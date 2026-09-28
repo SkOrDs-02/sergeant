@@ -2,7 +2,6 @@ import type { PoolClient } from "pg";
 import type { ImportDirection } from "@sergeant/shared";
 
 export interface DedupMonoInput {
-  userId: string;
   date: string;
   amountKopiykas: number;
   direction: ImportDirection;
@@ -10,10 +9,16 @@ export interface DedupMonoInput {
 
 /**
  * Тір 1 дедупу (спека § Фаза 2 «Дедуп — триярусний», п.1: "Проти
- * банк-API-даних"): чи вже існує `mono_transaction` користувача, яка
- * ОБЛІКОВУЄ саме цей import-рядок — того самого знаку (`expense` →
- * `amount<0`, `income` → `amount>0`), точної суми (`|amount| =
- * amountKopiykas`), у вікні ±1 Kyiv-календарна доба від `date`.
+ * банк-API-даних"): для КОЖНОГО import-рядка батчу — чи вже існує
+ * `mono_transaction` користувача, яка ОБЛІКОВУЄ саме цей рядок: того самого
+ * знаку (`expense` → `amount<0`, `income` → `amount>0`), точної суми
+ * (`|amount| = amountKopiykas`), у вікні ±1 Kyiv-календарна доба від `date`.
+ * Повертає масив `boolean` 1:1 з `rows` (той самий порядок).
+ *
+ * Один SQL на весь батч: рядки їдуть масивами через `unnest ... WITH
+ * ORDINALITY`, а предикат `EXISTS` дослівно той самий, що був у колишньому
+ * per-row запиті (до 2026-09-28 було N round-trip-ів на N рядків). Kyiv-день
+ * рахує Postgres, не JS, тож межі доби не зсуваються.
  *
  * Викликається ВСЕРЕДИНІ вже відкритої транзакції `commit.ts` (`client` —
  * checked-out `PoolClient`, не module-level `pool`) — той самий патерн, що
@@ -31,13 +36,13 @@ export interface DedupMonoInput {
  * "чому саме" на рівні цього запиту — обидва дають `skipped-mono`.
  *
  * `date` — вже готовий `YYYY-MM-DD` (Kyiv календарний день, як
- * надрукований на джерелі, без TZ-конвертації в JS — `$2::date` порівнює
+ * надрукований на джерелі, без TZ-конвертації в JS — `::date` порівнює
  * напряму з `timezone('Europe/Kyiv', t.time)::date` на боці SQL).
  *
  * Ніколи не видаляє й не зливає дані (та сама гарантія, що
- * `matchReceiptToMono`) — лише читає й повертає кандидата; caller
- * (`commit.ts`) вирішує сам. При кількох кандидатах — детермінований вибір
- * (найближчий Kyiv-день до `date`, tie-break по `mono_tx_id`).
+ * `matchReceiptToMono`) — лише читає. Який саме mono-tx збігся, caller-у
+ * не потрібно (`commit.ts` рахує лише факт збігу), тому запит його й не
+ * вибирає.
  *
  * AI-DANGER: НЕ "consume"-ить (не позначає) знайдену `mono_transaction` як
  * "вже використану цим import-рядком" — два різні import-рядки з
@@ -45,32 +50,44 @@ export interface DedupMonoInput {
  * на ОДИН mono-tx і обидва скіпнутись, навіть якщо лише один із них
  * справді той самий платіж. Той самий клас "слабкого" ризику, що вже
  * прийнятий у `receipts/matcher.ts`-слабкому матчі (сума+день, без
- * додаткового розрізнення) — не нова регресія цього PR, а той самий
- * компроміс, поширений на N рядків замість одного чека.
+ * додаткового розрізнення) — не нова регресія, а той самий компроміс,
+ * поширений на N рядків замість одного чека. Батчинг цю семантику
+ * зберігає: кожен рядок перевіряється незалежно.
  */
-export async function findMonoMatch(
+export async function findMonoMatchedRows(
   client: PoolClient,
-  input: DedupMonoInput,
-): Promise<{ monoTxId: string } | null> {
-  const { rows } = await client.query<{ mono_tx_id: string }>(
-    `SELECT t.mono_tx_id
-       FROM mono_transaction t
-      WHERE t.user_id = $1
-        AND t.deleted_at IS NULL
-        AND ABS(t.amount) = $2::bigint
-        AND (
-          ($3::text = 'expense' AND t.amount < 0)
-          OR ($3::text = 'income' AND t.amount > 0)
-        )
-        AND ABS(
-          (timezone('Europe/Kyiv', t.time))::date - $4::date
-        ) <= 1
-      ORDER BY
-        ABS((timezone('Europe/Kyiv', t.time))::date - $4::date) ASC,
-        t.mono_tx_id ASC
-      LIMIT 1`,
-    [input.userId, input.amountKopiykas, input.direction, input.date],
+  userId: string,
+  rows: ReadonlyArray<DedupMonoInput>,
+): Promise<boolean[]> {
+  const matched = rows.map(() => false);
+  if (rows.length === 0) return matched;
+  // `ord` це bigint (WITH ORDINALITY), node-pg віддає його рядком: Number()
+  // перед індексацією (Hard Rule #1).
+  const { rows: hits } = await client.query<{ ord: string }>(
+    `SELECT r.ord
+       FROM unnest($2::date[], $3::bigint[], $4::text[])
+            WITH ORDINALITY AS r(day, amount, direction, ord)
+      WHERE EXISTS (
+        SELECT 1
+          FROM mono_transaction t
+         WHERE t.user_id = $1
+           AND t.deleted_at IS NULL
+           AND ABS(t.amount) = r.amount
+           AND (
+             (r.direction = 'expense' AND t.amount < 0)
+             OR (r.direction = 'income' AND t.amount > 0)
+           )
+           AND ABS(
+             (timezone('Europe/Kyiv', t.time))::date - r.day
+           ) <= 1
+      )`,
+    [
+      userId,
+      rows.map((r) => r.date),
+      rows.map((r) => r.amountKopiykas),
+      rows.map((r) => r.direction),
+    ],
   );
-  const row = rows[0];
-  return row ? { monoTxId: row.mono_tx_id } : null;
+  for (const { ord } of hits) matched[Number(ord) - 1] = true;
+  return matched;
 }

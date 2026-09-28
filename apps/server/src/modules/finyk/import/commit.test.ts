@@ -3,14 +3,16 @@ import type { Request, Response } from "express";
 
 const mocks = vi.hoisted(() => ({
   connect: vi.fn(),
+  /** Пер-рядковий оракул тесту: `null` - нема матчу, інакше матч. */
   findMonoMatch: vi.fn(),
+  findMonoMatchedRows: vi.fn(),
 }));
 
 vi.mock("../../../db.js", () => ({
   default: { connect: mocks.connect },
 }));
 vi.mock("./dedupMono.js", () => ({
-  findMonoMatch: mocks.findMonoMatch,
+  findMonoMatchedRows: mocks.findMonoMatchedRows,
 }));
 
 import commitImportHandler from "./commit.js";
@@ -89,8 +91,8 @@ function defaultBatchRow(params: unknown[]) {
 const ROW_CREATED_AT = new Date("2026-01-15T12:30:00.000Z");
 const ROW_UPDATED_AT = new Date("2026-01-15T12:31:00.000Z");
 
-/** Форма, яку віддає upsert-запит `commit.ts`: стан рядка ПІСЛЯ виклику
- * + прапорець «вставили саме зараз». */
+/** Стан одного рядка, який віддає батч-upsert `commit.ts`: стан рядка
+ * ПІСЛЯ виклику + прапорець «вставили саме зараз». */
 function upsertRow(
   overrides: {
     inserted?: boolean;
@@ -99,44 +101,43 @@ function upsertRow(
   } = {},
 ) {
   return {
-    rows: [
-      {
-        data_json: overrides.data_json ?? { category: "food" },
-        created_at: ROW_CREATED_AT,
-        updated_at: ROW_UPDATED_AT,
-        deleted_at: overrides.deleted_at ?? null,
-        inserted: overrides.inserted ?? true,
-      },
-    ],
+    data_json: overrides.data_json ?? { category: "food" },
+    created_at: ROW_CREATED_AT,
+    updated_at: ROW_UPDATED_AT,
+    deleted_at: overrides.deleted_at ?? null,
+    inserted: overrides.inserted ?? true,
   };
 }
 
 /**
  * Диспетчер по SQL-тексту (той самий патерн, що
- * `receipts/save.test.ts#makeFakeClient`), з per-call-лічильником для
- * `finyk_manual_expenses`-вставок, бо commit обробляє N рядків в одному
- * виклику (на відміну від save.ts, який завжди вставляє один чек).
+ * `receipts/save.test.ts#makeFakeClient`). Батч-upsert `finyk_manual_expenses`
+ * це один запит на весь батч, тож override віддає стан ПО рядку
+ * (`insertIndex` - порядковий номер серед рядків, що дійшли до вставки;
+ * `null` - рядка в результаті немає).
  */
 function makeFakeClient(
   overrides: {
     manualExpenseInsert?: (
-      params: unknown[],
-      callIndex: number,
-    ) => { rows: unknown[] };
+      id: string,
+      insertIndex: number,
+    ) => ReturnType<typeof upsertRow> | null;
     batchInsert?: (params: unknown[]) => { rows: unknown[] };
   } = {},
 ) {
   const calls: Array<{ sql: string; params: unknown[] }> = [];
-  let manualExpenseInsertCount = 0;
   const query = vi.fn(async (sql: string, params: unknown[] = []) => {
     calls.push({ sql, params });
     if (/^BEGIN|^COMMIT|^ROLLBACK/.test(sql.trim())) return { rows: [] };
     if (/INSERT INTO finyk_manual_expenses/.test(sql)) {
-      const result = overrides.manualExpenseInsert
-        ? overrides.manualExpenseInsert(params, manualExpenseInsertCount)
-        : upsertRow();
-      manualExpenseInsertCount++;
-      return result;
+      const ids = params[0] as string[];
+      const rows = ids.flatMap((id, i) => {
+        const state = overrides.manualExpenseInsert
+          ? overrides.manualExpenseInsert(id, i)
+          : upsertRow();
+        return state ? [{ id, ...state }] : [];
+      });
+      return { rows };
     }
     if (/INSERT INTO import_batches/.test(sql)) {
       return overrides.batchInsert
@@ -173,9 +174,34 @@ function syncOpEmit(calls: Array<{ sql: string; params: unknown[] }>) {
   };
 }
 
+/** Вставлені blob-и батч-upsert-у (один запит, масив у `$3`). */
+function insertedBlobs(calls: Array<{ sql: string; params: unknown[] }>) {
+  const call = calls.find((c) =>
+    c.sql.includes("INSERT INTO finyk_manual_expenses"),
+  );
+  if (!call) return [];
+  return (call.params[2] as string[]).map(
+    (b) => JSON.parse(b) as Record<string, unknown>,
+  );
+}
+
 beforeEach(() => {
   mocks.connect.mockReset();
   mocks.findMonoMatch.mockReset();
+  mocks.findMonoMatchedRows.mockReset();
+  // Батч-матчер делегує пер-рядковому оракулу: наявні сценарії лишаються
+  // сформульованими «по рядку», як і сама семантика дедупу.
+  mocks.findMonoMatchedRows.mockImplementation(
+    async (_client: unknown, userId: string, rows: unknown[]) => {
+      const flags: boolean[] = [];
+      for (const r of rows) {
+        flags.push(
+          (await mocks.findMonoMatch({ userId, ...(r as object) })) != null,
+        );
+      }
+      return flags;
+    },
+  );
 });
 
 describe("commitImportHandler — happy path, усі рядки нові", () => {
@@ -238,9 +264,13 @@ describe("commitImportHandler — happy path, усі рядки нові", () =>
       c.sql.includes("INSERT INTO finyk_manual_expenses"),
     );
     expect(insertCall).toBeDefined();
-    const [, userId, blobJson] = insertCall!.params as [string, string, string];
+    const [, userId, blobJsons] = insertCall!.params as [
+      string[],
+      string,
+      string[],
+    ];
     expect(userId).toBe("u1");
-    const blob = JSON.parse(blobJson) as {
+    const blob = JSON.parse(blobJsons[0]!) as {
       kind: string;
       amount: number;
       category: string;
@@ -263,13 +293,7 @@ describe("commitImportHandler — happy path, усі рядки нові", () =>
       makeRes(),
     );
 
-    const insertCall = client.calls.find((c) =>
-      c.sql.includes("INSERT INTO finyk_manual_expenses"),
-    );
-    const blob = JSON.parse(insertCall!.params[2] as string) as {
-      kind: string;
-    };
-    expect(blob.kind).toBe("expense");
+    expect(insertedBlobs(client.calls)[0]!["kind"]).toBe("expense");
   });
 
   it("порожній опис → fallback 'Без опису' у blob (не в rowKey-хеші)", async () => {
@@ -282,13 +306,7 @@ describe("commitImportHandler — happy path, усі рядки нові", () =>
       makeRes(),
     );
 
-    const insertCall = client.calls.find((c) =>
-      c.sql.includes("INSERT INTO finyk_manual_expenses"),
-    );
-    const blob = JSON.parse(insertCall!.params[2] as string) as {
-      description: string;
-    };
-    expect(blob.description).toBe("Без опису");
+    expect(insertedBlobs(client.calls)[0]!["description"]).toBe("Без опису");
   });
 });
 
@@ -314,7 +332,7 @@ describe("commitImportHandler — mono-дедуп (тір 1)", () => {
     ).toBe(false);
   });
 
-  it("mono-matched для expense перевіряє direction='expense' у виклику findMonoMatch", async () => {
+  it("mono-matched для expense передає direction='expense' у батч-матчер", async () => {
     mocks.findMonoMatch.mockResolvedValueOnce(null);
     const client = makeFakeClient();
     mocks.connect.mockResolvedValue(client);
@@ -326,15 +344,13 @@ describe("commitImportHandler — mono-дедуп (тір 1)", () => {
       makeRes(),
     );
 
-    expect(mocks.findMonoMatch).toHaveBeenCalledWith(
-      client,
+    expect(mocks.findMonoMatchedRows).toHaveBeenCalledWith(client, "u1", [
       expect.objectContaining({
-        userId: "u1",
         date: "2026-01-15",
         amountKopiykas: 8475,
         direction: "expense",
       }),
-    );
+    ]);
   });
 
   it("змішаний батч: рядок 0 matched (skip), рядок 1 новий (created)", async () => {
@@ -361,11 +377,10 @@ describe("commitImportHandler — mono-дедуп (тір 1)", () => {
     };
     expect(body.created).toBe(1);
     expect(body.skipped.monoMatched).toBe(1);
-    expect(
-      client.calls.filter((c) =>
-        c.sql.includes("INSERT INTO finyk_manual_expenses"),
-      ),
-    ).toHaveLength(1);
+    // До вставки дійшов лише не-matched рядок.
+    expect(insertedBlobs(client.calls).map((b) => b["description"])).toEqual([
+      "новий",
+    ]);
   });
 });
 
@@ -403,16 +418,11 @@ describe("commitImportHandler — between-imports дедуп (тір 2, ON CONFL
       .mockResolvedValueOnce({ monoTxId: "tx-1" }) // row1 — mono-matched
       .mockResolvedValueOnce(null); // row2 — duplicate
 
-    let insertCallIndex = 0;
     const client = makeFakeClient({
-      manualExpenseInsert: () => {
-        insertCallIndex++;
-        // Перший фактичний insert-виклик (row0) — успіх; другий
-        // (row2, бо row1 скіпнулась ДО insert) — конфлікт.
-        return insertCallIndex === 1
-          ? upsertRow()
-          : upsertRow({ inserted: false });
-      },
+      // Перший рядок вставки (row0) успішний; другий (row2, бо row1
+      // скіпнулась ДО insert) дає конфлікт.
+      manualExpenseInsert: (_id, i) =>
+        i === 0 ? upsertRow() : upsertRow({ inserted: false }),
     });
     mocks.connect.mockResolvedValue(client);
 
@@ -542,14 +552,9 @@ describe("commitImportHandler — емісія sync_op_log (видимість �
       .mockResolvedValueOnce(null) // row0 — created
       .mockResolvedValueOnce({ monoTxId: "tx-1" }) // row1 — mono
       .mockResolvedValueOnce(null); // row2 — duplicate
-    let insertCallIndex = 0;
     const client = makeFakeClient({
-      manualExpenseInsert: () => {
-        insertCallIndex++;
-        return insertCallIndex === 1
-          ? upsertRow()
-          : upsertRow({ inserted: false });
-      },
+      manualExpenseInsert: (_id, i) =>
+        i === 0 ? upsertRow() : upsertRow({ inserted: false }),
     });
     mocks.connect.mockResolvedValue(client);
 
@@ -591,8 +596,31 @@ describe("commitImportHandler — емісія sync_op_log (видимість �
   });
 });
 
+describe("commitImportHandler - кількість round-trip-ів не залежить від N", () => {
+  it("1 і 500 рядків дають однакову кількість запитів до БД", async () => {
+    mocks.findMonoMatch.mockResolvedValue(null);
+    const countQueries = async (n: number) => {
+      const client = makeFakeClient();
+      mocks.connect.mockResolvedValue(client);
+      const rows = Array.from({ length: n }, (_, i) =>
+        row({ description: `рядок ${i}` }),
+      );
+      await commitImportHandler(makeReq(commitBody(rows)), makeRes());
+      return {
+        queries: client.query.mock.calls.length,
+        matcherCalls: mocks.findMonoMatchedRows.mock.calls.length,
+      };
+    };
+    const one = await countQueries(1);
+    mocks.findMonoMatchedRows.mockClear();
+    const many = await countQueries(500);
+    expect(many.queries).toBe(one.queries);
+    expect(many.matcherCalls).toBe(1);
+  });
+});
+
 describe("commitImportHandler — rollback on failure", () => {
-  it("ROLLBACK + release(), коли findMonoMatch кидає помилку; оригінальна помилка пробрасується", async () => {
+  it("ROLLBACK + release(), коли mono-матчер кидає помилку; оригінальна помилка пробрасується", async () => {
     mocks.findMonoMatch.mockRejectedValueOnce(new Error("mono boom"));
     const client = makeFakeClient();
     mocks.connect.mockResolvedValue(client);
