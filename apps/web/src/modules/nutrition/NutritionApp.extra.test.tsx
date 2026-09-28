@@ -44,6 +44,7 @@ vi.mock("./hooks/useNutritionDualWriteBoot", () => ({
 
 vi.mock("./hooks/useNutritionSqliteReadBoot", () => ({
   useNutritionSqliteReadBoot: vi.fn(),
+  isNutritionReadCacheSettled: () => true,
 }));
 
 vi.mock("./lib/sqliteReadGate", () => ({

@@ -74,6 +74,15 @@ describe("bootNutritionSqliteReadPath", () => {
     expect(getSqliteDb).toHaveBeenCalledTimes(1);
   });
 
+  it("shares one run between concurrent callers", async () => {
+    const [a, b] = await Promise.all([
+      bootNutritionSqliteReadPath("user-1"),
+      bootNutritionSqliteReadPath("user-1"),
+    ]);
+    expect([a, b]).toEqual([true, true]);
+    expect(getSqliteDb).toHaveBeenCalledTimes(1);
+  });
+
   it("falls back and records telemetry on failure", async () => {
     getSqliteDb.mockRejectedValue(new Error("no wasm"));
     const ok = await bootNutritionSqliteReadPath("user-1");

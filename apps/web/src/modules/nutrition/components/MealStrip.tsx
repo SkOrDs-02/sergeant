@@ -44,6 +44,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
+import { formatNumberUk } from "@sergeant/shared";
 import { REMAINING_TODAY_LABEL } from "../lib/nextMealLabel";
 
 export interface MealStripSegment {
@@ -278,8 +279,10 @@ export function MealStrip({
           <div className="mt-1 flex flex-col items-center gap-0.5 text-center">
             {remaining < 0 ? (
               <>
+                {/* Без мінуса: підпис нижче вже каже «понад ціль», і
+                    «−250 … понад ціль» читалось як подвійне заперечення. */}
                 <p className="text-style-display text-hero-ink tabular-nums">
-                  −{Math.round(Math.abs(remaining))}
+                  {formatNumberUk(Math.round(Math.abs(remaining)))}
                 </p>
                 <p className="text-style-caption text-hero-ink">
                   {messages.nutrition.heroStrip.overshootSuffix}
@@ -288,7 +291,7 @@ export function MealStrip({
             ) : (
               <>
                 <p className="text-style-display text-hero-ink tabular-nums">
-                  {Math.round(remaining)}{" "}
+                  {formatNumberUk(Math.round(remaining))}{" "}
                   <span className="text-style-caption text-hero-ink">
                     {messages.nutrition.heroStrip.kcalUnit}
                   </span>
@@ -342,9 +345,9 @@ export function MealStrip({
               : 0;
           return (
             <li key={m.label} className="flex flex-col gap-1">
-              <div className="flex items-baseline justify-between text-style-caption text-hero-ink tabular-nums">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-1 text-style-caption text-hero-ink tabular-nums">
                 <span>{m.label}</span>
-                <span>
+                <span className="whitespace-nowrap">
                   {m.consumed}
                   {m.goal > 0 ? ` / ${m.goal}` : ""} {unit}
                 </span>

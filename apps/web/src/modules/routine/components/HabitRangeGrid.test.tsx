@@ -113,10 +113,23 @@ describe("HabitRangeGrid", () => {
     }
   });
 
-  it("falls back to an explanatory line when nothing is scheduled", () => {
+  it("invites to add the first habit when there are none", () => {
     render(
       <HabitRangeGrid
         habits={[]}
+        completions={{}}
+        days={7}
+        hint="останні 7 днів"
+      />,
+    );
+    expect(screen.getByText(/Звичок ще немає/)).toBeInTheDocument();
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it("falls back to an explanatory line when nothing is scheduled", () => {
+    render(
+      <HabitRangeGrid
+        habits={[habit("later", "Пізніше", { startDate: "2026-02-01" })]}
         completions={{}}
         days={7}
         hint="останні 7 днів"

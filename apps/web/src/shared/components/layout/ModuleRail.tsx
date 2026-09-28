@@ -230,11 +230,15 @@ export function ModuleRail({
               // `zone-chip` не дає комірці тіла — ставимо панель і лінію,
               // як у решти карток головної.
               active === null && !isActive && "bg-panel border-line",
-              !isEnabled && "opacity-60",
+              // Не opacity на всій комірці: вона тягнула підпис нижче AA.
+              !isEnabled && "text-muted border-dashed border-line",
               tokens.ring,
             )}
           >
-            <span aria-hidden className="shrink-0">
+            <span
+              aria-hidden
+              className={cn("shrink-0", !isEnabled && "opacity-60 grayscale")}
+            >
               {MODULE_RAIL_ICONS[id]}
             </span>
             <span className="truncate">{cellLabel}</span>

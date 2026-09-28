@@ -186,13 +186,29 @@ export const BentoCard = memo(function BentoCard({
     moduleHasRealEntry(config.module as DashboardModuleId);
   const dormantCopy = dormantCopyFor(config.module);
   const showHandle = !!editMode;
+  // aria-label кнопки перекриває все всередині, тож видимі тренд і причина
+  // підказки мають бути в ньому явно, інакше скрінрідер їх не чує.
+  // Відсоток рахується один раз для бейджа й для мітки кнопки. Зміна, що
+  // округлюється до нуля, - це «без змін», а не «0 %».
+  const trend = config.trendDelta;
+  const trendPct =
+    trend != null && Number.isFinite(trend) ? Math.round(trend * 100) : 0;
+  const trendLabel =
+    trendPct === 0
+      ? null
+      : `${trendPct > 0 ? "+" : "−"}${Math.abs(trendPct)} %`;
+  const extraParts = [
+    trendLabel && `зміна ${trendLabel}`,
+    adaptiveReason,
+  ].filter(
+    (part): part is string => typeof part === "string" && part.length > 0,
+  );
 
   return (
     <div
       className={cn(
         "relative h-full",
         isDragging && "opacity-70 z-50",
-        inactive && "opacity-60",
         // Edit-mode wiggle. Suppressed while a card is being dragged so
         // the pointer drag is not fighting the rotation keyframes.
         editMode && !isDragging && "motion-safe:animate-wiggle",
@@ -205,9 +221,9 @@ export const BentoCard = memo(function BentoCard({
         {...primaryProps}
         aria-label={
           inactive
-            ? `${config.label}: неактивний модуль. Увімкнути в налаштуваннях Hub.`
+            ? `${config.label}: неактивний модуль. Увімкнути в налаштуваннях.`
             : hasData
-              ? `${config.label}: ${previewParts.join(", ")}`
+              ? `${config.label}: ${[...previewParts, ...extraParts].join(", ")}`
               : dormant
                 ? `${config.label}: ${dormantCopy.label}. ${dormantCopy.hint}`
                 : `${config.label}: ${config.emptyLabel}`
@@ -223,7 +239,9 @@ export const BentoCard = memo(function BentoCard({
           "pointer-fine:hover:shadow-float pointer-fine:hover:-translate-y-0.5",
           "pointer-fine:hover:border-brand-200/50 dark:pointer-fine:hover:border-line/80",
           "active:scale-[0.98] pointer-coarse:active:scale-[0.97]",
-          inactive ? "bg-panel grayscale" : config.cardBg,
+          // Неактивність позначають пунктир і сірий тон, не opacity: прозорість
+          // на всій картці тягнула `text-muted` нижче AA.
+          inactive ? "bg-panel grayscale border-dashed" : config.cardBg,
           isDragging && "shadow-float cursor-grabbing",
         )}
       >
@@ -343,30 +361,26 @@ export const BentoCard = memo(function BentoCard({
                 (rounded-full плюс 10%-заливка) — ще один контейнер під числом, яке
                 й так стоїть під hero-числом. Тепер це рядок тексту в
                 caption-ролі: колір несе стан, бокса немає. */}
-            {config.trendDelta != null &&
-              Number.isFinite(config.trendDelta) &&
-              config.trendDelta !== 0 && (
-                <span
-                  className={cn(
-                    "mt-1 inline-flex items-center gap-0.5 self-start",
-                    "text-style-caption font-semibold tabular-nums leading-none",
-                    "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow",
-                    config.trendDelta > 0
-                      ? "text-success-strong dark:text-success"
-                      : "text-danger-strong dark:text-danger",
-                  )}
-                  aria-label={`Зміна: ${config.trendDelta > 0 ? "+" : ""}${Math.round(config.trendDelta * 100)} %`}
-                >
-                  <Icon
-                    name={
-                      config.trendDelta > 0 ? "trending-up" : "trending-down"
-                    }
-                    size="xs"
-                    strokeWidth={2.5}
-                  />
-                  {Math.abs(Math.round(config.trendDelta * 100))}%
-                </span>
-              )}
+            {trendLabel && (
+              <span
+                className={cn(
+                  "mt-1 inline-flex items-center gap-0.5 self-start",
+                  "text-style-caption font-semibold tabular-nums leading-none",
+                  "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow",
+                  trendPct > 0
+                    ? "text-success-strong dark:text-success"
+                    : "text-danger-strong dark:text-danger",
+                )}
+                aria-label={`Зміна: ${trendLabel}`}
+              >
+                <Icon
+                  name={trendPct > 0 ? "trending-up" : "trending-down"}
+                  size="xs"
+                  strokeWidth={2.5}
+                />
+                {Math.abs(trendPct)}%
+              </span>
+            )}
           </>
         ) : dormant ? (
           <>

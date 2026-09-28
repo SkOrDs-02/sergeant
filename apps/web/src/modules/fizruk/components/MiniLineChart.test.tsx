@@ -92,7 +92,7 @@ describe("MiniLineChart", () => {
 
   it("shows a negative delta", () => {
     render(<MiniLineChart data={points([85, 80])} unit="кг" color="#00f" />);
-    expect(screen.getAllByText(/-5,0 кг/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/−5,0 кг/).length).toBeGreaterThanOrEqual(1);
   });
 
   describe("deltaDirection", () => {
@@ -107,7 +107,7 @@ describe("MiniLineChart", () => {
 
     it("defaults to down-is-good: negative delta renders success", () => {
       render(<MiniLineChart data={points([85, 80])} unit="кг" color="#00f" />);
-      const label = screen.getByText((_c, el) => el?.textContent === "-5,0 кг");
+      const label = screen.getByText((_c, el) => el?.textContent === "−5,0 кг");
       expect(label.className).toContain("text-success-strong");
     });
 
@@ -137,7 +137,7 @@ describe("MiniLineChart", () => {
         />,
       );
       const label = screen.getByText(
-        (_c, el) => el?.textContent === "-2,0 год",
+        (_c, el) => el?.textContent === "−2,0 год",
       );
       expect(label.className).toContain("text-warning-strong");
       expect(label.className).not.toContain("text-success-strong");

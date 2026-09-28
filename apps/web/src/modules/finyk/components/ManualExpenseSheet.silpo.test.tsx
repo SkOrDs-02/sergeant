@@ -48,6 +48,11 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+// Секція чекає ланцюжок syncState → receipts → receiptDetail, і під
+// навантаженням (паралельні воркери, мало RAM) дефолтна 1 с findBy не
+// встигала: у різних прогонах падали різні кейси цього файлу.
+const ASYNC_CHAIN = { timeout: 5000 };
+
 const EXPENSE = {
   id: "manual-1",
   description: "Сільпо",
@@ -113,8 +118,12 @@ describe("ManualExpenseSheet — чек Сільпо", () => {
 
     renderSheet();
 
-    expect(await screen.findByText("Чек із Сільпо")).toBeInTheDocument();
-    expect(await screen.findByText("Молоко")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Чек із Сільпо", {}, ASYNC_CHAIN),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByText("Молоко", {}, ASYNC_CHAIN),
+    ).toBeInTheDocument();
   });
 
   it("без чека пропонує прикріпити його вручну", async () => {
@@ -129,7 +138,11 @@ describe("ManualExpenseSheet — чек Сільпо", () => {
     renderSheet();
 
     expect(
-      await screen.findByRole("button", { name: "Прикріпити чек" }),
+      await screen.findByRole(
+        "button",
+        { name: "Прикріпити чек" },
+        ASYNC_CHAIN,
+      ),
     ).toBeInTheDocument();
   });
 

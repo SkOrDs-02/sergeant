@@ -239,7 +239,7 @@ describe("RoutineCalendarPanel", () => {
     it("тап по сьогоднішній даті → режим 'today'", () => {
       render(<RoutineCalendarPanel />);
       fireEvent.click(
-        screen.getByRole("button", { name: "Вівторок, 2026-06-23 (сьогодні)" }),
+        screen.getByRole("button", { name: "Вівторок, 23 червня (сьогодні)" }),
       );
       expect(setSelectedDay).toHaveBeenCalledWith("2026-06-23");
       expect(setTimeMode).toHaveBeenCalledWith("today");
@@ -248,7 +248,7 @@ describe("RoutineCalendarPanel", () => {
     it("тап по завтрашній даті → режим 'tomorrow'", () => {
       render(<RoutineCalendarPanel />);
       fireEvent.click(
-        screen.getByRole("button", { name: "Середа, 2026-06-24" }),
+        screen.getByRole("button", { name: "Середа, 24 червня" }),
       );
       expect(setSelectedDay).toHaveBeenCalledWith("2026-06-24");
       expect(setTimeMode).toHaveBeenCalledWith("tomorrow");
@@ -257,7 +257,7 @@ describe("RoutineCalendarPanel", () => {
     it("тап по довільній даті → режим 'day'", () => {
       render(<RoutineCalendarPanel />);
       fireEvent.click(
-        screen.getByRole("button", { name: "Пʼятниця, 2026-06-26" }),
+        screen.getByRole("button", { name: "Пʼятниця, 26 червня" }),
       );
       expect(setSelectedDay).toHaveBeenCalledWith("2026-06-26");
       expect(setTimeMode).toHaveBeenCalledWith("day");

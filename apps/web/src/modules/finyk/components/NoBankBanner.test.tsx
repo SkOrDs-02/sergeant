@@ -28,7 +28,7 @@ describe("NoBankBanner", () => {
     expect(onConnect).toHaveBeenCalledTimes(1);
   });
 
-  it("invokes onContinueManually when «Без банку продовжити» is clicked", () => {
+  it("invokes onContinueManually when «Продовжити без банку» is clicked", () => {
     const onContinueManually = vi.fn();
     render(
       <NoBankBanner
@@ -37,7 +37,7 @@ describe("NoBankBanner", () => {
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
+      screen.getByRole("button", { name: "Продовжити без банку" }),
     );
     expect(onContinueManually).toHaveBeenCalledTimes(1);
   });

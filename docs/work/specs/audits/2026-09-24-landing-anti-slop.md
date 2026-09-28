@@ -88,8 +88,9 @@ Q1: Сержант у видимому тексті, «AI-помічник» л�
 
 | PR                                                              | Title                                                                     | Merged     |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------- |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                     | 2026-09-26 |
 | [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) | fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд | 2026-09-26 |
 | [#27](https://bitbucket.org/skords01/sergeant/pull-requests/27) | docs(docs): анти-слоп аудит сайту за мірками раунду 2                     | 2026-09-24 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

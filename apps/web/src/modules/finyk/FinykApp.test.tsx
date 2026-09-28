@@ -176,7 +176,7 @@ describe("FinykApp — shell + default page (real component tree)", () => {
       screen.getByRole("button", { name: "Підключити Monobank" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
+      screen.getByRole("button", { name: "Продовжити без банку" }),
     ).toBeInTheDocument();
 
     // Real `Overview` page (sr-only page heading, not a stubbed testid).
@@ -312,7 +312,7 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     ).toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
+      screen.getByRole("button", { name: "Продовжити без банку" }),
     );
 
     expect(

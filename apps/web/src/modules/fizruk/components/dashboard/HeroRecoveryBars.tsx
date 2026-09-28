@@ -123,7 +123,7 @@ function RecoveryRowButton({
     <button
       type="button"
       onClick={() => onOpenAtlas(row.atlasId)}
-      className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left transition-[background-color,transform] active:scale-[0.99] hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+      className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-1 py-1.5 text-left transition-[background-color,transform] active:scale-[0.99] hover:bg-white/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0"
       aria-label={`${row.label}: ${caption.long}. Відкрити в атласі`}
     >
       <span className="min-w-0 shrink truncate text-style-label text-hero-ink">
@@ -145,7 +145,7 @@ function RecoveryRowButton({
  */
 function EmptyBody() {
   return (
-    <p className="mt-4 text-style-caption text-hero-ink/80">
+    <p className="mt-4 text-style-body text-hero-ink/80">
       Тіло ще не має історії. Перше тренування покаже, що відновлюється.
     </p>
   );

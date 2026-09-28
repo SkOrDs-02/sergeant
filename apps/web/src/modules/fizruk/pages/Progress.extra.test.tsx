@@ -148,7 +148,7 @@ describe("Progress page — charts & trends", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     // 18 − 20 = -2.0%
-    expect(screen.getByText(/-2,0%/)).toBeInTheDocument();
+    expect(screen.getByText(/−2,0%/)).toBeInTheDocument();
   });
 
   it("renders the wellbeing chart with ≥2 entries carrying energy/mood", () => {

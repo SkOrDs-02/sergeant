@@ -77,7 +77,8 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           <button
             type="button"
             onClick={() => onAction(rec.action ?? "", rec.actionHash)}
-            className="mt-1.5 inline-flex items-center gap-1 text-style-label font-semibold text-text hover:text-primary transition-colors"
+            aria-label={`${messages.actions.open}: ${rec.title}`}
+            className="mt-1.5 inline-flex items-center gap-1 rounded-lg focus-ring text-style-label font-semibold text-text hover:text-primary transition-colors"
           >
             {messages.actions.open}
             <Icon name="chevron-right" size="xs" strokeWidth={2.5} />
@@ -131,7 +132,7 @@ export function HubInsightsPanel({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={cn(
-          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl",
+          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl focus-ring",
           "border border-line bg-panel",
           "hover:bg-panelHi transition-colors",
         )}

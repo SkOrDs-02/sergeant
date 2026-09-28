@@ -110,8 +110,9 @@ If a reviewer sees a new prose paragraph or table cell in English in a doc that'
 
 | PR                                                              | Title                                                                   | Merged     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                   | 2026-09-26 |
 | [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)            | 2026-09-24 |
 | [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

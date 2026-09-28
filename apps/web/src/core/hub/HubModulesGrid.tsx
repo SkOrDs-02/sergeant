@@ -65,15 +65,17 @@ export function HubModulesGrid({
           type="button"
           onClick={toggleEditMode}
           aria-pressed={editMode}
+          // Видиме «Готово» стоїть на початку назви (WCAG 2.5.3): голосове
+          // керування за словом «Готово» інакше кнопку не знаходило.
           aria-label={
             editMode
-              ? "Завершити налаштування порядку модулів"
+              ? "Готово: завершити налаштування порядку модулів"
               : "Налаштувати порядок модулів"
           }
           title={editMode ? "Готово" : "Налаштувати"}
           className={cn(
             "inline-flex items-center justify-center gap-1.5 text-style-caption font-medium rounded-xl transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             editMode
               ? "bg-primary text-bg px-2.5 py-1"
               : "text-muted hover:text-text hover:bg-panelHi w-7 h-7 touch-target",

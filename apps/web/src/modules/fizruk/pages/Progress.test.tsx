@@ -142,7 +142,7 @@ describe("Progress page", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     expect(screen.getByText("79 кг")).toBeInTheDocument();
-    expect(screen.getByText("-2,0 кг")).toBeInTheDocument();
+    expect(screen.getByText("−2,0 кг")).toBeInTheDocument();
   });
 
   it("обʼєднує вагу з обох сховищ в один ряд (W1-WEIGHT-SOT)", () => {

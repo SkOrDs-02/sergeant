@@ -411,16 +411,17 @@ export function Progress({ onNavigate }: ProgressProps) {
                             weightDelta == null ? (
                               messages.fizruk.progress.noComparison
                             ) : (
-                              <span
-                                className={cn(
-                                  "font-semibold",
-                                  weightDelta > 0
-                                    ? "text-warning-strong dark:text-warning"
-                                    : "text-success-strong dark:text-success",
-                                )}
-                              >
+                              // Без оцінки напрямку: цілі ваги за замовчуванням
+                              // модуль не має (набір може бути метою), і
+                              // «Тіло» вже показує ту саму дельту нейтрально
+                              // (`CollapsibleTrendCard`, deltaDirection="neutral").
+                              <span className="font-semibold text-text">
                                 {weightDelta > 0 ? "+" : ""}
                                 {fmt(weightDelta, 1)} {messages.fizruk.kgUnit}
+                                <span className="font-normal text-subtle">
+                                  {" "}
+                                  {messages.fizruk.progress.deltaFromPrevious}
+                                </span>
                               </span>
                             )
                           }

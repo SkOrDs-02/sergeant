@@ -341,7 +341,7 @@ describe("HeroCard · recovery bars + kicker", () => {
       { streakWeeks: 1, weeklyWorkoutsCount: 1 },
     );
     expect(
-      screen.getByText(/серія 1 тижн\. · 1 тренування/),
+      screen.getByText(/серія 1 тиждень · 1 тренування/),
     ).toBeInTheDocument();
   });
 

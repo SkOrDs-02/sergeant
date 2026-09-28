@@ -108,13 +108,11 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
     ).toBeInTheDocument();
 
     // Real `HeroCard` in its "empty" state (no templates, no active
-    // workout, no plan session) renders the kicker (date · серія · тижн.)
-    // and the "no templates yet" copy — the old three-tile strip below the
-    // hero is gone (спека `fizruk-hero-recovery-bars.md` рішення 3), so the
-    // streak/week readout now lives here instead of a greeting.
-    expect(
-      screen.getByText(/серія 0 тижн\. · 0 тренувань/),
-    ).toBeInTheDocument();
+    // workout, no plan session) renders the kicker and the "no templates yet"
+    // copy. With no streak and no workouts the kicker is the date alone:
+    // zeros («серія 0 тижн. · 0 тренувань») are not shown on first run.
+    expect(screen.queryByText(/серія/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 тренувань/)).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Створити шаблон" }),
     ).toBeInTheDocument();

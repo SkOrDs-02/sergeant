@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -78,6 +78,7 @@ export function AssistantAdviceCard({
   sectionOpen = true,
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const bodyId = useId();
   const aiTier = useAiTier();
   const { isPro } = usePlan();
   const degradedLabel =
@@ -135,7 +136,9 @@ export function AssistantAdviceCard({
         <button
           type="button"
           onClick={toggle}
-          className="flex items-center justify-between w-full px-4 py-3 text-left"
+          aria-expanded={!collapsed}
+          aria-controls={bodyId}
+          className="flex items-center justify-between w-full px-4 py-3 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-2">
             <span
@@ -170,7 +173,7 @@ export function AssistantAdviceCard({
         </button>
 
         {!collapsed && (
-          <div className="px-4 pb-3.5 -mt-0.5">
+          <div id={bodyId} className="px-4 pb-3.5 -mt-0.5">
             {loading && !insight ? (
               // Skeleton stand-in matches three lines of body copy at
               // the real text size — keeps the card height stable so

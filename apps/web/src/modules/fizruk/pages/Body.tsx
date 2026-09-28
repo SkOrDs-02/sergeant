@@ -289,6 +289,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 latestValue={latest}
                 latestUnit={card.unit}
                 delta={delta}
+                deltaSince={card.data.find((p) => p.value != null)?.label}
                 deltaDirection={card.deltaDirection}
               >
                 <MiniLineChart

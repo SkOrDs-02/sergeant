@@ -142,7 +142,7 @@ describe("usePantryBarcodeScan", () => {
     const { scan, setPantryScanStatus } = setup();
     await scan("4820000000005");
     expect(setPantryScanStatus).toHaveBeenLastCalledWith(
-      "Немає підключення до інтернету.",
+      "Немає підключення до інтернету. Перевір зʼєднання і спробуй ще раз.",
     );
     onLineSpy.mockRestore();
   });

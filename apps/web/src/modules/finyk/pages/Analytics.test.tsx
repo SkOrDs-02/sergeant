@@ -102,7 +102,10 @@ describe("Analytics page", () => {
     });
     expect(screen.getByText("Підсумок місяця")).toBeInTheDocument();
     expect(screen.getByText("Категорії")).toBeInTheDocument();
-    expect(screen.getByText("Топ продавці")).toBeInTheDocument();
+    // Поточний місяць: дельти продавців теж міряються тими ж днями.
+    expect(
+      screen.getByText("Топ продавці: зміна за ті ж дні"),
+    ).toBeInTheDocument();
     // empty-state copy for no data
     expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();
     expect(screen.getByText("Поки немає продавців")).toBeInTheDocument();
@@ -389,7 +392,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
   });
@@ -414,7 +417,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
     // Summary (spent/income/balance) + comparison (2 rows) + merchant list
@@ -436,7 +439,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
     expect(screen.queryByText("••••")).not.toBeInTheDocument();
@@ -460,11 +463,11 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
-    const comparisonCard = screen.getByText("Порівняння з попереднім місяцем")
+    const comparisonCard = screen.getByText(/^Порівняння з попереднім місяцем/)
       .parentElement as HTMLElement;
     expect(within(comparisonCard).getByText(/2\s?518/)).toBeInTheDocument();
   });

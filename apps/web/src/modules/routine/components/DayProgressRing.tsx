@@ -65,7 +65,7 @@ export function DayProgressRing({
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col items-center gap-1.5 group cursor-pointer shrink-0"
+      className="flex flex-col items-center gap-1.5 group cursor-pointer shrink-0 rounded-2xl focus-ring"
       aria-label={
         scheduled > 0
           ? `Прогрес дня: ${completed} з ${scheduled}. Тапни для денного звіту`

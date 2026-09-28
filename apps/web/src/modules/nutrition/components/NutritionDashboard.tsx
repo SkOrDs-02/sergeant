@@ -198,6 +198,8 @@ export function NutritionDashboard({
   // чому рахувати. `countKcalStreakDays` дає довжину, і 7-денний інсайт
   // лишається окремою поверхнею зі своїм CTA — дублювання тут немає:
   // інсайт — картка з пропозицією плану, плашка — підтвердження віхи.
+  // Дашборд монтується лише після бута читання (гейт у
+  // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
   const kcalStreak = useMemo(
     () => countKcalStreakDays(log, goalPeriods, todayISODate()),
     [log, goalPeriods],
