@@ -20,8 +20,12 @@ export interface ChatEmptyProps {
    * Hand-off контракту: HubChat прокидає `setInput` + focus у parent
    * `HubChatBody`, який пробрасує сюди один callback — щоб `ChatEmpty`
    * не знав ні про focus-ref-и, ні про typing-state composer-а.
+   *
+   * Без callback-а (гість: замість composer-а стоїть `ChatAuthGate`)
+   * підказки лишаються прикладами запитань, а не кнопками: обіцянка
+   * «текст вставиться у поле» вела в нікуди, бо поля немає.
    */
-  onPickSuggestion: (text: string) => void;
+  onPickSuggestion?: ((text: string) => void) | undefined;
 }
 
 interface Suggestion {
@@ -143,27 +147,48 @@ export function ChatEmpty({ onPickSuggestion }: ChatEmptyProps) {
         {messages.hub.chatEmptyTitle}
       </p>
       <p className="max-w-xs text-style-body text-muted leading-relaxed text-pretty">
-        {messages.hub.chatEmptyDescription}
+        {onPickSuggestion
+          ? messages.hub.chatEmptyDescription
+          : messages.hub.chatEmptyDescriptionSignedOut}
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
-        {visibleSuggestions.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            data-testid={`chat-empty-suggestion-${s.id}`}
-            onClick={() => onPickSuggestion(s.prompt)}
-            className="inline-flex items-start gap-2 px-3 py-2 rounded-xl bg-panel border border-line text-style-label text-text text-left hover:border-muted hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
-          >
-            <Icon
-              name={s.icon}
-              size="sm"
-              className={cn("mt-0.5 shrink-0", s.accentClass)}
-              aria-hidden
-            />
-            <span>{s.prompt}</span>
-          </button>
-        ))}
-      </div>
+      {onPickSuggestion ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+          {visibleSuggestions.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              data-testid={`chat-empty-suggestion-${s.id}`}
+              onClick={() => onPickSuggestion(s.prompt)}
+              className="inline-flex items-start gap-2 px-3 py-2 rounded-xl bg-panel border border-line text-style-label text-text text-left hover:border-muted hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            >
+              <Icon
+                name={s.icon}
+                size="sm"
+                className={cn("mt-0.5 shrink-0", s.accentClass)}
+                aria-hidden
+              />
+              <span>{s.prompt}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-md">
+          {visibleSuggestions.map((s) => (
+            <li
+              key={s.id}
+              className="inline-flex items-start gap-2 px-3 py-2 rounded-xl border border-dashed border-line text-style-label text-muted text-left"
+            >
+              <Icon
+                name={s.icon}
+                size="sm"
+                className={cn("mt-0.5 shrink-0", s.accentClass)}
+                aria-hidden
+              />
+              <span>{s.prompt}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

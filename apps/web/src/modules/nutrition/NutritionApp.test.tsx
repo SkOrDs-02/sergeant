@@ -36,6 +36,7 @@ vi.mock("./hooks/useNutritionDualWriteBoot", () => ({
 }));
 vi.mock("./hooks/useNutritionSqliteReadBoot", () => ({
   useNutritionSqliteReadBoot: vi.fn(),
+  isNutritionReadCacheSettled: () => true,
 }));
 
 // A3, поставка 2: pre-gate доступу. Це дерево навмисно живе без

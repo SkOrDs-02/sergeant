@@ -179,11 +179,11 @@ pnpm --filter @sergeant/web build:analyze   # ANALYZE=1 → apps/web/dist/bundle
 
 | PR                                                              | Title                                                                                                           | Merged     |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                           | 2026-09-26 |
 | [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) | fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд                                       | 2026-09-26 |
 | [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                    | 2026-09-24 |
 | [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                         | 2026-09-23 |
 | [#57](https://github.com/zaebal-beep/sergeant/pull/57)          | fix(root): закрити знахідки наскрізного аудиту — валідація AI-шару, метрика конфліктів синку, браузерні дефекти | 2026-09-16 |
-| [#51](https://github.com/zaebal-beep/sergeant/pull/51)          | docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних                                 | 2026-09-15 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -283,8 +283,19 @@ function readFinykCategory(categoryId: string): Map<string, number> {
 }
 
 function readNutritionMacro(macro: "kcal" | "protein"): Map<string, number> {
+  return nutritionMacroReadings(loadNutritionLog(), macro);
+}
+
+/**
+ * Денні суми макросу з уже прочитаного логу. Окремо від читання, щоб момент
+ * запису їжі міг порахувати ряд «після» з нового логу: у сховище запис
+ * доїжджає асинхронно, а момент показується одразу.
+ */
+export function nutritionMacroReadings(
+  log: ReturnType<typeof loadNutritionLog>,
+  macro: "kcal" | "protein",
+): Map<string, number> {
   const out = new Map<string, number>();
-  const log = loadNutritionLog();
   for (const [day, data] of Object.entries(log)) {
     const meals = data?.meals ?? [];
     let sum = 0;
@@ -472,6 +483,28 @@ export function buildDailySeries(
     raw[metric] = col;
   }
   return { from: opts.from, to: opts.to, days, raw, metrics };
+}
+
+/**
+ * Той самий ряд із заміненим стовпцем однієї метрики. Структурні нулі
+ * рахуються так само, як у `buildDailySeries`, тож результат не відрізнити
+ * від ряду, побудованого з нових даних із нуля.
+ */
+export function withMetricReadings(
+  series: DailySeries,
+  metric: DailyMetric,
+  readings: Map<string, number>,
+): DailySeries {
+  const dayIndex = new Map(series.days.map((d, i) => [d, i]));
+  const col: (number | undefined)[] = new Array(series.days.length).fill(
+    undefined,
+  );
+  for (const [day, value] of readings) {
+    const i = dayIndex.get(day);
+    if (i !== undefined) col[i] = value;
+  }
+  applyStructuralZeros(col, series.days, readings, ABSENCE_MEANS[metric]);
+  return { ...series, raw: { ...series.raw, [metric]: col } };
 }
 
 // ─── Кореляції ───────────────────────────────────────────────────────────────

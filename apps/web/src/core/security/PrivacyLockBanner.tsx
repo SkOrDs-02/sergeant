@@ -24,7 +24,7 @@ export function PrivacyLockBanner() {
   if (dismissed || !hasSlot) return null;
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-3">
+    <div className="pb-3">
       {/* `flex-wrap` + `basis-full` на групі кнопок до `sm`: на 393px
           `shrink-0`-кнопки лишали заголовку 56px і ламали копію на сім
           рядків, а кнопка накривала текст (анти-слоп аудит 2026-09-01,

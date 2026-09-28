@@ -91,6 +91,14 @@ export const STORAGE_KEYS = {
    * записи не накопичуються.
    */
   MOMENTS_TODAY: "hub_moments_today_v1",
+  /**
+   * Звʼязки між сферами, які вже бували помітними: `{ pairKey: { a, b,
+   * phrase, seenOn } }`. Потрібні F-5 (спека `reward-loop-and-reminders.md`):
+   * коли модуль замовк, звʼязок має сказати це прямо, а не тихо зникнути,
+   * а без памʼяті про нього зниклий звʼязок не відрізнити від ніколи не
+   * баченого.
+   */
+  LINKS_REMEMBERED: "insights_links_remembered_v1",
   NUTRITION_QUICK_STATS: "nutrition_quick_stats",
 
   // PWA / install prompts

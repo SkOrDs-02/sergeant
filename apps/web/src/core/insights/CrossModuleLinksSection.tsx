@@ -31,6 +31,7 @@ import {
   buildCrossModuleSeries,
   notablePairsFromSeries,
   MIN_N,
+  WINDOW_DAYS,
   type NotablePair,
 } from "./digestCorrelations";
 import {
@@ -42,6 +43,8 @@ import {
 } from "./crossModuleLinkData";
 import { MODULE_TEXT_CLASS } from "./CrossModuleLinkCard";
 import { pairHistoryKey, recordAndCountChecks } from "./crossModuleLinkHistory";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
+import { quietLinks, recordNotableLinks, type QuietLink } from "./quietLinks";
 
 const MAX_CARDS = 3;
 
@@ -59,6 +62,19 @@ const MAX_CARDS = 3;
  *
  * Пара метрик унікальна за побудовою `PAIRS`, тож ключ стабільний.
  */
+function quietLinkText(q: QuietLink): string {
+  const T = messages.crossModuleLink;
+  const base = q.since
+    ? T.quietSince.replace(
+        "{date}",
+        formatDayKeyUk(q.since, { relative: false }),
+      )
+    : T.quietWindow.replace("{days}", String(WINDOW_DAYS));
+  return base
+    .replace("{phrase}", q.phrase)
+    .replace("{module}", T.moduleLabel[q.module]);
+}
+
 function linkKey(pair: NotablePair): string {
   return `${pair.a}-${pair.b}`;
 }
@@ -97,9 +113,18 @@ export default function CrossModuleLinksSection() {
   // Один прохід по рядах на весь рендер: `buildCrossModuleSeries` читає
   // 60 днів × 10 метрик зі сховища, тож і картки, і стан мовчання беруть
   // дані з ОДНОГО обчислення, а не з двох незалежних.
-  const { links, silent, smallData } = useMemo(() => {
+  const { links, silent, smallData, quiet } = useMemo(() => {
     const series = buildCrossModuleSeries();
     const pairs = notablePairsFromSeries(series);
+
+    // F-5: памʼять про помітні звʼязки пишеться тут із тієї ж причини, що
+    // й тижнева перевірка нижче (синхронне читання під час рендера), і
+    // пояснення рахуються з тих самих рядів, без другого 60-денного проходу.
+    const quiet = quietLinks(
+      series,
+      pairs,
+      recordNotableLinks(pairs, series.to),
+    );
 
     // Запис перевірки живе саме ТУТ, у тілі мемо, а не в ефекті. Ступінь
     // читається синхронно під час рендера, тож із ефектом перший показ
@@ -123,7 +148,7 @@ export default function CrossModuleLinksSection() {
       if (found.length >= MAX_CARDS) break;
     }
     if (found.length > 0) {
-      return { links: found, silent: null, smallData: null };
+      return { links: found, silent: null, smallData: null, quiet };
     }
 
     const closest = closestCrossModulePair(series);
@@ -142,6 +167,7 @@ export default function CrossModuleLinksSection() {
               observations: single.n,
             }
           : { pole: null, observations: 0 },
+        quiet,
       };
     }
 
@@ -152,6 +178,7 @@ export default function CrossModuleLinksSection() {
         observations: closest.n,
       },
       smallData: null,
+      quiet,
     };
     // deps нижче — це КЛЮЧІ ІНВАЛІДАЦІЇ, а не значення, які читає тіло:
     // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
@@ -170,6 +197,19 @@ export default function CrossModuleLinksSection() {
           {messages.crossModuleLink.sectionHint}
         </p>
       </div>
+
+      {quiet.length > 0 && (
+        <div className="space-y-1">
+          {quiet.map((q) => (
+            <p
+              key={`${q.phrase}|${q.module}`}
+              className="text-style-caption text-muted leading-relaxed"
+            >
+              {quietLinkText(q)}
+            </p>
+          ))}
+        </div>
+      )}
 
       {links.length > 0 ? (
         <div className="space-y-3">

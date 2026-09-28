@@ -276,9 +276,11 @@ export function WeeklyDigestFooter({
     <button
       type="button"
       onClick={onExpand}
-      aria-label="Розгорнути звіт тижня"
+      // Без aria-label: він перекривав видимий текст разом із позначкою
+      // «новий», тож свіжість звіту була лише візуальною.
+      aria-expanded={false}
       className={cn(
-        "w-full flex items-center gap-3 rounded-2xl border border-line bg-panel px-3 py-2.5",
+        "w-full flex items-center gap-3 rounded-2xl border border-line bg-panel px-3 py-2.5 focus-ring",
         "shadow-card hover:shadow-float transition-[box-shadow,filter,opacity,transform]",
         "text-left",
       )}
@@ -312,10 +314,13 @@ export function WeeklyDigestFooter({
         <span className="flex items-center gap-1.5">
           <span className="text-style-label text-text">Звіт тижня</span>
           {fresh && (
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
-              aria-label="Новий звіт"
-            />
+            <>
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
+                aria-hidden
+              />
+              <span className="sr-only">, новий</span>
+            </>
           )}
         </span>
         <span className="text-style-caption text-muted truncate">

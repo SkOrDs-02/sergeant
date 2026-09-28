@@ -121,7 +121,7 @@ describe("budgetLimitsRule", () => {
     });
     const recs = budgetLimitsRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("budget_over_food+restaurant");
-    expect(recs[0]?.title).toContain('"Їжа"');
+    expect(recs[0]?.title).toContain("«Їжа»");
   });
 
   it("показує кастомний label у бюджетному ліміті", () => {
@@ -132,7 +132,7 @@ describe("budgetLimitsRule", () => {
 
     const rec = budgetLimitsRule.evaluate(ctx)[0];
     expect(rec?.id).toBe("budget_warn_pets");
-    expect(rec?.title).toContain('"Песики"');
+    expect(rec?.title).toContain("«Песики»");
   });
 
   it("додає actionHash з категорією для глибокого лінка на Планування", () => {

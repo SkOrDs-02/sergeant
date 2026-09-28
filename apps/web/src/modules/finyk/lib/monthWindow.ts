@@ -98,3 +98,18 @@ export function filterToKyivMonth<T extends TxLike>(
     return ms != null && getKyivDayKey(ms).startsWith(monthPrefix);
   });
 }
+
+/**
+ * Keep only the rows dated on Kyiv days 1..`lastDay` of their month. Lets an
+ * unfinished month be compared with the same days of the previous one instead
+ * of the whole previous month (the hub report cards do the same since #52).
+ */
+export function filterToKyivFirstDays<T extends TxLike>(
+  transactions: readonly T[],
+  lastDay: number,
+): T[] {
+  return transactions.filter((tx) => {
+    const ms = txEpochMs(tx);
+    return ms != null && Number(getKyivDayKey(ms).slice(8, 10)) <= lastDay;
+  });
+}

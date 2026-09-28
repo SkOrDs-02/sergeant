@@ -125,7 +125,7 @@ export function MiniLineChart({
         compact
         className="rounded-2xl border border-dashed border-line bg-panelHi/50"
         title="Замало точок для лінії"
-        description={`Потрібні щонайменше два заміри з ${metricLabel}, щоб побудувати тренд.`}
+        description={`Щоб відстежувати ${metricLabel}, потрібні щонайменше два заміри.`}
       />
     );
   }
@@ -337,8 +337,8 @@ export function MiniLineChart({
 
       <div id={summaryId} className="sr-only">
         <p>
-          Тренд {metricLabel}. Поточне значення: {fmtLoose(lastValid.value)}{" "}
-          {unit}.
+          Графік показує {metricLabel}. Поточне значення:{" "}
+          {fmtLoose(lastValid.value)} {unit}.
           {delta !== 0
             ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
             : ""}

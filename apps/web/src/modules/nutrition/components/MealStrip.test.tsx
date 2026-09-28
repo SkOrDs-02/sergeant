@@ -313,7 +313,7 @@ describe("MealStrip", () => {
         macros={MACROS}
       />,
     );
-    expect(screen.getByText("−300")).toBeInTheDocument();
+    expect(screen.getByText("300")).toBeInTheDocument();
     expect(screen.getByText("ккал понад ціль")).toBeInTheDocument();
     // the "on-track" remaining caption must not also render
     expect(screen.queryByText("лишилось на перекус")).not.toBeInTheDocument();

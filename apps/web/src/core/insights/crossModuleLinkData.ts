@@ -76,6 +76,11 @@ const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
  * («1.3 тренування») — з десятковою, бо ціле «1» приховало б різницю між
  * «майже щодня» і «через день».
  */
+/** Модуль, якому належить метрика (для F-5 і моментів звʼязку). */
+export function metricModule(metric: DailyMetric): CrossModuleLinkModule {
+  return METRIC_MODULE[metric];
+}
+
 function formatPoleValue(mean: number): string {
   if (!Number.isFinite(mean)) return "—";
   const abs = Math.abs(mean);

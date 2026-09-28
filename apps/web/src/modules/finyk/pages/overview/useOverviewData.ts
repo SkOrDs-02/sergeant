@@ -232,7 +232,16 @@ export function useOverviewData({
     // break-even snapshot — a real scenario after paying off a loan that
     // exactly matches current cash. `accounts.length > 0` is the real
     // "data available" gate; zero net worth is a legitimate data point.
-    if (accounts.length > 0) {
+    // Without a bank the manual assets/debts ARE the net worth: gating on bank
+    // accounts alone meant «Динаміка капіталу» never got a point for a
+    // manual-only user and disagreed with «Капітал» on the same screen.
+    const manualOnlyData =
+      clientInfo == null &&
+      (manualAssets?.length ?? 0) +
+        (manualDebts?.length ?? 0) +
+        (receivables?.length ?? 0) >
+        0;
+    if (accounts.length > 0 || manualOnlyData) {
       saveNetworthSnapshot(networth);
     }
   }, [
@@ -240,6 +249,10 @@ export function useOverviewData({
     loadingTx,
     realTx.length,
     accounts.length,
+    clientInfo,
+    manualAssets,
+    manualDebts,
+    receivables,
     saveNetworthSnapshot,
   ]);
 

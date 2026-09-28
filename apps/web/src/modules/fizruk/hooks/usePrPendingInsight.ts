@@ -33,6 +33,7 @@
 import { useMemo } from "react";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import type { Insight } from "@shared/lib/insights/types";
+import { fmtLoose } from "../lib/numberFmt";
 
 /** Within this factor of all-time best weight → fire the insight. */
 const PR_PROXIMITY_FACTOR = 0.95; // 5 % below
@@ -134,7 +135,7 @@ export function usePrPendingInsight({
         id: "fizruk-pr-pending",
         module: "fizruk",
         title: `PR близько на ${exerciseName}`,
-        subtitle: `Спробуй ${targetKg} кг сьогодні?`,
+        subtitle: `Спробуй ${fmtLoose(targetKg)} кг сьогодні?`,
         askAiPrompt: `У поточному тренуванні є шанс на PR у "${exerciseName}" (минулий макс ${pr.maxWeightKg} кг). Як підійти до підходу безпечно?`,
         action: { type: "navigate", path: "/fizruk/workouts" },
         // Hub surface promoted post-Phase 5e: PR-close is motivational tickler,

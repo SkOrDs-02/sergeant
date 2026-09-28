@@ -50,7 +50,7 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
         module: "finyk" as const,
         priority: 55,
         icon: "bookmark",
-        title: `"${label}" – твоя найчастіша категорія без ліміту`,
+        title: `«${label}» – твоя найчастіша категорія без ліміту`,
         body: spendHint,
         action: "finyk",
       },

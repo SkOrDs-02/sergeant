@@ -16,8 +16,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const ROOT = new URL(".", import.meta.url).pathname;
+// `URL.pathname` на Windows дає `/D:/…`, і `join` склеював `D:\D:\…`.
+const ROOT = fileURLToPath(new URL(".", import.meta.url));
 
 /** `border border-line` разом із `rounded-xl` або `bg-panel/90` у className. */
 const HAND_ROLLED = /className=(?:"|\{cn\()[^"}]*\bborder border-line\b[^"}]*/g;

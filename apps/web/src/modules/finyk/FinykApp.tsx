@@ -80,6 +80,13 @@ interface FinykAppProps {
   onPwaActionConsumed?: () => void;
 }
 
+const FINYK_PWA_ACTIONS: ReadonlySet<string> = new Set([
+  "add_expense",
+  "set_budget",
+  "view_analytics",
+  "connect_bank",
+]);
+
 export default function App({
   onBackToHub,
   onGoToHub,
@@ -176,17 +183,26 @@ export default function App({
   // `ModuleEmptyState`. Прапорець first-run НЕ видалено — він і далі
   // живить підказку у Плануванні, коли юзер дійде туди сам.
 
-  // PWA action: open add-expense sheet when the OS deep-link fires.
+  // PWA/checklist action: the OS deep-link opens the add-expense sheet; the
+  // Hub checklist steps land on the page where the step is done. Without the
+  // three checklist cases every step opened Огляд, where «Підключити
+  // Monobank» had nothing to tap once the no-bank banner hid itself.
   const prevPwaActionRef = useRef<string | null | undefined>(null);
   useEffect(() => {
-    if (pwaAction !== "add_expense") {
+    if (!pwaAction || !FINYK_PWA_ACTIONS.has(pwaAction)) {
       prevPwaActionRef.current = pwaAction;
       return;
     }
-    if (prevPwaActionRef.current === "add_expense") return;
-    prevPwaActionRef.current = "add_expense";
+    if (prevPwaActionRef.current === pwaAction) return;
+    prevPwaActionRef.current = pwaAction;
 
     void Promise.resolve().then(() => {
+      if (pwaAction !== "add_expense") {
+        if (pwaAction === "connect_bank") setShowLoginOverlay(true);
+        else navigate(pwaAction === "set_budget" ? "budgets" : "analytics");
+        onPwaActionConsumed?.();
+        return;
+      }
       const prefill = consumePresetPrefill("finyk");
       navigate("transactions");
       setEditingManualExpenseId(null);
@@ -521,6 +537,7 @@ export default function App({
           <AuthErrorBanner
             authError={mono.authError}
             onOpenSettings={onOpenSettings}
+            onOpenAuth={onOpenAuth}
             setAuthError={mono.setAuthError}
           />
         )}
@@ -611,6 +628,7 @@ export default function App({
                 setShowLoginOverlay(false);
               }}
               onBackToHub={() => setShowLoginOverlay(false)}
+              onOpenAuth={onOpenAuth}
               backLabel="Назад"
             />
           </div>

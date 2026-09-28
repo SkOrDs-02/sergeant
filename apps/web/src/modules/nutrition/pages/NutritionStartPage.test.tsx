@@ -65,6 +65,11 @@ vi.mock("../components/NutritionDashboard", () => ({
   ),
 }));
 
+const boot = vi.hoisted(() => ({ settled: true }));
+vi.mock("../hooks/useNutritionSqliteReadBoot", () => ({
+  isNutritionReadCacheSettled: () => boot.settled,
+}));
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -120,12 +125,22 @@ function renderStartPage(
 
 afterEach(() => {
   cleanup();
+  boot.settled = true;
 });
 
 describe("NutritionStartPage", () => {
   it("renders without crashing — shows NutritionDashboard", () => {
     renderStartPage();
     expect(screen.getByTestId("nutrition-dashboard")).toBeTruthy();
+  });
+
+  it("показує скелетон, поки кеш читання не готовий", () => {
+    boot.settled = false;
+    renderStartPage();
+    expect(
+      screen.getByRole("status", { name: messages.loaders.loadingSection }),
+    ).toBeTruthy();
+    expect(screen.queryByTestId("nutrition-dashboard")).toBeNull();
   });
 
   it("'До щоденника' button calls setActivePageAndHash('log')", async () => {

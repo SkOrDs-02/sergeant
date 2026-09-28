@@ -4,6 +4,7 @@
  */
 import { memo } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 
 interface FirstInsightBannerProps {
   onSetBudget: () => void;
@@ -34,21 +35,15 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         <div className="text-style-body text-muted mt-0.5">
           Хочеш поставити бюджет, і бачити, коли починаєш виходити за рамки?
         </div>
+        {/* `Button`, а не ручні кнопки: той дає кільце фокусу, `-strong`
+            заливку без розбавлення на hover і 44px на coarse-pointer. */}
         <div className="flex gap-2 mt-3">
-          <button
-            type="button"
-            onClick={onSetBudget}
-            className="px-3 py-1.5 rounded-xl bg-finyk-strong text-white text-style-caption hover:bg-finyk-strong/80 transition dark:bg-finyk dark:text-bg dark:hover:bg-finyk/90"
-          >
+          <Button variant="solid" tone="finyk" size="sm" onClick={onSetBudget}>
             Поставити бюджет
-          </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="px-3 py-1.5 rounded-xl text-style-caption text-muted hover:text-text hover:bg-panelHi transition"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDismiss}>
             Пізніше
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -107,10 +107,11 @@ A reason after the colon is mandatory — the linter rejects bare `-- NO_ROLLBAC
 
 | PR                                                              | Title                                                                                                                   | Merged     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                                   | 2026-09-26 |
 | [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                            | 2026-09-24 |
 | [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                                 | 2026-09-23 |
 | [#508](https://github.com/SkOrDs-02/sergeant/pull/508)          | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
 | [#334](https://github.com/SkOrDs-02/sergeant/pull/334)          | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

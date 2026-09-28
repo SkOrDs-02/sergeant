@@ -113,7 +113,7 @@ describe("HabitRangeGrid", () => {
     }
   });
 
-  it("asks to add the first habit when there are none at all", () => {
+  it("invites to add the first habit when there are none", () => {
     render(
       <HabitRangeGrid
         habits={[]}
