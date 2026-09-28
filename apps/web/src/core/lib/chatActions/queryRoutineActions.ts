@@ -13,6 +13,7 @@ import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoM
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * Read-only "talk to your data" виконавці для Рутини (PR3 talk-to-your-data).
@@ -202,11 +203,11 @@ export function queryHabits(action: QueryHabitsAction): ChatActionResult {
 
   const lines = [
     `Статистика ${scope} за ${days} днів:`,
-    `Виконано: ${doneTotal}/${possible} (${pct}%)`,
+    `Виконано: ${doneTotal}/${possible} (${formatNumberUk(pct)}%)`,
   ];
   if (best && worst) {
     lines.push(
-      `Найкращий день: ${best.label} (${round(best.rate * 100)}%), найгірший: ${worst.label} (${round(worst.rate * 100)}%)`,
+      `Найкращий день: ${best.label} (${formatNumberUk(round(best.rate * 100))}%), найгірший: ${worst.label} (${formatNumberUk(round(worst.rate * 100))}%)`,
     );
   }
   if (missedDays.length > 0) {
@@ -343,9 +344,9 @@ export function habitCorrelation(
 
   return [
     `${metricTitle} ↔ ${scope} за ${days} днів:`,
-    `Дні зі звичкою (${withCount}): ${round(withAvg)} ${unit}`,
-    `Дні без неї (${withoutCount}): ${round(withoutAvg)} ${unit}`,
-    `Різниця: ${sign(delta)}${round(delta)} ${unit} (${sign(pct)}${pct.toFixed(1)}%)`,
+    `Дні зі звичкою (${withCount}): ${formatNumberUk(round(withAvg))} ${unit}`,
+    `Дні без неї (${withoutCount}): ${formatNumberUk(round(withoutAvg))} ${unit}`,
+    `Різниця: ${sign(delta)}${formatNumberUk(round(delta))} ${unit} (${sign(pct)}${formatNumberUk(pct, { maximumFractionDigits: 1 })}%)`,
   ].join("\n");
 }
 

@@ -456,7 +456,11 @@ export class OpenRouterProvider implements LLMProvider {
     }
 
     type OpenRouterData = {
-      choices?: Array<{ message?: { content?: string | null } }>;
+      choices?: Array<{
+        message?: { content?: string | null };
+        finish_reason?: string | null;
+        error?: { code?: number; message?: string };
+      }>;
       usage?: {
         prompt_tokens?: number;
         completion_tokens?: number;
@@ -496,7 +500,23 @@ export class OpenRouterProvider implements LLMProvider {
         };
       }
 
-      const text = data?.choices?.[0]?.message?.content ?? "";
+      // Апстрім може впасти посеред генерації (у замірі 2026-09-28 це 429
+      // Google у 3 з 8 викликів): шлюз тоді віддає HTTP 200, обрізаний текст,
+      // `finish_reason: "error"` і нульовий usage. Як успіх це давало
+      // обірваний JSON, який хендлери тихо перетворювали на порожній план.
+      const choice = data?.choices?.[0];
+      if (choice?.finish_reason === "error") {
+        const upstreamStatus = choice.error?.code ?? 502;
+        return {
+          ok: false,
+          error: choice.error?.message ?? "OpenRouter upstream error",
+          status: upstreamStatus,
+          code: upstreamStatus === 429 ? "rate_limited" : "openrouter_error",
+          raw: data as Record<string, unknown>,
+        };
+      }
+
+      const text = choice?.message?.content ?? "";
       const usage = data?.usage;
       const result: LLMGenerateResult = {
         ok: true,

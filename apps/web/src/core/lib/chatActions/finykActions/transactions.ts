@@ -16,6 +16,7 @@ import {
   triggerManualExpenseDeleteSqliteMirror,
 } from "../../../../modules/finyk/lib/sqliteWriter";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
+import { formatNumberUk } from "@sergeant/shared";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -70,7 +71,7 @@ export function createTransaction(
   finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
-  const result = `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
+  const result = `${human} ${formatNumberUk(amt)} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
   // Undo видаляє щойно додану транзакцію за `manualId`. Якщо юзер
   // паралельно встиг видалити її іншим шляхом — ідемпотентно
   // нічого не робимо (а не throw): двічі натиснений undo не має
@@ -150,7 +151,7 @@ export function splitTransaction(
   const desc = newSplits
     .map((s) => {
       const cat = resolveExpenseCategoryMeta(s.categoryId, customC);
-      return `${cat?.label || s.categoryId}: ${s.amount} грн`;
+      return `${cat?.label || s.categoryId}: ${formatNumberUk(s.amount)} грн`;
     })
     .join(", ");
   return `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`;

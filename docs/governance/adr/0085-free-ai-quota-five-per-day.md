@@ -49,3 +49,14 @@ quota-правку: анонімний AI потребує окремого сх
   можуть вигадувати власну інтерпретацію accounting.
 - `AI_QUOTA_DISABLED` лишається development/test escape hatch і блокується на
   production startup. Це не operational спосіб змінити план.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                            | Merged     |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
+| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу | 2026-09-28 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

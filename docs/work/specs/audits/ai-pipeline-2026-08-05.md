@@ -887,3 +887,14 @@ severity:
 
 **Решта:** B3 (огорожа coach), B4 (tier у `opts.model`), B5/B6 (mobile),
 B22 (схеми `remember`/`save_note`), B23, B24, B8, B9, B29.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                            | Merged     |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
+| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу | 2026-09-28 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

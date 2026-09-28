@@ -521,7 +521,7 @@ describe("set_daily_plan", () => {
       input: { kcal: 2500, protein_g: 150 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2500");
+    expect(out).toContain("2 500");
     expect(out).toContain("150");
   });
 
@@ -685,7 +685,7 @@ describe("plan_meals_for_day", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("4");
-    expect(out).toContain("2000");
+    expect(out).toContain("2 000");
     expect(out).toContain("500");
   });
 

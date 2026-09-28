@@ -12,6 +12,7 @@ import {
   previousWeekKey,
   weekLabelToMondayKey,
 } from "./helpers";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function compareWeeks(action: CompareWeeksAction): string {
   const { week_a, week_b, modules } = (action as CompareWeeksAction).input;
@@ -57,7 +58,7 @@ export function compareWeeks(action: CompareWeeksAction): string {
     const topB = fb.topCategories[0];
     if (topA || topB) {
       lines.push(
-        `  Топ категорія: ${topA ? `${topA.name} (${Math.round(topA.amount)}\u202F₴)` : "—"} vs ${topB ? `${topB.name} (${Math.round(topB.amount)}\u202F₴)` : "—"}`,
+        `  Топ категорія: ${topA ? `${topA.name} (${formatNumberUk(Math.round(topA.amount))}\u202F₴)` : "—"} vs ${topB ? `${topB.name} (${formatNumberUk(Math.round(topB.amount))}\u202F₴)` : "—"}`,
       );
     }
   }

@@ -51,7 +51,7 @@ describe("logWellbeing", () => {
   it("accepts valid sleep_hours", () => {
     const result = logWellbeing(makeAction({ sleep_hours: 7.5 }));
     expect(result).toMatchObject({
-      result: expect.stringContaining("сон 7.5"),
+      result: expect.stringContaining("сон 7,5"),
     });
   });
 

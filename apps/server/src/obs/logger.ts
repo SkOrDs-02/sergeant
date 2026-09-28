@@ -416,9 +416,20 @@ export function serializeError(
     return { message: String(err) };
   }
   const e = err as ErrorShape;
+  // `parseBody` кладе zod-issues у `cause: { details }`; без цього в лозі
+  // лишалось «Некоректні дані запиту: [object Object]» замість поля, що впало.
+  const details = (err as { details?: unknown }).details;
+  const detailsSummary = Array.isArray(details)
+    ? details
+        .map(
+          (d: { path?: unknown; message?: unknown }) =>
+            `${String(d?.path ?? "")}: ${String(d?.message ?? "")}`,
+        )
+        .join("; ")
+    : undefined;
   const out: SerializedError = {
     name: e.name,
-    message: e.message || String(err),
+    message: e.message || detailsSummary || String(err),
   };
   if (e.code !== undefined) out.code = e.code;
   if (e.status !== undefined) out.status = e.status;
