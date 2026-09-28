@@ -83,7 +83,9 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     renderSection();
     await openSection();
 
-    const toggle = screen.getByRole("switch", { name: /Блокування додатку/i });
+    const toggle = screen.getByRole("switch", {
+      name: /Блокування застосунку/i,
+    });
     fireEvent.click(toggle);
 
     // hasPin() (привʼязаний до user?.id) визначає рішення про setup — і
@@ -99,7 +101,7 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     await openSection();
 
     fireEvent.click(
-      screen.getByRole("switch", { name: /Блокування додатку/i }),
+      screen.getByRole("switch", { name: /Блокування застосунку/i }),
     );
 
     await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
@@ -123,7 +125,7 @@ describe("AppLockSettings — audit F16 (per-user PIN scoping)", () => {
     await openSection();
 
     fireEvent.click(
-      screen.getByRole("switch", { name: /Блокування додатку/i }),
+      screen.getByRole("switch", { name: /Блокування застосунку/i }),
     );
 
     // Підтверджуємо деструктивну дію в модалці.
@@ -173,7 +175,7 @@ describe("AppLockSettings — disable dialog and lock buttons", () => {
     await openSection();
 
     fireEvent.click(
-      screen.getByRole("switch", { name: /Блокування додатку/i }),
+      screen.getByRole("switch", { name: /Блокування застосунку/i }),
     );
 
     // `getByText`, а не `getByRole("button", { name: … })`: `ConfirmDialog`
@@ -260,7 +262,7 @@ describe("AppLockSettings — audit L-11 (lock toggle reflects a PIN-store wipe)
     // спільному пристрої перемикання юзерів не чіпає ні `appLock.state`,
     // ні (глобальний) прапор `app-lock-enabled`, тож без відстеження цієї
     // зміни ідентичності реконсиляційний ефект завжди впирався в ранній
-    // `!isMount && !cameFromLocked` return і лишав «Блокування додатку»
+    // `!isMount && !cameFromLocked` return і лишав «Блокування застосунку»
     // ввімкненим для юзера без PIN-а в ЙОГО ВЛАСНІЙ партиції.
     appLock.state = "idle";
     appLock.hasPin = vi.fn().mockResolvedValue(true); // у юзера A є PIN

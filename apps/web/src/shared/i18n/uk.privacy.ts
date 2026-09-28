@@ -18,9 +18,9 @@ export const privacyMessages = {
   bannerCta: "Налаштувати",
 
   lock: {
-    enableLabel: "Блокування додатку",
+    enableLabel: "Блокування застосунку",
     enableDescription:
-      "Захисти дані PIN-кодом. Додаток заблокується при переключенні або після 5 хвилин бездіяльності.",
+      "Захисти дані PIN-кодом. Застосунок заблокується, коли перемкнешся на інший, або після 5 хвилин бездіяльності.",
     setupTitle: "Встановити PIN",
     setupSubtitle: "Введи 4–6 цифр",
     changeTitle: "Змінити PIN",
@@ -35,7 +35,7 @@ export const privacyMessages = {
     changePin: "Змінити PIN",
     disableLabel: "Вимкнути блокування",
     disableConfirmTitle: "Вимкнути блокування?",
-    disableConfirmBody: "Додаток більше не буде запитувати PIN при відкритті.",
+    disableConfirmBody: "Застосунок більше не питатиме PIN при відкритті.",
     disableConfirmButton: "Вимкнути",
     recoveryHint: "Забув PIN? Скинь через відновлення акаунту.",
     next: "Далі",

@@ -626,12 +626,12 @@ export const messages = {
   // Копія за style-guide: звертання «ти», заголовки без крапки,
   // toast-success — перфект минулого часу.
   feedback: {
-    settingsTitle: "Фідбек",
+    settingsTitle: "Відгук",
     settingsSubGroupTitle: "Є ідея чи знайшов баг?",
     settingsDescription:
       "Розкажи, що поламалось або чого бракує, кожне повідомлення читає людина.",
-    openButton: "Написати фідбек",
-    dialogTitle: "Твій фідбек",
+    openButton: "Написати відгук",
+    dialogTitle: "Твій відгук",
     dialogDescription: "Кілька речень достатньо, головне, суть.",
     categoryLabel: "Про що це",
     categoryIdea: "Ідея",
