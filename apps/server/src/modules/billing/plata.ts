@@ -43,6 +43,7 @@ export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
 const CCY_UAH = 980;
 const SUBSCRIPTION_VALIDITY_SECONDS = 3600;
 const PUBKEY_TTL_MS = 60 * 60 * 1000;
+const PUBKEY_FORCE_COOLDOWN_MS = 60 * 1000;
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
 export function getToken(): string {
@@ -89,9 +90,10 @@ function parsePubkey(raw: string): crypto.KeyObject {
  */
 export async function ensurePlataPubkey(force = false): Promise<void> {
   const now = Date.now();
-  if (!force && cachedPubkey && now - cachedPubkey.fetchedAt < PUBKEY_TTL_MS) {
-    return;
-  }
+  // Force приходить з анонімного вебхука з невалідним X-Sign; без cooldown
+  // кожен такий запит робив би зовнішній fetch з нашим токеном.
+  const ttl = force ? PUBKEY_FORCE_COOLDOWN_MS : PUBKEY_TTL_MS;
+  if (cachedPubkey && now - cachedPubkey.fetchedAt < ttl) return;
   const response = await fetch(`${MONOPAY_BASE}/pubkey`, {
     headers: { "X-Token": getToken() },
   });

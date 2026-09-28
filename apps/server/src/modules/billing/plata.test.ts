@@ -237,6 +237,22 @@ describe("ensurePlataPubkey", () => {
     );
   });
 
+  it("force-рефетч не частіше за cooldown: чужий X-Sign не смикає monopay щоразу", async () => {
+    const derPubkey = publicKey.export({ type: "spki", format: "der" });
+    const fetchMock = vi.fn().mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ key: derPubkey.toString("base64") }), {
+          status: 200,
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await ensurePlataPubkey();
+    for (let i = 0; i < 5; i++) await ensurePlataPubkey(true);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("throws when the pubkey fetch HTTP call fails", async () => {
     vi.stubGlobal(
       "fetch",
