@@ -753,7 +753,7 @@ export async function getSessionUser(
           logger.warn(
             {
               event: "auth.session.ua_drift",
-              session_id: stored.id,
+              session_id_hash: hashUserId(stored.id),
               user_id: user.id,
               ua_changed: drift.ua,
               ip_changed: drift.ip,
