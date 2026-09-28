@@ -340,15 +340,26 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
   try {
     await client.query("BEGIN");
 
+    // Один дедуп-SELECT на весь батч замість одного на оп. Мапа
+    // доповнюється по ходу циклу, тож повтор ключа всередині одного пуша
+    // бачить рядок, записаний раніше в цьому ж батчі. Паралельний пуш, що
+    // закомітився вже після цього SELECT-а, ловить ON CONFLICT нижче, і
+    // тоді apply цього опа відкочується до savepoint-а `op_apply`.
+    const knownOps = new Map<string, SyncOpLogDuplicateRow>();
+    const prior = await client.query<
+      SyncOpLogDuplicateRow & { idempotency_key: string }
+    >(
+      `SELECT id, status, reject_reason, idempotency_key
+         FROM sync_op_log
+        WHERE user_id = $1 AND idempotency_key = ANY($2::text[])`,
+      [user.id, ops.map((o) => o.idempotency_key)],
+    );
+    for (const r of prior.rows) knownOps.set(r.idempotency_key, r);
+
     for (const op of ops) {
-      const dup = await client.query<SyncOpLogDuplicateRow>(
-        `SELECT id, status, reject_reason
-           FROM sync_op_log
-          WHERE user_id = $1 AND idempotency_key = $2`,
-        [user.id, op.idempotency_key],
-      );
-      if (dup.rows.length > 0) {
-        recordExistingOpLogRow(op, dup.rows[0]!);
+      const known = knownOps.get(op.idempotency_key);
+      if (known) {
+        recordExistingOpLogRow(op, known);
         continue;
       }
 
@@ -377,8 +388,12 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
         reason = "table_not_allowed";
       }
 
+      // `op_apply` лишається відкритим до запису в журнал: якщо ON CONFLICT
+      // покаже, що цей ключ уже записав паралельний пуш, apply відкочується.
+      let applySavepointOpen = false;
       if (status === "applied" && applyFn) {
         await client.query("SAVEPOINT op_apply");
+        applySavepointOpen = true;
         try {
           const applied = await applyFn(client, op, user.id, clientTs);
           if (applied.status === "rejected") {
@@ -399,11 +414,6 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
             table: op.table,
             err: err instanceof Error ? err.message : String(err),
           });
-        }
-        try {
-          await client.query("RELEASE SAVEPOINT op_apply");
-        } catch {
-          /* idempotent: already released after rollback */
         }
       }
 
@@ -479,6 +489,14 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       } catch {
         /* idempotent: already released after rollback */
       }
+      if (applySavepointOpen) {
+        try {
+          if (racedRow) await client.query("ROLLBACK TO SAVEPOINT op_apply");
+          await client.query("RELEASE SAVEPOINT op_apply");
+        } catch {
+          /* primary rollback below will catch transactional poison */
+        }
+      }
 
       if (oplogWriteFailed) {
         // Рядка в журналі немає, тож pull його не віддасть нікому — для
@@ -503,9 +521,15 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
       }
 
       if (!insertedRow) {
+        knownOps.set(op.idempotency_key, racedRow!);
         recordExistingOpLogRow(op, racedRow!);
         continue;
       }
+      knownOps.set(op.idempotency_key, {
+        id: insertedRow.id,
+        status,
+        reject_reason: reason,
+      });
 
       const insertedId = Number(insertedRow.id);
       if (insertedId > lastOpId) lastOpId = insertedId;
