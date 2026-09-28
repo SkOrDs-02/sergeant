@@ -60,14 +60,31 @@ export function useProfileWriteThroughBoot(): void {
     });
   }, [userId]);
 
+  // `refetchOnMount: "always"` + гейт `isFetchedAfterMount` нижче: кеш
+  // `hubKeys.profile` відновлюється з IndexedDB, і без них звірка йшла проти
+  // знімка з моменту входу, а не проти сервера (аудит 2026-09-28, D2).
   const query = useQuery({
     queryKey: hubKeys.profile(userId ?? "anon"),
     queryFn: ({ signal }) => meApi.getProfile({ signal }),
     enabled: userId !== null,
     staleTime: Infinity,
+    refetchOnMount: "always",
   });
 
   const reconciledForUserRef = useRef<string | null>(null);
+  const { refetch } = query;
+
+  // PUT офлайн-правки падає без повтору. Повторна звірка після повернення
+  // мережі віднесе локальне нагору за тим самим LWW.
+  useEffect(() => {
+    if (!userId) return;
+    const onOnline = () => {
+      reconciledForUserRef.current = null;
+      void refetch();
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [userId, refetch]);
 
   useEffect(() => {
     if (!userId) {
@@ -76,7 +93,7 @@ export function useProfileWriteThroughBoot(): void {
       reconciledForUserRef.current = null;
       return;
     }
-    if (!query.data) return;
+    if (!query.data || !query.isFetchedAfterMount || query.isFetching) return;
     if (reconciledForUserRef.current === userId) return;
     reconciledForUserRef.current = userId;
     const profile = query.data;
@@ -86,5 +103,5 @@ export function useProfileWriteThroughBoot(): void {
     ]).catch((err: unknown) => {
       logger.warn("[profileWriteThrough] boot reconcile failed", err);
     });
-  }, [userId, query.data]);
+  }, [userId, query.data, query.isFetchedAfterMount, query.isFetching]);
 }

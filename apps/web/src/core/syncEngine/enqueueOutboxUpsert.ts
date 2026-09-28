@@ -16,6 +16,7 @@
 
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
+import { trackOutboxWrite } from "./outboxCheckpoint.js";
 import { notifyOutboxEnqueued } from "./outboxNudge.js";
 import { isSyncableUserId } from "./syncableUserId.js";
 
@@ -119,6 +120,7 @@ export function enqueueOutboxUpsert(
     () => undefined,
     () => undefined,
   );
+  trackOutboxWrite(chained);
   return chained;
 }
 
