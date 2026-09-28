@@ -24,9 +24,16 @@ import {
 } from "./adapter.js";
 import {
   diffNutritionDualWriteOps,
+  type NutritionDualWriteOp,
   type NutritionDualWriteState,
 } from "./diff.js";
 import { probeNutritionParity } from "./parity.js";
+import {
+  ackDualWrite,
+  journalDualWrite,
+  pendingDualWrites,
+} from "../../../../core/durability/dualWriteJournal.js";
+import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
 /**
  * Orchestrator for the Nutrition dual-write layer.
@@ -102,6 +109,7 @@ export function registerNutritionDualWriteContext(
 ): () => void {
   liveContexts.push(ctx);
   registeredContext = ctx;
+  replayNutritionJournal(ctx);
   return () => {
     const at = liveContexts.lastIndexOf(ctx);
     if (at === -1) return;
@@ -114,6 +122,8 @@ export function registerNutritionDualWriteContext(
 export function __clearNutritionDualWriteContextForTests(): void {
   registeredContext = null;
   liveContexts.length = 0;
+  dualWriteQueue = Promise.resolve();
+  replayedJournalIds.clear();
 }
 
 /**
@@ -139,19 +149,29 @@ export async function dualWriteNutritionState(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
 ): Promise<DualWriteOutcome> {
-  const outcome = await runDualWriteNutritionState(prev, next);
+  const ctx = registeredContext;
+  const outcome = ctx
+    ? await runNutritionOps(
+        ctx,
+        diffNutritionDualWriteOps(prev, next),
+        ctx.getNow(),
+        next,
+      )
+    : ({ status: "skipped", reason: "context-unset" } as const);
   recordDualWriteOutcome("nutrition", outcome);
   return outcome;
 }
 
-async function runDualWriteNutritionState(
-  prev: NutritionDualWriteState,
-  next: NutritionDualWriteState,
+/**
+ * `clientTs` ззовні з тієї ж причини, що й у Фініку: реплей журналу йде з
+ * міткою первинного запуску. `next` null для реплею (паритет пропускаємо).
+ */
+async function runNutritionOps(
+  ctx: NutritionDualWriteContext,
+  ops: readonly NutritionDualWriteOp[],
+  clientTs: string,
+  next: NutritionDualWriteState | null,
 ): Promise<DualWriteOutcome> {
-  const ctx = registeredContext;
-  if (!ctx) return { status: "skipped", reason: "context-unset" };
-
-  const ops = diffNutritionDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
 
   const userId = ctx.getUserId();
@@ -178,7 +198,7 @@ async function runDualWriteNutritionState(
 
   const result = await applyNutritionDualWriteOps(client, ops, {
     userId,
-    clientTs: ctx.getNow(),
+    clientTs,
     logger: ctx.logger,
   });
 
@@ -204,6 +224,7 @@ async function runDualWriteNutritionState(
   // (`recordReadFallback`) so triage can tell `SELECT failing` apart
   // from a real LS↔SQLite divergence (`recordParityCheck("…",
   // "mismatch", …)`).
+  if (!next) return { status: "applied", result };
   try {
     const parity = await probeNutritionParity(client, userId, next);
     recordParityCheck("nutrition", parity.result, parity.details);
@@ -239,10 +260,85 @@ export function triggerNutritionDualWrite(
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
+  // Diff, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
+  // див. `core/durability/dualWriteJournal.ts`.
+  const ops = withStableEventIds(diffNutritionDualWriteOps(prev, next));
+  const clientTs = ctx.getNow();
+  const userId = ctx.getUserId();
+  const journalId =
+    ops.length > 0 && userId
+      ? journalDualWrite<NutritionJournalPayload>("nutrition", userId, {
+          ops,
+          clientTs,
+        })
+      : null;
+  enqueueNutritionRun(ctx, ops, clientTs, next, journalId);
+}
+
+/**
+ * Подія комори з `id: null` отримувала UUID у момент застосування. Реплей
+ * журналу після запуску, що встиг вставити подію, але не встиг зняти запис,
+ * дав би другу подію з новим UUID, і `INSERT OR IGNORE` її не відсік би.
+ * Тому UUID видається тут, до журналу: обидва запуски пишуть ту саму подію.
+ */
+function withStableEventIds(
+  ops: readonly NutritionDualWriteOp[],
+): NutritionDualWriteOp[] {
+  return ops.map((op) =>
+    op.kind === "pantry-event-append" && op.event.id === null
+      ? { ...op, event: { ...op.event, id: crypto.randomUUID() } }
+      : op,
+  );
+}
+
+interface NutritionJournalPayload {
+  readonly ops: readonly NutritionDualWriteOp[];
+  readonly clientTs: string;
+}
+
+/** Реплей відбувається раз на запис, хоч реєстрантів контексту кілька. */
+const replayedJournalIds = new Set<string>();
+
+function replayNutritionJournal(ctx: NutritionDualWriteContext): void {
+  const userId = ctx.getUserId();
+  if (!userId) return;
+  for (const entry of pendingDualWrites<NutritionJournalPayload>(
+    "nutrition",
+    userId,
+  )) {
+    if (replayedJournalIds.has(entry.id)) continue;
+    replayedJournalIds.add(entry.id);
+    enqueueNutritionRun(
+      ctx,
+      entry.payload.ops,
+      entry.payload.clientTs,
+      null,
+      entry.id,
+    );
+  }
+}
+
+function enqueueNutritionRun(
+  ctx: NutritionDualWriteContext,
+  ops: readonly NutritionDualWriteOp[],
+  clientTs: string,
+  next: NutritionDualWriteState | null,
+  journalId: string | null,
+): void {
   __openNutritionSqliteMutationWindow();
   dualWriteQueue = dualWriteQueue
     .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
-    .then(() => dualWriteNutritionState(prev, next))
+    .then(async () => {
+      const outboxSettled = outboxCheckpoint();
+      const outcome = await runNutritionOps(ctx, ops, clientTs, next);
+      recordDualWriteOutcome("nutrition", outcome);
+      // «sqlite недоступна» лишає запис у журналі для наступного буту.
+      // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
+      // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
+      if (journalId && outcome.status === "applied") {
+        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
+      }
+    })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),

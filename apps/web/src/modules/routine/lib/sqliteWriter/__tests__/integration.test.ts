@@ -24,6 +24,7 @@ import {
   type DualWriteLogger,
   type RoutineDualWriteContext,
 } from "../index.js";
+import { streakIdempotencyKey } from "../adapter.js";
 import { createTestSqlite } from "./testSqlite.js";
 
 interface RoutineEntryRowRaw extends Record<string, unknown> {
@@ -387,6 +388,28 @@ describe("dualWriteRoutineState — outbox enqueue wiring", () => {
     expect(input.row).toMatchObject({ user_id: USER_ID, delta: 1 });
     expect(typeof input.idempotencyKey).toBe("string");
     expect(input.idempotencyKey.length).toBeGreaterThan(0);
+  });
+
+  it("gives a replayed streak delta the same key, so the server counts it once", async () => {
+    registerRoutineDualWriteContext(makeCtx());
+    const prev = makeState([{ id: "h1", name: "Drink" }], {});
+    const next = makeState([{ id: "h1", name: "Drink" }], {
+      h1: ["2026-05-01"],
+    });
+
+    // Той самий перехід з тією самою міткою часу: саме так його
+    // відтворює журнал модуля після reload.
+    await dualWriteRoutineState(prev, next);
+    await dualWriteRoutineState(prev, next);
+    await Promise.resolve();
+
+    const keys = incrementMock.mock.calls.map(([, i]) => i.idempotencyKey);
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[0]).toMatch(/^[A-Za-z0-9_-]{1,64}$/);
+    expect(streakIdempotencyKey("h1:2026-05-01", -1, T1)).not.toBe(
+      streakIdempotencyKey("h1:2026-05-01", 1, T1),
+    );
   });
 
   it("enqueues a routine_streaks increment(-1) op after completion-remove", async () => {
