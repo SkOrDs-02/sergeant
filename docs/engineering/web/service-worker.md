@@ -1,6 +1,6 @@
 # Service Worker (apps/web)
 
-> **Last touched:** 2026-09-17 by @claude (шапка під зміст 2026-08; build-id cascade `RAILWAY_GIT_COMMIT_SHA` → `GIT_SHA`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-29 by @claude (сторож білого екрана `public/boot-watchdog.js`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → GIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID` ([`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts); `GIT_SHA` запікає `Dockerfile.api` для Coolify/ghcr — `RAILWAY_GIT_COMMIT_SHA` знято разом із Railway, ADR-0074).
@@ -67,8 +67,15 @@ Stack-pulse 2026-05 / [PR-21](https://github.com/Skords-01/Sergeant/blob/d068c73
 
 `isCapacitor()` гейт + `import.meta.env.VITE_TARGET === "capacitor"` build-time-флаг повністю DCE-ять SW-гілку — Capacitor WebView не використовує SW. Update-flow для mobile = standard App Store / Play OTA flow + EAS Update (окрема історія).
 
+## Сторож білого екрана
+
+Зрідка статичні залежності entry-модуля помирають з `net::ERR_ABORTED`, головний модуль не виконується, і `#root` лишається порожнім назавжди. Винятку немає, тож [`chunkReload.ts`](../../../apps/web/src/core/lib/chunkReload.ts) не спрацьовує. Прибрані reload на `controllerchange` і `skipWaiting()` в `install` закрили найімовірніші причини ([аудит 2026-08-05, B1](../../work/specs/audits/2026-08-05-browser-profile-testing.md)), але живі прогони 2026-09-28 спіймали той самий симптом ще двічі (онлайн і офлайн), а ізольований цикл на 280 навігацій не відтворив його жодного разу.
+
+Тому симптом лікує [`apps/web/public/boot-watchdog.js`](../../../apps/web/public/boot-watchdog.js): звичайний скрипт перед entry-модулем у `index.html`. Через 8 с після `load` він робить один reload, якщо `#root` так і не отримав дітей. Мітка в `sessionStorage` не дає reload частіше ніж раз на хвилину; без сховища reload не робиться зовсім. Файл окремий, а не інлайн: CSP має `script-src 'self'` без `'unsafe-inline'`. Він потрапляє в precache разом з іншими `*.js`, тож працює й офлайн.
+
 ## Тести
 
+- [`apps/web/src/core/lib/bootWatchdog.test.ts`](../../../apps/web/src/core/lib/bootWatchdog.test.ts): reload при порожньому `#root`, тиша при змонтованому, cooldown і відмова без `sessionStorage`.
 - [`apps/web/src/core/app/autoUpdate.test.ts`](../../../apps/web/src/core/app/autoUpdate.test.ts) — JSDOM + fake timers: periodic polling, saveData skip, idle-skipWaiting, no-waiting-SW guard, build-id mismatch force-prompt + reset on catch-up, short-sha ↔ full-sha нормалізація, ignores empty observations.
 - [`apps/web/src/core/app/useSWUpdate.test.ts`](../../../apps/web/src/core/app/useSWUpdate.test.ts) — defer-while-busy + поведінка `applyUpdate`: без waiting-воркера кнопка робить прямий reload, з waiting-воркером reload лишається за `vite-plugin-pwa`.
 - [`apps/server/src/http/buildIdHeader.test.ts`](../../../apps/server/src/http/buildIdHeader.test.ts) — cascade priority, 7-char truncation, missing-env behavior.
