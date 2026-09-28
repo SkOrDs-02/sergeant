@@ -93,7 +93,7 @@ export const pricingMessages = {
     paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
   },
   waitlist: {
-    headline: "Email для waitlist",
+    headline: "Повідомити про запуск Premium",
     subtitle: "Один лист, коли Premium стартує. Без спаму, без авто-списань.",
   },
   footer:
