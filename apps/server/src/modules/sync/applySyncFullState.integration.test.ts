@@ -12,6 +12,7 @@ import {
 } from "../../test/createIntegrationApp.js";
 import type { AppliedStatus } from "./syncV2-types.js";
 import { applyFinykTxCategories } from "./finyk/applySync.js";
+import { applyRoutineStreaks } from "./routine/applySync.js";
 import {
   applyRoutineHabits,
   applyRoutinePrefs,
@@ -207,6 +208,49 @@ describe("full-state LWW under concurrent pushes", () => {
         [USER_ID, "tx-race-1"],
       );
       expect(row.rows[0]?.category_id).toBe("cat-newer");
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
+
+  // `routine_streaks` не має `updated_at`: LWW іде проти `sync_op_log`, який
+  // пуш дописує після apply. Обгортка відтворює цей порядок, як у syncV2Push.
+  it(
+    "routine_streaks: older push committed after newer one does not overwrite it",
+    async (ctx) => {
+      if (!harness || !dockerAvailable) return ctx.skip();
+      const pool = harness.pool;
+      const streaksAndLog: Apply = async (c, o, u, ts) => {
+        const res = await applyRoutineStreaks(c, o, u, ts);
+        if (res.status === "applied") {
+          await c.query(
+            `INSERT INTO sync_op_log
+               (user_id, idempotency_key, table_name, op, row, client_ts, status)
+             VALUES ($1, $2, 'routine_streaks', $3, $4, $5, 'applied')`,
+            [u, `streaks-${ts.toISOString()}`, o.op, JSON.stringify(o.row), ts],
+          );
+        }
+        return res;
+      };
+      const streaks = (current: number) =>
+        op("routine_streaks", {
+          user_id: USER_ID,
+          current_streak: current,
+          longest_streak: current,
+        });
+
+      const res = await raceOlderAgainstNewer(
+        streaksAndLog,
+        streaks(7),
+        streaks(3),
+      );
+      expect(res.newer).toEqual({ status: "applied" });
+      expect(res.older).toEqual({ status: "rejected", reason: "lww_conflict" });
+
+      const row = await pool.query<{ current_streak: number }>(
+        `SELECT current_streak FROM routine_streaks WHERE user_id = $1`,
+        [USER_ID],
+      );
+      expect(row.rows[0]?.current_streak).toBe(7);
     },
     INTEGRATION_TIMEOUT_MS,
   );

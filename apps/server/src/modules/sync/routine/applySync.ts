@@ -214,6 +214,17 @@ export async function applyRoutineStreaks(
     return { status: "applied" };
   }
 
+  // AI-DANGER: `routine_streaks` не має `updated_at`, тож LWW іде проти
+  // `sync_op_log`, а цей рядок журналу пише пуш лише ПІСЛЯ apply у тій самій
+  // транзакції. Без блокування старіший паралельний пуш не бачить
+  // незакоміченого новішого і перезаписує його. Advisory lock на
+  // (routine_streaks, user) до кінця транзакції серіалізує такі пуші: після
+  // коміту сусіда наступний оператор бачить його рядок журналу (READ
+  // COMMITTED). Increment вище лок не бере, він атомарний сам.
+  await client.query(
+    `SELECT pg_advisory_xact_lock(hashtext('routine_streaks'), hashtext($1))`,
+    [userId],
+  );
   const lwwGuard = await client.query<{ max_ts: Date | null }>(
     `SELECT MAX(client_ts) AS max_ts
        FROM sync_op_log
