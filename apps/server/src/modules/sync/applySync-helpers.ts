@@ -97,24 +97,37 @@ export async function softDeleteById(
 ): Promise<AppliedStatus> {
   if (!existing) return { status: "rejected", reason: "not_found" };
   const sqlByTable = {
-    routine_habits: `UPDATE routine_habits SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3`,
-    routine_tags: `UPDATE routine_tags SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3`,
-    routine_categories: `UPDATE routine_categories SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3`,
-    fizruk_daily_log: `UPDATE fizruk_daily_log SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3`,
-    fizruk_workout_templates: `UPDATE fizruk_workout_templates SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3`,
+    routine_habits: `UPDATE routine_habits SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
+    routine_tags: `UPDATE routine_tags SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
+    routine_categories: `UPDATE routine_categories SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
+    fizruk_daily_log: `UPDATE fizruk_daily_log SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
+    fizruk_workout_templates: `UPDATE fizruk_workout_templates SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
   } as const;
-  await client.query(sqlByTable[table], [clientTs, id, userId]);
-  return { status: "applied" };
+  return applyIfNewer(client, sqlByTable[table], [clientTs, id, userId]);
 }
 
-export function guardUserPkLww(
-  existing: { updated_at: Date } | undefined,
-  clientTs: Date,
-): AppliedStatus | null {
-  if (existing && existing.updated_at.getTime() >= clientTs.getTime()) {
+/**
+ * Виконує запис, у SQL якого вже стоїть LWW-предикат «строго новіший»
+ * (`ON CONFLICT … DO UPDATE … WHERE <t>.updated_at < EXCLUDED.updated_at` або
+ * `UPDATE … AND updated_at < $clientTs`), і 0 зачеплених рядків звітує як
+ * `lww_conflict`, тобто так само, як відсів за SELECT-ом.
+ *
+ * AI-DANGER: LWW має перевіряти сама база в тому ж операторі, що й пише.
+ * Пара «SELECT без FOR UPDATE → порівняння в JS → безумовний upsert» під
+ * READ COMMITTED програє гонку двох паралельних пушів: новіший коміт
+ * проходить першим, старіший другим і перезаписує його. Той самий предикат
+ * стоїть у `packages/dualwrite-core/src/tableSpec.ts` (`upsertGuard`).
+ */
+export async function applyIfNewer(
+  client: PoolClient,
+  sql: string,
+  params: unknown[],
+): Promise<AppliedStatus> {
+  const res = await client.query(sql, params);
+  if (res.rowCount === 0) {
     return { status: "rejected", reason: "lww_conflict" };
   }
-  return null;
+  return { status: "applied" };
 }
 
 /** Accept PG key or SQLite `*_json` alias; coerce to JSONB bind param. */

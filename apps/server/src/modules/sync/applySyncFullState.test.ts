@@ -50,6 +50,14 @@ function makeClient(
   return { query } as unknown as PoolClient & { query: Mock };
 }
 
+// Newer row already committed: the upsert's strict-newer predicate
+// (`WHERE <t>.updated_at < EXCLUDED.updated_at`) filters the write out, so
+// Postgres reports rowCount 0.
+function newerRowClient(): PoolClient & { query: Mock } {
+  const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+  return { query } as unknown as PoolClient & { query: Mock };
+}
+
 function op(
   table: string,
   row: Record<string, unknown>,
@@ -291,9 +299,7 @@ describe("routine full-state appliers", () => {
   });
 
   it("applyRoutinePrefs rejects on lww_conflict", async () => {
-    const client = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const client = newerRowClient();
     const result = await applyRoutinePrefs(
       client,
       op("routine_prefs", { user_id: USER_ID, data: {} }),
@@ -565,9 +571,7 @@ describe("nutrition full-state appliers", () => {
   });
 
   it("applyNutritionShoppingList rejects on lww_conflict", async () => {
-    const client = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const client = newerRowClient();
     const result = await applyNutritionShoppingList(
       client,
       op("nutrition_shopping_list", { user_id: USER_ID, data: {} }),
@@ -1097,9 +1101,7 @@ describe("nutrition full-state validation edge cases", () => {
   });
 
   it("applyNutritionWaterLog rejects on lww_conflict", async () => {
-    const client = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const client = newerRowClient();
     const result = await applyNutritionWaterLog(
       client,
       op("nutrition_water_log", {
@@ -1195,9 +1197,7 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyFizrukMonthlyPlan(
         conflictClient,
@@ -1229,9 +1229,7 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyFizrukPlanTemplates(
         conflictClient,
@@ -1253,9 +1251,7 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyFizrukPrograms(
         conflictClient,
@@ -1504,9 +1500,7 @@ describe("routine full-state remaining validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyRoutineHabitOrder(
         conflictClient,

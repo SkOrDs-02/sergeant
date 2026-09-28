@@ -2,9 +2,9 @@ import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import {
+  applyIfNewer,
   assertRowUserId,
   guardUuidPkApply,
-  guardUserPkLww,
   queryOne,
   type ExistingUuidRow,
   parseOptionalDate,
@@ -97,12 +97,13 @@ export async function applyFizrukDailyLog(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_daily_log
          SET entry_at = $1, weight_kg = $2, sleep_hours = $3,
              energy_level = $4, mood = $5, note = $6,
              updated_at = $7, deleted_at = $8
-       WHERE id = $9 AND user_id = $10`,
+       WHERE id = $9 AND user_id = $10 AND updated_at < $7`,
       [
         entryAt,
         weightKg,
@@ -133,23 +134,16 @@ export async function applyFizrukMonthlyPlan(
   const userReject = assertRowUserId(row, userId);
   if (userReject) return userReject;
 
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM fizruk_monthly_plan WHERE user_id = $1`,
-    [userId],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
   const dataJson = readJsonbField(row, "data", "data_json");
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO fizruk_monthly_plan (user_id, data, updated_at)
      VALUES ($1, $2::jsonb, $3)
      ON CONFLICT (user_id) DO UPDATE
-       SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+       SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+       WHERE fizruk_monthly_plan.updated_at < EXCLUDED.updated_at`,
     [userId, dataJson, clientTs],
   );
-  return { status: "applied" };
 }
 
 export async function applyFizrukPlanTemplates(
@@ -165,23 +159,16 @@ export async function applyFizrukPlanTemplates(
   const userReject = assertRowUserId(row, userId);
   if (userReject) return userReject;
 
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM fizruk_plan_templates WHERE user_id = $1`,
-    [userId],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
   const dataJson = readJsonbField(row, "data", "data_json");
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO fizruk_plan_templates (user_id, data, updated_at)
      VALUES ($1, $2::jsonb, $3)
      ON CONFLICT (user_id) DO UPDATE
-       SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
+       SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at
+       WHERE fizruk_plan_templates.updated_at < EXCLUDED.updated_at`,
     [userId, dataJson === "null" ? null : dataJson, clientTs],
   );
-  return { status: "applied" };
 }
 
 export async function applyFizrukPrograms(
@@ -197,28 +184,21 @@ export async function applyFizrukPrograms(
   const userReject = assertRowUserId(row, userId);
   if (userReject) return userReject;
 
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM fizruk_programs WHERE user_id = $1`,
-    [userId],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
   const activeProgramId =
     typeof row["active_program_id"] === "string"
       ? row["active_program_id"]
       : null;
 
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO fizruk_programs (user_id, active_program_id, updated_at)
      VALUES ($1, $2, $3)
      ON CONFLICT (user_id) DO UPDATE
        SET active_program_id = EXCLUDED.active_program_id,
-           updated_at = EXCLUDED.updated_at`,
+           updated_at = EXCLUDED.updated_at
+       WHERE fizruk_programs.updated_at < EXCLUDED.updated_at`,
     [userId, activeProgramId, clientTs],
   );
-  return { status: "applied" };
 }
 
 export async function applyFizrukWellbeing(
@@ -250,13 +230,13 @@ export async function applyFizrukWellbeing(
 
   if (op.op === "delete") {
     if (!existing) return { status: "rejected", reason: "not_found" };
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_wellbeing
          SET deleted_at = $1, updated_at = $1
-       WHERE user_id = $2 AND date_key = $3`,
+       WHERE user_id = $2 AND date_key = $3 AND updated_at < $1`,
       [clientTs, userId, dateKey],
     );
-    return { status: "applied" };
   }
 
   const mood = parseOptionalInt(row["mood"]);
@@ -279,7 +259,8 @@ export async function applyFizrukWellbeing(
     return { status: "rejected", reason: "invalid_created_at" };
   }
 
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO fizruk_wellbeing
        (user_id, date_key, mood, energy, sleep_quality, sleep_hours, notes,
         created_at, updated_at, deleted_at)
@@ -291,7 +272,8 @@ export async function applyFizrukWellbeing(
            sleep_hours = EXCLUDED.sleep_hours,
            notes = EXCLUDED.notes,
            updated_at = EXCLUDED.updated_at,
-           deleted_at = NULL`,
+           deleted_at = NULL
+       WHERE fizruk_wellbeing.updated_at < EXCLUDED.updated_at`,
     [
       userId,
       dateKey,
@@ -304,7 +286,6 @@ export async function applyFizrukWellbeing(
       clientTs,
     ],
   );
-  return { status: "applied" };
 }
 
 export async function applyFizrukWorkoutTemplates(
@@ -380,11 +361,12 @@ export async function applyFizrukWorkoutTemplates(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workout_templates
          SET name = $1, exercise_ids = $2::jsonb, groups = $3::jsonb,
              last_used_at = $4, updated_at = $5, deleted_at = $6
-       WHERE id = $7 AND user_id = $8`,
+       WHERE id = $7 AND user_id = $8 AND updated_at < $5`,
       [
         name,
         exerciseIds,
