@@ -27,6 +27,30 @@ import { createHttpClient } from "../../httpClient";
 import { createBillingEndpoints } from "../../endpoints/billing";
 import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
 
+// Знімок доступу (`docs/work/specs/access-tiers.md`): сервер віддає стан,
+// відкриті фічі реєстру і тижневі лічильники, web нічого не виводить сам.
+function accessSnapshot(state: "free" | "pro") {
+  const limit = (n: number) => (state === "free" ? n : null);
+  const resetsAt = "2026-06-14T21:00:00.000Z";
+  return {
+    state,
+    trialEndsAt: null,
+    graceEndsAt: null,
+    features: {
+      "ai.actions": true,
+      "ai.photo": true,
+      "export.pdf": state !== "free",
+      "nutrition.weekPlan": state !== "free",
+      "bank.monoSync": true,
+    },
+    meters: {
+      aiActions: { used: 3, limit: limit(20), resetsAt },
+      aiPhoto: { used: 1, limit: limit(3), resetsAt },
+      finykVision: { used: 0, limit: limit(5), resetsAt },
+    },
+  };
+}
+
 describe(
   "contract @ POST /api/v1/billing/checkout",
   CONTRACT_SUITE_OPTIONS,
@@ -110,6 +134,7 @@ describe(
               active: true,
               currentPeriodEnd: "2026-06-20T00:00:00.000Z",
             },
+            access: accessSnapshot("pro"),
           });
         })
         .executeTest(async (mockServer) => {
@@ -122,6 +147,8 @@ describe(
           // leak Hard Rule #1 guards for money fields.
           expect(typeof out.subscription.id).toBe("number");
           expect(out.subscription.id).toBe(42);
+          expect(out.access.state).toBe("pro");
+          expect(out.access.meters.aiActions.limit).toBeNull();
         });
     });
 
@@ -144,6 +171,7 @@ describe(
               active: false,
               currentPeriodEnd: null,
             },
+            access: accessSnapshot("free"),
           });
         })
         .executeTest(async (mockServer) => {
@@ -153,6 +181,14 @@ describe(
           expect(out.subscription.active).toBe(false);
           expect(out.subscription.id).toBeNull();
           expect(out.subscription.plan).toBeNull();
+          expect(out.access.state).toBe("free");
+          expect(out.access.features["export.pdf"]).toBe(false);
+          expect(out.access.meters.aiActions).toEqual({
+            used: 3,
+            limit: 20,
+            resetsAt: "2026-06-14T21:00:00.000Z",
+          });
+          expect(typeof out.access.meters.aiPhoto.used).toBe("number");
         });
     });
   },

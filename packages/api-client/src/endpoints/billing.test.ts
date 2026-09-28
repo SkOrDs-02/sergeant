@@ -112,6 +112,20 @@ describe("createBillingEndpoints.createCheckout", () => {
   });
 });
 
+// Знімок доступу (`docs/work/specs/access-tiers.md`): обовʼязкове поле
+// відповіді, без нього схема відкидає тіло.
+const ACCESS = {
+  state: "free",
+  trialEndsAt: null,
+  graceEndsAt: null,
+  features: { "export.pdf": false, "ai.photo": true },
+  meters: {
+    aiActions: { used: 3, limit: 20, resetsAt: "2026-06-14T21:00:00.000Z" },
+    aiPhoto: { used: 0, limit: 3, resetsAt: "2026-06-14T21:00:00.000Z" },
+    finykVision: { used: 0, limit: 5, resetsAt: "2026-06-14T21:00:00.000Z" },
+  },
+};
+
 describe("createBillingEndpoints.status", () => {
   it("GETs /api/v1/billing/status and returns the parsed subscription", async () => {
     const subscription = {
@@ -122,13 +136,13 @@ describe("createBillingEndpoints.status", () => {
       active: true,
       currentPeriodEnd: "2026-05-20T00:00:00.000Z",
     };
-    const fetchMock = mockFetchOnce({ subscription });
+    const fetchMock = mockFetchOnce({ subscription, access: ACCESS });
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
     const billing = createBillingEndpoints(http);
 
     const res = await billing.status();
 
-    expect(res).toEqual({ subscription });
+    expect(res).toEqual({ subscription, access: ACCESS });
     const [url, init] = firstCall(fetchMock);
     expect(String(url)).toBe("https://api.example.com/api/v1/billing/status");
     expect((init as RequestInit).method ?? "GET").toBe("GET");
@@ -143,11 +157,27 @@ describe("createBillingEndpoints.status", () => {
       active: false,
       currentPeriodEnd: null,
     };
-    mockFetchOnce({ subscription });
+    mockFetchOnce({ subscription, access: ACCESS });
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
     const billing = createBillingEndpoints(http);
     const res = await billing.status();
     expect(res.subscription.active).toBe(false);
+  });
+
+  it("rejects a status response without the access snapshot", async () => {
+    mockFetchOnce({
+      subscription: {
+        id: null,
+        provider: null,
+        plan: null,
+        status: null,
+        active: false,
+        currentPeriodEnd: null,
+      },
+    });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    await expect(billing.status()).rejects.toThrow();
   });
 
   it("passes through an AbortSignal", async () => {
@@ -160,6 +190,7 @@ describe("createBillingEndpoints.status", () => {
         active: false,
         currentPeriodEnd: null,
       },
+      access: ACCESS,
     });
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
     const billing = createBillingEndpoints(http);

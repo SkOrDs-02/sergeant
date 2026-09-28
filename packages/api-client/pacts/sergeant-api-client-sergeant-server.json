@@ -265,6 +265,35 @@
       },
       "response": {
         "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
           "subscription": {
             "active": true,
             "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
@@ -297,6 +326,35 @@
       },
       "response": {
         "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": false,
+              "nutrition.weekPlan": false
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": 20,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": 3,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": 5,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "free",
+            "trialEndsAt": null
+          },
           "subscription": {
             "active": false,
             "currentPeriodEnd": null,
