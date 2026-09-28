@@ -11,6 +11,7 @@ import {
   toNonNegativeInt,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+import { applyIfNewer } from "../applySync-helpers.js";
 
 /**
  * Стеля для `nutrition_pantry_items.sources` — JSON-масиву варіантів
@@ -59,13 +60,13 @@ export async function applyNutritionMeals(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_meals
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const eatenAt = parseRequiredDate(row["eaten_at"]);
@@ -150,7 +151,8 @@ export async function applyNutritionMeals(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_meals
          SET eaten_at     = $1,
              meal_type    = $2,
@@ -167,7 +169,7 @@ export async function applyNutritionMeals(
              is_demo      = $13,
              updated_at   = $14,
              deleted_at   = $15
-       WHERE id = $16 AND user_id = $17`,
+       WHERE id = $16 AND user_id = $17 AND updated_at < $14`,
       [
         eatenAt,
         mealType,
@@ -233,13 +235,13 @@ export async function applyNutritionPantries(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_pantries
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : "";
@@ -274,13 +276,14 @@ export async function applyNutritionPantries(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_pantries
          SET name       = $1,
              text       = $2,
              updated_at = $3,
              deleted_at = $4
-       WHERE id = $5 AND user_id = $6`,
+       WHERE id = $5 AND user_id = $6 AND updated_at < $3`,
       [name, text, clientTs, deletedAt ?? null, id, userId],
     );
   }
@@ -325,13 +328,13 @@ export async function applyNutritionPantryItems(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_pantry_items
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const pantryId =
@@ -393,7 +396,8 @@ export async function applyNutritionPantryItems(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_pantry_items
          SET pantry_id  = $1,
              name       = $2,
@@ -404,7 +408,7 @@ export async function applyNutritionPantryItems(
              sort_order = $7,
              updated_at = $8,
              deleted_at = $9
-       WHERE id = $10 AND user_id = $11`,
+       WHERE id = $10 AND user_id = $11 AND updated_at < $8`,
       [
         pantryId,
         name,
@@ -466,12 +470,13 @@ export async function applyNutritionPrefs(
       [userId, prefsJson, activePantryId, clientTs, clientTs],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_prefs
          SET prefs_json       = $1::jsonb,
              active_pantry_id = $2,
              updated_at       = $3
-       WHERE user_id = $4`,
+       WHERE user_id = $4 AND updated_at < $3`,
       [prefsJson, activePantryId, clientTs, userId],
     );
   }
@@ -516,13 +521,13 @@ export async function applyNutritionRecipes(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_recipes
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : "";
@@ -558,13 +563,14 @@ export async function applyNutritionRecipes(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE nutrition_recipes
          SET name       = $1,
              data_json  = $2::jsonb,
              updated_at = $3,
              deleted_at = $4
-       WHERE id = $5 AND user_id = $6`,
+       WHERE id = $5 AND user_id = $6 AND updated_at < $3`,
       [name, dataJson, clientTs, deletedAt ?? null, id, userId],
     );
   }
