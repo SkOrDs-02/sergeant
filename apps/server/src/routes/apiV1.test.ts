@@ -264,6 +264,7 @@ describe("/api/v1/me data rights", () => {
       analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      pushDailyCap: 2,
       // Проактивний канал Сержанта — opt-in, вимкнений і для нових акаунтів.
       sergeantNudges: false,
       // GDPR Art. 9 health-data consent — explicit opt-in only (migration 111).
@@ -310,6 +311,7 @@ describe("/api/v1/me data rights", () => {
       analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      pushDailyCap: 2,
       sergeantNudges: false,
       healthDataConsent: true,
       activeModules: ["finyk", "routine"],
@@ -321,10 +323,9 @@ describe("/api/v1/me data rights", () => {
     });
     const [sql, params] = queryMock.mock.calls[1]!;
     expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
-    // Два останні параметри — `active_modules` і `hub_prefs`. Патч не
-    // згадує жодного, тож upsert мусить перенести поточні значення (тут
-    // обидва `null`, бо перший SELECT повернув порожній набір), а не
-    // затерти вибір.
+    // `active_modules`, `hub_prefs` і `push_daily_cap` патч не згадує, тож
+    // upsert мусить перенести поточні значення (тут `null` і дефолт 2, бо
+    // перший SELECT повернув порожній набір), а не затерти вибір.
     expect(params).toEqual([
       user.id,
       false,
@@ -334,6 +335,7 @@ describe("/api/v1/me data rights", () => {
       false,
       null,
       null,
+      2,
     ]);
   });
 
