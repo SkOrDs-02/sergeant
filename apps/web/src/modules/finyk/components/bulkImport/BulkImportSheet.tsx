@@ -42,6 +42,7 @@ import {
   isIncomeCategorySlug,
 } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
+import { useFinykVisionPaywall } from "../receiptScan/useFinykVisionPaywall";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import {
   IMPORT_STATEMENT_FILE_ACCEPT,
@@ -201,6 +202,7 @@ export function BulkImportSheet({
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
 
   const screenshotAnalyze = useImportScreenshotAnalyze();
+  const visionPaywall = useFinykVisionPaywall();
   const statementPreview = useImportStatementPreview();
   const commit = useImportCommit({ storage });
   const batchUndo = useImportBatchUndo({ storage });
@@ -235,6 +237,7 @@ export function BulkImportSheet({
 
   const handleScreenshotSelected = async (file: File) => {
     setFlowError(null);
+    if (!visionPaywall.requireAccess()) return;
     // Спінер до `await`: стиснення великого фото саме по собі помітна
     // пауза, і саме вона першою читалась як зависання.
     setProcessing({ label: "Готую фото…", hint: SCREENSHOT_SLOW_HINT });
@@ -268,6 +271,7 @@ export function BulkImportSheet({
       setProcessing(null);
       setStage("bulk-review");
     } catch (err) {
+      visionPaywall.onError(err);
       failBackToChoose(formatReceiptError(err, "Не вдалось розпізнати скрін."));
     }
   };
@@ -531,6 +535,7 @@ export function BulkImportSheet({
           )}
         </div>
       )}
+      {visionPaywall.modal}
     </Sheet>
   );
 }

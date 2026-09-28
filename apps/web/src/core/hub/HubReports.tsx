@@ -170,7 +170,7 @@ export function HubReports() {
   // Phase 7 D2 — cross-module PDF export is Premium. Free users see
   // the button but tapping it opens the paywall instead of generating
   // the report.
-  const exportGate = useFeatureGate("analytics-export-pdf");
+  const exportGate = useFeatureGate("export.pdf");
   const handleExportPdf = useCallback(() => {
     if (!exportGate.requireAccess()) return;
     // Escape any `<`/`&`/`>` before embedding insight strings into the report
@@ -387,8 +387,8 @@ export function HubReports() {
         open={exportGate.paywallOpen}
         onClose={exportGate.closePaywall}
         surface={exportGate.paywallSurface}
-        title={i18n.paywall["analytics-export-pdf"].title}
-        description={i18n.paywall["analytics-export-pdf"].description}
+        title={i18n.paywall["export.pdf"].title}
+        description={i18n.paywall["export.pdf"].description}
       />
 
       {previewHtml !== null && (

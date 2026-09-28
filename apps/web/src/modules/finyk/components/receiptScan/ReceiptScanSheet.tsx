@@ -69,6 +69,7 @@ import { ScanStatus, type ScanStatusState } from "../ScanStatus";
 import { DPS_QR_SCAN_ENABLED } from "./dpsQrGate";
 import { ReceiptScanCameraView } from "./ReceiptScanCameraView";
 import { ReceiptReviewForm } from "./ReceiptReviewForm";
+import { useFinykVisionPaywall } from "./useFinykVisionPaywall";
 
 type Stage = "choose" | "camera" | "processing" | "review" | "batch";
 
@@ -122,6 +123,7 @@ export function ReceiptScanSheet({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const bulkReceipts = useBulkReceiptsImport({ storage, onReceiptLinked });
+  const visionPaywall = useFinykVisionPaywall();
 
   const lookupMutation = useMutation({
     mutationFn: (req: ReceiptLookupRequest) =>
@@ -211,6 +213,10 @@ export function ReceiptScanSheet({
       }
     }
 
+    if (!visionPaywall.requireAccess()) {
+      setStage("choose");
+      return;
+    }
     const imageResult = await readReceiptImageFile(file);
     if (!imageResult.ok) {
       setFlowError(imageResult.error);
@@ -224,6 +230,7 @@ export function ReceiptScanSheet({
       );
       openReview(nextDraft);
     } catch (err) {
+      visionPaywall.onError(err);
       setFlowError(formatReceiptError(err, "Не вдалось розпізнати чек."));
       setStage("choose");
     }
@@ -491,6 +498,7 @@ export function ReceiptScanSheet({
           />
         </>
       )}
+      {visionPaywall.modal}
     </Sheet>
   );
 }

@@ -28,7 +28,7 @@
  * | ------------------------------------- | ------------------- |
  * | `401` + `UNAUTHORIZED`                | `sign-in-required`  |
  * | `402` + `PLAN_REQUIRED` + `requiredPlan` | `plan-required`  |
- * | `429` + `AI_QUOTA` / `AI_QUOTA_PRESET` | `quota-exhausted`  |
+ * | `429` + `AI_QUOTA` / `AI_QUOTA_PRESET` / `AI_PHOTO_QUOTA` / `AI_FINYK_VISION_QUOTA` | `quota-exhausted` |
  * | `403` без коду плану                  | `wrong-account`     |
  * | `kind: "network"` + `isOffline`       | `offline`           |
  * | `502` / `503` / `504`                 | `provider-down`     |
@@ -50,7 +50,12 @@ export type AccessDenial =
 /** Коди, якими сервер називає «потрібен план». */
 const PLAN_CODES = new Set(["PLAN_REQUIRED"]);
 /** Коди, якими сервер називає «квоту вичерпано». */
-const QUOTA_CODES = new Set(["AI_QUOTA", "AI_QUOTA_PRESET"]);
+const QUOTA_CODES = new Set([
+  "AI_QUOTA",
+  "AI_QUOTA_PRESET",
+  "AI_PHOTO_QUOTA",
+  "AI_FINYK_VISION_QUOTA",
+]);
 
 function bodyOf(err: unknown): Record<string, unknown> | null {
   if (!isApiError(err)) return null;

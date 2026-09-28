@@ -11,6 +11,7 @@ import {
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { billingKeys } from "@shared/lib/api/queryKeys";
+import { accessFixture } from "../test/helpers/billingAccess";
 
 const {
   submitMock,
@@ -44,6 +45,7 @@ const {
         currentPeriodEnd: string | null;
         cancelAtPeriodEnd: boolean;
       };
+      access: import("@sergeant/shared").BillingAccess;
     }>
   >(),
   toastSuccessMock: vi.fn(),
@@ -73,6 +75,7 @@ statusMock.mockResolvedValue({
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
   },
+  access: accessFixture("free"),
 });
 
 vi.mock("@shared/api", () => ({
@@ -162,6 +165,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
       },
+      access: accessFixture("free"),
     });
   });
   afterEach(() => cleanup());
@@ -417,6 +421,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
           currentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
           cancelAtPeriodEnd: false,
         },
+        access: accessFixture("pro"),
       });
     }
 

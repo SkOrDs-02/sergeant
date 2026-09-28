@@ -72,10 +72,10 @@ describe("friendlyApiError", () => {
   });
   it("special-cases AI quota on 429", () => {
     expect(friendlyApiError(429, "AI_QUOTA exceeded")).toBe(
-      "Денний ліміт Сержанта вичерпано. Спробуй завтра або зменш навантаження.",
+      "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.",
     );
     expect(friendlyApiError(429, "ліміт AI")).toContain(
-      "Денний ліміт Сержанта",
+      "Тижневий ліміт Сержанта",
     );
   });
   it("passes the server copy through for a preset weekly quota block", () => {

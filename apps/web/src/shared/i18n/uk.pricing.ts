@@ -19,15 +19,16 @@ export const pricingMessages = {
     // B4 (браузерний аудит 2026-08-05): прибрано обіцянку «натиснеш Premium —
     // відкриється оплата». Premium ще не запущений, оплати немає, а нижче на
     // тій самій сторінці стоїть waitlist — обіцянка суперечила формі.
-    subtitle:
-      "Один платний план. Без рівнів, без довічної підписки, без trial-таймера.",
+    // Обіцянку «без trial-таймера» знято: новий акаунт може стартувати з
+    // 7 днів Premium (спека access-tiers, ADR про пакетування Free/Premium).
+    subtitle: "Один платний план. Без рівнів і без довічної підписки.",
   },
   tiers: {
     freeName: "Free",
     freePrice: "0 ₴",
     freeCadence: "назавжди",
     freeTagline:
-      "Усі модулі, ручний трекінг без лімітів. Сержант: 5 запитів/день.",
+      "Усі модулі, ручний трекінг без лімітів. Сержант: 20 дій на тиждень.",
     premiumName: "Premium",
     // B4: конкретна ціна («199 ₴ / місяць») знята до запуску — вона
     // суперечила waitlist-у «Один лист, коли Premium стартує».
@@ -35,25 +36,20 @@ export const pricingMessages = {
     premiumCadence: "Ціну оголошу на запуску",
     premiumTagline: "Усе розблоковано. Один план, без рівнів і доплат.",
   },
+  // Рядки таблиці: доступ і ліміти кожного бере `core/pricing/pricingTiers.ts`
+  // з реєстру `@sergeant/shared` FEATURES, тут лише підписи.
   features: {
-    allModules: "Усі 4 модулі: повний функціонал",
     manualTracking: "Ручний трекінг без числових лімітів",
-    aiChat: "Чат із Сержантом",
-    cloudSync2Devices: "Cloud-sync на 2 пристрої",
-    expensesFinyk: "Витрати у Фініку",
-    aiPhotoFood: "Фото їжі від Сержанта у Харчуванні",
+    aiActions: "Дії Сержанта: чат, порада, план дня, рецепти",
     aiPhotoFoodShort: "Фото їжі від Сержанта",
-    manualMeals: "Ручні прийоми їжі",
-    activeWorkoutTemplate: "Активний шаблон тренування",
-    workoutTemplates: "Шаблони тренувань",
-    activeHabits: "Активні звички",
-    habits: "Звички",
-    pdfExport: "PDF-експорт звітів",
-    // B3: `multiCurrency` прибрано — функції не існує. У формі активу валюта
-    // статична («UAH») однаково для Free і Premium; не-гривневі значення
-    // бувають лише у старих записах і в загальний капітал не зводяться.
+    finykVision: "AI-скан чека без QR і скрінів банку",
     monoAutoSync: "Авто-синхронізація з Monobank",
     cloudSync: "CloudSync між пристроями",
+    csvExport: "Експорт CSV",
+    voice: "Голосовий ввід",
+    memoryRecall: "Памʼять Сержанта",
+    pdfExport: "PDF-експорт звітів",
+    weekPlan: "План харчування на тиждень",
     // Озвучення стану рядка для скрінрідера. Доти включена й виключена
     // функція звучали ІДЕНТИЧНО: різницю несли лише форма іконки
     // (`check`/`close`) і приглушений колір, а `Icon` без `title`
@@ -62,10 +58,9 @@ export const pricingMessages = {
     excludedSr: "не входить:",
   },
   limits: {
-    // Leading space intentional — composes як `${N} / місяць`.
-    perMonth: " / місяць",
+    // Leading space intentional: composes як `${N} / тиждень`.
+    perWeek: " / тиждень",
     unlimited: "без ліміту",
-    aiChatPerDay: "5 / день",
   },
   cta: {
     tryPremium: "Спробувати Premium",

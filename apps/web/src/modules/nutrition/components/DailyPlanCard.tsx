@@ -24,6 +24,7 @@ import {
   MissingMacrosHint,
 } from "./DailyPlanWarnings";
 import { MacroRatioBar } from "./DailyPlanMacros";
+import { WeekPlanButton } from "./WeekPlanButton";
 import {
   DailyPlanMealRow,
   MEAL_TYPE_ORDER,
@@ -344,18 +345,11 @@ export function DailyPlanCard({
             {dayPlanBusy ? "Генерую план…" : "Згенерувати денний план"}
           </button>
           {typeof fetchWeekPlan === "function" && (
-            <button
-              type="button"
+            <WeekPlanButton
               onClick={fetchWeekPlan}
               disabled={busy || weekPlanBusy}
-              className={cn(
-                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-                "focus-ring",
-              )}
-            >
-              {weekPlanBusy ? "…" : "План на тиждень"}
-            </button>
+              busy={weekPlanBusy}
+            />
           )}
         </div>
 
