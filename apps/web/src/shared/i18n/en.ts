@@ -241,6 +241,13 @@ export const messagesEn: Partial<{
       signIn: "Sign in",
       backup: "Download a copy",
     },
+    memoryOnly: {
+      title: "Entries are not being saved",
+      body: "Browser storage did not open, so new entries live in memory for now. Reload the page to keep them.",
+      bodyOtherTab:
+        "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
+      reload: "Reload",
+    },
   },
 
   dataDisclosure: {

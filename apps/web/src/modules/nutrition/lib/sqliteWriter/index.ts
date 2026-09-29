@@ -110,6 +110,7 @@ export function registerNutritionDualWriteContext(
   liveContexts.push(ctx);
   registeredContext = ctx;
   replayNutritionJournal(ctx);
+  flushPendingBeforeRegistration();
   return () => {
     const at = liveContexts.lastIndexOf(ctx);
     if (at === -1) return;
@@ -124,6 +125,7 @@ export function __clearNutritionDualWriteContextForTests(): void {
   liveContexts.length = 0;
   dualWriteQueue = Promise.resolve();
   replayedJournalIds.clear();
+  pendingBeforeRegistration.length = 0;
 }
 
 /**
@@ -254,13 +256,40 @@ async function runNutritionOps(
 // finyk dual-write orchestrator.
 let dualWriteQueue: Promise<unknown> = Promise.resolve();
 
+/** Записи, що прийшли до реєстрації контексту — див. AI-DANGER у {@link triggerNutritionDualWrite}. */
+let pendingBeforeRegistration: {
+  prev: NutritionDualWriteState;
+  next: NutritionDualWriteState;
+}[] = [];
+
+function flushPendingBeforeRegistration(): void {
+  if (pendingBeforeRegistration.length === 0) return;
+  const queued = pendingBeforeRegistration;
+  pendingBeforeRegistration = [];
+  for (const { prev, next } of queued) triggerNutritionDualWrite(prev, next);
+}
+
 export function triggerNutritionDualWrite(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
 ): void {
   const ctx = registeredContext;
-  if (!ctx) return;
-  // Diff, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
+  if (!ctx) {
+    // Контекст реєструється лише після auth-резолву (`useLocalUserId` не
+    // віддає навіть анонімний id, доки `status === "loading"` — навмисно,
+    // щоб перші записи автентифікованого візиту не лягали в анонімну
+    // партицію). Запис, зроблений у цьому вікні, раніше йшов у мовчазний
+    // no-op: `nutritionStorage.ts` бачив `prev === null` і рапортував
+    // "success", нічого не записавши нікуди (сліпий замір «Їжа»,
+    // 2026-09-28). Буферуємо в пам'яті й наздоганяємо звичайним
+    // (журнальованим) шляхом, щойно контекст з'явиться в межах ЦІЄЇ ж
+    // сторінки. ponytail: перезавантаження ДО реєстрації буфер не
+    // переживе (userId ще невідомий, журналювати нема під чим) — вужче
+    // вікно, ніж поточний гарантований дроп на кожному ранньому записі.
+    pendingBeforeRegistration.push({ prev, next });
+    return;
+  }
+  // Диф, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
   // див. `core/durability/dualWriteJournal.ts`.
   const ops = withStableEventIds(diffNutritionDualWriteOps(prev, next));
   const clientTs = ctx.getNow();

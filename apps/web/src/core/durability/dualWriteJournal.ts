@@ -21,6 +21,8 @@
  */
 import { resolveLsStore } from "@shared/lib/storage/storage";
 
+import { readActiveSqliteVfs } from "../db/storageBackendState";
+
 export type DualWriteJournalModule =
   "finyk" | "nutrition" | "routine" | "fizruk";
 
@@ -75,8 +77,18 @@ export function journalDualWrite<P>(
   return id;
 }
 
-/** Зняти запис після того, як SQLite його застосувала. */
+/**
+ * Зняти запис після того, як SQLite його застосувала.
+ *
+ * AI-DANGER: база `:memory:` застосовує запис формально успішно, але він
+ * помирає разом зі сторінкою. Знімати запис тоді означало б тихо його
+ * загубити (планшет 2026-09-29: воркер мовчав 30 с після очищення даних
+ * сайту, OPFS не відкрився, вода й прийом зникли після reload). Лишаємо в
+ * журналі, і наступний бут з OPFS/kvvfs дограє його тим самим LWW-шляхом.
+ * Guard стоїть тут, а не в модулях, бо через цю функцію йдуть усі чотири.
+ */
 export function ackDualWrite(id: string): void {
+  if (readActiveSqliteVfs() === "memory") return;
   try {
     const entries = readAll();
     const next = entries.filter((e) => e.id !== id);

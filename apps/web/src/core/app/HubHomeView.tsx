@@ -13,6 +13,7 @@ import { isFirstRealEntryDone } from "../onboarding/vibePicks";
 import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
+import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
 
@@ -188,6 +189,8 @@ export function HubHomeView(props: HubHomeViewProps) {
         notifications={notifications}
         activeTab={ui.hubView}
       />
+
+      <MemoryOnlyStorageBanner />
 
       <HubMainContent
         onOpenModule={openFromDashboard}
