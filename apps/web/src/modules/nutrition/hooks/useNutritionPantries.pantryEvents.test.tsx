@@ -167,3 +167,57 @@ describe("useNutritionPantries — ledger-подія на кожен з пʼят
     expect(appendMock).not.toHaveBeenCalled();
   });
 });
+
+describe("useNutritionPantries - відкат автоімпорту (revertReplenish)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    clearNutritionSqliteCache();
+    appendMock.mockClear();
+  });
+
+  function qtyOf(
+    result: ReturnType<typeof renderHarness>,
+    name: string,
+  ): number | null | undefined {
+    return result.current.pantryItems.find((x) => x.name === name)?.qty;
+  }
+
+  it("віднімає рівно додане, видаляє створену імпортом позицію і пише реальний absQty", () => {
+    seedPantries([{ name: "рис", qty: 200, unit: "г", notes: null }]);
+    const result = renderHarness();
+    let lines: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      lines = result.current.upsertItemForAutoImport([
+        { name: "рис", qty: 500, unit: "г", notes: null },
+        { name: "гречка", qty: 1000, unit: "г", notes: null },
+      ]);
+    });
+    expect(qtyOf(result, "рис")).toBe(700);
+    appendMock.mockClear();
+
+    act(() => result.current.revertReplenish(lines));
+
+    expect(qtyOf(result, "рис")).toBe(200);
+    expect(result.current.pantryItems.some((x) => x.name === "гречка")).toBe(
+      false,
+    );
+    const absByKey = Object.fromEntries(
+      appendMock.mock.calls.map(([ev]) => [ev.itemKey, ev.absQty]),
+    );
+    expect(absByKey).toEqual({ рис: 200, гречка: 0 });
+  });
+
+  it("не йде в мінус, якщо продукт устигли спожити", () => {
+    seedPantries([{ name: "рис", qty: 200, unit: "г", notes: null }]);
+    const result = renderHarness();
+    let lines: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      lines = result.current.upsertItemForAutoImport([
+        { name: "рис", qty: 500, unit: "г", notes: null },
+      ]);
+    });
+    act(() => result.current.consumePantryItem("рис", 600));
+    act(() => result.current.revertReplenish(lines));
+    expect(qtyOf(result, "рис")).toBe(0);
+  });
+});

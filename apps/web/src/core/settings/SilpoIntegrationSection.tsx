@@ -26,7 +26,8 @@ import {
   useSilpoWipe,
 } from "@finyk/hooks/useSilpoMutations";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
-import { SettingsSubGroup } from "./SettingsPrimitives";
+import { useSilpoUpdateSettings } from "@finyk/hooks/useSilpoReceipts";
+import { SettingsSubGroup, ToggleRow } from "./SettingsPrimitives";
 import { SilpoPrivacyPromise } from "./SilpoPrivacyPromise";
 import {
   SilpoUnmatchedReceipts,
@@ -77,6 +78,13 @@ const COPY = {
   neverSynced: "Ще не синхронізовано",
   sync: "Оновити чеки",
   syncing: "Оновлюю…",
+  // Тумблер автоімпорту (спека docs/work/specs/silpo-pantry-auto-import.md).
+  // За замовчуванням вимкнений - свідомий opt-in виняток із «нічого не
+  // пишеться мовчки» (спека § Рішення дизайну, «Тумблер»).
+  autoImportLabel: "Додавати продукти з чеків у комору автоматично",
+  autoImportDescription:
+    "Нові чеки додають продукти в комору без підтвердження. Старі чеки лишаються для ручного імпорту.",
+  autoImportToggleError: "Не вдалося змінити налаштування.",
   disconnect: "Відключити",
   disconnectTitle: "Відключити Сільпо?",
   disconnectBody:
@@ -122,6 +130,18 @@ export function SilpoIntegrationSection({
   const syncMutation = useSilpoSync();
   const disconnectMutation = useSilpoDisconnect();
   const wipeMutation = useSilpoWipe();
+  const updateSettingsMutation = useSilpoUpdateSettings();
+
+  const runToggleAutoImport = async (checked: boolean) => {
+    try {
+      await updateSettingsMutation.mutateAsync(checked);
+    } catch {
+      toast.error(COPY.autoImportToggleError, undefined, {
+        label: "Повторити",
+        onClick: () => void runToggleAutoImport(checked),
+      });
+    }
+  };
   // Both mutations are destructive and irreversible (token revoke / data
   // delete) — while either is in flight, block opening the confirm dialog
   // again and block re-confirming, so a double-tap can't fire a second
@@ -308,6 +328,13 @@ export function SilpoIntegrationSection({
                 {COPY.disconnect}
               </Button>
             </div>
+            <ToggleRow
+              label={COPY.autoImportLabel}
+              description={COPY.autoImportDescription}
+              checked={syncState?.pantryAutoImportSince != null}
+              onChange={(checked) => void runToggleAutoImport(checked)}
+              disabled={updateSettingsMutation.isPending}
+            />
             {/* Той самий текст, що в disconnected-стані, але згорнутий —
                 щоденно не муляє, лишається на відстані одного тапу. */}
             <SilpoPrivacyPromise copy={COPY} variant="details" />

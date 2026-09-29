@@ -1,0 +1,22 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`rowsToPantryItems > дає той самий PantryItem[], що й ручний потік до рефакторингу (snapshot) 1`] = `
+[
+  {
+    "name": "Молоко",
+    "notes": null,
+    "qty": 874,
+    "sources": [
+      {
+        "addedAt": "2026-08-17",
+        "name": "Молоко Яготинське 2.6% 900г",
+        "packCount": null,
+        "packGrams": null,
+        "qty": 874,
+        "unit": "мл",
+      },
+    ],
+    "unit": "мл",
+  },
+]
+`;

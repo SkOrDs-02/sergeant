@@ -27,7 +27,6 @@ import {
   canonicalFoodKey,
   displayFoodName,
   matchFoodName,
-  normalizeUnit,
   parseLoosePantryText,
   type PantryItem,
 } from "../lib/pantryTextParser";
@@ -43,10 +42,15 @@ import {
 import { usePantryPlaces } from "./usePantryPlaces";
 import { resolvePlaceOfWithFilter } from "../lib/resolvePlaceOfWithFilter";
 import {
-  getRememberedAmbiguousUnit,
   rememberAmbiguousUnitChoice,
   type AmbiguousPantryUnit,
 } from "../lib/pantryAmbiguousUnitMemory";
+import {
+  usePantryReplenishWrite,
+  normalizeIncomingItems,
+} from "./usePantryReplenishWrite";
+
+export type { PantryReplenishLine } from "./usePantryReplenishWrite";
 
 export interface PantryItemsAddedEntry {
   name: string;
@@ -86,46 +90,6 @@ export interface PantryParsePreview {
    * з якої розбір запускався.
    */
   pantryId: string;
-}
-
-/**
- * Єдина нормалізація для всіх шляхів наповнення комори: ручний ввід,
- * сканер, відповідь AI. Раніше AI-шлях клав `items` у стан як є, тому
- * модель, що повернула «гр» замість «г», плодила окрему позицію поруч
- * із уже наявною.
- *
- * `name` проходить через `displayFoodName`, а не через match-нормалізацію:
- * зі сканера сюди приходять бренди («Coca-Cola Zero», «Яготинське»), і
- * зіставлення все одно робиться окремим ключем.
- */
-function normalizeIncomingItems(raw: PantryItem | PantryItem[]): PantryItem[] {
-  return (Array.isArray(raw) ? raw : [raw])
-    .map((item) => ({
-      name: displayFoodName(item?.name),
-      qty:
-        item?.qty == null || !Number.isFinite(Number(item.qty))
-          ? null
-          : Number(item.qty),
-      unit: item?.unit != null ? normalizeUnit(item.unit) : null,
-      notes: item?.notes ?? null,
-      sources: Array.isArray(item?.sources) ? item.sources : null,
-    }))
-    .filter((item) => item.name);
-}
-
-/**
- * Якщо цей продукт уже отримував явний вибір «шт чи г?» (UX-4), застосовує
- * його мовчки і знімає `ambiguousQty` — саме тому вдруге не питаємо про той
- * самий товар. Продукт, про який ще не питали, повертається без змін: тоді
- * прапорець доходить до UI і викликає підказку.
- */
-function resolveAmbiguousItemWithMemory(item: PantryItem): PantryItem {
-  if (!item.ambiguousQty) return item;
-  const remembered = getRememberedAmbiguousUnit(canonicalFoodKey(item.name));
-  if (!remembered) return item;
-  const { ambiguousQty: _drop, ...rest } = item;
-  void _drop;
-  return { ...rest, unit: remembered };
 }
 
 export function useNutritionPantries({
@@ -194,14 +158,6 @@ export function useNutritionPantries({
     null,
   );
 
-  // UX-4 (аудит 2026-09-01) — позиції з `upsertItem`, чиє хвостове число без
-  // одиниці лишилось неоднозначним ПІСЛЯ перевірки памʼяті (нижче). Не
-  // мерджаться в комору, доки людина не тапне «шт» чи «г» — один тап у
-  // тому самому потоці, без модалки (`PantryAmbiguousQtyPrompt`).
-  const [ambiguousPantryItems, setAmbiguousPantryItems] = useState<
-    PantryItem[]
-  >([]);
-
   // DCRUD-007: skip the mount run — it would persist the UNHYDRATED
   // initial state (LS is tombstoned after the first boot, so that state
   // is an empty default) while the SQLite cache may already be warm;
@@ -258,85 +214,21 @@ export function useNutritionPantries({
   const placeOf = (name: unknown): string =>
     resolvePlaceOfWithFilter(pantryItems, name, placeFilter);
 
-  // Витягнуто з колишнього тіла `upsertItem`: злиття по місцях + одна
-  // 'replenish'-подія на позицію з відомою кількістю. Використовується і
-  // прямим шляхом (немає неоднозначних чисел), і з дозволу підказки
-  // «шт чи г?» нижче — обидва мають записати рівно те саме.
-  const mergeParsedItems = (items: PantryItem[]) => {
-    if (!items.length) return;
-    // Місце фіксується ДО `setPantries`: і подія, і колбек нижче мають
-    // читати те саме місце, яке щойно вирішило злиття, а не перерахунок
-    // над уже зміненим станом.
-    const placements = items.map((item) => ({
-      name: item.name,
-      pantryId: placeOf(item.name),
-    }));
-    setPantries((cur) => mergeItemsIntoPlaces(cur, items, placeOf));
-    // W1-PANTRY-APPEND стадія 2 — паралельно до запису `qty` вище: одна
-    // 'replenish'-подія на кожну позицію з відомою кількістю. Позиції без
-    // qty (гола назва — «сіль») дельту не несуть, тож пропускаємо.
-    items.forEach((item, i) => {
-      if (item.qty == null || !Number.isFinite(item.qty)) return;
-      appendNutritionPantryEvent({
-        id: null,
-        pantryId: placements[i]?.pantryId ?? placeOf(item.name),
-        itemId: null,
-        itemKey: canonicalFoodKey(item.name),
-        kind: "replenish",
-        deltaQty: item.qty,
-        absQty: null,
-        unit: item.unit,
-        source: "manual",
-        mealId: null,
-      });
-    });
-    onItemsAdded?.(placements);
-  };
-
-  const upsertItem = (raw: string | PantryItem | PantryItem[]) => {
-    const parsed =
-      typeof raw === "string"
-        ? parseLoosePantryText(raw)
-        : normalizeIncomingItems(raw);
-    if (!parsed.length) return;
-
-    // UX-4 — голе хвостове число без одиниці (`ambiguousQty`) не мерджиться
-    // мовчки. Продукт, про який людина вже одного разу відповіла «шт» чи
-    // «г», проходить одразу (`resolveAmbiguousItemWithMemory`); решта чекає
-    // явного тапу в `PantryAmbiguousQtyPrompt`.
-    const resolved = parsed.map(resolveAmbiguousItemWithMemory);
-    const ready = resolved.filter((item) => !item.ambiguousQty);
-    const pending = resolved.filter((item) => item.ambiguousQty);
-
-    if (ready.length > 0) mergeParsedItems(ready);
-    if (pending.length > 0) {
-      setAmbiguousPantryItems((cur) => [...cur, ...pending]);
-    }
-  };
-
-  /**
-   * Тап «шт» чи «г» на підказці: пише позицію з обраною одиницею й
-   * запамʼятовує вибір для цього продукту (канон nutrition §6 — не питати
-   * вдруге про той самий товар). Індекс адресує `ambiguousPantryItems`, не
-   * комору.
-   */
-  const resolveAmbiguousPantryItem = (
-    idx: number,
-    unit: AmbiguousPantryUnit,
-  ) => {
-    const item = ambiguousPantryItems[idx];
-    if (!item) return;
-    rememberAmbiguousUnitChoice(canonicalFoodKey(item.name), unit);
-    const { ambiguousQty: _drop, ...rest } = item;
-    void _drop;
-    mergeParsedItems([{ ...rest, unit }]);
-    setAmbiguousPantryItems((cur) => cur.filter((_, i) => i !== idx));
-  };
-
-  /** Скасовує додавання позиції з підказки — товар нікуди не пишеться. */
-  const dismissAmbiguousPantryItem = (idx: number) => {
-    setAmbiguousPantryItems((cur) => cur.filter((_, i) => i !== idx));
-  };
+  // Увесь шлях запису поповнення (ручний, автоімпорт Сільпо, відкат,
+  // підказка «шт чи г?») - у `usePantryReplenishWrite.ts` (Hard Rule #18).
+  const {
+    upsertItem,
+    upsertItemForAutoImport,
+    revertReplenish,
+    ambiguousPantryItems,
+    resolveAmbiguousPantryItem,
+    dismissAmbiguousPantryItem,
+  } = usePantryReplenishWrite({
+    pantryItems,
+    placeOf,
+    setPantries,
+    onItemsAdded,
+  });
 
   const removeItem = (name: string) => {
     // Match-ключ з обох боків: старі записи лежать у нижньому регістрі,
@@ -788,6 +680,8 @@ export function useNutritionPantries({
     itemEdit,
     setItemEdit,
     upsertItem,
+    upsertItemForAutoImport,
+    revertReplenish,
     ambiguousPantryItems,
     resolveAmbiguousPantryItem,
     dismissAmbiguousPantryItem,
