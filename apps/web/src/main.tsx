@@ -59,6 +59,13 @@ if (isCapacitor() && getPlatform() === "ios") {
 }
 
 const queryClient = createAppQueryClient();
+// Порівняння інлайн, не через спільний хелпер: інакше Rollup не згорне
+// гілку і чанк мосту потрапить у прод (feature-flags.md § dead-code).
+if (import.meta.env.VITE_E2E_SEED === "true") {
+  void import("./e2e/installScenarioBridge").then((m) =>
+    m.installScenarioBridge(queryClient),
+  );
+}
 // Persistent IDB-backed snapshot для warm-start: на холодному старті
 // PWA / Capacitor-shell `PersistQueryClientProvider` гідрирує
 // `QueryCache` з диску до того, як React зможе монтувати `useQuery`,

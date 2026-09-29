@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "id": "pantry-receipt-names",
+  "silpo": { "receiptsCount": 5 },
+  "local": {
+    "scenario": "pantry-receipt-names",
+    "pantryItems": [
+      {
+        "name": "Паста арахісова Лавка традицій Aumi кранч",
+        "qty": 1,
+        "unit": "шт"
+      },
+      {
+        "name": "Молоко Яготинське добірне пастеризоване 900 г",
+        "qty": 900,
+        "unit": "г"
+      },
+      {
+        "name": "Сир кисломолочний Президент розсипчастий 350 г",
+        "qty": 350,
+        "unit": "г"
+      },
+      {
+        "name": "Хліб Київхліб Український подовий 950 г",
+        "qty": 950,
+        "unit": "г"
+      },
+      {
+        "name": "Печиво Roshen Bonjour Souffle капучино 232 г",
+        "qty": 232,
+        "unit": "г"
+      },
+      {
+        "name": "Вода мінеральна Моршинська негазована",
+        "qty": 1500,
+        "unit": "мл"
+      },
+      {
+        "name": "Кава розчинна Jacobs Monarch Intense 200 г",
+        "qty": 200,
+        "unit": "г"
+      }
+    ]
+  }
+}
