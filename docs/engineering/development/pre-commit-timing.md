@@ -1,6 +1,6 @@
 # Pre-commit timing — як читати і чим міряти
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-26.
+> **Last touched:** 2026-09-20 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
 
 > Закриває P1-5 з [`docs/work/specs/audits/2026-05-13-testing-devx-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md) — «Pre-commit timing не вимірюється».
@@ -99,32 +99,12 @@ if (log) {
 
 Решта lint-staged стейджів (ESLint `--fix`, Prettier `--write`) залишаються "off-the-shelf" — їх wall-clock зливається у `total`. Якщо колись постане потреба у per-file timing для них, лінт-стейджед-плагіну `@trivago/precommit-time` НЕ беремо: він додає dependency, а нам достатньо JSONL-контракту нижче.
 
-## Як прогнати без commit-у — `pnpm precommit:bench`
+## Мок-прогін без commit-у прибрано
 
-`scripts/precommit-bench.mjs` — мок-ранер, що синтезує N (default 20) staged-style файлів і прогонить ту саму pipeline без `git`-side-effects.
-
-```bash
-pnpm precommit:bench               # default N = 20 mock .ts files + 5 .md
-pnpm precommit:bench -- --count 50 # custom N
-```
-
-Вивід — таблиця з `wall-clock` (зовнішнє spawn-time) + `inner (script)` (час, який сам wrapper-script виміряв через `SERGEANT_TIMING_LOG`) + `exit` per stage. Приклад:
-
-```
-⏱  precommit-bench summary  (N=20 mock files)
-
-    stage                   wall-clock   inner (script)   exit
-    ─────                   ──────────   ──────────────   ────
-    prettier                    553 ms                —      0
-    staged-typecheck            823 ms           792 ms      0
-    bump-last-validated          57 ms             7 ms      0
-    ─────
-    total                       1.44 s
-```
-
-Side-effects: створює і одразу прибирає `.husky/.bench-tmp/run-XXX/` (gitignored). Жодного `git`-запису.
-
-Коли використовувати: підбираєш N, який характерний для твого workflow (10–100), запускаєш 3–5 разів, дивишся, чи якийсь stage росте. Прибирає необхідність робити справжній dummy-commit для профілювання.
+`scripts/precommit-bench.mjs` <!-- removed --> (мок-ранер на N синтетичних staged-файлів) прибрано
+2026-09-19: ручний інструмент, який після появи не запускали жодного разу. Профілювання
+робиться тим самим логом нижче - він пишеться на КОЖНОМУ commit-і, тож окремий
+dummy-прогін не потрібен. Агрегатор `pnpm pre-commit:timings` лишається.
 
 ## Куди записується лог
 
@@ -163,7 +143,6 @@ git pipe-ить stdout pre-commit-у, і ми не хочемо забрудни
 
 - `scripts/pre-commit-timing.mjs` — wrapper (опис у файлі-header).
 - `scripts/pre-commit-timings-report.mjs` — aggregator для `pnpm pre-commit:timings`.
-- `scripts/precommit-bench.mjs` — мок-ранер для `pnpm precommit:bench` (D-1 follow-up).
 - `scripts/staged-typecheck.mjs` — емітить `{ stage: "staged-typecheck", ms }`.
 - `scripts/docs/bump-last-validated.mjs` — емітить `{ stage: "bump-last-validated", ms }`.
 - [`.husky/pre-commit`](../../../.husky/pre-commit) — точка входу.

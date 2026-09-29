@@ -16,6 +16,7 @@ import {
   triggerManualExpenseDeleteSqliteMirror,
 } from "../../../../modules/finyk/lib/sqliteWriter";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
+import { formatNumberUk } from "@sergeant/shared";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -30,7 +31,7 @@ export function createTransaction(
   const { type, amount, category, description, date } = action.input;
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума транзакції.";
+    return "Некоректна сума операції.";
   }
   const txType = type === "income" ? "income" : "expense";
   const nowIso = new Date().toISOString();
@@ -70,7 +71,7 @@ export function createTransaction(
   finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
-  const result = `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
+  const result = `${human} ${formatNumberUk(amt)} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
   // Undo видаляє щойно додану транзакцію за `manualId`. Якщо юзер
   // паралельно встиг видалити її іншим шляхом — ідемпотентно
   // нічого не робимо (а не throw): двічі натиснений undo не має
@@ -104,7 +105,7 @@ export function hideTransaction(
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
   triggerHiddenTransactionSqliteMirror(txId);
-  return `Транзакцію ${txId} приховано зі статистики`;
+  return `Операцію ${txId} приховано зі статистики`;
 }
 
 export function deleteTransaction(
@@ -114,16 +115,16 @@ export function deleteTransaction(
   const id = String(tx_id || "").trim();
   if (!id) return "Потрібен tx_id для видалення.";
   if (!id.startsWith("m_")) {
-    return `Транзакцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-транзакцій використайте hide_transaction.`;
+    return `Операцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-операцій використай hide_transaction.`;
   }
   const list = ls<Array<{ id: string }>>("finyk_manual_expenses_v1", []);
   const idx = list.findIndex((t) => t.id === id);
-  if (idx < 0) return `Транзакцію ${id} не знайдено (вже видалена).`;
+  if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
   const next = list.slice();
   next.splice(idx, 1);
   finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
-  return `Транзакцію ${id} видалено`;
+  return `Операцію ${id} видалено`;
 }
 
 export function splitTransaction(
@@ -150,8 +151,8 @@ export function splitTransaction(
   const desc = newSplits
     .map((s) => {
       const cat = resolveExpenseCategoryMeta(s.categoryId, customC);
-      return `${cat?.label || s.categoryId}: ${s.amount} грн`;
+      return `${cat?.label || s.categoryId}: ${formatNumberUk(s.amount)} грн`;
     })
     .join(", ");
-  return `Транзакцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
+  return `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
 }

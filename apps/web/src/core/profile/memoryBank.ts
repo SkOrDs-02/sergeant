@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
+// Durable-пара, а не `safeReadLS`/`safeWriteLS`: після reload SQLite
+// warm-cache залогіненої людини збирається з анонімної партиції, тож запис
+// у `kv_store` її партиції на старті невидимий. Порожній через це банк
+// наступною ж правкою перезаписував серверну копію (аудит 2026-09-28, D2).
 import {
-  safeReadLS,
-  safeReadLSValidated,
-  safeWriteLS,
+  safeReadLSDurable,
+  safeReadLSValidatedDurable,
+  safeWriteLSDurable,
 } from "@shared/lib/storage/storage";
 import type { MemoryEntry } from "./types";
 import type { IconName } from "@shared/components/ui/Icon";
@@ -60,20 +64,15 @@ export function setMemoryBankOwner(userId: string | null): void {
 }
 
 export function readMemoryBankMeta(): MemoryBankMeta {
-  return safeReadLSValidated(
+  return safeReadLSValidatedDurable(
     MEMORY_BANK_META_KEY,
     MemoryBankMetaSchema,
     MEMORY_BANK_META_DEFAULT,
   );
 }
 
-/** Дзеркало `readBiometricsOwnerId` — власник ОСТАННЬОГО запису в `PROFILE_KEY`. */
-export function readMemoryBankOwnerId(): string | null {
-  return readMemoryBankMeta().ownerId;
-}
-
 function writeMemoryBankMeta(updatedAt: string): void {
-  safeWriteLS(MEMORY_BANK_META_KEY, {
+  safeWriteLSDurable(MEMORY_BANK_META_KEY, {
     updatedAt,
     ownerId: currentMemoryBankOwner,
   });
@@ -112,7 +111,7 @@ export const CATEGORY_META: Record<string, { label: string; icon: IconName }> =
  *      користувача — і в `hub_chat_history`, і в бекапі.
  */
 export const MEMORY_ONBOARDING_PROMPT =
-  "Заповни мій профіль у памʼяті ШІ, постав мені кілька питань.";
+  "Заповни мій профіль у памʼяті Сержанта, постав мені кілька питань.";
 
 export const MEMORY_ADD_INFO_PROMPT = "Хочу додати щось про себе.";
 
@@ -244,7 +243,7 @@ export function buildMemoryImportPreview(
 }
 
 export function readMemoryEntries(): MemoryEntry[] {
-  const parsed = safeReadLS<unknown[]>(PROFILE_KEY, []);
+  const parsed = safeReadLSDurable<unknown[]>(PROFILE_KEY, []);
   if (!Array.isArray(parsed)) return [];
   return parsed
     .map((item) => normalizeMemoryEntry(item))
@@ -306,11 +305,7 @@ function notify(set: Set<MemoryBankListener>, entries: MemoryEntry[]): void {
 }
 
 export function writeMemoryEntries(entries: MemoryEntry[]): void {
-  // Profile entries dual-write to SQLite via the `useStorage()` per-row
-  // path; the LS slot is a hub-side warm cache. Cross-device sync flows
-  // through the v2 op-log writer-runtime, not LS-key-watcher, so a plain
-  // `safeWriteLS` is enough here.
-  if (!safeWriteLS(PROFILE_KEY, entries)) {
+  if (!safeWriteLSDurable(PROFILE_KEY, entries)) {
     throw new Error("Не вдалося зберегти памʼять профілю");
   }
   // L-8: генуїнний ЛОКАЛЬНИЙ запис — нова мітка часу ("зараз") + поточний
@@ -333,7 +328,7 @@ export function writeMemoryEntriesFromServer(
   entries: MemoryEntry[],
   serverUpdatedAt: string,
 ): void {
-  if (!safeWriteLS(PROFILE_KEY, entries)) {
+  if (!safeWriteLSDurable(PROFILE_KEY, entries)) {
     throw new Error("Не вдалося зберегти памʼять профілю");
   }
   writeMemoryBankMeta(serverUpdatedAt);

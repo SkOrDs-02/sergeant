@@ -31,6 +31,7 @@ import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
+import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -164,6 +165,12 @@ export function useOverviewData({
       txSplits,
     });
   }, [txForStats, excludedTxIds, txSplits, todayKey]);
+  // Борг і підписку можна привʼязати й до ручного запису, тож залишки й
+  // суми рахуються з того самого набору, що й картки в Плануванні.
+  const linkableTx = useMemo(
+    () => withManualExpenses(transactions, manualExpenses),
+    [transactions, manualExpenses],
+  );
   const assetsSummary = useMemo(
     () =>
       computeAssetsSummary({
@@ -186,7 +193,7 @@ export function useOverviewData({
         })),
         manualDebts,
         receivables,
-        transactions,
+        transactions: linkableTx,
         jars,
       }),
     [
@@ -195,7 +202,7 @@ export function useOverviewData({
       manualAssets,
       manualDebts,
       receivables,
-      transactions,
+      linkableTx,
       jars,
     ],
   );
@@ -225,7 +232,16 @@ export function useOverviewData({
     // break-even snapshot — a real scenario after paying off a loan that
     // exactly matches current cash. `accounts.length > 0` is the real
     // "data available" gate; zero net worth is a legitimate data point.
-    if (accounts.length > 0) {
+    // Without a bank the manual assets/debts ARE the net worth: gating on bank
+    // accounts alone meant «Динаміка капіталу» never got a point for a
+    // manual-only user and disagreed with «Капітал» on the same screen.
+    const manualOnlyData =
+      clientInfo == null &&
+      (manualAssets?.length ?? 0) +
+        (manualDebts?.length ?? 0) +
+        (receivables?.length ?? 0) >
+        0;
+    if (accounts.length > 0 || manualOnlyData) {
       saveNetworthSnapshot(networth);
     }
   }, [
@@ -233,14 +249,21 @@ export function useOverviewData({
     loadingTx,
     realTx.length,
     accounts.length,
+    clientInfo,
+    manualAssets,
+    manualDebts,
+    receivables,
     saveNetworthSnapshot,
   ]);
 
   // First-insight banner
   const hasAnyData = manualExpenses.length > 0 || realTx.length > 0;
-  const [showFirstInsight, setShowFirstInsight] = useState(
+  const [firstInsightUnseen, setShowFirstInsight] = useState(
     () => safeReadStringLS("finyk_first_insight_seen_v1", null) === null,
   );
+  // Підказка веде ставити бюджет. Людині, у якої бюджети вже є, вона лише
+  // забирає місце над першою цифрою огляду (критика екранів 2026-09-25).
+  const showFirstInsight = firstInsightUnseen && budgets.length === 0;
   const insightFiredRef = useRef(false);
   useEffect(() => {
     if (insightFiredRef.current) return;
@@ -285,7 +308,7 @@ export function useOverviewData({
       subscriptions,
       manualDebts,
       receivables,
-      transactions,
+      transactions: linkableTx,
       kyivYear,
       kyivMonth,
       kyivDay,
@@ -453,11 +476,7 @@ export function useOverviewData({
   const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
   const dateLabel = ucFirst(
-    new Date(nowMs).toLocaleDateString("uk-UA", {
-      timeZone: "Europe/Kyiv",
-      day: "numeric",
-      month: "long",
-    }),
+    formatDayMonth(new Date(nowMs), { timeZone: KYIV_TIME_ZONE }),
   );
 
   return {

@@ -1,8 +1,8 @@
 ---
 name: sergeant-start-here
-description: Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant.
+description: "Use when starting any task in the Sergeant repo — web, server, mobile, migrations, HubChat, deploys, reviews, or cross-package boundaries; always load this skill first; UA: будь-яка нова задача в Sergeant."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Стартова точка для Sergeant
@@ -12,12 +12,12 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 ## Швидке орієнтування
 
 - Не знаєш, де щось живе? Спершу використай codebase-memory MCP (`search_graph`, `trace_path`, `get_code_snippet`); якщо MCP недоступний — TypeScript/LSP, Knip або `rg`. Repo-specific committed indexes retired за ADR-0081.
-- Не знаєш, з чого почати зміну? `pnpm agent:route` — за git-diff/гілкою підкаже потрібний specialist-skill + активні hard-rules.
+- Не знаєш, з чого почати зміну? Таблиця роутингу нижче (§ Роутся одразу) і дзеркальна `AGENTS.md` § Agent harnesses & routing — дій за ними, `agent:route` retired 2026-09-19.
 - Не знаєш, хто кого може викликати? [`.agents/agent-graph.json`](../../agent-graph.json) — явна топологія агентного шару (skill / agent / workspace + дозволені переходи). Гейт `pnpm lint:agent-graph`; rationale — [ADR-0084](../../../docs/governance/adr/0084-agent-graph-topology.md).
 - Прочитай [`docs/start/agents/decisions.md`](../../../docs/start/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
 - Прочитай `docs/README.md` для repo-доків і `docs/start/agents/agent-skills-catalog.md` для skill-роутингу.
-- Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell` і спільними packages.
+- Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/landing`, `apps/server`, `apps/mobile`, `apps/mobile-shell` і спільними packages.
 
 ## 0.1 Dynamic context (always)
 
@@ -29,7 +29,7 @@ pnpm snapshot           # writes .agents/snapshot.md
 
 Read `.agents/snapshot.md` and react:
 
-- Red CI on `main` → stop, investigate before opening a new PR.
+- Немає віддаленого CI-сигналу (Bitbucket без pipelines) — перевіряй main↔prod дрейф через `pnpm deploy:status`, не через розділ CI у снапшоті.
 - Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
 - Entropy-сигнали по зачепленій поверхні (dead code, docs drift, cycles — прямі перевірки, див. `sergeant-tech-debt` § «Прямі entropy checks») → load `sergeant-tech-debt`.
 - Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.
@@ -80,7 +80,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Playwright / E2E тести / smoke test / accessibility automation    | `sergeant-e2e-testing`             |
 | Security review, аудит вразливостей, pnpm audit, PAT safety       | `sergeant-security-audit`          |
 | Технічний борг, dead code, ESLint baseline, module-size refactor  | `sergeant-tech-debt`               |
-| `tools/**`, `scripts/**`, ops tooling (janitors, snapshot, ci-скрипти) | `sergeant-tech-debt`               |
+| `tools/**`, `scripts/**`, ops tooling (snapshot, ci-скрипти)     | `sergeant-tech-debt`               |
 | Створення / редагування `.agents/skills/**/SKILL.md`             | `sergeant-writing-skills`          |
 | PR review що торкається 3+ governed surfaces                     | `sergeant-review-squad`            |
 | Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |

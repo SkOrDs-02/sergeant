@@ -55,17 +55,6 @@ function sh(cmd, args, opts = {}) {
   }
 }
 
-function tryJson(cmd, args, opts = {}) {
-  const out = sh(cmd, args, opts);
-  if (out.startsWith("__ERR__:"))
-    return { __unavailable__: out.slice("__ERR__:".length) };
-  try {
-    return JSON.parse(out);
-  } catch {
-    return { __unavailable__: `non-JSON from ${cmd}` };
-  }
-}
-
 function isoNow() {
   return new Date().toISOString();
 }
@@ -131,57 +120,13 @@ function sectionRepo() {
 }
 
 function sectionCi() {
-  const repoPathRaw = sh("git", ["config", "--get", "remote.origin.url"]);
-  const ownerSlash = repoPathRaw.startsWith("__ERR__")
-    ? "Skords-01/Sergeant"
-    : repoPathRaw
-        .replace(/^git@github\.com:/, "")
-        .replace(/^https?:\/\/github\.com\//, "")
-        .replace(/\.git$/, "");
-  const data = tryJson("gh", [
-    "api",
-    `repos/${ownerSlash}/commits/main/check-runs`,
-    "--jq",
-    ".check_runs",
-  ]);
-  if (data.__unavailable__) {
-    return [
-      "## CI last run on main",
-      `- Status: \`[unavailable: ${truncate(data.__unavailable__, 120)}]\``,
-    ].join("\n");
-  }
-  const runs = Array.isArray(data) ? data : [];
-  const passed = runs.filter((r) => r.conclusion === "success").length;
-  const failed = runs.filter((r) => r.conclusion === "failure").length;
-  const skipped = runs.filter(
-    (r) => r.conclusion === "skipped" || r.conclusion === "neutral",
-  ).length;
-  const inProgress = runs.filter(
-    (r) => r.status === "in_progress" || r.status === "queued",
-  ).length;
-  const failRuns = runs
-    .filter((r) => r.conclusion === "failure")
-    .slice(0, 5)
-    .map((r) => `    - ${r.name}`);
-
-  let status;
-  if (inProgress > 0) status = `🟡 in progress (${inProgress} pending)`;
-  else if (failed > 0) status = `🔴 red (${failed} failed)`;
-  else if (passed === 0 && skipped === 0) status = "⚪ no runs";
-  else status = "✅ green";
-
-  const lastCompleted = runs
-    .filter((r) => r.completed_at)
-    .sort((a, b) => (a.completed_at < b.completed_at ? 1 : -1))[0];
-
+  // ponytail: no remote CI exists (Bitbucket has no pipelines, GitHub
+  // Actions don't run); querying `gh` here only burns a timeout every
+  // session. Static message until a real CI signal exists again.
   return [
     "## CI last run on main",
-    `- Status: ${status}`,
-    `- Checks: ${passed} passed, ${failed} failed, ${skipped} skipped${inProgress ? `, ${inProgress} pending` : ""}`,
-    lastCompleted
-      ? `- Last completed: ${lastCompleted.name} at ${lastCompleted.completed_at}`
-      : "- Last completed: (none)",
-    ...(failRuns.length ? [`- Failures:\n${failRuns.join("\n")}`] : []),
+    "- CI відсутній з 2026-09-23 (Bitbucket без pipelines, GitHub Actions не виконуються).",
+    "- Для main↔prod drift дивись `pnpm deploy:status`.",
   ].join("\n");
 }
 

@@ -142,7 +142,7 @@ describe("logger", () => {
       expect(parsed.res.headers["set-cookie"]).toBe("[redacted]");
     });
 
-    it("redact маскує session.token (структуроване auth)", () => {
+    it("redact маскує session.token (структуроване auth) і хешує вкладений userId (W4)", () => {
       const { logger, chunks } = makeTestLogger();
 
       logger.info({
@@ -157,8 +157,11 @@ describe("logger", () => {
         session: Record<string, unknown>;
       };
       expect(parsed.session["token"]).toBe("[redacted]");
-      // userId — не sensitive, лишається.
-      expect(parsed.session["userId"]).toBe("user-123");
+      // W4: userId — sensitive, але не через generic "[redacted]" (втратили б
+      // кореляцію) — хеш-censor, той самий сталий sha256-префікс, що й у
+      // `mixin()`-шляху нижче.
+      expect(parsed.session["userId"]).toBe(hashUserId("user-123"));
+      expect(parsed.session["userId"]).not.toBe("user-123");
     });
   });
 
@@ -744,6 +747,59 @@ describe("logger", () => {
       // pass on a different format.
       expect(h).toMatch(/^[0-9a-f]{16}$/);
     });
+
+    // W4 — до цієї правки `redactKeysRecursively` не знав про `userId`
+    // взагалі (test вище на `session.userId` це й документував як "не
+    // sensitive, лишається"). Explicit `logger.x({ userId })` /
+    // `{ user_id })` — реальний патерн у ~11 файлах (push/send.ts,
+    // ai-memory/*, mono/*, syncV2Stream.ts, ftuxDrip.ts) — обходив
+    // `mixin()` і публікував сирий Better Auth ID напряму в Loki/Railway.
+    it("хешує явний root-level `userId` замість generic [redacted]", () => {
+      const { logger, chunks } = makeTestLogger();
+      const rawUuid = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+
+      logger.info({ msg: "push_dead_token_cleanup", userId: rawUuid });
+
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      expect(parsed["userId"]).toBe(hashUserId(rawUuid));
+      expect(parsed["userId"]).not.toBe(rawUuid);
+      const uuidRegex =
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      expect(chunks[0]).not.toMatch(uuidRegex);
+    });
+
+    it("хешує snake_case `user_id` (справжня форма в push/send.ts) на будь-якій глибині", () => {
+      const { logger, chunks } = makeTestLogger();
+      const rawUuid = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+
+      logger.info({
+        msg: "apns_send_failed",
+        user_id: rawUuid,
+        nested: { user_id: rawUuid },
+      });
+
+      const parsed = JSON.parse(chunks[0]!) as {
+        user_id: unknown;
+        nested: { user_id: unknown };
+      };
+      expect(parsed.user_id).toBe(hashUserId(rawUuid));
+      expect(parsed.nested.user_id).toBe(hashUserId(rawUuid));
+      const uuidRegex =
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      expect(chunks[0]).not.toMatch(uuidRegex);
+    });
+
+    it("не падає на не-стрінгове/відсутнє значення userId (defensive fallback)", () => {
+      const { logger, chunks } = makeTestLogger();
+
+      logger.info({ msg: "edge_case", userId: null, user_id: undefined });
+
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      // null/undefined не хешуються (hashUserId сам повертає null для них) —
+      // падаємо назад на "[redacted]", а не кидаємо помилку в hot log path.
+      expect(parsed["userId"]).toBe("[redacted]");
+      expect(parsed["user_id"]).toBe("[redacted]");
+    });
   });
 
   describe("serializeError", () => {
@@ -807,6 +863,17 @@ describe("logger", () => {
       const result = serializeError(err);
       expect(result?.code).toBe("ECONNREFUSED");
       expect(result?.status).toBe(502);
+    });
+
+    it("підсумовує zod-details у cause замість [object Object]", () => {
+      const err = new Error("Некоректні дані запиту", {
+        cause: {
+          details: [{ path: "messages.5.content", message: "Too small" }],
+        },
+      });
+      expect(serializeError(err)?.cause?.message).toBe(
+        "messages.5.content: Too small",
+      );
     });
   });
 });

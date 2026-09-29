@@ -19,6 +19,7 @@ import { fmt } from "../hubChatUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import type { AllData, BudgetGoal, BudgetLimit, CategoryDef } from "./types";
+import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 
 function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   const { year, month, day } = getKyivDateParts(now);
@@ -56,12 +57,7 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   );
 
   if (d.cacheTime) {
-    const ts = new Intl.DateTimeFormat("uk-UA", {
-      day: "numeric",
-      month: "short",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(d.cacheTime));
+    const ts = formatDateTimeShort(new Date(d.cacheTime));
     lines.push(`[Оновлено] ${ts}`);
   }
   if (d.clientName) lines.push(`[Користувач] ${d.clientName}`);
@@ -187,14 +183,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
             d.txCategories[t.id],
             d.customCategories,
           );
-    const date = t.time
-      ? new Date(t.time * 1000).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "";
+    const date = t.time ? formatDateTimeShort(new Date(t.time * 1000)) : "";
     lines.push(
       `  id:${t.id} | ${date} | ${t.description || "—"} | ${fmt(t.amount / 100)} грн | ${cat.label}`,
     );

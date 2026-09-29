@@ -15,8 +15,8 @@
  */
 import { useMemo } from "react";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
-import { kyivCalendarDaysBetween } from "@sergeant/shared";
-import { getDaysInMonth } from "@shared/lib/time/kyivTime";
+import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
+import { getSubscriptionDueDate } from "../../lib/upcomingSchedule";
 import { calcDebtRemaining, calcReceivableRemaining } from "../../utils";
 import type { useStorage } from "../../hooks/useStorage";
 import type { FlowItem } from "./FlowRow";
@@ -41,22 +41,7 @@ const parseLocalDate = (isoDate: string | null | undefined): Date => {
 const formatDaysLeft = (days: number): string => {
   if (days === 0) return "сьогодні";
   if (days === 1) return "завтра";
-  if (days <= 3) return `через ${days} дн`;
-  return `через ${days} дн`;
-};
-
-// `today` carries the Kyiv-anchored calendar parts of "now" (year, 0-based
-// month, day) so the billing rollover math stays on the Europe/Kyiv day
-// boundary regardless of the device timezone.
-const getNextBillingDate = (
-  billingDay: number,
-  today: { year: number; month: number; day: number },
-): Date => {
-  const { year: y, month: m, day } = today;
-  let d = new Date(y, m, Math.min(billingDay, getDaysInMonth(y, m)));
-  if (d < new Date(y, m, day))
-    d = new Date(y, m + 1, Math.min(billingDay, getDaysInMonth(y, m + 1)));
-  return d;
+  return `через ${days} ${pluralDays(days)}`;
 };
 
 export interface UseFlowScheduleParams {
@@ -94,15 +79,17 @@ export function useFlowSchedule({
   const subscriptionFlows = useMemo(
     () =>
       subscriptions.map((sub) => {
-        const { amount, currency } = getSubscriptionAmountMeta(
+        const { amount, currency, lastTx } = getSubscriptionAmountMeta(
           sub,
           transactions,
         );
-        const dueDate = getNextBillingDate(Number(sub.billingDay) || 1, {
-          year: kyivYear,
-          month: kyivMonth,
-          day: kyivDay,
-        });
+        // Полудень UTC київської дати: у Києві це той самий день за будь-якого
+        // часового поясу пристрою.
+        const dueDate = getSubscriptionDueDate(
+          Number(sub.billingDay) || 1,
+          new Date(Date.UTC(kyivYear, kyivMonth, kyivDay, 12)),
+          lastTx?.time,
+        );
         const daysLeft = kyivCalendarDaysBetween(
           dueDate.getTime(),
           todayStartMs,
@@ -139,7 +126,7 @@ export function useFlowSchedule({
           );
           return {
             id: `debt-${d.id}`,
-            title: d.name || "Борг",
+            title: d.name || "Пасив",
             amount: d.remaining,
             sign: "-",
             daysLeft,
@@ -166,7 +153,7 @@ export function useFlowSchedule({
           );
           return {
             id: `recv-${r.id}`,
-            title: r.name || "Дебіторка",
+            title: r.name || "Мені винні",
             amount: r.remaining,
             sign: "+",
             daysLeft,

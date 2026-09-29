@@ -29,7 +29,7 @@ const FALLBACK_STORE_NAME = "Невідомий магазин";
 // Колонки `receipts`, потрібні серіалізатору (`serialize.ts#ReceiptRow`).
 // Виписані буквально в КОЖНОМУ з трьох SQL нижче (а не через спільний
 // template-interpolated constant) навмисно: `no-restricted-syntax`
-// (`docs/04-governance/security/hardening/M11-eslint-plugin-security.md`)
+// (`docs/work/specs/security-hardening/M11-eslint-plugin-security.md`)
 // застерігає проти templated `query(...)` з `${...}` — тут інтерполяція
 // була б статичною (не user input), але лишати її дешевше усунути, ніж
 // пояснювати щоразу.
@@ -297,7 +297,7 @@ export default async function saveReceiptHandler(
         // manualExpenses.ts робить на власному RETURNING guard.
         if (!receiptRow) {
           throw new Error(
-            "receipts INSERT ... ON CONFLICT DO NOTHING повернув 0 рядків, але наступний SELECT теж — драйвер-аномалія",
+            "receipts INSERT ... ON CONFLICT DO NOTHING повернув 0 рядків, але наступний SELECT теж – драйвер-аномалія",
           );
         }
       }
@@ -348,7 +348,7 @@ export default async function saveReceiptHandler(
           isNew = true;
           if (!receiptRow) {
             throw new Error(
-              "receipts INSERT (fiscalNum=null) повернув 0 рядків — драйвер-аномалія",
+              "receipts INSERT (fiscalNum=null) повернув 0 рядків – драйвер-аномалія",
             );
           }
         } catch (err) {
@@ -372,7 +372,7 @@ export default async function saveReceiptHandler(
           // guard, що fiscalNum-гілка вище).
           if (!receiptRow) {
             throw new Error(
-              "23505 на receipts_user_client_scan_idx, але reload за clientScanId порожній — драйвер-аномалія",
+              "23505 на receipts_user_client_scan_idx, але reload за clientScanId порожній – драйвер-аномалія",
             );
           }
         }

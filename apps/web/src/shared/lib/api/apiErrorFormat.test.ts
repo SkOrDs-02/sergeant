@@ -92,14 +92,16 @@ describe("formatApiError", () => {
     );
   });
 
-  it("ApiError network + online → message або дефолт", () => {
+  it("ApiError network + online → фіксована копія, не технічний message", () => {
     vi.stubGlobal("navigator", { onLine: true });
     const err = new ApiError({
       kind: "network",
       message: "DNS failed",
       url: URL,
     });
-    expect(formatApiError(err)).toBe("DNS failed");
+    expect(formatApiError(err)).toBe(
+      "Не вдалося зʼєднатися із сервером. Перевір зʼєднання і спробуй ще раз.",
+    );
   });
 
   it("ApiError parse + HTML body → спеціальний rewrite-текст", () => {
@@ -110,7 +112,7 @@ describe("formatApiError", () => {
       url: URL,
     });
     expect(formatApiError(err)).toBe(
-      "API повернув HTML замість JSON (ймовірно, rewrite перехоплює /api/*).",
+      "Сервер відповів сторінкою замість даних. Онови сторінку, а якщо не допоможе, спробуй пізніше.",
     );
   });
 

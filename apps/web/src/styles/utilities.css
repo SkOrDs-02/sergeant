@@ -87,7 +87,7 @@
    разом з рештою естетичних AST-лінтів), тож повернення legacy-класів
    механічно не ловиться — лише review. Механічно гейтиться тільки 12px-floor
    (`scripts/check-design-conventions.mjs`). Таблиця мапінгу — у
-   `docs/90-work/audits/2026-07-22-cycle-5.md`.
+   `docs/work/specs/audits/2026-07-22-cycle-5.md`.
    ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Semantic `.text-style-*` utilities ────────────────────────────────────
@@ -121,12 +121,41 @@
 
 @utility page-tabbar-pad {
   /* ═══════════════════════════════════════════════════════════════════════
-     BOTTOM CLEARANCE — docked bottom-nav + iOS home indicator. 88px clears
-     the nav so module content scrolls fully above it. The extra +44px that
-     used to clear the floating AIPill was dropped when the assistant moved
-     into the module header (mobile-audit A4).
+     BOTTOM CLEARANCE — лише смуга home indicator, БЕЗ запасу під навігацію.
+
+     88px тут стояли з часів, коли нав був поза потоком і перекривав низ
+     контенту. Зараз не перекриває: `bottom-nav-shell` — `position: relative`
+     (див. цей же файл), а сам нав рендериться СУСІДОМ контенту у флекс-
+     колонці `ModuleShell` (`shared/components/layout/ModuleShell.tsx`: `<div
+     class="flex-1 overflow-hidden …">{children}</div>` і одразу `{nav}`).
+     Тобто контент фізично не може заїхати під нав — а 88px усередині
+     скрол-контейнера лишались порожнечею в кінці КОЖНОЇ сторінки всіх
+     чотирьох модулів (Фізрук, Фінік, Рутина, Їжа — ~25 місць). Перевірено
+     2026-09-14 у продуктовому аудиті (PR-Z5); `Atlas.tsx` зняв цей клас у
+     себе ще раніше, але діагноз там був вужчий («на цій сторінці нава
+     немає»), тож решта модулів борг зберегла.
+
+     Safe-area лишається, і саме вона тут єдина робота: на сторінках БЕЗ
+     нава (`FizrukApp.showBottomNav === false`) низ контенту впирається в
+     смугу home indicator. Там, де нав є, він уже несе власний
+     `padding-bottom: env(safe-area-inset-bottom)`, тож цей рядок нічого не
+     додає — дублювання безпечне, а окремий клас під два випадки коштував би
+     дорожче за нього.
+
+     Назва лишилась попри зміну змісту: перейменування — це 25 call-site-ів
+     churn-у заради слова, і саме тому тут стоїть цей абзац.
+
+     Друга робота (2026-09-24): запас під плаваючу кнопку дії. FAB — fixed і
+     стоїть над навом, тож останній рядок контенту заїжджав під нього на
+     кожній сторінці з FAB. Кнопка публікує свою смугу в `--sgt-fab-inset`
+     (`useBottomInsetVar`), нав — свою в `--sgt-bottom-nav-inset`; різниця і
+     є тим, на скільки FAB нависає над скрол-контейнером. Без FAB обидві
+     змінні відсутні, і доданок дорівнює нулю.
      ═══════════════════════════════════════════════════════════════════════ */
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    env(safe-area-inset-bottom, 0px) +
+      max(0px, var(--sgt-fab-inset, 0px) - var(--sgt-bottom-nav-inset, 0px))
+  );
 }
 
 @utility routine-main-pad {
@@ -144,58 +173,6 @@
 
 @utility fizruk-above-tabbar {
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-}
-
-:root {
-  /* ═══════════════════════════════════════════════════════════════════════
-     DEMO-BADGE FOOTPRINT — single source for two independent consumers:
-     `above-tabbar-pill` below (positions the pill itself) and the
-     scroll-region clearance in `mobile.css` (`html[data-demo-badge] main`,
-     shrinks the scroll band so cards don't scroll underneath the fixed
-     pill). Both used to hardcode their own copy of this arithmetic and
-     drifted apart when only one side was updated for the measured-inset
-     rework — the pill moved up, the clearance didn't (design-audit
-     2026-09-13, PR-X2; parser-guarded by
-     `mobile.demoBadgeClearance.test.ts`). Change the numbers here once;
-     both consumers follow automatically.
-     ═══════════════════════════════════════════════════════════════════════ */
-  --sgt-demo-badge-bottom-offset: calc(
-    max(env(safe-area-inset-bottom, 0px), var(--sgt-bottom-nav-inset, 0px)) +
-      4.5rem
-  );
-  /* Tailwind `h-11` on the `DemoModeBadge` button (`DemoModeBadge.tsx`). */
-  --sgt-demo-badge-height: 2.75rem;
-}
-
-@utility above-tabbar-pill {
-  /* ═══════════════════════════════════════════════════════════════════════
-     GENERIC "SITS ABOVE THE DOCKED TABBAR" OFFSET — for `fixed`,
-     bottom-anchored chrome (currently: `DemoModeBadge`) that must clear
-     whichever bottom-nav is actually mounted (`ModuleBottomNav` /
-     `HubBottomNav`), stay clear of per-module floating controls that
-     already dock directly above that nav via `fizruk-above-tabbar`
-     (rest-timer chip, workout-finish sheet), and collapse to a plain
-     safe-area offset on nav-less routes (auth, onboarding) instead of
-     reserving a stranded gap there.
-
-     `--sgt-bottom-nav-inset` is published by `useBottomInsetVar`
-     (shared/hooks/useBottomInsetVar.ts) off the *actual* mounted nav's
-     `getBoundingClientRect()` — not a guessed constant — onto `<html>`,
-     the one common ancestor for every `fixed` layer regardless of which
-     branch of the tree renders it (see `ToastContainer` for the sibling
-     precedent this copies). It already bakes in the nav's own
-     safe-area padding, so we `max()` against the raw env() value
-     instead of adding both and double-counting the inset.
-
-     The extra +4.5rem on top of that measured strip is deliberate
-     headroom, not a tight fit: `fizruk-above-tabbar` docks its own
-     floating controls (rest-timer, workout-finish sheet) directly above
-     the nav at roughly nav-height too, and those controls run another
-     ~44–56px tall. Landing edge-to-edge against that band is one
-     font-scale bump away from the exact overlap this utility exists to
-     fix — 4.5rem clears it with margin instead.
-     ═══════════════════════════════════════════════════════════════════════ */
-  bottom: var(--sgt-demo-badge-bottom-offset);
 }
 
 @utility routine-touch-field {

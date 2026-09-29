@@ -99,14 +99,80 @@ export const serverBlocks = [
   // гарантовано адресована людині й нічого іншого там немає. Розширення
   // скоупу потребує ЗАМІРУ на нових шляхах, не інтуїції.
   //
+  // ПЕРЕЗАМІР 2026-09-15 — і відповідь на «чи можна розширити» тепер «ні»,
+  // з числом, а не з інтуїцією. Прогін правила по всьому `apps/server/src`
+  // дав 135 влучань у 41 файлі: 129 — довге тире, 4 — «ми», 2 — «ви».
+  // Розбір усіх шести не-тирешних поіменно: СПРАВЖНІЙ один
+  // (`transcribe/usdCap.ts` — «Спробуйте завтра» у тілі 402-відповіді,
+  // виправлено тим же PR-ом). Решта п'ять — промпти (`import/prompts.ts`,
+  // `toolEval/dataBlock.ts`), опис аргументу тула (`queryRoutine.ts`),
+  // внутрішня діагностика контракту (`silpo/toolContract.ts`) і —
+  // найкрасномовніше — `toolDefs/systemPrompt.ts`, де правило спіймало
+  // ТЕКСТ, ЯКИЙ ФОРМУЛЮЄ ЦЕ САМЕ ПРАВИЛО («Звертайся на «ти», не на «Ви»»).
+  //
+  // Перевірено й вужчу ідею — вмикати не за текою, а за ПОЗИЦІЄЮ (рядок в
+  // `new *Error(...)` чи в `error:`-полі відповіді). Не рятує: з 13 влучань
+  // у таких позиціях 12 — внутрішні інваріантні помилки для розробника
+  // («драйвер-аномалія», `pgInt8.ts`, `env.ts`), де тире доречне.
+  //
+  // Тобто щільність сигналу — 1 зі 135 (0.7%). Будь-яке розширення дало б
+  // рівно той стан «червоне завжди = гейт вимкнено». Скоуп лишається як є
+  // НЕ через недогляд: це заміряне рішення, і перезамір його підтвердив.
+  //
   // Гейт зелений від народження: шість порушень, знайдених цим заміром,
   // виправлено в тому ж PR (листи й бот перейшли на 1-шу однини — рішення
   // founder-а 2026-09-01, style-guide §2, знахідка TXT-5).
+  //
+  // РОЗШИРЕННЯ 2026-09-23 (аудит копії вебу §2.4): скоуп тепер `email/**`,
+  // `modules/**` і `routes/**`. «Ні» вище не було помилкою: воно рахувало
+  // влучання по ФАЙЛАХ, а розширення стало можливим, коли їх розклали по
+  // КЛАСАХ. Прогін правила по трьох теках дав 119 влучань у 41 файлі
+  // (109 тире, 8 «ми», 2 «ви»), і вони діляться рівно на три групи:
+  //   - ~100 у 17 файлах: промпти й описи тулів для моделі (`toolDefs/**`,
+  //     `toolEval/**`, `toolSelectionCases/**`, `coach.ts`, `chatPresets.ts`,
+  //     `weeklyDigestPrompt.ts`, `*/prompts.ts`, сім нутриційних генераторів);
+  //   - 12 у 7 файлах: діагностика для розробника чи оператора,
+  //     `throw new Error("… драйвер-аномалія")` у `finyk/import` і
+  //     `finyk/receipts`, `logger.warn` у `genericFoods.ts`, звіти
+  //     `silpo/diagnose.ts` і `silpo/toolContract.ts`;
+  //   - 5: справжня копія, `digest/weekly-digest.ts` (×3, шаблонний звіт,
+  //     коли AI недоступний) і `silpo/receipts.ts` (×2, тексти відповідей
+  //     про збій Сільпо).
+  // Промпти й операторська діагностика виключені файлами нижче: там
+  // кирилицю читає модель або оператор, не користувач. Пʼять справжніх
+  // виправлено тим же PR, а тире в розробницьких інваріантах замінено на
+  // коротке «–» (§9а): це дешевше за виняток на файл, де інваріант живе
+  // поруч із копією, яку гейт має бачити. Ціна винятків: файл, що змішує
+  // промпт і копію (`coach.ts`, `day-plan.ts`), лишається поза гейтом
+  // цілком, як і до розширення, тільки тепер це названо поіменно.
+  // Новий промпт-файл додається сюди, а не лікується перекладом промпту.
   {
     files: [
       "apps/server/src/email/**/*.{js,ts}",
-      "apps/server/src/modules/telegram/**/*.{js,ts}",
-      "apps/server/src/routes/email-unsubscribe.ts",
+      "apps/server/src/modules/**/*.{js,ts}",
+      "apps/server/src/routes/**/*.{js,ts}",
+    ],
+    ignores: [
+      // Промпти моделі й описи тулів.
+      "apps/server/src/modules/chat/toolDefs/**",
+      "apps/server/src/modules/chat/toolEval/**",
+      "apps/server/src/modules/chat/toolSelectionCases/**",
+      "apps/server/src/modules/chat/coach.ts",
+      "apps/server/src/modules/chat/chatPresets.ts",
+      "apps/server/src/modules/digest/weeklyDigestPrompt.ts",
+      "apps/server/src/modules/finyk/import/prompts.ts",
+      "apps/server/src/modules/finyk/receipts/prompts.ts",
+      "apps/server/src/modules/nutrition/analyze-photo.ts",
+      "apps/server/src/modules/nutrition/day-plan.ts",
+      "apps/server/src/modules/nutrition/parse-pantry.ts",
+      "apps/server/src/modules/nutrition/recommend-recipes.ts",
+      "apps/server/src/modules/nutrition/refine-photo.ts",
+      "apps/server/src/modules/nutrition/shopping-list.ts",
+      "apps/server/src/modules/nutrition/week-plan.ts",
+      // Діагностика для оператора, не для користувача.
+      "apps/server/src/modules/silpo/diagnose.ts",
+      "apps/server/src/modules/silpo/toolContract.ts",
+      "apps/server/src/routes/internal/**",
     ],
     rules: {
       "sergeant-design/ukrainian-copy": "error",

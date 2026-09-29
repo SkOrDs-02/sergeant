@@ -84,7 +84,7 @@ function ModuleLink({ module }: { module: ChatActionCardModule }) {
       )}
     >
       {target.label}
-      <Icon name="chevron-right" size={12} />
+      <Icon name="chevron-right" size="xs" />
     </Link>
   );
 }
@@ -122,7 +122,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
         )}
         aria-hidden
       >
-        <Icon name={card.icon || (failed ? "alert" : "check")} size={14} />
+        <Icon name={card.icon || (failed ? "alert" : "check")} size="sm" />
       </span>
 
       <div className="min-w-0 flex-1">
@@ -314,7 +314,7 @@ export function TypingIndicator() {
     <div
       className="flex items-end gap-2"
       role="status"
-      aria-label="Асистент набирає відповідь"
+      aria-label="Сержант набирає відповідь"
     >
       <span
         className="shrink-0 mb-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-brand-500/10 text-brand-500"

@@ -96,26 +96,6 @@ export function useVapidPublicKey(opts?: QueryOpts<{ publicKey: string }>) {
   });
 }
 
-export function useSubscribePushMutation(
-  opts?: MutationOpts<unknown, PushSubscriptionJSON>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: (sub: PushSubscriptionJSON) => api.push.subscribe(sub),
-    ...opts,
-  });
-}
-
-export function useUnsubscribePushMutation(
-  opts?: MutationOpts<unknown, string>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: (endpoint: string) => api.push.unsubscribe(endpoint),
-    ...opts,
-  });
-}
-
 /**
  * `POST /api/push/register` — уніфікована реєстрація push-пристрою
  * (web / iOS / Android). Викликається з PWA service-worker flow

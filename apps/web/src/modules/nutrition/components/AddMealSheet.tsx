@@ -360,7 +360,10 @@ export function AddMealSheet({
       ["kcal", "protein_g", "fat_g", "carbs_g"] as const
     ).map((key) => (form[key] === "" ? null : parseDecimalInput(form[key])));
     if (macroInputs.some((m) => m != null && !m.ok)) {
-      setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
+      setForm((s) => ({
+        ...s,
+        err: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
+      }));
       return;
     }
     const [kcal, protein_g, fat_g, carbs_g] = macroInputs.map((m) =>
@@ -369,7 +372,7 @@ export function AddMealSheet({
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
-        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
       }));
       return;
     }
@@ -378,7 +381,7 @@ export function AddMealSheet({
     ) {
       setForm((s) => ({
         ...s,
-        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
       }));
       return;
     }
@@ -714,7 +717,6 @@ export function AddMealSheet({
 
             {pickedFood ? (
               <PickedFoodCard
-                form={form}
                 setForm={setForm}
                 pickedFood={pickedFood}
                 pickedGrams={pickedGrams}
@@ -796,14 +798,14 @@ export function AddMealSheet({
             <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Button
                 type="button"
-                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
+                className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
                 onClick={handleSave}
               >
                 {initialMeal?.id ? "Зберегти зміни" : "Додати прийом"}
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="h-12 min-h-[44px]"
                 onClick={onClose}
               >

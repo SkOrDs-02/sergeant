@@ -5,35 +5,12 @@
  * розходиться на першій же правці.
  */
 import { expect, type Page } from "@playwright/test";
+import { getWorld } from "../fixtures/worlds";
+import { installWorld } from "../utils/scenario";
 
-// Minimal API mock — the app renders fully client-side once `/me` returns a
-// user, so no backend is required. Mirrors playwright.ledger.config.ts.
+// Порожній світ: `/me` віддає qa-user, Monobank і Сільпо не підключені.
 export async function mockApi(page: Page) {
-  await page.route("**/api/**", async (route) => {
-    const path = new URL(route.request().url()).pathname;
-    const method = route.request().method();
-    if (path.includes("/me")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-          user: {
-            id: "qa-user",
-            name: "QA User",
-            email: "qa@example.com",
-            emailVerified: true,
-          },
-        }),
-      });
-      return;
-    }
-    await route.fulfill({
-      status: method === "POST" ? 204 : 200,
-      contentType: "application/json",
-      body: method === "POST" ? "" : JSON.stringify({ ok: true }),
-    });
-  });
+  await installWorld(page, getWorld("empty"));
 }
 
 // Controls that mobile.css raises to a 44×44 floor under `pointer: coarse`.

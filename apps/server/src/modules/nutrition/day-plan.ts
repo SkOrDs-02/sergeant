@@ -8,6 +8,7 @@ import { DayPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import {
+  JSON_TEXT_STYLE_RULE,
   pantryPromptSection,
   resolvePantryMode,
 } from "../../lib/prompt-builders.js";
@@ -47,16 +48,16 @@ interface NormalizedDayPlan {
 
 /**
  * Правило комори в system-промпті. Раніше тут беззастережно стояло
- * «Намагайся використовувати продукти з наявного списку (pantry)» — і саме
+ * «Намагайся використовувати продукти з наявного списку (pantry)» – і саме
  * воно перекривало вибір користувача «не враховувати комору», навіть коли б
  * той вибір доїхав до сервера.
  */
 const PANTRY_RULE: Record<PantryMode, string> = {
   prefer:
     "- Намагайся використовувати продукти з наявного списку (pantry), але за потреби для повноцінного плану можна додати звичайні доступні продукти поза списком",
-  only: "- Використовуй ТІЛЬКИ продукти з наявного списку (pantry) плюс сіль, олію, воду й базові спеції. Якщо продуктів не вистачає на повний день — поверни менше прийомів або повтори простий варіант і поясни це в note; відсутніх продуктів не додавай",
+  only: "- Використовуй ТІЛЬКИ продукти з наявного списку (pantry) плюс сіль, олію, воду й базові спеції. Якщо продуктів не вистачає на повний день – поверни менше прийомів або повтори простий варіант і поясни це в note; відсутніх продуктів не додавай",
   ignore:
-    "- Комору НЕ враховуй: складай план вільно, з будь-яких доступних у магазині продуктів. Списку наявного тобі не передано — не вигадуй його вміст",
+    "- Комору НЕ враховуй: складай план вільно, з будь-яких доступних у магазині продуктів. Списку наявного тобі не передано – не вигадуй його вміст",
 };
 
 export function buildDayPlanSystem(mode: PantryMode = "prefer"): string {
@@ -64,6 +65,7 @@ export function buildDayPlanSystem(mode: PantryMode = "prefer"): string {
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
+${JSON_TEXT_STYLE_RULE}
 
 Формат JSON:
 {
@@ -91,12 +93,12 @@ ${ADVICE_BOUNDARY_RULE}
 - Сніданок (breakfast), обід (lunch), вечеря (dinner), і 1-2 перекуси (snack)
 ${PANTRY_RULE[mode]}
 - Загальні макроси мають максимально відповідати цільовим значенням
-- description — 1-2 рядки опису страви
-- ingredients — список ключових інгредієнтів з кількостями
-- Якщо цільові макроси не задані — пропонуй збалансоване харчування ~2000 ккал`;
+- description – 1-2 рядки опису страви
+- ingredients – список ключових інгредієнтів з кількостями
+- Якщо цільові макроси не задані – пропонуй збалансоване харчування ~2000 ккал`;
 }
 
-/** Дефолтний system-промпт (`prefer`) — сумісність зі старими імпортами. */
+/** Дефолтний system-промпт (`prefer`) – сумісність зі старими імпортами. */
 export const SYSTEM = buildDayPlanSystem("prefer");
 
 function numOrNull(v: unknown): number | null {
@@ -107,7 +109,7 @@ function numOrNull(v: unknown): number | null {
  * Підсумок по прийомах, які РЕАЛЬНО лишились у плані.
  *
  * AI-DANGER: тотали приходять від моделі окремим полем, і довіряти їм
- * не можна з двох причин. Перша: модель помиляється в арифметиці —
+ * не можна з двох причин. Перша: модель помиляється в арифметиці –
  * прогін 2026-09-01 дав прийоми на 166 г вуглеводів при заявлених 171.
  * Друга, гірша: `meals` обрізається до шести, тож на довшій видачі
  * тотали лишились би від усіх прийомів, включно з викинутими, і план
@@ -182,7 +184,7 @@ function normalizeDayPlan(parsed: unknown): NormalizedDayPlan {
 }
 
 /**
- * Промпт денного плану — рівно той, що йде в прод (винесено заради стенду
+ * Промпт денного плану – рівно той, що йде в прод (винесено заради стенду
  * `scripts/eval/pipelines.nutrition.ts`).
  */
 export function buildDayPlanPrompt(input: DayPlanInput): {
@@ -197,7 +199,7 @@ export function buildDayPlanPrompt(input: DayPlanInput): {
     locale,
   } = input;
   const loc = String(locale || "uk-UA");
-  // Один режим на весь запит — і в секцію комори, і в system-промпт.
+  // Один режим на весь запит – і в секцію комори, і в system-промпт.
   // `only` із порожньою коморою відсікає pantryPromptSection до виклику LLM.
   const mode: PantryMode = resolvePantryMode(pantryMode);
 
@@ -220,7 +222,7 @@ export function buildDayPlanPrompt(input: DayPlanInput): {
   const targetsStr =
     kcal != null
       ? `Ціль ккал: ${kcal}. Білки: ${protein ?? "не задано"} г. Жири: ${fat ?? "не задано"} г. Вуглеводи: ${carbs ?? "не задано"} г.`
-      : "Цілі не задані — запропонуй збалансоване харчування.";
+      : "Цілі не задані – запропонуй збалансоване харчування.";
 
   const regenStr = regenerateMealType
     ? `Потрібно перегенерувати ТІЛЬКИ прийом їжі типу: "${regenerateMealType}". Решту не включай.`
@@ -237,7 +239,7 @@ ${regenStr}`;
 }
 
 /**
- * POST /api/nutrition/day-plan — згенерувати план харчування на день.
+ * POST /api/nutrition/day-plan – згенерувати план харчування на день.
  * CORS / token / quota / rate-limit виставляє роутер.
  */
 export default async function handler(

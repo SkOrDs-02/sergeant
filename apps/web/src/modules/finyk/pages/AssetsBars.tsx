@@ -188,10 +188,10 @@ export function SectionBar({
         </div>
       </div>
       <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
-        <span>{open ? "Згорнути" : "Розкласти"}</span>
+        <span>{open ? "Згорнути" : "Розгорнути"}</span>
         <Icon
           name={open ? "chevron-up" : "chevron-down"}
-          size={14}
+          size="sm"
           aria-hidden
         />
       </span>

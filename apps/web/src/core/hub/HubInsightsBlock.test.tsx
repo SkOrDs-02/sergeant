@@ -30,8 +30,20 @@ const insightsState = vi.hoisted(() => ({
   }>,
 }));
 
+const weekReportState = vi.hoisted(() => ({
+  lines: [] as string[],
+  enabledArgs: [] as boolean[],
+}));
+
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
+}));
+
+vi.mock("../../modules/finyk/hooks/useFinykWeekReport", () => ({
+  useFinykWeekReport: (enabled = true) => {
+    weekReportState.enabledArgs.push(enabled);
+    return enabled ? weekReportState.lines : [];
+  },
 }));
 
 vi.mock("@shared/lib/modules/hubBus", () => ({
@@ -175,20 +187,6 @@ vi.mock("../insights/WeeklyDigestCard", () => ({
   ),
 }));
 
-vi.mock("./dashboard/dashboardCards", () => ({
-  WeeklyDigestFooter: ({
-    fresh,
-    onExpand,
-  }: {
-    fresh: boolean;
-    onExpand: () => void;
-  }) => (
-    <button type="button" data-fresh={fresh} onClick={onExpand}>
-      expand digest
-    </button>
-  ),
-}));
-
 function props(
   overrides: Partial<HubInsightsBlockProps> = {},
 ): HubInsightsBlockProps {
@@ -254,7 +252,9 @@ describe("HubInsightsBlock", () => {
       within(screen.getByTestId("insights-panel")).getByText("Rest insight"),
     );
     fireEvent.click(screen.getByText("refresh advice"));
-    fireEvent.click(screen.getByText("expand digest"));
+    // Реальний WeeklyDigestFooter (не застаблений — тримаємо мок-бюджет),
+    // текст кнопки — "Звіт тижня".
+    fireEvent.click(screen.getByRole("button", { name: /Звіт тижня/ }));
 
     expect(navigateMock).toHaveBeenCalledWith("/insights");
     expect(emitHubBusMock).toHaveBeenCalledWith("openChat", {
@@ -328,5 +328,48 @@ describe("HubInsightsBlock", () => {
     const digest = screen.getByText("collapse digest");
     expect(digest.getAttribute("data-surface")).toBe("hub_dashboard");
     expect(digest.getAttribute("data-section-open")).toBe("true");
+  });
+
+  // Р23 спеки аналітики v2: локальний звіт тижня під AI-порадою, і підпис
+  // згорнутого блоку не чекає моделі.
+  it("renders the local week report below the AI advice and uses it as the loading subtitle", () => {
+    weekReportState.lines = [
+      "Найбільше за тиждень: Продукти, 807 ₴",
+      "Виросло проти минулого тижня: Кафе, +120 ₴",
+    ];
+    render(
+      <HubInsightsBlock
+        {...props({ coachLoading: true, coachInsightText: null, axis: true })}
+      />,
+    );
+    const report = screen.getByRole("region", { name: "Тиждень у цифрах" });
+    expect(within(report).getAllByRole("listitem")).toHaveLength(2);
+    const advice = screen.getByTestId("assistant-advice");
+    expect(
+      advice.compareDocumentPosition(report) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
+      "Найбільше за тиждень: Продукти, 807 ₴",
+    );
+    weekReportState.lines = [];
+  });
+
+  it("hides the money week report when Finyk is not an active module", () => {
+    weekReportState.lines = ["Найбільше за тиждень: Продукти, 807 ₴"];
+    weekReportState.enabledArgs = [];
+    render(
+      <HubInsightsBlock
+        {...props({ coachLoading: true, coachInsightText: null, axis: true })}
+        finykActive={false}
+      />,
+    );
+    expect(weekReportState.enabledArgs.at(-1)).toBe(false);
+    expect(
+      screen.queryByRole("region", { name: "Тиждень у цифрах" }),
+    ).toBeNull();
+    expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
+      "Готую пораду Сержанта…",
+    );
+    weekReportState.lines = [];
   });
 });

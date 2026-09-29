@@ -266,7 +266,7 @@ describe("FinykSection branch gaps", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
     expect(await screen.findByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText(/120 транзакцій/)).toBeInTheDocument();
+    expect(screen.getByText(/120 операцій/)).toBeInTheDocument();
   });
 
   it("renders BackfillProgressPill with error detail when backfill failed", async () => {
@@ -274,7 +274,9 @@ describe("FinykSection branch gaps", () => {
     backfillState.lastError = "rate limit";
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    expect(await screen.findByText("Помилка backfill")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Не вдалося довантажити виписку"),
+    ).toBeInTheDocument();
     expect(screen.getByText("rate limit")).toBeInTheDocument();
   });
 
@@ -283,7 +285,7 @@ describe("FinykSection branch gaps", () => {
   it("applies green border styling when webhook status is active", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
-    const label = await screen.findByText("Webhook активний");
+    const label = await screen.findByText("Синхронізація активна");
     const card = label.closest("[class*='border-']");
     expect(card?.className).toContain("border-success/30");
   });

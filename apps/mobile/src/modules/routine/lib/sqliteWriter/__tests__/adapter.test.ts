@@ -3,7 +3,7 @@
  * `better-sqlite3` engine, mirroring
  * `apps/web/src/modules/routine/lib/sqliteWriter/__tests__/adapter.test.ts`.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. The adapter
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The adapter
  * is platform-agnostic: it talks to a `SqliteMigrationClient`, which
  * the runtime resolves to `migrationClient()` on web (sqlite-wasm)
  * or `getSqliteMigrationClient()` on mobile (expo-sqlite). Tests use

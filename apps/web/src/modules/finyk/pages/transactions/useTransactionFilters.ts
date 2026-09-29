@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ucFirst } from "@shared/lib/ui/ucFirst";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 import type {
@@ -13,6 +13,7 @@ import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import {
   calcCategorySpent,
   getExpenseCategoryForTransaction,
@@ -226,11 +227,9 @@ export function useTransactionFilters({
 
   // TXT-7 (аудит 2026-09): велика літера в коді, не CSS `capitalize` —
   // інакше «р.» стає «Р.».
-  const monthLabel = ucFirst(
-    new Date(selMonth.year, selMonth.month, 1).toLocaleDateString("uk-UA", {
-      month: "long",
-      year: "numeric",
-    }),
+  const monthLabel = formatMonthYear(
+    new Date(selMonth.year, selMonth.month, 1),
+    { capitalize: true },
   );
 
   const creditAccIds = useMemo(() => {
@@ -298,10 +297,10 @@ export function useTransactionFilters({
       (c) => c.id === effectiveFilter,
     );
     if (!cat) return null;
-    // Емодзі на початку підпису прибираємо — те саме правило, що діяло
-    // для чипів категорій до їх зняття.
-    const space = cat.label.indexOf(" ");
-    return space > 0 ? cat.label.slice(space + 1) : cat.label;
+    // Прибираємо лише емодзі на початку: вбудовані підписи чисті від нього
+    // з 2026-08-21, і різання до першого пробілу робило з «Кафе та
+    // ресторани» «та ресторани».
+    return stripLeadingEmoji(cat.label);
   }, [effectiveFilter, customCategories]);
 
   const txsToShow = useMemo(

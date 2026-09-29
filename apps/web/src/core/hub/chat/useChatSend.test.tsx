@@ -138,6 +138,26 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
     expect(flat.some((m) => m.text === "Твій баланс — 1000 грн.")).toBe(true);
   });
 
+  it("drops empty assistant replies from history so the server does not 400 the whole thread", async () => {
+    sendMock.mockResolvedValue({ text: "Ок." });
+    const { result } = renderSend([
+      { id: "u1", role: "user", text: "як мої звички" },
+      { id: "a1", role: "assistant", text: "" },
+    ]);
+
+    await act(async () => {
+      await result.current.send("а за місяць?");
+    });
+
+    const payload = sendMock.mock.calls[0]![0] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(payload.messages).toEqual([
+      { role: "user", content: "як мої звички" },
+      { role: "user", content: "а за місяць?" },
+    ]);
+  });
+
   it("runs a validated tool call through executeActions then streams the follow-up", async () => {
     const setMessages = vi.fn();
     sendMock.mockResolvedValue({
@@ -291,7 +311,7 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
   });
 });
 
-// AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — коли
+// AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — коли
 // синтез (другий тур) падає, картка інструмента вже побудована з результату
 // ВИКОНАННЯ на клієнті. Клас інструмента (`getToolOutcomeClass`) вирішує,
 // як картка про це каже.
@@ -408,7 +428,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
 
@@ -434,13 +454,13 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
 
     await waitFor(() =>
       expect(result.current.confirmDestructive.pending?.items).toEqual([
-        { name: "delete_transaction", summary: "транзакція m_42" },
+        { name: "delete_transaction", summary: "операція m_42" },
       ]),
     );
 
@@ -459,7 +479,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
     await waitFor(() =>
@@ -478,7 +498,7 @@ describe("useChatSend — підтвердження незворотних ді
   it("згода → інструмент виконується", async () => {
     destructiveResponse();
     executeActionsMock.mockResolvedValue([
-      { name: "delete_transaction", result: "Транзакцію m_42 видалено" },
+      { name: "delete_transaction", result: "Операцію m_42 видалено" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "Готово!" }), {
@@ -490,7 +510,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
     await waitFor(() =>
@@ -527,7 +547,7 @@ describe("useChatSend — підтвердження незворотних ді
     const { result } = renderSend();
 
     await act(async () => {
-      await result.current.send("сховай транзакцію m_7");
+      await result.current.send("сховай операцію m_7");
     });
 
     expect(result.current.confirmDestructive.pending).toBeNull();

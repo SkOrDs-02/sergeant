@@ -5495,3 +5495,95 @@ describe("syncV2Push: nutrition_goal_periods (W1-KBJU-APPEND стадія 1)", (
     TIMEOUT_MS,
   );
 });
+
+// ── Вотермарк транзакцій (міграція 147) ─────────────────────────────────────
+//
+// `id` — BIGSERIAL: видається на INSERT, видимий на COMMIT. Довга транзакція
+// (імпорт виписки) бере менший `id`, коротка push-транзакція більший і
+// комітиться першою. Без вотермарку pull віддавав короткий оп, клієнт
+// просував курсор за нього, і оп довгої транзакції після COMMIT під
+// `id > курсор` не потрапляв уже ніколи.
+describe("syncV2Pull — вотермарк транзакцій (міграція 147)", () => {
+  it(
+    "не дає курсору перескочити оп довгої транзакції, закоміченої пізніше",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-watermark");
+
+      const pull = async (since: number) => {
+        const res = makeRes();
+        await syncV2Pull(
+          makeReq({
+            userId: "u-watermark",
+            query: { since },
+            headers: { "x-origin-device-id": "device-B" },
+          }),
+          res,
+        );
+        expect(res.statusCode).toBe(200);
+        return (res.body as { ops: Array<{ id: number }> }).ops.map(
+          (o) => o.id,
+        );
+      };
+
+      const long = await testPool.connect();
+      try {
+        await long.query("BEGIN");
+        const inserted = await long.query<{ id: string }>(
+          `INSERT INTO sync_op_log
+             (user_id, idempotency_key, table_name, op, row, client_ts,
+              status, origin_device_id)
+           VALUES ('u-watermark', 'import-1', 'routine_entries', 'insert',
+                   '{}'::jsonb, NOW(), 'applied', 'server')
+           RETURNING id`,
+        );
+        const longId = Number(inserted.rows[0]!.id);
+
+        const ts = isoNow();
+        const pushRes = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-watermark",
+            body: {
+              ops: [
+                {
+                  table: "routine_entries",
+                  op: "insert" as const,
+                  row: {
+                    id: "44444444-4444-4444-4444-444444444444",
+                    user_id: "u-watermark",
+                    name: "phone push",
+                    completed_at: ts,
+                  },
+                  client_ts: ts,
+                  idempotency_key: "phone-1",
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          pushRes,
+        );
+        expect(pushRes.statusCode).toBe(200);
+        const shortId = (pushRes.body as { last_op_id: number }).last_op_id;
+        expect(shortId).toBeGreaterThan(longId);
+
+        // Довга транзакція ще відкрита: короткий оп вже закомічений, але
+        // pull його не віддає, бо він новіший за найстарішу активну.
+        const first = await pull(0);
+        expect(first).not.toContain(shortId);
+        const cursor = Math.max(0, ...first);
+
+        await long.query("COMMIT");
+
+        // Клієнт тягне від свого курсора, як справжній: мусить отримати обидва.
+        const second = await pull(cursor);
+        expect(second).toEqual([longId, shortId]);
+      } finally {
+        await long.query("ROLLBACK").catch(() => {});
+        long.release();
+      }
+    },
+    TIMEOUT_MS,
+  );
+});

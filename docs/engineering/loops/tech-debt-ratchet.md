@@ -1,6 +1,6 @@
 # Tech-debt ratchet — вкладені цикли (nested loops)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-20.
+> **Last touched:** 2026-09-20 by @Skords-01. **Next review:** 2026-12-28.
 > **Status:** Active
 
 Runbook для зниження технічного боргу в пакеті як **ланцюг однозадачних
@@ -27,12 +27,12 @@ Loop 1: dead code ──► Loop 2: eslint baseline ──► Loop 3: strict-ф�
 
 ## Інвентар боргу — інструменти, не інтуїція
 
-| Метрика            | Команда                            | Що ловить                                        |
-| ------------------ | ---------------------------------- | ------------------------------------------------ |
-| Мертвий код        | `pnpm knip`                        | unused файли/депи (експорти `exclude` у конфізі) |
-| ESLint suppression | `eslint.baseline.js` + `pnpm lint` | правила, заглушені до ввімкнення                 |
-| Strict-флаги       | `pnpm strict:coverage`             | пакети без `noUncheckedIndexedAccess` тощо       |
-| Фінальний гейт     | `pnpm check`                       | format + lint + typecheck + test + build         |
+| Метрика            | Команда                               | Що ловить                                           |
+| ------------------ | ------------------------------------- | --------------------------------------------------- |
+| Мертвий код        | `pnpm knip`                           | unused файли/депи (експорти `exclude` у конфізі)    |
+| ESLint suppression | `eslint.baseline.js` + `pnpm lint`    | правила, заглушені до ввімкнення                    |
+| Strict-флаги       | `node tools/tsconfig-guard/check.mjs` | пакети, що глушать strict-флаги з базового tsconfig |
+| Фінальний гейт     | `pnpm check`                          | format + lint + typecheck + test + build            |
 
 ## Знімок реального боргу (2026-06-23)
 
@@ -42,7 +42,7 @@ Loop 1: dead code ──► Loop 2: eslint baseline ──► Loop 3: strict-ф�
   цінний як повторюваний вартовий, не разовий прохід.
 - **`eslint.baseline.js` — 9 заглушених записів**, усі `react-hooks` v7 /
   `react/prop-types`, тобто жива ціль Loop 2 = **`apps/web`** (не api-client).
-- **`pnpm strict:coverage` — `noUncheckedIndexedAccess` 100% (13/13).**
+- **`pnpm strict:coverage` <!-- removed --> — `noUncheckedIndexedAccess` 100% (13/13).**
   Первісна ціль Loop 3 уже закрита скрізь. Лишився борг: **`apps/mobile`** без
   `exactOptionalPropertyTypes` і `noPropertyAccessFromIndexSignature`.
 - **`@sergeant/api-client` — повністю чистий** (knip 0, усі strict-флаги on,
@@ -70,7 +70,7 @@ Loop 1: dead code ──► Loop 2: eslint baseline ──► Loop 3: strict-ф�
 
 - knip dead files/deps: <N>
 - eslint.baseline.js записів, що бʼють по пакету: <N>
-- strict:coverage — флаги, яких бракує: <список>
+- tsconfig-guard — пакети з дрейфом strict-флагів: <список>
 
 ## Done loops: —
 
@@ -113,7 +113,7 @@ Loop 1: dead code ──► Loop 2: eslint baseline ──► Loop 3: strict-ф�
 ### Loop 3 · Strict-флаг
 
 ```
-1. pnpm strict:coverage   → взяти пакет X, якому бракує флага
+1. node tools/tsconfig-guard/check.mjs   → взяти пакет X, якому бракує флага
 2. /goal pnpm --filter X typecheck зелений із <флагом>:true у tsconfig
 ```
 

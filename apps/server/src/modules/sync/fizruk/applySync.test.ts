@@ -111,4 +111,123 @@ describe("applyFizrukSets", () => {
     ).resolves.toEqual({ status: "rejected", reason: "invalid_reps" });
     expect(fake.queries).toHaveLength(1);
   });
+
+  // W4 — до цієї правки `weight_kg`/`reps` парсились НЕобмеженим
+  // `parseOptionalNumber`/`parseOptionalInt` (лише "це скінченне число?"),
+  // на відміну від сусідніх замірів тіла (`fizruk_measurements`), які вже
+  // мали `parseOptionalBoundedNumber`/`Int`. Межі — `syncV2-core.ts`
+  // (`WORKOUT_SET_WEIGHT_KG_BOUNDS` / `WORKOUT_SET_REPS_BOUNDS`, 0..1000 —
+  // ті самі, що клієнтська форма підходу).
+  describe("weight_kg / reps bounds (W4)", () => {
+    it("rejects weight_kg above the 1000kg ceiling", async () => {
+      const fake = new FakeClient();
+
+      await expect(
+        applyFizrukSets(
+          asClient(fake),
+          syncOp("fizruk_workout_sets", "insert", {
+            id: "set-1",
+            user_id: "user-1",
+            workout_item_id: "item-1",
+            weight_kg: 1000.01,
+          }),
+          "user-1",
+          new Date("2026-07-21T08:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "invalid_weight_kg" });
+      expect(fake.queries).toHaveLength(1); // тільки ownership SELECT — без DML
+    });
+
+    it("rejects negative weight_kg", async () => {
+      const fake = new FakeClient();
+
+      await expect(
+        applyFizrukSets(
+          asClient(fake),
+          syncOp("fizruk_workout_sets", "insert", {
+            id: "set-1",
+            user_id: "user-1",
+            workout_item_id: "item-1",
+            weight_kg: -1,
+          }),
+          "user-1",
+          new Date("2026-07-21T08:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "invalid_weight_kg" });
+      expect(fake.queries).toHaveLength(1);
+    });
+
+    it("rejects reps above the 1000 ceiling", async () => {
+      const fake = new FakeClient();
+
+      await expect(
+        applyFizrukSets(
+          asClient(fake),
+          syncOp("fizruk_workout_sets", "insert", {
+            id: "set-1",
+            user_id: "user-1",
+            workout_item_id: "item-1",
+            reps: 1001,
+          }),
+          "user-1",
+          new Date("2026-07-21T08:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "invalid_reps" });
+      expect(fake.queries).toHaveLength(1);
+    });
+
+    it("rejects negative reps", async () => {
+      const fake = new FakeClient();
+
+      await expect(
+        applyFizrukSets(
+          asClient(fake),
+          syncOp("fizruk_workout_sets", "insert", {
+            id: "set-1",
+            user_id: "user-1",
+            workout_item_id: "item-1",
+            reps: -5,
+          }),
+          "user-1",
+          new Date("2026-07-21T08:00:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "invalid_reps" });
+      expect(fake.queries).toHaveLength(1);
+    });
+
+    it("accepts boundary values (weight_kg=1000, reps=1000) and inserts them as-is", async () => {
+      const fake = new FakeClient();
+      const clientTs = new Date("2026-07-21T08:00:00.000Z");
+
+      await expect(
+        applyFizrukSets(
+          asClient(fake),
+          syncOp("fizruk_workout_sets", "insert", {
+            id: "set-1",
+            user_id: "user-1",
+            workout_item_id: "item-1",
+            weight_kg: 1000,
+            reps: 1000,
+          }),
+          "user-1",
+          clientTs,
+        ),
+      ).resolves.toEqual({ status: "applied" });
+
+      const insert = lastQuery(fake);
+      expect(insert.sql).toContain("INSERT INTO fizruk_workout_sets");
+      expect(insert.params).toEqual([
+        "set-1",
+        "item-1",
+        "user-1",
+        1000,
+        1000,
+        null,
+        0,
+        clientTs,
+        clientTs,
+        null,
+      ]);
+    });
+  });
 });

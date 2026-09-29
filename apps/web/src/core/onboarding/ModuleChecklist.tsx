@@ -210,7 +210,7 @@ export function ModuleChecklist({
   useEffect(() => {
     const isComplete = total > 0 && completed >= total;
     if (isComplete && !wasCompleteRef.current) {
-      toast.success(`${def.title}: перші кроки виконано!`, 4000);
+      toast.success(`${def.title}: перші кроки виконано`, 4000);
     }
     wasCompleteRef.current = isComplete;
   }, [completed, total, def.title, toast]);
@@ -263,7 +263,7 @@ export function ModuleChecklist({
               styles.accent,
             )}
           >
-            <Icon name="list-checks" size={16} strokeWidth={2} />
+            <Icon name="list-checks" size="md" strokeWidth={2} />
           </div>
           <div className="min-w-0 text-left">
             <h3 className="text-style-title text-text truncate">
@@ -313,7 +313,7 @@ export function ModuleChecklist({
 
           <Icon
             name="chevron-down"
-            size={16}
+            size="md"
             className={cn(
               "text-muted transition-transform duration-base",
               isCollapsed && "-rotate-90",
@@ -371,7 +371,7 @@ export function ModuleChecklist({
                 {interactive && (
                   <Icon
                     name="chevron-right"
-                    size={14}
+                    size="sm"
                     className="text-muted shrink-0"
                     aria-hidden
                   />
@@ -416,23 +416,4 @@ export function ModuleChecklist({
       )}
     </div>
   );
-}
-
-/**
- * Hook to check if a module checklist should be visible.
- * Useful for conditional rendering in parent components.
- *
- * Resolves against the same real-data signals the card itself uses, so
- * a caller never reserves space for a checklist the data has already
- * retired.
- */
-export function useModuleChecklistVisible(
-  moduleId: DashboardModuleId,
-  accountCreatedAt: string | null = null,
-): boolean {
-  const signals = useChecklistSignals(moduleId);
-  return isChecklistVisible(localStorageStore, moduleId, {
-    signals,
-    accountCreatedAt,
-  });
 }

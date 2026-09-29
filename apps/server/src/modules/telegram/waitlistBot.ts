@@ -1,10 +1,14 @@
 import { timingSafeEqual } from "node:crypto";
 import type { Pool } from "pg";
+import {
+  resolveLandingPlacement,
+  type LandingPlacement,
+} from "@sergeant/shared";
 import { SURVEYS, type SurveyDefinition } from "./betaTexts.js";
 
 /**
  * Telegram-вейтліст: обробка апдейтів бота бети.
- * Спека: `docs/90-work/planning/specs/telegram-waitlist.md`.
+ * Спека: `docs/work/specs/telegram-waitlist.md`.
  *
  * Модуль свідомо не знає про Express — це чисті функції над `Pool` плюс
  * парсер апдейта. Роутер лишається тонким, а логіка тестується без HTTP.
@@ -255,16 +259,26 @@ export interface StartResult {
   /** `true` — це перший `/start` цього чату. */
   created: boolean;
   /**
-   * Порядковий номер у списку, рахуючи з 1.
+   * Місце в черзі на наступний раунд, рахуючи з 1: скільки людей попереду
+   * ще НЕ отримали інвайт, включно з самим питальником.
    *
-   * Стабільний назавжди: рахується від власного `id` рядка (`BIGSERIAL`,
-   * монотонний, рядки ніколи не видаляються — `/stop` лише ставить
-   * `opted_out_at`). Тому повторний `/start` покаже те саме число.
+   * **До 2026-09-17 це був абсолютний номер рядка** (`count(*) WHERE id <=
+   * свій id`), стабільний назавжди. Аргумент на його користь був такий:
+   * номер, що стрибає вниз, коли хтось попереду натиснув `/stop`, людина
+   * читає як помилку. Практика показала дорожчу ваду. На 37 рядках, де 30
+   * уже запрошені й 1 відписався, новачок чув «ти 38-й у черзі» — хоча
+   * попереду нього стояло **шестеро**. Число було стабільне і неправдиве,
+   * і воно ж вирішувало, яку з відповідей він побачить.
    *
-   * Свідомо НЕ перераховується з урахуванням відписок: інакше номер стрибав
-   * би вниз щоразу, коли хтось попереду натиснув `/stop`, і людина читала б
-   * це як помилку. Черга на розсилку все одно рухається правильно — вибірку
-   * робить `broadcast-waitlist.mjs`, і вона відписаних пропускає.
+   * Тепер номер рухається — і рухається ВНИЗ, разом із чергою, яку він
+   * описує. Це та сама властивість, що колись вважалась вадою, але в
+   * тексті «черга рухається швидше, ніж здається» вона є підтвердженням,
+   * а не помилкою. Повторний `/start` може показати менше число, ніж
+   * попередній, і це правда про стан справ.
+   *
+   * Для вже запрошеного (`notified_at IS NOT NULL`) номер не має предмета:
+   * він у черзі не стоїть, тож сам себе не рахує і отримує число менше за
+   * розмір хвилі — тобто відповідь «ти вже в списку», як і раніше.
    */
   position: number;
 }
@@ -319,12 +333,27 @@ export async function recordStart(
   const row = result.rows[0];
   if (!row) return { created: false, position: 0 };
 
-  // Позиція від власного id, а не від created_at: id монотонний і не має
-  // колізій, тож ранг стабільний між викликами. Hard Rule #1 — count(*) у pg
-  // це bigint, тобто РЯДОК; коерція тут, інакше `position > limit` порівняє
-  // рядок із числом і дасть тихо неправильну гілку відповіді.
+  // Рахуємо лише тих, хто ще В ЧЕРЗІ: запрошені й відписані місця попереду
+  // не займають. Саме цей фільтр — уся суть правки 2026-09-17 (розбір у
+  // docstring `StartResult.position`).
+  //
+  // Порядок усередині черги — за власним `id`, а не за `created_at`: `id`
+  // монотонний і не має колізій.
+  //
+  // Той самий предикат «ще чекає» живе у `broadcast-waitlist.mjs` (кого
+  // реально запрошувати) і в `countWaitlistStats` (рядок `Чекають` у
+  // `/stats`). Міняєш визначення черги — міняй у всіх трьох, інакше номер
+  // розійдеться з розсилкою.
+  //
+  // Hard Rule #1 — count(*) у pg це bigint, тобто РЯДОК; коерція тут,
+  // інакше `position > limit` порівняє рядок із числом і дасть тихо
+  // неправильну гілку відповіді.
   const rank = await pool.query<{ position: string }>(
-    `SELECT count(*) AS position FROM telegram_waitlist WHERE id <= $1`,
+    `SELECT count(*) AS position
+       FROM telegram_waitlist
+      WHERE id <= $1
+        AND notified_at IS NULL
+        AND opted_out_at IS NULL`,
     [row.id],
   );
 
@@ -434,8 +463,35 @@ export interface WaitlistStats {
   optedOut: number;
   total: number;
   lastSignupAt: Date | null;
+  /**
+   * Розбивка за каналом. `channel` — уже готовий до показу підпис, не код:
+   * зведення робить `countWaitlistStats`, а `formatStatsReply` лише друкує.
+   */
   byChannel: Array<{ channel: string; count: number }>;
 }
+
+/**
+ * Людські підписи каналів.
+ *
+ * Лежать поруч із зведенням, а не в `betaTexts.ts`, бо це не текст, який
+ * читає підписник, — це підпис у службовому звіті для власника, і живе він
+ * рівно там, де рахуються числа.
+ */
+const CHANNEL_LABELS: Record<LandingPlacement, string> = {
+  hero: "Лендінг, головний екран",
+  footer: "Лендінг, підвал",
+  beta: "Лендінг, блок бети",
+};
+
+/** Прямий старт: людина відкрила бота без deep link-а з лендінга. */
+const CHANNEL_DIRECT = "Прямий перехід";
+
+/**
+ * Payload є, але не наш: ручний ввід, чужа кампанія, старий формат, якого
+ * ми більше не знаємо. Зникати такі старти не мають права — інакше сума по
+ * каналах тихо розійдеться з `total`.
+ */
+const CHANNEL_OTHER = "Інше";
 
 /**
  * Зведення для власника. Замінює похід у psql: єдине, що досі відповідало на
@@ -461,12 +517,10 @@ export async function countWaitlistStats(pool: Pool): Promise<WaitlistStats> {
      FROM telegram_waitlist`,
   );
 
-  const channels = await pool.query<{ channel: string; count: string }>(
-    `SELECT coalesce(start_payload, 'без каналу') AS channel, count(*) AS count
+  const channels = await pool.query<{ payload: string | null; count: string }>(
+    `SELECT start_payload AS payload, count(*) AS count
        FROM telegram_waitlist
-      GROUP BY 1
-      ORDER BY count(*) DESC, 1
-      LIMIT 10`,
+      GROUP BY 1`,
   );
 
   // Hard Rule #1: `count(*)` у pg — bigint, тобто рядок. Коерція тут, а не
@@ -478,11 +532,52 @@ export async function countWaitlistStats(pool: Pool): Promise<WaitlistStats> {
     optedOut: Number(row?.opted_out ?? 0),
     total: Number(row?.total ?? 0),
     lastSignupAt: row?.last_signup ?? null,
-    byChannel: channels.rows.map((r) => ({
-      channel: r.channel,
-      count: Number(r.count),
-    })),
+    byChannel: summariseChannels(channels.rows),
   };
+}
+
+/**
+ * Зводить сирі payload-и в канали.
+ *
+ * **Чому це не `GROUP BY start_payload` у SQL, як було до 2026-09-17.**
+ * Payload має форму `<placement>_<ref>`, де `ref` — одноразовий токен, що
+ * генерується на КОЖНЕ завантаження лендінга
+ * (`packages/shared/src/lib/landingAttribution.ts`). Тобто кожен відвідувач
+ * лишає в базі власний унікальний рядок, і групування по ньому давало не
+ * розбивку, а список окремих людей: `LIMIT 10` друкував десять випадкових
+ * токенів по одиниці, а питання «скільки прийшло з героя проти підвалу»
+ * лишалось без відповіді взагалі. Виглядало це як косметична проблема
+ * («сира назва»), хоча зламаною була сама агрегація.
+ *
+ * Зведення живе в JS, а не в SQL, свідомо: знання формату payload-а лежить
+ * в одному місці — `landingAttribution.ts`, — і дублювати його регуляркою в
+ * запиті означало б завести друге джерело істини, яке розійдеться при
+ * першій же зміні формату. Ціна — рядків із бази приходить стільки, скільки
+ * унікальних payload-ів; на вейтлісті в сотні-тисячі записів це один
+ * дешевий запит, який робить власник вручну.
+ *
+ * Порядок — за спаданням кількості, далі за назвою: однакові числа не мають
+ * стрибати місцями між викликами.
+ */
+function summariseChannels(
+  rows: ReadonlyArray<{ payload: string | null; count: string }>,
+): Array<{ channel: string; count: number }> {
+  const totals = new Map<string, number>();
+
+  for (const r of rows) {
+    const placement = resolveLandingPlacement(r.payload);
+    const label = placement
+      ? CHANNEL_LABELS[placement]
+      : r.payload
+        ? CHANNEL_OTHER
+        : CHANNEL_DIRECT;
+    // Hard Rule #1: count(*) приїжджає рядком; без Number() «+» склеїв би.
+    totals.set(label, (totals.get(label) ?? 0) + Number(r.count));
+  }
+
+  return [...totals]
+    .map(([channel, count]) => ({ channel, count }))
+    .sort((a, b) => b.count - a.count || a.channel.localeCompare(b.channel));
 }
 
 export function formatStatsReply(s: WaitlistStats): string {
@@ -500,7 +595,7 @@ export function formatStatsReply(s: WaitlistStats): string {
 
   if (s.byChannel.length > 0) {
     lines.push("", "Канали:");
-    for (const c of s.byChannel) lines.push(`  ${c.channel} — ${c.count}`);
+    for (const c of s.byChannel) lines.push(`  ${c.channel}: ${c.count}`);
   }
 
   if (s.lastSignupAt) {

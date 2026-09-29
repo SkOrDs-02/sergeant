@@ -15,7 +15,6 @@ import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
@@ -46,6 +45,7 @@ import {
 } from "../lib/pendingRetroEnd";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
 import type { LogPastWorkoutActivity } from "../components/workouts/LogPastWorkoutSheet";
+import { useQuickLog } from "./useQuickLog";
 import {
   trackFizrukWorkoutDiscarded,
   trackFizrukWorkoutStarted,
@@ -129,6 +129,8 @@ export function useWorkoutsOrchestrator(
   const [addOpen, setAddOpen] = useState(false);
   /** Форма «Внести проведене заняття» — див. `submitPastWorkout` нижче. */
   const [logPastOpen, setLogPastOpen] = useState(false);
+  /** Сабміт «Швидкого запису» — окремий хук, див. `useQuickLog`. */
+  const quickLog = useQuickLog({ restoreWorkout, toast });
   // Pulled out of `options` so the start callbacks can depend on the function
   // itself rather than on the whole options object, which is a fresh literal
   // on every render of the host page.
@@ -259,7 +261,6 @@ export function useWorkoutsOrchestrator(
     setActiveWorkoutId,
     { routeOwnsWorkoutId: Boolean(options.requestedWorkoutId) },
   );
-  useWorkoutsViewFromSession(setView, !options.requestedWorkoutId);
 
   useLiveWorkoutTick(activeWorkout, setNow);
 
@@ -290,7 +291,7 @@ export function useWorkoutsOrchestrator(
       }
       if (!activeWorkoutId) {
         toast.warning(
-          "Спочатку натисни «+ Нове» у блоці нижче, щоб зʼявилось активне тренування.",
+          "Спочатку натисни «Почати тренування», щоб зʼявилось активне тренування.",
         );
         return;
       }
@@ -359,7 +360,8 @@ export function useWorkoutsOrchestrator(
       }
       if (tpl?.id) templateApi.markTemplateUsed(tpl.id);
       setActiveWorkoutId(w.id);
-      trackFizrukWorkoutStarted(w.id, "template");
+      // Без id — разовий набір з аркуша «Почати тренування», не шаблон.
+      trackFizrukWorkoutStarted(w.id, tpl?.id ? "template" : "quick_start");
       if (onWorkoutStarted) onWorkoutStarted(w.id);
       else setView("log");
     },
@@ -665,6 +667,7 @@ export function useWorkoutsOrchestrator(
     logPastOpen,
     setLogPastOpen,
     submitPastWorkout,
+    ...quickLog,
     handleDeleteExerciseConfirm,
     handleRiskyTemplateConfirm,
     summarizeWorkoutForFinish,

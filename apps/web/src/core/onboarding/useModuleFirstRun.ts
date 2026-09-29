@@ -48,7 +48,6 @@ export const MODULE_FIRST_RUN_IDS = [
   "routine",
   "nutrition",
 ] as const;
-export type ModuleFirstRunId = (typeof MODULE_FIRST_RUN_IDS)[number];
 
 function firstSeenKey(moduleId: string): string {
   return `${FIRST_SEEN_KEY_PREFIX}${moduleId}${FIRST_SEEN_KEY_SUFFIX}`;

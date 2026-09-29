@@ -108,16 +108,18 @@ describe("WeeklyDigestFooter", () => {
   it("renders the week range and fires onExpand", () => {
     const onExpand = vi.fn();
     render(<WeeklyDigestFooter onExpand={onExpand} fresh={false} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Розгорнути звіт тижня" }),
-    );
+    const button = screen.getByRole("button", { name: /^Звіт тижня/ });
+    fireEvent.click(button);
     expect(onExpand).toHaveBeenCalledTimes(1);
-    expect(screen.queryByLabelText("Новий звіт")).not.toBeInTheDocument();
+    expect(button).toHaveAttribute("aria-expanded", "false");
+    expect(button).not.toHaveAccessibleName(/новий/);
   });
 
-  it("shows the fresh dot when fresh is true", () => {
+  it("announces the fresh state through the button name", () => {
     render(<WeeklyDigestFooter onExpand={vi.fn()} fresh />);
-    expect(screen.getByLabelText("Новий звіт")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^Звіт тижня, новий/ }),
+    ).toBeInTheDocument();
   });
 });
 

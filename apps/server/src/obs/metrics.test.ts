@@ -20,6 +20,7 @@ import {
   metricsHandler,
   n8nWebhookReplayAttemptsTotal,
   n8nWebhookReplayDurationMs,
+  syncConflictsTotal,
   syncOpLogApplyTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
@@ -157,8 +158,14 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // CodeRabbit PR #627 review: +1 `invalid_tz_offset_min` — `tz_offset_min`
     // had no range check at all; a present value outside the real UTC-offset
     // range now rejects instead of silently passing through.
-    expect(APPLY_REJECT_REASONS.length).toBe(65);
-    expect(ENGINE_REJECT_REASONS.length).toBe(5);
+    // Фікс «оп-лог поза savepoint»: +1 engine-level `oplog_write_failed` —
+    // запис рядка в `sync_op_log` під власним savepoint-ом, тож його
+    // помилка відхиляє ОДИН оп замість ROLLBACK-у всього батча.
+    // Міграція 146: +10 `invalid_*` на решту полів веб-форми заміру тіла
+    // (жир, шия, передпліччя, стегно, литка, ліва/права сторони біцепса) —
+    // колонок під них не було, тож уведене користувачем зникало.
+    expect(APPLY_REJECT_REASONS.length).toBe(75);
+    expect(ENGINE_REJECT_REASONS.length).toBe(6);
 
     // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,
     // фіксуємо явно — щоб accidental refactor не приховав їх із
@@ -171,6 +178,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(ENGINE_REJECT_REASONS).toContain("apply_failed");
     expect(ENGINE_REJECT_REASONS).toContain("table_not_allowed");
     expect(ENGINE_REJECT_REASONS).toContain("op_not_supported");
+    expect(ENGINE_REJECT_REASONS).toContain("oplog_write_failed");
 
     // Жодних дублікатів — Set.size має дорівнювати довжині масиву.
     const all = [...APPLY_REJECT_REASONS, ...ENGINE_REJECT_REASONS];
@@ -195,6 +203,25 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="100"\}/);
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="5000"\}/);
     expect(text).toMatch(/sync_op_log_pull_queue_depth_bucket\{le="200"\}/);
+  });
+});
+
+describe("metrics registry — `sync_conflicts_total` (W4)", () => {
+  // До W4 цей counter був оголошений в `obs/metrics/domain.ts`, але жоден
+  // код у репо його не інкрементив — `syncV2Push` тепер робить це в тому
+  // самому per-op циклі, де вже пишеться `sync_op_log_apply_total` (див.
+  // `syncV2.test.ts` за end-to-end доказом через реальний push-запит).
+  it("реєстрований у спільному `register`-і з labels {module}", () => {
+    const metric = register.getSingleMetric("sync_conflicts_total");
+    expect(metric).toBe(syncConflictsTotal);
+  });
+
+  it("апдейтиться через .inc({module}) і експортується з label-ом", async () => {
+    syncConflictsTotal.inc({ module: "finyk" });
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE sync_conflicts_total counter");
+    // Runbook `SyncConflictSpike` робить `sum by (module) (rate(...))`.
+    expect(text).toMatch(/sync_conflicts_total\{module="finyk"\} \d+/);
   });
 });
 

@@ -29,8 +29,8 @@ pnpm db:index-audit --write                           # запис у
 ```
 
 > `pg_stat_user_indexes.idx_scan` лічиться **з моменту останнього
-> `pg_stat_reset()` АБО останнього restart-у Postgres** (Railway restart
-> процесу зануляє лічильники). Перед серйозним rely-ом на zero-scan signal
+> `pg_stat_reset()` АБО останнього restart-у Postgres** (рестарт процесу
+> — наприклад, редеплой у Coolify — зануляє лічильники). Перед серйозним rely-ом на zero-scan signal
 > перевір:
 > `SELECT stats_reset FROM pg_stat_database WHERE datname = current_database();`
 
@@ -63,3 +63,14 @@ pnpm db:index-audit --write                           # запис у
 - Runbook recipe + decision tree: [`operations-runbook.md § 9`](./operations-runbook.md#9-index-hygiene)
 - Hard Rule #4 (sequential / two-phase DROP): [`docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md`](../../governance/governance/rules/04-sql-migrations-sequential-two-phase.md)
 - Static heuristic linter: `pnpm lint:db-indexes --all`
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                           | Merged     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------- | ---------- |
+| [#51](https://github.com/zaebal-beep/sergeant/pull/51) | docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних | 2026-09-15 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

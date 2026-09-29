@@ -60,7 +60,7 @@ export function getSyncTone(
   if (syncState?.status === "error") {
     return {
       dot: "bg-danger",
-      text: "помилка",
+      text: "не синхронізовано",
       pill: "bg-danger-soft  text-danger-strong dark:text-danger  border-danger/20",
       icon: "alert-circle",
       needsAttention: true,

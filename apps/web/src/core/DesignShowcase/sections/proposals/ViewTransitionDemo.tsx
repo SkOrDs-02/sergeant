@@ -97,7 +97,7 @@ function Screen({ page }: { page: "hub" | "mod" }) {
                 color,
               }}
             >
-              <Icon name="credit-card" size={16} />
+              <Icon name="credit-card" size="md" />
             </span>
             <span className="text-style-caption text-text">Фінік</span>
           </div>

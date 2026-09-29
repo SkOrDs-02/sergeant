@@ -65,12 +65,12 @@ describe("ModuleBottomNav", () => {
     // one bare class covers the foreground in both themes.
     expect(activeTab.firstElementChild?.className).toContain("bg-finyk-strong");
     expect(activeTab.firstElementChild?.className).toContain(
-      "dark:bg-brand-400",
+      "dark:bg-teal-400",
     );
     expect(activeTab.className).toContain("text-bg");
     expect(activeTab.className).toContain("border-transparent");
     expect(inactiveTab.firstElementChild?.className).not.toContain(
-      "dark:bg-brand-400",
+      "dark:bg-teal-400",
     );
   });
 

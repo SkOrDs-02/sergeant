@@ -33,8 +33,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const SRC = new URL("../../..", import.meta.url).pathname;
+// `URL.pathname` на Windows дає `/D:/…`, і `join` склеював `D:\D:\…`.
+const SRC = fileURLToPath(new URL("../../..", import.meta.url));
 
 /**
  * Дзеркало `EMPHASIS_TONE_MAP` і `LEGACY_VARIANTS` із `Button.tsx`.
@@ -135,6 +137,35 @@ function buttonTags(src: string): Array<{ tag: string; line: number }> {
   return out;
 }
 
+/**
+ * Можливі значення `variant` у тезі.
+ *
+ *  - `variant="solid"`            → `["solid"]`
+ *  - `variant={c ? "a" : "b"}`    → `["a", "b"]` (перевіряємо обидві гілки)
+ *  - `variant={someVar}`          → `null` (не читається — не вгадуємо)
+ *  - пропа немає                  → `["primary"]` (справжній дефолт компонента)
+ */
+function variantCandidates(tag: string): string[] | null {
+  const literal = /\bvariant="([^"]+)"/.exec(tag);
+  if (literal) return [literal[1] as string];
+
+  const expr = /\bvariant=\{/.exec(tag);
+  if (!expr) return ["primary"]; // пропа немає — діє дефолт `variant = "primary"`
+
+  // Вміст `{...}` з урахуванням вкладених дужок.
+  let i = expr.index + expr[0].length;
+  let depth = 1;
+  const start = i;
+  while (i < tag.length && depth > 0) {
+    if (tag[i] === "{") depth += 1;
+    else if (tag[i] === "}") depth -= 1;
+    i += 1;
+  }
+  const body = tag.slice(start, i - 1);
+  const strings = [...body.matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
+  return strings.length > 0 ? strings : null;
+}
+
 function findOffenders(): Offender[] {
   const offenders: Offender[] = [];
   for (const file of walk(SRC)) {
@@ -146,26 +177,42 @@ function findOffenders(): Offender[] {
       // справних кнопках (на цьому я вже спіймався вручну з `AssetsBars`).
       const tone = /\btone="([^"]+)"/.exec(tag)?.[1];
       if (!tone) continue;
-      const variant = /\bvariant="([^"]+)"/.exec(tag)?.[1] ?? "primary";
       const where = `${file.replace(SRC, "")}:${line}`;
 
-      if (LEGACY_VARIANTS.has(variant)) {
-        offenders.push({
-          where,
-          variant,
-          tone,
-          why: "legacy-варіант: `tone` відкидається не читаючи",
-        });
-        continue;
-      }
-      const allowed = EMPHASIS_TONES[variant];
-      if (allowed && !allowed.has(tone)) {
-        offenders.push({
-          where,
-          variant,
-          tone,
-          why: "немає такої клітинки: мовчки стане суцільною primary",
-        });
+      // Той самий принцип «не вгадуй», що й для `tone` вище, але для
+      // `variant` він доти НЕ діяв: відсутність літерала трактувалась як
+      // дефолт `primary`, тобто НЕВІДОМЕ рахувалось за легасі. На кнопці
+      // `variant={cond ? "solid" : "soft"} tone="finyk"` — цілком справній,
+      // де обидві гілки канонічні — це давало хибне спрацювання
+      // (`FinykSection.tsx:99`, міграція C-секції 2026-09-16).
+      //
+      // Тому замість «літерал або дефолт» тут ПЕРЕЛІК можливих значень:
+      // з `variant={a ? "x" : "y"}` дістаємо обидві гілки й перевіряємо
+      // кожну. Це сильніше за пропуск динамічних тегів — реальний
+      // порушник `variant={c ? "primary" : "secondary"} tone="finyk"`
+      // лишається спійманим по обох гілках.
+      const variants = variantCandidates(tag);
+      if (variants === null) continue; // справді не читається — не вгадуємо
+
+      for (const variant of variants) {
+        if (LEGACY_VARIANTS.has(variant)) {
+          offenders.push({
+            where,
+            variant,
+            tone,
+            why: "legacy-варіант: `tone` відкидається не читаючи",
+          });
+          continue;
+        }
+        const allowed = EMPHASIS_TONES[variant];
+        if (allowed && !allowed.has(tone)) {
+          offenders.push({
+            where,
+            variant,
+            tone,
+            why: "немає такої клітинки: мовчки стане суцільною primary",
+          });
+        }
       }
     }
   }

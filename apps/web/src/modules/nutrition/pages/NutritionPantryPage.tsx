@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-08
+ * Last validated: 2026-09-26
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
@@ -81,7 +81,11 @@ export function NutritionPantryPage({
         />
         {pantrySubTab === "items" ? (
           <>
-            <NutritionPantrySelector pantry={pantry} busy={busy} />
+            {/* Порожня комора лишає вибір місця окремою карткою над формою;
+                наповнена переносить його в шапку списку. */}
+            {pantry.effectiveItems.length === 0 && (
+              <NutritionPantrySelector pantry={pantry} busy={busy} />
+            )}
             <PantryCard
               busy={busy}
               parsePantry={pantry.parsePantry}
@@ -121,6 +125,9 @@ export function NutritionPantryPage({
                 setPantryScannerOpen(true);
               }}
               placeFilter={pantry.placeFilter}
+              placeSelector={
+                <NutritionPantrySelector pantry={pantry} busy={busy} compact />
+              }
             />
             {pantryScanStatus && !pantryBarcodeNotice && (
               <div className="text-style-caption text-subtle px-1">
@@ -147,6 +154,7 @@ export function NutritionPantryPage({
             onClearChecked={shopping.clearChecked}
             onClearAll={shopping.clearAll}
             onAddCheckedToPantry={addCheckedItemsToPantry}
+            onAddItem={shopping.addItem}
             checkedItems={shopping.checkedItems}
           />
         )}

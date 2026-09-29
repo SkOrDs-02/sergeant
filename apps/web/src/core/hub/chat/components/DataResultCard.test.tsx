@@ -6,7 +6,7 @@ import { DataResultCard } from "./DataResultCard";
 describe("DataResultCard (talk-to-your-data PR4)", () => {
   it("рендерить headline + breakdown-бари для aggregate_spending", () => {
     const result =
-      "Витрати за 2026-05-01 – 2026-05-31: 3540 грн усього (59 транзакц.). " +
+      "Витрати за 2026-05-01 – 2026-05-31: 3540 грн усього (59 операц.). " +
       "Розбивка за категоріями: Кафе: 2340 грн (47); Транспорт: 1200 грн (12)";
     render(
       <DataResultCard
@@ -72,19 +72,19 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
 
   it("парсить listing-хвіст query_transactions у breakdown-рядки", () => {
     const result =
-      "Знайдено 2 транзакц. на суму 320 грн: " +
+      "Знайдено 2 операц. на суму 320 грн: " +
       "m_1: 2026-05-01 · 120 грн · кава · Кафе; " +
       "m_2: 2026-05-02 · 200 грн · обід · Кафе";
     render(
       <DataResultCard
         toolName="query_transactions"
         result={result}
-        title="Транзакції за запитом"
+        title="Операції за запитом"
       />,
     );
 
     const card = screen.getByTestId("chat-data-card-query_transactions");
-    expect(card).toHaveTextContent("Знайдено 2 транзакц. на суму 320 грн");
+    expect(card).toHaveTextContent("Знайдено 2 операц. на суму 320 грн");
     const items = within(card).getAllByRole("listitem");
     expect(items.length).toBe(2);
     expect(items[0]).toHaveTextContent("m_1");

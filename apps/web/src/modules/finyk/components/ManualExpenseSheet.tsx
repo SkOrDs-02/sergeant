@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-12
+ * Last validated: 2026-09-24
  * Status: Active
  *
  * Manual expense add/edit sheet. Orchestrates form state and delegates
@@ -261,9 +261,13 @@ export function ManualExpenseSheet({
           amount: expenseAmountHryvnia(values.amount),
           // Write path: always emit slug (Era 3).
           category: slug,
-          // "YYYY-MM-DD" як local date може зʼїхати при toISOString() в UTC.
-          // Ставимо полудень, щоб стабільно зберігати правильний день.
-          date: toExpenseInstant(values.date || toLocalISODate()),
+          // Редагування без зміни дня лишає записану мить: інакше кожне
+          // виправлення суми переставляло б час запису на час правки.
+          date:
+            initialExpense?.date &&
+            toLocalISODate(initialExpense.date) === values.date
+              ? initialExpense.date
+              : toExpenseInstant(values.date || toLocalISODate()),
           kind,
         });
 
@@ -321,12 +325,6 @@ export function ManualExpenseSheet({
   const [aiAppliedCategory, setAiAppliedCategory] = useState<string | null>(
     null,
   );
-
-  // showDateField — UI-only, не частина zod-схеми. Раніше жило в
-  // form-state, але то був лиш toggle для видимості поля — без валідації
-  // чи подачі на сервер. Тримаємо окремо, щоб схема лишалася
-  // чистою (description/amount/category/date).
-  const [showDateField, setShowDateField] = useState(false);
 
   // UI-only toggle, який скидається в reset-ефекті нижче. Оголошений тут
   // (перед ефектом), щоб його сеттер був доступний у момент виклику.
@@ -438,7 +436,6 @@ export function ManualExpenseSheet({
         });
       }
       setDescFocused(false);
-      setShowDateField(false);
       setAiAppliedCategory(null);
     });
   }, [
@@ -736,9 +733,7 @@ export function ManualExpenseSheet({
           date={date}
           dateError={dateError}
           dateWarning={dateWarning}
-          showDateField={showDateField}
           isSubmitting={isSubmitting}
-          onReveal={() => setShowDateField(true)}
           onDateChange={(iso) =>
             setValue("date", iso, { shouldDirty: true, shouldValidate: false })
           }

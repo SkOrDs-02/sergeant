@@ -77,7 +77,7 @@ export function MonoTokenInlineForm({
           className="focus-ring touch-target absolute right-0 top-1/2 -translate-y-1/2 rounded-xl text-subtle hover:text-text"
           aria-label={showToken ? COPY.hideToken : COPY.showToken}
         >
-          <Icon name={showToken ? "eye-off" : "eye"} size={16} aria-hidden />
+          <Icon name={showToken ? "eye-off" : "eye"} size="md" aria-hidden />
         </button>
       </div>
       <Button className="w-full h-11" onClick={onSubmit} disabled={submitting}>

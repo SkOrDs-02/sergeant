@@ -102,7 +102,7 @@ export function ReadinessSheet({
       footer={
         <div className="flex gap-2">
           <Button
-            variant="secondary"
+            variant="outline"
             className="flex-1 h-12 min-h-[44px]"
             type="button"
             onClick={onSkip}
@@ -110,7 +110,7 @@ export function ReadinessSheet({
             {t.skip}
           </Button>
           <Button
-            variant="primary"
+            variant="solid"
             className="flex-1 h-12 min-h-[44px]"
             type="button"
             // Порожня відповідь дозволена і дорівнює пропуску: домен читає

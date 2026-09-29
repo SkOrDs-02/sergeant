@@ -1,6 +1,6 @@
 # 00 — Launch readiness audit: 5 застосунків Sergeant
 
-> **Last touched:** 2026-09-14 by @claude. **Next review:** 2027-11-19.
+> **Last touched:** 2026-09-17 by @claude (таблиці §2/§5 приведені до TL;DR: LiqPay/Plata live, Stripe dormant; Devin → агент). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface не підтверджені з репо лише зовнішні Vercel production deployment і `sergeant.com.ua` DNS. Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.
@@ -29,11 +29,11 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 > **Легенда:** ✅ — готово / production; 🟡 — частково / scaffold / pending secret; 🟥 — не зроблено / явно блокер.
 >
-> «Real-user tested?» = чи проходили flow зовнішні (не founder-/Devin-) користувачі.
+> «Real-user tested?» = чи проходили flow зовнішні (не founder-/агент-) користувачі.
 
 | Surface                        | Deploy ready?                                                                | Auth ready?                                                 | Observability?                     | Release playbook?                                                                                                                                       | Real-user tested?        | Top blockers                                                                                                         |
 | ------------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                                              | 🟡 Email/password live; Apple/Google UI shipped (env-gated) | ✅ Sentry + PostHog + CSP-RO       | ✅ [`release.md §1`](../../../../start/instructions/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Legal publish; live Stripe env; cookie banner                                                                        |
+| **Web** (`apps/web`)           | ✅ Vercel prod + preview-per-PR                                              | 🟡 Email/password live; Apple/Google UI shipped (env-gated) | ✅ Sentry + PostHog + CSP-RO       | ✅ [`release.md §1`](../../../../start/instructions/release.md#1-web--api)                                                                              | 🟥 (0 paying)            | Legal publish; live LiqPay/Plata env (Stripe dormant); cookie banner                                                 |
 | **Server** (`apps/server`)     | ✅ Coolify/Hetzner `Dockerfile.api` (ADR-0074)                               | ✅ Better Auth (cookie + bearer)                            | ✅ Sentry + Prom + alert-bot       | ✅ [`release.md §1`](../../../../start/instructions/release.md#1-web--api)                                                                              | n/a (B2C-фронт)          | Live payment prod keys; прод APNs/FCM creds                                                                          |
 | **Capacitor** (`mobile-shell`) | 🟡 Android signing live; iOS — secrets pending                               | ✅ Bearer через Keychain/EncryptedSharedPrefs (PR #505)     | 🟡 web-side observability reuse    | ✅ [`release.md §2`](../../../../start/instructions/release.md#2-mobile-shell-capacitor) + [`mobile/shell.md`](../../../../engineering/mobile/shell.md) | 🟥                       | Apple secrets для iOS release CI, Play store listing assets, internal track config                                   |
 | **Native** (`apps/mobile`)     | 🟡 EAS `production` profile є, без submit                                    | ✅ Better Auth Expo + bearer                                | 🟡 PostHog wired, Sentry TBD       | ✅ [`release.md §3`](../../../../start/instructions/release.md#3-expo) + [`mobile/overview.md`](../../../../engineering/mobile/overview.md)             | 🟥 (internal dev-client) | Store-listing (icons, privacy manifest, data safety), photo-AI / pantry parity, Expo flaky-test green 20/20 baseline |
@@ -50,7 +50,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
 - **Security:** CSP report-only активний (CSP/COOP/COEP у [`apps/web/vercel.json`](../../../../../apps/web/vercel.json)), Permissions-Policy жорстка.
-- **Billing UI/API:** scaffold уже в коді — `PricingPage`, `core/billing/PaywallModal`, `usePlan()` hook, server `/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`, а також API-client billing helpers. **Public launch work — live Stripe env/account/legal rollout + remaining placement polish**, не побудова billing skeleton з нуля.
+- **Billing UI/API:** scaffold уже в коді — `PricingPage`, `core/billing/PaywallModal`, `usePlan()` hook, server `/api/billing/status`, `/checkout`, `/portal`, `/stripe-webhook`, а також API-client billing helpers. **Public launch work — live payment env (LiqPay/Plata — live UA-провайдери, Stripe dormant за флагом; `modules/billing/provider.ts`) + legal rollout + remaining placement polish**, не побудова billing skeleton з нуля.
 - **Висновок для запуску:** web уже **запускається для closed beta з 10–30 запрошеними юзерами** на поточному стеку. Public launch потребує: legal publish, cookie-banner, live payment env, Apple/Google OAuth prod secrets і підтверджений production deploy/domain уже створеного `apps/landing`.
 
 ### 3.2 Server (`apps/server`)
@@ -128,23 +128,23 @@ Sergeant фактично вже **технічно деплоїться у пр
 | 1   | Privacy Policy + Terms of Service сторінки опубліковані у проді             | Founder       | 0.5–1 д. | [`04-launch-readiness.md § 1.1`](../business/04-launch-readiness.md#1-юридичне-та-compliance); потрібно навіть для closed beta (health + fin)                          |
 | 2   | Invite-only access: посаджуємо registration за feature-flag                 | Dev           | 0.5 д.   | Простий FF гейт `signupOpenForRoles` на `AuthPage`; запрошення через manual link                                                                                       |
 | 3   | Support email або Telegram-канал для бета-фідбеку                           | Founder       | 0.5 д.   | Item #30 у [`04 § 7`](../business/04-launch-readiness.md#7-pre-launch-чеклист); `support@sergeant.app` згадано в ADR-0003                                              |
-| 4   | Staging environment окремий від prod (для Devin-/Devin-child-смоків)        | Dev           | 1–2 д.   | Item #22 у [`04 § 7`](../business/04-launch-readiness.md#7-pre-launch-чеклист)                                                                                         |
+| 4   | Staging environment окремий від prod (для агентських смоків)                | Dev           | 1–2 д.   | Item #22 у [`04 § 7`](../business/04-launch-readiness.md#7-pre-launch-чеклист)                                                                                         |
 | 5   | DB backups перевірено end-to-end (`pnpm db:test-backup-restore`)            | Dev           | 0.5 д.   | Playbook [`test-backup-restore.md`](../../../../start/instructions/test-backup-restore.md); critical перед запрошенням реальних даних                                  |
 | 6   | Sentry alert routes (email/Telegram) на P0-крах і auth-фейли                | Dev           | 0.5 д.   | Item #24; alert-bot 60/120-min escalation вже в `apps/server` — треба тільки channel-bind                                                                              |
 | 7   | Status page (uptimerobot.com або `apps/web/src/core/status/StatusPage.tsx`) | Dev           | 0.5 д.   | Item #25; `StatusPage` route уже існує — треба public-friendly копію                                                                                                   |
 | 8   | Rate-limiting через Redis у проді (не in-memory)                            | Dev           | 1–2 д.   | Item #23; для closed beta in-memory OK, але блокер public                                                                                                              |
-| 9   | Smoke-test критичних flow-ів на проді (signup → onboarding → demo entry)    | Dev/Devin     | 0.5 д.   | E2E уже мерджнуто (`tests/smoke/onboarding-happy-path.spec.ts`); прогнати на prod-URL                                                                                  |
+| 9   | Smoke-test критичних flow-ів на проді (signup → onboarding → demo entry)    | Dev/агент     | 0.5 д.   | E2E уже мерджнуто (`tests/smoke/onboarding-happy-path.spec.ts`); прогнати на prod-URL                                                                                  |
 | 10  | Invite-link з UTM-параметрами + дефолтний onboarding flow для запрошених    | Dev + Founder | 0.5 д.   | UTM пишеться у PostHog identify; FTUX cohort attribution — pure-function у [`packages/insights/src/activation.ts`](../../../../../packages/insights/src/activation.ts) |
 
 **Effort summary:** 6–9 робочих днів до повноцінного closed beta, якщо власник не блокується на legal-/support-кроках.
 
 **Додаткові blockers, що зʼявляться між closed beta → public web launch** (не входять у top-10, але треба тримати в голові):
 
-- Stripe billing (Phase 2–4 з [`0010`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)).
+- Live billing env — LiqPay/Plata (Stripe dormant; Phase 2–4 з [`0010`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) писались під Stripe).
 - Apple/Google SSO (Phase 4.3 з 0010).
 - Cookie consent banner для EU.
 - Окремий лендінг на `sergeant.com.ua` (див. § 4).
-- ФОП + банк-рахунок для UA-Stripe (з [`04 § 1.3`](../business/04-launch-readiness.md)).
+- ФОП + банк-рахунок для UA-платежів (LiqPay/Plata; з [`04 § 1.3`](../business/04-launch-readiness.md)).
 - Demo-video 30–60s для лендінгу/store.
 - `subscriptions` SQL-міграція + Stripe webhook handlers.
 - `/api/me/export` (GDPR data export) і `DELETE /api/me` (cascade + external cleanup).
@@ -199,7 +199,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 4. **iOS-капакітор vs нічого до Apple.** Якщо Apple Developer-акаунт ще не оформлено, чи запускаємо Capacitor Android-only на CP-3, чи чекаємо паралельний iOS-track?
 5. **Native (Expo) — необхідний чи opt-in?** ADR-0052 говорить «обидва паралельно». При single-founder velocity native може займати 40% часу. Чи робимо native «pro-channel» (тільки для power-users з voice/photo-AI) і тримаємо Capacitor як default, чи пушимо native до full parity і тоді sunset Capacitor (ADR-0052 trigger)?
 6. **Закрита бета мовою.** UA-only на старті, чи English-first з Day 1 (EN-локаль = Phase 6 у 0010)? Це впливає на копії лендінгу і вибір perfomance-каналів (Product Hunt = EN).
-7. **Підготовка legal-/ФОП-track.** Хто реально виконує юр-чеклист [`04 § 1`](../business/04-launch-readiness.md#1-юридичне-та-compliance) — founder сам, юрист-консультант, чи Devin генерує draft-и під рев'ю?
+7. **Підготовка legal-/ФОП-track.** Хто реально виконує юр-чеклист [`04 § 1`](../business/04-launch-readiness.md#1-юридичне-та-compliance) — founder сам, юрист-консультант, чи агент генерує draft-и під рев'ю?
 8. **Real-user testing baseline.** Чи запускаємо paid acquisition (Google Ads / Meta Ads) на CP-2, чи тримаємось organic-only перші 4 тижні після public launch для чесного N1 baseline?
 
 ---

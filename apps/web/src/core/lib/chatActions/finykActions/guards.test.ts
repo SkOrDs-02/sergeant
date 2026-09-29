@@ -60,7 +60,7 @@ describe("change_category guards", () => {
         input: { tx_id: "tx_999999", category_id: "food" },
       }),
     );
-    expect(out).toContain("Не знайшов транзакцію");
+    expect(out).toContain("Не знайшов операцію");
     expect(localStorage.getItem("finyk_tx_cats")).toBeNull();
   });
 
@@ -126,7 +126,7 @@ describe("hide_transaction guards", () => {
         input: { tx_id: "tx_999999" },
       }),
     );
-    expect(out).toContain("Не знайшов транзакцію");
+    expect(out).toContain("Не знайшов операцію");
     expect(localStorage.getItem("finyk_hidden_txs")).toBeNull();
   });
 
@@ -159,7 +159,7 @@ describe("split_transaction guards", () => {
         },
       }),
     );
-    expect(out).toContain("Не знайшов транзакцію");
+    expect(out).toContain("Не знайшов операцію");
     expect(localStorage.getItem("finyk_tx_splits")).toBeNull();
   });
 
@@ -204,7 +204,7 @@ describe("set_budget_limit guards", () => {
         input: { category_id: "c_1", limit: 5000 },
       }),
     );
-    expect(out).toContain("5000");
+    expect(out).toContain("5\u00A0000");
     expect(localStorage.getItem("finyk_budgets")).not.toBeNull();
   });
 });

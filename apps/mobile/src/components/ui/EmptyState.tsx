@@ -318,7 +318,7 @@ export function SearchEmptyState({
 }) {
   return (
     <EmptyState
-      title="Нічого не знайдено"
+      title="Нічого не знайшов"
       description={
         query
           ? `За запитом "${query}" нічого не знайдено. Спробуй інший запит.`

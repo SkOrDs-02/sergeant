@@ -23,7 +23,6 @@ import { WheelPicker } from "@shared/components/ui/WheelPicker";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
-import { MacroChip } from "./MacroChip";
 import { ProductNutrientsRow } from "./ProductNutrientsRow";
 import { ProductThumb } from "./ProductThumb";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
@@ -37,7 +36,8 @@ function rescaleKey(food: PickedFood, grams: string): string {
 }
 
 interface PickedFoodCardProps {
-  form: MealFormState;
+  // Картка у форму лише ПИШЕ (перерахунок під вагу). Читала її рівно
+  // прибрана звідси плашкова стрічка КБЖВ — див. коментар у розмітці.
   setForm: Dispatch<SetStateAction<MealFormState>>;
   pickedFood: PickedFood;
   pickedGrams: string;
@@ -60,7 +60,6 @@ interface PickedFoodCardProps {
 }
 
 export function PickedFoodCard({
-  form,
   setForm,
   pickedFood,
   pickedGrams,
@@ -180,7 +179,7 @@ export function PickedFoodCard({
           className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-line/50 text-muted hover:text-text hover:bg-line transition-colors"
           aria-label="Обрати інший продукт"
         >
-          <Icon name="close" size={16} aria-hidden />
+          <Icon name="close" size="md" aria-hidden />
         </button>
       </div>
 
@@ -269,7 +268,7 @@ export function PickedFoodCard({
                 // контролом картки. 44×44 тут не опційні.
                 "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
                 Number(pickedGrams) === g
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "bg-panelHi text-subtle border-line hover:border-nutrition/40",
               )}
             >
@@ -279,30 +278,25 @@ export function PickedFoodCard({
         </div>
       </div>
 
-      {/* Live КБЖВ плашки */}
-      <div className="grid grid-cols-4 border-t border-line/20 divide-x divide-line/20">
-        <MacroChip
-          label="Ккал"
-          value={form.kcal !== "" ? Number(form.kcal) : null}
-          unit="ккал"
-          color="bg-nutrition/8 text-nutrition-strong dark:text-nutrition"
-        />
-        <MacroChip
-          label="Білки"
-          value={form.protein_g !== "" ? Number(form.protein_g) : null}
-          color="bg-panel text-text"
-        />
-        <MacroChip
-          label="Жири"
-          value={form.fat_g !== "" ? Number(form.fat_g) : null}
-          color="bg-panel text-text"
-        />
-        <MacroChip
-          label="Вуглев."
-          value={form.carbs_g !== "" ? Number(form.carbs_g) : null}
-          color="bg-panel text-text"
-        />
-      </div>
+      {/*
+        Рядка «Live КБЖВ плашки» тут БІЛЬШЕ НЕМАЄ — не забули, прибрали
+        свідомо (звіт власника 2026-09-15: «дубль значень КБЖВ при
+        підстановці»).
+
+        AI-CONTEXT. Чотири плашки читали `form.kcal/protein_g/fat_g/carbs_g`,
+        а `MacrosEditor` рендерить чотири ПОЛЯ з тим самим `form` рівно під
+        карткою — тобто ті самі чотири числа стояли одне під одним двічі, і
+        мінялись синхронно. Дубль не був задуманий: картка жила на кроці
+        «source», всередині `FoodPickerSection`, і плашки були там єдиним
+        показом перерахунку. 2026-08-22 картку перенесли на крок «fill»
+        (див. AI-CONTEXT у шапці файлу), де вже стояв редактор, — плашки
+        приїхали разом і з того дня дублювали його.
+
+        Лишились поля, а не плашки: поля показують ті самі числа, живо
+        оновлюються тим самим ефектом перерахунку і при цьому їх можна
+        правити. Плашка правитись не вміла, тож із двох поверхонь вона
+        була строго біднішою.
+      */}
     </div>
   );
 }

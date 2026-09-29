@@ -39,6 +39,16 @@ Flag: shape changed in one artifact but not the others; or the regenerated OpenA
 - api-client type updated to `string | number` to "make it pass" — that masks a server-side leak; flag it.
 - Two-phase header present but dates fabricated / <14-day soak.
 
+## Anchor check — confirm every `file:line` before it leaves this agent
+
+A finding that points at the wrong line wastes the reviewer's trust faster than a missed one. For each finding, before writing it up:
+
+1. Re-read the cited file at that line **in the diff under review**, not from memory of an earlier read.
+2. Confirm the quoted snippet is present there verbatim. Diffs shift line numbers — if it moved, re-anchor to where it actually is.
+3. Confirm the file is in this diff at all. A real issue in an untouched file is out of scope here; hand it to the lead as context, not as a PR finding.
+
+If you cannot confirm the anchor, drop the finding rather than guessing a line. State in the report that it was dropped and why.
+
 ## Report format
 
 Three headers — `### Hard Rule #1`, `### #3`, `### #4`. Each finding: `file:line`, one-line violation, severity (BLOCKER for data-loss/deploy-crash, WARNING otherwise). Write "✅ None" under a clean rule. Send findings to the lead.

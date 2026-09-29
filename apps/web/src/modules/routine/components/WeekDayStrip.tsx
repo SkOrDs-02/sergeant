@@ -5,12 +5,14 @@
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 import {
   addDays,
   dateKeyFromDate,
   parseDateKey,
   startOfIsoWeek,
 } from "../lib/weekUtils";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 function weekKeysFromAnchor(anchorKey: string): string[] {
   const s = startOfIsoWeek(parseDateKey(anchorKey));
@@ -78,7 +80,7 @@ export function WeekDayStrip({
               key={k}
               type="button"
               aria-pressed={isSel}
-              aria-label={`${full[i]}, ${k}${isToday ? " (сьогодні)" : ""}`}
+              aria-label={`${full[i]}, ${formatDayMonth(parseDateKey(k))}${isToday ? " (сьогодні)" : ""}`}
               onClick={() => onSelectDay(k)}
               className={cn(
                 // Розміру шрифта на кнопці НЕМАЄ навмисно: обидва вкладені
@@ -130,7 +132,7 @@ export function WeekShiftControls({ onShiftWeek }: WeekShiftControlsProps) {
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
+        className={cn("shrink-0", ROUTINE_OUTLINE_ICON_BUTTON)}
         onClick={() => onShiftWeek(-1)}
         aria-label="Попередній тиждень"
       >
@@ -139,7 +141,7 @@ export function WeekShiftControls({ onShiftWeek }: WeekShiftControlsProps) {
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
+        className={cn("shrink-0", ROUTINE_OUTLINE_ICON_BUTTON)}
         onClick={() => onShiftWeek(1)}
         aria-label="Наступний тиждень"
       >

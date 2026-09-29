@@ -43,6 +43,7 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
+import { WorkoutMomentLine } from "./WorkoutMomentLine";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -53,12 +54,19 @@ export interface WorkoutSummaryViewProps {
 }
 
 /** One-line "what happened" caption for a single exercise entry. */
-function formatItemDetail(item: WorkoutItem): string {
+function formatItemDetail(item: WorkoutItem, rpeLabel: string): string {
   if (item.type === "strength") {
     const sets = item.sets || [];
     if (sets.length === 0) return "—";
     return sets
-      .map((s) => `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`)
+      .map((s) => {
+        const base = `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`;
+        const rpe = s["rpe"];
+        // RPE is strictly optional (Borg 1..10) — omit the suffix entirely
+        // rather than print a misleading "RPE 0" when it was never filled
+        // in (canon `fizruk.md` §3).
+        return typeof rpe === "number" ? `${base} · ${rpeLabel} ${rpe}` : base;
+      })
       .join(", ");
   }
   if (item.type === "distance") {
@@ -113,6 +121,7 @@ export function WorkoutSummaryView({
               </span>
             ) : null}
           </div>
+          <WorkoutMomentLine workoutId={workout.id} />
         </div>
       </div>
 
@@ -158,7 +167,7 @@ export function WorkoutSummaryView({
             >
               <div className="text-style-label text-text">{item.nameUk}</div>
               <div className="text-style-caption text-subtle mt-0.5">
-                {formatItemDetail(item)}
+                {formatItemDetail(item, copy.rpeLabel)}
               </div>
             </li>
           ))}
@@ -177,12 +186,14 @@ export function WorkoutSummaryView({
       )}
 
       <Button
-        module="fizruk"
+        variant="solid"
+        tone="fizruk"
+
         className="w-full h-12 mt-4"
         type="button"
         onClick={onRepeat}
       >
-        <Icon name="refresh-cw" size={16} aria-hidden /> {copy.repeatCta}
+        <Icon name="refresh-cw" size="md" aria-hidden /> {copy.repeatCta}
       </Button>
     </Card>
   );

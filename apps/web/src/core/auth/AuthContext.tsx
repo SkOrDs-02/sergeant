@@ -23,7 +23,6 @@ import { swClearCaches, swSetActiveUser } from "../app/swControl";
 import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { clearDemoFlag } from "../onboarding/onboardingGate";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
@@ -138,7 +137,7 @@ export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
  * Better Auth `code`, бо це стабільний контракт, на відміну від
  * англійських `message`, які регулярно ламали мапер (наприклад,
  * `/invalid email/i` фальш-метчив `"Invalid email or password"`, і юзер
- * з неправильним паролем бачив «Невірний формат email.»). Поле `error`
+ * з неправильним паролем бачив «Неправильний формат email.»). Поле `error`
  * читаємо як fallback — наш серверний error-handler і rate-limiter
  * пишуть саме його, а не `message`, тож без цієї гілки 429/5xx
  * приходили б у фронт як `undefined` і ловилися зовнішнім fallback-ом.
@@ -215,7 +214,7 @@ function translateByMessage(message: string, fallback: string): string {
   if (/^invalid token$/i.test(message)) return messages.auth.invalidToken;
   // Перевіряти specific-перед-generic: `"Invalid email or password"`
   // містить підрядок `"Invalid email"`, тож загальна гілка
-  // `/invalid email/i` фальш-метчила wrong-password як «Невірний формат
+  // `/invalid email/i` фальш-метчила wrong-password як «Неправильний формат
   // email.». Тримаємо composite-патерн вище і використовуємо межу слова
   // у вузькій гілці.
   if (/user already exists/i.test(message))
@@ -426,17 +425,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const result = await signIn.email({ email, password });
         if (result?.error) {
-          setAuthError(translateAuthError(result.error, "Помилка входу"));
+          setAuthError(
+            translateAuthError(result.error, messages.auth.genericFailure),
+          );
           return false;
         }
-        // Leaving demo on auth prevents the demo+authenticated mixed state
-        // that wedges the post-logout transition (QA D-004).
-        clearDemoFlag();
         setSignedOut(false);
         await invalidateMe();
         return true;
       } catch (err) {
-        setAuthError(translateAuthError(asAuthErrorLike(err), "Помилка входу"));
+        setAuthError(
+          translateAuthError(
+            asAuthErrorLike(err),
+            messages.auth.genericFailure,
+          ),
+        );
         return false;
       }
     },
@@ -515,7 +518,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const result = await signUp.email({ email, password, name });
         if (result?.error) {
-          setAuthError(translateAuthError(result.error, "Помилка реєстрації"));
+          setAuthError(
+            translateAuthError(result.error, messages.auth.registerFailure),
+          );
           const code = (result.error as { code?: string }).code;
           return code === "USER_ALREADY_EXISTS" ||
             code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
@@ -527,15 +532,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // помилки і ніколи не кидає. Викликаємо до `invalidateMe`, щоб
         // ивент полетів навіть якщо рефетч `me` зависне.
         trackEvent(ANALYTICS_EVENTS.SIGNUP_COMPLETED, { method: "email" });
-        // Leaving demo on auth prevents the demo+authenticated mixed state
-        // that wedges the post-logout transition (QA D-004).
-        clearDemoFlag();
         setSignedOut(false);
         await invalidateMe();
         return true;
       } catch (err) {
         setAuthError(
-          translateAuthError(asAuthErrorLike(err), "Помилка реєстрації"),
+          translateAuthError(
+            asAuthErrorLike(err),
+            messages.auth.registerFailure,
+          ),
         );
         return false;
       }

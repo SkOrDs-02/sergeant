@@ -237,7 +237,7 @@ export function MemoryBankSection() {
     <Card radius="lg" padding="none" className="overflow-hidden">
       {/* V-4 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»):
           цей `<div>` раніше малював власний текстовий заголовок
-          «Памʼять ШІ» поверх `text-style-label` — БІЛЬШИМ за зовнішній
+          «Памʼять AI» поверх `text-style-label` — БІЛЬШИМ за зовнішній
           `CollapsibleSection`-заголовок «Памʼять» (`SectionHeading
           size="xs"` у `ProfilePage.tsx`), тобто інверсія ієрархії:
           дрібніший зовнішній рівень над більшим вкладеним. Заголовок-текст
@@ -270,20 +270,20 @@ export function MemoryBankSection() {
                 <Icon name="sergeant" size={22} className="text-brand-500" />
               }
               title="Банк памʼяті порожній"
-              description="ШІ поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
+              description="Сержант поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
               action={
                 <Button
-                  variant="primary"
+                  variant="solid"
                   size="sm"
                   onClick={() => openMemoryChat("interview")}
                 >
-                  <Icon name="sergeant" size={14} className="mr-1.5" />
+                  <Icon name="sergeant" size="sm" className="mr-1.5" />
                   Заповнити профіль
                 </Button>
               }
               secondaryAction={
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() => setManualOpen(true)}
                 >
@@ -296,7 +296,7 @@ export function MemoryBankSection() {
                   size="sm"
                   onClick={() => importRef.current?.click()}
                 >
-                  <Icon name="upload" size={14} className="mr-1.5" />
+                  <Icon name="upload" size="sm" className="mr-1.5" />
                   Імпорт
                 </Button>
               }
@@ -343,7 +343,7 @@ export function MemoryBankSection() {
                           className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] rounded-xl flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                           aria-label={`Видалити: ${entry.fact}`}
                         >
-                          <Icon name="close" size={14} />
+                          <Icon name="close" size="sm" />
                         </button>
                       </div>
                     ))}
@@ -360,8 +360,8 @@ export function MemoryBankSection() {
               <DropdownMenu
                 ariaLabel="Як додати факт"
                 trigger={
-                  <Button variant="secondary" size="sm" className="gap-1.5">
-                    <Icon name="plus" size={14} />
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Icon name="plus" size="sm" />
                     Додати
                   </Button>
                 }
@@ -371,7 +371,7 @@ export function MemoryBankSection() {
                     id: "chat",
                     label: "Додати інфо в чаті",
                     description: "Розкажи Сержанту, він запише",
-                    icon: <Icon name="sergeant" size={16} />,
+                    icon: <Icon name="sergeant" size="md" />,
                     onSelect: () => openMemoryChat("add"),
                   },
                   {
@@ -379,7 +379,7 @@ export function MemoryBankSection() {
                     id: "interview",
                     label: "Пройти інтервʼю",
                     description: "Ширші питання: цілі, обмеження, звички",
-                    icon: <Icon name="message-circle" size={16} />,
+                    icon: <Icon name="message-circle" size="md" />,
                     onSelect: () => openMemoryChat("interview"),
                   },
                   {
@@ -387,7 +387,7 @@ export function MemoryBankSection() {
                     id: "manual",
                     label: "Вручну",
                     description: "Крок за кроком, без чату",
-                    icon: <Icon name="pen" size={16} />,
+                    icon: <Icon name="pen" size="md" />,
                     onSelect: () => setManualOpen(true),
                   },
                 ]}
@@ -401,7 +401,7 @@ export function MemoryBankSection() {
                     iconOnly
                     aria-label="Ще дії з памʼяттю"
                   >
-                    <Icon name="more-horizontal" size={16} />
+                    <Icon name="more-horizontal" size="md" />
                   </Button>
                 }
                 items={[
@@ -409,14 +409,14 @@ export function MemoryBankSection() {
                     type: "item",
                     id: "export",
                     label: "Експорт памʼяті",
-                    icon: <Icon name="download" size={16} />,
+                    icon: <Icon name="download" size="md" />,
                     onSelect: handleExport,
                   },
                   {
                     type: "item",
                     id: "import",
                     label: "Імпорт памʼяті",
-                    icon: <Icon name="upload" size={16} />,
+                    icon: <Icon name="upload" size="md" />,
                     onSelect: () => importRef.current?.click(),
                   },
                 ]}
@@ -449,7 +449,7 @@ export function MemoryBankSection() {
                 className="shrink-0 rounded-xl p-2 text-muted hover:bg-panel hover:text-text"
                 aria-label="Закрити ручне заповнення"
               >
-                <Icon name="close" size={14} />
+                <Icon name="close" size="sm" />
               </button>
             </div>
             <Textarea
@@ -467,7 +467,7 @@ export function MemoryBankSection() {
               <Button variant="ghost" size="sm" onClick={saveManualStep}>
                 Пропустити
               </Button>
-              <Button variant="primary" size="sm" onClick={saveManualStep}>
+              <Button variant="solid" size="sm" onClick={saveManualStep}>
                 {manualStepIndex + 1 >= MEMORY_MANUAL_STEPS.length
                   ? "Завершити"
                   : "Зберегти і далі"}
@@ -526,7 +526,7 @@ export function MemoryBankSection() {
                 Скасувати
               </Button>
               <Button
-                variant="primary"
+                variant="solid"
                 size="sm"
                 disabled={pendingImport.newEntries.length === 0}
                 onClick={confirmImport}

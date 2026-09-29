@@ -15,6 +15,7 @@
 import { addDays, dateKeyFromDate, isoWeekdayFromDateKey } from "./dateKeys.js";
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
+import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 
 /**
  * Стан однієї клітинки рядка.
@@ -127,7 +128,18 @@ export function buildHabitRangeRows(
 
     for (const dateKey of dateKeys) {
       let state: HabitRangeCellState = "unscheduled";
-      if (habitScheduledOnDate(habit, dateKey, scheduleOpts)) {
+      // Гнучка звичка («N разів на тиждень») перестає бути в розкладі,
+      // щойно тижневу ціль добрано — без `weekDoneCount` предикат вважає
+      // її запланованою щодня (`schedule.ts`), тож рядок малював би
+      // клітинки «Пропущено» на дні понад норму (клас Б спеки
+      // `routine-flexible-weekly-frequency.md`, той самий розрив, що вже
+      // закрито в `grid.ts`/`calendarEvents.ts`).
+      const weekDoneCount = isFlexibleHabit(habit)
+        ? weekDoneCountExcludingDate(completions?.[habit.id], dateKey)
+        : undefined;
+      if (
+        habitScheduledOnDate(habit, dateKey, { ...scheduleOpts, weekDoneCount })
+      ) {
         scheduled += 1;
         if (done.has(dateKey)) {
           state = "done";

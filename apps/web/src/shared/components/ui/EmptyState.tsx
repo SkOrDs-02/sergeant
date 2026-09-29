@@ -490,7 +490,7 @@ const MODULE_EMPTY_CONFIG: Record<
     icon: "utensils",
     title: "Що ти їси насправді?",
     description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву, AI порахує калорії",
+    hint: "Порада: Сфоткай страву, Сержант порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     exampleLine1: "Сніданок",
@@ -591,7 +591,7 @@ export function ModuleEmptyState({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
-          <Icon name="x" size={16} aria-hidden="true" />
+          <Icon name="close" size="md" aria-hidden="true" />
         </button>
       )}
       <EmptyState
@@ -627,7 +627,7 @@ export function ModuleEmptyState({
         action={
           onAction && (
             <Button
-              variant="primary"
+              variant="solid"
               size={compact ? "sm" : "md"}
               onClick={onAction}
             >

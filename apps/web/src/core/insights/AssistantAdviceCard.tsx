@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -78,6 +78,7 @@ export function AssistantAdviceCard({
   sectionOpen = true,
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const bodyId = useId();
   const aiTier = useAiTier();
   const { isPro } = usePlan();
   const degradedLabel =
@@ -131,11 +132,13 @@ export function AssistantAdviceCard({
         "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
-      <div className="rounded-2xl bg-surface-glass backdrop-blur-md overflow-hidden">
+      <div className="rounded-2xl bg-panel overflow-hidden">
         <button
           type="button"
           onClick={toggle}
-          className="flex items-center justify-between w-full px-4 py-3 text-left"
+          aria-expanded={!collapsed}
+          aria-controls={bodyId}
+          className="flex items-center justify-between w-full px-4 py-3 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-2">
             <span
@@ -164,13 +167,13 @@ export function AssistantAdviceCard({
           </div>
           <Icon
             name={collapsed ? "chevron-down" : "chevron-up"}
-            size={14}
+            size="sm"
             className="text-muted"
           />
         </button>
 
         {!collapsed && (
-          <div className="px-4 pb-3.5 -mt-0.5">
+          <div id={bodyId} className="px-4 pb-3.5 -mt-0.5">
             {loading && !insight ? (
               // Skeleton stand-in matches three lines of body copy at
               // the real text size — keeps the card height stable so
@@ -223,7 +226,7 @@ export function AssistantAdviceCard({
               <div className="mt-2.5 flex items-center gap-2">
                 {/* Actionable insight (UX-пропозиція 2026-07): порада була
                     суто текстовою — тепер із неї можна одразу перейти в
-                    дію. «Запитати AI про це» відкриває асистента із
+                    дію. «Запитати Сержанта про це» відкриває його із
                     засіяним контекстом поради (autoSend: false, щоб юзер
                     міг відредагувати питання перед відправкою). */}
                 {insight && (
@@ -258,7 +261,7 @@ export function AssistantAdviceCard({
                       strokeWidth={2}
                       aria-hidden
                     />
-                    Запитати AI про це
+                    Запитати Сержанта про це
                   </button>
                 )}
                 <button
@@ -276,7 +279,7 @@ export function AssistantAdviceCard({
                       "opacity-40 cursor-not-allowed motion-safe:animate-spin",
                   )}
                 >
-                  <Icon name="refresh-cw" size={14} />
+                  <Icon name="refresh-cw" size="sm" />
                 </button>
                 {/* Оцінка — праворуч, окремо від дій над порадою: «зроби
                     щось із цим» і «чи це взагалі було варте показу» — різні

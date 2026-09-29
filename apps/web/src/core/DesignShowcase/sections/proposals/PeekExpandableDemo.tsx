@@ -37,7 +37,7 @@ export function PeekExpandableDemo() {
           <div className="rounded-2xl border border-line bg-panel overflow-hidden">
             <div className="px-4 py-3 flex items-center gap-2 border-b border-line">
               <span className="h-6 w-6 rounded-md bg-finyk-soft text-finyk flex items-center justify-center">
-                <Icon name="wallet" size={14} />
+                <Icon name="wallet" size="sm" />
               </span>
               <span className="text-style-label text-text">
                 Останні витрати
@@ -77,7 +77,7 @@ export function PeekExpandableDemo() {
               aria-expanded={open}
             >
               {open ? "Згорнути" : `Ще ${hidden}`}
-              <Icon name={open ? "chevron-up" : "chevron-down"} size={14} />
+              <Icon name={open ? "chevron-up" : "chevron-down"} size="sm" />
             </button>
           </div>
         </div>

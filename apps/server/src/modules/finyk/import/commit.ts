@@ -12,7 +12,7 @@ import type {
   ImportCommitRowStatus,
 } from "@sergeant/shared";
 import { assignImportRowIds } from "./rowKey.js";
-import { findMonoMatch } from "./dedupMono.js";
+import { findMonoMatchedRows } from "./dedupMono.js";
 import { serializeImportBatch } from "./serialize.js";
 import type { ImportBatchRow } from "./serialize.js";
 import { emitServerSyncOps } from "../../sync/serverOpLog.js";
@@ -66,35 +66,43 @@ interface UpsertedManualExpense {
  * INSERT ... ON CONFLICT (id) DO NOTHING — детермінований `id`
  * (rowKey.ts) робить повторний commit того самого рядка (той самий
  * файл/період завантажено вдруге) no-op замість дубля (0022 § Відкриті
- * рішення №2).
+ * рішення №2). Один statement на всі не-mono рядки батчу (масиви через
+ * `unnest`), а не по запиту на рядок; `id` у межах батчу унікальні
+ * (`occurrenceIndex` у rowKey.ts), тож рядки батчу між собою не конфліктують.
  *
- * Повертає СТАН рядка, а не лише «вставили/ні»: серверний
- * `sync_op_log`-оп несе фактичний `data_json` і `updated_at` рядка, тож
- * для конфліктного рядка треба саме те, що вже лежить у базі, а не blob,
- * який щойно намагались вставити (категорія в базі могла бути іншою —
- * id хешує дату/суму/напрям/опис, але НЕ категорію). Друга гілка UNION
- * читає знімок ДО цього statement-у, тож вона порожня рівно тоді, коли
- * INSERT спрацював, і навпаки.
+ * Повертає СТАН кожного рядка (Map за `id`), а не лише «вставили/ні»:
+ * серверний `sync_op_log`-оп несе фактичний `data_json` і `updated_at`
+ * рядка, тож для конфліктного рядка треба саме те, що вже лежить у базі, а
+ * не blob, який щойно намагались вставити (категорія в базі могла бути
+ * іншою — id хешує дату/суму/напрям/опис, але НЕ категорію). Друга гілка
+ * UNION читає знімок ДО цього statement-у, тож для кожного `id` вона
+ * порожня рівно тоді, коли INSERT спрацював, і навпаки. `id`, якого немає
+ * в Map, належить іншому користувачу (гілка фільтрує `user_id`).
  *
  * `deletedAt !== null` — рядок існує, але tombstone (undo імпорту чи
  * ручне видалення). AI-DANGER: такий рядок НЕ можна реплікувати опом —
  * це воскресило б дані, які користувач свідомо прибрав.
  */
-async function upsertManualExpenseRow(
+async function upsertManualExpenseRows(
   client: PoolClient,
   userId: string,
-  id: string,
-  row: ImportCommitRow,
-): Promise<UpsertedManualExpense | null> {
-  const blob: ManualExpenseBlob = {
-    id,
-    date: row.date,
-    description: row.description.trim() || FALLBACK_DESCRIPTION,
-    amount: row.amountKopiykas / 100,
-    category: row.category,
-    kind: row.direction,
-  };
+  items: ReadonlyArray<{ id: string; row: ImportCommitRow }>,
+): Promise<Map<string, UpsertedManualExpense>> {
+  const result = new Map<string, UpsertedManualExpense>();
+  if (items.length === 0) return result;
+  const blobs = items.map(({ id, row }) => {
+    const blob: ManualExpenseBlob = {
+      id,
+      date: row.date,
+      description: row.description.trim() || FALLBACK_DESCRIPTION,
+      amount: row.amountKopiykas / 100,
+      category: row.category,
+      kind: row.direction,
+    };
+    return JSON.stringify(blob);
+  });
   const { rows } = await client.query<{
+    id: string;
     data_json: unknown;
     created_at: Date;
     updated_at: Date;
@@ -103,27 +111,31 @@ async function upsertManualExpenseRow(
   }>(
     `WITH ins AS (
        INSERT INTO finyk_manual_expenses (id, user_id, data_json)
-       VALUES ($1, $2, $3::jsonb)
+       SELECT i.id, $2, i.blob::jsonb
+         FROM unnest($1::text[], $3::text[]) WITH ORDINALITY AS i(id, blob, ord)
+        ORDER BY i.ord
        ON CONFLICT (id) DO NOTHING
-       RETURNING data_json, created_at, updated_at, deleted_at
+       RETURNING id, data_json, created_at, updated_at, deleted_at
      )
-     SELECT data_json, created_at, updated_at, deleted_at, TRUE AS inserted
+     SELECT id, data_json, created_at, updated_at, deleted_at, TRUE AS inserted
        FROM ins
      UNION ALL
-     SELECT data_json, created_at, updated_at, deleted_at, FALSE AS inserted
-       FROM finyk_manual_expenses
-      WHERE id = $1 AND user_id = $2 AND NOT EXISTS (SELECT 1 FROM ins)`,
-    [id, userId, JSON.stringify(blob)],
+     SELECT f.id, f.data_json, f.created_at, f.updated_at, f.deleted_at, FALSE AS inserted
+       FROM finyk_manual_expenses f
+      WHERE f.id = ANY($1::text[]) AND f.user_id = $2
+        AND NOT EXISTS (SELECT 1 FROM ins WHERE ins.id = f.id)`,
+    [items.map(({ id }) => id), userId, blobs],
   );
-  const found = rows[0];
-  if (!found) return null;
-  return {
-    inserted: found.inserted,
-    dataJson: found.data_json,
-    createdAt: found.created_at,
-    updatedAt: found.updated_at,
-    deletedAt: found.deleted_at,
-  };
+  for (const found of rows) {
+    result.set(found.id, {
+      inserted: found.inserted,
+      dataJson: found.data_json,
+      createdAt: found.created_at,
+      updatedAt: found.updated_at,
+      deletedAt: found.deleted_at,
+    });
+  }
+  return result;
 }
 
 /**
@@ -167,7 +179,7 @@ async function upsertManualExpenseRow(
  * цього кейсу — задокументовано як відоме обмеження в звіті server-agent-а
  * замість мовчазного "виправлення" непроханою логікою.
  *
- * `findMonoMatch`/rowKey обчислюються з `row.description` "як дано" (ДО
+ * `findMonoMatchedRows`/rowKey обчислюються з `row.description` "як дано" (ДО
  * `FALLBACK_DESCRIPTION`-підстановки) — фолбек лише для збереженого
  * blob-у, не для хешу; порожній опис сам по собі стабільне значення для
  * групування/дедупу.
@@ -187,7 +199,7 @@ export default async function commitImportHandler(
     // рахувався б «дублем» — мовчазна втрата даних замість помилки.
     if (!id) {
       throw new Error(
-        "assignImportRowIds повернув менше id, ніж рядків — інваріант порушено",
+        "assignImportRowIds повернув менше id, ніж рядків – інваріант порушено",
       );
     }
     return { row, id };
@@ -206,20 +218,29 @@ export default async function commitImportHandler(
      * їх реплікуємо опом (created + живі дублі, § докстрінг handler-а). */
     const replicable: Array<{ id: string; state: UpsertedManualExpense }> = [];
 
-    for (const { row, id } of rowsWithIds) {
-      const match = await findMonoMatch(client, {
-        userId,
-        date: row.date,
-        amountKopiykas: row.amountKopiykas,
-        direction: row.direction,
-      });
-      if (match) {
+    // Два запити на весь батч незалежно від кількості рядків: mono-матч
+    // читає лише mono_transaction, тож вставки manual-expense на нього не
+    // впливають і порядок «спершу всі матчі, потім одна вставка» дає той
+    // самий результат, що колишній цикл «матч, вставка» по рядку.
+    const monoMatchedFlags = await findMonoMatchedRows(
+      client,
+      userId,
+      rowsWithIds.map(({ row }) => row),
+    );
+    const upsertedById = await upsertManualExpenseRows(
+      client,
+      userId,
+      rowsWithIds.filter((_, idx) => !monoMatchedFlags[idx]),
+    );
+
+    for (const [idx, { id }] of rowsWithIds.entries()) {
+      if (monoMatchedFlags[idx]) {
         monoMatched++;
         rowResults.push({ id, status: "mono_matched" });
         continue;
       }
 
-      const upserted = await upsertManualExpenseRow(client, userId, id, row);
+      const upserted = upsertedById.get(id);
       let status: ImportCommitRowStatus;
       if (upserted?.inserted) {
         created++;
@@ -256,7 +277,7 @@ export default async function commitImportHandler(
     const batchRow = batchRows[0];
     if (!batchRow) {
       throw new Error(
-        "import_batches INSERT ... RETURNING повернув 0 рядків — драйвер-аномалія",
+        "import_batches INSERT ... RETURNING повернув 0 рядків – драйвер-аномалія",
       );
     }
 

@@ -15,7 +15,6 @@ import {
   getAccountLabel,
   getMonoDebt,
   isMonoDebt,
-  daysUntil,
   getMonthStart,
   getTxStatAmount,
   calcCategorySpent,
@@ -97,7 +96,7 @@ describe("getCategory (expense)", () => {
     expect(getCategory("", 6011).id).not.toBe("debt");
   });
 
-  it("бере канонічний categoryId транзакції раніше за MCC/опис", () => {
+  it("бере канонічний categoryId операції раніше за MCC/опис", () => {
     const tx = {
       description: "Розваги",
       mcc: 0,
@@ -393,20 +392,6 @@ describe("isMonoDebt", () => {
   });
 });
 
-describe("daysUntil", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2024, 5, 10, 12, 0, 0));
-  });
-  it("повертає додатну кількість днів до дати в поточному місяці", () => {
-    expect(daysUntil(20)).toBe(10);
-  });
-  it("переходить на наступний місяць коли день вже минув", () => {
-    expect(daysUntil(5)).toBeGreaterThan(20);
-    expect(daysUntil(5)).toBeLessThanOrEqual(31);
-  });
-});
-
 describe("getMonthStart", () => {
   it("повертає перший день поточного місяця", () => {
     vi.useFakeTimers();
@@ -450,7 +435,7 @@ describe("calcCategorySpent", () => {
   it("сумує витрати для food через MCC+keyword", () => {
     expect(calcCategorySpent(txs, "food")).toBe(600);
   });
-  it("сумує через override для окремої транзакції", () => {
+  it("сумує через override для окремої операції", () => {
     expect(calcCategorySpent(txs, "transport", { 4: "transport" })).toBe(300);
   });
   it("використовує спліт коли він заданий", () => {

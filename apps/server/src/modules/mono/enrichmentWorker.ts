@@ -6,6 +6,7 @@ import {
   monoMccBatchProcessedTotal,
 } from "../../obs/metrics.js";
 import { logger, serializeError } from "../../obs/logger.js";
+import { toPublicErrorCode } from "../../obs/errorCode.js";
 import { categorizeTransaction } from "../../routes/internal/categorize.js";
 import type { CategorizeResult } from "../../routes/internal/categorize.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
@@ -411,7 +412,8 @@ export interface MonoEnrichmentWorkerStatus {
     dead_letter: number;
     total: number;
   } | null;
-  error?: string;
+  /** Клас помилки для публічної відповіді; повний текст — лише в логу. */
+  errorCode?: string;
 }
 
 export async function getMonoEnrichmentWorkerStatus(
@@ -453,11 +455,18 @@ export async function getMonoEnrichmentWorkerStatus(
     }
     return { enabled, intervalMs, queueDepth: depth };
   } catch (err) {
+    // Текст помилки `pg` носить внутрішній хост і імʼя DB-користувача, а
+    // `/health/workers` анонімний — назовні йде лише клас
+    // (`obs/errorCode.ts`), повний текст лишається тут, у лозі.
+    logger.error({
+      msg: "mono_enrichment_queue_depth_failed",
+      err: serializeError(err),
+    });
     return {
       enabled,
       intervalMs,
       queueDepth: null,
-      error: err instanceof Error ? err.message : String(err),
+      errorCode: toPublicErrorCode(err),
     };
   }
 }

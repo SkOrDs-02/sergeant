@@ -122,9 +122,10 @@ function applyServerError<TValues extends FieldValues>(
   return (
     topLevel ??
     body.error ??
+    // `err.message` тут технічний («HTTP 503»), людині його не показуємо
+    // (аудит копі 2026-09-23 §2.5).
     err.serverMessage ??
-    err.message ??
-    "Помилка сервера"
+    "Щось пішло не так. Спробуй ще раз."
   );
 }
 

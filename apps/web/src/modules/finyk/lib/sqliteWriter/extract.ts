@@ -3,7 +3,7 @@
  * `useFinykStorageSlots`) into the `FinykDualWriteState` shape the
  * diff layer consumes.
  *
- * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 PR #036 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * The extractor is intentionally stupid — it does NOT mutate, deeply
  * clone, or normalise data. The slot bundle already holds the LS

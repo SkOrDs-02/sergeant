@@ -48,7 +48,7 @@ export const FINYK_PAGES: readonly FinykPageDef[] = [
   {
     id: "transactions",
     label: "Операції",
-    description: "Всі транзакції з пошуком та фільтрами",
+    description: "Всі операції з пошуком та фільтрами",
     Icon: CreditCard,
     href: "/finyk/transactions",
   },

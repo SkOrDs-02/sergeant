@@ -41,12 +41,28 @@ function makeRoot(overrides = {}) {
     "# AGENTS.md\n\n## Harness version\n\n- **Current:** see `current` field in `.agents/harness-versions.json`.\n";
   writeFileSync(join(root, "AGENTS.md"), agentsMd);
 
-  mkdirSync(join(root, "docs", "work", "planning"), { recursive: true });
+  // Шлях мусить збігатися з тим, який читає сам скрипт
+  // (`scripts/check-harness-version-freshness.mjs`). Док переїхав
+  // `docs/work/planning/` → `docs/work/specs/planning/`, скрипт оновили,
+  // а фікстуру ні — і два тести мовчки стали перевіряти НЕІСНУЮЧИЙ файл:
+  // скрипт нічого не знаходив, тож ні помилки, ні попередження не було.
+  // Спіймалось лише тому, що весь глоб `scripts/__tests__` вперше
+  // прогнали разом (аудит шуму 2026-09-17).
+  mkdirSync(join(root, "docs", "work", "specs", "planning"), {
+    recursive: true,
+  });
   const v1Doc =
     overrides.v1Doc ??
     "# Harness Engineering v1\n\n(schemaVersion 1, поточна `1.0.0` — promoted 2026-07-20)\n";
   writeFileSync(
-    join(root, "docs", "work", "planning", "harness-engineering-v1.md"),
+    join(
+      root,
+      "docs",
+      "work",
+      "specs",
+      "planning",
+      "harness-engineering-v1.md",
+    ),
     v1Doc,
   );
 

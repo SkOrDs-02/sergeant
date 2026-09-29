@@ -1,3 +1,4 @@
+import { categoryColors } from "@sergeant/design-tokens";
 import {
   CodeBlock,
   DoDont,
@@ -11,7 +12,7 @@ const SAMPLE_USAGE = `// Tokens: light / dark / hc cascade for free
 <div className="bg-panel text-text border border-line">…</div>
 
 // Saturated brand fill behind text-white needs the -strong companion
-<button className="bg-accent-strong text-white">Submit</button>`;
+<button className="bg-brand-strong text-white">Submit</button>`;
 
 export function ColorsSection() {
   return (
@@ -85,6 +86,33 @@ export function ColorsSection() {
         </div>
       </Group>
 
+      <Group
+        label="Пʼята родина: categoryColors (категорії витрат Фініка)"
+        description={
+          <>
+            Свідомо розведена по hue з модульними акцентами - не фарбуй
+            категорію бренд-тиром. Джерело - <code>tokens.js</code>, гейт{" "}
+            <code>categoryColors.contract.test.js</code>. У JSX бери через{" "}
+            <code>catChipVars()</code> + класи <code>.cat-chip</code> /{" "}
+            <code>.cat-dot</code>, не хардкодь hex.
+          </>
+        }
+      >
+        <div className="flex flex-wrap gap-4">
+          {Object.entries(categoryColors).map(([id, c]) => (
+            <div key={id} className="flex flex-col items-center gap-1.5">
+              <div
+                className="w-14 h-14 rounded-2xl border border-line shadow-card"
+                style={{ backgroundColor: c.solid }}
+              />
+              <span className="text-style-code text-subtle text-center">
+                {id}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Group>
+
       <Group label="Приклад використання">
         <CodeBlock>{SAMPLE_USAGE}</CodeBlock>
       </Group>
@@ -99,7 +127,7 @@ export function ColorsSection() {
             },
             {
               label: "Saturated fill + text-white",
-              good: <code>bg-accent-strong text-white</code>,
+              good: <code>bg-brand-strong text-white</code>,
               bad: <code>bg-accent text-white</code>,
             },
             {

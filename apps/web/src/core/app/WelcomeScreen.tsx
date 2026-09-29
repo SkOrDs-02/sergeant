@@ -9,7 +9,6 @@ import {
   markFirstActionStartedAt,
   saveVibePicks,
 } from "../onboarding/vibePicks";
-import { seedDemoData } from "../onboarding/seedDemoData";
 import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   isOnboardingCompletedFired,
@@ -28,10 +27,18 @@ import { messages } from "@shared/i18n/uk";
 // real dashboard layout new users are about to see.
 //
 // PR-06 — canonical Cyrillic without emoji. Module labels are bare brand
-// names (`Фінік / Фізрук / Рутина / Харчування`) — the colored module-icon
+// names (`Фінік / Фізрук / Рутина / Їжа`) — the colored module-icon
 // bubble already carries the visual association, so emoji prefixed to the
 // text was duplicative and broke uniformity vs the hub bottom-nav and
 // settings groups.
+//
+// AI-CONTEXT: картки навмисно БЕЗ числових значень. Доти тут стояли
+// `−320 ₴`, `5 трен.`, `7 днів`, `420 ккал`, а підпис «Це приклад» мав
+// `hidden sm:flex` — тобто на телефоні, основній платформі web-first PWA,
+// новачок бачив чужі числа без жодної ознаки, що вони несправжні
+// (`docs/work/specs/audits/2026-09-20-rada-skeptykiv.md` § G). Форму
+// дашборда тепер тримають скелетон-риски: вони не вдають дані, тож і
+// дисклеймер більше не потрібен.
 const PEEK_CARDS = [
   {
     id: "finyk",
@@ -39,8 +46,6 @@ const PEEK_CARDS = [
     cardBg: "bg-finyk-soft/40 dark:bg-finyk-surface-dark/8",
     iconClass: "bg-finyk-soft text-finyk dark:bg-finyk-surface-dark/15",
     icon: "credit-card",
-    metric: "−320 ₴",
-    sub: "тиждень",
   },
   {
     id: "fizruk",
@@ -48,8 +53,6 @@ const PEEK_CARDS = [
     cardBg: "bg-fizruk-soft/40 dark:bg-fizruk-surface-dark/8",
     iconClass: "bg-fizruk-soft text-fizruk dark:bg-fizruk-surface-dark/15",
     icon: "dumbbell",
-    metric: "5 трен.",
-    sub: "14 днів",
   },
   {
     id: "routine",
@@ -58,8 +61,6 @@ const PEEK_CARDS = [
     iconClass:
       "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
     icon: "check",
-    metric: "7 днів",
-    sub: "серія",
   },
   {
     id: "nutrition",
@@ -68,8 +69,6 @@ const PEEK_CARDS = [
     iconClass:
       "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",
     icon: "utensils",
-    metric: "420 ккал",
-    sub: "сніданок",
   },
 ];
 
@@ -94,35 +93,6 @@ function PeekBackdrop() {
           "bg-linear-to-b from-brand-500/5 via-transparent to-transparent",
         )}
       />
-      {/* Honest peek disclaimer. The blurred cards beneath carry fake
-          metrics (`−320 ₴`, `5 трен.`, ...) so on first load the splash
-          visually promises a populated dashboard. The disclaimer keeps
-          that promise honest without competing with the primary CTA:
-          muted caption-size text, single-line, pinned just below the
-          safe-area top so it sits inside the peek area but above the
-          blurred bento.
-
-          UX-feedback 2026-05-08: hidden below `sm` because on mobile
-          the splash card sits `items-end` and covers the full width
-          and ~80% of the viewport — the blurred bento behind has no
-          visible vertical room (squeezed between safe-area-top and
-          the card), so this caption was floating over an empty cream
-          background and reading as a broken promise («це приклад» —
-          where?). On `sm+` the card centres and the bento is visible
-          on either side, so the disclaimer keeps making sense. The
-          demo entry point on mobile is the secondary CTA inside the
-          splash card («Подивитись приклад»). */}
-      <div
-        className={cn(
-          "absolute inset-x-0",
-          "pt-[max(0.5rem,calc(env(safe-area-inset-top)+0.25rem))] px-5",
-          "hidden sm:flex sm:justify-center",
-        )}
-      >
-        <span className="text-style-caption text-muted">
-          Це приклад. Твоя головна буде твоєю.
-        </span>
-      </div>
       {/* Animated floating shapes for visual interest */}
       <div className="absolute inset-0">
         <div
@@ -139,9 +109,10 @@ function PeekBackdrop() {
         />
       </div>
       {/* Faux hub rendered under a blur so the user perceives the shape
-          and accent colors of their about-to-be-populated dashboard, but
-          can't read individual numbers well enough to be distracted from
-          the splash copy. Uses a 2×2 bento grid matching the real dashboard. */}
+          and accent colors of their about-to-be-populated dashboard. The
+          cards carry skeleton bars, not numbers — nothing here pretends to
+          be data, so no disclaimer is needed. Uses a 2×2 bento grid
+          matching the real dashboard. */}
       <div
         className={cn(
           "absolute inset-x-0 top-0 pt-[max(2.5rem,env(safe-area-inset-top))] px-5 max-w-lg mx-auto w-full",
@@ -182,7 +153,7 @@ function PeekBackdrop() {
                 >
                   <Icon
                     name={card.icon}
-                    size={16}
+                    size="md"
                     strokeWidth={2}
                     aria-hidden
                   />
@@ -190,12 +161,8 @@ function PeekBackdrop() {
                 <span className="text-style-label font-semibold text-text">
                   {card.label}
                 </span>
-                <span className="text-style-title text-text tabular-nums mt-1">
-                  {card.metric}
-                </span>
-                <span className="text-style-caption text-muted mt-0.5">
-                  {card.sub}
-                </span>
+                <div className="h-5 w-16 rounded-xl bg-panelHi mt-1" />
+                <div className="h-3 w-12 rounded-xl bg-panelHi mt-1.5" />
               </div>
             ))}
           </div>
@@ -229,27 +196,11 @@ interface WelcomeScreenProps {
  * `getActiveModules` observe the same
  * downstream state regardless of which welcome surface ran.
  *
- * PR-05 promoted the demo entry to a first-class CTA *inside* the
- * splash card — the picker keeps that contract via
- * `onSecondaryAction` so the "просто подивитись" cohort still
- * lands on the same demo seeder without scanning past the card.
+ * До 2026-09-17 картка несла ще й другорядний CTA «Подивитись
+ * приклад», що сіяв демо-payload. Демо-режим знято — лишається один
+ * шлях: обрати модулі або увійти в наявний акаунт.
  */
 export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
-  // S4.1 + PR-05 demo handler. Seeds a synthetic hub payload across
-  // all four modules and reloads onto `/` so the demo state is
-  // visible immediately. Tracking is fired before the redirect so the
-  // `demo_started` event lands even if the new page mounts before the
-  // old PostHog buffer flushes (the SDK persists pending events).
-  const startDemoAndGoHome = useCallback(() => {
-    trackEvent(ANALYTICS_EVENTS.DEMO_STARTED, { source: "welcome" });
-    seedDemoData();
-    try {
-      window.location.assign("/");
-    } catch {
-      /* noop */
-    }
-  }, []);
-
   // "У мене вже є акаунт" — just navigates to `/sign-in`. Does NOT mark
   // onboarding done here (PR-H7, design-audit 2026-09-13): a mistaken tap
   // followed by "Поки що пропустити" on `/sign-in` used to leave the local
@@ -340,7 +291,6 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
           <WelcomeModulePicker
             onComplete={handlePicksComplete}
             onOpenAuth={handleOpenAuth}
-            onSecondaryAction={startDemoAndGoHome}
           />
         </div>
       </div>

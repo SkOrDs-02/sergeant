@@ -9,7 +9,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const triggerSpy = vi.fn();
-let dualWriteRegistered = true;
 
 vi.mock("./sqliteWriter/index", async () => {
   const actual = await vi.importActual<typeof import("./sqliteWriter/index")>(
@@ -18,7 +17,6 @@ vi.mock("./sqliteWriter/index", async () => {
   return {
     ...actual,
     triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),
-    isNutritionDualWriteRegistered: () => dualWriteRegistered,
   };
 });
 
@@ -66,7 +64,6 @@ beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
   clearNutritionSqliteCache();
   triggerSpy.mockReset();
-  dualWriteRegistered = true;
 });
 
 afterEach(() => {
@@ -244,15 +241,20 @@ describe("persistPantries — dual-write only (no LS write)", () => {
     });
   });
 
-  it("no-ops silently when dual-write context is not registered", () => {
-    dualWriteRegistered = false;
+  // Regression for the blind nutrition run (2026-09-28): a write made
+  // before `useNutritionDualWriteBoot` registers its context (auth
+  // still resolving) used to report "saved" while dropping the write
+  // entirely. It must still reach `triggerNutritionDualWrite` — which
+  // buffers and replays once a context registers (see sqliteWriter/index.ts)
+  // — so the row isn't lost.
+  it("still forwards to triggerNutritionDualWrite before the dual-write context is registered", () => {
     persistPantries(
       NUTRITION_PANTRIES_KEY,
       NUTRITION_ACTIVE_PANTRY_KEY,
       [{ id: "a", name: "A", items: [], text: "" }],
       "a",
     );
-    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
     expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toBeNull();
   });
 });
@@ -324,11 +326,9 @@ describe("persistNutritionWaterLog — dual-write only", () => {
     });
   });
 
-  it("no-ops before the dual-write context is registered", () => {
-    dualWriteRegistered = false;
-
+  it("still forwards to triggerNutritionDualWrite before the dual-write context is registered", () => {
     expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(true);
-    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -381,11 +381,9 @@ describe("persistNutritionShoppingList — dual-write only", () => {
     });
   });
 
-  it("no-ops before the dual-write context is registered", () => {
-    dualWriteRegistered = false;
-
+  it("still forwards to triggerNutritionDualWrite before the dual-write context is registered", () => {
     expect(persistNutritionShoppingList({ categories: [] })).toBe(true);
-    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -413,8 +411,7 @@ describe("appendNutritionPantryEvent — W1-PANTRY-APPEND стадія 2", () =>
     });
   });
 
-  it("no-ops before the dual-write context is registered", () => {
-    dualWriteRegistered = false;
+  it("still forwards to triggerNutritionDualWrite before the dual-write context is registered", () => {
     appendNutritionPantryEvent({
       id: null,
       pantryId: "home",
@@ -427,7 +424,7 @@ describe("appendNutritionPantryEvent — W1-PANTRY-APPEND стадія 2", () =>
       source: "meal_log",
       mealId: null,
     });
-    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
   });
 });
 

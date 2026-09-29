@@ -11,6 +11,9 @@ import {
   STORAGE_KEYS,
   TRACKED_STREAK_MILESTONES,
   claimStreakMilestone,
+  pluralDays,
+  pluralUa,
+  type UaPluralForms,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { countRealEntries } from "../../onboarding/firstRealEntry";
@@ -20,6 +23,13 @@ import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
 import { useHubStorageBump } from "../useHubStorageBump";
 
 const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
+
+/** «Вже 1 запис» / «Вже 2 записи» / «Вже 5 записів» — не бінарна форма. */
+const RECORD_FORMS: UaPluralForms = {
+  one: "запис",
+  few: "записи",
+  many: "записів",
+};
 
 // AI-CONTEXT: Pill numbers render as bold text on the cream `bg-panel`
 // surface. The saturated `text-{module}` shades only clear ~2.4–3.1:1
@@ -181,7 +191,11 @@ export function StreakIndicator() {
   if (streak < 2) return null;
 
   return (
-    <StreakBadge streak={streak} label="днів поспіль" className="shadow-sm" />
+    <StreakBadge
+      streak={streak}
+      label={`${pluralDays(streak)} поспіль`}
+      className="shadow-sm"
+    />
   );
 }
 
@@ -220,7 +234,7 @@ export function StaggerChild({
 
 /**
  * Bottom-of-dashboard small-talk: counts real entries (across all modules)
- * and shows a "Вже N записів — продовжуй!" line once the user has at
+ * and shows a "Вже N записів" line once the user has at
  * least one real entry across any module. Returns `null` until then —
  * до першого real entry юзер бачить онбординг-нагадування / FirstAction
  * вгорі дашборду, і pre-emptive «Sergeant працює офлайн» внизу плутав
@@ -239,10 +253,7 @@ export function MotivationalFooter() {
 
   if (entryCount === 0) return null;
 
-  const message =
-    entryCount === 1
-      ? "Вже 1 запис, продовжуй!"
-      : `Вже ${entryCount} записів, продовжуй!`;
+  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}. Продовжуй.`;
 
   return (
     <p className="text-style-caption text-subtle text-center py-8">{message}</p>
@@ -265,9 +276,11 @@ export function WeeklyDigestFooter({
     <button
       type="button"
       onClick={onExpand}
-      aria-label="Розгорнути звіт тижня"
+      // Без aria-label: він перекривав видимий текст разом із позначкою
+      // «новий», тож свіжість звіту була лише візуальною.
+      aria-expanded={false}
       className={cn(
-        "w-full flex items-center gap-3 rounded-2xl border border-line bg-panel px-3 py-2.5",
+        "w-full flex items-center gap-3 rounded-2xl border border-line bg-panel px-3 py-2.5 focus-ring",
         "shadow-card hover:shadow-float transition-[box-shadow,filter,opacity,transform]",
         "text-left",
       )}
@@ -301,10 +314,13 @@ export function WeeklyDigestFooter({
         <span className="flex items-center gap-1.5">
           <span className="text-style-label text-text">Звіт тижня</span>
           {fresh && (
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
-              aria-label="Новий звіт"
-            />
+            <>
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full bg-primary"
+                aria-hidden
+              />
+              <span className="sr-only">, новий</span>
+            </>
           )}
         </span>
         <span className="text-style-caption text-muted truncate">
@@ -313,7 +329,7 @@ export function WeeklyDigestFooter({
       </span>
       <Icon
         name="chevron-right"
-        size={14}
+        size="sm"
         strokeWidth={2.5}
         className="text-muted shrink-0"
       />

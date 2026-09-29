@@ -265,6 +265,35 @@
       },
       "response": {
         "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
           "subscription": {
             "active": true,
             "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
@@ -297,6 +326,35 @@
       },
       "response": {
         "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": false,
+              "nutrition.weekPlan": false
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": 20,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": 3,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": 5,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "free",
+            "trialEndsAt": null
+          },
           "subscription": {
             "active": false,
             "currentPeriodEnd": null,
@@ -666,6 +724,7 @@
           "analytics": false,
           "healthDataConsent": true,
           "hubPrefs": null,
+          "pushDailyCap": 3,
           "pushNotifications": true,
           "sergeantNudges": false,
           "updatedAt": "2026-08-01T12:00:00.000Z"
@@ -3079,6 +3138,75 @@
       }
     },
     {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "itemIds": [
+            501,
+            502
+          ],
+          "mode": "auto"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim"
+      },
+      "response": {
+        "body": {
+          "claimedItemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with claimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "decline": true,
+          "itemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/silpo/sync request (no body)",
       "providerStates": [
         {
@@ -3308,7 +3436,8 @@
               "idempotency_key": "01HZ000000000000000000000B",
               "status": "applied"
             }
-          ]
+          ],
+          "server_now": "2026-05-12T09:30:01.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -3348,6 +3477,36 @@
             "weightKg": 62
           },
           "updatedAt": "2026-08-01T12:05:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a PUT /api/v1/silpo/settings request (enable)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "pantryAutoImport": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "PUT",
+        "path": "/api/v1/silpo/settings"
+      },
+      "response": {
+        "body": {
+          "pantryAutoImportSince": "2026-09-25T10:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",

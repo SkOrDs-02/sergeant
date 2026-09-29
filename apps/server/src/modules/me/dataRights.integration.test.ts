@@ -192,17 +192,15 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
 });
 
 describe("GET /api/me/export — GDPR data export", () => {
-  it("returns valid export structure including seeded ai_usage_daily row", async (ctx) => {
+  it("returns valid export structure including seeded module rows", async (ctx) => {
     if (!dockerAvailable || !app || !pool) return ctx.skip();
 
-    // Seed an ai_usage_daily row (no FK to user — uses subject_key = 'u:<id>').
-    // `endpoint` (міграції 104/106) NOT NULL / частина PK — 'legacy' канон
-    // для рядків без конкретного endpoint-тегу.
+    // Запис модуля — рівно те, чого в експорті НЕ БУЛО до 2026-09-20:
+    // файл віддавав `moduleData: []` від таблиці, дропнутої міграцією 046,
+    // і жодного запису людини з чотирьох модулів у ньому не було.
     await pool.query(
-      `INSERT INTO ai_usage_daily (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
-       VALUES ($1, CURRENT_DATE, 'anthropic:claude-3-5-haiku', 'legacy', 3, 900)
-       ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO NOTHING`,
-      [`u:${TEST_USER_ID}`],
+      `INSERT INTO routine_habits (user_id, name) VALUES ($1, 'Вода')`,
+      [TEST_USER_ID],
     );
 
     const res = await request(app)
@@ -226,14 +224,49 @@ describe("GET /api/me/export — GDPR data export", () => {
     // module_data is always [] after migration 046 dropped the table.
     expect(res.body.data.moduleData).toEqual([]);
 
-    // Seeded ai_usage row must appear in the export.
-    expect(Array.isArray(res.body.data.ai.usageDaily)).toBe(true);
-    expect(res.body.data.ai.usageDaily.length).toBeGreaterThan(0);
+    // Проти РЕАЛЬНОГО Postgres, не проти моку: кожна таблиця зі списку
+    // мусить існувати в базі, інакше запит впав би і роут віддав би 500.
+    const habits = res.body.data.routine.routine_habits;
+    expect(Array.isArray(habits)).toBe(true);
+    expect(habits.length).toBeGreaterThan(0);
+    expect(habits[0].name).toBe("Вода");
+    for (const moduleId of ["finyk", "fizruk", "nutrition", "routine"]) {
+      expect(Object.keys(res.body.data[moduleId]).length).toBeGreaterThan(0);
+    }
+
+    // Межа файлу названа в самому файлі.
+    expect(
+      res.body.data.excluded.map((e: { group: string }) => e.group),
+    ).toEqual(["syncLog", "nutritionBackups", "aiMemories", "aiUsage"]);
+    expect(res.body.data.ai).toBeUndefined();
 
     const mono = res.body.data.mono;
     expect(mono.connection).toBeNull();
     expect(Array.isArray(mono.accounts)).toBe(true);
     expect(Array.isArray(mono.transactions)).toBe(true);
+  });
+
+  it("другий одночасний експорт відхиляється, послідовний проходить", async (ctx) => {
+    if (!dockerAvailable || !app) return ctx.skip();
+
+    const [first, second] = await Promise.all([
+      request(app)
+        .get("/api/me/export")
+        .set("Authorization", "Bearer test-bearer"),
+      request(app)
+        .get("/api/me/export")
+        .set("Authorization", "Bearer test-bearer"),
+    ]);
+
+    // Який із двох виграв гонку — не визначено; визначено, що рівно один.
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([200, 409]);
+
+    // Замок знімається: наступний запит проходить.
+    const third = await request(app)
+      .get("/api/me/export")
+      .set("Authorization", "Bearer test-bearer");
+    expect(third.status).toBe(200);
   });
 });
 

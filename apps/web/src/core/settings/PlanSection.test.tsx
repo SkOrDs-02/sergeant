@@ -13,6 +13,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { BillingStatusResponse } from "@sergeant/shared";
+import { accessFixture } from "../../test/helpers/billingAccess";
 
 const { statusMock, createPortalMock, cancelMock } = vi.hoisted(() => ({
   statusMock:
@@ -73,6 +74,7 @@ const FREE_RESPONSE: BillingStatusResponse = {
     active: false,
     currentPeriodEnd: null,
   },
+  access: accessFixture("free"),
 };
 
 const PRO_ACTIVE_RESPONSE: BillingStatusResponse = {
@@ -84,6 +86,7 @@ const PRO_ACTIVE_RESPONSE: BillingStatusResponse = {
     active: true,
     currentPeriodEnd: "2026-06-01T10:00:00.000Z",
   },
+  access: accessFixture("pro"),
 };
 
 const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
@@ -95,6 +98,7 @@ const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
     active: true,
     currentPeriodEnd: "2026-05-30T10:00:00.000Z",
   },
+  access: accessFixture("pro"),
 };
 
 const PRO_TRIAL_RESPONSE: BillingStatusResponse = {
@@ -106,6 +110,7 @@ const PRO_TRIAL_RESPONSE: BillingStatusResponse = {
     active: true,
     currentPeriodEnd: "2026-06-07T10:00:00.000Z",
   },
+  access: accessFixture("trial"),
 };
 
 describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () => {
@@ -229,6 +234,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+      access: accessFixture("grace"),
     });
     renderSection();
     await openSection();
@@ -250,6 +256,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+      access: accessFixture("grace"),
     });
     renderSection();
     await openSection();
@@ -257,5 +264,23 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     const pastDue = await screen.findByTestId("plan-past-due-info");
     expect(pastDue).toHaveTextContent(/платіжному порталі/i);
     expect(screen.getByTestId("plan-manage-button")).toBeInTheDocument();
+  });
+
+  it("не стверджує «Free» і не пропонує апгрейд, поки статус ще вантажиться", async () => {
+    // Регресія WF-19 (аудит 2026-09-16): `usePlan` повертає `plan: "free"`
+    // як ДЕФОЛТ під час запиту, тож платний користувач до відповіді
+    // сервера бачив бейдж «Free», абзац «Ти на безкоштовному тарифі…» і
+    // кнопку «Перейти на Premium», яка вела його на /pricing.
+    statusMock.mockImplementation(() => new Promise(() => {}));
+    renderSection();
+    await openSection();
+
+    const badge = await screen.findByTestId("plan-badge");
+    expect(badge).not.toHaveTextContent("Free");
+    expect(screen.getByText("Завантаження…")).toBeInTheDocument();
+    expect(screen.queryByTestId("plan-upgrade-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Ти на безкоштовному плані/),
+    ).not.toBeInTheDocument();
   });
 });

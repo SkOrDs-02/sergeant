@@ -92,7 +92,7 @@ export function BottomSheetDemo() {
                       </span>
                       <Icon
                         name="chevron-right"
-                        size={16}
+                        size="md"
                         className="text-subtle ml-auto"
                       />
                     </div>

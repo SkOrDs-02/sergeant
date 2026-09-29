@@ -15,14 +15,13 @@
  * робочими, навіть якщо Сільпо зараз недоступне.
  */
 import { useState } from "react";
+import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
-// `<option>` не приймає React-дітей, тільки текст, тому тут рядковий
-// форматер, а не компонент `<Money>`, яким користується решта аркуша.
-import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { SilpoCartDto, SilpoCartMatchDto } from "@shared/api";
@@ -67,14 +66,15 @@ function ErrorBanner({
   const text = errorCopy(kind);
   if (!text) return null;
   return (
-    <div
+    <Banner
+      variant="warning"
       role="alert"
       aria-live="assertive"
-      className="flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3"
+      className="flex items-start gap-2.5"
     >
       <Icon
         name="alert-triangle"
-        size={16}
+        size="md"
         className="mt-0.5 shrink-0 text-warning"
         aria-hidden
       />
@@ -93,7 +93,7 @@ function ErrorBanner({
           </button>
         )}
       </div>
-    </div>
+    </Banner>
   );
 }
 
@@ -115,7 +115,7 @@ function QtyStepper({
         onClick={() => onChange(qty - 1)}
         className="w-9 h-9 min-h-[44px] min-w-[44px] rounded-xl border border-line flex items-center justify-center text-text hover:bg-panelHi disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
       >
-        <Icon name="minus" size={14} aria-hidden />
+        <Icon name="minus" size="sm" aria-hidden />
       </button>
       <span className="w-6 text-center text-style-label tabular-nums text-text">
         {qty}
@@ -127,7 +127,7 @@ function QtyStepper({
         onClick={() => onChange(qty + 1)}
         className="w-9 h-9 min-h-[44px] min-w-[44px] rounded-xl border border-line flex items-center justify-center text-text hover:bg-panelHi disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
       >
-        <Icon name="plus" size={14} aria-hidden />
+        <Icon name="plus" size="sm" aria-hidden />
       </button>
     </div>
   );
@@ -187,7 +187,7 @@ function CartRow({
       <li className="flex items-start gap-2.5 px-1 py-2 rounded-xl">
         <Icon
           name="alert-triangle"
-          size={16}
+          size="md"
           className="mt-0.5 shrink-0 text-subtle"
           aria-hidden
         />
@@ -295,7 +295,7 @@ function SuccessView({
       <div className="flex items-center gap-2.5">
         <Icon
           name="check-circle"
-          size={20}
+          size="lg"
           className="text-success shrink-0"
           aria-hidden
         />
@@ -337,7 +337,8 @@ function SuccessView({
       )}
       <Button
         type="button"
-        variant="nutrition"
+        variant="solid"
+        tone="nutrition"
         className="h-12 shadow-none hover:shadow-none dark:shadow-none"
         onClick={onClose}
       >
@@ -421,7 +422,7 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
           <div className="flex gap-2 p-4">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="flex-1 h-12"
               onClick={onClose}
               disabled={busy}
@@ -430,7 +431,8 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
             </Button>
             <Button
               type="button"
-              variant="nutrition"
+              variant="solid"
+              tone="nutrition"
               className="flex-1 h-12 shadow-none hover:shadow-none dark:shadow-none"
               disabled={busy || checkedCount === 0}
               loading={busy}

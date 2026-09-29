@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
+import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
 import { useOptionalHubShell } from "../app/HubShellContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
@@ -35,6 +36,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   aiMemory: true,
   pushNotifications: false,
   sergeantNudges: false,
+  pushDailyCap: PUSH_DAILY_CAP_DEFAULT,
   healthDataConsent: false,
   // Приватність цим екраном не керує — вибір модулів живе в «Головна»
   // (`DashboardSection`) і синхронізується окремо (`activeModulesSync`).
@@ -233,7 +235,7 @@ export function PrivacySection() {
             </p>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => {
                 setPreferencesError(null);

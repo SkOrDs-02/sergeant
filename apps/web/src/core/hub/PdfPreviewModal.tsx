@@ -90,8 +90,8 @@ export function PdfPreviewModal({ html, onClose }: PdfPreviewModalProps) {
         <span className="text-style-label text-text truncate">
           {COPY.title}
         </span>
-        <Button variant="primary" size="sm" onClick={handlePrint}>
-          <Icon name="download" size={16} aria-hidden />
+        <Button variant="solid" size="sm" onClick={handlePrint}>
+          <Icon name="download" size="md" aria-hidden />
           {COPY.save}
         </Button>
       </div>

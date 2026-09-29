@@ -34,6 +34,7 @@ import {
 } from "../components/ExerciseProgressChart";
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
 import { formatShortDate } from "../lib/dateFmt";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import { chartSeries, chartStatusSeries } from "@shared/charts";
 
 interface ExerciseProps {
@@ -117,10 +118,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
       const distKm = dist / 1000;
       const durMin = dur / 60;
       const paceMinKm = durMin / distKm;
-      const dateLabel = new Date(workout.startedAt).toLocaleDateString(
-        "uk-UA",
-        { day: "numeric", month: "short" },
-      );
+      const dateLabel = formatDateShort(new Date(workout.startedAt));
       pacePoints.push({ value: Math.round(paceMinKm * 10) / 10, dateLabel });
       distPoints.push({ value: Math.round(distKm * 100) / 100, dateLabel });
     }
@@ -141,10 +139,14 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
           <Card radius="lg" padding="lg">
             <EmptyState
-              title="Невірний ID вправи"
+              title="Неправильний ID вправи"
               description="Посилання пошкоджене або застаріле. Повернись до журналу тренувань і обери вправу зі списку."
               action={
-                <Button variant="fizruk" onClick={() => onNavigate("workouts")}>
+                <Button
+                  variant="solid"
+                  tone="fizruk"
+                  onClick={() => onNavigate("workouts")}
+                >
                   До журналу
                 </Button>
               }
@@ -199,7 +201,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               action={
                 onNavigate ? (
                   <Button
-                    variant="fizruk"
+                    variant="solid"
+                    tone="fizruk"
                     onClick={() => onNavigate("workouts")}
                   >
                     До журналу
@@ -249,7 +252,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         */}
         {best.isNewPR && !aging.returnMode && (
           <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
-            <Icon name="award" size={20} aria-hidden />
+            <Icon name="award" size="lg" aria-hidden />
             <div>
               <p className="text-style-label text-warning-strong dark:text-warning">
                 Новий особистий рекорд!
@@ -289,7 +292,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                   <Measure value={best.bestSet.reps ?? 0} unit="повт." />
                 </>
               ) : (
-                "Немає силових сетів"
+                "Немає силових підходів"
               )}
             </div>
             {best.bestSet?.at && (
@@ -324,7 +327,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                   × <Measure value={suggestedNext.reps} unit="повт." />
                 </>
               ) : (
-                "Заповни сети, щоб зʼявилась рекомендація"
+                "Заповни підходи, щоб зʼявилась рекомендація"
               )}
             </div>
             {/* Обидва поля в гейті, а не одне: `altReps` теж необовʼязкове,
@@ -425,7 +428,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         <Card radius="lg" padding="lg">
           <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-            Історія сетів
+            Історія підходів
           </SectionHeading>
           {history.length === 0 ? (
             <EmptyState
@@ -479,7 +482,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                                   ps = 0;
                                 }
                                 const speed = fmt(distKm / (dur / 3600), 1);
-                                return `${base} · ${pm}:${String(ps).padStart(2, "0")} хв/км · ${speed} км/год`;
+                                return `${base} · ${pm}:${String(ps).padStart(2, "0")}\u202Fхв/км · ${speed}\u202Fкм/год`;
                               }
                               return base;
                             })()
@@ -496,7 +499,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                     {history.length}
                   </p>
                   <Button
-                    variant="fizruk-soft"
+                    variant="soft"
+                    tone="fizruk"
                     size="sm"
                     onClick={() =>
                       setVisibleHistoryCount((prev) =>
@@ -513,7 +517,8 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
           <div className="mt-3">
             <Button
-              variant="fizruk"
+              variant="solid"
+              tone="fizruk"
               size="lg"
               className="w-full rounded-full"
               onClick={() => onNavigate("workouts")}

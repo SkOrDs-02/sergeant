@@ -1095,7 +1095,9 @@ describe("AddMealSheet — save validation branches", () => {
       macros: { kcal: 1212.1, protein_g: 121.1 },
     });
     expect(
-      screen.queryByText("Некоректне значення КБЖВ."),
+      screen.queryByText(
+        "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -1111,7 +1113,11 @@ describe("AddMealSheet — save validation branches", () => {
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );
     await waitFor(() => {
-      expect(screen.getByText("Некоректне значення КБЖВ.")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
+        ),
+      ).toBeInTheDocument();
     });
   });
 });

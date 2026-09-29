@@ -3,11 +3,11 @@ import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
 import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractDailyLogSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractDailyLogSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -67,6 +67,11 @@ export function useDailyLog() {
     },
   );
 
+  // AI-CONTEXT: prev для diff-у — з останнього наміру, не з сирого кешу;
+  // чому — у шапці `fizrukDualWriteIntent.ts` (undo-гонка журналу тіла,
+  // PR #64). Стережеться `useDailyLog.undoRace.test.tsx`.
+  const intended = useFizrukIntendedSlice<"dailyLog">(sqliteCacheTick);
+
   const persist = useCallback(
     (next: DailyLogEntry[]) => {
       setEntries(next);
@@ -74,19 +79,18 @@ export function useDailyLog() {
       // pipeline (SQLite is the source of truth for the journal).
       // Fire-and-forget; trigger is a no-op when the context is not
       // registered (pre-auth).
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        dailyLog: extractDailyLogSnapshots(next),
-      };
+      const transition = fizrukDualWriteTransition(
+        "dailyLog",
+        intended,
+        extractDailyLogSnapshots(next),
+      );
       try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        triggerFizrukDualWrite(transition.prev, transition.next);
       } catch {
         /* trigger is fire-and-forget — never propagate */
       }
     },
-    [setEntries],
+    [intended, setEntries],
   );
 
   const addEntry = useCallback(

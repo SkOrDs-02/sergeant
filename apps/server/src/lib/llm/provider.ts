@@ -98,6 +98,12 @@ export interface LLMGenerateOpts {
    * provider-рядок (`provider:anthropic`), а саме його читає денна стеля.
    */
   userId?: string | undefined;
+  /**
+   * `$ai_trace_id` для PostHog AI Observability (ініціатива 0025, Фаза 2).
+   * Обидва провайдери, що шлють `$ai_generation`, прокидають його як-є;
+   * `Stub` ігнорує. Без нього — випадковий per-call UUID (Фаза 1 дефолт).
+   */
+  traceId?: string | undefined;
 }
 
 /**
@@ -183,6 +189,7 @@ export class AnthropicProvider implements LLMProvider {
     if (opts.promptVersion !== undefined)
       callOpts.promptVersion = opts.promptVersion;
     if (opts.userId !== undefined) callOpts.userId = opts.userId;
+    if (opts.traceId !== undefined) callOpts.traceId = opts.traceId;
 
     try {
       const { response, data } = await anthropicMessages(
@@ -311,6 +318,7 @@ function recordOpenRouterUsage(
   endpoint: string | undefined,
   usage: { prompt_tokens?: number; completion_tokens?: number; cost?: number },
   userId?: string | undefined,
+  traceId?: string | undefined,
 ): void {
   const labels = {
     provider: "anthropic",
@@ -380,6 +388,7 @@ function recordOpenRouterUsage(
     inputTokens: usage.prompt_tokens,
     outputTokens: usage.completion_tokens,
     costUsd: usdForEvent !== null && usdForEvent > 0 ? usdForEvent : undefined,
+    traceId,
   });
 }
 
@@ -447,7 +456,11 @@ export class OpenRouterProvider implements LLMProvider {
     }
 
     type OpenRouterData = {
-      choices?: Array<{ message?: { content?: string | null } }>;
+      choices?: Array<{
+        message?: { content?: string | null };
+        finish_reason?: string | null;
+        error?: { code?: number; message?: string };
+      }>;
       usage?: {
         prompt_tokens?: number;
         completion_tokens?: number;
@@ -487,7 +500,23 @@ export class OpenRouterProvider implements LLMProvider {
         };
       }
 
-      const text = data?.choices?.[0]?.message?.content ?? "";
+      // Апстрім може впасти посеред генерації (у замірі 2026-09-28 це 429
+      // Google у 3 з 8 викликів): шлюз тоді віддає HTTP 200, обрізаний текст,
+      // `finish_reason: "error"` і нульовий usage. Як успіх це давало
+      // обірваний JSON, який хендлери тихо перетворювали на порожній план.
+      const choice = data?.choices?.[0];
+      if (choice?.finish_reason === "error") {
+        const upstreamStatus = choice.error?.code ?? 502;
+        return {
+          ok: false,
+          error: choice.error?.message ?? "OpenRouter upstream error",
+          status: upstreamStatus,
+          code: upstreamStatus === 429 ? "rate_limited" : "openrouter_error",
+          raw: data as Record<string, unknown>,
+        };
+      }
+
+      const text = choice?.message?.content ?? "";
       const usage = data?.usage;
       const result: LLMGenerateResult = {
         ok: true,
@@ -503,7 +532,13 @@ export class OpenRouterProvider implements LLMProvider {
         if (typeof usage.completion_tokens === "number")
           usageOut.outputTokens = usage.completion_tokens;
         result.usage = usageOut;
-        recordOpenRouterUsage(model, opts.endpoint, usage, opts.userId);
+        recordOpenRouterUsage(
+          model,
+          opts.endpoint,
+          usage,
+          opts.userId,
+          opts.traceId,
+        );
       }
       return result;
     } catch (e: unknown) {

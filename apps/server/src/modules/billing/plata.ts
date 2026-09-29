@@ -26,7 +26,7 @@ import type { Pool } from "pg";
 import type {
   BillingCheckoutResponse,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
@@ -43,6 +43,7 @@ export const MONOPAY_BASE = "https://api.monobank.ua/api/merchant";
 const CCY_UAH = 980;
 const SUBSCRIPTION_VALIDITY_SECONDS = 3600;
 const PUBKEY_TTL_MS = 60 * 60 * 1000;
+const PUBKEY_FORCE_COOLDOWN_MS = 60 * 1000;
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
 export function getToken(): string {
@@ -89,9 +90,10 @@ function parsePubkey(raw: string): crypto.KeyObject {
  */
 export async function ensurePlataPubkey(force = false): Promise<void> {
   const now = Date.now();
-  if (!force && cachedPubkey && now - cachedPubkey.fetchedAt < PUBKEY_TTL_MS) {
-    return;
-  }
+  // Force приходить з анонімного вебхука з невалідним X-Sign; без cooldown
+  // кожен такий запит робив би зовнішній fetch з нашим токеном.
+  const ttl = force ? PUBKEY_FORCE_COOLDOWN_MS : PUBKEY_TTL_MS;
+  if (cachedPubkey && now - cachedPubkey.fetchedAt < ttl) return;
   const response = await fetch(`${MONOPAY_BASE}/pubkey`, {
     headers: { "X-Token": getToken() },
   });
@@ -208,14 +210,16 @@ interface BillingRow {
   current_period_end: Date | string | null;
 }
 
-function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
+function serializeBillingRow(
+  row: BillingRow | null,
+): BillingSubscriptionStatus {
   return {
     subscription: row
       ? {
           id: Number(row.id),
           provider:
-            row.provider as BillingStatusResponse["subscription"]["provider"],
-          plan: row.plan as BillingStatusResponse["subscription"]["plan"],
+            row.provider as BillingSubscriptionStatus["subscription"]["provider"],
+          plan: row.plan as BillingSubscriptionStatus["subscription"]["plan"],
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
@@ -323,7 +327,7 @@ export const plataProvider: BillingProvider = {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse> {
+  ): Promise<BillingSubscriptionStatus> {
     return readLatestSubscription(pool, userId).then(serializeBillingRow);
   },
 

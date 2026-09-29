@@ -12,8 +12,11 @@
  * Тут — обіцяна семантика: **N тижнів поспіль із ≥X тренувань**, межі тижня
  * київські (понеділок-перший, ISO 8601), як і в `computeWeeklyTotals`.
  *
- * `computeStreakDays` лишається поруч недоторканим — його читає мобілка,
- * яка поза скоупом за рішенням власника 2026-07-30.
+ * `computeStreakDays` лишається поруч для мобілки (поза скоупом за
+ * рішенням власника 2026-07-30) — щоденна логіка там незмінна, але
+ * одиниця та сама: обидві функції рахують лише повноцінні тренування
+ * (`isFullWorkout`, канон §8), інакше веб і мобілка розійшлись би ще й у
+ * тому, ЩО вважати тренуванням, а не лише в тому, як рахувати дні.
  */
 
 import {
@@ -21,6 +24,7 @@ import {
   type WeeklyStreakBreakdown,
 } from "@sergeant/shared";
 
+import { isFullWorkout } from "../workouts/activityWeight.js";
 import type { DashboardWorkoutInput } from "./types.js";
 
 /**
@@ -56,8 +60,13 @@ export function computeWeeklyStreakBreakdown(
 ): WeeklyStreakBreakdown {
   const { targetPerWeek = DEFAULT_WEEKLY_STREAK_TARGET, now = new Date() } =
     options;
+  // Лише ПОВНОЦІННІ (канон §8, рішення власника 2026-09-15): легка
+  // активність — «+20 відтискань», десять хвилин розтяжки — лишається на дні
+  // в журналі, у відновленні й калоріях, але тиждень нею не «закривається».
+  // Інакше серія вимірювала б наявність будь-якого запису, а не режим.
   return computeWeeklyStreakBreakdownFromInstants(
     (Array.isArray(workouts) ? workouts : [])
+      .filter((w) => isFullWorkout(w))
       .map((w) => w?.endedAt)
       .filter((endedAt): endedAt is string => typeof endedAt === "string"),
     { targetPerWeek, now },

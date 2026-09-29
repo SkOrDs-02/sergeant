@@ -210,6 +210,17 @@ describe("useTransactionFilters", () => {
       expect(result.current.activeCategoryLabel).toBe("Продукти");
     });
 
+    // Регресія: підпис із кількох слів різався до першого пробілу, і чип
+    // та тренд категорії казали «та ресторани».
+    it("keeps multi-word category labels whole", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({ categoryFilter: "restaurant" }),
+        ),
+      );
+      expect(result.current.activeCategoryLabel).toBe("Кафе та ресторани");
+    });
+
     it("has no category label for the base pills", () => {
       const { result } = renderHook(() =>
         useTransactionFilters(buildDefaultParams()),
@@ -543,7 +554,7 @@ describe("useTransactionFilters", () => {
       expect(result.current.flatItems.map((t) => t.id)).toEqual(["manual_m1"]);
     });
 
-    it("розгортає день самої транзакції, а не сьогоднішній", () => {
+    it("розгортає день самої операції, а не сьогоднішній", () => {
       // Сьогодні (fake timers) — 2025-06-04; запис датований 2-м червня
       // через «Не сьогодні? Змінити дату».
       const today = mkTx("bank-today", -100, {

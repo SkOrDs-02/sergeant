@@ -1,6 +1,6 @@
 # API v1 + v2 — версіонування і контракт
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-17 by @claude (ai-memory ingest знято, billing → LiqPay/Plata, каталог → вказівник на `openapi.json`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API, гарантії контракту і міграційна стратегія.
@@ -42,24 +42,26 @@ Web прокидає `apiPrefix` через `getApiPrefix()` (div. `apps/web/src
 
 ## ✨ Каталог активних endpoint-ів
 
+> Таблиці нижче — орієнтовний огляд груп, не вичерпний перелік. Повний і завжди актуальний каталог — [`docs/engineering/api/openapi.json`](../api/openapi.json) (генерується з `packages/shared/src/openapi/routes.ts`, гейт `pnpm api:check-openapi`); групи, яких тут нема (finyk receipts/import/statement, silpo, privat, preferences/profile, alerts, metrics/web-vitals тощо), шукай там.
+
 ### v1 endpoints (дзеркало `/api/*` ↔ `/api/v1/*`)
 
-| Endpoint                | Method   | Опис                                                                  |
-| ----------------------- | -------- | --------------------------------------------------------------------- |
-| `/api/v1/me`            | GET      | Уніфікований "хто я" для web (cookie) і mobile (bearer)               |
-| `/api/v1/push/register` | POST     | Реєстрація native push (APNs/FCM)                                     |
-| `/api/v1/chat`          | POST     | HubChat streaming (SSE) + tool-use                                    |
-| `/api/v1/coach/memory`  | GET/POST | Coach memory store (recall + write)                                   |
-| `/api/v1/coach/insight` | POST     | Coaching insight write                                                |
-| `/api/v1/weekly-digest` | POST     | Weekly digest (живе у `routes/weekly-digest.ts`, окремо від coach)    |
-| `/api/v1/mono/*`        | GET/POST | Monobank: connect, accounts, transactions, backfill                   |
-| `/api/v1/ai-memory/*`   | POST     | AI memory ingest / recall                                             |
-| `/api/v1/push/send`     | POST     | Internal push send (service-to-service, X-Api-Secret header)          |
-| `/api/v1/nutrition/*`   | POST     | Nutrition log, backup та AI-endpoints (analyze-photo, day-plan, тощо) |
-| `/api/v1/barcode`       | GET      | Barcode lookup (Open Food Facts proxy)                                |
-| `/api/v1/transcribe`    | POST     | Audio → text (Groq Whisper). USD-cap per user/day                     |
-| `/api/v1/billing/*`     | GET/POST | Stripe checkout, subscription status, webhooks                        |
-| `/api/v1/waitlist`      | POST     | Waitlist sign-up                                                      |
+| Endpoint                | Method   | Опис                                                                                                                      |
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `/api/v1/me`            | GET      | Уніфікований "хто я" для web (cookie) і mobile (bearer)                                                                   |
+| `/api/v1/push/register` | POST     | Реєстрація native push (APNs/FCM)                                                                                         |
+| `/api/v1/chat`          | POST     | HubChat streaming (SSE) + tool-use                                                                                        |
+| `/api/v1/coach/memory`  | GET/POST | Coach memory store (recall + write)                                                                                       |
+| `/api/v1/coach/insight` | POST     | Coaching insight write                                                                                                    |
+| `/api/v1/weekly-digest` | POST     | Weekly digest (живе у `routes/weekly-digest.ts`, окремо від coach)                                                        |
+| `/api/v1/mono/*`        | GET/POST | Monobank: connect, accounts, transactions, backfill                                                                       |
+| `/api/v1/ai-memory/*`   | GET/POST | AI memory recall / list / get-by-id (клієнт-driven ingest знято ініціативою 0024 PR-1, 2026-09)                           |
+| `/api/v1/push/send`     | POST     | Internal push send (service-to-service, X-Api-Secret header)                                                              |
+| `/api/v1/nutrition/*`   | POST     | Nutrition log, backup та AI-endpoints (analyze-photo, day-plan, тощо)                                                     |
+| `/api/v1/barcode`       | GET      | Barcode lookup (Open Food Facts proxy)                                                                                    |
+| `/api/v1/transcribe`    | POST     | Audio → text (Groq Whisper). USD-cap per user/day                                                                         |
+| `/api/v1/billing/*`     | GET/POST | LiqPay/Plata checkout (UA — канонічні), subscription status, callbacks; Stripe — legacy-провайдер для наявних підписників |
+| `/api/v1/waitlist`      | POST     | Waitlist sign-up                                                                                                          |
 
 ### v2 endpoints (новий namespace; проходять через `apiVersionRewrite` як `/api/v1/v2/...` → `/api/v2/...`)
 

@@ -11,7 +11,7 @@ import {
  * Run the Finyk SQLite client migrations. Idempotent via the runner's
  * `__finyk_migrations` ledger contract.
  *
- * Stage 4 PR #035 of `docs/planning/storage-roadmap.md` — schema-only.
+ * Stage 4 PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — schema-only.
  * The seam this exports is wired into the write paths by PR #036
  * (dual-write); PR #035 itself only ships the runner so PR #036 has
  * the same shape as the nutrition dual-write entry-point.

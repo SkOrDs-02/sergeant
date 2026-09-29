@@ -23,8 +23,17 @@ vi.mock("@shared/api", async () => {
   };
 });
 
+vi.mock("../../../core/observability/sentry", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/observability/sentry")
+  >("../../../core/observability/sentry");
+  return { ...actual, captureException: vi.fn() };
+});
+
 import { privatApi, ApiError } from "@shared/api";
-import { removeItem, writeJSON } from "../lib/finykStorage";
+import { logger } from "@shared/lib";
+import { captureException } from "../../../core/observability/sentry";
+import { readJSON, removeItem, writeJSON } from "../lib/finykStorage";
 import { usePrivatbank } from "./usePrivatbank";
 
 const PRIVAT_KEYS = [
@@ -126,7 +135,7 @@ describe("usePrivatbank (extra) — refresh()", () => {
     expect(balanceCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("sets error message on refresh failure", async () => {
+  it("sets the catalog copy on refresh failure", async () => {
     mockedStatus.mockResolvedValue({ connected: true, merchantId: "mid" });
     const { result } = renderHook(() => usePrivatbank());
     await waitFor(() => expect(result.current.connected).toBe(true));
@@ -135,7 +144,9 @@ describe("usePrivatbank (extra) — refresh()", () => {
     await act(async () => {
       await result.current.refresh();
     });
-    expect(result.current.error).toBe("network down");
+    expect(result.current.error).toBe(
+      "Не вдалося оновити дані PrivatBank. Спробуй ще раз.",
+    );
   });
 });
 
@@ -209,7 +220,7 @@ describe("usePrivatbank (extra) — fetchTransactions AuthError", () => {
     await act(async () => {
       await result.current.connect("mid", "tok");
     });
-    expect(result.current.error).toContain("Невірні credentials");
+    expect(result.current.error).toContain("Неправильні дані входу");
   });
 });
 
@@ -322,7 +333,7 @@ describe("usePrivatbank (extra) — data.data response format", () => {
 // ── connect — outer catch: AuthError from balance fetch ──────────────────────
 
 describe("usePrivatbank (extra) — connect outer catch: AuthError from balance", () => {
-  it("sets 'Невірні credentials' error when balance API returns 401", async () => {
+  it("sets 'Неправильні дані входу' error when balance API returns 401", async () => {
     // No cached balance → apiFetch is called, throws AuthError
     const { ApiError } = await import("@shared/api");
     const authErr = new ApiError({
@@ -341,7 +352,7 @@ describe("usePrivatbank (extra) — connect outer catch: AuthError from balance"
       await result.current.connect("mid-auth-fail", "tok-auth-fail");
     });
 
-    expect(result.current.error).toContain("Невірні credentials");
+    expect(result.current.error).toContain("Неправильні дані входу");
     // `connected` лишається true: сервер уже прийняв і зберіг креденшели у
     // `privat_connection`, а впав саме дозавантаж даних. Показати тут
     // «не підключено» означало б суперечити стану сервера — користувач
@@ -353,7 +364,7 @@ describe("usePrivatbank (extra) — connect outer catch: AuthError from balance"
 // ── connect — outer catch: generic non-AuthError from balance fetch ──────────
 
 describe("usePrivatbank (extra) — connect outer catch: generic error from balance", () => {
-  it("sets error.message when balance API throws a generic Error", async () => {
+  it("sets the catalog copy when balance API throws a generic Error", async () => {
     mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
       if (path.includes("/balance/final")) throw new Error("Мережева помилка");
       return { data: [] };
@@ -364,7 +375,9 @@ describe("usePrivatbank (extra) — connect outer catch: generic error from bala
       await result.current.connect("mid-net", "tok-net");
     });
 
-    expect(result.current.error).toBe("Мережева помилка");
+    expect(result.current.error).toBe(
+      "Не вдалося підключити PrivatBank. Спробуй ще раз.",
+    );
     // Див. коментар вище: підключення існує на сервері, впало завантаження.
     expect(result.current.connected).toBe(true);
   });
@@ -380,7 +393,9 @@ describe("usePrivatbank (extra) — connect outer catch: generic error from bala
       await result.current.connect("mid-empty", "tok-empty");
     });
 
-    expect(result.current.error).toBe("Помилка підключення до PrivatBank");
+    expect(result.current.error).toBe(
+      "Не вдалося підключити PrivatBank. Спробуй ще раз.",
+    );
   });
 });
 
@@ -567,5 +582,105 @@ describe("usePrivatbank (extra) — loadBalanceCache TTL expired", () => {
       ([path]) => path.includes("/balance/final"),
     );
     expect(balanceCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ── невпізнаний конверт: борг «Privat24 — баланси завжди 0» ─────────────────
+
+describe("usePrivatbank (extra) — невпізнаний конверт відповіді", () => {
+  it("каже вголос і НЕ кешує, коли жоден відомий конверт не підійшов", async () => {
+    // Рівно та форма, яку оголошують типи `@sergeant/api-client`
+    // (`{ balances }`) і яку код НЕ читає. До цієї правки хук мовчки
+    // віддавав `[]` і ще й клав порожнечу в кеш, тож стан ставав липким.
+    const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+    mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+      if (path.includes("/balance/final"))
+        return { balances: [{ acc: "UA123", balanceOut: "500.00" }] };
+      return { data: [] };
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    expect(result.current.accounts).toHaveLength(0);
+    expect(warn).toHaveBeenCalled();
+    const said = warn.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said).toContain("balance/final");
+    // Ключі верхнього рівня — так замір закриє борг; ЗНАЧЕНЬ там бути не
+    // може (Hard Rule #21: у відповіді банку лежать поля рахунку).
+    expect(said).toContain("balances");
+    expect(said).not.toContain("500.00");
+    expect(said).not.toContain("UA123");
+    // Липкої порожнечі в кеші немає.
+    expect(readJSON("finyk_privat_balance_cache", null)).toBe(null);
+    // І окрема подія в Sentry: warn у проді — лише breadcrumb, його не видно.
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("balance/final"),
+      }),
+      expect.objectContaining({
+        level: "warning",
+        extra: { keys: ["balances"] },
+      }),
+    );
+    expect(JSON.stringify(vi.mocked(captureException).mock.calls)).not.toMatch(
+      /500\.00|UA123/,
+    );
+    warn.mockRestore();
+  });
+
+  it("шле в Sentry назви полів, коли конверт упізнано, а `balance` у записі немає", async () => {
+    // Перша половина боргу: оголошений тип має `balanceOut`, код читає
+    // `balance`, і `|| 0` перетворює промах на 0 ₴ без жодного сліду.
+    mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+      if (path.includes("/balance/final"))
+        return {
+          StatementsResponse: {
+            data: [{ acc: "UA777", balanceOut: "700.00", currency: "UAH" }],
+          },
+        };
+      return { data: [] };
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("balance-record"),
+      }),
+      expect.objectContaining({
+        level: "warning",
+        extra: { keys: ["acc", "balanceOut", "currency"] },
+      }),
+    );
+    expect(JSON.stringify(vi.mocked(captureException).mock.calls)).not.toMatch(
+      /700\.00|UA777/,
+    );
+  });
+
+  it("мовчить, коли конверт упізнано, а рахунків просто нуль", async () => {
+    // Порожній масив у JS ІСТИННИЙ, тож ця форма — законна порожнеча, і
+    // відрізняти її від промаху конверта й було суттю правки.
+    const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+    mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+      if (path.includes("/balance/final"))
+        return { StatementsResponse: { data: [] } };
+      return { data: [] };
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    const said = warn.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said).not.toContain("жоден відомий конверт");
+    expect(captureException).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

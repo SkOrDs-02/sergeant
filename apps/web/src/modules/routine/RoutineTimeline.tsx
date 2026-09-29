@@ -11,6 +11,7 @@ import { Banner } from "@shared/components/ui/Banner";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
+import { messages } from "@shared/i18n/uk";
 import { RoutineCalendarPanel } from "./components/RoutineCalendarPanel";
 import { RoutineHabitsPanel } from "./components/RoutineHabitsPanel";
 import { RoutineStatsPanel } from "./components/RoutineStatsPanel";
@@ -91,11 +92,7 @@ export function RoutineTimeline({
               role="alert"
               className="flex items-start justify-between gap-3"
             >
-              <span>
-                Не вдалося зберегти дані Рутини ({storageErrorMsg}). Можливо,
-                браузер переповнив сховище, звільни місце або експортуй резервну
-                копію.
-              </span>
+              <span>{messages.errors.generic.storageSaveFailed}</span>
               <button
                 type="button"
                 onClick={onDismissStorageError}

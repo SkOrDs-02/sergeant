@@ -43,9 +43,9 @@ interface CategoryPickerFieldProps {
 const copy = {
   all: "Усі категорії",
   frequent: "Часті",
-  noResults: "Нічого не знайдено",
+  noResults: "Нічого не знайшов",
   placeholder: "Обери категорію",
-  search: "Знайти категорію",
+  search: "Знайди категорію",
   title: "Категорія",
 } as const;
 
@@ -123,7 +123,7 @@ export function CategoryPickerField({
         <span className="truncate">{stripLeadingEmoji(category.label)}</span>
       </span>
       {category.id === selectedId && (
-        <Icon name="check" size={16} aria-hidden />
+        <Icon name="check" size="md" aria-hidden />
       )}
     </button>
   );
@@ -147,7 +147,7 @@ export function CategoryPickerField({
         <span className={selected ? "text-text" : "text-subtle"}>
           {selected ? stripLeadingEmoji(selected.label) : placeholder}
         </span>
-        <Icon name="chevron-down" size={16} aria-hidden />
+        <Icon name="chevron-down" size="md" aria-hidden />
       </button>
 
       <Sheet
@@ -165,7 +165,7 @@ export function CategoryPickerField({
           onChange={(event) => setQuery(event.target.value)}
           placeholder={copy.search}
           aria-label={copy.search}
-          icon={<Icon name="search" size={16} aria-hidden />}
+          icon={<Icon name="search" size="md" aria-hidden />}
         />
         {filtered.length === 0 ? (
           <p className="py-6 text-center text-style-body text-subtle">
@@ -208,7 +208,7 @@ export function CategoryPickerField({
             className="touch-target w-full rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-style-body text-subtle transition-colors hover:border-muted hover:text-text"
           >
             <span className="inline-flex items-center gap-2">
-              <Icon name="refresh-cw" size={16} aria-hidden />
+              <Icon name="refresh-cw" size="md" aria-hidden />
               {resetLabel}
             </span>
           </button>

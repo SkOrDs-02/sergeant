@@ -3,28 +3,38 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import MonoAccessTable from "../components/MonoAccessTable";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
+import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 const STEPS = [
-  "Відкрий api.monobank.ua і авторизуйся через застосунок банку: QR-кодом, як звичайний вхід.",
-  "Скопіюй персональний токен. Він виглядає як довгий рядок літер: це і є твій ключ «лише читання».",
-  "Встав токен у трекер. Перше вивантаження йде по одному рахунку за раз – банк дозволяє один запит на хвилину, – тож на кілька карток і банок піде кілька хвилин. Далі синк працює сам.",
+  "Відкрий api.monobank.ua і увійди через застосунок банку: QR-кодом, як звичайний вхід.",
+  "Скопіюй персональний токен. Він виглядає як довгий рядок літер: це і є твій токен лише для читання.",
+  "Встав токен у трекер. Перше вивантаження йде по одному рахунку за раз, бо банк дозволяє один запит на хвилину, тож на кілька карток і банок піде кілька хвилин. Далі синхронізація працює сама.",
 ];
 
 const SHORT_ANSWER =
-  "Monobank віддає трекеру виписку через персональний токен, який ти створюєш сам за хвилину. Токен лише читає дані: транзакції, категорії MCC і баланс. Рухати гроші чи бачити повний номер картки він фізично не може.";
+  "Monobank віддає трекеру виписку через персональний токен, який ти створюєш сам за хвилину. Токен лише читає дані: операції, код категорії від банку і баланс. Рухати гроші чи бачити повний номер картки він фізично не може.";
 
 export default function GuideMonobankPage() {
   usePageMeta({
     ...ROUTE_META["/guides/monobank"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "Article",
-      headline:
-        "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
+      // HowTo, а не Article: сторінка веде людину по кроках, і саме кроки
+      // мають бути машинно-читабельними. Розширених сніпетів Google для
+      // HowTo більше не малює (зняв у вересні 2023), тож адресат тут –
+      // AI-споживачі, ті самі, заради яких у нас llms.txt і markdown.
+      "@type": "HowTo",
+      name: "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/monobank"].lastmod,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
+      step: STEPS.map((text, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        text,
+      })),
     },
   });
 
@@ -43,7 +53,7 @@ export default function GuideMonobankPage() {
           </h1>
           <p className="mt-4 text-sm text-subtle">
             Оновлено <UpdatedOn iso={ROUTE_META["/guides/monobank"].lastmod} />{" "}
-            · автор Sergeant
+            · {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>
@@ -82,27 +92,82 @@ export default function GuideMonobankPage() {
         </section>
 
         <section>
+          <h2 className={h2}>Скільки історії приїжджає одразу</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
+            На старті трекер забирає виписку за останній місяць по кожному
+            рахунку. Це достатньо, щоб перший же тиждень мав із чим
+            порівнюватись, і водночас не перетворює підключення на довге
+            чекання. Глибша історія за кілька років одним махом не тягнеться:
+            банк віддає її вікнами, по одному запиту на хвилину.
+          </p>
+        </section>
+
+        <section>
+          <h2 className={h2}>Коли витрата зʼявляється в трекері</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
+            Після підключення банк сам надсилає кожну нову операцію, щойно вона
+            сталась. Це не опитування раз на годину: трекер нічого не питає, а
+            отримує. На практиці покупка лягає у стрічку витрат, поки ти ще не
+            вийшов із магазину.
+          </p>
+        </section>
+
+        <section>
+          <h2 className={h2}>Кілька карток і банки</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
+            Один токен відкриває всі рахунки цього клієнта, включно з банками.
+            Кожен рахунок лишається окремим: гривнева картка, валютна і банка на
+            відпустку не змішуються в одну купу. Перше вивантаження йде по
+            одному рахунку за раз через той самий хвилинний ліміт, тож на кілька
+            карток піде кілька хвилин, і це одноразово.
+          </p>
+        </section>
+
+        <section>
+          <h2 className={h2}>Звідки береться категорія витрати</h2>
+          <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
+            Банк передає код торговця, і саме він стає першим доказом категорії.
+            Там, де коду мало, працюють правила за описом операції. Будь-яку
+            підказку можна змінити, і жодна не вирішує остаточно: супермаркетний
+            чек, наприклад, ділиться на реальні категорії вже окремо.
+          </p>
+        </section>
+
+        <section>
           <h2 className={h2}>Якщо передумаєш</h2>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
             Токен відкликається в один клік на тій самій сторінці
             api.monobank.ua. Після цього жоден сервіс, якому ти його давав,
-            більше не бачить нічого. Це головна перевага офіційного API перед
-            «поділись логіном»: контроль завжди у тебе.
+            більше не бачить нічого: контроль лишається в тебе.
+          </p>
+          <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
+            З боку трекера є симетрична дія: відключення знімає підписку на нові
+            операції і стирає дані самого зʼєднання, зокрема токен. Уже
+            завантажені витрати лишаються твоїми записами, бо вони вже частина
+            історії, а не власність банку.
+          </p>
+          <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
+            Якщо синхронізація колись зупиниться, найчастіша причина одна: токен
+            відкликаний на боці банку. Лікується тим самим шляхом, яким
+            підключався: новий токен на api.monobank.ua замість старого.
           </p>
         </section>
 
-        <div className="flex flex-col gap-2.5 border-t border-cardline pt-6">
-          <p className="text-sm leading-relaxed text-muted">
-            У Sergeant синк Monobank вбудований: один токен – і Фінік веде
-            бюджети в гривні без ручного вводу.
+        <section>
+          <p className="text-sm text-subtle">
+            Усі входи витрат Фініка –{" "}
+            <a
+              href="/hroshi"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              на сторінці про гроші
+            </a>
+            .
           </p>
-          <a
-            href="/beta"
-            className="text-sm font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Стати в чергу
-          </a>
-        </div>
+          <div className="mt-6">
+            <TelegramCta placement="footer" label="Стати в чергу" />
+          </div>
+        </section>
       </article>
     </SiteLayout>
   );

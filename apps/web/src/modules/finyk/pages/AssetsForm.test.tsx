@@ -43,12 +43,10 @@ describe("SubscriptionForm", () => {
       />,
     );
     expect(
-      screen.getByLabelText("Пошук транзакції за описом"),
+      screen.getByLabelText("Пошук операції за описом"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        /знайдемо найновішу витрату, опис якої містить цей текст/,
-      ),
+      screen.getByText(/знайду найновішу витрату, опис якої містить цей текст/),
     ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("День списання (1-31)"),
@@ -518,7 +516,7 @@ describe("DebtForm", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг…)"), {
+    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг)"), {
       target: { value: "Розстрочка" },
     });
     fireEvent.change(screen.getByLabelText("Початкова сума боргу у гривнях"), {
@@ -653,10 +651,10 @@ describe("DebtForm", () => {
       />,
     );
 
-    expect(container).toHaveTextContent("Виникнення за транзакціями");
+    expect(container).toHaveTextContent("Виникнення за операціями");
     expect(container).toHaveTextContent("Збільшення боргу");
     expect(container).toHaveTextContent(/1[\s\u202f]?721,14/);
-    expect(container).toHaveTextContent(/транзакції виникнення більші/);
+    expect(container).toHaveTextContent(/операції виникнення більші/);
   });
 
   it("does not commit a debt when name is empty", () => {

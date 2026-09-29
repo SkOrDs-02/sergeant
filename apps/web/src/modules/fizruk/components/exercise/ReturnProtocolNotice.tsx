@@ -29,7 +29,7 @@ export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
 
   return (
     <div className="flex items-start gap-2.5 rounded-2xl border border-info/40 bg-info/10 px-4 py-3">
-      <Icon name="info" size={20} aria-hidden className="mt-0.5 shrink-0" />
+      <Icon name="info" size="lg" aria-hidden className="mt-0.5 shrink-0" />
       <div className="min-w-0">
         <p className="text-style-label text-info-strong dark:text-info">
           {injury ? t.injuryTitle : t.staleTitle}

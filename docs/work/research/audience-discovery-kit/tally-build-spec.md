@@ -1,7 +1,7 @@
 # Tally build-spec — опитування ЦА блок-за-блоком
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-23.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Active → Draft: спека форми, дослідження не запущене). **Next review:** 2026-12-16.
+> **Status:** Draft — спека опитування, форму не зібрано
 
 > Tally не імпортує з файлу, тож збираєш руками. Це точна специфікація: тип поля + варіанти + logic.
 > Та сама форма, що в [`google-form-generator.gs`](./google-form-generator.gs), якщо волієш Tally замість Google.

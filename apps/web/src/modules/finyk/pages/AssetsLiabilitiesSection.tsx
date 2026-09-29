@@ -42,9 +42,9 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
       {liabilitiesEmpty && (
         <div className="space-y-2 mb-3">
           <p className="text-style-body text-muted px-1">
-            Кредити, розстрочки, позики, комунальні борги, додавайте з датою
-            повернення, привʼязуйте транзакції-платежі, і картка сама покаже
-            прогрес «Сплачено N з M».
+            Кредити, розстрочки, позики, комунальні борги, додавай з датою
+            повернення, привʼязуй операції-платежі, і картка сама покаже прогрес
+            «Сплачено N з M».
           </p>
           <div className="flex flex-wrap gap-1.5 px-1">
             {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (
@@ -142,7 +142,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             const removed = d;
             setManualDebts((ds) => ds.filter((x) => x.id !== removed.id));
             showUndoToast(toast, {
-              msg: `Видалено борг «${removed.name}»`,
+              msg: `Видалено пасив «${removed.name}»`,
               onUndo: () => setManualDebts((ds) => [...ds, removed]),
             });
           }}

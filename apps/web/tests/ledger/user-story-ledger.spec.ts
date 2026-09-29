@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { getWorld, QA_USER } from "../fixtures/worlds";
+import { installWorld } from "../utils/scenario";
 
 const WARM_STORAGE: Record<string, string> = {
   hub_onboarding_done_v1: "1",
@@ -111,82 +113,10 @@ async function seedLocalStorage(
 }
 
 async function mockApi(page: Page, auth: AuthMode) {
-  await page.route("**/api/**", async (route) => {
-    const url = new URL(route.request().url());
-    const path = url.pathname;
-    const method = route.request().method();
-
-    if (path.includes("/me")) {
-      if (auth === "anon") {
-        await route.fulfill({
-          status: 401,
-          contentType: "application/json",
-          body: JSON.stringify({ ok: false, code: "UNAUTHENTICATED" }),
-        });
-        return;
-      }
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-          user: {
-            id: "qa-user",
-            name: "QA User",
-            email: "qa@example.com",
-            emailVerified: true,
-          },
-        }),
-      });
-      return;
-    }
-
-    if (path.includes("/status")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-          generatedAt: new Date().toISOString(),
-          overall: "operational",
-          components: [],
-        }),
-      });
-      return;
-    }
-
-    if (path.includes("/billing/status")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ ok: true, plan: "free", features: {} }),
-      });
-      return;
-    }
-
-    if (path.includes("/mono/sync-state")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ ok: true, connected: false, sync: null }),
-      });
-      return;
-    }
-
-    if (path.includes("/push/vapid-public")) {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({ ok: true, publicKey: "test-key" }),
-      });
-      return;
-    }
-
-    await route.fulfill({
-      status: method === "POST" ? 204 : 200,
-      contentType: "application/json",
-      body: method === "POST" ? "" : JSON.stringify({ ok: true }),
-    });
+  const world = getWorld("empty");
+  await installWorld(page, {
+    ...world,
+    user: auth === "anon" ? null : QA_USER,
   });
 }
 

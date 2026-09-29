@@ -1,7 +1,7 @@
 /**
  * Sensitive query-key policy for React Query persisters.
  *
- * Stage 0 / PR #004 from `docs/planning/storage-roadmap.md`. The
+ * Stage 0 / PR #004 from `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The
  * web (`apps/web/src/shared/lib/api/queryClientPersister.ts`) and mobile
  * (`apps/mobile/src/sync/persister/mmkvPersister.ts`) persisters
  * dehydrate a snapshot of the React Query cache to disk on every

@@ -72,7 +72,7 @@ export function PWASection() {
       <div className="flex gap-2">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="h-10 flex-1"
           disabled={swBusy || !("serviceWorker" in navigator)}
@@ -80,11 +80,12 @@ export function PWASection() {
             void runSwDiagnostics();
           }}
         >
-          Діагностика SW
+          Технічна діагностика
         </Button>
         <Button
           type="button"
-          variant="danger"
+          variant="soft"
+          tone="danger"
           size="sm"
           className="h-10 flex-1"
           disabled={swBusy || !("serviceWorker" in navigator)}
@@ -143,7 +144,7 @@ export function PWASection() {
       <ConfirmDialog
         open={confirmOpen}
         title="Скинути кеш PWA?"
-        description="Service Worker видалить кеші застосунку, і сторінка перезавантажиться. Твої дані й офлайн-черга лишаються на місці, а файли інтерфейсу застосунок дотягне заново, тож роби це при інтернеті."
+        description="Застосунок видалить свої кеші, і сторінка перезавантажиться. Твої дані й офлайн-черга лишаються на місці, а файли інтерфейсу застосунок дотягне заново, тож роби це при інтернеті."
         confirmLabel="Скинути та перезавантажити"
         cancelLabel="Скасувати"
         danger

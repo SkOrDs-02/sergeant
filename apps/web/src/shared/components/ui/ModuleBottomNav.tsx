@@ -120,7 +120,9 @@ type ColorTokens = {
 const COLORS: Record<ModuleNavColor, ColorTokens> = {
   finyk: {
     fillLight: "bg-finyk-strong",
-    fillDark: "dark:bg-brand-400",
+    // `brand` став нейтральним кам'яним тоном хаба (design-audit M1), тож
+    // brand-400 давав Фініку сіру плашку. Tier-400 модуля, як у решти трьох.
+    fillDark: "dark:bg-teal-400",
     badge: "bg-finyk",
   },
   fizruk: {

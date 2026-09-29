@@ -1,10 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "baseline_revision": "35e41e3ba97e2b2623d589bc0a441a9da2338482",
-  "baseline_files": 612,
-  "current_files": 614,
-  "total_entries": 614,
+  "tracked_files": 668,
+  "total_entries": 668,
   "target_collisions": [],
   "entries": [
     {
@@ -22,8 +20,11 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/assets/README.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
     },
     {
       "old_path": "docs/design/design/anti-slop-strategy.md",
@@ -31,20 +32,29 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/anti-slop-strategy.md",
-      "inbound_count": 14,
+      "inbound_count": 23,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/density-hierarchy-spec.md",
+        "docs/design/design/redesign-v2/retrospective-2026-05-21.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/engineering/testing/verification/README.md",
         "docs/engineering/testing/verification/catalog.json",
         "docs/governance/governance/external-link-allowlist.json",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/product/modules/hub-coach.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/checklists.md",
         "docs/work/specs/audits/2026-09-06-founder-ux-review.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/run.json",
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json",
+        "docs/work/specs/hub-action-axis.md",
         "docs/work/specs/planning/product-knowledge-backlog.md",
         "docs/work/specs/tech-debt/frontend.md"
       ]
@@ -55,7 +65,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/brandbook.md",
-      "inbound_count": 15,
+      "inbound_count": 17,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
@@ -64,10 +74,12 @@
         "docs/design/design/redesign-v2/execution-plan.md",
         "docs/design/design/redesign-v2/governance.md",
         "docs/design/design/redesign-v2/handoff-package/handoff-for-claude-code.md",
+        "docs/design/design/specs/2026-09-17-landing-design.md",
         "docs/design/design/unified-bottom-nav.md",
         "docs/engineering/architecture/apps-status-matrix.md",
         "docs/engineering/mobile/react-native-migration.md",
         "docs/governance/adr/0007-tailwind-opacity-and-strong-tier.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/rules/15-governance-and-doc-language.md",
         "docs/product/marketing/README.md",
@@ -108,8 +120,9 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-consistency-audit-2026-07.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/design-system/01-tokens-colors.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
@@ -120,7 +133,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-system.md",
-      "inbound_count": 17,
+      "inbound_count": 19,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
@@ -136,6 +149,8 @@
         "docs/design/design/redesign-v2/execution-plan.md",
         "docs/design/design/redesign-v2/execution-status.md",
         "docs/design/design/redesign-v2/governance.md",
+        "docs/design/design/redesign-v2/migration.md",
+        "docs/design/design/redesign-v2/retrospective-2026-05-21.md",
         "docs/engineering/architecture/apps-status-matrix.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/rules/15-governance-and-doc-language.md"
@@ -147,11 +162,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-system/01-tokens-colors.md",
-      "inbound_count": 4,
+      "inbound_count": 7,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/brandbook.md",
         "docs/design/design/design-system.md",
         "docs/design/design/design-system/03-spacing-elevation-theming.md",
+        "docs/design/design/module-accent.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -161,10 +179,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-system/02-typography.md",
-      "inbound_count": 3,
+      "inbound_count": 6,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/brandbook.md",
         "docs/design/design/design-system.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -174,9 +195,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-system/03-spacing-elevation-theming.md",
-      "inbound_count": 2,
+      "inbound_count": 7,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/design-system.md",
+        "docs/design/design/design-system/01-tokens-colors.md",
+        "docs/design/design/design-system/04-components.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
+        "docs/design/ui/toast-policy.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -186,9 +212,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-system/04-components.md",
-      "inbound_count": 2,
+      "inbound_count": 8,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/design-system.md",
+        "docs/design/design/specs/2026-09-16-pricing-paywall-design.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
+        "docs/design/design/specs/2026-09-17-settings-design.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -198,9 +230,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/design-system/05-motion-offline-error.md",
-      "inbound_count": 2,
+      "inbound_count": 4,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/design-system.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -229,8 +263,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/mockups-backlog.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/redesign-v2/backlog.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
     },
     {
       "old_path": "docs/design/design/module-accent.md",
@@ -238,12 +276,16 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/module-accent.md",
-      "inbound_count": 6,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/design-system/01-tokens-colors.md",
         "docs/design/design/redesign-v2/execution-plan.md",
         "docs/design/design/redesign-v2/governance.md",
+        "docs/design/design/specs/2026-09-16-onboarding-design.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
         "docs/design/design/unified-bottom-nav.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
@@ -254,12 +296,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/radius-rhythm.md",
-      "inbound_count": 5,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/brandbook.md",
         "docs/design/design/design-consistency-audit-2026-07.md",
+        "docs/design/design/design-system/03-spacing-elevation-theming.md",
+        "docs/design/design/redesign-v2/migration.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -269,12 +314,18 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/design/design/README.md",
-      "inbound_count": 8,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
         "docs/design/README.md",
+        "docs/design/design/design-system.md",
         "docs/design/design/redesign-v2/execution-plan.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/design/design/specs/2026-09-17-landing-design.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
+        "docs/design/design/specs/2026-09-17-settings-design.md",
         "docs/design/ui/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/copy/README.md",
@@ -306,9 +357,8 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/redesign-v2/backlog.md",
-      "inbound_count": 12,
+      "inbound_count": 11,
       "inbound_sources": [
-        "docs/design/design/design-system.md",
         "docs/design/design/redesign-v2/README.md",
         "docs/design/design/redesign-v2/alignment-audit-2026-05-18.md",
         "docs/design/design/redesign-v2/execution-plan.md",
@@ -380,9 +430,8 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/redesign-v2/governance.md",
-      "inbound_count": 10,
+      "inbound_count": 9,
       "inbound_sources": [
-        "docs/design/design/design-system.md",
         "docs/design/design/module-accent.md",
         "docs/design/design/redesign-v2/README.md",
         "docs/design/design/redesign-v2/backlog.md",
@@ -455,8 +504,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
     },
     {
       "old_path": "docs/design/design/redesign-v2/README.md",
@@ -583,6 +635,116 @@
       ]
     },
     {
+      "old_path": "docs/design/design/specs/2026-09-16-onboarding-design.md",
+      "new_path": "docs/design/design/specs/2026-09-16-onboarding-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-16-onboarding-design.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-16-pricing-paywall-design.md",
+      "new_path": "docs/design/design/specs/2026-09-16-pricing-paywall-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-16-pricing-paywall-design.md",
+      "inbound_count": 6,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
+        "docs/design/design/specs/2026-09-17-landing-design.md",
+        "docs/design/design/specs/2026-09-17-settings-design.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-17-auth-design.md",
+      "new_path": "docs/design/design/specs/2026-09-17-auth-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-17-auth-design.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-17-hubchat-design.md",
+      "new_path": "docs/design/design/specs/2026-09-17-hubchat-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-17-hubchat-design.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-17-landing-design.md",
+      "new_path": "docs/design/design/specs/2026-09-17-landing-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-17-landing-design.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/audits/2026-09-17-site-copy-audit.md"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-17-legal-design.md",
+      "new_path": "docs/design/design/specs/2026-09-17-legal-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-17-legal-design.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-17-profile-design.md",
+      "new_path": "docs/design/design/specs/2026-09-17-profile-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-17-profile-design.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
+      "old_path": "docs/design/design/specs/2026-09-17-settings-design.md",
+      "new_path": "docs/design/design/specs/2026-09-17-settings-design.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/design/design/specs/2026-09-17-settings-design.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/specs/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
+    },
+    {
       "old_path": "docs/design/design/specs/README.md",
       "new_path": "docs/design/design/specs/README.md",
       "action": "keep",
@@ -600,9 +762,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/storybook.md",
-      "inbound_count": 3,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/design/design/README.md",
+        "docs/design/design/design-system/04-components.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
         "docs/governance/adr/0046-storybook-vrt-scope.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
@@ -643,12 +807,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/i18n/readiness.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/design/i18n/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/copy/style-guide.uk.md",
-        "docs/start/agents/onboarding.md"
+        "docs/start/agents/onboarding.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md"
       ]
     },
     {
@@ -657,13 +822,16 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/design/i18n/README.md",
-      "inbound_count": 5,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
         "docs/design/README.md",
+        "docs/design/design/README.md",
+        "docs/design/i18n/readiness.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/product/copy/README.md"
+        "docs/product/copy/README.md",
+        "docs/work/specs/tech-debt/frontend.md"
       ]
     },
     {
@@ -684,11 +852,12 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/design/ui/README.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
         "docs/design/README.md",
+        "docs/design/design/README.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
     },
@@ -698,8 +867,9 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/ui/shortcuts.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
+        "docs/design/design/design-system/04-components.md",
         "docs/design/ui/README.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
@@ -710,8 +880,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/ui/toast-policy.md",
-      "inbound_count": 2,
+      "inbound_count": 4,
       "inbound_sources": [
+        "docs/design/design/design-system/04-components.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/design/ui/README.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
@@ -722,11 +894,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/api/openapi.json",
-      "inbound_count": 3,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/engineering/api/README.md",
+        "docs/engineering/architecture/api-v1.md",
         "docs/governance/adr/0025-openapi-generation.md",
-        "docs/governance/adr/README.md"
+        "docs/governance/adr/README.md",
+        "docs/work/specs/audits/2026-09-21-agent-readiness.md"
       ]
     },
     {
@@ -794,7 +968,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/api-v1.md",
-      "inbound_count": 9,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/apps-status-matrix.md",
@@ -803,8 +977,7 @@
         "docs/governance/adr/0018-api-versioning-policy.md",
         "docs/governance/adr/0053-api-versioning-policy.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/governance/pr-ledger/index.json",
-        "docs/work/specs/tech-debt/backend.md"
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -1034,17 +1207,33 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/feature-flags.md",
-      "inbound_count": 9,
+      "inbound_count": 25,
       "inbound_sources": [
+        "docs/README.md",
+        "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
+        "docs/design/design/specs/2026-09-17-settings-design.md",
         "docs/engineering/integrations/env-vars.md",
+        "docs/governance/governance/README.md",
+        "docs/governance/governance/feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/operations/observability/engineering-metrics.md",
+        "docs/operations/observability/hub-perf-baseline.md",
+        "docs/operations/observability/runbook.md",
+        "docs/start/instructions/add-feature-flag.md",
         "docs/start/instructions/billing-payments-launch.md",
+        "docs/start/instructions/cleanup-dead-code.md",
+        "docs/start/instructions/migrate-client-storage.md",
+        "docs/start/instructions/retire-feature-flag.md",
+        "docs/start/instructions/run-weekly-operator-digest.md",
+        "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/e2e-repeatable-states.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md",
         "docs/work/specs/site-ia/README.md",
-        "docs/work/specs/site-ia/page-stan.md"
+        "docs/work/specs/site-ia/page-stan.md",
+        "docs/work/specs/sqlite-opfs-worker.md"
       ]
     },
     {
@@ -1053,11 +1242,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/frontend-overview.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/apps-status-matrix.md",
         "docs/engineering/architecture/module-structure.md",
+        "docs/engineering/mobile/react-native-migration.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json"
       ]
@@ -1085,7 +1275,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/metric-registry.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -1093,6 +1283,7 @@
         "docs/product/modules/finyk.md",
         "docs/product/modules/hub-coach.md",
         "docs/product/modules/routine.md",
+        "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/planning/product-knowledge-backlog.md"
       ]
     },
@@ -1102,14 +1293,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/module-ownership.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/apps-status-matrix.md",
         "docs/engineering/architecture/repo-map.md",
         "docs/engineering/architecture/state-write-paths.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/governance/pr-ledger/index.json"
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
       ]
     },
     {
@@ -1131,10 +1323,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/notifications.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
-        "docs/governance/governance/freshness-dashboard.html"
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/planning/product-knowledge-backlog.md"
       ]
     },
     {
@@ -1205,14 +1398,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/repo-map.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/module-ownership.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/schemas/repo-map.schema.json",
-        "docs/governance/pr-ledger/index.json"
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -1318,9 +1512,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/integrations/env-vars.md",
-      "inbound_count": 20,
+      "inbound_count": 21,
       "inbound_sources": [
         "docs/engineering/architecture/feature-flags.md",
+        "docs/engineering/integrations/README.md",
         "docs/engineering/integrations/monobank-provider-api-plan.md",
         "docs/governance/adr/0042-password-hashing-strategy.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -1447,8 +1642,9 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/loops/tech-debt-ratchet.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
+        "docs/README.md",
         "docs/engineering/README.md",
         "docs/governance/governance/freshness-dashboard.html"
       ]
@@ -1743,8 +1939,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/testing/verification/catalog.json",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/engineering/testing/verification/README.md"]
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/engineering/testing/verification/README.md",
+        "docs/work/specs/e2e-repeatable-states.md",
+        "docs/work/specs/kv-warm-cache-user-partition.md"
+      ]
     },
     {
       "old_path": "docs/engineering/testing/verification/implementation-status.md",
@@ -1859,8 +2059,9 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0002-tool-lifecycle.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/specialists-mapping.md",
         "docs/work/specs/tech-debt/backend.md"
       ]
@@ -1938,11 +2139,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0009-hosting-split-railway-vercel.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/pr-ledger/index.json",
         "docs/operations/deploy/monorepo-deploy-filtering.md",
-        "docs/operations/deploy/vercel.md"
+        "docs/operations/deploy/vercel.md",
+        "docs/operations/observability/runbook.md"
       ]
     },
     {
@@ -1967,11 +2169,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0011-local-first-storage.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/adr/0012-rls-as-authz-boundary.md",
         "docs/governance/adr/0067-engagement-mechanism-standardization.md",
-        "docs/governance/adr/0073-dualwrite-generic-framework.md"
+        "docs/governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/start/instructions/migrate-client-storage.md"
       ]
     },
     {
@@ -2026,14 +2229,16 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
-      "inbound_count": 8,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/adr/0001-monetization-architecture.md",
         "docs/governance/adr/0017-better-auth-choice-and-session-model.md",
         "docs/governance/adr/0022-atomic-sql-quotas.md",
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/governance/external-link-allowlist.json",
+        "docs/governance/pr-ledger/index.json",
         "docs/governance/security/llm-subprocessors.md",
         "docs/work/specs/user-deletion-grace-window.md"
       ]
@@ -2044,10 +2249,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0017-better-auth-choice-and-session-model.md",
-      "inbound_count": 4,
+      "inbound_count": 6,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-auth-design.md",
         "docs/governance/adr/0018-api-versioning-policy.md",
         "docs/governance/adr/0042-password-hashing-strategy.md",
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/security/better-auth-audit-2026-05.md",
         "docs/start/agents/specialists-mapping.md"
       ]
@@ -2185,7 +2392,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0028-pgvector-ai-memory.md",
-      "inbound_count": 9,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/engineering/architecture/ai-memory.md",
         "docs/engineering/integrations/env-vars.md",
@@ -2193,7 +2400,6 @@
         "docs/governance/adr/0021-memory-bank.md",
         "docs/governance/adr/0031-openclaw-v0-telegram-cofounder.md",
         "docs/governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
-        "docs/governance/governance/feature-flags.md",
         "docs/operations/observability/runbook.md",
         "docs/work/specs/launch/tech/ai-memory-activation.md"
       ]
@@ -2204,12 +2410,15 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0030-telegram-reporting-channel-structure.md",
-      "inbound_count": 6,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/governance/adr/0031-openclaw-v0-telegram-cofounder.md",
         "docs/governance/adr/0032-console-consolidated-into-openclaw.md",
         "docs/governance/adr/0033-openclaw-multi-personas-and-council.md",
         "docs/governance/adr/0036-openclaw-write-tools-with-approval.md",
+        "docs/governance/adr/0090-n8n-decommissioned.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/operations/observability/posthog-ftux-dashboards.md",
         "docs/operations/observability/telegram-control-plane.md",
         "docs/start/instructions/modify-n8n-workflow.md"
       ]
@@ -2280,9 +2489,10 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0035-distributed-tracing-opentelemetry.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
+        "docs/governance/security/pii-handling.md",
         "docs/operations/observability/runbook.md",
         "docs/work/specs/initiatives/README.md"
       ]
@@ -2402,8 +2612,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0045-hard-rules-taxonomy.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/adr/0058-knowledge-graph-schema.md"]
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/adr/0058-knowledge-graph-schema.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/pr-ledger/index.json"
+      ]
     },
     {
       "old_path": "docs/governance/adr/0046-storybook-vrt-scope.md",
@@ -2411,9 +2625,10 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0046-storybook-vrt-scope.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/design/design/storybook.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/work/specs/initiatives/README.md"
       ]
     },
@@ -2423,10 +2638,15 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0047-cloudsync-v1-410-gone.md",
-      "inbound_count": 10,
+      "inbound_count": 15,
       "inbound_sources": [
+        "docs/engineering/architecture/diagrams/c3-chat-tool-use.md",
         "docs/engineering/mobile/react-native-migration.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-finyk.md",
         "docs/engineering/notes/spikes/2026-05-walkthrough-fizruk.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-hubchat.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-nutrition.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-routine.md",
         "docs/engineering/notes/spikes/2026-05-walkthrough-sync.md",
         "docs/governance/adr/0004-cloudsync-lww-conflict-resolution.md",
         "docs/governance/adr/0011-local-first-storage.md",
@@ -2524,9 +2744,8 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0054-ux-roast-2026-q2.md",
-      "inbound_count": 2,
+      "inbound_count": 1,
       "inbound_sources": [
-        "docs/governance/governance/feature-flags.md",
         "docs/work/specs/launch/product-os/ftux-master-tracker.md"
       ]
     },
@@ -2551,8 +2770,8 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0057-anthropic-sdk-v1-upgrade.md",
-      "inbound_count": 0,
-      "inbound_sources": []
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/pr-ledger/index.json"]
     },
     {
       "old_path": "docs/governance/adr/0058-knowledge-graph-schema.md",
@@ -2628,8 +2847,8 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0063-expo-sdk-53-upgrade.md",
-      "inbound_count": 0,
-      "inbound_sources": []
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/pr-ledger/index.json"]
     },
     {
       "old_path": "docs/governance/adr/0064-syncv2-modular-refactor.md",
@@ -2691,17 +2910,19 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0068-pricing-v4-uah-reverse-trial.md",
-      "inbound_count": 12,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/governance/README.md",
         "docs/governance/adr/0001-monetization-architecture.md",
         "docs/governance/adr/0003-refund-and-dispute-handling.md",
         "docs/governance/adr/0051-pricing-v3-single-tier.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/work/README.md",
         "docs/work/specs/launch/README.md",
         "docs/work/specs/launch/business/01-monetization-and-pricing.md",
         "docs/work/specs/launch/business/06-monetization-architecture.md",
         "docs/work/specs/launch/phases/README.md",
+        "docs/work/specs/launch/product-os/paywall-ux-placement.md",
         "docs/work/specs/planning/product-knowledge-backlog.md",
         "docs/work/specs/site-ia/page-obitsyanky.md",
         "docs/work/specs/site-ia/page-pytannya.md"
@@ -2777,8 +2998,9 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0074-hosting-hetzner-coolify.md",
-      "inbound_count": 38,
+      "inbound_count": 42,
       "inbound_sources": [
+        "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/diagrams/c1-system-context.md",
         "docs/engineering/architecture/feature-flags.md",
         "docs/engineering/architecture/hosting-evolution.md",
@@ -2791,6 +3013,9 @@
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
         "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/governance/security/api-internal-hmac.md",
+        "docs/governance/security/pii-handling.md",
+        "docs/governance/security/rate-limit-failure-mode.md",
         "docs/governance/security/secret-ownership-register.md",
         "docs/governance/security/secret-rotation.md",
         "docs/operations/deploy/README.md",
@@ -2811,8 +3036,8 @@
         "docs/start/instructions/operations-runbook.md",
         "docs/start/instructions/postgres-read-replica.md",
         "docs/start/instructions/rotate-secrets.md",
+        "docs/start/instructions/security-events.md",
         "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
-        "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/launch/business/03-services-and-toolstack.md",
         "docs/work/specs/launch/business/05-operations-and-automation.md",
         "docs/work/specs/launch/tech/ai-memory-activation.md",
@@ -2825,10 +3050,11 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0075-openclaw-gateway-decommissioned.md",
-      "inbound_count": 34,
+      "inbound_count": 42,
       "inbound_sources": [
         "docs/engineering/architecture/api-contracts.md",
         "docs/engineering/architecture/apps-status-matrix.md",
+        "docs/engineering/architecture/data-exchange-storage-audit.md",
         "docs/engineering/architecture/diagrams/c1-system-context.md",
         "docs/engineering/integrations/env-vars.md",
         "docs/engineering/integrations/railway-vercel.md",
@@ -2842,16 +3068,21 @@
         "docs/governance/adr/0055-openclaw-external-gateway.md",
         "docs/governance/adr/0057-anthropic-sdk-v1-upgrade.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
+        "docs/governance/governance/rules/20-no-openclaw-pats-in-production.md",
+        "docs/governance/security/access-matrix.md",
         "docs/governance/security/audit-exceptions.md",
         "docs/governance/security/container-scan.md",
+        "docs/governance/security/disaster-recovery.md",
         "docs/governance/security/distroless-upgrade-plan.md",
         "docs/governance/security/internal-api-keys.md",
+        "docs/governance/security/pii-handling.md",
         "docs/operations/deploy/README.md",
         "docs/operations/deploy/monorepo-deploy-filtering.md",
         "docs/operations/deploy/openclaw.md",
         "docs/operations/observability/alert-bot-routing.md",
         "docs/operations/observability/log-levels.md",
         "docs/operations/observability/runbook.md",
+        "docs/operations/observability/sentry-sampling.md",
         "docs/operations/observability/telegram-control-plane.md",
         "docs/operations/ops/docker-image-policy.md",
         "docs/start/agents/specialists-mapping.md",
@@ -2860,7 +3091,9 @@
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/rotate-openclaw-credentials.md",
         "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
-        "docs/work/specs/launch/business/05-operations-and-automation.md"
+        "docs/work/specs/launch/business/03-services-and-toolstack.md",
+        "docs/work/specs/launch/business/05-operations-and-automation.md",
+        "docs/work/specs/tech-debt/mobile.md"
       ]
     },
     {
@@ -2897,20 +3130,32 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0078-day-boundary-device-local.md",
-      "inbound_count": 12,
+      "inbound_count": 24,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-16-onboarding-design.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
         "docs/engineering/architecture/domain-invariants.md",
         "docs/engineering/architecture/metric-registry.md",
         "docs/engineering/architecture/module-ownership.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-finyk.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-fizruk.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-hubchat.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-nutrition.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-routine.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-sync.md",
         "docs/governance/adr/0067-engagement-mechanism-standardization.md",
         "docs/governance/adr/0079-frozen-past-and-canonical-denominator.md",
+        "docs/governance/adr/0096-product-reward-loop.md",
         "docs/governance/governance/rules/kyiv-time-helpers.md",
+        "docs/product/copy/style-guide.uk.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
         "docs/work/specs/audits/unification-modules.md",
         "docs/work/specs/finyk-hero-month-strip.md",
         "docs/work/specs/fizruk-readiness-check.md",
-        "docs/work/specs/planning/product-knowledge-backlog.md"
+        "docs/work/specs/planning/product-knowledge-backlog.md",
+        "docs/work/specs/reward-loop-and-reminders.md"
       ]
     },
     {
@@ -2937,8 +3182,9 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0080-body-weight-source-of-truth.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-profile-design.md",
         "docs/governance/adr/0091-goal-history-not-repainted.md",
         "docs/product/modules/fizruk.md",
         "docs/work/specs/import-external-trackers.md",
@@ -2952,13 +3198,14 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0081-repository-simplification.md",
-      "inbound_count": 31,
+      "inbound_count": 36,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/brandbook.md",
         "docs/design/design/design-system/01-tokens-colors.md",
         "docs/design/design/design-system/02-typography.md",
+        "docs/design/design/design-system/03-spacing-elevation-theming.md",
         "docs/design/design/design-system/05-motion-offline-error.md",
         "docs/design/design/module-accent.md",
         "docs/design/design/radius-rhythm.md",
@@ -2977,14 +3224,18 @@
         "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
         "docs/governance/adr/0093-eslint-kept-lint-pipeline-cached.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/README.md",
         "docs/governance/governance/rules/23-archive-move-depth.md",
         "docs/governance/governance/rules/README.md",
         "docs/governance/governance/snapshot.md",
+        "docs/governance/pr-ledger/README.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/decisions.md",
         "docs/work/specs/audits/2026-08-21-icons-and-emoji.md",
         "docs/work/specs/initiatives/README.md",
-        "docs/work/specs/planning/harness-engineering-v1.md"
+        "docs/work/specs/planning/harness-engineering-v1.md",
+        "docs/work/specs/tech-debt/frontend.md"
       ]
     },
     {
@@ -2993,23 +3244,30 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0082-private-storage-repo-posture.md",
-      "inbound_count": 17,
+      "inbound_count": 24,
       "inbound_sources": [
         "docs/design/design/storybook.md",
         "docs/engineering/architecture/module-ownership.md",
         "docs/engineering/architecture/rag-eval.md",
         "docs/engineering/testing/README.md",
         "docs/governance/adr/0034-visual-regression-testing.md",
+        "docs/governance/adr/0046-storybook-vrt-scope.md",
         "docs/governance/adr/0069-ai-pr-checklist.md",
         "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
+        "docs/governance/governance/README.md",
         "docs/governance/governance/ai-pr-checklist.md",
         "docs/governance/governance/harness-versioning.md",
         "docs/governance/governance/review-checklist.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/governance/security/ai-quota-kill-switch.md",
+        "docs/governance/security/threat-model.md",
+        "docs/governance/security/vulnerability-sla.md",
         "docs/operations/observability/runbook.md",
         "docs/start/instructions/bump-dep-safely.md",
         "docs/start/instructions/operational-continuity.md",
         "docs/start/instructions/stabilize-flaky-test.md",
         "docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/initiatives/README.md",
         "docs/work/specs/planning/harness-engineering-v1.md"
       ]
@@ -3045,12 +3303,15 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
-      "inbound_count": 9,
+      "inbound_count": 12,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/governance/adr/0022-atomic-sql-quotas.md",
         "docs/governance/adr/0051-pricing-v3-single-tier.md",
         "docs/governance/adr/0068-pricing-v4-uah-reverse-trial.md",
         "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/product/modules/hub-coach.md",
         "docs/work/specs/launch/README.md",
         "docs/work/specs/launch/business/01-monetization-and-pricing.md",
@@ -3064,11 +3325,14 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md",
-      "inbound_count": 12,
+      "inbound_count": 15,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/adr/0022-atomic-sql-quotas.md",
         "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
+        "docs/governance/adr/0095-demo-mode-removed.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/governance/pr-ledger/index.json",
         "docs/governance/security/ai-quota-kill-switch.md",
         "docs/operations/observability/runbook.md",
@@ -3086,10 +3350,11 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0087-model-tiering-measured.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/adr/0005-anthropic-model-selection-and-prompt-caching.md",
-        "docs/governance/pr-ledger/index.json"
+        "docs/governance/pr-ledger/index.json",
+        "docs/governance/security/llm-subprocessors.md"
       ]
     },
     {
@@ -3098,11 +3363,17 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
-      "inbound_count": 3,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/governance/adr/0072-harness-versioning.md",
+        "docs/governance/adr/README.md",
         "docs/governance/governance/harness-versioning.md",
-        "docs/governance/pr-ledger/index.json"
+        "docs/governance/governance/rules/20-no-openclaw-pats-in-production.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/launch/phases/01-web-launch-with-users.md",
+        "docs/work/specs/launch/phases/02-capacitor-launch.md",
+        "docs/work/specs/launch/phases/README.md",
+        "docs/work/specs/launch/product-os/paywall-ux-placement.md"
       ]
     },
     {
@@ -3111,12 +3382,16 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
-      "inbound_count": 9,
+      "inbound_count": 13,
       "inbound_sources": [
         "docs/engineering/architecture/diagrams/flow-reminder-fire.md",
         "docs/governance/adr/0074-hosting-hetzner-coolify.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/pr-ledger/index.json",
+        "docs/governance/security/disaster-recovery.md",
+        "docs/operations/observability/posthog-ftux-dashboards.md",
+        "docs/operations/observability/telegram-control-plane.md",
         "docs/start/instructions/add-push-notification.md",
         "docs/start/instructions/modify-n8n-workflow.md",
         "docs/start/instructions/operations-runbook.md",
@@ -3130,24 +3405,39 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0090-n8n-decommissioned.md",
-      "inbound_count": 16,
+      "inbound_count": 31,
       "inbound_sources": [
+        "docs/engineering/api/README.md",
         "docs/engineering/architecture/diagrams/flow-reminder-fire.md",
+        "docs/engineering/architecture/service-catalog.md",
         "docs/engineering/integrations/env-vars.md",
+        "docs/engineering/integrations/railway-vercel.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-finyk.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-fizruk.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-hubchat.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-nutrition.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-routine.md",
+        "docs/engineering/notes/spikes/2026-05-walkthrough-sync.md",
         "docs/governance/adr/0026-n8n-workflow-source-of-truth.md",
+        "docs/governance/adr/0030-telegram-reporting-channel-structure.md",
         "docs/governance/pr-ledger/index.json",
         "docs/governance/security/api-internal-hmac.md",
+        "docs/governance/security/audit-exceptions.md",
+        "docs/governance/security/disaster-recovery.md",
         "docs/governance/security/internal-api-keys.md",
         "docs/governance/security/secret-rotation.md",
         "docs/operations/observability/alert-bot-routing.md",
+        "docs/operations/observability/metrics.md",
         "docs/operations/observability/runbook.md",
         "docs/operations/observability/telegram-control-plane.md",
+        "docs/operations/observability/telemetry-rollout-plan.md",
         "docs/start/agents/loops/LOOP.md",
         "docs/start/agents/onboarding.md",
         "docs/start/instructions/enable-silpo-integration.md",
         "docs/start/instructions/modify-n8n-workflow.md",
         "docs/start/instructions/operations-runbook.md",
-        "docs/start/instructions/playbook-catalog.md"
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/work/specs/launch/business/03-services-and-toolstack.md"
       ]
     },
     {
@@ -3184,8 +3474,8 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0093-eslint-kept-lint-pipeline-cached.md",
-      "inbound_count": 0,
-      "inbound_sources": []
+      "inbound_count": 1,
+      "inbound_sources": ["docs/engineering/development/eslint-config.md"]
     },
     {
       "old_path": "docs/governance/adr/0094-mobile-web-first-freeze.md",
@@ -3193,11 +3483,130 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0094-mobile-web-first-freeze.md",
-      "inbound_count": 3,
+      "inbound_count": 30,
       "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
+        "docs/design/design/specs/2026-09-16-onboarding-design.md",
+        "docs/design/design/specs/2026-09-16-pricing-paywall-design.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
+        "docs/design/design/specs/2026-09-17-landing-design.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
+        "docs/design/design/specs/2026-09-17-settings-design.md",
+        "docs/engineering/architecture/apps-status-matrix.md",
         "docs/engineering/architecture/platforms.md",
+        "docs/engineering/mobile/overview.md",
+        "docs/engineering/mobile/react-native-migration.md",
+        "docs/engineering/mobile/shell.md",
         "docs/governance/adr/0052-mobile-strategy-capacitor-primary.md",
-        "docs/governance/pr-ledger/index.json"
+        "docs/governance/pr-ledger/index.json",
+        "docs/operations/observability/telemetry-rollout-plan.md",
+        "docs/start/agents/decisions.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/launch/phases/00-readiness-audit.md",
+        "docs/work/specs/launch/phases/01-web-launch-with-users.md",
+        "docs/work/specs/launch/phases/02-capacitor-launch.md",
+        "docs/work/specs/launch/phases/README.md",
+        "docs/work/specs/reward-loop-and-reminders.md",
+        "docs/work/specs/sqlite-multi-tab-ownership.md",
+        "docs/work/specs/sqlite-opfs-worker.md",
+        "docs/work/specs/tech-debt/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0095-demo-mode-removed.md",
+      "new_path": "docs/governance/adr/0095-demo-mode-removed.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0095-demo-mode-removed.md",
+      "inbound_count": 6,
+      "inbound_sources": [
+        "docs/design/design/specs/2026-09-16-onboarding-design.md",
+        "docs/product/modules/finyk.md",
+        "docs/start/agents/decisions.md",
+        "docs/start/instructions/deep-module-audit.md",
+        "docs/work/specs/import-external-trackers.md",
+        "docs/work/specs/site-ia/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0096-product-reward-loop.md",
+      "new_path": "docs/governance/adr/0096-product-reward-loop.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0096-product-reward-loop.md",
+      "inbound_count": 8,
+      "inbound_sources": [
+        "docs/governance/adr/0097-link-evidence-standard.md",
+        "docs/product/modules/fizruk.md",
+        "docs/product/modules/nutrition.md",
+        "docs/product/modules/routine.md",
+        "docs/start/agents/decisions.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+        "docs/work/specs/link-evidence-standard.md",
+        "docs/work/specs/reward-loop-and-reminders.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0097-link-evidence-standard.md",
+      "new_path": "docs/governance/adr/0097-link-evidence-standard.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0097-link-evidence-standard.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/start/agents/decisions.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+        "docs/work/specs/link-evidence-standard.md",
+        "docs/work/specs/reward-loop-and-reminders.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0098-account-deletion-grace-window.md",
+      "new_path": "docs/governance/adr/0098-account-deletion-grace-window.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0098-account-deletion-grace-window.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/agents/decisions.md",
+        "docs/work/specs/user-deletion-grace-window.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0099-retired-hard-rules-registry.md",
+      "new_path": "docs/governance/adr/0099-retired-hard-rules-registry.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0099-retired-hard-rules-registry.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/adr/0081-repository-simplification.md",
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+      "new_path": "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/engineering/architecture/feature-flags.md",
+        "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/product/model/product-overview.md",
+        "docs/product/modules/hub-coach.md"
       ]
     },
     {
@@ -3206,11 +3615,13 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/README.md",
-      "inbound_count": 3,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
-        "docs/governance/README.md"
+        "docs/governance/README.md",
+        "docs/governance/governance/README.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -3255,8 +3666,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/external-link-allowlist.json",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/governance/README.md"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/README.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
+      ]
     },
     {
       "old_path": "docs/governance/governance/feature-flags.md",
@@ -3264,17 +3678,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/feature-flags.md",
-      "inbound_count": 15,
+      "inbound_count": 8,
       "inbound_sources": [
-        "docs/README.md",
         "docs/governance/adr/0008-feature-flags.md",
         "docs/governance/governance/README.md",
-        "docs/governance/governance/freshness-dashboard.html",
-        "docs/operations/observability/engineering-metrics.md",
-        "docs/operations/observability/runbook.md",
-        "docs/start/instructions/add-feature-flag.md",
-        "docs/start/instructions/cleanup-dead-code.md",
-        "docs/start/instructions/retire-feature-flag.md",
         "docs/start/instructions/run-weekly-operator-digest.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/launch/phases/01-web-launch-with-users.md",
@@ -3289,10 +3696,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/freshness-dashboard.html",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
+        "docs/engineering/architecture/README.md",
         "docs/governance/governance/README.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
         "docs/start/instructions/reconcile-doc-drift.md",
@@ -3306,16 +3714,18 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/hard-rules-matrix.md",
-      "inbound_count": 9,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/adr/0045-hard-rules-taxonomy.md",
         "docs/governance/governance/README.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/governance/policy-review.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
         "docs/governance/governance/rules/README.md",
         "docs/start/agents/onboarding.md",
         "docs/start/agents/skills-evolution-roadmap.md",
         "docs/start/instructions/add-hard-rule.md",
+        "docs/start/instructions/audit-ci-gates.md",
         "docs/work/specs/initiatives/README.md"
       ]
     },
@@ -3325,12 +3735,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/hard-rules.json",
-      "inbound_count": 27,
+      "inbound_count": 30,
       "inbound_sources": [
         "docs/engineering/architecture/state-write-paths.md",
         "docs/governance/adr/0045-hard-rules-taxonomy.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/governance/README.md",
         "docs/governance/governance/hard-rules-matrix.md",
+        "docs/governance/governance/policy-review.md",
         "docs/governance/governance/rules/01-db-types-coerce-bigint-to-number.md",
         "docs/governance/governance/rules/02-rq-keys-via-centralized-factories.md",
         "docs/governance/governance/rules/03-api-contract-server-client-test.md",
@@ -3352,6 +3764,7 @@
         "docs/start/agents/onboarding.md",
         "docs/start/agents/skills-evolution-roadmap.md",
         "docs/start/instructions/add-hard-rule.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/README.md",
         "docs/work/specs/planning/harness-engineering-v1.md"
       ]
@@ -3362,9 +3775,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/hard-rules.schema.json",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/adr/0045-hard-rules-taxonomy.md",
+        "docs/governance/governance/README.md",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/start/instructions/add-hard-rule.md"
       ]
@@ -3390,7 +3804,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/incident-severity-policy.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
         "docs/governance/governance/README.md",
@@ -3400,7 +3814,8 @@
         "docs/start/instructions/declare-incident.md",
         "docs/start/instructions/operations-runbook.md",
         "docs/start/instructions/restore-from-backup.md",
-        "docs/start/instructions/write-postmortem.md"
+        "docs/start/instructions/write-postmortem.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -3409,10 +3824,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/pnpm-overrides-policy.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/README.md",
-        "docs/governance/governance/freshness-dashboard.html"
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/security/audit-exceptions.md"
       ]
     },
     {
@@ -3452,14 +3868,27 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/release-policy.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
         "docs/governance/governance/README.md",
-        "docs/governance/governance/feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/start/instructions/audit-ci-gates.md",
         "docs/start/instructions/deploy-config-change.md",
-        "docs/start/instructions/release.md"
+        "docs/start/instructions/release.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/governance/repo-identity.json",
+      "new_path": "docs/governance/governance/repo-identity.json",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/governance/governance/repo-identity.json",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
       ]
     },
     {
@@ -3468,9 +3897,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/repo-map.auto.json",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/engineering/architecture/repo-map.md",
+        "docs/governance/governance/README.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md"
       ]
     },
@@ -3563,11 +3993,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/05-conventional-commits-explicit-scope.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -3576,11 +4007,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/06-no-force-push-to-main.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -3604,12 +4036,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/10-lifecycle-markers.md",
-      "inbound_count": 5,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md"
       ]
     },
@@ -3619,12 +4053,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/15-governance-and-doc-language.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/engineering/architecture/rag-eval.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -3660,11 +4095,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/20-no-openclaw-pats-in-production.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/rotate-openclaw-credentials.md"
       ]
     },
@@ -3731,11 +4167,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/README.md",
         "docs/governance/pr-ledger/index.json"
       ]
     },
@@ -3745,10 +4182,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/kyiv-time-helpers.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
       ]
     },
     {
@@ -3769,8 +4207,12 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/governance/governance/rules/README.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/governance/README.md",
+        "docs/governance/governance/freshness-dashboard.html"
+      ]
     },
     {
       "old_path": "docs/governance/governance/schemas/pr-ledger.schema.json",
@@ -3823,9 +4265,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/service-catalog.auto.json",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
+        "docs/governance/governance/README.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md"
       ]
     },
@@ -3847,8 +4290,9 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/wip-limits.json",
-      "inbound_count": 1,
+      "inbound_count": 2,
       "inbound_sources": [
+        "docs/governance/governance/README.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md"
       ]
     },
@@ -3858,63 +4302,117 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 57,
+      "inbound_count": 111,
       "inbound_sources": [
         "docs/STATUS.md",
+        "docs/governance/adr/0002-tool-lifecycle.md",
         "docs/governance/adr/0003-refund-and-dispute-handling.md",
         "docs/governance/adr/0009-hosting-split-railway-vercel.md",
         "docs/governance/adr/0010-mobile-dual-track-capacitor-expo.md",
+        "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
+        "docs/governance/adr/0030-telegram-reporting-channel-structure.md",
         "docs/governance/adr/0043-cloudsync-v1-sunset.md",
+        "docs/governance/adr/0045-hard-rules-taxonomy.md",
+        "docs/governance/adr/0046-storybook-vrt-scope.md",
         "docs/governance/adr/0047-cloudsync-v1-410-gone.md",
         "docs/governance/adr/0048-apns-provider-library.md",
         "docs/governance/adr/0052-mobile-strategy-capacitor-primary.md",
+        "docs/governance/adr/0057-anthropic-sdk-v1-upgrade.md",
         "docs/governance/adr/0058-knowledge-graph-schema.md",
         "docs/governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
         "docs/governance/adr/0060-architecture-diagrams-automation-scope.md",
         "docs/governance/adr/0061-pr-backlink-storage.md",
         "docs/governance/adr/0062-openapi-source-of-truth.md",
+        "docs/governance/adr/0063-expo-sdk-53-upgrade.md",
         "docs/governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
         "docs/governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
         "docs/governance/adr/0067-engagement-mechanism-standardization.md",
         "docs/governance/adr/0069-ai-pr-checklist.md",
         "docs/governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/governance/adr/0081-repository-simplification.md",
+        "docs/governance/adr/0082-private-storage-repo-posture.md",
+        "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
         "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md",
         "docs/governance/adr/0087-model-tiering-measured.md",
         "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
         "docs/governance/adr/0094-mobile-web-first-freeze.md",
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/governance/adr/README.md",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/hard-rules.json",
+        "docs/governance/governance/repo-identity.json",
         "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/governance/governance/rules/05-conventional-commits-explicit-scope.md",
+        "docs/governance/governance/rules/06-no-force-push-to-main.md",
+        "docs/governance/governance/rules/10-lifecycle-markers.md",
+        "docs/governance/governance/rules/15-governance-and-doc-language.md",
+        "docs/governance/governance/rules/20-no-openclaw-pats-in-production.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
         "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
         "docs/governance/governance/snapshot.md",
         "docs/governance/pr-ledger/README.md",
         "docs/start/agents/agent-workflows.md",
         "docs/start/agents/loops/LOOP.md",
+        "docs/start/instructions/add-feature-flag.md",
         "docs/start/instructions/add-hubchat-tool.md",
+        "docs/start/instructions/audit-ci-gates.md",
+        "docs/start/instructions/cleanup-dead-code.md",
         "docs/start/instructions/database-backup-restore.md",
         "docs/start/instructions/database-connection-pooling.md",
+        "docs/start/instructions/db-index-audit-template.md",
         "docs/start/instructions/debug-chat-tool.md",
+        "docs/start/instructions/deploy-config-change.md",
         "docs/start/instructions/enable-prompt-caching.md",
+        "docs/start/instructions/enable-silpo-integration.md",
         "docs/start/instructions/encryption-key-rotation.md",
         "docs/start/instructions/execute-planning-batch.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/modify-n8n-workflow.md",
         "docs/start/instructions/onboard-external-api.md",
+        "docs/start/instructions/operational-continuity.md",
         "docs/start/instructions/operations-runbook.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/postgres-read-replica.md",
         "docs/start/instructions/reconcile-doc-drift.md",
+        "docs/start/instructions/retire-feature-flag.md",
         "docs/start/instructions/rotate-openclaw-credentials.md",
         "docs/start/instructions/run-weekly-operator-digest.md",
+        "docs/start/instructions/security-events.md",
         "docs/start/instructions/tune-system-prompt.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
+        "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+        "docs/work/specs/audits/ai-abuse-2026-08-05.md",
+        "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
+        "docs/work/specs/audits/finyk-analytics-research.md",
+        "docs/work/specs/audits/product-knowledge-fizruk.md",
+        "docs/work/specs/audits/product-knowledge-overview.md",
+        "docs/work/specs/audits/unification-modules.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md",
         "docs/work/specs/initiatives/0023-photo-analysis-multi-item.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md",
+        "docs/work/specs/initiatives/README.md",
         "docs/work/specs/initiatives/hardening-matrix.md",
         "docs/work/specs/planning/harness-engineering-v1.md"
       ]
@@ -3950,7 +4448,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/access-matrix.md",
-      "inbound_count": 8,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/security-incident-policy.md",
@@ -3959,7 +4457,8 @@
         "docs/governance/security/access-policy.md",
         "docs/governance/security/secret-ownership-register.md",
         "docs/governance/security/threat-model.md",
-        "docs/start/instructions/access-governance.md"
+        "docs/start/instructions/access-governance.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -3968,7 +4467,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/access-policy.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -3978,7 +4477,8 @@
         "docs/governance/security/logging-redaction-policy.md",
         "docs/governance/security/secret-ownership-register.md",
         "docs/governance/security/threat-model.md",
-        "docs/start/instructions/access-governance.md"
+        "docs/start/instructions/access-governance.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -4001,13 +4501,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/api-internal-hmac.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/README.md",
         "docs/governance/security/better-auth-audit-2026-05.md",
         "docs/governance/security/internal-api-keys.md",
+        "docs/governance/security/secret-ownership-register.md",
         "docs/start/instructions/modify-n8n-workflow.md"
       ]
     },
@@ -4046,10 +4547,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/beta-tester-brief.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/external-link-allowlist.json",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/security/README.md",
         "docs/work/specs/beta-security-readiness.md"
       ]
     },
@@ -4059,13 +4561,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/better-auth-audit-2026-05.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/adr/0017-better-auth-choice-and-session-model.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/README.md",
-        "docs/governance/security/api-internal-hmac.md"
+        "docs/governance/security/api-internal-hmac.md",
+        "docs/governance/security/rate-limit-failure-mode.md"
       ]
     },
     {
@@ -4117,7 +4620,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/disaster-recovery.md",
-      "inbound_count": 13,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -4131,7 +4634,8 @@
         "docs/start/instructions/operational-continuity.md",
         "docs/start/instructions/operations-runbook.md",
         "docs/start/instructions/restore-from-backup.md",
-        "docs/start/instructions/test-backup-restore.md"
+        "docs/start/instructions/test-backup-restore.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -4140,10 +4644,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/distroless-upgrade-plan.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/pr-ledger/index.json",
         "docs/governance/security/README.md",
+        "docs/governance/security/container-scan.md",
         "docs/governance/security/distroless-upgrade-plan.md"
       ]
     },
@@ -4153,11 +4658,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/internal-api-keys.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
-        "docs/governance/security/README.md"
+        "docs/governance/security/README.md",
+        "docs/governance/security/secret-ownership-register.md"
       ]
     },
     {
@@ -4166,13 +4672,17 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/llm-subprocessors.md",
-      "inbound_count": 6,
+      "inbound_count": 10,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-legal-design.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/README.md",
         "docs/governance/security/pii-handling.md",
+        "docs/governance/security/secret-ownership-register.md",
         "docs/product/modules/hub-coach.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/work/specs/audits/2026-07-31-legal-docs-beta-readiness.md",
+        "docs/work/specs/audits/2026-09-14-site-code-drift.md",
         "docs/work/specs/planning/product-knowledge-backlog.md"
       ]
     },
@@ -4279,7 +4789,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/secret-ownership-register.md",
-      "inbound_count": 11,
+      "inbound_count": 12,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
@@ -4287,6 +4797,7 @@
         "docs/governance/security/access-matrix.md",
         "docs/governance/security/access-policy.md",
         "docs/governance/security/internal-api-keys.md",
+        "docs/governance/security/secret-rotation.md",
         "docs/operations/deploy/openclaw.md",
         "docs/start/instructions/access-governance.md",
         "docs/start/instructions/encryption-key-rotation.md",
@@ -4300,9 +4811,8 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/secret-rotation.md",
-      "inbound_count": 6,
+      "inbound_count": 5,
       "inbound_sources": [
-        "docs/governance/governance/external-link-allowlist.json",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/governance/security/README.md",
@@ -4331,7 +4841,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/vulnerability-sla.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/README.md",
@@ -4342,6 +4852,7 @@
         "docs/operations/observability/engineering-metrics.md",
         "docs/operations/ops/renovate.md",
         "docs/work/specs/beta-security-readiness.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/security-hardening/README.md"
       ]
     },
@@ -4351,7 +4862,7 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/open-work.md",
-      "inbound_count": 22,
+      "inbound_count": 23,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
@@ -4361,6 +4872,7 @@
         "docs/governance/governance/hard-rules.json",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
         "docs/governance/pr-ledger/README.md",
+        "docs/governance/security/pen-tests/2026-05-hardening-sweep.md",
         "docs/open-work.md",
         "docs/start/agents/agent-workflows.md",
         "docs/start/instructions/execute-planning-batch.md",
@@ -4383,13 +4895,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/deploy/monorepo-deploy-filtering.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/operations/deploy/README.md",
         "docs/operations/deploy/openclaw.md",
         "docs/operations/deploy/vercel.md",
+        "docs/operations/ops/renovate.md",
         "docs/work/specs/beta-launch/run-beta-wave.md"
       ]
     },
@@ -4460,8 +4973,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/alertmanager.yml",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/operations/observability/SLO.md"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/operations/observability/SLO.md",
+        "docs/operations/observability/csp-monitoring.md"
+      ]
     },
     {
       "old_path": "docs/operations/observability/csp-monitoring.md",
@@ -4469,10 +4985,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/csp-monitoring.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/operations/observability/README.md"
+        "docs/operations/observability/README.md",
+        "docs/operations/observability/sentry-sampling.md"
       ]
     },
     {
@@ -4785,13 +5302,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/metrics.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/engineering/architecture/apps-status-matrix.md",
         "docs/engineering/architecture/service-catalog.md",
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/operations/observability/README.md",
+        "docs/operations/observability/SLO.md",
         "docs/operations/observability/dashboards.md",
         "docs/operations/observability/env-vars.md",
         "docs/product/modules/routine.md",
@@ -4820,7 +5338,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/posthog-founder-pulse.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/operations/observability/README.md",
@@ -4828,6 +5346,7 @@
         "docs/operations/observability/feedback-loop.md",
         "docs/operations/observability/hub-perf-baseline.md",
         "docs/operations/observability/metrics.md",
+        "docs/operations/observability/posthog-ftux-dashboards.md",
         "docs/work/specs/audits/product-knowledge-finyk.md",
         "docs/work/specs/beta-forms.md",
         "docs/work/specs/launch/phases/01-web-launch-with-users.md",
@@ -4860,10 +5379,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/prometheus/alert_rules.yml",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/adr/0015-observability-stack.md",
         "docs/operations/observability/SLO.md",
+        "docs/operations/observability/csp-monitoring.md",
         "docs/operations/observability/dashboards/README.md",
         "docs/operations/observability/log-levels.md",
         "docs/operations/observability/pg-pool-sizing.md",
@@ -4903,7 +5423,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/runbook.md",
-      "inbound_count": 28,
+      "inbound_count": 27,
       "inbound_sources": [
         "docs/engineering/architecture/hosting-evolution.md",
         "docs/engineering/architecture/rag-eval.md",
@@ -4913,7 +5433,6 @@
         "docs/governance/adr/0015-observability-stack.md",
         "docs/governance/adr/0038-tg-alert-acks-and-escalation.md",
         "docs/governance/governance/doc-freshness.md",
-        "docs/governance/governance/feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/operations/deploy/README.md",
         "docs/operations/observability/README.md",
@@ -4954,18 +5473,21 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/SLO.md",
-      "inbound_count": 12,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/governance/adr/0009-hosting-split-railway-vercel.md",
         "docs/governance/adr/0015-observability-stack.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/security/logging-redaction-policy.md",
         "docs/operations/observability/README.md",
+        "docs/operations/observability/csp-monitoring.md",
         "docs/operations/observability/dashboards/README.md",
         "docs/operations/observability/error-budget-policy.md",
         "docs/operations/observability/frontend.md",
         "docs/operations/observability/logging.md",
         "docs/operations/observability/metrics.md",
         "docs/operations/observability/runbook.md",
+        "docs/operations/observability/telegram-control-plane.md",
         "docs/start/instructions/operations-runbook.md",
         "docs/work/specs/tech-debt/backend.md"
       ]
@@ -5002,10 +5524,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/ops/docker-image-policy.md",
-      "inbound_count": 3,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/security/container-scan.md",
         "docs/governance/security/distroless-upgrade-plan.md",
+        "docs/operations/observability/runbook.md",
         "docs/operations/ops/README.md"
       ]
     },
@@ -5042,10 +5566,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/postmortems/INDEX.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/incident-severity-policy.md",
+        "docs/governance/security/pii-handling.md",
         "docs/operations/postmortems/README.md",
         "docs/start/instructions/write-postmortem.md"
       ]
@@ -5070,11 +5595,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/postmortems/TEMPLATE.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/operations/postmortems/INDEX.md",
         "docs/operations/postmortems/README.md",
-        "docs/start/instructions/write-postmortem.md"
+        "docs/start/instructions/write-postmortem.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -5109,28 +5635,48 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/copy/style-guide.uk.md",
-      "inbound_count": 22,
+      "inbound_count": 42,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/empty-states.md",
+        "docs/design/design/specs/2026-09-16-onboarding-design.md",
+        "docs/design/design/specs/2026-09-16-pricing-paywall-design.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
+        "docs/design/design/specs/2026-09-17-landing-design.md",
+        "docs/design/design/specs/2026-09-17-legal-design.md",
+        "docs/design/design/specs/2026-09-17-profile-design.md",
+        "docs/design/design/specs/2026-09-17-settings-design.md",
+        "docs/design/i18n/README.md",
         "docs/engineering/testing/verification/catalog.json",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/copy/README.md",
         "docs/product/whats-new/2026-08-10-beta-fixes.md",
         "docs/product/whats-new/2026-08-10-retro-and-plans.md",
+        "docs/product/whats-new/_draft-next.md",
         "docs/start/instructions/release.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/work/research/2026-06-28-audience-discovery-trackers.md",
+        "docs/work/specs/ai-cost-ceiling.md",
         "docs/work/specs/audits/2026-07-21-design-audit.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/checklists.md",
+        "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
         "docs/work/specs/beta-texts-posts.md",
         "docs/work/specs/finyk-hero-month-strip.md",
         "docs/work/specs/finyk-import-reminders.md",
         "docs/work/specs/finyk-observations.md",
         "docs/work/specs/fizruk-hero-recovery-bars.md",
         "docs/work/specs/fizruk-readiness-check.md",
+        "docs/work/specs/link-evidence-standard.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/receipt-scan.md",
+        "docs/work/specs/reward-loop-and-reminders.md",
         "docs/work/specs/site-ia/README.md",
         "docs/work/specs/user-deletion-grace-window.md"
       ]
@@ -5169,9 +5715,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/model/product-overview.md",
-      "inbound_count": 17,
+      "inbound_count": 21,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
+        "docs/governance/adr/0097-link-evidence-standard.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/model/README.md",
         "docs/product/modules/finyk.md",
@@ -5179,8 +5726,11 @@
         "docs/product/modules/hub-coach.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
+        "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/audits/product-knowledge-overview.md",
+        "docs/work/specs/honest-export-and-first-screen.md",
         "docs/work/specs/planning/product-brainstorm-2026-07.md",
         "docs/work/specs/site-ia/README.md",
         "docs/work/specs/site-ia/page-obitsyanky.md",
@@ -5196,10 +5746,11 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/product/model/README.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/product/README.md",
         "docs/work/research/2026-09-01-competitor-research-modules.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/README.md"
@@ -5211,13 +5762,13 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/finyk.md",
-      "inbound_count": 21,
+      "inbound_count": 25,
       "inbound_sources": [
+        "docs/README.md",
         "docs/engineering/architecture/metric-registry.md",
         "docs/engineering/testing/verification/catalog.json",
         "docs/governance/adr/0076-cash-on-hand-entity.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/product/README.md",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
         "docs/product/modules/fizruk.md",
@@ -5225,12 +5776,16 @@
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
         "docs/work/research/2026-08-25-mcp-and-integrations-landscape.md",
+        "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/product-knowledge-finyk.md",
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/run.json",
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json",
         "docs/work/specs/finyk-hero-month-strip.md",
         "docs/work/specs/finyk-import-reminders.md",
         "docs/work/specs/finyk-observations.md",
+        "docs/work/specs/honest-export-and-first-screen.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/receipt-scan.md",
         "docs/work/specs/site-ia/page-pytannya.md",
         "docs/work/specs/site-ia/page-stan.md"
@@ -5242,7 +5797,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/fizruk.md",
-      "inbound_count": 15,
+      "inbound_count": 18,
       "inbound_sources": [
         "docs/engineering/architecture/metric-registry.md",
         "docs/governance/adr/0080-body-weight-source-of-truth.md",
@@ -5250,11 +5805,14 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
+        "docs/product/modules/routine.md",
         "docs/product/whats-new/2026-08-10-retro-and-plans.md",
         "docs/work/research/2026-08-26-integrations-second-pass.md",
         "docs/work/specs/audits/2026-08-07-fizruk-deep-audit.md",
+        "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/product-knowledge-fizruk.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/fizruk-active-session.md",
         "docs/work/specs/fizruk-hero-recovery-bars.md",
         "docs/work/specs/routine-flexible-weekly-frequency.md",
@@ -5267,9 +5825,10 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/hub-coach.md",
-      "inbound_count": 26,
+      "inbound_count": 31,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
+        "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/engineering/architecture/metric-registry.md",
         "docs/engineering/testing/verification/catalog.json",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -5282,9 +5841,11 @@
         "docs/product/modules/fizruk.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
+        "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
         "docs/work/specs/audits/product-knowledge-fizruk.md",
         "docs/work/specs/audits/product-knowledge-hub-coach.md",
         "docs/work/specs/audits/product-knowledge-nutrition.md",
@@ -5292,8 +5853,10 @@
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json",
         "docs/work/specs/beta-forms.md",
         "docs/work/specs/beta-testing-group.md",
+        "docs/work/specs/hub-action-axis.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/site-ia/page-zvyazky.md"
       ]
     },
@@ -5303,7 +5866,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/nutrition.md",
-      "inbound_count": 19,
+      "inbound_count": 22,
       "inbound_sources": [
         "docs/engineering/architecture/metric-registry.md",
         "docs/governance/adr/0077-pantry-append-only-ledger.md",
@@ -5316,8 +5879,11 @@
         "docs/product/model/product-overview.md",
         "docs/product/modules/fizruk.md",
         "docs/product/modules/routine.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/work/specs/audits/2026-09-06-founder-ux-review.md",
+        "docs/work/specs/audits/2026-09-14-site-code-drift.md",
         "docs/work/specs/audits/product-knowledge-nutrition.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/launch/business/02-go-to-market.md",
         "docs/work/specs/nutrition-adaptive-goal.md",
         "docs/work/specs/nutrition-hero-day-strip.md",
@@ -5332,18 +5898,22 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/routine.md",
-      "inbound_count": 11,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/engineering/architecture/metric-registry.md",
         "docs/governance/adr/0078-day-boundary-device-local.md",
         "docs/governance/adr/0079-frozen-past-and-canonical-denominator.md",
+        "docs/governance/adr/0096-product-reward-loop.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
         "docs/work/research/2026-08-26-integrations-second-pass.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/product-knowledge-routine.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/planning/product-knowledge-backlog.md",
+        "docs/work/specs/reward-loop-and-reminders.md",
         "docs/work/specs/routine-flexible-weekly-frequency.md"
       ]
     },
@@ -5395,11 +5965,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/whats-new/2026-08-10-beta-fixes.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/whats-new/2026-08-10-retro-and-plans.md",
         "docs/product/whats-new/2026-08-11-pantry-and-colours.md",
+        "docs/product/whats-new/2026-08-12-easier-meal-entry.md",
         "docs/product/whats-new/_draft-next.md"
       ]
     },
@@ -5430,6 +6001,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/whats-new/2026-08-12-easier-meal-entry.md",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+    },
+    {
+      "old_path": "docs/product/whats-new/2026-09-28-forecasts-and-imports.md",
+      "new_path": "docs/product/whats-new/2026-09-28-forecasts-and-imports.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/product/whats-new/2026-09-28-forecasts-and-imports.md",
       "inbound_count": 2,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
@@ -5456,7 +6036,7 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/README.md",
-      "inbound_count": 14,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/design/README.md",
@@ -5470,6 +6050,7 @@
         "docs/today.md",
         "docs/work/README.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md",
         "docs/work/specs/launch/phases/02-capacitor-launch.md"
       ]
@@ -5480,13 +6061,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/start/agents/agent-skills-catalog.md",
-      "inbound_count": 15,
+      "inbound_count": 16,
       "inbound_sources": [
         "docs/README.md",
         "docs/design/ui/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/snapshot.md",
         "docs/start/agents/README.md",
+        "docs/start/agents/agent-workflows.md",
         "docs/start/agents/loops/LOOP.md",
         "docs/start/agents/loops/registry.yaml",
         "docs/start/agents/onboarding.md",
@@ -5505,13 +6087,14 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/start/agents/agent-workflows.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/README.md",
         "docs/start/agents/onboarding.md",
         "docs/start/agents/specialists-mapping.md",
-        "docs/start/instructions/execute-planning-batch.md"
+        "docs/start/instructions/execute-planning-batch.md",
+        "docs/start/instructions/unify-ui-to-canon.md"
       ]
     },
     {
@@ -5520,10 +6103,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/start/agents/codex-capabilities.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/start/agents/README.md"
+        "docs/start/agents/README.md",
+        "docs/start/agents/agent-skills-catalog.md"
       ]
     },
     {
@@ -5532,7 +6116,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/start/agents/decisions.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/modules/finyk.md",
@@ -5542,6 +6126,7 @@
         "docs/product/modules/routine.md",
         "docs/start/agents/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/initiatives/README.md",
         "docs/work/specs/silpo-mcp-integration.md"
       ]
@@ -5598,12 +6183,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/start/agents/onboarding.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/README.md",
         "docs/start/agents/skills-evolution-roadmap.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/initiatives/hardening-matrix.md"
       ]
     },
@@ -5772,16 +6358,18 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/add-feature-flag.md",
-      "inbound_count": 11,
+      "inbound_count": 13,
       "inbound_sources": [
         "docs/governance/adr/0002-tool-lifecycle.md",
         "docs/governance/adr/0008-feature-flags.md",
         "docs/governance/governance/feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/add-new-page-route.md",
         "docs/start/instructions/add-onboarding-step.md",
         "docs/start/instructions/enable-silpo-integration.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/retire-feature-flag.md",
         "docs/start/instructions/tune-system-prompt.md"
@@ -5793,12 +6381,14 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/add-hard-rule.md",
-      "inbound_count": 4,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/start/instructions/INDEX.md",
-        "docs/start/instructions/playbook-catalog.md"
+        "docs/start/instructions/audit-ci-gates.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/unify-ui-to-canon.md"
       ]
     },
     {
@@ -5843,12 +6433,14 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/add-new-page-route.md",
-      "inbound_count": 5,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/start/instructions/write-e2e-test.md"
       ]
     },
@@ -5858,8 +6450,9 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/add-onboarding-step.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-16-onboarding-design.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/playbook-catalog.md",
@@ -5902,7 +6495,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/add-sql-migration.md",
-      "inbound_count": 13,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
         "docs/governance/adr/0013-db-migrations-conventions.md",
@@ -5914,9 +6507,31 @@
         "docs/start/instructions/change-auth-flow.md",
         "docs/start/instructions/embedding-provider-migration.md",
         "docs/start/instructions/hotfix-prod-regression.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/pre-merge-migration-checklist.md",
         "docs/start/instructions/release.md"
+      ]
+    },
+    {
+      "old_path": "docs/start/instructions/audit-ci-gates.md",
+      "new_path": "docs/start/instructions/audit-ci-gates.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/audit-ci-gates.md",
+      "inbound_count": 11,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/README.md",
+        "docs/start/instructions/cleanup-dead-code.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
+        "docs/start/instructions/onboard-external-api.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/start/instructions/verify-site-claims.md"
       ]
     },
     {
@@ -5940,10 +6555,11 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/billing-payments-launch.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/engineering/architecture/feature-flags.md",
-        "docs/governance/governance/freshness-dashboard.html"
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/start/instructions/README.md"
       ]
     },
     {
@@ -5952,12 +6568,13 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/bump-dep-safely.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/dependency-sweeper.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
         "docs/start/instructions/playbook-catalog.md"
       ]
     },
@@ -5997,19 +6614,23 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/cleanup-dead-code.md",
-      "inbound_count": 12,
+      "inbound_count": 16,
       "inbound_sources": [
         "docs/governance/adr/0008-feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/add-feature-flag.md",
         "docs/start/instructions/add-monobank-event-handler.md",
         "docs/start/instructions/deep-module-audit.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
         "docs/start/instructions/migrate-localstorage-to-typedstore.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/reconcile-doc-drift.md",
         "docs/start/instructions/retire-feature-flag.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
         "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md"
       ]
     },
@@ -6055,9 +6676,10 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/db-index-audit-template.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/operations-runbook.md"
       ]
     },
@@ -6102,11 +6724,15 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/deep-module-audit.md",
-      "inbound_count": 6,
+      "inbound_count": 10,
       "inbound_sources": [
+        "docs/governance/adr/0095-demo-mode-removed.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/fix-mobile-horizontal-overflow.md",
         "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/work/specs/audits/2026-08-07-fizruk-deep-audit.md",
         "docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md"
@@ -6131,11 +6757,14 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/deploy-config-change.md",
-      "inbound_count": 5,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/audit-ci-gates.md",
         "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/verify-site-claims.md",
         "docs/work/specs/beta-launch/run-beta-wave.md",
         "docs/work/specs/launch/email-verification-sweep.md"
       ]
@@ -6175,9 +6804,10 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/enable-silpo-integration.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/playbook-catalog.md"
       ]
@@ -6204,10 +6834,11 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/execute-planning-batch.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/agent-workflows.md",
+        "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/work/specs/planning/README.md"
@@ -6219,12 +6850,13 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/fix-exhaustive-deps.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
-        "docs/start/instructions/playbook-catalog.md"
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/unify-ui-to-canon.md"
       ]
     },
     {
@@ -6233,17 +6865,54 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/fix-failing-ci.md",
-      "inbound_count": 9,
+      "inbound_count": 12,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/README.md",
         "docs/start/instructions/add-api-endpoint.md",
+        "docs/start/instructions/audit-ci-gates.md",
         "docs/start/instructions/deep-module-audit.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
         "docs/start/instructions/investigate-alert.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/run-locally-after-merge.md"
+      ]
+    },
+    {
+      "old_path": "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+      "new_path": "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/playbook-catalog.md"
+      ]
+    },
+    {
+      "old_path": "docs/start/instructions/fix-red-bundle-budget.md",
+      "new_path": "docs/start/instructions/fix-red-bundle-budget.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/fix-red-bundle-budget.md",
+      "inbound_count": 10,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/README.md",
+        "docs/start/instructions/audit-ci-gates.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/migrate-client-storage.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/work/specs/tech-debt/bundle-budget-ratchet-log.md",
+        "docs/work/specs/tech-debt/frontend.md"
       ]
     },
     {
@@ -6318,17 +6987,33 @@
       ]
     },
     {
+      "old_path": "docs/start/instructions/migrate-client-storage.md",
+      "new_path": "docs/start/instructions/migrate-client-storage.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/migrate-client-storage.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/README.md",
+        "docs/start/instructions/playbook-catalog.md"
+      ]
+    },
+    {
       "old_path": "docs/start/instructions/migrate-localstorage-to-typedstore.md",
       "new_path": "docs/start/instructions/migrate-localstorage-to-typedstore.md",
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/migrate-localstorage-to-typedstore.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/add-onboarding-step.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/playbook-catalog.md"
       ]
     },
@@ -6370,9 +7055,10 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/operational-continuity.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/playbook-catalog.md"
       ]
@@ -6383,7 +7069,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/operations-runbook.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/external-link-allowlist.json",
         "docs/governance/governance/freshness-dashboard.html",
@@ -6394,6 +7080,7 @@
         "docs/start/instructions/db-index-audit-template.md",
         "docs/start/instructions/operational-continuity.md",
         "docs/start/instructions/operations-runbook.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/launch/business/05-operations-and-automation.md"
       ]
     },
@@ -6403,10 +7090,11 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/playbook-catalog.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/governance/rules/15-governance-and-doc-language.md",
         "docs/governance/pr-ledger/index.json",
         "docs/operations/README.md",
         "docs/start/instructions/README.md",
@@ -6452,13 +7140,14 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/pre-merge-migration-checklist.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/adr/0013-db-migrations-conventions.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/change-auth-flow.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/pre-merge-migration-checklist.md"
       ]
@@ -6484,7 +7173,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/README.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
@@ -6495,7 +7184,8 @@
         "docs/start/agents/onboarding.md",
         "docs/start/glossary.md",
         "docs/start/instructions/operations-runbook.md",
-        "docs/work/specs/beta-launch/README.md"
+        "docs/work/specs/beta-launch/README.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
       ]
     },
     {
@@ -6504,14 +7194,15 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/reconcile-doc-drift.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/agent-workflows.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/deep-module-audit.md",
         "docs/start/instructions/execute-planning-batch.md",
-        "docs/start/instructions/playbook-catalog.md"
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/verify-site-claims.md"
       ]
     },
     {
@@ -6520,7 +7211,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/release.md",
-      "inbound_count": 15,
+      "inbound_count": 16,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -6528,6 +7219,7 @@
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/README.md",
+        "docs/start/instructions/audit-ci-gates.md",
         "docs/start/instructions/deploy-config-change.md",
         "docs/start/instructions/operations-runbook.md",
         "docs/start/instructions/playbook-catalog.md",
@@ -6545,7 +7237,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/restore-from-backup.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/engineering/architecture/service-catalog.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -6554,6 +7246,7 @@
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/README.md",
         "docs/start/instructions/database-backup-restore.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/test-backup-restore.md"
       ]
@@ -6564,11 +7257,13 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/retire-feature-flag.md",
-      "inbound_count": 6,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/governance/feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/release.md",
         "docs/start/instructions/run-weekly-operator-digest.md"
@@ -6595,15 +7290,17 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/rotate-secrets.md",
-      "inbound_count": 19,
+      "inbound_count": 22,
       "inbound_sources": [
         "docs/engineering/architecture/feature-flags.md",
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/security-incident-policy.md",
+        "docs/governance/security/README.md",
         "docs/governance/security/api-internal-hmac.md",
         "docs/governance/security/disaster-recovery.md",
         "docs/governance/security/secret-ownership-register.md",
+        "docs/governance/security/secret-rotation.md",
         "docs/operations/observability/alert-bot-routing.md",
         "docs/operations/observability/telegram-control-plane.md",
         "docs/start/agents/specialists-mapping.md",
@@ -6614,6 +7311,7 @@
         "docs/start/instructions/operations-runbook.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/rotate-openclaw-credentials.md",
+        "docs/start/instructions/security-events.md",
         "docs/work/specs/beta-launch/run-beta-wave.md",
         "docs/work/specs/launch/phases/00-readiness-audit.md"
       ]
@@ -6694,9 +7392,10 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/run-weekly-operator-digest.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/operations/observability/engineering-metrics.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/access-governance.md",
@@ -6710,9 +7409,10 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/security-events.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/instructions/README.md",
         "docs/work/specs/security-hardening/README.md"
       ]
@@ -6723,10 +7423,11 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/security-pen-test-checklist.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/pen-tests/2026-05-hardening-sweep.md",
+        "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/work/specs/launch/email-verification-sweep.md"
@@ -6738,12 +7439,13 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/stabilize-flaky-test.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/adr/0020-testing-pyramid.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/agents/specialists-mapping.md",
         "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/fix-failing-ci.md",
         "docs/start/instructions/playbook-catalog.md",
         "docs/start/instructions/write-e2e-test.md"
       ]
@@ -6754,10 +7456,11 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/sync-client-e2e.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/start/instructions/README.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/work/specs/planning/sync-client-wiring-playbook.md",
         "docs/work/specs/planning/sync-client-wiring.md"
       ]
@@ -6817,6 +7520,40 @@
       ]
     },
     {
+      "old_path": "docs/start/instructions/unify-ui-to-canon.md",
+      "new_path": "docs/start/instructions/unify-ui-to-canon.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/unify-ui-to-canon.md",
+      "inbound_count": 7,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/design-system/04-components.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/README.md",
+        "docs/start/instructions/playbook-catalog.md"
+      ]
+    },
+    {
+      "old_path": "docs/start/instructions/verify-site-claims.md",
+      "new_path": "docs/start/instructions/verify-site-claims.md",
+      "action": "keep",
+      "genre": "instruction",
+      "canonical_owner": "docs/start/instructions/verify-site-claims.md",
+      "inbound_count": 7,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/start/instructions/INDEX.md",
+        "docs/start/instructions/README.md",
+        "docs/start/instructions/deploy-config-change.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/playbook-catalog.md"
+      ]
+    },
+    {
       "old_path": "docs/start/instructions/write-e2e-test.md",
       "new_path": "docs/start/instructions/write-e2e-test.md",
       "action": "keep",
@@ -6840,12 +7577,13 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/write-postmortem.md",
-      "inbound_count": 13,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/incident-severity-policy.md",
         "docs/governance/governance/security-incident-policy.md",
         "docs/governance/security/disaster-recovery.md",
+        "docs/governance/security/pii-handling.md",
         "docs/operations/postmortems/README.md",
         "docs/start/instructions/INDEX.md",
         "docs/start/instructions/access-governance.md",
@@ -6875,13 +7613,14 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/STATUS.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/doc-freshness.md",
         "docs/governance/governance/rules/10-lifecycle-markers.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
-        "docs/governance/pr-ledger/index.json"
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -6890,10 +7629,11 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/today.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
+        "docs/governance/governance/README.md",
         "docs/governance/governance/doc-freshness.md",
         "docs/governance/governance/rules/10-lifecycle-markers.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
@@ -6987,11 +7727,21 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/work/research/2026-09-01-competitor-research-modules.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/work/README.md"
+        "docs/work/README.md",
+        "docs/work/research/2026-09-20-competitor-handson-protocol.md"
       ]
+    },
+    {
+      "old_path": "docs/work/research/2026-09-20-competitor-handson-protocol.md",
+      "new_path": "docs/work/research/2026-09-20-competitor-handson-protocol.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/research/2026-09-20-competitor-handson-protocol.md",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
       "old_path": "docs/work/research/audience-discovery-kit/analysis-affinity-tracker.csv",
@@ -7074,8 +7824,11 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/work/research/audience-discovery-kit/README.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/research/2026-06-28-audience-discovery-trackers.md"
+      ]
     },
     {
       "old_path": "docs/work/research/audience-discovery-kit/recruitment-tracker.csv",
@@ -7099,6 +7852,34 @@
       ]
     },
     {
+      "old_path": "docs/work/research/competitor-matrix.md",
+      "new_path": "docs/work/research/competitor-matrix.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/work/research/competitor-matrix.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/work/research/2026-09-20-competitor-handson-protocol.md",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+        "docs/work/specs/planning/product-knowledge-backlog.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/access-tiers.md",
+      "new_path": "docs/work/specs/access-tiers.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/access-tiers.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/product/model/product-overview.md",
+        "docs/product/modules/hub-coach.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/accessibility-low-vision-beta.md",
       "new_path": "docs/work/specs/accessibility-low-vision-beta.md",
       "action": "keep",
@@ -7108,6 +7889,20 @@
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/ai-cost-ceiling.md",
+      "new_path": "docs/work/specs/ai-cost-ceiling.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/ai-cost-ceiling.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+        "docs/work/specs/link-evidence-standard.md"
       ]
     },
     {
@@ -7125,11 +7920,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/anonymous-local-first-persistence.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
+        "docs/start/instructions/migrate-client-storage.md",
         "docs/today.md"
       ]
     },
@@ -7190,8 +7986,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-07-31-legal-docs-beta-readiness.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-legal-design.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
@@ -7223,11 +8020,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md",
-      "inbound_count": 7,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/engineering/testing/README.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
@@ -7240,14 +8036,15 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-05-browser-profile-testing.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
+        "docs/engineering/web/service-worker.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/audits/2026-08-07-beta-rehearsal-run.md",
         "docs/work/specs/audits/2026-08-09-beta-acceptance-run.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md",
         "docs/work/specs/beta-launch/beta-browser-run.md"
@@ -7274,10 +8071,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-05-lost-commits-audit.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md"
@@ -7289,9 +8087,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
-      "inbound_count": 8,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/start/instructions/enable-silpo-integration.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
@@ -7310,8 +8109,8 @@
       "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/audits/2026-08-09-beta-acceptance-run.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md",
         "docs/work/specs/beta-launch/beta-browser-run.md"
@@ -7323,7 +8122,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-07-fizruk-deep-audit.md",
-      "inbound_count": 9,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
@@ -7331,6 +8130,8 @@
         "docs/start/instructions/deep-module-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md",
         "docs/work/specs/fizruk-active-session.md"
@@ -7342,11 +8143,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/work/specs/audits/2026-09-04-profile-settings-review.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/tech-debt/frontend.md"
       ]
     },
@@ -7359,9 +8161,9 @@
       "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md",
         "docs/work/specs/beta-launch/beta-browser-run.md"
@@ -7388,12 +8190,17 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
-      "inbound_count": 10,
+      "inbound_count": 15,
       "inbound_sources": [
+        "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md",
@@ -7499,11 +8306,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-01-product-audit/report.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/operations/observability/metrics.md",
+        "docs/work/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md"
       ]
     },
@@ -7525,10 +8333,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-04-profile-settings-review.md",
-      "inbound_count": 2,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/README.md"
       ]
     },
     {
@@ -7540,9 +8350,9 @@
       "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/product/modules/nutrition.md",
-        "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md"
+        "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
+        "docs/work/specs/audits/README.md"
       ]
     },
     {
@@ -7551,12 +8361,15 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
-      "inbound_count": 4,
+      "inbound_count": 7,
       "inbound_sources": [
-        "docs/STATUS.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
-        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+        "docs/work/specs/audits/2026-09-06-founder-ux-review.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/README.md",
+        "docs/work/specs/tech-debt/bundle-budget-ratchet-log.md"
       ]
     },
     {
@@ -7565,13 +8378,237 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-13-product-full-review.md",
-      "inbound_count": 6,
+      "inbound_count": 12,
       "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/design/design/README.md",
+        "docs/design/design/design-system/04-components.md",
+        "docs/design/design/redesign-v2/backlog.md",
+        "docs/design/design/specs/2026-09-17-auth-design.md",
         "docs/governance/adr/0094-mobile-web-first-freeze.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/product/modules/hub-coach.md",
         "docs/product/modules/nutrition.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-14-site-code-drift.md",
+      "new_path": "docs/work/specs/audits/2026-09-14-site-code-drift.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-14-site-code-drift.md",
+      "inbound_count": 6,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/product/modules/fizruk.md",
+        "docs/start/instructions/verify-site-claims.md",
+        "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
+      "new_path": "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+      "new_path": "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+      "inbound_count": 6,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/design/design/anti-slop-strategy.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+      "new_path": "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+      "inbound_count": 9,
+      "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-landing-design.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/product/copy/style-guide.uk.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+      "new_path": "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+      "inbound_count": 12,
+      "inbound_sources": [
+        "docs/governance/adr/0096-product-reward-loop.md",
+        "docs/governance/adr/0097-link-evidence-standard.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/product/model/product-overview.md",
+        "docs/work/specs/ai-cost-ceiling.md",
+        "docs/work/specs/audits/2026-09-21-agent-readiness.md",
+        "docs/work/specs/health-text-encryption.md",
+        "docs/work/specs/honest-export-and-first-screen.md",
+        "docs/work/specs/link-evidence-standard.md",
+        "docs/work/specs/reward-loop-and-reminders.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-21-agent-readiness.md",
+      "new_path": "docs/work/specs/audits/2026-09-21-agent-readiness.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-21-agent-readiness.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+      "new_path": "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+      "inbound_count": 7,
+      "inbound_sources": [
+        "docs/design/design/anti-slop-strategy.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/product/modules/hub-coach.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+      "new_path": "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-dead-remotes-inventory.tsv",
+      "new_path": "docs/work/specs/audits/2026-09-23-dead-remotes-inventory.tsv",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-dead-remotes-inventory.tsv",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+      "new_path": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+      "inbound_count": 7,
+      "inbound_sources": [
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/start/agents/decisions.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+      "new_path": "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+      "new_path": "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/finyk-analytics-research.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+      "new_path": "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+      "new_path": "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
         "docs/work/specs/audits/README.md"
       ]
     },
@@ -7581,9 +8618,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/product/modules/hub-coach.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
@@ -7601,9 +8639,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/ai-testing-2026-08-25.md",
@@ -7637,11 +8676,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/browser-qa-2026-08-04/accounts.md",
-      "inbound_count": 2,
-      "inbound_sources": [
-        "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md"
-      ]
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
       "old_path": "docs/work/specs/audits/browser-qa-2026-08-04/findings.md",
@@ -7649,10 +8685,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/browser-qa-2026-08-04/findings.md",
-      "inbound_count": 4,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md"
       ]
@@ -7663,11 +8698,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/browser-qa-2026-08-04/progress.md",
-      "inbound_count": 2,
-      "inbound_sources": [
-        "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md"
-      ]
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
       "old_path": "docs/work/specs/audits/browser-qa-2026-08-04/test-plan.md",
@@ -7678,7 +8710,7 @@
       "inbound_count": 2,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md"
+        "docs/work/specs/audits/README.md"
       ]
     },
     {
@@ -7687,10 +8719,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/finyk-analytics-research.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/external-link-allowlist.json",
-        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
         "docs/work/specs/audits/README.md"
       ]
     },
@@ -7729,12 +8762,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/product-knowledge-fizruk.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/engineering/architecture/metric-registry.md",
         "docs/governance/adr/0080-body-weight-source-of-truth.md",
         "docs/governance/adr/0083-injury-model-zone-level.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/product/model/README.md",
         "docs/product/modules/fizruk.md",
         "docs/work/specs/audits/2026-08-07-fizruk-deep-audit.md"
@@ -7764,7 +8798,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/product-knowledge-nutrition.md",
-      "inbound_count": 8,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/governance/adr/0077-pantry-append-only-ledger.md",
         "docs/governance/adr/0091-goal-history-not-repainted.md",
@@ -7773,6 +8807,7 @@
         "docs/product/modules/nutrition.md",
         "docs/work/specs/audits/product-knowledge-fizruk.md",
         "docs/work/specs/audits/product-knowledge-routine.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/nutrition-goal-journal-cutover.md"
       ]
     },
@@ -7782,12 +8817,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/product-knowledge-overview.md",
-      "inbound_count": 4,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
-        "docs/work/specs/audits/2026-09-01-product-audit/findings.md"
+        "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -7846,11 +8883,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/unification-modules.md",
-      "inbound_count": 5,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
         "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md"
       ]
@@ -7870,8 +8910,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/findings.json",
-      "inbound_count": 21,
+      "inbound_count": 24,
       "inbound_sources": [
+        "docs/design/design/specs/2026-09-17-legal-design.md",
         "docs/work/specs/audits/2026-07-31-legal-docs-beta-readiness.md",
         "docs/work/specs/audits/2026-08-04-global-qa-findings.md",
         "docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md",
@@ -7885,10 +8926,12 @@
         "docs/work/specs/audits/2026-08-21-icons-and-emoji.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
+        "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/ai-abuse-2026-08-05.md",
         "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
         "docs/work/specs/audits/ai-testing-2026-08-25.md",
         "docs/work/specs/audits/browser-qa-2026-08-04/findings.md",
+        "docs/work/specs/audits/browser-qa-2026-08-04/test-plan.md",
         "docs/work/specs/audits/security-comprehensive-2026-08-04.md",
         "docs/work/specs/audits/unification-modules.md",
         "docs/work/specs/audits/verification/README.md",
@@ -7901,10 +8944,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/verification/migration.md",
-      "inbound_count": 2,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md"
+        "docs/open-work.md",
+        "docs/work/specs/audits/README.md",
+        "docs/work/specs/audits/verification/README.md"
       ]
     },
     {
@@ -8017,13 +9062,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/beta-launch/README.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/work/README.md",
         "docs/work/specs/beta-launch/beta-browser-run.md",
-        "docs/work/specs/beta-launch/run-beta-wave.md"
+        "docs/work/specs/beta-launch/run-beta-wave.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
       ]
     },
     {
@@ -8100,14 +9146,31 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/c-section-consistency-migration.md",
+      "new_path": "docs/work/specs/c-section-consistency-migration.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/c-section-consistency-migration.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/design/design/README.md",
+        "docs/design/design/design-system/04-components.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/data/documentation-inventory.json",
       "new_path": "docs/work/specs/data/documentation-inventory.json",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/data/documentation-inventory.json",
-      "inbound_count": 2,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/start/documentation-architecture.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/documentation-refactor.md"
       ]
     },
@@ -8133,6 +9196,20 @@
       "inbound_sources": ["docs/work/specs/pantry-categorization-ai.md"]
     },
     {
+      "old_path": "docs/work/specs/docs-code-drift-2026-09-19.md",
+      "new_path": "docs/work/specs/docs-code-drift-2026-09-19.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/docs-code-drift-2026-09-19.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/governance/governance/external-link-allowlist.json",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/audits/product-knowledge-nutrition.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/documentation-refactor.md",
       "new_path": "docs/work/specs/documentation-refactor.md",
       "action": "keep",
@@ -8140,6 +9217,18 @@
       "canonical_owner": "docs/work/specs/documentation-refactor.md",
       "inbound_count": 0,
       "inbound_sources": []
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/e2e-repeatable-states.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/e2e-repeatable-states.md",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md"
+      ]
     },
     {
       "old_path": "docs/work/specs/finyk-hero-month-strip.md",
@@ -8239,6 +9328,50 @@
       "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
+      "old_path": "docs/work/specs/health-text-encryption.md",
+      "new_path": "docs/work/specs/health-text-encryption.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/health-text-encryption.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/honest-export-and-first-screen.md",
+      "new_path": "docs/work/specs/honest-export-and-first-screen.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/honest-export-and-first-screen.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/product/model/product-overview.md",
+        "docs/product/modules/finyk.md",
+        "docs/work/specs/audits/2026-09-14-site-code-drift.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/hub-action-axis.md",
+      "new_path": "docs/work/specs/hub-action-axis.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/hub-action-axis.md",
+      "inbound_count": 6,
+      "inbound_sources": [
+        "docs/design/design/anti-slop-strategy.md",
+        "docs/engineering/architecture/feature-flags.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/product/modules/hub-coach.md",
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/import-external-trackers.md",
       "new_path": "docs/work/specs/import-external-trackers.md",
       "action": "keep",
@@ -8305,15 +9438,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
-      "inbound_count": 12,
+      "inbound_count": 10,
       "inbound_sources": [
-        "docs/STATUS.md",
         "docs/engineering/architecture/ai-memory.md",
-        "docs/governance/governance/freshness-dashboard.html",
+        "docs/engineering/integrations/env-vars.md",
+        "docs/engineering/integrations/voyage-pgvector.md",
         "docs/governance/pr-ledger/index.json",
-        "docs/open-work.md",
         "docs/product/modules/hub-coach.md",
-        "docs/today.md",
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md",
         "docs/work/specs/initiatives/README.md",
         "docs/work/specs/launch/tech/ai-memory-activation.md",
@@ -8381,6 +9512,20 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/kv-warm-cache-user-partition.md",
+      "new_path": "docs/work/specs/kv-warm-cache-user-partition.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/kv-warm-cache-user-partition.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/today.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/launch/business/01-monetization-and-pricing.md",
       "new_path": "docs/work/specs/launch/business/01-monetization-and-pricing.md",
       "action": "keep",
@@ -8443,13 +9588,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/business/03-services-and-toolstack.md",
-      "inbound_count": 11,
+      "inbound_count": 12,
       "inbound_sources": [
         "docs/engineering/architecture/hosting-evolution.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
+        "docs/work/specs/audits/2026-09-21-agent-readiness.md",
         "docs/work/specs/launch/README.md",
         "docs/work/specs/launch/business/01-monetization-and-pricing.md",
         "docs/work/specs/launch/business/02-go-to-market.md",
@@ -8547,8 +9693,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/phases/00-readiness-audit.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
+        "docs/STATUS.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
@@ -8579,11 +9726,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/phases/02-capacitor-launch.md",
-      "inbound_count": 6,
+      "inbound_count": 4,
       "inbound_sources": [
-        "docs/STATUS.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/launch/README.md",
         "docs/work/specs/launch/phases/01-web-launch-with-users.md",
         "docs/work/specs/launch/phases/README.md"
@@ -8609,11 +9754,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/product-os/ftux-master-tracker.md",
-      "inbound_count": 14,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/assets/README.md",
         "docs/design/design/mockups-backlog.md",
+        "docs/governance/adr/0095-demo-mode-removed.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/operations/observability/ftux-slo.yml",
@@ -8633,11 +9779,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/product-os/paywall-ux-placement.md",
-      "inbound_count": 5,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/design/design/mockups-backlog.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/work/specs/launch/product-os/ftux-master-tracker.md",
         "docs/work/specs/launch/product-os/paywall-ux-placement.md"
       ]
@@ -8663,9 +9808,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/tech/ai-memory-activation.md",
-      "inbound_count": 7,
+      "inbound_count": 6,
       "inbound_sources": [
-        "docs/governance/governance/feature-flags.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/operations/observability/runbook.md",
@@ -8675,16 +9819,31 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/link-evidence-standard.md",
+      "new_path": "docs/work/specs/link-evidence-standard.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/link-evidence-standard.md",
+      "inbound_count": 6,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/governance/adr/0097-link-evidence-standard.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+        "docs/work/specs/reward-loop-and-reminders.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/nutrition-adaptive-goal.md",
       "new_path": "docs/work/specs/nutrition-adaptive-goal.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/nutrition-adaptive-goal.md",
-      "inbound_count": 6,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/adr/0091-goal-history-not-repainted.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/product/modules/nutrition.md",
         "docs/work/specs/audits/2026-09-06-founder-ux-review.md",
         "docs/work/specs/nutrition-goal-journal-cutover.md"
@@ -8777,10 +9936,23 @@
       "inbound_sources": [
         "docs/governance/governance/external-link-allowlist.json",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
         "docs/operations/observability/metrics.md",
         "docs/work/research/2026-09-01-competitor-research-modules.md",
+        "docs/work/specs/planning/README.md",
         "docs/work/specs/planning/product-knowledge-backlog.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/planning/finyk-analytics-v2.md",
+      "new_path": "docs/work/specs/planning/finyk-analytics-v2.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/finyk-analytics-v2.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/product/modules/finyk.md",
+        "docs/product/modules/hub-coach.md"
       ]
     },
     {
@@ -8798,13 +9970,26 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/planning/jev-injection-shadow.md",
+      "new_path": "docs/work/specs/planning/jev-injection-shadow.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/jev-injection-shadow.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/engineering/architecture/feature-flags.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/planning/model-eval-2026-08-04.md",
       "new_path": "docs/work/specs/planning/model-eval-2026-08-04.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/model-eval-2026-08-04.md",
-      "inbound_count": 0,
-      "inbound_sources": []
+      "inbound_count": 1,
+      "inbound_sources": ["docs/work/specs/planning/README.md"]
     },
     {
       "old_path": "docs/work/specs/planning/model-eval-2026-08-25.md",
@@ -8812,8 +9997,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/model-eval-2026-08-25.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/work/specs/audits/ai-testing-2026-08-25.md"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/work/specs/audits/ai-testing-2026-08-25.md",
+        "docs/work/specs/planning/README.md"
+      ]
     },
     {
       "old_path": "docs/work/specs/planning/product-brainstorm-2026-07.md",
@@ -8834,7 +10022,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md",
-      "inbound_count": 11,
+      "inbound_count": 16,
       "inbound_sources": [
         "docs/governance/adr/0077-pantry-append-only-ledger.md",
         "docs/governance/adr/0083-injury-model-zone-level.md",
@@ -8842,9 +10030,14 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/llm-subprocessors.md",
         "docs/open-work.md",
+        "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
         "docs/work/research/2026-09-01-competitor-research-modules.md",
+        "docs/work/research/2026-09-20-competitor-handson-protocol.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/audits/README.md",
+        "docs/work/specs/audits/product-knowledge-nutrition.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/planning/README.md",
         "docs/work/specs/tech-debt/frontend.md"
       ]
@@ -8902,8 +10095,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/vision-eval-2026-08-04.md",
-      "inbound_count": 0,
-      "inbound_sources": []
+      "inbound_count": 1,
+      "inbound_sources": ["docs/work/specs/planning/README.md"]
     },
     {
       "old_path": "docs/work/specs/planning/vision-eval-2026-08-25.md",
@@ -8911,17 +10104,24 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/vision-eval-2026-08-25.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/work/specs/audits/ai-testing-2026-08-25.md"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/work/specs/audits/ai-testing-2026-08-25.md",
+        "docs/work/specs/planning/README.md"
+      ]
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/pr-body-validator-template-race.md",
       "new_path": "docs/work/specs/pr-body-validator-template-race.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/pr-body-validator-template-race.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/open-work.md"]
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md"
+      ]
     },
     {
       "old_path": "docs/work/specs/README.md",
@@ -8929,10 +10129,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/README.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/STATUS.md",
-        "docs/governance/governance/freshness-dashboard.html"
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -8941,12 +10142,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/receipt-scan.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/modules/finyk.md",
         "docs/work/specs/initiatives/0022-import-from-external-trackers.md",
-        "docs/work/specs/planning/barcode-database-research.md"
+        "docs/work/specs/planning/barcode-database-research.md",
+        "docs/work/specs/planning/product-knowledge-backlog.md"
       ]
     },
     {
@@ -8961,6 +10163,23 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/work/specs/audits/verification/migration.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/reward-loop-and-reminders.md",
+      "new_path": "docs/work/specs/reward-loop-and-reminders.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/reward-loop-and-reminders.md",
+      "inbound_count": 7,
+      "inbound_sources": [
+        "docs/governance/adr/0096-product-reward-loop.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/product/modules/fizruk.md",
+        "docs/product/modules/hub-coach.md",
+        "docs/product/modules/nutrition.md",
+        "docs/product/modules/routine.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md"
       ]
     },
     {
@@ -8981,12 +10200,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/routine-flexible-weekly-frequency.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
+        "docs/product/modules/routine.md",
         "docs/work/specs/finyk-observations.md",
-        "docs/work/specs/nutrition-goal-journal-cutover.md"
+        "docs/work/specs/nutrition-goal-journal-cutover.md",
+        "docs/work/specs/planning/product-knowledge-backlog.md"
       ]
     },
     {
@@ -9171,11 +10391,39 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/site-ia/README.md",
-      "inbound_count": 3,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/product/modules/routine.md",
+        "docs/work/specs/README.md",
+        "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
         "docs/work/specs/site-ia/page-ruchna-robota.md",
         "docs/work/specs/site-ia/page-vyhid.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/sqlite-multi-tab-ownership.md",
+      "new_path": "docs/work/specs/sqlite-multi-tab-ownership.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/sqlite-multi-tab-ownership.md",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/sqlite-opfs-worker.md",
+      "new_path": "docs/work/specs/sqlite-opfs-worker.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/sqlite-opfs-worker.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/start/instructions/migrate-client-storage.md",
+        "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
+        "docs/work/specs/sqlite-multi-tab-ownership.md"
       ]
     },
     {
@@ -9184,10 +10432,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/strava-integration.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
+        "docs/product/modules/fizruk.md",
         "docs/work/specs/import-external-trackers.md",
         "docs/work/specs/initiatives/0022-import-from-external-trackers.md"
       ]
@@ -9198,10 +10447,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/superpowers/README.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/start/documentation-architecture.md",
         "docs/work/README.md"
       ]
     },
@@ -9211,7 +10461,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/tech-debt/backend.md",
-      "inbound_count": 14,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/engineering/architecture/apps-status-matrix.md",
@@ -9221,6 +10471,7 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/policy-review.md",
         "docs/open-work.md",
+        "docs/product/modules/hub-coach.md",
         "docs/start/instructions/onboard-external-api.md",
         "docs/start/instructions/pre-merge-migration-checklist.md",
         "docs/work/specs/audits/product-knowledge-routine.md",
@@ -9230,16 +10481,32 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/tech-debt/bundle-budget-ratchet-log.md",
+      "new_path": "docs/work/specs/tech-debt/bundle-budget-ratchet-log.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/tech-debt/bundle-budget-ratchet-log.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/start/instructions/fix-red-bundle-budget.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/tech-debt/frontend.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/tech-debt/frontend.md",
       "new_path": "docs/work/specs/tech-debt/frontend.md",
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/tech-debt/frontend.md",
-      "inbound_count": 23,
+      "inbound_count": 28,
       "inbound_sources": [
         "docs/STATUS.md",
-        "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
+        "docs/design/design/mockups-backlog.md",
+        "docs/design/design/redesign-v2/backlog.md",
+        "docs/design/i18n/README.md",
         "docs/engineering/architecture/apps-status-matrix.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
@@ -9250,6 +10517,7 @@
         "docs/operations/observability/hub-perf-baseline.md",
         "docs/start/instructions/add-new-page-route.md",
         "docs/start/instructions/fix-exhaustive-deps.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
         "docs/start/instructions/migrate-localstorage-to-typedstore.md",
         "docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md",
         "docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md",
@@ -9259,7 +10527,9 @@
         "docs/work/specs/initiatives/README.md",
         "docs/work/specs/planning/product-knowledge-backlog.md",
         "docs/work/specs/tech-debt/README.md",
-        "docs/work/specs/tech-debt/backend.md"
+        "docs/work/specs/tech-debt/backend.md",
+        "docs/work/specs/tech-debt/bundle-budget-ratchet-log.md",
+        "docs/work/specs/tech-debt/mobile.md"
       ]
     },
     {
@@ -9268,9 +10538,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/tech-debt/mobile.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/STATUS.md",
+        "docs/design/design/README.md",
         "docs/engineering/architecture/platforms.md",
         "docs/engineering/testing/README.md",
         "docs/governance/adr/0094-mobile-web-first-freeze.md",
@@ -9329,20 +10600,24 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/user-deletion-grace-window.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/launch/business/04-launch-readiness.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/voice-input-followups.md",
+      "new_path": "docs/work/specs/voice-input-followups.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/voice-input-followups.md",
       "inbound_count": 2,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md"
       ]
-    },
-    {
-      "old_path": null,
-      "new_path": "docs/work/specs/voice-input-followups.md",
-      "action": "keep",
-      "genre": "active-work",
-      "canonical_owner": "docs/work/specs/voice-input-followups.md",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/open-work.md"]
     }
   ]
 }

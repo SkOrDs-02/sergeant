@@ -28,6 +28,12 @@ vi.mock("../lib/recommendationEngine", () => ({
     generateRecommendationsMock(...(args as [])),
 }));
 
+const trackEventMock = vi.fn();
+vi.mock("../observability/analytics", () => ({
+  trackEvent: (...args: unknown[]) => trackEventMock(...args),
+  ANALYTICS_EVENTS: { TODAY_FOCUS_CTA_CLICKED: "today_focus_cta_clicked" },
+}));
+
 // Mock hubNav so we can verify dispatches without real DOM events
 const openHubModuleWithActionMock = vi.fn();
 vi.mock("@shared/lib/modules/hubNav", () => ({
@@ -292,6 +298,41 @@ describe("TodayFocusCard", () => {
     expect(openHubModuleWithActionMock).toHaveBeenCalledWith(
       "fizruk",
       "start_workout",
+      "today_focus_cta",
+    );
+  });
+
+  it("primary CTA з pwaAction стріляє TODAY_FOCUS_CTA_CLICKED і передає джерело", () => {
+    // Базова лінія перед віссю дії хабу (P3): третя з трьох подій.
+    trackEventMock.mockClear();
+    openHubModuleWithActionMock.mockClear();
+    render(
+      <TodayFocusCard
+        focus={{
+          id: "nutrition_protein_low",
+          module: "nutrition",
+          icon: "utensils",
+          title: "Лише 48 г білка",
+          body: "",
+          action: "nutrition",
+          pwaAction: "add_meal",
+        }}
+        onAction={onAction}
+        onDismiss={onDismiss}
+      />,
+    );
+    const buttons = screen.getAllByRole("button");
+    fireEvent.click(buttons.find((b) => b.textContent?.includes("Додати"))!);
+    expect(trackEventMock).toHaveBeenCalledWith("today_focus_cta_clicked", {
+      rec_id: "nutrition_protein_low",
+      module: "nutrition",
+      kind: "primary",
+      has_pwa_action: true,
+    });
+    expect(openHubModuleWithActionMock).toHaveBeenCalledWith(
+      "nutrition",
+      "add_meal",
+      "today_focus_cta",
     );
   });
 
@@ -400,7 +441,7 @@ describe("TodayFocusCard", () => {
     const focus = {
       id: "routine_streak_7",
       module: "routine" as const,
-      title: "7 днів поспіль! Вогонь!",
+      title: "7 днів поспіль",
       body: "Неймовірна серія!",
       icon: "flame",
       action: "routine",

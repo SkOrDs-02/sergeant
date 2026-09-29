@@ -151,7 +151,7 @@ ADR: [ADR-0092](./0092-backfill-marker-deferred.md) відклав його дл
 - Тест зберігає provenance: `origin='backfill'` доїжджає через резолвер і не
   підміняється `manual` / `preset` / `tdee`; візуальний тест з'являється лише
   за умовою ADR-0092.
-- `pnpm docs:check-adr-index` тримає індекс і статуси в синхроні.
+- `pnpm docs:check-adr-graph` тримає індекс і статуси в синхроні.
 
 ## Невирішене рішення founder-а: календар сходинки цілі
 

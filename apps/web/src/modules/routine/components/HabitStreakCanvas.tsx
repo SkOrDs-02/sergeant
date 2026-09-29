@@ -31,6 +31,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import { flexibleStreakBreakdown } from "../lib/streaks";
 import { SKIP_REASON_LABELS } from "../lib/skipReasons";
 import type { Habit } from "../lib/types";
@@ -55,7 +56,7 @@ function formatCellDate(key: string): string {
   // Парсимо готовий day-key на візуальну мітку — не читаємо годинник
   // хоста, тож "prefer-kyiv-time" тут не застосовний.
   const dt = new Date(`${key}T12:00:00`);
-  return dt.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+  return formatDateShort(dt);
 }
 
 /** Клітинка полотна — форма/патерн різні для кожного типу, не лише колір. */
@@ -91,20 +92,16 @@ function DayCell({
         />
       );
     case "miss":
+      // F-3 (спека `reward-loop-and-reminders.md`): мовчазний пропуск не
+      // має власного кольору. День без відмітки це просто день без
+      // відмітки; про те, що серія його пережила, людина дізнається
+      // моментом «заморозка спрацювала» в рядку звички, а не плямою тут.
       return (
         <li
           role="img"
           aria-label={`${dateLabel}: ${T.cellGrace}`}
-          className={cn(
-            CELL_BASE,
-            "relative overflow-hidden border border-routine-strong/30 bg-panelHi/40",
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-1/2 border-t border-routine-strong/40 bg-routine-strong/35"
-          />
-        </li>
+          className={cn(CELL_BASE, MISS_FILL)}
+        />
       );
     case "pause":
       return (
@@ -151,6 +148,13 @@ function DayCell({
   }
 }
 
+/**
+ * Нейтральний сірий, той самий щабель, що й «не виконано» в сітці
+ * активності (`HabitRangeGrid`), тож дві візуалізації на одній сторінці
+ * говорять однією мовою.
+ */
+const MISS_FILL = "bg-line/30";
+
 interface LegendRow {
   kind: StreakDayKind;
   title: string;
@@ -185,17 +189,7 @@ function LegendSwatch({ kind }: { kind: StreakDayKind }) {
         />
       );
     case "miss":
-      return (
-        <span
-          aria-hidden="true"
-          className={cn(
-            fixed,
-            "relative overflow-hidden border border-routine-strong/30 bg-panelHi/40",
-          )}
-        >
-          <span className="absolute inset-x-0 bottom-0 h-1/2 border-t border-routine-strong/40 bg-routine-strong/35" />
-        </span>
-      );
+      return <span aria-hidden="true" className={cn(fixed, MISS_FILL)} />;
     case "pause":
       return (
         <span

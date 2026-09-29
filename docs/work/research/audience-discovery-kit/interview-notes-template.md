@@ -1,7 +1,7 @@
 # Interview notes — [Респондент NN]
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2028-01-07.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Active → Draft: шаблон, дослідження не запущене). **Next review:** 2026-12-16.
+> **Status:** Draft — шаблон нотаток інтервʼю
 
 > Копіюй цей файл під кожне інтервʼю: `interview-01-imya.md`, `interview-02-…`.
 > Заповнюй одразу після дзвінка, поки свіжо. Цитати — **дослівно** (це майбутня маркетингова мова).

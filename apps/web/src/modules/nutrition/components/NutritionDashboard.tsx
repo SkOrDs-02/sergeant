@@ -31,7 +31,7 @@ import {
   getDaySummary,
   getMacrosForDateRange,
 } from "../lib/nutritionStorage";
-import { mealTypeKcalForDay } from "../lib/nutritionStats";
+import { mealsByTypeForDay, mealTypeKcalForDay } from "../lib/nutritionStats";
 import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
@@ -127,14 +127,22 @@ export function NutritionDashboard({
     () => mealTypeKcalForDay(log, today),
     [log, today],
   );
+  // Кількість записів поруч із калоріями: саме вона вирішує, порожній
+  // сегмент чи ні (див. `MealStripSegment.count`), бо запис без макросів
+  // існує, але дає нуль ккал.
+  const mealsByType = useMemo(
+    () => mealsByTypeForDay(log, today),
+    [log, today],
+  );
   const segments: MealStripSegment[] = useMemo(
     () =>
       MEAL_ORDER.map((type) => ({
         type,
         label: MEAL_META[type].label,
         kcal: kcalByType[type],
+        count: mealsByType[type].length,
       })),
-    [kcalByType],
+    [kcalByType, mealsByType],
   );
   const remainingLabel = useMemo(() => nextMealLabel(kcalByType), [kcalByType]);
 
@@ -160,7 +168,7 @@ export function NutritionDashboard({
 
     toastFiredRef.current = true;
     safeWriteLS(LS_KEY, today);
-    toast.success("Денну норму виконано");
+    toast.success("Денну ціль виконано");
   }, [kcalConsumed, kcalGoal, hasGoal, today, toast]);
 
   const protein = {
@@ -190,6 +198,8 @@ export function NutritionDashboard({
   // чому рахувати. `countKcalStreakDays` дає довжину, і 7-денний інсайт
   // лишається окремою поверхнею зі своїм CTA — дублювання тут немає:
   // інсайт — картка з пропозицією плану, плашка — підтвердження віхи.
+  // Дашборд монтується лише після бута читання (гейт у
+  // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
   const kcalStreak = useMemo(
     () => countKcalStreakDays(log, goalPeriods, todayISODate()),
     [log, goalPeriods],

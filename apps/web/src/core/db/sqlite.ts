@@ -9,16 +9,22 @@ import {
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
-import { noteActiveSqliteVfs } from "./storageBackendState.js";
+import {
+  noteActiveSqliteVfs,
+  noteSqliteVfsFallbackReason,
+} from "./storageBackendState.js";
+import { isHandoffDone } from "./kvvfsHandoff.js";
+import { claimDbOwnership, onYieldRequested } from "./dbOwnership.js";
+import { watchOpfsWipe } from "./opfsWipeGuard.js";
+import { markKvAnonPartition, refreshKvWarmCache } from "./kvStoreBoot.js";
 import {
   makeLocalConnection,
   type SqliteConnection,
 } from "./sqliteConnection.js";
-import { getFlag } from "../lib/featureFlags.js";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
- * `docs/planning/storage-roadmap.md`).
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * Why this lives outside the main bundle:
  *
@@ -33,14 +39,20 @@ import { getFlag } from "../lib/featureFlags.js";
  *
  * VFS selection (best → worst):
  *
- * 1. **OPFS-SAH Pool** — persistent, durable, no COOP/COEP needed
- *    (`installOpfsSAHPoolVfs()`). Available in Chrome 86+, Firefox 111+,
- *    Safari 17+ on the main thread.
- * 2. **kvvfs (`localStorage`)** — persistent fallback for older Safari /
- *    iOS < 16.4 where `FileSystemSyncAccessHandle` is missing. Capped at
- *    ~5 MB by the browser; sufficient as a stop-gap until a true IDB-VFS
- *    lands.
- * 3. **`:memory:`** — last resort so the contract still resolves; data
+ * 1. **OPFS-SAH Pool у ВОРКЕРІ** ({@link openWorkerBackedDb}) — основний
+ *    шлях від стадії 3 спеки `sqlite-opfs-worker.md`. Файл на акаунт,
+ *    стеля — частка вільного місця пристрою.
+ * 2. **OPFS-SAH Pool на головному потоці** — історична гілка, яка на
+ *    практиці не спрацьовує НІКОЛИ: `installOpfsSAHPoolVfs()` вимагає
+ *    `FileSystemSyncAccessHandle`, доступний лише у воркері, тож виклик
+ *    кидає `Missing required OPFS APIs`. Саме через це kvvfs-фолбек
+ *    «для старого iOS» був основним шляхом для всіх до стадії 1.
+ *    Лишена свідомо: вона нічого не коштує, поки воркер живий, і є
+ *    останнім шансом на OPFS, якщо воркер не піднявся.
+ * 3. **kvvfs (`localStorage`)** — фолбек, коли воркер не піднявся.
+ *    Стеля ~5 МБ; продукт на такому пристрої лишається робочим, але
+ *    переростає її так само, як переріс до переїзду.
+ * 4. **`:memory:`** — last resort so the contract still resolves; data
  *    does not survive a reload.
  *
  * Concurrency: every caller awaits the same in-flight init promise — see
@@ -155,6 +167,7 @@ export async function switchSqliteUser(
   });
   activeUserKey = key;
   activeUserId = key === ANON_USER_KEY ? null : (userId ?? null);
+  if (key === ANON_USER_KEY) markKvAnonPartition();
   const stale = resolved;
   resolved = null;
   resolvedKey = null;
@@ -164,6 +177,10 @@ export async function switchSqliteUser(
   if (stale) {
     await stale.close();
   }
+  // KV-кеш заповнено на буті з `anon`: без перечитування залогінений
+  // користувач читав би анонімні значення до кінця сесії. Після `close()`,
+  // бо перечитування відкриває новий handle, а два одночасно не можна.
+  if (key !== ANON_USER_KEY) await refreshKvWarmCache();
 }
 
 /**
@@ -284,6 +301,23 @@ export function __resetSqliteDbForTests(): void {
   activeUserId = null;
 }
 
+/**
+ * Віддати базу вкладці, яка натиснула «Працювати тут».
+ *
+ * Сингълтон скидається СИНХРОННО, до `close()`: доки він скинутий, будь-який
+ * паралельний `getSqliteDb()` відкриє нову (вже памʼятєву) базу замість того,
+ * щоб дочекатись хендла, який зараз закривається.
+ */
+onYieldRequested(async () => {
+  const stale = resolved;
+  resolved = null;
+  resolvedKey = null;
+  inFlight = null;
+  inFlightKey = null;
+  currentOpen = null;
+  if (stale) await stale.close();
+});
+
 async function initSqliteDb(
   userKey: string,
 ): Promise<{ handle: SqliteDbHandle; open: OpenedDb }> {
@@ -298,8 +332,19 @@ async function initSqliteDb(
   // важкий модуль на головному потоці не потрібен узагалі, тож і не
   // вантажиться. Фолбек тут тихий і повний — якщо воркер не піднявся,
   // застосунок працює рівно як до стадії 1.
-  const driver =
-    (await openWorkerBackedDb(userKey)) ?? (await openMainThreadDb(userKey));
+  // Персистентний стор відкриває ЛИШЕ лідер - див. `dbOwnership.ts`. Пул
+  // замикає каталог цілком, тож друга вкладка все одно його не дістане: ретраї
+  // нижче виграють гонку з воркером ПОПЕРЕДНЬОГО завантаження цієї ж сторінки,
+  // але не з сусідньою вкладкою, яка тримає пул скільки завгодно довго. Без
+  // цієї гілки вона з'їжджала б у власне сховище поруч із живою базою першої
+  // і показувала б інший набір даних на тому самому акаунті.
+  const owner = await claimDbOwnership();
+  const persistent = owner === "leader";
+  if (!persistent) noteSqliteVfsFallbackReason("pool-busy");
+  const driver = persistent
+    ? ((await openWorkerBackedDb(userKey)) ??
+      (await openMainThreadDb(userKey, true)))
+    : await openMainThreadDb(userKey, false);
   const proxy = makeProxyDriver(driver.conn);
   const drizzleDb = drizzle<SqliteSchema>(proxy, { schema: sqliteSchema });
 
@@ -327,6 +372,7 @@ async function initSqliteDb(
   // за бекендом зберігання.
   lastVfs = driver.vfs;
   noteActiveSqliteVfs(driver.vfs);
+  if (driver.vfs === "opfs-sahpool") watchOpfsWipe(SAH_POOL_DIRECTORY);
   setSentryTag("sqlite.vfs", driver.vfs);
 
   const handle: SqliteDbHandle = {
@@ -345,77 +391,146 @@ async function initSqliteDb(
  * Відкриває базу у фоновому воркері, або віддає `null`, якщо не судилось.
  *
  * `null`, а не виняток: рішення «куди падати» ухвалюється тут, вище по
- * стеку про існування воркера знати не треба. Будь-яка невдача — вимкнений
- * прапорець, відсутній `Worker`, OPFS, що не піднявся, — веде в наявний
+ * стеку про існування воркера знати не треба. Будь-яка невдача — відсутній
+ * `Worker`, OPFS, що не піднявся, впале перелиття — веде в наявний
  * головнопотоковий шлях.
  *
  * AI-DANGER: під цим прапорцем база ІНША — окремий файл в OPFS, а не
- * спільний localStorage-блоб. Дані зі старого сховища сюди НЕ переїжджають:
- * це стадія 2 спеки. Тобто перше вмикання показує порожню базу, а вимикання
- * повертає все як було — старе сховище лишається недоторканим.
+ * спільний localStorage-блоб. Від стадії 2 дані переїжджають разом із
+ * двигуном: при першому відкритті стара база копіюється сюди цілком
+ * (`kvvfsHandoff`). Старе сховище при цьому НЕ чіпається, тому вимикання
+ * прапорця повертає все як було — але записи, зроблені під увімкненим,
+ * лишаються тут.
+ *
+ * Від стадії 3 це БЕЗУМОВНИЙ основний шлях: прапорця більше немає.
+ *
+ * AI-DANGER: не повертай сюди тумблер. Його прибрано за рішенням власника
+ * саме тому, що ручне вимикання розщеплює дані — записи, зроблені в OPFS,
+ * у старе сховище не повертаються, і людина лишається з двома половинами
+ * історії, не знаючи про це. Відкат тепер один і чесний: ревертнути
+ * коміт. Автоматичний фолбек від цього не постраждав — він нижче і
+ * спрацьовує на будь-якій невдачі воркера.
  */
 async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
-  if (!getFlag(SQLITE_WORKER_FLAG)) return null;
-  try {
-    const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
-    const handoff = await import("./kvvfsHandoff.js");
-    const dbName = `sergeant-${userKey}.db`;
-    // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
-    // позначки — після переїзду цей шлях більше не виконується і важкий
-    // модуль на головний потік не потрапляє.
-    const needsHandoff = !handoff.isHandoffDone(userKey);
-    const importBytes = needsHandoff
-      ? await handoff.readKvvfsSnapshotBytes()
-      : null;
-    const conn = await openSqliteInWorker(dbName, {
-      directory: SAH_POOL_DIRECTORY,
-      initialCapacity: SAH_POOL_INITIAL_CAPACITY,
-      minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
-      importBytes,
-    });
-    if (needsHandoff) {
-      // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
-      // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
-      // уже існує, але містить чужі партиції. На чистій базі це no-op.
-      const prunedTables = await handoff.pruneForeignPartitionRows(
-        conn,
-        activeUserId,
-      );
-      // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
-      // таким, що не відбулось, і наступний запуск доробить його.
-      handoff.markHandoffDone(userKey);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await attemptWorkerBackedDb(userKey);
+    } catch (err) {
+      const delayMs = OPFS_LOCK_RETRY_DELAYS_MS[attempt];
+      if (delayMs !== undefined && isOpfsLockContention(err)) {
+        addSentryBreadcrumb({
+          category: "storage",
+          level: "info",
+          message: "sqlite: opfs pool busy, retrying",
+          data: { attempt: attempt + 1, delayMs },
+        });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      if (isChunkLoadError(err)) reloadOnceForChunkError();
+      // Ретраї вичерпано, а пул усе ще зайнятий - отже тримає його не наш
+      // попередній воркер, а щось довговічніше. Причина доїжджає до аркуша
+      // «Синхронізація» окремим рядком: її людина усуває сама.
+      const busy = isOpfsLockContention(err);
+      if (busy) noteSqliteVfsFallbackReason("pool-busy");
       addSentryBreadcrumb({
         category: "storage",
-        level: "info",
-        message: "sqlite: kvvfs handoff completed",
-        data: { imported: conn.imported, prunedTables },
+        level: "warning",
+        message: "sqlite: worker backend unavailable, falling back",
+        data: {
+          error: err instanceof Error ? err.message : String(err),
+          poolBusy: busy,
+        },
       });
+      return null;
     }
-    lastWorkerDiagnostics = await conn.diagnostics();
+  }
+}
+
+/**
+ * Паузи між спробами взяти SAH-пул. Дві, і обидві короткі.
+ *
+ * AI-CONTEXT: пул захоплює `FileSystemSyncAccessHandle` на СВОЇ файли в
+ * `SAH_POOL_DIRECTORY`, а не на одну базу, тож два власники пулу в одному
+ * origin виключають один одного незалежно від імені бази. Найчастіший
+ * власник-конкурент — воркер ПОПЕРЕДНЬОГО завантаження цієї ж сторінки:
+ * браузер звільняє його хендли, лише коли добиває потік, і нове
+ * завантаження встигає постукати раніше. Прод 2026-09-21 (Chrome 151,
+ * Android): `createSyncAccessHandle` кидав «Access Handles cannot be
+ * created…» через 70 мс після старту сторінки, і через одну-єдину
+ * спробу вся сесія лишалась на kvvfs зі стелею ~5 МБ.
+ *
+ * Чому саме перечекати, а не закривати пул на `pagehide`: закриття їде у
+ * воркер повідомленням, тобто асинхронно, і сторінка, яку вивантажують,
+ * відповіді не дочекається. Гонку виграє той, хто готовий почекати.
+ */
+const OPFS_LOCK_RETRY_DELAYS_MS = [150, 400] as const;
+
+/**
+ * Чи це саме «пул зайнятий», а не чесна відмова середовища.
+ *
+ * Розрізняти обов'язково: на пристрої без OPFS (`Missing required OPFS
+ * APIs`) ретраї лише додали б півсекунди до кожного холодного старту, так
+ * нічого й не змінивши.
+ */
+function isOpfsLockContention(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === "NoModificationAllowedError") return true;
+  return /createSyncAccessHandle|Access Handles cannot be created/i.test(
+    err.message,
+  );
+}
+
+async function attemptWorkerBackedDb(userKey: string): Promise<OpenedDb> {
+  const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
+  const handoff = await import("./kvvfsHandoff.js");
+  const dbName = `sergeant-${userKey}.db`;
+  // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
+  // позначки — після переїзду цей шлях більше не виконується і важкий
+  // модуль на головний потік не потрапляє.
+  const needsHandoff = !handoff.isHandoffDone(userKey);
+  const importBytes = needsHandoff
+    ? await handoff.readKvvfsSnapshotBytes()
+    : null;
+  const conn = await openSqliteInWorker(dbName, {
+    directory: SAH_POOL_DIRECTORY,
+    initialCapacity: SAH_POOL_INITIAL_CAPACITY,
+    minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
+    importBytes,
+  });
+  if (needsHandoff) {
+    // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
+    // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
+    // уже існує, але містить чужі партиції. На чистій базі це no-op.
+    const prunedTables = await handoff.pruneForeignPartitionRows(
+      conn,
+      activeUserId,
+    );
+    // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
+    // таким, що не відбулось, і наступний запуск доробить його.
+    handoff.markHandoffDone(userKey);
     addSentryBreadcrumb({
       category: "storage",
       level: "info",
-      message: "sqlite: opened in worker",
-      data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
+      message: "sqlite: kvvfs handoff completed",
+      data: { imported: conn.imported, prunedTables },
     });
-    return {
-      conn,
-      vfs: "opfs-sahpool",
-      dbName,
-      // Файл на акаунт — видаляється цілком, як і в головнопотоковій
-      // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
-      wipe: () => conn.wipe(),
-    };
-  } catch (err) {
-    if (isChunkLoadError(err)) reloadOnceForChunkError();
-    addSentryBreadcrumb({
-      category: "storage",
-      level: "warning",
-      message: "sqlite: worker backend unavailable, falling back",
-      data: { error: err instanceof Error ? err.message : String(err) },
-    });
-    return null;
   }
+  lastWorkerDiagnostics = await conn.diagnostics();
+  addSentryBreadcrumb({
+    category: "storage",
+    level: "info",
+    message: "sqlite: opened in worker",
+    data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
+  });
+  return {
+    conn,
+    vfs: "opfs-sahpool",
+    dbName,
+    // Файл на акаунт — видаляється цілком, як і в головнопотоковій
+    // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
+    wipe: () => conn.wipe(),
+  };
 }
 
 /**
@@ -434,7 +549,10 @@ async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
  * Той самий one-shot-reload стоїть і на динамічному імпорті клієнта
  * воркера: його чанк версійований так само.
  */
-async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
+async function openMainThreadDb(
+  userKey: string,
+  persistent: boolean,
+): Promise<OpenedDb> {
   let sqlite3: Sqlite3Static;
   try {
     const sqlite3InitModule = await loadSqliteWasm();
@@ -443,7 +561,7 @@ async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
     if (isChunkLoadError(err)) reloadOnceForChunkError();
     throw err;
   }
-  return openDb(sqlite3, userKey);
+  return openDb(sqlite3, userKey, persistent);
 }
 
 /**
@@ -456,7 +574,7 @@ async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
  * available.
  *
  * COOP/COEP wiring itself is tracked separately as PR #016 in
- * `docs/planning/storage-roadmap.md`.
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 function warnIfNotCrossOriginIsolated(): boolean {
   const isolated =
@@ -585,7 +703,6 @@ const SAH_POOL_DIRECTORY = "/sergeant/sqlite";
  * результат, а відкат не потребує редеплою. Дефолт — вимкнено: стадія 1
  * має зливатись без зміни поведінки.
  */
-const SQLITE_WORKER_FLAG = "storage_sqlite_worker";
 
 /**
  * Заповненість пулу, як її повідомив воркер на відкритті.
@@ -627,6 +744,11 @@ let lastVfs: SqliteVfs | null = null;
 /** Який VFS обслуговує базу, або `null` доки її не відкривали. */
 export function readActiveSqliteVfs(): SqliteVfs | null {
   return lastVfs;
+}
+
+/** Сирий id активної партиції, або `null` для анонімної. */
+export function readActiveSqliteUserId(): string | null {
+  return activeUserId;
 }
 
 /**
@@ -679,11 +801,12 @@ async function ensureSahPoolHeadroom(pool: SahPoolLike): Promise<void> {
 async function openDb(
   sqlite3: Sqlite3Static,
   userKey: string,
+  persistent: boolean,
 ): Promise<OpenedDb> {
   // 1) Persistent: OPFS SyncAccessHandle Pool VFS — main-thread friendly,
   //    does not need COOP/COEP. Skip on environments without OPFS at all
   //    (jsdom, very old Safari) so we don't wait on a timeout.
-  if (hasOpfsSupport()) {
+  if (persistent && hasOpfsSupport()) {
     try {
       const pool = await sqlite3.installOpfsSAHPoolVfs({
         directory: SAH_POOL_DIRECTORY,
@@ -722,7 +845,16 @@ async function openDb(
   //    kvvfs is the closest persistent fallback. kvvfs is a single wholesale
   //    store (no per-user filename), so cross-user isolation here relies on
   //    `wipe()` clearing it on logout rather than on the filename key.
-  if (hasLocalStorage()) {
+  //
+  // AI-DANGER: після перелиття (стадія 2) цей шлях ЗАБОРОНЕНИЙ. Старе
+  // сховище навмисно не чистять (див. `kvvfsHandoff.ts`), тож воно живе на
+  // пристрої як знімок бази на момент переїзду. Відкрити його після
+  // позначки означає показати людині старі дані замість її власних і
+  // прийняти нові записи в мертвий стор, звідки їх ніхто не забере.
+  // Заміряно на Xiaomi Pad 6 2026-09-22: одна вкладка - OPFS і нуль росту
+  // `kvvfs-local-*`; щойно відкривається друга - +1 ключ і +4.4 kB у тому
+  // самому localStorage.
+  if (persistent && hasLocalStorage() && !isHandoffDone(userKey)) {
     try {
       const conn = makeLocalConnection(new sqlite3.oo1.JsStorageDb("local"));
       return {

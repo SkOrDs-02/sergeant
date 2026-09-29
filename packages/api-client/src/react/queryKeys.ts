@@ -9,6 +9,8 @@
 export const apiQueryKeys = {
   me: {
     current: () => ["me", "current"] as const,
+    /** Стан 30-денного вікна на скасування видалення акаунта. */
+    deletionStatus: () => ["me", "deletion-status"] as const,
   },
   coach: {
     all: ["coach"] as const,

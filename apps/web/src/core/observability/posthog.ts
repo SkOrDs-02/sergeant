@@ -391,12 +391,3 @@ export function resetPostHog(): void {
   if (initFailed) return;
   enqueue({ kind: "reset" });
 }
-
-// Test-only: скидає внутрішній стан між тестами. Не експортується у
-// публічному index — викликається напряму через `import("./posthog")`.
-export function __resetForTests(): void {
-  posthogModule = null;
-  initPromise = null;
-  initFailed = false;
-  queue = [];
-}

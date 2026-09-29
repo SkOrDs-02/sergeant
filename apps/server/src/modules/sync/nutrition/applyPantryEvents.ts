@@ -186,7 +186,7 @@ export async function applyNutritionPantryEvents(
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
-  await client.query(
+  const res = await client.query(
     `INSERT INTO nutrition_pantry_events
        (id, user_id, pantry_id, item_id, item_key, kind, delta_qty, abs_qty,
         unit, source, meal_id, occurred_at, tz_offset_min, created_at,
@@ -212,5 +212,24 @@ export async function applyNutritionPantryEvents(
       deletedAt ?? null,
     ],
   );
+
+  // `DO NOTHING` мовчазний за визначенням і сам по собі не розрізняє «мій
+  // повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
+  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
+  // вже володіє рядком у таблиці. `id` тут TEXT і будується клієнтом
+  // детерміновано, тобто вгадуваний — тож підібраний id давав no-op і
+  // чесний `applied`: подія комори мовчки не доїжджала, а виглядало це як
+  // успіх. Той самий guard, що в `routine/applyCompletionEvents.ts`.
+  if (res.rowCount === 0) {
+    const existing = await client.query<{ user_id: string }>(
+      `SELECT user_id FROM nutrition_pantry_events WHERE id = $1`,
+      [id],
+    );
+    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож
+    // штатно це неможливо; трактуємо як не-наш рядок, а не як успіх.
+    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+  }
   return { status: "applied" };
 }

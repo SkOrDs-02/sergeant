@@ -122,7 +122,7 @@ describe("BankTransactionDetailsSheet", () => {
     expect(
       screen.queryByRole("tablist", { name: "Тип запису" }),
     ).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Нотатка до транзакції")).toBeInTheDocument();
+    expect(screen.getByLabelText("Нотатка до операції")).toBeInTheDocument();
     expect(
       screen.getByRole("switch", { name: /Не враховувати у статистиці/ }),
     ).toBeInTheDocument();
@@ -141,7 +141,7 @@ describe("BankTransactionDetailsSheet", () => {
       "transport",
     );
 
-    const note = screen.getByLabelText("Нотатка до транзакції");
+    const note = screen.getByLabelText("Нотатка до операції");
     fireEvent.change(note, { target: { value: "Оплата за друга" } });
     fireEvent.blur(note);
     expect(handlers.onNoteChange).toHaveBeenCalledWith(
@@ -217,7 +217,7 @@ describe("BankTransactionDetailsSheet", () => {
         screen.getByRole("button", { name: "Створити новий пасив" }),
       );
       fireEvent.change(
-        screen.getByPlaceholderText("Назва пасиву (кредит, борг…)"),
+        screen.getByPlaceholderText("Назва пасиву (кредит, борг)"),
         { target: { value: "Позика в Олі" } },
       );
       fireEvent.click(screen.getByRole("button", { name: "Створити" }));
@@ -307,7 +307,7 @@ describe("BankTransactionDetailsSheet", () => {
       );
     });
 
-    it("розділена транзакція привʼязує лише debt-частку спліту, не повну суму (CodeRabbit finding #1)", () => {
+    it("розділена операція привʼязує лише debt-частку спліту, не повну суму (CodeRabbit finding #1)", () => {
       const setLinkedTxRole = vi.fn();
       renderSheet({
         overrideCatId: "debt",
@@ -346,7 +346,7 @@ describe("BankTransactionDetailsSheet", () => {
       );
     });
 
-    it("розділена транзакція БЕЗ debt-частки не пропонує привʼязку взагалі", () => {
+    it("розділена операція БЕЗ debt-частки не пропонує привʼязку взагалі", () => {
       // Категорія верхнього рівня лишається «Борг» (override/MCC не знають
       // про спліти), але людина розписала всю суму на інші категорії —
       // до боргу не пішло нічого. Привʼязка на 0 ₴ була б хибним числом,

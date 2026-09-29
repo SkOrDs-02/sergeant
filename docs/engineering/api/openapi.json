@@ -50,6 +50,137 @@
             }
           }
         }
+      },
+      "delete": {
+        "summary": "Попросити видалити акаунт (30-денне вікно на скасування)",
+        "description": "НЕ видаляє одразу: позначає акаунт, гасить сесії на всіх пристроях і скасовує підписку. Незворотне видалення виконує добивач через 30 днів; до того дня працює POST /api/me/restore. Повторний виклик ідемпотентний і не зсуває дату.",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeDeleteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Прохання прийняте; `scheduledPurgeAt` — дата видалення.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/deletion-status": {
+      "get": {
+        "summary": "Стан вікна на скасування видалення",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Стан акаунта; `pending: false` — активний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDeletionStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/restore": {
+      "post": {
+        "summary": "Скасувати прохання видалити акаунт",
+        "description": "Знімає позначку, поки вікно не закрилось. Підписку не повертає: її скасовано в день прохання, і потрібне нове оформлення.",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Прохання скасоване, акаунт знову активний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeRestoreResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Активного прохання видалити акаунт немає."
+          }
+        }
       }
     },
     "/api/me/profile": {
@@ -1283,118 +1414,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PushUnregister"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {},
-                  "additionalProperties": {}
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request — payload не пройшов zod-валідацію.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/push/subscribe": {
-      "post": {
-        "summary": "Web-push subscribe (legacy alias для /push/register web)",
-        "tags": ["push"],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushSubscribe"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {},
-                  "additionalProperties": {}
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request — payload не пройшов zod-валідацію.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized — потрібна активна сесія.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "summary": "Web-push unsubscribe (legacy alias для /push/unregister web)",
-        "tags": ["push"],
-        "security": [
-          {
-            "cookieAuth": []
-          },
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PushUnsubscribe"
               }
             }
           }
@@ -4385,6 +4404,17 @@
   },
   "components": {
     "schemas": {
+      "MeDeleteBody": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "description": "Тіло DELETE /api/me. Пароль обовʼязковий для акаунтів із credential-входом і безпредметний для OAuth-акаунтів."
+      },
       "UserProfilePutBody": {
         "type": "object",
         "properties": {
@@ -4559,18 +4589,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "enum": [
-                "chat",
-                "finyk",
-                "fizruk",
-                "nutrition",
-                "routine",
-                "journal",
-                "digest",
-                "cofounder",
-                "product",
-                "profile"
-              ]
+              "enum": ["digest", "cofounder", "product", "profile"]
             }
           }
         },
@@ -5988,46 +6007,6 @@
         "description": "POST /api/push/unregister.",
         "type": "object"
       },
-      "PushSubscribe": {
-        "type": "object",
-        "properties": {
-          "endpoint": {
-            "type": "string",
-            "maxLength": 2048,
-            "format": "uri"
-          },
-          "keys": {
-            "type": "object",
-            "properties": {
-              "p256dh": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 256
-              },
-              "auth": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 256
-              }
-            },
-            "required": ["p256dh", "auth"]
-          }
-        },
-        "required": ["endpoint", "keys"],
-        "description": "Web-push subscribe (legacy)."
-      },
-      "PushUnsubscribe": {
-        "type": "object",
-        "properties": {
-          "endpoint": {
-            "type": "string",
-            "maxLength": 2048,
-            "format": "uri"
-          }
-        },
-        "required": ["endpoint"],
-        "description": "Web-push unsubscribe (legacy)."
-      },
       "PushSend": {
         "type": "object",
         "properties": {
@@ -6708,6 +6687,83 @@
         "additionalProperties": false,
         "description": "Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію)."
       },
+      "MeDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "scheduledPurgeAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": ["ok", "deletedAt", "scheduledPurgeAt"],
+        "additionalProperties": false,
+        "description": "Відповідь DELETE /api/me. `deletedAt` — коли сервер прийняв прохання; `scheduledPurgeAt` — коли акаунт зникне (30 днів)."
+      },
+      "MeDeletionStatusResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": ["pending"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "boolean",
+                "const": true
+              },
+              "requestedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "scheduledPurgeAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": ["pending", "requestedAt", "scheduledPurgeAt"],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Відповідь GET /api/me/deletion-status. `pending: false` — акаунт активний, дат немає.",
+        "type": "object"
+      },
+      "MeRestoreResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "restoredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": ["ok", "restoredAt"],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/me/restore — прохання скасоване."
+      },
       "UserProfileResponse": {
         "type": "object",
         "properties": {
@@ -6875,18 +6931,7 @@
                 },
                 "source": {
                   "type": "string",
-                  "enum": [
-                    "chat",
-                    "finyk",
-                    "fizruk",
-                    "nutrition",
-                    "routine",
-                    "journal",
-                    "digest",
-                    "cofounder",
-                    "product",
-                    "profile"
-                  ]
+                  "enum": ["digest", "cofounder", "product", "profile"]
                 },
                 "sourceRef": {
                   "anyOf": [
@@ -8547,11 +8592,145 @@
               "currentPeriodEnd"
             ],
             "additionalProperties": false
+          },
+          "access": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": ["free", "trial", "pro", "grace"]
+              },
+              "trialEndsAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "graceEndsAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "features": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              },
+              "meters": {
+                "type": "object",
+                "properties": {
+                  "aiActions": {
+                    "type": "object",
+                    "properties": {
+                      "used": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "limit": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["used", "limit", "resetsAt"],
+                    "additionalProperties": false
+                  },
+                  "aiPhoto": {
+                    "type": "object",
+                    "properties": {
+                      "used": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "limit": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["used", "limit", "resetsAt"],
+                    "additionalProperties": false
+                  },
+                  "finykVision": {
+                    "type": "object",
+                    "properties": {
+                      "used": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "limit": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["used", "limit", "resetsAt"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["aiActions", "aiPhoto", "finykVision"],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "trialEndsAt",
+              "graceEndsAt",
+              "features",
+              "meters"
+            ],
+            "additionalProperties": false
           }
         },
-        "required": ["subscription"],
+        "required": ["subscription", "access"],
         "additionalProperties": false,
-        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056)."
+        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056), плюс знімок доступу `access` (стан free/trial/pro/grace, фічі реєстру, тижневі лічильники)."
       },
       "BillingPortalResponse": {
         "type": "object",
@@ -8696,6 +8875,17 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "pantryAutoImportSince": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8704,7 +8894,8 @@
           "lastSyncAt",
           "lastFailedAt",
           "lastErrorCode",
-          "receiptsCount"
+          "receiptsCount",
+          "pantryAutoImportSince"
         ],
         "additionalProperties": false,
         "description": "Відповідь GET /api/silpo/sync-state — статус інтеграції + лічильники для Settings-картки."
@@ -8819,6 +9010,16 @@
                       "type": "null"
                     }
                   ]
+                },
+                "pantryClaimedCount": {
+                  "default": 0,
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "pantryAutoDeclined": {
+                  "default": false,
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -8828,7 +9029,9 @@
                 "channel",
                 "paymentHint",
                 "totalKop",
-                "transactionId"
+                "transactionId",
+                "pantryClaimedCount",
+                "pantryAutoDeclined"
               ],
               "additionalProperties": false
             }
@@ -8898,6 +9101,16 @@
               }
             ]
           },
+          "pantryClaimedCount": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pantryAutoDeclined": {
+            "default": false,
+            "type": "boolean"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -8956,6 +9169,17 @@
                       "type": "null"
                     }
                   ]
+                },
+                "pantryClaimedAt": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -8965,7 +9189,8 @@
                 "unit",
                 "priceKop",
                 "categorySlug",
-                "barcode"
+                "barcode",
+                "pantryClaimedAt"
               ],
               "additionalProperties": false
             }
@@ -8979,6 +9204,8 @@
           "paymentHint",
           "totalKop",
           "transactionId",
+          "pantryClaimedCount",
+          "pantryAutoDeclined",
           "items"
         ],
         "additionalProperties": false,

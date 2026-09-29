@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
-import { requirePlan } from "../modules/billing/index.js";
+import { requireFeature } from "../modules/billing/index.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 import { clearAiMemoryHandler } from "../modules/ai-memory/clearRoute.js";
 import {
@@ -14,7 +14,7 @@ import {
  * `/api/ai-memory/*`. Клієнт-driven ingestion (`POST /api/ai-memory/ingest`)
  * видалено ініціативою 0024 (PR-1, 2026-09-03) — жодне з клієнт-driven
  * джерел (`chat`/`fizruk`/`nutrition`/`routine`/`journal`) не мало
- * продюсера в дереві (`docs/90-work/initiatives/0024-ai-memory-source-
+ * продюсера в дереві (`docs/work/specs/initiatives/0024-ai-memory-source-
  * coverage.md`). Живі server-side producer-и: `digest/weekly-digest.ts`
  * (`source=digest`) і `ai-memory/profileMirror.ts` (`source=profile`).
  *
@@ -86,7 +86,7 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     heavyPreAuthIp,
     requireSession(),
     heavyRateLimit,
-    requirePlan(pool, "pro"),
+    requireFeature(pool, "ai.memoryRecall"),
     recallMemoryHandler,
   );
   r.delete(

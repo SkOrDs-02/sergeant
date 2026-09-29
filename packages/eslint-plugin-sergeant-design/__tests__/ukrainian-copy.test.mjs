@@ -39,6 +39,23 @@ function lint(code, filename = abs("apps/web/src/Foo.tsx")) {
   );
 }
 
+function lintWith(code, options, filename = abs("apps/web/src/Foo.tsx")) {
+  return linter.verify(
+    code,
+    {
+      files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+      plugins: { "sergeant-design": plugin },
+      rules: { [RULE_ID]: ["error", options] },
+      languageOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        parserOptions: { ecmaFeatures: { jsx: true } },
+      },
+    },
+    { filename },
+  );
+}
+
 const ids = (msgs) => msgs.map((m) => m.messageId).sort();
 
 describe("ukrainian-copy — формальне «Ви» (§1.1)", () => {
@@ -183,6 +200,79 @@ describe("ukrainian-copy — 1-а особа множини (§2)", () => {
     ]);
   });
 
+  it("allowFirstPersonPlural вимикає лише перевірку «ми», решта діє (аудит копі 2026-09-23 §6.6, §6.7)", () => {
+    const opts = { allowFirstPersonPlural: ["src/core/legal"] };
+    const legal = abs("apps/web/src/core/legal/privacyDocument.ts");
+    assert.deepEqual(
+      lintWith('const a = "Ми не продаємо твій контент.";', opts, legal),
+      [],
+    );
+    assert.deepEqual(
+      ids(
+        lintWith(
+          'const a = "Ми — сторона договору, і Ви це знаєте.";',
+          opts,
+          legal,
+        ),
+      ),
+      ["emDash", "formalVy"],
+    );
+    // Поза переліком «ми» ловиться, як і раніше.
+    assert.deepEqual(
+      ids(lintWith('const a = "Ми не продаємо твій контент.";', opts)),
+      ["firstPersonPlural"],
+    );
+  });
+
+  it("ловить -емо / -имо / -їмо та зворотні -мось / -мося (дірка з аудиту 2026-09-15)", () => {
+    for (const s of [
+      "Робимо перший крок.",
+      "Ідемо далі",
+      "Вчимося разом.",
+      "Боїмось пропустити день",
+      "Тримаємося плану!",
+    ]) {
+      assert.deepEqual(
+        ids(lint(`const a = "${s}";`)),
+        ["firstPersonPlural"],
+        s,
+      );
+    }
+  });
+
+  it("не ловить «демо», прислівники на -емо/-имо та «ласкаво просимо»", () => {
+    assert.deepEqual(lint('const a = "Демо-режим увімкнено";'), []);
+    assert.deepEqual(lint('const a = "Режим демо";'), []);
+    assert.deepEqual(
+      lint('const a = "Кожен факт можна видалити окремо.";'),
+      [],
+    );
+    assert.deepEqual(
+      lint('const a = "Показую їх окремо, у капітал не зводжу.";'),
+      [],
+    );
+    assert.deepEqual(lint('const a = "Ласкаво просимо в Premium!";'), []);
+    // Регресія 2026-09-19: allowlist не працював, коли за словом ішов
+    // ПРОБІЛ і ще одне слово — найчастіший випадок у живій копії. Збіг
+    // регулярки тягне межу-пробіл усередині `m[0]`, тож розширення до
+    // цілого слова стартувало вже з першої літери наступного слова і
+    // склеювало два в одне (`окремоє`), якого в allowlist бути не може.
+    // Тести вище цього не бачили, бо в них за словом стояв розділовий
+    // знак. Знайдено першим живим прогоном правила на лендінгу.
+    assert.deepEqual(
+      lint('const a = "Окремо є ручне довантаження за 31 день.";'),
+      [],
+    );
+    assert.deepEqual(
+      lint('const a = "Заміри парні окремо для лівої та правої сторони.";'),
+      [],
+    );
+    // Allowlist — лише для цих слів: те саме закінчення в дієслові ловиться.
+    assert.deepEqual(ids(lint('const a = "Окремо зберемо всі чеки.";')), [
+      "firstPersonPlural",
+    ]);
+  });
+
   it("мовчить на 1-й особі однини та іменнику", () => {
     assert.deepEqual(lint('const a = "Завантажую…";'), []);
     assert.deepEqual(lint('const a = "Завантаження…";'), []);
@@ -249,5 +339,121 @@ describe("ukrainian-copy — межі застосування", () => {
       ids(lint("const a = `Натисніть select, і ми оновимо список.`;")),
       ["firstPersonPlural", "formalVy"],
     );
+  });
+});
+
+describe("ukrainian-copy — імператив множини за закінченням (аудит 2026-09-23 §2.1)", () => {
+  it("ловить дієслова поза колишнім списком із 21", () => {
+    for (const s of [
+      "Вставте токен Mono API",
+      "Отримайте новий токен: Monobank → Налаштування → API",
+      "Зберігайте облік боргів і дат повернення.",
+      "Додавайте з датою повернення, привʼязуйте транзакції-платежі.",
+      "Запис занадто короткий, затисніть і говоріть кілька секунд.",
+      "Якщо транзакція зайва, використайте hide_transaction.",
+      "Будьте уважні: поверніться до цього пізніше.",
+      "Не хвилюйтесь, дані на місці",
+    ]) {
+      assert.deepEqual(ids(lint(`const a = "${s}";`)), ["formalVy"], s);
+    }
+  });
+
+  it("називає в повідомленні саме слово, а не хвіст рядка", () => {
+    const [m] = lint('const a = "Спершу вставте токен";');
+    assert.match(m.message, /«вставте»/);
+  });
+
+  it("мовчить на «навіть» і на «росте» з префіксами", () => {
+    for (const s of [
+      "Навіть якщо так.",
+      "Вага росте разом із калоріями",
+      "Баланс зросте на 200 грн",
+      "Капітал виросте до кінця року",
+    ]) {
+      assert.deepEqual(lint(`const a = "${s}";`), [], s);
+    }
+  });
+
+  it("мовчить на дієприкметниках, прикметниках і порядкових середнього роду", () => {
+    for (const s of [
+      "Відкрите питання",
+      "Закрите питання",
+      "Просте правило",
+      "Чисте поле",
+      "Пʼяте число",
+      "Шосте число",
+    ]) {
+      assert.deepEqual(lint(`const a = "${s}";`), [], s);
+    }
+  });
+
+  it("мовчить на 3-й особі однини та на «те» як займеннику", () => {
+    for (const s of [
+      "Вона стоїть на місці",
+      "Він говорить тихо",
+      "Те, що ти бачиш",
+      "Мабуть, так",
+    ]) {
+      assert.deepEqual(lint(`const a = "${s}";`), [], s);
+    }
+  });
+});
+
+describe("ukrainian-copy — тире на межі літерала (аудит 2026-09-23 §2.2)", () => {
+  it("ловить тире в кінці лівого операнда «+»", () => {
+    assert.deepEqual(
+      ids(
+        lint('const a = "напишу сюди першим — " + "нічого робити не треба";'),
+      ),
+      ["emDash"],
+    );
+  });
+
+  it("ловить тире на початку правого операнда «+», і в template-літералі теж", () => {
+    assert.deepEqual(
+      ids(lint('const a = count + " — сервер їх так і не отримав";')),
+      ["emDash"],
+    );
+    assert.deepEqual(
+      ids(
+        lint(
+          "const a = `${n} записів видалено` + ` — сервер їх так і не отримав`;",
+        ),
+      ),
+      ["emDash"],
+    );
+  });
+
+  it("проходить ланцюжок «+» до кінця", () => {
+    assert.deepEqual(ids(lint('const a = "Так" + " — тому" + " що";')), [
+      "emDash",
+    ]);
+  });
+
+  it("ловить тире на початку JSX-виразу, коли ліворуч є сусід", () => {
+    assert.deepEqual(
+      ids(
+        lint(
+          'const a = <p>{list}{" — витрати рахуватимуться в обох лімітах."}</p>;',
+        ),
+      ),
+      ["emDash"],
+    );
+  });
+
+  it("ловить тире в кінці JSX-тексту перед виразом", () => {
+    assert.deepEqual(
+      ids(lint("const a = <p>\n  Немає звʼязку —\n  {reason}\n</p>;")),
+      ["emDash"],
+    );
+  });
+
+  it("не вигадує сусіда там, де його нема", () => {
+    // Тире на початку без тексту ліворуч: маркер списку, не звʼязка.
+    assert.deepEqual(lint('const a = <p>{"— так"}<b>1</b></p>;'), []);
+    // Самі пробіли й переноси навколо: JSX їх не рендерить.
+    assert.deepEqual(lint('const a = <p>\n  {"— так, і все"}\n</p>;'), []);
+    // Плейсхолдер порожнього значення поза конкатенацією.
+    assert.deepEqual(lint('const a = x ?? "—";'), []);
   });
 });

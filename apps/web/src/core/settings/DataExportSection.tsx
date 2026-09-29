@@ -19,16 +19,30 @@ function exportFilename(ext: "json" | "csv"): string {
 /**
  * Розкладає серверний експорт у секції CSV.
  *
- * AI-CONTEXT: список секцій привʼязаний до форми `MeExportResponse` і саме
- * тому будується явно, а не обходом обʼєкта рекурсією. Рекурсія дала б
+ * AI-CONTEXT: акаунтні секції привʼязані до форми `MeExportResponse` і саме
+ * тому будуються явно, а не обходом обʼєкта рекурсією. Рекурсія дала б
  * «магічні» назви секцій із ключів схеми (`webSubscriptions`), а файл, який
  * founder попросив «щоб подивитись», має бути читабельним українською.
  * Ціна — новий масив в експорті треба додати сюди руками; тест на це є.
+ *
+ * Модульні секції — виняток із цього правила: їх майже піввсотні, і назва
+ * там уже сама себе пояснює (`finyk_assets`, `routine_habits`). Власний
+ * український рядок на кожну таблицю означав би пів сотні i18n-ключів, які
+ * розходяться з базою при першій же міграції. Тому тут імʼя таблиці як є.
  */
 function toCsvSections(payload: MeExportResponse): ExportCsvSection[] {
   const d = payload.data;
+  const moduleSections: ExportCsvSection[] = [
+    d.finyk,
+    d.fizruk,
+    d.nutrition,
+    d.routine,
+  ].flatMap((section) =>
+    Object.entries(section).map(([table, rows]) => ({ name: table, rows })),
+  );
   return [
     { name: m.sections.moduleData, rows: d.moduleData },
+    ...moduleSections,
     { name: m.sections.monoAccounts, rows: d.mono.accounts },
     { name: m.sections.monoTransactions, rows: d.mono.transactions },
     {
@@ -37,8 +51,7 @@ function toCsvSections(payload: MeExportResponse): ExportCsvSection[] {
     },
     { name: m.sections.subscriptions, rows: d.billing.subscriptions },
     { name: m.sections.pushDevices, rows: d.push.devices },
-    { name: m.sections.aiUsage, rows: d.ai.usageDaily },
-    { name: m.sections.aiMemories, rows: d.ai.memories },
+    { name: m.sections.excluded, rows: d.excluded },
   ];
 }
 
@@ -122,7 +135,7 @@ export function DataExportSection() {
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => void handleServerExport("json")}
               disabled={serverExportBusy || signedIn === false}
@@ -131,7 +144,7 @@ export function DataExportSection() {
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => void handleServerExport("csv")}
               disabled={serverExportBusy || signedIn === false}

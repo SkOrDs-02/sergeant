@@ -3,12 +3,17 @@
  * Status: Active
  */
 import { useMemo } from "react";
-import { pluralExercises, pluralSets } from "@sergeant/shared";
+import { pluralExercises } from "@sergeant/shared";
+import { setsCountLabel } from "../session/sessionLib";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { messages } from "@shared/i18n/uk";
-import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
+import { formatDateShort } from "@shared/lib/time/formatDate";
+import {
+  computeWorkoutSummary,
+  isLightWorkout,
+} from "@sergeant/fizruk-domain/domain";
 
 type WorkoutItem = ReadonlyArray<unknown>;
 
@@ -27,9 +32,25 @@ export interface WorkoutsHomeProps {
   recentWorkouts: ReadonlyArray<WorkoutShape>;
   onOpenSession: () => void;
   onOpenCatalog: () => void;
-  onOpenTemplates: () => void;
   onOpenJournal: () => void;
-  /** Starts an empty workout immediately. */
+  /**
+   * Відкриває КОНКРЕТНЕ тренування зі списку «Останні». Доти кожен рядок
+   * викликав `onOpenJournal`, тобто всі вони вели в той самий загальний
+   * журнал, хоча рядок несе повний підсумок запису і шеврон — тобто
+   * обіцяє перехід саме в нього (аудит 2026-09-16, WF-7). Маршрут
+   * `workout/:id` уже вживаний у `WorkoutHistory` і для активної сесії.
+   * Опційний: якщо хост його не передав, рядок лишається на старій
+   * поведінці, а не стає мертвим.
+   */
+  onOpenWorkout?: ((id: string) => void) | undefined;
+  /**
+   * «Почати тренування» — відкриває аркуш вибору способу (`QuickStartSheet`:
+   * за шаблоном, підібрати вправи, за програмою). До 2026-09-16 кнопка
+   * називалась «Швидкий старт» і одразу створювала порожню сесію, а шаблони
+   * мали окреме посилання «або із шаблону →» під нею; власник попросив
+   * зібрати входи за двома осями — «почати зараз» і «записати те, що вже
+   * було» — по одній кнопці на кожну, з вибором усередині.
+   */
   onRequestStart: () => void;
   /**
    * Відкриває форму «Внести проведене заняття» — тренування заднім числом.
@@ -42,9 +63,8 @@ export interface WorkoutsHomeProps {
   onLogPast: () => void;
   /**
    * Deep-link into the Routine module's calendar so the user can
-   * schedule a future training session. Surfaced as an extra stacked
-   * CTA under «Швидкий старт» / «Із шаблону» / «Внести проведене заняття»
-   * when the host (`Workouts.tsx`) wires it through. The button is
+   * schedule a future training session. Surfaced as a row in
+   * «Довідники» when the host (`Workouts.tsx`) wires it through. The button is
    * hidden when `onOpenSchedule` is not provided so we don't show a
    * dead control on hosts where deep-linking isn't available.
    */
@@ -70,8 +90,8 @@ export function WorkoutsHome({
   recentWorkouts,
   onOpenSession,
   onOpenCatalog,
-  onOpenTemplates,
   onOpenJournal,
+  onOpenWorkout,
   onOpenPrograms,
   onOpenStrongImport,
   activeProgramName,
@@ -98,11 +118,13 @@ export function WorkoutsHome({
               </div>
             </div>
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="h-11 px-4"
               onClick={onOpenSession}
             >
-              Відкрити →
+              Відкрити
             </Button>
           </div>
           {/* Ретро лишається доступним і під час живої сесії, хоч тепер воно
@@ -110,11 +132,11 @@ export function WorkoutsHome({
               людину. Показуємо — і на кліку дає той самий діалог конфлікту,
               де вибір її: завершити поточне чи викинути. */}
           <Button
-            variant="secondary"
+            variant="outline"
             className="mt-3 w-full h-11"
             onClick={onLogPast}
           >
-            <Icon name="edit" size={16} aria-hidden />{" "}
+            <Icon name="edit" size="md" aria-hidden />{" "}
             {messages.fizruk.logPast.cta}
           </Button>
         </div>
@@ -126,34 +148,32 @@ export function WorkoutsHome({
           <div className="text-style-caption text-subtle mt-1">
             Почни зараз або запиши те, що вже провів.
           </div>
-          {/* Ієрархія, а не три рівні кнопки: старт основний, шаблон — його
-              варіант, а запис проведеного — окремий, вторинний шлях. Три
-              однакові кнопки читались як три різні речі (звіт 2026-09-03). */}
+          {/* Дві кнопки за двома осями — «зараз» і «вже було», — а вибір
+              способу живе всередині кожної (аркуш старту: шаблон / підбір /
+              програма; форма запису: заняття й час / по підходах / швидкий).
+              Історія: три рівні кнопки читались як три різні речі (звіт
+              2026-09-03) → ієрархія з двома текстовими посиланнями → чотири
+              елементи в ряду (2026-09-15) → власник 2026-09-16: «забагато
+              кнопок і маршрутів», зібрати. */}
           <div
             role="group"
             className="mt-3 flex flex-col gap-2"
             aria-label="Способи почати або внести тренування"
           >
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
               className="h-12 text-base"
               onClick={onRequestStart}
             >
-              <Icon name="play" size={16} aria-hidden /> Швидкий старт
+              <Icon name="play" size="md" aria-hidden /> Почати тренування
             </Button>
-            <button
-              type="button"
-              onClick={onOpenTemplates}
-              className="focus-ring min-h-[44px] w-full rounded-xl text-style-caption font-semibold text-fizruk-strong hover:underline"
-            >
-              або із шаблону →
-            </button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="h-12 text-base"
               onClick={onLogPast}
             >
-              <Icon name="edit" size={16} aria-hidden />{" "}
+              <Icon name="edit" size="md" aria-hidden />{" "}
               {messages.fizruk.logPast.cta}
             </Button>
           </div>
@@ -169,7 +189,7 @@ export function WorkoutsHome({
               className="text-style-caption text-fizruk-strong hover:underline active:opacity-70 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={onOpenJournal}
             >
-              Всі →
+              Всі
             </button>
           ) : null}
         </div>
@@ -180,7 +200,9 @@ export function WorkoutsHome({
                 <button
                   type="button"
                   className="w-full text-left rounded-xl border border-line bg-bg px-3 py-3 flex items-center justify-between hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-                  onClick={onOpenJournal}
+                  onClick={() =>
+                    onOpenWorkout ? onOpenWorkout(w.id) : onOpenJournal()
+                  }
                 >
                   <RecentWorkoutSummary workout={w} />
                   <Icon
@@ -311,19 +333,15 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
     [workout],
   );
   const started = new Date(workout.startedAt);
-  const dateLabel = started.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
-  });
+  const dateLabel = formatDateShort(started);
   const parts: string[] = [];
   if (summary.itemCount > 0)
     parts.push(`${summary.itemCount} ${pluralExercises(summary.itemCount)}`);
-  if (summary.setCount > 0)
-    parts.push(`${summary.setCount} ${pluralSets(summary.setCount)}`);
+  if (summary.setCount > 0) parts.push(setsCountLabel(summary.setCount));
   const durMin = summary.durationSec
     ? Math.max(1, Math.round(summary.durationSec / 60))
     : null;
-  if (durMin !== null) parts.push(`${durMin} хв`);
+  if (durMin !== null) parts.push(`${durMin}\u202Fхв`);
   if (typeof workout.kcalBurned === "number" && workout.kcalBurned > 0) {
     parts.push(`${workout.kcalBurned} ккал`);
   }
@@ -336,6 +354,12 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
         {!summary.isFinished ? (
           <span className="text-style-caption font-semibold text-warning-strong bg-warning/15 px-2 py-0.5 rounded-full">
             Чернетка
+          </span>
+        ) : isLightWorkout(workout as never) ? (
+          // Той самий бейдж, що в історії: легкий запис на дні є, серію не
+          // рухає (канон §8, 2026-09-15).
+          <span className="text-style-caption font-semibold text-fizruk-strong dark:text-fizruk bg-fizruk/10 px-2 py-0.5 rounded-full">
+            {messages.fizruk.workoutHistory.lightBadge}
           </span>
         ) : null}
       </div>

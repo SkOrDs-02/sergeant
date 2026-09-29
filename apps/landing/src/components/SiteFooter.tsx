@@ -1,7 +1,5 @@
-import { telegramStartLink } from "../lib/links";
+import { telegramStartLink, THREADS_URL } from "../lib/links";
 import { LogoMark } from "./Wordmark";
-
-const THREADS_URL = "https://www.threads.com/@sergeant.app";
 
 export default function SiteFooter() {
   const link =
@@ -17,10 +15,10 @@ export default function SiteFooter() {
               Sergeant
             </span>
           </p>
-          <p>© 2026 · Made in Ukraine</p>
+          <p>© 2026 · Зроблено в Україні</p>
         </div>
         <nav
-          aria-label="Футер"
+          aria-label="Посилання сайту"
           className="mt-2 grid gap-x-8 gap-y-1 text-sm text-muted sm:grid-cols-3"
         >
           <div className="flex flex-col">
@@ -29,6 +27,9 @@ export default function SiteFooter() {
             </p>
             <a href="/zvyazky" className={link}>
               Звʼязки
+            </a>
+            <a href="/pomichnyk" className={link}>
+              Сержант
             </a>
             <a href="/guides" className={link}>
               Гайди
@@ -39,7 +40,7 @@ export default function SiteFooter() {
           </div>
           <div className="flex flex-col">
             <p className="pb-1 font-display text-xs font-bold uppercase tracking-[0.08em] text-subtle">
-              Чесність
+              Про продукт
             </p>
             <a href="/obitsyanky" className={link}>
               Що обіцяю
@@ -51,7 +52,7 @@ export default function SiteFooter() {
               Питання
             </a>
             <a href="/about" className={link}>
-              Про Sergeant
+              Про проєкт
             </a>
           </div>
           <div className="flex flex-col">

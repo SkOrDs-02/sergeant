@@ -145,7 +145,7 @@ function readLS<T>(key: string, fallback: T): T {
 // ─── Фінік ────────────────────────────────────────────────────────────
 
 describe("find_transaction", () => {
-  it("шукає ручну транзакцію за описом і сумою", () => {
+  it("шукає ручну операцію за описом і сумою", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         {
@@ -219,7 +219,7 @@ describe("batch_categorize", () => {
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
   });
 
-  it("з dry_run=false записує категорію для matched транзакцій", () => {
+  it("з dry_run=false записує категорію для matched операцій", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
@@ -253,7 +253,7 @@ describe("batch_categorize", () => {
 });
 
 describe("delete_transaction", () => {
-  it("видаляє ручну транзакцію за id", () => {
+  it("видаляє ручну операцію за id", () => {
     localStorage.setItem(
       "finyk_manual_expenses_v1",
       JSON.stringify([
@@ -270,7 +270,7 @@ describe("delete_transaction", () => {
     expect(arr.map((t) => t.id)).toEqual(["m_keep"]);
   });
 
-  it("відмовляє для монобанк-транзакцій (не m_)", () => {
+  it("відмовляє для монобанк-операцій (не m_)", () => {
     const msg = executeAction({
       name: "delete_transaction",
       input: { tx_id: "mono_xyz" },
@@ -363,7 +363,7 @@ describe("update_budget", () => {
 });
 
 describe("mark_debt_paid", () => {
-  it("створює repayment-транзакцію і закриває борг при повній сумі", () => {
+  it("створює repayment-операцію і закриває борг при повній сумі", () => {
     localStorage.setItem(
       "finyk_debts",
       JSON.stringify([
@@ -607,7 +607,7 @@ describe("add_program_day", () => {
 });
 
 describe("log_wellbeing", () => {
-  it("записує самопочуття у fizruk_daily_log_v1", () => {
+  it("записує самопочуття через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_wellbeing",
       input: {
@@ -619,17 +619,14 @@ describe("log_wellbeing", () => {
     });
     expect(msg).toContain("вага 78");
     expect(msg).toContain("сон 7.5");
-    const arr = readLS<
-      Array<{
-        weightKg: number | null;
-        sleepHours: number | null;
-        energyLevel: number | null;
-      }>
-    >("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(78);
-    expect(arr[0]!.sleepHours).toBe(7.5);
-    expect(arr[0]!.energyLevel).toBe(4);
+    // LS-ключ `fizruk_daily_log_v1` tombstoned: журнал їде лише в SQLite
+    // через dual-write, тож перевіряємо `next.dailyLog`, а не localStorage.
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(78);
+    expect(next?.dailyLog[0]!.sleepHours).toBe(7.5);
+    expect(next?.dailyLog[0]!.energyLevel).toBe(4);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє якщо немає жодного поля", () => {
@@ -1014,15 +1011,16 @@ describe("set_daily_plan", () => {
 });
 
 describe("log_weight", () => {
-  it("пише вагу у fizruk_daily_log_v1", () => {
+  it("пише вагу через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_weight",
       input: { weight_kg: 77.3 },
     });
     expect(msg).toContain("77.3");
-    const arr = readLS<Array<{ weightKg: number }>>("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(77.3);
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(77.3);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє на 0/неч.", () => {

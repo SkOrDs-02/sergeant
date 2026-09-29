@@ -1,7 +1,9 @@
+import { CORRELATION_NOTABLE_R } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
   buildDailySeries,
   computePairwiseCorrelations,
+  MIN_N,
   type DailyMetric,
   type DailySeries,
 } from "../lib/chatActions/crossActions/dailySeries";
@@ -25,23 +27,23 @@ import {
 // «епістемічний стандарт звʼязків» (product-overview.md §6) вимагає, щоб
 // поріг мовчання був один на весь продукт, а не по одному на кожну поверхню.
 export const WINDOW_DAYS = 60;
-export const NOTABLE_R = 0.4;
+/**
+ * Поріг помітності - зі спільного пакета з тієї ж причини, що й `MIN_N`:
+ * його підписує сервер у промпті коуча, тож окрема копія тут розійшлася б
+ * із текстом, який читає модель.
+ */
+export const NOTABLE_R = CORRELATION_NOTABLE_R;
 
 /**
- * Мінімум спільних днів, щоб пара взагалі заговорила.
+ * Поріг мовчання - один на весь продукт, тож він більше не оголошується тут.
+ * Канонічне місце - `dailySeries.ts` (там же рахуються самі кореляції), а
+ * цей ре-експорт лишається, бо на нього дивиться решта поверхонь:
+ * `crossModuleLinkTiers.ts` виводить із нього драбину ступенів.
  *
- * Порогом 5 продукт жив на час закритої бети (рішення власника 2026-08-05):
- * на малих даних треба було показувати бодай щось, щоб побачити реакцію.
- * Умовою зняття було саме закриття бети — виконано.
- *
- * Чому 5 було боргом, а не нормою: на пʼяти точках `|r| = 0.4` трапляється
- * на випадкових даних приблизно в половині випадків, тобто перший ступінь
- * стояв на доказі рівня підкидання монети. Назва «Поки що збіг»
- * (`crossModuleLinkTiers.ts`) була чесною, але доказу не посилювала. Набір
- * пар розширено 2026-08-05 з 9 до 15, і це множило проблему: більше
- * перевірених гіпотез — вищий шанс, що хоч одна перетне поріг випадково.
+ * До 2026-09-22 тут стояло власне `export const MIN_N = 10`, а чат-тул мав
+ * своє число 4 - розбір у `dailySeries.ts` над самою константою.
  */
-export const MIN_N = 10;
+export { MIN_N };
 const MAX_LINES = 3;
 
 interface PairPhrase {
@@ -285,7 +287,16 @@ export function notablePairsFromSeries(series: DailySeries): NotablePair[] {
  * storage/годинника).
  */
 export function correlationsFromSeries(series: DailySeries): string[] {
-  return notablePairsFromSeries(series)
+  return correlationsFromPairs(notablePairsFromSeries(series));
+}
+
+/**
+ * Той самий формат, але з уже порахованих пар - щоб викликач, якому пари
+ * потрібні й для іншого (запис тижневої перевірки), не будував 60-денні
+ * ряди вдруге.
+ */
+export function correlationsFromPairs(pairs: NotablePair[]): string[] {
+  return pairs
     .slice(0, MAX_LINES)
     .map((p) => `${p.phrase} (r=${p.pearson.toFixed(2)}, ${p.n} дн)`);
 }
@@ -304,7 +315,7 @@ export function correlationsFromSeries(series: DailySeries): string[] {
  * ній самій через UTC-полудень: UTC не має переходів, і зсув на добу завжди
  * рівно одна доба.
  */
-function shiftDayKey(dayKey: string, deltaDays: number): string {
+export function shiftDayKey(dayKey: string, deltaDays: number): string {
   // UTC-полудень навмисно: це не читання «зараз», а чиста календарна
   // арифметика над уже київським ключем дня.
   const d = new Date(`${dayKey}T12:00:00.000Z`);

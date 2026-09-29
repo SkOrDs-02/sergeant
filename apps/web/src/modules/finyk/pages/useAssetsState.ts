@@ -9,7 +9,7 @@ import { useDebtAutoLink } from "../hooks/useDebtAutoLink";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
-import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 
 // AI-NOTE: Props mirror the original Assets component signature from FinykApp.
 // The original component was untyped; we use loose structural types here to
@@ -121,12 +121,7 @@ export function useAssetsState({
   } = storage;
 
   const linkableTransactions = useMemo(
-    () => [
-      ...transactions,
-      ...(manualExpenses ?? []).map((expense) =>
-        manualExpenseToTransaction(expense),
-      ),
-    ],
+    () => withManualExpenses(transactions, manualExpenses),
     [manualExpenses, transactions],
   );
 
@@ -225,6 +220,11 @@ export function useAssetsState({
     networth,
     totalAssets,
   } = assetsSummary;
+  // Той самий предикат, що в `sumManualAssetsUAH`: у капітал іде лише
+  // `currency === "UAH"`, решту картка капіталу мусить назвати вголос.
+  const nonUahManualAssetCount = manualAssets.filter(
+    (a) => a.currency !== "UAH",
+  ).length;
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
@@ -238,10 +238,12 @@ export function useAssetsState({
         subscriptions,
         manualDebts,
         receivables,
-        transactions: [...transactions],
+        // Ручні записи теж: підписку й борг можна привʼязати до них, і
+        // картки нижче вже рахують з цього ж набору.
+        transactions: linkableTransactions,
         todayStart,
       }),
-    [subscriptions, manualDebts, receivables, transactions, todayStart],
+    [subscriptions, manualDebts, receivables, linkableTransactions, todayStart],
   );
 
   // Єдиний вхід у кожну форму — quick-action-ряд угорі сторінки. Раніше
@@ -350,6 +352,7 @@ export function useAssetsState({
     totalReceivable,
     manualAssetTotal,
     networth,
+    nonUahManualAssetCount,
     totalAssets,
     todayStart,
     urgentLiability,

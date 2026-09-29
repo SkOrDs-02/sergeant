@@ -12,6 +12,11 @@
 // вже були; чого не було — нічого, що заважає створити розсинхрон ЛОКАЛЬНО.
 // Автор дізнавався про нього лише коли червонів чужий відкритий PR.
 //
+// AI-NOTE: (2026-09-23) CI на цьому репо більше не існує (Bitbucket, немає
+// `bitbucket-pipelines.yml`; `.github/workflows/*` не виконуються). Усі
+// згадки «CI» нижче в цьому файлі - історичний контекст, чому хук
+// з'явився, а не діюча підстраховка: цей хук тепер єдина перевірка.
+//
 // AI-CONTEXT: цей скрипт не додає НОВОГО класу блокувань. Кожна перевірка
 // тут уже стоїть PR-гейтом (`api:check-openapi` — у contract-tests.yml,
 // решта — у docs-automation.yml, джоби `docs-freshness`, `daily-brief`,
@@ -62,8 +67,9 @@
 //   node scripts/pre-commit-derived-artifacts.mjs --openapi  [files…]
 //
 // Opt-out: `SERGEANT_NO_DERIVED_CHECK=1 git commit …` — для проміжного
-// коміту в гілці. Хук при цьому НЕ пропускається (Hard Rule #7), і CI-гейт
-// лишається на місці.
+// коміту в гілці. Хук при цьому НЕ пропускається (Hard Rule #7); нічого
+// іншого це не перевірить (CI немає), тому пропуск лишає розсинхрон до
+// наступного запуску цього самого хука.
 
 import { spawn } from "node:child_process";
 import { appendFileSync, readFileSync } from "node:fs";
@@ -205,7 +211,7 @@ export function formatFailure(failures) {
     `    pnpm ${failures.map((f) => f.fix).join(" && pnpm ")}`,
     ...(paths.length > 0 ? [`    git add ${paths.join(" ")}`] : []),
     "",
-    "  Ці ж перевірки стоять PR-гейтом — без них червонітиме CI, а не тільки цей хук.",
+    "  CI на це не запуститься (репо на Bitbucket, CI немає) - цей хук єдина перевірка.",
     "  Проміжний коміт: SERGEANT_NO_DERIVED_CHECK=1 git commit …",
     "",
   ];

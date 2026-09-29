@@ -15,6 +15,8 @@
 import { useNavigate } from "react-router-dom";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
+import { LocalWeekReport } from "./LocalWeekReport";
+import { useFinykWeekReport } from "../../modules/finyk/hooks/useFinykWeekReport";
 import { DailyNudge } from "../onboarding/DailyNudge";
 import { HubInsightsPanel } from "./HubInsightsPanel";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
@@ -68,6 +70,14 @@ export interface HubInsightsBlockProps {
   digestExpanded: boolean;
   setDigestExpanded: (v: boolean) => void;
   showDigestFooter: boolean;
+  /**
+   * Вісь дії (спека `hub-action-axis.md`): інсайти модулів і решта
+   * рекомендацій уже живуть у купі «Зараз», тож блок лишає собі лише
+   * пораду коуча, nudge і звіт тижня — і називається відповідно.
+   */
+  axis?: boolean | undefined;
+  /** Фінік серед активних модулів: без нього звіту тижня з грошей немає. */
+  finykActive?: boolean | undefined;
 }
 
 export function HubInsightsBlock({
@@ -90,10 +100,17 @@ export function HubInsightsBlock({
   digestExpanded,
   setDigestExpanded,
   showDigestFooter,
+  axis = false,
+  finykActive = true,
 }: HubInsightsBlockProps) {
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
   const askAiDisabled = useAskAiQuotaExhausted();
+  // Р23: звіт тижня з локальних даних. Він не чекає мережі, тож і підпис
+  // згорнутого блоку, поки AI-порада вантажиться чи недоступна, говорить
+  // фактом, а не «Готую пораду Сержанта…».
+  const weekReport = useFinykWeekReport(finykActive);
+  const weekHeadline = weekReport[0];
   // Реальний стан розгорнутості секції тепер живе в `HubDashboard`.
   // `CollapsibleSection` тримає дітей у DOM і згорнутою, тож він потрібен
   // тут, щоб AI-порада й дайджест не рахували показ, якого користувач не
@@ -124,27 +141,31 @@ export function HubInsightsBlock({
       storageKey={HUB_INSIGHTS_OPEN_STORAGE_KEY}
       defaultOpen={insightsDefaultOpen}
       onOpenChange={onInsightsOpenChange}
-      title="Що зараз важливо"
+      title={axis ? "Порада й звіт тижня" : "Що зараз важливо"}
       collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
-          ? "Готую AI-пораду…"
+          ? (weekHeadline ?? "Готую пораду Сержанта…")
           : coachError
             ? // AI-порада недоступна (anon/quota/мережа). Не лякаємо
-              // «збоєм» — показуємо реальні інсайти, якщо є, інакше
-              // спокійний нейтральний підпис.
-              (rest[0]?.title ?? "Порада Сержанта зараз недоступна")
+              // «збоєм» — показуємо реальні інсайти, якщо є, далі звіт
+              // тижня, інакше спокійний нейтральний підпис.
+              ((axis ? undefined : rest[0]?.title) ??
+              weekHeadline ??
+              "Порада Сержанта зараз недоступна")
             : // Show first actionable insight title verbatim so the collapsed
-              // pill carries real value instead of a generic count.
-              (rest[0]?.title ??
+              // pill carries real value instead of a generic count. Під
+              // віссю рекомендації живуть у «Зараз», тож підпис — про те,
+              // що всередині.
+              ((axis ? undefined : rest[0]?.title) ??
               (digestFresh
-                ? "Порада Сержанта + свіжий дайджест"
+                ? "Порада Сержанта + свіжий звіт тижня"
                 : activeNudge && !reengagementShow
                   ? "Порада Сержанта + нагадування"
                   : "Порада Сержанта на день"))
       }
     >
-      {moduleInsights.length > 0 && (
+      {!axis && moduleInsights.length > 0 && (
         <div className="space-y-1.5">
           {moduleInsights.map((insight) => (
             <InsightCard
@@ -171,6 +192,8 @@ export function HubInsightsBlock({
         adviceId={coachAdviceId}
         sectionOpen={insightsOpen}
       />
+      {/* AI-порада над локальним звітом, не замість нього (Р23). */}
+      <LocalWeekReport lines={weekReport} />
       {activeNudge && !reengagementShow && (
         <DailyNudge
           nudge={activeNudge}
@@ -178,11 +201,13 @@ export function HubInsightsBlock({
           onDismiss={dismissNudge}
         />
       )}
-      <HubInsightsPanel
-        items={rest as Rec[]}
-        onOpenModule={openInsightTarget}
-        onDismiss={dismiss}
-      />
+      {!axis && (
+        <HubInsightsPanel
+          items={rest as Rec[]}
+          onOpenModule={openInsightTarget}
+          onDismiss={dismiss}
+        />
+      )}
       {digestExpanded ? (
         <WeeklyDigestCard
           onCollapse={() => setDigestExpanded(false)}

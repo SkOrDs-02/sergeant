@@ -1,7 +1,7 @@
 # Дослідження ЦА: трекери — чи юзають, для чого, чому кидають
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-10-04.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Active → Reference: дизайн дослідження, виконання не розпочато). **Next review:** 2026-12-16.
+> **Status:** Reference — дизайн дослідження (червень 2026); прогін не розпочато, шаблони — в [`audience-discovery-kit/`](./audience-discovery-kit/README.md)
 
 > Дизайн exploratory-дослідження ЦА Sergeant перед/під час раннього запуску.
 > Двоступеневий метод: **глибинні інтервʼю (qual)** → **масове опитування (quant)**.

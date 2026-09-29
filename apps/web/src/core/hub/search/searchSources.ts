@@ -1,5 +1,9 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
+import {
+  formatMoney,
+  formatMoneyFromKopecks,
+  pluralExercises,
+} from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
@@ -42,7 +46,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           id: `finyk_tx_${tx.id || time}`,
           module: "finyk",
           moduleLabel: "Фінік",
-          title: tx.description || tx.comment || "Транзакція",
+          title: tx.description || tx.comment || "Операція",
           subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
           icon: "credit-card",
           target: { kind: "module", moduleId: "finyk" },
@@ -166,7 +170,7 @@ function searchFizruk(tokens: string[]): Hit[] {
         subtitle:
           dateLabel +
           (itemsRaw.length
-            ? ` · ${itemsRaw.length} вправ · ${fullTokensText}`
+            ? ` · ${itemsRaw.length} ${pluralExercises(itemsRaw.length)} · ${fullTokensText}`
             : ""),
         icon: "dumbbell",
         target: { kind: "module", moduleId: "fizruk" },

@@ -22,10 +22,12 @@ import {
 // § Performance budgets, історія `vendor-sqlite`).
 import {
   readActiveSqliteVfs,
+  readSqliteVfsFallbackReason,
   type SqliteVfsName,
 } from "../db/storageBackendState";
 import { probeOpfsInWorker } from "../db/opfsProbe";
 import type { OpfsProbeResult } from "../db/opfsProbe.worker";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 
 type RowTone = "ok" | "warn" | "err";
 
@@ -49,10 +51,12 @@ const COPY = {
   rejectedEmpty: "Немає",
   storage: "Сховище",
   storageUnknown: "Ще не відкривали",
-  storageOpfs: "OPFS, файли",
-  storageLocalStorage: "localStorage, ліміт ~5 МБ",
+  storageOpfs: "Файлове сховище браузера",
+  storageLocalStorage: "Просте сховище браузера, ліміт ~5 МБ",
   storageMemory: "Лише памʼять, до перезапуску",
-  opfsWorker: "OPFS у фоні",
+  storageOtherTab:
+    "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
+  opfsWorker: "Файлове сховище у фоні",
   opfsWorkerChecking: "Перевіряю…",
   opfsWorkerOk: "Доступний",
   retry: "Повторити синхронізацію",
@@ -76,13 +80,10 @@ function purgeNoticeBody(purged: number, purgedAtIso: string): string {
     few: "старі записи",
     many: "старих записів",
   });
-  const dateLabel = new Date(purgedAtIso).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "long",
-  });
+  const dateLabel = formatDayMonth(new Date(purgedAtIso));
   return (
     `${purged} ${noun} синхронізації видалено ${dateLabel} (старіші за 30 днів)` +
-    ` — сервер їх так і не отримав, ці зміни втрачено.`
+    `: сервер їх так і не отримав, ці зміни втрачено.`
   );
 }
 
@@ -113,6 +114,10 @@ function describeVfs(vfs: SqliteVfsName | null): {
   tone: RowTone;
 } {
   if (vfs === "opfs-sahpool") return { value: COPY.storageOpfs, tone: "ok" };
+  // Причина йде поперед назви сховища: «Лише памʼять» описує наслідок, а
+  // діяти можна лише знаючи причину - і саме цю причину людина усуває сама.
+  if (readSqliteVfsFallbackReason() === "pool-busy")
+    return { value: COPY.storageOtherTab, tone: "err" };
   if (vfs === "kvvfs") return { value: COPY.storageLocalStorage, tone: "warn" };
   if (vfs === "memory") return { value: COPY.storageMemory, tone: "err" };
   return { value: COPY.storageUnknown, tone: "ok" };
@@ -222,7 +227,7 @@ export function SyncStatusSheet({
           className={cn(
             "mt-3 w-full min-h-[44px] rounded-xl font-semibold transition-colors",
             "bg-brand-soft text-brand-strong hover:bg-brand-soft-hover",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
           {COPY.retry}
@@ -245,7 +250,7 @@ export function SyncStatusSheet({
             className={cn(
               "mt-2 w-full min-h-[44px] rounded-xl font-semibold transition-colors",
               "bg-warning/10 text-warning-strong hover:bg-warning/15",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
             )}
           >
             {COPY.purgeNoticeDismiss}

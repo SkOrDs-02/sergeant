@@ -268,7 +268,7 @@ describe("useSWUpdate — defer-while-busy", () => {
       window.dispatchEvent(new Event("pwa-offline-ready"));
     });
 
-    expect(mockToastSuccess).toHaveBeenCalledWith(
+    expect(mockToastInfo).toHaveBeenCalledWith(
       "Додаток готовий до роботи офлайн",
       4000,
     );

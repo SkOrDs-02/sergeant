@@ -451,7 +451,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
     fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
-    expect(toastMock.success).toHaveBeenCalledWith("Видалив витрату");
+    expect(toastMock.success).toHaveBeenCalledWith("Витрату видалено");
     expect(showUndoToast).not.toHaveBeenCalled();
   });
 
@@ -463,7 +463,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(showUndoToast).toHaveBeenCalledWith(
       toastMock,
-      expect.objectContaining({ msg: "Видалив витрату" }),
+      expect.objectContaining({ msg: "Витрату видалено" }),
     );
   });
 });
@@ -522,7 +522,7 @@ describe("FinykApp (extra) — URL sync effect", () => {
     storageMock.loadFromUrl.mockReturnValue(true);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     expect(toastMock.success).toHaveBeenCalledWith(
-      "Налаштування синхронізовано!",
+      "Налаштування синхронізовано.",
     );
   });
 
@@ -652,7 +652,7 @@ describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
         onOpenSettings={onOpenSettings}
       />,
     );
-    const link = screen.getByText("Оновити токен у Налаштуваннях Hub");
+    const link = screen.getByText("Оновити токен у Налаштуваннях");
     fireEvent.click(link);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onBackToHub).not.toHaveBeenCalled();
@@ -672,7 +672,7 @@ describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
     } as unknown as ReturnType<typeof useMonobank>);
     render(<FinykApp onOpenAuth={NOOP_AUTH} onBackToHub={vi.fn()} />);
     expect(
-      screen.queryByText("Оновити токен у Налаштуваннях Hub"),
+      screen.queryByText("Оновити токен у Налаштуваннях"),
     ).not.toBeInTheDocument();
   });
 });
@@ -818,6 +818,10 @@ describe("FinykApp (extra) — page routing", () => {
 
 describe("FinykApp (extra) — auto-close login overlay when clientInfo arrives", () => {
   it("closes the overlay when clientInfo becomes non-null after opening", () => {
+    // Банер «підключити банк» живе лише на Огляді, а попередній describe
+    // лишає в моці маршруту постійне значення (`clearAllMocks` його не
+    // скидає), тож сторінку задаємо явно.
+    vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
     const { rerender } = render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     fireEvent.click(screen.getByText("Підключити"));
     expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();

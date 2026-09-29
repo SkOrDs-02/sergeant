@@ -3,8 +3,8 @@
  * Status: Active
  */
 import { memo } from "react";
-import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
 
 interface FirstInsightBannerProps {
   onSetBudget: () => void;
@@ -26,42 +26,26 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         className="w-10 h-10 shrink-0 rounded-2xl bg-finyk/15 flex items-center justify-center"
         aria-hidden
       >
-        <Icon name="lightbulb" size={20} aria-hidden />
+        <Icon name="lightbulb" size="lg" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-style-label text-text">
           Ось куди йдуть твої гроші
         </div>
-        <div className="text-style-caption text-muted mt-0.5">
+        <div className="text-style-body text-muted mt-0.5">
           Хочеш поставити бюджет, і бачити, коли починаєш виходити за рамки?
         </div>
+        {/* `Button`, а не ручні кнопки: той дає кільце фокусу, `-strong`
+            заливку без розбавлення на hover і 44px на coarse-pointer. */}
         <div className="flex gap-2 mt-3">
-          <button
-            type="button"
-            onClick={onSetBudget}
-            className="px-3 py-1.5 rounded-xl bg-finyk-strong text-white text-style-caption hover:bg-finyk-strong/80 transition"
-          >
+          <Button variant="solid" tone="finyk" size="sm" onClick={onSetBudget}>
             Поставити бюджет
-          </button>
-          <button
-            type="button"
-            onClick={onDismiss}
-            className="px-3 py-1.5 rounded-xl text-style-caption text-muted hover:text-text hover:bg-panelHi transition"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDismiss}>
             Пізніше
-          </button>
+          </Button>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="xs"
-        iconOnly
-        onClick={onDismiss}
-        aria-label="Закрити підказку"
-        className="shrink-0 -mr-1 text-muted hover:text-text"
-      >
-        <Icon name="close" size={16} />
-      </Button>
     </div>
   );
 };

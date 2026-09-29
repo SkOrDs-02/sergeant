@@ -2,11 +2,13 @@
    Chat-action executor (outside React): tx splits stay on LS; bank transactions
    now come from the Mono mirror reader (Dual-write teardown Phase 3). */
 import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
+import { formatDateNumeric, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type { ExportReportAction, ChatActionResult } from "../types";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function exportReport(action: ExportReportAction): ChatActionResult {
   const { period, from, to } = action.input || {};
@@ -48,14 +50,13 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
     0,
   );
   const totalIncome = income.reduce((s, t) => s + t.amount / 100, 0);
-  const dayFmt = new Intl.DateTimeFormat("uk-UA", { timeZone: "Europe/Kyiv" });
-  const fromStr = dayFmt.format(fromDate);
-  const toStr = dayFmt.format(toDate);
+  const fromStr = formatDateNumeric(fromDate, { timeZone: KYIV_TIME_ZONE });
+  const toStr = formatDateNumeric(toDate, { timeZone: KYIV_TIME_ZONE });
   return [
     `Звіт за ${fromStr} – ${toStr}:`,
-    `Дохід: ${Math.round(totalIncome)} грн`,
-    `Витрати: ${Math.round(totalExpense)} грн`,
-    `Баланс: ${Math.round(totalIncome - totalExpense)} грн`,
-    `Транзакцій: ${filtered.length} (витрат: ${expenses.length}, доходів: ${income.length})`,
+    `Дохід: ${formatNumberUk(Math.round(totalIncome))} грн`,
+    `Витрати: ${formatNumberUk(Math.round(totalExpense))} грн`,
+    `Баланс: ${formatNumberUk(Math.round(totalIncome - totalExpense))} грн`,
+    `Операцій: ${filtered.length} (витрат: ${expenses.length}, доходів: ${income.length})`,
   ].join("\n");
 }

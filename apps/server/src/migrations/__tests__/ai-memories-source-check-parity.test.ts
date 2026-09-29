@@ -32,12 +32,15 @@
 // (покриває і inline CHECK у CREATE TABLE 025, і ALTER TABLE ... ADD
 // CONSTRAINT у 028/068/118).
 //
-// Фаза 1 ініціативи 0024 (2026-09-03): `ALLOWED_MEMORY_SOURCES` звужено до
-// того, що реально пишеться, а CHECK ще тримає шість знятих значень для
-// legacy-рядків. Тому SQL порівнюється зі `STORED_MEMORY_SOURCES`
-// (= ALLOWED + RETIRED), а окремий кейс вимагає, щоб ALLOWED і RETIRED не
-// перетинались. Коли PR-3 звузить CHECK, `RETIRED_MEMORY_SOURCES`
-// спорожніє, і цей тест знову зведеться до ALLOWED ↔ SQL.
+// Ініціатива 0024: Фаза 1 (PR-1, 2026-09-03) звузила `ALLOWED_MEMORY_SOURCES`
+// до того, що реально пишеться, лишивши CHECK широким (шість знятих значень
+// для legacy-рядків) — тому тест тимчасово звіряв SQL зі
+// `STORED_MEMORY_SOURCES` (= ALLOWED + RETIRED). Фаза 2 (PR-3, міграція 144,
+// 2026-09-19) звузила й CHECK до тих самих чотирьох значень:
+// `RETIRED_MEMORY_SOURCES` спорожнів, і `STORED_MEMORY_SOURCES` тепер
+// дорівнює `ALLOWED_MEMORY_SOURCES` — порівняння нижче знову звичайний
+// ALLOWED ↔ SQL, лише через ім'я STORED (лишене як стабільний контракт
+// на випадок майбутнього розширення).
 
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";

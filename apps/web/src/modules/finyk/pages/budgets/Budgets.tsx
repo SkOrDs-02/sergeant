@@ -25,6 +25,7 @@ import {
   calculateTotalExpenseFact,
   filterTransactionsForLimitPeriod,
   limitBudgetCategoryIds,
+  projectMonthEndSpend,
 } from "@sergeant/finyk-domain/domain/budget";
 import {
   filterStatTransactions,
@@ -177,7 +178,7 @@ export function Budgets({
 
   // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
   const now = useMemo(() => new Date(), []);
-  const { monthStart } = getCurrentMonthContext(now);
+  const { monthStart, daysPassed, daysInMonth } = getCurrentMonthContext(now);
 
   // Manual expenses/income live in storage (LS + React state), not in the
   // bank tx stream — the fact-vs-plan selectors below must merge them in
@@ -295,6 +296,12 @@ export function Budgets({
     [statTx, txSplits],
   );
   const factSavings = factIncome - totalExpenseFact;
+  // Прогноз з точних копійок (Р7-Р8), не з округленого `totalExpenseFact`.
+  const forecastExpense = projectMonthEndSpend(
+    monthlySummary.spentMinor / 100,
+    daysPassed,
+    daysInMonth,
+  );
 
   // Per-(month, category) dismissed-advice registry. Persisted under a
   // dedicated localStorage namespace so it survives reloads but doesn't
@@ -416,21 +423,24 @@ export function Budgets({
       });
       setShowForm(false);
     },
-    [setBudgets],
+    [setBudgets, setShowForm],
   );
 
   const handleCancelForm = useCallback(() => {
     setShowForm(false);
-  }, []);
+  }, [setShowForm]);
 
   // Пункти комбінованого пікера «Запланувати» (F2): «Ліміт»/«Ціль»
   // відкривають ЦЮ форму на потрібній вкладці, «Підписка» делегує в
   // `onAddSubscription` (форма підписки живе в іншому React-піддереві —
   // `PlanningSubscriptions`, див. коментар на `BudgetsProps.onAddSubscription`).
-  const openBudgetForm = useCallback((type: BudgetFormType) => {
-    setFormType(type);
-    setShowForm(true);
-  }, []);
+  const openBudgetForm = useCallback(
+    (type: BudgetFormType) => {
+      setFormType(type);
+      setShowForm(true);
+    },
+    [setFormType, setShowForm],
+  );
 
   // DataState contract: `data === undefined` triggers the skeleton slot.
   // First-paint of the Budgets page treats "loading and no realTx yet" as
@@ -498,6 +508,7 @@ export function Budgets({
               pctExpense={pctExpense}
               isOver={isOver}
               daysLeft={daysLeft2}
+              forecastExpense={forecastExpense}
               firstRunHint={monthlyPlanFirstRunHint}
               onDismissFirstRunHint={onDismissMonthlyPlanFirstRunHint}
             />
@@ -508,6 +519,7 @@ export function Budgets({
               limitsOpen={limitsOpen}
               toggleLimits={toggleLimits}
               monthStart={monthStart}
+              now={now}
               limitBudgets={limitBudgets}
               budgets={budgets}
               setBudgets={setBudgets}
@@ -568,7 +580,7 @@ export function Budgets({
                     label: messages.finyk.planning.addSubscription,
                     description:
                       messages.finyk.planning.addSubscriptionDescription,
-                    icon: <Icon name="refresh-cw" size={16} aria-hidden />,
+                    icon: <Icon name="refresh-cw" size="md" aria-hidden />,
                     onSelect: () => onAddSubscription?.(),
                   },
                   {
@@ -576,7 +588,7 @@ export function Budgets({
                     id: "limit",
                     label: messages.finyk.planning.addLimitLabel,
                     description: messages.finyk.planning.addLimitDescription,
-                    icon: <Icon name="flag" size={16} aria-hidden />,
+                    icon: <Icon name="flag" size="md" aria-hidden />,
                     onSelect: () => openBudgetForm("limit"),
                   },
                   {
@@ -584,7 +596,7 @@ export function Budgets({
                     id: "goal",
                     label: messages.finyk.planning.addGoalLabel,
                     description: messages.finyk.planning.addGoalDescription,
-                    icon: <Icon name="target" size={16} aria-hidden />,
+                    icon: <Icon name="target" size="md" aria-hidden />,
                     onSelect: () => openBudgetForm("goal"),
                   },
                 ]}

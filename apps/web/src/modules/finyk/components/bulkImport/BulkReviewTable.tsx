@@ -178,7 +178,7 @@ export function BulkReviewTable({
           </Select>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={disabled || !bulkCategory || selectedExpenseCount === 0}
             onClick={() => {
@@ -247,7 +247,7 @@ export function BulkReviewTable({
                       tone="soft"
                       size="xs"
                     >
-                      {row.direction === "income" ? "дохід" : "витрата"}
+                      {row.direction === "income" ? "надходження" : "витрата"}
                     </Badge>
                     {/* Бейджі — підозра, а не вирок: щойно людина сама
                         поставила галочку «імпортувати», підозра знята, і

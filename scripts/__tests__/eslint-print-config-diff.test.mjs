@@ -108,7 +108,7 @@ describe("snapshotPathFor — slug generation", () => {
 });
 
 describe("FIXTURES — coverage invariants", () => {
-  it("covers every independently-linted monorepo surface (one fixture per package that owns an eslint.config.js)", () => {
+  it("lists exactly the surfaces the gate is meant to sample", () => {
     // `tools/openclaw` is intentionally absent: it has no `lint` script (turbo
     // never lints it) and no standalone `eslint.config.js`, so there is no
     // per-package config to resolve. Its security rules live in the shared
@@ -119,10 +119,23 @@ describe("FIXTURES — coverage invariants", () => {
     // на підтеку (`ukrainian-copy` на копійних теках, 2026-09-14). Тобто
     // інваріант «один фікстур на пакет» від цього дня не єдиний — до нього
     // додається «плюс точка на кожен скоупований блок правил».
+    //
+    // ЩО ЦЕЙ ТЕСТ РОБИТЬ І ЧОГО НЕ РОБИТЬ. Він звіряє FIXTURES із
+    // переліком нижче, тобто ловить ТИХЕ зникнення точки — але не
+    // доводить, що покрито кожен пакет із власним `eslint.config.js`.
+    // Заміром 2026-09-14: таких пакетів 15, а точок тут 8. Попередній
+    // заголовок тесту обіцяв саме повне покриття, і через це `landing`
+    // (власний `eslint.config.js` є з народження) роками був поза
+    // гейтом, а тест лишався зеленим. Вивести перелік із файлової
+    // системи можна, але це відкриє ще сім непокритих пакетів — окрема
+    // робота, не цей PR.
     const expected = [
       "server",
       "server-copy",
+      "server-modules-copy",
+      "server-routes-copy",
       "web",
+      "landing",
       "mobile",
       "mobile-shell",
       "shared",

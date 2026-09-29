@@ -287,7 +287,7 @@ describe("useOverviewData", () => {
         {
           id: "tx-spotify",
           amount: -19900,
-          time: new Date(2026, 4, 10, 12, 0).getTime(),
+          time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
           date: "2026-05-10",
           description: "spotify premium",
           categoryId: "subscriptions",
@@ -424,7 +424,7 @@ describe("useOverviewData", () => {
               {
                 id: "tx-spotify",
                 amount: -19900,
-                time: new Date(2026, 4, 10, 12, 0).getTime(),
+                time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
                 date: "2026-05-10",
                 description: "spotify premium",
                 categoryId: "subscriptions",
@@ -491,6 +491,23 @@ describe("useOverviewData", () => {
         }),
       );
       expect(result.current.showFirstInsight).toBe(true);
+    });
+
+    it("showFirstInsight is false when budgets already exist", () => {
+      // Підказка кличе поставити бюджет; людині з бюджетами вона лише
+      // відсуває першу цифру огляду вниз.
+      localStorage.removeItem("finyk_first_insight_seen_v1");
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono(),
+          storage: buildStorage({
+            budgets: [
+              { id: "b1", type: "limit", categoryId: "food", limit: 5000 },
+            ] as UseOverviewDataParams["storage"]["budgets"],
+          }),
+        }),
+      );
+      expect(result.current.showFirstInsight).toBe(false);
     });
 
     it("showFirstInsight is false when the seen-key is present", () => {

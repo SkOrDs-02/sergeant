@@ -59,10 +59,14 @@ vi.mock("posthog-node", () => ({ PostHog: posthogMock.PostHog }));
 
 import {
   AI_GENERATION_EVENT,
+  AI_SPAN_EVENT,
   AI_SYSTEM_DISTINCT_ID,
   type AiGenerationEvent,
+  type AiSpanEvent,
   buildAiGenerationProperties,
+  buildAiSpanProperties,
   captureAiGeneration,
+  captureAiSpan,
   flushPostHogAi,
   getPostHogAiClient,
   isPostHogAiEnabled,
@@ -260,6 +264,106 @@ describe("captureAiGeneration", () => {
     expect(loggerMock.warn).toHaveBeenCalledTimes(1);
     expect(loggerMock.warn).toHaveBeenCalledWith(
       expect.objectContaining({ msg: "posthog_ai_init_failed" }),
+    );
+  });
+});
+
+function baseSpanEvent(): AiSpanEvent {
+  return {
+    userId: "user_abc",
+    traceId: "trace-1",
+    spanName: "finyk_get_balance",
+    isError: false,
+    latencyMs: 2500,
+  };
+}
+
+// Ініціатива 0025, Фаза 2 — `$ai_span` на tool-виклики в chat tool-loop.
+describe("buildAiSpanProperties — allowlist за конструкцією", () => {
+  it("мапить дозволені поля у формат PostHog AI Observability", () => {
+    const props = buildAiSpanProperties(baseSpanEvent());
+    expect(props).toEqual({
+      $ai_trace_id: "trace-1",
+      $ai_span_name: "finyk_get_balance",
+      $ai_is_error: false,
+      $ai_latency: 2.5,
+    });
+  });
+
+  it("відкидає невідомі ключі — аргументи tool-а й контент не мають шляху в подію", () => {
+    const smuggled = {
+      ...baseSpanEvent(),
+      $ai_input_state: { amount: 5000 },
+      $ai_output_state: { balanceUah: 124_000 },
+      toolArgs: { merchant: "Сільпо" },
+    } as unknown as AiSpanEvent;
+    const props = buildAiSpanProperties(smuggled) as unknown as Record<
+      string,
+      unknown
+    >;
+    for (const forbidden of [
+      "$ai_input_state",
+      "$ai_output_state",
+      "toolArgs",
+    ]) {
+      expect(props).not.toHaveProperty(forbidden);
+    }
+    expect(Object.keys(props).sort()).toEqual(
+      Object.keys(buildAiSpanProperties(baseSpanEvent())).sort(),
+    );
+  });
+
+  it("без is_error/parentId/latency — дефолт false, без опційних полів", () => {
+    const props = buildAiSpanProperties({
+      traceId: "trace-2",
+      spanName: "",
+    });
+    expect(props.$ai_span_name).toBe("unknown");
+    expect(props.$ai_is_error).toBe(false);
+    expect(props).not.toHaveProperty("$ai_latency");
+    expect(props).not.toHaveProperty("$ai_parent_id");
+  });
+});
+
+describe("captureAiSpan", () => {
+  beforeEach(() => {
+    envMock.POSTHOG_AI_OBSERVABILITY_KEY = "phc_test";
+  });
+
+  it("шле $ai_span з distinctId = userId і лише allowlist-властивостями", () => {
+    expect(captureAiSpan(baseSpanEvent())).toBe(true);
+    const capture = posthogMock.instances[0]!.capture;
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      distinctId: string;
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.event).toBe(AI_SPAN_EVENT);
+    expect(arg.distinctId).toBe("user_abc");
+    expect(arg.properties).toEqual(buildAiSpanProperties(baseSpanEvent()));
+  });
+
+  it("без userId — системний distinctId `server`", () => {
+    captureAiSpan({ ...baseSpanEvent(), userId: undefined });
+    const arg = posthogMock.instances[0]!.capture.mock.calls[0]![0] as {
+      distinctId: string;
+    };
+    expect(arg.distinctId).toBe(AI_SYSTEM_DISTINCT_ID);
+  });
+
+  it("без ключа — вимкнено: capture повертає false, no-op", () => {
+    envMock.POSTHOG_AI_OBSERVABILITY_KEY = "";
+    resetPostHogAiForTests();
+    expect(captureAiSpan(baseSpanEvent())).toBe(false);
+  });
+
+  it("fail-open: помилка SDK у capture глушиться warn-ом і не кидається", () => {
+    posthogMock.setThrowOnCapture(true);
+    expect(() => captureAiSpan(baseSpanEvent())).not.toThrow();
+    expect(captureAiSpan(baseSpanEvent())).toBe(false);
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "posthog_ai_span_capture_failed" }),
     );
   });
 });

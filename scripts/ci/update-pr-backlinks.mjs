@@ -2,24 +2,28 @@
 // scripts/ci/update-pr-backlinks.mjs
 //
 // Update `docs/governance/pr-ledger/index.json` and the in-doc PR-BACKLINKS block
-// at the end of each canonical doc (ADR / initiative / playbook /
-// hard-rule). Driven by the `.github/workflows/pr-backlinks.yml`
-// GitHub Action on every merged PR; can also run locally via
-// `--pr <NUMBER>` for backfill or `--rebuild-blocks` for block
-// regeneration after a manual ledger edit.
+// at the end of each canonical doc (ADR / initiative / playbook / hard-rule).
+//
+// AI-CONTEXT: до 2026-09-23 писача запускав `.github/workflows/pr-backlinks.yml`
+// після кожного мержу, а метадані брались через `gh pr view`. Переїзд на
+// Bitbucket забрав обидві половини одразу: воркфлоу не виконується, `gh` з
+// Bitbucket не працює. Реєстр тихо став на 2026-09-17, і жоден гейт цього не
+// показав, бо `--check` звіряє лише реєстр ↔ блоки ↔ схему, тобто ФОРМУ, а не
+// ПОВНОТУ (аудит DG-3). Тепер джерело метаданих - Bitbucket API, а тригером
+// служить `pre-push` хук, який після пуша повідомляє про відставання.
 //
 // Modes:
-//   --pr <NUMBER>           — fetch PR metadata via `gh pr view`, upsert
-//                             into the ledger, and regenerate blocks in
-//                             every touched canonical doc that still
-//                             exists. Requires the `gh` CLI on PATH.
-//   --rebuild-blocks        — re-render every in-doc block from the
-//                             current ledger (no GitHub access needed).
-//                             Useful after a ledger edit or schema bump.
-//   --check                 — same as `--rebuild-blocks` but writes
-//                             nothing; exits 1 on any difference between
-//                             the on-disk blocks and the freshly-rendered
-//                             ones, or any ledger schema violation.
+//   --sync                  — дочитати з Bitbucket усі MERGED PR, яких ще
+//                             немає в реєстрі, і перебудувати блоки. Робочий
+//                             режим: саме його радить `pre-push`.
+//   --pr <NUMBER>           — те саме для одного PR (бекфіл, точкова правка).
+//   --stale                 — нічого не пише: рахує, скількох змерджених PR
+//                             бракує в реєстрі. Exit 0 завжди, число у stdout.
+//   --rebuild-blocks        — перерендерити блоки з поточного реєстру
+//                             (без мережі). Після ручної правки реєстру.
+//   --check                 — як `--rebuild-blocks`, але нічого не пише;
+//                             exit 1 на розбіжності блоків або порушенні
+//                             схеми. Це крок `pnpm lint`.
 //
 // Phase 5 of Initiative 0014. See ADR-0061 for the storage strategy.
 
@@ -32,7 +36,10 @@ import {
 } from "node:fs";
 import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
+import {
+  currentSlug as currentRepoSlug,
+  prBaseForEntry as prBaseFor,
+} from "../docs/repo-identity.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,6 +48,12 @@ const REPO_ROOT = resolve(__dirname, "../..");
 const LEDGER_PATH = resolve(REPO_ROOT, "docs/governance/pr-ledger/index.json");
 const SCHEMA_VERSION = 1;
 const TOP_N_IN_DOC = 5;
+
+// Стеля скану змерджених PR за один прогін. Реально їх дванадцять, тож запас
+// великий; сама стеля існує, щоб `--sync` не перетворився на нескінченний обхід
+// історії, якщо реєстр колись обнулять. Спрацювання не мовчазне: викликач
+// друкує, що скан обрізано.
+const SYNC_LIMIT = 200;
 
 const BLOCK_START = "<!-- AUTO-GENERATED: PR-BACKLINKS-START -->";
 const BLOCK_END = "<!-- AUTO-GENERATED: PR-BACKLINKS-END -->";
@@ -55,7 +68,7 @@ const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 
 // База посилання на PR.
 //
-// `LEGACY_PR_BASE` — старе репо `Skords-01/Sergeant`, звідки прийшли 20 із 37
+// `legacyPrSlug` у реєстрі — старе репо `Skords-01/Sergeant`, звідки прийшли 20 із 37
 // записів леджера. Їхні номери (2876, 3611, …) у поточному репо не існують,
 // тож переписати всі посилання на новий хост означало б наробити 544 битих
 // лінки замість робочих.
@@ -69,14 +82,19 @@ const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 // блок у свіжому ADR-0094 вів на `Skords-01/Sergeant/pull/1134` — сторінку,
 // якої немає. Автоматика цього не показала б, бо вона не відкриває PR-и з
 // 2026-08-28 (див. § Backfill у правилі 26).
-const LEGACY_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
-const CURRENT_PR_BASE = "https://github.com/SkOrDs-02/sergeant/pull";
-const CURRENT_REPO = "SkOrDs-02/sergeant";
-
-/** База для конкретного запису: явне поле `repo` → нове репо, інакше легасі. */
-function prBaseFor(pr) {
-  return pr.repo === CURRENT_REPO ? CURRENT_PR_BASE : LEGACY_PR_BASE;
-}
+//
+// 2026-09-17: репо переїхало втретє (`zaebal-beep/Sergeant`), і зашитий
+// «поточний» слуг знову дав мертві лінки — цього разу на 22 дозаповнені
+// записи. Тому база тепер береться з самого поля `repo` (яке репо записано,
+// на те й лінк), а зашитим лишається лише легасі-фолбек для записів без поля.
+//
+// 2026-09-19: переїзд ЧЕТВЕРТИЙ (`klas149/Sergeant`), і стало видно, що
+// зашитий легасі-слуг тут — одна з ТРЬОХ незалежних копій тієї самої
+// величини (друга — у `scripts/docs/generate-status.mjs`, третя — поле
+// `repo` кожного запису леджера). Копії розійшлись, і 93 посилання стали
+// мертвими. Слуг тепер живе в `scripts/docs/repo-identity.mjs` + реєстрі
+// `docs/governance/governance/repo-identity.json`, а розбіжність реєстру з
+// фактичним `origin` ловить `pnpm lint:repo-slug`.
 
 // ── Canonical doc whitelist ─────────────────────────────────────────────────
 
@@ -85,7 +103,7 @@ function prBaseFor(pr) {
  * is { rootDir, recursive, excludes? }. Files matching `excludes`
  * (filename match against basename) are skipped.
  */
-const CANONICAL_DOC_ROOTS = [
+export const CANONICAL_DOC_ROOTS = [
   {
     rootDir: "docs/governance/adr",
     recursive: false,
@@ -104,6 +122,15 @@ const CANONICAL_DOC_ROOTS = [
   },
   {
     rootDir: "docs/governance/governance/rules",
+    recursive: false,
+    excludes: ["README.md"],
+  },
+  // Додано 2026-09-15. Первісне рішення виключало аудити як «snapshot-natured»;
+  // практика його спростувала — реєстр наскрізного огляду правився шість разів
+  // за день, і чотири рази розходився з кодом. Розбір — у тілі правила
+  // `docs/governance/governance/rules/26-pr-ledger-update-on-merge.md`.
+  {
+    rootDir: "docs/work/specs/audits",
     recursive: false,
     excludes: ["README.md"],
   },
@@ -190,6 +217,27 @@ function loadLedger() {
   return data;
 }
 
+/**
+ * Ключ запису — трійка host+repo+number, а не самий номер.
+ *
+ * Номер унікальний лише в межах одного репо одного хоста, і це не теорія:
+ * Bitbucket почав нумерацію заново з одиниці, тоді як у реєстрі вже лежать
+ * номери 29..3665 із трьох різних GitHub-репо. Щойно Bitbucket дійде до #29,
+ * ключ по самому номеру почав би вважати два різні PR одним і перезаписувати
+ * старіший запис - тихо, бо `upsert` на це не скаржиться.
+ *
+ * Відсутній `host` читається як `github`, відсутній `repo` - як легасі-репо,
+ * тими самими правилами, що й у `repo-identity.mjs`. Так 60 наявних записів
+ * лишаються валідними без переписування.
+ */
+export function entryKey(entry) {
+  const host = entry?.host ?? "github";
+  const repo = entry?.repo ?? "(legacy)";
+  return `${host}:${repo}#${entry?.number}`;
+}
+
+const KNOWN_HOSTS = new Set(["github", "bitbucket"]);
+
 function validateLedger(ledger) {
   const errors = [];
   if (ledger.version !== SCHEMA_VERSION)
@@ -202,15 +250,18 @@ function validateLedger(ledger) {
   }
   const seen = new Set();
   for (const pr of ledger.prs) {
+    const key = entryKey(pr);
     if (typeof pr.number !== "number" || pr.number < 1)
       errors.push(`pr ${JSON.stringify(pr.number)}: invalid number`);
-    if (seen.has(pr.number)) errors.push(`pr #${pr.number}: duplicate entry`);
-    seen.add(pr.number);
-    if (!pr.title) errors.push(`pr #${pr.number}: missing title`);
-    if (!pr.merged_at) errors.push(`pr #${pr.number}: missing merged_at`);
-    if (!pr.author) errors.push(`pr #${pr.number}: missing author`);
+    if (seen.has(key)) errors.push(`pr ${key}: duplicate entry`);
+    seen.add(key);
+    if (pr.host !== undefined && !KNOWN_HOSTS.has(pr.host))
+      errors.push(`pr ${key}: unknown host ${JSON.stringify(pr.host)}`);
+    if (!pr.title) errors.push(`pr ${key}: missing title`);
+    if (!pr.merged_at) errors.push(`pr ${key}: missing merged_at`);
+    if (!pr.author) errors.push(`pr ${key}: missing author`);
     if (!Array.isArray(pr.touchedDocs) || pr.touchedDocs.length === 0)
-      errors.push(`pr #${pr.number}: empty touchedDocs`);
+      errors.push(`pr ${key}: empty touchedDocs`);
   }
   return errors;
 }
@@ -347,26 +398,43 @@ async function rebuildAllBlocks(ledger, { write = true } = {}) {
   return diffs;
 }
 
-// ── PR fetcher (uses `gh` CLI) ──────────────────────────────────────────────
+// ── PR fetcher (Bitbucket API) ──────────────────────────────────────────────
 
-function ghJSON(args) {
-  const out = execFileSync("gh", args, { encoding: "utf8", maxBuffer: 8e6 });
-  return JSON.parse(out);
+// Токен живе в `.env` ОСНОВНОГО клону, а не worktree, і не передається
+// аргументом: у командному рядку його бути не повинно. Той самий шлях і те саме
+// міркування, що в `scripts/deploy-api.mjs` і `scripts/pre-push-merged-pr.mjs`.
+const ENV_PATH = "D:\\Sergeant\\.env";
+const BB_API = "https://api.bitbucket.org/2.0/repositories";
+
+export function readBitbucketToken(envPath = ENV_PATH) {
+  const line = readFileSync(envPath, "utf8")
+    .split(/\r?\n/)
+    .find((l) => l.startsWith("BITBUCKET_TOKEN="));
+  const token = line?.slice("BITBUCKET_TOKEN=".length).trim();
+  if (!token) {
+    throw new Error(
+      `BITBUCKET_TOKEN не знайдено в ${envPath}. Без нього реєстр не оновити: ` +
+        `метадані PR живуть лише в Bitbucket API (gh з Bitbucket не працює).`,
+    );
+  }
+  return token;
 }
 
-function ghLines(args) {
-  const out = execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64e6 });
-  return out
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+async function bbGet(token, path) {
+  const res = await fetch(`${BB_API}/${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Bitbucket API ${res.status} на ${path.split("?")[0]}`);
+  }
+  return res.json();
 }
 
 /**
  * Звірка «скільки файлів у PR» проти «скільки ми прочитали».
  *
  * Винесено окремою чистою функцією, бо саме тут була дірка: `gh pr view
- * --json files` віддає максимум 100 файлів, і для більшого PR скрипт
+ * --json files` віддавав максимум 100 файлів, і для більшого PR скрипт
  * чесно не бачив жодного канонічного документа, друкував «did not touch
  * any canonical doc» і виходив нулем. Джоба ставала зеленою, крок
  * створення follow-up PR — `skipped`, і в логах це не відрізнити від
@@ -375,70 +443,177 @@ function ghLines(args) {
  *
  * Тому неповний список — це помилка, а не привід тихо продовжити:
  * гейт, який не може виконати свою роботу, мусить сказати про це вголос.
+ *
+ * Bitbucket має ту саму пастку під іншим іменем: `diffstat` посторінковий, і
+ * зупинка на першій сторінці дала б той самий тихий недолік. Тому лічильник
+ * звіряється з полем `size` відповіді.
  */
 export function assertCompleteFileList(fetched, expected, prNumber) {
   if (!Number.isInteger(expected)) return;
   if (fetched === expected) return;
   throw new Error(
-    `PR #${prNumber}: fetched ${fetched} changed file(s) but GitHub reports ` +
+    `PR #${prNumber}: fetched ${fetched} changed file(s) but the API reports ` +
       `${expected}. Refusing to guess which docs were touched — a partial ` +
-      `list silently under-reports the ledger. Note the GitHub API caps the ` +
-      `pull-request files endpoint at 3000 files.`,
+      `list silently under-reports the ledger.`,
   );
 }
 
-function fetchPRMetadata(prNumber) {
-  // `gh pr view --json` fields documented at
-  // https://cli.github.com/manual/gh_pr_view
-  const data = ghJSON([
-    "pr",
-    "view",
-    String(prNumber),
-    "--json",
-    "number,title,mergedAt,author,changedFiles",
-  ]);
-  if (!data.mergedAt) {
-    throw new Error(`PR #${prNumber} is not merged (mergedAt is null).`);
+/** Усі шляхи, змінені в PR. Ходить по сторінках `diffstat` до кінця. */
+async function fetchChangedPaths(token, slug, prNumber) {
+  const paths = [];
+  let expected = null;
+  let page = 1;
+  for (;;) {
+    const data = await bbGet(
+      token,
+      `${slug}/pullrequests/${prNumber}/diffstat?pagelen=100&page=${page}`,
+    );
+    if (expected === null) expected = data.size ?? null;
+    for (const v of data.values ?? []) {
+      // `new` порожній у видалених файлів, `old` — у доданих.
+      const p = v.new?.path ?? v.old?.path;
+      if (p) paths.push(p);
+    }
+    if (!data.next) break;
+    page += 1;
   }
-  // Список файлів беремо окремим посторінковим запитом, а не полем
-  // `files` у `gh pr view` — див. `assertCompleteFileList` вище.
-  const repo = ghJSON([
-    "repo",
-    "view",
-    "--json",
-    "nameWithOwner",
-  ]).nameWithOwner;
-  const paths = ghLines([
-    "api",
-    `repos/${repo}/pulls/${prNumber}/files`,
-    "--paginate",
-    "-q",
-    ".[].filename",
-  ]);
-  assertCompleteFileList(paths.length, data.changedFiles, prNumber);
+  assertCompleteFileList(paths.length, expected, prNumber);
+  return paths;
+}
+
+/** Bitbucket не має `merged_at`; час мержу — це `closed_on`. */
+function normalizeMergedAt(pr) {
+  const raw = pr.closed_on ?? pr.updated_on;
+  if (!raw) return null;
+  return new Date(raw).toISOString().replace(/\.\d+Z$/, "Z");
+}
+
+/**
+ * Автор у формі `@handle`.
+ *
+ * Bitbucket логіна в цій відповіді не віддає: поля `nickname` немає навіть у
+ * явному `fields=`, є лише `display_name` - і там лежить СПРАВЖНЄ ІМʼЯ власника
+ * («Стахов Дмитрий»), а не хендл. Те саме в git: мерж-коміти, створені
+ * Bitbucket-ом, несуть реальне імʼя і в `%an`, і в `%cn`.
+ *
+ * Тому display_name сюди не пишемо. Поле `author` ніде не рендериться (блок
+ * показує лише номер, заголовок і дату), тож PII у трекованому файлі дало б
+ * рівно нуль користі - а AGENTS.md § Deployment прямо просить такого не
+ * комітити. Замість цього беремо слуг робочого простору з `repo`: він і так
+ * лежить у репо відкритим текстом, має форму хендла і для цього репо правдивий,
+ * бо PR-и тут створює лише власник.
+ *
+ * `nickname` теж не рятує: у цьому репо він приходить як «Стахов Дмитрий», бо
+ * Bitbucket за замовчуванням дорівнює його display_name. Відрізнити хендл від
+ * імені програмно не вийде (одне слово буває і тим, і тим), тож ніяких здогадів:
+ * для Bitbucket пишемо слуг робочого простору завжди.
+ *
+ * Обмеження свідоме: зʼявиться другий автор - усі його PR підпишуться слугом
+ * робочого простору. Тоді сюди треба буде тягти `account_id`, а не справжні
+ * імена.
+ */
+function normalizeAuthor(slug) {
+  const workspace = slug?.split("/")[0];
+  return `@${workspace || "unknown"}`;
+}
+
+async function fetchPRMetadata(prNumber, { token, slug }) {
+  const data = await bbGet(
+    token,
+    `${slug}/pullrequests/${prNumber}` +
+      `?fields=id,title,state,closed_on,updated_on`,
+  );
+  if (data.state !== "MERGED") {
+    throw new Error(`PR #${prNumber} не змерджений (state=${data.state}).`);
+  }
+  const paths = await fetchChangedPaths(token, slug, prNumber);
   const touchedDocs = paths.filter((p) => isCanonicalDocPath(p)).sort();
   console.log(
     `PR #${prNumber}: ${paths.length} changed file(s), ` +
       `${touchedDocs.length} canonical doc(s).`,
   );
   return {
-    number: data.number,
+    number: data.id,
     title: data.title,
-    merged_at: data.mergedAt,
-    author: `@${data.author?.login || "unknown"}`,
-    // `gh pr view` ходить у поточне репо, тож усе, що збирає ця функція,
-    // походить звідти. Без цього поля рендер узяв би легасі-базу і виписав
-    // посилання на неіснуючу сторінку.
-    repo: CURRENT_REPO,
+    merged_at: normalizeMergedAt(data),
+    author: normalizeAuthor(slug),
+    host: "bitbucket",
+    repo: slug,
     touchedDocs,
   };
+}
+
+/**
+ * Змерджені PR, найсвіжіші першими. `limit` — стеля на кількість, і якщо вона
+ * спрацювала, викликач про це каже вголос: тихо обрізаний список тут означав би
+ * рівно ту саму ваду, проти якої стоїть `assertCompleteFileList`.
+ */
+async function listMergedPRs(token, slug, limit) {
+  const out = [];
+  let page = 1;
+  for (;;) {
+    const data = await bbGet(
+      token,
+      `${slug}/pullrequests?q=${encodeURIComponent('state="MERGED"')}` +
+        `&sort=-updated_on&pagelen=50&page=${page}` +
+        `&fields=next,values.id,values.title,values.state,values.closed_on,values.updated_on`,
+    );
+    out.push(...(data.values ?? []));
+    if (!data.next || out.length >= limit) break;
+    page += 1;
+  }
+  return { prs: out.slice(0, limit), capped: out.length > limit };
+}
+
+/**
+ * PR, які вже дивились і які не торкнулись жодного канонічного документа.
+ *
+ * Без цього списку `--stale` рахував би їх вічно: більшість PR канонічних доків
+ * не чіпає, запису в реєстрі не отримує - і кожен наступний пуш нагадував би
+ * про ті самі одинадцять «пропущених». Нагадування, яке не можна погасити, за
+ * тиждень читається як шум і перестає працювати.
+ *
+ * Зберігаємо саме перелік оглянутих, а не «найбільший оглянутий номер»: PR
+ * зі старішим номером може змерджитись пізніше за новіший, і відсічка по
+ * максимуму тихо проковтнула б його - рівно той клас пропуску, проти якого це
+ * правило й існує.
+ */
+function examinedSet(ledger, host) {
+  return new Set(ledger.examined?.[host] ?? []);
+}
+
+function markExamined(ledger, host, numbers) {
+  if (numbers.length === 0) return false;
+  const before = examinedSet(ledger, host);
+  const after = new Set([...before, ...numbers]);
+  if (after.size === before.size) return false;
+  ledger.examined = {
+    ...(ledger.examined ?? {}),
+    [host]: [...after].sort((a, b) => a - b),
+  };
+  return true;
+}
+
+/** Змерджені PR, яких ще немає в реєстрі і яких ще не дивились. */
+async function findMissingPRs(ledger, { token, slug, limit }) {
+  const known = new Set(ledger.prs.map((p) => entryKey(p)));
+  const examined = examinedSet(ledger, "bitbucket");
+  const { prs, capped } = await listMergedPRs(token, slug, limit);
+  const missing = prs.filter(
+    (pr) =>
+      !known.has(entryKey({ number: pr.id, host: "bitbucket", repo: slug })) &&
+      !examined.has(pr.id),
+  );
+  missing.reverse();
+  return { missing, capped, scanned: prs.length };
 }
 
 // ── Ledger upsert ───────────────────────────────────────────────────────────
 
 function upsertPR(ledger, entry) {
   if (entry.touchedDocs.length === 0) return false;
-  const idx = ledger.prs.findIndex((p) => p.number === entry.number);
+  const key = entryKey(entry);
+  const idx = ledger.prs.findIndex((p) => entryKey(p) === key);
   if (idx >= 0) {
     // Replace existing entry verbatim (fields may change after merge —
     // for example, follow-up amend changes title).
@@ -465,6 +640,8 @@ function parseArgs(argv) {
     const a = argv[i];
     if (a === "--check") out.mode = "check";
     else if (a === "--rebuild-blocks") out.mode = "rebuild-blocks";
+    else if (a === "--sync") out.mode = "sync";
+    else if (a === "--stale") out.mode = "stale";
     else if (a === "--pr") {
       const v = argv[++i];
       const n = Number(v);
@@ -482,7 +659,12 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.mode) {
     console.error(
-      "Usage:\n  --pr <NUMBER>      fetch metadata and update ledger + blocks\n  --rebuild-blocks   regenerate in-doc blocks from current ledger\n  --check            verify ledger ↔ blocks ↔ schema (CI gate)",
+      "Usage:\n" +
+        "  --sync             дочитати з Bitbucket усі змерджені PR, яких немає в реєстрі\n" +
+        "  --pr <NUMBER>      те саме для одного PR\n" +
+        "  --stale            скільки PR бракує (нічого не пише, exit 0)\n" +
+        "  --rebuild-blocks   перерендерити блоки з поточного реєстру\n" +
+        "  --check            звірити реєстр ↔ блоки ↔ схему (крок pnpm lint)",
     );
     process.exit(2);
   }
@@ -526,25 +708,59 @@ async function main() {
     return;
   }
 
-  if (args.mode === "pr") {
-    const entry = fetchPRMetadata(args.prNumber);
-    if (entry.touchedDocs.length === 0) {
-      console.log(
-        `PR #${entry.number} did not touch any canonical doc — ledger unchanged.`,
+  const token = readBitbucketToken();
+  const slug = currentRepoSlug();
+
+  if (args.mode === "stale") {
+    const { missing, capped, scanned } = await findMissingPRs(ledger, {
+      token,
+      slug,
+      limit: SYNC_LIMIT,
+    });
+    console.log(String(missing.length));
+    if (missing.length > 0) {
+      console.error(
+        `pr-ledger: ${missing.length} змерджених PR з ${scanned} перевірених немає в реєстрі` +
+          `${capped ? ` (скан обрізано на ${SYNC_LIMIT})` : ""}: ` +
+          missing.map((p) => `#${p.id}`).join(", "),
       );
+    }
+    return;
+  }
+
+  if (args.mode === "sync" || args.mode === "pr") {
+    const targets =
+      args.mode === "pr"
+        ? [{ id: args.prNumber }]
+        : (await findMissingPRs(ledger, { token, slug, limit: SYNC_LIMIT }))
+            .missing;
+
+    if (targets.length === 0) {
+      console.log("pr-ledger: усі змерджені PR уже в реєстрі.");
       return;
     }
-    const changed = upsertPR(ledger, entry);
-    if (!changed) {
-      console.log(
-        `PR #${entry.number} already in ledger with same metadata — ledger unchanged.`,
-      );
-    } else {
-      writeLedger(ledger);
-      console.log(
-        `PR #${entry.number}: upserted with ${entry.touchedDocs.length} touched doc${entry.touchedDocs.length === 1 ? "" : "s"}.`,
-      );
+
+    let upserted = 0;
+    const withoutDocs = [];
+    for (const target of targets) {
+      const entry = await fetchPRMetadata(target.id, { token, slug });
+      if (entry.touchedDocs.length === 0) {
+        // Нічого канонічного не торкнувся — це не пропуск, а нормальний стан
+        // для більшості PR. Запису немає навмисно: реєстр індексує саме
+        // канонічні доки, а не всі мержі. Але номер запамʼятовуємо, інакше
+        // `--stale` рахуватиме його як пропущений вічно.
+        withoutDocs.push(entry.number);
+        continue;
+      }
+      if (upsertPR(ledger, entry)) upserted += 1;
     }
+
+    const marked = markExamined(ledger, "bitbucket", withoutDocs);
+    if (upserted > 0 || marked) writeLedger(ledger);
+    console.log(
+      `pr-ledger: ${upserted} запис(ів) додано або оновлено, ` +
+        `${withoutDocs.length} PR без канонічних доків.`,
+    );
     const diffs = await rebuildAllBlocks(ledger, { write: true });
     console.log(
       `Blocks: ${diffs.length === 0 ? "no updates needed" : `regenerated ${diffs.length}`}.`,

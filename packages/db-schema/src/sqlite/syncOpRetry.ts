@@ -1,6 +1,6 @@
 /**
  * Persistent retry policy for the client-side `sync_op_outbox`
- * (`docs/planning/storage-roadmap.md` Stage 5 / PR #040).
+ * (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5 / PR #040).
  *
  * The op-log table itself is platform-independent (sqlite-wasm in
  * `apps/web`, expo-sqlite in `apps/mobile`, better-sqlite3 in tests),

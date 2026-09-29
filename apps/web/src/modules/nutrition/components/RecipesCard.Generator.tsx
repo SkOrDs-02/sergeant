@@ -63,7 +63,7 @@ export function GeneratorCard({
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
           <span className="ml-1 text-nutrition-strong dark:text-nutrition">
-            (є кеш сеансу, натисни «Запропонувати» для оновлення)
+            (є кеш сеансу, натисни «Запропонувати рецепти» для оновлення)
           </span>
         )}
       </div>
@@ -168,7 +168,7 @@ export function GeneratorCard({
           disabled={busy}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           Запропонувати рецепти
@@ -204,7 +204,7 @@ export function GeneratorCard({
                   <div className="flex gap-2 flex-wrap basis-full sm:basis-auto">
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() => onSave(r)}
                       disabled={busy}
@@ -213,7 +213,7 @@ export function GeneratorCard({
                     </Button>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() =>
                         onAddToLog(r, r.id || r.title || String(idx))

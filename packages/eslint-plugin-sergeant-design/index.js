@@ -879,7 +879,7 @@ const noAnthropicKeyInLogs = {
 //      TSAsExpression whose typeAnnotation is TSUnknownKeyword)
 //
 // Test files are exempt via eslint.config.js `ignores`.
-// Existing violations are allowlisted (see docs/tech-debt/frontend.md).
+// Existing violations are allowlisted (see docs/work/specs/tech-debt/frontend.md).
 
 const NO_STRICT_BYPASS_MESSAGES = {
   tsExpectError:
@@ -1488,7 +1488,7 @@ const forbidShellOnlyFeature = {
 // Звіт через `messageId: "hashRouter"` з посиланням на initiative 0006.
 
 const NO_HASH_ROUTER_MESSAGE =
-  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md.";
+  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Ініціативу 0006 закрито й заархівовано — розбір у git history.";
 
 const HASH_ROUTER_HOOK_NAMES = new Set(["useHashRouter", "useHashRoute"]);
 
@@ -1909,7 +1909,7 @@ const noRawReqInPinoLog = {
 const NO_CONSOLE_PII_REGEX = /email|phone|password|token|secret|auth/i;
 const NO_CONSOLE_PII_METHODS = new Set(["log", "error", "warn", "info"]);
 const NO_CONSOLE_PII_MESSAGE =
-  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. See docs/audits/2026-05-13-security-observability-roast.md § S2.";
+  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. Розбір — у git history аудиту 2026-05-13-security-observability-roast § S2.";
 
 function isConsolePiiMethodCall(callee) {
   return (
@@ -2286,7 +2286,7 @@ const RAW_STORAGE_HELPER_NAMES = new Set([
 const NO_RAW_STORAGE_KEY_MESSAGE =
   "Raw localStorage key literal '{{key}}' — use `STORAGE_KEYS.<NAME>` from `@sergeant/shared` instead. " +
   "Inline string literals drift from the registry when keys are renamed/deprecated. " +
-  "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 5. " +
+  "Розбір — у git history аудиту 2026-05-13-consolidated-page-audit § Theme 5. " +
   "Burn-down: 2026-Q3.";
 
 function extractStringValue(node) {
@@ -2877,9 +2877,10 @@ const noRawTypeSize = {
 // Три перевірки, усі — про рядки, які бачить людина:
 //   1. EM_DASH — довге тире «—» у копії. §1.9: воно читається як «це писала
 //      машина». Виняток — самотнє «—» як плейсхолдер порожнього значення,
-//      бо там це символ, а не текст.
-//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини («Спробуйте»).
-//      §1.1: звертання лише на «ти».
+//      бо там це символ, а не текст. Сусід літерала (інтерполяція, операнд
+//      `+`, сусідній JSX-вузол) рахується як текст.
+//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини за закінченням
+//      («Спробуйте», «Введіть»). §1.1: звертання лише на «ти».
 //   3. FIRST_PERSON_PLURAL — «ми» у голосі продукту. §2.
 //
 // Що НЕ ловить: коментарі (ESLint не віддає їх як вузли), рядки без
@@ -2917,8 +2918,58 @@ const UKRAINIAN_COPY_MESSAGES = {
 const RX_EM_DASH_IN_COPY = /\S\s*—\s*\S/;
 const RX_FORMAL_PRONOUN =
   /(^|[\s"'`>(«])(Ви|Вас|Вам|Ваш[а-яіїєґ]*)([\s,.!?»]|$)/;
+// Імператив 2-ї множини ловиться за ЗАКІНЧЕННЯМ, не за списком (аудит копії
+// вебу 2026-09-23 §2.1). Список із 21 дієслова пропускав «Вставте»,
+// «Отримайте», «Зберігайте», «привʼязуйте», «затисніть», «використайте»:
+// сім живих порушень §1.1 у вебі, і жодне не екзотика. Форма стійка:
+// приголосна (разом із «й» та «ь») + «те» («спробуйте», «перевірте»,
+// «будьте») або «іть» («введіть», «натисніть»), необовʼязково зворотне
+// «-ся/-сь» («поверніться», «хвилюйтесь»). Голосна перед «те» навмисно НЕ
+// ловиться: це дієприкметники й порядкові середнього роду («відкрите»,
+// «закрите», «пʼяте») та 2-а множини теперішнього («маєте»), яку тримає
+// гілка «Ви». Щонайменше дві літери перед закінченням, щоб «те» й «оте»
+// не ловились. 3-я особа однини безпечна сама собою: вона закінчується на
+// «-ить/-їть» («стоїть», «говорить»), не на «-іть».
 const RX_IMPERATIVE_PLURAL =
-  /(^|[\s"'`>(«])(с|С)проб(уй|ій)те|(п|П)еревірте|(в|В)ведіть|(н|Н)атисніть|(о|О)беріть|(в|В)иберіть|(д|Д)одайте|(с|С)творіть|(з|З)ачекайте|(о|О)новіть|(з|З)аповніть|(у|У)війдіть|(о|О)чистіть|(з|З)мініть|(в|В)идаліть|(з|З)бережіть|(п|П)очніть|(в|В)імкніть|(в|В)имкніть|(п|П)оверніться|(х|Х)вилюйтесь/;
+  /(^|[\s"'`>(«])([А-ЯІЇЄҐа-яіїєґ][а-яіїєґʼ’']+(?:[бвгґджзйклмнпрстфхцчшщь]те|іть)(?:ся|сь)?)(?=[\s,.!?»…:;)"'`]|$)/;
+
+// Не-імперативи з тим самим хвостом. Замір 2026-09-23 по web, landing і
+// server дав рівно два живих: «навіть» (23 рядки) і «росте» з префіксами
+// («зросте», «виросте»; 4 рядки). Решта того самого класу, якого в копії
+// ще нема, але який нею буде: прикметники й дієприкметники середнього роду
+// з приголосною перед «те» і порядкові «четверте», «шосте».
+const IMPERATIVE_PLURAL_STOPLIST = new Set([
+  "навіть",
+  "просте",
+  "чисте",
+  "пусте",
+  "густе",
+  "часте",
+  "товсте",
+  "жовте",
+  "відверте",
+  "уперте",
+  "потерте",
+  "стерте",
+  "затерте",
+  "четверте",
+  "шосте",
+]);
+const RX_IMPERATIVE_PLURAL_STOP = /^[а-яіїєґ]{0,4}росте$/;
+
+/** Перше слово в наказовій формі множини поза стоп-списком, або null. */
+function findImperativePlural(text) {
+  const re = new RegExp(RX_IMPERATIVE_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const word = m[2];
+    const key = word.replace(/[ʼ’']/g, "").toLowerCase();
+    if (IMPERATIVE_PLURAL_STOPLIST.has(key)) continue;
+    if (RX_IMPERATIVE_PLURAL_STOP.test(key)) continue;
+    return word;
+  }
+  return null;
+}
 
 // «Ми» як займенник + характерні закінчення 1-ї особи множини теперішнього
 // й майбутнього часу. Коментарі сюди не потрапляють — правило ходить лише
@@ -2933,8 +2984,73 @@ const RX_IMPERATIVE_PLURAL =
 // («'Готово'») і англійські контракції, які до §1.10 стосунку не мають.
 const RX_APOSTROPHE = /[а-яіїєґА-ЯІЇЄҐ](['’])[а-яіїєґА-ЯІЇЄҐ]/;
 
+// Закінчення: -ємо/-емо (ідемо, радимо → ні, це -имо), -имо (робимо,
+// любимо), -їмо (боїмо-сь), плюс зворотні -мось/-мося (вчимося). До
+// 2026-09-16 -емо/-имо/-мось проходили повз (аудит 2026-09-15 § 6) — тобто
+// «робимо», «вчимося», «ідемо» правило не бачило, і саме такі рядки жили в
+// копі. Дві літери перед закінченням (перша може бути великою: «Ідемо»,
+// «Вчимося») — щоб «демо» (1 літера) не ловилось.
 const RX_FIRST_PERSON_PLURAL =
-  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґ]{2}(аємо|уємо|юємо|имемо|немо|ємо)(\s|[.,!?»…:;)]|$)/;
+  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґА-ЯІЇЄҐ][а-яіїєґ](аємо|уємо|юємо|имемо|немо|ємо|емо|имо|їмо)(сь|ся)?(\s|[.,!?»…:;)]|$)/;
+
+// Слова з тими самими закінченнями, які НЕ є дієсловами 1-ї множини:
+// прислівники на -емо/-имо («окремо», «видимо») і усталене привітання
+// «ласкаво просимо». Останнє — свідомий виняток: заміна привітання на
+// «Вітаю» — рішення founder-а, а не лінтера (аудит 2026-09-15 § 6).
+const FIRST_PERSON_PLURAL_ALLOWLIST = new Set([
+  "окремо",
+  "видимо",
+  "невидимо",
+  "незримо",
+  "невловимо",
+  "терпимо",
+  "нестерпимо",
+]);
+const FIRST_PERSON_PLURAL_ALLOWED_PHRASES = [/ласкаво\s+просимо/i];
+const RX_UA_LETTER = /[а-яіїєґА-ЯІЇЄҐʼ'’]/;
+
+/**
+ * Перший збіг 1-ї особи множини, що не потрапляє в allowlist. Дієслівна
+ * гілка регулярки ловить лише хвіст слова (дві літери + закінчення), тож
+ * для звірки з allowlist збіг розширюється до цілого слова.
+ */
+function findFirstPersonPlural(text) {
+  const re = new RegExp(RX_FIRST_PERSON_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[0] === "") {
+      re.lastIndex += 1;
+      continue;
+    }
+    if (m[3] === undefined) return m; // гілка «ми …» — allowlist не стосується
+    let start = m.index;
+    while (start > 0 && RX_UA_LETTER.test(text[start - 1])) start -= 1;
+    // `m[0]` тягне ще й завершальний символ межі (група 5 — пробіл або
+    // розділовий знак), тож відлік уперед мусить починатися ПЕРЕД ним.
+    // Без цього віднімання межа-пробіл «зʼїдалась», крок уперед бачив
+    // першу літеру НАСТУПНОГО слова і склеював два слова в одне: рядок
+    // «Окремо є ручне…» давав `окремоє`, якого в allowlist немає й бути
+    // не може. Наслідок — allowlist мовчки не працював для найчастішого
+    // випадку «слово + пробіл + слово», тобто майже завжди; спрацьовував
+    // лише тоді, коли за словом ішов розділовий знак у кінці рядка.
+    // Знайдено 2026-09-19 першим живим прогоном правила на лендінгу:
+    // чотири законні «окремо» (HroshiPage, TrenuvanniaPage ×2, DataPage)
+    // репортувались як 1-а особа множини.
+    const trailingBoundary = m[5] ?? "";
+    let end = m.index + m[0].length - trailingBoundary.length;
+    while (end < text.length && RX_UA_LETTER.test(text[end])) end += 1;
+    const word = text
+      .slice(start, end)
+      .replace(/[^а-яіїєґА-ЯІЇЄҐ]/g, "")
+      .toLowerCase();
+    if (FIRST_PERSON_PLURAL_ALLOWLIST.has(word)) continue;
+    const phraseWindow = text.slice(Math.max(0, start - 12), end);
+    if (FIRST_PERSON_PLURAL_ALLOWED_PHRASES.some((rx) => rx.test(phraseWindow)))
+      continue;
+    return m;
+  }
+  return null;
+}
 
 // Непробільний сентинел на місці інтерполяції: каже «тут вираз МОЖЕ
 // віддати текст». Потрібен лише перевірці тире, яка дивиться на сусідів
@@ -2942,6 +3058,53 @@ const RX_FIRST_PERSON_PLURAL =
 // класи меж (`[\s"'`>(«]`, `[\s,.!?»…:;)]`), і чужий символ у них
 // зламав би збіг. Тому дві версії рядка, а не одна.
 const UA_EXPR_SENTINEL = "\u0001";
+
+// Той самий сентинел на КРАЯХ літерала, коли текст триває поза ним:
+// сусідній операнд `+` або сусід у JSX (аудит копії вебу 2026-09-23 §2.2).
+// `"…напишу сюди першим — " + "нічого робити не треба"`, `` `…` + ` — сервер
+// їх так і не отримав` ``, `{list}{" — витрати рахуватимуться…"}`: тире
+// стоїть на межі літерала, і `\S\s*—\s*\S` не бачить сусіда, бо той живе в
+// іншому вузлі. Ланцюжок `+` проходиться до кінця, тож `a + " — " + b` теж
+// рахується. Порожній JSXText (самі пробіли й переноси між елементами)
+// сусідом не вважається: JSX його не рендерить. Елемент масиву й аргумент
+// виклику сусідів не мають, це свідома межа: там склейка не гарантована.
+function edgeNeighbours(node) {
+  let left = false;
+  let right = false;
+  let child = node;
+  let parent = node.parent;
+  while (
+    parent &&
+    parent.type === "BinaryExpression" &&
+    parent.operator === "+"
+  ) {
+    if (parent.left === child) right = true;
+    else left = true;
+    child = parent;
+    parent = parent.parent;
+  }
+  if (parent && parent.type === "JSXExpressionContainer") {
+    child = parent;
+    parent = parent.parent;
+  }
+  if (
+    parent &&
+    (parent.type === "JSXElement" || parent.type === "JSXFragment")
+  ) {
+    const isContent = (n) => n.type !== "JSXText" || n.value.trim() !== "";
+    const i = parent.children.indexOf(child);
+    left = left || parent.children.slice(0, i).some(isContent);
+    right = right || parent.children.slice(i + 1).some(isContent);
+  }
+  return { left, right };
+}
+
+function withEdgeSentinels(node, text) {
+  const { left, right } = edgeNeighbours(node);
+  return (
+    (left ? UA_EXPR_SENTINEL : "") + text + (right ? UA_EXPR_SENTINEL : "")
+  );
+}
 
 // SQL у шаблонному літералі — не копія, і правило мусить це знати.
 //
@@ -2972,15 +3135,14 @@ function ukrainianCopyViolations(text, emDashText = text) {
   if (pronoun) {
     out.push({ messageId: "formalVy", data: { found: pronoun[2] } });
   } else {
-    const verb = RX_IMPERATIVE_PLURAL.exec(text);
-    if (verb)
-      out.push({ messageId: "formalVy", data: { found: verb[0].trim() } });
+    const verb = findImperativePlural(text);
+    if (verb) out.push({ messageId: "formalVy", data: { found: verb } });
   }
   const apostrophe = RX_APOSTROPHE.exec(text);
   if (apostrophe) {
     out.push({ messageId: "apostrophe", data: { found: apostrophe[1] } });
   }
-  const plural = RX_FIRST_PERSON_PLURAL.exec(text);
+  const plural = findFirstPersonPlural(text);
   if (plural) {
     out.push({
       messageId: "firstPersonPlural",
@@ -3008,17 +3170,29 @@ const ukrainianCopy = {
             description:
               "Project-relative file paths (forward-slash) that are exempt.",
           },
+          allowFirstPersonPlural: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Paths (file or directory) where only the «ми» check is skipped: " +
+              "legal texts, data disclosure and support appeals speak for the team (канон §2).",
+          },
         },
         additionalProperties: false,
       },
     ],
   },
   create(context) {
-    const { allowlist = [] } = context.options[0] ?? {};
+    const { allowlist = [], allowFirstPersonPlural = [] } =
+      context.options[0] ?? {};
     const filename = (context.filename ?? context.getFilename() ?? "").replace(
       /\\/g,
       "/",
     );
+    // Запис — або конкретний файл (`endsWith`), або каталог (`.../<p>/...`).
+    // Без другої гілки виняток на теку мовчки не діяв би.
+    const matchesPath = (p) =>
+      filename.endsWith(p) || filename.includes(`${p}/`);
     if (
       /\.(test|spec)\.[jt]sx?$/.test(filename) ||
       filename.includes("/__tests__/") ||
@@ -3031,23 +3205,27 @@ const ukrainianCopy = {
       // не називаються.
       filename.includes("/tests/") ||
       /\.stories\.[jt]sx?$/.test(filename) ||
-      // Запис allowlist — або конкретний файл (`endsWith`), або каталог
-      // (`.../<p>/...`). Без другої гілки виняток на теку мовчки не діяв би.
-      allowlist.some((p) => filename.endsWith(p) || filename.includes(`${p}/`))
+      allowlist.some(matchesPath)
     ) {
       return {};
     }
+    // Legal, розкриття даних і звернення в підтримку говорять від «ми»
+    // (канон §2): там вимикається лише ця перевірка, решта діє.
+    const skipFirstPersonPlural = allowFirstPersonPlural.some(matchesPath);
     const report = (node, text, emDashText = text) => {
       for (const v of ukrainianCopyViolations(text, emDashText)) {
+        if (skipFirstPersonPlural && v.messageId === "firstPersonPlural")
+          continue;
         context.report({ node, messageId: v.messageId, data: v.data });
       }
     };
     return {
       Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
+        if (typeof node.value === "string")
+          report(node, node.value, withEdgeSentinels(node, node.value));
       },
       JSXText(node) {
-        report(node, node.value);
+        report(node, node.value, withEdgeSentinels(node, node.value));
       },
       // Літерал перевіряємо ЦІЛИМ, а не поквазі: тире часто стоїть саме
       // на межі інтерполяції, і поквазі там не збігається нічого.
@@ -3067,7 +3245,11 @@ const ukrainianCopy = {
       TemplateLiteral(node) {
         const parts = node.quasis.map((q) => q.value.cooked ?? q.value.raw);
         if (RX_SQL_STATEMENT_START.test(parts[0] ?? "")) return;
-        report(node, parts.join(" "), parts.join(UA_EXPR_SENTINEL));
+        report(
+          node,
+          parts.join(" "),
+          withEdgeSentinels(node, parts.join(UA_EXPR_SENTINEL)),
+        );
       },
     };
   },

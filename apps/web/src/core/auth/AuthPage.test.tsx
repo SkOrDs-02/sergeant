@@ -144,7 +144,7 @@ describe("AuthPage — login mode", () => {
 
   it("does NOT toast success when login() returns false", async () => {
     loginMock.mockResolvedValue(false);
-    authErrorState = "Невірний пароль";
+    authErrorState = "Неправильний пароль";
     render(
       <MemoryRouter>
         <AuthPage />
@@ -168,7 +168,7 @@ describe("AuthPage — login mode", () => {
     expect(
       screen
         .getAllByRole("alert")
-        .some((el) => el.textContent?.includes("Невірний пароль")),
+        .some((el) => el.textContent?.includes("Неправильний пароль")),
     ).toBe(true);
   });
 });

@@ -52,10 +52,18 @@ import {
  * фронтовий `VITE_POSTHOG_KEY`.
  */
 
+// `has_push` їде тим самим запитом, а не окремим: листам дня 1 і 3 треба
+// знати, чи людина взагалі може отримати нагадування (спека
+// `reward-loop-and-reminders.md`, дірка з новачками).
 const FTUX_DRIP_LOOKUP_USER_QUERY = `
-  SELECT id, email, name
-  FROM "user"
-  WHERE id = $1
+  SELECT u.id, u.email, u.name,
+         (EXISTS (SELECT 1 FROM push_subscriptions s
+                   WHERE s.user_id = u.id AND s.deleted_at IS NULL)
+          OR EXISTS (SELECT 1 FROM push_devices d
+                      WHERE d.user_id = u.id AND d.deleted_at IS NULL)
+         ) AS has_push
+  FROM "user" u
+  WHERE u.id = $1
   LIMIT 1
 `;
 
@@ -79,6 +87,7 @@ interface UserRow {
   id: string;
   email: string;
   name: string | null;
+  has_push?: boolean;
 }
 
 function emailFingerprint(email: string): string {
@@ -184,8 +193,73 @@ async function updateLogWithProvider(
   );
 }
 
+/**
+ * Відкотити claim, який ми щойно поставили, коли Resend явно відмовив.
+ *
+ * ── Що це лагодить ──────────────────────────────────────────────────────
+ *
+ * `reserveLogRow` стовпить рядок ПЕРЕД відправкою — це правильно, бо
+ * унікальний індекс `(campaign_key, recipient_id)` тут єдиний race-safe
+ * дедуп між кількома воркерами. Але наслідок був такий: при 5xx від Resend
+ * job падав, BullMQ його ретраїв, ретрай бачив `isNew === false` і чесно
+ * закривав job як `skipped_already_sent`. Тобто **всі 5 налаштованих
+ * ретраїв не робили нічого**, і лист не приходив НІКОЛИ — при цьому в логах
+ * усе виглядало як штатний скіп дубля.
+ *
+ * ── Чому відкат, а не `sent_at IS NULL` ─────────────────────────────────
+ *
+ * Варіант «claim-рядок із `sent_at IS NULL`, ретраїти поки не проставлено»
+ * тут неможливий без міграції: `email_campaigns_log.sent_at` оголошений
+ * `TIMESTAMPTZ NOT NULL DEFAULT NOW()` (міграція 020), тож `NULL` у ньому
+ * не буває за визначенням. Відкат claim-у дає ту саму властивість без зміни
+ * схеми.
+ *
+ * ── Чому ТІЛЬКИ на не-2xx ───────────────────────────────────────────────
+ *
+ * AI-DANGER: не розширюй це на будь-яку помилку. Відкат безпечний рівно
+ * тоді, коли ми ТОЧНО знаємо, що лист не прийнято — тобто коли Resend
+ * відповів статусом. На обриві чи таймауті запит міг дійти, і відкат
+ * claim-у означав би другий лист тій самій людині. Там claim свідомо
+ * лишається: втратити рідкісний лист дешевше, ніж надіслати дубль.
+ *
+ * `provider_message_id IS NULL` у `WHERE` — додатковий запобіжник: рядок із
+ * уже відомим id апстріму не видаляємо ніколи.
+ */
+async function releaseLogRow(pool: Pool, id: number): Promise<void> {
+  if (!id) return;
+  await pool.query(
+    `DELETE FROM email_campaigns_log
+      WHERE id = $1
+        AND provider_message_id IS NULL`,
+    [id],
+  );
+}
+
 interface ResendCreateEmailResponse {
   id?: string;
+}
+
+/**
+ * Стеля часу на один виклик Resend API. Ретраї робить BullMQ, не цей код.
+ */
+const RESEND_TIMEOUT_MS = 10_000;
+
+/**
+ * Resend ВІДПОВІВ, і відповідь не-2xx.
+ *
+ * Окремий тип потрібен саме для того, щоб відрізнити «апстрім явно
+ * відмовив» від «ми не знаємо, що сталось» (обрив, таймаут). У першому
+ * випадку лист точно НЕ прийнято, тож claim можна безпечно відкотити й дати
+ * ретраю спрацювати. У другому — запит міг дійти, і відкат claim-у
+ * породив би дубль.
+ */
+class ResendHttpError extends Error {
+  readonly status: number;
+  constructor(status: number, body: string) {
+    super(`Resend HTTP ${status}: ${body.slice(0, 500)}`);
+    this.status = status;
+    this.name = "ResendHttpError";
+  }
 }
 
 async function sendViaResend(args: {
@@ -226,11 +300,14 @@ async function sendViaResend(args: {
       text: args.text,
       html: args.html,
     }),
+    // Без `signal` undici чекає на заголовки до 300 с — один завислий
+    // drip-лист тримав би воркер черги п'ять хвилин.
+    signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
   });
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Resend HTTP ${res.status}: ${body.slice(0, 500)}`);
+    throw new ResendHttpError(res.status, body);
   }
 
   const json = (await res
@@ -322,18 +399,46 @@ async function dispatchFtuxDripEmail(data: FtuxDripJobData): Promise<void> {
     recipientName: user.name?.trim() || null,
     unsubscribeUrl,
     appUrl,
+    // Нудж відсутності будить лише тих, хто вже підписаний на push, тож
+    // новачок без підписки, що зник на третій день, інакше не почув би
+    // нічого. Лист лишається єдиним каналом, яким його ще можна покликати.
+    pushInvite: user.has_push !== true,
   });
 
-  // Залишаємо row у `email_campaigns_log` НАВІТЬ якщо Resend поверне 5xx:
-  // ретрай BullMQ на тому ж job-id побачить існуючий log-row і мʼяко
-  // заскіпає (`skipped_already_sent`). Це безпечніше ніж дублікат на
-  // 0.1% non-idempotent-кейсів (Resend accept→reply-5xx race).
-  const { providerMessageId } = await sendViaResend({
-    to,
-    subject: tpl.subject,
-    text: tpl.text,
-    html: tpl.html,
-  });
+  // Claim уже стоїть. Якщо Resend ЯВНО відмовив (не-2xx), відкочуємо його —
+  // інакше ретрай BullMQ побачить існуючий рядок і закриє job як
+  // `skipped_already_sent`, тобто лист не піде ніколи. Розбір компромісу —
+  // у doc-string `releaseLogRow`.
+  let providerMessageId: string | null;
+  try {
+    ({ providerMessageId } = await sendViaResend({
+      to,
+      subject: tpl.subject,
+      text: tpl.text,
+      html: tpl.html,
+    }));
+  } catch (err) {
+    if (err instanceof ResendHttpError) {
+      try {
+        await releaseLogRow(pool, reserved.id);
+      } catch (releaseErr) {
+        // Відкот не вдався — лист усе одно не пішов, але наступний ретрай
+        // тепер заскіпає. Логуємо гучно: це рівно той стан, у якому лист
+        // тихо зникає, і без цього рядка його не знайти.
+        logger.error({
+          msg: "ftux_drip_claim_release_failed",
+          day: data.day,
+          emailHash,
+          campaignLogId: reserved.id,
+          err:
+            releaseErr instanceof Error
+              ? releaseErr.message
+              : String(releaseErr),
+        });
+      }
+    }
+    throw err;
+  }
 
   if (providerMessageId) {
     await updateLogWithProvider(pool, {

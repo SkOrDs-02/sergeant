@@ -51,7 +51,7 @@ export function useBodyScrollLock(active: boolean = true): void {
     // step ignores the CSS lock. Left uncorrected, `window.scrollY`
     // drifts on every focus change inside the locked sheet, which is
     // exactly what fed the keyboard-inset jitter and the "jumping"
-    // sheet (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
+    // sheet (spec `docs/work/specs/keyboard-and-scroll.md`
     // § H1, design decision §1). Snap it straight back to the pinned
     // offset on every focus change while any lock is active.
     const resetScroll = () => {

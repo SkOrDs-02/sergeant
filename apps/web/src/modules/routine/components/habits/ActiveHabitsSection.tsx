@@ -67,14 +67,13 @@ export function ActiveHabitsSection({
         Активні звички
       </SectionHeading>
       <p className="text-style-body text-subtle leading-snug">
-        Порядок у списку = порядок у календарі. На десктопі можна перетягнути;
-        на телефоні: кнопки ↑↓. Для клавіатури та скрінрідерів зручніші кнопки
-        ↑↓.
+        Порядок у списку = порядок у календарі. На десктопі можна перетягнути,
+        на телефоні й з клавіатури: «Вище» і «Нижче» в меню «⋯».
       </p>
       <Input
         className="routine-touch-field w-full max-w-md"
         {...searchFieldProps("habit-list-search")}
-        placeholder="Пошук у списку звичок…"
+        placeholder="Пошук у списку звичок"
         value={habitListQuery}
         onChange={(e) => setHabitListQuery(e.target.value)}
         aria-label="Пошук звичок у списку"
@@ -93,11 +92,7 @@ export function ActiveHabitsSection({
           module="routine"
           action={
             typeof onOpenCalendar === "function" ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onOpenCalendar}
-              >
+              <Button type="button" variant="outline" onClick={onOpenCalendar}>
                 Перейти до календаря
               </Button>
             ) : undefined
@@ -113,13 +108,13 @@ export function ActiveHabitsSection({
           скидає саме той фільтр, який сховав список. */}
       {hasActive && filteredActiveHabits.length === 0 && (
         <EmptyState
-          title="Нічого не знайдено"
+          title="Нічого не знайшов"
           description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
           module="routine"
           action={
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={() => setHabitListQuery("")}
             >
               Скинути пошук

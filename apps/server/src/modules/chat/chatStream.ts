@@ -8,6 +8,7 @@ import {
 } from "../../lib/anthropic.js";
 import type { AiProvider } from "../../lib/posthogAi.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { replaceLongDash } from "../../lib/modelText.js";
 import { logger } from "../../obs/logger.js";
 import { aiFirstTokenMs } from "../../obs/metrics.js";
 import {
@@ -197,9 +198,10 @@ async function streamOneIterationToSse(
           // рахує метрику лише для ПЕРШОЇ ітерації — continuation-и
           // стартують з уже теплого зʼєднання і межу SLO не характеризують.
           if (firstTextAtMs === null) firstTextAtMs = Date.now();
-          accumulatedText += ev.delta.text;
+          const delta = replaceLongDash(ev.delta.text);
+          accumulatedText += delta;
           if (!res.writableEnded) {
-            res.write(`data: ${JSON.stringify({ t: ev.delta.text })}\n\n`);
+            res.write(`data: ${JSON.stringify({ t: delta })}\n\n`);
           }
         } else if (ev.type === "message_delta") {
           if (ev.delta?.stop_reason) {
@@ -273,6 +275,13 @@ export async function streamAnthropicToSse(
   abortSignal?: AbortSignal,
   promptVersion?: string,
   userId?: string,
+  /**
+   * `$ai_trace_id` для PostHog AI Observability (ініціатива 0025, Фаза 2) —
+   * той самий round-trip-квиток, що звʼязує turn-1 tool-пропозицію,
+   * `$ai_span`-и виконаних tool-ів і цей (tool-result) turn-2 в одне
+   * дерево. Див. `AnthropicCallOptions.traceId`.
+   */
+  traceId?: string,
 ): Promise<void> {
   let firstStream: AnthropicStreamResult;
   try {
@@ -282,6 +291,7 @@ export async function streamAnthropicToSse(
       signal: abortSignal,
       allowOpenRouter: chatViaOpenRouter(),
       userId,
+      traceId,
     });
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
@@ -352,11 +362,13 @@ export async function streamAnthropicToSse(
   let currentProvider = firstStream.provider as AiProvider | undefined;
   let currentElapsedMs = firstStream.elapsedMs as (() => number) | undefined;
   let continuationsLeft = MAX_TEXT_CONTINUATIONS;
+  let lastOutcome: string | undefined;
 
   try {
     while (true) {
       const iter = await streamOneIterationToSse(res, currentResponse);
       currentRecordEnd(iter.outcome);
+      lastOutcome = iter.outcome;
       if (iter.accumulatedText) accumulatedAllText += iter.accumulatedText;
 
       if (!firstTokenObserved && iter.firstTextAtMs !== null) {
@@ -416,6 +428,7 @@ export async function streamAnthropicToSse(
               typeof currentElapsedMs === "function"
                 ? currentElapsedMs()
                 : undefined,
+            traceId,
           },
         );
       }
@@ -448,6 +461,7 @@ export async function streamAnthropicToSse(
             signal: abortSignal,
             allowOpenRouter: chatViaOpenRouter(),
             userId,
+            traceId,
           },
         );
         const nextResponse = nextStream.response;
@@ -481,6 +495,25 @@ export async function streamAnthropicToSse(
     }
   } finally {
     clearInterval(heartbeat);
+  }
+
+  // Модель чесно закрила стрім (`outcome: ok`), але не дала жодного символу.
+  // Без цієї гілки клієнт отримував голий [DONE], зберігав порожню відповідь
+  // асистента, і вона ж поверталась в історії наступного запиту, де zod
+  // відхиляє порожній `content`, тож розмова ламалась до «Нова».
+  if (
+    !accumulatedAllText &&
+    lastOutcome !== "error" &&
+    !abortSignal?.aborted &&
+    !res.writableEnded
+  ) {
+    await refundQuotaOnUpstreamFailure(req);
+    logger.warn({
+      msg: "chat_stream_empty_ok",
+      endpoint,
+      model: (payload["model"] as string) || "unknown",
+    });
+    res.write(`data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`);
   }
 
   if (!res.writableEnded) {

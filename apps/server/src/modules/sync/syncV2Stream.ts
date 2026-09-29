@@ -12,7 +12,7 @@ import {
 import { elapsedMs } from "../../lib/timing.js";
 
 /**
- * Stage 5 / PR #041 із `docs/planning/storage-roadmap.md` — real-time pull
+ * Stage 5 / PR #041 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — real-time pull
  * через Server-Sent Events.
  *
  * Доповнює `GET /api/v2/sync/pull` (PR #021) живим стрімом: коли
@@ -99,6 +99,13 @@ export const opLogEmitter = new SyncOpLogEmitter();
  * Викликається `syncV2Push` після успішного COMMIT-у. `applied` — лише
  * ops зі `status='applied'`, з фінальним `id`/`server_ts`. Rejected
  * рядки в стрім не йдуть, симетрично з `/pull` (status='applied').
+ *
+ * AI-DANGER: живі кадри НЕ проходять вотермарк `SYNC_OP_LOG_COMMITTED_WATERMARK_SQL`.
+ * Вони йдуть у порядку коміту з `op.id` як SSE event id, а серверні оп-и
+ * (`serverOpLog.ts`, імпорт виписки) сюди не потрапляють узагалі. Клієнт,
+ * що візьме `Last-Event-ID` як курсор pull, перескочить оп-и довгої
+ * транзакції назавжди. Споживач (Фаза 3, `sync-client-wiring.md`) мусить
+ * трактувати живий кадр як сигнал «зроби pull», а не як просування курсора.
  */
 export function notifySyncV2OpsApplied(
   userId: string,
@@ -262,6 +269,7 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
           AND id > $2
           AND status = 'applied'
           AND origin_device_id IS DISTINCT FROM $3
+          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
         ORDER BY id ASC
         LIMIT $4`,
       [user.id, since, originDeviceId, SYNC_V2_STREAM_REPLAY_LIMIT],

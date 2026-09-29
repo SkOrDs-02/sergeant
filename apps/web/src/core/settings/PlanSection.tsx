@@ -54,7 +54,14 @@ export function PlanSection() {
   // i18n, а не хардкодимо: на `/pricing` тариф називався «Premium», а тут
   // і в чаті «Pro», тобто один продукт мав дві назви (browser-QA 2026-09-02).
   const premiumName = messages.pricing.tiers.premiumName;
-  const planLabel = isPro ? premiumName : "Free";
+  // `usePlan` віддає `plan: "free"` як дефолт, ПОКИ запит у польоті — це
+  // прямо задокументовано в його типі. Тобто до відповіді сервера платний
+  // користувач бачив бейдж «Free», абзац «Ти на безкоштовному тарифі…» і
+  // кнопку «Перейти на Premium», яка вела його на /pricing (аудит
+  // 2026-09-16, WF-19). `isLoading` у цьому файлі вже читався — але лише
+  // задля підпису «Завантаження…» поруч; самі твердження його ігнорували.
+  // Плейсхолдер замість назви тарифу — бо «ще не знаю» це не «Free».
+  const planLabel = isLoading ? "—" : isPro ? premiumName : "Free";
 
   async function handleManage() {
     setRedirecting(true);
@@ -98,8 +105,8 @@ export function PlanSection() {
           data-testid="plan-section-header"
         >
           <Badge
-            variant={isPro ? "accent" : "neutral"}
-            tone={isPro ? "solid" : "soft"}
+            variant={isPro && !isLoading ? "accent" : "neutral"}
+            tone={isPro && !isLoading ? "solid" : "soft"}
             size="md"
             data-testid="plan-badge"
           >
@@ -117,7 +124,7 @@ export function PlanSection() {
             <span className="text-style-label block">Пробний період</span>
             <p className="text-style-body text-text leading-snug">
               Закінчується {periodEnd}. Після цього підписка стане платною за
-              тарифом з чекауту, скасуй до цієї дати, якщо передумаєш.
+              планом з чекауту, скасуй до цієї дати, якщо передумаєш.
             </p>
           </div>
         )}
@@ -154,10 +161,11 @@ export function PlanSection() {
           </p>
         )}
 
-        {!isPro && status !== "canceled" && (
+        {!isPro && !isLoading && status !== "canceled" && (
           <p className="text-style-body text-subtle leading-snug">
-            Ти на безкоштовному тарифі. {premiumName} відкриває безлімітний
-            AI-чат, CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
+            Ти на безкоштовному плані. {premiumName} відкриває безлімітний чат
+            із Сержантом, CloudSync між пристроями, авто-Mono sync і експорт
+            CSV/PDF.
           </p>
         )}
 
@@ -179,14 +187,14 @@ export function PlanSection() {
                   керування = кнопка «Скасувати Premium» нижче (порталу нема). */}
               {subscription?.provider === "stripe" && (
                 <Button
-                  variant="primary"
+                  variant="solid"
                   size="md"
                   onClick={handleManage}
                   disabled={redirecting}
                   data-testid="plan-manage-button"
                   className="gap-2"
                 >
-                  <Icon name="credit-card" size={16} />
+                  <Icon name="credit-card" size="md" />
                   Керувати підпискою
                 </Button>
               )}
@@ -194,7 +202,8 @@ export function PlanSection() {
                 (confirmingCancel ? (
                   <div className="flex gap-2">
                     <Button
-                      variant="danger"
+                      variant="soft"
+                      tone="danger"
                       size="md"
                       onClick={handleCancel}
                       disabled={canceling}
@@ -203,7 +212,7 @@ export function PlanSection() {
                       {canceling ? "Скасовую…" : "Точно скасувати?"}
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="md"
                       onClick={() => setConfirmingCancel(false)}
                       disabled={canceling}
@@ -213,7 +222,7 @@ export function PlanSection() {
                   </div>
                 ) : (
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="md"
                     onClick={() => setConfirmingCancel(true)}
                     data-testid="plan-cancel-button"
@@ -222,15 +231,15 @@ export function PlanSection() {
                   </Button>
                 ))}
             </>
-          ) : (
+          ) : isLoading ? null : (
             <Button
-              variant="primary"
+              variant="solid"
               size="md"
               onClick={handleUpgrade}
               data-testid="plan-upgrade-button"
               className="gap-2"
             >
-              <Icon name="sergeant" size={16} />
+              <Icon name="sergeant" size="md" />
               Перейти на Premium
             </Button>
           )}
@@ -257,5 +266,3 @@ export function PlanSection() {
     </SettingsGroup>
   );
 }
-
-export const __PLAN_SECTION_PORTAL_UNAVAILABLE = BILLING_PORTAL_UNAVAILABLE;

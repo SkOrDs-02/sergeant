@@ -154,6 +154,12 @@ export interface WrapToolResultsOptions {
   recordInjectionAttempt?: (labels: { tool: string }) => void;
   /** Override патернів — для тестів. */
   patterns?: ReadonlyArray<RegExp>;
+  /** Кожен просканований результат із вердиктом regex - для тіньових детекторів. */
+  onScanned?: (scan: {
+    tool: string;
+    content: string;
+    matched: boolean;
+  }) => void;
 }
 
 /**
@@ -187,6 +193,7 @@ export function wrapAndScanToolResults(
     if (matched) {
       inc({ tool });
     }
+    opts.onScanned?.({ tool, content: r.content, matched });
     const escaped = escapeToolOutputClose(r.content);
     const wrapped = `<tool_output tool="${tool}">${escaped}</tool_output>`;
     return { tool_use_id: r.tool_use_id, content: wrapped };

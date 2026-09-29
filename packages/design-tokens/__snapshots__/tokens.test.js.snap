@@ -153,11 +153,11 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 
 exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList / chartHex keep the same ordered palette 3`] = `
 {
-  "carbs": "#567c0f",
-  "fat": "#ac4c64",
+  "carbs": "#784784",
+  "fat": "#af5504",
   "limit": "#ef4444",
   "neutral": "#98a49c",
-  "protein": "#0e7490",
+  "protein": "#436cc8",
 }
 `;
 

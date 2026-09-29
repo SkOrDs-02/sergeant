@@ -1,6 +1,6 @@
 # Хостинг: Hetzner + Coolify (бекенд) + Vercel (фронт)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-30.
+> **Last touched:** 2026-09-17 by @claude (§7 Sentry→n8n позначено історією за ADR-0090, healthcheck-рядок у §6 виправлено). **Next review:** 2026-12-16.
 > **Status:** Active — але лише Vercel-частина; Railway-секції (§1–2, §8) історичні (див. банер нижче)
 >
 > **⚠️ Hosting-частина superseded [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2, §8) — історичний контекст доміграційного стеку; Railway config видалено, а OpenClaw повністю декомісовано [ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) з `BACKEND_URL` на Coolify API.
@@ -91,13 +91,15 @@ ALLOWED_ORIGINS=http://localhost:5173
 - **Uptime:** `GET /livez` кожні 1–5 хв.
 - **Readiness (з БД):** `GET /readyz` (або `/health`) — корисно, якщо треба алертити саме проблеми з Postgres.
 - Алерт при **не 200** або тілі не `ok`.
-- **Coolify health-probe**: `/health` віддає сам Node через Coolify proxy (див. [`apps/server/AGENTS.md`](../../../apps/server/AGENTS.md)). Container-level health-check вимкнено для distroless-образу (без curl/wget). Pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js`. Це окремо від зовнішнього uptime-моніторингу вище.
+- **Coolify health-probe**: `/health` віддає сам Node через Coolify proxy (див. [`apps/server/AGENTS.md § Health`](../../../apps/server/AGENTS.md)). Container-level health-check **працює**: Coolify збирає команду `curl … || wget …` сам, `curl` в образі немає (у логах `curl: not found` — це не мертвий гейт), а busybox-`wget` запечений у `Dockerfile.api` і саме його код вирішує результат (виправлено 2026-09-17; раніше тут стояло «вимкнено, без curl/wget»). Pre-deploy міграції — Coolify `pre_deployment_command = node dist-server/migrate.js`. Це окремо від зовнішнього uptime-моніторингу вище.
 - **Логи (Coolify container logs)**: шукай за **`X-Request-Id`** з відповіді API або з тіла помилки (`requestId`), щоб зв’язати клієнт і сервер.
 - **Структуровані рядки** `{"msg":"http",...}` — фільтруй за `status >= 500` або `path` для регресій.
 
-## 7. Sentry → n8n → Telegram
+## 7. Sentry → n8n → Telegram (історичне — n8n виведено з експлуатації, ADR-0090)
 
-Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api`, `sergeant-web`) у self-hosted n8n
+> **Історія.** n8n знято [ADR-0090](../../governance/adr/0090-n8n-decommissioned.md); маршрут Sentry → n8n нижче більше не існує. Чинний канал алертів — серверний `POST /api/internal/alerts/send` (`apps/server/src/routes/internal/alerts.ts`) → Telegram; wiring описано в [`docs/operations/observability/`](../../operations/observability). Кроки нижче лишено як запис того, як це було склеєно.
+
+Error-алерти йшли з обох Sentry-проєктів (`sergeant-api`, `sergeant-web`) у self-hosted n8n
 (Railway) → воркфлоу `03 — Sentry Alert Routing` → Telegram (`Sergeant_alert_bot`).
 
 Як це склеєно (одноразова операція в Sentry/n8n, не в коді репо):

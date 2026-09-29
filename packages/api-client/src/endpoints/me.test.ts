@@ -129,6 +129,8 @@ describe("createMeEndpoints", () => {
       aiMemory: false,
       pushNotifications: true,
       sergeantNudges: true,
+      // Поля нема у відповіді: схема підставляє дефолт колонки (міграція 148).
+      pushDailyCap: 2,
       healthDataConsent: false,
       // Відповідь мока не містить `activeModules` (як і будь-який
       // сервер до міграції 116) — схема підставляє `null`, а не `[]`:
@@ -312,6 +314,7 @@ describe("createMeEndpoints", () => {
         aiMemory: true,
         pushNotifications: false,
         sergeantNudges: false,
+        pushDailyCap: 2,
         healthDataConsent: false,
         activeModules: ["finyk", "routine"],
         // PR-S13: серіалізатор ЗАВЖДИ віддає ключ (а схема має
@@ -326,7 +329,17 @@ describe("createMeEndpoints", () => {
         mono: { connection: null, accounts: [], transactions: [] },
         billing: { subscriptions: [] },
         push: { webSubscriptions: [], devices: [] },
-        ai: { usageDaily: [], memories: [] },
+        finyk: { finyk_assets: [] },
+        fizruk: { fizruk_workouts: [] },
+        nutrition: { nutrition_meals: [] },
+        routine: { routine_habits: [{ id: "h-1", name: "Вода" }] },
+        excluded: [
+          {
+            group: "aiMemories",
+            tables: ["ai_memories"],
+            reason: "Памʼять асистента.",
+          },
+        ],
       },
     };
     mockFetchOnce(payload);
@@ -336,15 +349,19 @@ describe("createMeEndpoints", () => {
   });
 
   it("DELETE /api/me повертає deletion acknowledgement", async () => {
+    // Форма з `dataRights.ts`: `scheduledPurgeAt` = прохання + 30 днів
+    // (`ACCOUNT_DELETION_GRACE_DAYS`, ADR-0098).
     const fetchMock = mockFetchOnce({
       ok: true,
       deletedAt: "2026-06-06T10:15:00.000Z",
+      scheduledPurgeAt: "2026-07-06T10:15:00.000Z",
     });
     const me = createMeEndpoints(createHttpClient());
 
     await expect(me.deleteAccount()).resolves.toEqual({
       ok: true,
       deletedAt: "2026-06-06T10:15:00.000Z",
+      scheduledPurgeAt: "2026-07-06T10:15:00.000Z",
     });
     const init = firstCall(fetchMock)[1] as RequestInit;
     expect(init.method).toBe("DELETE");
@@ -358,6 +375,46 @@ describe("createMeEndpoints", () => {
     const [url, init] = firstCall(fetchMock);
     expect(String(url)).toMatch(/\/api(?:\/v1)?\/ai-memory$/);
     expect((init as RequestInit).method).toBe("DELETE");
+  });
+
+  // Hard Rule #3 — контрактна трійка для `/api/me/export`. Сервер віддає
+  // секції чотирьох модулів (`dataRights.ts`), схема з `@sergeant/shared`
+  // їх вимагає, а цей тест ловить сервер, який відкотився до старої форми.
+  it("GET /api/me/export відхиляє відповідь без секцій модулів", async () => {
+    // Рівно та форма, яку сервер віддавав до 2026-09-20: `moduleData: []`
+    // і жодного запису людини з модулів. Мовчки прийняти її означало б
+    // віддати людині неповний файл із виглядом повного.
+    mockFetchOnce({
+      generatedAt: "2026-06-06T10:10:00.000Z",
+      user: {
+        id: "user-123",
+        email: "test@example.com",
+        name: null,
+        image: null,
+        emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
+      },
+      preferences: {
+        analytics: true,
+        aiMemory: true,
+        pushNotifications: false,
+        sergeantNudges: false,
+        healthDataConsent: false,
+        activeModules: null,
+        hubPrefs: null,
+        updatedAt: null,
+      },
+      data: {
+        moduleData: [],
+        mono: { connection: null, accounts: [], transactions: [] },
+        billing: { subscriptions: [] },
+        push: { webSubscriptions: [], devices: [] },
+        ai: { usageDaily: [], memories: [] },
+      },
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.exportData()).rejects.toThrow();
   });
 
   // Hard Rule #3 — контрактна трійка для `/api/ai-memory/list` і

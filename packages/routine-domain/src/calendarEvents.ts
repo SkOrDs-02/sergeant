@@ -270,7 +270,7 @@ export function buildFinykSubscriptionEvents(
       const amtStr =
         amount != null
           ? `~${formatGroupedUk(amount)} ${currency ?? ""}`.trim()
-          : "сума з транзакції або вручну у Фініку";
+          : "сума з операції або вручну у Фініку";
       out.push({
         id: `finyk_sub_${sub.id}_${date}`,
         source: "finyk_subscription",

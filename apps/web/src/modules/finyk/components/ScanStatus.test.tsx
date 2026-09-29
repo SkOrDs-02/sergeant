@@ -19,10 +19,8 @@ function advance(ms: number) {
 
 describe("ScanStatus", () => {
   it("оголошує поточну фазу як live-статус", () => {
-    render(<ScanStatus label="Розпізнаю транзакції…" />);
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Розпізнаю транзакції…",
-    );
+    render(<ScanStatus label="Розпізнаю операції…" />);
+    expect(screen.getByRole("status")).toHaveTextContent("Розпізнаю операції…");
   });
 
   it("притримує пояснення затримки до порогу, далі показує", () => {
@@ -53,13 +51,11 @@ describe("ScanStatus", () => {
     );
     advance(SLOW_HINT_DELAY_MS - 100);
     rerender(
-      <ScanStatus label="Розпізнаю транзакції…" slowHint="Великий скрін." />,
+      <ScanStatus label="Розпізнаю операції…" slowHint="Великий скрін." />,
     );
     advance(100);
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Розпізнаю транзакції…",
-    );
+    expect(screen.getByRole("status")).toHaveTextContent("Розпізнаю операції…");
     expect(screen.getByText("Великий скрін.")).toBeInTheDocument();
   });
 });

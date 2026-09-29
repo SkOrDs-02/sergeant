@@ -167,3 +167,153 @@ describe("useNutritionPantries — ledger-подія на кожен з пʼят
     expect(appendMock).not.toHaveBeenCalled();
   });
 });
+
+describe("useNutritionPantries - відкат автоімпорту (revertReplenish)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    clearNutritionSqliteCache();
+    appendMock.mockClear();
+  });
+
+  function qtyOf(
+    result: ReturnType<typeof renderHarness>,
+    name: string,
+  ): number | null | undefined {
+    return result.current.pantryItems.find((x) => x.name === name)?.qty;
+  }
+
+  it("віднімає рівно додане, видаляє створену імпортом позицію і пише реальний absQty", () => {
+    seedPantries([{ name: "рис", qty: 200, unit: "г", notes: null }]);
+    const result = renderHarness();
+    let lines: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      lines = result.current.upsertItemForAutoImport([
+        { name: "рис", qty: 500, unit: "г", notes: null },
+        { name: "гречка", qty: 1000, unit: "г", notes: null },
+      ]);
+    });
+    expect(qtyOf(result, "рис")).toBe(700);
+    appendMock.mockClear();
+
+    act(() => result.current.revertReplenish(lines));
+
+    expect(qtyOf(result, "рис")).toBe(200);
+    expect(result.current.pantryItems.some((x) => x.name === "гречка")).toBe(
+      false,
+    );
+    const absByKey = Object.fromEntries(
+      appendMock.mock.calls.map(([ev]) => [ev.itemKey, ev.absQty]),
+    );
+    expect(absByKey).toEqual({ рис: 200, гречка: 0 });
+  });
+
+  it("не йде в мінус, якщо продукт устигли спожити", () => {
+    seedPantries([{ name: "рис", qty: 200, unit: "г", notes: null }]);
+    const result = renderHarness();
+    let lines: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      lines = result.current.upsertItemForAutoImport([
+        { name: "рис", qty: 500, unit: "г", notes: null },
+      ]);
+    });
+    act(() => result.current.consumePantryItem("рис", 600));
+    act(() => result.current.revertReplenish(lines));
+    expect(qtyOf(result, "рис")).toBe(0);
+  });
+
+  it("відкочує лінії двох чеків на той самий продукт одним викликом", () => {
+    seedPantries([{ name: "рис", qty: 200, unit: "г", notes: null }]);
+    const result = renderHarness();
+    let first: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    let second: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      first = result.current.upsertItemForAutoImport([
+        { name: "рис", qty: 500, unit: "г", notes: null },
+      ]);
+    });
+    act(() => {
+      second = result.current.upsertItemForAutoImport([
+        { name: "рис", qty: 300, unit: "г", notes: null },
+      ]);
+    });
+    expect(qtyOf(result, "рис")).toBe(1000);
+    act(() => result.current.revertReplenish([...first, ...second]));
+    expect(qtyOf(result, "рис")).toBe(200);
+  });
+
+  it("прибирає доданий варіант, тож наступне доливання не повертає відкочене", () => {
+    const earlier = {
+      name: "Молоко",
+      qty: 500,
+      unit: "мл",
+      addedAt: "2026-09-20",
+    };
+    seedPantries([
+      { name: "молоко", qty: 500, unit: "мл", notes: null, sources: [earlier] },
+    ]);
+    const result = renderHarness();
+    let lines: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      lines = result.current.upsertItemForAutoImport([
+        {
+          name: "молоко",
+          qty: 874,
+          unit: "мл",
+          notes: null,
+          sources: [
+            { name: "Молоко", qty: 874, unit: "мл", addedAt: "2026-09-29" },
+          ],
+        },
+      ]);
+    });
+    expect(qtyOf(result, "молоко")).toBe(1374);
+    act(() => result.current.revertReplenish(lines));
+    expect(qtyOf(result, "молоко")).toBe(500);
+    expect(
+      result.current.pantryItems.find((x) => x.name === "молоко")?.sources,
+    ).toHaveLength(1);
+
+    act(() => {
+      result.current.upsertItemForAutoImport([
+        {
+          name: "молоко",
+          qty: 200,
+          unit: "мл",
+          notes: null,
+          sources: [
+            { name: "Молоко", qty: 200, unit: "мл", addedAt: "2026-09-30" },
+          ],
+        },
+      ]);
+    });
+    expect(qtyOf(result, "молоко")).toBe(700);
+  });
+
+  it("покупка, яку злиття відкинуло як дубль, не пише поповнення і не дає лінії", () => {
+    const bought = {
+      name: "Молоко",
+      qty: 874,
+      unit: "мл",
+      addedAt: "2026-09-29",
+    };
+    seedPantries([
+      { name: "молоко", qty: 874, unit: "мл", notes: null, sources: [bought] },
+    ]);
+    const result = renderHarness();
+    let lines: ReturnType<typeof result.current.upsertItemForAutoImport> = [];
+    act(() => {
+      lines = result.current.upsertItemForAutoImport([
+        {
+          name: "молоко",
+          qty: 874,
+          unit: "мл",
+          notes: null,
+          sources: [bought],
+        },
+      ]);
+    });
+    expect(lines).toEqual([]);
+    expect(appendMock).not.toHaveBeenCalled();
+    expect(qtyOf(result, "молоко")).toBe(874);
+  });
+});

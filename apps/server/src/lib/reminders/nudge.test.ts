@@ -1,17 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-vi.mock("../../push/send.js", () => ({ sendToUserQuietly: vi.fn() }));
-vi.mock("../../obs/logger.js", () => ({
-  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  serializeError: (e: unknown) => String(e),
-}));
+import { describe, expect, it, vi } from "vitest";
 
 import {
+  NUDGE_AT_HM,
   NUDGE_NEUTRAL_BODY,
   NUDGE_TITLE,
   buildNudgeBody,
-  isQuietHour,
-  runSergeantNudgeSweep,
+  nudgeReason,
   selectNudgeCandidates,
   type NudgeCandidate,
 } from "./nudge.js";
@@ -38,30 +32,11 @@ function candidate(over: Partial<NudgeCandidate> = {}): NudgeCandidate {
   };
 }
 
-/** Мінімальний фейк `pg` — повертає підготовлені рядки, лічить INSERT-и. */
+/** Мінімальний фейк `pg`: повертає підготовлені рядки. */
 function makeDb(rows: Record<string, unknown>[]) {
-  const claimed = new Set<string>();
-  const query = vi.fn(async (sql: string, params?: unknown[]) => {
-    if (sql.includes("INSERT INTO push_reminder_log")) {
-      const key = `${String(params?.[0])}|${String(params?.[1])}`;
-      if (claimed.has(key)) return { rows: [], rowCount: 0 };
-      claimed.add(key);
-      return { rows: [], rowCount: 1 };
-    }
-    return { rows, rowCount: rows.length };
-  });
+  const query = vi.fn(async () => ({ rows, rowCount: rows.length }));
   return { db: { query }, query };
 }
-
-describe("isQuietHour", () => {
-  it("дозволяє ранковий слот і глушить ніч", () => {
-    expect(isQuietHour(NOON_KYIV)).toBe(false); // 09:00 Kyiv
-    expect(isQuietHour(new Date("2026-08-05T20:30:00.000Z"))).toBe(true); // 23:30
-    expect(isQuietHour(new Date("2026-08-05T00:30:00.000Z"))).toBe(true); // 03:30
-    expect(isQuietHour(new Date("2026-08-05T04:59:00.000Z"))).toBe(true); // 07:59
-    expect(isQuietHour(new Date("2026-08-05T05:00:00.000Z"))).toBe(false); // 08:00
-  });
-});
 
 describe("buildNudgeBody", () => {
   it("шле свіжу консерву як є", () => {
@@ -112,76 +87,21 @@ describe("selectNudgeCandidates", () => {
   });
 });
 
-describe("runSergeantNudgeSweep", () => {
-  beforeEach(() => vi.clearAllMocks());
-
-  const eligible = [
-    {
-      user_id: "u1",
-      last_seen_at: daysAgo(2),
-      cached_body: "Порада дня.",
-      cached_generated_at: new Date(NOON_KYIV.getTime() - 3600_000),
-    },
-  ];
-
-  it("надсилає рівно один пуш зі стабільним tag", async () => {
-    const { db } = makeDb(eligible);
-    const send = vi.fn(async () => {});
-    const summary = await runSergeantNudgeSweep(db, { now: NOON_KYIV, send });
-
-    expect(summary).toEqual({
-      candidates: 1,
-      sent: 1,
-      skippedQuietHours: false,
-    });
-    expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith("u1", {
+describe("nudgeReason", () => {
+  it("стає приводом о 09:00 зі стабільним tag доби", () => {
+    const reason = nudgeReason(
+      candidate({ cachedBody: "Порада дня." }),
+      "2026-08-05",
+      NOON_KYIV,
+    );
+    expect(reason).toMatchObject({
+      userId: "u1",
+      module: "sergeant",
+      dedupKey: "sergeant-nudge-2026-08-05",
       title: NUDGE_TITLE,
       body: "Порада дня.",
-      tag: "sergeant-nudge-2026-08-05",
       url: "/",
+      at: NUDGE_AT_HM,
     });
-  });
-
-  it("два проходи за ту саму добу шлють один пуш", async () => {
-    const { db } = makeDb(eligible);
-    const send = vi.fn(async () => {});
-    await runSergeantNudgeSweep(db, { now: NOON_KYIV, send });
-    await runSergeantNudgeSweep(db, { now: NOON_KYIV, send });
-    expect(send).toHaveBeenCalledTimes(1);
-  });
-
-  it("у тихі години не шле нічого і не чіпає БД", async () => {
-    const { db, query } = makeDb(eligible);
-    const send = vi.fn(async () => {});
-    const summary = await runSergeantNudgeSweep(db, {
-      now: new Date("2026-08-05T20:30:00.000Z"), // 23:30 Kyiv
-      send,
-    });
-
-    expect(summary.skippedQuietHours).toBe(true);
-    expect(send).not.toHaveBeenCalled();
-    expect(query).not.toHaveBeenCalled();
-  });
-
-  it("збій відправки не зриває решту проходу", async () => {
-    const { db } = makeDb([
-      ...eligible,
-      {
-        user_id: "u2",
-        last_seen_at: daysAgo(4),
-        cached_body: null,
-        cached_generated_at: null,
-      },
-    ]);
-    const send = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("push upstream 500"))
-      .mockResolvedValueOnce(undefined);
-
-    const summary = await runSergeantNudgeSweep(db, { now: NOON_KYIV, send });
-
-    expect(send).toHaveBeenCalledTimes(2);
-    expect(summary.sent).toBe(1);
   });
 });

@@ -23,11 +23,20 @@
  * **Доповнення 2026-09-01 — безумовна плашка жанру.** Три ноти вище умовні:
  * у нормальному стані (свіжа репліка, свіжий журнал) не рендериться жодна,
  * і людина читає «готово / рано» як вердикт без будь-якої рамки. Тому зверху
- * додано безумовне «Спостереження, не порада», а внизу — межа компетенції
- * («болить — до лікаря»). Привід не косметичний: Whoop отримав
+ * додано безумовне «Спостереження, не порада», а внизу – межа компетенції
+ * («болить – до лікаря»). Привід не косметичний: Whoop отримав
  * попереджувальний лист FDA (2025-07-14) саме за функцію, подану як
  * медичну, і канон `fizruk.md` §2 тримає цей рядок як контракт, а не як
  * юридичну формальність.
+ *
+ * **Доповнення 2026-09-26 – один рядок замість стіни.** На mobile плашки й
+ * абзаци стояли над силуетом і виштовхували його за перший екран. Тепер
+ * блок – нативний `<details>` під картою: безумовним лишається лише рядок
+ * `summary` («Спостереження, не медична порада»), він і несе жанр, і межу
+ * компетенції; решта відкривається тапом. Нота про свіжість репліки має
+ * сенс лише там, де є що синхронізувати: анонімний пристрій і є вся
+ * історія, тож для нього «синхронізації ще не було» – скарга системи на
+ * власний стан, а не межа поради.
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
@@ -37,45 +46,38 @@ import type { ReplicaFreshness } from "../../../core/syncEngine/replicaFreshness
 export interface RecoveryHonestyNotesProps {
   freshness: ReplicaFreshness;
   wellbeing: WellbeingSignal;
+  syncEnabled: boolean;
 }
 
 export function RecoveryHonestyNotes({
   freshness,
   wellbeing,
+  syncEnabled,
 }: RecoveryHonestyNotesProps) {
   const t = messages.fizruk.recoveryHonesty;
   const neverSynced = freshness.lastPullAt === null;
 
   return (
-    <>
-      {/*
-        Жанр блоку — ПЕРШИМ рядком, до будь-яких умовних застережень.
-        Решта нот тут умовні (застаріла репліка, протухлий журнал): вони
-        зʼявляються лише коли щось не так, тож у нормальному стані людина
-        не бачила б жодної рамки взагалі і читала б «готово / рано» як
-        вердикт. Ця плашка безумовна саме тому.
-      */}
-      <div className="mb-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-panel border border-line">
+    <details className="group mb-3 rounded-xl border border-line bg-panel px-3">
+      <summary className="touch-target flex cursor-pointer items-center gap-1.5 text-style-caption text-muted marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fizruk">
         <Icon
           name="info"
           size={13}
           className="shrink-0 text-subtle"
           aria-hidden
         />
-        <span className="text-style-caption text-muted">
-          {t.observationBadge}
-        </span>
-      </div>
+        <span className="min-w-0 flex-1">{t.observationBadge}</span>
+        <Icon
+          name="chevron-right"
+          size={13}
+          className="shrink-0 text-subtle transition-transform group-open:rotate-90"
+          aria-hidden
+        />
+      </summary>
 
-      {!freshness.complete && (
-        <div className="mb-3 px-3 py-2 rounded-xl bg-panel border border-line flex items-start gap-2">
-          <Icon
-            name="info"
-            size={16}
-            className="shrink-0 text-subtle mt-0.5"
-            aria-hidden
-          />
-          <div className="min-w-0">
+      <div className="pb-3">
+        {syncEnabled && !freshness.complete && (
+          <div className="mb-2">
             <p className="text-style-caption text-text leading-snug">
               {t.staleReplicaTitle}
             </p>
@@ -92,26 +94,26 @@ export function RecoveryHonestyNotes({
               </p>
             )}
           </div>
-        </div>
-      )}
+        )}
 
-      {wellbeing.stale && (
-        <div className="mb-3 px-3 py-2 rounded-xl bg-panel border border-line">
-          <p className="text-style-caption text-text leading-snug">
-            {t.staleWellbeingTitle}
-          </p>
-          <p className="text-style-caption text-subtle leading-snug">
-            {t.staleWellbeingNote}
-          </p>
-        </div>
-      )}
+        {wellbeing.stale && (
+          <div className="mb-2">
+            <p className="text-style-caption text-text leading-snug">
+              {t.staleWellbeingTitle}
+            </p>
+            <p className="text-style-caption text-subtle leading-snug">
+              {t.staleWellbeingNote}
+            </p>
+          </div>
+        )}
 
-      <p className="text-style-caption text-muted leading-snug mb-1">
-        {t.n1Note}
-      </p>
-      <p className="text-style-caption text-muted leading-snug mb-3">
-        {t.medicalNote}
-      </p>
-    </>
+        <p className="text-style-caption text-muted leading-snug mb-1">
+          {t.n1Note}
+        </p>
+        <p className="text-style-caption text-muted leading-snug">
+          {t.medicalNote}
+        </p>
+      </div>
+    </details>
   );
 }

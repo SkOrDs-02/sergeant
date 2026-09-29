@@ -40,11 +40,13 @@ import type {
 } from "./types";
 import {
   DAY_MS,
+  habitTrendText,
   WEEKDAY_LABEL_UK,
   normalizeDayToken,
   normalizeHabitId,
   isDateKey,
 } from "./routineActions.helpers";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function handleRoutineAction(
   action: ChatAction,
@@ -80,7 +82,7 @@ export function handleRoutineAction(
       if (alreadyDone) {
         return { result, confirm: persistRoutineState(routineState) };
       }
-      // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+      // LOG-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
       // домен-редʼюсер, а не ручний запис у `completions`:
       // `applyToggleHabitCompletion` (1) не пише незаплановий день (той
       // самий `habitScheduledOnDate`-гейт, що чекбокс в UI) і (2) знімає
@@ -503,7 +505,7 @@ export function handleRoutineAction(
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
       const habitName = habit.name || id;
-      const todayKey = getKyivDayKey();
+      const todayKey = anchoredCompletionBounds().todayKey;
 
       if (!target) {
         const next = applyResumeHabitFrom(state, id, todayKey);
@@ -561,7 +563,7 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      // LOG-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+      // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
       // — той самий гнучкий стрік і той самий per-habit rate, що рахує UI
       // (`flexStreak.ts`/`streaks.ts`), а не третя жорстка реалізація, яка
       // обнуляла серію на першому пропущеному дні незалежно від паузи,
@@ -601,7 +603,7 @@ export function handleRoutineAction(
         // Без гліфа: у полі лежить icon-slug, і «droplet Пити воду» в
         // тексті чату виглядало б як помилка рендера.
         `Статистика "${habit.name || id}" за ${days} днів:`,
-        `Виконано: ${completed}/${scheduled} (${pct}%)`,
+        `Виконано: ${completed}/${scheduled} (${formatNumberUk(pct)}%)`,
         `Поточна серія: ${currentStreak} днів`,
         `Макс. серія: ${maxStreak} днів`,
       ];
@@ -614,56 +616,18 @@ export function handleRoutineAction(
     case "habit_trend": {
       const { habit_id, period_days } =
         (action as HabitTrendAction).input || {};
-      const days = Number(period_days) || 30;
       const state = loadRoutineState();
       if (state.habits.length === 0) return "Немає звичок.";
       const habits = habit_id
         ? state.habits.filter((h) => h.id === habit_id)
         : state.habits.filter((h) => !h.archived);
       if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
-      const completions = state.completions;
-      const histSets = new Map<string, Set<string>>();
-      for (const h of habits) {
-        const arr = Array.isArray(completions[h.id]) ? completions[h.id] : [];
-        histSets.set(h.id, new Set(arr));
-      }
-      const now = Date.now();
-      const weeks = Math.ceil(days / 7);
-      const weeklyData: number[] = [];
-      for (let w = 0; w < weeks; w++) {
-        let done = 0;
-        let possible = 0;
-        for (let d = 0; d < 7; d++) {
-          const dayOffset = w * 7 + d;
-          if (dayOffset >= days) break;
-          const dk = getKyivDayKey(now - dayOffset * DAY_MS);
-          for (const h of habits) {
-            possible++;
-            const hist = histSets.get(h.id);
-            if (hist && hist.has(dk)) done++;
-          }
-        }
-        weeklyData.push(possible > 0 ? Math.round((done / possible) * 100) : 0);
-      }
-      const parts: string[] = [
-        `Тренд звичок за ${days} днів (${habits.length} звичок):`,
-      ];
-      weeklyData.reverse();
-      for (let i = 0; i < weeklyData.length; i++) {
-        parts.push(`  Тиждень ${i + 1}: ${weeklyData[i]}%`);
-      }
-      const first = weeklyData[0];
-      const last = weeklyData[weeklyData.length - 1];
-      if (weeklyData.length >= 2 && first !== undefined && last !== undefined) {
-        const trend =
-          last > first
-            ? "покращується"
-            : last < first
-              ? "погіршується"
-              : "стабільно";
-        parts.push(`Тренд: ${trend} (${first}% → ${last}%)`);
-      }
-      return parts.join("\n");
+      return habitTrendText(
+        habits,
+        state.completions,
+        Number(period_days) || 30,
+        Date.now(),
+      );
     }
     // ── Утиліти ────────────────────────────────────────────────
     default:

@@ -178,7 +178,7 @@ export function HabitDetailSheet({
     <div className="flex flex-col gap-2 sm:flex-row">
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         className="flex-1"
         onClick={() => setEditOpen(true)}
       >
@@ -186,7 +186,7 @@ export function HabitDetailSheet({
       </Button>
       <Button
         type="button"
-        variant="secondary"
+        variant="outline"
         className="flex-1"
         onClick={handleToggleArchived}
       >
@@ -196,7 +196,8 @@ export function HabitDetailSheet({
       </Button>
       <Button
         type="button"
-        variant="danger"
+        variant="soft"
+        tone="danger"
         className="flex-1"
         onClick={() => setConfirmDelete(true)}
       >

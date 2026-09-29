@@ -1,8 +1,8 @@
 ---
 name: sergeant-review-and-merge
-description: Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; also for rollback safety checks; UA: ревʼю PR і мердж.
+description: "Use when reviewing a Sergeant PR, preparing for merge, checking commit scope, validating docs freshness, or deciding if a change is safe to ship; also for rollback safety checks; UA: ревʼю PR і мердж."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Ревʼю і мердж у Sergeant
@@ -76,7 +76,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 **Канон гейта живе в [`sergeant-verify-before-done`](../sergeant-verify-before-done/SKILL.md)** — таблиця «claim → proving command», правило повного scope і цитування exit code. Не дублюй його тут і не веди власний список команд: розбіжні списки вже одного разу розійшлись (цей skill колись вимагав `pnpm lint && typecheck && test && build` без `format:check`, тож PR міг пройти гейт і впасти в CI на prettier).
 
-Одна команда, що покриває весь матрицю: **`pnpm check`** (= `format:check && lint && check:typecheck-and-test && build`) — той самий набір, що й у CI.
+Одна команда, що покриває весь матрицю: **`pnpm check`** (= `format:check && lint && check:typecheck-and-test && build`). CI відсутній (Bitbucket без pipelines) — доказ це саме свіжий локальний прогін, не «CI зелений».
 
 Цей skill додає поверх канону лише те, що специфічне для **PR-межі**:
 

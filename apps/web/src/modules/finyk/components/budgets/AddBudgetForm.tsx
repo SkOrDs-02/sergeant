@@ -447,7 +447,7 @@ function AddBudgetFormComponent({
                       aria-label={`Прибрати категорію ${resolveCategoryLabel(id)}`}
                       className="touch-target flex items-center justify-center rounded-xl text-muted hover:text-text transition-colors"
                     >
-                      <Icon name="x" size={16} aria-hidden />
+                      <Icon name="close" size="md" aria-hidden />
                     </button>
                   </li>
                 ))}
@@ -489,7 +489,7 @@ function AddBudgetFormComponent({
                       )}»`,
                   )
                   .join("; ")}
-                {" — витрати рахуватимуться в обох лімітах."}
+                {": витрати рахуватимуться в обох лімітах."}
               </p>
             )}
           </div>
@@ -554,7 +554,7 @@ function AddBudgetFormComponent({
               type="button"
               className="flex-1"
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={onCancel}
             >
               Скасувати
@@ -676,7 +676,7 @@ function AddBudgetFormComponent({
               type="button"
               className="flex-1"
               size="sm"
-              variant="secondary"
+              variant="outline"
               onClick={onCancel}
             >
               Скасувати

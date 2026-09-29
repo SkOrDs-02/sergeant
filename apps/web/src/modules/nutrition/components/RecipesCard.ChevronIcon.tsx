@@ -12,7 +12,7 @@ export function ChevronIcon({ open }: { open: boolean }) {
   return (
     <Icon
       name="chevron-right"
-      size={16}
+      size="md"
       strokeWidth={2.5}
       className={cn(
         "shrink-0 text-subtle transition-transform duration-base",

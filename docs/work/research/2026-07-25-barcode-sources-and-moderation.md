@@ -1,8 +1,7 @@
 # Штрихкоди: джерела даних і модерація внесків
 
-> **Last validated:** 2026-07-25 by @claude (research)
-> **Next review:** 2026-10-23.
-> **Status:** Active — дослідження під рішення, не рішення
+> **Last touched:** 2026-09-17 by @claude (Active → Reference: research-док без трекера). **Next review:** 2026-12-16.
+> **Status:** Reference — дослідження під рішення, не рішення; рішення: каскад OFF → USDA реалізовано (`apps/server/src/modules/nutrition/barcode.ts`), модерація внесків — без окремого рішення власника
 
 **Навіщо цей файл.** Рядок Хвилі 3 «Research баз штрихкодів (укр-продукти) →
 продакшн-ключі USDA / заміна UPCitemdb» заблокований двома невирішеними

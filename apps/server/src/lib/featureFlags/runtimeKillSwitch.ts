@@ -4,19 +4,20 @@
  *
  * Архітектура:
  *
- *   env (Railway)           lib/featureFlags/runtimeKillSwitch.ts
- *   MONO_AI_MEMORY_INGEST  ◀── авторитет на startup
+ *   env (Coolify)                lib/featureFlags/runtimeKillSwitch.ts
+ *   DIGEST_AI_MEMORY_INGEST     ◀── авторитет на startup
  *           ↓
- *   ingestQueue.ts:  isKillSwitchActive("mono_ai_memory_ingest")
- *                    ? "force OFF" : env.MONO_AI_MEMORY_INGEST_ENABLED
+ *   ingestQueue.ts:  isKillSwitchActive("digest_ai_memory_ingest")
+ *                    ? "force OFF" : env.DIGEST_AI_MEMORY_INGEST_ENABLED
  *
  * Тригер:
  *   POST /api/internal/eval/rag-weekly → recall@4 < kill_threshold
- *      → activateKillSwitch("mono_ai_memory_ingest", { reason, recall, mode })
+ *      → activateKillSwitch("digest_ai_memory_ingest", { reason, recall, mode })
  *
  * Чому in-memory (не БД-таблиця):
- *   - Railway деплой — single instance; multi-instance scale-up зайде з PR-X
- *     пізніше, тоді потрібна буде DB-backed реалізація.
+ *   - Coolify деплой — single instance ([ADR-0074](../../../../docs/governance/adr/0074-hosting-hetzner-coolify.md));
+ *     multi-instance scale-up зайде з PR-X пізніше, тоді потрібна буде
+ *     DB-backed реалізація.
  *   - Reset на restart — feature, а не баг: operator має шанс розслідувати
  *     причину і ввімкнути вручну якщо false-positive (через runbook).
  *   - Зменшує scope PR — без міграції / RPC / sync-логіки між instance-ами.
@@ -35,7 +36,7 @@ import {
   runtimeKillSwitchActivationsTotal,
 } from "../../obs/metrics.js";
 
-export type KillSwitchName = "mono_ai_memory_ingest";
+export type KillSwitchName = "digest_ai_memory_ingest";
 
 interface KillSwitchState {
   active: boolean;

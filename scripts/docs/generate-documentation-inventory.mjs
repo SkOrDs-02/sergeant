@@ -1,11 +1,34 @@
 #!/usr/bin/env node
 
-/** Build the auditable old-path → final-path matrix for the docs migration. */
+/**
+ * Build the auditable old-path → final-path matrix for the docs migration.
+ *
+ * @status Active
+ *
+ * **Чому артефакт не несе часу.** До 2026-09-19 сюди писалось
+ * `baseline_revision: git rev-parse HEAD` і `baseline_files`, а `--check`
+ * вимагав побайтової рівності. Це робило гейт нездійсненним за побудовою:
+ * щойно щойно згенерований файл потрапляв у коміт, HEAD змінювався — і
+ * артефакт ставав «застарілим» тією самою дією, яка його зберігала. `--amend`
+ * цього не лікував, бо міняв HEAD ще раз. Друга половина тієї ж пастки:
+ * `baseline_files` рахував `git ls-tree HEAD`, тож коміт із новим доком
+ * зсував і його.
+ *
+ * Саме тому гейт і не був підключений ні до `pnpm lint`, ні до жодного
+ * воркфлоу — підключений він валив би все. А непідключений мовчав, і файл
+ * стояв простроченим до звірки 2026-09-19.
+ *
+ * Тепер в артефакті лишається тільки те, що описує САМУ матрицю (`entries`,
+ * `target_collisions`, `tracked_files` як розмір об'єднання закоміченого й
+ * дискового стану). Ревізія і момент зняття йдуть у лог прогону, не у файл.
+ * Розбір — `docs/work/specs/docs-code-drift-2026-09-19.md`, PR-9.
+ */
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format } from "prettier";
+import { readIdentity } from "./repo-identity.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const OUTPUT = resolve(
@@ -17,6 +40,11 @@ const SHA = execFileSync("git", ["rev-parse", "HEAD"], {
   cwd: ROOT,
   encoding: "utf8",
 }).trim();
+// Слуг для permalink-ів на видалені доки — із реєстру домівок, не зашитий.
+// Доти тут стояв `SkOrDs-01/Sergeant` (ще й у третьому написанні власника),
+// тобто четверта незалежна копія величини, яку PR-1 звів до однієї.
+const LEGACY_BLOB_BASE = `https://github.com/${readIdentity().legacyPrSlug}/blob`;
+
 const TEXT_EXTENSIONS =
   /\.(?:md|json|mjs|js|ts|tsx|yml|yaml|toml|hbs|css|html|alloy)$/u;
 
@@ -128,12 +156,52 @@ for (const sourcePath of current.filter(
   }
 }
 
+/**
+ * Ревізія, на яку безпечно пінити permalink видаленого доку: останній коміт,
+ * у якому файл ІСНУВАВ.
+ *
+ * Чому не `HEAD`. По-перше, це та сама пастка, що й `baseline_revision`:
+ * пін на HEAD робить артефакт нестабільним від самого факту коміту. По-друге,
+ * для ВИДАЛЕНОГО файла permalink на HEAD просто неправильний — на HEAD його
+ * нема, посилання віддає 404. Останній коміт, що торкався шляху, може бути
+ * саме комітом видалення, тому за потреби відступаємо на його батька.
+ *
+ * Зараз таких записів нуль (міграція доків завершена), але без цієї правки
+ * перший же видалений док повернув би самопожирання артефакту.
+ */
+const permalinkRevCache = new Map();
+function permalinkRevFor(path) {
+  if (permalinkRevCache.has(path)) return permalinkRevCache.get(path);
+  let rev;
+  try {
+    rev = execFileSync("git", ["rev-list", "-1", "HEAD", "--", path], {
+      cwd: ROOT,
+      encoding: "utf8",
+    }).trim();
+    if (rev) {
+      try {
+        execFileSync("git", ["cat-file", "-e", `${rev}:${path}`], {
+          cwd: ROOT,
+          stdio: "ignore",
+        });
+      } catch {
+        rev = `${rev}^`; // цей коміт файл і видалив — беремо батька
+      }
+    }
+  } catch {
+    rev = "";
+  }
+  const out = rev || SHA;
+  permalinkRevCache.set(path, out);
+  return out;
+}
+
 const entries = baseline.map((oldPath) => {
   const proposed = finalPathFor(oldPath);
   const exists = currentSet.has(proposed);
   const removed = !exists || proposed.includes("/archive/");
   const newPath = removed
-    ? `https://github.com/SkOrDs-01/Sergeant/blob/${SHA}/${oldPath}`
+    ? `${LEGACY_BLOB_BASE}/${permalinkRevFor(oldPath)}/${oldPath}`
     : proposed;
   const sources = [...(inbound.get(exists ? proposed : oldPath) ?? [])].sort();
   const mergedReadme =
@@ -191,14 +259,20 @@ const targetCollisions = [...targets.entries()]
   })
   .map(([new_path, old_paths]) => ({ new_path, old_paths }));
 
+// Розмір ОБ'ЄДНАННЯ закоміченого й дискового стану. Саме об'єднання, а не
+// `baseline.length`: після коміту, який додає док, `git ls-tree HEAD` бачить
+// новий файл, і лічильник «baseline» стрибає — тобто чергове число, що
+// змінюється від самого факту коміту.
+const trackedFiles = new Set([...baseline, ...current]).size;
+
 const output = await format(
   JSON.stringify(
     {
       _generated: true,
       generated_by: "scripts/docs/generate-documentation-inventory.mjs",
-      baseline_revision: SHA,
-      baseline_files: baseline.length,
-      current_files: current.length,
+      // `baseline_revision` і `baseline_files` тут НЕ пишуться навмисно — див.
+      // коментар «Чому артефакт не несе часу» у шапці файла.
+      tracked_files: trackedFiles,
       total_entries: entries.length,
       target_collisions: targetCollisions,
       entries,
@@ -223,7 +297,8 @@ if (CHECK) {
     process.exitCode = 1;
   } else {
     console.log(
-      `Documentation inventory is current (${entries.length} entries).`,
+      `Documentation inventory is current (${entries.length} entries, ` +
+        `${trackedFiles} tracked files @ ${SHA.slice(0, 8)}).`,
     );
   }
 } else {

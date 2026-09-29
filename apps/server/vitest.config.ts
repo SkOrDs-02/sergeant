@@ -23,7 +23,13 @@ export default defineConfig({
     // тести мокають пул чергою `mockResolvedValueOnce`, і позаплановий
     // UPDATE зʼїдає чужу відповідь. Сама поведінка покрита в
     // `src/lib/lastSeen.test.ts`, де прапорець вмикається явно.
-    env: { LAST_SEEN_TRACKING_ENABLED: "false" },
+    // Тіньовий Jev-детектор увімкнений за замовчуванням і ходить у мережу з
+    // кожного `prepareToolResults`; у юнітах вимкнений з тієї ж причини, а
+    // вмикається явно в `chat/injectionShadowJev.test.ts`.
+    env: {
+      LAST_SEEN_TRACKING_ENABLED: "false",
+      CHAT_INJECTION_JEV_SHADOW: "false",
+    },
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
@@ -66,7 +72,7 @@ export default defineConfig({
         //    docs/work/specs/tech-debt/backend.md § "Tests coverage map"
         //    reconciled the same day.
         //  - 2026-08-04 actual: lines 92.95 / branches 82.75 / fns 92.05
-        //    (coverage-depth audit, docs/90-work/audits/
+        //    (coverage-depth audit, docs/work/specs/audits/
         //    2026-08-04-test-coverage-depth-audit.md). Floors ratcheted to
         //    fact − 5пп: the old 60/48/63 safety net sat ~30пп below fact —
         //    a legal degradation corridor no gate would flag. The repo-root

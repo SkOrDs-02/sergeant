@@ -1,4 +1,3 @@
-import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
@@ -30,6 +29,25 @@ const User = schemas.UserSchema.meta({
 const MeResponse = schemas.MeResponseSchema.meta({
   id: "MeResponse",
   description: "Відповідь на GET /api/me.",
+});
+const MeDeleteBody = schemas.MeDeleteBodySchema.meta({
+  id: "MeDeleteBody",
+  description:
+    "Тіло DELETE /api/me. Пароль обовʼязковий для акаунтів із credential-входом і безпредметний для OAuth-акаунтів.",
+});
+const MeDeleteResponse = schemas.MeDeleteResponseSchema.meta({
+  id: "MeDeleteResponse",
+  description:
+    "Відповідь DELETE /api/me. `deletedAt` — коли сервер прийняв прохання; `scheduledPurgeAt` — коли акаунт зникне (30 днів).",
+});
+const MeDeletionStatusResponse = schemas.MeDeletionStatusResponseSchema.meta({
+  id: "MeDeletionStatusResponse",
+  description:
+    "Відповідь GET /api/me/deletion-status. `pending: false` — акаунт активний, дат немає.",
+});
+const MeRestoreResponse = schemas.MeRestoreResponseSchema.meta({
+  id: "MeRestoreResponse",
+  description: "Відповідь POST /api/me/restore — прохання скасоване.",
 });
 const UserProfilePutBody = schemas.UserProfilePutBodySchema.meta({
   id: "UserProfilePutBody",
@@ -133,14 +151,6 @@ const CoachMemoryPost = schemas.CoachMemoryPostSchema.meta({
 const PrivatQuery = schemas.PrivatQuerySchema.meta({
   id: "PrivatQuery",
   description: "Query для GET /api/privat.",
-});
-const PushSubscribe = schemas.PushSubscribeSchema.meta({
-  id: "PushSubscribe",
-  description: "Web-push subscribe (legacy).",
-});
-const PushUnsubscribe = schemas.PushUnsubscribeSchema.meta({
-  id: "PushUnsubscribe",
-  description: "Web-push unsubscribe (legacy).",
 });
 const PushRegister = schemas.PushRegisterSchema.meta({
   id: "PushRegister",
@@ -341,7 +351,7 @@ const BillingCheckoutResponse = schemas.BillingCheckoutResponseSchema.meta({
 const BillingStatusResponse = schemas.BillingStatusResponseSchema.meta({
   id: "BillingStatusResponse",
   description:
-    "Поточний subscription state користувача, серіалізований з subscriptions (m056).",
+    "Поточний subscription state користувача, серіалізований з subscriptions (m056), плюс знімок доступу `access` (стан free/trial/pro/grace, фічі реєстру, тижневі лічильники).",
 });
 const BillingPortalResponse = schemas.BillingPortalResponseSchema.meta({
   id: "BillingPortalResponse",
@@ -495,6 +505,10 @@ const ApiError = z
 export const namedSchemas = {
   User,
   MeResponse,
+  MeDeleteBody,
+  MeDeleteResponse,
+  MeDeletionStatusResponse,
+  MeRestoreResponse,
   UserProfilePutBody,
   UserProfileResponse,
   ChatRequest,
@@ -517,8 +531,6 @@ export const namedSchemas = {
   CoachInsight,
   CoachMemoryPost,
   PrivatQuery,
-  PushSubscribe,
-  PushUnsubscribe,
   PushRegister,
   PushUnregister,
   PushSend,
@@ -582,5 +594,3 @@ export const namedSchemas = {
   ImportBatchUndoResponse,
   ApiError,
 } as const;
-
-export { createDocument };

@@ -103,7 +103,7 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "info",
             label: ss.aboutExercise,
-            icon: <Icon name="info" size={16} aria-hidden />,
+            icon: <Icon name="info" size="md" aria-hidden />,
             onSelect: onOpenInfo,
           },
         ]
@@ -114,7 +114,7 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "stats",
             label: ss.exerciseStats,
-            icon: <Icon name="trending-up" size={16} aria-hidden />,
+            icon: <Icon name="trending-up" size="md" aria-hidden />,
             onSelect: onOpenStats,
           },
         ]
@@ -125,7 +125,7 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "ungroup",
             label: ss.ungroup,
-            icon: <Icon name="scissors" size={16} aria-hidden />,
+            icon: <Icon name="scissors" size="md" aria-hidden />,
             onSelect: onUngroup,
           },
         ]
@@ -136,7 +136,7 @@ export function SessionExerciseFocus({
             type: "item" as const,
             id: "remove",
             label: ss.removeFromWorkout,
-            icon: <Icon name="trash" size={16} aria-hidden />,
+            icon: <Icon name="trash" size="md" aria-hidden />,
             destructive: true,
             onSelect: onRemoveItem,
           },
@@ -197,7 +197,7 @@ export function SessionExerciseFocus({
                 type="button"
                 aria-label={`${ss.moreActions}: ${it.nameUk}`}
               >
-                <Icon name="more-horizontal" size={16} aria-hidden />
+                <Icon name="more-horizontal" size="md" aria-hidden />
               </Button>
             }
           />
@@ -234,7 +234,7 @@ export function SessionExerciseFocus({
             aria-label={`${ss.prevExercise}: ${prev.nameUk}`}
             className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-xl px-2 text-style-label text-muted hover:text-text"
           >
-            <Icon name="chevron-left" size={16} aria-hidden />
+            <Icon name="chevron-left" size="md" aria-hidden />
             <span className="truncate">{prev.nameUk}</span>
           </button>
         ) : (
@@ -248,7 +248,7 @@ export function SessionExerciseFocus({
             className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-xl px-2 text-style-label font-semibold text-fizruk-strong dark:text-fizruk hover:bg-fizruk-surface"
           >
             <span className="truncate">{next.nameUk}</span>
-            <Icon name="chevron-right" size={16} aria-hidden />
+            <Icon name="chevron-right" size="md" aria-hidden />
           </button>
         ) : (
           <span />

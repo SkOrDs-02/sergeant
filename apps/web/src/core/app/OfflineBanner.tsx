@@ -36,7 +36,7 @@ import { useOutboxPurgeNotice } from "../syncEngine/outboxPurgeNotice";
 // Плашка виняткового стану розміщується під 68px-хедером і не перекриває
 // його назву та дії. У нормальному стані індикатор не показується.
 const PILL_CLS =
-  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 type BannerState = "blocked" | "offline" | "syncing" | "rejected" | "purged";
 
@@ -96,8 +96,18 @@ export function OfflineBanner() {
               ? "purged"
               : null;
 
-  // Online and nothing waiting — the happy path needs no chrome.
-  if (state === null) return null;
+  // Живий регіон стоїть у DOM завжди, і коли банера немає: регіон, що
+  // зʼявляється разом зі своїм текстом, скрінрідери не озвучують, тож
+  // перехід в офлайн мовчав. Оголошуємо стан, а не лічильник черги:
+  // «Синхронізація · N» перечитувався б на кожен запис у черзі.
+  const statusRegion = (text: string) => (
+    <span role="status" className="sr-only">
+      {text}
+    </span>
+  );
+
+  // Online and nothing waiting: the happy path needs no chrome.
+  if (state === null) return <>{statusRegion("")}</>;
 
   const view =
     state === "blocked"
@@ -142,11 +152,17 @@ export function OfflineBanner() {
                 label: `Синхронізація · ${queueLabel(pending)}`,
               };
 
+  const announcement =
+    state === "offline"
+      ? "Офлайн"
+      : state === "syncing"
+        ? "Синхронізація"
+        : view.label;
+
   const content = (
     <>
       <button
         type="button"
-        aria-live="polite"
         data-testid="offline-banner"
         data-state={state}
         onClick={() => setSheetOpen(true)}
@@ -155,7 +171,7 @@ export function OfflineBanner() {
       >
         <Icon
           name={view.icon}
-          size={12}
+          size="xs"
           strokeWidth={2.5}
           aria-hidden
           className={cn(view.iconClass)}
@@ -174,6 +190,12 @@ export function OfflineBanner() {
     </>
   );
 
-  if (headerSlot === undefined) return null;
-  return headerSlot ? createPortal(content, headerSlot) : content;
+  // Той самий Fragment зі статусом першим, що й у гілці без банера: React
+  // оновлює наявний вузол регіону, а не монтує новий.
+  return (
+    <>
+      {statusRegion(announcement)}
+      {headerSlot ? createPortal(content, headerSlot) : content}
+    </>
+  );
 }

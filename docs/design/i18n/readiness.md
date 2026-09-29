@@ -1,11 +1,26 @@
 # i18n readiness — Sergeant web
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-19.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-27.
 > **Status:** Active
+
+> **Стан на 2026-09-16 — читай перед фазами нижче.** Фази 1–3 описані
+> вірно, але (а) каталог давно не «`uk.ts` на 6 груп»: це агрегатор над
+> `uk.core.ts` і десятьма модульними файлами, ~32 групи / ~1300 ключів, з
+> вимогою, щоб eager-поверхні імпортували лише `uk.core`
+> ([`uk.core.eagerImports.test.ts`](../../../apps/web/src/shared/i18n/uk.core.eagerImports.test.ts));
+> (б) **Phase 4 частково приземлилась, але не за планом нижче**: без
+> `i18next` — власний `getMessages(lang)` в `index.ts`, часткова `en.ts`
+> (~30 груп) і `useLocale` (`?lang=en` → `localStorage["sergeant:locale"]`).
+> Механічної перевірки паритету EN ↔ UK немає і не буде: **рішення
+> власника 2026-09-16 — EN заморожено як фундамент** (S10-R2 закрито);
+> (в) allowlist — **300** файлів, не 283, правило живе в `eslint.web.js`,
+> не в `eslint.config.js`, і з 2026-09-16 число тримає храповик
+> `cyrillicJsxAllowlist` у `check-ui-canon-ratchet.mjs` (стеля 300, лише
+> вниз). Зведення — [`README.md`](./README.md).
 
 ## Контекст
 
-Сергеант поки **UA-only** і не приймає англомовних beta-юзерів. Запускати повний `i18next` / `lingui` runtime до того, як з'явиться продукт-вимога — це expensive yak-shave: ~20–30 годин на migration, плюс recurring cost кожного нового рядка.
+Сергеант UA-first; англомовних beta-юзерів не набирає, EN-локаль часткова (див. вище). Запускати повний `i18next` / `lingui` runtime до того, як з'явиться продукт-вимога — це expensive yak-shave: ~20–30 годин на migration, плюс recurring cost кожного нового рядка.
 
 Натомість ми робимо **lightweight foundation**, що готує ґрунт для майбутнього runtime-i18n за один крок:
 
@@ -19,10 +34,10 @@ Roadmap-довідник: [`docs/work/specs/audits/2026-05-03-web-deep-dive`](ht
 
 ## Foundation (готово — round 10–14)
 
-- ✅ Створено `apps/web/src/shared/i18n/uk.ts` з 6 групами:
-  `messages.auth.*`, `messages.sync.*`, `messages.validation.*`,
-  `messages.actions.*`, `messages.empty.*`, `messages.errors.generic.*`,
-  `messages.toast.*` (round 14: розширено до 6 груп, ~80 ключів).
+- ✅ Створено `apps/web/src/shared/i18n/uk.ts` — на round 14 із 7 групами
+  (`auth`, `sync`, `validation`, `actions`, `empty`, `errors.generic`,
+  `toast`, ~80 ключів). Станом на 2026-09-16 файл — агрегатор: групи
+  ядра переїхали в `uk.core.ts`, модульні — у `uk.<module>.ts`.
 - ✅ `translateAuthError` (`apps/web/src/core/auth/AuthContext.tsx`)
   переведено на `messages.auth.*`. Існуючі тести (`AuthContext.test.tsx`
   — 22 кейси) лишаються зеленими — string-rendering ідентичний.
@@ -35,7 +50,7 @@ Roadmap-довідник: [`docs/work/specs/audits/2026-05-03-web-deep-dive`](ht
     TagsSection) переведено на `messages.validation.*` (~22 рядки,
     20 нових ключів). Тести пройдено без зміни assertions.
   - ESLint rule `sergeant-design/no-cyrillic-jsx-literal` додано в
-    warn-режимі з allowlist на 283 файли (станом на 2026-08-08; round-14 baseline був 239)
+    warn-режимі з allowlist на 300 файлів (станом на 2026-09-16; 283 на 2026-08-08, round-14 baseline був 239)
     (`apps/web/eslint.i18n-allowlist.json`). Burndown — зменшувати
     allowlist у наступних PR-ах; коли `[]` — promote до `error`.
   - Unit tests rule-у: 13 кейсів (file scoping, allowlist behaviour,
@@ -75,7 +90,7 @@ inline-літерали в JSX → ці групи; кожна міграція 
 allowlist-у.
 
 **Tooling — `i18n-burndown` codemod** (round 15+):
-[`scripts/codemods/i18n-burndown/`](../../../scripts/codemods/i18n-burndown/README.md)
+[`scripts/codemods/i18n-burndown/`](../../../scripts/codemods/i18n-burndown/) (README — рівнем вище, [`scripts/codemods/README.md`](../../../scripts/codemods/README.md))
 — AST-кодомод, який бере allowlist-файл, шукає JSX-text + JSX-attribute
 UA-літерали, мапить їх до існуючих ключів каталогу і переписує лише ті
 файли, де **усі** літерали зматчилися (інакше пропускає, щоб не
@@ -104,20 +119,37 @@ node scripts/codemods/i18n-burndown/script.mjs --filter=foo # subset
 (`messages.x.y`), template literals (next-round scope), та файли з
 allowlist у `apps/web/eslint.i18n-allowlist.json`.
 
-Round-14 baseline: 239 файлів у allowlist; поточний стан — 283 (регрес, див. таблицю нижче). Кожен наступний PR
-скорочує цей файл (одне-два видалення на PR). Після `[]` — promote
-до `"error"` у `eslint.config.js`.
+Round-14 baseline: 239 файлів у allowlist; поточний стан — 300 (регрес, див. таблицю нижче), і з 2026-09-16 це стеля храповика
+`cyrillicJsxAllowlist` (`pnpm lint:ui-canon`): дописати файл можна, лише прибравши інший. Кожен наступний PR
+скорочує цей файл (одне-два видалення на PR) і опускає стелю через `--update`. Після `[]` — promote
+до `"error"` у `eslint.web.js` (правило й allowlist підключені там, рядок
+`sergeant-design/no-cyrillic-jsx-literal: ["warn", { allowlist }]`, скоуп
+`apps/web/**/*.{ts,tsx,js,jsx}`).
 
-### Phase 4 — Runtime swap (тільки коли є product-вимога)
+### Phase 4 — Runtime swap (частково приземлилась, без `i18next`)
 
-Якщо/коли з'явиться англомовний MVP:
+План був: `i18next` + `react-i18next`, дзеркальна `en.ts`, codemod
+`messages.x.y` → `t('x.y')`, `i18n.changeLanguage(...)`. **Фактично
+зроблено інакше** (ініціатива 0010, EN-foundation):
 
-1. Додати `i18next` + `react-i18next` як залежності `@sergeant/web`.
-2. Створити `apps/web/src/shared/i18n/en.ts` (mirror структури `uk.ts`, всі value-strings перекласти).
-3. Замінити `messages.x.y` на `t('x.y')` через codemod (jscodeshift або перетворення у IDE).
-4. Локально вибрати локаль через `i18n.changeLanguage(...)`.
+1. `apps/web/src/shared/i18n/index.ts` — `Locale = "uk" | "en"`,
+   `SUPPORTED_LOCALES`, `parseLocale`, `getMessages(lang)`: EN накладається
+   поверх UK неглибоким merge-ем, незакриті ключі лишаються українськими.
+2. `en.ts` (~30 груп: auth, sync, validation, actions, status, nav, empty,
+   errors, toast, hub, onboarding, paywall, legal, whatsNew …) плюс
+   `en.pricing.ts`, `en.nutritionTdee.ts`. Модульні каталоги (finyk, fizruk,
+   nutrition, routine) англійської не мають.
+3. `useLocale.ts` — `?lang=` → `localStorage["sergeant:locale"]` → `uk`;
+   `setLocale`. Споживачів — вісім поверхонь (PricingPage, HubReports,
+   екрани Їжі); решта продукту читає `messages` напряму, тобто завжди UA.
+4. Codemod `messages.x.y → t()` не робився і не потрібен: `getMessages`
+   повертає той самий типізований обʼєкт.
 
-Час: ~4–6 годин для swap, бо foundation вже готовий.
+Рішення власника 2026-09-16: EN — **лише foundation**, заморожено.
+`lint:i18n-parity` не пишеться, переклад не доробляється, перемикач мови в
+UI не показується. Натомість allowlist кирилиці тримає храповик
+`cyrillicJsxAllowlist` (стеля 300), щоб каталог не розмивався далі. S10-R2
+у `tech-debt/frontend.md` закрито цим рішенням.
 
 ## Coverage tracking
 
@@ -127,7 +159,7 @@ allowlist-у через follow-up PR-и. Перевірити фактичну �
 
 ```bash
 jq 'length' apps/web/eslint.i18n-allowlist.json
-# → 283 (2026-08-08; число росте, коли нові екрани заходять із inline-кирилицею)
+# → 300 (2026-09-16; 283 на 2026-08-08 — росло, коли нові екрани заходили з inline-кирилицею; з 2026-09-16 стеля храповика)
 ```
 
 Або через ESLint warning count (eslint-rule безпосередньо):
@@ -148,6 +180,7 @@ Burndown plan (один файл за PR ↦ кілька десятків PR; �
 | 16    | 199            | High-frequency burndown: +9 catalog-груп, codemod multi-line-import bug fixed; 34 файли мігровано (50 replacements)                                                                                                                  |
 | 17    | 236            | Fizruk pages burndown: `Progress`, `Programs`, `Measurements`, `Body` + `Body/Journal{Section,EntryCard}` мігровано у `messages.fizruk.{progress,programs,measurements,body,journal}` (87 JSX-літералів, 6 файлів знято з allowlist) |
 | 18+   | 292            | **Регрес:** нові екрани (бета-хвиля) заходили з inline-кирилицею швидше, ніж ішов burndown — allowlist переріс baseline round-14. Перш ніж продовжувати codemod-раунди, треба зупинити приплив (rule на `error` для нових файлів).   |
+| 09-16 | 300            | Замір 2026-09-16 (`jq length`): приплив не зупинено — +8 за місяць. Механізму «error для нових файлів» досі немає.                                                                                                                   |
 | —     | 0              | Ціль: promote rule до `"error"` глобально                                                                                                                                                                                            |
 
 Сирий мір по проекту (всі UA-strings, не тільки JSX-літерали; для
@@ -164,8 +197,8 @@ rg -n --glob='apps/web/src/**' --glob='!apps/web/src/shared/i18n/**' \
 
 ## Не робити поки нема вимоги
 
-- ❌ Не додавати `i18next` runtime раніше Phase 4. Foundation-каталог достатній.
-- ❌ Не перекладати `uk.ts` на англійську "про запас" — це створить divergence.
+- ❌ Не додавати `i18next` runtime — власний `getMessages` / `useLocale` уже покриває потребу.
+- ❌ Не розширювати `en.ts` на модульні каталоги «про запас»: divergence, якого це правило боялось, уже є (EN часткова, паритет не гейтиться). Спершу гейт паритету, потім переклад.
 - ❌ Не міняти UA-asserts у тестах.
 
 ## Hard rule references

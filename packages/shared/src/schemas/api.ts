@@ -71,6 +71,14 @@ const HubPrefsBagSchema = z
     message: `hubPrefs: не більше ${HUB_PREFS_MAX_KEYS} ключів`,
   });
 
+/**
+ * Стеля нагадувань на київську добу (міграція 148). Спільна для сервера,
+ * який її застосовує, і клієнта, який малює перемикач: розбіжність тут
+ * означала б, що UI пропонує значення, яке CHECK у БД відкине.
+ */
+export const PUSH_DAILY_CAP_DEFAULT = 2;
+export const PUSH_DAILY_CAP_MAX = 4;
+
 export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
@@ -89,6 +97,22 @@ export const UserPreferencesSchema = z.object({
    * тож «поля нема» і «поле false» означають рівно те саме.
    */
   sergeantNudges: z.boolean().default(false),
+  /**
+   * Скільки нагадувань на добу може надіслати сервер (спека
+   * `reward-loop-and-reminders.md`). Приводи понад стелю не губляться, а
+   * згортаються в одне сповіщення; `0` вимикає нагадування зовсім.
+   *
+   * `.default(...)` з тієї ж rolling-deploy причини, що й сусіди: новий
+   * клієнт може розмовляти зі старим сервером, який поля ще не віддає.
+   * Дефолт збігається з `DEFAULT` колонки, тож «поля нема» означає рівно
+   * те, що сервер і так застосує.
+   */
+  pushDailyCap: z
+    .number()
+    .int()
+    .min(0)
+    .max(PUSH_DAILY_CAP_MAX)
+    .default(PUSH_DAILY_CAP_DEFAULT),
   /**
    * Explicit consent for processing health-adjacent data (fizruk
    * workouts/wellbeing, nutrition logs) per GDPR Art. 9 — special category
@@ -150,6 +174,7 @@ export const UserPreferencesPatchSchema = z
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
     sergeantNudges: z.boolean().optional(),
+    pushDailyCap: z.number().int().min(0).max(PUSH_DAILY_CAP_MAX).optional(),
     healthDataConsent: z.boolean().optional(),
     /**
      * Відсутнє поле = «не чіпай вибір»; `null` = «прибери серверний
@@ -183,12 +208,35 @@ export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
 
 const ExportRecordSchema = z.record(z.string(), z.unknown());
 
+/** Таблиці одного продуктового модуля: ключ — імʼя таблиці як у базі. */
+const ExportModuleSectionSchema = z.record(
+  z.string(),
+  z.array(ExportRecordSchema),
+);
+
+/** Що свідомо не потрапило у файл, із причиною для людини. */
+const ExportExclusionSchema = z.object({
+  group: z.string(),
+  tables: z.array(z.string()),
+  reason: z.string(),
+});
+
 export const MeExportResponseSchema = z.object({
   generatedAt: z.string().datetime({ offset: true }),
   user: UserSchema,
   preferences: UserPreferencesSchema,
   data: z.object({
+    /**
+     * @deprecated Завжди `[]`. Ключ лишається від таблиці `module_data`,
+     * дропнутої міграцією 046; справжні дані модулів — у секціях `finyk`,
+     * `fizruk`, `nutrition`, `routine` нижче. Не наповнюється навмисно,
+     * щоб старий споживач не прочитав новий вміст за старою семантикою.
+     */
     moduleData: z.array(ExportRecordSchema),
+    finyk: ExportModuleSectionSchema,
+    fizruk: ExportModuleSectionSchema,
+    nutrition: ExportModuleSectionSchema,
+    routine: ExportModuleSectionSchema,
     mono: z.object({
       connection: ExportRecordSchema.nullable(),
       accounts: z.array(ExportRecordSchema),
@@ -201,19 +249,61 @@ export const MeExportResponseSchema = z.object({
       webSubscriptions: z.array(ExportRecordSchema),
       devices: z.array(ExportRecordSchema),
     }),
-    ai: z.object({
-      usageDaily: z.array(ExportRecordSchema),
-      memories: z.array(ExportRecordSchema),
-    }),
+    excluded: z.array(ExportExclusionSchema),
   }),
 });
 export type MeExportResponse = z.infer<typeof MeExportResponseSchema>;
 
+/**
+ * Тіло `DELETE /api/me`. Пароль обовʼязковий для акаунтів із
+ * credential-входом і безпредметний для тих, хто заходить лише через
+ * OAuth (`modules/me/verifyAccountPassword.ts` робить цю розвилку).
+ * До появи 30-денного вікна цю перевірку тримав Better Auth на
+ * `POST /api/auth/delete-user`.
+ */
+export const MeDeleteBodySchema = z.object({
+  password: z.string().min(1).max(128).optional(),
+});
+export type MeDeleteBody = z.infer<typeof MeDeleteBodySchema>;
+
+/**
+ * `DELETE /api/me` більше не видаляє одразу: воно ПОЗНАЧАЄ акаунт, і
+ * незворотне видалення виконує добивач через `ACCOUNT_DELETION_GRACE_DAYS`
+ * днів (спека docs/work/specs/user-deletion-grace-window.md, ADR-0098).
+ *
+ * `deletedAt` лишається під старим імʼям і старим змістом «коли сервер
+ * прийняв прохання» — його читає наявний UI. Нове поле `scheduledPurgeAt`
+ * несе дату, після якої акаунт зникне; саме його показує екран-блокер.
+ */
 export const MeDeleteResponseSchema = z.object({
   ok: z.literal(true),
   deletedAt: z.string().datetime({ offset: true }),
+  scheduledPurgeAt: z.string().datetime({ offset: true }),
 });
 export type MeDeleteResponse = z.infer<typeof MeDeleteResponseSchema>;
+
+/**
+ * `GET /api/me/deletion-status` — те, чим екран-блокер малює себе.
+ * `pending: false` означає активний акаунт, і тоді дат немає.
+ */
+export const MeDeletionStatusResponseSchema = z.discriminatedUnion("pending", [
+  z.object({ pending: z.literal(false) }),
+  z.object({
+    pending: z.literal(true),
+    requestedAt: z.string().datetime({ offset: true }),
+    scheduledPurgeAt: z.string().datetime({ offset: true }),
+  }),
+]);
+export type MeDeletionStatusResponse = z.infer<
+  typeof MeDeletionStatusResponseSchema
+>;
+
+/** `POST /api/me/restore` — скасування прохання, акаунт знову активний. */
+export const MeRestoreResponseSchema = z.object({
+  ok: z.literal(true),
+  restoredAt: z.string().datetime({ offset: true }),
+});
+export type MeRestoreResponse = z.infer<typeof MeRestoreResponseSchema>;
 
 // ────────────────────── Profile write-through (/api/me/profile) ───────────
 
@@ -369,7 +459,7 @@ const ToolUseBlockSchema = z
     name: z.string().min(1).max(200),
     input: z.unknown(),
     /**
-     * AI-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+     * AI-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
      * OpenRouter's `tool_use` blocks carry a `caller` field that Anthropic's
      * own API doesn't emit (provenance of which upstream hop issued the
      * call). `.strict()` below rejected the whole block for this one
@@ -464,7 +554,7 @@ export const ChatRequestSchema = z.object({
   tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
   stream: z.boolean().optional(),
   /**
-   * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+   * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
    * — echo-иться назад із першого-турового `tool_calls`-відповіді на другому
    * (tool-result-синтезному) запиті того самого ходу. Сервер видає його лише
    * своєму ж юзеру (`chatRoundTripTicket.ts`), одноразово й короткоживуче;
@@ -477,9 +567,9 @@ export const ChatRequestSchema = z.object({
 });
 
 /**
- * GET /api/chat/usage (PR-42 chat counter). `limit`/`remaining` are `null`
- * for Pro (unlimited `aiRequestsPerDay` — see `billing/effectiveLimits`);
- * the frontend counter pill hides itself in that case.
+ * GET /api/chat/usage (PR-42 chat counter). Тижневе відро `ai.actions`
+ * реєстру доступу (`billing/entitlements.ts`); `limit`/`remaining` = `null`
+ * для Premium (без ліміту).
  */
 export const ChatUsageResponseSchema = z.object({
   plan: z.enum(["free", "pro"]),
@@ -493,14 +583,13 @@ export type ChatUsageResponse = z.infer<typeof ChatUsageResponseSchema>;
  * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
  * літерали тут (а не enum-import з server-only модуля), щоб
  * `@sergeant/shared` лишився edge-runtime-friendly без deps на Postgres.
+ *
+ * Звужено до чотирьох живих значень ініціативою 0024, PR-3 (2026-09-19):
+ * `chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` — шість
+ * джерел без жодного продюсера в дереві — прибрані звідси разом зі
+ * звуженням CHECK-констрейнта `ai_memories_source_check` (міграція 144).
  */
 const RECALL_MEMORY_SOURCES = [
-  "chat",
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-  "journal",
   "digest",
   "cofounder",
   // Migration 068 historically used `product` for PostHog → AI-memory sync.
@@ -1033,7 +1122,7 @@ export const CoachMemoryPostSchema = z.object({
 // other callers, so the sunset middleware no longer needs them for
 // payload validation.
 //
-// Stage 2 / PR #021 із `docs/planning/storage-roadmap.md`. v2 — per-row
+// Stage 2 / PR #021 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. v2 — per-row
 // op-log замість whole-blob LWW v1. Ці схеми валідують HTTP-payload
 // до того, як handler звертається до `sync_op_log`. Серверний whitelist
 // дозволених `table` живе в `apps/server/src/modules/sync/syncV2.ts`
@@ -1146,15 +1235,6 @@ export const PrivatQuerySchema = z
 const PushKeys = z.object({
   p256dh: z.string().min(1).max(256),
   auth: z.string().min(1).max(256),
-});
-
-export const PushSubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
-  keys: PushKeys,
-});
-
-export const PushUnsubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
 });
 
 /**
@@ -1366,7 +1446,7 @@ export type MonoAccountsResponse = z.infer<typeof MonoAccountsResponseSchema>;
  * sub-accounts — `goal` is the user-set target amount in the jar itself
  * (nullable when the user never set one in the Monobank app), used as the
  * default target when a Фінік goal links to this jar
- * (docs/90-work/planning/specs/goal-progress-auto.md).
+ * (docs/work/specs/goal-progress-auto.md).
  */
 export const MonoJarDtoSchema = z.object({
   userId: z.string().min(1),
@@ -1570,7 +1650,9 @@ export const WaitlistSubmitResponseSchema = z.object({
   ok: z.literal(true),
   // `created` — true якщо це новий запис; false якщо email уже був у списку.
   // Дозволяє UI показати «ми памʼятаємо твій інтерес» замість «дякуємо що
-  // підписався» — без розкриття конкретики.
+  // підписався». Це СВІДОМО розкриває членство у вейтлисті (і нічого
+  // більше — таблиця окрема від акаунтів); повний розбір інваріанта — у
+  // doc-string `apps/server/src/routes/waitlist.ts`.
   created: z.boolean(),
 });
 export type WaitlistSubmitResponse = z.infer<
@@ -1678,9 +1760,41 @@ export const BillingSubscriptionSchema = z.object({
 });
 export type BillingSubscription = z.infer<typeof BillingSubscriptionSchema>;
 
-export const BillingStatusResponseSchema = z.object({
+/** Відповідь провайдера білінгу: лише рядок підписки, без знімка доступу. */
+export const BillingSubscriptionStatusSchema = z.object({
   subscription: BillingSubscriptionSchema,
 });
+export type BillingSubscriptionStatus = z.infer<
+  typeof BillingSubscriptionStatusSchema
+>;
+
+const BillingMeterSchema = z.object({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().nonnegative().nullable(),
+  resetsAt: z.string(),
+});
+export type BillingMeter = z.infer<typeof BillingMeterSchema>;
+
+// Знімок доступу (`docs/work/specs/access-tiers.md`). Сервер обчислює стан і
+// лічильники сам, web нічого не виводить із `plan`: під час trial і grace два
+// місця обчислення розійшлися б.
+export const BillingAccessSchema = z.object({
+  state: z.enum(["free", "trial", "pro", "grace"]),
+  trialEndsAt: z.string().nullable(),
+  graceEndsAt: z.string().nullable(),
+  features: z.record(z.string(), z.boolean()),
+  meters: z.object({
+    aiActions: BillingMeterSchema,
+    aiPhoto: BillingMeterSchema,
+    finykVision: BillingMeterSchema,
+  }),
+});
+export type BillingAccess = z.infer<typeof BillingAccessSchema>;
+
+export const BillingStatusResponseSchema =
+  BillingSubscriptionStatusSchema.extend({
+    access: BillingAccessSchema,
+  });
 export type BillingStatusResponse = z.infer<typeof BillingStatusResponseSchema>;
 
 // `POST /api/billing/portal` — створює manage-session і повертає

@@ -8,12 +8,17 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
-import { BentoCard } from "./BentoCard";
+import { BentoCard, SortableCard } from "./BentoCard";
 import type { ModuleConfig } from "./moduleConfigs";
 import { moduleHasRealEntry } from "../../onboarding/firstRealEntry";
 
 vi.mock("../../onboarding/firstRealEntry", () => ({
   moduleHasRealEntry: vi.fn(() => false),
+}));
+const trackEventMock = vi.fn();
+vi.mock("../../observability/analytics", () => ({
+  trackEvent: (...args: unknown[]) => trackEventMock(...args),
+  ANALYTICS_EVENTS: { HUB_MODULE_TILE_CLICKED: "hub_module_tile_clicked" },
 }));
 
 const hasRealEntryMock = vi.mocked(moduleHasRealEntry);
@@ -72,6 +77,32 @@ describe("BentoCard", () => {
     expect(container.querySelector('[style="width: 100%;"]')).toBeTruthy();
   });
 
+  it("names the trend in the card label and badge with one format", () => {
+    render(
+      <BentoCard
+        config={makeConfig({ main: "4/5", sub: null }, { trendDelta: -0.05 })}
+        onClick={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Рутина: 4/5, зміна −5 %" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Зміна: −5 %")).toHaveTextContent("5%");
+  });
+
+  it("treats a trend that rounds to zero as no change", () => {
+    render(
+      <BentoCard
+        config={makeConfig({ main: "4/5", sub: null }, { trendDelta: 0.004 })}
+        onClick={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Рутина: 4/5" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Зміна:/)).toBeNull();
+  });
+
   it("renders empty and inactive states with distinct accessible labels", () => {
     const { rerender } = render(
       <BentoCard
@@ -95,7 +126,7 @@ describe("BentoCard", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Рутина: неактивний модуль. Увімкнути в налаштуваннях Hub.",
+        name: "Рутина: неактивний модуль. Увімкнути в налаштуваннях.",
       }),
     ).toHaveAttribute("data-inactive", "true");
     expect(
@@ -212,5 +243,64 @@ describe("BentoCard", () => {
 
     expect(screen.getByText("0 ₴")).toBeInTheDocument();
     expect(screen.queryByText(config.emptyPromise)).not.toBeInTheDocument();
+  });
+
+  it("тримає фокус усередині аркуша швидких дій і закривається на Escape", async () => {
+    // Регресія WF-3 (аудит 2026-09-16): аркуш оголошував
+    // `role="dialog" aria-modal="true"`, але пастки фокуса не мав —
+    // Tab ішов у картки під ним. Escape же висів `onKeyDown`-ом на
+    // бекдропі з `aria-hidden` і без `tabIndex`, тобто на вузлі, який
+    // фокус ніколи не отримує: обробник не спрацьовував ЖОДНОГО разу.
+    vi.useFakeTimers();
+    try {
+      const { container } = render(
+        <SortableCard
+          id="finyk"
+          onOpenModule={vi.fn()}
+          displayOrder={["finyk"]}
+          sortableHandlers={{ onDragStart: vi.fn(), onDragEnd: vi.fn() }}
+        />,
+      );
+
+      act(() => {
+        fireEvent.pointerDown(container.firstChild as Element, { button: 0 });
+        vi.advanceTimersByTime(600);
+      });
+
+      const dialog = screen.getByRole("dialog", { name: /Швидкі дії/ });
+      // Пастка перевела фокус усередину — інакше Tab-цикл не замикається.
+      expect(dialog.contains(document.activeElement)).toBe(true);
+
+      act(() => {
+        fireEvent.keyDown(document, { key: "Escape" });
+      });
+      expect(
+        screen.queryByRole("dialog", { name: /Швидкі дії/ }),
+      ).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("клік по плитці стріляє HUB_MODULE_TILE_CLICKED і відкриває модуль", () => {
+    // Базова лінія перед віссю дії хабу (P3): до цього в теці dashboard
+    // був один trackEvent, і той про стрік — вхід у модуль через плитку
+    // не мірявся взагалі.
+    trackEventMock.mockClear();
+    const onOpenModule = vi.fn();
+    render(
+      <SortableCard
+        id="routine"
+        onOpenModule={onOpenModule}
+        displayOrder={["routine"]}
+        sortableHandlers={{ onDragStart: vi.fn(), onDragEnd: vi.fn() }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Рутина/ }));
+    expect(trackEventMock).toHaveBeenCalledWith("hub_module_tile_clicked", {
+      module: "routine",
+      inactive: false,
+    });
+    expect(onOpenModule).toHaveBeenCalledWith("routine");
   });
 });

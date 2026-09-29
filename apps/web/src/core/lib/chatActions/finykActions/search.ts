@@ -14,6 +14,7 @@ import {
   unknownTransactionMessage,
 } from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
+import { formatNumberUk } from "@sergeant/shared";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
@@ -184,7 +185,7 @@ function formatTxList(items: FinykSearchTx[]): string {
       const category = tx.category ? ` · ${tx.category}` : "";
       const desc = tx.description ? ` · ${tx.description}` : "";
       const source = txSourceOf(tx);
-      return `${tx.id}: ${tx.date || "без дати"} · ${toDisplayAmount(tx, source)} грн${desc}${category}`;
+      return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(toDisplayAmount(tx, source))} грн${desc}${category}`;
     })
     .join("; ");
 }
@@ -208,7 +209,7 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   finykChatWrite("finyk_tx_cats", cats);
   const customC = getCachedFinykSqliteState().customCategories;
   const cat = resolveExpenseCategoryMeta(categoryId, customC);
-  const result = `Категорію транзакції ${txId} змінено на ${cat?.label || categoryId}`;
+  const result = `Категорію операції ${txId} змінено на ${cat?.label || categoryId}`;
   return {
     result,
     undo: () => {
@@ -238,7 +239,7 @@ export function findTransaction(
       : 0.01;
   const query = String(input.query || "").trim();
   if (!query && amount === undefined && !input.date_from && !input.date_to) {
-    return "Потрібен query, amount або date-фільтр для пошуку транзакції.";
+    return "Потрібен query, amount або date-фільтр для пошуку операції.";
   }
   const limit = clampLimit(input.limit, 5, 10);
   const matches = readSearchTransactions()
@@ -252,8 +253,8 @@ export function findTransaction(
       }),
     )
     .slice(0, limit);
-  if (matches.length === 0) return "Транзакцій за цими фільтрами не знайдено.";
-  return `Знайдено ${matches.length} транзакц.: ${formatTxList(matches)}`;
+  if (matches.length === 0) return "Операцій за цими фільтрами не знайдено.";
+  return `Знайдено ${matches.length} операц.: ${formatTxList(matches)}`;
 }
 
 export function batchCategorize(
@@ -288,14 +289,14 @@ export function batchCategorize(
     )
     .slice(0, limit);
   if (matches.length === 0) {
-    return `Не знайшов транзакцій за pattern "${pattern}".`;
+    return `Не знайшов операцій за pattern "${pattern}".`;
   }
   const preview = formatTxList(matches);
   if (input.dry_run !== false) {
-    return `Dry-run: ${matches.length} транзакц. буде перенесено в ${categoryId}: ${preview}`;
+    return `Dry-run: ${matches.length} операц. буде перенесено в ${categoryId}: ${preview}`;
   }
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
   for (const tx of matches) cats[tx.id] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
-  return `Категорію ${matches.length} транзакц. змінено на ${categoryId}: ${preview}`;
+  return `Категорію ${matches.length} операц. змінено на ${categoryId}: ${preview}`;
 }

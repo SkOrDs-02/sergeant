@@ -5,6 +5,13 @@ import userEvent from "@testing-library/user-event";
 
 import { CrossModuleLinkRow } from "./CrossModuleLinkRow";
 import { MIN_N, REPEATING_R } from "./crossModuleLinkTiers";
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
+
+// Ці тести міряють драбину СИЛИ, а не повторюваність: серія перевірок
+// передається всюди явно, щоб вони лишились про те, для чого написані.
+// Саму повторюваність як умову ступеня перевіряє
+// `crossModuleLinkHistory.test.ts`.
+const REPEATED = REQUIRED_CONSECUTIVE_CHECKS;
 
 const poleA = {
   module: "finyk" as const,
@@ -29,6 +36,7 @@ describe("CrossModuleLinkRow — згорнутий звʼязок", () => {
         poleB={poleB}
         observations={10}
         strength={REPEATING_R}
+        checks={REPEATED}
         phrase="Коли витрачаєш більше — їси більше"
       />,
     );
@@ -54,6 +62,7 @@ describe("CrossModuleLinkRow — згорнутий звʼязок", () => {
         poleB={poleB}
         observations={10}
         strength={REPEATING_R}
+        checks={REPEATED}
         phrase="Коли витрачаєш більше — їси більше"
       />,
     );
@@ -79,6 +88,7 @@ describe("CrossModuleLinkRow — згорнутий звʼязок", () => {
         poleB={poleB}
         observations={MIN_N - 3}
         strength={0.9}
+        checks={REPEATED}
         phrase="Коли витрачаєш більше — їси більше"
       />,
     );

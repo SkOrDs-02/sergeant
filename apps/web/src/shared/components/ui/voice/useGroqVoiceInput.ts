@@ -161,9 +161,7 @@ export function useGroqVoiceInput({
             onError?.("Браузер записав невідомий формат. Оновись і повтори.");
             return;
           case "error":
-            onError?.(
-              `Помилка розпізнавання (${result.status}). Спробуй ще раз.`,
-            );
+            onError?.("Не вдалося розпізнати запис. Спробуй ще раз.");
             return;
         }
       } catch (err) {
@@ -244,16 +242,14 @@ export function useGroqVoiceInput({
       cleanup();
       if (chunks.length === 0) return;
       if (duration < GROQ_MIN_DURATION_MS) {
-        onError?.(
-          "Запис занадто короткий, затисніть і говоріть кілька секунд.",
-        );
+        onError?.("Запис занадто короткий, затисни й говори кілька секунд.");
         return;
       }
       const blob = new Blob(chunks, { type: finalMime });
       void upload(blob, finalMime);
     });
     recorder.addEventListener("error", () => {
-      onError?.("Помилка запису аудіо.");
+      onError?.("Не вдалося записати аудіо. Перевір доступ до мікрофона.");
       cleanup();
       setListening(false);
     });

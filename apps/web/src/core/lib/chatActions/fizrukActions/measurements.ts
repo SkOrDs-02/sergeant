@@ -6,11 +6,26 @@ import {
 } from "../../../../modules/fizruk/lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
 import type { MeasurementEntry } from "@sergeant/fizruk-domain";
+import { MEASUREMENT_BOUNDS, formatNumberUk } from "@sergeant/shared";
 import { recordBodyWeight } from "../../../profile/recordBodyWeight";
 import type { LogMeasurementAction, ChatActionResult } from "../types";
 
 export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
   const input = action.input || {};
+  // Канонічна межа ваги (ADR-0080, fizruk — єдине джерело істини для ваги
+  // тіла): сервер реджектить УВЕСЬ рядок заміру на `invalid_weight_kg`
+  // (`apps/server/src/modules/sync/fizruk/applyMisc.ts`), тож без цього
+  // клієнт мовчки писав запис, який назавжди застрягав несинхронізованим.
+  const rawWeight = input["weight_kg"];
+  if (rawWeight != null && rawWeight !== "") {
+    const weightN = Number(rawWeight);
+    if (Number.isFinite(weightN) && weightN > 0) {
+      const { min, max } = MEASUREMENT_BOUNDS.weightKg;
+      if (weightN < min || weightN > max) {
+        return `Вага має бути від ${formatNumberUk(min)} до ${formatNumberUk(max)} кг. Перевір число і спробуй ще раз.`;
+      }
+    }
+  }
   const keyMap: Record<string, string> = {
     weight_kg: "weightKg",
     body_fat_pct: "bodyFatPct",

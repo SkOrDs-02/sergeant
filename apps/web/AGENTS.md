@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-09-14 by @claude. **Next review:** 2027-01-08.
+> **Last touched:** 2026-09-23 by @claude (deploy-рядок і «CI gate» формулювання приведено до реального стану: CI не виконується). **Next review:** 2027-01-13.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: Vercel preview per PR + production on merge to `main`. Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
+React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: ручний `pnpm deploy:web` (локальний Vercel CLI, прямо в прод) — прев'ю на PR немає, Git-інтеграція на Bitbucket не працює; автодеплою на merge теж немає. Деталі — [`AGENTS.md § Де живе код`](../../AGENTS.md). Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
 
 ## Quick commands
 
@@ -24,7 +24,7 @@ pnpm --filter @sergeant/web test               # Vitest
 pnpm --filter @sergeant/web test:a11y          # Playwright + axe
 pnpm --filter @sergeant/web test:coverage      # Vitest with coverage
 pnpm --filter @sergeant/web typecheck
-pnpm --filter @sergeant/web size               # size-limit (CI gate)
+pnpm --filter @sergeant/web size               # size-limit (локальний обов'язковий гейт — CI не виконується)
 pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gate)
 ```
 
@@ -45,15 +45,17 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 - **Оверлей поверх `Sheet` мусить бути зареєстрованим діалогом, інакше він мертвий.** `Sheet`/`Modal` вмикають `inertBackground` і портуються в `<body>`, а background-inert manager у [`useDialogFocusTrap`](./src/shared/hooks/useDialogFocusTrap.ts) ставить `inert` + `aria-hidden` на все, що не веде до відкритого діалогу — тобто на весь `#root`. Оверлей, який рендериться на місці (без порталу) і покладається лише на `z-index`, потрапляє в це піддерево РАЗОМ із ним: він малюється зверху, але не отримує жодної події, а тапи «провалюються» на елементи аркуша під ним. Так `BarcodeScanner` не закривався і клікав кнопки позаду (звіт власника 2026-08-23; діагноз — `document.elementsFromPoint` на прев'ю-білді, бо DevTools-стек і z-index виглядали правильними). Лікування — не підняття `z-index` і не `pointer-events`, а `useDialogFocusTrap(open, panelRef, { inertBackground: true })`: менеджер сам знімає `inert` з гілки до нового діалогу й переносить його на аркуш (випадок «ConfirmDialog поверх Sheet», описаний у самому хуку). **Діагностична порада:** якщо елемент видно, але він не клікається, перевіряй `inert` на предках, а не z-index — computed `z-index` у такому разі показує саме те, що ти й задумав. Клавіші при цьому належать **верхньому** діалогу стосу: слухачі висять на спільному `document`, тож без цього Escape закривав усі відкриті діалоги разом, а Tab у верхньому смикав фокус у нижній (нижня пастка бачила фокус «поза своєю панеллю» — нормальний стан, коли зверху інший діалог). Порядок стосу — це порядок ВІДКРИТТЯ, не вкладеність DOM: оверлей у `#root` і аркуш у порталі `<body>` не є предками одне одного, тож визначити верхній по дереву неможливо.
 
+- **Трей тостів лишається внизу, але піднімається над футером відкритого `Sheet`.** Внизу він стояв рівно там, де футер bottom-sheet-а з його CTA, а наведення ставить авто-закриття на паузу — тож на десктопі тост під курсором, що завмер після кліку по попередньому аркушу, не зникав ніколи, і «Пропустити» в аркуші готовності було недосяжним (E2E `fizruk-active-workout`, PR #64). #73 переносив трей угору на час модального діалогу; власник 2026-09-16 обрав лишити його знизу і піднімати на висоту футера: `Sheet` публікує її у `--sgt-sheet-footer-inset` через [`useBottomInsetVar`](./src/shared/hooks/useBottomInsetVar.ts), поки відкритий і має `footer`. Звідси правило для аркушів: **CTA кладеться у слот `footer`**, не останнім рядком тіла. Не вигадуй окремий стан «діалог відкритий» у провайдері тостів і не повертай `top`-якір. Канон трею — [`docs/design/ui/toast-policy.md § Layout`](../../docs/design/ui/toast-policy.md).
+
 - **`AuthContext` × `@sergeant/shared` — білий екран на буті.** Новий runtime-import `@sergeant/shared` у [`src/core/auth/AuthContext.tsx`](./src/core/auth/AuthContext.tsx) перекроює eager-чанки так, що analytics стартує з ще не ініціалізованими константами: `Cannot read properties of undefined (reading 'SIGNUP_COMPLETED')`, застосунок не рендериться взагалі. Ламає однаково і статичний import, і `await import(...)`; `import type` безпечний. Тому `SYNC_ORIGIN_DEVICE_ID_KEY` там продубльовано літералом під pin-тестом `AuthContext.originDeviceKey.test.ts`. **Typecheck і юніти цього не бачать** — перевіряй буту в браузері на prod-білді (`VERCEL=1 build` + статика з COOP/COEP). Знайдено browser-QA 2026-08-06. **Це стосується будь-якої правки імпортів у цьому файлі, не лише додавання:** 2026-09-12 його i18n-імпорт звузили до `@shared/i18n/uk.core` (він був останнім eager-ребром до повного каталогу), і перевірку буту на prod-білді робили саме через цей абзац — `/`, `/auth` і `/finyk` рендерились, `#root` не порожній.
 
 ## Bundle budget
 
-CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
+Локальний обов'язковий гейт через `size-limit` — CI, який раніше це перевіряв, не виконується з переїзду на Bitbucket (2026-09-23). Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
 
-**Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard` + `seedDemoData/*`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
+**Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 
-**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це було ~365 kB, на 2026-08-02 — 430 kB, і з того дня воно **гейтиться окремо** (`pnpm --filter @sergeant/web size:eager`); ліміт тричі ратчетнуто вниз — 2026-08-07 470 → 430 → 280, 2026-09-12 → **268 kB** — після того, як із критичного шляху виїхали спершу `posthog-js`, а потім `vendor-sqlite`: факт упав 472.3 → 411.7 → 264.6 → **260.8 kB** (третій крок — виніс UA-каталогу з критичного шляху; обґрунтування — root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets)). Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
+**Як читати `pnpm --filter @sergeant/web size`:** виводить дві лінії — `JS (усього)` (брутто-сума всіх `assets/*.js`, включно з lazy chunk-ами) і `CSS`. Real-world initial paint вимірюється `eager-only` під-сумою (chunks з `<link rel="modulepreload">` у `apps/server/dist/index.html`) — після T4 (PR `perf(web): T4`) це було ~365 kB, на 2026-08-02 — 430 kB, і з того дня воно **гейтиться окремо** (`pnpm --filter @sergeant/web size:eager`); ліміт тричі ратчетнуто вниз — 2026-08-07 470 → 430 → 280, 2026-09-12 → **268 kB** — після того, як із критичного шляху виїхали спершу `posthog-js`, а потім `vendor-sqlite`: факт упав 472.3 → 411.7 → 264.6 → **260.8 kB** (третій крок — виніс UA-каталогу з критичного шляху; обґрунтування — root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets)). **2026-09-16 стеля з'їздила туди й назад за один день:** 268 → 271 (звичайна продуктова робота вибрала 6.4 з 7.2 kB запасу за чотири дні), потім знову **268** — після того, як `Sheet` виїхав із критичного шляху разом зі своїм стеком (`HubChatOverlay` розділено на eager-оболонку і лінивий `HubChatSheet.tsx`), факт **268.0 → 264.5 kB**, preload-чанків 76 → 72. Ціна — +2.1 kB до брутто-суми `size-limit` (новий чанк має власний boilerplate), тобто саме той обмін, яким ця пара метрик і живе. Lighthouse LCP/FCP gate-и (див. секцію нижче) перевіряють user-felt impact, `size-limit` ловить total-regression.
 
 **Якщо потрібно підняти ліміт:** у тому ж PR, що додає dep / feature; explicit обґрунтування у PR-description. Bypass: label `audit-exception` (як для всіх optional CI checks).
 
@@ -101,7 +103,7 @@ Reports drop у `apps/web/.lighthouseci/` (gitignored).
 
 ## E2E smoke (Playwright)
 
-Critical-flow E2E lane runs per-PR via `.github/workflows/ci.yml` job `critical-flow` (line ~539): `playwright test -c playwright.smoke.config.ts --grep @critical`. Boot sequence — `docker compose up -d postgres` → `pnpm db:migrate:dev` → `@sergeant/server dev` (:3000) → `@sergeant/web build` → `vite preview` (:4173). Driver: `apps/web/tests/smoke/start-smoke-webserver.mjs`. Tests under `apps/web/tests/smoke/`.
+Critical-flow E2E lane runs per-PR via `.github/workflows/ci.yml` job `critical-flow` (line ~539): `playwright test -c playwright.smoke.config.ts --grep @critical`. Boot sequence — `docker compose up -d postgres` → `pnpm --filter @sergeant/server db:migrate:dev` → `@sergeant/server dev` (:3000) → `@sergeant/web build` → `vite preview` (:4173). Driver: `apps/web/tests/smoke/start-smoke-webserver.mjs`. Tests under `apps/web/tests/smoke/`.
 
 ```bash
 pnpm --filter @sergeant/web e2e                  # → playwright --grep @critical
@@ -121,6 +123,25 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 6. **Smoke-environment gotcha (пом'якшено 2026-08-04):** історично `vite preview` НЕ emit-ив COOP/COEP response-headers → `SharedArrayBuffer` недоступний → `sqlite-wasm` падав на memory-only VFS, і SQLite-backed стан осцилював проти оптимістичного (root cause постійних detach-фейлів routine/nutrition ніг `deep-module-crud`). Тепер `vite.config.js` → `preview.headers` шле ті самі COOP/COEP, що й прод (`vercel.json`), тож smoke-середовище працює на OPFS VFS як продакшн. Порада лишається чинною як defensive-практика: analytics ring-buffer — deterministic signal-of-truth, а UI-assertions навколо SQLite-backed gate документуй inline (див. § 4a у `onboarding-happy-path.spec.ts`).
 
 7. **`page.reload()` в E2E — це гонка з сервіс-воркером, доки її явно не зняти.** `precacheAndRoute` кладе весь прекеш (400 записів, 6.6 МБ) у `event.waitUntil` події `install`, тож воркер стає `activated` лише після його завершення — на цьому репо приблизно через 4 с після завантаження сторінки. Тест, який доходить до рестарту раніше або рівно на тій межі, щоразу потрапляє в один із ТРЬОХ станів: воркер ще `installing` (навігація йде повз нього), уже `activated` (йде через `NavigationRoute`), або перехід стається ПОСЕРЕД навігації — і тоді вона абортиться (`net::ERR_ABORTED; maybe frame was detached?`) чи зависає. Заміри 2026-09-02 на одному й тому самому тесті: без барʼєра стан перед рестартом стрибав між `{installing:true, active:null}` і `{active:"activated"}` без жодної зміни коду — різниця лише в швидкості машини, тому локально це виглядає стабільним, а в CI ні. Саме на цьому `pantry-storage-places` правили тричі поспіль, щоразу підкручуванням таймінгу. Перед `page.reload()` став [`waitForServiceWorkerActivated`](./tests/utils/serviceWorker.ts) — він прибирає третій варіант, а не «чекає трохи». Ціна барʼєра ~2 с, тож тесту з рестартом потрібен власний `test.setTimeout`.
+
+## A11y lane (axe-core)
+
+Per-PR job `Accessibility (axe-core)` у [`ci.yml`](../../.github/workflows/ci.yml): `pnpm --filter @sergeant/web test:a11y` → [`playwright.config.ts`](./playwright.config.ts) (prod-білд + `vite preview` на :4173, без бекенду — `/api/*` дає `ECONNREFUSED`, це очікувано) → [`tests/a11y/axe.spec.ts`](./tests/a11y/axe.spec.ts). Блокують лише `serious`/`critical` плюс `heading-order`; світла тема — 18 поверхонь, `dark`/`hc` — по чотири.
+
+## Repeatable E2E States
+
+Mobile і a11y лейни можуть вмикати тестовий міст через `VITE_E2E_SEED=true`.
+Єдиний entrypoint у prod-білді: `main.tsx` динамічно імпортує
+`src/e2e/installScenarioBridge`, який виставляє `window.__sergeantScenario`.
+Світи живуть у `tests/fixtures/worlds/*.json`, а застосування в тестах - через
+`tests/utils/scenario.ts` (`installWorld`, `applyScenario`). Не додавай
+`?scenario=` або UI для вибору стану: стан активується лише з Playwright через
+JS-виклик. Після звичайного prod-білда `scripts/ci/check-e2e-seed-boundary.mjs`
+має не знайти `__sergeantScenario` в assets; `scripts/check-imports.mjs`
+дозволяє імпорт `src/e2e/**` тільки самому `main.tsx` і файлам усередині
+`src/e2e`.
+
+**axe знімає кольори в момент виклику, тож entry-анімація з `opacity` — це контраст, якого немає.** Блоки хаба заїжджають через `stagger-in` (`StaggerChild`, 320 ms, opacity 0 → 1), lazy-контент — через `SuspenseWithMinDelay` (`animate-fade-in`, 220 ms). Скан у хвості такої анімації бачить foreground, домножений на альфу предка: на #72 (2026-09-16) заголовок «Модулі» дав 3.75:1 із foreground `#6e756f` — це `--c-muted` #535c56 при opacity ≈0.83 на столі хаба, підказки карток — 4.49:1 замість ≥4.5. Той самий коміт на другому прогоні зелений, і саме це «то є, то немає» — ознака таймінгу, а не токенів: різниця лише в тому, коли мережа затихла відносно маунту сітки. Тому перед кожним `analyze()` стоїть `settleAnimations` — чекає СКІНЧЕННІ анімації кількома проходами (stagger-діти стартують із затримкою до 150 ms) зі стелею 3 с; лупи shimmer/pulse не чекає, бо вони не закінчуються. Той самий барʼєр — у [`tests/mobile/audit.ts`](./tests/mobile/audit.ts) для rect-ів. **Бачиш у логу a11y контраст на кілька сотих нижче порогу з foreground, якого немає в `theme.css`, — спершу порахуй альфу, а не рухай токен.**
 
 ## Deeper docs
 

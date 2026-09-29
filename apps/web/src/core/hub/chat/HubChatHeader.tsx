@@ -61,7 +61,7 @@ export function HubChatHeader({
         className="min-w-[280px]! p-1.5"
         trigger={
           <span
-            aria-label="Деталі асистента"
+            aria-label="Деталі Сержанта"
             className="flex items-center gap-2.5 min-w-0 w-full px-1.5 py-1 -mx-1.5 rounded-xl hover:bg-panelHi transition-colors cursor-pointer select-none"
           >
             <span
@@ -72,7 +72,7 @@ export function HubChatHeader({
               )}
               aria-hidden
             >
-              <Icon name="sergeant" size={16} className="text-brand-500" />
+              <Icon name="sergeant" size="md" className="text-brand-500" />
               <span
                 className={cn(
                   "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-bg",
@@ -94,11 +94,11 @@ export function HubChatHeader({
                 id="hub-chat-title"
                 className="text-style-title font-bold text-text leading-snug whitespace-nowrap"
               >
-                Асистент
+                Сержант
               </span>
               <Icon
                 name="chevron-down"
-                size={14}
+                size="sm"
                 className={cn(
                   "text-muted shrink-0 transition-transform duration-fast",
                   detailsOpen && "rotate-180",
@@ -149,7 +149,7 @@ export function HubChatHeader({
         </div>
         <PopoverDivider />
         <PopoverItem
-          icon={<Icon name="list" size={14} />}
+          icon={<Icon name="list" size="sm" />}
           onClick={() => {
             onDetailsOpenChange(false);
             onOpenHistory();
@@ -170,7 +170,7 @@ export function HubChatHeader({
             className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label="Нова бесіда"
           >
-            <Icon name="plus" size={14} />
+            <Icon name="plus" size="sm" />
             Нова
           </button>
         </Tooltip>
@@ -178,9 +178,9 @@ export function HubChatHeader({
           type="button"
           onClick={onClose}
           className="w-9 h-9 min-h-[44px] min-w-[44px] shrink-0 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-          aria-label="Закрити асистента"
+          aria-label="Закрити чат"
         >
-          <Icon name="close" size={16} />
+          <Icon name="close" size="md" />
         </button>
       </div>
     </div>

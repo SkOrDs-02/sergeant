@@ -8,6 +8,7 @@ import { WeekPlanSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import {
+  JSON_TEXT_STYLE_RULE,
   pantryPromptSection,
   resolvePantryMode,
 } from "../../lib/prompt-builders.js";
@@ -64,7 +65,7 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
  * Правило комори в system-промпті.
  *
  * AI-CONTEXT: у `prefer`/`only` тут стоїть «не вигадуй інгредієнти поза
- * списком» — фактично жорстке обмеження коморою. Саме воно робило вибір
+ * списком» – фактично жорстке обмеження коморою. Саме воно робило вибір
  * «не враховувати комору» невидимим: навіть порожній список читався як
  * «нічого поза ним не можна». Для `ignore` обмеження мусить зникнути разом
  * зі списком.
@@ -72,7 +73,7 @@ function normalizeWeekPlan(parsed: unknown): NormalizedWeekPlan {
 const PANTRY_RULE: Record<PantryMode, string> = {
   prefer:
     "Віддавай перевагу продуктам зі списку, але за потреби можна додавати звичайні доступні продукти поза ним. Усі додані продукти називай прямо.",
-  only: "Використовуй ТІЛЬКИ продукти зі списку — дозволено додати сіль, олію, воду й базові спеції. Якщо продуктів не вистачає на 7 різних днів — повторюй прості варіанти або лишай частину прийомів порожньою; відсутніх продуктів не додавай.",
+  only: "Використовуй ТІЛЬКИ продукти зі списку – дозволено додати сіль, олію, воду й базові спеції. Якщо продуктів не вистачає на 7 різних днів – повторюй прості варіанти або лишай частину прийомів порожньою; відсутніх продуктів не додавай.",
   ignore:
     "Комору не враховуй: списку наявних продуктів тобі не передано, тож склади план вільно зі звичайних доступних продуктів. Не вигадуй, що є вдома.",
 };
@@ -82,21 +83,22 @@ export function buildWeekPlanSystem(mode: PantryMode = "prefer"): string {
 
 ${ADVICE_BOUNDARY_RULE}
 Поверни ТІЛЬКИ валідний JSON без markdown.
+${JSON_TEXT_STYLE_RULE}
 
 Формат:
 {
   "days": [
-    { "label": "Пн", "note": "коротко", "meals": ["сніданок — ...", "обід — ..."] }
+    { "label": "Пн", "note": "коротко", "meals": ["сніданок – ...", "обід – ..."] }
   ]
 }
 Максимум 7 днів. ${PANTRY_RULE[mode]}`;
 }
 
-/** Дефолтний system-промпт (`prefer`) — сумісність зі старими імпортами. */
+/** Дефолтний system-промпт (`prefer`) – сумісність зі старими імпортами. */
 export const SYSTEM = buildWeekPlanSystem("prefer");
 
 /**
- * Промпт тижневого плану — рівно той, що йде в прод (винесено заради стенду
+ * Промпт тижневого плану – рівно той, що йде в прод (винесено заради стенду
  * `scripts/eval/pipelines.nutrition.ts`).
  */
 export function buildWeekPlanPrompt(input: WeekPlanInput): {
@@ -107,7 +109,7 @@ export function buildWeekPlanPrompt(input: WeekPlanInput): {
   const prefs = preferences || {};
   const goal = String(prefs.goal || "balanced");
   const loc = String(locale || "uk-UA");
-  // Один режим на весь запит — і в секцію комори, і в system-промпт.
+  // Один режим на весь запит – і в секцію комори, і в system-промпт.
   const mode: PantryMode = resolvePantryMode(pantryMode);
 
   const pantrySec = pantryPromptSection({
@@ -127,7 +129,7 @@ ${pantrySec}
 }
 
 /**
- * POST /api/nutrition/week-plan — згенерувати план харчування на тиждень.
+ * POST /api/nutrition/week-plan – згенерувати план харчування на тиждень.
  * CORS / token / quota / rate-limit виставляє роутер.
  */
 export default async function handler(

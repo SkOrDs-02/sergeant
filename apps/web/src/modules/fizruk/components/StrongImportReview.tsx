@@ -135,11 +135,13 @@ export function StrongImportReview({
       size="xl"
       footer={
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button variant="secondary" className="h-11" onClick={onClose}>
+          <Button variant="outline" className="h-11" onClick={onClose}>
             {messages.actions.cancel}
           </Button>
           <Button
-            module="fizruk"
+            variant="solid"
+            tone="fizruk"
+
             className="h-11"
             disabled={!canSubmit}
             onClick={submit}

@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-14 by docs:gen-status. **Next review:** 2026-09-21.
+> **Last touched:** 2026-09-29 by docs:gen-status. **Next review:** 2026-10-06.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -11,7 +11,16 @@
 
 <!-- FOCUS:START -->
 
-`/`
+- **Епістемічний стандарт звʼязків - три блоки з чотирьох у коді.** Спека [`link-evidence-standard.md`](./work/specs/link-evidence-standard.md), рішення - [ADR-0097](./governance/adr/0097-link-evidence-standard.md). Другий і третій ступені впевненості тепер вимагають дві тижневі перевірки поспіль, а не разовий замір; поріг спільних днів став ОДИН на продукт (чат-тул мав свій, мʼякший: 4 проти 10), і обидва блоки кореляцій у промпті підписують джерело та стандарт. При `n < 10` продукт більше не вимовляє слова «звʼязок», а віддає спостереження про одну метрику.
+- **Четвертий блок, верифікація чисел, свідомо не починався.** Спека вимагає фікстур із живих логів відповідей моделі, а їх немає де взяти: телеметрія AI-шару працює в privacy-режимі й текстів не зберігає. Механізм, зібраний на вигаданих форматах чисел, або пропускатиме брехню, або відхилятиме правду - і робив би це на грошових сумах. Потрібне рішення власника.
+- **Дві «застарілі» знахідки виявились чинними.** PR-A6: мапер 402 у коді Є, але `callRecallApi` бʼє в API сирим `fetch` повз `apiClient`, тож до нього не доходить, і free-юзер бачить сире `HTTP 402`. PR-A4: split оболонки й аркуша чату це винесення бандла, не дедуплікація, тож `Ctrl/Cmd+/` на `/chat` і далі піднімає другий інстанс.
+- **Кольори макросів лікували двічі.** Перший захід закрив знахідку N-13, поставивши всі три сегменти на однакову світлоту, і створив гіршу проблему: під протанопією білки й вуглеводи розходились на 18 одиниць із 441. Приймання було сформульоване як заперечення, тож його виконали, зламавши те, про що воно мовчало. Тепер розрізнюваність для дихроматів і видимість сегмента на темній панелі стоять гейтами.
+- **Звірку `docs/` з кодом виконано — вісім задач із дев'яти закрито.** Спека [`docs-code-drift-2026-09-19.md`](./work/specs/docs-code-drift-2026-09-19.md). Новий гейт `lint:repo-slug` тримає слуг репо в одному місці замість трьох; `docs:check-inventory` уперше здійсненний і підключений; `--require-issue` для AI-LEGACY увімкнено. Відкритий лише PR-2 — **який хендл maintainer-а чинний**, це рішення власника.
+- **Три постановки з дев'яти були помилкові, і це головний урок заходу.** PR-7 вимагав дії, яку README прямо забороняє дводенним рішенням; PR-5 — issue-номерів, яких за дизайном ще не існує; PR-3 — добити дедлайн, якого жоден канонічний документ не ставив. Спільне: завдання виводилось із **виводу гейта**, не звіреного з правилом, яке той гейт обслуговує.
+- **Три гейти більше не брешуть:** `lint:lifecycle-markers` не називає порушенням те, що правило дозволяє; `generate-playbook-index` розрізняє зафіксований виняток і реальний дрейф; `lint:dead-doc-links` опущено 255 → 251 після виносу мертвих покажчиків із текстів помилок лінтерів.
+- **Тиша замість шуму** — три хвилі фіксів злито (#96, #97, #100), лишились рішення власника — [`2026-09-16-product-noise-and-navigation.md`](./work/specs/audits/2026-09-16-product-noise-and-navigation.md).
+- **Сервер, БД, синк** — знахідки аудиту закриті (#95, #101); далі — операторський замір для 0024 PR-3.
+- **GitHub недоступний: обидва акаунти заблоковані.** Жоден воркфлоу з `.github/workflows/` не виконується. Код тепер на Bitbucket (`AGENTS.md § Де живе код`), `origin` пушить одразу в Bitbucket і в bare-дзеркало на Hetzner. Локальний `pnpm check` заблокований політикою слабкого заліза, тож верифікація це точкові типчеки й тести по торкнутих поверхнях.
 
 <!-- FOCUS:END -->
 
@@ -19,22 +28,22 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
-- [#1134](https://github.com/SkOrDs-02/sergeant/pull/1134) — ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR _(2026-09-13)_
-- [#1098](https://github.com/SkOrDs-02/sergeant/pull/1098) — fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника _(2026-09-11)_
-- [#1071](https://github.com/SkOrDs-02/sergeant/pull/1071) — fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами _(2026-09-03)_
-- [#1064](https://github.com/SkOrDs-02/sergeant/pull/1064) — feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу _(2026-09-03)_
-- [#1070](https://github.com/SkOrDs-02/sergeant/pull/1070) — feat(web): писати N рядків журналу з фото-аналізу замість одного злитого (0023, PR-3) _(2026-09-03)_
-- [#1067](https://github.com/SkOrDs-02/sergeant/pull/1067) — feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1) _(2026-09-03)_
-- [#1068](https://github.com/SkOrDs-02/sergeant/pull/1068) — feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1) _(2026-09-03)_
-- [#1046](https://github.com/SkOrDs-02/sergeant/pull/1046) — docs(docs): полагодити dangling ref у ADR-0067 (червоний check на main) _(2026-09-02)_
-- [#1043](https://github.com/SkOrDs-02/sergeant/pull/1043) — docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення _(2026-09-02)_
-- [#895](https://github.com/SkOrDs-02/sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
+- [#101](https://bitbucket.org/skords01/sergeant/pull-requests/101) — fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах _(2026-09-29)_
+- [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) — fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел _(2026-09-28)_
+- [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) — feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу _(2026-09-28)_
+- [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) — fix(web): виправлення за браузерним web-аудитом 2026-09-27 _(2026-09-28)_
+- [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) — fix(web): рішення власника за аудитом копі сайту _(2026-09-26)_
+- [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
+- [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
+- [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
+- [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) — fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі _(2026-09-25)_
+- [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
 
-## 🔵 В роботі — 77 відкритих документів
+## 🔵 В роботі — 82 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 77       |
+| Активні спеки | 82       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -43,17 +52,17 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
-- [`work/specs/launch/phases/02-capacitor-launch.md`](./work/specs/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Активні спеки)_
 - [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active _(Активні спеки)_
 - [`work/specs/launch/phases/00-readiness-audit.md`](./work/specs/launch/phases/00-readiness-audit.md) — 00 — Launch readiness audit: 5 застосунків Sergeant — Active _(Активні спеки)_
+- [`work/specs/pr-body-validator-template-race.md`](./work/specs/pr-body-validator-template-race.md) — SPEC: `PR body validator` червоніє на PR, створених через API — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
 Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
-- [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
+- [`work/specs/kv-warm-cache-user-partition.md`](./work/specs/kv-warm-cache-user-partition.md) — SPEC: KV-кеш читає розділ залогіненого користувача → **agent-ready** _(Активні спеки)_
 
 ## 🧱 Стек
 

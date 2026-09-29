@@ -123,7 +123,7 @@ describe("getFrequentCategories", () => {
     expect(ids).toContain("transport");
   });
 
-  it("ігнорує транзакції поза вікном", () => {
+  it("ігнорує операції поза вікном", () => {
     const txs = [
       bankTx({
         id: "old",

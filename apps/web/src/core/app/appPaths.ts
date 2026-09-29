@@ -21,10 +21,10 @@ export const APP_TITLE = "Sergeant · Твій персональний хаб �
 // name. Format mirrors `APP_TITLE`: `Sergeant · <surface>`.
 export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/status": "Sergeant · Статус системи",
-  "/chat": "Sergeant · Асистент",
+  "/chat": "Sergeant · Чат із Сержантом",
   "/assistant": "Sergeant · Що вміє Сержант",
-  "/capabilities": "Sergeant · Що вміє додаток",
-  "/pricing": "Sergeant · Тарифи",
+  "/capabilities": "Sergeant · Що вміє застосунок",
+  "/pricing": "Sergeant · Плани",
   "/sign-in": "Sergeant · Вхід",
   "/reset-password": "Sergeant · Скидання пароля",
   "/verify-email": "Sergeant · Підтвердження email",

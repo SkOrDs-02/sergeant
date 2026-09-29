@@ -76,6 +76,11 @@ const METRIC_MODULE: Record<DailyMetric, CrossModuleLinkModule> = {
  * («1.3 тренування») — з десятковою, бо ціле «1» приховало б різницю між
  * «майже щодня» і «через день».
  */
+/** Модуль, якому належить метрика (для F-5 і моментів звʼязку). */
+export function metricModule(metric: DailyMetric): CrossModuleLinkModule {
+  return METRIC_MODULE[metric];
+}
+
 function formatPoleValue(mean: number): string {
   if (!Number.isFinite(mean)) return "—";
   const abs = Math.abs(mean);
@@ -230,4 +235,52 @@ export function silentPoles(
   b: DailyMetric,
 ): { poleA: CrossModuleLinkPole; poleB: CrossModuleLinkPole } {
   return { poleA: pole(a, Number.NaN), poleB: pole(b, Number.NaN) };
+}
+
+/**
+ * Спостереження про ОДНУ метрику - для стану, коли спільних днів ще замало,
+ * щоб зіставляти дві (спека `link-evidence-standard.md`, гілка `n < MIN_N`).
+ *
+ * AI-CONTEXT: до 2026-09-22 цей стан показував ПАРУ полюсів і прогрес до
+ * порога, тобто називав пару, про яку сам не мав права нічого стверджувати.
+ * Рішення власника (ADR-0097): при малих даних продукт не вимовляє слова
+ * «звʼязок» узагалі, але й не мовчить - віддає спостереження іншого жанру.
+ *
+ * Береться метрика з найбільшою кількістю днів із записом серед тих, що
+ * входять у куровані пари: це те, що людина справді веде, а не найзручніше
+ * для показу. `null`, якщо записів немає взагалі - тоді спостереження
+ * довелося б вигадати.
+ */
+export function bestSingleMetric(
+  series: DailySeries,
+): { metric: DailyMetric; mean: number; n: number } | null {
+  const metrics = new Set<DailyMetric>();
+  for (const p of CURATED_PAIRS) {
+    metrics.add(p.a);
+    metrics.add(p.b);
+  }
+
+  let best: { metric: DailyMetric; mean: number; n: number } | null = null;
+  for (const metric of metrics) {
+    const col = series.raw[metric];
+    if (!col) continue;
+    let sum = 0;
+    let n = 0;
+    for (const v of col) {
+      if (v === undefined || !Number.isFinite(v)) continue;
+      sum += v;
+      n += 1;
+    }
+    if (n === 0) continue;
+    if (best === null || n > best.n) best = { metric, mean: sum / n, n };
+  }
+  return best;
+}
+
+/** Полюс для спостереження про одну метрику - із числом, на відміну від `silentPoles`. */
+export function singleMetricPole(
+  metric: DailyMetric,
+  mean: number,
+): CrossModuleLinkPole {
+  return pole(metric, mean);
 }

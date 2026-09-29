@@ -38,7 +38,7 @@ function ctx(overrides: Partial<FinanceContext> = {}): FinanceContext {
     hiddenTxIds: new Set<string>(),
     transferIds: new Set<string>(),
     thisMonthTx: [],
-    categorySpend: {},
+    limitUsage: [],
     canonicalMonthSpend: new Map(),
     canonicalTotalCount: new Map(),
     ...overrides,

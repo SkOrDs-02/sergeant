@@ -50,9 +50,9 @@ describe("TxRow", () => {
     expect(screen.getByText(/250/)).toBeInTheDocument();
   });
 
-  it("falls back to 'Транзакція' when description is empty", () => {
+  it("falls back to 'Операція' when description is empty", () => {
     render(<TxRow tx={mkTx({ description: "" })} />);
-    expect(screen.getByText("Транзакція")).toBeInTheDocument();
+    expect(screen.getByText("Операція")).toBeInTheDocument();
   });
 
   it("shows a manual transaction's canonical category and its category colour", () => {
@@ -160,14 +160,16 @@ describe("TxRow", () => {
     // food MCC, no override, not manual, not transfer, not "other"
     render(<TxRow tx={mkTx({ mcc: 5411, description: "Сільпо" })} />);
     expect(
-      screen.getByText("Категорію визначив Сержант за описом і MCC"),
+      screen.getByText("Категорію визначив Сержант за описом і типом магазину"),
     ).toBeInTheDocument();
   });
 
   it("hides the AI badge for a manual expense", () => {
     render(<TxRow tx={mkTx({ _manual: true })} />);
     expect(
-      screen.queryByText("Категорію визначив Сержант за описом і MCC"),
+      screen.queryByText(
+        "Категорію визначив Сержант за описом і типом магазину",
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -177,7 +179,9 @@ describe("TxRow", () => {
     );
     expect(screen.getByText("Надходження ФОП")).toBeInTheDocument();
     expect(
-      screen.queryByText("Категорію визначив Сержант за описом і MCC"),
+      screen.queryByText(
+        "Категорію визначив Сержант за описом і типом магазину",
+      ),
     ).not.toBeInTheDocument();
   });
 
@@ -320,7 +324,7 @@ describe("TxRow", () => {
   it("renders the highlighted check icon", () => {
     render(<TxRow tx={mkTx()} highlighted />);
     expect(
-      screen.getByRole("img", { name: "Вибрана транзакція" }),
+      screen.getByRole("img", { name: "Вибрана операція" }),
     ).toBeInTheDocument();
   });
 
@@ -349,9 +353,9 @@ describe("TxRow", () => {
       ],
     };
     render(<TxRow tx={mkTx()} txSplits={txSplits} />);
-    expect(screen.getByText(/спліт/)).toBeInTheDocument();
+    expect(screen.getByText(/розбито/)).toBeInTheDocument();
     expect(
-      screen.queryByLabelText("Розподілити транзакцію"),
+      screen.queryByLabelText("Розподілити операцію"),
     ).not.toBeInTheDocument();
   });
 
@@ -360,7 +364,9 @@ describe("TxRow", () => {
     render(<TxRow tx={mkTx()} overrideCatId="internal_transfer" />);
     expect(screen.getByText("не в статистиці")).toBeInTheDocument();
     expect(
-      screen.queryByText("Категорію визначив Сержант за описом і MCC"),
+      screen.queryByText(
+        "Категорію визначив Сержант за описом і типом магазину",
+      ),
     ).not.toBeInTheDocument();
   });
 

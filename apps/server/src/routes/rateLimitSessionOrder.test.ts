@@ -203,7 +203,7 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
       assertSessionBeforeLimiter(
         code,
         /r\.use\(\s*["']\/api\/nutrition["']\s*,\s*setModule\(\s*["']nutrition["']\s*\)\s*\)/,
-        /const aiVision/,
+        /const aiText/,
         /requireSession\(\)/,
         /rateLimitExpress\(\s*\{\s*key:\s*["']api:nutrition["']/,
         "/api/nutrition",
@@ -267,30 +267,6 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
         /requireSession\(\)/,
         /rateLimitExpress\(\s*\{\s*key:\s*["']api:transcribe["']/,
         "/api/transcribe",
-      );
-    });
-
-    it("push.ts: POST /api/push/subscribe (requireSessionSoft)", () => {
-      const code = stripComments(readRouteSource("push.ts"));
-      assertSessionBeforeLimiter(
-        code,
-        /r\.post\(\s*["']\/api\/push\/subscribe["']/,
-        /r\.delete\(\s*["']\/api\/push\/subscribe["']/,
-        /requireSessionSoft\(\)/,
-        /broadRateLimit/,
-        "POST /api/push/subscribe",
-      );
-    });
-
-    it("push.ts: DELETE /api/push/subscribe (requireSessionSoft)", () => {
-      const code = stripComments(readRouteSource("push.ts"));
-      assertSessionBeforeLimiter(
-        code,
-        /r\.delete\(\s*["']\/api\/push\/subscribe["']/,
-        /r\.post\(\s*["']\/api\/push\/register["']/,
-        /requireSessionSoft\(\)/,
-        /broadRateLimit/,
-        "DELETE /api/push/subscribe",
       );
     });
 
@@ -392,7 +368,7 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
       assertPreAuthIpBeforeSession(
         code,
         /r\.use\(\s*["']\/api\/nutrition["']\s*,\s*setModule\(\s*["']nutrition["']\s*\)\s*\)/,
-        /const aiVision/,
+        /const aiText/,
         /rateLimitExpress\(\s*\{\s*key:\s*["']api:nutrition:ip["']/,
         /requireSession\(\)/,
         "/api/nutrition",
@@ -459,30 +435,6 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
       );
     });
 
-    it("push.ts: POST /api/push/subscribe (requireSessionSoft)", () => {
-      const code = stripComments(readRouteSource("push.ts"));
-      assertPreAuthIpBeforeSession(
-        code,
-        /r\.post\(\s*["']\/api\/push\/subscribe["']/,
-        /r\.delete\(\s*["']\/api\/push\/subscribe["']/,
-        /preAuthIpRateLimit/,
-        /requireSessionSoft\(\)/,
-        "POST /api/push/subscribe",
-      );
-    });
-
-    it("push.ts: DELETE /api/push/subscribe (requireSessionSoft)", () => {
-      const code = stripComments(readRouteSource("push.ts"));
-      assertPreAuthIpBeforeSession(
-        code,
-        /r\.delete\(\s*["']\/api\/push\/subscribe["']/,
-        /r\.post\(\s*["']\/api\/push\/register["']/,
-        /preAuthIpRateLimit/,
-        /requireSessionSoft\(\)/,
-        "DELETE /api/push/subscribe",
-      );
-    });
-
     it("push.ts: POST /api/push/register", () => {
       const code = stripComments(readRouteSource("push.ts"));
       assertPreAuthIpBeforeSession(
@@ -512,7 +464,7 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
     // `r.use("/api/push", broadRateLimit)` різав безсесійний трафік на ВСІХ
     // push-роутах, `test` включно. Після реордингу сесія стала першою — тобто
     // 401 без `next()` — і `test` втратив той захист рівно так само, як
-    // subscribe/register/unregister. `send` лишається єдиним винятком нижче.
+    // register/unregister. `send` лишається єдиним винятком нижче.
     it("push.ts: POST /api/push/test", () => {
       const code = stripComments(readRouteSource("push.ts"));
       assertPreAuthIpBeforeSession(

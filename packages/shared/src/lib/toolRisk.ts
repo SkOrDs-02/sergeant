@@ -25,6 +25,11 @@
  * що прожив у списку невідомо скільки.
  */
 
+import {
+  ASSISTANT_CAPABILITIES,
+  getCapabilityServerTool,
+} from "./assistantCatalogue";
+
 /**
  * - `destructive` — незворотне: видалення або перезапис даних. Виконанню
  *   передує явне підтвердження людини (канон §8).
@@ -101,13 +106,35 @@ export function isRiskyTool(name: string): boolean {
 }
 
 /**
+ * Усі серверні інструменти, які продукт знає, — з каталогу здібностей.
+ * `systemPrompt.test.ts` на сервері гарантує, що кожен запис `TOOLS` має
+ * пару в каталозі, тож «немає в цій множині» = «інструмент, про який продукт
+ * не знає взагалі».
+ */
+const KNOWN_SERVER_TOOLS: ReadonlySet<string> = new Set(
+  ASSISTANT_CAPABILITIES.map(getCapabilityServerTool).filter(
+    (tool): tool is string => tool !== null,
+  ),
+);
+
+/**
  * `true` — виконанню має передувати явна згода людини.
  *
  * Це і є гейт із канону §8. Раніше функції не існувало взагалі: `isRiskyTool`
  * впливала лише на колір картки ПІСЛЯ виконання, тобто продукт повідомляв
  * post factum і компенсував це undo-тостом — модель «undo замість confirm»,
  * яку канон називає визнаним боргом.
+ *
+ * AI-DANGER: дефолт для НЕВІДОМОГО інструмента — підтвердження, не пропуск.
+ * До 2026-09-16 функція повертала `false` для будь-якого імені поза
+ * `TOOL_RISK`, тобто захист тримався на тому, що автор нового деструктивного
+ * тула не забуде його зареєструвати, — а це остання лінія проти
+ * prompt-injection (аудит 2026-09-15 § 1). Тепер забути реєстрацію означає
+ * зайве питання людині, а не тиху руйнівну дію. Звичайні інструменти з
+ * каталогу без запису в `TOOL_RISK` як і раніше йдуть без діалогу.
  */
 export function requiresConfirmation(name: string): boolean {
-  return TOOL_RISK[name] === "destructive";
+  const risk = TOOL_RISK[name];
+  if (risk !== undefined) return risk === "destructive";
+  return !KNOWN_SERVER_TOOLS.has(name);
 }

@@ -1,18 +1,18 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-20.
-> **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code.
+> **Last touched:** 2026-09-17 by @claude (два Status зведено в один; зафіксовано, що Report-Only досі віддається). **Next review:** 2026-12-16.
+> **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code. **Звірка 2026-09-17:** крок не виконано — `apps/web/vercel.json` досі віддає `Content-Security-Policy-Report-Only` поруч з enforce-заголовком `Content-Security-Policy`; зняття лишається операційним follow-up-ом (не в цьому PR).
 
-| Field              | Value                                                                                                                                                     |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                                                                               |
-| **Sprint**         | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md) |
-| **Owner**          | frontend                                                                                                                                                  |
-| **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                                                                                       |
-| **Status**         | Phase 1 closed — frontend Report-Only canary live; Phase 2 (strict/enforce + nonce) tracked below                                                         |
-| **Discovered**     | 2026-05-03                                                                                                                                                |
-| **Threat model**   | XSS Exfiltration → Account Compromise                                                                                                                     |
-| **Affected files** | `apps/web/vercel.json`, `apps/web/index.html`, `apps/server/src/http/security.ts`                                                                         |
+| Field              | Value                                                                                                                                                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                                                                                                                                      |
+| **Sprint**         | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md)                                                        |
+| **Owner**          | frontend                                                                                                                                                                                                         |
+| **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                                                                                                                                              |
+| **Status**         | In progress — те саме, що в шапці: Phase 1 closed (Report-Only canary, 2026-05-04), Phase 2 enforce rolled out 2026-05-24; лишилось зняти Report-Only (досі віддається, звірка 2026-09-17). Nonce-flow — опційно |
+| **Discovered**     | 2026-05-03                                                                                                                                                                                                       |
+| **Threat model**   | XSS Exfiltration → Account Compromise                                                                                                                                                                            |
+| **Affected files** | `apps/web/vercel.json`, `apps/web/index.html`, `apps/server/src/http/security.ts`                                                                                                                                |
 
 ## Summary
 
@@ -198,7 +198,7 @@ hand-flip after the 24h soak).**
 ```json
 {
   "key": "Content-Security-Policy",
-  "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com wss:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.app/api/csp-report; report-to csp-endpoint"
+  "value": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.sergeant.app https://api.sergeantapp.com wss:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.app/api/csp-report; report-to csp-endpoint"
 }
 ```
 

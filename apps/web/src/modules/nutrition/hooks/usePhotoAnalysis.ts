@@ -20,6 +20,8 @@ import { sumMacrosNullable } from "@sergeant/shared";
 import { compressImageFile } from "@shared/lib/media/compressImage";
 import { fileToBase64 } from "../lib/fileToBase64";
 import { formatNutritionError } from "../lib/nutritionErrors";
+import { failedCopy } from "@shared/i18n/failedCopy";
+import { isQuotaError } from "../../../core/billing/quotaError";
 
 export interface PhotoAnalysisPayload {
   image_base64: string;
@@ -49,6 +51,8 @@ export interface UsePhotoAnalysisParams {
   setBusy: Dispatch<SetStateAction<boolean>>;
   setErr: Dispatch<SetStateAction<string>>;
   setStatusText: Dispatch<SetStateAction<string>>;
+  /** 429 `AI_PHOTO_QUOTA`: тижневі фото Free вичерпано, час на пейвол. */
+  onQuotaExceeded?: () => void;
 }
 
 export interface UsePhotoAnalysisResult {
@@ -80,6 +84,7 @@ export function usePhotoAnalysis({
   setBusy,
   setErr,
   setStatusText,
+  onQuotaExceeded,
 }: UsePhotoAnalysisParams): UsePhotoAnalysisResult {
   const fileRef = useRef<HTMLInputElement | null>(null);
   /** Стиснута копія обраного фото (`compressImageFile`) — analyze бере її
@@ -230,7 +235,8 @@ export function usePhotoAnalysis({
       setPhotoResult(data?.result || null);
     },
     onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка аналізу фото"));
+      if (isQuotaError(err, "AI_PHOTO_QUOTA")) onQuotaExceeded?.();
+      setErr(formatNutritionError(err, failedCopy("оцінити фото")));
     },
     onSettled: () => {
       setStatusText("");
@@ -279,7 +285,7 @@ export function usePhotoAnalysis({
       setPhotoResult(data?.result || null);
     },
     onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка уточнення"));
+      setErr(formatNutritionError(err, failedCopy("уточнити оцінку")));
     },
     onSettled: () => {
       setStatusText("");

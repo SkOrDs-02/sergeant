@@ -19,9 +19,9 @@ const meta: Meta<typeof ConfirmDialog> = {
   tags: ["autodocs"],
   args: {
     open: true,
-    title: "Видалити транзакцію?",
+    title: "Видалити операцію?",
     description:
-      "Цю транзакцію неможливо буде відновити. Бюджет і статистика перерахуються одразу.",
+      "Цю операцію неможливо буде відновити. Бюджет і статистика перерахуються одразу.",
     confirmLabel: "Видалити",
     cancelLabel: "Скасувати",
     danger: true,

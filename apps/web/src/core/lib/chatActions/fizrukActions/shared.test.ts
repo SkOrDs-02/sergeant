@@ -18,6 +18,7 @@ import {
   persistFizrukWorkouts,
   readFizrukDailyLog,
   persistFizrukDailyLog,
+  deleteFizrukDailyLogEntry,
 } from "./shared";
 import {
   __setFizrukSqliteCacheForTests,
@@ -92,36 +93,40 @@ describe("persistFizrukWorkouts", () => {
 });
 
 describe("readFizrukDailyLog", () => {
-  it("returns the stored daily-log array", () => {
+  it("reads the SQLite warm-cache, not the tombstoned LS key", () => {
     localStorage.setItem(
       "fizruk_daily_log_v1",
-      JSON.stringify([{ id: "d1", at: "2026-06-01T00:00:00Z" }]),
+      JSON.stringify([{ id: "stale", at: "2026-06-01T00:00:00Z" }]),
     );
-    const out = readFizrukDailyLog();
-    expect(out).toHaveLength(1);
+    __setFizrukSqliteCacheForTests({
+      dailyLog: [
+        {
+          id: "d1",
+          at: "2026-06-02T00:00:00Z",
+          weightKg: 80,
+          sleepHours: null,
+          energyLevel: null,
+          moodScore: null,
+          note: "",
+        },
+      ],
+    });
+    expect(readFizrukDailyLog().map((e) => e.id)).toEqual(["d1"]);
   });
 
-  it("returns [] when stored value is not an array", () => {
-    localStorage.setItem("fizruk_daily_log_v1", JSON.stringify({ bad: 1 }));
-    expect(readFizrukDailyLog()).toEqual([]);
-  });
-
-  it("returns [] when key is absent", () => {
+  it("returns [] before the cache has been refreshed", () => {
     expect(readFizrukDailyLog()).toEqual([]);
   });
 });
 
 describe("persistFizrukDailyLog", () => {
-  it("writes LS and fires the dual-write trigger", () => {
+  it("fires the dual-write trigger and never touches LS", () => {
     const entries = [
       { id: "d1", at: "2026-06-01T00:00:00Z", weightKg: 80 },
     ] as never;
     persistFizrukDailyLog(entries);
-    const stored = JSON.parse(
-      localStorage.getItem("fizruk_daily_log_v1") || "null",
-    );
-    expect(stored).toHaveLength(1);
     expect(trigger).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("never throws when the trigger rejects", () => {
@@ -129,7 +134,33 @@ describe("persistFizrukDailyLog", () => {
       throw new Error("boom");
     });
     expect(() => persistFizrukDailyLog([] as never)).not.toThrow();
-    // LS write still happened before the trigger.
-    expect(localStorage.getItem("fizruk_daily_log_v1")).toBe("[]");
+  });
+});
+
+describe("deleteFizrukDailyLogEntry", () => {
+  const ENTRY = {
+    id: "dl_new",
+    at: "2026-06-03T00:00:00Z",
+    weightKg: 79,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+  };
+
+  it("emits the delete even when the cache does not know the entry yet", () => {
+    __setFizrukSqliteCacheForTests({ dailyLog: [] });
+    deleteFizrukDailyLogEntry(ENTRY);
+    const [prev, next] = trigger.mock.calls.at(-1)!;
+    expect(prev.dailyLog.map((e: { id: string }) => e.id)).toEqual(["dl_new"]);
+    expect(next.dailyLog).toEqual([]);
+  });
+
+  it("does not duplicate the entry when the cache already has it", () => {
+    __setFizrukSqliteCacheForTests({ dailyLog: [ENTRY] });
+    deleteFizrukDailyLogEntry(ENTRY);
+    const [prev, next] = trigger.mock.calls.at(-1)!;
+    expect(prev.dailyLog.map((e: { id: string }) => e.id)).toEqual(["dl_new"]);
+    expect(next.dailyLog).toEqual([]);
   });
 });

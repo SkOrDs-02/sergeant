@@ -1,16 +1,31 @@
 import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { EXPORT_CLAIM } from "../content/exportClaim";
+import { NO_SALE_CLAIM } from "../content/noSaleClaim";
 import UpdatedOn from "../components/UpdatedOn";
 
 /**
  * Політика приватності сайту. Коротка, бо сайт справді збирає мінімум:
- * cookieless-аналітика з трьома явними подіями і Telegram-естафета без
+ * cookieless-аналітика з чотирма явними подіями і Telegram-естафета без
  * персистентних ідентифікаторів (див. lib/analytics.ts і
  * @sergeant/shared landingAttribution).
  */
 export default function PrivacyPage() {
-  usePageMeta(ROUTE_META["/privacy"]);
+  usePageMeta({
+    ...ROUTE_META["/privacy"],
+    // До 2026-09-17 — одна з чотирьох сторінок без розмітки: для краулера
+    // текст без типу й дати. `WebPage`, а не `Article`: це документ сайту,
+    // не авторський матеріал, тож author тут не ставиться.
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/privacy"].title,
+      description: ROUTE_META["/privacy"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/privacy"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
 
   const h2 =
     "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
@@ -37,19 +52,20 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>Черга в бету</h2>
       <p className={p}>
-        Черга живе в Telegram. Сайт не збирає пошту і не має форм: у deep link
-        передається лише місце кнопки та одноразовий випадковий токен, який
-        помирає разом із вкладкою. Далі спілкування відбувається в Telegram за
-        його правилами, і бот бачить тільки те, що ти сам йому напишеш.
+        Черга живе в Telegram. Сайт не збирає пошту і не має форм: у посиланні
+        на бота лише місце кнопки і випадковий код, що зникає із закриттям
+        вкладки. Далі спілкування відбувається в Telegram за його правилами, і
+        бот бачить тільки те, що ти сам йому напишеш.
       </p>
 
       <h2 className={h2}>Дані в застосунку</h2>
       <p className={p}>
         Це політика сайту. Про дані всередині застосунку коротко: токен Monobank
-        – лише читання і зберігається зашифрованим; я не продаю і не передаю
-        твої дані нікому. {EXPORT_CLAIM} Повна мапа доступів – що бачить
-        банківський токен, куди їдуть фото чеків, як працює AI-помічник –
-        зібрана на сторінці{" "}
+        – лише читання і зберігається зашифрованим. {NO_SALE_CLAIM}. Виняток
+        один і він не про торгівлю: щоб працював Сержант, частина даних їде до
+        стороннього AI-провайдера. {EXPORT_CLAIM} Повна мапа доступів (що бачить
+        банківський токен, куди їдуть фото чеків, як працює Сержант) зібрана на
+        сторінці{" "}
         <a
           href="/data"
           className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -60,9 +76,7 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className={h2}>Питання</h2>
-      <p className={p}>
-        Напиши в Telegram-бот або у Threads @sergeant.app – відповідаю сам.
-      </p>
+      <p className={p}>Напиши нам у Telegram-бот, відповімо.</p>
     </SiteLayout>
   );
 }

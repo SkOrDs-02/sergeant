@@ -117,7 +117,7 @@ export const WithIconOnlyAction: Story = {
 export const Compact: Story = {
   args: {
     icon: <Icon name="search" />,
-    title: "Нічого не знайдено",
+    title: "Нічого не знайшов",
     description: "Спробуй інший запит.",
     compact: true,
     action: (
@@ -175,7 +175,7 @@ export const CompactNoAction: Story = {
 export const ModuleFinyk: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="finyk" size={120} />,
-    title: "Жодної транзакції",
+    title: "Жодної операції",
     description: "Підключи Mono або додай витрату вручну, щоб почати облік.",
     action: (
       <Button variant="finyk" size="md">

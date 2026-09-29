@@ -27,22 +27,16 @@
  * pre-SQLite LS data to migrate — see git history for the prior
  * implementation.
  *
- * ⚠️ Те видалення забрало з собою й ДЕМО-режим: демо-сід пише payload у
- * ті самі LS-ключі, і саме residual-дренаж доносив його до SQLite (це
- * прямим текстом стоїть у докблоці `DEMO_LOCAL_USER_ID`). Без нього
- * демо малювало порожній модуль поряд із засіяними картками хабу
- * (аудит L-8, 2026-08-07). Крок 1.5 нижче — `importFizrukDemoSeed()` —
- * закриває саме цей розрив і працює ЛИШЕ під демо-прапорцем; це не
- * повернення legacy-міграції.
+ * Між 2026-08 і 2026-09 тут стояв ще один крок — місток демо-сіду
+ * (`importFizrukDemoSeed`), який під демо-прапорцем доносив засіяний
+ * LS-payload до SQLite. Демо-режим знято 2026-09-17 разом із ним.
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
-import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { bootstrapBodyWeightFromBiometrics } from "./bodyWeightBootstrap.js";
 import { migrateFizruk } from "./clientMigrate.js";
-import { importFizrukDemoSeed } from "./demoSeedImport.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import {
   getCachedFizrukSqliteState,
@@ -79,25 +73,6 @@ export async function bootFizrukSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateFizruk(client);
-
-    // Демо: залити засіяний payload із LS у SQLite ДО першого читання,
-    // інакше модуль намалює порожньо (аудит L-8). Гейт на демо
-    // обовʼязковий — див. AI-DANGER у `demoSeedImport.ts`. Порядок теж
-    // важливий: нижче йде `refreshFizrukSqliteState`, який гріє кеш, з
-    // якого рендериться модуль.
-    if (isDemoActive()) {
-      const applied = await importFizrukDemoSeed({
-        client,
-        userId,
-        // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, не день-ключ
-        nowIso: new Date().toISOString(),
-      });
-      if (applied > 0) {
-        logger.debug("[fizruk.demoSeed] демо-дані залито в SQLite", {
-          applied,
-        });
-      }
-    }
 
     await refreshFizrukSqliteState(client, userId);
 

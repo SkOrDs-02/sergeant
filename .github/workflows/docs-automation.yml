@@ -1,6 +1,6 @@
 name: Docs automation
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -325,7 +325,6 @@ jobs:
             scripts/docs/__tests__/check-freshness.test.mjs \
             scripts/docs/__tests__/check-freshness-single-marker.test.mjs \
             scripts/docs/__tests__/freshness-config.test.mjs \
-            scripts/docs/__tests__/restamp-next-review.test.mjs \
             scripts/docs/__tests__/bump-last-validated-integration.test.mjs \
             scripts/docs/__tests__/check-playbook-3way-sync.test.mjs \
             scripts/docs/__tests__/freshness-stamp.test.mjs \

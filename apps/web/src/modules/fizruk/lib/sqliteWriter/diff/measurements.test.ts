@@ -33,10 +33,47 @@ describe("diffMeasurementsOps", () => {
     expect(diffMeasurementsOps([m], [m])).toEqual([]);
   });
 
-  it("always upserts on reference change, even with identical field values", () => {
-    const ops = diffMeasurementsOps([baseMeasurement()], [baseMeasurement()]);
+  it("emits no op for a new reference with identical fields", () => {
+    expect(
+      diffMeasurementsOps([baseMeasurement()], [baseMeasurement()]),
+    ).toEqual([]);
+  });
+
+  it("upserts when a measured value changes", () => {
+    const ops = diffMeasurementsOps(
+      [baseMeasurement()],
+      [baseMeasurement({ weightKg: 81.9 })],
+    );
     expect(ops).toEqual([
+      {
+        kind: "measurement-upsert",
+        measurement: baseMeasurement({ weightKg: 81.9 }),
+      },
+    ]);
+  });
+
+  it("upserts when a field is added or removed", () => {
+    const withWaist = baseMeasurement({ waistCm: 84 });
+    expect(diffMeasurementsOps([baseMeasurement()], [withWaist])).toEqual([
+      { kind: "measurement-upsert", measurement: withWaist },
+    ]);
+    expect(diffMeasurementsOps([withWaist], [baseMeasurement()])).toEqual([
       { kind: "measurement-upsert", measurement: baseMeasurement() },
+    ]);
+  });
+
+  it("touches only the changed row when the whole list is a new array", () => {
+    const untouched = baseMeasurement({
+      id: "m0",
+      at: "2026-06-30T10:00:00.000Z",
+    });
+    const prev = [untouched, baseMeasurement()];
+    const next = [{ ...untouched }, baseMeasurement({ weightKg: 83 })];
+    expect(diffMeasurementsOps(prev, next)).toEqual([
+      {
+        kind: "measurement-upsert",
+        measurement: baseMeasurement({ weightKg: 83 }),
+      },
     ]);
   });
 });

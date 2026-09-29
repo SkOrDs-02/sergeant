@@ -132,7 +132,7 @@ function buildMonoPushPayload(
   monoAccountId: string,
 ): PushPayload {
   const amountStr = formatMonoMoney(item.amount, item.currencyCode);
-  const description = (item.description || "Транзакція").trim().slice(0, 80);
+  const description = (item.description || "Операція").trim().slice(0, 80);
   const balanceStr =
     typeof item.balance === "number"
       ? formatMonoMoney(item.balance, item.currencyCode).replace(/^[+−]/, "")

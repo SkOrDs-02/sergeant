@@ -44,6 +44,7 @@ vi.mock("./hooks/useNutritionDualWriteBoot", () => ({
 
 vi.mock("./hooks/useNutritionSqliteReadBoot", () => ({
   useNutritionSqliteReadBoot: vi.fn(),
+  isNutritionReadCacheSettled: () => true,
 }));
 
 vi.mock("./lib/sqliteReadGate", () => ({
@@ -264,6 +265,14 @@ vi.mock("./components/NutritionHeader", () => ({
 
 vi.mock("./components/NutritionBottomNav", () => ({
   NutritionBottomNav: () => <nav data-testid="nutrition-bottom-nav" />,
+  // `NutritionApp` бере підзаголовок шапки з цього ж модуля (N-12), тож
+  // мок без цього експорту валив кожен рендер.
+  NUTRITION_NAV_LABELS: {
+    start: "Огляд",
+    pantry: "Комора",
+    log: "Журнал",
+    menu: "Меню",
+  },
 }));
 
 vi.mock("./components/NutritionPantrySelector", () => ({
@@ -432,6 +441,17 @@ vi.mock("@shared/components/ui/PullToRefresh", () => ({
 
 // ─── Imports (after mocks) ─────────────────────────────────────────────────
 import NutritionApp from "./NutritionApp";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
+
+// Автоімпорт Сільпо в NutritionApp читає sync-state через справжній
+// `useQuery`, тож дереву потрібен клієнт, хоч `useQueryClient` і замоканий.
+function QueryWrapper({ children }: { children: ReactNode }) {
+  const [client] = useState(
+    () => new QueryClient({ defaultOptions: { queries: { retry: false } } }),
+  );
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionUiState } from "./hooks/useNutritionUiState";
 import { useNutritionRoute } from "./hooks/useNutritionRoute";
@@ -478,7 +498,7 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
   }
 
   it("opens the add-meal sheet at the photo step", () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     openMealPhoto();
     expect(
       vi.mocked(useNutritionLog)().setAddMealSheetOpen,
@@ -492,7 +512,7 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
   it("a later plain add-meal open resets the sheet back to the source step", () => {
     // Регресія залишкового кроку: після входу через фото-шорткат звичайний
     // FAB «Додати прийом їжі» не має відкривати sheet на кроці фото.
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     openMealPhoto();
     expect(screen.getByTestId("nutrition-overlays")).toHaveAttribute(
       "data-initial-step",
@@ -508,7 +528,7 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
 
 describe("NutritionApp — handleQuickAddMealFromChip", () => {
   it("calls log.handleAddMeal and toast.success with the chip data", () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByTestId("quick-add"));
     expect(vi.mocked(useNutritionLog)().handleAddMeal).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -526,7 +546,7 @@ describe("NutritionApp — handleQuickAddMealFromChip", () => {
   });
 
   it("quick-add undo calls log.handleRemoveMeal", () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByTestId("quick-add"));
     const successCall = mockToast.success.mock.calls[0]!;
     const undoAction = successCall[2] as { label: string; onClick: () => void };
@@ -537,7 +557,7 @@ describe("NutritionApp — handleQuickAddMealFromChip", () => {
 
 describe("NutritionApp — handlePullRefresh / handlePullRefreshError", () => {
   it("handlePullRefresh calls invalidateQueries and requestCloudPull", async () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     await act(async () => {
       fireEvent.click(screen.getByTestId("ptr-refresh"));
     });
@@ -546,7 +566,7 @@ describe("NutritionApp — handlePullRefresh / handlePullRefreshError", () => {
   });
 
   it("handlePullRefreshError calls toast.error with a retry action", () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByTestId("ptr-error"));
     expect(mockToast.error).toHaveBeenCalledWith(
       expect.stringContaining("Не вдалося оновити"),
@@ -556,7 +576,7 @@ describe("NutritionApp — handlePullRefresh / handlePullRefreshError", () => {
   });
 
   it("the retry action in the error toast calls invalidateQueries again", async () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     fireEvent.click(screen.getByTestId("ptr-error"));
     const errorCall = mockToast.error.mock.calls[0]!;
     const retryAction = errorCall[2] as { label: string; onClick: () => void };
@@ -570,7 +590,7 @@ describe("NutritionApp — handlePullRefresh / handlePullRefreshError", () => {
 describe("NutritionApp — wrappedSaveMeal (add path)", () => {
   it("add path calls log.handleAddMeal and shows success toast", async () => {
     // editingMeal is null by default → add path
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     await act(async () => {
       fireEvent.click(screen.getByTestId("save-meal-add"));
     });
@@ -607,7 +627,7 @@ describe("NutritionApp — wrappedSaveMeal (edit path)", () => {
       setEditingMeal: vi.fn(),
     } as ReturnType<typeof useNutritionUiState>);
 
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     await act(async () => {
       fireEvent.click(screen.getByTestId("save-meal-edit"));
     });
@@ -623,14 +643,14 @@ describe("NutritionApp — page shells", () => {
     ["menu", "nutrition-menu-page"],
   ] as const)("renders the %s page", (page, testId) => {
     vi.mocked(useNutritionRoute).mockReturnValue(mockRoute(page));
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     expect(screen.getByTestId(testId)).toBeInTheDocument();
   });
 });
 
 describe("NutritionApp — statusText and err banners", () => {
   it("shows a status banner when setStatusText is called by a hook", () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     // capturedSetStatusText is populated when useNutritionRemoteActions mock runs
     act(() => {
       capturedSetStatusText("Операція успішна");
@@ -639,7 +659,7 @@ describe("NutritionApp — statusText and err banners", () => {
   });
 
   it("shows a danger banner when setErr is called by a hook", () => {
-    render(<NutritionApp />);
+    render(<NutritionApp />, { wrapper: QueryWrapper });
     act(() => {
       capturedSetErr("Помилка мережі");
     });

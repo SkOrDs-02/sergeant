@@ -82,4 +82,11 @@ describe("ServerErrorPage", () => {
     render(<ServerErrorPage />);
     expect(screen.getByText(/Якщо помилка повторюється/i)).toBeInTheDocument();
   });
+
+  it("carries an <h1> — the empty state is the whole page, so it must own the heading", () => {
+    render(<ServerErrorPage />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Щось пішло не так" }),
+    ).toBeInTheDocument();
+  });
 });

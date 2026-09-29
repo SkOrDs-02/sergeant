@@ -58,7 +58,7 @@ describe("friendlyApiError", () => {
         "AI-помічник тимчасово недоступний. Спробуй пізніше.",
         "ANTHROPIC_KEY_MISSING",
       ),
-    ).toBe("Чат на сервері не налаштовано (немає ключа AI).");
+    ).toBe("Чат на сервері не налаштовано. Повідом у підтримку.");
   });
   it("without the code a 503 with a body stays the server's own text", () => {
     // Той самий статус без маркера — це звичайний збій upstream-у, і
@@ -72,9 +72,11 @@ describe("friendlyApiError", () => {
   });
   it("special-cases AI quota on 429", () => {
     expect(friendlyApiError(429, "AI_QUOTA exceeded")).toBe(
-      "Денний ліміт AI вичерпано. Спробуй завтра або зменш навантаження.",
+      "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.",
     );
-    expect(friendlyApiError(429, "ліміт AI")).toContain("Денний ліміт AI");
+    expect(friendlyApiError(429, "ліміт AI")).toContain(
+      "Тижневий ліміт Сержанта",
+    );
   });
   it("passes the server copy through for a preset weekly quota block", () => {
     // Копія цього випадку живе на сервері (`assertAiQuota`) в одному

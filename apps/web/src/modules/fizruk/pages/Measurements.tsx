@@ -13,11 +13,14 @@ import {
 } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
+import { Button } from "@shared/components/ui/Button";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
 import { formatNumberUk } from "@sergeant/shared";
 import { fmt } from "../lib/numberFmt";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 // Programmatic-focus target for the guide view's `<h2>` — see the
 // scroll/focus-management effect below.
@@ -30,6 +33,7 @@ const HISTORY_ROW_FIELD_LIMIT = 4;
 
 export function Measurements() {
   const [guideOpen, setGuideOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
   const toast = useToast();
   const handleDelete = useCallback(
@@ -108,17 +112,39 @@ export function Measurements() {
 
   const stats = useMemo(() => {
     const total = entries?.length || 0;
-    const latestAt = latest?.at
-      ? new Date(latest.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        })
-      : "—";
-    const filledLatest = latest
-      ? MEASURE_FIELDS.filter((f) => latest[f.id] != null).length
-      : 0;
-    return { total, latestAt, filledLatest };
+    const latestAt = latest?.at ? formatDateShort(new Date(latest.at)) : "—";
+    return { total, latestAt };
   }, [entries, latest]);
+
+  const guideButton = (
+    <button
+      ref={guideTriggerRef}
+      type="button"
+      onClick={() => setGuideOpen(true)}
+      className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
+    >
+      <div className="min-w-0">
+        <SectionHeading
+          as="div"
+          size="xs"
+          variant="fizruk"
+          className="inline-flex items-center gap-1.5"
+        >
+          <Icon
+            name="info"
+            size="sm"
+            className="shrink-0 text-fizruk-strong dark:text-fizruk"
+            aria-hidden
+          />
+          {messages.fizruk.measurements.manual}
+        </SectionHeading>
+        <div className="text-style-label text-fizruk-strong dark:text-fizruk mt-0.5 inline-flex items-center gap-0.5">
+          {messages.fizruk.measurements.manualLink}
+          <Icon name="chevron-right" size="sm" />
+        </div>
+      </div>
+    </button>
+  );
 
   if (guideOpen) {
     return (
@@ -138,9 +164,18 @@ export function Measurements() {
                   scroll/focus-management effect above (not part of tab
                   order; SectionHeading isn't a forwardRef component, so a
                   DOM ref isn't available here — id + getElementById is the
-                  pragmatic substitute). */}
+                  pragmatic substitute).
+
+                  `as="h1"`, не `h2`: гайд — це повноекранне під-в'ю з
+                  власним раннім `return`, тож на екрані він єдиний і свого
+                  `<h1>` не мав узагалі (сторінковий заголовок «Заміри
+                  тіла» рендериться в ІНШІЙ гілці й сюди не потрапляє).
+                  Свіп цього не бачив і побачити не міг: гайд — стан
+                  `guideOpen`, а не адреса, тож жоден маршрутний лейн у
+                  нього не заходить. Візуально нічого не змінюється —
+                  `size="lg"` лишається, міняється лише тег. */}
               <SectionHeading
-                as="h2"
+                as="h1"
                 size="lg"
                 id={GUIDE_HEADING_ID}
                 tabIndex={-1}
@@ -225,67 +260,63 @@ export function Measurements() {
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
-        <button
-          ref={guideTriggerRef}
-          type="button"
-          onClick={() => setGuideOpen(true)}
-          className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
-        >
-          <div className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
-            <svg
-              aria-hidden
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* Сторінка не мала ЖОДНОГО `<h1>` — лише `SectionHeading as="div"`
+            по картках (axe `page-has-heading-one`, замір свіпу 2026-09-16).
+            Видимий заголовок за зразком сусідніх сторінок модуля
+            (`Programs.tsx`, `components/workouts/WorkoutsHeader.tsx`) —
+            той самий `text-style-title text-text` плюс підпис-caption. */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <h1 className="text-style-title text-text">
+              {messages.fizruk.progress.measurementsTitle}
+            </h1>
+            <p className="text-style-caption text-subtle mt-0.5">
+              {messages.fizruk.progress.measurementsSubtitle}
+            </p>
+          </div>
+          {latest && (
+            <Button
+              variant="solid"
+              tone="fizruk"
+              size="sm"
+              className="h-9 px-4"
+              onClick={() => setAddOpen(true)}
+              aria-label={messages.fizruk.measurements.addHeading}
             >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4M12 16h.01" />
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <SectionHeading as="div" size="xs" variant="fizruk">
-              {messages.fizruk.measurements.manual}
-            </SectionHeading>
-            <div className="text-style-label text-success-strong dark:text-success mt-0.5 inline-flex items-center gap-0.5">
-              {messages.fizruk.measurements.manualLink}
-              <Icon name="chevron-right" size="sm" />
-            </div>
-          </div>
-        </button>
-
-        <div className="grid grid-cols-3 gap-2">
-          <Card radius="lg" padding="sm">
-            <Stat
-              label={messages.fizruk.measurements.records}
-              value={stats.total}
-              size="sm"
-              align="center"
-            />
-          </Card>
-          <Card radius="lg" padding="sm">
-            <Stat
-              label={messages.fizruk.measurements.last}
-              value={<span className="text-style-label">{stats.latestAt}</span>}
-              size="sm"
-              align="center"
-            />
-          </Card>
-          <Card radius="lg" padding="sm">
-            <Stat
-              label={messages.fizruk.measurements.fields}
-              value={stats.filledLatest}
-              size="sm"
-              align="center"
-            />
-          </Card>
+              {messages.fizruk.measurements.addButton}
+            </Button>
+          )}
         </div>
+        {/* Коли записів немає, форма і є головний зміст екрана, тож гайд
+            стоїть над нею; з історією він з'їжджає під неї. */}
+        {!latest && guideButton}
 
-        <AddMeasurementForm addEntry={addEntry} />
+        {/* До першого запису плиткам нема що казати: «0 / – / 0» подає
+            порожній стан як результат. */}
+        {latest && (
+          <div className="grid grid-cols-2 gap-2">
+            <Card radius="lg" padding="sm">
+              <Stat
+                label={messages.fizruk.measurements.records}
+                value={stats.total}
+                size="sm"
+                align="center"
+              />
+            </Card>
+            <Card radius="lg" padding="sm">
+              <Stat
+                label={messages.fizruk.measurements.last}
+                value={
+                  <span className="text-style-label">{stats.latestAt}</span>
+                }
+                size="sm"
+                align="center"
+              />
+            </Card>
+          </div>
+        )}
+
+        {!latest && <AddMeasurementForm addEntry={addEntry} />}
 
         {/*
           П3 «край і зріз»: «Останній запис» і журнал «Історія» нижче
@@ -363,10 +394,8 @@ export function Measurements() {
             </SectionHeading>
           </div>
           {(entries || []).map((e) => {
-            const dateLabel = new Date(e.at).toLocaleDateString("uk-UA", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
+            const dateLabel = formatDateShort(new Date(e.at), {
+              withYear: true,
             });
             const filledFields = MEASURE_FIELDS.filter((f) => e[f.id] != null);
             // Defect #7: a record can carry up to 14 fields — silently
@@ -431,7 +460,22 @@ export function Measurements() {
             />
           )}
         </Card>
+
+        {latest && guideButton}
       </div>
+
+      <Sheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title={messages.fizruk.measurements.addHeading}
+        closeLabel={messages.actions.close}
+      >
+        <AddMeasurementForm
+          addEntry={addEntry}
+          inSheet
+          onSaved={() => setAddOpen(false)}
+        />
+      </Sheet>
     </div>
   );
 }

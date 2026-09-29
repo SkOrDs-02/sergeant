@@ -307,14 +307,39 @@ export function getDebtEffectiveTotal(
   return roundHryvnia(base + getDebtOriginated(debt, transactions));
 }
 
+/**
+ * Сума операцій, якими виникла дебіторка — дзеркало `getDebtSourced`.
+ * Та сама семантика: `source` не додається поверх ручної бази, але й не
+ * дозволяє показати базу, меншу за суму підтверджених джерел.
+ *
+ * AI-CONTEXT: до 2026-09-16 цієї функції не було, і
+ * `getReceivableEffectiveTotal` рахував `amount + originated`, ігноруючи
+ * роль `source` повністю — тоді як підказка в пікері (`receivableSource`:
+ * «Сума вже врахована») обіцяла те саме, що й для боргу. Асиметрія з
+ * аудиту 2026-09-15 § 3.
+ */
+export function getReceivableSourced(
+  receivable: Receivable,
+  transactions: readonly Tx[] = [],
+): number {
+  const links = resolveLinks(
+    receivable?.linkedTxIds || [],
+    receivable?.txLinks,
+    transactions,
+    defaultReceivableTxRole,
+  );
+  return sumByRole(links, "source");
+}
+
 export function getReceivableEffectiveTotal(
   receivable: Receivable,
   transactions: readonly Tx[] = [],
 ): number {
-  return (
-    Number(receivable?.amount || 0) +
-    getReceivableOriginated(receivable, transactions)
+  const base = Math.max(
+    Number(receivable?.amount || 0),
+    getReceivableSourced(receivable, transactions),
   );
+  return roundHryvnia(base + getReceivableOriginated(receivable, transactions));
 }
 
 export function calcDebtRemaining(

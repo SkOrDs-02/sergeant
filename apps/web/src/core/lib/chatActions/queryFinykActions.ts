@@ -1,4 +1,4 @@
-import { getWeekKey } from "@sergeant/shared";
+import { formatNumberUk, getWeekKey } from "@sergeant/shared";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 
 /**
@@ -344,7 +344,7 @@ export function queryTransactions(
     return withinRange(tx, from, to);
   });
 
-  if (matched.length === 0) return "Транзакцій за цими фільтрами не знайдено.";
+  if (matched.length === 0) return "Операцій за цими фільтрами не знайдено.";
 
   const total = matched.reduce((sum, tx) => sum + txAmountGrn(tx), 0);
   const shown = matched.slice(0, limit);
@@ -354,14 +354,14 @@ export function queryTransactions(
         ? ` · ${categoryLabel(tx.category, customCats)}`
         : "";
       const desc = tx.description ? ` · ${tx.description}` : "";
-      return `${tx.id}: ${tx.date || "без дати"} · ${roundGrn(txAmountGrn(tx))} грн${desc}${cat}`;
+      return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(roundGrn(txAmountGrn(tx)))} грн${desc}${cat}`;
     })
     .join("; ");
   const more =
     matched.length > shown.length
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
-  return `Знайдено ${matched.length} транзакц. на суму ${roundGrn(total)} грн${more}: ${list}`;
+  return `Знайдено ${matched.length} операц. на суму ${formatNumberUk(roundGrn(total))} грн${more}: ${list}`;
 }
 
 export function aggregateSpending(
@@ -411,11 +411,14 @@ export function aggregateSpending(
   const sorted = [...groups.entries()]
     .sort((a, b) => b[1].sum - a[1].sum)
     .slice(0, top)
-    .map(([key, v]) => `${key}: ${roundGrn(v.sum)} грн (${v.count})`);
+    .map(
+      ([key, v]) =>
+        `${key}: ${formatNumberUk(roundGrn(v.sum))} грн (${v.count})`,
+    );
 
   const dirTitle = direction === "income" ? "Дохід" : "Витрати";
   const more = groups.size > sorted.length ? ` з ${groups.size} груп` : "";
-  return `${dirTitle} за ${finykRange(from, to)}: ${roundGrn(total)} грн усього (${rows.length} транзакц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
+  return `${dirTitle} за ${finykRange(from, to)}: ${formatNumberUk(roundGrn(total))} грн усього (${rows.length} операц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
 }
 
 export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
@@ -444,7 +447,7 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
   const b = roundGrn(measure(bFrom, bTo));
   const delta = a - b;
   const pct = b !== 0 ? (delta / b) * 100 : a !== 0 ? 100 : 0;
-  const unit = metric === "count" ? "транзакц." : "грн";
+  const unit = metric === "count" ? "операц." : "грн";
   const metricTitle =
     metric === "count"
       ? "Кількість"
@@ -452,7 +455,7 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
         ? "Дохід"
         : "Витрати";
   const sign = (n: number): string => (n >= 0 ? "+" : "");
-  return `${metricTitle}: A (${aFrom} – ${aTo}) = ${a} ${unit}; B (${bFrom} – ${bTo}) = ${b} ${unit}. Різниця (A − B): ${sign(delta)}${delta} ${unit} (${sign(pct)}${pct.toFixed(1)}%).`;
+  return `${metricTitle}: A (${aFrom} – ${aTo}) = ${formatNumberUk(a)} ${unit}; B (${bFrom} – ${bTo}) = ${formatNumberUk(b)} ${unit}. Різниця (A − B): ${sign(delta)}${formatNumberUk(delta)} ${unit} (${sign(pct)}${formatNumberUk(pct, { maximumFractionDigits: 1 })}%).`;
 }
 
 /**

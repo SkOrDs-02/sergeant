@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "6.1.0",
+  "current": "7.0.5",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -510,6 +510,202 @@
         "Причина bump-у саме minor: RED-прогон показав, що зі старим текстом агент штатним роутингом відповідав «Capacitor primary, обидва стеки активні, новий екран у `apps/mobile` йде за правилом» — тобто вів до роботи, яку власник заморозив. Після правки той самий прогон зупиняється і йде питати власника. Це зміна поведінки, не формулювання.",
         "Заморозка тепер видима і на вході в роутинг: задача «нова фіча / новий екран» веде в `sergeant-feature-delivery`, який про мобільну паузу не знав нічого.",
         "Друга ітерація в тому ж PR, за рев'ю #1188: застереження про паузу додано і в `sergeant-feature-delivery/SKILL.md` — саме туди веде роутинг за формулюванням «нова фіча / новий екран», тож без нього цілий клас задач обходив би паузу. Там же виправлено опис `forbid-shell-only-feature` у скілі й у `.claude/agents/mobile-agent.md`: правило однонаправлене (алаутліст на нові файли під `apps/mobile-shell/src/**`), а не вимога парності між воркспейсами, як стверджував успадкований текст."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.2.0": {
+      "releasedAt": "2026-09-15",
+      "changes": [
+        "require-toast-error-action: гейт розширено з `apps/web/src/**` на `apps/mobile/src/**` і `apps/mobile/app/**` — блок переїхав з `eslint.web.js` у `eslint.cross-surface.js`. Закриває структурний залишок PR-X3 наскрізного огляду 2026-09-13: правило вже вміло мобільну форму дії (`onPress` поряд з `onClick`), бракувало саме глоба.",
+        "Мобільний `showUndoToast.ts` додано в allowlist правила дзеркально до веб-аналога `undoToast.tsx` (ретрай проваленого undo може подвоїти запис).",
+        "Класифікація бампу зроблена вручну: `ci-bump-harness-version.mjs` дав `patch`, бо в `packages/eslint-plugin-sergeant-design/**` змінився лише коментар, а розширення скоупу живе в кореневому `eslint.cross-surface.js`, якого детектор не знає. За таблицею § «Bump rules» це `minor` — нове механічне enforcement на поверхні, де його не було."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.3.0": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "Новий гейт `scripts/check-auth-before-rate-limit.mjs` у ланцюжку `pnpm lint` (+ `lint:auth-before-rate-limit`, + 10 юніт-тестів на сам гейт). Вимагає, щоб резолвер сесії стояв перед per-user rate-лімітером на кожному роуті `apps/server/src/routes/**`; pre-auth IP-бакет (ключ із суфіксом `:ip`) порушенням не є. Закриває єдину незакриту частину PR-A3 — дефект рецидивував ЧОТИРИ рази й доти тримався лише на коментарях.",
+        "На першому прогоні гейт знайшов четвертий рецидив: `routes/finyk.ts` тримав per-user лімітер `api:finyk` перед `requireSession()`, тобто весь модуль ділив бакет за IP. Полагоджено за еталоном `nutrition.ts`.",
+        "knip: `apps/mobile` entry звужено з `[app/**, src/**]` до `[app/**]`. Доти кожен файл поверхні був точкою входу, і knip структурно не міг знайти на мобайлі нічого мертвого, світячись зеленим (PR-M3). 15 наявних орфанів перелічені поіменно в `ignore` з причиною — мобільний контур на паузі (ADR-0094), видалення — рішення власника.",
+        "`ukrainian-copy` на сервері: скоуп НЕ розширено, і це тепер заміряне рішення, а не замовчування. Перезамір дав 135 влучань, з них справжнє одне; обґрунтування записане в `eslint.server.js`."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.3.1": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "knip: знято список `ignore` для `apps/mobile` (заведений у 6.3.0) — 15 перелічених у ньому файлів видалено рішенням власника, тобто борг закрито, а не приховано. Каскаду видалення не дало: knip зелений без жодного винятку."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.4.0": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "Новий гейт `scripts/check-ui-canon-ratchet.mjs` у ланцюжку `pnpm lint` (+ `lint:ui-canon`, + 13 юніт-тестів). Дві метрики-храповики в `apps/web/src`: `legacyButton` = 0 (заборона на повернення — codemod того ж PR-а звів усі 227 легасі-вживань до нуля) і `handRolledFocusRing` = 234 (стеля над боргом, міграція поза скоупом). Baseline — `.tech-debt/ui-canon-budget.json`, опускати можна, піднімати ні.",
+        "Спека міграції C-секції: `docs/work/specs/c-section-consistency-migration.md` — мапа легасі→канон для `<Button>`, рішення власника 2026-09-16 і межі скоупу.",
+        "Посилено наявний `Button.toneRenders.test.ts`: він трактував динамічний `variant={...}` як дефолт `primary` і давав хибне спрацювання на цілком справній кнопці. Тепер читає гілки тернарника й перевіряє кожну — сильніше, ніж було."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.4.1": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "bump from 6.4.0 -> 6.4.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.4.2": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "bump from 6.4.1 -> 6.4.2: ukrainian-copy — 1-а множини тепер ловить -емо/-имо/-їмо і зворотні -мось/-мося (велика перша літера дозволена); allowlist для прислівників «окремо»/«видимо» і привітання «ласкаво просимо»; 14 рядків копі переведено на 1-у однини"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.4.3": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "eslint.type-aware.js: перший type-aware зріз лінту — @typescript-eslint/no-floating-promises на apps/** (рішення власника 2026-09-16)",
+        "eslint.floating-promises-baseline.js: борговий allowlist на 83 файли (198 знахідок) + ратчет scripts/ci/check-floating-promises-baseline.mjs у ланцюжку pnpm lint",
+        "turbo.json globalDependencies: обидва нові кореневі конфіги зареєстровані; додано тест, що ловить незареєстрований eslint.*.js (фальшивий зелений кешу)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.0": {
+      "releasedAt": "2026-09-16",
+      "changes": [
+        "bump from 6.4.3 -> 6.5.0: AGENTS.md modified"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.1": {
+      "releasedAt": "2026-09-17",
+      "changes": [
+        "bump from 6.5.0 -> 6.5.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.2": {
+      "releasedAt": "2026-09-17",
+      "changes": [
+        "bump from 6.5.1 -> 6.5.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.3": {
+      "releasedAt": "2026-09-17",
+      "changes": [
+        "bump from 6.5.2 -> 6.5.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.4": {
+      "releasedAt": "2026-09-17",
+      "changes": [
+        "bump from 6.5.3 -> 6.5.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.5": {
+      "releasedAt": "2026-09-17",
+      "changes": [
+        "bump from 6.5.4 -> 6.5.5: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.6": {
+      "releasedAt": "2026-09-17",
+      "changes": [
+        "bump from 6.5.5 -> 6.5.6: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.7": {
+      "releasedAt": "2026-09-19",
+      "changes": [
+        "bump from 6.5.6 -> 6.5.7: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.8": {
+      "releasedAt": "2026-09-19",
+      "changes": [
+        "bump from 6.5.7 -> 6.5.8: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.5.9": {
+      "releasedAt": "2026-09-23",
+      "changes": [
+        "bump from 6.5.8 -> 6.5.9: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "7.0.0": {
+      "releasedAt": "2026-09-23",
+      "changes": [
+        "Hard Rule #26 повернуто в дію на Bitbucket: писач pr-ledger бере метадані з Bitbucket API замість мертвого `gh`, ключ запису став host+repo+number, тригером служить pre-push хук (`pnpm docs:sync-pr-ledger`)",
+        "Аудит documentation/governance: enforcement-заяви в AGENTS.md, hard-rules.json і скілах вирівняно з фактом (CI відсутній з 2026-09-23), деплой-доки переписано на ручний Coolify/Vercel-потік",
+        "lint-migrations, check-hard-rules-registry і check-governance-sync перенесено з мертвого CI у ланцюжок `pnpm lint`; deploy-api.mjs дістав pre-flight міграцій",
+        "ADR-0099: реєстр дев'яти Hard Rules, знятих ADR-0081; журнал бандл-ратчетів винесено з AGENTS.md (88 -> 57 KB)"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "7.0.1": {
+      "releasedAt": "2026-09-23",
+      "changes": [
+        "bump from 7.0.0 -> 7.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "7.0.2": {
+      "releasedAt": "2026-09-24",
+      "changes": [
+        "bump from 7.0.1 -> 7.0.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "7.0.3": {
+      "releasedAt": "2026-09-26",
+      "changes": [
+        "bump from 7.0.2 -> 7.0.3: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "7.0.4": {
+      "releasedAt": "2026-09-28",
+      "changes": [
+        "bump from 7.0.3 -> 7.0.4: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "7.0.5": {
+      "releasedAt": "2026-09-28",
+      "changes": [
+        "bump from 7.0.4 -> 7.0.5: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

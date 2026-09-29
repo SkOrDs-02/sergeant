@@ -250,7 +250,7 @@ describe("Transactions page shell", () => {
   it("renders the transaction filter toolbar", () => {
     renderTransactions();
     expect(
-      screen.getByRole("toolbar", { name: "Фільтр транзакцій" }),
+      screen.getByRole("toolbar", { name: "Фільтр операцій" }),
     ).toBeInTheDocument();
   });
 
@@ -329,6 +329,16 @@ describe("Transactions page shell", () => {
     ];
   }
 
+  it("holds transfer suggestions until the SQLite storage cache is warm", () => {
+    renderTransactions({
+      mono: { realTx: buildTransferPair() },
+      storage: { storageReady: false },
+    });
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+  });
+
   it("snoozes a transfer suggestion via 'Не зараз', persisted for the current Kyiv day", () => {
     const pair = buildTransferPair();
     const { unmount } = renderTransactions({ mono: { realTx: pair } });
@@ -395,12 +405,68 @@ describe("Transactions page shell", () => {
     expect(screen.getByText("Схоже на погашення кредитки")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Погашення не рахується як витрата, витратами були покупки з кредитки",
+        "Погашення не рахується як витрата. Витратою вже були самі покупки кредиткою.",
       ),
     ).toBeInTheDocument();
     expect(
       screen.queryByText("Схоже на внутрішній переказ"),
     ).not.toBeInTheDocument();
+    // Заголовок питає про погашення — кнопки мають відповідати про нього ж,
+    // а не про «переказ» (звіт власника 2026-09-14).
+    expect(
+      screen.getByRole("button", { name: "Так, це погашення" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ні, різні операції" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Пізніше" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Це переказ" }),
+    ).not.toBeInTheDocument();
+    // Кредитний рахунок названо в рядку напрямку: без цього з двох карток
+    // не видно, яка з них кредитка, на якій і тримається вся підказка.
+    expect(screen.getByText(/Чорна.*·\sкредитна/)).toBeInTheDocument();
+  });
+
+  it("confirms a credit-card repayment via the repayment-worded button", () => {
+    const overrideCategory = vi.fn();
+    const pair = buildTransferPair();
+    renderTransactions({
+      mono: {
+        realTx: pair,
+        accounts: [
+          { id: "black", type: "black" },
+          { id: "white", type: "black", creditLimit: 50_000 },
+        ],
+      },
+      storage: { overrideCategory },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Так, це погашення" }));
+    expect(overrideCategory).toHaveBeenNthCalledWith(
+      1,
+      "transfer-out",
+      "internal_transfer",
+    );
+    expect(overrideCategory).toHaveBeenNthCalledWith(
+      2,
+      "transfer-in",
+      "internal_transfer",
+    );
+  });
+
+  it("puts the sign on each leg's amount, not on its date", () => {
+    const pair = buildTransferPair();
+    renderTransactions({ mono: { realTx: pair } });
+    // Регресія, заради якої розкладку й переробляли: знак стояв перед датою
+    // («−11 вер.») і читався як «мінус одинадцяте», а сума в кутку не
+    // належала жодній із двох ніг.
+    const card = screen
+      .getByText("Схоже на внутрішній переказ")
+      .closest("div")?.parentElement;
+    expect(card).toBeTruthy();
+    expect(card?.textContent).toContain("−100");
+    expect(card?.textContent).toContain("+100");
+    expect(card?.textContent).not.toMatch(/[−+]\d+\s*(вер|чер)/);
   });
 
   it("routes the list to the skeleton slot on first-paint loading", () => {
@@ -417,8 +483,8 @@ describe("Transactions page shell", () => {
     renderTransactions({
       mono: buildMono({ realTx: [SAMPLE_TX] }),
     });
-    fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
-    expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
+    expect(screen.getByText("Немає операцій")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -428,7 +494,7 @@ describe("Transactions page shell", () => {
     });
     // F1: Транзакції більше НЕ повторюють герой Огляду. Порожній перший
     // вхід віддає власну list-scoped заглушку — див. `TransactionList.tsx`.
-    expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+    expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -519,7 +585,7 @@ describe("Transactions page shell", () => {
       />,
     );
     expect(screen.queryByText("синхронізовано")).not.toBeInTheDocument();
-    expect(screen.queryByText("помилка")).not.toBeInTheDocument();
+    expect(screen.queryByText("не синхронізовано")).not.toBeInTheDocument();
     expect(screen.queryByText(/оновлено ·/)).not.toBeInTheDocument();
 
     rerender(

@@ -149,7 +149,7 @@ export function InjuryManager() {
               </span>
               <Button
                 size="sm"
-                variant="secondary"
+                variant="outline"
                 disabled={busy}
                 onClick={() => clearInjury(injury.id)}
               >
@@ -193,7 +193,9 @@ export function InjuryManager() {
       </div>
 
       <Button
-        module="fizruk"
+        variant="solid"
+        tone="fizruk"
+
         className="w-full h-12"
         disabled={busy || selected.length === 0}
         onClick={saveSelected}

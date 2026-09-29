@@ -24,6 +24,7 @@ import {
   MissingMacrosHint,
 } from "./DailyPlanWarnings";
 import { MacroRatioBar } from "./DailyPlanMacros";
+import { WeekPlanButton } from "./WeekPlanButton";
 import {
   DailyPlanMealRow,
   MEAL_TYPE_ORDER,
@@ -332,23 +333,23 @@ export function DailyPlanCard({
             disabled={busy || dayPlanBusy}
             className={cn(
               "text-style-label w-full h-11 rounded-2xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
+              // Обидві CTA — сирі `<button>`, тож кільце фокуса не приходить
+              // від `Button`. Без нього з клавіатури не видно, де ти стоїш
+              // (підтверджено живим прогоном 2026-09-16). Канон — утиліта
+              // `focus-ring`, а не рукописний `focus-visible:ring-2`: її
+              // стереже храповик `handRolledFocusRing` у `pnpm lint`.
+              "focus-ring",
             )}
           >
             {dayPlanBusy ? "Генерую план…" : "Згенерувати денний план"}
           </button>
           {typeof fetchWeekPlan === "function" && (
-            <button
-              type="button"
+            <WeekPlanButton
               onClick={fetchWeekPlan}
               disabled={busy || weekPlanBusy}
-              className={cn(
-                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-              )}
-            >
-              {weekPlanBusy ? "…" : "План на тиждень"}
-            </button>
+              busy={weekPlanBusy}
+            />
           )}
         </div>
 

@@ -98,7 +98,7 @@ test("parseAgentsTableRules: non-numeric and separator rows are ignored", () => 
   const table = [
     "| Path        | Owner       |",
     "| ----------- | ----------- |",
-    "| apps/web/** | @SkOrDs-02  |",
+    "| apps/web/** | @klas149  |",
   ].join("\n");
 
   assert.equal(parseAgentsTableRules(table).size, 0);

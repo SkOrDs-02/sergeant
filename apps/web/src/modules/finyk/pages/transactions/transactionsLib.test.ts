@@ -11,7 +11,7 @@ describe("computeDaySummary", () => {
     expect(s).toEqual({ total: 40000, count: 2, statCount: 2 });
   });
 
-  it("виключає транзакції з excludedTxIds (внутрішні перекази, приховані тощо)", () => {
+  it("виключає операції з excludedTxIds (внутрішні перекази, приховані тощо)", () => {
     const s = computeDaySummary(
       [
         { id: "a", amount: 75000 }, // внутрішній переказ (income)
@@ -24,7 +24,7 @@ describe("computeDaySummary", () => {
     expect(s).toEqual({ total: 1130358, count: 3, statCount: 1 });
   });
 
-  it("повертає statCount=0 коли всі транзакції виключені — UI ховає суму", () => {
+  it("повертає statCount=0 коли всі операції виключені — UI ховає суму", () => {
     const s = computeDaySummary(
       [
         { id: "a", amount: 75000 },
@@ -53,7 +53,7 @@ describe("computeDaySummary", () => {
     expect(s.statCount).toBe(1);
   });
 
-  it("при сплітах на доходній транзакції віддає позитивну суму", () => {
+  it("при сплітах на доходній операції віддає позитивну суму", () => {
     const s = computeDaySummary([{ id: "y", amount: 50000 }], {
       txSplits: {
         y: [

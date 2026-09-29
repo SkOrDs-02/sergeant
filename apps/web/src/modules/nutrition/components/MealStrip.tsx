@@ -15,11 +15,16 @@
  * тієї самої частки»). Той компонент лишається недоторканим у
  * `DayLogSheet`; `MealStrip` — окрема форма для hero.
  *
- * **Сегменти клікабельні (рішення власника 2026-09-11).** Тап по «Обід»
- * відкриває аркуш прийому з уже обраним `mealType`. До того hero був
+ * **Сегменти клікабельні (рішення власника 2026-09-11).** До того hero був
  * індикатором, з якого не зробиш нічого: єдиною дією лишався FAB, а він
  * відкриває аркуш БЕЗ типу — тип угадував годинник (`mealTypeByNow`).
- * Тепер FAB — вхід «щось нове», сегмент — вхід «у цей прийом».
+ *
+ * **Куди веде тап — уточнено 2026-09-15.** Спершу сегмент відкривав форму
+ * додавання з уже обраним типом; власник заперечив: сегмент НЕСЕ факт
+ * («Вечеря, 520 ккал»), тож тап має цей факт розгорнути, а не почати новий
+ * запис. Тепер записаний прийом відкриває `MealTypeSheet` зі своїми
+ * рядками, а порожній — і далі форму, бо показувати в ньому нічого. Вхід
+ * «щось нове» лишається один — FAB.
  *
  * **Один рядок замість двох.** Було: пропорційні бари зверху й колонки з
  * назвою та ккал знизу — два ряди, що кодують те саме число. Стало: чотири
@@ -39,12 +44,21 @@ import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
+import { formatNumberUk } from "@sergeant/shared";
 import { REMAINING_TODAY_LABEL } from "../lib/nextMealLabel";
 
 export interface MealStripSegment {
   type: MealTypeId;
   label: string;
   kcal: number;
+  /**
+   * Скільки записів у цьому прийомі — і саме воно, а не `kcal`, вирішує,
+   * порожній сегмент чи ні. Запис без макросів (фото, яке не розпізналось;
+   * страва, для якої КБЖВ ще не проставили) дає нуль калорій, але існує:
+   * за калоріями сегмент читався б як «не записано», а тап відкривав би
+   * аркуш із рядками — дві поверхні суперечили б одна одній.
+   */
+  count: number;
 }
 
 export interface MealStripMacro {
@@ -72,8 +86,14 @@ export interface MealStripProps {
   /**
    * Тап по сегменту. Обовʼязковий навмисно: без нього сегменти лишались
    * би `aria-hidden`-картинкою, і hero знову став би індикатором, з якого
-   * нічого не зробиш — саме тим, на що скаржився власник. FAB лишається
-   * для «щось нове», сегмент — для «в цей прийом».
+   * нічого не зробиш — саме тим, на що скаржився власник.
+   *
+   * Що саме відкривається, вирішує викликач, і воно різне (рішення
+   * власника 2026-09-15): записаний прийом розгортається аркушем
+   * `MealTypeSheet` («що в мене у вечері»), порожній — формою додавання з
+   * уже обраним типом, бо показувати там нічого. Стрічка про цю розвилку
+   * знає рівно стільки, скільки потрібно для чесного підпису кнопки, —
+   * через `segment.count`.
    */
   onPickMeal: (type: MealTypeId) => void;
   /**
@@ -94,7 +114,12 @@ const ARIA_NOT_RECORDED: Record<MealTypeId, string> = {
 
 const REMAINING_ON_PREFIX = "лишилось на ";
 
-/** Дія кнопки сегмента — другим реченням доступної назви. */
+/**
+ * Дія кнопки сегмента — другим реченням доступної назви. Пар дві, бо дія
+ * різна: порожній прийом веде у форму додавання, записаний — в аркуш із
+ * його рядками. Обіцяти «Додати» там, де відкриється список, означало б
+ * для AT-користувача збрехати про наслідок натискання.
+ */
 const ADD_TO_MEAL: Record<MealTypeId, string> = {
   breakfast: "Додати в сніданок",
   lunch: "Додати в обід",
@@ -102,9 +127,16 @@ const ADD_TO_MEAL: Record<MealTypeId, string> = {
   snack: "Додати в перекус",
 };
 
+const SHOW_MEAL: Record<MealTypeId, string> = {
+  breakfast: "Показати записи сніданку",
+  lunch: "Показати записи обіду",
+  dinner: "Показати записи вечері",
+  snack: "Показати записи перекусу",
+};
+
 /** Факт прийому — першим реченням доступної назви кнопки. */
 function segmentAriaFact(seg: MealStripSegment): string {
-  if (seg.kcal <= 0) {
+  if (seg.count <= 0) {
     const notRecorded = ARIA_NOT_RECORDED[seg.type];
     return notRecorded.charAt(0).toUpperCase() + notRecorded.slice(1);
   }
@@ -123,7 +155,7 @@ function buildRemainingAriaLabel(
 ): string {
   const sentence =
     remaining < 0
-      ? `${Math.round(Math.abs(remaining))} ккал понад норму`
+      ? `${Math.round(Math.abs(remaining))} ккал понад ціль`
       : remainingLabel === REMAINING_TODAY_LABEL
         ? `лишилось ${Math.round(remaining)} ккал сьогодні`
         : remainingLabel.startsWith(REMAINING_ON_PREFIX)
@@ -182,18 +214,26 @@ export function MealStrip({
       */}
       <ul data-testid="meal-strip-bars" className="grid grid-cols-4 gap-1">
         {segments.map((seg, i) => {
-          const isEmpty = seg.kcal <= 0;
+          const isEmpty = seg.count <= 0;
           const isAccent = accentIndex === i;
           const share = total > 0 ? (seg.kcal / total) * 100 : 0;
           const body = (
             <>
+              {/*
+                Частка прийому смугою знизу, як макро-бари нижче. Заливка
+                на всю висоту колонки читалась як збій рендера, а не прогрес.
+              */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-1 bg-hero-ink/15"
+              />
               <span
                 aria-hidden="true"
                 data-testid="meal-strip-fill"
                 style={{ width: `${share}%` }}
                 className={cn(
-                  "absolute inset-y-0 left-0 rounded-lg",
-                  isAccent ? "bg-nutrition" : "bg-hero-ink/30",
+                  "absolute bottom-0 left-0 h-1",
+                  isAccent ? "bg-nutrition" : "bg-hero-ink/60",
                 )}
               />
               <span className="relative text-style-caption text-hero-ink/90 truncate w-full">
@@ -209,7 +249,9 @@ export function MealStrip({
               <button
                 type="button"
                 onClick={() => onPickMeal(seg.type)}
-                aria-label={`${segmentAriaFact(seg)}. ${ADD_TO_MEAL[seg.type]}`}
+                aria-label={`${segmentAriaFact(seg)}. ${
+                  isEmpty ? ADD_TO_MEAL[seg.type] : SHOW_MEAL[seg.type]
+                }`}
                 className={cn(
                   "relative isolate flex w-full flex-col items-center justify-center",
                   "overflow-hidden rounded-lg border border-hero-ink/20 px-1 py-1.5",
@@ -237,8 +279,10 @@ export function MealStrip({
           <div className="mt-1 flex flex-col items-center gap-0.5 text-center">
             {remaining < 0 ? (
               <>
+                {/* Без мінуса: підпис нижче вже каже «понад ціль», і
+                    «−250 … понад ціль» читалось як подвійне заперечення. */}
                 <p className="text-style-display text-hero-ink tabular-nums">
-                  −{Math.round(Math.abs(remaining))}
+                  {formatNumberUk(Math.round(Math.abs(remaining)))}
                 </p>
                 <p className="text-style-caption text-hero-ink">
                   {messages.nutrition.heroStrip.overshootSuffix}
@@ -247,7 +291,7 @@ export function MealStrip({
             ) : (
               <>
                 <p className="text-style-display text-hero-ink tabular-nums">
-                  {Math.round(remaining)}{" "}
+                  {formatNumberUk(Math.round(remaining))}{" "}
                   <span className="text-style-caption text-hero-ink">
                     {messages.nutrition.heroStrip.kcalUnit}
                   </span>
@@ -269,7 +313,12 @@ export function MealStrip({
 
       {goalKcal == null && onSetGoal && (
         <div className="flex justify-center">
-          <Button variant="nutrition" size="md" onClick={onSetGoal}>
+          <Button
+            variant="solid"
+            tone="nutrition"
+            size="md"
+            onClick={onSetGoal}
+          >
             {messages.nutrition.heroStrip.ctaSetGoal}
           </Button>
         </div>
@@ -296,9 +345,9 @@ export function MealStrip({
               : 0;
           return (
             <li key={m.label} className="flex flex-col gap-1">
-              <div className="flex items-baseline justify-between text-style-caption text-hero-ink tabular-nums">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-1 text-style-caption text-hero-ink tabular-nums">
                 <span>{m.label}</span>
-                <span>
+                <span className="whitespace-nowrap">
                   {m.consumed}
                   {m.goal > 0 ? ` / ${m.goal}` : ""} {unit}
                 </span>

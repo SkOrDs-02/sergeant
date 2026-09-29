@@ -172,8 +172,9 @@ export function PackageEntryStep({ onCreated }: PackageEntryStepProps) {
       </p>
       <Button
         type="button"
-        variant="primary"
-        module="nutrition"
+        variant="solid"
+        tone="nutrition"
+
         className="w-full min-h-[44px]"
         disabled={busy}
         onClick={() => void handleSubmit()}

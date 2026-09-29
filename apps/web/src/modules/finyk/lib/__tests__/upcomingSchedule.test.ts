@@ -80,7 +80,7 @@ describe("formatRelativeDue", () => {
 
   it("labels within a week as 'через N дн'", () => {
     expect(formatRelativeDue(new Date(2026, 5, 8), todayStart)).toBe(
-      "через 5 дн",
+      "через 5 днів",
     );
   });
 

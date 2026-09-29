@@ -176,3 +176,27 @@ describe("featureFlags", () => {
     expect(d).toBe(c);
   });
 });
+
+// Стадія 3: прапорець `storage_sqlite_worker` прибрано з апки зовсім.
+// Воркер на OPFS — безумовний основний шлях, фолбек на kvvfs лишився
+// автоматичним (`openWorkerBackedDb` віддає `null` на будь-якій невдачі).
+//
+// Пін навмисний: тумблер тут не має зʼявитись назад. Ручне вимикання
+// РОЗЩЕПЛЮЄ дані — записи, зроблені в OPFS, у старе сховище не
+// повертаються, і людина лишається з двома половинами історії, не знаючи
+// про це. Рішення власника 2026-09-15; відкат тепер ревертом коміта.
+describe("прапорця сховища в апці більше немає (стадія 3)", () => {
+  it("реєстр його не містить", async () => {
+    const { FLAG_REGISTRY, getFlagDefinition } = await loadFresh();
+    expect(getFlagDefinition("storage_sqlite_worker")).toBeUndefined();
+    expect(FLAG_REGISTRY.map((f) => f.id)).not.toContain(
+      "storage_sqlite_worker",
+    );
+  });
+
+  it("жоден експериментальний тумблер його не показує", async () => {
+    const { FLAG_REGISTRY } = await loadFresh();
+    const experimental = FLAG_REGISTRY.filter((f) => f.experimental);
+    expect(experimental.some((f) => f.id.startsWith("storage_"))).toBe(false);
+  });
+});

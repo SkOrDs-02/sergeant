@@ -190,7 +190,7 @@ export function useSWUpdate() {
     };
 
     const onOffline = () => {
-      toastRef.current.success("Додаток готовий до роботи офлайн", 4000);
+      toastRef.current.info("Додаток готовий до роботи офлайн", 4000);
     };
 
     if (window.__pwaUpdateReady) {

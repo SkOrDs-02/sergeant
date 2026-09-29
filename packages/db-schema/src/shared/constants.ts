@@ -48,7 +48,7 @@ export const DEFAULT_WAITLIST_SOURCE = "pricing_page" as const;
  * dependency, and clients read it on the boot path. Importing it from the
  * `./sqlite` barrel dragged `drizzle-orm/sqlite-core` (and therefore the
  * whole `vendor-sqlite` manual chunk) into the eager bundle — see
- * `docs/90-work/tech-debt/frontend.md` § eager-бюджет.
+ * `docs/work/specs/tech-debt/frontend.md` § eager-бюджет.
  */
 export const SYNC_OP_CURSOR_PULL_SINCE = "pull_since";
 

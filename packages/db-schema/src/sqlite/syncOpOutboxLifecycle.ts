@@ -4,7 +4,7 @@ import type { SyncOpRetryPlan } from "./syncOpRetry.js";
 
 /**
  * Write-side lifecycle helpers for the client-side `sync_op_outbox`
- * (`docs/planning/storage-roadmap.md` Stage 5 / PR #042e-lifecycle).
+ * (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5 / PR #042e-lifecycle).
  *
  * Mirror of {@link drainSyncOpOutbox} (PR #042e-drain) on the write
  * side. Where the drain reader pulls due, pending rows out of the

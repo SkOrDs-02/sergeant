@@ -50,7 +50,7 @@ export function LogCardSearch({
       <Input
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Назва страви…"
+        placeholder="Назва страви"
         aria-label="Пошук по журналу"
         // Без `type="search"`, тож автоматичний guard з `Input` сюди не
         // дістає — спред обовʼязковий. Розбір, чому Chrome інакше пропонує
@@ -60,9 +60,7 @@ export function LogCardSearch({
       {searchQuery.trim() && (
         <ul className="max-h-48 overflow-y-auto space-y-1">
           {searchHits.length === 0 && (
-            <li className="text-muted text-style-caption">
-              Нічого не знайдено
-            </li>
+            <li className="text-muted text-style-caption">Нічого не знайшов</li>
           )}
           {searchHits.map(({ date, meal }) => {
             const mac = meal.macros || {

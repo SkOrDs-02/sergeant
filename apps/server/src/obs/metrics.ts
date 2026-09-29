@@ -29,6 +29,7 @@ export {
   chatToolIterationCapHitTotal,
   nutritionPhotoRejectedTotal,
   chatPromptInjectionAttemptTotal,
+  chatPromptInjectionShadowTotal,
   aiQuotaBlocksTotal,
   aiCostConsumedTotal,
   aiQuotaFailOpenTotal,
@@ -252,7 +253,7 @@ export const aiFirstTokenMs = new client.Histogram({
  * `streamAnthropicToSse`. До того ж її відлік починається з
  * `streamStartedAtMs` — моменту, коли upstream УЖЕ відповів заголовками, —
  * тобто вона міряє латентність токенів моделі, а не очікування людини.
- * Розбір: AI-2 у `docs/90-work/audits/2026-09-01-product-audit/findings.md`.
+ * Розбір: AI-2 у `docs/work/specs/audits/2026-09-01-product-audit/findings.md`.
  *
  * Питання, на яке метрика відповідає: із 6,7 с медіани очікування скільки
  * наше, а скільки провайдера. `pre_upstream` міряє все від входу в handler
@@ -563,7 +564,7 @@ export const ragEvalRecordsTotal = new client.Counter({
 export const runtimeKillSwitchActive = new client.Gauge({
   name: "runtime_kill_switch_active",
   help: "1 if runtime kill-switch is currently active, 0 otherwise",
-  labelNames: ["switch"], // KillSwitchName ("mono_ai_memory_ingest")
+  labelNames: ["switch"], // KillSwitchName ("digest_ai_memory_ingest")
   registers: [register],
 });
 

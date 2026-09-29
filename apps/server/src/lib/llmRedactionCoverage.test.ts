@@ -24,10 +24,20 @@ const SERVER_SRC = join(import.meta.dirname, "..");
 /**
  * Маркери, за якими впізнаємо вихід за периметр до LLM-провайдера.
  * `anthropicMessages` покриває і non-stream, і stream-варіант.
+ *
+ * `api.groq.com` і `openrouter.ai` додані 2026-09-16: без них гейт не бачив
+ * ДВОХ із чотирьох провайдерів, до яких репо реально ходить, і новий файл,
+ * що покликав би їх напряму в обхід `invokeLLM`, проїхав би зеленим. Тобто
+ * це була рівно та тиха відмова, проти якої гейт і будувався — «маску
+ * поставили на два шляхи, потім додали шість нових». Витоку на момент
+ * додавання не було (Groq отримує аудіо), але відсутність маркера — це
+ * борг у самому детекторі, а не наслідок того, що зараз чисто.
  */
 const EXIT_MARKERS = [
   "api.anthropic.com",
   "api.voyageai.com",
+  "api.groq.com",
+  "openrouter.ai",
   "anthropicMessages(",
   "anthropicMessagesStream(",
 ];
@@ -39,6 +49,11 @@ const EXIT_MARKERS = [
  */
 const KNOWN_EXITS: Record<string, string> = {
   "lib/anthropic.ts": "транспорт — маскують ті, хто будує payload",
+  // Аудіо, а не текст: маскувати на вході нічим — Whisper отримує сирі
+  // байти голосу, у яких немає полів для редакції. Маскується РЕЗУЛЬТАТ —
+  // транскрипт іде далі звичайним шляхом через `invokeLLM`, тобто через
+  // `maskGenerateOpts` у `lib/llm/provider.ts`.
+  "lib/groq.ts": "неможливо — аудіо, маскується вже результат",
   "lib/llm/provider.ts": "маскує сам (maskGenerateOpts) для всіх invokeLLM",
   // Не вихід, а будівник промпту: згадка в docstring-у. Лишаємо в
   // реєстрі свідомо — краще один зайвий рядок, ніж послаблений маркер,
@@ -47,6 +62,15 @@ const KNOWN_EXITS: Record<string, string> = {
   "modules/ai-memory/embeddings.ts": "маскує сам (callVoyage)",
   "modules/chat/chat.ts": "маскує context / messages / tool_results",
   "modules/chat/chatStream.ts": "отримує вже замаскований payload із chat.ts",
+  // Тіньовий детектор інʼєкцій (Jev через OpenRouter, субпроцесор TypeSafe,
+  // погоджений власником за умови ZDR + data_collection=deny). Сам не
+  // маскує, бо отримує вже замаскований текст: `prepareToolResults`
+  // проганяє `maskMachineText` і усічення ДО `wrapAndScanToolResults`, чий
+  // `onScanned` і кличе детектор. Тобто Jev бачить те саме, що модель чату.
+  "modules/chat/injectionShadowJev.ts":
+    "отримує вже замаскований tool_result із prepareToolResults (maskMachineText + усічення); ZDR, data_collection=deny",
+  "modules/chat/toolEval/jev.ts":
+    "стенд евалу eval:tools:jev на синтетичних кейсах (toolSelectionCases, injectionCases); реальних даних користувачів не бачить",
   "modules/nutrition/analyze-photo.ts":
     "неможливо — фото; замість маски попередження в UI",
   "modules/nutrition/refine-photo.ts":

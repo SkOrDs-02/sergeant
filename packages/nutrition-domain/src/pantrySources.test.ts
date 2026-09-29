@@ -1,6 +1,6 @@
 // Картка продукту комори: варіанти позиції та інваріант «сума варіантів =
 // кількість позиції». Кейси нумеровані за § Верифікація спеки
-// `docs/90-work/planning/specs/pantry-generic-names.md`.
+// `docs/work/specs/pantry-generic-names.md`.
 import { describe, expect, it } from "vitest";
 
 import { mergeItems } from "./mergeItems.js";

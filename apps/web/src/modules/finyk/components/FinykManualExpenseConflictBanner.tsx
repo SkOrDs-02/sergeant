@@ -15,7 +15,7 @@ export interface FinykManualExpenseConflictBannerProps {
 }
 
 /**
- * Stage 5 PR #044 (`docs/planning/storage-roadmap.md`). Surfaces sync-v2
+ * Stage 5 PR #044 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Surfaces sync-v2
  * LWW-конфлікти на `finyk_manual_expenses` у вигляді inline-банера на
  * шапці FinykApp.
  *
@@ -82,7 +82,7 @@ export function FinykManualExpenseConflictBanner({
           <h3 className="text-style-label text-text">
             {conflicts.length} {noun} синхронізації
           </h3>
-          <p className="text-style-caption text-muted mt-1 leading-snug">
+          <p className="text-style-body text-muted mt-1 leading-snug">
             На іншому пристрої цю витрату вже змінено. Хмарна версія
             актуальніша, потягни вниз, щоб оновити, або відхили попередження,
             якщо не критично.
@@ -92,7 +92,7 @@ export function FinykManualExpenseConflictBanner({
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
           className="flex-1 min-h-[40px]"
           onClick={handleDismissAll}

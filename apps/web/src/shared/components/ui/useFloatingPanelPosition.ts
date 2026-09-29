@@ -73,6 +73,11 @@ export function useFloatingPanelPosition({
     // panel is visibility:hidden in some engines (DropdownMenu park).
     const pW = panel.getBoundingClientRect().width || panel.offsetWidth || 0;
     const pH = panel.getBoundingClientRect().height || panel.offsetHeight || 0;
+    // The bottom nav overlays the viewport: treat its top edge as the floor
+    // so a menu opened above it flips up instead of sliding underneath.
+    const navTop = document
+      .querySelector(".bottom-nav-shell")
+      ?.getBoundingClientRect().top;
     const pos = computeFloatingPosition(
       {
         top: tRect.top,
@@ -83,6 +88,11 @@ export function useFloatingPanelPosition({
       { width: pW, height: pH },
       placement,
       offset,
+      {
+        width: window.innerWidth,
+        height:
+          navTop != null && navTop > tRect.top ? navTop : window.innerHeight,
+      },
     );
     setCoords({
       top: pos.top,

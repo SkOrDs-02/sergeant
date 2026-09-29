@@ -316,6 +316,138 @@ describe(
   },
 );
 
+describe(
+  "contract @ PUT /api/v1/silpo/settings",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("вмикає автоімпорт у комору і повертає момент увімкнення", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-001 has a connected Silpo account")
+        .uponReceiving("a PUT /api/v1/silpo/settings request (enable)")
+        .withRequest("PUT", "/api/v1/silpo/settings", (req) => {
+          req.headers({
+            accept: "application/json",
+            "content-type": "application/json",
+          });
+          req.jsonBody({ pantryAutoImport: true });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ pantryAutoImportSince: "2026-09-25T10:00:00.000Z" });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.updateSettings({ pantryAutoImport: true });
+          expect(out.pantryAutoImportSince).toBe("2026-09-25T10:00:00.000Z");
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ POST /api/v1/silpo/receipts/{id}/pantry-claim",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("бронює позиції і повертає лише РЕАЛЬНО заброньовані itemIds", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501",
+        )
+        .uponReceiving(
+          "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim request",
+        )
+        .withRequest(
+          "POST",
+          "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
+          (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({ itemIds: [501, 502], mode: "auto" });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          // 502 уже заброньована іншим пристроєм - сервер не повертає її.
+          res.jsonBody({ claimedItemIds: [501] });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.pantryClaim("rcpt-pact-0001", {
+            itemIds: [501, 502],
+            mode: "auto",
+          });
+          expect(out.claimedItemIds).toEqual([501]);
+          expect(typeof out.claimedItemIds[0]).toBe("number");
+        });
+    });
+  },
+);
+
+describe(
+  "contract @ POST /api/v1/silpo/receipts/{id}/pantry-release",
+  CONTRACT_SUITE_OPTIONS,
+  () => {
+    let pact: PactV4;
+    beforeAll(() => {
+      pact = createPact();
+    });
+    afterAll(() => {});
+
+    it("«Повернути» знімає бронювання і відхиляє чек для автоімпорту", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "user-pact-001 owns receipt rcpt-pact-0001 with claimed item 501",
+        )
+        .uponReceiving(
+          "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline)",
+        )
+        .withRequest(
+          "POST",
+          "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
+          (req) => {
+            req.headers({
+              accept: "application/json",
+              "content-type": "application/json",
+            });
+            req.jsonBody({ itemIds: [501], decline: true });
+          },
+        )
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({ ok: true });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const out = await silpo.pantryRelease("rcpt-pact-0001", {
+            itemIds: [501],
+            decline: true,
+          });
+          expect(out.ok).toBe(true);
+        });
+    });
+  },
+);
+
 describe("contract @ POST /api/v1/silpo/sync", CONTRACT_SUITE_OPTIONS, () => {
   let pact: PactV4;
   beforeAll(() => {

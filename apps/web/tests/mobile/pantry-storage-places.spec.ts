@@ -33,10 +33,19 @@ const ITEMS = [
 async function fillPantry(page: Page) {
   const nameInput = page.getByPlaceholder("напр. лосось 300г");
   await nameInput.waitFor({ state: "visible", timeout: 15_000 });
-  for (const item of ITEMS) {
+  for (const [i, item] of ITEMS.entries()) {
+    // Перша позиція йде в інлайн-форму порожньої комори, решта в аркуш
+    // з кнопки шапки списку (він лишається відкритим між додаваннями).
+    if (i === 1) {
+      await page.getByRole("button", { name: "Додати продукти" }).click();
+    }
     await nameInput.fill(item.name);
     await page.getByRole("button", { name: "Додати", exact: true }).click();
   }
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
   await expect(page.getByRole("button", { name: /^Редагувати / })).toHaveCount(
     ITEMS.length,
   );

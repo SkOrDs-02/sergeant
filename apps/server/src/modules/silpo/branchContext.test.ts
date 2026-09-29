@@ -115,4 +115,41 @@ describe("resolveBranchContext", () => {
       expect.objectContaining({ msg: "silpo_branch_context_unavailable" }),
     );
   });
+
+  // ── Стеля кешу (аудит 2026-09-16) ───────────────────────────────────────
+  // TTL сам собою пам'ять не звільняє: протермінований запис лежав у `Map`,
+  // доки той самий `userId` не прийде знову, а sweep-у тут немає. Без стелі
+  // це монотонне зростання з кожним новим користувачем Сільпо.
+  it("кеш не росте понад стелю при потоці нових користувачів", async () => {
+    mocks.callMcpTool.mockImplementation(
+      async ({ toolName }: { toolName: string }) => CART_CHAIN[toolName],
+    );
+
+    for (let i = 0; i < 600; i++) {
+      await resolveBranchContext(`user-${i}`, "token");
+    }
+
+    expect(__silpoBranchContextTestHooks().cacheSize()).toBeLessThanOrEqual(
+      500,
+    );
+  });
+
+  it("витісняє найстаріший запис, лишаючи найсвіжіший", async () => {
+    mocks.callMcpTool.mockImplementation(
+      async ({ toolName }: { toolName: string }) => CART_CHAIN[toolName],
+    );
+
+    for (let i = 0; i < 600; i++) {
+      await resolveBranchContext(`user-${i}`, "token");
+    }
+
+    mocks.callMcpTool.mockClear();
+    // Найсвіжіший лишився — попадання в кеш, апстрім не смикаємо.
+    await resolveBranchContext("user-599", "token");
+    expect(mocks.callMcpTool).not.toHaveBeenCalled();
+
+    // Найстаріший витіснений — резолв іде наново.
+    await resolveBranchContext("user-0", "token");
+    expect(mocks.callMcpTool).toHaveBeenCalled();
+  });
 });

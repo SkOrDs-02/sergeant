@@ -27,7 +27,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "routine_streaks",
       "{"user_id":"u1","delta":1}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000002",
+      "rs-inc-b26cfa994bcb468d",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -66,7 +66,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "routine_streaks",
       "{"user_id":"u1","delta":-1}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000004",
+      "rs-dec-8664ba07a7e7a7bd",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -117,7 +117,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"id":"h1:2026-06-19","user_id":"u1"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000003",
+      "00000000-0000-4000-8000-000000000002",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -192,7 +192,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"id":"h1|2026-06-20|done|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-20","state":"done","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000005",
+      "00000000-0000-4000-8000-000000000003",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -266,7 +266,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"id":"h1|2026-06-19|undone|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-19","state":"undone","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000006",
+      "00000000-0000-4000-8000-000000000004",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -312,7 +312,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"id":"h1","user_id":"u1","name":"Пити 2л води","emoji":"💧","tag_ids_json":"[\\"t1\\"]","category_id":"c1","archived":0,"paused":0,"recurrence":"daily","start_date":"2026-06-01","end_date":null,"time_of_day":"morning","reminder_times_json":"[\\"08:00\\"]","weekdays_json":"[1,2,3,4,5]","pause_intervals_json":"[{\\"from\\":\\"2026-06-10\\",\\"to\\":\\"2026-06-14\\"}]","weekly_target_history_json":"[]","created_at":"2026-06-01T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000007",
+      "00000000-0000-4000-8000-000000000005",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -358,7 +358,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"id":"h2","user_id":"u1","name":"Читати","emoji":"","tag_ids_json":"[]","category_id":null,"archived":0,"paused":0,"recurrence":"daily","start_date":null,"end_date":null,"time_of_day":"","reminder_times_json":"[]","weekdays_json":"[0,1,2,3,4,5,6]","pause_intervals_json":"[]","weekly_target_history_json":"[]","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000008",
+      "00000000-0000-4000-8000-000000000006",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -397,7 +397,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"id":"h3","user_id":"u1"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000009",
+      "00000000-0000-4000-8000-000000000007",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -440,7 +440,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"id":"t1","user_id":"u1","name":"ранок","scope":"","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000010",
+      "00000000-0000-4000-8000-000000000008",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -487,7 +487,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"id":"t2","user_id":"u1"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000011",
+      "00000000-0000-4000-8000-000000000009",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -500,7 +500,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"id":"c1","user_id":"u1","name":"Здоровʼя","emoji":"🏥","created_at":"2026-06-23T00:00:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000012",
+      "00000000-0000-4000-8000-000000000010",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -513,7 +513,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"id":"c2","user_id":"u1"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000013",
+      "00000000-0000-4000-8000-000000000011",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -526,7 +526,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"user_id":"u1","data_json":"{\\"showFizrukInCalendar\\":true,\\"routineRemindersEnabled\\":false}"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000014",
+      "00000000-0000-4000-8000-000000000012",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -539,7 +539,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"user_id":"u1","order_json":"[\\"h2\\",\\"h1\\"]"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000015",
+      "00000000-0000-4000-8000-000000000013",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -552,7 +552,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"user_id":"u1","note_key":"h1__2026-06-20","note":"вдалося"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000016",
+      "00000000-0000-4000-8000-000000000014",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -565,7 +565,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"user_id":"u1","note_key":"h1__2026-06-19"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000017",
+      "00000000-0000-4000-8000-000000000015",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -578,7 +578,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "insert",
       "{"user_id":"u1","skip_key":"h1__2026-06-18","reason":"sick","note":"температура","at":"2026-06-18T07:30:00.000Z"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000018",
+      "00000000-0000-4000-8000-000000000016",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)
@@ -591,7 +591,7 @@ exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-st
       "delete",
       "{"user_id":"u1","skip_key":"h1__2026-06-17"}",
       "2026-06-23T00:00:00.000Z",
-      "00000000-0000-4000-8000-000000000019",
+      "00000000-0000-4000-8000-000000000017",
     ],
     "sql": "INSERT OR IGNORE INTO sync_op_outbox
        (user_id, table_name, op, row, client_ts, idempotency_key)

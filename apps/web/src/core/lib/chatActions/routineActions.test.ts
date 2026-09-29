@@ -576,6 +576,13 @@ describe("pause_habit", () => {
     expect(out).toContain("повернуто з паузи");
   });
 
+  it("неявний початок паузи = день ПРИСТРОЮ, коли київська доба вже наступна", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    seedHabit("h1", "Вода");
+    const out = call({ name: "pause_habit", input: { habit_id: "h1" } });
+    expect(out).toContain("з 2026-04-22");
+  });
+
   it("пише датований інтервал, а не недатований прапор", () => {
     seedHabit("h1", "Вода");
     const out = call({
@@ -709,7 +716,7 @@ describe("habit_stats", () => {
     expect(out).toContain("серія");
   });
 
-  // LOG-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // `habit_stats` рахує серію тим самим гнучким алгоритмом
   // (`flexibleStreakBreakdown`), що й UI, а не жорсткою реалізацією, яка
   // обнуляла серію на першому дні без completion незалежно від skip.
@@ -780,6 +787,15 @@ describe("habit_trend", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("не знайдено");
+  });
+
+  it("several habits: adds a per-habit breakdown so the model can name the weak one", () => {
+    seedHabit("h1", "Біг");
+    seedHabit("h2", "Читання");
+    const out = call({ name: "habit_trend", input: { period_days: 7 } });
+    expect(out).toContain("По звичках:");
+    expect(out).toMatch(/Біг: \d+\/\d+ \(\d+%\)/);
+    expect(out).toMatch(/Читання: \d+\/\d+ \(\d+%\)/);
   });
 
   it("shape: result is a non-empty string", () => {
@@ -923,7 +939,7 @@ describe("mark_habit_done · undo", () => {
     expect(after.completions["h1"]).not.toContain("2026-04-20");
   });
 
-  // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // LOG-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // раніше `mark_habit_done` писав completion незалежно від розкладу
   // звички (жодного `habitScheduledOnDate`-гейту, той самий пропуск, що
   // `applyToggleHabitCompletion` закриває). Дата ДО `startDate` звички —

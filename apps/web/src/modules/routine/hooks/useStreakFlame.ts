@@ -36,10 +36,18 @@ export interface UseStreakFlameResult {
   reducedMotion: boolean;
 }
 
+/**
+ * Ступені серії: ті самі числа керують кольором вогника і моментом
+ * «серія досягла ступеня» (ADR-0096). Одне джерело, щоб вогник і рядок
+ * моменту не розійшлись тихо.
+ */
+export const STREAK_MILESTONES = [7, 30, 100] as const;
+
 function resolveIntensity(streakDays: number): StreakFlameIntensity {
-  if (streakDays >= 100) return "max";
-  if (streakDays >= 30) return "strong";
-  if (streakDays >= 7) return "medium";
+  const [medium, strong, max] = STREAK_MILESTONES;
+  if (streakDays >= max) return "max";
+  if (streakDays >= strong) return "strong";
+  if (streakDays >= medium) return "medium";
   return "low";
 }
 

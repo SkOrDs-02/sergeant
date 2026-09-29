@@ -32,6 +32,7 @@ vi.mock("@shared/api", () => {
     aiMemory: true,
     pushNotifications: false,
     sergeantNudges: false,
+    pushDailyCap: 2,
     healthDataConsent: false,
     activeModules: null,
     hubPrefs: null,
@@ -45,6 +46,7 @@ vi.mock("@shared/api", () => {
 });
 
 import { DashboardSection } from "./DashboardSection";
+import { resetFlags, setFlag } from "../lib/featureFlags";
 
 function renderSection(): ReturnType<typeof render> {
   return render(
@@ -71,10 +73,16 @@ function openSection() {
 
 beforeEach(() => {
   localStorage.clear();
+  // Тести нижче описують налаштування СТАРОЇ головної (сітка); під віссю
+  // дії (`hub_action_axis_v1`, дефолт увімкнено) частина тумблерів зникає
+  // — див. `describe` наприкінці файлу.
+  resetFlags();
+  setFlag("hub_action_axis_v1", false);
 });
 
 afterEach(() => {
   cleanup();
+  resetFlags();
   localStorage.clear();
 });
 
@@ -235,5 +243,39 @@ describe("DashboardSection", () => {
     expect(within(group).getAllByRole("button")).toHaveLength(
       DASHBOARD_DENSITIES.length,
     );
+  });
+});
+
+describe("DashboardSection — вісь дії (hub_action_axis_v1)", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    resetFlags(); // дефолт — увімкнено
+  });
+
+  it("лишає два тумблери вигляду: «Порада й звіт тижня» і «Мотиваційний підпис»", () => {
+    renderSection();
+    openSection();
+    expect(
+      screen.getByRole("switch", { name: "Порада й звіт тижня" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Мотиваційний підпис" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Чистий режим")).toBeNull();
+    expect(screen.queryByText("Адаптивний порядок")).toBeNull();
+    expect(screen.queryByText("Картка «Сьогодні»")).toBeNull();
+    expect(screen.queryByText("Що зараз важливо")).toBeNull();
+    expect(
+      screen.queryByRole("group", {
+        name: "Щільність карток на головному екрані",
+      }),
+    ).toBeNull();
+  });
+
+  it("тумблери модулів лишаються — рейок бере з них приглушення", () => {
+    renderSection();
+    openSection();
+    expect(screen.getByRole("switch", { name: "Фінік" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Їжа" })).toBeInTheDocument();
   });
 });

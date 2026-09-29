@@ -73,7 +73,7 @@ export function ChipsFilterRowDemo() {
               <div className="px-4 flex items-center justify-between">
                 <span className="text-style-label text-text">Транзакції</span>
                 <span className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-line bg-panel text-muted">
-                  <Icon name="filter" size={14} />
+                  <Icon name="filter" size="sm" />
                   <span className="text-style-caption">Фільтри</span>
                 </span>
               </div>

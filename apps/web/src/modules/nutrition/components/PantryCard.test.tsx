@@ -138,6 +138,16 @@ describe("PantryCard add modes", () => {
     expect(setPantryText).toHaveBeenCalledWith("банани, молоко");
   });
 
+  it("дає полю режиму «Списком» доступну назву, а не лише плейсхолдер", () => {
+    // Регресія WF-15 (аудит 2026-09-16): сирий `<textarea>` без мітки —
+    // плейсхолдер зникає з першим символом, тож поле лишалось безіменним.
+    // Сусідній `Input` режиму «По одному» мітку вже мав.
+    render(<Card {...baseProps()} />);
+    fireEvent.click(screen.getByText("Списком"));
+    const field = screen.getByLabelText("Список продуктів");
+    expect(field.tagName).toBe("TEXTAREA");
+  });
+
   it("renders the barcode scan affordance when handler provided", () => {
     const onScanBarcode = vi.fn();
     render(<Card {...baseProps({ onScanBarcode })} />);
@@ -276,5 +286,63 @@ describe("PantryCard inventory", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Прибрати продукт"));
     expect(removeItemAtOrByName).toHaveBeenCalledWith(0, undefined);
+  });
+});
+
+describe("PantryCard: список першим, додавання в аркуші", () => {
+  const filled = () =>
+    baseProps({
+      effectiveItems: [{ name: "Молоко", qty: 1, unit: "л" }],
+      pantryItemsLength: 1,
+    });
+
+  it("наповнена комора не показує форму інлайн, а «Додати» відкриває аркуш із фокусом у полі", () => {
+    render(<Card {...filled()} />);
+    expect(screen.queryByPlaceholderText(/лосось/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Додати продукти" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Додати продукти" });
+    const field = screen.getByPlaceholderText(/лосось/);
+    expect(dialog).toContainElement(field);
+    expect(field).toHaveFocus();
+    // Список стоїть у DOM раніше за форму. Роль тут не годиться: відкритий
+    // аркуш робить фон інертним, і кнопка списку ховається від `getByRole`.
+    const list = screen.getByText("Моя комора");
+    expect(
+      list.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("аркуш лишається відкритим після додавання, щоб ввести наступний продукт", () => {
+    const upsertItem = vi.fn();
+    render(<Card {...filled()} newItemName="Рис" upsertItem={upsertItem} />);
+    fireEvent.click(screen.getByRole("button", { name: "Додати продукти" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    expect(upsertItem).toHaveBeenCalledWith("Рис");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("порожня комора показує форму інлайн і не має кнопки аркуша", () => {
+    render(<Card {...baseProps()} />);
+    expect(screen.getByPlaceholderText(/лосось/)).not.toHaveFocus();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Додати продукти" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("неоднозначна позиція повертає форму інлайн, поки аркуш закритий", () => {
+    render(
+      <Card
+        {...filled()}
+        ambiguousPantryItems={[{ name: "яйця", qty: 10, unit: null }]}
+        resolveAmbiguousPantryItem={vi.fn()}
+        dismissAmbiguousPantryItem={vi.fn()}
+      />,
+    );
+    expect(screen.getByPlaceholderText(/лосось/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

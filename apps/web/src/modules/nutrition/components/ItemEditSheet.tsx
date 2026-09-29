@@ -53,7 +53,7 @@ export function ItemEditSheet({
       open={!!itemEdit.open}
       onClose={onClose}
       title={itemEdit.name}
-      description="Назва, кількість і одиниці (порожньо: прибрати)"
+      description="Назва, кількість і одиниці. Порожнє поле прибирає позицію."
       panelClassName="nutrition-sheet"
       zIndex={120}
     >
@@ -164,7 +164,7 @@ export function ItemEditSheet({
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
           type="button"
-          className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
+          className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
           onClick={() => {
             const nameStr = String(itemEdit.name || "").trim();
             if (!nameStr) {
@@ -184,7 +184,10 @@ export function ItemEditSheet({
                 (qty as number) < 0 ||
                 (qty as number) > MAX_ITEM_QTY)
             ) {
-              setItemEdit((s) => ({ ...s, err: "Некоректна кількість." }));
+              setItemEdit((s) => ({
+                ...s,
+                err: "Некоректна кількість. Впиши число, наприклад 2 або 0,5.",
+              }));
               return;
             }
             const unit = unitStr === "" ? null : normalizeUnit(unitStr);
@@ -204,7 +207,7 @@ export function ItemEditSheet({
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           className="h-12 min-h-[44px]"
           onClick={onClose}
         >

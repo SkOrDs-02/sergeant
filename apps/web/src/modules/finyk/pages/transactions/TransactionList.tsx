@@ -84,7 +84,7 @@ function DayCardShell({
 
           Утиліти РОЗДІЛЕНІ саме заради цього місця. Група дня — це
           стос із кількох `DayCardShell`; якби лінійка й перфорація
-          були одним класом, кожна транзакція отримала б обидві, і
+          були одним класом, кожна операція отримала б обидві, і
           матеріал став би візерунком.
 
           AI-DANGER: `overflow-hidden` тут більше НЕ ставиться на
@@ -92,7 +92,7 @@ function DayCardShell({
           Замість нього обрізанням займається сама маска.
 
           Підйому (`edge-lift`) тут навмисно немає — `edge-no-lift`.
-          Чек дня ЛЕЖИТЬ на папері, а не висить над ним: стос транзакцій
+          Чек дня ЛЕЖИТЬ на папері, а не висить над ним: стос операцій
           читають як один аркуш, і тінь під кожним днем зробила б із
           нього купку карток — рівно те, від чого матеріал і відводить.
           Тінь беруть окремі документи поза стосом (шторка операції,
@@ -363,7 +363,7 @@ export function TransactionList({
           module="finyk"
           action={
             onGoPreviousMonth ? (
-              <Button variant="secondary" onClick={onGoPreviousMonth}>
+              <Button variant="outline" onClick={onGoPreviousMonth}>
                 Попередній місяць
               </Button>
             ) : undefined
@@ -374,8 +374,8 @@ export function TransactionList({
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
           illustration={<FinykEmptyIllustration size={80} />}
-          title="Записів ще немає"
-          description="Додай перший запис вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+          title="Операцій ще немає"
+          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
           module="finyk"
         />
       </div>
@@ -383,7 +383,7 @@ export function TransactionList({
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
           illustration={<FinykEmptyIllustration size={80} />}
-          title="Немає транзакцій"
+          title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           module="finyk"
         />

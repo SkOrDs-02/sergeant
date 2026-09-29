@@ -59,7 +59,11 @@
  */
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage/storage";
+// Durable-пара з тієї ж причини, що й у `memoryBank.ts` (аудит 2026-09-28, D2).
+import {
+  safeReadLSValidatedDurable,
+  safeWriteLSDurable,
+} from "@shared/lib/storage/storage";
 
 export const BIOMETRICS_KEY = STORAGE_KEYS.HUB_BIOMETRICS;
 
@@ -91,7 +95,7 @@ export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
  * the i18n error copy, and inline numbers in this schema — and only the
  * first two were kept in lockstep by a pin test. A schema left behind on
  * an old range is the worst kind of drift: `readBiometrics()` parses every
- * read through `safeReadLSValidated`, which falls back to
+ * read through `safeReadLSValidatedDurable`, which falls back to
  * `BIOMETRICS_DEFAULT` — silently dropping the ENTIRE record (birth date,
  * sex, activity level, weight, not just the one out-of-sync field) — the
  * moment a value inside the new-but-not-yet-validated range gets written.
@@ -194,7 +198,7 @@ export function setBiometricsOwner(userId: string | null): void {
  * out/anonymous.
  */
 export function readBiometricsOwnerId(): string | null {
-  return safeReadLSValidated(BIOMETRICS_KEY, StoredBiometricsSchema, {
+  return safeReadLSValidatedDurable(BIOMETRICS_KEY, StoredBiometricsSchema, {
     ...BIOMETRICS_DEFAULT,
     ownerId: null,
   }).ownerId;
@@ -214,7 +218,7 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
 };
 
 export function readBiometrics(): Biometrics {
-  return safeReadLSValidated(
+  return safeReadLSValidatedDurable(
     BIOMETRICS_KEY,
     BiometricsSchema,
     BIOMETRICS_DEFAULT,
@@ -247,7 +251,7 @@ export function subscribeBiometrics(listener: BiometricsListener): () => void {
  * `profileWriteThrough.ts`'s cross-account upload guard.
  */
 export function writeBiometrics(b: Biometrics): void {
-  safeWriteLS(BIOMETRICS_KEY, { ...b, ownerId: currentBiometricsOwner });
+  safeWriteLSDurable(BIOMETRICS_KEY, { ...b, ownerId: currentBiometricsOwner });
   for (const listener of Array.from(biometricsListeners)) {
     try {
       listener(b);

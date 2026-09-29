@@ -9,7 +9,7 @@ import type { NutritionDualWriteState } from "./diff.js";
 /**
  * Parity probe for the Nutrition SQLite dual-write layer.
  *
- * Stage 8 §3 of `docs/planning/storage-roadmap.md` defines a
+ * Stage 8 §3 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` defines a
  * `<module>.sqlite.dualwrite.parity` decision-gate metric: whenever
  * the LS-derived state and the SQLite-derived state should be
  * identical (which is the steady-state invariant once the dual-write
@@ -238,7 +238,8 @@ async function probeWaterLog(
   // The diff layer emits a `water-log-set` op with `volumeMl = 0`
   // when an LS entry is removed; the SQLite row stays as `volume_ml = 0`
   // (no soft-delete column). So treat «missing key» and «value 0» as
-  // equivalent for parity, mirroring fizruk_pushups.
+  // equivalent for parity (the same contract the routine-era pushup
+  // counter had before it was folded into fizruk workouts).
   const allKeys = new Set([...Object.keys(lsMap), ...sqliteMap.keys()]);
 
   let lsOnly = 0;

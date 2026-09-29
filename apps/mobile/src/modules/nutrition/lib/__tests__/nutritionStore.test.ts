@@ -1,6 +1,6 @@
 /**
  * Phase 7 / PR 3 — mobile nutrition storage foundation, rewired for
- * Stage 8 PR #057n-tombstone-mobile (`docs/planning/storage-roadmap.md`).
+ * Stage 8 PR #057n-tombstone-mobile (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * The Nutrition `load*` / `save*` helpers no longer touch MMKV — every
  * slot (log / prefs / pantries / water / shopping list) now reads from

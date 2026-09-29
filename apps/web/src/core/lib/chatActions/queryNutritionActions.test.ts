@@ -60,7 +60,7 @@ describe("query_nutrition", () => {
     const out = call({ name: "query_nutrition", input: {} });
     expect(out).toContain("Прийомів за");
     expect(out).toContain("3"); // 3 meals in window
-    expect(out).toContain("1150"); // 350+600+200
+    expect(out).toContain("1 150"); // 350+600+200
     expect(out).not.toContain("Старе");
   });
 
@@ -122,7 +122,7 @@ describe("nutrition_averages", () => {
       input: { period_days: 7 },
     });
     expect(out).toContain("Середнє харчування");
-    expect(out).toContain("1500 ккал/день"); // (2000+1000)/2
+    expect(out).toContain("1 500 ккал/день"); // (2000+1000)/2
     expect(out).toMatch(/Тренд калорій/);
   });
 
@@ -136,7 +136,7 @@ describe("nutrition_averages", () => {
       name: "nutrition_averages",
       input: { period_days: 7 },
     });
-    expect(out).toContain("2000 ккал/день");
+    expect(out).toContain("2 000 ккал/день");
     expect(out).toContain("1 день");
   });
 

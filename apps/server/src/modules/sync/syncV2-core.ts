@@ -24,12 +24,21 @@ export const SYNC_V2_MODULE = "v2";
 export type SyncV2OpKind = "v2_push" | "v2_pull";
 
 /**
- * Maximum tolerated forward clock skew. Клієнти, що надсилають
- * `client_ts > server_ts + 1h`, відхиляються — інакше їхній
- * "майбутній" timestamp перевертатиме LWW і ламатиме реплікацію
- * для нормальних пристроїв.
+ * AI-DANGER: кожен читач `sync_op_log` курсором по `id` мусить нести цей
+ * предикат дослівно (зараз `syncV2Pull` і replay `syncV2Stream`). У SQL він
+ * вписаний текстом, а не через `${…}`: правило M11 (`no-restricted-syntax`)
+ * забороняє шаблонні `pool.query`. Цю константу юніт-тести обох хендлерів
+ * звіряють із текстом запиту, тож копії не розійдуться непомітно.
+ *
+ * `id` — BIGSERIAL, видається на INSERT, а видимим рядок стає на COMMIT.
+ * Без предиката коротка транзакція з більшим `id`, закомічена раніше за
+ * довгу (імпорт виписки), просуває курсор клієнта, і оп-и довгої після
+ * свого COMMIT під `id > курсор` вже не потрапляють ніколи. Предикат не
+ * віддає рядки, новіші за найстарішу активну транзакцію, тож курсор через
+ * неї не перескакує. NULL — рядки до міграції 147, давно закомічені.
  */
-export const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
+export const SYNC_OP_LOG_COMMITTED_WATERMARK_SQL =
+  "(tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))";
 
 /**
  * Maximum allowed |delta| in a single `op='increment'` payload. PN-counter
@@ -336,8 +345,38 @@ export function parseOptionalTzOffsetMin(
 }
 
 /**
+ * Bound check for `fizruk_workout_sets.weight_kg` / `.reps` (W4 — server
+ * observability/boundary audit). Сусідні заміри тіла (`fizruk_measurements`,
+ * `applyMisc.ts` → `MEASUREMENT_BOUNDS`) уже отримали межі в pre-beta
+ * input-boundaries audit; сети тренування лишались на необмежених
+ * `parseOptionalNumber`/`parseOptionalInt` — `curl` міг записати
+ * `weight_kg: -500` чи `reps: 999999999` без жодного захисту.
+ *
+ * Числа дзеркалять клієнтську стелю форми підходу
+ * (`apps/web/src/modules/fizruk/lib/numericBounds.ts` →
+ * `MAX_WEIGHT_KG`/`MAX_REPS` = 1000/1000) — НЕ плутати з
+ * `MEASUREMENT_BOUNDS.weightKg` (20–400): те поле — вага ТІЛА людини,
+ * а тут — вага СНАРЯДУ/тренажера на одному підході, яка фізично може бути
+ * набагато більшою (жим ногами, станова тяга на тренажері). Мінімум `0` —
+ * від'ємна вага чи кількість повторень позбавлена сенсу.
+ *
+ * Оголошено тут (не в `@sergeant/shared`, поруч із `MEASUREMENT_BOUNDS`),
+ * бо задача, яка це виправляла, свідомо обмежена `apps/server/**` — якщо
+ * колись знадобиться той самий канон і клієнту, перенеси разом з
+ * `MEASUREMENT_BOUNDS`-патерном, не дублюй числа окремо вдруге.
+ */
+export const WORKOUT_SET_WEIGHT_KG_BOUNDS: { min: number; max: number } = {
+  min: 0,
+  max: 1000,
+};
+export const WORKOUT_SET_REPS_BOUNDS: { min: number; max: number } = {
+  min: 0,
+  max: 1000,
+};
+
+/**
  * Bound check for user-supplied name/label/note/text fields (pre-beta
- * input-boundaries audit, `docs/90-work/planning/specs/beta-input-
+ * input-boundaries audit, `docs/work/specs/beta-input-
  * boundaries.md` Фаза 3 — сервер). Client-side bounds
  * (`apps/web/src/shared/lib/text/limits.ts`) are trivially bypassed via
  * `curl`, so every per-table applier must re-check server-side. Callers

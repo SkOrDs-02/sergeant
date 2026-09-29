@@ -11,6 +11,7 @@ import {
 import { isApiError } from "@shared/api";
 import { STATUS_AUTO_HIDE_MS } from "@shared/lib/ui/timeouts";
 import { useBarcodeProductLookup } from "./useBarcodeProduct";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 export interface PantryBarcodeScanApi {
   upsertItem: (label: string) => void;
@@ -67,7 +68,9 @@ export function usePantryBarcodeScan({
         p = await lookupProduct(code);
       } catch (err) {
         if (isApiError(err) && err.isOffline) {
-          setPantryScanStatus("Немає підключення до інтернету.");
+          setPantryScanStatus(
+            "Немає підключення до інтернету. Перевір зʼєднання і спробуй ще раз.",
+          );
           return;
         }
         // AI-DANGER: 503 = усі три upstream-и каскаду не відповіли (аудит
@@ -79,10 +82,10 @@ export function usePantryBarcodeScan({
           return;
         }
         if (isApiError(err) && err.kind === "http") {
-          setPantryScanStatus(err.serverMessage || "Помилка пошуку.");
+          setPantryScanStatus(err.serverMessage || failedCopy("знайти товар"));
           return;
         }
-        setPantryScanStatus("Помилка пошуку. Перевір зʼєднання.");
+        setPantryScanStatus(failedCopy("знайти товар", "Перевір зʼєднання."));
         return;
       }
 

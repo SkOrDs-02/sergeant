@@ -86,7 +86,7 @@ describe("AddMealSheet manual flow", () => {
     fireEvent.changeText(getByLabelText("Ккал"), "420");
     fireEvent.changeText(getByLabelText("Білки г"), "24");
     fireEvent.changeText(getByLabelText("Жири г"), "16");
-    fireEvent.changeText(getByLabelText("Вуглев. г"), "42");
+    fireEvent.changeText(getByLabelText("Вугл г"), "42");
     fireEvent.press(getByLabelText("Обід"));
     fireEvent.press(getByTestId("add-meal-save"));
 

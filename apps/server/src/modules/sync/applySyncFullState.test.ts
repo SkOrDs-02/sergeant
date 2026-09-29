@@ -6,7 +6,6 @@ import {
   applyRoutineHabits,
   applyUuidNameScopeTable,
   applyRoutinePrefs,
-  applyRoutinePushups,
   applyRoutineHabitOrder,
   applyRoutineCompletionNotes,
   applyRoutineHabitSkips,
@@ -20,7 +19,6 @@ import {
   applyFizrukDailyLog,
   applyFizrukMonthlyPlan,
   applyFizrukPlanTemplates,
-  applyFizrukPushups,
   applyFizrukWellbeing,
   applyFizrukWorkoutTemplates,
 } from "./fizruk/applySyncFullState.js";
@@ -52,6 +50,14 @@ function makeClient(
   return { query } as unknown as PoolClient & { query: Mock };
 }
 
+// Newer row already committed: the upsert's strict-newer predicate
+// (`WHERE <t>.updated_at < EXCLUDED.updated_at`) filters the write out, so
+// Postgres reports rowCount 0.
+function newerRowClient(): PoolClient & { query: Mock } {
+  const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+  return { query } as unknown as PoolClient & { query: Mock };
+}
+
 function op(
   table: string,
   row: Record<string, unknown>,
@@ -67,8 +73,8 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips + fizruk_pushups + fizruk_custom_activities (49 total)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(49);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips + fizruk_custom_activities (47 total; обидві pushup-таблиці зняті міграціями 139/140)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(47);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",
@@ -77,8 +83,6 @@ describe("Phase 2 registry expansion", () => {
         "nutrition_water_log",
         "fizruk_daily_log",
         "fizruk_programs",
-        // Перенос власності pushup-даних routine → fizruk (2026-08-30).
-        "fizruk_pushups",
         // Свої заняття для короткого запису (міграція 132).
         "fizruk_custom_activities",
         // Append-only журнали стадії 1: routine (W1-ROUTINE-APPEND),
@@ -295,9 +299,7 @@ describe("routine full-state appliers", () => {
   });
 
   it("applyRoutinePrefs rejects on lww_conflict", async () => {
-    const client = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const client = newerRowClient();
     const result = await applyRoutinePrefs(
       client,
       op("routine_prefs", { user_id: USER_ID, data: {} }),
@@ -305,72 +307,6 @@ describe("routine full-state appliers", () => {
       CLIENT_TS,
     );
     expect(result).toEqual({ status: "rejected", reason: "lww_conflict" });
-  });
-
-  it("applyRoutinePushups rejects when date_key is missing", async () => {
-    const client = makeClient([]);
-    const result = await applyRoutinePushups(
-      client,
-      op("routine_pushups", { user_id: USER_ID, reps: 20 }),
-      USER_ID,
-      CLIENT_TS,
-    );
-    expect(result).toEqual({
-      status: "rejected",
-      reason: "missing_date_key",
-    });
-  });
-
-  it("applyRoutinePushups upserts reps for a date", async () => {
-    const client = makeClient([]);
-    const result = await applyRoutinePushups(
-      client,
-      op("routine_pushups", {
-        user_id: USER_ID,
-        date_key: "2026-07-10",
-        reps: 45,
-      }),
-      USER_ID,
-      CLIENT_TS,
-    );
-    expect(result).toEqual({ status: "applied" });
-    expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining("INSERT INTO routine_pushups"),
-      [USER_ID, "2026-07-10", 45, CLIENT_TS],
-    );
-  });
-
-  it("applyFizrukPushups upserts reps for a date (mirror of routine_pushups)", async () => {
-    const client = makeClient([]);
-    const result = await applyFizrukPushups(
-      client,
-      op("fizruk_pushups", {
-        user_id: USER_ID,
-        date_key: "2026-07-10",
-        reps: 45,
-      }),
-      USER_ID,
-      CLIENT_TS,
-    );
-    expect(result).toEqual({ status: "applied" });
-    expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining("INSERT INTO fizruk_pushups"),
-      [USER_ID, "2026-07-10", 45, CLIENT_TS],
-    );
-  });
-
-  it("applyFizrukPushups rejects when date_key is missing", async () => {
-    const client = makeClient([]);
-    const result = await applyFizrukPushups(
-      client,
-      op("fizruk_pushups", { user_id: USER_ID, reps: 20 }),
-      USER_ID,
-      CLIENT_TS,
-    );
-    expect(result).toEqual({
-      status: "rejected",
-      reason: "missing_date_key",
-    });
   });
 
   it("applyRoutineHabitOrder upserts the ordering array", async () => {
@@ -635,9 +571,7 @@ describe("nutrition full-state appliers", () => {
   });
 
   it("applyNutritionShoppingList rejects on lww_conflict", async () => {
-    const client = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const client = newerRowClient();
     const result = await applyNutritionShoppingList(
       client,
       op("nutrition_shopping_list", { user_id: USER_ID, data: {} }),
@@ -1167,9 +1101,7 @@ describe("nutrition full-state validation edge cases", () => {
   });
 
   it("applyNutritionWaterLog rejects on lww_conflict", async () => {
-    const client = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const client = newerRowClient();
     const result = await applyNutritionWaterLog(
       client,
       op("nutrition_water_log", {
@@ -1265,9 +1197,7 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyFizrukMonthlyPlan(
         conflictClient,
@@ -1299,9 +1229,7 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyFizrukPlanTemplates(
         conflictClient,
@@ -1323,9 +1251,7 @@ describe("fizruk full-state validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyFizrukPrograms(
         conflictClient,
@@ -1553,37 +1479,6 @@ describe("routine full-state remaining validation edge cases", () => {
     expect(result).toEqual({ status: "rejected", reason: "user_id_mismatch" });
   });
 
-  it("applyRoutinePushups rejects on user_id mismatch and lww_conflict", async () => {
-    const mismatchClient = makeClient([]);
-    expect(
-      await applyRoutinePushups(
-        mismatchClient,
-        op("routine_pushups", {
-          user_id: "someone-else",
-          date_key: "2026-07-10",
-        }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
-
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
-    expect(
-      await applyRoutinePushups(
-        conflictClient,
-        op("routine_pushups", {
-          user_id: USER_ID,
-          date_key: "2026-07-10",
-          reps: 10,
-        }),
-        USER_ID,
-        CLIENT_TS,
-      ),
-    ).toEqual({ status: "rejected", reason: "lww_conflict" });
-  });
-
   it("applyRoutineHabitOrder rejects delete ops, user_id mismatch and lww_conflict", async () => {
     const deleteClient = makeClient([]);
     expect(
@@ -1605,9 +1500,7 @@ describe("routine full-state remaining validation edge cases", () => {
       ),
     ).toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
-    const conflictClient = makeClient([
-      { user_id: USER_ID, updated_at: new Date("2026-07-10T13:00:00.000Z") },
-    ]);
+    const conflictClient = newerRowClient();
     expect(
       await applyRoutineHabitOrder(
         conflictClient,

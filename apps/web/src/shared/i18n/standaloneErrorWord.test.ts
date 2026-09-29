@@ -1,11 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import {
+  collectSourceFiles,
+  lineOf,
+  literalsIn,
+  webCopySources,
+} from "./__tests__/webCopySources";
 
 /**
  * §7 гайду копірайтингу, рядок «"Помилка" як standalone → не actionable»
- * (`docs/product/copy/style-guide.uk.md`). Гейт для PR-X3 (аудит 2026-09-13).
+ * (`docs/product/copy/style-guide.uk.md`). Гейт для PR-X3 (аудит 2026-09-13),
+ * розширений хвилею D аудиту копії вебу (2026-09-23, §2.6).
  *
  * **Чому тест, а не правило ESLint.** Правило дало б фідбек прямо в редакторі,
  * і для копії це цінніше. Але `eslint-plugin-sergeant-design/ukrainian-copy`,
@@ -15,23 +19,59 @@ import { fileURLToPath } from "node:url";
  * правила, але не за прохід по копії — тож перевірка живе тут, поруч із
  * каталогом, а перенесення в `ukrainian-copy` лишається окремим боргом.
  *
- * **Що саме ловиться.** Рівно дві форми, які §7 називає standalone:
- *   - слово «Помилка» саме по собі;
- *   - префікс «Помилка: …» поверх іншого тексту.
+ * **Що саме ловиться.** Три форми:
+ *   - слово «Помилка» (чи «помилка») саме по собі;
+ *   - префікс «Помилка: …» поверх іншого тексту;
+ *   - «Помилка <що саме>» без другого речення, коли рядок стоїть у ПОЗИЦІЇ
+ *     ПОВІДОМЛЕННЯ: аргумент тоста чи сетера помилки, фолбек форматера
+ *     (`formatNutritionError(err, "…")`), поле `fallback*:` / `error:`,
+ *     права частина `||` / `??` після серверного тексту, гілка «інакше»
+ *     після `.message ? … :`. Це фолбеки на випадок, коли сервер не дав
+ *     свого тексту, тобто рівно той момент, коли людині потрібна дія, а
+ *     не назва того, що впало (аудит 2026-09-23 §2.6).
  *
- * Форма «Помилка <що саме>» («Помилка синхронізації») НЕ ловиться навмисно:
- * §7 забороняє голе слово, а не назву того, що впало. Такі рядки часто
- * живуть у бейджах і пігулках, де другому реченню фізично немає місця; їхня
- * §3-проблема реальна, але окрема, і одним регексом не лікується.
+ * Та сама форма «Помилка <що саме>» у бейджі чи пігулці («Помилка
+ * синхронізації» в `SyncStatusBadge`, `headline` у `BackfillProgressPill`)
+ * НЕ ловиться навмисно: там другому реченню фізично немає місця, а §7
+ * забороняє повідомлення без дії, не назву стану. Другим реченням
+ * вважається будь-який текст після `.`, `!`, `?` чи `…`: «Помилка пошуку.
+ * Спробуй пізніше.» проходить, «Помилка пошуку.» ні.
  */
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const WEB_SRC = resolve(HERE, "../..");
-
 /** Голе «Помилка» як увесь текст рядка. */
-const EXACT = /^Помилка$/;
+const EXACT = /^[Пп]омилка$/;
 /** «Помилка: …» — префікс поверх чужого повідомлення. */
 const PREFIX = /^Помилка\s*:/;
+/** «Помилка <що саме>»: назва того, що впало. */
+const NOUN = /^Помилка\s\S/;
+/** Є друге речення, тобто є куди подіти дію. */
+const HAS_NEXT_STEP = /[.!?…]\s+\S/;
+
+/**
+ * Позиції повідомлення. Перевіряються на вікні джерела ПЕРЕД літералом,
+ * обрізаному по останньому `;`, `{` чи `}` (межа виразу) і зі згорнутими
+ * пробілами. Сінк виклику може стояти будь-де у вікні (літерал — його
+ * аргумент, хай і через тернар), решта сінків мусять стояти впритул.
+ */
+const MESSAGE_SINKS = [
+  /(?:toast\??\.\w+\??\.?\(|\bset\w*(?:Err|Error)\w*\(|\b\w*Error\w*\??\.?\()/,
+  /\b(?:fallback\w*|error)\s*:\s*$/,
+  /(?:\|\||\?\?)\s*$/,
+  /\.(?:message|serverMessage)\s*\?[^:]*:\s*$/,
+];
+
+function inMessagePosition(clean: string, index: number): boolean {
+  const window = clean
+    .slice(Math.max(0, index - 240), index)
+    .replace(/\s+/g, " ");
+  const cut = Math.max(
+    window.lastIndexOf(";"),
+    window.lastIndexOf("{"),
+    window.lastIndexOf("}"),
+  );
+  const scope = window.slice(cut + 1);
+  return MESSAGE_SINKS.some((rx) => rx.test(scope));
+}
 
 /**
  * Єдиний дозволений випадок, і він не є повідомленням.
@@ -44,33 +84,13 @@ const PREFIX = /^Помилка\s*:/;
  * повторює заголовок під собою, — але це вже питання композиції
  * `EmptyState`, не заборонена конструкція.
  */
-const ALLOWED = new Set(["shared/i18n/uk.core.ts"]);
-
-function collectSourceFiles(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry);
-    if (statSync(full).isDirectory()) {
-      if (entry === "node_modules" || entry === "__tests__") continue;
-      collectSourceFiles(full, out);
-      continue;
-    }
-    if (!/\.tsx?$/.test(entry)) continue;
-    if (entry.includes(".test.") || entry.includes(".stories.")) continue;
-    out.push(full);
-  }
-  return out;
-}
-
-/**
- * Прибирає коментарі перед пошуком. Без цього гейт ловив би власні пояснення
- * — саме цей файл і сусідні коментарі цитують заборонену форму, щоб її
- * пояснити, і це не порушення.
- */
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
+const ALLOWED = new Set([
+  "shared/i18n/uk.core.ts",
+  // `Помилка ${status}` тут не копія, а сентинел: `formatApiError` упізнає
+  // форму `^Помилка d+$` як «мапер не мав чого сказати» і підставляє
+  // caller-специфічний фолбек (див. AI-DANGER у самому файлі).
+  "shared/lib/api/friendlyApiError.ts",
+]);
 
 interface Offender {
   file: string;
@@ -80,29 +100,23 @@ interface Offender {
 
 function findOffenders(): Offender[] {
   const offenders: Offender[] = [];
-  for (const file of collectSourceFiles(WEB_SRC)) {
-    const rel = relative(WEB_SRC, file);
+  for (const { rel, clean } of webCopySources()) {
     if (ALLOWED.has(rel)) continue;
-    const src = readFileSync(file, "utf8");
-    const clean = stripComments(src);
-    for (const match of clean.matchAll(
-      /"([^"\\]*)"|'([^'\\]*)'|`([^`\\]*)`/g,
-    )) {
-      const value = match[1] ?? match[2] ?? match[3];
-      if (value == null) continue;
-      if (!EXACT.test(value) && !PREFIX.test(value)) continue;
-      offenders.push({
-        file: rel,
-        line: clean.slice(0, match.index).split("\n").length,
-        text: value,
-      });
+    for (const { value, index } of literalsIn(clean)) {
+      const standalone = EXACT.test(value) || PREFIX.test(value);
+      const nounWithoutStep =
+        NOUN.test(value) &&
+        !HAS_NEXT_STEP.test(value) &&
+        inMessagePosition(clean, index);
+      if (!standalone && !nounWithoutStep) continue;
+      offenders.push({ file: rel, line: lineOf(clean, index), text: value });
     }
     // Шаблонний рядок з підстановкою: `Помилка: ${msg}` — саме та форма,
     // яку `friendlyChatError` віддавав до PR-X3.
     for (const match of clean.matchAll(/`Помилка\s*:/g)) {
       offenders.push({
         file: rel,
-        line: clean.slice(0, match.index).split("\n").length,
+        line: lineOf(clean, match.index ?? 0),
         text: "`Помилка: ${…}`",
       });
     }
@@ -114,12 +128,12 @@ describe("«Помилка» як standalone (§7 гайду копірайти�
   it("сканер бачить достатньо файлів, щоб перевірка щось означала", () => {
     // Захист від тихого нуля: якщо обхід дерева зламається, наступний тест
     // стане зеленим на порожньому списку.
-    expect(collectSourceFiles(WEB_SRC).length).toBeGreaterThan(500);
+    expect(collectSourceFiles().length).toBeGreaterThan(500);
   });
 
-  it("не вживається ні голим словом, ні префіксом «Помилка: »", () => {
-    expect(
-      findOffenders().map((o) => `${o.file}:${o.line} — ${o.text}`),
-    ).toEqual([]);
+  it("не вживається ні голим словом, ні префіксом «Помилка: », ні як «Помилка <що саме>» без дії в повідомленні", () => {
+    expect(findOffenders().map((o) => `${o.file}:${o.line} ${o.text}`)).toEqual(
+      [],
+    );
   });
 });

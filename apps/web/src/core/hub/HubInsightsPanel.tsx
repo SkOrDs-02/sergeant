@@ -61,7 +61,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           {rec.icon && ICON_NAMES.includes(rec.icon) && (
             <Icon
               name={rec.icon}
-              size={14}
+              size="sm"
               className="inline-block mr-1 align-middle"
               aria-hidden
             />
@@ -77,10 +77,11 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           <button
             type="button"
             onClick={() => onAction(rec.action ?? "", rec.actionHash)}
-            className="mt-1.5 inline-flex items-center gap-1 text-style-label font-semibold text-text hover:text-primary transition-colors"
+            aria-label={`${messages.actions.open}: ${rec.title}`}
+            className="mt-1.5 inline-flex items-center gap-1 rounded-lg focus-ring text-style-label font-semibold text-text hover:text-primary transition-colors"
           >
             {messages.actions.open}
-            <Icon name="chevron-right" size={12} strokeWidth={2.5} />
+            <Icon name="chevron-right" size="xs" strokeWidth={2.5} />
           </button>
         )}
       </div>
@@ -94,7 +95,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           title={messages.actions.remove}
           className="shrink-0 -mr-1 -mt-1 text-muted hover:text-text"
         >
-          <Icon name="close" size={14} />
+          <Icon name="close" size="sm" />
         </Button>
       )}
     </div>
@@ -131,7 +132,7 @@ export function HubInsightsPanel({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className={cn(
-          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl",
+          "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl focus-ring",
           "border border-line bg-panel",
           "hover:bg-panelHi transition-colors",
         )}

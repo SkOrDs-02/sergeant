@@ -209,7 +209,7 @@ export function PantryPage({ testID }: { testID?: string }) {
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Продукт або список…"
+            placeholder="Продукт або список"
             className="flex-1 border border-cream-300 rounded-xl px-3 py-2 text-fg bg-white"
             placeholderTextColor="#a8a29e"
             onSubmitEditing={onAdd}

@@ -42,7 +42,7 @@ function makeReq(body: unknown): Request {
 }
 
 /**
- * AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — same
+ * AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — same
  * as `makeReq`, but with a spy-able `aiQuotaRefund` closure attached, the
  * way `requireAiQuota()`/`assertAiQuota` attach it in production before
  * `handler` ever runs.
@@ -806,7 +806,7 @@ describe("chat handler — B36 tool_results/tool_calls_raw XOR", () => {
   });
 });
 
-// AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
 // `assertAiQuota` consumes a daily-quota ticket in router middleware BEFORE
 // this handler runs. A 4xx/422 that `handler` itself raises before ever
 // calling `anthropicMessages` used to keep that ticket burned — free users
@@ -1135,8 +1135,8 @@ describe("chat handler — system payload (prompt caching)", () => {
       type: "ephemeral",
       ttl: "1h",
     });
-    // SYSTEM_PREFIX починається з "Ти персональний асистент…"
-    expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+    // SYSTEM_PREFIX починається з PERSONA_RULE: "Ти Сержант…"
+    expect(payload!.system[0]!.text).toMatch(/^Ти Сержант/);
     expect(payload!.system[1]!.type).toBe("text");
     expect(payload!.system[1]!.text).toContain("Алергія на горіхи");
     // context-блок НЕ кешується — інакше Anthropic зробить окремий cache slot
@@ -1371,7 +1371,7 @@ describe("chat handler — system payload (prompt caching)", () => {
         type: "ephemeral",
         ttl: "1h",
       });
-      expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+      expect(payload!.system[0]!.text).toMatch(/^Ти Сержант/);
       const marked = payload.tools.filter((t) => t.cache_control !== undefined);
       expect(marked).toHaveLength(1);
       expect(marked[0]!.cache_control).toEqual({
@@ -1420,7 +1420,7 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
 
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
     expect(asRec(res.body)["text"]).toBe(
-      "Перша частина брифінгу… друга частина — кінець.",
+      "Перша частина брифінгу… друга частина – кінець.",
     );
 
     // Continuation-виклик отримує partial-text як останнє assistant-повідомлення.

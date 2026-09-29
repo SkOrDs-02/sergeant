@@ -5,7 +5,7 @@
 - **Last validated:** 2026-09-04 by @codex
 - **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
-- **Supersedes:** [ADR-0026](./0026-n8n-workflow-source-of-truth.md)
+- **Supersedes:** [ADR-0026](./0026-n8n-workflow-source-of-truth.md), [ADR-0030](./0030-telegram-reporting-channel-structure.md)
 - **Related:** [ADR-0074](./0074-hosting-hetzner-coolify.md), [ADR-0075](./0075-openclaw-gateway-decommissioned.md), [ADR-0081](./0081-repository-simplification.md), [ADR-0089](./0089-job-substrates-outbox-broker-timer.md)
 
 ## Decision
@@ -38,9 +38,13 @@ Hard Rule #20: legacy OpenClaw/PAT material remains forbidden in production.
 
 ## Recent PRs
 
-| PR                                                       | Title                                                                         | Merged     |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
-| [#1043](https://github.com/SkOrDs-02/sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                           | 2026-09-23 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

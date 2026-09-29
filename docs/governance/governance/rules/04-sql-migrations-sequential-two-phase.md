@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-04-15.
+> **Last touched:** 2026-09-23 by @claude (enforced_by: lint-migrations.mjs тепер у `pnpm lint`, lint-staged і deploy-api.mjs pre-flight). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #4. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -13,11 +13,13 @@
 
 ## Enforced by
 
-- **ci** — pnpm lint:migrations
+- **ci** - `pnpm lint` (крок `node scripts/lint-migrations.mjs`, з 2026-09-23)
+- **hook** - lint-staged: `apps/server/src/migrations/**` запускає `lint-migrations.mjs` (з 2026-09-23)
+- **hook** - `scripts/deploy-api.mjs` pre-flight відмовляє в деплої, якщо `lint-migrations.mjs` червоний (з 2026-09-23)
 
 ## Why / What is enforced
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–127, sequential, no gaps; єдиний історичний дубль — `091`, див. § «Перейменування вже застосованої міграції»). Pre-deploy: Coolify `pre_deployment_command = node dist-server/migrate.js` (compiled from `apps/server/migrate.mjs`; requires `MIGRATE_DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md) — раніше це був Railway `[deploy].preDeployCommand`. Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (sequential from `001`, no gaps — поточний максимум дивись через `ls apps/server/src/migrations | grep -v down | tail -1`, не в цьому файлі; єдиний історичний дубль — `091`, див. § «Перейменування вже застосованої міграції»). Застосування: ENTRYPOINT образу — `node dist-server/migrate.js && exec node dist-server/index.js` (compiled from `apps/server/migrate.mjs`; бере `MIGRATE_DATABASE_URL` або `DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md). Раніше це був Railway `[deploy].preDeployCommand`, потім Coolify `pre_deployment_command` — останній виконувався у контейнері зі СТАРИМ образом, через що міграція доїжджала на деплой пізніше за код; виправлено 2026-09-21, розбір у [`apps/server/AGENTS.md`](../../../../apps/server/AGENTS.md). Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
 
 > **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg17`, not stock `postgres:17-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `db-backup-verify.yml`) already pin the same image.
 
@@ -34,7 +36,7 @@ UPDATE transactions SET amount_minor = (amount * 100)::BIGINT;
 ALTER TABLE transactions DROP COLUMN amount;
 ```
 
-Never drop a column in the same release as the code that stops writing to it — Railway pre-deploy migrates before the new app starts, so the old version (briefly serving traffic) will crash.
+Never drop a column in the same release as the code that stops writing to it — the Coolify pre-deploy command (historically Railway pre-deploy) migrates before the new app starts, so the old version (briefly serving traffic) will crash.
 
 A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollbacks. Production never runs `down.sql`, but the file is still required: it documents how to revert the schema during incident recovery or local development.
 
@@ -103,10 +105,13 @@ A reason after the colon is mandatory — the linter rejects bare `-- NO_ROLLBAC
 
 ## Recent PRs
 
-| PR                                                     | Title                                                                                                                   | Merged     |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [#508](https://github.com/SkOrDs-02/sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
-| [#334](https://github.com/SkOrDs-02/sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                           | 2026-09-23 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -29,7 +29,7 @@ export function DemoToRealDemo() {
         <MiniPhone dim>
           <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-4 text-center gap-2">
             <span className="h-10 w-10 rounded-full bg-surface-muted flex items-center justify-center text-muted">
-              <Icon name="file-text" size={20} />
+              <Icon name="file-text" size="lg" />
             </span>
             <p className="text-style-caption text-text">Поки що порожньо</p>
             <p className="text-style-caption text-muted">
@@ -71,7 +71,7 @@ export function DemoToRealDemo() {
                   </div>
                   {isReal ? (
                     <span className="text-accent">
-                      <Icon name="check-circle" size={16} />
+                      <Icon name="check-circle" size="md" />
                     </span>
                   ) : (
                     <button

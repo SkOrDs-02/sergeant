@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-billing
-description: Use when the task touches billing — plans, quotas, limits, LiqPay payments, pricing, trial logic; UA: задача про billing/тарифи/квоти/оплату/LiqPay.
+description: "Use when the task touches billing — plans, quotas, limits, LiqPay payments, pricing, trial logic; UA: задача про billing/тарифи/квоти/оплату/LiqPay."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Billing — власник інфра-модуля
@@ -11,9 +11,11 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Контекст
 
-- Модуль тарифів і оплат: план користувача (`getUserPlan.ts`), ефективні ліміти (`effectiveLimits.ts`), платіжний провайдер LiqPay (`liqpay.ts`).
+- Модуль тарифів і оплат: план і стан доступу (`getUserPlan.ts`, `accessStateOf`: free / trial / pro / grace), знімок для `/api/billing/status` (`accessSnapshot.ts`), reverse trial (`reverseTrial.ts`), платіжний провайдер LiqPay (`liqpay.ts`).
+- Що в якому плані — **лише** реєстр `packages/shared/src/billing/entitlements.ts` (`FEATURES`, `weeklyLimit`, `weekStartKyiv`). Сервер гейтить за ним (`requireFeature`, тижневі відра в `modules/chat/aiQuotaWeekly.ts`), web читає знімок `access` через `usePlan` / `useFeatureGate`, `/pricing` будується з нього. Нову Premium-фічу додають рядком у реєстр, а не константою в коді поверхні.
+- Новий бакет квоти потребує міграції, що розширює CHECK `ai_usage_daily_bucket_format`: інакше вставка падає, а `assertAiQuota` пропускає запит без ліміту. Звірку тримає `modules/chat/aiQuotaBucketCheck.test.ts`.
 - Чинний прайсинг — v4: ₴199/міс, зворотній trial, уточнені ліміти Free/Pro ([ADR-0068](../../../docs/governance/adr/0068-pricing-v4-uah-reverse-trial.md)); архітектурна основа монетизації — ADR-0001.
-- Денні квоти — атомарний SQL (`INSERT ... ON CONFLICT DO UPDATE WHERE`, [ADR-0022](../../../docs/governance/adr/0022-atomic-sql-quotas.md)); AI-квоти Free — [ADR-0085](../../../docs/governance/adr/0085-free-ai-quota-five-per-day.md).
+- Денні квоти — атомарний SQL (`INSERT ... ON CONFLICT DO UPDATE WHERE`, [ADR-0022](../../../docs/governance/adr/0022-atomic-sql-quotas.md)); тижневі AI-квоти Free і реєстр доступу — [ADR-0100](../../../docs/governance/adr/0100-free-premium-weekly-quotas-registry.md) (заміщує ADR-0085); спека `docs/work/specs/access-tiers.md`.
 
 ## Мапа файлів
 
@@ -30,6 +32,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 | Дата       | Рішення                                                       | Джерело/ADR                                                                     |
 | ---------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 2026-09-28 | Free: 20 AI-дій, 3 фото, 5 сканів Фініка на ISO-тиждень; реєстр доступу; trial за прапорцем; grace 3 дні | [ADR-0100](../../../docs/governance/adr/0100-free-premium-weekly-quotas-registry.md) |
 | 2026-06-27 | Pricing v4 — ₴199/міс, зворотній trial, ліміти Free/Pro       | [ADR-0068](../../../docs/governance/adr/0068-pricing-v4-uah-reverse-trial.md) |
 | 2026-04-27 | Денні квоти — атомарний SQL upsert, без app-level лічильників | [ADR-0022](../../../docs/governance/adr/0022-atomic-sql-quotas.md)           |
 

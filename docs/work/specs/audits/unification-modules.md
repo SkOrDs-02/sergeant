@@ -5,7 +5,57 @@
 > **Last touched:** 2026-08-31 by Claude. **Next review:** 2027-12-05.
 > **Status:** Active
 
-> Read-only аудит. Код не змінювався, PR не відкривався. Знахідки згруповані за наслідком, не за модулем.
+> Read-only аудит **на момент написання (2026-08-31)**. Знахідки згруповані за наслідком, не за модулем.
+
+> **ПЕРЕЗАМІР 2026-09-15.** Рядок «код не змінювався» більше не відповідає
+> дійсності і тому переписаний: за 113 комітів після дати аудиту значна
+> частина знахідок закрита, і 19 файлів у `apps/`/`packages/` прямо
+> цитують цей документ у коментарях до фіксів.
+>
+> Вибірково перевірено 11 знахідок §1, з них **дев'ять закриті**:
+>
+> - **1.1** — `packages/insights` тепер має залежність на `finyk-domain`,
+>   а `financeContext.ts:61` несе `txSplits`.
+> - **1.2 (заголовна)** — `deviceMondayStart` існує (`shared/utils/date.ts:142`)
+>   парою до `kyivMondayStartMs`, як і рекомендував аудит; змішування
+>   годинників у `useMondayAutoDigest` знято, і фікс цитує «audit
+>   unification-modules §1.2» у коментарі.
+> - **1.3** — `useUnifiedFinanceData.ts:68` бере `getMonoTotals`.
+> - **1.12**, **1.18**, **1.25**, **1.28** — закриті з посиланням на цей
+>   документ у коді й тестах Харчування.
+> - **1.20** — чат більше не має власної формули: `calculate1rm` кличе
+>   канонічний `epley1rm` з `E1RM_REP_CAP`.
+> - **1.27** — власної таблиці підписів категорій в `insights` немає.
+>
+> **1.4 підтверджено живою і виправлено частково (2026-09-15).** Канон мав
+> тоннаж лише по тренуванню цілком, тож розріз ПО ВПРАВІ пʼять місць писали
+> своєю рукою. Додано `itemTonnageKg`, і три веб-виклики переведені на
+> нього. Справжній дефект був один: `chatActions/fizrukActions/analytics.ts`
+> фільтрував вправи по назві й мʼязу, а `type` не перевіряв зовсім, тож
+> кардіо-вправа з підходами потрапляла в тоннаж. Два інші веб-місця фільтр
+> мали — там була чиста дуплікація.
+>
+> **Мобільну половину свідомо НЕ зведено, і це важливіше за сам фікс.**
+> Спроба перевести `coachSnapshot.ts` і `weeklyDigestAggregates.ts` на канон
+> повалила два їхні тести: обʼєм тижня став **нулем**. Причина — `type` на
+> мобілці необовʼязковий (`useFizrukWorkouts.ts:42` оголошує `type?:`), а
+> канон фільтрує строго. Тобто «уніфікація» тут обнулила б людям тижневий
+> обʼєм. Перш ніж зводити, треба перевірити на РЕАЛЬНИХ даних, чи `type`
+> заповнений; поки ні — застереження стоїть AI-DANGER-ом у самому
+> `workoutStats.ts`.
+>
+> **1.16 — НЕ дефект, моя помилка в першій редакції цієї нотатки.** Два
+> експорти `todayDate` під одним іменем справді існують, але розбіжність
+> поведінки зникла з cutover 2026-09-01 (ADR-0078): обидва рахують
+> device-local полудень. Розділення лишене НАВМИСНО і пояснене просто в
+> докстрінгу `RoutineApp.helpers.ts` — `lib/dayAnchor.ts` має лишатись
+> єдиним місцем, що парує генератор ключа з міткою `ROUTINE_DAY_ANCHOR`.
+> Опис у §1.16 нижче («web київський, мобайл за пристроєм») застарів.
+>
+> **Решта 57 знахідок НЕ перевірялась.** Вибірка з 11 не дає права
+> заявляти пропорцію по всьому документу — вона доводить лише те, що
+> документ застарів і читати його як список відкритої роботи більше не
+> можна. Перед тим як брати звідси задачу, перевір її на поточній голові.
 
 ## Підсумок
 
@@ -184,7 +234,7 @@
 
 ### 1.13. Денний free-ліміт AI: клієнт рахує повідомлення, сервер одиниці квоти
 
-- [apps/server/src/modules/billing/effectiveLimits.ts:13](../../../../apps/server/src/modules/billing/effectiveLimits.ts) (`aiRequestsPerDay: 5`, атомарний UPSERT, per-user)
+- apps/server/src/modules/billing/effectiveLimits.ts:13 (`aiRequestsPerDay: 5`, атомарний UPSERT, per-user)
 - [apps/web/src/core/hub/chat/useChatSend.ts:62](../../../../apps/web/src/core/hub/chat/useChatSend.ts) (`FREE_DAILY_AI_CHAT_LIMIT = 5`, localStorage, per-device)
 - [apps/web/src/core/hub/HubChat.tsx:221](../../../../apps/web/src/core/hub/HubChat.tsx) (третя копія числа в UI-копії)
 
@@ -466,3 +516,16 @@
 - **`apps/mobile` не аудитований.** Жоден із семи сканерів не проходив мобільну поверхню систематично, лише як список викликачів доменних функцій. Це найбільша діра прогону: grep показує, що `apps/mobile/src/core` несе близькі копії `hubReports.aggregation.ts`, `useCoachInsight.ts`, `hubChatSessions.ts`, `HubChatHistoryDrawer.tsx`, `searchTypes.ts`, `ReportChart.tsx`, `weeklyDigestAggregates.ts`, `coachSnapshot.ts`. Тобто половина знахідок §1 і §2 з core/hub і core/insights, найімовірніше, має мобільного двійника, який у цьому звіті не названий. Окремий підозрюваний: `apps/mobile/src/modules/nutrition/lib/recipeBookStore.ts` виглядає портованою копією web `recipeBook.ts`. Паритет web↔mobile вартий власного прогону.
 - **Тестові файли і `*.stories.tsx` як джерело знахідок не використовувались.** `core/DesignShowcase` і `core/onboarding/seedDemoData` теж виключені: демо-дані свідомо мають власну арифметику.
 - **Поодинокі дефекти без другої копії у звіт не потрапили** за правилами формату. Один такий зафіксовано і варто винести окремо: [useImportReminder.ts:167](../../../../apps/web/src/modules/finyk/pages/overview/useImportReminder.ts) будує день-ключ через `toISOString().slice(0,10)` (UTC), тобто повз київський інваріант; читає його лише дедуп аналітичної події. Другий: `derived.completionRateVal` ([useRoutineDerivedData.ts:232](../../../../apps/web/src/modules/routine/useRoutineDerivedData.ts)) проходить крізь контекст до героя, але ніде не рендериться, тобто обчислення мертве. Третій: `formatCompactKg` ([workoutStats.ts:212](../../../../packages/fizruk-domain/src/lib/workoutStats.ts)) не має жодного виклику в репо.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу                                                  | 2026-09-28 |
+| [#39](https://github.com/zaebal-beep/sergeant/pull/39)          | fix(web): уніфікація кнопок Рутини, канон «Скасувати»/«Зберегти» і перезамір аудиту                               | 2026-09-15 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -171,9 +171,8 @@ export function NutritionSection() {
         </p>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
-          className="border border-line"
           onClick={openPantryManager}
         >
           Відкрити менеджер комори →

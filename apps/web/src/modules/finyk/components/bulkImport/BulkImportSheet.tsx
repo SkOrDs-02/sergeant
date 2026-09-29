@@ -42,6 +42,7 @@ import {
   isIncomeCategorySlug,
 } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
+import { useFinykVisionPaywall } from "../receiptScan/useFinykVisionPaywall";
 import { readReceiptImageFile } from "../../lib/receiptImage";
 import {
   IMPORT_STATEMENT_FILE_ACCEPT,
@@ -109,7 +110,7 @@ function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.docType === "other") {
     return "Це не схоже на екран банківського застосунку. Відкрий список операцій у банку і зроби скрін звідти.";
   }
-  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список транзакцій із сумами.";
+  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список операцій із сумами.";
 }
 
 /** Українська трійка форм для лічильника (1 / 2-4 / 5+). */
@@ -201,6 +202,7 @@ export function BulkImportSheet({
   const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
 
   const screenshotAnalyze = useImportScreenshotAnalyze();
+  const visionPaywall = useFinykVisionPaywall();
   const statementPreview = useImportStatementPreview();
   const commit = useImportCommit({ storage });
   const batchUndo = useImportBatchUndo({ storage });
@@ -235,6 +237,7 @@ export function BulkImportSheet({
 
   const handleScreenshotSelected = async (file: File) => {
     setFlowError(null);
+    if (!visionPaywall.requireAccess()) return;
     // Спінер до `await`: стиснення великого фото саме по собі помітна
     // пауза, і саме вона першою читалась як зависання.
     setProcessing({ label: "Готую фото…", hint: SCREENSHOT_SLOW_HINT });
@@ -245,7 +248,7 @@ export function BulkImportSheet({
       return;
     }
     setProcessing({
-      label: "Розпізнаю транзакції…",
+      label: "Розпізнаю операції…",
       hint: SCREENSHOT_SLOW_HINT,
     });
     try {
@@ -268,6 +271,7 @@ export function BulkImportSheet({
       setProcessing(null);
       setStage("bulk-review");
     } catch (err) {
+      visionPaywall.onError(err);
       failBackToChoose(formatReceiptError(err, "Не вдалось розпізнати скрін."));
     }
   };
@@ -378,8 +382,10 @@ export function BulkImportSheet({
       footer={
         stage === "bulk-review" ? (
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             loading={commit.isPending}
             disabled={reviewRows.every((r) => !r.selected)}
             onClick={() => void handleCommit()}
@@ -436,19 +442,21 @@ export function BulkImportSheet({
       {stage === "choose" && (
         <div className="space-y-3">
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             onClick={() => screenshotInputRef.current?.click()}
           >
-            <Icon name="upload" size={16} aria-hidden />
+            <Icon name="upload" size="md" aria-hidden />
             Скрін банкінгу
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             className="w-full"
             onClick={() => csvInputRef.current?.click()}
           >
-            <Icon name="file-text" size={16} aria-hidden />
+            <Icon name="file-text" size="md" aria-hidden />
             Виписка файлом
           </Button>
           {/* Не «CSV, XLS або XLSX»: сервер читає CSV, XLSX і HTML-таблицю,
@@ -527,6 +535,7 @@ export function BulkImportSheet({
           )}
         </div>
       )}
+      {visionPaywall.modal}
     </Sheet>
   );
 }

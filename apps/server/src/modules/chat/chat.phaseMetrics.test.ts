@@ -1,7 +1,7 @@
 /**
  * Замір фаз ПЕРШОГО ходу чату — метрика `chat_first_turn_phase_ms`.
  *
- * Знахідка AI-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`):
+ * Знахідка AI-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`):
  * «TTFT 5–14 с» міряв не те, що називався. Першого токена на цьому шляху
  * немає — перший хід не стрімиться, — тож `ai_first_token_ms` його не бачить,
  * і питання «скільки з очікування наше, а скільки провайдера» лишалось без
@@ -116,8 +116,9 @@ describe("chat_first_turn_phase_ms", () => {
     expect(res.statusCode).toBe(200);
 
     const counts = await phaseCounts();
-    // Ці чотири платить КОЖЕН перший хід, включно з аноновим.
-    expect(counts["session"]).toBe(1);
+    // Ці три платить КОЖЕН перший хід, включно з аноновим. Фази `session`
+    // більше немає: сесію кладе middleware, handler її не шукає вдруге.
+    expect(counts["session"]).toBeUndefined();
     expect(counts["counterparties"]).toBe(1);
     expect(counts["pre_upstream"]).toBe(1);
     expect(counts["upstream"]).toBe(1);
@@ -155,7 +156,7 @@ describe("chat_first_turn_phase_ms", () => {
     );
 
     const sums = await phaseSums();
-    const named = (sums["session"] ?? 0) + (sums["counterparties"] ?? 0);
+    const named = sums["counterparties"] ?? 0;
     // Нестрога нерівність навмисно: у юніт-тесті всі кроки моковані й
     // укладаються в один тік, тож чесний результат тут — рівність нулю.
     // Тест стереже ЗНАК різниці (неврахована робота не буває відʼємною),

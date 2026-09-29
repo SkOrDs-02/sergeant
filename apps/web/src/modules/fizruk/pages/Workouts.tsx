@@ -16,6 +16,7 @@ import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSect
 import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
 import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { LogPastWorkoutSheet } from "../components/workouts/LogPastWorkoutSheet";
+import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -60,6 +61,20 @@ interface WorkoutsProps {
    * tab that the user asked us to dissolve.
    */
   onOpenRoutine?: (() => void) | undefined;
+  /**
+   * Сьогоднішня сесія активної програми — третя плитка в аркуші «Почати
+   * тренування». Роутер збирає її з `activeProgram` + `todaySession` і
+   * віддає той самий старт, що й hero-картка Огляду; без програми —
+   * `undefined`, і плитки немає.
+   */
+  programStart?: { label: string; onStart: () => void } | undefined;
+  /**
+   * Лічильник зовнішніх запитів відкрити аркуш «Почати тренування»
+   * (`FizrukApp` → PWA-інтент `start_workout` / клавіша `N`). Реагуємо на
+   * зміну значення, не на саме значення: аркуш, закритий після першого
+   * запиту, має відкритись знову на другому.
+   */
+  quickStartRequest?: number | undefined;
 }
 
 export function Workouts({
@@ -69,6 +84,8 @@ export function Workouts({
   section,
   onNavigate,
   onOpenRoutine,
+  programStart,
+  quickStartRequest = 0,
 }: WorkoutsProps = {}) {
   const o = useWorkoutsOrchestrator({
     requestedWorkoutId: workoutId,
@@ -104,6 +121,22 @@ export function Workouts({
   // sync beyond what a fresh mount already re-reads from `localStorage`.
   const { activeProgram } = useTrainingProgram();
   const [strongImportOpen, setStrongImportOpen] = useState(false);
+  /**
+   * Аркуш «Почати тренування» (рішення власника 2026-09-16). Одна кнопка на
+   * домашній замість «Швидкий старт» + «або із шаблону →»: спосіб обирають
+   * усередині. Порожньої сесії тут немає навмисно — таймер стартує, коли
+   * є хоча б одна вправа (докблок `QuickStartSheet`).
+   */
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  // Зовнішній запит відкрити аркуш — «стан, похідний від пропа»: реагуємо на
+  // зміну лічильника прямо в рендері (той самий патерн, що `prevOpen` у
+  // `CommandPaletteUI`), без ефекту, який би ставив стан після коміту.
+  const [seenQuickStartRequest, setSeenQuickStartRequest] =
+    useState(quickStartRequest);
+  if (quickStartRequest !== seenQuickStartRequest) {
+    setSeenQuickStartRequest(quickStartRequest);
+    if (quickStartRequest > 0) setQuickStartOpen(true);
+  }
   // Каталог у сесії — аркуш із «+ Вправа», а не хвіст сторінки (спека
   // `fizruk-active-session.md`, рішення 4).
   const [catalogSheetOpen, setCatalogSheetOpen] = useState(false);
@@ -156,6 +189,7 @@ export function Workouts({
             onBack={() =>
               section ? onNavigate?.("workouts") : o.setView("home")
             }
+            routeOwnsBack={Boolean(section)}
             onAddCatalog={() => o.setAddOpen(true)}
           />
         )}
@@ -176,16 +210,44 @@ export function Workouts({
             // Каталог і шаблони мають власні адреси (`FIZRUK_PAGES`), тож
             // це навігація, а не перемикання локального `view`.
             onOpenCatalog={() => onNavigate?.("catalog")}
-            onOpenTemplates={() => onNavigate?.("templates")}
             // 03-A — "Всі →" now owns its own URL (`/fizruk/history`)
             // instead of flipping `view` to "log" on the same
             // `/fizruk/workouts` path (the dual start-path bug).
             onOpenJournal={() => onNavigate?.("history")}
+            // Рядок «Останніх» веде у свій запис, а не в загальний журнал —
+            // той самий маршрут, яким уже ходять `WorkoutHistory` і активна
+            // сесія (аудит 2026-09-16, WF-7).
+            onOpenWorkout={(id) => onNavigate?.(`workout/${id}`)}
             onOpenPrograms={() => onNavigate?.("programs")}
             onOpenStrongImport={() => setStrongImportOpen(true)}
-            onRequestStart={o.handleQuickStart}
+            onRequestStart={() => setQuickStartOpen(true)}
             onLogPast={() => o.setLogPastOpen(true)}
             onOpenSchedule={onOpenRoutine}
+          />
+        ) : null}
+
+        {o.view === "home" ? (
+          <QuickStartSheet
+            open={quickStartOpen}
+            onClose={() => setQuickStartOpen(false)}
+            exercises={o.exercises}
+            search={o.search}
+            primaryGroupsUk={o.primaryGroupsUk}
+            // Шаблони мають власну адресу (`/fizruk/templates`) — це навігація.
+            onPickTemplate={() => onNavigate?.("templates")}
+            onConfirmExercises={(picks) => {
+              setQuickStartOpen(false);
+              // Разовий набір — той самий шлях, що й шаблон (перевірка
+              // відновлення, конфлікт «одне активне»), лише без id: його
+              // не позначають використаним і телеметрія каже `quick_start`.
+              o.startWorkoutFromTemplate({
+                id: "",
+                name: "",
+                exerciseIds: picks.map((ex) => ex.id),
+                groups: [],
+              });
+            }}
+            programTile={programStart}
           />
         ) : null}
 
@@ -198,6 +260,14 @@ export function Workouts({
               // форми, і воно прилітає вже після цього виклику.
               markComposeSaved(FIZRUK_PAST_WORKOUT_COMPOSE_KEY);
               o.submitPastWorkout(payload);
+            }}
+            // Третій режим форми — швидкий запис однієї вправи. Та сама форма,
+            // той самий лічильник тертя: закриття після запису — завершена
+            // композиція, а не кинута.
+            onQuickLog={(payload) => {
+              markComposeSaved(FIZRUK_PAST_WORKOUT_COMPOSE_KEY);
+              o.setLogPastOpen(false);
+              o.submitQuickLog(payload);
             }}
             weightKg={bodyWeightKg}
             // Той самий писач, що й у решті зважувань: `addEntry` сам
@@ -330,7 +400,9 @@ export function Workouts({
             title={sessionCopy.addExerciseSheetTitle}
             footer={
               <Button
-                module="fizruk"
+                variant="solid"
+                tone="fizruk"
+
                 className="w-full h-11"
                 onClick={() => setCatalogSheetOpen(false)}
               >

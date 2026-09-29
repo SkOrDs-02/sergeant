@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Modal } from "@shared/components/ui/Modal";
+import { messages } from "@shared/i18n/uk";
+import type { PaywallSurface } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 /**
@@ -17,14 +19,9 @@ import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
  * we can tune messaging per surface without forking the component.
  */
 
-export type PaywallSurface =
-  | "ai_chat_limit"
-  | "mono_auto_sync"
-  | "cloud_sync"
-  | "csv_export"
-  | "unlimited_ai_photo"
-  | "themes"
-  | "other";
+// Поверхні живуть у реєстрі доступу (`@sergeant/shared`, поле `surface`
+// рядка фічі), а не окремою мапою тут.
+export type { PaywallSurface };
 
 export interface PaywallModalProps {
   open: boolean;
@@ -40,20 +37,24 @@ export interface PaywallModalProps {
   description: string;
   /** Visible features list (3–5 bullets). */
   features?: ReadonlyArray<string>;
-  /** Override the primary CTA label. Defaults to "Перейти на Premium". */
+  /** Override the primary CTA label. Defaults to `messages.paywallModal.cta`. */
   ctaLabel?: string;
-  /** Override the secondary CTA label. Defaults to "Не зараз". */
+  /** Override the secondary CTA label. Defaults to `messages.paywallModal.dismiss`. */
   dismissLabel?: string;
 }
 
 // AI-NOTE: буліт «7 днів trial без привʼязки картки» прибрано 2026-08-05
-// (B4 браузерного аудиту). Сторінка тарифів — джерело правди щодо моделі
-// оплати, і вона прямо каже «без trial-таймера»; обіцянка trial-у тут
-// суперечила їй. Не повертай його, поки trial не зʼявиться у /pricing.
+// (B4 браузерного аудиту) і не повертається: trial дається лише новому
+// акаунту і лише за прапорцем `BILLING_REVERSE_TRIAL_ENABLED`, тож людина
+// перед пейволом його вже або має, або не отримає.
+const COPY = messages.paywallModal;
+
+// Порядок булетів — тут: каталог тримає плоскі ключі, бо `MessageCatalog`
+// не допускає масивів (див. коментар над групою в `uk.ts`).
 const DEFAULT_FEATURES: ReadonlyArray<string> = [
-  "Безлімітний AI-чат + щоденні брифи",
-  "Авто-синхронізація Mono + CloudSync між пристроями",
-  "Експорт CSV/PDF + крос-модульні звіти",
+  COPY.featureAi,
+  COPY.featureSync,
+  COPY.featureExport,
 ];
 
 export function PaywallModal({
@@ -63,8 +64,8 @@ export function PaywallModal({
   title,
   description,
   features = DEFAULT_FEATURES,
-  ctaLabel = "Перейти на Premium",
-  dismissLabel = "Не зараз",
+  ctaLabel = COPY.cta,
+  dismissLabel = COPY.dismiss,
 }: PaywallModalProps) {
   const navigate = useNavigate();
   const prevOpen = useRef(false);
@@ -103,7 +104,7 @@ export function PaywallModal({
           <Button variant="ghost" size="md" onClick={onClose}>
             {dismissLabel}
           </Button>
-          <Button variant="primary" size="md" onClick={handleCta}>
+          <Button variant="solid" size="md" onClick={handleCta}>
             {ctaLabel}
           </Button>
         </div>

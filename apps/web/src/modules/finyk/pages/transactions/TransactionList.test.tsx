@@ -86,7 +86,7 @@ describe("TransactionList — DataState routing", () => {
 
     // The empty-state title and the virtualized list must NOT be
     // rendered while skeleton is on.
-    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.queryByText("Немає операцій")).not.toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -100,7 +100,7 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
+    expect(screen.getByText("Немає операцій")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -118,13 +118,13 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+    expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
     // Must NOT repeat Overview's hero title verbatim.
     expect(
       screen.queryByText("Куди йдуть твої гроші?"),
     ).not.toBeInTheDocument();
     // The filter-empty copy must NOT also render at the same time.
-    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.queryByText("Немає операцій")).not.toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -188,7 +188,7 @@ describe("TransactionList — DataState routing", () => {
         />,
       );
 
-      expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+      expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
     });
   });
 
@@ -206,7 +206,7 @@ describe("TransactionList — DataState routing", () => {
     );
 
     expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
-    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.queryByText("Немає операцій")).not.toBeInTheDocument();
   });
 
   // PR-F4 (founder-UX audit wave 6, «Чесність показників»): the row-level
@@ -294,7 +294,7 @@ describe("TransactionList — DataState routing", () => {
     fireEvent.click(screen.getByText("Сільпо"));
     expect(onOpenTransaction).toHaveBeenCalledWith(manualTx);
     expect(
-      screen.queryByRole("button", { name: "Розподілити транзакцію" }),
+      screen.queryByRole("button", { name: "Розподілити операцію" }),
     ).not.toBeInTheDocument();
   });
 });

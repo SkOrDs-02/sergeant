@@ -220,7 +220,7 @@ describe("recommend-recipes handler", () => {
 
     const opts = asRecord(invokeLLM.mock.calls[0]?.[1]);
     const messages = JSON.stringify(opts["messages"]);
-    expect(messages).toContain("Не використовувати/алергени: —");
+    expect(messages).toContain("Не використовувати/алергени: немає");
     expect(messages).toContain("гречка");
     expect(messages).toContain("рис");
     expect(messages).toContain("Ціль: low-carb");

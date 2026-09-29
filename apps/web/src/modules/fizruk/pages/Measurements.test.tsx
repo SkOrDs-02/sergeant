@@ -66,6 +66,26 @@ describe("Measurements page", () => {
     expect(() => render(<Measurements />)).not.toThrow();
   });
 
+  it("не показує тайли статистики, поки записів немає", () => {
+    // Три плитки «Записів 0 / Останній – / Полів 0» подають нулі як
+    // результат (критика екранів 2026-09-23). До першого запису їм нема
+    // що казати, тож їх нема.
+    render(<Measurements />);
+    expect(screen.queryByText("Записів")).toBeNull();
+    expect(screen.queryByText("Полів")).toBeNull();
+  });
+
+  it("кнопка гайду стоїть в акценті модуля, а не в success", () => {
+    // Довідка про заміри не є «успіхом»: зелений усередині cyan-модуля
+    // ламає module-accent containment (критика екранів 2026-09-23).
+    render(<Measurements />);
+    const trigger = screen.getByRole("button", {
+      name: /Як правильно робити заміри/,
+    });
+    expect(trigger.querySelector('[class*="success"]')).toBeNull();
+    expect(trigger.querySelector('[class*="fizruk"]')).not.toBeNull();
+  });
+
   it("opens the internal measurement guide with primary-source links", () => {
     render(<Measurements />);
     fireEvent.click(
@@ -337,5 +357,60 @@ describe("Measurements page", () => {
       name: /NHS.*відкриється в новій вкладці/,
     });
     expect(nhsLink).toHaveAttribute("href", expect.stringContaining("nhs.uk"));
+  });
+
+  describe("список першим", () => {
+    const twoEntries = [
+      { id: "b", at: "2026-05-14T08:00:00Z", weightKg: 83 },
+      { id: "a", at: "2026-05-07T08:00:00Z", weightKg: 80 },
+    ];
+
+    it("з записами історія стоїть у DOM раніше за гайд, а форми інлайн немає", () => {
+      mockEntries = twoEntries;
+      render(<Measurements />);
+      expect(
+        screen.queryByRole("button", { name: "Зберегти замір" }),
+      ).toBeNull();
+      const history = screen.getByText("Історія");
+      const guide = screen.getByRole("button", {
+        name: /Як правильно робити заміри/,
+      });
+      expect(
+        history.compareDocumentPosition(guide) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it("не рендерить плитку «Полів»", () => {
+      mockEntries = twoEntries;
+      render(<Measurements />);
+      expect(screen.getByText("Записів")).toBeInTheDocument();
+      expect(screen.queryByText("Полів")).toBeNull();
+    });
+
+    it("кнопка біля заголовка відкриває форму в аркуші і закриває його після збереження", () => {
+      mockEntries = twoEntries;
+      render(<Measurements />);
+      fireEvent.click(screen.getByRole("button", { name: "Додати замір" }));
+      const dialog = screen.getByRole("dialog");
+      // Історія й динаміка стоять над формою і в порядку DOM.
+      expect(
+        screen.getByText("Історія").compareDocumentPosition(getSaveButton()) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      fireEvent.change(screen.getByLabelText(/Вага/), {
+        target: { value: "82" },
+      });
+      fireEvent.click(getSaveButton());
+      expect(addEntry).toHaveBeenCalledWith({ weightKg: 82 });
+      expect(dialog).not.toBeInTheDocument();
+    });
+
+    it("без записів форма інлайн, а кнопки аркуша немає", () => {
+      render(<Measurements />);
+      expect(getSaveButton()).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Додати замір" })).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 });

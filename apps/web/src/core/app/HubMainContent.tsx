@@ -276,18 +276,21 @@ export const HubMainContent = memo(function HubMainContent({
                   Показуватись чи ні, вирішує сам банер (той самий предикат
                   `isSyncableUserId`, що вимикає запис в outbox), тому гейта
                   на `user` тут немає. Під час FTUX мовчить: перша сесія
-                  тримає рівно один сигнал на екрані — CTA першої дії. */}
+                  тримає рівно один сигнал на екрані — CTA першої дії.
+                  Стоїть ПІСЛЯ дашборда: першим, над модулями й «Зараз»,
+                  банер читався як загроза втрати даних замість наступного
+                  кроку (критика екранів 2026-09-23). */}
               {/* Стеля на кількість підказок одночасно — див.
                   `bannerBudget.tsx` (анти-слоп аудит 2026-09-01, F3). */}
               <HubBannerBudgetProvider>
-                {!inFtuxSession && (
-                  <LocalOnlyDataBanner onSignIn={onShowAuth} />
-                )}
                 <HubDashboard
                   onOpenModule={onOpenModule}
                   user={user}
                   onShowAuth={onShowAuth}
                 />
+                {!inFtuxSession && (
+                  <LocalOnlyDataBanner onSignIn={onShowAuth} />
+                )}
               </HubBannerBudgetProvider>
             </div>
           </ErrorBoundary>

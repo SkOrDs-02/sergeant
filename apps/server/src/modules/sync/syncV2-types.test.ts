@@ -15,7 +15,9 @@ describe("syncV2 wire reason/type registries", () => {
     // Спека fizruk-readiness-check: +1 `invalid_chosen_variant` — значення
     // поза переліком відкидається на рівні sync, а не доходить до CHECK у
     // міграції 134 і не стає 500-кою.
-    expect(APPLY_REJECT_REASONS).toHaveLength(65);
+    // Міграція 146: +10 причин на решту полів веб-форми заміру (жир, шия,
+    // передпліччя, стегно, литка, ліва/права сторони біцепса).
+    expect(APPLY_REJECT_REASONS).toHaveLength(75);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );
@@ -47,6 +49,9 @@ describe("syncV2 wire reason/type registries", () => {
       "apply_failed",
       "duplicate",
       "op_not_supported",
+      // Запис у `sync_op_log` живе під savepoint-ом `op_log_write`; його
+      // помилка відхиляє один оп, а не валить батч 500-кою.
+      "oplog_write_failed",
     ]);
     expect(new Set(ENGINE_REJECT_REASONS).size).toBe(
       ENGINE_REJECT_REASONS.length,

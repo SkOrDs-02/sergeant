@@ -77,6 +77,40 @@ test("новий мертвий шлях валить гейт", () => {
   assert.equal(run().code, 0, "стан не відновлено");
 });
 
+test("закріплений blob/<sha> URL не рахується мертвим шляхом", () => {
+  // Дзеркало попереднього тесту: та сама приманка, але всередині
+  // закріпленого GitHub-URL. Це форма, якою Hard Rule #23 велить цитувати
+  // заархівовані доки (локальних архівних дерев у репо немає), тож гейт
+  // мусить лишитись зеленим. Sha — 40 hex, інакше пропуск не спрацює.
+  const victim = join(ROOT, "scripts/check-dead-doc-links.mjs");
+  const orig = readFileSync(victim, "utf8");
+  const sha = "d068c73a2f21881d5c1305544fe99f3ea8be81f4";
+  try {
+    writeFileSync(
+      victim,
+      orig +
+        `\n// https://github.com/x/y/blob/${sha}/docs/definitely-not-here/pinned-${Date.now()}.md\n`,
+    );
+    const { code, out } = run(["--json"]);
+    assert.equal(code, 0, "закріплений URL помилково визнано мертвим");
+    assert.deepEqual(JSON.parse(out).appeared, []);
+  } finally {
+    writeFileSync(victim, orig);
+  }
+  // А от `blob/main/…` ротиться разом із гілкою — його пропускати не можна.
+  try {
+    writeFileSync(
+      victim,
+      orig +
+        `\n// https://github.com/x/y/blob/main/docs/definitely-not-here/branch-${Date.now()}.md\n`,
+    );
+    assert.equal(run().code, 1, "URL на гілку мав лишитись під наглядом");
+  } finally {
+    writeFileSync(victim, orig);
+  }
+  assert.equal(run().code, 0, "стан не відновлено");
+});
+
 test("--update відмовляється піднімати бюджет", () => {
   // Ключовий інваріант: baseline рухається лише вниз. Тимчасово занижуємо
   // число і переконуємось, що `--update` НЕ погоджується його підняти назад.
@@ -100,31 +134,63 @@ test("--update відмовляється піднімати бюджет", () =
   }
 });
 
-test("SKIP_FILES — кожен запис із причиною, і саме ті два", () => {
+test("SKIP_FILES — кожен запис із причиною, і саме той один", () => {
   // Виняток можна додати, але свідомо: без причини список стає тихим
   // способом сховати мертвий покажчик замість того, щоб його полагодити.
+  //
+  // Записів було два, доки жив `scripts/docs/rewrite-documentation-paths.mjs`
+  // — другий скрипт із таблицею переїзду доків. Його прибрано 2026-09-19
+  // разом із виключенням: пропуск на неіснуючий файл нічого не пропускає,
+  // але читається як діючий виняток.
   const src = readFileSync(SCRIPT, "utf8");
   const block = src.slice(
     src.indexOf("const SKIP_FILES"),
     src.indexOf("const FIXTURE_DIR"),
   );
   const entries = [...block.matchAll(/\[\s*"([^"]+)",\s*"([^"]+)",?\s*\]/g)];
-  assert.equal(entries.length, 2, "склад винятків змінився — перечитай шапку");
+  assert.equal(entries.length, 1, "склад винятків змінився — перечитай шапку");
   for (const [, file, reason] of entries) {
     assert.ok(existsSync(join(ROOT, file)), `виняток на неіснуючий ${file}`);
     assert.ok(reason.length > 20, `${file}: причина надто коротка`);
   }
 });
 
-test("виключені таблиці справді ламаються від переписування шляхів", () => {
-  // Пін не на «файл у списку», а на ПРИЧИНУ, з якої він там. Обидва скрипти
-  // тримають пари «історична назва → чинна»; переписавши ліву колонку, пару
-  // робиш тотожною, і резолв старого шляху перестає працювати. Саме це
-  // зробив перший захід T9, і саме тому файли тут.
-  for (const file of [
-    "scripts/docs/rewrite-documentation-paths.mjs",
+test("файл зі SKIP_FILES справді пропускається", () => {
+  // Пін на МЕХАНІКУ пропуску, не на склад списку (той стереже тест вище).
+  // На Windows `relative()` повертає `scripts\docs\…`, а ключі записані
+  // через `/`, тож `SKIP_FILES.has()` не збігався ЖОДНОГО разу: список
+  // винятків мовчки не діяв, і гейт видавав фальшиві мертві посилання на
+  // чистому дереві. Дзеркало тесту «новий мертвий шлях валить гейт» — та
+  // сама приманка, але у пропущеному файлі, тож гейт мусить лишитись
+  // зеленим. Дописуємо В КІНЕЦЬ і ASCII — з тих самих причин, що й там.
+  const victim = join(
+    ROOT,
     "scripts/docs/generate-documentation-inventory.mjs",
-  ]) {
+  );
+  const orig = readFileSync(victim, "utf8");
+  try {
+    writeFileSync(
+      victim,
+      orig +
+        `
+// docs/definitely-not-here/skipped-${Date.now()}.md
+`,
+    );
+    const { code, out } = run(["--json"]);
+    assert.equal(code, 0, "приманка у пропущеному файлі дійшла до сканера");
+    assert.deepEqual(JSON.parse(out).appeared, []);
+  } finally {
+    writeFileSync(victim, orig);
+  }
+  assert.equal(run().code, 0, "стан не відновлено");
+});
+
+test("виключені таблиці справді ламаються від переписування шляхів", () => {
+  // Пін не на «файл у списку», а на ПРИЧИНУ, з якої він там. Скрипт тримає
+  // пари «історична назва → чинна»; переписавши ліву колонку, пару робиш
+  // тотожною, і резолв старого шляху перестає працювати. Саме це зробив
+  // перший захід T9, і саме тому файл тут.
+  for (const file of ["scripts/docs/generate-documentation-inventory.mjs"]) {
     const src = readFileSync(join(ROOT, file), "utf8");
     const pairs = [...src.matchAll(/\[\s*"(docs\/[^"]+)",\s*"(docs\/[^"]+)"/g)];
     assert.ok(pairs.length > 0, `${file}: таблиці переїзду не знайдено`);

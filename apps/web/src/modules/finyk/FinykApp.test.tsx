@@ -176,7 +176,7 @@ describe("FinykApp — shell + default page (real component tree)", () => {
       screen.getByRole("button", { name: "Підключити Monobank" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
+      screen.getByRole("button", { name: "Продовжити без банку" }),
     ).toBeInTheDocument();
 
     // Real `Overview` page (sr-only page heading, not a stubbed testid).
@@ -265,7 +265,7 @@ describe("FinykApp — real page routing via the bottom nav", () => {
     await userEvent.click(navButton("Операції"));
     // No mono/manual data at all → the list-scoped no-data state, not
     // Overview's `ModuleEmptyState` hero (founder-UX audit round 2, F1).
-    expect(await screen.findByText("Записів ще немає")).toBeInTheDocument();
+    expect(await screen.findByText("Операцій ще немає")).toBeInTheDocument();
   });
 
   it("navigates to the real Analytics page on tab click", async () => {
@@ -301,7 +301,7 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     });
     // Real `FinykLoginScreen` inside the overlay.
     expect(
-      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      within(dialog).getByPlaceholderText("Встав токен Mono API"),
     ).toBeInTheDocument();
   });
 
@@ -312,7 +312,7 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     ).toBeInTheDocument();
 
     await userEvent.click(
-      screen.getByRole("button", { name: "Без банку продовжити" }),
+      screen.getByRole("button", { name: "Продовжити без банку" }),
     );
 
     expect(
@@ -444,7 +444,7 @@ describe("FinykApp — a rejected Mono token surfaces the real authError banner"
       name: "Підключення Monobank",
     });
     await userEvent.type(
-      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      within(dialog).getByPlaceholderText("Встав токен Mono API"),
       "bad-token",
     );
     await userEvent.click(

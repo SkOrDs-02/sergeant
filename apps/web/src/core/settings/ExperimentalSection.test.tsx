@@ -121,10 +121,12 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     expandSection();
 
     const note = screen.getByRole("note");
-    expect(note.className).toMatch(/\bborder-warning\/40\b/);
-    expect(note.className).toMatch(/\bbg-warning\/10\b/);
-    expect(note.className).not.toMatch(/\bborder-warn\/40\b/);
-    expect(note.className).not.toMatch(/\bbg-warn\/10\b/);
+    // Ступінь прозорості і soft-заливку банер бере зі спільного варіанта,
+    // тож пінимо лише сам токен `warning`, а не його відтінок.
+    expect(note.className).toMatch(/\bborder-warning\/\d+\b/);
+    expect(note.className).toMatch(/\bbg-warning(-soft|\/\d+)\b/);
+    expect(note.className).not.toMatch(/\bborder-warn\//);
+    expect(note.className).not.toMatch(/\bbg-warn\//);
 
     const icon = note.querySelector("svg");
     if (!icon) throw new Error("warning icon missing");

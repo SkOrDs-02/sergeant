@@ -59,7 +59,8 @@ export type BodySizeRule =
  * Обчислені ліміти (schema-level max + запас під JSON-оверхед):
  *   nutrition/analyze-photo / refine-photo : 10mb (schema до ~7MB base64)
  *   nutrition/backup-upload                : 4mb  (internal cap 2.5MB)
- *   sync push/pull                         : 6mb  (MAX_BLOB_SIZE = 5MB)
+ *   sync v1 push/pull + audit              : 6mb  (MAX_BLOB_SIZE = 5MB)
+ *   sync v2 push/pull (/api/v2/sync)       : 6mb  (200 ops × 256KB row cap)
  *   coach memory                           : 6mb  (той самий MAX_BLOB_SIZE)
  *   chat                                   : 1mb  (ChatRequestSchema active session)
  *   mono webhook                           : 32kb (Monobank payload)
@@ -118,10 +119,31 @@ export const BODY_SIZE_POLICY: ReadonlyArray<BodySizeRule> = [
       "До IMPORT_COMMIT_MAX_ROWS draft-рядків (~150B/рядок) — з запасом над дефолтні 128KB",
   },
   {
+    // AI-DANGER: це правило НЕ покриває `/api/v2/sync/*` — Express матчить
+    // pathPrefix буквально, а `apiVersionRewrite` переписує лише `/api/v1/*`.
+    // Живий sync-push сидить на `/api/v2/sync/push` і має власне правило
+    // нижче. Прибереш його — push мовчки провалиться в дефолтні 128kb.
     pathPrefix: "/api/sync",
     kind: "json",
     limit: "6mb",
-    reason: "CloudSync push/pull (MAX_BLOB_SIZE = 5MB)",
+    reason:
+      "CloudSync v1 push/pull + /api/sync/audit (MAX_BLOB_SIZE = 5MB). v2 — окреме правило /api/v2/sync",
+  },
+  {
+    // Єдиний ЖИВИЙ sync-транспорт. Без цього рядка `/api/v2/sync/push`
+    // потрапляв у дефолтні 128kb, хоча схема дозволяє
+    // SYNC_V2_MAX_OPS_PER_PUSH × SYNC_V2_MAX_ROW_BYTES, а клієнт жене
+    // батчами по 100 опів. Наслідок був не «помилка», а тиха втрата:
+    // bodyParser віддавав 413 ДО хендлера, клієнтський push-loop трактує
+    // будь-який throw як транзієнт і шле ВЕСЬ батч у markRetry, батч
+    // дренеться детерміновано (ORDER BY id ASC), тож після
+    // SYNC_OP_MAX_ATTEMPTS=10 усі рядки ставали dead_letter. Записане
+    // офлайн не доїжджало на сервер ніколи й ніде не спливало.
+    pathPrefix: "/api/v2/sync",
+    kind: "json",
+    limit: "6mb",
+    reason:
+      "sync v2 push: 200 ops × 256KB row cap (SYNC_V2_MAX_OPS_PER_PUSH / SYNC_V2_MAX_ROW_BYTES) — дзеркалить ліміт v1",
   },
   {
     pathPrefix: "/api/coach/memory",

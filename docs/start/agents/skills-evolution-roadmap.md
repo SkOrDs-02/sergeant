@@ -1,7 +1,7 @@
 # Skills Evolution Roadmap — запозичення з ecosystem-у agent skills
 
-> **Last touched:** 2026-06-14 by Claude (drift reconcile: PR 4/10/11 merged #2925; PR 7 superseded by central eval harness). **Next review:** 2026-09-26.
-> **Status:** Active (proposal — sequencing only; кожен пункт окремий PR із власним acceptance criteria)
+> **Last touched:** 2026-09-17 by @claude (errata: PR 3 і PR 6 shipped; лишився тільки PR 8; актуальні імена lint-скриптів). **Next review:** 2026-12-16.
+> **Status:** Reference (discovery roadmap виконано, крім PR 8 — переоцінити проти наявного eval harness-у)
 
 > **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
 
@@ -43,6 +43,8 @@ PR проходить у roadmap, якщо він задовольняє всі 
 Дев'ять незалежних PR-ів, від найдешевшого до найдорожчого. Кожен — окремий branch, окремий PR, окремий verify-step. **Один PR на одну проблему** (Hard Rule #15 sub-clause). Ніяких bundled-changes.
 
 > **Drift policy.** Якщо план відстає реальності, фіксуй це errata-блоком у цій секції з датою і коротким поясненням, як у `docs/work/specs/initiatives/0011-…md`. Не переписуй мовчки, не видаляй "невзяті" пункти.
+>
+> **Errata 2026-09-17 (@claude).** PR 3 і PR 6 — shipped: `.agents/skills/sergeant-data-and-migrations/references/` містить 9 Postgres reference-файлів, конвенція `references/` описана в [`skill-authoring-guide.md`](./skill-authoring-guide.md). Відкритим лишається лише **PR 8** (real-LLM eval runner) — переоцінити проти `pnpm eval:skills`. Імена скриптів у тілах PR нижче — план 2026-05: замість `scripts/lint-skills.mjs` реальний гейт — `pnpm lint:skills` (= `scripts/check-skill-shape.mjs` + `check-skills-lock.mjs` + `check-skill-body-security.mjs` + `lint:agent-graph` + `eval:skills`), замість `scripts/test-skill-evals.mjs` — `scripts/eval-skill-triggers.mjs`.
 >
 > **Errata 2026-06-14 (Claude).** Reconcile зі станом репо: PR 4 / 10 / 11 змерджено одним commit `f0581fa8e` у [#2925](https://github.com/Skords-01/Sergeant/pull/2925) (2026-05-16) — статуси оновлено з «in progress» на ✅; усі три скіли (`sergeant-e2e-testing`, `sergeant-security-audit`, `sergeant-tech-debt`) уже в `.agents/skills/` і в routing-таблиці `AGENTS.md`. **PR 7 (Skill evals substring) — superseded**: централізований harness `docs/start/agents/skill-trigger-evals.json` + `pnpm eval:skills` уже покриває 2 trigger + 1 anti-trigger + 1 workflow-compliance prompt на **кожен** repo-owned skill (ширше за per-skill `evals/evals.json` із початкового плану) і вшитий у `pnpm lint:skills`. Окремий PR 7 не беремо. PR 8 (real-LLM runner) залежав від PR 7 → переоцінити проти наявного harness-у, а не від нуля.
 
@@ -106,7 +108,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 3 — Postgres reference-rules в `sergeant-data-and-migrations` (≈2 год, M)
+### PR 3 — Postgres reference-rules в `sergeant-data-and-migrations` (≈2 год, M) ✅ (shipped — див. Errata 2026-09-17)
 
 **Проблема.** `sergeant-data-and-migrations` enforce-ить sequential numbering і two-phase DROP, але не покриває generic Postgres performance pitfall-и (FK без index-у, n+1, missing partial index, deadlock-prone update order, vacuum starvation). У `supabase/agent-skills` ці правила вже структуровані як reference-файли з `impact:` + EXPLAIN-прикладами + GOOD/BAD SQL.
 
@@ -229,7 +231,7 @@ PR проходить у roadmap, якщо він задовольняє всі 
 
 ---
 
-### PR 6 — Reference-folder convention як сторінка governance (≈1 год, S)
+### PR 6 — Reference-folder convention як сторінка governance (≈1 год, S) ✅ (shipped як `skill-authoring-guide.md` — див. Errata 2026-09-17)
 
 **Проблема.** Якщо PR 3 (Postgres references) і PR 4 (e2e references) внесуть `references/` у два скіли, треба canonical опис: коли робити reference-файл, як називати, які frontmatter-поля обов'язкові. Без цього через 6 місяців отримаємо drift (один скіл — `references/{prefix}-*.md`, інший — `refs/*-{name}.md`).
 
@@ -408,17 +410,17 @@ PR проходить у roadmap, якщо він задовольняє всі 
 | --- | --------------------------------- | ------ | -------------- | ------------------- | ------------- |
 | 1   | Pushy descriptions audit          | S      | High           | none                | ✅ #2374      |
 | 2   | Verification gate in review skill | S      | **Highest**    | none                | ✅ #2373      |
-| 3   | Postgres references               | M      | High           | (no hard dep)       |               |
+| 3   | Postgres references               | M      | High           | (no hard dep)       | ✅ shipped    |
 | 4   | E2E testing skill                 | M      | Medium         | (no hard dep)       | ✅ #2925      |
 | 5   | Security body-scan in lint:skills | M      | High           | none                | ✅ #2378      |
-| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 |               |
+| 6   | References folder convention      | S      | Medium         | depends on PR 3 / 4 | ✅ shipped    |
 | 7   | Skill evals (substring)           | L      | Medium-High    | depends on PR 1     | ⛔ superseded |
 | 8   | Real-LLM eval runner              | L      | Medium         | depends on PR 7     |               |
 | 9   | PR template cross-link            | S      | High           | depends on PR 2     | ✅ #2375      |
 | 10  | `sergeant-security-audit` skill   | M      | High           | none                | ✅ #2925      |
 | 11  | `sergeant-tech-debt` skill        | M      | High           | none                | ✅ #2925      |
 
-**Recommended starting order:** ~~PR 2 → PR 1 → PR 5 → PR 9~~ (merged) → ~~PR 4 / 10 / 11~~ (merged #2925) → **PR 3 → PR 6** (єдині відкриті) → ~~PR 7~~ (superseded) → PR 8 (переоцінити). Тобто лишилися тільки **PR 3** (Postgres references) і залежний від нього **PR 6** (references-convention governance page).
+**Recommended starting order:** ~~PR 2 → PR 1 → PR 5 → PR 9~~ (merged) → ~~PR 4 / 10 / 11~~ (merged #2925) → ~~PR 3 → PR 6~~ (shipped — errata 2026-09-17) → ~~PR 7~~ (superseded) → PR 8 (переоцінити). Тобто лишився тільки **PR 8** (real-LLM eval runner).
 
 **Найдешевший quality-bump:** PR 2 (Verification gate) — лінгвістична дисципліна, що ловить 60-70% "Should pass now" / "Looks correct" хибних completion claims одним прочитанням SKILL.md.
 

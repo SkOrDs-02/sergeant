@@ -20,16 +20,19 @@ import { safeStringEqual } from "./safeCompare.js";
  *      with `X-Timestamp` a UNIX-seconds integer; the timestamp prefix
  *      prevents body-only replays against a different clock window.
  *
- * Rollout (30-day grace window):
- *   - `WEBHOOK_HMAC_SECRET=""` → middleware is a no-op (feature disabled).
- *   - `WEBHOOK_HMAC_SECRET=<x>` + `WEBHOOK_HMAC_REQUIRED=false` (default)
- *     → verifies opportunistically, logs `webhook_hmac_mismatch` warn +
- *     Sentry breadcrumb on failure, but **still accepts** the request.
- *     This is the period where ops can land per-workflow Function-node
- *     signing code without a coordinated cut-over.
- *   - `WEBHOOK_HMAC_REQUIRED=true` → flip after the manifest reports
- *     `hmac_signed: true` for every n8n workflow that calls server.
- *     Then missing/invalid signature → 401 Unauthorized.
+ * Configuration matrix (grace window closed 2026-09-16):
+ *   - `WEBHOOK_HMAC_SECRET=""` → middleware is a no-op (feature disabled),
+ *     **whatever `WEBHOOK_HMAC_REQUIRED` says**. Callers are then guarded by
+ *     the fail-closed bearer check alone. `assertStartupEnv` warns about this
+ *     combination at boot so the flag never silently means nothing.
+ *   - `WEBHOOK_HMAC_SECRET=<x>` + `WEBHOOK_HMAC_REQUIRED=true` (default since
+ *     2026-09-16) → missing/invalid signature is a 401.
+ *   - `WEBHOOK_HMAC_SECRET=<x>` + `WEBHOOK_HMAC_REQUIRED=false` → verifies
+ *     opportunistically, logs `webhook_hmac_mismatch` warn + a Sentry
+ *     breadcrumb, but **still accepts** the request. This was the rollout
+ *     grace mode for the 25 n8n workflows; n8n is decommissioned (ADR-0090),
+ *     so it now only serves a deliberate, temporary opt-out while a new
+ *     internal caller learns to sign.
  *
  * Constant-time comparison via `safeStringEqual` (which delegates to
  * `crypto.timingSafeEqual`). Naive `===` on a hex-encoded HMAC leaks

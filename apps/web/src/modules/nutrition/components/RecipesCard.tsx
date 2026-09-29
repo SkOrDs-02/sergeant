@@ -82,6 +82,7 @@ export function RecipesCard({
     () => [] as SavedRecipe[],
   );
   const [savedBusy, setSavedBusy] = useState(true);
+  const [savedError, setSavedError] = useState(false);
   const [portionById, setPortionById] = useState<Record<string, string>>({});
   const [deleteRecipeConfirm, setDeleteRecipeConfirm] =
     useState<SavedRecipe | null>(null);
@@ -93,7 +94,9 @@ export function RecipesCard({
       const list = await listSavedRecipes(200);
       if (!cancelled) setSaved(list);
     })()
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setSavedError(true);
+      })
       .finally(() => {
         if (!cancelled) setSavedBusy(false);
       });
@@ -114,6 +117,7 @@ export function RecipesCard({
     setSavedBusy(true);
     try {
       setSaved(await listSavedRecipes(200));
+      setSavedError(false);
     } finally {
       setSavedBusy(false);
     }
@@ -188,6 +192,8 @@ export function RecipesCard({
       <SavedSection
         saved={saved}
         savedBusy={savedBusy}
+        savedError={savedError}
+        onRetry={() => void refreshSaved().catch(() => {})}
         savedOpen={savedOpen}
         setSavedOpen={setSavedOpen}
         openSavedId={openSavedId}

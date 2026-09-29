@@ -1,6 +1,6 @@
 -- 023: sync_audit_log — per-user audit trail of /api/sync/* operations.
 --
--- Stage 0 / PR #005 з `docs/planning/storage-roadmap.md`. Записує
+-- Stage 0 / PR #005 з `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Записує
 -- кожен виклик `syncPush` / `syncPull` / `syncPushAll` / `syncPullAll`
 -- разом із outcome (ok/conflict/error/too_large/invalid/empty/unauthorized),
 -- розміром payload-у і часом обробки. Нагадує `sync_event` info-лог,

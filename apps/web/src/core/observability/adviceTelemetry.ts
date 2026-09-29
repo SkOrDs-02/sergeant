@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-07-25
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * Телеметрія AI-поради (Хвиля 2, картка W2-AI-ADVICE-EVENTS, стадія 1).
  *

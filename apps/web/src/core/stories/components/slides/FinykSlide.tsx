@@ -22,7 +22,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
           {fmtUah(agg?.totalSpent)}
         </div>
         <div className="mt-2 text-style-body text-white/80">
-          {agg?.txCount || 0} транзакцій · дохід {fmtUah(agg?.totalIncome)}
+          {agg?.txCount || 0} операцій · дохід {fmtUah(agg?.totalIncome)}
         </div>
       </div>
 
@@ -64,7 +64,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
       </div>
 
       {ai?.summary && (
-        <div className="mt-auto rounded-2xl bg-white/15 backdrop-blur-sm px-4 py-3 border border-white/20">
+        <div className="mt-auto rounded-2xl bg-brand-strong px-4 py-3 border border-white/20">
           <p className="text-style-label leading-snug">{ai.summary}</p>
           {ai.comment && (
             <p className="text-style-caption text-white/85 mt-2 leading-relaxed">

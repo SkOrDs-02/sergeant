@@ -9,6 +9,8 @@
 import { calcDebtRemaining, calcReceivableRemaining } from "../utils";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { pluralDays } from "@sergeant/shared";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import type {
   Debt as EngineDebt,
   Receivable as EngineReceivable,
@@ -65,6 +67,15 @@ export function parseLocalDate(isoDate: string | undefined | null): Date {
     !Number.isFinite(d) ||
     (y as number) < 1970
   ) {
+    // Device-local тут НАВМИСНО. Щаслива гілка нижче будує дату з явних
+    // компонентів (`new Date(y, m-1, d)`), тобто повертає опівніч ЗА
+    // ГОДИННИКОМ ПРИСТРОЮ, і викликачі порівнюють результат саме з локальним
+    // `todayStart` (`formatRelativeDue`). Київський якір у фолбеку зробив би
+    // його неузгодженим із 99% шляху тієї самої функції — на невалідному вводі
+    // дата стрибала б на кілька годин відносно сусідніх. Київ у цьому файлі
+    // застосований там, де він і потрібен: `getNextBillingDate` рахує цикл
+    // списання через `getKyivDateParts`, щоб подорож не зрушила день списання.
+    // eslint-disable-next-line no-restricted-syntax -- див. коментар вище
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
@@ -90,15 +101,41 @@ export function getNextBillingDate(billingDay: number, now: Date): Date {
   return d;
 }
 
+/**
+ * Наступна дата списання підписки для всіх поверхонь Фініка (картка
+ * підписки, «Найближчі платежі», смуга статистики). Цикл вважається
+ * сплаченим, коли останнє привʼязане списання ближче до поточної дати
+ * списання, ніж до попередньої: сервіс може зняти гроші на день-два
+ * раніше, і таке списання закриває цикл, а запізніле списання минулого
+ * циклу ні. `lastChargeSec` у секундах, як `Transaction.time`.
+ */
+export function getSubscriptionDueDate(
+  billingDay: number,
+  now: Date,
+  lastChargeSec?: number | null,
+): Date {
+  const due = getNextBillingDate(billingDay, now);
+  if (lastChargeSec == null) return due;
+  // Перша дата списання не раніше ніж за 31 день до `due` - це і є
+  // попередня: між сусідніми датами завжди 28-31 день.
+  const prevDue = getNextBillingDate(
+    billingDay,
+    new Date(due.getTime() - 31 * 86400000),
+  );
+  const midpoint = (prevDue.getTime() + due.getTime()) / 2;
+  if (lastChargeSec * 1000 < midpoint) return due;
+  return getNextBillingDate(billingDay, new Date(due.getTime() + 86400000));
+}
+
 export function formatShortDate(d: Date): string {
-  return d.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+  return formatDateShort(d);
 }
 
 export function formatRelativeDue(dueDate: Date, todayStart: Date): string {
   const days = Math.ceil((dueDate.getTime() - todayStart.getTime()) / 86400000);
   if (days <= 0) return "сьогодні";
   if (days === 1) return "завтра";
-  if (days <= 7) return `через ${days} дн`;
+  if (days <= 7) return `через ${days} ${pluralDays(days)}`;
   return formatShortDate(dueDate);
 }
 
@@ -148,17 +185,11 @@ export function computeFinykSchedule({
     );
     if (!amount || currency !== "₴") continue;
     subsMonthly += amount;
-    // AI-NOTE: коли остання списана транзакція припадає на `dueDate`
-    // (тобто billingDay сьогодні і користувач уже привʼязав сьогоднішнє
-    // списання), цикл уже сплачено — переносимо `dueDate` на наступний
-    // billingDay, щоб тайл "Наступний платіж" не показував сплачений.
-    let dueDate = getNextBillingDate(Number(sub.billingDay), todayStart);
-    if (lastTx?.time && lastTx.time >= dueDate.getTime()) {
-      dueDate = getNextBillingDate(
-        Number(sub.billingDay),
-        new Date(dueDate.getTime() + 86400000),
-      );
-    }
+    const dueDate = getSubscriptionDueDate(
+      Number(sub.billingDay),
+      todayStart,
+      lastTx?.time,
+    );
     upcoming.push({
       label: sub.name ?? "Підписка",
       amount,

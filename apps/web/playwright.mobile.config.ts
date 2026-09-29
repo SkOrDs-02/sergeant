@@ -45,6 +45,7 @@ export default defineConfig({
           command:
             "npm run build && npm run preview -- --port 4173 --host 127.0.0.1",
           url: "http://127.0.0.1:4173",
+          env: { VITE_E2E_SEED: "true" },
           reuseExistingServer: !process.env["CI"],
           timeout: 360_000,
           stdout: "pipe",

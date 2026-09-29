@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Pure (no I/O, no logger) parsing/normalization for the "build a Silpo cart
- * from a shopping list" flow (spec `docs/90-work/planning/specs/
+ * from a shopping list" flow (spec `docs/work/specs/
  * silpo-mcp-integration.md` § Track G). Split out of `cart.ts` per Hard Rule
  * #18 (module-size discipline) — everything here is a plain function, unit
  * tested directly without mocking `mcpClient`/`db`.

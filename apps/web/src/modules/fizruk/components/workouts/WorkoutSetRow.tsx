@@ -11,6 +11,7 @@ import type { WorkoutSet } from "@sergeant/fizruk-domain";
 import { messages } from "@shared/i18n/uk";
 import { MAX_REPS, MAX_WEIGHT_KG } from "../../lib/numericBounds";
 import { fmtLoose } from "../../lib/numberFmt";
+import { WorkoutSetRpeMenu } from "./WorkoutSetRpeMenu";
 
 export interface WorkoutSetRowProps {
   /** 0-based position inside `it.sets`. */
@@ -34,6 +35,13 @@ export interface WorkoutSetRowProps {
   isLast: boolean;
   onChangeWeight: (weightKg: number) => void;
   onChangeReps: (reps: number) => void;
+  /**
+   * Borg 1..10 effort rating for this set — `null` means "not filled
+   * in" (never `0`, see `WorkoutSetRpeMenu`). Optional prop so callers
+   * that don't wire RPE yet (tests, older call-sites) keep compiling.
+   */
+  rpe?: number | null | undefined;
+  onChangeRpe?: ((rpe: number | null) => void) | undefined;
   /** Fill both fields from `ghost` — no-op if `ghost` is null. */
   onApplyGhost: () => void;
   /** Tap on the ✓ control once the row is "done" (see {@link isSetDone});
@@ -84,6 +92,8 @@ export function WorkoutSetRow({
   isLast,
   onChangeWeight,
   onChangeReps,
+  rpe,
+  onChangeRpe,
   onApplyGhost,
   onCheckTap,
   onDelete,
@@ -176,6 +186,14 @@ export function WorkoutSetRow({
           onChangeReps(clampNumericInput(e.target.value, MAX_REPS))
         }
       />
+      {onChangeRpe && (
+        <WorkoutSetRpeMenu
+          setNumber={setNumber}
+          value={rpe}
+          disabled={isReadOnly}
+          onChange={onChangeRpe}
+        />
+      )}
       <button
         type="button"
         disabled={isReadOnly}
@@ -222,6 +240,9 @@ export function WorkoutSetColumnHeader() {
       <span className="flex-1 px-3 text-style-caption text-subtle">
         {ss.columnReps}
       </span>
+      {/* RPE column — icon-only trigger in the row below, no caption here
+          (mirrors the check/trash slots, which also caption nothing). */}
+      <span className="w-9 shrink-0" />
       <span className="w-11 shrink-0" />
       <span className="w-9 shrink-0" />
     </div>

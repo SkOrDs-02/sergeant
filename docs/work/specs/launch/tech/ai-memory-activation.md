@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-11.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-11-19.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
 
 > **Прод-URL** у прикладах — `$PROD_API_URL`; фактичне значення живе в Coolify env / нотатнику власника (репо публічне).
@@ -81,18 +81,19 @@ ADR — [`docs/governance/adr/0028-pgvector-ai-memory.md`](../../../../governanc
 Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не починає писати у
 `ai_memories`. Producer-и керуються окремими прапорцями.
 
-> **Оновлено 2026-09-03 (ініціатива 0024, PR-1):** `mono/webhook`
+> **Оновлено 2026-09-16 (ініціатива 0024, PR-1 + PR-2):** `mono/webhook`
 > (`source=finyk`) і клієнт-driven `POST /api/ai-memory/ingest`
 > (`chat`/`fizruk`/`nutrition`/`routine`/`journal`) прибрані — жоден із
 > них ніколи не мав живого продюсера (замір § Перезамір,
-> `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md`). Таблиця
-> нижче лишена для історії до PR-2 тієї ж ініціативи, яка перецілить
-> `MONO_AI_MEMORY_INGEST_ENABLED` на `digest`.
+> `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md`). PR-2
+> перецілив per-source kill-switch на `digest`: env-флаг перейменований
+> `MONO_AI_MEMORY_INGEST_ENABLED` → `DIGEST_AI_MEMORY_INGEST_ENABLED`, а
+> runtime kill-switch — `mono_ai_memory_ingest` → `digest_ai_memory_ingest`.
 
-| Producer                         | Flag                             | Default | Що робити                                             |
-| -------------------------------- | -------------------------------- | ------- | ----------------------------------------------------- |
-| `weekly-digest`                  | _no flag_ — auto-on після master | —       | Перший digest-cron запише через ~24h                  |
-| `profileMirror` (source=profile) | _no flag_ — auto-on після master | —       | Пише при кожному `PUT /api/me/profile` (банк памʼяті) |
+| Producer                         | Flag                                                     | Default | Що робити                                             |
+| -------------------------------- | -------------------------------------------------------- | ------- | ----------------------------------------------------- |
+| `weekly-digest` (source=digest)  | `DIGEST_AI_MEMORY_INGEST_ENABLED` — auto-on після master | `true`  | Перший digest-cron запише через ~24h                  |
+| `profileMirror` (source=profile) | _no flag_ — auto-on після master                         | —       | Пише при кожному `PUT /api/me/profile` (банк памʼяті) |
 
 **Рекомендований порядок (дні 1–7 після Step 2):**
 
@@ -138,11 +139,12 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
    Усі гілки (`recall_memory` tool, RAG-injection, ingestion-producer-и)
    no-op-лять негайно. Existing data у `ai_memories` лишається — нема
    destructive truncate.
-2. **Selective ingestion kill:** `MONO_AI_MEMORY_INGEST_ENABLED` існує
-   (env.ts), але з прибранням `finyk`-гілки (ініціатива 0024, PR-1,
-   2026-09-03) ні на що не впливає — per-source kill-switch тимчасово
-   без цілі. PR-2 тієї ж ініціативи перецілює його на `digest`
-   (rename → `DIGEST_AI_MEMORY_INGEST_ENABLED`).
+2. **Selective ingestion kill:** `DIGEST_AI_MEMORY_INGEST_ENABLED=false` у
+   Coolify → redeploy гасить лише `source="digest"` (weekly-digest); інші
+   живі джерела (`profile`) не зачіпаються. Той самий ефект дає runtime
+   kill-switch `digest_ai_memory_ingest` (in-memory, до рестарту процесу).
+   Перецілено з мертвого `finyk` на `digest` ініціативою 0024 (PR-2,
+   2026-09-16) — до цього прапорець існував, але ні на що не впливав.
 3. **Voyage outage:** circuit-breaker сам розмикається після 3 послідовних
    5xx. Метрика `voyage_external_http_breaker_state` = `open` → ingestion
    park-иться у BullMQ retry-черзі, retrieval повертає 503 (graceful).

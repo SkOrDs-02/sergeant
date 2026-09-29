@@ -84,7 +84,7 @@ export function TxRowMetaChips({
   if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
   if (overrideCatId && !isTransfer) statuses.push("змін.");
   if (tx._source === "privatbank") statuses.push("П24");
-  if (existingSplitsCount > 0) statuses.push("спліт");
+  if (existingSplitsCount > 0) statuses.push("розбито");
 
   const showAccountName = showAccount && account && accountName;
   const showAiMark =
@@ -123,11 +123,11 @@ export function TxRowMetaChips({
           {showAiMark && (
             <span
               className="inline-flex items-center"
-              title="Категорію визначив Сержант за описом і MCC"
+              title="Категорію визначив Сержант за описом і типом магазину"
             >
-              <Icon name="sergeant" size={12} aria-hidden />
+              <Icon name="sergeant" size="xs" aria-hidden />
               <span className="sr-only">
-                Категорію визначив Сержант за описом і MCC
+                Категорію визначив Сержант за описом і типом магазину
               </span>
             </span>
           )}
@@ -137,7 +137,7 @@ export function TxRowMetaChips({
               {/* §2: рахунок завжди нейтральний — «кредитна» позначає
                   іконка, не колір. Червоне лишається боргам/активам. */}
               {isCreditCard && (
-                <Icon name="credit-card" size={12} aria-hidden />
+                <Icon name="credit-card" size="xs" aria-hidden />
               )}
               {accountName}
             </span>
@@ -155,12 +155,12 @@ export function TxRowMetaChips({
       {hasReceipt && (
         <span
           className="shrink-0 inline-flex items-center text-muted"
-          title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
+          title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
         >
           <Icon
             name="file-text"
-            size={12}
-            title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
+            size="xs"
+            title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
           />
         </span>
       )}

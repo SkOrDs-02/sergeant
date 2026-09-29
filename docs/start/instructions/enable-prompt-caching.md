@@ -1,10 +1,8 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-16. _(Прибрано дубль `Status`; походження — PR-12.A, Sprint 0.)_
 > **Status:** Active
 > **Runtime-specific:** no
-
-**Status:** ✅ active (PR-12.A, Sprint 0)
 
 **Trigger:** «Зменшити cost Anthropic» / «Anthropic API занадто дорогий» / `aiTokensTotal{kind="prompt"}` росте лінійно з трафіком, бо стабільні `SYSTEM_PREFIX` і `TOOLS` повторюються на кожному запиті.
 

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildSurveyKeyboard,
@@ -311,9 +312,12 @@ describe("recordStart", () => {
     expect(r.position + 1).toBe(41);
   });
 
-  it("рахує позицію від власного id, а не від живих підписників", async () => {
-    const { pool, query } = fakePool([{ created: true, id: "36" }], "36");
-    await recordStart(pool, {
+  it("рахує позицію лише серед тих, хто ще чекає", async () => {
+    // Це і є правка 2026-09-17. Абсолютний номер рядка на живих даних
+    // (37 рядків: 30 запрошених, 1 відписаний, 6 у черзі) казав новачку
+    // «ти 38-й», хоча попереду нього стояло шестеро.
+    const { pool, query } = fakePool([{ created: true, id: "38" }], "7");
+    const r = await recordStart(pool, {
       chatId: 3,
       username: null,
       firstName: null,
@@ -324,10 +328,39 @@ describe("recordStart", () => {
     const sql = String(query.mock.calls[1]?.[0]);
     expect(sql).toContain("count(*)");
     expect(sql).toContain("id <= $1");
-    // opted_out_at свідомо НЕ фільтрується: інакше номер стрибав би вниз
-    // щоразу, коли хтось попереду відписався, і читався б як помилка.
-    expect(sql).not.toContain("opted_out_at");
-    expect(query.mock.calls[1]?.[1]).toEqual(["36"]);
+    // Запрошені й відписані місця в черзі не займають.
+    expect(sql).toMatch(/notified_at\s+IS\s+NULL/);
+    expect(sql).toMatch(/opted_out_at\s+IS\s+NULL/);
+    expect(query.mock.calls[1]?.[1]).toEqual(["38"]);
+    // Номер — той, що повернула БД, а не похідна від id рядка.
+    expect(r.position).toBe(7);
+  });
+
+  it("предикат черги збігається з тим, за яким іде розсилка", async () => {
+    // Якби вони розійшлись, бот називав би одне місце, а `broadcast-waitlist`
+    // запрошував за іншим порядком — і номер перестав би щось означати.
+    const { pool, query } = fakePool();
+    await recordStart(pool, {
+      chatId: 4,
+      username: null,
+      firstName: null,
+      languageCode: null,
+      startPayload: null,
+    });
+
+    const botPredicate = String(query.mock.calls[1]?.[0])
+      .replace(/\s+/g, " ")
+      .match(/notified_at IS NULL AND opted_out_at IS NULL/);
+    expect(botPredicate).not.toBeNull();
+
+    const broadcast = readFileSync(
+      new URL(
+        "../../../../../scripts/telegram/broadcast-waitlist.mjs",
+        import.meta.url,
+      ),
+      "utf8",
+    ).replace(/\s+/g, " ");
+    expect(broadcast).toContain("notified_at IS NULL AND opted_out_at IS NULL");
   });
 });
 
@@ -463,8 +496,8 @@ describe("countWaitlistStats", () => {
       })
       .mockResolvedValueOnce({
         rows: [
-          { channel: "hero", count: "4" },
-          { channel: "footer", count: "2" },
+          { payload: "hero_abcdefgh12345678", count: "4" },
+          { payload: "footer_abcdefgh12345678", count: "2" },
         ],
       });
 
@@ -473,11 +506,99 @@ describe("countWaitlistStats", () => {
     expect(stats.pending).toBe(3);
     expect(stats.total).toBe(6);
     expect(stats.byChannel).toEqual([
-      { channel: "hero", count: 4 },
-      { channel: "footer", count: 2 },
+      { channel: "Лендінг, головний екран", count: 4 },
+      { channel: "Лендінг, підвал", count: 2 },
     ]);
     // Без коерції `total + 1` дало б "61" — саме це правило й ловить.
     expect(stats.total + 1).toBe(7);
+  });
+
+  it("зводить одноразові токени в один канал, а не в рядок на людину", async () => {
+    // Це і є та поломка, заради якої зведення переїхало в JS: `ref`
+    // генерується на КОЖНЕ завантаження лендінга, тож групування по сирому
+    // payload давало стільки рядків, скільки людей, кожен по одиниці.
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ total: "3" }] })
+      .mockResolvedValueOnce({
+        rows: [
+          { payload: "hero_aaaaaaaaaaaaaaaa", count: "1" },
+          { payload: "hero_bbbbbbbbbbbbbbbb", count: "1" },
+          { payload: "hero_cccccccccccccccc", count: "1" },
+        ],
+      });
+
+    const stats = await countWaitlistStats({ query } as never);
+
+    expect(stats.byChannel).toEqual([
+      { channel: "Лендінг, головний екран", count: 3 },
+    ]);
+  });
+
+  it("зараховує дотокенні payload-и в їхній канал, а не в «Інше»", async () => {
+    // Історична форма (`hero` без токена) лишилась у базі з часів до
+    // контракту атрибуції. Відправити її в «Інше» означало б показати
+    // провал каналу там, де просто старіший формат рядка.
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ total: "5" }] })
+      .mockResolvedValueOnce({
+        rows: [
+          { payload: "hero", count: "2" },
+          { payload: "hero_abcdefgh12345678", count: "3" },
+        ],
+      });
+
+    const stats = await countWaitlistStats({ query } as never);
+
+    expect(stats.byChannel).toEqual([
+      { channel: "Лендінг, головний екран", count: 5 },
+    ]);
+  });
+
+  it("не губить старти: прямі й нерозпізнані лишаються окремими каналами", async () => {
+    // Сума по каналах мусить сходитись із total, інакше звіт тихо бреше.
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ total: "9" }] })
+      .mockResolvedValueOnce({
+        rows: [
+          { payload: null, count: "4" },
+          { payload: "hero_abcdefgh12345678", count: "3" },
+          { payload: "partner-podcast", count: "2" },
+        ],
+      });
+
+    const stats = await countWaitlistStats({ query } as never);
+
+    expect(stats.byChannel).toEqual([
+      { channel: "Прямий перехід", count: 4 },
+      { channel: "Лендінг, головний екран", count: 3 },
+      { channel: "Інше", count: 2 },
+    ]);
+    const summed = stats.byChannel.reduce((acc, c) => acc + c.count, 0);
+    expect(summed).toBe(stats.total);
+  });
+
+  it("порядок стабільний: за кількістю, далі за назвою", async () => {
+    // Однакові числа не мають стрибати місцями між викликами — інакше
+    // власник читає перестановку як зміну в даних.
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({ rows: [{ total: "4" }] })
+      .mockResolvedValueOnce({
+        rows: [
+          { payload: "footer_abcdefgh12345678", count: "2" },
+          { payload: "beta_abcdefgh12345678", count: "2" },
+        ],
+      });
+
+    const stats = await countWaitlistStats({ query } as never);
+
+    expect(stats.byChannel.map((c) => c.channel)).toEqual([
+      "Лендінг, блок бети",
+      "Лендінг, підвал",
+    ]);
   });
 
   it("не витягує chat_id і хендли — лише числа", async () => {
@@ -513,10 +634,10 @@ describe("formatStatsReply", () => {
       pending: 2,
       total: 2,
       lastSignupAt: new Date("2026-07-29T07:30:00Z"),
-      byChannel: [{ channel: "hero", count: 2 }],
+      byChannel: [{ channel: "Лендінг, головний екран", count: 2 }],
     });
     expect(out).toMatch(/Вейтліст: 2/);
-    expect(out).toMatch(/hero — 2/);
+    expect(out).toMatch(/Лендінг, головний екран: 2/);
     // 07:30 UTC = 10:30 Kyiv. Без явної зони власник читав би час назад.
     expect(out).toMatch(/10:30/);
   });

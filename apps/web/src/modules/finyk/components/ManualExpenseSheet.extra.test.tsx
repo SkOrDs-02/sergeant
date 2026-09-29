@@ -66,9 +66,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
     fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
     expect(
-      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток…"),
+      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток"),
     ).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("Кава, продукти, таксі…")).toBeNull();
+    expect(screen.queryByPlaceholderText("Кава, продукти, таксі")).toBeNull();
   });
 
   it("renders the amount hero preview when an amount is set", () => {
@@ -120,7 +120,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     fireEvent.click(within(hints).getByText("Сільпо"));
     // description set + AI badge surfaces the auto-applied "food" category
     expect(screen.getByPlaceholderText(/Кава, продукти/)).toHaveValue("Сільпо");
-    expect(screen.getByText(/AI ·/)).toBeInTheDocument();
+    expect(screen.getByText(/Сержант ·/)).toBeInTheDocument();
   });
 
   it("dismisses the AI-applied category badge", () => {
@@ -134,8 +134,8 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     );
     const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
-    fireEvent.click(screen.getByLabelText("Сховати AI-підказку"));
-    expect(screen.queryByText(/AI ·/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Сховати підказку Сержанта"));
+    expect(screen.queryByText(/Сержант ·/)).not.toBeInTheDocument();
   });
 
   it("selects a category from the shared picker", () => {
@@ -181,10 +181,26 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     ]);
   });
 
-  it("reveals the date field via 'Не сьогодні'", () => {
+  // Дата — один дефолт: стрічка днів видима одразу, без кроку «Не сьогодні?».
+  it("показує стрічку днів і фолбек «Інша дата» без додаткового кроку", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    fireEvent.click(screen.getByText(/Не сьогодні/));
+    expect(
+      screen.getByRole("radiogroup", { name: "Дата запису" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Інша дата")).toBeInTheDocument();
     expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+  });
+
+  it("тримає поле дати в межах аркуша — жодного intrinsic-розпирання", () => {
+    // Той самий клас багів, що й у `LogPastWorkoutSheet`: нативний
+    // `input[type=date]` має власний intrinsic inline-size, і поле ставало
+    // ширшим за екран. Пін на спільний примітив `DateField`, який цей
+    // контракт несе; сирий `<Input type="date">` його НЕ дає.
+    // Рецепт — docs/start/instructions/fix-mobile-horizontal-overflow.md.
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    expect(screen.getByLabelText("Дата").className).toContain(
+      "[min-inline-size:0]",
+    );
   });
 
   it("orders categories by frequency for frequent-category stats", () => {
@@ -233,8 +249,12 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       expect(
         screen.getByRole("button", { name: "Зберегти" }),
       ).toBeInTheDocument();
-      // edited entry has a non-today date → the date field is visible
+      // Дата запису (2026-05-20) лежить поза вікном стрічки, тож фолбек
+      // «Інша дата» розкритий одразу — інакше стрічка стояла б без вибору.
       expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+      expect(screen.getByText("Інша дата").closest("details")).toHaveAttribute(
+        "open",
+      );
     });
 
     it("deletes immediately via onDelete + closes (undo lives in the toast)", async () => {

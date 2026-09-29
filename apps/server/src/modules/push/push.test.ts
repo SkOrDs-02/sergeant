@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
  * `push.ts` reads `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` /
  * `NODE_ENV` once at module-load via the zod-validated `env` singleton
  * (а не raw `process.env[...]`-reads). Тому, щоб перевірити різні
- * комбінації (зчитуючи `vapidReady`, `vapidPublic`, `subscribe`,
+ * комбінації (зчитуючи `vapidReady`, `vapidPublic`, `register`,
  * `sendPush`), треба пере-impport-ити обидва модулі (`push.ts` і
  * `env/env.ts`) на свіжих env-значеннях.
  *
@@ -177,18 +177,6 @@ describe("push handler VAPID readiness gating", () => {
     expect(res.body).toEqual({ error: "Push not configured" });
   });
 
-  it("subscribe returns 503 in production when VAPID_EMAIL is missing", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
-    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
-    vi.stubEnv("VAPID_EMAIL", "");
-
-    const { subscribe } = await import("./push.js");
-    const res = makeRes();
-    await subscribe({ body: {} } as never, res as never);
-    expect(res.statusCode).toBe(503);
-  });
-
   it("sendPush returns 503 in production when VAPID_EMAIL is missing", async () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
@@ -212,27 +200,6 @@ describe("push handler VAPID readiness gating", () => {
     await vapidPublic({} as never, res as never);
     expect(res.statusCode).toBe(200);
     expect(res.body).toEqual({ publicKey: "BPUB" });
-  });
-
-  // Happy path — додано в P2-1 разом із міграцією на `env.ts`. Перевіряє,
-  // що `subscribe` пропускає gate-перевірку коли усі VAPID-поля задані
-  // (а не падає 503), і що endpoint-handler дочитується до `validateBody`.
-  it("subscribe passes the vapid gate when all three keys are set (proceeds to body validation)", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
-    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
-    vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
-
-    const { subscribe } = await import("./push.js");
-    // Порожнє body завалить `parseBody` → ValidationError throws, але ВАЖЛИВО
-    // для цього тесту лише те, що 503-gate НЕ виставився: handler дійшов
-    // до body-валідації, тобто vapid-gate (raise 503) пройшов.
-    await expect(
-      subscribe(
-        { body: {}, user: { id: "u_test" } } as never,
-        makeRes() as never,
-      ),
-    ).rejects.toMatchObject({ name: "ValidationError" });
   });
 
   // Edge case — додано в P2-1: `env.VAPID_EMAIL` отримує whitespace.
@@ -371,8 +338,7 @@ describe("push handlers", () => {
   it("registers and unregisters web and native push targets", async () => {
     const mocks = await loadHandlerMocks();
     mocks.db.query.mockResolvedValue({ rows: [] });
-    const { register, unregister, subscribe, unsubscribe } =
-      await import("./push.js");
+    const { register, unregister } = await import("./push.js");
 
     await register(
       {
@@ -392,16 +358,6 @@ describe("push handlers", () => {
       } as never,
       makeRes() as never,
     );
-    await subscribe(
-      {
-        user: { id: "u1" },
-        body: {
-          endpoint: "https://push.example/legacy",
-          keys: { p256dh: "p256", auth: "auth" },
-        },
-      } as never,
-      makeRes() as never,
-    );
     await unregister(
       {
         user: { id: "u1" },
@@ -416,15 +372,8 @@ describe("push handlers", () => {
       } as never,
       makeRes() as never,
     );
-    await unsubscribe(
-      {
-        user: { id: "u1" },
-        body: { endpoint: "https://push.example/sub" },
-      } as never,
-      makeRes() as never,
-    );
 
-    expect(mocks.db.query).toHaveBeenCalledTimes(6);
+    expect(mocks.db.query).toHaveBeenCalledTimes(4);
     expect(mocks.db.query.mock.calls[0]?.[1]).toEqual([
       "u1",
       "https://push.example/sub",
@@ -436,13 +385,7 @@ describe("push handlers", () => {
       "ios",
       "apns-token",
     ]);
-    expect(mocks.db.query.mock.calls[2]?.[1]).toEqual([
-      "u1",
-      "https://push.example/legacy",
-      "p256",
-      "auth",
-    ]);
-    expect(mocks.db.query.mock.calls[4]?.[1]).toEqual(["u1", "android", "fcm"]);
+    expect(mocks.db.query.mock.calls[3]?.[1]).toEqual(["u1", "android", "fcm"]);
   });
 
   it("sendPush rate-limits before reading subscriptions", async () => {
@@ -551,5 +494,66 @@ describe("push handlers", () => {
       silent: true,
     });
     expect(res.body).toEqual(summary);
+  });
+
+  // Регресія: `push_subscriptions.endpoint` глобально UNIQUE, тож арбітр
+  // конфлікту НЕ містить `user_id`, і беззастережний `DO UPDATE SET
+  // user_id` віддавав чужий рядок тому, хто останнім покликав register —
+  // жертва мовчки переставала отримувати свої сповіщення. Native-гілка
+  // (`push_devices`) цей guard мала від початку, web-таблиця лишалась
+  // відкритою. Endpoint своєї підписки людина бачить у власному
+  // GDPR-експорті, тож «його ніхто не знає» захистом не було.
+  //
+  // Guard навмисно ширший за `user_id = $1`: web-push endpoint належить
+  // БРАУЗЕРУ, і на спільному компʼютері `pushManager.subscribe()` віддає
+  // новому користувачу ТУ САМУ підписку — той самий endpoint і ті самі
+  // ключі. Тому збіг ключів теж дозволяє зміну власника; розбіжність при
+  // тому самому endpoint — ні.
+  it("register: не дозволяє забрати чужий endpoint, коли ключі не збігаються", async () => {
+    const mocks = await loadHandlerMocks();
+    // rowCount = 0 → WHERE-гілка upsert-а не пропустила зміну власника.
+    mocks.db.query.mockResolvedValue({ rows: [], rowCount: 0 });
+    const { register } = await import("./push.js");
+    const res = makeRes();
+
+    const body = {
+      platform: "web" as const,
+      token: "https://push.example/victim",
+      keys: { p256dh: "attacker", auth: "attacker" },
+    };
+
+    await expect(
+      register({ user: { id: "attacker" }, body } as never, res as never),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "PUSH_SUBSCRIPTION_OWNED",
+    });
+
+    // Хендлер не пише у відповідь узагалі — тіло складе errorHandler.
+    expect(res.body).toBeNull();
+  });
+
+  it("register: SQL несе guard на власника і на збіг ключів", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.db.query.mockResolvedValue({ rows: [], rowCount: 1 });
+    const { register } = await import("./push.js");
+
+    const body = {
+      platform: "web" as const,
+      token: "https://push.example/own",
+      keys: { p256dh: "p256", auth: "auth" },
+    };
+
+    await register({ user: { id: "u1" }, body } as never, makeRes() as never);
+
+    const upsert = mocks.db.query.mock.calls
+      .map((c) => String(c[0]))
+      .find((sql) => sql.includes("INSERT INTO push_subscriptions"));
+    expect(upsert).toBeDefined();
+    expect(upsert).toMatch(/push_subscriptions\.user_id = \$1/);
+    expect(upsert).toMatch(/push_subscriptions\.deleted_at IS NOT NULL/);
+    expect(upsert).toMatch(
+      /push_subscriptions\.p256dh = \$3 AND push_subscriptions\.auth = \$4/,
+    );
   });
 });

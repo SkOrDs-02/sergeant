@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-integrations
-description: Use when the task touches external integrations — Silpo receipts import, Telegram bots, audio transcription, inbound webhooks; UA: задача про silpo/telegram/transcribe/webhooks.
+description: "Use when the task touches external integrations — Silpo receipts import, Telegram bots, audio transcription, inbound webhooks; UA: задача про silpo/telegram/transcribe/webhooks."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Integrations — власник інфра-модуля
@@ -27,6 +27,8 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 | Дата       | Рішення                                                          | Джерело/ADR                                                                                   |
 | ---------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 2026-09-17 | Silpo: поріг автосинку одного користувача 20 → **8 год** (рішення власника) — 20 давали один синк на добу, тож вечірню покупку полер у той самий вечір не бачив за побудовою; 4 год відкинуто через спільний на весь деплой `client_id` | [спека § Дві щілини (2026-09-17)](../../../docs/work/specs/silpo-mcp-integration.md) |
+| 2026-09-17 | Silpo: чек, збережений без позицій (Сільпо віддає голову офлайн-чека раніше за `products[]`), доливається найближчим синком — наявні позиції незмінні. Стан «чек відвʼязано» дає ОДНУ дію — «Прикріпити чек» (пікер уже показує щойно відчеплений чек першим рядком, тож «повернути» і «виправити» — той самий жест); окремої кнопки «Повернути» більше немає | [спека § Дві щілини (2026-09-17)](../../../docs/work/specs/silpo-mcp-integration.md) |
 | 2026-08-19 | Silpo-інтеграція чеків приїхала в main (розчинена в finyk/nutrition-чанках) | [PR #819](https://github.com/Skords-01/Sergeant/pull/819)                                     |
 | 2026-05-02 | Telegram-репортинг — фіксована структура каналів для n8n         | [ADR-0030](../../../docs/governance/adr/0030-telegram-reporting-channel-structure.md)      |
 

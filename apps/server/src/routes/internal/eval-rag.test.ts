@@ -3,7 +3,7 @@ import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   formatEventMessage,
-  shouldAutoDisableMonoIngest,
+  shouldAutoDisableDigestIngest,
   type RagEvalSummary,
 } from "./eval-rag.js";
 
@@ -150,7 +150,7 @@ describe("/api/internal/eval/rag-weekly", () => {
     const { app } = await makeApp();
     const { isKillSwitchActive } =
       await import("../../lib/featureFlags/runtimeKillSwitch.js");
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
 
     const summary = buildSummary({
       status: "kill",
@@ -168,7 +168,7 @@ describe("/api/internal/eval/rag-weekly", () => {
       .send(summary);
     expect(withoutFlag.status).toBe(200);
     expect(withoutFlag.body.killSwitchActivated).toBe(false);
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
 
     const res = await request(app)
       .post("/api/internal/eval/rag-weekly")
@@ -188,7 +188,7 @@ describe("/api/internal/eval/rag-weekly", () => {
     expect(msg).toContain("RAG quality gate kill");
     expect(opts.level).toBe("error");
     expect(opts.tags["auto_disable_recommended"]).toBe("true");
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(true);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(true);
   });
 
   it("rejects malformed body (Zod 400)", async () => {
@@ -244,25 +244,27 @@ describe("eval-rag pure helpers", () => {
     expect(msg).toBe("rag-eval-weekly warn mode=mock recall@4=0.450 count=50");
   });
 
-  it("shouldAutoDisableMonoIngest без прапорця не гасить нічого", () => {
+  it("shouldAutoDisableDigestIngest без прапорця не гасить нічого", () => {
     for (const status of ["pass", "warn", "kill", "error"] as const) {
-      expect(shouldAutoDisableMonoIngest(buildSummary({ status }))).toBe(false);
+      expect(shouldAutoDisableDigestIngest(buildSummary({ status }))).toBe(
+        false,
+      );
     }
   });
 
-  it("shouldAutoDisableMonoIngest з autoDisable спрацьовує лише на kill", () => {
+  it("shouldAutoDisableDigestIngest з autoDisable спрацьовує лише на kill", () => {
     const opts = { autoDisable: true };
     expect(
-      shouldAutoDisableMonoIngest(buildSummary({ status: "pass" }), opts),
+      shouldAutoDisableDigestIngest(buildSummary({ status: "pass" }), opts),
     ).toBe(false);
     expect(
-      shouldAutoDisableMonoIngest(buildSummary({ status: "warn" }), opts),
+      shouldAutoDisableDigestIngest(buildSummary({ status: "warn" }), opts),
     ).toBe(false);
     expect(
-      shouldAutoDisableMonoIngest(buildSummary({ status: "kill" }), opts),
+      shouldAutoDisableDigestIngest(buildSummary({ status: "kill" }), opts),
     ).toBe(true);
     expect(
-      shouldAutoDisableMonoIngest(buildSummary({ status: "error" }), opts),
+      shouldAutoDisableDigestIngest(buildSummary({ status: "error" }), opts),
     ).toBe(false);
   });
 });

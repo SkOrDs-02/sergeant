@@ -12,6 +12,7 @@ import { MemoryRouter, useLocation, useNavigationType } from "react-router-dom";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { expandAllCollapsedSections } from "../../test/helpers/collapsibleSection";
 import { messages } from "@shared/i18n/uk";
+import { meApi } from "@shared/api";
 
 // ── Mocks ────────────────────────────────────────────────────
 
@@ -22,7 +23,14 @@ const updateUserMock =
 const changePasswordMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 const listSessionsMock = vi.fn<() => Promise<{ data: unknown[] }>>();
 const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
-const deleteUserMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
+// DangerZoneSection тепер видаляє акаунт через `DELETE /api/me`
+// (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
+// 30-денне вікно на скасування.
+//
+// `vi.spyOn` замість `vi.mock("@shared/api", …)` (бюджет vi.mock на файл) —
+// решта `@shared/api` лишається СПРАВЖНЬОЮ без ризику затерти сусідні
+// api-групи, якими користується решта профілю.
+const deleteAccountMock = vi.spyOn(meApi, "deleteAccount");
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -32,7 +40,11 @@ updateUserMock.mockResolvedValue({ error: null });
 changePasswordMock.mockResolvedValue({ error: null });
 listSessionsMock.mockResolvedValue({ data: [] });
 revokeSessionMock.mockResolvedValue({ error: null });
-deleteUserMock.mockResolvedValue({ error: null });
+deleteAccountMock.mockResolvedValue({
+  ok: true,
+  deletedAt: "2026-09-20T10:00:00.000Z",
+  scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+});
 signOutMock.mockResolvedValue(undefined);
 sendVerificationEmailMock.mockResolvedValue({ error: null });
 changeEmailMock.mockResolvedValue({ error: null });
@@ -42,7 +54,6 @@ vi.mock("../auth/authClient.js", () => ({
   changePassword: (data: unknown) => changePasswordMock(data),
   listSessions: () => listSessionsMock(),
   revokeSession: (data: unknown) => revokeSessionMock(data),
-  deleteUser: (data: unknown) => deleteUserMock(data),
   signOut: () => signOutMock(),
   sendVerificationEmail: (data: unknown) => sendVerificationEmailMock(data),
   changeEmail: (data: unknown) => changeEmailMock(data),
@@ -149,7 +160,11 @@ describe("ProfilePage", () => {
     changePasswordMock.mockResolvedValue({ error: null });
     listSessionsMock.mockResolvedValue({ data: [] });
     revokeSessionMock.mockResolvedValue({ error: null });
-    deleteUserMock.mockResolvedValue({ error: null });
+    deleteAccountMock.mockResolvedValue({
+      ok: true,
+      deletedAt: "2026-09-20T10:00:00.000Z",
+      scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+    });
     signOutMock.mockResolvedValue(undefined);
     sendVerificationEmailMock.mockResolvedValue({ error: null });
     changeEmailMock.mockResolvedValue({ error: null });
@@ -377,10 +392,12 @@ describe("ProfilePage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
 
       const dialog = screen.getByRole("dialog", {
-        name: "Видалити акаунт назавжди?",
+        name: "Видалити акаунт?",
       });
       expect(dialog).toHaveAttribute("aria-modal", "true");
-      expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();
+      expect(
+        within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      ).toBeInTheDocument();
 
       fireEvent.keyDown(document, { key: "Escape" });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -491,9 +508,10 @@ describe("ProfilePage", () => {
         name: "Є незбережені записи",
       });
       // `^`-анкор — щоб `pending=3` не міг випадково збігтися з рядком, де
-      // "3" є суфіксом іншого числа (напр. "13 записів").
+      // "3" є суфіксом іншого числа (напр. "13 записів"). pending=3 бере
+      // форму "few" ("записи"), не бінарну англійську "записів".
       expect(
-        within(dialog).getByText(/^3 записів ще не збережено на сервері\./),
+        within(dialog).getByText(/^3 записи ще не збережено на сервері\./),
       ).toBeInTheDocument();
 
       fireEvent.click(
@@ -538,6 +556,30 @@ describe("ProfilePage", () => {
       // loading, ніби вихід досі триває.
       expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();
     });
+
+    // Українська плюралізація — три форми (one/few/many), не бінарна
+    // «1 vs N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("записів"),
+    // 21 повертається до "one" ("запис").
+    it.each([
+      [1, "запис"],
+      [2, "записи"],
+      [5, "записів"],
+      [11, "записів"],
+      [21, "запис"],
+    ])("uses the correct plural form for N=%i (%s)", async (n, form) => {
+      mockLogoutAsksForConfirmation(n);
+      renderPage();
+      await tapLogoutAndConfirm();
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      expect(
+        within(dialog).getByText(
+          new RegExp(`^${n} ${form} ще не збережено на сервері\\.`),
+        ),
+      ).toBeInTheDocument();
+    });
   });
 
   // V-4 / V-10 (deep-module-audit 2026-08-08, §5): Профіль приведено до
@@ -568,7 +610,7 @@ describe("ProfilePage", () => {
       expect(screen.getAllByText("Пароль")).toHaveLength(1);
       // MemoryBankSection мала близький, а не дослівний дублікат —
       // «Памʼять ШІ» замість «Памʼять» — цей текст мав зникнути повністю.
-      expect(screen.queryByText("Памʼять ШІ")).not.toBeInTheDocument();
+      expect(screen.queryByText("Памʼять AI")).not.toBeInTheDocument();
     });
 
     it("raises the outer section heading to text-style-label so it is never smaller than its inner card header (V-4)", () => {

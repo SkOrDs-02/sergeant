@@ -23,9 +23,10 @@ export interface HubChatBodyProps {
   /**
    * PR-26: викликається при тапі на suggestion-chip у `<ChatEmpty>`.
    * Parent (HubChat) пробрасує `setInput` + setTimeout-focus, як це
-   * робить `<ChatQuickActions onPrefill>` у composer-і.
+   * робить `<ChatQuickActions onPrefill>` у composer-і. Гостю не
+   * передається: поля для вставки в нього немає.
    */
-  onPickSuggestion: (text: string) => void;
+  onPickSuggestion?: ((text: string) => void) | undefined;
 }
 
 /**
@@ -96,7 +97,7 @@ export function HubChatBody({
           screen readers without disrupting the message list region above.
 
           AI-DANGER: тут оголошується і САМА ВІДПОВІДЬ, не лише статус. Доти
-          область казала тільки «Асистент відповідає…», а стрічка повідомлень
+          область казала тільки «Сержант відповідає…», а стрічка повідомлень
           лежить у статичному `role="region"` (`HubChat.tsx`), тож незрячий
           користувач чув, що асистент відповідає, і не чув ЩО (browser-QA
           2026-09-02).
@@ -111,7 +112,7 @@ export function HubChatBody({
         aria-atomic="true"
         className="sr-only"
       >
-        {loading ? "Асистент відповідає…" : announcedReply}
+        {loading ? "Сержант відповідає…" : announcedReply}
       </span>
       {/*
         AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
@@ -152,7 +153,7 @@ export function HubChatBody({
               className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-full bg-panelHi hover:bg-line/40 text-muted hover:text-text text-style-caption font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               aria-label="Скасувати поточний запит"
             >
-              <Icon name="close" size={12} />
+              <Icon name="close" size="xs" />
               Скасувати
             </button>
           </Tooltip>

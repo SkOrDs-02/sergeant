@@ -14,6 +14,19 @@ vi.mock("../../env/env.js", async (importOriginal) => {
   };
 });
 
+const { loggerMock } = vi.hoisted(() => ({
+  loggerMock: {
+    warn: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+vi.mock("../../obs/logger.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../obs/logger.js")>();
+  return { ...actual, logger: loggerMock };
+});
+
 import {
   decodeUserIdFromOrderId,
   encodeData,
@@ -74,17 +87,52 @@ describe("liqpay parseCallbackData", () => {
   });
 });
 
-function mockPool(webhookInsertRowCount = 1) {
+const TX_KEYWORDS = ["BEGIN", "COMMIT", "ROLLBACK"];
+
+interface MockPoolOptions {
+  /** rowCount дедуп-INSERT-у: 0 = повторна доставка. */
+  webhookInsertRowCount?: number;
+  /** Рядки, які віддає SELECT «чи був уже reversed/unsubscribe». */
+  cancellationRows?: unknown[];
+  /** Підрядок SQL, на якому мок кидає — для перевірки ROLLBACK-у. */
+  failOn?: string;
+}
+
+/**
+ * `processWebhook` тепер бере `pool.connect()` і працює однією транзакцією
+ * (дзеркало `processStripeWebhook`), тож мок віддає і `query`, і `connect`.
+ * Обидва пишуть в один `calls`, щоб наявні перевірки лишились чинними.
+ */
+function mockPool(options: MockPoolOptions = {}) {
   const calls: { sql: string; params: unknown[] | undefined }[] = [];
   const query = vi.fn(async (sql: string, params?: unknown[]) => {
     calls.push({ sql, params });
-    if (sql.includes("billing_webhook_events")) {
-      return { rowCount: webhookInsertRowCount, rows: [] };
+    if (TX_KEYWORDS.includes(sql)) return { rowCount: 0, rows: [] };
+    if (options.failOn && sql.includes(options.failOn)) {
+      throw new Error("db exploded mid-processing");
+    }
+    if (sql.includes("INSERT INTO billing_webhook_events")) {
+      return {
+        rowCount: options.webhookInsertRowCount ?? 1,
+        rows: [{ id: 1 }],
+      };
+    }
+    if (sql.includes("FROM billing_webhook_events")) {
+      const rows = options.cancellationRows ?? [];
+      return { rowCount: rows.length, rows };
     }
     return { rowCount: 1, rows: [] };
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return { pool: { query } as any, calls };
+  const client = { query, release: vi.fn() };
+  return {
+    pool: {
+      query,
+      connect: vi.fn().mockResolvedValue(client),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any,
+    calls,
+    client,
+  };
 }
 
 describe("liqpay processWebhook", () => {
@@ -138,7 +186,7 @@ describe("liqpay processWebhook", () => {
   });
 
   it("skips processing on a duplicate delivery (dedup)", async () => {
-    const { pool, calls } = mockPool(0); // billing_webhook_events INSERT → 0 rows
+    const { pool, calls } = mockPool({ webhookInsertRowCount: 0 }); // дедуп → 0 rows
     const data = encodeData({
       status: "success",
       action: "subscribe",
@@ -215,6 +263,254 @@ describe("liqpay processWebhook", () => {
       c.sql.includes("billing_webhook_events"),
     );
     expect(insertEvent?.params?.[0]).toBe(`${orderId}:success:subscribe`);
+  });
+});
+
+/**
+ * Транзакційність (фікс аудиту 2026-09-16). Доти дедуп-INSERT ішов окремим
+ * автокоміт-ним `pool.query` ДО обробки: падіння після нього залишало
+ * «вже оброблено» назавжди, LiqPay на ретраї діставав 200, підписка не
+ * активувалась ніколи — а гроші вже списані.
+ */
+describe("liqpay processWebhook — одна транзакція на дедуп + обробку", () => {
+  const userId = "usr_tx";
+  const orderId = encodeOrderId(userId);
+
+  it("обгортає дедуп-INSERT і обробку в BEGIN/COMMIT", async () => {
+    const { pool, calls, client } = mockPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "success",
+        action: "subscribe",
+        order_id: orderId,
+        payment_id: 7001,
+      }),
+    );
+    const sqls = calls.map((c) => c.sql);
+    expect(sqls[0]).toBe("BEGIN");
+    expect(sqls).toContain("COMMIT");
+    expect(sqls).not.toContain("ROLLBACK");
+    // Дедуп-рядок пишеться ВСЕРЕДИНІ транзакції, не до неї.
+    expect(sqls.indexOf("BEGIN")).toBeLessThan(
+      sqls.findIndex((sql) =>
+        sql.includes("INSERT INTO billing_webhook_events"),
+      ),
+    );
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("ROLLBACK знімає дедуп-рядок, коли обробка падає — ретрай провайдера повторить роботу", async () => {
+    const { pool, calls, client } = mockPool({
+      failOn: "INSERT INTO subscriptions",
+    });
+    await expect(
+      liqpayProvider.processWebhook(
+        pool,
+        encodeData({
+          status: "success",
+          action: "subscribe",
+          order_id: orderId,
+          payment_id: 7002,
+        }),
+      ),
+    ).rejects.toThrow("db exploded mid-processing");
+
+    const sqls = calls.map((c) => c.sql);
+    expect(sqls).toContain("ROLLBACK");
+    expect(sqls).not.toContain("COMMIT");
+    // Дедуп-INSERT був — але відкотився разом із транзакцією.
+    expect(
+      sqls.some((sql) => sql.includes("INSERT INTO billing_webhook_events")),
+    ).toBe(true);
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  it("повторна доставка комітить порожню транзакцію і відпускає клієнта", async () => {
+    const { pool, calls, client } = mockPool({ webhookInsertRowCount: 0 });
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "success",
+        action: "subscribe",
+        order_id: orderId,
+        payment_id: 7003,
+      }),
+    );
+    expect(calls.map((c) => c.sql)).toContain("COMMIT");
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * Порядок доставки LiqPay не гарантований. Гілка скасування — це
+ * `UPDATE ... WHERE status IN (активні)`, тож без активного рядка вона тихий
+ * no-op; наступний `success` спокійно вставляв місяць Pro за скасований
+ * платіж. Дедуп по `payment_id` не рятує — це РІЗНІ події.
+ */
+describe("liqpay processWebhook — reversed раніше за success", () => {
+  const userId = "usr_race";
+  const orderId = encodeOrderId(userId);
+
+  /** Мок із реальним сховищем `billing_webhook_events` — перевіряє ПОРЯДОК. */
+  function statefulPool() {
+    const events: { eventType: string; orderId: string }[] = [];
+    const calls: { sql: string; params: unknown[] | undefined }[] = [];
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      if (TX_KEYWORDS.includes(sql)) return { rowCount: 0, rows: [] };
+      if (sql.includes("INSERT INTO billing_webhook_events")) {
+        const payload = JSON.parse(String(params?.[2])) as {
+          order_id?: string;
+        };
+        const eventType = String(params?.[1]);
+        if (events.some((e) => e.eventType === eventType)) {
+          return { rowCount: 0, rows: [] };
+        }
+        events.push({ eventType, orderId: payload.order_id ?? "" });
+        return { rowCount: 1, rows: [{ id: events.length }] };
+      }
+      if (sql.includes("FROM billing_webhook_events")) {
+        const target = String(params?.[0]);
+        const hit = events.filter(
+          (e) =>
+            e.orderId === target &&
+            (e.eventType.startsWith("unsubscribe:") ||
+              e.eventType.endsWith(":reversed")),
+        );
+        return {
+          rowCount: hit.length,
+          rows: hit.map(() => ({ "?column?": 1 })),
+        };
+      }
+      return { rowCount: 1, rows: [] };
+    });
+    const client = { query, release: vi.fn() };
+    return {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      pool: { query, connect: vi.fn().mockResolvedValue(client) } as any,
+      calls,
+    };
+  }
+
+  it("не активує підписку, коли reversed для того самого order_id уже записаний", async () => {
+    const { pool, calls } = statefulPool();
+
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({ status: "reversed", order_id: orderId, payment_id: 8001 }),
+    );
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "success",
+        action: "subscribe",
+        order_id: orderId,
+        payment_id: 8002,
+      }),
+    );
+
+    expect(calls.some((c) => c.sql.includes("INSERT INTO subscriptions"))).toBe(
+      false,
+    );
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "liqpay_success_after_cancellation_ignored",
+        orderId,
+      }),
+    );
+  });
+
+  it("активує, коли скасування для цього order_id не було", async () => {
+    const { pool, calls } = statefulPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "success",
+        action: "subscribe",
+        order_id: orderId,
+        payment_id: 8003,
+      }),
+    );
+    expect(calls.some((c) => c.sql.includes("INSERT INTO subscriptions"))).toBe(
+      true,
+    );
+  });
+});
+
+/**
+ * `sandbox` — статус тестового платежу, за яким не стоїть жодної гривні.
+ * Поки він лежав у `SUCCESS_STATUSES` беззастережно, будь-який такий
+ * callback на бойових ключах видавав місяць Pro безкоштовно.
+ */
+describe("liqpay processWebhook — status:sandbox", () => {
+  const userId = "usr_sandbox";
+  const orderId = encodeOrderId(userId);
+
+  afterEach(() => {
+    delete mockEnv["LIQPAY_PUBLIC_KEY"];
+  });
+
+  it("на бойовому ключі НЕ активує підписку і не збиває її в past_due", async () => {
+    mockEnv["LIQPAY_PUBLIC_KEY"] = "i00000001";
+    const { pool, calls } = mockPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "sandbox",
+        action: "pay",
+        order_id: orderId,
+        payment_id: 6001,
+      }),
+    );
+    expect(
+      calls.some(
+        (c) =>
+          c.sql.includes("INSERT INTO subscriptions") ||
+          c.sql.includes("UPDATE subscriptions"),
+      ),
+    ).toBe(false);
+    expect(loggerMock.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "liqpay_sandbox_status_on_live_keys",
+        orderId,
+      }),
+    );
+  });
+
+  it("без налаштованих ключів теж не активує (безпечний бік помилки)", async () => {
+    const { pool, calls } = mockPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "sandbox",
+        action: "pay",
+        order_id: orderId,
+        payment_id: 6002,
+      }),
+    );
+    expect(calls.some((c) => c.sql.includes("INSERT INTO subscriptions"))).toBe(
+      false,
+    );
+  });
+
+  it("на sandbox-ключі активує, як і раніше (тестовий контур лишається робочим)", async () => {
+    mockEnv["LIQPAY_PUBLIC_KEY"] = "sandbox_i00000001";
+    const { pool, calls } = mockPool();
+    await liqpayProvider.processWebhook(
+      pool,
+      encodeData({
+        status: "sandbox",
+        action: "pay",
+        order_id: orderId,
+        payment_id: 6003,
+      }),
+    );
+    const upsert = calls.find((c) =>
+      c.sql.includes("INSERT INTO subscriptions"),
+    );
+    expect(upsert).toBeDefined();
+    expect(upsert?.params?.[0]).toBe(userId);
   });
 });
 

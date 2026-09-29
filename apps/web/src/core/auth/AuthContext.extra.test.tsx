@@ -323,7 +323,9 @@ describe("AuthContext — action catch paths (thrown errors)", () => {
       const success = await result.current.login("a@b.c", "pw");
       expect(success).toBe(false);
     });
-    expect(result.current.authError).toBe("Помилка входу");
+    expect(result.current.authError).toBe(
+      "Не вдалося завершити вхід. Спробуй ще раз.",
+    );
   });
 
   it("register: thrown non-string/non-object → falls back to register fallback", async () => {
@@ -335,7 +337,9 @@ describe("AuthContext — action catch paths (thrown errors)", () => {
       const success = await result.current.register("a@b.c", "pw", "A");
       expect(success).toBe(false);
     });
-    expect(result.current.authError).toBe("Помилка реєстрації");
+    expect(result.current.authError).toBe(
+      "Не вдалося зареєструватись. Спробуй ще раз.",
+    );
   });
 });
 

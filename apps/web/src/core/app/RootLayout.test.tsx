@@ -57,8 +57,15 @@
  *     pull the entire lazy-chunk graph into every test in this file.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider } from "@sergeant/api-client/react";
@@ -66,12 +73,20 @@ import { http, HttpResponse } from "msw";
 import { meFixtures } from "@sergeant/shared";
 
 import { apiClient } from "@shared/api";
-import { ToastProvider } from "@shared/hooks/useToast";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import {
+  CommandPaletteProvider,
+  useCommandPaletteControls,
+} from "@shared/components/ui/CommandPalette";
+import {
+  HUB_OPEN_MODULE_EVENT,
+  openHubSearch,
+} from "@shared/lib/modules/hubNav";
 import { server } from "../../test/msw/server";
 import { AuthProvider } from "../auth/AuthContext";
 import { AppLockProvider } from "../security/AppLockContext";
 import * as featureFlags from "../lib/featureFlags";
-import { DEMO_FLAG_KEY } from "../onboarding/seedDemoData/keys";
 import { useHubShell } from "./HubShellContext";
 
 const {
@@ -198,14 +213,23 @@ function meAuthenticatedHandler() {
  * state) through the DOM so tests assert on rendered output instead of
  * captured mock-callback refs.
  */
+const undoProbe = new Map<"toast", ReturnType<typeof useToast>>();
+
 function ShellProbe() {
   const { shortcutsOpen, ui, activeModule, user, authLoading } = useHubShell();
   const location = useLocation();
+  const palette = useCommandPaletteControls();
+  const toast = useToast();
+  useEffect(() => {
+    undoProbe.set("toast", toast);
+  }, [toast]);
   return (
     <>
       <div data-testid="child">child</div>
       <div data-testid="shortcuts-open">{String(shortcutsOpen)}</div>
       <div data-testid="search-open">{String(ui.searchOpen)}</div>
+      <div data-testid="search-query">{ui.searchQuery}</div>
+      <div data-testid="palette-open">{String(palette.isOpen)}</div>
       <div data-testid="active-module">{String(activeModule)}</div>
       <div data-testid="pathname">{location.pathname}</div>
       <div data-testid="auth-user">{user ? user.id : "anon"}</div>
@@ -223,15 +247,17 @@ function renderAt(path = "/") {
       <ApiClientProvider client={apiClient}>
         <MemoryRouter initialEntries={[path]}>
           <ToastProvider>
-            <AuthProvider>
-              <AppLockProvider>
-                <Routes>
-                  <Route element={<RootLayout />}>
-                    <Route path="*" element={<ShellProbe />} />
-                  </Route>
-                </Routes>
-              </AppLockProvider>
-            </AuthProvider>
+            <CommandPaletteProvider>
+              <AuthProvider>
+                <AppLockProvider>
+                  <Routes>
+                    <Route element={<RootLayout />}>
+                      <Route path="*" element={<ShellProbe />} />
+                    </Route>
+                  </Routes>
+                </AppLockProvider>
+              </AuthProvider>
+            </CommandPaletteProvider>
           </ToastProvider>
         </MemoryRouter>
       </ApiClientProvider>
@@ -370,13 +396,12 @@ describe("RootLayout", () => {
     );
   });
 
-  // Regression coverage for the demo-mode Hub Reports empty-cards bug: an
-  // unauthenticated `?demo=1` session (synthetic `demo-local` id) must warm
-  // the same per-module SQLite read caches Hub Reports reads directly, or
-  // the Fitness/Expenses/Habits/Nutrition cards stay empty even though the
-  // seeded demo payload exists in localStorage.
-  it("boots nutrition/finyk/fizruk/routine sqlite hooks for an unauthenticated demo session", async () => {
-    window.localStorage.setItem(DEMO_FLAG_KEY, "1");
+  // Regression coverage for the Hub Reports empty-cards bug: an
+  // unauthenticated session (synthetic `local-anon` id) must warm the same
+  // per-module SQLite read caches Hub Reports reads directly, or the
+  // Fitness/Expenses/Habits/Nutrition cards stay empty. Спершу це знайшли
+  // на демо-режимі (знято 2026-09-17), але гілка та сама — анонім.
+  it("boots nutrition/finyk/fizruk/routine sqlite hooks for an unauthenticated session", async () => {
     renderAt("/");
     await waitFor(() =>
       expect(screen.getByTestId("auth-loading")).toHaveTextContent("false"),
@@ -515,5 +540,72 @@ describe("RootLayout", () => {
     expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("false");
     fireEvent.keyDown(window, { key: "?", shiftKey: true });
     expect(screen.getByTestId("shortcuts-open")).toHaveTextContent("true");
+  });
+
+  // ── Рішення власника 2026-09-16: Cmd+K має одного власника ──────────────
+
+  it("Cmd+K opens the command palette instead of hub search once hub_command_palette is on", () => {
+    featureFlags.setFlag("hub_command_palette", true);
+    renderAt("/");
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    expect(screen.getByTestId("palette-open")).toHaveTextContent("true");
+    expect(screen.getByTestId("search-open")).toHaveTextContent("false");
+  });
+
+  it("opens hub search with the query handed over by the palette fallback row", () => {
+    renderAt("/finyk");
+    act(() => {
+      openHubSearch("кава");
+    });
+    expect(screen.getByTestId("pathname")).toHaveTextContent("/");
+    expect(screen.getByTestId("search-open")).toHaveTextContent("true");
+    expect(screen.getByTestId("search-query")).toHaveTextContent("кава");
+  });
+
+  // ── N — «створити» в поточному контексті ─────────────────────────────────
+
+  it("N on the hub opens search with an empty query (the quick-add actions)", () => {
+    renderAt("/");
+    fireEvent.keyDown(window, { key: "n" });
+    expect(screen.getByTestId("search-open")).toHaveTextContent("true");
+    expect(screen.getByTestId("search-query")).toHaveTextContent("");
+  });
+
+  it("N inside a module dispatches that module's primary create intent", () => {
+    renderAt("/nutrition");
+    const listener = vi.fn();
+    window.addEventListener(HUB_OPEN_MODULE_EVENT, listener);
+    fireEvent.keyDown(window, { key: "n" });
+    window.removeEventListener(HUB_OPEN_MODULE_EVENT, listener);
+    expect(listener).toHaveBeenCalledTimes(1);
+    const detail = (listener.mock.calls[0]?.[0] as CustomEvent).detail;
+    expect(detail).toMatchObject({ module: "nutrition", action: "add_meal" });
+    expect(screen.getByTestId("search-open")).toHaveTextContent("false");
+  });
+
+  // ── Cmd+Z — «Повернути» з видимого undo-тоста ────────────────────────────
+
+  it("Cmd+Z fires the undo of the youngest visible undo toast and dismisses it", () => {
+    renderAt("/");
+    const onUndo = vi.fn();
+    const onRetry = vi.fn();
+    const toast = undoProbe.get("toast");
+    if (!toast) throw new Error("toast api not captured");
+    // Не-undo дія (retry) молодша за undo-тост — клавіша її не чіпає.
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true }); // нема чого — no-op
+    expect(onUndo).not.toHaveBeenCalled();
+    act(() => {
+      showUndoToast(toast, { msg: "Видалено", onUndo });
+      toast.error("Не вдалося", undefined, {
+        label: "Повторити",
+        onClick: onRetry,
+      });
+    });
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(onUndo).toHaveBeenCalledTimes(1);
+    expect(onRetry).not.toHaveBeenCalled();
+    // Другий Cmd+Z уже нічого не повертає — тост іде геть.
+    fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+    expect(onUndo).toHaveBeenCalledTimes(1);
   });
 });

@@ -41,6 +41,13 @@ export interface HubHeroBlockProps {
   activeModules: readonly string[];
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
+  /**
+   * Вісь дії (спека `hub-action-axis.md`): замість однієї картки «Зараз»
+   * hero-слот займає ціла купа «Зараз» (`NowPile`). Резолвер одного hero
+   * не змінюється — FirstAction / SoftAuth / re-engagement перемагають так
+   * само; купа стає лише на місце `TodayFocusCard`.
+   */
+  nowPile?: React.ReactNode | undefined;
 }
 
 export function HubHeroBlock({
@@ -62,6 +69,7 @@ export function HubHeroBlock({
   activeModules,
   goals,
   hasValueBar,
+  nowPile,
 }: HubHeroBlockProps) {
   const reengagementIsHero = reengagement.show;
   const outcomeCardEnabled = useFlag("ftux_outcome_card_v1");
@@ -80,6 +88,8 @@ export function HubHeroBlock({
         sessionDays={sessionDays}
       />
     );
+  } else if (nowPile) {
+    hero = nowPile;
   } else {
     hero = (
       <TodayFocusCard
@@ -120,14 +130,12 @@ export function HubHeroBlock({
           onAction={(action) => {
             // AI-DANGER: тут НЕ МОЖНА ставити відмітку «крок виконано».
             // Був саме такий рядок для `view_analytics`, і він брехав:
-            // подія йде в `useAppEffects`, який передає далі лише
-            // `module`, а не `action`, тож Фінік відкривається на
-            // дефолтній сторінці (огляд), а `FinykApp` споживає з усіх
-            // дій саму `add_expense`. Відмітка ж ставилась постійно —
-            // тобто чекліст знову зараховував крок, якого не сталося,
-            // рівно той дефект, що його F3 і закривав (знахідка рев'ю
-            // до PR #1106). Тап — це чиста навігація; відмітку ставить
-            // САМ екран аналітики на маунті
+            // тап лише відкриває модуль (`FinykApp` веде дію на її
+            // сторінку), а людина може піти звідти, нічого не зробивши.
+            // Відмітка ж ставилась постійно, тобто чекліст зараховував
+            // крок, якого не сталося, рівно той дефект, що його F3 і
+            // закривав (знахідка рев'ю до PR #1106). Тап - це чиста
+            // навігація; відмітку ставить САМ екран аналітики на маунті
             // (`modules/finyk/pages/Analytics.tsx`).
             openHubModuleWithAction(
               primaryModule as Parameters<typeof openHubModuleWithAction>[0],

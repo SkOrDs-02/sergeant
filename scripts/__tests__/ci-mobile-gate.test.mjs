@@ -5,7 +5,7 @@
 // Чому це парсерний тест, а не «просто прибрали фільтр». `apps/mobile` жив
 // поза CI не через технічну перешкоду, а через тимчасову поставу «web-focus
 // phase», записану коментарем. Такі постави переживають свою причину: фільтр
-// `--filter=!@sergeant/mobile` пролежав у `check:typecheck-and-test:ci` доти,
+// `--filter=!@sergeant/mobile` пролежав у `check:typecheck-and-test` доти,
 // доки цілу поверхню продукту перестали перевіряти взагалі — і коштувало це
 // вже двічі. 2026-08-07 `main` був червоний через три mobile-тести, яких
 // ніхто не бачив; 2026-09-13 повний греп `habitScheduledOnDate` знайшов у
@@ -55,19 +55,19 @@ function mustHaveScript(scripts, name) {
   return value;
 }
 
-test("check:typecheck-and-test:ci не виключає @sergeant/mobile", () => {
+test("check:typecheck-and-test не виключає @sergeant/mobile", () => {
   const scripts = readRootScripts();
-  const script = mustHaveScript(scripts, "check:typecheck-and-test:ci");
+  const script = mustHaveScript(scripts, "check:typecheck-and-test");
   // Перевіряємо ВІДСУТНІСТЬ будь-якого `--filter`, а не однієї конкретної
   // форми виключення. Перша версія тесту ловила рівно `--filter=!@sergeant/
   // mobile` — і пропускала `--filter=@sergeant/web`, який виключає мобайл так
   // само надійно, просто з іншого боку (знахідка рев'ю CodeRabbit на PR
-  // #1134). Скрипт називається `check:typecheck-and-test:ci` і має означати
+  // #1134). Скрипт називається `check:typecheck-and-test` і має означати
   // «весь монорепо»: фільтр тут у принципі не потрібен, тож заборона на всі
   // фільтри — не надмірність, а точний опис інваріанта.
   assert.ok(
     !script.includes("--filter"),
-    `ci-mobile-gate: у "check:typecheck-and-test:ci" зʼявився \`--filter\`.\n` +
+    `ci-mobile-gate: у "check:typecheck-and-test" зʼявився \`--filter\`.\n` +
       `Будь-який фільтр тут звужує джобу \`check\` до частини воркспейсів —\n` +
       `неважливо, виключенням (\`${MOBILE_FILTER}\`) чи вибором одного\n` +
       `(\`--filter=@sergeant/web\`). Наслідок однаковий: ціла поверхня продукту\n` +
@@ -77,12 +77,16 @@ test("check:typecheck-and-test:ci не виключає @sergeant/mobile", () =>
   );
 });
 
-test("check:ci проходить саме через check:typecheck-and-test:ci", () => {
+test("check:ci проходить саме через check:typecheck-and-test", () => {
   const scripts = readRootScripts();
   const checkCi = mustHaveScript(scripts, "check:ci");
+  // Окремого `:ci`-двійника більше немає: `check:typecheck-and-test:ci` був
+  // побайтовою копією `check:typecheck-and-test` і прибраний 2026-09-19. Два
+  // імені для одного рядка означали два місця, де фільтр може відрости, і
+  // рівно одне з них було під цим гейтом.
   assert.ok(
-    checkCi.includes("check:typecheck-and-test:ci"),
-    `ci-mobile-gate: "check:ci" більше не викликає "check:typecheck-and-test:ci".\n` +
+    checkCi.includes("check:typecheck-and-test"),
+    `ci-mobile-gate: "check:ci" більше не викликає "check:typecheck-and-test".\n` +
       `Перший тест цього файлу стереже не той ланцюжок — онови обидва разом.`,
   );
 });

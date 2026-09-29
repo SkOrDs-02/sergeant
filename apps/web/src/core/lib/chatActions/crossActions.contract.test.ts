@@ -95,7 +95,7 @@ describe("set_goal", () => {
       input: { description: "Калорійний план", daily_kcal: 2000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2000");
+    expect(out).toContain("2 000");
     // The kcal target now persists through the canonical nutrition store
     // (persistNutritionPrefs → SQLite), not the tombstoned `nutrition_prefs_v1`
     // LS key — assert the dead key is no longer written.

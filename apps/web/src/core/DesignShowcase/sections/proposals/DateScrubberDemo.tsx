@@ -30,7 +30,7 @@ export function DateScrubberDemo() {
       <PhoneFrame>
         <div className="flex-1 min-h-0 flex flex-col">
           <div className="px-4 pb-1 flex items-center gap-2">
-            <Icon name="calendar" size={16} className="text-muted" />
+            <Icon name="calendar" size="md" className="text-muted" />
             <span className="text-style-label text-text">
               {formatKyivLongDate(new Date().toISOString())}
             </span>

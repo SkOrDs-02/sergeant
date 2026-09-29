@@ -204,7 +204,7 @@ export interface RateLimitOptions {
    * independent (typically longer) window — a burst allowance plus a
    * sustained cap over a longer horizon.
    *
-   * **Why this exists (AI-3, `docs/90-work/audits/2026-09-01-product-audit/
+   * **Why this exists (AI-3, `docs/work/specs/audits/2026-09-01-product-audit/
    * findings.md`).** A single fixed-window bucket forces a choice between
    * "generous enough for a quick back-and-forth" and "tight enough over
    * several minutes" — `api:chat` at 6 streams/min let a normal conversation
@@ -604,7 +604,7 @@ function checkRateLimitBySubject(
  *   - M9 (`ipLimit`) — secondary bucket on the client's IP, prevents an
  *     attacker with N authenticated accounts from multiplying effective
  *     throughput by N from a single machine.
- *   - AI-3 (`sustained`, `docs/90-work/audits/2026-09-01-product-audit/
+ *   - AI-3 (`sustained`, `docs/work/specs/audits/2026-09-01-product-audit/
  *     findings.md`) — secondary bucket on the SAME subject as the primary,
  *     but a longer window: a burst-friendly short window plus a stricter
  *     sustained cap over several minutes.
@@ -746,7 +746,7 @@ export function rateLimitExpress({
       };
     }
 
-    // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
     // sustained same-subject bucket, checked only once the burst (and,
     // if configured, the M9 IP) bucket both passed. Independent window,
     // same subject as the primary — see `RateLimitOptions.sustained`.
@@ -792,7 +792,7 @@ export function rateLimitExpress({
         /* ignore */
       }
       const requestId = (req as Request & { requestId?: string }).requestId;
-      // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+      // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
       // копія називає, скільки саме чекати, а не голе «пізніше»: `retryAfterSec`
       // тут той самий рахунок, що йде в заголовок `Retry-After` нижче, тож
       // текст і header ніколи не розходяться.

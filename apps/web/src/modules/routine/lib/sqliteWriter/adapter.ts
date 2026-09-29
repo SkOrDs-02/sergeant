@@ -10,6 +10,7 @@ import { enqueueOutboxIncrement } from "@sergeant/db-schema/sqlite";
 import { logger as webLogger } from "@shared/lib";
 
 import { enqueueOutboxUpsert } from "../../../../core/syncEngine/enqueueOutboxUpsert.js";
+import { trackOutboxWrite } from "../../../../core/syncEngine/outboxCheckpoint.js";
 import { notifyOutboxEnqueued } from "../../../../core/syncEngine/outboxNudge.js";
 import { isSyncableUserId } from "../../../../core/syncEngine/syncableUserId.js";
 import { fireSyncOutboxUpsert } from "../../../../core/syncEngine/fireSyncOutboxUpsert.js";
@@ -35,7 +36,7 @@ import {
 /**
  * Async SQLite-side adapter for the routine dual-write layer.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Migrated onto
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Migrated onto
  * `@sergeant/dualwrite-core` in ADR-0073 крок 3: the op-loop is now
  * `createApplyOps` (best-effort) and every standard-shape table's upsert SQL
  * is emitted by the shared `buildLwwUpsert` builder. Behaviour and emitted SQL
@@ -222,7 +223,7 @@ async function addCompletion(
     /* sync-enqueue failure is intentionally swallowed */
   });
   // Enqueue a streak increment (+1) so the server's PN-counter stays current.
-  fireStreakIncrement(client, userId, 1, clientTs);
+  fireStreakIncrement(client, userId, id, 1, clientTs);
 }
 
 async function removeCompletion(
@@ -254,7 +255,7 @@ async function removeCompletion(
     /* sync-enqueue failure is intentionally swallowed */
   });
   // Enqueue a streak decrement (-1) so the server's PN-counter stays current.
-  fireStreakIncrement(client, userId, -1, clientTs);
+  fireStreakIncrement(client, userId, id, -1, clientTs);
 }
 
 /**
@@ -265,27 +266,46 @@ async function removeCompletion(
  * і не був би прибраний (TTL-збирач `pending` не чіпає). Той самий гейт,
  * що і в `enqueueOutboxUpsert` — тут окремо, бо `enqueueOutboxIncrement`
  * живе в `db-schema`, спільному з mobile, і про web-синтетичні id не знає.
+ *
+ * Ключ детермінований (відмітка + мітка часу + знак), а не випадковий:
+ * дельта не ідемпотентна, а журнал модуля може відтворити ту саму операцію
+ * після reload. Сервер відсікає повтор за `(user_id, idempotency_key)`,
+ * тож `+1` не стає `+2`.
  */
 function fireStreakIncrement(
   client: SqliteMigrationClient,
   userId: string,
+  completionId: string,
   delta: 1 | -1,
   clientTs: string,
 ): void {
   if (!isSyncableUserId(userId)) return;
-  void enqueueOutboxIncrement(client, {
-    userId,
-    table: "routine_streaks",
-    row: { user_id: userId, delta },
-    clientTs,
-    idempotencyKey: crypto.randomUUID(),
-  })
-    .then(() => {
+  trackOutboxWrite(
+    enqueueOutboxIncrement(client, {
+      userId,
+      table: "routine_streaks",
+      row: { user_id: userId, delta },
+      clientTs,
+      idempotencyKey: streakIdempotencyKey(completionId, delta, clientTs),
+    }).then(() => {
       notifyOutboxEnqueued();
-    })
-    .catch(() => {
-      /* sync-enqueue failure is intentionally swallowed */
-    });
+    }),
+  );
+}
+
+/** `rs-inc-<fnv1a64>`: вписується у `[A-Za-z0-9_-]{1,64}` контракту push. */
+export function streakIdempotencyKey(
+  completionId: string,
+  delta: 1 | -1,
+  clientTs: string,
+): string {
+  let h = 0xcbf29ce484222325n;
+  const input = `${completionId}|${clientTs}`;
+  for (let i = 0; i < input.length; i++) {
+    h ^= BigInt(input.charCodeAt(i));
+    h = (h * 0x100000001b3n) & 0xffffffffffffffffn;
+  }
+  return `rs-${delta > 0 ? "inc" : "dec"}-${h.toString(16)}`;
 }
 
 async function renameHabit(

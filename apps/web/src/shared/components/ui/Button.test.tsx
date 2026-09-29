@@ -147,7 +147,8 @@ describe("Button", () => {
     it("module primary carries the calm dark treatment (accent fill + ink + elevation)", () => {
       // Light keeps `-strong` + white; dark swaps to the luminescent
       // tier-400 accent (`dark:bg-{module}`) + ink text (`dark:text-bg`)
-      // + a quiet elevation shadow. Resting glow is deliberately absent.
+      // + a quiet elevation shadow (base `shadow-sm`; DESIGN.md forbids
+      // `dark:shadow-*`). Resting glow is deliberately absent.
       const { getByRole } = render(
         <Button module="routine" variant="primary">
           Go
@@ -156,7 +157,8 @@ describe("Button", () => {
       const cls = getByRole("button").className;
       expect(cls).toContain("dark:bg-routine");
       expect(cls).toContain("dark:text-bg");
-      expect(cls).toContain("dark:shadow-sm");
+      expect(cls).toContain("shadow-sm");
+      expect(cls).not.toMatch(/dark:shadow-/);
       expect(cls).not.toContain("dark:shadow-glow-accent-rose");
     });
 
@@ -249,6 +251,9 @@ describe("Button", () => {
       const cls = getByRole("button").className;
       expect(cls).toContain("bg-danger-soft");
       expect(cls).not.toContain("bg-danger-strong");
+      // У темній темі `--c-danger-soft` суцільний red-800; кнопка мусить
+      // перебити його прозорою заливкою, інакше «soft» стає солідом.
+      expect(cls).toContain("dark:bg-danger/15");
     });
 
     it("outline/neutral renders the secondary outline button", () => {
@@ -271,14 +276,18 @@ describe("Button", () => {
       expect(getByRole("button").className).toContain("bg-ink-strong");
     });
 
-    it("unsupported (variant, tone) cell falls back to solid/neutral primary", () => {
-      // e.g. outline + a module tone has no dedicated cell → safe neutral.
+    it("unsupported (variant, tone) cell keeps the emphasis and drops the tone", () => {
+      // outline + a module tone has no dedicated cell → neutral outline,
+      // never a solid fill: the emphasis is the caller's intent, the tone
+      // is only colour.
       const { getByRole } = render(
         <Button variant="outline" tone="nutrition">
           X
         </Button>,
       );
-      expect(getByRole("button").className).toContain("bg-brand-strong");
+      const cls = getByRole("button").className;
+      expect(cls).toContain("border-border-strong");
+      expect(cls).not.toContain("bg-brand-strong");
     });
 
     it("ghost is tone-agnostic (same treatment regardless of tone)", () => {

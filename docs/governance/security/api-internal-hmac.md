@@ -1,9 +1,9 @@
 # `/api/internal/*` HMAC signing — rollout playbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-24.
-> **Status:** Active (grace mode).
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-10-02.
+> **Status:** Active (enforced by default since 2026-09-16).
 
-> ⚠️ **n8n виведено з репо ([ADR-0090](../adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side middleware і env-тріо чинні; n8n-side кроки (Function-node template, manifest `hmacSigned`, validator) — історичні, файли — у permalink-снапшоті.
+> ⚠️ **n8n виведено з репо ([ADR-0090](../adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side middleware і env-тріо чинні; n8n-side кроки (Function-node template, manifest `hmacSigned`, validator) — історичні, файли — у permalink-снапшоті, а **§ Rollout нижче — історичний n8n-плейбук**, виконувати його нема на чому. **Рішення ухвалене 2026-09-16 (власник): `WEBHOOK_HMAC_REQUIRED` тепер `true` за замовчуванням** (`apps/server/src/env/env.ts`). Grace-режим обґрунтовувався поетапною міграцією 25 n8n-воркфлоу; після ADR-0090 єдині внутрішні caller-и — CI/admin-тулінг, який ми контролюємо, тож вікно лишилось без предмета. **Застереження, важливіше за сам прапорець:** він нічого не вмикає без `WEBHOOK_HMAC_SECRET` — верифікатор виходить із `ok`, коли секрет порожній. Таку конфігурацію тепер видно: `assertStartupEnv` пише при старті `WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty`.
 > **Owner:** ops + server.
 > **Related:** [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md), [`logging-redaction-policy.md`](./logging-redaction-policy.md), [`docs/operations/observability/alert-bot-routing.md`](../../operations/observability/alert-bot-routing.md).
 
@@ -18,7 +18,7 @@ needs `WEBHOOK_HMAC_SECRET` — defence in depth.
 
 ## Wire-protocol
 
-Per request, the n8n side sends three headers (the bearer is unchanged):
+Per request, the caller (historically the n8n side; today any internal client) sends three headers (the bearer is unchanged):
 
 | Header          | Value                                                              |
 | --------------- | ------------------------------------------------------------------ |
@@ -38,29 +38,33 @@ n8n side template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](https://g
 
 ```dotenv
 WEBHOOK_HMAC_SECRET=          # 32+ bytes; openssl rand -hex 32
-WEBHOOK_HMAC_REQUIRED=false   # see "Rollout" below
+WEBHOOK_HMAC_REQUIRED=true    # default since 2026-09-16; set false only as a deliberate opt-out
 WEBHOOK_HMAC_TS_TOLERANCE_SEC=300
 ```
 
 - **`WEBHOOK_HMAC_SECRET=""`** — feature OFF. Middleware is a no-op.
   Use this for local dev where you don't want to wire n8n at all.
-- **`WEBHOOK_HMAC_REQUIRED=false`** (default during rollout) — middleware
-  verifies signatures opportunistically. On mismatch, it logs
-  `webhook_hmac_mismatch` (Pino `warn`) + adds a Sentry breadcrumb, but
-  the request still passes through. This is the period where ops can
-  add the Function-node signer to one workflow at a time without
-  breaking the others.
-- **`WEBHOOK_HMAC_REQUIRED=true`** — flip after every wired workflow
-  shows `hmacSigned: true` in `ops/n8n-workflows/manifest.json`. From
-  then on, missing/invalid signature → `401 Invalid webhook signature`
-  with `code: WEBHOOK_HMAC_INVALID` and a `reason` enum in the body.
+- **`WEBHOOK_HMAC_REQUIRED=true`** (default since 2026-09-16) — missing or
+  invalid signature → `401 Invalid webhook signature` with
+  `code: WEBHOOK_HMAC_INVALID` and a `reason` enum in the body. Note this
+  only bites when `WEBHOOK_HMAC_SECRET` is set: with an empty secret the
+  middleware is a no-op and the flag means nothing (the server warns about
+  that combination at boot).
+- **`WEBHOOK_HMAC_REQUIRED=false`** — verifies signatures opportunistically.
+  On mismatch it logs `webhook_hmac_mismatch` (Pino `warn`) + adds a Sentry
+  breadcrumb, but the request still passes through. This was the grace mode
+  for the staged n8n rollout; with n8n gone (ADR-0090) it is a deliberate,
+  temporary opt-out for onboarding a new internal caller — not a resting
+  state.
 
 `X-Timestamp` is clock-skew-tolerant by `WEBHOOK_HMAC_TS_TOLERANCE_SEC`
 (default 5min, symmetric — past _and_ future). 5min matches Stripe,
 GitHub, and Slack webhook signatures. Beyond that window, the verifier
 emits `timestamp_out_of_window`.
 
-## Rollout
+## Rollout _(historical — n8n, retired by ADR-0090)_
+
+> Чек-лист нижче описує міграцію n8n-воркфлоу на Railway — обидва виведені ([ADR-0090](../adr/0090-n8n-decommissioned.md), [ADR-0074](../adr/0074-hosting-hetzner-coolify.md)). Лишено як запис того, чому grace-режим існує; кроки 1–5 і 7 виконувати немає на чому. Новому внутрішньому клієнту достатньо wire-protocol вище плюс `WEBHOOK_HMAC_SECRET` у його env.
 
 Per-workflow checklist:
 

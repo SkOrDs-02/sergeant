@@ -21,6 +21,8 @@ export interface FinykLoginScreenProps {
   onConnect: (token: string) => void;
   onContinueWithoutBank: () => void;
   onBackToHub?: () => void;
+  /** Opens sign-in when the connect failed only because there is no account. */
+  onOpenAuth?: () => void;
   /** Override the back-button label. Defaults to "Назад до хабу" (top-level use). */
   backLabel?: string;
 }
@@ -46,6 +48,7 @@ export function FinykLoginScreen({
   onConnect,
   onContinueWithoutBank,
   onBackToHub,
+  onOpenAuth,
   backLabel = "Назад до хабу",
 }: FinykLoginScreenProps) {
   const [showTokenVisible, setShowTokenVisible] = useState(false);
@@ -79,9 +82,9 @@ export function FinykLoginScreen({
           <div
             className={cn(
               "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-4",
-              "bg-linear-to-br from-brand-100 to-brand-200",
-              "dark:from-brand-900/40 dark:to-brand-800/30",
-              "border border-brand-soft-border/60",
+              // Акцент Фініка, а не нейтральний бренд хабу: екран живе
+              // всередині модуля й має нести його колір.
+              "bg-finyk/10 border border-finyk/25",
               "shadow-card",
             )}
           >
@@ -94,7 +97,7 @@ export function FinykLoginScreen({
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-strong"
+              className="text-finyk-strong dark:text-finyk"
               aria-hidden
             >
               <rect x="3" y="8" width="18" height="12" rx="2" />
@@ -128,9 +131,9 @@ export function FinykLoginScreen({
           <div className="relative mt-1">
             <Input
               id="finyk-mono-token"
-              className="pr-20"
+              className="pr-24"
               type={showTokenVisible ? "text" : "password"}
-              placeholder="Вставте токен Mono API"
+              placeholder="Встав токен Mono API"
               autoComplete="off"
               aria-invalid={!!formState.errors.token}
               aria-describedby={
@@ -138,55 +141,33 @@ export function FinykLoginScreen({
               }
               {...register("token")}
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="absolute right-10 top-1/2 -translate-y-1/2 h-8 w-8 p-0 border-0"
-              aria-label="Вставити з буфера обміну"
-              title="Вставити з буфера"
-              onClick={async () => {
-                try {
-                  const text = (await navigator.clipboard.readText()).trim();
-                  // Use RHF setValue so the form's internal state + validation
-                  // are updated alongside the DOM input value.
-                  setValue("token", text, {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                    shouldValidate: true,
-                  });
-                } catch {
-                  // Clipboard read can fail on permissions or in test envs.
-                  // The user can still paste manually.
-                }
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
+            {/* Обидві кнопки в одному flex-ряду: на coarse-pointer `Button`
+                росте до 44px, і два абсолютні блоки з фіксованими `right-*`
+                накладались один на одного й на текст поля. */}
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 border-0"
+                aria-label="Вставити з буфера обміну"
+                title="Вставити з буфера"
+                onClick={async () => {
+                  try {
+                    const text = (await navigator.clipboard.readText()).trim();
+                    // Use RHF setValue so the form's internal state + validation
+                    // are updated alongside the DOM input value.
+                    setValue("token", text, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    });
+                  } catch {
+                    // Clipboard read can fail on permissions or in test envs.
+                    // The user can still paste manually.
+                  }
+                }}
               >
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 border-0"
-              aria-label={
-                showTokenVisible ? "Приховати токен" : "Показати токен"
-              }
-              onClick={() => setShowTokenVisible((v) => !v)}
-            >
-              {showTokenVisible ? (
                 <svg
                   width="16"
                   height="16"
@@ -198,26 +179,53 @@ export function FinykLoginScreen({
                   strokeLinejoin="round"
                   aria-hidden
                 >
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
-              ) : (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              )}
-            </Button>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 border-0"
+                aria-label={
+                  showTokenVisible ? "Приховати токен" : "Показати токен"
+                }
+                onClick={() => setShowTokenVisible((v) => !v)}
+              >
+                {showTokenVisible ? (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </Button>
+            </div>
           </div>
 
           {formState.errors.token && (
@@ -238,17 +246,33 @@ export function FinykLoginScreen({
             Токен відправляється на сервер і не зберігається у браузері.
           </p>
 
-          {authError && (
-            <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
-              <p className="font-semibold text-text">
-                Токен потребує оновлення
-              </p>
-              <p className="text-style-caption text-muted">{authError}</p>
-              <p className="text-style-caption text-muted">
-                Отримайте новий токен: Monobank → Налаштування → API
-              </p>
-            </div>
-          )}
+          {authError &&
+            (authError === messages.finyk.monoConnectErrors.accountRequired ? (
+              <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+                <p className="font-semibold text-text">Потрібен вхід</p>
+                <p className="text-style-caption text-muted">{authError}</p>
+                {onOpenAuth && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="mt-1"
+                    onClick={onOpenAuth}
+                  >
+                    Увійти
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+                <p className="font-semibold text-text">
+                  Токен потребує оновлення
+                </p>
+                <p className="text-style-caption text-muted">{authError}</p>
+                <p className="text-style-caption text-muted">
+                  Отримай новий токен: Monobank → Налаштування → API
+                </p>
+              </div>
+            ))}
           {/* Server-level error (from useApiForm) or parent-provided error */}
           {(serverError || (error && !authError)) && (
             <p
@@ -284,7 +308,7 @@ export function FinykLoginScreen({
           </div>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="w-full min-h-[48px]"
             onClick={onContinueWithoutBank}
           >
@@ -301,7 +325,7 @@ export function FinykLoginScreen({
           {typeof onBackToHub === "function" && (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >

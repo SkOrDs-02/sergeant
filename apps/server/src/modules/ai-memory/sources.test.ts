@@ -17,7 +17,7 @@ import { ALLOWED_MEMORY_SOURCES, RESERVED_SOURCES } from "./types.js";
  * Гейт від рецидиву — ініціатива 0024 (PR-1, § Ратифіковані рішення #9:
  * "unit-тест у модулі ai-memory, без нового CI-скрипта"). `ai_memories`
  * оголошувала 10 джерел, а писали у неї 4 (замір § Перезамір
- * 2026-09-03 у `docs/90-work/initiatives/0024-ai-memory-source-
+ * 2026-09-03 у `docs/work/specs/initiatives/0024-ai-memory-source-
  * coverage.md`) — шість (`chat`, `finyk`, `fizruk`, `nutrition`,
  * `routine`, `journal`) не мали жодного продюсера в дереві попри
  * CHECK-констрейнт, union-тип, zod-схему й ops-документ, які обіцяли, що

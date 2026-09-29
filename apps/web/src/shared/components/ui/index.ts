@@ -103,7 +103,7 @@ export type {
   TextareaProps,
 } from "./Input";
 
-export { SectionHeader, SectionHeading } from "./SectionHeading";
+export { SectionHeading } from "./SectionHeading";
 export type {
   SectionHeadingProps,
   SectionHeadingSize,
@@ -306,7 +306,6 @@ export {
   CommandPaletteProvider,
   useCommandPalette,
   useCommandPaletteControls,
-  useCommandPaletteHotkey,
   useRegisterCommand,
 } from "./CommandPalette";
 export type { PaletteCommand } from "./CommandPalette";

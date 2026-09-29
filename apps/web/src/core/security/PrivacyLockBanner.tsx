@@ -24,7 +24,7 @@ export function PrivacyLockBanner() {
   if (dismissed || !hasSlot) return null;
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-3">
+    <div className="pb-3">
       {/* `flex-wrap` + `basis-full` на групі кнопок до `sm`: на 393px
           `shrink-0`-кнопки лишали заголовку 56px і ламали копію на сім
           рядків, а кнопка накривала текст (анти-слоп аудит 2026-09-01,
@@ -43,7 +43,7 @@ export function PrivacyLockBanner() {
         </div>
         <div className="flex items-center justify-end gap-2 shrink-0 basis-full sm:basis-auto sm:ml-1">
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={() => openHubSettingsSection("privacy")}
           >
@@ -53,9 +53,9 @@ export function PrivacyLockBanner() {
             type="button"
             onClick={() => setDismissed(true)}
             aria-label={messages.actions.close}
-            className="p-1.5 rounded-xl touch-target text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
+            className="p-1.5 rounded-xl touch-target text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
           >
-            <Icon name="x" size={14} aria-hidden />
+            <Icon name="close" size="sm" aria-hidden />
           </button>
         </div>
       </div>

@@ -32,6 +32,7 @@ import type {
   RecallMemoryRequest,
   RecallMemoryResponse,
 } from "@sergeant/shared";
+import { formatNumberUk } from "@sergeant/shared";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import type {
   ChatAction,
@@ -112,15 +113,17 @@ async function callRecallApi(
       return {
         error:
           code === "AI_MEMORY_DISABLED"
-            ? "Памʼять ШІ вимкнена на сервері, це не збій, фічу ще не активовано. Чекати марно."
-            : "Памʼять ШІ тимчасово недоступна: провайдер ембеддингів не відповідає. Спробуй за кілька хвилин.",
+            ? "Памʼять AI вимкнена на сервері, це не збій, фічу ще не активовано. Чекати марно."
+            : "Памʼять AI тимчасово недоступна: провайдер ембеддингів не відповідає. Спробуй за кілька хвилин.",
       };
     }
     if (res.status === 401) {
-      return { error: "Потрібна авторизація для пошуку памʼяті." };
+      return { error: "Увійди, щоб шукати в памʼяті." };
     }
     if (!res.ok) {
-      return { error: `Помилка серверу при recall (HTTP ${res.status}).` };
+      return {
+        error: "Не вдалося отримати памʼять асистента. Спробуй ще раз.",
+      };
     }
     return (await res.json()) as RecallMemoryResponse;
   } catch (err) {
@@ -175,7 +178,7 @@ async function handleCreateTransaction(
   const { type, amount, category, description, date } = action.input;
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума транзакції.";
+    return "Некоректна сума операції.";
   }
   // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
   if (type === "income") {
@@ -228,7 +231,7 @@ async function handleCreateTransaction(
       ? resolveExpenseCategoryMeta(category.trim(), getCategories())
       : undefined;
     const label = meta?.label || category?.trim() || "";
-    return `Витрату ${amt} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
+    return `Витрату ${formatNumberUk(amt)} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
   } catch {
     // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
     const local = createTransactionLocal(action);

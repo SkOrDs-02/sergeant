@@ -28,6 +28,14 @@ describe("chatRoundTripTicket — AI-5 continuation authorization", () => {
     expect(consumeRoundTripTicket({ ticket, userId: "u-1" })).toBe(false);
   });
 
+  it("issues a caller-supplied id verbatim (0025 Фаза 2 — traceId reuse)", () => {
+    const ticket = issueRoundTripTicket({ userId: "u-1", id: "trace-abc" });
+    expect(ticket).toBe("trace-abc");
+    expect(consumeRoundTripTicket({ ticket: "trace-abc", userId: "u-1" })).toBe(
+      true,
+    );
+  });
+
   it("rejects an unknown / forged ticket string", () => {
     expect(
       consumeRoundTripTicket({

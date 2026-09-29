@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useCallback, useMemo, useRef, useState } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
@@ -85,12 +86,9 @@ function dayGroup(ts: number, now: number): DayGroup {
   return "earlier";
 }
 
+const SESSION_FORMS = { one: "бесіда", few: "бесіди", many: "бесід" };
 function sessionsWord(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "бесіда";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "бесіди";
-  return "бесід";
+  return pluralUa(n, SESSION_FORMS);
 }
 
 /**
@@ -174,13 +172,13 @@ function HistoryPanel({
         className="relative flex flex-col w-[88%] max-w-sm h-full bg-bg border-r border-line shadow-float motion-safe:animate-fade-in"
       >
         <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0"
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon
+              name="sergeant"
+              size="md"
+              className="text-brand-500 shrink-0"
               aria-hidden
-            >
-              <Icon name="sergeant" size={16} className="text-brand-500" />
-            </div>
+            />
             <div className="min-w-0">
               <div className="text-style-title font-bold text-text leading-tight">
                 Бесіди
@@ -302,7 +300,7 @@ function HistoryPanel({
                           title="Видалити"
                           className="absolute right-1.5 top-1/2 -translate-y-1/2 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
                         >
-                          <Icon name="trash" size={14} />
+                          <Icon name="trash" size="sm" />
                         </Button>
                       </li>
                     );

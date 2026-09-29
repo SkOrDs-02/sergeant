@@ -465,16 +465,13 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
   it("попереджає про дату поза мʼяким вікном, але дозволяє зберегти", async () => {
     const { onSave, amount } = await openSheet();
     fireEvent.change(amount, { target: { value: "50" } });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Не сьогодні? Змінити дату" }),
-    );
     fireEvent.change(screen.getByLabelText("Дата"), {
       target: { value: "2019-01-01" },
     });
 
     await waitFor(() => {
       expect(
-        screen.getByText("Незвична дата, перевір, чи не помилка в році"),
+        screen.getByText("Незвична дата, перевір, чи не помилка в році."),
       ).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
@@ -484,9 +481,6 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
   it("відкидає дату поза жорстким вікном", async () => {
     const { onSave, amount } = await openSheet();
     fireEvent.change(amount, { target: { value: "50" } });
-    fireEvent.click(
-      screen.getByRole("button", { name: "Не сьогодні? Змінити дату" }),
-    );
     fireEvent.change(screen.getByLabelText("Дата"), {
       target: { value: "3025-01-01" },
     });
@@ -494,7 +488,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
 
     await waitFor(() => {
       expect(
-        screen.getByText("Дата поза допустимим діапазоном"),
+        screen.getByText("Дата поза допустимим діапазоном."),
       ).toBeInTheDocument();
     });
     expect(onSave).not.toHaveBeenCalled();

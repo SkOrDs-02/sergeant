@@ -6,6 +6,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
 import { safeWriteLS } from "@shared/lib/storage/storage";
+import { messages } from "@shared/i18n/uk";
 import { TREND_STORAGE_PREFIX, readTrendOpen } from "./storage";
 
 /**
@@ -41,6 +42,7 @@ export function CollapsibleTrendCard({
   latestValue,
   latestUnit,
   delta,
+  deltaSince,
   deltaDirection = "down-is-good",
   ariaLabel,
   children,
@@ -50,6 +52,12 @@ export function CollapsibleTrendCard({
   latestValue: number | null;
   latestUnit: string;
   delta: number | null;
+  /**
+   * Label of the point the delta is measured from. Weight shows different
+   * deltas on Тіло, Прогрес and Заміри, and without the anchor they read as
+   * contradicting each other.
+   */
+  deltaSince?: string | undefined;
   /** @default "down-is-good" — preserves pre-existing behaviour for callers that don't pass it. */
   deltaDirection?: TrendDeltaDirection;
   ariaLabel: string;
@@ -142,6 +150,12 @@ export function CollapsibleTrendCard({
                     signed
                     tone="inherit"
                   />
+                  {deltaSince && (
+                    <span className="text-subtle">
+                      {" "}
+                      {messages.fizruk.progress.deltaSincePrefix} {deltaSince}
+                    </span>
+                  )}
                 </span>
               )}
             </div>

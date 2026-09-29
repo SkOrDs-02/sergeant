@@ -132,7 +132,7 @@ export function WorkoutTemplateEditor({
       <View className="gap-2">
         <SectionHeading size="xs">Додати вправу з каталогу</SectionHeading>
         <Input
-          placeholder="Пошук вправи…"
+          placeholder="Пошук вправи"
           value={query}
           onChangeText={setQuery}
           accessibilityLabel="Пошук вправи для шаблону"
@@ -146,7 +146,7 @@ export function WorkoutTemplateEditor({
           >
             {pickList.length === 0 ? (
               <Text className="text-xs text-fg-muted text-center py-4">
-                Нічого не знайдено
+                Нічого не знайшов
               </Text>
             ) : (
               pickList.map((ex) => (

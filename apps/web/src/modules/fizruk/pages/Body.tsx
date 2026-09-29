@@ -20,6 +20,7 @@ import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
 import { chartStatusSeries, chartSeries, chartPalette } from "@shared/charts";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 // Модуль фізичного щоденника: форма запису + графіки динаміки + журнал.
 interface BodyProps {
@@ -88,10 +89,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
       .reverse()
       .map((e) => ({
         value: e.sleepHours,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [recentWith]);
 
@@ -102,10 +100,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
       .reverse()
       .map((e) => ({
         value: e.energyLevel,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [recentWith]);
 
@@ -116,10 +111,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
       .reverse()
       .map((e) => ({
         value: e.moodScore,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [recentWith]);
 
@@ -297,6 +289,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 latestValue={latest}
                 latestUnit={card.unit}
                 delta={delta}
+                deltaSince={card.data.find((p) => p.value != null)?.label}
                 deltaDirection={card.deltaDirection}
               >
                 <MiniLineChart

@@ -132,7 +132,8 @@ describe("applyFinykTxCategories", () => {
 
     const deletion = lastQuery(fake);
     expect(deletion.sql).toContain("DELETE FROM finyk_tx_categories");
-    expect(deletion.params).toEqual(["user-1", "tx-1"]);
+    expect(deletion.sql).toContain("AND updated_at < $3");
+    expect(deletion.params).toEqual(["user-1", "tx-1", clientTs]);
   });
 });
 

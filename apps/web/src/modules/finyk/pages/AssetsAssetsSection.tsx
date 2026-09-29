@@ -82,8 +82,8 @@ export function AssetsAssetsSection({ state }: { state: State }) {
       >
         {receivables.length === 0 && !showRecvForm && (
           <p className="text-style-body text-muted px-1">
-            Зберігайте облік боргів і дат повернення, привʼязуйте вхідні
-            транзакції, щоб автоматично рахувати повернене.
+            Зберігай облік боргів і дат повернення, привʼязуй вхідні операції,
+            щоб автоматично рахувати повернене.
           </p>
         )}
         {receivables
@@ -114,7 +114,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 const removed = r;
                 setReceivables((rs) => rs.filter((x) => x.id !== removed.id));
                 showUndoToast(toast, {
-                  msg: `Видалено борг «${removed.name}»`,
+                  msg: `Видалено «${removed.name}» зі списку «Мені винні»`,
                   onUndo: () => setReceivables((rs) => [...rs, removed]),
                 });
               }}
@@ -261,7 +261,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 className="text-subtle hover:text-text transition-colors"
                 aria-label={`Редагувати актив ${a.name}`}
               >
-                <Icon name="edit" size={16} aria-hidden />
+                <Icon name="edit" size="md" aria-hidden />
               </button>
               <button
                 type="button"
@@ -284,7 +284,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 className="text-subtle hover:text-danger transition-colors"
                 aria-label={`Видалити актив ${a.name}`}
               >
-                <Icon name="trash" size={16} aria-hidden />
+                <Icon name="trash" size="md" aria-hidden />
               </button>
             </div>
           </div>

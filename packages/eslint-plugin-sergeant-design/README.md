@@ -30,6 +30,6 @@
 ## Перевірка
 
 ```bash
-pnpm --filter eslint-plugin-sergeant-design test
+pnpm lint:plugins   # node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs
 pnpm lint
 ```

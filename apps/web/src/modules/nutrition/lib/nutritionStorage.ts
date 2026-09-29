@@ -3,7 +3,7 @@
  * Status: Active
  * Web I/O-адаптер для модуля Харчування: prefs, pantries, log.
  *
- * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`): the
+ * Stage 8 PR #057n-tombstone (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`): the
  * `load*` / `persist*` helpers below no longer touch `localStorage`.
  * The SQLite-WASM `nutrition_*` tables are the source of truth — reads
  * pull from the in-process cache populated by
@@ -38,7 +38,6 @@ import {
 } from "@sergeant/nutrition-domain";
 
 import {
-  isNutritionDualWriteRegistered,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
 } from "./sqliteWriter/index.js";
@@ -320,9 +319,18 @@ export function persistNutritionShoppingList(
 // Dual-write state extraction (Stage 4 PR #032; rewired by
 // PR #057n-tombstone to peek the SQLite warm cache instead of LS).
 //
-// Returns `null` when no dual-write context is registered — the
-// write call sites use this as a fast-path gate so we never enqueue
-// SQLite ops pre-auth.
+// AI-DANGER: does NOT gate on `isNutritionDualWriteRegistered()` anymore.
+// It used to — before `useNutritionDualWriteBoot` registers a context
+// (auth `status === "loading"`, right after a fresh nav/reload), every
+// `persist*` call below saw `prev === null` and returned `true`
+// ("saved") without writing ANYTHING, anywhere — a silent, permanent
+// data loss on the very first write of a session (blind nutrition run,
+// 2026-09-28: 7 entries typed in that window, all gone on next reload).
+// `triggerNutritionDualWrite` (sqliteWriter/index.js) now buffers a call
+// made before registration and replays it once a context registers
+// within the same page life, so this must keep producing a real `prev`
+// snapshot even pre-registration — the cache read below has sane
+// `EMPTY_CACHE` defaults and works regardless of registration state.
 //
 // Recipes live in IndexedDB (`recipeBook.ts`) rather than LS, but the
 // SQLite `nutrition_recipes` table is what `sqliteReader.ts` reads back
@@ -336,7 +344,6 @@ function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
 }
 
 function peekNutritionDualWriteState(): NutritionDualWriteState | null {
-  if (!isNutritionDualWriteRegistered()) return null;
   try {
     const cache = getCachedNutritionSqliteState();
     const prefs = cache.prefs ?? defaultNutritionPrefs();

@@ -2,11 +2,17 @@ import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
+import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 const SOURCES = [
   { data: "Сума і час покупки", from: "Виписка банку", cheque: false },
   { data: "Назва магазину", from: "Виписка банку", cheque: false },
-  { data: "Груба категорія (MCC)", from: "Виписка банку", cheque: false },
+  {
+    data: "Груба категорія (код від банку)",
+    from: "Виписка банку",
+    cheque: false,
+  },
   { data: "Позиції: що саме куплено", from: "Тільки чек", cheque: true },
   { data: "Ціна за одиницю і кількість", from: "Тільки чек", cheque: true },
   { data: "Покупка за готівку", from: "Тільки чек", cheque: true },
@@ -27,13 +33,21 @@ export default function GuideChekyPage() {
     ...ROUTE_META["/guides/cheky"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "Article",
-      headline:
-        "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
+      // HowTo, а не Article: сторінка веде людину по кроках, і саме кроки
+      // мають бути машинно-читабельними. Розширених сніпетів Google для
+      // HowTo більше не малює (зняв у вересні 2023), тож адресат тут –
+      // AI-споживачі, ті самі, заради яких у нас llms.txt і markdown.
+      "@type": "HowTo",
+      name: "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/cheky"].lastmod,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
+      step: STEPS.map((text, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        text,
+      })),
     },
   });
 
@@ -51,8 +65,8 @@ export default function GuideChekyPage() {
             Як перетворити паперовий чек на облік витрат, коли QR не сканується
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено <UpdatedOn iso={ROUTE_META["/guides/cheky"].lastmod} /> ·
-            автор Sergeant
+            Оновлено <UpdatedOn iso={ROUTE_META["/guides/cheky"].lastmod} /> ·{" "}
+            {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>
@@ -91,12 +105,11 @@ export default function GuideChekyPage() {
             ))}
           </div>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
-            Практична різниця виглядає так. Виписка каже «супермаркет,
-            1&nbsp;240 грн», і ця сума цілком їде в категорію «продукти». Чек
-            показує, що 300 грн з них були побутовою хімією, ще 200 – кормом для
-            кота, а їжі там на дві третини суми (цифри тут як приклад). Місяць
-            такого округлення, і бюджет на продукти виглядає роздутим, хоча їси
-            ти рівно як завжди.
+            Виписка каже «супермаркет, 1&nbsp;240&#8239;₴», і ця сума цілком їде
+            в категорію «продукти». Чек показує, що 300&#8239;₴ з них були
+            побутовою хімією, ще 200&#8239;₴ – кормом для кота, а їжі там на дві
+            третини суми (цифри тут як приклад). Місяць такого округлення, і
+            бюджет на продукти виглядає роздутим, хоча їси ти рівно як завжди.
           </p>
         </section>
 
@@ -150,23 +163,21 @@ export default function GuideChekyPage() {
           </p>
         </section>
 
-        <div className="flex flex-col gap-2.5 border-t border-cardline pt-6">
-          <p className="text-sm leading-relaxed text-muted">
-            У Фініку сканер чеків працює з фото: по одному або пачкою до десяти
-            за раз, коли після вихідних назбирався жмут. Розпізнані позиції
-            лягають у витрати. Перекласти продуктові рядки в комору Харчування
-            можна поки лише з чеків Сільпо – для фото такого мосту немає.
-            Банківські транзакції тим часом тягне синк Monobank, тож чек
-            лишається тим, чим і має бути: джерелом деталей. Суму банк знає і
-            без нього.
+        <section>
+          <p className="text-sm text-subtle">
+            Усі входи витрат Фініка –{" "}
+            <a
+              href="/hroshi"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              на сторінці про гроші
+            </a>
+            .
           </p>
-          <a
-            href="/beta"
-            className="text-sm font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Стати в чергу
-          </a>
-        </div>
+          <div className="mt-6">
+            <TelegramCta placement="footer" label="Стати в чергу" />
+          </div>
+        </section>
       </article>
     </SiteLayout>
   );

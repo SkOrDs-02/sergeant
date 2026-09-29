@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-07-25
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * Леджер експозиції стріку — device-local запис «коли користувач востаннє
  * бачив свій стрік на поверхні, яка НЕ є `InsightCard`».

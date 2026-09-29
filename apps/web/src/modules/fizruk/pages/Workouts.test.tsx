@@ -77,7 +77,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
   WorkoutsHome: ({
     onOpenSession,
     onOpenCatalog,
-    onOpenTemplates,
     onOpenJournal,
     onOpenPrograms,
     onRequestStart,
@@ -85,7 +84,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
   }: {
     onOpenSession: () => void;
     onOpenCatalog: () => void;
-    onOpenTemplates: () => void;
     onOpenJournal: () => void;
     onOpenPrograms: () => void;
     onRequestStart: () => void;
@@ -97,13 +95,6 @@ vi.mock("../components/workouts/WorkoutsHome", () => ({
       </button>
       <button type="button" onClick={onOpenCatalog} data-testid="open-catalog">
         Каталог
-      </button>
-      <button
-        type="button"
-        onClick={onOpenTemplates}
-        data-testid="open-templates"
-      >
-        Шаблони
       </button>
       <button type="button" onClick={onOpenJournal} data-testid="open-journal">
         Історія
@@ -590,18 +581,6 @@ describe("Workouts page — home action wiring", () => {
     expect(setView).not.toHaveBeenCalled();
   });
 
-  it("'open-templates' button navigates to the templates route", () => {
-    const onNavigate = vi.fn();
-    mockedOrchestrator.mockReturnValue(
-      makeOrchestrator("home") as unknown as ReturnType<
-        typeof useWorkoutsOrchestrator
-      >,
-    );
-    renderWorkouts({ onNavigate });
-    fireEvent.click(screen.getByTestId("open-templates"));
-    expect(onNavigate).toHaveBeenCalledWith("templates");
-  });
-
   it("back from a routed section returns to the workouts hub", () => {
     const setView = vi.fn();
     const onNavigate = vi.fn();
@@ -630,7 +609,10 @@ describe("Workouts page — home action wiring", () => {
     expect(onOpenRoutine).toHaveBeenCalledTimes(1);
   });
 
-  it("starts an empty workout directly from Quick Start", () => {
+  it("«Почати тренування» відкриває аркуш вибору, а не порожню сесію", () => {
+    // Рішення власника 2026-09-16: спосіб старту обирають усередині аркуша
+    // (шаблон / підбір вправ / програма), тож кнопка більше не створює
+    // порожнє тренування напряму.
     const handleQuickStart = vi.fn();
     mockedOrchestrator.mockReturnValue(
       makeOrchestrator("home", {
@@ -641,7 +623,23 @@ describe("Workouts page — home action wiring", () => {
     renderWorkouts();
     fireEvent.click(screen.getByTestId("request-start"));
 
-    expect(handleQuickStart).toHaveBeenCalledTimes(1);
+    expect(handleQuickStart).not.toHaveBeenCalled();
+    expect(screen.getByTestId("quick-start-sheet")).toBeInTheDocument();
+  });
+
+  it("плитка «За шаблоном» в аркуші веде на адресу шаблонів", () => {
+    mockedOrchestrator.mockReturnValue(
+      makeOrchestrator("home") as unknown as ReturnType<
+        typeof useWorkoutsOrchestrator
+      >,
+    );
+    const onNavigate = vi.fn();
+
+    renderWorkouts({ onNavigate });
+    fireEvent.click(screen.getByTestId("request-start"));
+    fireEvent.click(screen.getByTestId("pick-template"));
+
+    expect(onNavigate).toHaveBeenCalledWith("templates");
   });
 
   // 03-A — "Всі →" must own its own URL instead of flipping `view` to

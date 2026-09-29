@@ -176,7 +176,7 @@ describe("FinykSection extra branches", () => {
   it("cancels the cache-clear confirm modal without clearing anything", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Скасувати"));
@@ -207,7 +207,11 @@ describe("FinykSection extra branches", () => {
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(await screen.findByText("Помилка підключення")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows fallback connect error when Error has empty message", async () => {
@@ -217,7 +221,11 @@ describe("FinykSection extra branches", () => {
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(await screen.findByText("Помилка підключення")).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("shows fallback backfill error when a non-Error value is thrown", async () => {
@@ -227,7 +235,7 @@ describe("FinykSection extra branches", () => {
     fireEvent.click(await screen.findByText("Синхронізувати історію"));
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Помилка re-sync",
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
     );
   });
 
@@ -246,7 +254,7 @@ describe("FinykSection extra branches", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "disconnect failed",
     );
-    expect(screen.getByText("Webhook активний")).toBeInTheDocument();
+    expect(screen.getByText("Синхронізація активна")).toBeInTheDocument();
   });
 
   // ── Connect success path ─────────────────────────────────────────────────
@@ -309,7 +317,7 @@ describe("FinykSection extra branches", () => {
   it("clears tx cache when the confirm modal Очистити button is clicked", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
@@ -344,14 +352,14 @@ describe("FinykSection extra branches", () => {
 
   // ── triggerBackfill: Error instance → error message stored ─────────────────
 
-  it("shows the Error message after backfill fails", async () => {
+  it("shows the catalog fallback after backfill fails", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
     renderSection();
     fireEvent.click(await screen.findByText("Синхронізувати історію"));
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Помилка re-sync",
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
     );
   });
 
@@ -375,8 +383,12 @@ describe("FinykSection extra branches", () => {
       lastEventAt: null,
     });
     renderSection();
-    expect(await screen.findByText("Webhook активний")).toBeInTheDocument();
-    const statusSection = screen.getByText("Webhook активний").parentElement;
+    expect(
+      await screen.findByText("Синхронізація активна"),
+    ).toBeInTheDocument();
+    const statusSection = screen.getByText(
+      "Синхронізація активна",
+    ).parentElement;
     expect(statusSection?.textContent).not.toContain("·");
   });
 });

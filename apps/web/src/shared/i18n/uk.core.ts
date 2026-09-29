@@ -60,6 +60,11 @@ export const coreMessages = {
     // дасть скрінрідеру «Прихована підсумок дня». Або тримай `label`
     // жіночим, або спершу перероби це на повний рядок із підстановкою.
     hiddenValuePrefix: "Прихована",
+    // `StreakFlame` / `StreakBadge`: sr-only-підпис полумʼя серії. Число і
+    // форма «день/дні/днів» підставляються компонентом через `pluralDays`.
+    // До 2026-09-17 рядок був англійським літералом «Streak: N days» і жив
+    // поза каталогом, тож лінт на кирилицю його не бачив.
+    streakPrefix: "Серія",
   },
 
   actions: {
@@ -100,6 +105,18 @@ export const coreMessages = {
     send: "Надіслати",
   },
 
+  celebration: {
+    // `CelebrationModal` / `useCelebration`: факт замість вигуку (аудит
+    // anti-slop round2, P1-3): жодних знаків оклику й похвали персонажа
+    // («легенда», «стаєш сильнішим»), число вже несе емоцію.
+    goalReached: "Ціль закрито",
+    // Число вже показане великим `value` над заголовком (`renderValue`),
+    // тож title не повторює його — інакше «5» + «Рівень 5» / «30 днів» +
+    // «30 днів поспіль» дублюють ту саму цифру двічі на екрані.
+    levelUp: "Новий рівень",
+    streakDays: "Днів поспіль",
+  },
+
   errors: {
     generic: {
       // Phase 2 — generic-помилки, що рендеряться у банері/toast-і коли
@@ -109,6 +126,15 @@ export const coreMessages = {
       retry: "Спробуй ще раз",
       timeout: "Перевищено час очікування. Спробуй ще раз.",
       unknown: "Щось пішло не так. Спробуй ще раз.",
+      // Аудит копі 2026-09-23 §2.6: один шаблон на всі фолбеки збою за
+      // каноном §3 «що сталось + що зробити». Підставляє `failedCopy()` з
+      // `./failedCopy`; `what` в інфінітиві («скласти план»).
+      failed: "Не вдалося {what}. {action}",
+      retryAction: "Спробуй ще раз.",
+      // Аудит копі 2026-09-23 §2.5: сира причина (`QuotaExceededError`,
+      // «quota exceeded») лишається в події й телеметрії, людині один рядок.
+      storageSaveFailed:
+        "Не вдалося зберегти дані. Звільни місце в сховищі браузера або збережи резервну копію.",
 
       // Round 16 — short error labels та section-failure messages.
       // `title` — bare "Помилка" як заголовок банера/тулбара.
@@ -126,6 +152,9 @@ export const coreMessages = {
       backToModulePicker: "До вибору модуля",
       copyRequestId: "Копіювати",
       copyRequestIdAria: "Скопіювати requestId",
+      // `OptimizedImage`: aria-label заглушки, коли картинка не завантажилась
+      // і `alt` порожній. До 2026-09-17 — англійський літерал поза каталогом.
+      imageFailed: "Зображення не завантажилось",
     },
   },
 
@@ -153,7 +182,6 @@ export const coreMessages = {
     errorNetwork: "Не вдалось синхронізувати, перевір зʼєднання.",
     errorServerRetryable: "Сервер тимчасово не відповідає. Спробуй ще раз.",
     errorServerNonRetryable: "Помилка синхронізації. Передивись введення.",
-    errorGeneric: "Помилка синхронізації.",
     retryCta: "Спробувати ще",
 
     // Reserved для майбутніх migration-round-ів — narrative-strings, які
@@ -170,8 +198,8 @@ export const coreMessages = {
     // не є згодою.
     destructiveConfirm: {
       title: "Підтверди незворотну дію",
-      body: "Асистент хоче виконати те, що не вийде скасувати:",
-      confirm: "Так, виконати",
+      body: "Сержант хоче виконати те, що не вийде скасувати:",
+      confirm: "Виконати",
       cancel: "Скасувати",
     },
     // Round 16 — Hub-shell-specific copy (ні header, ні bottom-nav). Сюди
@@ -181,14 +209,32 @@ export const coreMessages = {
     // Не «Інсайти»: так називалась і батьківська секція, і секція на
     // «Звʼязках», яка рахує зовсім інше й за інше вікно.
     otherTips: "Інші підказки",
-    overlayTitle: "AI-асистент",
+    // Вісь дії (спека `hub-action-axis.md`): дві купи головної. У ядрі
+    // каталогу, бо `HubDashboard` — eager-поверхня.
+    nowPile: {
+      heading: "Зараз",
+      empty: "Сьогодні все закрито, нічого не просить уваги.",
+      more: "ще",
+      doIt: "Зробити",
+      open: "Відкрити",
+      askAiChip: "Сержант",
+      askAi: "Спитати Сержанта про це",
+      askAiLimit: "Ліміт запитів до Сержанта на сьогодні",
+      dismiss: "Закрити підказку",
+    },
+    closedPile: {
+      heading: "Закрито сьогодні",
+    },
+    // Рейок модулів (`ModuleRail`) — eager і на хабі, і в шапках модулів.
+    moduleRail: "Модулі",
+    overlayTitle: "Сержант",
     closeChat: "Закрити чат",
     chatQuickActions: "Швидкі сценарії",
     valueProgressAria: "Прогрес до твоїх цілей",
-    crossModulePreviewAria: "Що Sergeant покаже далі",
+    crossModulePreviewAria: "Що Сержант покаже далі",
     weeklyDigestTitle: "Щотижневий дайджест: сторіс",
     chatOfflineNotice:
-      "Асистент недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
+      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але відповіді Сержанта потребують підключення.",
 
     // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
     // тільки-но відкрив чат і ще нічого не написав, замість пустого
@@ -201,6 +247,7 @@ export const coreMessages = {
     chatEmptyTitle: "Запитай щось, я допоможу",
     chatEmptyDescription:
       "Тапни на підказку, текст вставиться у поле, і ти зможеш відредагувати його перед відправкою.",
+    chatEmptyDescriptionSignedOut: "Ось про що можна спитати, коли увійдеш.",
     // Розкриття «це AI» — вимога EU AI Act ст. 50(1), чинна з 2026-08-02:
     // людину повідомляють, що вона взаємодіє з AI, не пізніше першого
     // контакту. `ChatEmpty` — рівно та поверхня: вона рендериться, поки в
@@ -218,6 +265,14 @@ export const coreMessages = {
     reportNoData: "Немає даних",
     reportChartAria: "Графік",
     reportPrevious: "Минулий:",
+    reportPreviousToDate: "Минулий за ті ж дні:",
+    // Порожній стан картки звіту, коли даних нема ні в поточному, ні в
+    // минулому вікні: що відсутнє + де це зробити (гайд копірайту §5).
+    // Нуль тут не результат, а старт (критика екранів 2026-09-23).
+    reportEmptyWorkouts: "Тренувань ще не було. Перше запиши у Фізруку.",
+    reportEmptyHabits: "Звичок ще немає. Додай першу в Рутині.",
+    reportEmptyExpenses: "Витрат ще не записано. Додай першу у Фініку.",
+    reportEmptyMeals: "Прийомів їжі ще не записано. Додай перший у Їжі.",
     // Нульова дельта до попереднього періоду — без стрілки (DeltaChip,
     // анти-слоп аудит 2026-09-01 F4).
     reportDeltaFlat: "без змін",
@@ -226,16 +281,16 @@ export const coreMessages = {
     // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
     // interpolated at the call-site as `${used}/${limit} ${chatUsageUnit}`
     // (no Cyrillic-string placeholders needed for plain digits).
-    // Одиниця — ЗАПИТ до AI, не повідомлення. Копія «5 повідомлень» обіцяла
-    // людині більше, ніж дає ліміт (browser QA 2026-08-23), тож клієнт
-    // говорить тією ж мовою, що сервер. AI-5 рішення 1 (`docs/90-work/
-    // audits/2026-09-01-product-audit/findings.md`, 2026-09-01) зробило хід
-    // з дією (tool-round-trip) рівно одним запитом (раніше — 2), тож тепер
-    // «запитів» буквально дорівнює «діям», без застережень.
-    chatUsageUnit: "запитів",
+    // Одиниця: ДІЯ Сержанта, не повідомлення: AI-5 рішення 1 (`docs/work/
+    // audits/2026-09-01-product-audit/findings.md`) зробило хід з дією
+    // (tool-round-trip) рівно одним списанням, тож «дія» = один хід.
+    // Відро тижневе (спека access-tiers): 20 дій на ISO-тиждень, скидання в
+    // понеділок 00:00 за Києвом.
+    chatUsageUnit: "дій, оновиться в понеділок",
     chatUsageAriaPrefix: "Використано",
-    chatUsageAriaSuffix: "запитів до AI на сьогодні",
-    chatUsageExhausted: "Ліміт запитів до AI на сьогодні. Подивись плани",
+    chatUsageAriaSuffix:
+      "дій Сержанта цього тижня, ліміт оновиться в понеділок",
+    chatUsageExhausted: "Тижневий ліміт Сержанта вичерпано. Подивись плани",
   },
 
   // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in
@@ -298,7 +353,7 @@ export const coreMessages = {
     // екскурсія» показувала той самий welcome-візард у read-only — тобто
     // повтор привітання, а не розповідь про можливості. Тепер веде на
     // `/capabilities`, і назва це відображає.
-    tourLaunchLabel: "Що вміє додаток",
+    tourLaunchLabel: "Що вміє застосунок",
     appCapabilitiesHint:
       "Що вміє кожен розділ і як вони працюють разом. Дані не зміняться.",
 
@@ -307,37 +362,31 @@ export const coreMessages = {
     // `goalFirstSkipLabel` is the tertiary escape hatch back to the
     // legacy module-checklist welcome.
     goalFirstHeading: "Що для тебе зараз важливо?",
-    goalFirstSubtitle:
-      "Обери головне, Sergeant підбере розділ, з якого почати.",
+    goalFirstSubtitle: "Обери головне, Сержант підбере розділ, з якого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
-
-    // Persistent demo-mode badge (DemoModeBadge) — a global, always-on
-    // marker + exit, rendered on every route while the store holds a
-    // demo payload. Clicking runs the same action as DemoModeBanner's
-    // «Створити свій», so it's the always-available way out of demo.
-    demoBadgeText: "Демо",
-    demoBadgeExit: "Вийти",
-    demoBadgeLabel:
-      "Демонстраційні дані: натисни, щоб вийти і створити свій профіль",
-    demoBadgeTitle: "Демо. Натисни, щоб вийти й почати з чистого аркуша.",
   },
   auth: {
+    /** Підпис кнопки входу через Apple. */
+    signInWithApple: "Увійти через Apple",
+
     // Generic fallback — використовується, коли не вдалося визначити
     // конкретну причину помилки.
     genericFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
+    registerFailure: "Не вдалося зареєструватись. Спробуй ще раз.",
 
     // Better Auth canonical error-codes:
-    invalidEmailOrPassword: "Невірний email або пароль.",
+    invalidEmailOrPassword: "Неправильний email або пароль.",
     invalidToken:
       "Посилання для скидання пароля невалідне або вже використане. Запроси новий лист на сторінці входу.",
     userAlreadyExists: "Цей email вже зареєстровано. Спробуй увійти.",
-    invalidEmail: "Невірний формат email.",
-    invalidPassword: "Невірний пароль.",
+    invalidEmail: "Неправильний формат email.",
+    invalidPassword: "Неправильний пароль.",
     passwordTooShort: "Пароль занадто короткий.",
     passwordTooLong: "Пароль занадто довгий.",
     emailNotVerified: "Email ще не підтверджено. Перевір пошту.",
-    providerNotFound: "Цей провайдер входу не налаштовано.",
+    providerNotFound:
+      "Цей провайдер входу не налаштовано. Спробуй інший спосіб входу.",
     sessionFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
 
     // Серверні errors (rate-limiter, error handler):

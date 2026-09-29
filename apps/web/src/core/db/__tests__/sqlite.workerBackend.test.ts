@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
+import { __resetDbOwnershipForTests } from "../dbOwnership";
 import { sqlite3InitModuleMock } from "./sqlite-wasm-fake";
 
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
@@ -21,7 +22,6 @@ vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
   setSentryTag: vi.fn(),
 }));
-vi.mock("../../lib/featureFlags.js", () => ({ getFlag: vi.fn(() => false) }));
 vi.mock("../sqliteWorkerClient.js", () => ({
   openSqliteInWorker: vi.fn(),
 }));
@@ -32,7 +32,6 @@ vi.mock("../kvvfsHandoff.js", () => ({
   pruneForeignPartitionRows: vi.fn(async () => 0),
 }));
 
-import { getFlag } from "../../lib/featureFlags.js";
 import { openSqliteInWorker } from "../sqliteWorkerClient.js";
 import {
   isHandoffDone,
@@ -57,7 +56,7 @@ function fakeWorkerConnection() {
 
 beforeEach(() => {
   __resetSqliteDbForTests();
-  vi.mocked(getFlag).mockReturnValue(false);
+  __resetDbOwnershipForTests();
   vi.mocked(openSqliteInWorker).mockReset();
   vi.mocked(isHandoffDone).mockReturnValue(true);
   vi.mocked(markHandoffDone).mockClear();
@@ -86,15 +85,7 @@ afterEach(() => {
 });
 
 describe("бекенд бази у воркері", () => {
-  it("вимкнений прапорець не піднімає воркер узагалі", async () => {
-    const handle = await getSqliteDb();
-
-    expect(openSqliteInWorker).not.toHaveBeenCalled();
-    expect(handle.vfs).toBe("kvvfs");
-  });
-
-  it("увімкнений прапорець веде запити у воркер", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
+  it("запити йдуть у воркер без жодного прапорця (стадія 3)", async () => {
     const conn = fakeWorkerConnection();
     vi.mocked(openSqliteInWorker).mockResolvedValue(conn);
 
@@ -110,7 +101,6 @@ describe("бекенд бази у воркері", () => {
   });
 
   it("переливає стару базу один раз і ставить позначку ОСТАННЬОЮ", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(isHandoffDone).mockReturnValue(false);
     const bytes = new ArrayBuffer(512);
     vi.mocked(readKvvfsSnapshotBytes).mockResolvedValue(bytes);
@@ -133,7 +123,6 @@ describe("бекенд бази у воркері", () => {
     // Попередня спроба могла впасти рівно між імпортом і підчищанням:
     // файл на місці, позначки немає, чужі рядки всередині. Пропустити
     // підчищання тут означало б залишити їх назавжди.
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(isHandoffDone).mockReturnValue(false);
     vi.mocked(openSqliteInWorker).mockResolvedValue({
       ...fakeWorkerConnection(),
@@ -146,7 +135,6 @@ describe("бекенд бази у воркері", () => {
   });
 
   it("не чіпає перелиття вдруге, коли позначка вже стоїть", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(isHandoffDone).mockReturnValue(true);
     vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
 
@@ -158,8 +146,8 @@ describe("бекенд бази у воркері", () => {
     expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
   });
 
-  it("невдача воркера тихо повертає застосунок на наявний шлях", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
+  it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
     vi.mocked(openSqliteInWorker).mockRejectedValue(
       new Error("Missing required OPFS APIs."),
     );
@@ -167,5 +155,80 @@ describe("бекенд бази у воркері", () => {
     const handle = await getSqliteDb();
 
     expect(handle.vfs).toBe("kvvfs");
+  });
+
+  // Після перелиття старе сховище лишається на пристрої як знімок на момент
+  // переїзду (`kvvfsHandoff.ts` навмисно його не чистить). Відкрити його
+  // вдруге означає показати торішні дані поруч із живою базою іншої вкладки.
+  it("після перелиття невдача воркера веде в памʼять, а не в старий стор", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+  });
+
+  // Вкладка, якій не дісталось лідерство, НЕ має відкрити персистентного
+  // сховища жодного роду: два стори на один акаунт — це два різні набори
+  // даних, а не резервна копія. Ретраї вище тут не допоможуть — сусідня
+  // вкладка тримає пул скільки завгодно довго.
+  it("послідовник не відкриває персистентного сховища навіть із робочим воркером", async () => {
+    Object.defineProperty(globalThis.navigator, "locks", {
+      value: {
+        request: (
+          _name: string,
+          options: { ifAvailable?: boolean },
+          cb: (lock: object | null) => unknown,
+        ) =>
+          options.ifAvailable
+            ? Promise.resolve(cb(null))
+            : new Promise<void>(() => {}),
+      },
+      configurable: true,
+    });
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+    expect(openSqliteInWorker).not.toHaveBeenCalled();
+    Object.defineProperty(globalThis.navigator, "locks", {
+      value: undefined,
+      configurable: true,
+    });
+  });
+
+  it("перечікує зайнятий SAH-пул замість того, щоб осісти на kvvfs", async () => {
+    // Прод 2026-09-21 (Chrome 151, Android): воркер попереднього
+    // завантаження ще тримав хендли, перша спроба падала за 70 мс після
+    // старту — і сесія лишалась на localStorage зі стелею ~5 МБ.
+    const busy = new Error(
+      "Failed to execute 'createSyncAccessHandle' on 'FileSystemFileHandle': " +
+        "Access Handles cannot be created if there is another open Access Handle",
+    );
+    vi.mocked(openSqliteInWorker)
+      .mockRejectedValueOnce(busy)
+      .mockResolvedValue(fakeWorkerConnection());
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("opfs-sahpool");
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
+  });
+
+  it("не ретраїть там, де середовище відмовило чесно", async () => {
+    // Пристрій без OPFS не подобрішає від очікування: зайві спроби лише
+    // додали б півсекунди до кожного холодного старту.
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    await getSqliteDb();
+
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(1);
   });
 });

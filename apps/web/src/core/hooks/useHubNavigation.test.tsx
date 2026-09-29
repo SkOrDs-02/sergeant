@@ -19,6 +19,11 @@ vi.mock("../observability/posthog", () => ({
 vi.mock("../lib/recentModules", () => ({
   recordModuleOpen: vi.fn(),
 }));
+const trackEventMock = vi.fn();
+vi.mock("../observability/analytics", () => ({
+  trackEvent: (...args: unknown[]) => trackEventMock(...args),
+  ANALYTICS_EVENTS: { MODULE_OPENED: "module_opened" },
+}));
 
 function makeWrapper(initialEntries: string[]) {
   const locationRef = {
@@ -92,5 +97,48 @@ describe("useHubNavigation", () => {
     });
 
     expect(result.current.activeModule).toBeNull();
+  });
+
+  describe("openModule — MODULE_OPENED (базова лінія перед віссю дії хабу)", () => {
+    beforeEach(() => trackEventMock.mockClear());
+
+    it("стріляє одну подію з модулем і названим джерелом", () => {
+      const { Wrapper } = makeWrapper(["/"]);
+      const { result } = renderHook<HubNavigation, void>(
+        () => useHubNavigation(),
+        { wrapper: Wrapper },
+      );
+      act(() => result.current.openModule("finyk", { source: "search" }));
+      expect(trackEventMock).toHaveBeenCalledTimes(1);
+      expect(trackEventMock).toHaveBeenCalledWith("module_opened", {
+        module: "finyk",
+        source: "search",
+      });
+    });
+
+    it("без джерела — `other`, а не відсутнє поле і не `unknown`", () => {
+      // Дашборд у PostHog групує по `source`; порожнє поле випадало б з
+      // усіх груп і робило б суму меншою за факт.
+      const { Wrapper } = makeWrapper(["/"]);
+      const { result } = renderHook<HubNavigation, void>(
+        () => useHubNavigation(),
+        { wrapper: Wrapper },
+      );
+      act(() => result.current.openModule("routine"));
+      expect(trackEventMock).toHaveBeenCalledWith("module_opened", {
+        module: "routine",
+        source: "other",
+      });
+    });
+
+    it("невалідний модуль — жодної події", () => {
+      const { Wrapper } = makeWrapper(["/"]);
+      const { result } = renderHook<HubNavigation, void>(
+        () => useHubNavigation(),
+        { wrapper: Wrapper },
+      );
+      act(() => result.current.openModule("nope"));
+      expect(trackEventMock).not.toHaveBeenCalled();
+    });
   });
 });

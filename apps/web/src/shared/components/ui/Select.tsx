@@ -33,15 +33,21 @@ const variants: Record<SelectVariant, string> = {
 
 /**
  * Focus treatment — mirrors `Input` and `Button`: keyboard focus shows a
- * `focus-visible:ring-2 ring-focus/30` ring (Hard Rule #14), pointer
- * clicks don't.
+ * `focus-visible:ring-2 ring-focus/45` ring, pointer clicks don't.
+ *
+ * До 2026-09-15 цей докстрінг СУПЕРЕЧИВ САМ СОБІ: він заявляв дзеркалення
+ * `Input` і `Button`, але називав `/30`, тоді як обидва згадані стоять на
+ * `/45` (`Button.tsx:400`, докстрінг `Input.tsx`). Число тут — не «м'якше
+ * кільце для поля»: та роль належить утиліті `.input-focus`, у якої інший
+ * механізм (кільце БЕЗ офсету, `utilities.css`), і вона свідомо лишається
+ * на `/30`. `Select` же бере форму з офсетом, тобто кнопкову.
  */
 const brandFocus: Record<SelectVariant, string> = {
   default:
-    "focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
+    "focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
   filled:
-    "focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
-  ghost: "focus-visible:ring-2 focus-visible:ring-focus/30",
+    "focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
+  ghost: "focus-visible:ring-2 focus-visible:ring-focus/45",
 };
 
 /**

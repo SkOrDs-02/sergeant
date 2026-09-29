@@ -81,6 +81,11 @@ interface MonthlyPlanCardProps {
   isOver: boolean;
   daysLeft: number;
   /**
+   * Прогноз витрат на кінець місяця за поточним темпом
+   * (`projectMonthEndSpend`); `null` у перші два дні місяця.
+   */
+  forecastExpense?: number | null | undefined;
+  /**
    * When true, the card auto-opens and auto-enters the edit form on
    * mount and renders a `<FirstRunHintBanner />` framing the inputs as
    * the canonical «домівка» for the user's monthly plan. Set on the
@@ -112,6 +117,7 @@ function MonthlyPlanCardComponent({
   pctExpense,
   isOver,
   daysLeft,
+  forecastExpense,
   firstRunHint,
   onDismissFirstRunHint,
 }: MonthlyPlanCardProps) {
@@ -148,9 +154,9 @@ function MonthlyPlanCardComponent({
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted" aria-hidden>
-            <Icon name="calendar" size={16} />
+            <Icon name="calendar" size="md" />
           </span>
-          <span className="text-style-label text-text">Фінплан на місяць</span>
+          <span className="text-style-label text-text">План на місяць</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasPlan && !open && (
@@ -185,7 +191,7 @@ function MonthlyPlanCardComponent({
           )}
           <Icon
             name="chevron-down"
-            size={14}
+            size="sm"
             className={cn(
               "transition-transform text-muted",
               open ? "rotate-180" : "",
@@ -392,6 +398,14 @@ function MonthlyPlanCardComponent({
                   style={{ width: `${Math.min(100, pctExpense)}%` }}
                 />
               </div>
+              {showBalance &&
+                forecastExpense != null &&
+                forecastExpense > 0 && (
+                  <div className="text-style-caption text-subtle">
+                    За поточним темпом до кінця місяця ~
+                    <Money amount={Math.round(forecastExpense)} />
+                  </div>
+                )}
             </div>
           )}
 
@@ -402,7 +416,7 @@ function MonthlyPlanCardComponent({
               aria-expanded={editing}
               className="text-style-caption text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
             >
-              <Icon name="edit" size={12} />
+              <Icon name="edit" size="xs" />
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
             </button>
           </div>

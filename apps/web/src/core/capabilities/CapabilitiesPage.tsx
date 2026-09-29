@@ -61,7 +61,7 @@ function CapabilityCard({ item }: { item: Capability }) {
           accent || "bg-surface-soft-glass border-surface-line text-muted-v2",
         )}
       >
-        <Icon name={item.icon} size={20} />
+        <Icon name={item.icon} size="lg" />
       </span>
       <span className="flex-1 min-w-0">
         <span className="block text-style-label text-text">{item.title}</span>
@@ -81,7 +81,7 @@ function CapabilityCard({ item }: { item: Capability }) {
       </span>
       <Icon
         name="chevron-right"
-        size={16}
+        size="md"
         className="shrink-0 mt-1 text-muted"
         aria-hidden
       />
@@ -106,14 +106,14 @@ export function CapabilitiesPage({ onClose }: CapabilitiesPageProps) {
       <div className="max-w-2xl mx-auto flex flex-col gap-4 px-4 pt-3 pb-8">
         <Card prominence="glass" radius="lg" padding="md">
           <div className="flex items-start gap-3">
-            <span
-              aria-hidden
-              className="shrink-0 w-11 h-11 rounded-2xl bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
-            >
-              <Icon name="compass" size={20} />
-            </span>
             <div className="flex-1 min-w-0">
-              <h1 className="text-style-title text-text leading-tight">
+              <h1 className="flex items-center gap-2 text-style-title text-text leading-tight">
+                <Icon
+                  name="compass"
+                  size="md"
+                  className="shrink-0 text-brand-strong"
+                  aria-hidden
+                />
                 {messages.onboarding.tourLaunchLabel}
               </h1>
               <p className="text-style-body text-subtle mt-1 leading-relaxed">

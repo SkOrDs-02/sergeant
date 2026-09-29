@@ -3,7 +3,7 @@
  *
  * Mirror of `apps/web/src/modules/routine/lib/sqliteReader.ts`. See
  * the web copy for the full design rationale (PR #025 of
- * `docs/planning/storage-roadmap.md`).
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * **Stage 10 mobile mirror** extends the reader from completions-only
  * (routine_entries) to all 7 new tables introduced in PR #070r-schema:

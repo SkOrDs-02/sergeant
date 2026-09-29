@@ -1,7 +1,7 @@
 # Дослідження: бази баркодів для харчових продуктів (фокус — Україна)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-15.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Active → Reference: зріз 2026-08-01, рішення спожите). **Next review:** 2026-12-16.
+> **Status:** Reference — рішення спожите: каскад OFF → USDA живе в `apps/server/src/modules/nutrition/barcode.ts`
 
 Дослідження для nutrition-модуля Sergeant: як апки-конкуренти вирішують проблему «баркод → продукт з КБЖВ», які бази/API існують, покриття українських товарів, ціни. Контекст: у web-апці вже є сканер на `@zxing`.
 

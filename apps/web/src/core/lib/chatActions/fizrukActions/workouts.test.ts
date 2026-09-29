@@ -160,6 +160,97 @@ describe("logSet", () => {
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
     expect(persisted[0]?.items[0]?.sets?.[0]?.weightKg).toBe(0);
   });
+
+  // Голосовий ввід («сто пʼятдесят на десять» → 15000) інакше назавжди
+  // осідає в 1RM / персональному рекорді й впливає на suggestNextSet.
+  describe("reps upper bound (MAX_REPS = 1000)", () => {
+    it("rejects reps just above MAX_REPS", () => {
+      const result = logSet({
+        name: "log_set",
+        input: { exercise_name: "Squat", reps: 1001, weight_kg: 50, sets: 1 },
+      });
+      expect(result).toContain("Забагато повторень");
+      expect(mockPersist).not.toHaveBeenCalled();
+    });
+
+    it("accepts reps exactly at MAX_REPS boundary", () => {
+      mockReadWorkouts.mockReturnValue([]);
+      const result = logSet({
+        name: "log_set",
+        input: { exercise_name: "Squat", reps: 1000, weight_kg: 50, sets: 1 },
+      });
+      expect(result).not.toContain("Забагато");
+      expect(mockPersist).toHaveBeenCalledOnce();
+      const persisted = mockPersist.mock.calls[0]![0] as Workout[];
+      expect(persisted[0]?.items[0]?.sets?.[0]?.reps).toBe(1000);
+    });
+
+    it("still rejects NaN reps via the existing finite check", () => {
+      const result = logSet({
+        name: "log_set",
+        input: { exercise_name: "Squat", reps: NaN, weight_kg: 50, sets: 1 },
+      });
+      expect(result).toContain("повторень");
+      expect(mockPersist).not.toHaveBeenCalled();
+    });
+
+    it("still rejects negative reps via the existing finite check", () => {
+      const result = logSet({
+        name: "log_set",
+        input: { exercise_name: "Squat", reps: -1, weight_kg: 50, sets: 1 },
+      });
+      expect(result).toContain("повторень");
+      expect(mockPersist).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("weight_kg upper bound (MAX_WEIGHT_KG = 1000)", () => {
+    it("rejects weight_kg just above MAX_WEIGHT_KG", () => {
+      const result = logSet({
+        name: "log_set",
+        input: {
+          exercise_name: "Squat",
+          reps: 5,
+          weight_kg: 1001,
+          sets: 1,
+        },
+      });
+      expect(result).toContain("Вага підходу занадто велика");
+      expect(mockPersist).not.toHaveBeenCalled();
+    });
+
+    it("accepts weight_kg exactly at MAX_WEIGHT_KG boundary", () => {
+      mockReadWorkouts.mockReturnValue([]);
+      const result = logSet({
+        name: "log_set",
+        input: {
+          exercise_name: "Squat",
+          reps: 5,
+          weight_kg: 1000,
+          sets: 1,
+        },
+      });
+      expect(result).not.toContain("занадто велика");
+      expect(mockPersist).toHaveBeenCalledOnce();
+      const persisted = mockPersist.mock.calls[0]![0] as Workout[];
+      expect(persisted[0]?.items[0]?.sets?.[0]?.weightKg).toBe(1000);
+    });
+
+    it("stays under bound with a normal weight_kg value", () => {
+      mockReadWorkouts.mockReturnValue([]);
+      const result = logSet({
+        name: "log_set",
+        input: {
+          exercise_name: "Squat",
+          reps: 5,
+          weight_kg: 100,
+          sets: 1,
+        },
+      });
+      expect(result).not.toContain("занадто велика");
+      expect(mockPersist).toHaveBeenCalledOnce();
+    });
+  });
 });
 
 // ─── startWorkout ─────────────────────────────────────────────────────────────

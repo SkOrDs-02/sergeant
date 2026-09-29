@@ -43,6 +43,17 @@ export const FINYK_MANUAL_ONLY_KEY = "finyk_manual_only_v1";
 export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   budgets: "finyk_budgets",
   subscriptions: "finyk_subs",
+  /**
+   * Ручні операції — те, заради чого бекап і роблять.
+   *
+   * AI-DANGER: до 2026-09-22 цього ключа тут не було, і експорт віддавав
+   * `hiddenTxIds`, `txCategories`, `txSplits` — тобто НАДБУДОВИ над
+   * операціями без самих операцій. Файл власника від 2026-09-21: 2 417 Б
+   * при дев'яти операціях на 39 308,60 ₴ у базі, і поруч на тому ж екрані
+   * обіцянка «ручні витрати живуть лише на цьому пристрої… зроби експорт».
+   * Тобто єдина порада на випадок зміни телефона мовчки не працювала.
+   */
+  manualExpenses: "finyk_manual_expenses_v1",
   manualAssets: "finyk_assets",
   manualDebts: "finyk_debts",
   receivables: "finyk_recv",

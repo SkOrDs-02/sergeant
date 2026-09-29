@@ -49,6 +49,13 @@ interface NutritionHeaderProps {
   onBackToHub?: (() => void) | undefined;
   onGoToHub?: (() => void) | undefined;
   onOpenSettings?: (() => void) | undefined;
+  /**
+   * N-12 (аудит 2026-09-16): раніше тут завжди стояло статичне «Мій
+   * раціон», хоча активна вкладка нижньої навігації називалась інакше
+   * («Меню», «Комора», «Журнал»…) - три різні назви одного екрана.
+   * Викликач передає мітку активної вкладки (`NUTRITION_NAV_LABELS`).
+   */
+  subtitle?: string | undefined;
 }
 
 export function NutritionHeader({
@@ -56,6 +63,7 @@ export function NutritionHeader({
   onBackToHub,
   onGoToHub,
   onOpenSettings,
+  subtitle,
 }: NutritionHeaderProps) {
   const left =
     typeof onBackToHub === "function" ? (
@@ -74,7 +82,7 @@ export function NutritionHeader({
       module="nutrition"
       left={left}
       title={MODULE_LABELS.nutrition}
-      subtitle="Мій раціон"
+      subtitle={subtitle}
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

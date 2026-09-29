@@ -1,6 +1,6 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last touched:** 2026-07-20 by @cursor (docs-drift: S6.3/S6.11/PR-12 reconciled). **Next review:** 2027-10-23.
+> **Last touched:** 2026-09-22 by @claude (§8.5 резюме перераховано за таблицею нижче: PR-0 закрито, цифри застаріли). **Next review:** 2026-12-16.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
 >
 > **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.
@@ -50,7 +50,7 @@
 
 > **Snapshot 2026-07-10 (code truth):**
 >
-> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open: live Stripe prod env, legal publish, remaining placement polish.
+> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open (звірка 2026-09-17): live prod env для LiqPay/Plata — саме вони live UA-провайдери, Stripe dormant за флагом (`apps/server/src/modules/billing/provider.ts`); реквізити ФОП + представник у ЄС — legal пак опубліковано 12.07.2026 ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи)); remaining placement polish.
 > - **Pricing/trial:** ADR-0068 — ₴199/міс, ₴1490/рік, reverse trial 7 днів, cloud-sync 2 devices; Free AI **5 msg/day** (ADR-0085); анонім AI не отримує зовсім — асистент за `requireSession()`, гість бачить 401 і запрошення увійти (ADR-0086).
 > - **Landing:** in-app `LandingPage` на `/` + waitlist shipped; standalone `sergeant.com.ua` — TBD.
 > - **FTUX sprints:** S1–S3 core items merged; S6 cleanup mostly done. Real-world activation conversion still **TBD** (needs 14+ day cohort).
@@ -513,6 +513,13 @@ slos:
 > Джерело: [`docs/work/specs/audits/2026-05-06-ux-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-06-ux-roast.md). Виконавчий план: [`docs/work/specs/audits/2026-05-06-ux-roast-pr-plan.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-06-ux-roast-pr-plan.md) (41 PR). Архітектурні рішення: [ADR-0054](../../../../governance/adr/0054-ux-roast-2026-q2.md).
 >
 > Статус станом на 2026-05-07: **15/41 змерджено**, 2 obsolete (PR-13, PR-37). Головний блокер Sprint 1: PR-0 (telemetry, S) — не стартував.
+>
+> **Перераховано 2026-09-22 за таблицею нижче:** з 36 PR, поіменованих у
+> таблиці (вихідний план - 41, частина об'єднана в групові рядки), **15
+> закрито, 20 відкрито, 1 заблоковано** (PR-28, S3/R2 credentials). Блокер
+> Sprint 1 знято: **PR-0 (telemetry) тепер `✅ Closed`** - усі 9 подій
+> landed. Обсолет-мітку «PR-13, PR-37» таблиця не підтверджує: PR-13 і зараз
+> у рядку `⏳ Open` (`PR-8-14`), PR-37 у таблиці не згадується взагалі.
 
 | Sprint | Категорія                              | Стан       | Деталі                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------ | -------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

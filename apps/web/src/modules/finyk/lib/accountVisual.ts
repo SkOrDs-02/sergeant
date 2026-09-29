@@ -1,5 +1,4 @@
 import type { IconName } from "@shared/components/ui/Icon";
-import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 
 /**
  * Derive the visual treatment for a Monobank account: an icon glyph, a tone
@@ -25,7 +24,7 @@ export interface AccountVisual {
    * Підпис рахунку. Дублює `getAccountLabel` із `@sergeant/finyk-domain`,
    * який до 2026-08-21 ніс емодзі-префікс і тому був непридатний тут;
    * тепер обидві таблиці чисті, тож дубль лишився без причини — зведення
-   * в одну винесено окремим боргом (див. `docs/90-work/audits/icons-and-emoji.md`).
+   * в одну винесено окремим боргом (див. `docs/work/specs/audits/icons-and-emoji.md`).
    */
   name: string;
 }
@@ -103,10 +102,3 @@ export function getAccountVisual(acc: AccountLike): AccountVisual {
   }
   return { iconName: "credit-card", tone: TONE_NEUTRAL, name: "Картка" };
 }
-
-/**
- * `MonoAccount` is the canonical type used by callers; re-export the narrow
- * surface we actually touch so the helper can be called with a bare `type` +
- * `creditLimit` pair in tests without requiring the full shape.
- */
-export type AccountVisualInput = Pick<MonoAccount, "type" | "creditLimit">;

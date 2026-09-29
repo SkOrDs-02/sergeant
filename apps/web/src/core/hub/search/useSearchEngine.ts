@@ -25,6 +25,8 @@ import { type UseInlineAiRailResult, useInlineAiRail } from "./useInlineAiRail";
 export interface UseSearchEngineOptions {
   onClose: () => void;
   onOpenModule: (moduleId: string) => void;
+  /** Запит, з яким пошук відкрили ззовні; читається лише на маунті. */
+  initialQuery?: string | undefined;
 }
 
 export interface UseSearchEngineResult {
@@ -68,8 +70,9 @@ export interface UseSearchEngineResult {
 export function useSearchEngine({
   onClose,
   onOpenModule,
+  initialQuery = "",
 }: UseSearchEngineOptions): UseSearchEngineResult {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [activeIdx, setActiveIdx] = useState(0);
   const [recents, setRecents] = useState<string[]>(() => getRecentQueries());
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -252,7 +255,11 @@ export function useSearchEngine({
           // the bento NextCard / FAB use. The destination module reads the
           // intent on mount via `useHubModuleAction` and opens its own
           // create-modal.
-          openHubModuleWithAction(hit.target.moduleId, hit.target.action);
+          openHubModuleWithAction(
+            hit.target.moduleId,
+            hit.target.action,
+            "search",
+          );
           break;
         }
         // Note: `ai-handoff` hits never reach this switch — they're

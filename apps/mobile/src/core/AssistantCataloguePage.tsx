@@ -173,7 +173,7 @@ export function AssistantCataloguePage({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Пошук: «витрата», «звичка», «1RM»…"
+            placeholder="Пошук: «витрата», «звичка», «1RM»"
             placeholderTextColor="#a8a29e"
             className="flex-1 text-sm text-fg py-1"
             accessibilityLabel="Пошук можливостей"
@@ -207,7 +207,7 @@ export function AssistantCataloguePage({
 
         {filtered.length === 0 ? (
           <Text className="text-center text-fg-muted py-8 text-sm">
-            Нічого не знайдено за «{query}». Спробуй інший термін.
+            Нічого не знайшов за «{query}». Спробуй інший термін.
           </Text>
         ) : (
           <View className="gap-5">

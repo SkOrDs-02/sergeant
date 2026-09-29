@@ -15,6 +15,7 @@ import {
   useEffect,
   type ImgHTMLAttributes,
 } from "react";
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -125,7 +126,7 @@ export function OptimizedImage({
         )}
         style={aspectRatio ? { aspectRatio } : undefined}
         role="img"
-        aria-label={alt || "Image failed to load"}
+        aria-label={alt || messages.errors.generic.imageFailed}
       >
         <svg
           width="24"

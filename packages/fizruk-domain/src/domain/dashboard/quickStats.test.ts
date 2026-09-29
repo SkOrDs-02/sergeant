@@ -1,10 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { computeFizrukQuickStats } from "./quickStats.js";
 
-// A completed workout: only `endedAt` matters for both figures.
+// Повноцінне завершене тренування (45 хв по годиннику). `weekWorkouts`
+// читає лише `endedAt`; стрік із 2026-09-15 — ще й вагу запису (канон §8),
+// тож нульова тривалість тут читалась би як «легке» і серію б не рухала.
 const done = (id: string, endedAt: string) => ({
   id,
-  startedAt: endedAt,
+  startedAt: new Date(Date.parse(endedAt) - 45 * 60_000).toISOString(),
   endedAt,
   items: [],
 });
@@ -56,6 +58,33 @@ describe("computeFizrukQuickStats", () => {
       now,
     );
     expect(streak).toBe(1);
+  });
+
+  it("легкий запис входить у тижневий лічильник, але не в серію", () => {
+    // Четвер 2026-07-23. Два повноцінні + один «+20 відтискань».
+    // `weekWorkouts` — факт («що робив»), стрік — режим («чи тренувався»).
+    const now = new Date("2026-07-23T09:00:00Z");
+    const light = {
+      id: "pushups",
+      startedAt: "2026-07-22T17:59:30Z",
+      endedAt: "2026-07-22T18:00:00Z",
+      items: [{ type: "strength", sets: [{ weightKg: 0, reps: 20 }] }],
+    };
+    const { weekWorkouts, streak } = computeFizrukQuickStats(
+      [
+        done("mon", "2026-07-20T09:00:00Z"),
+        done("tue", "2026-07-21T09:00:00Z"),
+        light,
+      ],
+      now,
+    );
+    expect(weekWorkouts).toBe(3);
+    expect(streak).toBe(1);
+    // Без повноцінних — лічильник є, серії немає.
+    expect(computeFizrukQuickStats([light], now)).toEqual({
+      weekWorkouts: 1,
+      streak: 0,
+    });
   });
 
   it("returns zeroes for an empty stream", () => {
