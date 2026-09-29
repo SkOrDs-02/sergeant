@@ -60,6 +60,8 @@ export interface UseTransactionFiltersParams {
   fetchMonth: (year: number, month: number) => Promise<unknown>;
   /** External-driven category filter (e.g. tap on a category card). */
   categoryFilter: string | null | undefined;
+  /** Місяць дрил-дауну разом із `categoryFilter` (`month` 1-based, як в Аналітиці). */
+  categoryMonth?: { year: number; month: number } | null | undefined;
   onClearCategoryFilter?: (() => void) | undefined;
   /**
    * URL-driven calendar shortcut (`?date=...`): `"today"` from Overview's
@@ -99,6 +101,7 @@ export function useTransactionFilters({
   customCategories,
   fetchMonth,
   categoryFilter,
+  categoryMonth,
   onClearCategoryFilter,
   dayFilter,
 }: UseTransactionFiltersParams) {
@@ -133,13 +136,33 @@ export function useTransactionFilters({
   );
   if (incomingCategory !== seenCategoryFilter) {
     setSeenCategoryFilter(incomingCategory);
-    if (incomingCategory) setFilter(incomingCategory);
+    if (incomingCategory) {
+      setFilter(incomingCategory);
+      // Дрил-даун несе місяць Аналітики: без цього список стартував би на
+      // поточному й категорія за минулий місяць показувала б порожньо.
+      if (categoryMonth) {
+        setSelMonth({
+          year: categoryMonth.year,
+          month: categoryMonth.month - 1,
+        });
+      }
+    }
   }
 
   // Гасимо одноразовий проп у власника, щоб він не «прилипав» до сторінки.
   useEffect(() => {
-    if (categoryFilter) onClearCategoryFilter?.();
-  }, [categoryFilter, onClearCategoryFilter]);
+    if (!categoryFilter) return;
+    if (categoryMonth) {
+      const now = kyivNowMonth();
+      if (!(
+        categoryMonth.year === now.year && categoryMonth.month - 1 === now.month
+      )) {
+        // Fire-and-forget, як у `goMonth`: відмова моно лишає порожній стан.
+        fetchMonth(categoryMonth.year, categoryMonth.month - 1).catch(() => {});
+      }
+    }
+    onClearCategoryFilter?.();
+  }, [categoryFilter, categoryMonth, fetchMonth, onClearCategoryFilter]);
 
   // Єдине джерело правди — власний стан. Після підхоплення вище проп уже
   // нічого не перекриває.

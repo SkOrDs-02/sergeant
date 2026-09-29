@@ -121,6 +121,11 @@ export default function App({
 
   // State
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  // Місяць дрил-дауну з Аналітики (month 1-based); одноразовий, як і категорія.
+  const [categoryMonth, setCategoryMonth] = useState<{
+    year: number;
+    month: number;
+  } | null>(null);
   const showBalance = storage.showBalance;
   const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
@@ -296,7 +301,11 @@ export default function App({
             showBalance={showBalance}
             receiptLinks={receiptLinks}
             categoryFilter={categoryFilter}
-            onClearCategoryFilter={() => setCategoryFilter(null)}
+            categoryMonth={categoryMonth}
+            onClearCategoryFilter={() => {
+              setCategoryFilter(null);
+              setCategoryMonth(null);
+            }}
             dayFilter={focusTransactionDate}
             onClearDayFilter={() => navigate("transactions")}
             onEditManualExpense={(id) => {
@@ -348,11 +357,12 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             showBalance={showBalance}
-            onSelectCategory={(categoryId) => {
+            onSelectCategory={(categoryId, period) => {
               // Порядок важливий: спершу кладемо категорію, тоді
               // переходимо. `Transactions` монтується вже з нею й одразу
               // показує звужений список — інакше був би кадр із повним.
               setCategoryFilter(categoryId);
+              setCategoryMonth(period);
               navigate("transactions");
             }}
           />
