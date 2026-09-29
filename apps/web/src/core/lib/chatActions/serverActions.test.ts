@@ -316,3 +316,17 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
     expect(out).toContain("Не вдалося звʼязатися");
   });
 });
+
+describe("handleAsyncChatAction — recall_memory 402 (Free)", () => {
+  it("→ 402 → чесний текст про Pro, без «спробуй ще раз»", async () => {
+    fetchMock.mockResolvedValueOnce(
+      makeJsonResponse({ error: "plan_required" }, { status: 402 }),
+    );
+    const out = await handleAsyncChatAction({
+      name: "recall_memory",
+      input: { query: "що я їв" },
+    } as unknown as ChatAction);
+    expect(String(out)).toContain("Pro");
+    expect(String(out)).not.toContain("Спробуй ще раз");
+  });
+});

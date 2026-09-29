@@ -85,6 +85,15 @@ describe("AssistantMessageBody", () => {
     expect(container.textContent).toContain("click");
   });
 
+  it.each(["//evil.example", "/\\evil.example"])(
+    "sandboxes protocol-relative link %s",
+    (href) => {
+      const { container } = renderBody(`x [go](${href}) y`);
+      expect(container.querySelector("a")).toBeNull();
+      expect(container.textContent).toContain("go");
+    },
+  );
+
   it("preserves hard line-breaks within a paragraph", () => {
     const { container } = renderBody("line one\nline two");
     const p = container.querySelector("p");

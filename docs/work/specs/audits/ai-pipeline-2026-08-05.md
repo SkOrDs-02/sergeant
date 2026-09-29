@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-01.
+> **Last touched:** 2026-09-29 by @claude. **Next review:** 2027-12-01.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -225,6 +225,8 @@ const normalizedToolResults = truncateToolResults(tool_results, {
 
 ### B22 — «сувора» валідація tool-input перевіряє поля, яких не існує
 
+> **ЗАКРИТО 2026-09-29 (`claude/hubchat-tool-fixes`).** `SaveNoteInputSchema` у [`toolCallSchema.ts`](../../../../apps/web/src/core/hub/chat/toolCallSchema.ts) тепер `{text, tag?}`; тести на payload `{text, tag}` і батч із `save_note` у `toolCallSchema.test.ts`. Побічно в allow-list додано `get_daily_series` (його теж відкидав фаєрвол). `remember` виправлено раніше.
+
 [`toolCallSchema.ts:158-166`](../../../../apps/web/src/core/hub/chat/toolCallSchema.ts)
 вимагає для `remember` поля `key`/`value`, а для `save_note` — `content`/`title`.
 Реальний контракт інший: `remember` приймає `fact`/`category`
@@ -241,6 +243,8 @@ Fail-closed, тож не експлуатується. Але контроль �
 цих двох payload-ів не проганяють.
 
 ### B23 — авто-експорт + модельні посилання = ексфільтрація в один клік
+
+> **ЧАСТКОВО ЗАКРИТО 2026-09-29.** Protocol-relative `//evil.example` (і `/\evil.example`) більше не проходить `HREF_SAFE_RE` ([`AssistantMessageBody.tsx`](../../../../apps/web/src/shared/components/AssistantMessageBody.tsx), тест у `AssistantMessageBody.test.tsx`). `export_module_data` без `TOOL_RISK` лишається відкритим: потрібне рішення власника.
 
 `export_module_data` не в `TOOL_RISK`, тобто виконується автоматично, і віддає
 до 3000 символів сирого JSON модуля
