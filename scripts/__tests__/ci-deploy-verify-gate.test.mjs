@@ -1,32 +1,23 @@
 // scripts/__tests__/ci-deploy-verify-gate.test.mjs
 //
-// Shape-regression tests for the deploy-verification gate in
-// `.github/workflows/deploy-api.yml`.
+// Shape-regression tests для автодеплою бекенду: джоба `deploy-api` у
+// `.github/workflows/ci.yml` викликає `.github/workflows/deploy-api.yml`.
 //
-// Чому цей гейт існує. Крок «Trigger Coolify deploy» доводить рівно одне:
-// Coolify ПРИЙНЯВ запит. Далі він тягне образ, піднімає новий контейнер і
-// чекає healthcheck — а якщо той не проходить, ТИХО відкочується на старий
-// («New container is not healthy, rolling back to the old container»).
-// Джоба при цьому лишалась зеленою, бо hook відповів 2xx.
+// Що тут стережеться і чому (ADR-0101):
 //
-// Так 2026-09-14 знайшлося, що деплої відкочувались, а на VPS тижнями
-// крутився старий образ: фікси мерджились, CI був зелений, у проді не
-// мінялось нічого. Це той самий клас поломки, що й `401` на хук у серпні,
-// лише на крок пізніше в ланцюжку.
+//   1. Деплой стоїть ПІСЛЯ обовʼязкових джоб і лише на push у main.
+//      Міграції БД їдуть в ENTRYPOINT образу, тож деплой без гейта
+//      застосовував би неперевірену схему на живій базі.
+//   2. `deploy-api.yml` не має власного `on: push` - інакше він обійшов би
+//      гейт так само, як старий ghcr-воркфлоу, що деплоїв паралельно з CI.
+//   3. Крок перевірки читає статус деплою по uuid і звіряє КОМІТ. Coolify
+//      відповідає 2xx на «прийнято», а потім може тихо відкотитись
+//      (2026-09-14) або зібрати вже задеплоєний коміт.
+//   4. fail-closed і без `continue-on-error` - саме він колись зробив
+//      пʼятиденний простій невидимим.
 //
-// Тому тут перевіряється не «крок існує», а саме ті властивості, втрата
-// яких повертає мовчазне зелене:
-//
-//   1. happy path — крок перевірки є і стоїть ПІСЛЯ кроку-тригера
-//      (перевіряти нічого, поки деплой не замовлено);
-//   2. крок читає статус деплою по uuid, а не вдовольняється кодом хука;
-//   3. fail-closed — і невдалий статус, і вичерпаний таймаут дають `exit 1`;
-//   4. `continue-on-error` тут заборонений — саме він колись і зробив
-//      серпневу поломку невидимою;
-//   5. тригер зберігає `deployment_uuid`, інакше перевіряти буде нічого.
-//
-// Парсер навмисно рядковий і без залежностей — той самий компроміс, що і в
-// ci-bundle-budget-gates.test.mjs поруч.
+// Парсер навмисно рядковий і без залежностей - той самий компроміс, що й
+// у ci-bundle-budget-gates.test.mjs поруч.
 //
 // Run with:  node --test scripts/__tests__/ci-deploy-verify-gate.test.mjs
 
@@ -38,16 +29,11 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const WORKFLOW_PATH = resolve(
-  __dirname,
-  "..",
-  "..",
-  ".github",
-  "workflows",
-  "deploy-api.yml",
-);
+const WORKFLOWS = resolve(__dirname, "..", "..", ".github", "workflows");
+const DEPLOY = readFileSync(resolve(WORKFLOWS, "deploy-api.yml"), "utf-8");
+const CI = readFileSync(resolve(WORKFLOWS, "ci.yml"), "utf-8");
 
-/** @see ci-bundle-budget-gates.test.mjs — той самий 2-space канон. */
+/** @see ci-bundle-budget-gates.test.mjs - той самий 2-space канон. */
 function extractSteps(workflow) {
   const steps = [];
   let current = null;
@@ -63,176 +49,127 @@ function extractSteps(workflow) {
   return steps;
 }
 
-const WORKFLOW = readFileSync(WORKFLOW_PATH, "utf-8");
-const STEPS = extractSteps(WORKFLOW);
+/** Блок джоби верхнього рівня (`  <id>:`) до наступної джоби. */
+function extractJob(workflow, id) {
+  const lines = workflow.split("\n");
+  const start = lines.findIndex((l) => l === `  ${id}:`);
+  if (start === -1) return null;
+  let end = lines.length;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^ {2}[a-z0-9_-]+:\s*$/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return lines.slice(start, end).join("\n");
+}
 
+const STEPS = extractSteps(DEPLOY);
 const triggerIndex = STEPS.findIndex((s) => /- name: Trigger Coolify/.test(s));
 const verifyIndex = STEPS.findIndex((s) =>
   /- name: Verify Coolify actually deployed/.test(s),
 );
 
+test("ci.yml: деплой після обовʼязкових джоб і лише на push у main", () => {
+  const job = extractJob(CI, "deploy-api");
+  assert.ok(job, "джоба `deploy-api` зникла з ci.yml - автодеплою немає");
+  assert.match(job, /uses: \.\/\.github\/workflows\/deploy-api\.yml/);
+  for (const need of [
+    "check",
+    "critical-flow",
+    "migration-lint",
+    "migration-down-drill",
+  ]) {
+    assert.match(
+      job,
+      new RegExp(`needs:[^\\n]*\\b${need}\\b`),
+      `деплой мусить чекати на \`${need}\``,
+    );
+  }
+  assert.match(job, /github\.event_name == 'push'/);
+  assert.match(job, /github\.ref == 'refs\/heads\/main'/);
+});
+
+test("deploy-api.yml не тригериться сам на push", () => {
+  const on = DEPLOY.split("\njobs:")[0];
+  assert.doesNotMatch(
+    on,
+    /^\s+push:/m,
+    "власний `on: push` обходить гейт CI - саме так старий воркфлоу деплоїв паралельно з тестами",
+  );
+  assert.match(on, /workflow_call:/);
+});
+
+test("без секретів джоба пропускається, а не падає", () => {
+  const gate = STEPS.find((s) => /- name: Секрети на місці/.test(s));
+  assert.ok(gate, "крок перевірки секретів зник");
+  assert.match(gate, /ready=false/);
+  assert.doesNotMatch(gate, /exit 1/);
+});
+
 test("happy path: крок перевірки існує і стоїть після тригера", () => {
   assert.notEqual(triggerIndex, -1, "крок «Trigger Coolify deploy» зник");
-  assert.notEqual(
-    verifyIndex,
-    -1,
-    "крок перевірки результату деплою зник — джоба знову зелена на відкоті",
-  );
+  assert.notEqual(verifyIndex, -1, "крок перевірки результату деплою зник");
   assert.ok(
     verifyIndex > triggerIndex,
-    "перевірка мусить стояти ПІСЛЯ тригера: до замовлення деплою перевіряти нічого",
+    "перевірка мусить стояти після тригера",
   );
 });
 
-test("тригер зберігає deployment_uuid — інакше перевіряти нічим", () => {
+test("тригер зберігає deployment_uuid - інакше перевіряти нічим", () => {
   const trigger = STEPS[triggerIndex];
-  assert.match(
-    trigger,
-    /deployment_uuid/,
-    "з відповіді хука має зберігатись uuid деплою",
-  );
-  assert.match(
-    trigger,
-    /coolify-deployment-uuid/,
-    "uuid має лягати у файл, який читає крок перевірки",
-  );
+  assert.match(trigger, /deployment_uuid/);
+  assert.match(trigger, /coolify-deployment-uuid/);
+  assert.match(trigger, /-X POST/, "ендпоінт deploy приймає лише POST");
 });
 
-test("перевірка читає САМЕ статус деплою, а не код хука", () => {
+test("перевірка звіряє статус і КОМІТ, а не код відповіді", () => {
   const verify = STEPS[verifyIndex];
-  assert.match(
-    verify,
-    /api\/v1\/deployments\//,
-    "статус треба брати з /api/v1/deployments/<uuid>",
-  );
-  assert.match(verify, /\.status/, "з відповіді читається поле status");
+  assert.match(verify, /api\/v1\/deployments\/applications\//);
+  assert.match(verify, /\.status/);
+  assert.match(verify, /\.commit/);
+  assert.match(verify, /TARGET_SHA/);
+  assert.match(verify, /HEALTH_URL/);
 });
 
-test("edge case: fail-closed — і поганий статус, і таймаут валять джобу", () => {
+test("edge case: fail-closed - і поганий статус, і чужий коміт валять джобу", () => {
   const verify = STEPS[verifyIndex];
   const exits = verify.match(/exit 1/g) ?? [];
   assert.ok(
-    exits.length >= 2,
-    `очікувалось щонайменше два fail-closed виходи (поганий статус + вичерпаний таймаут), знайдено ${exits.length}`,
+    exits.length >= 3,
+    `очікувалось >= 3 fail-closed виходи, є ${exits.length}`,
   );
-  assert.match(
-    verify,
-    /::error::/,
-    "провал має підніматись як error-анотація, а не тонути в логах",
-  );
+  assert.match(verify, /::error::/);
 });
 
-test("edge case: continue-on-error у цих кроках заборонений", () => {
-  // Шукаємо КЛЮЧ, а не згадку: в обох кроках стоїть AI-DANGER-коментар про
-  // те, що `continue-on-error` сюди повертати не можна, і наївний пошук
-  // підрядком ловив саме його. Це той самий клас хиби, що й у решті сесії —
-  // перевірка, яка міряє не те, що мала.
+test("edge case: continue-on-error у кроках деплою заборонений", () => {
   const settingRe = /^\s*continue-on-error\s*:/;
   for (const idx of [triggerIndex, verifyIndex]) {
     const offending = STEPS[idx]
       .split("\n")
       .filter((line) => !/^\s*#/.test(line) && settingRe.test(line));
-    assert.deepEqual(
-      offending,
-      [],
-      "continue-on-error повертає мовчазне зелене — саме воно коштувало пʼяти днів простою в серпні",
-    );
+    assert.deepEqual(offending, []);
   }
 });
 
-test("неперевірений деплой не вдає успішний", () => {
+test("jq-вираз перевірки справді знаходить свій деплой серед історії", () => {
   const verify = STEPS[verifyIndex];
-  assert.match(
-    verify,
-    /::warning::/,
-    "коли uuid недоступний, крок мусить СКАЗАТИ, що результат не перевірено",
+  const m = verify.match(/jq -r --arg u "\$UUID" '([^']*\.commit[^']*)'/);
+  assert.ok(m?.[1], "не знайдено jq-вираз коміту - тест втратив предмет");
+  const history = JSON.stringify({
+    deployments: [
+      { deployment_uuid: "new", status: "finished", commit: "aaa" },
+      { deployment_uuid: "old", status: "finished", commit: "bbb" },
+    ],
+  });
+  const out = spawnSync("jq", ["-r", "--arg", "u", "old", m[1]], {
+    input: history,
+    encoding: "utf-8",
+  });
+  assert.equal(
+    out.error,
+    undefined,
+    "потрібен `jq` - ним розбирає відповідь і сам крок деплою",
   );
-});
-
-// Друга хвиля, 2026-09-14. Гейт відпрацював свій перший інцидент — і сам
-// виявився напівсліпим: `GET /api/v1/deployments/<uuid>` не віддавав
-// читабельного `.status`, крок мовчки крутив опит 15 хвилин і завершувався
-// текстом «не вдалося прочитати» БЕЗ жодної причини. Три деплої підряд
-// (#354, #356, #357) стали червоними однаково, тож із логів не було видно
-// ні що зламалось, ні чи доїхав код.
-//
-// Це рівно та хвороба, про яку сказано в AGENTS.md двома абзацами вище за
-// текстом: «список причин, у якому немає твого випадку, гірший за
-// відсутність списку». Тому тут закріплені три властивості діагностики.
-
-test("опит статусу зберігає HTTP-код — без нього причина невідома", () => {
-  const verify = STEPS[verifyIndex];
-  assert.match(
-    verify,
-    /%\{http_code\}/,
-    "опит мусить фіксувати код відповіді: без нього 401 не відрізнити від «ще триває»",
-  );
-});
-
-test("явна відмова не чекає таймауту", () => {
-  const verify = STEPS[verifyIndex];
-  assert.match(
-    verify,
-    /401\|403\|404\|405\)\s*\n?\s*break/,
-    "на 4xx цикл має вийти одразу: наступний опит нічого не змінить",
-  );
-});
-
-// Третя хвиля, того самого дня. Тести вище грепають ТЕКСТ кроку — і саме
-// тому проґавили, що ланцюжок `(.status // .[0].status // …)` читав лише
-// одну форму з трьох: `.status` на масиві це не «порожньо», а ПОМИЛКА jq,
-// яка валить увесь вираз до фолбеків. Рядковий тест бачив три форми в
-// коді й був зелений; знайшов це рев'ю.
-//
-// Тому цей тест ВИКОНУЄ вираз, витягнутий із самого workflow, на всіх
-// трьох формах. Перевіряє не наявність слів, а поведінку.
-test("парсер статусу справді читає всі три форми відповіді", () => {
-  const verify = STEPS[verifyIndex];
-  const m = verify.match(
-    /jq -r '([\s\S]*?)' \\\n\s*\/tmp\/coolify-deployment\.json/,
-  );
-  assert.ok(
-    m?.[1],
-    "не знайдено jq-вираз розбору статусу — тест втратив предмет",
-  );
-  const expr = m[1];
-
-  const shapes = {
-    обʼєкт: '{"status":"finished"}',
-    масив: '[{"status":"finished"}]',
-    "обгортка deployments": '{"deployments":[{"status":"finished"}]}',
-  };
-  for (const [name, json] of Object.entries(shapes)) {
-    const out = spawnSync("jq", ["-r", expr], {
-      input: json,
-      encoding: "utf-8",
-    });
-    // Без цього рядка відсутній `jq` дає порожній stdout, і тест падає з
-    // «форма не розібралась» — тобто звинувачує парсер у чужій біді.
-    assert.equal(
-      out.error,
-      undefined,
-      "потрібен `jq` — ним розбирає відповідь і сам крок деплою",
-    );
-    assert.equal(
-      out.stdout.trim(),
-      "finished",
-      `форма «${name}» не розібралась: ${out.stderr.trim() || "порожньо"}`,
-    );
-  }
-});
-
-test("нечитабельний статус називає причину, а не лише факт", () => {
-  const verify = STEPS[verifyIndex];
-  for (const code of ["401|403", "404", "000"]) {
-    assert.ok(
-      verify.includes(`${code})`),
-      `гілка причини для ${code} зникла — лишився б звіт «не вдалося прочитати» без пояснення`,
-    );
-  }
-  assert.match(
-    verify,
-    /deployments\[0\]\.status/,
-    "форма відповіді різниться між версіями Coolify — читаємо всі відомі",
-  );
+  assert.equal(out.stdout.trim(), "bbb");
 });

@@ -174,13 +174,12 @@ jobs:
         run: node --test "scripts/__tests__/*.test.mjs"
 
       - name: Deploy-verification gate shape regression test
-        # Той самий прийом для гейта в `deploy-api.yml`. Він стереже крок,
-        # що дочікується РЕЗУЛЬТАТУ деплою: hook відповідає 2xx на
-        # «прийнято», а Coolify потім може тихо відкотитись на старий
-        # контейнер — саме так 2026-09-14 знайшлося, що на VPS тижнями
-        # крутився старий образ при зеленому CI. Живе тут, а не в
-        # `deploy-api.yml`: тест парсить YAML і не потребує ні образу, ні
-        # секретів, тож має бігати на КОЖНОМУ PR, а не лише на мержі в main.
+        # Той самий прийом для автодеплою (`deploy-api.yml` + джоба
+        # `deploy-api` нижче). Стереже дві речі: деплой стоїть ПІСЛЯ
+        # обовʼязкових джоб, і крок перевірки дочікується РЕЗУЛЬТАТУ та
+        # звіряє коміт. Coolify відповідає 2xx на «прийнято», а потім може
+        # тихо відкотитись на старий контейнер (2026-09-14). Живе тут, бо
+        # тест парсить YAML і не потребує секретів, тож біжить на кожному PR.
         run: node --test scripts/__tests__/ci-deploy-verify-gate.test.mjs
 
       - name: Governance sync (Hard Rules + Status badges + dangling refs)
@@ -1313,6 +1312,20 @@ jobs:
         run: |
           actionlint -color \
             -ignore 'shellcheck reported issue in this script: SC[0-9]+:(info|style):'
+
+  deploy-api:
+    name: Deploy API (after green CI)
+    # Автодеплой бекенду лише з `main` і лише після обовʼязкових джоб
+    # (ADR-0101). Міграції БД їдуть в ENTRYPOINT образу, тож деплой без
+    # цього гейта застосовував би неперевірену схему на живій базі.
+    # `critical-flow` тут тому, що він єдиний ганяє справжній API-сервер
+    # із міграціями проти браузера; `migration-*` - бо саме міграції
+    # виконає прод при старті. Червона будь-яка з них = деплою немає.
+    # Форму стереже `scripts/__tests__/ci-deploy-verify-gate.test.mjs`.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, critical-flow, migration-lint, migration-down-drill]
+    uses: ./.github/workflows/deploy-api.yml
+    secrets: inherit
 
   pipeline-duration-summary:
     name: Pipeline duration (p95 trend)

@@ -192,7 +192,7 @@ jobs:
               '',
               '</details>',
               '',
-              'cc @zaebal-beep',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             const { data: issues } = await github.rest.issues.listForRepo({

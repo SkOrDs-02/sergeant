@@ -178,7 +178,7 @@ jobs:
               '',
               '</details>',
               '',
-              'cc @zaebal-beep',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             // Idempotent: refresh the existing open issue rather than creating
