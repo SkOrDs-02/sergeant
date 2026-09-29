@@ -81,6 +81,16 @@ interface ImportMetaEnv {
    * `/api/transcribe` — $1.00/добу/юзер без plan-gate.
    */
   readonly VITE_ENABLE_VOICE_INPUT?: string;
+
+  /**
+   * Вмикає тестовий міст `window.__sergeantScenario` для Playwright-лейнів,
+   * які ганяються на prod-білді через `vite preview`.
+   *
+   * Незадана змінна означає "міста немає". Прапорець несе лише тестовий
+   * код; prod-бандл додатково перевіряється сканером
+   * `scripts/ci/check-e2e-seed-boundary.mjs`.
+   */
+  readonly VITE_E2E_SEED?: string;
 }
 
 interface ImportMeta {

@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 667,
-  "total_entries": 667,
+  "tracked_files": 668,
+  "total_entries": 668,
   "target_collisions": [],
   "entries": [
     {
@@ -1207,7 +1207,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/feature-flags.md",
-      "inbound_count": 24,
+      "inbound_count": 25,
       "inbound_sources": [
         "docs/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -1228,6 +1228,7 @@
         "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/e2e-repeatable-states.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md",
         "docs/work/specs/site-ia/README.md",
@@ -1938,9 +1939,10 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/testing/verification/catalog.json",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/engineering/testing/verification/README.md",
+        "docs/work/specs/e2e-repeatable-states.md",
         "docs/work/specs/kv-warm-cache-user-partition.md"
       ]
     },
@@ -9215,6 +9217,18 @@
       "canonical_owner": "docs/work/specs/documentation-refactor.md",
       "inbound_count": 0,
       "inbound_sources": []
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/work/specs/e2e-repeatable-states.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/e2e-repeatable-states.md",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md"
+      ]
     },
     {
       "old_path": "docs/work/specs/finyk-hero-month-strip.md",

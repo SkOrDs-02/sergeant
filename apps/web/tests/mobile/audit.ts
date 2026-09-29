@@ -5,63 +5,12 @@
  * розходиться на першій же правці.
  */
 import { expect, type Page } from "@playwright/test";
+import { getWorld } from "../fixtures/worlds";
+import { installWorld } from "../utils/scenario";
 
-/** Форма `MonoSyncStateSchema` із `apps/server/src/modules/mono/connection.ts`. */
-export const MONO_DISCONNECTED = {
-  status: "disconnected",
-  webhookActive: false,
-  lastEventAt: null,
-  lastBackfillAt: null,
-  accountsCount: 0,
-} as const;
-
-// Minimal API mock — the app renders fully client-side once `/me` returns a
-// user, so no backend is required. Mirrors playwright.ledger.config.ts.
+// Порожній світ: `/me` віддає qa-user, Monobank і Сільпо не підключені.
 export async function mockApi(page: Page) {
-  // Лише реальний API (`/api/...` на будь-якому origin). Глоб `**/api/**`
-  // ловив ще й вихідники застосунку — `src/shared/lib/api/…` під dev-сервером
-  // і будь-який чанк зі сегментом `api` у шляху — і віддавав їм `{ ok: true }`
-  // замість модуля (аудит 2026-09-15, §8): аудит тоді міряв порожню сторінку.
-  await page.route(
-    (url) => url.pathname === "/api" || url.pathname.startsWith("/api/"),
-    async (route) => {
-      const path = new URL(route.request().url()).pathname;
-      const method = route.request().method();
-      if (path.includes("/me")) {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            ok: true,
-            user: {
-              id: "qa-user",
-              name: "QA User",
-              email: "qa@example.com",
-              emailVerified: true,
-            },
-          }),
-        });
-        return;
-      }
-      // Реальна відповідь сервера для користувача без Monobank. Загальний
-      // `{ ok: true }` клієнт читає як «підключено» (немає `status:
-      // "disconnected"`), і Фінік чекав банківські операції, яких у стенді
-      // не існує.
-      if (path.endsWith("/mono/sync-state")) {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify(MONO_DISCONNECTED),
-        });
-        return;
-      }
-      await route.fulfill({
-        status: method === "POST" ? 204 : 200,
-        contentType: "application/json",
-        body: method === "POST" ? "" : JSON.stringify({ ok: true }),
-      });
-    },
-  );
+  await installWorld(page, getWorld("empty"));
 }
 
 // Controls that mobile.css raises to a 44×44 floor under `pointer: coarse`.
