@@ -1,7 +1,7 @@
 ---
 name: migration-agent
 description: "Stage 1 of sergeant-deliver-squad — owns ALL database schema work for a feature. Creates sequential NNN_*.sql migrations in apps/server/src/migrations, enforces two-phase DROP and additive-first NOT NULL (Hard Rule #4), flags every new bigint column for downstream coercion, and updates packages/db-schema types. Trigger FIRST whenever a feature needs schema changes; always run before server-agent. Boundary: does NOT write route handlers, serializers, or client code — hand the schema report to server-agent."
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 skills: sergeant-data-and-migrations
 ---
@@ -68,3 +68,7 @@ Justified backward-compat exception only: `-- ALLOW_DROP: <reason> (due: YYYY-MM
 - Any Phase-2 DROP that must follow in a later PR (+ its `safe to drop after` date).
 - Tables/columns changed; Drizzle sync status.
 - `pnpm lint:migrations` / drift-check / migrate status (✅ or exact errors).
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
