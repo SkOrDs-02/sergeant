@@ -182,7 +182,7 @@ for (const r of results) {
 
 if (anyStale) {
   console.log(
-    "\nВикотити: pnpm deploy:api (спершу бекенд), далі pnpm deploy:web / pnpm deploy:landing.",
+    "\nВикотити: pnpm deploy:api -- --yes (спершу бекенд), далі pnpm deploy:web -- --yes / pnpm deploy:landing -- --yes.",
   );
 }
 process.exit(0);
