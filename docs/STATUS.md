@@ -39,11 +39,11 @@
 - [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) — feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти _(2026-09-24)_
 - [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) — fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message _(2026-09-24)_
 
-## 🔵 В роботі — 78 відкритих документів
+## 🔵 В роботі — 79 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 78       |
+| Активні спеки | 79       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -62,6 +62,7 @@ Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pend
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
+- [`work/specs/kv-warm-cache-user-partition.md`](./work/specs/kv-warm-cache-user-partition.md) — SPEC: KV-кеш читає розділ залогіненого користувача → **agent-ready** _(Активні спеки)_
 
 ## 🧱 Стек
 
