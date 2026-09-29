@@ -220,6 +220,47 @@ describe("бекенд бази у воркері", () => {
     expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
   });
 
+  it("після таймауту відкриття пробує воркер ще раз, а не падає в памʼять", async () => {
+    // Планшет 2026-09-29: після очищення даних сайту воркер мовчав 30 с,
+    // і сесія тихо опинялась у `:memory:` з UI на «Завантаження…».
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    try {
+      vi.mocked(openSqliteInWorker)
+        .mockRejectedValueOnce(new Error("sqlite-worker: timed out"))
+        .mockResolvedValue(fakeWorkerConnection());
+
+      const pending = getSqliteDb();
+      await vi.runAllTimersAsync();
+      const handle = await pending;
+
+      expect(handle.vfs).toBe("opfs-sahpool");
+      expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(openSqliteInWorker).mock.calls[1]?.[1]).toMatchObject({
+        openTimeoutMs: 15_000,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("повторює після таймауту лише раз", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    try {
+      vi.mocked(openSqliteInWorker).mockRejectedValue(
+        new Error("sqlite-worker: timed out"),
+      );
+
+      const pending = getSqliteDb();
+      await vi.runAllTimersAsync();
+      const handle = await pending;
+
+      expect(handle.vfs).toBe("memory");
+      expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("не ретраїть там, де середовище відмовило чесно", async () => {
     // Пристрій без OPFS не подобрішає від очікування: зайві спроби лише
     // додали б півсекунди до кожного холодного старту.

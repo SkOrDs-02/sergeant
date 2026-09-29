@@ -19,9 +19,21 @@ export type SqliteVfsName = "opfs-sahpool" | "kvvfs" | "memory";
 
 let activeVfs: SqliteVfsName | null = null;
 
+// База відкривається вже після першого рендера (а при зависанні воркера і
+// через 30+ с), тож банер «дані не збережуться» мусить дізнатись про VFS
+// підпискою, а не читанням на рендері, як аркуш «Синхронізація».
+const listeners = new Set<() => void>();
+
+/** Підписка для `useSyncExternalStore`. */
+export function subscribeActiveSqliteVfs(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
 /** Викликає `sqlite.ts` одразу після відкриття бази. */
 export function noteActiveSqliteVfs(vfs: SqliteVfsName): void {
   activeVfs = vfs;
+  for (const listener of listeners) listener();
 }
 
 /**
