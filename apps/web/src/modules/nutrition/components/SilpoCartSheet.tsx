@@ -156,7 +156,7 @@ function MatchPicker({
       >
         {matches.map((m) => (
           <option key={m.lagerId} value={m.lagerId}>
-            {m.name} —{" "}
+            {m.name}:{" "}
             {formatMoneyFromKopecks(m.priceKop, {
               minFractionDigits: 2,
             })}

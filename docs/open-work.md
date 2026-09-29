@@ -11,9 +11,9 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (3–5 цифр, без провідного нуля, не приклеєні до сусідніх літер/цифр — тож hex-кольори `#14100e`, якорі `file.md#141-…` і zero-padded мітки `PR #052b` сюди не потрапляють; deduped, sorted ascending, перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **81** — Активні спеки: **81**.
+**Усього відкритих документів:** **82** — Активні спеки: **82**.
 
-## Активні спеки (81)
+## Активні спеки (82)
 
 > Єдиний каталог активної роботи; підкаталоги зберігають жанр і предметну область.
 

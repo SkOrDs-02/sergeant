@@ -30,7 +30,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Surface-specific gotchas
 
-- **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`). No inline `queryKey: [...]`.
+- **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `silpoKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`). No inline `queryKey: [...]`. Повноту списку стереже `node scripts/check-rq-keys-catalog.mjs`.
 - **Tailwind colour-opacity (дизайн-конвенція — tokens + review, ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/governance/adr/0081-repository-simplification.md)):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion. Конвенція чинна, але без ESLint-enforcement — тримається design tokens + design-review.
 - **No arbitrary hex / focus-visible (дизайн-конвенція — tokens + review, ex-Rules #11/#14, retired ADR-0081):** no arbitrary hex in `className`; use `focus-visible:` not `focus:`.
 - **Module accents (дизайн-конвенція — tokens + review, ex-Rule #12, retired ADR-0081):** module-accent containment — no foreign accents inside a module subtree.

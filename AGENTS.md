@@ -173,7 +173,7 @@ Single source of truth: **Europe/Kyiv** for time **display, server-side reports 
 
 ## RQ keys factory
 
-Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `silpoKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/governance/rules/02-rq-keys-via-centralized-factories.md).
+Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `silpoKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`. Список звіряється з кодом гейтом `node scripts/check-rq-keys-catalog.mjs` (у ланцюжку `pnpm lint`): `silpoKeys` пролежав у коді незгаданим із серпня, і знайшов це аудит, а не перевірка. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/governance/rules/02-rq-keys-via-centralized-factories.md).
 
 ## Performance budgets
 
