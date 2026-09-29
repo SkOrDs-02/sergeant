@@ -12,7 +12,9 @@ import {
   coerceInt,
   floatFromEnv,
   intFromEnv,
+  founderIdsFromEnv,
   optionalUrl,
+  strictBoolFromEnv,
   stringWithDefault,
 } from "./envHelpers.js";
 import { pgEnvShape } from "./pgEnv.js";
@@ -182,7 +184,7 @@ const envSchema = z.object({
 
   AI_QUOTA_TOOL_DEFAULT_LIMIT: coerceInt.nonnegative().optional(),
 
-  AI_QUOTA_FOUNDER_IDS: z.string().optional(),
+  AI_QUOTA_FOUNDER_IDS: founderIdsFromEnv("AI_QUOTA_FOUNDER_IDS"),
 
   // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети;
   // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
@@ -242,6 +244,12 @@ const envSchema = z.object({
     }),
 
   PUSH_INTERNAL_ALLOWED_IPS: stringWithDefault(""),
+
+  // Опційний IP-allowlist для ВСЬОГО `/api/internal/*` (аудит ai-pipeline B27).
+  // Порожньо = перевірка не монтується (навіть у production): легітимні
+  // викликачі (n8n/Coolify-крони, scripts/replay-*.mjs) приходять з адрес,
+  // які треба спершу інвентаризувати, інакше fail-closed 503 зламає їх усіх.
+  INTERNAL_ALLOWED_IPS: stringWithDefault(""),
 
   APNS_P8_KEY: z.string().optional(),
   APNS_KEY_ID: z.string().optional(),
@@ -650,9 +658,15 @@ const envSchema = z.object({
 
   ANTHROPIC_BUDGET_CHECK_INTERVAL_MS: intFromEnv(300_000),
 
-  ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
+  ANTHROPIC_BUDGET_ALERT_ENABLED: strictBoolFromEnv(
+    "ANTHROPIC_BUDGET_ALERT_ENABLED",
+    true,
+  ),
 
-  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: boolFromEnv(false),
+  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: strictBoolFromEnv(
+    "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
+    false,
+  ),
 
   VOYAGE_DAILY_BUDGET_USD_SOFT: floatFromEnv(1),
 
