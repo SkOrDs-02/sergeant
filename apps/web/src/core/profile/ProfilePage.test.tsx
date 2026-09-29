@@ -12,6 +12,7 @@ import { MemoryRouter, useLocation, useNavigationType } from "react-router-dom";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { expandAllCollapsedSections } from "../../test/helpers/collapsibleSection";
 import { messages } from "@shared/i18n/uk";
+import { meApi } from "@shared/api";
 
 // ── Mocks ────────────────────────────────────────────────────
 
@@ -25,20 +26,11 @@ const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 // DangerZoneSection тепер видаляє акаунт через `DELETE /api/me`
 // (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
 // 30-денне вікно на скасування.
-const deleteAccountMock = vi.fn<(d: unknown) => Promise<unknown>>();
-// Часткова підміна, а не весь модуль: `@shared/api` віддає ще з десяток
-// api-груп, якими користується решта профілю, і повний мок затирав їх —
-// сусідній тест про зміну імені падав саме через це.
-vi.mock("@shared/api", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@shared/api")>();
-  return {
-    ...actual,
-    meApi: {
-      ...actual.meApi,
-      deleteAccount: (data: unknown) => deleteAccountMock(data),
-    },
-  };
-});
+//
+// `vi.spyOn` замість `vi.mock("@shared/api", …)` (бюджет vi.mock на файл) —
+// решта `@shared/api` лишається СПРАВЖНЬОЮ без ризику затерти сусідні
+// api-групи, якими користується решта профілю.
+const deleteAccountMock = vi.spyOn(meApi, "deleteAccount");
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();

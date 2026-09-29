@@ -35,7 +35,7 @@ import { floatingPromisesBaseline } from "./eslint.floating-promises-baseline.js
 //     name: TypeScript resolves the `.ts` and never sees the `.tsx`, so those
 //     two specs are untyped today. That is a bug in its own right, tracked
 //     separately — listing them here keeps this PR to one cause.
-const PROJECT_SERVICE_BLIND_SPOTS = [
+export const PROJECT_SERVICE_BLIND_SPOTS = [
   "apps/web/tests/**",
   "apps/web/src/sw.ts",
   "apps/web/src/sw/**",

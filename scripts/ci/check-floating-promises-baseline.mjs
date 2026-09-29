@@ -20,11 +20,18 @@
 //
 // `--bump` is the expensive path (a whole type-aware pass, minutes) and is
 // meant to be run by hand after fixing files — never in CI.
+//
+// Памʼять: на машині з 7.9 ГБ RAM `--bump` по всьому `apps/**` падав з OOM
+// навіть з `--max-old-space-size=4096` (88 хв, 2026-09-29). Прибрати один
+// виправлений файл простіше руками з виводу `--check-only`; повний `--bump`
+// запускати там, де heap можна дати більше.
 
 import { ESLint } from "eslint";
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
+
+import { PROJECT_SERVICE_BLIND_SPOTS } from "../../eslint.type-aware.js";
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -46,14 +53,27 @@ async function findOffenders(patterns) {
     // Force the rule back on: the repo config switches it off for exactly the
     // files we want to re-examine, so without this override the answer would
     // always be "clean" and the ratchet would be a no-op.
-    overrideConfig: [{ files: patterns, rules: { [RULE]: "error" } }],
+    // Сліпі зони типізованого конфігу виключаються і тут: інакше --bump по
+    // `apps/**` вмикав правило на файлах без type info (напр.
+    // apps/landing/playwright.config.ts) і падав.
+    overrideConfig: [
+      {
+        files: patterns,
+        ignores: PROJECT_SERVICE_BLIND_SPOTS,
+        rules: { [RULE]: "error" },
+      },
+    ],
     errorOnUnmatchedPattern: false,
     warnIgnored: false,
   });
   const results = await eslint.lintFiles(patterns);
   const offenders = new Set();
   for (const result of results) {
-    const relative = path.relative(REPO_ROOT, result.filePath);
+    // Baseline пишеться через `/`, а path.relative() на Windows дає зворотний
+    // слеш: без нормалізації жоден файл не збігався і всі 83 здавались виправленими.
+    const relative = path
+      .relative(REPO_ROOT, result.filePath)
+      .replaceAll("\\", "/");
     for (const message of result.messages) {
       if (message.ruleId === RULE) offenders.add(relative);
       // A parse failure means the file left the TS project (moved, renamed,
@@ -67,7 +87,8 @@ async function findOffenders(patterns) {
 }
 
 async function readBaseline() {
-  const module = await import(BASELINE_FILE);
+  // На Windows абсолютний шлях `D:\...` ESM-лоадер читає як URL зі схемою `d:`.
+  const module = await import(pathToFileURL(BASELINE_FILE).href);
   return module.floatingPromisesBaseline;
 }
 

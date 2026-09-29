@@ -403,6 +403,11 @@ function checkDanglingRefs() {
     // Check if this is the RN migration tracker (target-state refs are OK)
     if (relPath.includes("react-native-migration")) continue;
 
+    // Матрицю генерує tools/matrix.py приватного репо competitor-research
+    // (D:/competitor-research), і шляхи `apps/<пакет>/frames/*` вказують у той
+    // репо. Маркер `<!-- removed -->` тут не годиться: перегенерація його зітре.
+    if (relPath === "docs/work/research/competitor-matrix.md") continue;
+
     const aspirational = isAspirational(relPath);
 
     let refMatch;

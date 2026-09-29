@@ -353,6 +353,23 @@ async function seeMemory(page: Page, fact: string) {
   await openMemory(page);
   await expect(visibleText(page, fact)).toBeVisible({ timeout: 30_000 });
 }
+// KV-ключ без durable-дзеркала: остання вкладка Рутини
+// (`hub_routine_main_tab_v1`). Лише локальний, на сервер не їде, тож на новому
+// пристрої його немає за контрактом. «Статистику» ніхто в P1 не обирає, отже в
+// анонімному розділі її немає, і читання звідти (знахідка D2) дало б іншу вкладку.
+async function pickRoutineStatsTab(page: Page) {
+  await goto(page, "/routine");
+  await page
+    .getByRole("tab", { name: /Статистика/ })
+    .first()
+    .click();
+  await expect(page).toHaveURL(/\/routine\/stats/);
+  await page.waitForTimeout(SETTLE_MS);
+}
+async function routineRestoresStatsTab(page: Page) {
+  await goto(page, "/routine");
+  await expect(page).toHaveURL(/\/routine\/stats/, { timeout: 30_000 });
+}
 // На /routine/habits кнопки рядка — «Деталі / Змінити / В архів / Видалити»
 // без назви звички, тож рядок шукаємо як найближчого предка з цими кнопками.
 function habitRowButton(page: Page, name: string, button: string) {
@@ -496,11 +513,17 @@ test("P2 анонім → реєстрація: дані переносятьс�
   await check(ph, "server: profile M1", () =>
     expectOnServer("profile", userId, T("M1")),
   );
+  await check(ph, "KV без дзеркала: обрати вкладку «Статистика»", () =>
+    pickRoutineStatsTab(p),
+  );
 
   await reload(p);
   await check(ph, "UI після reload: finyk", () => seeExpense(p, T("F1")));
   await check(ph, "UI після reload: routine", () => seeHabit(p, T("R1")));
   await check(ph, "UI після reload: memory", () => seeMemory(p, T("M1")));
+  await check(ph, "UI після reload: KV-вкладка Рутини на місці", () =>
+    routineRestoresStatsTab(p),
+  );
 });
 
 test("P3 новий пристрій: свіжий логін підтягує все", async ({ browser }) => {
@@ -515,6 +538,16 @@ test("P3 новий пристрій: свіжий логін підтягує �
   await check(ph, "B: routine R1", () => seeHabit(p, T("R1")));
   await check(ph, "B: fizruk 81.2", () => seeBody(p, "81.2"));
   await check(ph, "B: memory M1", () => seeMemory(p, T("M1")));
+  await check(ph, "B: KV-вкладка Рутини лишилась локальною на A", async () => {
+    await goto(p, "/routine");
+    await p.waitForTimeout(3000);
+    await expect(p).not.toHaveURL(/\/routine\/stats/);
+  });
+  await check(ph, "B: KV-вкладка Рутини переживає reload", async () => {
+    await pickRoutineStatsTab(p);
+    await reload(p);
+    await routineRestoresStatsTab(p);
+  });
 });
 
 test("P4 офлайн на A: запис, reload без мережі, догон на сервер і на B", async () => {
