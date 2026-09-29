@@ -1,0 +1,225 @@
+{
+  "version": 1,
+  "id": "finyk-month",
+  "mono": {
+    "transactions": [
+      {
+        "daysAgo": 0,
+        "amount": -84550,
+        "mcc": 5411,
+        "description": "Сільпо",
+        "categorySlug": "food"
+      },
+      {
+        "daysAgo": 0,
+        "amount": -14500,
+        "mcc": 5814,
+        "description": "Aroma Kava",
+        "categorySlug": "restaurant"
+      },
+      {
+        "daysAgo": 1,
+        "amount": -21900,
+        "mcc": 4121,
+        "description": "Uklon",
+        "categorySlug": "transport"
+      },
+      {
+        "daysAgo": 2,
+        "amount": -132000,
+        "mcc": 5411,
+        "description": "АТБ-Маркет",
+        "categorySlug": "food"
+      },
+      {
+        "daysAgo": 3,
+        "amount": -29900,
+        "mcc": 4899,
+        "description": "Netflix",
+        "categorySlug": "subscriptions"
+      },
+      {
+        "daysAgo": 3,
+        "amount": -38700,
+        "mcc": 5912,
+        "description": "Аптека Доброго Дня",
+        "categorySlug": "health"
+      },
+      {
+        "daysAgo": 4,
+        "amount": -189900,
+        "mcc": 5651,
+        "description": "Reserved",
+        "categorySlug": "shopping"
+      },
+      {
+        "daysAgo": 5,
+        "amount": -649900,
+        "mcc": null,
+        "description": "Comfy",
+        "categorySlug": "tech"
+      },
+      {
+        "daysAgo": 6,
+        "amount": -46000,
+        "mcc": 7832,
+        "description": "Multiplex",
+        "categorySlug": "entertainment"
+      },
+      {
+        "daysAgo": 6,
+        "amount": -125000,
+        "mcc": 5411,
+        "description": "Novus",
+        "categorySlug": "food"
+      },
+      {
+        "daysAgo": 7,
+        "amount": -95000,
+        "mcc": 7997,
+        "description": "Sport Life абонемент",
+        "categorySlug": "sport"
+      },
+      {
+        "daysAgo": 8,
+        "amount": -60000,
+        "mcc": 7230,
+        "description": "Барбершоп Frisor",
+        "categorySlug": "beauty"
+      },
+      {
+        "daysAgo": 8,
+        "amount": -12000,
+        "mcc": 5993,
+        "description": "Тютюн-маркет",
+        "categorySlug": "smoking"
+      },
+      {
+        "daysAgo": 9,
+        "amount": -45600,
+        "mcc": 5921,
+        "description": "Winetime",
+        "categorySlug": "alcohol"
+      },
+      {
+        "daysAgo": 10,
+        "amount": -150000,
+        "mcc": 8299,
+        "description": "Prometheus курс",
+        "categorySlug": "education"
+      },
+      {
+        "daysAgo": 11,
+        "amount": -214300,
+        "mcc": null,
+        "description": "Комунальні платежі",
+        "categorySlug": "utilities"
+      },
+      {
+        "daysAgo": 12,
+        "amount": -35000,
+        "mcc": null,
+        "description": "Разовий платіж",
+        "categorySlug": "other"
+      },
+      {
+        "daysAgo": 13,
+        "amount": -432000,
+        "mcc": 4511,
+        "description": "Ryanair",
+        "categorySlug": "travel"
+      },
+      {
+        "daysAgo": 14,
+        "amount": -300000,
+        "mcc": 6012,
+        "description": "Погашення кредиту",
+        "categorySlug": "debt"
+      },
+      {
+        "daysAgo": 15,
+        "amount": -50000,
+        "mcc": 8398,
+        "description": "Повернись живим",
+        "categorySlug": "charity"
+      },
+      {
+        "daysAgo": 16,
+        "amount": -48000,
+        "mcc": 5812,
+        "description": "Пузата хата",
+        "categorySlug": "restaurant"
+      },
+      {
+        "daysAgo": 17,
+        "amount": -32000,
+        "mcc": 4121,
+        "description": "Bolt",
+        "categorySlug": "transport"
+      },
+      {
+        "daysAgo": 18,
+        "amount": -110000,
+        "mcc": 5541,
+        "description": "WOG",
+        "categorySlug": "transport"
+      },
+      {
+        "daysAgo": 19,
+        "amount": -76400,
+        "mcc": 5411,
+        "description": "Сільпо",
+        "categorySlug": "food"
+      },
+      {
+        "daysAgo": 20,
+        "amount": -85500,
+        "mcc": 5812,
+        "description": "Львівські круасани",
+        "categorySlug": "restaurant"
+      },
+      {
+        "daysAgo": 21,
+        "amount": -9900,
+        "mcc": 4899,
+        "description": "Spotify",
+        "categorySlug": "subscriptions"
+      },
+      {
+        "daysAgo": 22,
+        "amount": -61200,
+        "mcc": 5411,
+        "description": "Фора",
+        "categorySlug": "food"
+      },
+      {
+        "daysAgo": 23,
+        "amount": 4500000,
+        "mcc": null,
+        "description": "Зарплата",
+        "categorySlug": null
+      }
+    ]
+  },
+  "local": {
+    "scenario": "finyk-month",
+    "finykBudgets": [
+      { "id": "e2e-budget-food", "categoryId": "food", "limit": 3000 },
+      {
+        "id": "e2e-budget-restaurant",
+        "categoryId": "restaurant",
+        "limit": 2500
+      },
+      {
+        "id": "e2e-budget-transport",
+        "categoryId": "transport",
+        "limit": 1500
+      },
+      {
+        "id": "e2e-budget-entertainment",
+        "categoryId": "entertainment",
+        "limit": 2000
+      }
+    ]
+  }
+}

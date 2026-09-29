@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { applyScenario } from "../utils/scenario";
 
 /**
  * Pre-seed localStorage so the SPA can land directly on targeted hub
@@ -304,6 +305,33 @@ for (const { name, path, seed } of SURFACES) {
       ),
       `console errors on ${path}:\n${consoleErrors.join("\n")}`,
     ).toEqual([]);
+  });
+}
+
+const SCENARIO_SURFACES = [
+  {
+    name: "pantry-receipt-names",
+    id: "pantry-receipt-names",
+    path: "/nutrition/pantry",
+  },
+  { name: "finyk-month", id: "finyk-month", path: "/finyk" },
+  { name: "routine-streaks", id: "routine-streaks", path: "/routine" },
+  {
+    name: "fizruk-active-session",
+    id: "fizruk-active-session",
+    path: "/fizruk/workouts",
+  },
+] as const;
+
+for (const { name, id, path } of SCENARIO_SURFACES) {
+  test(`a11y: ${name} world has no serious/critical violations`, async ({
+    page,
+  }) => {
+    await seedLocalStorage(page, SEEDED_LS);
+    await applyScenario(page, id, path);
+    const results = await analyzeA11y(page);
+    const blocking = results.violations.filter(isBlockingViolation);
+    expect(blocking, `axe violations on ${path}`).toEqual([]);
   });
 }
 
