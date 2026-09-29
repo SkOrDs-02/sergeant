@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { logger } from "../obs/logger.js";
+import { ValidationError } from "../obs/errors.js";
 import { parseBody } from "../http/validate.js";
 import {
   SilpoPantryClaimRequestSchema,
@@ -27,13 +28,10 @@ import {
  * (`createSilpoRouter()`), той самий kill-switch і auth-гейт.
  */
 
-function readReceiptId(req: Request, res: Response): string | null {
-  const receiptIdParam = req.params["id"];
-  const receiptId =
-    typeof receiptIdParam === "string" ? receiptIdParam : undefined;
-  if (!receiptId) {
-    res.status(400).json({ error: "Missing receipt id", code: "VALIDATION" });
-    return null;
+function readReceiptId(req: Request): string {
+  const receiptId = req.params["id"];
+  if (typeof receiptId !== "string" || !receiptId) {
+    throw new ValidationError("Missing receipt id");
   }
   return receiptId;
 }
@@ -71,8 +69,7 @@ export async function pantryClaimHandler(
   if (!assertSilpoEnabled(res)) return;
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
-  const receiptId = readReceiptId(req, res);
-  if (!receiptId) return;
+  const receiptId = readReceiptId(req);
 
   const { itemIds, mode } = parseBody(SilpoPantryClaimRequestSchema, req);
   const claimedItemIds = await claimPantryItems(
@@ -99,8 +96,7 @@ export async function pantryReleaseHandler(
   if (!assertSilpoEnabled(res)) return;
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
-  const receiptId = readReceiptId(req, res);
-  if (!receiptId) return;
+  const receiptId = readReceiptId(req);
 
   const { itemIds, decline } = parseBody(SilpoPantryReleaseRequestSchema, req);
   await releasePantryItems(userId, receiptId, itemIds, decline);
