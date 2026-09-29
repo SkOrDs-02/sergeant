@@ -18,6 +18,7 @@ const receiptsMock = vi.fn();
 const claimMock = vi.fn();
 const releaseMock = vi.fn();
 const receiptDetailApiMock = vi.fn();
+const receiptsApiMock = vi.fn();
 const toastShowMock = vi.fn();
 
 vi.mock("@finyk/hooks/useSilpoSyncState", () => ({
@@ -31,6 +32,7 @@ vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
 vi.mock("@shared/api", () => ({
   silpoApi: {
     receiptDetail: (...args: unknown[]) => receiptDetailApiMock(...args),
+    receipts: (...args: unknown[]) => receiptsApiMock(...args),
   },
 }));
 vi.mock("@shared/hooks/useToast", () => ({
@@ -112,6 +114,62 @@ describe("useSilpoPantryAutoImport", () => {
     receiptDetailApiMock.mockReset();
     toastShowMock.mockReset();
     releaseMock.mockResolvedValue(undefined);
+    receiptsApiMock.mockReset();
+    receiptsApiMock.mockResolvedValue({ data: [RECEIPT], nextCursor: null });
+  });
+
+  it("проходить усі сторінки до першого чека, старшого за увімкнення", async () => {
+    syncStateMock.mockReturnValue({
+      status: "connected",
+      data: { pantryAutoImportSince: "2026-09-20T00:00:00.000Z" },
+    });
+    receiptsMock.mockReturnValue({ receipts: [RECEIPT] });
+    const older = {
+      ...RECEIPT,
+      receiptId: "rcpt-2",
+      purchasedAt: "2026-09-21T10:00:00.000Z",
+    };
+    const tooOld = {
+      ...RECEIPT,
+      receiptId: "rcpt-3",
+      purchasedAt: "2026-09-19T10:00:00.000Z",
+    };
+    receiptsApiMock
+      .mockResolvedValueOnce({ data: [RECEIPT], nextCursor: "c1" })
+      .mockResolvedValueOnce({ data: [older, tooOld], nextCursor: "c2" });
+    receiptDetailApiMock.mockResolvedValue(detail([]));
+
+    renderAutoImport();
+
+    await waitFor(() => expect(receiptDetailApiMock).toHaveBeenCalledTimes(2));
+    expect(receiptDetailApiMock.mock.calls.map((c) => c[0])).toEqual([
+      "rcpt-1",
+      "rcpt-2",
+    ]);
+    expect(receiptsApiMock).toHaveBeenCalledTimes(2);
+    expect(receiptsApiMock.mock.calls[1]![0]).toMatchObject({ cursor: "c1" });
+  });
+
+  it("чек із тимчасовою помилкою пробується знову на наступному оновленні", async () => {
+    syncStateMock.mockReturnValue({
+      status: "connected",
+      data: { pantryAutoImportSince: "2026-09-20T00:00:00.000Z" },
+    });
+    receiptsMock.mockReturnValue({ receipts: [RECEIPT] });
+    receiptDetailApiMock
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValue(detail([groceryItem(1)]));
+    claimMock.mockResolvedValue([1]);
+
+    const { rerender } = renderAutoImport();
+    await waitFor(() => expect(receiptDetailApiMock).toHaveBeenCalledTimes(1));
+
+    receiptsMock.mockReturnValue({ receipts: [{ ...RECEIPT }] });
+    rerender();
+
+    await waitFor(() =>
+      expect(claimMock).toHaveBeenCalledWith("rcpt-1", [1], "auto"),
+    );
   });
 
   it("вимкнений тумблер - жодного запиту чеків", () => {

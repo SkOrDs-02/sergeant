@@ -37,6 +37,33 @@ import type { PantryReplenishLine } from "./useNutritionPantries";
 import type { PantryItem } from "../lib/pantryTextParser";
 
 const RECEIPTS_LIMIT = 10;
+const PAGE_LIMIT = 50;
+
+type ReceiptSummary = Awaited<
+  ReturnType<typeof silpoApi.receipts>
+>["data"][number];
+
+/**
+ * Усі чеки, куплені не раніше `since`. Сервер віддає сторінки від новіших до
+ * старіших, тож перший старший чек означає кінець: без цього після кількох
+ * днів без відкриття Харчування чеки поза першою сторінкою губились назавжди.
+ */
+async function fetchReceiptsSince(since: number): Promise<ReceiptSummary[]> {
+  const out: ReceiptSummary[] = [];
+  let cursor: string | undefined;
+  for (;;) {
+    const page = await silpoApi.receipts({
+      limit: PAGE_LIMIT,
+      ...(cursor ? { cursor } : {}),
+    });
+    for (const r of page.data) {
+      if (Date.parse(r.purchasedAt) < since) return out;
+      out.push(r);
+    }
+    if (!page.nextCursor) return out;
+    cursor = page.nextCursor;
+  }
+}
 
 export interface UseSilpoPantryAutoImportParams {
   pantryItems: readonly Pick<PantryItem, "name">[];
@@ -74,10 +101,9 @@ export function useSilpoPantryAutoImport({
   // наступного refetch.
   const rerunRef = useRef(false);
   const [rerunTick, setRerunTick] = useState(0);
-  // Чеки, оброблені в поточному проході, не обробляються повторно до
-  // наступного оновлення списку - сервер (`pantry_auto_declined_at`) і так
-  // не дасть повторно імпортувати відхилений чек, але без цього замка
-  // кожен зайвий рендер під час await пробував би той самий чек ще раз.
+  // Чеки, з якими вже все ясно: імпортовані або такі, де сервер нічого не
+  // забронював. Чек із тимчасовою помилкою сюди НЕ потрапляє і пробується
+  // знову на наступному оновленні списку.
   const processedRef = useRef<Set<string>>(new Set());
   const pantryItemsRef = useRef(pantryItems);
   const upsertRef = useRef(upsertItemForAutoImport);
@@ -97,23 +123,26 @@ export function useSilpoPantryAutoImport({
       rerunRef.current = true;
       return;
     }
-    // Сервер і сам не забронює чек, старший за увімкнення тумблера, але без
-    // цього фільтра кожне відкриття тягнуло б деталі всіх десяти чеків.
+    // Сервер і сам не забронює чек, старший за увімкнення тумблера; перша
+    // сторінка списку тут лише сигнал, що з'явилось щось нове.
     const since = Date.parse(syncState?.pantryAutoImportSince ?? "");
-    const candidates = receiptsQuery.receipts.filter(
-      (r) =>
-        !r.pantryAutoDeclined &&
-        !processedRef.current.has(r.receiptId) &&
-        Date.parse(r.purchasedAt) >= since,
-    );
-    if (candidates.length === 0) return;
+    if (
+      !receiptsQuery.receipts.some((r) => Date.parse(r.purchasedAt) >= since)
+    ) {
+      return;
+    }
 
     runningRef.current = true;
     void (async () => {
       const imported: AutoImportedReceipt[] = [];
       try {
+        const candidates = (
+          await fetchReceiptsSince(since).catch(() => [])
+        ).filter(
+          (r) =>
+            !r.pantryAutoDeclined && !processedRef.current.has(r.receiptId),
+        );
         for (const receipt of candidates) {
-          processedRef.current.add(receipt.receiptId);
           const detail = await silpoApi
             .receiptDetail(receipt.receiptId)
             .catch(() => null);
@@ -123,7 +152,10 @@ export function useSilpoPantryAutoImport({
               item.pantryClaimedAt == null &&
               mapReceiptItemToCategory(item) === "groceries",
           );
-          if (groceryItems.length === 0) continue;
+          if (groceryItems.length === 0) {
+            processedRef.current.add(receipt.receiptId);
+            continue;
+          }
 
           const claimedItemIds = await claim
             .claim(
@@ -131,8 +163,12 @@ export function useSilpoPantryAutoImport({
               groceryItems.map((i) => i.id),
               "auto",
             )
-            .catch(() => [] as number[]);
-          if (claimedItemIds.length === 0) continue;
+            .catch(() => null);
+          if (claimedItemIds == null) continue;
+          if (claimedItemIds.length === 0) {
+            processedRef.current.add(receipt.receiptId);
+            continue;
+          }
 
           const claimedItems = groceryItems.filter((i) =>
             claimedItemIds.includes(i.id),
@@ -153,6 +189,7 @@ export function useSilpoPantryAutoImport({
               claimedItemIds,
               lines,
             });
+            processedRef.current.add(receipt.receiptId);
           } catch {
             // Порядок кроків (спека § «Позначка живе на сервері…»): якщо
             // `upsertItem` кинув помилку, знімаємо бронювання без
