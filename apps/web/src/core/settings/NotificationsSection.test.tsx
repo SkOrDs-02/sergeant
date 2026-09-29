@@ -5,7 +5,6 @@ import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 const {
   toastWarningMock,
-  requestPermMock,
   routineState,
   updateRoutinePrefMock,
   monthlyPlanState,
@@ -15,7 +14,6 @@ const {
   meApiMock,
 } = vi.hoisted(() => ({
   toastWarningMock: vi.fn(),
-  requestPermMock: vi.fn(),
   routineState: {
     routine: { prefs: { routineRemindersEnabled: false } },
   },
@@ -49,9 +47,9 @@ const {
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: () => ({ warning: toastWarningMock }),
 }));
-vi.mock("@shared/hooks/useModuleReminder", () => ({
-  requestNotificationPermission: requestPermMock,
-}));
+// `requestNotificationPermission` не мокаємо (бюджет vi.mock) — вона тонко
+// делегує до глобального `Notification.requestPermission()`, який тест
+// уже стабить через `stubNotification`.
 vi.mock("../../modules/routine/hooks/useRoutineState", () => ({
   useRoutineState: () => ({
     routine: routineState.routine,
@@ -158,7 +156,6 @@ describe("NotificationsSection", () => {
 
   it("enables the routine reminder pref once permission is granted", async () => {
     stubNotification("granted");
-    requestPermMock.mockResolvedValue("granted");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("routine");
     await waitFor(() =>
@@ -170,11 +167,11 @@ describe("NotificationsSection", () => {
   });
 
   it("does not enable routine reminders when permission is refused", async () => {
-    stubNotification("default");
-    requestPermMock.mockResolvedValue("denied");
+    const reqFn = stubNotification("default");
+    reqFn.mockResolvedValue("denied");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("routine");
-    await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
+    await waitFor(() => expect(reqFn).toHaveBeenCalled());
     expect(updateRoutinePrefMock).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });
@@ -230,21 +227,21 @@ describe("NotificationsSection", () => {
   });
 
   it("does not enable the fizruk reminder when permission is refused", async () => {
-    stubNotification("default");
-    requestPermMock.mockResolvedValue("denied");
+    const reqFn = stubNotification("default");
+    reqFn.mockResolvedValue("denied");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("fizruk");
-    await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
+    await waitFor(() => expect(reqFn).toHaveBeenCalled());
     expect(monthlyPlanState.setReminderEnabled).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });
 
   it("does not persist the nutrition reminder when permission is refused", async () => {
-    stubNotification("default");
-    requestPermMock.mockResolvedValue("denied");
+    const reqFn = stubNotification("default");
+    reqFn.mockResolvedValue("denied");
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("nutrition");
-    await waitFor(() => expect(requestPermMock).toHaveBeenCalled());
+    await waitFor(() => expect(reqFn).toHaveBeenCalled());
     expect(persistNutritionPrefsMock).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });

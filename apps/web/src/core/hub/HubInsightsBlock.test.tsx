@@ -187,20 +187,6 @@ vi.mock("../insights/WeeklyDigestCard", () => ({
   ),
 }));
 
-vi.mock("./dashboard/dashboardCards", () => ({
-  WeeklyDigestFooter: ({
-    fresh,
-    onExpand,
-  }: {
-    fresh: boolean;
-    onExpand: () => void;
-  }) => (
-    <button type="button" data-fresh={fresh} onClick={onExpand}>
-      expand digest
-    </button>
-  ),
-}));
-
 function props(
   overrides: Partial<HubInsightsBlockProps> = {},
 ): HubInsightsBlockProps {
@@ -266,7 +252,9 @@ describe("HubInsightsBlock", () => {
       within(screen.getByTestId("insights-panel")).getByText("Rest insight"),
     );
     fireEvent.click(screen.getByText("refresh advice"));
-    fireEvent.click(screen.getByText("expand digest"));
+    // Реальний WeeklyDigestFooter (не застаблений — тримаємо мок-бюджет),
+    // текст кнопки — "Звіт тижня".
+    fireEvent.click(screen.getByRole("button", { name: /Звіт тижня/ }));
 
     expect(navigateMock).toHaveBeenCalledWith("/insights");
     expect(emitHubBusMock).toHaveBeenCalledWith("openChat", {
