@@ -431,6 +431,7 @@ describe("GET /api/silpo/sync-state", () => {
       lastFailedAt: null,
       lastErrorCode: null,
       receiptsCount: 0,
+      pantryAutoImportSince: null,
     });
   });
 
@@ -465,6 +466,7 @@ describe("GET /api/silpo/sync-state", () => {
       lastFailedAt: null,
       lastErrorCode: null,
       receiptsCount: 5,
+      pantryAutoImportSince: null,
     });
   });
 
@@ -552,6 +554,8 @@ describe("GET /api/silpo/receipts", () => {
           paymentHint: null,
           totalKop: 12345,
           transactionId: null,
+          pantryClaimedCount: 0,
+          pantryAutoDeclined: false,
         },
       ],
       nextCursor: null,
@@ -714,6 +718,8 @@ describe("GET /api/silpo/receipts/:id", () => {
       paymentHint: null,
       totalKop: 500,
       transactionId: "tx-1",
+      pantryClaimedCount: 0,
+      pantryAutoDeclined: false,
       items: [
         {
           id: 1,
@@ -723,6 +729,7 @@ describe("GET /api/silpo/receipts/:id", () => {
           priceKop: 500,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ],
     });
