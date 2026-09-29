@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-01.
+> **Last touched:** 2026-09-29 by @claude. **Next review:** 2027-12-01.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -269,7 +269,9 @@ plaintext JSON у localStorage
 не конфіденційність. Токен авторизації там **не** лежить (Better Auth —
 HttpOnly-кука), і це правильно.
 
-### B25 — `prior_result` у refine-photo необмежений
+### B25 — `prior_result` у refine-photo необмежений ✅ виправлено
+
+> **Закрито 2026-09-29:** `REFINE_PRIOR_RESULT_MAX_BYTES = 16 KB` (UTF-8 байти серіалізованого JSON) у [`api.ts`](../../../../packages/shared/src/schemas/api.ts); тест — [`refine-photo.test.ts`](../../../../apps/server/src/modules/nutrition/refine-photo.test.ts). Форма лишилась `unknown` (це вільна відповідь analyze-photo без схеми), межа лише за розміром.
 
 [`schemas/api.ts:286`](../../../../packages/shared/src/schemas/api.ts):
 `prior_result: z.unknown().optional()` — без обмеження розміру й форми, і
@@ -282,7 +284,9 @@ per-string і per-element cap-и ([`api.ts:301-443`](../../../../packages/shared
 що робить цю дірку помітною саме на їхньому тлі. ~600 КБ сміття ≈ 150k вхідних
 токенів Sonnet на запит, при дозволених ~6 запитах/хв.
 
-### B26 — стеля витрат на транскрипцію має TOCTOU-гонку
+### B26 — стеля витрат на транскрипцію має TOCTOU-гонку ✅ виправлено
+
+> **Закрито 2026-09-29:** `assertTranscribeUsdCap` резервує оцінку одним умовним UPSERT (`WHERE usd_micros + estimate <= cap`), провал Groq повертає резерв (`releaseTranscribeUsdReservation`); див. [`usdCap.ts`](../../../../apps/server/src/modules/transcribe/usdCap.ts), тести `usdCap.test.ts` (паралельний кейс) і e2e.
 
 [`usdCap.ts:130-161`](../../../../apps/server/src/modules/transcribe/usdCap.ts)
 робить `SELECT usd_micros`, порівнює `spent + estimate > cap` — а інкремент
@@ -314,7 +318,9 @@ LLM-ендпоінт `POST /api/internal/categorize` з будь-якої точ
 до того ж читає `req.body as CategorizeArgs` **без Zod**, тож 128 КБ
 «опису транзакції» стають ~32k токенів на виклик.
 
-### B28 — 10 МБ тіла парситься до автентифікації, зі стисненням
+### B28 — 10 МБ тіла парситься до автентифікації, зі стисненням ✅ виправлено (частково)
+
+> **Закрито 2026-09-29 у частині стиснення:** `inflate: false` на AI-правилах [`bodySizePolicy.ts`](../../../../apps/server/src/http/bodySizePolicy.ts) (фото, чеки, скрін, chat, transcribe, coach memory) → gzip-тіло дає 415 без розпаковки. Сам факт парсингу до `requireSession` (буферизація до 10 МБ нестисненого) лишається: перенесення парсерів після auth — окреме архітектурне рішення.
 
 `applyBodySizePolicy(app)` монтується на рівні застосунку
 ([`app.ts:147`](../../../../apps/server/src/app.ts)), а роутери — на `:169`. Тобто
