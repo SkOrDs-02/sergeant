@@ -101,7 +101,8 @@ function callBody(src, from) {
 
 const sites = [];
 for (const file of walk(SRC)) {
-  const rel = relative(SRC, file);
+  // EXEMPT_FILES пишуться через `/`, а relative() на Windows дає зворотний слеш.
+  const rel = relative(SRC, file).replaceAll("\\", "/");
   if (EXEMPT_FILES.has(rel)) continue;
   const src = readFileSync(file, "utf8");
   CALL.lastIndex = 0;

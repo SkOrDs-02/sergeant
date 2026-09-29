@@ -23,7 +23,7 @@
 
 import { ESLint } from "eslint";
 import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 const REPO_ROOT = path.resolve(
@@ -53,7 +53,11 @@ async function findOffenders(patterns) {
   const results = await eslint.lintFiles(patterns);
   const offenders = new Set();
   for (const result of results) {
-    const relative = path.relative(REPO_ROOT, result.filePath);
+    // Baseline пишеться через `/`, а path.relative() на Windows дає зворотний
+    // слеш: без нормалізації жоден файл не збігався і всі 83 здавались виправленими.
+    const relative = path
+      .relative(REPO_ROOT, result.filePath)
+      .replaceAll("\\", "/");
     for (const message of result.messages) {
       if (message.ruleId === RULE) offenders.add(relative);
       // A parse failure means the file left the TS project (moved, renamed,
@@ -67,7 +71,8 @@ async function findOffenders(patterns) {
 }
 
 async function readBaseline() {
-  const module = await import(BASELINE_FILE);
+  // На Windows абсолютний шлях `D:\...` ESM-лоадер читає як URL зі схемою `d:`.
+  const module = await import(pathToFileURL(BASELINE_FILE).href);
   return module.floatingPromisesBaseline;
 }
 

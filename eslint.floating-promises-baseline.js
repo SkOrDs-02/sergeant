@@ -10,6 +10,7 @@
 // so a fixed file cannot quietly keep the rule disabled.
 //
 // Baseline captured 2026-09-16: 198 findings across 83 files.
+// 2026-09-29: TrialBanner.tsx fixed and dropped (82 files).
 export const floatingPromisesBaseline = [
   "apps/mobile/src/components/ui/ConfirmDialog.tsx",
   "apps/mobile/src/components/ui/SwipeToAction.tsx",
@@ -36,7 +37,6 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/app/useDemoCommands.ts",
   "apps/web/src/core/app/usePwaInstall.ts",
   "apps/web/src/core/billing/PaywallModal.tsx",
-  "apps/web/src/core/billing/TrialBanner.tsx",
   "apps/web/src/core/db/__tests__/sqlite.kvvfsWipe.test.ts",
   "apps/web/src/core/errors/NotFoundPage.tsx",
   "apps/web/src/core/hooks/useHubNavigation.ts",
