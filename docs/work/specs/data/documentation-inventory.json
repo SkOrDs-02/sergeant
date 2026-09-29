@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 657,
-  "total_entries": 657,
+  "tracked_files": 666,
+  "total_entries": 666,
   "target_collisions": [],
   "entries": [
     {
@@ -32,7 +32,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/design/anti-slop-strategy.md",
-      "inbound_count": 21,
+      "inbound_count": 23,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/density-hierarchy-spec.md",
@@ -50,6 +50,8 @@
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
         "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-a/run.json",
         "docs/work/specs/audits/verification/runs/pilot-2026-09-05-b/run.json",
         "docs/work/specs/hub-action-axis.md",
@@ -805,12 +807,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/design/i18n/readiness.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/design/i18n/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/copy/style-guide.uk.md",
-        "docs/start/agents/onboarding.md"
+        "docs/start/agents/onboarding.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md"
       ]
     },
     {
@@ -965,7 +968,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/api-v1.md",
-      "inbound_count": 9,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/apps-status-matrix.md",
@@ -974,8 +977,7 @@
         "docs/governance/adr/0018-api-versioning-policy.md",
         "docs/governance/adr/0053-api-versioning-policy.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/governance/pr-ledger/index.json",
-        "docs/work/specs/tech-debt/backend.md"
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -1205,7 +1207,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/feature-flags.md",
-      "inbound_count": 23,
+      "inbound_count": 24,
       "inbound_sources": [
         "docs/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -1223,6 +1225,7 @@
         "docs/start/instructions/migrate-client-storage.md",
         "docs/start/instructions/retire-feature-flag.md",
         "docs/start/instructions/run-weekly-operator-digest.md",
+        "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
@@ -2402,13 +2405,14 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0030-telegram-reporting-channel-structure.md",
-      "inbound_count": 8,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/governance/adr/0031-openclaw-v0-telegram-cofounder.md",
         "docs/governance/adr/0032-console-consolidated-into-openclaw.md",
         "docs/governance/adr/0033-openclaw-multi-personas-and-council.md",
         "docs/governance/adr/0036-openclaw-write-tools-with-approval.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/operations/observability/posthog-ftux-dashboards.md",
         "docs/operations/observability/telegram-control-plane.md",
         "docs/start/instructions/modify-n8n-workflow.md"
@@ -2616,9 +2620,10 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0046-storybook-vrt-scope.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/design/design/storybook.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/work/specs/initiatives/README.md"
       ]
     },
@@ -2760,8 +2765,8 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0057-anthropic-sdk-v1-upgrade.md",
-      "inbound_count": 0,
-      "inbound_sources": []
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/pr-ledger/index.json"]
     },
     {
       "old_path": "docs/governance/adr/0058-knowledge-graph-schema.md",
@@ -2900,12 +2905,13 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0068-pricing-v4-uah-reverse-trial.md",
-      "inbound_count": 13,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/governance/README.md",
         "docs/governance/adr/0001-monetization-architecture.md",
         "docs/governance/adr/0003-refund-and-dispute-handling.md",
         "docs/governance/adr/0051-pricing-v3-single-tier.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/work/README.md",
         "docs/work/specs/launch/README.md",
         "docs/work/specs/launch/business/01-monetization-and-pricing.md",
@@ -3187,7 +3193,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0081-repository-simplification.md",
-      "inbound_count": 35,
+      "inbound_count": 36,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
@@ -3219,6 +3225,7 @@
         "docs/governance/governance/rules/README.md",
         "docs/governance/governance/snapshot.md",
         "docs/governance/pr-ledger/README.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/decisions.md",
         "docs/work/specs/audits/2026-08-21-icons-and-emoji.md",
         "docs/work/specs/initiatives/README.md",
@@ -3232,7 +3239,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0082-private-storage-repo-posture.md",
-      "inbound_count": 23,
+      "inbound_count": 24,
       "inbound_sources": [
         "docs/design/design/storybook.md",
         "docs/engineering/architecture/module-ownership.md",
@@ -3246,6 +3253,7 @@
         "docs/governance/governance/ai-pr-checklist.md",
         "docs/governance/governance/harness-versioning.md",
         "docs/governance/governance/review-checklist.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/governance/security/ai-quota-kill-switch.md",
         "docs/governance/security/threat-model.md",
         "docs/governance/security/vulnerability-sla.md",
@@ -3290,13 +3298,15 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
-      "inbound_count": 10,
+      "inbound_count": 12,
       "inbound_sources": [
         "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/governance/adr/0022-atomic-sql-quotas.md",
         "docs/governance/adr/0051-pricing-v3-single-tier.md",
         "docs/governance/adr/0068-pricing-v4-uah-reverse-trial.md",
         "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/product/modules/hub-coach.md",
         "docs/work/specs/launch/README.md",
         "docs/work/specs/launch/business/01-monetization-and-pricing.md",
@@ -3310,13 +3320,14 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md",
-      "inbound_count": 14,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/design/design/specs/2026-09-17-hubchat-design.md",
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/adr/0022-atomic-sql-quotas.md",
         "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
         "docs/governance/adr/0095-demo-mode-removed.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/governance/pr-ledger/index.json",
         "docs/governance/security/ai-quota-kill-switch.md",
         "docs/operations/observability/runbook.md",
@@ -3467,7 +3478,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0094-mobile-web-first-freeze.md",
-      "inbound_count": 28,
+      "inbound_count": 30,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -3489,6 +3500,8 @@
         "docs/operations/observability/telemetry-rollout-plan.md",
         "docs/start/agents/decisions.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
         "docs/work/specs/launch/phases/00-readiness-audit.md",
         "docs/work/specs/launch/phases/01-web-launch-with-users.md",
         "docs/work/specs/launch/phases/02-capacitor-launch.md",
@@ -3521,9 +3534,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0096-product-reward-loop.md",
-      "inbound_count": 5,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/adr/0097-link-evidence-standard.md",
+        "docs/product/modules/fizruk.md",
+        "docs/product/modules/nutrition.md",
+        "docs/product/modules/routine.md",
         "docs/start/agents/decisions.md",
         "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
         "docs/work/specs/link-evidence-standard.md",
@@ -3564,11 +3580,27 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0099-retired-hard-rules-registry.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/adr/0081-repository-simplification.md",
         "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
+      ]
+    },
+    {
+      "old_path": "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+      "new_path": "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/engineering/architecture/feature-flags.md",
+        "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
+        "docs/governance/pr-ledger/index.json",
+        "docs/product/model/product-overview.md",
+        "docs/product/modules/hub-coach.md"
       ]
     },
     {
@@ -3955,11 +3987,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/05-conventional-commits-explicit-scope.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -3968,11 +4001,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/06-no-force-push-to-main.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -3996,11 +4030,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/10-lifecycle-markers.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md",
         "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md"
@@ -4012,12 +4047,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/15-governance-and-doc-language.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/engineering/architecture/rag-eval.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
-        "docs/governance/governance/rules/README.md"
+        "docs/governance/governance/rules/README.md",
+        "docs/governance/pr-ledger/index.json"
       ]
     },
     {
@@ -4260,7 +4296,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 88,
+      "inbound_count": 110,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -4268,11 +4304,14 @@
         "docs/governance/adr/0009-hosting-split-railway-vercel.md",
         "docs/governance/adr/0010-mobile-dual-track-capacitor-expo.md",
         "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
+        "docs/governance/adr/0030-telegram-reporting-channel-structure.md",
         "docs/governance/adr/0043-cloudsync-v1-sunset.md",
         "docs/governance/adr/0045-hard-rules-taxonomy.md",
+        "docs/governance/adr/0046-storybook-vrt-scope.md",
         "docs/governance/adr/0047-cloudsync-v1-410-gone.md",
         "docs/governance/adr/0048-apns-provider-library.md",
         "docs/governance/adr/0052-mobile-strategy-capacitor-primary.md",
+        "docs/governance/adr/0057-anthropic-sdk-v1-upgrade.md",
         "docs/governance/adr/0058-knowledge-graph-schema.md",
         "docs/governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
         "docs/governance/adr/0060-architecture-diagrams-automation-scope.md",
@@ -4284,17 +4323,26 @@
         "docs/governance/adr/0067-engagement-mechanism-standardization.md",
         "docs/governance/adr/0069-ai-pr-checklist.md",
         "docs/governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/governance/adr/0081-repository-simplification.md",
+        "docs/governance/adr/0082-private-storage-repo-posture.md",
+        "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
         "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md",
         "docs/governance/adr/0087-model-tiering-measured.md",
         "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
         "docs/governance/adr/0094-mobile-web-first-freeze.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/governance/adr/README.md",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/hard-rules.json",
         "docs/governance/governance/repo-identity.json",
         "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/governance/governance/rules/05-conventional-commits-explicit-scope.md",
+        "docs/governance/governance/rules/06-no-force-push-to-main.md",
+        "docs/governance/governance/rules/10-lifecycle-markers.md",
+        "docs/governance/governance/rules/15-governance-and-doc-language.md",
         "docs/governance/governance/rules/20-no-openclaw-pats-in-production.md",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
         "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
@@ -4338,9 +4386,19 @@
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
         "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
         "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
         "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+        "docs/work/specs/audits/ai-abuse-2026-08-05.md",
+        "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
+        "docs/work/specs/audits/finyk-analytics-research.md",
         "docs/work/specs/audits/product-knowledge-fizruk.md",
+        "docs/work/specs/audits/product-knowledge-overview.md",
         "docs/work/specs/audits/unification-modules.md",
         "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md",
@@ -5570,7 +5628,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/copy/style-guide.uk.md",
-      "inbound_count": 38,
+      "inbound_count": 42,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/empty-states.md",
@@ -5598,7 +5656,10 @@
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
         "docs/work/specs/audits/2026-09-01-product-audit/checklists.md",
         "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
         "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
         "docs/work/specs/beta-texts-posts.md",
         "docs/work/specs/finyk-hero-month-strip.md",
         "docs/work/specs/finyk-import-reminders.md",
@@ -5606,6 +5667,7 @@
         "docs/work/specs/fizruk-hero-recovery-bars.md",
         "docs/work/specs/fizruk-readiness-check.md",
         "docs/work/specs/link-evidence-standard.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/receipt-scan.md",
         "docs/work/specs/reward-loop-and-reminders.md",
         "docs/work/specs/site-ia/README.md",
@@ -5646,7 +5708,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/model/product-overview.md",
-      "inbound_count": 20,
+      "inbound_count": 21,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/governance/adr/0097-link-evidence-standard.md",
@@ -5657,6 +5719,7 @@
         "docs/product/modules/hub-coach.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
+        "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
         "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/audits/product-knowledge-overview.md",
@@ -5692,7 +5755,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/finyk.md",
-      "inbound_count": 24,
+      "inbound_count": 25,
       "inbound_sources": [
         "docs/README.md",
         "docs/engineering/architecture/metric-registry.md",
@@ -5715,6 +5778,7 @@
         "docs/work/specs/finyk-import-reminders.md",
         "docs/work/specs/finyk-observations.md",
         "docs/work/specs/honest-export-and-first-screen.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/receipt-scan.md",
         "docs/work/specs/site-ia/page-pytannya.md",
         "docs/work/specs/site-ia/page-stan.md"
@@ -5754,7 +5818,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/hub-coach.md",
-      "inbound_count": 28,
+      "inbound_count": 31,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/specs/2026-09-17-hubchat-design.md",
@@ -5770,9 +5834,11 @@
         "docs/product/modules/fizruk.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
+        "docs/work/specs/access-tiers.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
         "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
         "docs/work/specs/audits/product-knowledge-fizruk.md",
         "docs/work/specs/audits/product-knowledge-hub-coach.md",
         "docs/work/specs/audits/product-knowledge-nutrition.md",
@@ -5783,6 +5849,7 @@
         "docs/work/specs/hub-action-axis.md",
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md",
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/site-ia/page-zvyazky.md"
       ]
     },
@@ -5927,6 +5994,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/whats-new/2026-08-12-easier-meal-entry.md",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
+    },
+    {
+      "old_path": "docs/product/whats-new/2026-09-28-forecasts-and-imports.md",
+      "new_path": "docs/product/whats-new/2026-09-28-forecasts-and-imports.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/product/whats-new/2026-09-28-forecasts-and-imports.md",
       "inbound_count": 2,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
@@ -7657,11 +7733,8 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/work/research/2026-09-20-competitor-handson-protocol.md",
-      "inbound_count": 2,
-      "inbound_sources": [
-        "docs/governance/governance/freshness-dashboard.html",
-        "docs/work/research/competitor-matrix.md"
-      ]
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
       "old_path": "docs/work/research/audience-discovery-kit/analysis-affinity-tracker.csv",
@@ -7779,9 +7852,24 @@
       "canonical_owner": "docs/work/research/competitor-matrix.md",
       "inbound_count": 3,
       "inbound_sources": [
-        "docs/governance/governance/freshness-dashboard.html",
         "docs/work/research/2026-09-20-competitor-handson-protocol.md",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
         "docs/work/specs/planning/product-knowledge-backlog.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/access-tiers.md",
+      "new_path": "docs/work/specs/access-tiers.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/access-tiers.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/product/model/product-overview.md",
+        "docs/product/modules/hub-coach.md"
       ]
     },
     {
@@ -7941,8 +8029,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-05-browser-profile-testing.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
+        "docs/engineering/web/service-worker.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/work/specs/audits/2026-08-07-beta-rehearsal-run.md",
         "docs/work/specs/audits/2026-08-09-beta-acceptance-run.md",
@@ -8094,7 +8183,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-01-anti-slop-audit.md",
-      "inbound_count": 12,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/anti-slop-strategy.md",
@@ -8102,6 +8191,9 @@
         "docs/open-work.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md",
@@ -8346,12 +8438,16 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-17-site-copy-audit.md",
-      "inbound_count": 5,
+      "inbound_count": 9,
       "inbound_sources": [
         "docs/design/design/specs/2026-09-17-landing-design.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
         "docs/product/copy/style-guide.uk.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
         "docs/work/specs/audits/README.md"
       ]
     },
@@ -8361,11 +8457,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md",
-      "inbound_count": 11,
+      "inbound_count": 12,
       "inbound_sources": [
         "docs/governance/adr/0096-product-reward-loop.md",
         "docs/governance/adr/0097-link-evidence-standard.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/product/model/product-overview.md",
         "docs/work/specs/ai-cost-ceiling.md",
@@ -8386,6 +8483,23 @@
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+      "new_path": "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+      "inbound_count": 7,
+      "inbound_sources": [
+        "docs/design/design/anti-slop-strategy.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/product/modules/hub-coach.md",
+        "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
         "docs/work/specs/audits/README.md"
       ]
     },
@@ -8421,13 +8535,73 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/start/agents/decisions.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+      "new_path": "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+      "new_path": "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/finyk-analytics-research.md",
+        "docs/work/specs/planning/finyk-analytics-v2.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+      "new_path": "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-24-landing-anti-slop.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
+        "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
+        "docs/work/specs/audits/README.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+      "new_path": "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-26-landing-copy-audit.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/open-work.md",
         "docs/work/specs/audits/README.md"
       ]
     },
@@ -8437,9 +8611,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/product/modules/hub-coach.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
@@ -8457,9 +8632,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/ai-pipeline-2026-08-05.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/ai-testing-2026-08-25.md",
@@ -8536,10 +8712,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/finyk-analytics-research.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/external-link-allowlist.json",
-        "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
         "docs/work/specs/audits/README.md"
       ]
     },
@@ -8633,9 +8810,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/product-knowledge-overview.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
         "docs/work/specs/audits/2026-09-01-product-audit/findings.md",
@@ -9732,6 +9910,19 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/planning/finyk-analytics-v2.md",
+      "new_path": "docs/work/specs/planning/finyk-analytics-v2.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/planning/finyk-analytics-v2.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/product/modules/finyk.md",
+        "docs/product/modules/hub-coach.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/planning/harness-engineering-v1.md",
       "new_path": "docs/work/specs/planning/harness-engineering-v1.md",
       "action": "keep",
@@ -9798,7 +9989,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md",
-      "inbound_count": 17,
+      "inbound_count": 16,
       "inbound_sources": [
         "docs/governance/adr/0077-pantry-append-only-ledger.md",
         "docs/governance/adr/0083-injury-model-zone-level.md",
@@ -9810,7 +10001,6 @@
         "docs/product/model/product-overview.md",
         "docs/work/research/2026-09-01-competitor-research-modules.md",
         "docs/work/research/2026-09-20-competitor-handson-protocol.md",
-        "docs/work/research/competitor-matrix.md",
         "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/product-knowledge-nutrition.md",
@@ -9948,11 +10138,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/reward-loop-and-reminders.md",
-      "inbound_count": 4,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/governance/adr/0096-product-reward-loop.md",
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
+        "docs/product/modules/fizruk.md",
+        "docs/product/modules/hub-coach.md",
+        "docs/product/modules/nutrition.md",
+        "docs/product/modules/routine.md",
         "docs/work/specs/audits/2026-09-20-rada-skeptykiv.md"
       ]
     },
@@ -10235,7 +10428,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/tech-debt/backend.md",
-      "inbound_count": 14,
+      "inbound_count": 15,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/engineering/architecture/apps-status-matrix.md",
@@ -10245,6 +10438,7 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/policy-review.md",
         "docs/open-work.md",
+        "docs/product/modules/hub-coach.md",
         "docs/start/instructions/onboard-external-api.md",
         "docs/start/instructions/pre-merge-migration-checklist.md",
         "docs/work/specs/audits/product-knowledge-routine.md",
