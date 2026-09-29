@@ -23,5 +23,9 @@ A path that doesn't exist, a gate that fails for pre-existing reasons, a contrad
 ## Report format
 
 Ukrainian: what was executed (per spec section), gates run with exit codes, deviations/blockers with evidence, what remains. Link the spec file and every touched path.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "spec-executor"
