@@ -92,13 +92,13 @@
 
 ## Compliance
 
-| Що тримається                                         | Чим перевіряється                                                                                                                                |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Хук Better Auth лишається вимкненим і без обробника   | [`apps/server/src/auth.test.ts`](../../../apps/server/src/auth.test.ts) § «user.deleteUser закритий на користь вікна скасування»                 |
-| Гварди живого шляху: пароль і свіжа сесія             | [`apps/server/src/routes/me.route.test.ts`](../../../apps/server/src/routes/me.route.test.ts) § «DELETE /api/me — гварди живого шляху видалення» |
-| Мітка, ідемпотентність, гасіння сесій, скасування     | [`modules/me/dataRights.test.ts`](../../../apps/server/src/modules/me/dataRights.test.ts)                                                        |
-| Добивання після кінця вікна                           | [`modules/me/deletionPoller.test.ts`](../../../apps/server/src/modules/me/deletionPoller.test.ts)                                                |
-| Немає таблиці з `user_id` без FK (каскад із ADR-0016) | [`141-142-user-scoped-cascade.test.ts`](../../../apps/server/src/migrations/__tests__/141-142-user-scoped-cascade.test.ts)                       |
+| Що тримається                                         | Чим перевіряється                                                                                                                                              |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Хук Better Auth лишається вимкненим і без обробника   | [`apps/server/src/auth.test.ts`](../../../apps/server/src/auth.test.ts) § «user.deleteUser закритий на користь вікна скасування»                               |
+| Гварди живого шляху: пароль і свіжа сесія             | [`apps/server/src/routes/me.delete.route.test.ts`](../../../apps/server/src/routes/me.delete.route.test.ts) § «DELETE /api/me — гварди живого шляху видалення» |
+| Мітка, ідемпотентність, гасіння сесій, скасування     | [`modules/me/dataRights.test.ts`](../../../apps/server/src/modules/me/dataRights.test.ts)                                                                      |
+| Добивання після кінця вікна                           | [`modules/me/deletionPoller.test.ts`](../../../apps/server/src/modules/me/deletionPoller.test.ts)                                                              |
+| Немає таблиці з `user_id` без FK (каскад із ADR-0016) | [`141-142-user-scoped-cascade.test.ts`](../../../apps/server/src/migrations/__tests__/141-142-user-scoped-cascade.test.ts)                                     |
 
 ## Links
 

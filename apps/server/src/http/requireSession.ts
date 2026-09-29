@@ -158,6 +158,7 @@ function buildRequireSession(
             message: "Акаунт у процесі видалення",
             code: ACCOUNT_PENDING_DELETION_CODE,
             scheduledPurgeAt: status.scheduledPurgeAt,
+            requestId: (req as Request & { requestId?: string }).requestId,
           });
           return;
         }
@@ -217,6 +218,7 @@ export function requireSessionSoft(): RequestHandler {
           message: "Акаунт у процесі видалення",
           code: ACCOUNT_PENDING_DELETION_CODE,
           scheduledPurgeAt: status.scheduledPurgeAt,
+          requestId: (req as Request & { requestId?: string }).requestId,
         });
         return;
       }

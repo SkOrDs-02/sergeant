@@ -21,6 +21,7 @@ import {
   setModule,
 } from "../http/index.js";
 import { pool } from "../db.js";
+import { AppError } from "../obs/errors.js";
 import {
   buildMeExport,
   getAccountDeletionStatus,
@@ -130,6 +131,7 @@ export function createMeRouter(): Router {
         res.status(409).json({
           error: "export_in_flight",
           message: "Твій експорт уже готується. Дочекайся файлу і спробуй ще.",
+          requestId: (req as Request & { requestId?: string }).requestId,
         });
         return;
       }
@@ -266,7 +268,7 @@ export function createMeRouter(): Router {
   // Auth) вимкнений — `user.deleteUser.enabled: false` в `auth.ts`, бо на
   // його хуку вікно нездійсненне; пін на це стоїть у `auth.test.ts`. Гварди
   // цього роуту (пароль + свіжа сесія) закріплені в
-  // `routes/me.route.test.ts`.
+  // `routes/me.delete.route.test.ts`.
   r.delete(
     "/api/me",
     requireFreshSession(),
@@ -280,12 +282,10 @@ export function createMeRouter(): Router {
       const body = MeDeleteBodySchema.parse(req.body ?? {});
       const check = await verifyAccountPassword(user.id, body.password);
       if (!check.ok) {
-        res.status(400).json({
-          error: "Неправильний пароль",
-          message: "Неправильний пароль",
+        throw new AppError("Неправильний пароль", {
+          status: 400,
           code: "INVALID_PASSWORD",
         });
-        return;
       }
 
       const payload = MeDeleteResponseSchema.parse(
@@ -323,12 +323,10 @@ export function createMeRouter(): Router {
         // Скасовувати не було чого. 404, а не 200: «відновив активний
         // акаунт» не є успіхом, і клієнт має відрізнити це від реального
         // скасування.
-        res.status(404).json({
-          error: "Немає активного прохання видалити акаунт",
-          message: "Немає активного прохання видалити акаунт",
+        throw new AppError("Немає активного прохання видалити акаунт", {
+          status: 404,
           code: "NO_PENDING_DELETION",
         });
-        return;
       }
       const payload = MeRestoreResponseSchema.parse({
         ok: true as const,

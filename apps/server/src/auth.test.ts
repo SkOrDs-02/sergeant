@@ -68,7 +68,7 @@ type DeleteUserHooks = {
  * наступний «полагодить» вікно, повернувши хук назад.
  *
  * Де перевіряється те, що тримає планку ТЕПЕР (тут не дублюємо):
- * пароль і свіжість сесії — `routes/me.route.test.ts`
+ * пароль і свіжість сесії — `routes/me.delete.route.test.ts`
  * (§ «DELETE /api/me»); мітка й скасування — `modules/me/dataRights.test.ts`;
  * добивання після вікна — `modules/me/deletionPoller.test.ts`.
  */

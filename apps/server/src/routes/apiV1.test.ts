@@ -45,7 +45,7 @@ vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
   })),
 }));
 
-// Звірку пароля й саму мітку покривають `me.route.test.ts` і
+// Звірку пароля й саму мітку покривають `me.delete.route.test.ts` і
 // `dataRights.test.ts`; тут перевіряється лише, що запит доходить до них.
 vi.mock("../modules/me/verifyAccountPassword.js", () => ({
   verifyAccountPassword: vi.fn(async () => ({ ok: true })),

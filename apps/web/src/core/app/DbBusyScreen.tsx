@@ -35,9 +35,7 @@ export function DbBusyScreen() {
     // (знято з планшета 2026-09-22).
     <div className="min-h-[70dvh] flex flex-col items-center justify-center gap-4 px-6 py-10 text-center safe-area-pt-pb">
       <h1 className="text-style-title text-balance">{COPY.title}</h1>
-      <p className="max-w-sm text-style-body text-muted-foreground">
-        {COPY.body}
-      </p>
+      <p className="max-w-sm text-style-body text-muted">{COPY.body}</p>
       <Button
         variant="solid"
         tone="neutral"

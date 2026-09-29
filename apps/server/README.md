@@ -54,6 +54,7 @@ pnpm --filter @sergeant/server eval:stream           # перевірка стр
 pnpm --filter @sergeant/server eval:vision           # eval розпізнавання фото (vision)
 pnpm --filter @sergeant/server rag-eval:embed        # побудова ембедингів для RAG-eval корпусу
 pnpm --filter @sergeant/server eval:tools:judge      # LLM-judge поверх результатів `eval:tools`
+pnpm --filter @sergeant/server eval:tools:jev        # замір Jev на розмітці стенду вибору інструментів (нічого не гейтить)
 pnpm --filter @sergeant/server rag-eval:live         # RAG-eval проти живого API
 ```
 
