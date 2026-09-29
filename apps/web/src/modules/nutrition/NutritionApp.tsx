@@ -40,6 +40,7 @@ import {
   useNutritionPantries,
   type PantryItemsAddedEntry,
 } from "./hooks/useNutritionPantries";
+import { useSilpoPantryAutoImport } from "./hooks/useSilpoPantryAutoImport";
 import { buildPantryAddedToastMessage } from "./lib/pantryAddedToast";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
@@ -205,6 +206,15 @@ export default function NutritionApp({
   useEffect(() => {
     pantryRef.current = pantry;
   }, [pantry]);
+  // Автоімпорт чеків Сільпо в комору (спека
+  // docs/work/specs/silpo-pantry-auto-import.md) - ТА САМА інстанція
+  // `pantry` вище, не окремий `useNutritionPantries` (ризик «два
+  // екземпляри стану комори», спека § Ризики).
+  useSilpoPantryAutoImport({
+    pantryItems: pantry.pantryItems,
+    upsertItemForAutoImport: pantry.upsertItemForAutoImport,
+    revertReplenish: pantry.revertReplenish,
+  });
   const log = useNutritionLog();
   const ui = useNutritionUiState();
   const shopping = useShoppingList();

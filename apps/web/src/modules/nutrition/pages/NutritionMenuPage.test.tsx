@@ -68,6 +68,8 @@ function makePantry(): ReturnType<typeof useNutritionPantries> {
     },
     setItemEdit: vi.fn(),
     upsertItem: vi.fn(),
+    upsertItemForAutoImport: vi.fn(),
+    revertReplenish: vi.fn(),
     ambiguousPantryItems: [],
     resolveAmbiguousPantryItem: vi.fn(),
     dismissAmbiguousPantryItem: vi.fn(),

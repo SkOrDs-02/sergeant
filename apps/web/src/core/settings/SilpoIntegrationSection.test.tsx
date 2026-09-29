@@ -15,6 +15,7 @@ vi.mock("@shared/api", async () => {
       wipe: vi.fn(),
       receipts: vi.fn(),
       receiptDetail: vi.fn(),
+      updateSettings: vi.fn(),
     },
     silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
   };
@@ -43,6 +44,9 @@ const mockedSyncState = silpoApi.syncState as unknown as ReturnType<
 >;
 const mockedWipe = silpoApi.wipe as unknown as ReturnType<typeof vi.fn>;
 const mockedReceipts = silpoApi.receipts as unknown as ReturnType<typeof vi.fn>;
+const mockedUpdateSettings = silpoApi.updateSettings as unknown as ReturnType<
+  typeof vi.fn
+>;
 
 function renderSection(addManualExpense = vi.fn()) {
   const client = new QueryClient({
@@ -267,5 +271,33 @@ describe("SilpoIntegrationSection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
 
     await vi.waitFor(() => expect(mockedWipe).toHaveBeenCalledTimes(1));
+  });
+
+  it("тумблер автоімпорту показує стан із pantryAutoImportSince і вмикає його PUT-ом", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+      lastSyncAt: "2026-08-17T09:15:00.000Z",
+      receiptsCount: 5,
+      pantryAutoImportSince: null,
+    });
+    mockedUpdateSettings.mockResolvedValue({
+      pantryAutoImportSince: "2026-09-29T10:00:00.000Z",
+    });
+
+    renderSection();
+
+    const toggle = await screen.findByRole("switch", {
+      name: "Додавати продукти з чеків у комору автоматично",
+    });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+
+    fireEvent.click(toggle);
+
+    await vi.waitFor(() =>
+      expect(mockedUpdateSettings).toHaveBeenCalledWith({
+        pantryAutoImport: true,
+      }),
+    );
   });
 });

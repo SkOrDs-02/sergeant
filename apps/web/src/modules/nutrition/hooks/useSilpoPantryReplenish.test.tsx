@@ -16,10 +16,12 @@ import type { SilpoReceiptDetailDto } from "@shared/api";
 
 const receiptsMock = vi.fn();
 const receiptDetailMock = vi.fn();
+const pantryClaimMock = vi.fn();
 
 vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
   useSilpoReceipts: (...args: unknown[]) => receiptsMock(...args),
   useSilpoReceiptDetail: (...args: unknown[]) => receiptDetailMock(...args),
+  usePantryClaim: () => ({ claim: pantryClaimMock, isPending: false }),
 }));
 
 import { useSilpoPantryReplenish } from "./useSilpoPantryReplenish";
@@ -32,6 +34,8 @@ const RECEIPT_SUMMARY = {
   paymentHint: "card",
   totalKop: 100000,
   transactionId: null,
+  pantryClaimedCount: 0,
+  pantryAutoDeclined: false,
 };
 
 function detailWithItems(
@@ -55,6 +59,12 @@ describe("useSilpoPantryReplenish", () => {
   beforeEach(() => {
     receiptsMock.mockReset();
     receiptDetailMock.mockReset();
+    pantryClaimMock.mockReset();
+    // Дефолт: сервер бронює РІВНО те, що запросили - тести, які цікавляться
+    // частковим бронюванням, перевизначають це самі.
+    pantryClaimMock.mockImplementation(
+      (_receiptId: string, itemIds: number[]) => Promise.resolve(itemIds),
+    );
     mockReceipts([]);
     mockDetail(null);
   });
@@ -86,6 +96,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 4500,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -114,6 +125,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 8000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -141,6 +153,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 12000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 2,
@@ -150,6 +163,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 30000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 3,
@@ -159,6 +173,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 15000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -193,6 +208,72 @@ describe("useSilpoPantryReplenish", () => {
     expect(byId.get(3)?.foodIconName).toBe("package");
   });
 
+  // Спека silpo-pantry-auto-import.md § Рішення дизайну, «Вигляд позначки»:
+  // позиція з `pantryClaimedAt != null` за замовчуванням БЕЗ галочки, навіть
+  // коли вона groceries (яка інакше мала б дефолт "увімкнено").
+  it("рядок із pantryClaimedAt не пуст - за замовчуванням без галочки, навіть groceries", () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Курка гомілка",
+          qty: 1,
+          unit: "кг",
+          priceKop: 12000,
+          categorySlug: null,
+          barcode: null,
+          pantryClaimedAt: "2026-09-25T10:00:00.000Z",
+        },
+      ]),
+    );
+
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem: vi.fn(),
+      }),
+    );
+
+    expect(result.current.rows[0]?.checked).toBe(false);
+  });
+
+  // Другий пристрій: сервер повертає порожній `claimedItemIds` (позиції вже
+  // заброньовані першим), тож `confirm()` нічого не пише.
+  it("confirm() нічого не пише, коли сервер не заброньував жодної позиції", async () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Хліб",
+          qty: 1,
+          unit: "шт",
+          priceKop: 3000,
+          categorySlug: null,
+          barcode: null,
+          pantryClaimedAt: null,
+        },
+      ]),
+    );
+    pantryClaimMock.mockResolvedValue([]);
+    const upsertItem = vi.fn();
+
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
+    );
+
+    let added = -1;
+    await act(async () => {
+      added = await result.current.confirm();
+    });
+
+    expect(added).toBe(0);
+    expect(upsertItem).not.toHaveBeenCalled();
+    expect(pantryClaimMock).toHaveBeenCalledWith("rcpt-1", [1], "manual");
+  });
+
   it("сусідні продуктові рядки дістають РІЗНІ іконки", async () => {
     mockDetail(
       detailWithItems([
@@ -204,6 +285,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 4000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 2,
@@ -213,6 +295,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 6000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 3,
@@ -222,6 +305,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 2500,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -254,6 +338,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 2,
@@ -263,6 +348,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 9000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -295,7 +381,7 @@ describe("useSilpoPantryReplenish", () => {
     expect(byIdGroceries.get(1)?.checked).toBe(false);
   });
 
-  it("confirm() writes checked items through the existing upsertItem mechanism, unchecked items are skipped", () => {
+  it("confirm() writes checked items through the existing upsertItem mechanism, unchecked items are skipped", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -307,6 +393,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 2,
@@ -316,6 +403,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 30000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -330,8 +418,8 @@ describe("useSilpoPantryReplenish", () => {
     );
 
     let added = 0;
-    act(() => {
-      added = result.current.confirm();
+    await act(async () => {
+      added = await result.current.confirm();
     });
 
     expect(added).toBe(1);
@@ -365,7 +453,7 @@ describe("useSilpoPantryReplenish", () => {
   // розклад позиції як одна «500 мл» — пляшка, якої він не купував. Сума
   // лишається добутком (інваріант «сума варіантів = кількість позиції»),
   // але кількість штук їде поруч, щоб покупку можна було впізнати.
-  it("запамʼятовує кількість штук у фасуванні: 2 × 0,25 л, не «пляшка 500 мл»", () => {
+  it("запамʼятовує кількість штук у фасуванні: 2 × 0,25 л, не «пляшка 500 мл»", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -377,6 +465,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 8000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -385,8 +474,8 @@ describe("useSilpoPantryReplenish", () => {
       useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
     );
 
-    act(() => {
-      result.current.confirm();
+    await act(async () => {
+      await result.current.confirm();
     });
 
     const written = upsertItem.mock.calls[0]![0] as Array<{
@@ -401,7 +490,7 @@ describe("useSilpoPantryReplenish", () => {
   // 2026-09-11: рядок «З чека» в аркуші прийому їжі видалено, вага
   // фасування переїхала на джерело комори — «З комори» підставляє її як
   // порцію, коли позицію обирають (FromPantryRow → latestPackGrams).
-  it("пише packGrams на джерелі, коли чек знає вагу фасування", () => {
+  it("пише packGrams на джерелі, коли чек знає вагу фасування", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -413,6 +502,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 4500,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -421,8 +511,8 @@ describe("useSilpoPantryReplenish", () => {
       useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
     );
 
-    act(() => {
-      result.current.confirm();
+    await act(async () => {
+      await result.current.confirm();
     });
 
     const written = upsertItem.mock.calls[0]![0] as Array<{
@@ -434,7 +524,7 @@ describe("useSilpoPantryReplenish", () => {
   // Закупівля («1 кг яблук») — не разова порція: `receiptQtyToGrams`
   // навмисно мовчить вище `MAX_PORTION_GRAMS_FROM_RECEIPT` (500 г), краще
   // порожнє поле, ніж вгадана вага.
-  it("не пише packGrams, коли вага перевищує стелю разової порції", () => {
+  it("не пише packGrams, коли вага перевищує стелю разової порції", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -446,6 +536,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -454,8 +545,8 @@ describe("useSilpoPantryReplenish", () => {
       useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
     );
 
-    act(() => {
-      result.current.confirm();
+    await act(async () => {
+      await result.current.confirm();
     });
 
     const written = upsertItem.mock.calls[0]![0] as Array<{
@@ -464,7 +555,7 @@ describe("useSilpoPantryReplenish", () => {
     expect(written[0]!.sources![0]!.packGrams).toBeNull();
   });
 
-  it("згортає назву з чека до родової і показує це в рядку", () => {
+  it("згортає назву з чека до родової і показує це в рядку", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -476,6 +567,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         // Напої згортання не проходять: бренд змінює суть продукту.
         {
@@ -486,6 +578,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 4000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -502,8 +595,8 @@ describe("useSilpoPantryReplenish", () => {
     expect(byId.get(1)?.genericName).toBe("Молоко");
     expect(byId.get(2)?.genericName).toBeNull();
 
-    act(() => {
-      result.current.confirm();
+    await act(async () => {
+      await result.current.confirm();
     });
     const written = upsertItem.mock.calls[0]?.[0] as Array<{
       name: string;
@@ -521,7 +614,7 @@ describe("useSilpoPantryReplenish", () => {
     expect(written[1]).toMatchObject({ qty: 250, unit: "мл" });
   });
 
-  it("«лишити повну» вимикає згортання для одного рядка", () => {
+  it("«лишити повну» вимикає згортання для одного рядка", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -533,6 +626,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -548,14 +642,14 @@ describe("useSilpoPantryReplenish", () => {
     act(() => result.current.toggleKeepFull(1));
     expect(result.current.rows[0]?.keepFull).toBe(true);
 
-    act(() => {
-      result.current.confirm();
+    await act(async () => {
+      await result.current.confirm();
     });
     const written = upsertItem.mock.calls[0]?.[0] as Array<{ name: string }>;
     expect(written[0]?.name).toBe("Молоко Яготинське 2.6% 900г");
   });
 
-  it("confirm() is a no-op (nothing written) when nothing is checked", () => {
+  it("confirm() is a no-op (nothing written) when nothing is checked", async () => {
     mockReceipts([RECEIPT_SUMMARY]);
     mockDetail(
       detailWithItems([
@@ -567,6 +661,7 @@ describe("useSilpoPantryReplenish", () => {
           priceKop: 30000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
     );
@@ -577,8 +672,8 @@ describe("useSilpoPantryReplenish", () => {
     );
 
     let added = -1;
-    act(() => {
-      added = result.current.confirm();
+    await act(async () => {
+      added = await result.current.confirm();
     });
 
     expect(added).toBe(0);

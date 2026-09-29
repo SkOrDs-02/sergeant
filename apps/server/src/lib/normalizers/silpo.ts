@@ -20,6 +20,9 @@ export interface SilpoReceiptItemRow {
   priceKop: unknown; // BIGINT → string from pg
   categorySlug: string | null;
   barcode: string | null;
+  /** `pantry_claimed_at` (migration 151) - omittable so existing callers
+   *  that don't select the column keep compiling; treated as `null`. */
+  pantryClaimedAt?: Date | string | null;
 }
 
 export interface NormalizedSilpoReceiptItem {
@@ -30,6 +33,7 @@ export interface NormalizedSilpoReceiptItem {
   priceKop: number;
   categorySlug: string | null;
   barcode: string | null;
+  pantryClaimedAt: string | null;
 }
 
 export function normalizeSilpoReceiptItem(
@@ -45,6 +49,9 @@ export function normalizeSilpoReceiptItem(
     priceKop: toNumberOrNull(row.priceKop) ?? 0,
     categorySlug: row.categorySlug,
     barcode: row.barcode,
+    pantryClaimedAt: row.pantryClaimedAt
+      ? toIsoString(row.pantryClaimedAt)
+      : null,
   };
 }
 
@@ -58,6 +65,14 @@ export interface SilpoReceiptRow {
   paymentHint: string | null;
   totalKop: unknown; // BIGINT → string from pg
   transactionId: string | null;
+  /** `pantry_auto_declined_at` (migration 151) - omittable, same reason as
+   *  `SilpoReceiptItemRow.pantryClaimedAt` above. */
+  pantryAutoDeclinedAt?: Date | string | null;
+  /** `COUNT(...)` of claimed items - pg returns bigint as string, omittable
+   *  for the same reason. `normalizeSilpoReceiptDetail` overrides this with
+   *  the exact count from `itemRows` instead of requiring the detail query
+   *  to carry a redundant aggregate. */
+  pantryClaimedCount?: unknown;
 }
 
 export interface NormalizedSilpoReceiptSummary {
@@ -68,6 +83,8 @@ export interface NormalizedSilpoReceiptSummary {
   paymentHint: string | null;
   totalKop: number;
   transactionId: string | null;
+  pantryClaimedCount: number;
+  pantryAutoDeclined: boolean;
 }
 
 function toIsoString(v: Date | string): string {
@@ -85,6 +102,8 @@ export function normalizeSilpoReceiptSummary(
     paymentHint: row.paymentHint,
     totalKop: toNumberOrNull(row.totalKop) ?? 0,
     transactionId: row.transactionId,
+    pantryClaimedCount: toNumberOrNull(row.pantryClaimedCount) ?? 0,
+    pantryAutoDeclined: row.pantryAutoDeclinedAt != null,
   };
 }
 
@@ -96,8 +115,12 @@ export function normalizeSilpoReceiptDetail(
   row: SilpoReceiptRow,
   itemRows: SilpoReceiptItemRow[],
 ): NormalizedSilpoReceiptDetail {
+  const items = itemRows.map(normalizeSilpoReceiptItem);
   return {
     ...normalizeSilpoReceiptSummary(row),
-    items: itemRows.map(normalizeSilpoReceiptItem),
+    // Точний рахунок з уже завантажених позицій - детальний запит не
+    // потребує окремого агрегату поруч із самим списком.
+    pantryClaimedCount: items.filter((i) => i.pantryClaimedAt != null).length,
+    items,
   };
 }

@@ -7,13 +7,21 @@
  * `SilpoPantryReplenishEntry.test.tsx`.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  render as rtlRender,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import type { ReactElement } from "react";
+import { ToastProvider } from "@shared/hooks/useToast";
 import userEvent from "@testing-library/user-event";
 import type { SilpoReceiptDetailDto } from "@shared/api";
 
 const syncStateMock = vi.fn();
 const receiptsMock = vi.fn();
 const receiptDetailMock = vi.fn();
+const pantryClaimMock = vi.fn();
 
 vi.mock("@finyk/hooks/useSilpoSyncState", () => ({
   useSilpoSyncState: (...args: unknown[]) => syncStateMock(...args),
@@ -21,6 +29,7 @@ vi.mock("@finyk/hooks/useSilpoSyncState", () => ({
 vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
   useSilpoReceipts: (...args: unknown[]) => receiptsMock(...args),
   useSilpoReceiptDetail: (...args: unknown[]) => receiptDetailMock(...args),
+  usePantryClaim: () => ({ claim: pantryClaimMock, isPending: false }),
 }));
 
 import { PantrySourceTabs } from "./PantrySourceTabs";
@@ -33,10 +42,17 @@ const RECEIPT_SUMMARY = {
   paymentHint: "card",
   totalKop: 100000,
   transactionId: null,
+  pantryClaimedCount: 0,
+  pantryAutoDeclined: false,
 };
 
 function detail(items: SilpoReceiptDetailDto["items"]): SilpoReceiptDetailDto {
   return { ...RECEIPT_SUMMARY, items };
+}
+
+// Аркуш «З чека» показує тост, коли бронювання не вдалось.
+function render(ui: ReactElement) {
+  return rtlRender(ui, { wrapper: ToastProvider });
 }
 
 function baseProps(overrides: Record<string, unknown> = {}) {
@@ -108,6 +124,11 @@ describe("PantrySourceTabs — «З чека» segment (Silpo gate)", () => {
     syncStateMock.mockReset();
     receiptsMock.mockReset();
     receiptDetailMock.mockReset();
+    pantryClaimMock.mockReset();
+    // Дефолт: сервер бронює рівно те, що запросили.
+    pantryClaimMock.mockImplementation(
+      (_receiptId: string, itemIds: number[]) => Promise.resolve(itemIds),
+    );
     receiptsMock.mockReturnValue({
       receipts: [RECEIPT_SUMMARY],
       isLoading: false,
@@ -122,6 +143,7 @@ describe("PantrySourceTabs — «З чека» segment (Silpo gate)", () => {
           priceKop: 3000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
         {
           id: 2,
@@ -131,6 +153,7 @@ describe("PantrySourceTabs — «З чека» segment (Silpo gate)", () => {
           priceKop: 30000,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
       isLoading: false,
@@ -187,7 +210,7 @@ describe("PantrySourceTabs — «З чека» segment (Silpo gate)", () => {
     expect(confirmButton).toBeEnabled();
     await user.click(confirmButton);
 
-    expect(upsertItem).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(upsertItem).toHaveBeenCalledTimes(1));
     expect(upsertItem).toHaveBeenCalledWith([
       {
         name: "Хліб",
@@ -220,6 +243,7 @@ describe("PantrySourceTabs — «З чека» segment (Silpo gate)", () => {
           priceKop: 4500,
           categorySlug: null,
           barcode: null,
+          pantryClaimedAt: null,
         },
       ]),
       isLoading: false,

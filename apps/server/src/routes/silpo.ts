@@ -4,13 +4,9 @@ import { env } from "../env/env.js";
 import { query } from "../db.js";
 import { logger } from "../obs/logger.js";
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
-import { parseQuery } from "../http/validate.js";
+import { parseQuery, parseBody } from "../http/validate.js";
 import { getWebAppOrigin } from "../auth/verificationMail.js";
 import {
-  SilpoCartApplyRequestSchema,
-  SilpoCartDtoSchema,
-  SilpoCartPreviewRequestSchema,
-  SilpoCartPreviewResponseSchema,
   SilpoDisconnectResponseSchema,
   SilpoReceiptDetailDtoSchema,
   SilpoReceiptsPageSchema,
@@ -38,12 +34,21 @@ import {
   unlinkReceiptFromTransaction,
 } from "../modules/silpo/receipts.js";
 import {
-  applyCart,
-  clearCart,
-  getCart,
-  previewCart,
-} from "../modules/silpo/cart.js";
-import { parseBody } from "../http/validate.js";
+  assertSilpoEnabled,
+  getUserId,
+  type AuthedRequest,
+} from "../modules/silpo/routeHelpers.js";
+import {
+  cartApplyHandler,
+  cartClearHandler,
+  cartGetHandler,
+  cartPreviewHandler,
+} from "./silpoCart.js";
+import {
+  pantryClaimHandler,
+  pantryReleaseHandler,
+  settingsHandler,
+} from "./silpoPantry.js";
 
 /**
  * `GET /api/silpo/connect|callback`, `POST /api/silpo/disconnect|wipe|sync`,
@@ -69,32 +74,6 @@ import { parseBody } from "../http/validate.js";
  * `nutrition`, this router has no single broad `r.use(...)` bucket covering
  * `/api/silpo/*`, so each `r.get`/`r.post` below needs an explicit limiter.
  */
-
-interface AuthedRequest extends Request {
-  user?: { id: string };
-}
-
-function assertSilpoEnabled(res: Response): boolean {
-  if (!env.SILPO_ENABLED) {
-    res.status(503).json({
-      error: "Інтеграція із Сільпо вимкнена",
-      code: "SILPO_DISABLED",
-    });
-    return false;
-  }
-  return true;
-}
-
-function getUserId(req: AuthedRequest, res: Response): string | null {
-  const userId = req.user?.id;
-  if (!userId) {
-    res
-      .status(401)
-      .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
-    return null;
-  }
-  return userId;
-}
 
 function callbackRedirectUri(): string | null {
   return env.PUBLIC_API_BASE_URL
@@ -298,6 +277,7 @@ type SyncStateConnRow = {
   last_sync_at: Date | string | null;
   last_failed_at: Date | string | null;
   last_error_code: string | null;
+  pantry_auto_import_since: Date | string | null;
 };
 type SyncStateCountRow = { count: string };
 
@@ -338,7 +318,7 @@ export async function syncStateHandler(
       // last_sync_at — персистований момент успішного pullAndSyncReceipts
       // (не MAX(created_at) по чеках: sync без нових чеків теж «оновлення»).
       `SELECT status, access_token_expires_at, last_sync_at,
-                last_failed_at, last_error_code
+                last_failed_at, last_error_code, pantry_auto_import_since
            FROM silpo_connection WHERE user_id = $1`,
       [userId],
       { op: "silpo_sync_state_connection" },
@@ -362,6 +342,9 @@ export async function syncStateHandler(
       lastFailedAt: toIsoOrNull(conn?.last_failed_at ?? null),
       lastErrorCode: conn?.last_error_code ?? null,
       receiptsCount: Number(counts?.count ?? 0),
+      pantryAutoImportSince: toIsoOrNull(
+        conn?.pantry_auto_import_since ?? null,
+      ),
     }),
   );
 }
@@ -457,7 +440,7 @@ async function withSyncDiagnosis(
   }
 }
 
-// ──────────────────────────────── Receipts read ────────────────────────────
+// ──────────────────────────────────── Receipts read ────────────────────────
 
 export async function receiptsListHandler(
   req: Request,
@@ -584,74 +567,6 @@ export async function receiptRelinkHandler(
   res.status(200).json(SilpoRelinkResponseSchema.parse({ ok: true }));
 }
 
-// ──────────────────────────────────── Cart (Track G) ────────────────────────
-
-/**
- * `POST /api/silpo/cart/preview` — search-only, never writes. Body:
- * `{items: [{name, quantity?}]}` (1..100, names trimmed/non-empty — Zod
- * rejects a whitespace-only name with 400 before the handler runs).
- */
-export async function cartPreviewHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const { items } = parseBody(SilpoCartPreviewRequestSchema, req);
-  const results = await previewCart(userId, items);
-  res.status(200).json(SilpoCartPreviewResponseSchema.parse({ results }));
-}
-
-/**
- * `POST /api/silpo/cart/apply` — confirm-before-write. Body:
- * `{selections: [{lagerId, quantity}]}` (1..100). Adds EXACTLY the passed
- * positions (`applyCart` uses `addQuantity: false`), then returns the
- * post-write cart state.
- */
-export async function cartApplyHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const { selections } = parseBody(SilpoCartApplyRequestSchema, req);
-  const cart = await applyCart(userId, selections);
-  res.status(200).json(SilpoCartDtoSchema.parse(cart));
-}
-
-/**
- * `POST /api/silpo/cart/clear` — empty the external cart, then return the
- * post-write (empty) state. Body-less: there is exactly one cart per user.
- */
-export async function cartClearHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const cart = await clearCart(userId);
-  res.status(200).json(SilpoCartDtoSchema.parse(cart));
-}
-
-/** `GET /api/silpo/cart` — current cart state. */
-export async function cartGetHandler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  if (!assertSilpoEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
-
-  const cart = await getCart(userId);
-  res.status(200).json(SilpoCartDtoSchema.parse(cart));
-}
-
 // ──────────────────────────────────── Router ────────────────────────────────
 
 export function createSilpoRouter(): Router {
@@ -706,6 +621,15 @@ export function createSilpoRouter(): Router {
     }),
     syncStateHandler,
   );
+  r.put(
+    "/api/silpo/settings",
+    rateLimitExpress({
+      key: "api:silpo:settings",
+      limit: 20,
+      windowMs: 60_000,
+    }),
+    settingsHandler,
+  );
   r.post(
     "/api/silpo/sync",
     rateLimitExpress({ key: "api:silpo:sync", limit: 5, windowMs: 60_000 }),
@@ -757,6 +681,26 @@ export function createSilpoRouter(): Router {
       windowMs: 60_000,
     }),
     receiptRelinkHandler,
+  );
+  r.post(
+    "/api/silpo/receipts/:id/pantry-claim",
+    // Бронювання перед записом - той самий порядок величини, що й
+    // `receipt-relink`: пише один рядок на позицію, не читальний роут.
+    rateLimitExpress({
+      key: "api:silpo:pantry-claim",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    pantryClaimHandler,
+  );
+  r.post(
+    "/api/silpo/receipts/:id/pantry-release",
+    rateLimitExpress({
+      key: "api:silpo:pantry-release",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    pantryReleaseHandler,
   );
   r.post(
     "/api/silpo/cart/preview",

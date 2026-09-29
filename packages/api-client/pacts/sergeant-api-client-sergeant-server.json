@@ -3138,6 +3138,75 @@
       }
     },
     {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "itemIds": [
+            501,
+            502
+          ],
+          "mode": "auto"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim"
+      },
+      "response": {
+        "body": {
+          "claimedItemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with claimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "decline": true,
+          "itemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/silpo/sync request (no body)",
       "providerStates": [
         {
@@ -3408,6 +3477,36 @@
             "weightKg": 62
           },
           "updatedAt": "2026-08-01T12:05:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a PUT /api/v1/silpo/settings request (enable)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "pantryAutoImport": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "PUT",
+        "path": "/api/v1/silpo/settings"
+      },
+      "response": {
+        "body": {
+          "pantryAutoImportSince": "2026-09-25T10:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
