@@ -28,6 +28,8 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#101](https://bitbucket.org/skords01/sergeant/pull-requests/101) — fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах _(2026-09-29)_
+- [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) — fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел _(2026-09-28)_
 - [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) — feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу _(2026-09-28)_
 - [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) — fix(web): виправлення за браузерним web-аудитом 2026-09-27 _(2026-09-28)_
 - [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) — fix(web): рішення власника за аудитом копі сайту _(2026-09-26)_
@@ -36,8 +38,6 @@
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 - [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) — fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі _(2026-09-25)_
 - [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
-- [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) — feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти _(2026-09-24)_
-- [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) — fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message _(2026-09-24)_
 
 ## 🔵 В роботі — 81 відкритий документ
 

@@ -3572,9 +3572,10 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0098-account-deletion-grace-window.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/decisions.md",
         "docs/work/specs/user-deletion-grace-window.md"
       ]
@@ -4301,7 +4302,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 110,
+      "inbound_count": 111,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -4337,6 +4338,7 @@
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
         "docs/governance/adr/0094-mobile-web-first-freeze.md",
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/governance/adr/README.md",
@@ -9217,7 +9219,7 @@
       "inbound_sources": []
     },
     {
-      "old_path": "docs/work/specs/e2e-repeatable-states.md",
+      "old_path": null,
       "new_path": "docs/work/specs/e2e-repeatable-states.md",
       "action": "keep",
       "genre": "active-work",
@@ -9510,7 +9512,7 @@
       ]
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/kv-warm-cache-user-partition.md",
       "new_path": "docs/work/specs/kv-warm-cache-user-partition.md",
       "action": "keep",
       "genre": "active-work",

@@ -397,13 +397,13 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 
 ## Recent PRs
 
-| PR                                                              | Title                                                                   | Merged     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
-| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27              | 2026-09-28 |
-| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                   | 2026-09-26 |
-| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)            | 2026-09-24 |
-| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
-| [#1098](https://github.com/SkOrDs-02/sergeant/pull/1098)        | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника  | 2026-09-11 |
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket                                           | 2026-09-23 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
