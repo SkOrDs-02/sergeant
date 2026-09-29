@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-01.
+> **Last touched:** 2026-09-29 by @claude. **Next review:** 2027-12-01.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -470,6 +470,14 @@ LLM-шляхів (coach, digest, categorize) віддадуть заглушку
 
 ### B10 — стеля Voyage не діє на recall (блокер перед активацією AI-пам'яті)
 
+> **Статус 2026-09-29 (гілка `claude/ai-memory-preactivation`):** частково закрито.
+> Облік невідомої моделі — закрито: `recordVoyageUsage` рахує за консервативною
+> ціною (найдорожчий тариф таблиці) + one-shot warn, `embeddings.ts`.
+> Hard-cap на `recall()` — закрито: `service.ts` повертає `[]` без embed-виклику.
+> `requireAiQuota()` на `/recall` — **не зроблено**, бо `recall_memory` — tool-hop
+> уже оплаченого чат-ходу (AI-5 рішення 1), а квиток продовження цей роут не
+> несе; потрібне продуктове рішення. IP-ключ rate-limit лишається відкритим.
+
 **Спільний патерн із B1, і це головний висновок аудиту.** Два незалежні модулі
 зробили однакову помилку: **акаунтинг витрат вкладено всередину пошуку ціни в
 хардкодженій таблиці, а стеля витрат читає саме той акаунтинг.** Невідома
@@ -637,6 +645,10 @@ zero-width слабший: модель усе одно бачить послі�
 
 ### B11 — DLQ AI-пам'яті переживає видалення акаунта
 
+> **Статус 2026-09-29:** закрито кодом. `ai_memory_ingest_failed` чиститься в
+> `dataRights.ts` (видалення акаунта) і в `vectorStore.deleteAllForUser`
+> (`forgetUser` / «Очистити памʼять»). GDPR-експорт DLQ досі не включає.
+
 [`migrations/069_ai_memory_ingest_failed.sql:50-61`](../../../../apps/server/src/migrations/069_ai_memory_ingest_failed.sql):
 `ai_memory_ingest_failed.payload_json` містить **повний текст** пам'яті, а
 `user_id` — звичайний `TEXT NOT NULL` без FK і без `ON DELETE CASCADE` (у
@@ -656,6 +668,9 @@ GDPR-експорт ці рядки теж не включає — тобто д
 пряма GDPR-експозиція, і фіксити її треба разом із B10.
 
 ### B12 — очищення пам'яті без tombstone: in-flight ingest повертає стерте
+
+> **Статус 2026-09-29:** відкрито (свідомо не чіпали). DLQ-частина закрита в B11;
+> epoch/tombstone для задач BullMQ, що вже в Redis, не робили.
 
 [`clearRoute.ts:16`](../../../../apps/server/src/modules/ai-memory/clearRoute.ts)
 робить простий `DELETE FROM ai_memories WHERE user_id = $1`. Задачі BullMQ, уже
