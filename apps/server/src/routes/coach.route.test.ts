@@ -80,30 +80,11 @@ vi.mock("./../auth.js", () => ({
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("./../lib/anthropic.js", () => ({
-  // `anthropicMessages` returns `{ response, data }` — see
-  // `apps/server/src/lib/anthropic.ts` `AnthropicMessagesResult`. Production
-  // code reads `aiRes?.ok` to decide whether to throw `ExternalServiceError`,
-  // so we need a minimally-shaped `Response`-like object with `ok: true` and
-  // `status: 200`. Earlier this mock returned the bare `{ content: [...] }`
-  // payload, which made the handler's `if (!aiRes?.ok)` always fire and
-  // surface as a 502 in the test.
-  anthropicMessages: vi.fn().mockResolvedValue({
-    response: { ok: true, status: 200 } as unknown as Response,
-    data: {
-      content: [{ type: "text", text: "Ось порада для тебе." }],
-    },
-  }),
-  extractAnthropicText: vi.fn(
-    (d: { content?: { type: string; text?: string }[] }) =>
-      (d?.content ?? [])
-        .filter((b) => b.type === "text")
-        .map((b) => b.text)
-        .join("\n")
-        .trim(),
-  ),
-  recordAnthropicUsage: vi.fn(),
-}));
+// `../lib/anthropic.js` навмисно НЕ мокаємо: coach-хендлер ходить через
+// `getLLMProvider()`/`invokeLLM()` (`lib/llm/provider.js`), а тест "POST
+// /insight" нижче стабить `LLM_COACH_PROVIDER=stub`, тож справжній
+// `AnthropicProvider` (і разом з ним `lib/anthropic.js`) у ланцюжку викликів
+// не бере участі — сам модуль безпечно вантажиться неподоканим.
 
 vi.mock("./../push/send.js", () => ({
   sendToUserQuietly: vi.fn().mockResolvedValue(undefined),
