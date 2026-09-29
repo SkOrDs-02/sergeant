@@ -28,19 +28,8 @@ import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
 // ─── Stub heavy sub-components ────────────────────────────────────────────
 
-vi.mock("@shared/components/ui/Card", () => ({
-  Card: ({
-    children,
-    className,
-  }: {
-    children: React.ReactNode;
-    className?: string;
-  }) => (
-    <div data-testid="card" className={className}>
-      {children}
-    </div>
-  ),
-}));
+// `Card` не мокаємо (бюджет vi.mock) — чиста презентаційна обгортка без
+// мережі/сторедж-побічних ефектів, жоден тест тут не читає її testid.
 
 vi.mock("@shared/components/ui/Input", () => ({
   Input: ({

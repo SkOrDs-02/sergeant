@@ -188,6 +188,39 @@ describe("createSqliteKVStore — read path", () => {
   });
 });
 
+describe("createSqliteKVStore: replaceCache", () => {
+  it("замінює кеш і сповіщає лише про змінені ключі, без запису в SQLite", () => {
+    const { client, calls } = makeSyncSqliteSpy();
+    const boot = makeBoot({ same: "x", changed: "old", gone: "1" });
+    const store = createSqliteKVStore({ sqlite: client, boot });
+    const seen: [string, string | null][] = [];
+    for (const key of ["same", "changed", "gone", "fresh"]) {
+      store.onChange(key, (next) => seen.push([key, next]));
+    }
+
+    store.replaceCache(
+      new Map([
+        ["same", "x"],
+        ["changed", "new"],
+        ["fresh", "2"],
+      ]),
+    );
+
+    expect(Object.fromEntries(boot.warmCache)).toEqual({
+      same: "x",
+      changed: "new",
+      fresh: "2",
+    });
+    expect(seen).toEqual([
+      ["changed", "new"],
+      ["gone", null],
+      ["fresh", "2"],
+    ]);
+    expect(calls.upsert).toEqual([]);
+    expect(calls.remove).toEqual([]);
+  });
+});
+
 // ─── write path ──────────────────────────────────────────────────────
 
 describe("createSqliteKVStore — write path", () => {

@@ -7,7 +7,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 # ADR у Sergeant
 
-Архітектурні рішення живуть у `docs/governance/adr/` — нумеровані `NNNN-slug.md`. Індекс і життєвий цикл — у [docs/governance/adr/README.md](../../../docs/governance/adr/README.md); механічний гейт — `pnpm docs:check-adr-index` (статуси, supersede-ланцюги, таблиця індексу).
+Архітектурні рішення живуть у `docs/governance/adr/` — нумеровані `NNNN-slug.md`. Індекс і життєвий цикл — у [docs/governance/adr/README.md](../../../docs/governance/adr/README.md); механічний гейт — `pnpm docs:check-adr-graph` (статуси, supersede-ланцюги, таблиця індексу, нумерація без пропусків; входить у `pnpm lint`).
 
 ## Як створити новий ADR
 
@@ -16,7 +16,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 3. **Status: `Proposed` поки PR відкритий; `Accepted` — при мержі** (чек-ліст «Як створити новий ADR» у README). Не мержи ADR одразу як Accepted у гілці, що ще на ревʼю.
 4. Додай рядок у таблицю «Поточні ADR» README у тому ж PR.
 5. Якщо рішення замінює старе — у нового `Supersedes: ADR-NNNN`, у старого `Superseded by ADR-MMMM`; гейт перевіряє обидва кінці.
-6. Прожени `pnpm docs:check-adr-index` перед PR.
+6. Прожени `pnpm docs:check-adr-graph` перед PR.
 
 ## Звʼязок із журналами рішень
 
