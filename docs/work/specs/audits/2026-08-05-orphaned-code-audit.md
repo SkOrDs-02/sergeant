@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-11-06.
+> **Last touched:** 2026-09-29 by @claude. **Next review:** 2027-11-16.
 > **Status:** Active
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).
@@ -488,6 +488,10 @@ Vite + React (не Next), 17 файлів, повністю підключени
 | P3 (backlog)                         | Mobile UI-kit: підключати чи видаляти пакетом (після зняття knip-маски); `OfflineBanner` — дешевий win змонтувати; 16 unused types (§ 8); 16 шляхів без OpenApi-опису; insights-ядро для mobile-search; оновити `platforms.md` (finyk-рядок) і `.telemetry/`; `report-shell-tax` і `.ps1`-бекапи n8n — підтвердити долю у власника                                                                                                                                                                                                                                                                                                         | backlog                                   |
 
 **Порядок має значення:** P1-гейти йдуть перед P2-видаленнями. Інакше mobile UI-kit (найбільший кластер за обсягом) виросте знову — його не бачить жоден інструмент, і саме тому він і виріс.
+
+## Статус закриття § 2 (2026-09-29)
+
+Рішення власника: двофазне видалення 22 осиротілих таблиць (`webhook_events`, `seo_*` ×8, `growth_cohorts`, `revenue_daily`, `feature_adoption_weekly`, `brand_mentions`, `social_mentions`, `social_channels_daily`, `app_store_reviews`, `email_events`, `hard_rules_violations`, `openclaw_{decisions,write_audit,reminders,approval_nonce}`). Фаза 1 — ✅ міграція [`152_orphan_tables_deprecate_phase1.sql`](../../../../apps/server/src/migrations/152_orphan_tables_deprecate_phase1.sql) (deprecation-маркер) + видалено ендпоінт `POST /api/internal/email/event`, єдиний живий писар `email_events`. Роути `seo/growth/marketing/governance` на момент фази 1 у коді вже відсутні. Фаза 2 (DROP) — окремий PR не раніше 2026-10-13. Виключені: `openclaw_mute_state` (читач `modules/alerts/mute-state.ts`), `growth_funnel_daily`/`growth_acquisition_daily` (пишуть WF-60/63).
 
 ## Обмеження аудиту
 
