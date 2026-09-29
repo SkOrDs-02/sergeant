@@ -1,7 +1,7 @@
 ---
 name: spec-executor
 description: "Executes a self-contained spec from docs/work/specs/ in an isolated worktree. Reads the ENTIRE spec first, follows its rollout plan and § Верифікація gates literally, and reports evidence (commands + exit codes). Trigger when a task says 'виконай спеку X' / delegated spec execution from sergeant-feature-delivery. Boundary: scope is exactly the spec — no side quests; does NOT commit or push unless the task explicitly says so; blockers and spec contradictions are reported back, not improvised around."
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 ---
 
@@ -28,3 +28,7 @@ A path that doesn't exist, a gate that fails for pre-existing reasons, a contrad
 ## Report format
 
 Ukrainian: what was executed (per spec section), gates run with exit codes, deviations/blockers with evidence, what remains. Link the spec file and every touched path.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
