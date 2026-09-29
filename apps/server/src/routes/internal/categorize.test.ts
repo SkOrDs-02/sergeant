@@ -60,6 +60,34 @@ describe("createCategorizeInternalRouter", () => {
     expect(invokeLLMMock).not.toHaveBeenCalled();
   });
 
+  it("returns 400 for a description over the 500-char cap before LLM work", async () => {
+    const app = await makeApp();
+
+    const res = await request(app)
+      .post("/api/internal/categorize")
+      .send({ description: "x".repeat(501) });
+
+    expect(res.status).toBe(400);
+    expect(invokeLLMMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 400 for a non-string description or malformed mcc/amount", async () => {
+    const app = await makeApp();
+
+    for (const body of [
+      { description: { $ne: "" } },
+      { description: "ok", mcc: "5411" },
+      { description: "ok", amount: "19900" },
+      {},
+    ]) {
+      const res = await request(app)
+        .post("/api/internal/categorize")
+        .send(body);
+      expect(res.status).toBe(400);
+    }
+    expect(invokeLLMMock).not.toHaveBeenCalled();
+  });
+
   it("uses the deterministic MCC fast path without invoking the LLM", async () => {
     const app = await makeApp();
 

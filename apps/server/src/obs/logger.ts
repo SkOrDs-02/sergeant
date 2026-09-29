@@ -222,6 +222,7 @@ export const redactPaths = [
   "groqKey",
   "anthropicKey",
   "voyageKey",
+  "openrouterKey",
   // M3 — типові ділянки `req.body` для login/register flows. Зазвичай ми
   // НЕ логуємо body, але якщо хтось зробить `logger.error({ req })` через
   // pino-std-serializer, body буде включений — і ми хочемо його зачистити.
