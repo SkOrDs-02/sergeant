@@ -23,6 +23,14 @@ Kilo Code і Devin виведені з експлуатації ([ADR-0088](./do
 
 Root вантажиться при старті; вкладені `CLAUDE.md` — ліниво при вході в subtree. Bridge-и: `apps/{web,server,mobile,mobile-shell}/CLAUDE.md` (→ surface `AGENTS.md`), `packages/{api-client,db-schema,dualwrite-core,finyk-domain,fizruk-domain,nutrition-domain,routine-domain}/CLAUDE.md` (pointer+інваріант+skill).
 
+## Граф коду (codebase-memory)
+
+Для питань «де живе X», «хто викликає Y», «що зачепить зміна» спершу граф, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (ланцюги викликів і потоки даних), `get_code_snippet`, `query_graph`. Інструменти deferred: завантаж їх одним `ToolSearch` на старті сесії, до першого пошуку по коду.
+
+- **Проєкт завжди `D-Sergeant`.** Індекс один, з трунку `D:\Sergeant` на `main`, оновлюється щоночі рутиною `graph-reindex-nightly`. Worktree не індексуй (~150 МБ на кожен): змін своєї гілки в графі немає, їх читай файлами.
+- **Свіжість перевіряй, а не припускай.** Не знаходить символ, який точно є в `main`, значить індекс відстає: скажи про це і переходь на `Grep`. Рутина пропускає оновлення, коли трунк не на `main` або брудний.
+- **Сабагентам** з кодовою задачею пиши в брифі, що граф доступний і з яким проєктом. Репо-агенти в `.claude/agents/` мають інструменти графа у своєму `tools:`; агент без них у списку граф викликати не може.
+
 ## Notes
 
 - OpenClaw/Gateway виведено з експлуатації ([ADR-0075](./docs/governance/adr/0075-openclaw-gateway-decommissioned.md)) — скіла `sergeant-openclaw` НЕ існує. Web-асистент → `sergeant-module-ai`; PAT-guard (Hard Rule #20) → `sergeant-security-audit`. Каталоги: [agent-workflows.md](./docs/start/agents/agent-workflows.md), [agent-skills-catalog.md](./docs/start/agents/agent-skills-catalog.md).

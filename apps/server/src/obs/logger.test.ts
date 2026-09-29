@@ -260,6 +260,11 @@ describe("logger", () => {
         readRedacted: (p) => p["voyageKey"],
       },
       {
+        name: "openrouterKey у root (B18)",
+        payload: { openrouterKey: "sk-or-v1-xxx" },
+        readRedacted: (p) => p["openrouterKey"],
+      },
+      {
         name: "groqKey всередині debug-обʼєкта (1 рівень)",
         payload: { ctx: { groqKey: "gsk_live_xxx", model: "llama" } },
         readRedacted: (p) => (p["ctx"] as Record<string, unknown>)["groqKey"],
