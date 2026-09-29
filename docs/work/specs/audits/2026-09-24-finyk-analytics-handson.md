@@ -1,6 +1,6 @@
 # Аналітика конкурентів руками: замір D5 і шортліст для Фініка (2026-09-24)
 
-> **Last touched:** 2026-09-26 by @Skords-01. **Next review:** 2027-12-14.
+> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-17.
 > **Status:** Active - заміряно на планшеті за рубрикою D5 v2 (20 апок, 3 мілкі за стіною акаунта), кабінетно для Emma, Revolut, Copilot Money і PocketSmith (зі слів, не заміряно). Замінює [`finyk-analytics-research.md`](./finyk-analytics-research.md) (Deprecated, джерело гіпотез).
 
 Джерело правди - приватний репо `D:\competitor-research`: `verdicts/*.yaml` (вердикт і доказ у кожній клітинці), `dimensions/reports.md` (крос-апковий розбір D5 за шістьма полями), `desk/d5-analytics.md` (чотири апки поза планшетом, зі слів), `SYNTHESIS.md` (загальна картина), `SHORTLIST-2026-09-24.md` (цей шортліст). Матриця вердиктів - [`competitor-matrix.md`](../../research/competitor-matrix.md). Шляхи до доказів нижче вказують у приватний репо: скріншоти чужих апок у публічний не переносяться.
@@ -340,13 +340,13 @@
 
 ## Recent PRs
 
-| PR                                                              | Title                                                                               | Merged     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
-| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                          | 2026-09-28 |
-| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                               | 2026-09-26 |
-| [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) | fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд           | 2026-09-26 |
-| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                        | 2026-09-24 |
-| [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) | docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру | 2026-09-24 |
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                                                        | 2026-09-28 |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                                                             | 2026-09-26 |
+| [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) | fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд                                         | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                                      | 2026-09-24 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

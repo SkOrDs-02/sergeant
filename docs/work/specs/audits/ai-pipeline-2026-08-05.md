@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-28 by @Skords-01. **Next review:** 2027-11-30.
+> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-01.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -892,9 +892,10 @@ B22 (схеми `remember`/`save_note`), B23, B24, B8, B9, B29.
 
 ## Recent PRs
 
-| PR                                                              | Title                                                            | Merged     |
-| --------------------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
-| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу | 2026-09-28 |
+| PR                                                              | Title                                                                                                             | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) | fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел | 2026-09-28 |
+| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу                                                  | 2026-09-28 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -104,3 +104,14 @@
 
 - [`docs/work/specs/user-deletion-grace-window.md`](../../work/specs/user-deletion-grace-window.md) — спека, `Status: Implemented`, усі чотири кроки.
 - Міграція [`145_user_deletion_grace_window.sql`](../../../apps/server/src/migrations/145_user_deletion_grace_window.sql) і парний `.down.sql`.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                                | Title                                                                  | Merged     |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
+| [#101](https://bitbucket.org/skords01/sergeant/pull-requests/101) | fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах | 2026-09-29 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

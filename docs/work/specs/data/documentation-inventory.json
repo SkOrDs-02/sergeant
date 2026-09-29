@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 666,
-  "total_entries": 666,
+  "tracked_files": 667,
+  "total_entries": 667,
   "target_collisions": [],
   "entries": [
     {
@@ -1938,8 +1938,11 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/testing/verification/catalog.json",
-      "inbound_count": 1,
-      "inbound_sources": ["docs/engineering/testing/verification/README.md"]
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/engineering/testing/verification/README.md",
+        "docs/work/specs/kv-warm-cache-user-partition.md"
+      ]
     },
     {
       "old_path": "docs/engineering/testing/verification/implementation-status.md",
@@ -3567,9 +3570,10 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0098-account-deletion-grace-window.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/start/agents/decisions.md",
         "docs/work/specs/user-deletion-grace-window.md"
       ]
@@ -4296,7 +4300,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 110,
+      "inbound_count": 111,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -4332,6 +4336,7 @@
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
         "docs/governance/adr/0094-mobile-web-first-freeze.md",
+        "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
         "docs/governance/adr/README.md",
@@ -9490,6 +9495,20 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/work/README.md",
         "docs/work/specs/initiatives/follow-ups.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/kv-warm-cache-user-partition.md",
+      "new_path": "docs/work/specs/kv-warm-cache-user-partition.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/kv-warm-cache-user-partition.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/STATUS.md",
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/today.md"
       ]
     },
     {
