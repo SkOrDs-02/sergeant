@@ -99,6 +99,8 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "groqKey",
   "anthropicKey",
   "voyageKey",
+  // B18: OpenRouter-ключ (`sk-or-v1-…`) у diagnostics/`extra`.
+  "openrouterKey",
   "silpoToken",
   // Class B-adjacent — вміст розмови з асистентом (B43,
   // `docs/work/specs/audits/ai-testing-2026-08-25.md`). Сюди беремо ЛИШЕ
@@ -243,6 +245,19 @@ export const PII_STRING_PATTERNS: ReadonlyArray<{
     // header dumps where the placeholder string is short).
     pattern: /\b[Bb]earer\s+[A-Za-z0-9._-]{16,}/g,
     replacement: "Bearer [redacted]",
+  },
+  {
+    name: "anthropic-api-key",
+    // B18: `sk-ant-api03-…`, `sk-ant-admin01-…` — ключ провайдера в тексті
+    // помилки/стектрейсі (`err.config.headers`, `err.message`).
+    pattern: /\bsk-ant-[A-Za-z0-9_-]{16,}/g,
+    replacement: "[anthropic-key redacted]",
+  },
+  {
+    name: "openrouter-api-key",
+    // B18: `sk-or-v1-<64 hex>` (OpenRouter).
+    pattern: /\bsk-or-v1-[A-Za-z0-9_-]{16,}/g,
+    replacement: "[openrouter-key redacted]",
   },
 ];
 
