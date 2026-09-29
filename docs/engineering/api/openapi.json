@@ -8875,6 +8875,17 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "pantryAutoImportSince": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8883,7 +8894,8 @@
           "lastSyncAt",
           "lastFailedAt",
           "lastErrorCode",
-          "receiptsCount"
+          "receiptsCount",
+          "pantryAutoImportSince"
         ],
         "additionalProperties": false,
         "description": "Відповідь GET /api/silpo/sync-state — статус інтеграції + лічильники для Settings-картки."
@@ -8998,6 +9010,16 @@
                       "type": "null"
                     }
                   ]
+                },
+                "pantryClaimedCount": {
+                  "default": 0,
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "pantryAutoDeclined": {
+                  "default": false,
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -9007,7 +9029,9 @@
                 "channel",
                 "paymentHint",
                 "totalKop",
-                "transactionId"
+                "transactionId",
+                "pantryClaimedCount",
+                "pantryAutoDeclined"
               ],
               "additionalProperties": false
             }
@@ -9077,6 +9101,16 @@
               }
             ]
           },
+          "pantryClaimedCount": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pantryAutoDeclined": {
+            "default": false,
+            "type": "boolean"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -9135,6 +9169,17 @@
                       "type": "null"
                     }
                   ]
+                },
+                "pantryClaimedAt": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -9144,7 +9189,8 @@
                 "unit",
                 "priceKop",
                 "categorySlug",
-                "barcode"
+                "barcode",
+                "pantryClaimedAt"
               ],
               "additionalProperties": false
             }
@@ -9158,6 +9204,8 @@
           "paymentHint",
           "totalKop",
           "transactionId",
+          "pantryClaimedCount",
+          "pantryAutoDeclined",
           "items"
         ],
         "additionalProperties": false,

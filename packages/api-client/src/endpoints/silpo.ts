@@ -8,12 +8,19 @@ import type {
   SilpoCartPreviewResponse as SharedSilpoCartPreviewResponse,
   SilpoConnectionStatus as SharedSilpoConnectionStatus,
   SilpoDisconnectResponse as SharedSilpoDisconnectResponse,
+  SilpoPantryClaimMode as SharedSilpoPantryClaimMode,
+  SilpoPantryClaimRequest as SharedSilpoPantryClaimRequest,
+  SilpoPantryClaimResponse as SharedSilpoPantryClaimResponse,
+  SilpoPantryReleaseRequest as SharedSilpoPantryReleaseRequest,
+  SilpoPantryReleaseResponse as SharedSilpoPantryReleaseResponse,
   SilpoReceiptChannel as SharedSilpoReceiptChannel,
   SilpoReceiptDetailDto as SharedSilpoReceiptDetailDto,
   SilpoReceiptItemDto as SharedSilpoReceiptItemDto,
   SilpoReceiptsPage as SharedSilpoReceiptsPage,
   SilpoReceiptsQuery as SharedSilpoReceiptsQuery,
   SilpoReceiptSummaryDto as SharedSilpoReceiptSummaryDto,
+  SilpoSettingsRequest as SharedSilpoSettingsRequest,
+  SilpoSettingsResponse as SharedSilpoSettingsResponse,
   SilpoSyncResult as SharedSilpoSyncResult,
   SilpoSyncState as SharedSilpoSyncState,
   SilpoRelinkResponse as SharedSilpoRelinkResponse,
@@ -29,8 +36,14 @@ import {
   SilpoCartPreviewRequestSchema,
   SilpoCartPreviewResponseSchema,
   SilpoDisconnectResponseSchema,
+  SilpoPantryClaimRequestSchema,
+  SilpoPantryClaimResponseSchema,
+  SilpoPantryReleaseRequestSchema,
+  SilpoPantryReleaseResponseSchema,
   SilpoReceiptDetailDtoSchema,
   SilpoReceiptsPageSchema,
+  SilpoSettingsRequestSchema,
+  SilpoSettingsResponseSchema,
   SilpoSyncResultSchema,
   SilpoSyncStateSchema,
   SilpoRelinkResponseSchema,
@@ -97,6 +110,15 @@ export type SilpoReceiptDetailDto = SharedSilpoReceiptDetailDto;
 export type SilpoReceiptsPage = SharedSilpoReceiptsPage;
 export type SilpoReceiptsQuery = SharedSilpoReceiptsQuery;
 
+// ── Pantry auto-import (спека silpo-pantry-auto-import.md) ─────────────────
+export type SilpoSettingsRequest = SharedSilpoSettingsRequest;
+export type SilpoSettingsResponse = SharedSilpoSettingsResponse;
+export type SilpoPantryClaimMode = SharedSilpoPantryClaimMode;
+export type SilpoPantryClaimRequest = SharedSilpoPantryClaimRequest;
+export type SilpoPantryClaimResponse = SharedSilpoPantryClaimResponse;
+export type SilpoPantryReleaseRequest = SharedSilpoPantryReleaseRequest;
+export type SilpoPantryReleaseResponse = SharedSilpoPantryReleaseResponse;
+
 // ── Cart (Track G — MCP write path) ─────────────────────────────────────
 export type SilpoCartPreviewRequest = SharedSilpoCartPreviewRequest;
 /** Один рядок запиту `cartPreview()` — `{name, quantity?}`. */
@@ -162,9 +184,40 @@ export interface SilpoEndpoints {
   ) => Promise<SilpoRelinkResponse>;
   /**
    * `GET /api/silpo/sync-state` — стан інтеграції для Settings-картки
-   * (connect / connected / reauth-банер).
+   * (connect / connected / reauth-банер). Несе й `pantryAutoImportSince`
+   * (тумблер автоімпорту, спека `docs/work/specs/silpo-pantry-auto-import.md`).
    */
   syncState: (opts?: Pick<RequestOptions, "signal">) => Promise<SilpoSyncState>;
+  /**
+   * `PUT /api/silpo/settings` - тумблер «Додавати продукти з чеків у комору
+   * автоматично». Увімкнення ставить `pantry_auto_import_since = now()` на
+   * сервері; вимкнення - `null`.
+   */
+  updateSettings: (
+    body: SilpoSettingsRequest,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoSettingsResponse>;
+  /**
+   * `POST /api/silpo/receipts/:id/pantry-claim` - атомарне бронювання
+   * позицій чека ПЕРЕД записом у комору. Клієнт пише в комору ЛИШЕ
+   * `claimedItemIds` з відповіді, не весь запит: другий пристрій, що
+   * прийшов пізніше з тим самим `auto`-чеком, отримує порожній масив.
+   */
+  pantryClaim: (
+    receiptId: string,
+    body: SilpoPantryClaimRequest,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoPantryClaimResponse>;
+  /**
+   * `POST /api/silpo/receipts/:id/pantry-release` - знімає бронювання.
+   * `decline: true` - «Повернути» в тості автоімпорту: чек більше не
+   * потрапляє в автоімпорт (ручний лишається доступним).
+   */
+  pantryRelease: (
+    receiptId: string,
+    body: SilpoPantryReleaseRequest,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<SilpoPantryReleaseResponse>;
   /**
    * `POST /api/silpo/sync` — кнопка "Оновити чеки". `status` у відповіді —
    * стан ПІСЛЯ спроби синхронізації (можливий `reauth_required`, якщо
@@ -255,6 +308,31 @@ export function createSilpoEndpoints(http: HttpClient): SilpoEndpoints {
     syncState: async ({ signal } = {}) => {
       const raw = await http.get<unknown>("/api/silpo/sync-state", { signal });
       return SilpoSyncStateSchema.parse(raw);
+    },
+    updateSettings: async (body, { signal } = {}) => {
+      const parsedBody = SilpoSettingsRequestSchema.parse(body);
+      const raw = await http.put<unknown>("/api/silpo/settings", parsedBody, {
+        signal,
+      });
+      return SilpoSettingsResponseSchema.parse(raw);
+    },
+    pantryClaim: async (receiptId, body, { signal } = {}) => {
+      const parsedBody = SilpoPantryClaimRequestSchema.parse(body);
+      const raw = await http.post<unknown>(
+        `/api/silpo/receipts/${encodeURIComponent(receiptId)}/pantry-claim`,
+        parsedBody,
+        { signal },
+      );
+      return SilpoPantryClaimResponseSchema.parse(raw);
+    },
+    pantryRelease: async (receiptId, body, { signal } = {}) => {
+      const parsedBody = SilpoPantryReleaseRequestSchema.parse(body);
+      const raw = await http.post<unknown>(
+        `/api/silpo/receipts/${encodeURIComponent(receiptId)}/pantry-release`,
+        parsedBody,
+        { signal },
+      );
+      return SilpoPantryReleaseResponseSchema.parse(raw);
     },
     sync: async ({ signal } = {}) => {
       const raw = await http.post<unknown>("/api/silpo/sync", undefined, {
