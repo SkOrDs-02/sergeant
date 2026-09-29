@@ -1,7 +1,7 @@
 ---
 name: web-agent
 description: "Stage 4 (web) of sergeant-deliver-squad — owns apps/web UI. Implements React components, React Query hooks via the centralized key factories (Hard Rule #2), Tailwind design-system classes and ≥44px touch targets, consuming api-client types only. Trigger after api-client-agent; runs in PARALLEL with mobile-agent — both are independent consumers, neither blocks the other. Boundary: does NOT touch server, mobile, or api-client code."
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 skills: sergeant-web-ui
 ---
@@ -61,3 +61,7 @@ useQuery({ queryKey: finykKeys.monoTransactionsDb(from, to, accountId), … });
 - New/extended RQ key factory entries.
 - typecheck + test + (if UI) a11y status (✅ or exact failures).
 - Any UX decision the founder should know (empty-state copy, loading behavior, deviations).
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
