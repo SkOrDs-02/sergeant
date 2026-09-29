@@ -1,7 +1,7 @@
 # SPEC: KV-кеш читає розділ залогіненого користувача
 
 > **Last touched:** 2026-09-29 by @claude (рішення про зонд переносу переглянуто після виконання). **Next review:** 2026-12-28.
-> **Status:** Active
+> **Status:** Reference - реалізовано: коміт [`81e665fd`](https://bitbucket.org/skords01/sergeant/commits/81e665fd5) (`refreshKvWarmCache` у `apps/web/src/core/db/kvStoreBoot.ts`), підготовчий [`7010b4b0`](https://bitbucket.org/skords01/sergeant/commits/7010b4b0f); відкритих пунктів немає.
 > **Agent-ready:** yes. Рішення прийняті власником в інтервʼю 2026-09-28 і уточнені 2026-09-29, відкритих блокерів немає.
 
 ## Проблема

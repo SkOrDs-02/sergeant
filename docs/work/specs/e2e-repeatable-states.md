@@ -1,7 +1,7 @@
 # SPEC: повторювані стани застосунку для E2E-лейнів
 
 > **Last touched:** 2026-09-24 by @claude (spec-інтервʼю з власником, два раунди). **Next review:** 2026-12-24.
-> **Status:** Draft
+> **Status:** Active - реалізовано: коміт [`e0da9341`](https://bitbucket.org/skords01/sergeant/commits/e0da93415), `apps/web/src/e2e/*` (з `AGENTS.md`), `apps/web/tests/fixtures/worlds/*.json`; лишилось `pnpm check` цілком, ledger- і smoke-лейни (див. § Стан виконання).
 
 ## Проблема
 
