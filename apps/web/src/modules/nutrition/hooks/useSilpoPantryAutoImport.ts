@@ -16,7 +16,7 @@
  * змонтована в `NutritionApp` (ризик «два екземпляри стану комори» - спека
  * § Ризики), і показує один тост «Повернути» на прохід.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { mapReceiptItemToCategory } from "@sergeant/finyk-domain/domain";
 import { buildPantryIndex } from "@sergeant/nutrition-domain";
 import { silpoApi } from "@shared/api";
@@ -69,6 +69,11 @@ export function useSilpoPantryAutoImport({
 
   // Захист від повторного входу: одночасно працює один прохід (ref-замок).
   const runningRef = useRef(false);
+  // Список чеків оновився, поки прохід ще йшов: ефект тоді виходить одразу,
+  // тож після проходу треба перезапуститись самим, інакше новий чек чекав би
+  // наступного refetch.
+  const rerunRef = useRef(false);
+  const [rerunTick, setRerunTick] = useState(0);
   // Чеки, оброблені в поточному проході, не обробляються повторно до
   // наступного оновлення списку - сервер (`pantry_auto_declined_at`) і так
   // не дасть повторно імпортувати відхилений чек, але без цього замка
@@ -87,7 +92,11 @@ export function useSilpoPantryAutoImport({
   });
 
   useEffect(() => {
-    if (!enabled || runningRef.current) return;
+    if (!enabled) return;
+    if (runningRef.current) {
+      rerunRef.current = true;
+      return;
+    }
     // Сервер і сам не забронює чек, старший за увімкнення тумблера, але без
     // цього фільтра кожне відкриття тягнуло б деталі всіх десяти чеків.
     const since = Date.parse(syncState?.pantryAutoImportSince ?? "");
@@ -156,6 +165,10 @@ export function useSilpoPantryAutoImport({
         }
       } finally {
         runningRef.current = false;
+        if (rerunRef.current) {
+          rerunRef.current = false;
+          setRerunTick((t) => t + 1);
+        }
       }
 
       const addedCount = imported.reduce((n, r) => n + r.lines.length, 0);
@@ -164,8 +177,10 @@ export function useSilpoPantryAutoImport({
       showUndoToast(toast, {
         msg: buildSilpoAutoImportToastMessage(addedCount, imported.length),
         onUndo: () => {
+          // Один виклик на всі чеки: відкат рахує від знімка комори, і
+          // окремі виклики на той самий продукт перезаписували б один одного.
+          revertRef.current(imported.flatMap((r) => r.lines));
           for (const r of imported) {
-            revertRef.current(r.lines);
             void release
               .release(r.receiptId, r.claimedItemIds, true)
               .catch(() => undefined);
@@ -181,6 +196,7 @@ export function useSilpoPantryAutoImport({
     enabled,
     syncState?.pantryAutoImportSince,
     receiptsQuery.receipts,
+    rerunTick,
     claim,
     release,
     toast,

@@ -1,8 +1,10 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import {
   mergeItemsIntoPlaces,
+  sourcesTotal,
   updatePantry,
   type Pantry,
+  type PantryItemSource,
   type PlacedPantryItem,
 } from "@sergeant/nutrition-domain";
 import { appendNutritionPantryEvent } from "../lib/nutritionStorage";
@@ -44,6 +46,18 @@ export interface PantryReplenishLine {
   addedQty: number;
   unit: string | null;
   isNewPosition: boolean;
+  /** Варіант покупки, який приніс цей запис; «Повернути» прибирає саме його. */
+  source: PantryItemSource | null;
+}
+
+/** Та сама покупка: ключ збігається з тим, яким `mergeSources` відкидає дублі. */
+function sameSource(a: PantryItemSource, b: PantryItemSource): boolean {
+  return (
+    matchFoodName(a.name) === matchFoodName(b.name) &&
+    a.qty === b.qty &&
+    a.unit === b.unit &&
+    (a.addedAt ?? "") === (b.addedAt ?? "")
+  );
 }
 
 export interface UsePantryReplenishWriteParams {
@@ -139,6 +153,17 @@ export function usePantryReplenishWrite({
     items.forEach((item, i) => {
       if (item.qty == null || !Number.isFinite(item.qty)) return;
       const pantryId = placements[i]?.pantryId ?? placeOf(item.name);
+      // Покупку, яка вже є серед варіантів позиції, злиття відкидає як дубль:
+      // кількість не росте, тож і поповнення в ledger, і лінії для відкату
+      // бути не повинно, інакше споживання розійдеться з qty.
+      const source = item.sources?.[0] ?? null;
+      const key = canonicalFoodKey(item.name);
+      const existing = pantryItems.find(
+        (x) => x.pantryId === pantryId && canonicalFoodKey(x.name) === key,
+      );
+      if (source && existing?.sources?.some((s) => sameSource(s, source))) {
+        return;
+      }
       appendNutritionPantryEvent({
         id: null,
         pantryId,
@@ -157,6 +182,7 @@ export function usePantryReplenishWrite({
         addedQty: item.qty,
         unit: item.unit,
         isNewPosition: !(existsBefore[i] ?? false),
+        source,
       });
     });
     onItemsAdded?.(placements);
@@ -215,35 +241,53 @@ export function usePantryReplenishWrite({
    * контракт, що й ручне редагування кількості).
    */
   const revertReplenish = (lines: PantryReplenishLine[]) => {
-    // Кінцеву кількість рахуємо зі знімка ДО `setPantries`: updater React
+    // Кінцевий стан рахуємо зі знімка ДО `setPantries`: updater React
     // виконує відкладено, тож значення, присвоєні всередині нього, подія
-    // ledger нижче ще не бачила б і писала б `absQty: 0` на кожну позицію.
-    // Лінії групуються: два чеки одного проходу з тим самим продуктом дають
-    // дві лінії на одну позицію, і віднімати їх треба разом.
-    const groups = new Map<string, PantryReplenishLine>();
+    // ledger нижче ще не бачила б. Лінії однієї позиції (кілька чеків з
+    // тим самим продуктом) групуються й відкочуються разом.
+    const groups = new Map<
+      string,
+      {
+        line: PantryReplenishLine;
+        addedQty: number;
+        sources: PantryItemSource[];
+      }
+    >();
     for (const line of lines) {
       const key = matchFoodName(line.itemName);
       if (!key) continue;
       const groupKey = `${line.pantryId}\0${key}`;
-      const prev = groups.get(groupKey);
-      groups.set(
-        groupKey,
-        prev
-          ? {
-              ...prev,
-              addedQty: prev.addedQty + line.addedQty,
-              isNewPosition: prev.isNewPosition || line.isNewPosition,
-            }
-          : line,
-      );
+      const group = groups.get(groupKey) ?? { line, addedQty: 0, sources: [] };
+      group.addedQty += line.addedQty;
+      if (line.source) group.sources.push(line.source);
+      group.line = {
+        ...group.line,
+        isNewPosition: group.line.isNewPosition || line.isNewPosition,
+      };
+      groups.set(groupKey, group);
     }
-    for (const line of groups.values()) {
+    for (const { line, addedQty, sources } of groups.values()) {
       const key = matchFoodName(line.itemName);
       const current = pantryItems.find(
         (x) => x.pantryId === line.pantryId && matchFoodName(x.name) === key,
       );
       if (!current) continue;
-      const nextQty = Math.max(0, (current.qty ?? 0) - line.addedQty);
+      // Позиція з варіантами рахує кількість з них, тож прибрати треба сам
+      // варіант: інакше наступне злиття перерахує qty і повернута покупка
+      // знову зʼявиться в коморі.
+      const remaining = Array.isArray(current.sources)
+        ? [...current.sources]
+        : null;
+      if (remaining) {
+        for (const src of sources) {
+          const idx = remaining.findIndex((s) => sameSource(s, src));
+          if (idx >= 0) remaining.splice(idx, 1);
+        }
+      }
+      const nextSources = remaining && remaining.length > 0 ? remaining : null;
+      const nextQty = nextSources
+        ? sourcesTotal(nextSources)
+        : Math.max(0, (current.qty ?? 0) - addedQty);
       const removed = line.isNewPosition && nextQty === 0;
       setPantries((cur) =>
         updatePantry(cur, line.pantryId, (p) => {
@@ -252,7 +296,7 @@ export function usePantryReplenishWrite({
           const item = items[idx];
           if (idx < 0 || !item) return p;
           if (removed) items.splice(idx, 1);
-          else items[idx] = { ...item, qty: nextQty };
+          else items[idx] = { ...item, qty: nextQty, sources: nextSources };
           return { ...p, items };
         }),
       );

@@ -112,6 +112,7 @@ export function useSilpoPantryReplenish({
     // може застаріти між reseed-ом (зміна вибраного чека) і кліком.
     setCheckedState((cur) => {
       const row = rows.find((r) => r.item.id === itemId);
+      if (row?.locked) return cur;
       const current = cur[itemId] ?? row?.checked ?? false;
       return { ...cur, [itemId]: !current };
     });

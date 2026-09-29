@@ -102,10 +102,16 @@ function ReceiptItemRow({
     <li>
       {/* Native label+checkbox — той самий touch-target-патерн, що вже
           несе `PantryParsePreview` (input min 20px усередині 44px label). */}
-      <label className="flex items-center gap-2.5 px-1 touch-target rounded-xl hover:bg-panelHi/50 transition-colors cursor-pointer">
+      <label
+        className={cn(
+          "flex items-center gap-2.5 px-1 touch-target rounded-xl transition-colors",
+          row.locked ? "cursor-default" : "hover:bg-panelHi/50 cursor-pointer",
+        )}
+      >
         <input
           type="checkbox"
           checked={row.checked}
+          disabled={row.locked}
           onChange={() => onToggle(row.item.id)}
           className="shrink-0 w-5 h-5 accent-nutrition"
         />
@@ -140,10 +146,9 @@ function ReceiptItemRow({
             {row.item.name}
           </span>
           <span className="min-w-0 text-style-caption text-subtle truncate">
-            {/* «Вже в коморі» переважає над «Уже є»/«Нова позиція»: позицію
-                вже взяли в комору (вручну чи автоматично) - це важливіше за
-                те, чи знайшовся збіг за назвою. */}
-            {row.item.pantryClaimedAt != null
+            {/* «Вже в коморі» переважає над «Уже є»/«Нова позиція», поки
+                взятий із чека продукт лежить у коморі (`row.locked`). */}
+            {row.locked
               ? COPY.alreadyInPantry
               : row.matchedName
                 ? `${COPY.matchedPrefix} ${row.matchedName}`

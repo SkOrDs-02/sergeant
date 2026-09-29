@@ -55,6 +55,33 @@ describe("buildSilpoReplenishRows", () => {
     expect(rows[0]?.checked).toBe(false);
   });
 
+  it("взяте з чека, що досі в коморі, заблоковане навіть проти явної галочки", () => {
+    const claimed = item({
+      id: 1,
+      name: "Курка гомілка",
+      unit: "кг",
+      pantryClaimedAt: "2026-09-25T10:00:00.000Z",
+    });
+    const inPantry = buildSilpoReplenishRows({
+      items: [claimed],
+      pantryIndex: buildPantryIndex([{ name: "Курка гомілка" }]),
+      checkedState: { 1: true },
+      keepFullState: {},
+    });
+    expect(inPantry[0]).toMatchObject({ locked: true, checked: false });
+
+    const removedFromPantry = buildSilpoReplenishRows({
+      items: [claimed],
+      pantryIndex: buildPantryIndex([]),
+      checkedState: { 1: true },
+      keepFullState: {},
+    });
+    expect(removedFromPantry[0]).toMatchObject({
+      locked: false,
+      checked: true,
+    });
+  });
+
   it("явний вибір людини (checkedState) переважає дефолт", () => {
     const rows = buildSilpoReplenishRows({
       items: [item({ id: 1, name: "Пральний порошок Persil" })],

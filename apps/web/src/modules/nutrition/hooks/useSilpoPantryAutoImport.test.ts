@@ -150,6 +150,7 @@ describe("useSilpoPantryAutoImport", () => {
           addedQty: 1,
           unit: "шт",
           isNewPosition: true,
+          source: null,
         },
       ]);
 
@@ -219,6 +220,7 @@ describe("useSilpoPantryAutoImport", () => {
         addedQty: 1,
         unit: "шт",
         isNewPosition: true,
+        source: null,
       },
     ];
     const upsertItemForAutoImport = vi
@@ -232,6 +234,7 @@ describe("useSilpoPantryAutoImport", () => {
     const action = toastShowMock.mock.calls[0]![3] as { onClick: () => void };
     act(() => action.onClick());
 
+    expect(revertReplenish).toHaveBeenCalledTimes(1);
     expect(revertReplenish).toHaveBeenCalledWith(lines);
     expect(releaseMock).toHaveBeenCalledWith("rcpt-1", [1], true);
   });

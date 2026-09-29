@@ -52,6 +52,13 @@ export interface SilpoReplenishRow {
   genericName: string | null;
   /** Людина натиснула «лишити повну» - згортання для цього рядка вимкнене. */
   keepFull: boolean;
+  /**
+   * Позицію вже взяли з чека, і продукт досі лежить у коморі. Галочку тут
+   * поставити не можна: повторна та сама покупка злиттям відкидається як
+   * дубль, тож «додати ще раз» мовчки нічого б не додало. Коли продукт з
+   * комори видалили, рядок знову доступний.
+   */
+  locked: boolean;
   checked: boolean;
 }
 
@@ -90,6 +97,7 @@ export function buildSilpoReplenishRows({
     const generic = category.collapseBrand ? genericFoodName(item.name) : "";
     const finykCategory = mapReceiptItemToCategory(item);
     const isGrocery = finykCategory === "groceries";
+    const locked = item.pantryClaimedAt != null && match != null;
     return {
       item,
       category: finykCategory,
@@ -100,7 +108,8 @@ export function buildSilpoReplenishRows({
           ? generic
           : null,
       keepFull: keepFullState[item.id] ?? false,
-      checked: checkedState[item.id] ?? defaultChecked(item),
+      locked,
+      checked: !locked && (checkedState[item.id] ?? defaultChecked(item)),
     };
   });
 }
