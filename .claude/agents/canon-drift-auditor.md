@@ -1,7 +1,7 @@
 ---
 name: canon-drift-auditor
 description: "Read-only auditor: product canon ↔ code drift for one module. Given a module name (finyk, nutrition, fizruk, routine, hub-coach), reads docs/product/modules/<module>.md (incl. § Журнал рішень) and checks its claims against the actual module code, reporting divergences with file:line evidence — or an explicit 'no divergences found'. Trigger manually after feature work or before canon updates. Boundary: reports ONLY — never edits code or canon; [ІНТЕРВ'Ю] sections are founder's words, drift there is a finding, not an error to fix."
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 ---
 
@@ -30,3 +30,7 @@ One module name: `finyk`, `nutrition`, `fizruk`, `routine`, or `hub-coach`. No n
 
 - Read-only: no Edit/Write of code or canon — propose, never apply.
 - One module per run; cross-module seams belong to the named module's «Шви володіння» section.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
