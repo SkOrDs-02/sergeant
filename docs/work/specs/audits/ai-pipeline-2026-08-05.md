@@ -330,6 +330,8 @@ LLM-ендпоінт `POST /api/internal/categorize` з будь-якої точ
 
 ### B29 — weekly-digest кладе рядки користувача в **system**-промпт сирими
 
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): блок `ДАНІ` у [`weeklyDigestPrompt.ts`](../../../../apps/server/src/modules/digest/weeklyDigestPrompt.ts) іде через `wrapAndScanUserContext`, у промпті парний `DATA_FENCE_RULE`; тест `weeklyDigestPrompt.test.ts`. Персистентність у ai-memory лишається: огорожа стоїть на вході в LLM, не на виході.
+
 [`weekly-digest.ts:307-321`](../../../../apps/server/src/modules/digest/weekly-digest.ts):
 `systemPrompt` завершується `ДАНІ:\n${dataContext}`, а туди входять
 клієнтські `weekRange`, назви категорій, вправ і звичок. Це та сама асиметрія,
@@ -548,6 +550,8 @@ if (pricePerMTok != null) {
 
 ### B3 — `/api/coach/insight` без огорожі, яку отримав `/api/chat`
 
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `memorySummary` і `snapshotText` в [`coach.ts`](../../../../apps/server/src/modules/chat/coach.ts) огороджені `wrapAndScanUserContext`, додано `DATA_FENCE_RULE` (єдине джерело в `systemPrompt.ts`, текст HubChat не змінено, кеш не інвалідовано). Прогін `eval` стенду не робився (платний).
+
 A2 попереднього аудиту закрили обгорткою `<user_data>` у `buildSystem`. Але
 сусідній AI-роут будує промпт із того самого класу даних — і огорожі не має.
 
@@ -579,6 +583,8 @@ founder свідомо поставив.
 `eval` стенду, бо промпт зміниться.
 
 ### B4 — деградацію моделі coach обходить fallback-ланцюг
+
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `opts.model` тепер `coachAnthropicModel(tier.tier)`: premium → `COACH_MODEL_ANTHROPIC`, standard/floor → `claude-haiku-4-5-20251001`. Літеральне «передати tier-модель» не годилось: `tier.model` — OpenRouter-id, а Anthropic на нього відповість 404, тож tier мапиться на Claude-id.
 
 `resolveProTier` віддає floor-модель (дешеву) при вичерпаній квоті або при
 hard-breach бюджету. Coach передає її як `openrouterModel`
@@ -635,6 +641,8 @@ mobile навмисно **не виконує** tool-и (`stubResultText` — «
 B1. Поле додано.
 
 ### B8 — асиметрія екранування огорож
+
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `</tool_output>` тепер екранується тією ж ентіті (`&lt;/tool_output&gt;`), що й `</user_data>`; тест оновлено.
 
 [`toolOutputWrapping.ts:78, 94`](../../../../apps/server/src/modules/chat/toolOutputWrapping.ts):
 `</tool_output>` екранується zero-width-символом (`<​/tool_output>`), а
