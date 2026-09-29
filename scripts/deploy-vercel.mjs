@@ -149,6 +149,14 @@ function main() {
   console.log(`Деплой "${target}" у продакшн (project ${projectId}).`);
   run(["pull", "--yes", "--environment=production"]);
   run(["build", "--prod"]);
+  console.log(
+    "\n> node scripts/ci/check-e2e-seed-boundary.mjs .vercel/output/static/assets",
+  );
+  execFileSync(
+    "node",
+    ["scripts/ci/check-e2e-seed-boundary.mjs", ".vercel/output/static/assets"],
+    { cwd: repoRoot, stdio: "inherit" },
+  );
   const result = checkDeployOutput(
     runCaptured(["deploy", "--prebuilt", "--prod"]),
   );
