@@ -412,35 +412,19 @@ async function initSqliteDb(
  * спрацьовує на будь-якій невдачі воркера.
  */
 async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
-  let lockAttempt = 0;
-  let openTimeoutMs: number | undefined;
-  for (;;) {
+  for (let attempt = 0; ; attempt++) {
     try {
-      return await attemptWorkerBackedDb(userKey, openTimeoutMs);
+      return await attemptWorkerBackedDb(userKey);
     } catch (err) {
-      const delayMs = OPFS_LOCK_RETRY_DELAYS_MS[lockAttempt];
+      const delayMs = OPFS_LOCK_RETRY_DELAYS_MS[attempt];
       if (delayMs !== undefined && isOpfsLockContention(err)) {
-        lockAttempt++;
         addSentryBreadcrumb({
           category: "storage",
           level: "info",
           message: "sqlite: opfs pool busy, retrying",
-          data: { attempt: lockAttempt, delayMs },
+          data: { attempt: attempt + 1, delayMs },
         });
         await new Promise((resolve) => setTimeout(resolve, delayMs));
-        continue;
-      }
-      if (openTimeoutMs === undefined && isWorkerOpenTimeout(err)) {
-        openTimeoutMs = RETRY_OPEN_TIMEOUT_MS;
-        addSentryBreadcrumb({
-          category: "storage",
-          level: "warning",
-          message: "sqlite: worker open timed out, retrying",
-          data: { delayMs: OPEN_TIMEOUT_RETRY_DELAY_MS, openTimeoutMs },
-        });
-        await new Promise((resolve) =>
-          setTimeout(resolve, OPEN_TIMEOUT_RETRY_DELAY_MS),
-        );
         continue;
       }
       if (isChunkLoadError(err)) reloadOnceForChunkError();
@@ -483,28 +467,6 @@ async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
 const OPFS_LOCK_RETRY_DELAYS_MS = [150, 400] as const;
 
 /**
- * Одна повторна спроба після таймауту відкриття у воркері: пауза і коротший
- * поріг.
- *
- * AI-CONTEXT: планшет 2026-09-29 (Xiaomi Pad 6, прод). Після очищення даних
- * сайту воркер одного з перших завантажень мовчав усі 30 с, далі OPFS на
- * головному потоці падав, kvvfs заборонений позначкою перелиття, і база тихо
- * відкривалась як `:memory:`, тобто кожен запис сесії зникав на reload.
- * Зависання це стан конкретного воркера (його вбиває `terminate()` у
- * клієнті), а не середовища, тож свіжий воркер має шанс. Повтор один: два
- * зависання поспіль уже кажуть про середовище. Поріг 15 с, а не ще 30:
- * WASM на цей момент уже в HTTP-кеші, а сумарне очікування ≈45,5 с проти
- * 30 с раніше лишається в межах «довго, але не вічно». Фолбек після цього
- * не мовчазний: банер `MemoryOnlyStorageBanner` і журнал без ack.
- */
-const OPEN_TIMEOUT_RETRY_DELAY_MS = 500;
-const RETRY_OPEN_TIMEOUT_MS = 15_000;
-
-function isWorkerOpenTimeout(err: unknown): boolean {
-  return err instanceof Error && err.message === "sqlite-worker: timed out";
-}
-
-/**
  * Чи це саме «пул зайнятий», а не чесна відмова середовища.
  *
  * Розрізняти обов'язково: на пристрої без OPFS (`Missing required OPFS
@@ -519,10 +481,7 @@ function isOpfsLockContention(err: unknown): boolean {
   );
 }
 
-async function attemptWorkerBackedDb(
-  userKey: string,
-  openTimeoutMs: number | undefined,
-): Promise<OpenedDb> {
+async function attemptWorkerBackedDb(userKey: string): Promise<OpenedDb> {
   const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
   const handoff = await import("./kvvfsHandoff.js");
   const dbName = `sergeant-${userKey}.db`;
@@ -538,7 +497,6 @@ async function attemptWorkerBackedDb(
     initialCapacity: SAH_POOL_INITIAL_CAPACITY,
     minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
     importBytes,
-    ...(openTimeoutMs === undefined ? {} : { openTimeoutMs }),
   });
   if (needsHandoff) {
     // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня

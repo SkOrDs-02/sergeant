@@ -63,8 +63,6 @@ export interface SqliteWorkerOpenOptions {
    * на головному потоці порожній. Так і задумано — база важить мегабайти.
    */
   readonly importBytes?: ArrayBuffer | null;
-  /** Поріг очікування `open`; за замовчуванням {@link OPEN_TIMEOUT_MS}. */
-  readonly openTimeoutMs?: number;
 }
 
 /**
@@ -190,7 +188,7 @@ export async function openSqliteInWorker(
         minFreeSlots: options.minFreeSlots,
         ...(importBytes ? { importBytes } : {}),
       },
-      options.openTimeoutMs ?? OPEN_TIMEOUT_MS,
+      OPEN_TIMEOUT_MS,
       importBytes ? [importBytes] : undefined,
     );
   } catch (err) {
