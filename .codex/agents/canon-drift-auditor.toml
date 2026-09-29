@@ -27,5 +27,9 @@ One module name: `finyk`, `nutrition`, `fizruk`, `routine`, or `hub-coach`. No n
 
 - Read-only: no Edit/Write of code or canon — propose, never apply.
 - One module per run; cross-module seams belong to the named module's «Шви володіння» section.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "canon-drift-auditor"
