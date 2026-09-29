@@ -115,7 +115,7 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket): ci.yml job `Commit messages (commitlint)` does not run"
+          "ref": "ci.yml job `Commit messages (commitlint)` (GitHub Actions, PR-only; restored 2026-09-30, ADR-0101)"
         },
         {
           "kind": "hook",
@@ -138,7 +138,7 @@
       "enforced_by": [
         {
           "kind": "branch-protection",
-          "ref": "SUSPENDED since 2026-09-23 (repo moved to Bitbucket, GitHub accounts blocked): the old GitHub branch protection is dead. AGENTS.md claims a Bitbucket branch restriction, unverified from this repo; protection on the Hetzner mirror (origin's second pushurl) is also unverified"
+          "ref": "GitHub branch protection on SkOrDs-02/sergeant `main` (force-push and deletion disabled; verified 2026-09-30). Protection on the Hetzner mirror (origin's second pushurl) is unverified"
         }
       ],
       "links": [
@@ -185,11 +185,11 @@
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, and lint:ai-legacy --require-issue needs GITHUB_TOKEN): pnpm lint:ai-legacy - no local replacement"
+          "ref": ".github/workflows/ai-legacy-scan.yml (PR, path-filtered): node scripts/check-ai-legacy.mjs --check --require-issue (restored 2026-09-30)"
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, not in pnpm lint/check): pnpm dead-code:files (honours @scaffolded markers) - no local replacement"
+          "ref": "SUSPENDED: pnpm dead-code:files (honours @scaffolded markers) is not in any workflow nor in pnpm lint/check; raw `pnpm knip` runs in ci.yml job `Dead Code (Knip)`"
         }
       ],
       "links": [
@@ -212,7 +212,7 @@
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, not in pnpm lint/check): pnpm docs:check-freshness-coverage - no local replacement"
+          "ref": "SUSPENDED: pnpm docs:check-freshness-coverage is not in any workflow nor in pnpm lint/check; docs-automation.yml runs only the cadence and single-marker checks"
         },
         {
           "kind": "ci",
@@ -426,15 +426,15 @@
       "enforced_by": [
         {
           "kind": "hook",
-          "ref": "pre-push (scripts/pre-push-merged-pr.mjs) - після пуша повідомляє, скільки змерджених PR бракує в реєстрі, і радить `pnpm docs:sync-pr-ledger`. Попередження, не блок: запис у реєстр треба комітити окремо"
+          "ref": "SUSPENDED since 2026-09-30: повноту реєстру ніщо не стереже. Нагадування в pre-push прибрано разом із перевіркою PR на Bitbucket (ADR-0101), а .github/workflows/pr-backlinks.yml вимкнено (змінна репо PR_LEDGER_ON_GITHUB), доки фетчер не читає GitHub"
         },
         {
           "kind": "convention",
-          "ref": "pnpm docs:sync-pr-ledger - дочитує метадані змерджених PR з Bitbucket API (з 2026-09-23; до того це робив .github/workflows/pr-backlinks.yml через `gh`, обидва мертві)"
+          "ref": "pnpm docs:sync-pr-ledger - дочитує метадані змерджених PR лише з Bitbucket API (архівні PR 2026-09-23..29); PR на GitHub з 2026-09-30 він не бачить"
         },
         {
           "kind": "ci",
-          "ref": "pnpm docs:check-pr-ledger (крок pnpm lint) - звіряє реєстр ↔ блоки ↔ схему. Перевіряє ФОРМУ, не повноту: за повнотою стежить pre-push"
+          "ref": "pnpm docs:check-pr-ledger (крок pnpm lint) - звіряє реєстр ↔ блоки ↔ схему. Перевіряє ФОРМУ, не повноту"
         }
       ],
       "links": [
