@@ -62,5 +62,9 @@ Justified backward-compat exception only: `-- ALLOW_DROP: <reason> (due: YYYY-MM
 - Any Phase-2 DROP that must follow in a later PR (+ its `safe to drop after` date).
 - Tables/columns changed; Drizzle sync status.
 - `pnpm lint:migrations` / drift-check / migrate status (✅ or exact errors).
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "migration-agent"

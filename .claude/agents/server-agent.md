@@ -1,7 +1,7 @@
 ---
 name: server-agent
 description: "Stage 2 of sergeant-deliver-squad — owns server-side implementation in apps/server. Writes route handlers, business logic, and the serializer that DEFINES the API response shape, coercing every bigint to number (Hard Rule #1) and honoring the ADR-0078 day-boundary split (device-local for personal entities, Europe/Kyiv for reports) and Better Auth session patterns. Trigger after migration-agent; run before api-client-agent. Boundary: does NOT touch migrations (migration-agent) or client types (api-client-agent) — publish the exact response shape for them to consume."
-tools: Read, Write, Edit, Bash, Grep, Glob
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 skills: sergeant-server-api
 ---
@@ -67,3 +67,7 @@ The day key is part of the tick's primary key (`habitId:YYYY-MM-DD`) and `comple
 - Every `bigint` field now coerced to `number`.
 - Typecheck/test + `api:check-openapi` status (✅ or exact errors).
 - Auth/validation constraints the client must respect.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
