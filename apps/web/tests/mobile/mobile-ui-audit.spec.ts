@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
 import { auditPage, mockApi } from "./audit";
+import { applyScenario } from "../utils/scenario";
 
 // Steady-state surfaces (post-FTUX). One entry per module plus the
 // Hub/Settings/Reports/Insights shells.
@@ -45,24 +46,6 @@ const ROUTES: ReadonlyArray<{ id: string; path: string }> = [
   { id: "NUTRITION_LOG", path: "/nutrition/log" },
   { id: "ROUTINE_HABITS", path: "/routine/habits" },
   { id: "STATUS", path: "/status" },
-];
-
-// Receipt-length names, the stress case the ROUTES sweep structurally cannot
-// reach: a steady-state pantry is empty, so the row that actually sizes the
-// grid track never renders. Seeded through the UI because `upsertItem` is a
-// pure local mutation — no SQLite handshake, none of the timing fragility
-// that keeps the demo funnel out of this lane (see the note above).
-// No commas: `upsertItem` runs a loose parse that splits on them, so a decimal
-// inside a name («2,6%») would silently land as two pantry rows and make the
-// seeded count non-obvious. Length is what matters here, not punctuation.
-const RECEIPT_PANTRY_ITEMS: readonly string[] = [
-  "Паста арахісова Лавка традицій Aumi кранч",
-  "Молоко Яготинське добірне пастеризоване 900 г",
-  "Сир кисломолочний Президент розсипчастий 350 г",
-  "Хліб Київхліб Український подовий 950 г",
-  "Печиво Roshen Bonjour Souffle капучино 232 г",
-  "Вода мінеральна Моршинська негазована",
-  "Кава розчинна Jacobs Monarch Intense 200 г",
 ];
 
 test.describe("mobile coarse-pointer UI audit", () => {
@@ -115,44 +98,39 @@ test.describe("mobile coarse-pointer UI audit", () => {
   test("PANTRY /nutrition/pantry with receipt-length names", async ({
     page,
   }) => {
-    await mockApi(page);
-    // Registered after `mockApi` so it wins: a connected Silpo account is what
-    // adds the fourth "З чека" segment to the source strip in `PantryCard`
-    // (accessible name still "З покупок Сільпо" — see `PantrySourceTabs`).
-    await page.route("**/silpo/sync-state", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          status: "connected",
-          accessTokenExpiresAt: "2099-01-01T00:00:00.000Z",
-          lastSyncAt: "2026-08-28T09:15:00.000Z",
-          receiptsCount: 5,
-        }),
-      });
-    });
     await seedFTUX(page, "post-ftux");
-    await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
-
-    const nameInput = page.getByPlaceholder("напр. лосось 300г");
-    await nameInput.waitFor({ state: "visible", timeout: 15_000 });
-    for (const [i, name] of RECEIPT_PANTRY_ITEMS.entries()) {
-      // First item goes through the empty pantry's inline form; the rest go
-      // through the add sheet opened from the list header (it stays open).
-      if (i === 1) {
-        await page.getByRole("button", { name: "Додати продукти" }).click();
-      }
-      await nameInput.fill(name);
-      await page.getByRole("button", { name: "Додати", exact: true }).click();
-    }
-    await page
-      .getByRole("dialog", { name: "Додати продукти" })
-      .getByRole("button", { name: "Закрити" })
-      .click();
+    await applyScenario(page, "pantry-receipt-names", "/nutrition/pantry");
     await expect(
       page.getByRole("button", { name: /^Редагувати / }),
-    ).toHaveCount(RECEIPT_PANTRY_ITEMS.length);
+    ).toHaveCount(7);
 
     await auditPage(page, "PANTRY");
+  });
+
+  test("FINYK_MONTH /finyk", async ({ page }) => {
+    await seedFTUX(page, "post-ftux");
+    await applyScenario(page, "finyk-month", "/finyk");
+    await expect(page.getByText("Синхронізовано").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await auditPage(page, "FINYK_MONTH");
+  });
+
+  test("ROUTINE_STREAKS /routine", async ({ page }) => {
+    await seedFTUX(page, "post-ftux");
+    await applyScenario(page, "routine-streaks", "/routine");
+    await expect(page.getByText("Читання перед сном").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await auditPage(page, "ROUTINE_STREAKS");
+  });
+
+  test("FIZRUK_ACTIVE /fizruk/workouts", async ({ page }) => {
+    await seedFTUX(page, "post-ftux");
+    await applyScenario(page, "fizruk-active-session", "/fizruk/workouts");
+    await expect(page.getByText("Активне тренування").first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await auditPage(page, "FIZRUK_ACTIVE");
   });
 });

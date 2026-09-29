@@ -128,6 +128,19 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 
 Per-PR job `Accessibility (axe-core)` у [`ci.yml`](../../.github/workflows/ci.yml): `pnpm --filter @sergeant/web test:a11y` → [`playwright.config.ts`](./playwright.config.ts) (prod-білд + `vite preview` на :4173, без бекенду — `/api/*` дає `ECONNREFUSED`, це очікувано) → [`tests/a11y/axe.spec.ts`](./tests/a11y/axe.spec.ts). Блокують лише `serious`/`critical` плюс `heading-order`; світла тема — 18 поверхонь, `dark`/`hc` — по чотири.
 
+## Repeatable E2E States
+
+Mobile і a11y лейни можуть вмикати тестовий міст через `VITE_E2E_SEED=true`.
+Єдиний entrypoint у prod-білді: `main.tsx` динамічно імпортує
+`src/e2e/installScenarioBridge`, який виставляє `window.__sergeantScenario`.
+Світи живуть у `tests/fixtures/worlds/*.json`, а застосування в тестах - через
+`tests/utils/scenario.ts` (`installWorld`, `applyScenario`). Не додавай
+`?scenario=` або UI для вибору стану: стан активується лише з Playwright через
+JS-виклик. Після звичайного prod-білда `scripts/ci/check-e2e-seed-boundary.mjs`
+має не знайти `__sergeantScenario` в assets; `scripts/check-imports.mjs`
+дозволяє імпорт `src/e2e/**` тільки самому `main.tsx` і файлам усередині
+`src/e2e`.
+
 **axe знімає кольори в момент виклику, тож entry-анімація з `opacity` — це контраст, якого немає.** Блоки хаба заїжджають через `stagger-in` (`StaggerChild`, 320 ms, opacity 0 → 1), lazy-контент — через `SuspenseWithMinDelay` (`animate-fade-in`, 220 ms). Скан у хвості такої анімації бачить foreground, домножений на альфу предка: на #72 (2026-09-16) заголовок «Модулі» дав 3.75:1 із foreground `#6e756f` — це `--c-muted` #535c56 при opacity ≈0.83 на столі хаба, підказки карток — 4.49:1 замість ≥4.5. Той самий коміт на другому прогоні зелений, і саме це «то є, то немає» — ознака таймінгу, а не токенів: різниця лише в тому, коли мережа затихла відносно маунту сітки. Тому перед кожним `analyze()` стоїть `settleAnimations` — чекає СКІНЧЕННІ анімації кількома проходами (stagger-діти стартують із затримкою до 150 ms) зі стелею 3 с; лупи shimmer/pulse не чекає, бо вони не закінчуються. Той самий барʼєр — у [`tests/mobile/audit.ts`](./tests/mobile/audit.ts) для rect-ів. **Бачиш у логу a11y контраст на кілька сотих нижче порогу з foreground, якого немає в `theme.css`, — спершу порахуй альфу, а не рухай токен.**
 
 ## Deeper docs

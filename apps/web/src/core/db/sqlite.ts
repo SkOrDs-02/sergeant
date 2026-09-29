@@ -746,6 +746,11 @@ export function readActiveSqliteVfs(): SqliteVfs | null {
   return lastVfs;
 }
 
+/** Сирий id активної партиції, або `null` для анонімної. */
+export function readActiveSqliteUserId(): string | null {
+  return activeUserId;
+}
+
 /**
  * Заповненість SAH-пулу, або `null` поза OPFS-гілкою (kvvfs, memory, тести).
  * Ніколи не кидає: це діагностика, а не робочий шлях.
