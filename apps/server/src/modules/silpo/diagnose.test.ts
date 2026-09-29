@@ -37,6 +37,13 @@ const TOOLS_WITH_SCHEMA: Record<string, unknown> = {
     },
     required: ["branchId", "deliveryType", "timeslotStart", "timeslotEnd"],
   },
+  // `silpo_get_coupon_details` — єдина з шести "loyalty" тул (`benefits.ts`)
+  // з обовʼязковим аргументом: `businessCouponId` мусить лишатись у схемі,
+  // інакше `diffToolContract` читає це як дрейф.
+  silpo_get_coupon_details: {
+    properties: { businessCouponId: { type: "number" } },
+    required: ["businessCouponId"],
+  },
 };
 
 const ALL_TOOLS = [
@@ -47,6 +54,15 @@ const ALL_TOOLS = [
   "silpo_get_my_shopping_cart",
   "silpo_get_shopping_cart_by_id",
   "silpo_list_branches",
+  // Шість "loyalty" тул читання (spec § benefits.ts) — жодна не потребує
+  // branchContext; лише `silpo_get_coupon_details` несе обовʼязковий
+  // аргумент (див. `TOOLS_WITH_SCHEMA` вище).
+  "silpo_get_loyalty_info",
+  "silpo_get_my_coupons",
+  "silpo_get_coupon_details",
+  "silpo_get_my_promos",
+  "silpo_get_promo_codes",
+  "silpo_get_my_certificates",
 ].map((name) =>
   TOOLS_WITH_SCHEMA[name]
     ? { name, inputSchema: TOOLS_WITH_SCHEMA[name] }
@@ -87,7 +103,7 @@ describe("diagnoseSilpo", () => {
   it("здорова інтеграція: тули на місці, відповідь розбирається", async () => {
     const result = await diagnoseSilpo("u1");
 
-    expect(result).toMatchObject({ missingTools: [], toolsTotal: 7 });
+    expect(result).toMatchObject({ missingTools: [], toolsTotal: 13 });
     expect("verdict" in result && result.verdict).toContain("Все справне");
   });
 
