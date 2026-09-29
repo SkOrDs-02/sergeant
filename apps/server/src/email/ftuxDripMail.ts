@@ -177,7 +177,7 @@ async function reserveLogRow(
 /**
  * Update запису `email_campaigns_log` після успішного send-у — підтягує
  * provider_message_id (Resend `id`), яким ми потім крос-референсимо
- * webhook-події у `email_events`.
+ * webhook-події провайдера (таблиця `email_events` deprecated міграцією 152).
  */
 async function updateLogWithProvider(
   pool: Pool,
