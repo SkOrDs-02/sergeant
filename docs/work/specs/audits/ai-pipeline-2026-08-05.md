@@ -298,6 +298,8 @@ per-string і per-element cap-и ([`api.ts:301-443`](../../../../packages/shared
 
 ### B27 — `/api/internal/*` тримається на одному статичному секреті
 
+> **Частково закрито 2026-09-29** (`claude/server-internal-hardening`): rate-limit `api:internal` (120/хв per-IP) у [`routes/internal/index.ts`](../../../../apps/server/src/routes/internal/index.ts); опційний IP-allowlist `INTERNAL_ALLOWED_IPS` (порожній = шар не монтується, бо адреси n8n/Coolify-кронів не інвентаризовані, а fail-closed 503 зламав би їх); Zod-схема `CategorizeBodySchema` (description ≤ 500) у [`categorize.ts`](../../../../apps/server/src/routes/internal/categorize.ts). Тести: `routes/internal/index.test.ts`, `categorize.test.ts`. **Лишається:** HMAC-обовʼязковість — `WEBHOOK_HMAC_REQUIRED` уже `true` за замовчуванням, але шар пропускається при порожньому `WEBHOOK_HMAC_SECRET`; рішення (fail-startup у проді без секрету) потребує інвентаризації викликачів.
+
 [`routes/internal/index.ts:52-71`](../../../../apps/server/src/routes/internal/index.ts):
 Bearer `INTERNAL_API_KEY` (constant-time, fail-closed — це добре). Але:
 
@@ -396,6 +398,8 @@ unlimited) або валідувати JSON у Zod-схемі env, щоб бит
 
 ### B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею
 
+> **Закрито для `ANTHROPIC_BUDGET_*` 2026-09-29:** `strictBoolFromEnv` у [`envHelpers.ts`](../../../../apps/server/src/env/envHelpers.ts) кидає на старті для `ANTHROPIC_BUDGET_ALERT_ENABLED` / `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL` (тест `envHelpers.test.ts`). Решта `boolFromEnv`/`floatFromEnv` без змін.
+
 [`env.ts:28-38`](../../../../apps/server/src/env/env.ts) (`boolFromEnv`): будь-що,
 крім `true|1|false|0`, повертає дефолт **без помилки й без попередження**. Те
 саме `floatFromEnv` для чисел.
@@ -416,6 +420,8 @@ unlimited) або валідувати JSON у Zod-схемі env, щоб бит
 
 ### B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки
 
+> **Закрито 2026-09-29:** `founderIdsFromEnv` валідує формат при парсингу env (запис без пробілів усередині; кінцеві коми дозволені). Тест `envHelpers.test.ts`.
+
 [`env.ts:247`](../../../../apps/server/src/env/env.ts) — `z.string().optional()`,
 без валідації формату. Збіг за id знімає `assertAiQuota`, `consumeToolQuota` і
 Pro-деградацію ([`aiQuota.ts:243-247, 372, 525-527, 650`](../../../../apps/server/src/modules/chat/aiQuota.ts)).
@@ -426,6 +432,8 @@ Pro-деградацію ([`aiQuota.ts:243-247, 372, 525-527, 650`](../../../../
 метрик квоти — рівно та діра, яку hard-блок `AI_QUOTA_DISABLED` і закривав.
 
 ### B18 — редакція пропускає `api_key`, `openrouterKey` і самі формати ключів
+
+> **Частково закрито 2026-09-29:** `openrouterKey` у `REDACT_KEY_NAMES` і pino `redactPaths`; `PII_STRING_PATTERNS` доповнено `sk-ant-*` та `sk-or-v1-*` ([`pii.ts`](../../../../packages/shared/src/lib/pii.ts)). **Лишається:** `api_key` (snake_case), Voyage `pa-*`, payload-поля.
 
 [`pii.ts:49-105`](../../../../packages/shared/src/lib/pii.ts) — матчинг за **точною
 рівністю в нижньому регістрі** ([`pii.ts:142`](../../../../packages/shared/src/lib/pii.ts)),
