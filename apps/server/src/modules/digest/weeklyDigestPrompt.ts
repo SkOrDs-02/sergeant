@@ -1,9 +1,11 @@
 import { ValidationError } from "../../obs/errors.js";
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
 import {
+  DATA_FENCE_RULE,
   PERSONA_RULE,
   VOICE_RULE_JSON,
 } from "../chat/toolDefs/systemPrompt.js";
+import { wrapAndScanUserContext } from "../chat/toolOutputWrapping.js";
 import type { WeeklyDigestRequest } from "../../http/schemas.js";
 
 /**
@@ -160,8 +162,10 @@ ${VOICE_RULE_JSON}
 приходить раз на місяць, тож 0 надходжень за тиждень не є дефіцитом і не
 привід радити «планувати надходження».
 
+${DATA_FENCE_RULE}
+
 ДАНІ:
-${dataContext}`;
+${wrapAndScanUserContext(dataContext)}`;
 
   return { system: systemPrompt, user: userPrompt };
 }
