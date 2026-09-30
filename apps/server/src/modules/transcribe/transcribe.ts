@@ -3,7 +3,11 @@ import { TranscribeQuerySchema } from "@sergeant/shared";
 import { parseQuery } from "../../http/validate.js";
 import { transcribeAudio, GroqTranscribeError } from "../../lib/groq.js";
 import { logger } from "../../obs/logger.js";
-import { assertTranscribeUsdCap, recordTranscribeUsdSpend } from "./usdCap.js";
+import {
+  assertTranscribeUsdCap,
+  recordTranscribeUsdSpend,
+  releaseTranscribeUsdReservation,
+} from "./usdCap.js";
 import { env } from "../../env/env.js";
 
 type WithGroqKey = Request & { groqKey?: string };
@@ -167,6 +171,8 @@ export default async function transcribeHandler(
       model,
     });
   } catch (err) {
+    // B26: провал апстріму (чи abort) не тарифікується — повертаємо резерв.
+    await releaseTranscribeUsdReservation(req);
     if (err instanceof GroqTranscribeError) {
       logger.warn({
         msg: "transcribe_upstream_failed",

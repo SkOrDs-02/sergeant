@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-11-06.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-11-17.
 > **Status:** Active
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).
@@ -197,7 +197,7 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 
 ### 3г. Контрактний шар (Hard Rule #3) і OpenAPI
 
-- **Мертвих шляхів у згенерованому OpenAPI — 0.** Дрейф в інший бік: **16 серверних method-level шляхів відсутні в spec** (`DELETE /api/me`, `GET /api/me/export`, `GET|PATCH /api/me/preferences`, `GET /api/mono/jars`, `GET /api/status`, `GET /api/sync/audit`, `POST|GET|GET /api/v2/sync/{push,pull,stream}`, `POST /api/ai-memory/{ingest,event-sync}`, `POST /api/csp-report`, `GET /api/email/unsubscribe`, `POST /api/finyk/manual-expenses`, `POST /api/telegram/webhook`). Freshness-гейт `pnpm api:check-openapi` це не ловить **за конструкцією**: він звіряє spec із джерелом `packages/shared/src/openapi/routes.ts`, а не з реальним router-графом — якщо шлях не описали в джерелі, гейт мовчить.
+- **Мертвих шляхів у згенерованому OpenAPI — 0.** Дрейф в інший бік: 16 серверних method-level шляхів були відсутні в spec. **Закрито 2026-09-29** ([`packages/shared/src/openapi/routes.ts`](../../../../packages/shared/src/openapi/routes.ts), [`registry.ts`](../../../../packages/shared/src/openapi/registry.ts), перегенеровано [`openapi.json`](../../../engineering/api/openapi.json)): описано `GET /api/me/export`, `GET|PATCH /api/me/preferences`, `GET /api/mono/jars`, `GET /api/status`, `GET /api/sync/audit`, `POST /api/v2/sync/push`, `GET /api/v2/sync/pull`, `GET /api/v2/sync/stream`, `POST /api/csp-report`, `GET /api/email/unsubscribe`, `POST /api/finyk/manual-expenses`, `POST /api/telegram/webhook`. `DELETE /api/me` уже був у spec. **Роутів не існує (у spec не додавались):** `POST /api/ai-memory/ingest` (видалено ініціативою 0024 PR-1, 2026-09-03) і `POST /api/ai-memory/event-sync` (знято 2026-08-29, коментар у `routes/ai-memory.ts`); тобто реальний дрейф був 14, а не 16. Для `/api/status`, `/api/sync/audit` та відповідей `/api/v2/sync/{push,pull}` спільних Zod-схем відповіді немає (лише TS-інтерфейс/inline JSON) — описано inline у `routes.ts` за фактичним serializer-ом; винести в `@sergeant/shared/schemas` — окремий крок. Freshness-гейт `pnpm api:check-openapi` цей клас дрейфу не ловить **за конструкцією**: він звіряє spec із джерелом `routes.ts`, а не з реальним router-графом — якщо шлях не описали в джерелі, гейт мовчить.
 - **Контракт-тест на неіснуючий ендпоінт:** `routes/account-recovery.contract.test.ts` (2026-05-14) навмисно фіксує wire-контракт «before implementation» — але висить 2,5 місяця; сам роут `/api/account/recovery` не існує.
 - **Мертві шляхи в конфігу Sentry:** `sentry.ts:43` семплить `/api/internal/openclaw/write/` (поверхня видалена ADR-0075), `:55` — `/api/account/recovery` (не існує); обидва зафіксовані асертами в `__tests__/sentry-sampler.test.ts:62-70`, тож тест захищає мертві правила.
 - Doc-drift: `ops/n8n-workflows/REPORTING-MATRIX.md` досі містить рядок WF-25 (`25-morning-briefing-cron.json` видалено).
@@ -488,6 +488,10 @@ Vite + React (не Next), 17 файлів, повністю підключени
 | P3 (backlog)                         | Mobile UI-kit: підключати чи видаляти пакетом (після зняття knip-маски); `OfflineBanner` — дешевий win змонтувати; 16 unused types (§ 8); 16 шляхів без OpenApi-опису; insights-ядро для mobile-search; оновити `platforms.md` (finyk-рядок) і `.telemetry/`; `report-shell-tax` і `.ps1`-бекапи n8n — підтвердити долю у власника                                                                                                                                                                                                                                                                                                         | backlog                                   |
 
 **Порядок має значення:** P1-гейти йдуть перед P2-видаленнями. Інакше mobile UI-kit (найбільший кластер за обсягом) виросте знову — його не бачить жоден інструмент, і саме тому він і виріс.
+
+## Статус закриття § 2 (2026-09-29)
+
+Рішення власника: двофазне видалення 22 осиротілих таблиць (`webhook_events`, `seo_*` ×8, `growth_cohorts`, `revenue_daily`, `feature_adoption_weekly`, `brand_mentions`, `social_mentions`, `social_channels_daily`, `app_store_reviews`, `email_events`, `hard_rules_violations`, `openclaw_{decisions,write_audit,reminders,approval_nonce}`). Фаза 1 — ✅ міграція [`152_orphan_tables_deprecate_phase1.sql`](../../../../apps/server/src/migrations/152_orphan_tables_deprecate_phase1.sql) (deprecation-маркер) + видалено ендпоінт `POST /api/internal/email/event`, єдиний живий писар `email_events`. Роути `seo/growth/marketing/governance` на момент фази 1 у коді вже відсутні. Фаза 2 (DROP) — окремий PR не раніше 2026-10-13. Виключені: `openclaw_mute_state` (читач `modules/alerts/mute-state.ts`), `growth_funnel_daily`/`growth_acquisition_daily` (пишуть WF-60/63).
 
 ## Обмеження аудиту
 
