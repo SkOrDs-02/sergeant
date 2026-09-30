@@ -4,9 +4,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import {
-  DASHBOARD_MODULE_LABELS,
   FIRST_REAL_ENTRY_KEY,
-  HIDE_INACTIVE_MODULES_KEY,
   MODULE_CHECKLISTS,
   STORAGE_KEYS,
   VIBE_PICKS_KEY,
@@ -15,24 +13,8 @@ import {
 } from "@sergeant/shared";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { expandSingleCollapsedSection } from "../../test/helpers/collapsibleSection";
-import { resetFlags, setFlag } from "../lib/featureFlags";
 
 type TestRec = Rec & { actionHash?: string };
-
-// `formatMoney` (single source of truth in `@sergeant/shared`) renders
-// hryvnia amounts as `"<number> ₴"` (e.g. `"1 250 ₴"`) using a regular
-// space before the symbol. testing-library normalises NBSP/space to a
-// single space, so plain spaces are fine in the expectation strings.
-const EXPECTED_FINYK_MAIN = "1 250 \u20b4";
-// The copy lives in `packages/shared/src/lib/quickStats.ts` (the
-// "plan remainder" sub-label). This constant must mirror that wording
-// verbatim; `moduleConfigs.test.tsx` already asserts against the same one.
-const EXPECTED_FINYK_SUB =
-  "\u0417\u0430\u043b\u0438\u0448\u043e\u043a \u043f\u043b\u0430\u043d\u0443: 7 300 \u20b4";
-const EXPECTED_ROUTINE_SUB =
-  "\u0421\u0435\u0440\u0456\u044f: 5 \u0434\u043d\u0456\u0432";
-const INACTIVE_TOGGLE_NEEDLE =
-  "\u043d\u0435\u0430\u043a\u0442\u0438\u0432\u043d\u0456";
 
 const mocks = vi.hoisted(() => ({
   dashboardFocus: {
@@ -44,11 +26,6 @@ const mocks = vi.hoisted(() => ({
   openHubModule: vi.fn(),
   openHubModuleWithAction: vi.fn(),
   openHubSettingsSection: vi.fn(),
-  // Kept for potential future capture hooks; announce mock is the primary signal.
-  sortableCapture: {
-    handlers: undefined as undefined,
-  },
-  announce: vi.fn(),
   /**
    * Аргументи КОЖНОГО виклику `useCoachInsight`.
    *
@@ -58,10 +35,6 @@ const mocks = vi.hoisted(() => ({
    * ньому. Тут вона була й на вебі.
    */
   coachInsightCalls: [] as Array<{ enabled?: boolean } | undefined>,
-}));
-
-vi.mock("@shared/components/ui/ScreenReaderAnnouncer", () => ({
-  useAnnounce: () => ({ announce: mocks.announce }),
 }));
 
 vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
@@ -101,36 +74,6 @@ vi.mock("../insights/TodayFocusCard", () => ({
         </button>
       </section>
     ) : null,
-}));
-
-vi.mock("./HubInsightsPanel", () => ({
-  HubInsightsPanel: ({
-    items,
-    onOpenModule,
-    onDismiss,
-  }: {
-    items: TestRec[];
-    onOpenModule: (module: string, hash?: string) => void;
-    onDismiss: (id: string) => void;
-  }) => (
-    <section data-testid="hub-insights-panel">
-      <p data-testid="insight-count">{items.length}</p>
-      {items.map((item) => (
-        <div key={item.id}>
-          <span>{item.title}</span>
-          <button
-            type="button"
-            onClick={() => onOpenModule(item.action, item.actionHash)}
-          >
-            open-{item.id}
-          </button>
-          <button type="button" onClick={() => onDismiss(item.id)}>
-            dismiss-{item.id}
-          </button>
-        </div>
-      ))}
-    </section>
-  ),
 }));
 
 vi.mock("../insights/WeeklyDigestCard", () => ({
@@ -286,19 +229,6 @@ function userAged(daysAgo: number): User {
   };
 }
 
-function rec(overrides: Partial<TestRec>): TestRec {
-  return {
-    id: "rec-1",
-    module: "finyk",
-    priority: 100,
-    icon: "",
-    title: "Recommendation",
-    body: "Body",
-    action: "finyk",
-    ...overrides,
-  };
-}
-
 describe("HubDashboard", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -309,11 +239,6 @@ describe("HubDashboard", () => {
     // `ModuleChecklist`, whose «Фінік: Перші кроки» heading would
     // collide with the bento «Фінік» button under `getByRole`.
     localStorage.setItem("hub_first_real_entry_done_v1", "1");
-    // Вісь дії (`hub_action_axis_v1`) увімкнена дефолтом; ці тести
-    // описують СТАРУ головну (сітка + hero + акордеон), яка лишається за
-    // kill-switch-ем до PR 3. Гілку осі покриває `describe` нижче.
-    resetFlags();
-    setFlag("hub_action_axis_v1", false);
     mocks.dashboardFocus.focus = null;
     mocks.dashboardFocus.rest = [];
     mocks.dashboardFocus.dismiss.mockClear();
@@ -321,48 +246,13 @@ describe("HubDashboard", () => {
     mocks.openHubModule.mockClear();
     mocks.openHubModuleWithAction.mockClear();
     mocks.openHubSettingsSection.mockClear();
-    mocks.announce.mockClear();
     mocks.coachInsightCalls.length = 0;
   });
 
   afterEach(() => {
     cleanup();
-    resetFlags();
     localStorage.clear();
     vi.useRealTimers();
-  });
-
-  it("renders module previews from quick stats and empty states for modules without data", () => {
-    // S6.1 / B-1 (`packages/shared/src/lib/activeModules.ts`): empty
-    // vibe picks + `isOnboardingDone == false` now returns `[]`, so every
-    // bento card renders in the `inactive` state and the preview slots
-    // are replaced by «Неактивний: увімкнути в налаштуваннях». Mark all
-    // four modules as active so the preview rendering path is the one
-    // actually exercised by this test.
-    localStorage.setItem(
-      VIBE_PICKS_KEY,
-      JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
-    );
-    localStorage.setItem(
-      STORAGE_KEYS.FINYK_QUICK_STATS,
-      JSON.stringify({ todaySpent: 1250, budgetLeft: 7300 }),
-    );
-    localStorage.setItem(
-      STORAGE_KEYS.ROUTINE_QUICK_STATS,
-      JSON.stringify({ todayDone: 2, todayTotal: 4, streak: 5 }),
-    );
-
-    renderDashboard();
-
-    expect(screen.getByText(EXPECTED_FINYK_MAIN)).toBeInTheDocument();
-    expect(screen.getByText(EXPECTED_FINYK_SUB)).toBeInTheDocument();
-    expect(screen.getByText("2/4")).toBeInTheDocument();
-    expect(screen.getByText(EXPECTED_ROUTINE_SUB)).toBeInTheDocument();
-    // Empty cards (fizruk, nutrition) no longer render visible «Почни тут →»
-    // CTA copy — the tile itself is the affordance. The empty-state intent
-    // is exposed only through each card's accessible name
-    // (`<label>: <emptyLabel>`), so assert both empty modules announce it.
-    expect(screen.getAllByLabelText(/Почни тут/)).toHaveLength(2);
   });
 
   it("keeps the pre-FTUX dashboard focused on first-entry guidance", () => {
@@ -378,7 +268,6 @@ describe("HubDashboard", () => {
     expect(screen.queryByTestId("today-focus-card")).toBeNull();
     expect(screen.queryByText(MODULE_CHECKLISTS.finyk.title)).toBeNull();
     expect(screen.queryByTestId("assistant-advice-card")).toBeNull();
-    expect(screen.queryByTestId("hub-insights-panel")).toBeNull();
     expect(screen.queryByTestId("weekly-digest-footer")).toBeNull();
   });
 
@@ -413,154 +302,6 @@ describe("HubDashboard", () => {
     expect(screen.getByText(MODULE_CHECKLISTS.finyk.title)).toBeInTheDocument();
   });
 
-  it("opens the module on a card tap", () => {
-    const onOpenModule = vi.fn();
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
-    mocks.dashboardFocus.focus = rec({
-      id: "focus-finyk",
-      module: "finyk",
-      action: "finyk",
-    });
-    mocks.dashboardFocus.rest = [
-      rec({
-        id: "rest-fizruk",
-        module: "fizruk",
-        action: "fizruk",
-      }),
-    ];
-
-    renderDashboard({ onOpenModule });
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: new RegExp(DASHBOARD_MODULE_LABELS.finyk),
-      }),
-    );
-    expect(onOpenModule).toHaveBeenCalledWith("finyk");
-  });
-
-  it("marks inactive modules and persists the hide-inactive toggle", () => {
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
-    const { container } = renderDashboard();
-
-    expect(container.querySelectorAll('[data-inactive="true"]')).toHaveLength(
-      3,
-    );
-
-    const toggle = Array.from(screen.getAllByRole("button")).find((button) =>
-      button.textContent?.includes(INACTIVE_TOGGLE_NEEDLE),
-    );
-    expect(toggle).toBeDefined();
-    fireEvent.click(toggle!);
-
-    expect(localStorage.getItem(HIDE_INACTIVE_MODULES_KEY)).toBe("1");
-    expect(
-      screen.queryByRole("button", {
-        name: new RegExp(DASHBOARD_MODULE_LABELS.fizruk),
-      }),
-    ).toBeNull();
-  });
-
-  it("routes taps on inactive bento cards to Hub Settings → Дашборд instead of opening the module", () => {
-    // Only `finyk` is in vibe picks → fizruk/routine/nutrition cards
-    // render greyed-out. The card's copy promises «Неактивний —
-    // увімкнути в налаштуваннях» and the quick-add affordance is
-    // suppressed; tapping the card body must follow the same intent
-    // and dispatch `HUB_OPEN_SETTINGS_EVENT` for section "dashboard"
-    // (which scrolls to the «Модулі дашборду» toggle list) instead of
-    // calling `onOpenModule(id)` for a module the user explicitly did
-    // not opt into.
-    localStorage.setItem(VIBE_PICKS_KEY, JSON.stringify(["finyk"]));
-    const onOpenModule = vi.fn();
-
-    renderDashboard({ onOpenModule });
-
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: new RegExp(DASHBOARD_MODULE_LABELS.fizruk),
-      }),
-    );
-
-    expect(onOpenModule).not.toHaveBeenCalled();
-    expect(mocks.openHubSettingsSection).toHaveBeenCalledTimes(1);
-    expect(mocks.openHubSettingsSection).toHaveBeenCalledWith("dashboard");
-
-    // Active modules keep their normal "open the module" tap target —
-    // the inactive guard must not regress the happy path.
-    fireEvent.click(
-      screen.getByRole("button", {
-        name: new RegExp(DASHBOARD_MODULE_LABELS.finyk),
-      }),
-    );
-    expect(onOpenModule).toHaveBeenCalledWith("finyk");
-  });
-
-  it("routes hero and insight callbacks to the correct dashboard actions", () => {
-    const onOpenModule = vi.fn();
-    // Після 8a19987 soft-auth фаєриться для гостя вже з першого
-    // session-day після реального запису і виграє hero-слот у
-    // TodayFocus. Цей тест перевіряє роутінг фокус-картки, тож
-    // прибираємо конкурента так само, як зробив би юзер — дізмісом.
-    localStorage.setItem("hub_soft_auth_dismissed_v1", "1");
-    mocks.dashboardFocus.focus = rec({
-      id: "focus",
-      title: "Focus recommendation",
-      action: "nutrition",
-    });
-    mocks.dashboardFocus.rest = [
-      rec({
-        id: "hashed",
-        title: "Hashed insight",
-        action: "finyk",
-        actionHash: "#budgets",
-      }),
-      rec({
-        id: "plain",
-        title: "Plain insight",
-        action: "fizruk",
-      }),
-    ];
-
-    const { container } = renderDashboard({ onOpenModule });
-
-    expect(screen.getByText("Focus recommendation")).toBeInTheDocument();
-    expect(screen.getByTestId("insight-count")).toHaveTextContent("2");
-
-    // «Що зараз важливо» (HubInsightsBlock → CollapsibleSection) згорнута
-    // за замовчуванням — L-7 фікс ховає її вміст через `inert` +
-    // `aria-hidden`, тож insight-кнопки нижче недоступні для getByRole,
-    // доки секцію не розкрито, так само як не побачив би їх реальний
-    // юзер без тапу по заголовку.
-    expandSingleCollapsedSection(container);
-
-    fireEvent.click(screen.getByRole("button", { name: "focus-action" }));
-    fireEvent.click(screen.getByRole("button", { name: "open-hashed" }));
-    fireEvent.click(screen.getByRole("button", { name: "open-plain" }));
-    fireEvent.click(screen.getByRole("button", { name: "dismiss-hashed" }));
-
-    expect(onOpenModule).toHaveBeenCalledWith("nutrition");
-    expect(mocks.openHubModule).toHaveBeenCalledWith("finyk", "#budgets");
-    expect(onOpenModule).toHaveBeenCalledWith("fizruk");
-    expect(mocks.dashboardFocus.dismiss).toHaveBeenCalledWith("hashed");
-  });
-
-  it("keeps the post-FTUX focus card in normal flow instead of translating it over module cards", () => {
-    // Див. коментар у попередньому тесті: без дізмісу soft-auth
-    // (8a19987) фокус-картка не виграє hero-слот для гостя.
-    localStorage.setItem("hub_soft_auth_dismissed_v1", "1");
-    mocks.dashboardFocus.focus = rec({
-      id: "focus-no-overlap",
-      title: "Focus without overlap",
-      action: "nutrition",
-    });
-
-    renderDashboard();
-
-    expect(
-      screen.getByTestId("today-focus-card").closest('[style*="translateY"]'),
-    ).toBeNull();
-  });
-
   it("shows the weekly digest footer and expands the report summary inline", () => {
     // UX-feedback 2026-05-13: footer is always rendered (regardless of day
     // or `digestFresh`) so users always have a 1-tap entry into the
@@ -578,37 +319,6 @@ describe("HubDashboard", () => {
     fireEvent.click(screen.getByTestId("weekly-digest-footer"));
 
     expect(screen.getByTestId("weekly-digest-card")).toBeInTheDocument();
-  });
-
-  it("announces native keyboard reorder via aria-live (PR-12 / A9)", () => {
-    localStorage.setItem(
-      VIBE_PICKS_KEY,
-      JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
-    );
-
-    renderDashboard();
-
-    expect(screen.getByTestId("native-sortable-grid")).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: /Налаштувати порядок модулів/i }),
-    );
-
-    const grip = screen.getByRole("button", {
-      name: new RegExp(`Перетягнути ${DASHBOARD_MODULE_LABELS.finyk}`),
-    });
-    grip.focus();
-    fireEvent.keyDown(grip, { key: "ArrowRight" });
-
-    expect(mocks.announce).toHaveBeenCalledWith(
-      expect.stringContaining(DASHBOARD_MODULE_LABELS.finyk),
-    );
-    const messages = mocks.announce.mock.calls.map((args) => args[0] as string);
-    expect(
-      messages.some((message) =>
-        /\u043f\u043e\u0437\u0438\u0446\u0456\u044e 2 \u0437/.test(message),
-      ),
-    ).toBe(true);
   });
 
   it("renders the weekly digest footer mid-week regardless of digest freshness", () => {
@@ -673,7 +383,7 @@ describe("HubDashboard", () => {
 // `vi.mock` цього файлу вже на межі): на порожніх кешах «Зараз» показує
 // порожній рядок, «Закрито» не рендериться. Їхню логіку покривають власні
 // тести (`now/*.test.ts*`), тут — розкладка.
-describe("HubDashboard — вісь дії (hub_action_axis_v1)", () => {
+describe("HubDashboard — вісь дії", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-29T09:00:00+03:00"));
@@ -683,14 +393,12 @@ describe("HubDashboard — вісь дії (hub_action_axis_v1)", () => {
       VIBE_PICKS_KEY,
       JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
     );
-    resetFlags(); // дефолт — увімкнено
     mocks.dashboardFocus.focus = null;
     mocks.dashboardFocus.rest = [];
     mocks.openHubModule.mockClear();
   });
   afterEach(() => {
     cleanup();
-    resetFlags();
     localStorage.clear();
     vi.useRealTimers();
   });
@@ -700,7 +408,6 @@ describe("HubDashboard — вісь дії (hub_action_axis_v1)", () => {
     expect(screen.getByTestId("module-rail")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Зараз" })).toBeInTheDocument();
     expect(screen.getByTestId("now-empty")).toBeInTheDocument();
-    expect(screen.queryByTestId("native-sortable-grid")).toBeNull();
     expect(screen.queryByTestId("today-focus-card")).toBeNull();
     // Акордеон під віссю — лише порада й звіт.
     expect(screen.getByText("Порада й звіт тижня")).toBeInTheDocument();
@@ -723,10 +430,9 @@ describe("HubDashboard — вісь дії (hub_action_axis_v1)", () => {
     expect(screen.getByTestId("module-rail")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Зараз" })).toBeNull();
     expect(screen.queryByTestId("now-empty")).toBeNull();
-    expect(screen.queryByTestId("native-sortable-grid")).toBeNull();
   });
 
-  it("«Чистий режим» під віссю не діє: порада й звіт лишаються", () => {
+  it("збережений застарілий calmMode ігнорується: порада й звіт лишаються", () => {
     localStorage.setItem(
       STORAGE_KEYS.HUB_PREFS,
       JSON.stringify({ calmMode: true }),
@@ -734,19 +440,5 @@ describe("HubDashboard — вісь дії (hub_action_axis_v1)", () => {
     renderDashboard();
     expect(screen.getByTestId("now-empty")).toBeInTheDocument();
     expect(screen.getByText("Порада й звіт тижня")).toBeInTheDocument();
-  });
-
-  it("kill-switch: вимкнений прапорець повертає сітку і картку «Зараз»", () => {
-    setFlag("hub_action_axis_v1", false);
-    mocks.dashboardFocus.focus = rec({
-      id: "f",
-      module: "finyk",
-      action: "finyk",
-    });
-    renderDashboard();
-    expect(screen.getByTestId("native-sortable-grid")).toBeInTheDocument();
-    expect(screen.getByTestId("today-focus-card")).toBeInTheDocument();
-    expect(screen.queryByTestId("module-rail")).toBeNull();
-    expect(screen.queryByTestId("now-empty")).toBeNull();
   });
 });
