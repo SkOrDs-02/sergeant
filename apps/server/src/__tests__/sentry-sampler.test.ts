@@ -33,13 +33,6 @@ describe("pickTracesSampleRate", () => {
     expect(pickTracesSampleRate("/api/auth/oauth/callback", 0.05)).toBe(1.0);
   });
 
-  it("samples /api/account/recovery at 100%", () => {
-    expect(pickTracesSampleRate("/api/account/recovery", 0.05)).toBe(1.0);
-    expect(
-      pickTracesSampleRate("/api/account/recovery/confirm?token=x", 0.05),
-    ).toBe(1.0);
-  });
-
   it("samples /api/admin/* at 100% (low volume + high blast radius)", () => {
     expect(pickTracesSampleRate("/api/admin/users", 0.05)).toBe(1.0);
     expect(pickTracesSampleRate("/api/admin/jobs/retry", 0.05)).toBe(1.0);
@@ -78,7 +71,6 @@ describe("pickTracesSampleRate", () => {
     const { SENTRY_SAMPLING_RULES } = await import("../sentry.js");
     const REAL_PATHS = [
       "/api/internal/cron/digest",
-      "/api/account/recovery",
       "/api/admin/users",
       "/api/auth/sign-in",
       "/api/chat",
