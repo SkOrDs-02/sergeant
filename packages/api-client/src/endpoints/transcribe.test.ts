@@ -104,6 +104,47 @@ describe("createTranscribeEndpoints.send", () => {
     expect((init as RequestInit).body).toBe(audio);
   });
 
+  it("передає модуль-тег у query (?module=nutrition)", async () => {
+    const fetchMock = mockFetchOnce({ text: "x", durationSec: 1, model: "m" });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const transcribe = createTranscribeEndpoints(http);
+
+    await transcribe.send(
+      { audio: new ArrayBuffer(1), mimeType: "audio/webm" },
+      { language: "uk", module: "nutrition" },
+    );
+
+    const [url] = firstCall(fetchMock);
+    expect(new URL(String(url)).searchParams.get("module")).toBe("nutrition");
+  });
+
+  it("403 HEALTH_CONSENT_REQUIRED -> outcome health_consent_required з текстом-дією", async () => {
+    mockFetchOnce(
+      { error: "Потрібна згода", code: "HEALTH_CONSENT_REQUIRED" },
+      { status: 403 },
+    );
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const transcribe = createTranscribeEndpoints(http);
+
+    await expect(
+      transcribe.send({ audio: new ArrayBuffer(1), mimeType: "audio/webm" }),
+    ).resolves.toEqual({
+      outcome: "health_consent_required",
+      status: 403,
+      message: "Потрібна згода",
+    });
+  });
+
+  it("403 без коду згоди лишається generic error", async () => {
+    mockFetchOnce({ error: "Forbidden" }, { status: 403 });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const transcribe = createTranscribeEndpoints(http);
+
+    await expect(
+      transcribe.send({ audio: new ArrayBuffer(1), mimeType: "audio/webm" }),
+    ).resolves.toMatchObject({ outcome: "error", status: 403 });
+  });
+
   it("rejects an out-of-range query via the canonical schema before sending anything", async () => {
     const fetchMock = mockFetchOnce({});
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
