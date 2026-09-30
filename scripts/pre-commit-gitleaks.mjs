@@ -3,10 +3,9 @@
 //
 // Pre-commit guard for secret leaks (closes I5 hardening item).
 //
-// There is no CI on this repo (Bitbucket, no `bitbucket-pipelines.yml`;
-// GitHub Actions in `.github/workflows/` do not run - see AGENTS.md
-// § "Де живе код"). This hook is therefore the ONLY secret scan that
-// exists, not an early-warning layer on top of one.
+// CI (`ci.yml` job `secret-scan`, gitleaks) scans every PR since
+// 2026-09-30 (ADR-0101), but only after the push. This hook keeps the
+// secret out of the pushed history in the first place.
 //
 // Behaviour:
 //   - If `gitleaks` is installed: run `gitleaks protect --staged` on the
@@ -81,8 +80,8 @@ function main() {
       [
         "",
         `⚠️  [pre-commit-gitleaks] ${SKIP_ENV}=1 - secret scan SKIPPED.`,
-        "  Nothing else scans this commit for secrets: there is no CI",
-        "  on this repo (Bitbucket, no bitbucket-pipelines.yml). Use this",
+        "  Only CI will scan it, after the secret is already pushed.",
+        "  Use this",
         "  only for a documented break-glass case, never as a habit.",
         "",
       ].join("\n"),
