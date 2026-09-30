@@ -6,6 +6,27 @@
 <!-- Заповнено через spec-інтервʼю (`.agents/skills/sergeant-spec/SKILL.md`) 2026-09-20.
 Джерело знахідки: docs/work/specs/audits/2026-09-20-rada-skeptykiv.md § G-1. -->
 
+## Статус реалізації (2026-09-29)
+
+Рішення власника звузило v1 до **лише `fizruk_injuries.note`**; `ai_memories.content` відкладено (блокер з § Ризики про RAG-пошук не розбирався, бо поле поза скоупом).
+
+Зроблено (гілка `claude/encrypt-injury-note`):
+
+- [`apps/server/src/lib/healthTextCrypto.ts`](../../../apps/server/src/lib/healthTextCrypto.ts) — обгортка над наявним `encryptString`/`decryptString` (`auth/tokenCrypto.ts`, формат `enc:v2:k<ver>:…` у самій TEXT-колонці) і кільцем `BETTER_AUTH_TOKEN_ENC_KEY[S]` (обовʼязкове в проді, нового env немає). Fail-soft: збій розшифрування дає `""` + warn без значення.
+- Запис: `applyInjuries.ts` шифрує `note` перед INSERT/UPDATE.
+- **Міграція не потрібна** (відступ від § Поверхня змін): префікс `enc:` самоописний, колонка вже TEXT, версія ключа зашита в значенні. Номер 153 не використано.
+- **Бекфіл — lazy**: старі plaintext-рядки читаються як є (немає префікса `enc:`), а перешифровуються при наступному записі цього рядка. Примусової міграції даних немає.
+- Експорт: `dataRights.ts` розшифровує `fizruk_injuries.note` у `GET /api/me/export`.
+- **`sync_op_log.row`** (не було в спеці): `note` шифрується при записі оп-лога (`syncV2.ts`) і розшифровується на `pull` та SSE-replay (`syncV2Stream.ts`), протокол і форма відповіді не змінені. Контракт API (Hard Rule #3) не змінюється: клієнт бачить plaintext.
+- Тести: [`healthTextCrypto.test.ts`](../../../apps/server/src/lib/healthTextCrypto.test.ts) — шифрування без plaintext у значенні, читання, legacy plaintext, ротація ключів, деградація при збої, op-log payload, INSERT у `applyFizrukInjuries`.
+
+Відкрито:
+
+- Старі рядки `sync_op_log` (до цього PR) лишаються з plaintext `note`, а старі рядки `fizruk_injuries`, які ніхто не редагує — теж. Закрити можна разовим скриптом-бекфілом (перешифрувати `note` у обох таблицях) — рішення власника.
+- Live-SSE фрейм у момент push шле plaintext власним пристроям користувача (у памʼяті, не зберігається) — навмисно.
+- `ai_memories.content` — не зроблено (поза скоупом рішення).
+- Ключ і БД на одному хості — межа захисту, як і в § Ризики.
+
 ## Проблема
 
 Ворожий огляд 2026-09-20 знайшов асиметрію в захисті даних ([рада скептиків § G-1](./audits/2026-09-20-rada-skeptykiv.md)). Field-level шифрування в продукті **є, але тільки для токенів доступу**: `apps/server/src/modules/mono/crypto.ts` тримає AES-256-GCM із кільцем ключів і підтримкою ротації (H4).
