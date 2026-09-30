@@ -85,6 +85,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "split_transaction",
   "recurring_expense",
   "export_report",
+  "import_monobank_range",
   // Routine
   "mark_habit_done",
   "create_habit",
@@ -116,6 +117,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "log_measurement",
   "log_wellbeing",
   "log_weight",
+  "add_program_day",
   "suggest_workout",
   "copy_workout",
   "compare_progress",
@@ -129,6 +131,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "category_breakdown",
   "detect_anomalies",
   "habit_trend",
+  "get_daily_series",
   // Utility
   "calculate_1rm",
   "convert_units",
@@ -160,6 +163,11 @@ interface CardInput {
 }
 
 const FAILURE_RE = /^(Помилка|Не вдалося|Невідома дія)/;
+
+/** Чи результат виконавця — помилка (для гейта «✓» у `useChatSend`). */
+export function isFailureResult(result: string): boolean {
+  return FAILURE_RE.test(result);
+}
 
 function deriveStatus(
   result: string,

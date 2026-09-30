@@ -4,6 +4,7 @@ import * as schemas from "../schemas/api";
 import * as receiptSchemas from "../schemas/receipts";
 import * as importSchemas from "../schemas/import";
 import * as silpoSchemas from "../schemas/silpo";
+import * as finykSchemas from "../schemas/finyk";
 
 /**
  * Builds OpenAPI 3.1 document from zod-схем у `@sergeant/shared/schemas/api`.
@@ -59,6 +60,44 @@ const UserProfileResponse = schemas.UserProfileResponseSchema.meta({
   description:
     "Відповідь GET/PUT /api/me/profile. `profile: {}` / `updatedAt: null` — дефолт, коли рядка ще немає.",
 });
+const UserPreferences = schemas.UserPreferencesSchema.meta({
+  id: "UserPreferences",
+  description:
+    "Відповідь GET/PATCH /api/me/preferences — налаштування користувача.",
+});
+const UserPreferencesPatch = schemas.UserPreferencesPatchSchema.meta({
+  id: "UserPreferencesPatch",
+  description:
+    "Тіло PATCH /api/me/preferences — часткове оновлення налаштувань.",
+});
+const MeExportResponse = schemas.MeExportResponseSchema.meta({
+  id: "MeExportResponse",
+  description:
+    "Відповідь GET /api/me/export — повний експорт даних користувача (GDPR-право на доступ).",
+});
+const SyncV2PushRequest = schemas.SyncV2PushSchema.meta({
+  id: "SyncV2PushRequest",
+  description: "Тіло POST /api/v2/sync/push — пачка op-ів per-row op-log sync.",
+});
+const SyncV2PullQuery = schemas.SyncV2PullSchema.meta({
+  id: "SyncV2PullQuery",
+  description:
+    "Query для GET /api/v2/sync/pull і /stream: `since` (курсор по id) та `limit`.",
+});
+const CspReportBody = schemas.CspReportBodySchema.meta({
+  id: "CspReportBody",
+  description:
+    "POST /api/csp-report — legacy `csp-report`, Reporting-API масив або bare-об'єкт (Safari).",
+});
+const ManualExpenseCreate = finykSchemas.ManualExpenseCreateSchema.meta({
+  id: "ManualExpenseCreate",
+  description: "Тіло POST /api/finyk/manual-expenses (сума в копійках).",
+});
+const ManualExpenseCreateResponse =
+  finykSchemas.ManualExpenseCreateResponseSchema.meta({
+    id: "ManualExpenseCreateResponse",
+    description: "Відповідь 201 POST /api/finyk/manual-expenses.",
+  });
 const ChatRequest = schemas.ChatRequestSchema.meta({
   id: "ChatRequest",
   description:
@@ -511,6 +550,14 @@ export const namedSchemas = {
   MeRestoreResponse,
   UserProfilePutBody,
   UserProfileResponse,
+  UserPreferences,
+  UserPreferencesPatch,
+  MeExportResponse,
+  SyncV2PushRequest,
+  SyncV2PullQuery,
+  CspReportBody,
+  ManualExpenseCreate,
+  ManualExpenseCreateResponse,
   ChatRequest,
   ChatUsageResponse,
   RecallMemoryRequest,

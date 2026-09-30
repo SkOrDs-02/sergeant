@@ -102,6 +102,15 @@ async function loadCandidateTransactions(
           SELECT 1 FROM silpo_tx_receipt_links l
            WHERE l.user_id = t.user_id AND l.transaction_id = t.mono_tx_id
         )
+        -- Дзеркало finyk/receipts/matcher.ts: транзакція, що вже має
+        -- фіскальний чек (finyk), не кандидат Сільпо (unification §1.14).
+        -- finyk_tx_receipt_links без user_id — ізолюємо через receipts.
+        AND NOT EXISTS (
+          SELECT 1 FROM finyk_tx_receipt_links fl
+            JOIN receipts fr ON fr.id = fl.receipt_id
+           WHERE fr.user_id = t.user_id
+             AND fl.tx_kind = 'mono' AND fl.tx_ref = t.mono_tx_id
+        )
       UNION ALL
      SELECT m.data_json->>'id' AS "id",
             (-ROUND((m.data_json->>'amount')::numeric * 100))::bigint AS "amountKop",
@@ -121,6 +130,12 @@ async function loadCandidateTransactions(
           SELECT 1 FROM silpo_tx_receipt_links l
            WHERE l.user_id = m.user_id
              AND l.transaction_id = m.data_json->>'id'
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM finyk_tx_receipt_links fl
+            JOIN receipts fr ON fr.id = fl.receipt_id
+           WHERE fr.user_id = m.user_id
+             AND fl.tx_kind = 'manual' AND fl.tx_ref = m.data_json->>'id'
         )`,
     [userId, new Date(windowStartMs), new Date(windowEndMs)],
     { op: "silpo_candidate_transactions_select" },
