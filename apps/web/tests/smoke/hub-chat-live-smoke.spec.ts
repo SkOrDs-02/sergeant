@@ -42,7 +42,7 @@ test("@live-chat hub-chat: sends a real prompt and renders assistant reply", asy
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
 
-  const input = page.getByLabel("Повідомлення асистенту");
+  const input = page.getByLabel("Повідомлення Сержанту");
   const speakButtons = page.getByRole("button", {
     name: "Озвучити відповідь",
   });
