@@ -3617,7 +3617,7 @@
       ]
     },
     {
-      "old_path": null,
+      "old_path": "docs/governance/adr/0101-github-primary-host-ci-returns.md",
       "new_path": "docs/governance/adr/0101-github-primary-host-ci-returns.md",
       "action": "keep",
       "genre": "adr",

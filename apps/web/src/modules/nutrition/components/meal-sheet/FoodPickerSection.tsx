@@ -181,7 +181,7 @@ export function FoodPickerSection({
             href="https://world.openfoodfacts.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/40"
+            className="underline focus-ring"
           >
             Open Food Facts
           </a>{" "}
