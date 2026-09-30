@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-19.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2028-01-07.
 > **Status:** Active — знахідки §3 відкриті; після їх закриття перевести у Reference.
 
 - **Питання:** чи лишилися на гілках коміти або зміни, які загубилися або пішли поверх мерджу і не потрапили на `main`?
@@ -81,6 +81,13 @@
 асиметрія, яку #420 і закривав. Дефект б'є і по залогінених, не лише по анонімах.
 
 Обсяг: 2 файли, +71 / −13 (`useHubChatStorageBoot.ts` + `.test.ts`).
+
+> **ЗАКРИТО 2026-09-29** (гілка `claude/hubchat-routine-dualwrite`):
+> `apps/web/src/core/hub/chat/useHubChatStorageBoot.ts` реєструє
+> `bootRoutineDualWrite` через `useLocalUserId` і ДИНАМІЧНИЙ import (без
+> `vendor-sqlite` в eager). Реєстрація routine - стек, teardown знімає лише
+> власний контекст, тож шел `/routine` не страждає; хаб teardown не викликає
+> (як finyk). Тест - `useHubChatStorageBoot.test.ts`.
 
 > `claude/sergeant-anonymous-persistence-33b5da` (#419) у зведенні показує ті самі два файли —
 > це не окрема втрата: #420 влився саме в цю гілку, тому вона несе той самий коміт.

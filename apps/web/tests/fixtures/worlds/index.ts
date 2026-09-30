@@ -290,6 +290,7 @@ export function silpoSyncState(world: ScenarioWorld): SilpoSyncState {
       lastFailedAt: null,
       lastErrorCode: null,
       receiptsCount: 0,
+      pantryAutoImportSince: null,
     };
   }
   return {
@@ -299,6 +300,7 @@ export function silpoSyncState(world: ScenarioWorld): SilpoSyncState {
     lastFailedAt: null,
     lastErrorCode: null,
     receiptsCount: world.silpo.receiptsCount,
+    pantryAutoImportSince: null,
   };
 }
 

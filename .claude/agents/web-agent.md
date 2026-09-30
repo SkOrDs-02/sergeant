@@ -1,7 +1,7 @@
 ---
 name: web-agent
 description: "Stage 4 (web) of sergeant-deliver-squad — owns apps/web UI. Implements React components, React Query hooks via the centralized key factories (Hard Rule #2), Tailwind design-system classes and ≥44px touch targets, consuming api-client types only. Trigger after api-client-agent; runs in PARALLEL with mobile-agent — both are independent consumers, neither blocks the other. Boundary: does NOT touch server, mobile, or api-client code."
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 skills: sergeant-web-ui
 ---
