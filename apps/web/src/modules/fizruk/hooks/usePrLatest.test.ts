@@ -11,15 +11,18 @@ import { renderHook } from "@testing-library/react";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 import { usePrLatest } from "./usePrLatest";
 
-// 2026-06-04 12:00:00 UTC — fixes "today" in Kyiv (UTC+3 = 2026-06-04 15:00).
+// 2026-06-04 12:00:00 UTC — «сьогодні» 2026-06-04 і для Києва, і для UTC.
 const FIXED_NOW = new Date("2026-06-04T12:00:00Z");
 
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(FIXED_NOW);
 });
+const originalTz = process.env["TZ"];
 afterEach(() => {
   vi.useRealTimers();
+  if (originalTz === undefined) delete process.env["TZ"];
+  else process.env["TZ"] = originalTz;
 });
 
 function mkStrengthItem(
@@ -89,7 +92,7 @@ describe("usePrLatest", () => {
   });
 
   it("returns the PR from a completed workout within the 30-day window", () => {
-    // Workout ended 1 day ago (Kyiv 2026-06-03).
+    // Workout ended 1 day ago (device 2026-06-03).
     const w = mkWorkout("w1", "2026-06-03T10:00:00Z", [
       mkStrengthItem("bench", "Жим лежачи", 100),
     ]);
@@ -99,6 +102,19 @@ describe("usePrLatest", () => {
     expect(result.current).not.toBeNull();
     expect(result.current!.exerciseName).toBe("Жим лежачи");
     expect(result.current!.weightKg).toBe(100);
+    expect(result.current!.daysAgo).toBe(1);
+  });
+
+  it("рахує «днів тому» за добою пристрою (ADR-0078)", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    // FIXED_NOW = 06:00 local Jun 4. Тренування 2026-06-04T05:30Z = Jun 3
+    // 23:30 local → вчора за пристроєм (за Києвом було б «сьогодні»).
+    const w = mkWorkout("w1", "2026-06-04T05:30:00Z", [
+      mkStrengthItem("bench", "Жим лежачи", 100),
+    ]);
+    const { result } = renderHook(() =>
+      usePrLatest({ workouts: [w], loaded: true }),
+    );
     expect(result.current!.daysAgo).toBe(1);
   });
 

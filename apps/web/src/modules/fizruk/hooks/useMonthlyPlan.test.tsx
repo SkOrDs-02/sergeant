@@ -4,12 +4,16 @@ import { act, renderHook } from "@testing-library/react";
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { useMonthlyPlan } from "./useMonthlyPlan";
 
+const originalTz = process.env["TZ"];
+
 describe("useMonthlyPlan", () => {
   beforeEach(() => {
     localStorage.clear();
   });
   afterEach(() => {
     vi.useRealTimers();
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
   });
 
   it("starts from defaults", () => {
@@ -79,4 +83,13 @@ describe("useMonthlyPlan", () => {
   // reset state to defaults once the LS write-mirror was dropped. Cross-instance
   // sync for the singleton plan now relies on the SQLite overlay tick — there is
   // no LS event to react to.
+
+  it("getTodayDateKey — доба пристрою, а не Києва (ADR-0078)", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    vi.useFakeTimers();
+    // 2026-09-02 23:30 local = 2026-09-03 08:30 у Києві.
+    vi.setSystemTime(new Date("2026-09-03T05:30:00Z"));
+    const { result } = renderHook(() => useMonthlyPlan());
+    expect(result.current.getTodayDateKey()).toBe("2026-09-02");
+  });
 });

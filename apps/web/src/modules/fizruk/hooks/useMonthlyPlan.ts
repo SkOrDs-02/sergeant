@@ -3,7 +3,7 @@ import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { safeReadLS } from "@shared/lib/storage/storage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { deviceDayKey } from "@sergeant/shared";
 
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
 import { extractMonthlyPlanSnapshot } from "../lib/fizrukDualWriteState";
@@ -29,9 +29,9 @@ interface MonthlyPlanState {
 }
 
 function todayKey() {
-  // Kyiv-anchored day key so the plan's "today" doesn't drift for users whose
-  // host clock is outside Europe/Kyiv (domain invariant: day boundaries in Kyiv).
-  return getKyivDayKey();
+  // Device day key (ADR-0078, рішення власника 2026-09-29): "сьогодні" плану —
+  // та сама доба, що бачить користувач на телефоні.
+  return deviceDayKey();
 }
 
 const DEFAULT_STATE: MonthlyPlanState = {

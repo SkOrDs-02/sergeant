@@ -18,7 +18,7 @@
  * послідовно, а нова форма на кожен модуль — це той самий слоп, лише
  * дорожчий.
  */
-import { kyivMondayStartMs } from "@sergeant/shared";
+import { deviceMondayStart } from "@sergeant/shared";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -135,7 +135,7 @@ export function buildMuscleWeekMatrix(
   // і ланцюжок віднімань поїхав би.
   const weekStarts: number[] = [];
   for (let i = MATRIX_WEEKS - 1; i >= 0; i -= 1) {
-    weekStarts.push(kyivMondayStartMs(nowMs - i * 7 * DAY_MS));
+    weekStarts.push(deviceMondayStart(nowMs - i * 7 * DAY_MS));
   }
   const weekIndex = new Map(weekStarts.map((ms, idx) => [ms, idx]));
   const cutoff = weekStarts[0] ?? nowMs;
@@ -146,7 +146,7 @@ export function buildMuscleWeekMatrix(
   for (const w of workouts || []) {
     const started = w.startedAt ? Date.parse(w.startedAt) : NaN;
     if (!Number.isFinite(started) || started < cutoff) continue;
-    const idx = weekIndex.get(kyivMondayStartMs(started));
+    const idx = weekIndex.get(deviceMondayStart(started));
     if (idx === undefined) continue;
 
     for (const item of w.items || []) {
