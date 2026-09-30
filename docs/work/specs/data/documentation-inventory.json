@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 674,
-  "total_entries": 674,
+  "tracked_files": 673,
+  "total_entries": 673,
   "target_collisions": [],
   "entries": [
     {
@@ -3619,16 +3619,7 @@
       ]
     },
     {
-      "old_path": "docs/governance/adr/0101-github-actions-ci-and-autodeploy.md",
-      "new_path": "https://github.com/Skords-01/Sergeant/blob/12f501c5829bd50621a8ca388ea498497339e15b/docs/governance/adr/0101-github-actions-ci-and-autodeploy.md",
-      "action": "remove",
-      "genre": "adr",
-      "canonical_owner": "https://github.com/Skords-01/Sergeant/blob/12f501c5829bd50621a8ca388ea498497339e15b/docs/governance/adr/0101-github-actions-ci-and-autodeploy.md",
-      "inbound_count": 0,
-      "inbound_sources": []
-    },
-    {
-      "old_path": null,
+      "old_path": "docs/governance/adr/0101-github-primary-host-ci-returns.md",
       "new_path": "docs/governance/adr/0101-github-primary-host-ci-returns.md",
       "action": "keep",
       "genre": "adr",
@@ -3644,7 +3635,7 @@
       ]
     },
     {
-      "old_path": null,
+      "old_path": "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
       "new_path": "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
       "action": "keep",
       "genre": "adr",
@@ -7945,7 +7936,7 @@
       ]
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/account-recovery.md",
       "new_path": "docs/work/specs/account-recovery.md",
       "action": "keep",
       "genre": "active-work",
