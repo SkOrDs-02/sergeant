@@ -30,12 +30,12 @@ opposing failure modes at the same time:
 
 Dynamic per-route sampling — Sentry's `tracesSampler` callback —
 addresses both at once. The rule table is **declarative, ordered
-longest-prefix-first**, mirroring `apps/server/src/http/bodySizePolicy.ts`
+narrowest-match-first** (matching is substring-based, `url.includes`), mirroring `apps/server/src/http/bodySizePolicy.ts`
 to keep the audit pattern consistent.
 
 ## Server rules (`SENTRY_SAMPLING_RULES`)
 
-| Match prefix                   | Rate    | Reason                                                                                                                                                              |
+| Match substring                | Rate    | Reason                                                                                                                                                              |
 | ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/api/internal/`               | `1.0`   | All internal-namespace routes (cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                    |
 | `/api/admin/`                  | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                      |
@@ -61,7 +61,7 @@ use `0.5` with a note to revisit on upgrade.
 
 ### Order matters
 
-Таблиця правил перебирається зверху вниз, перший збіг за префіксом перемагає.
+Таблиця правил перебирається зверху вниз, перший збіг за підрядком (`url.includes(rule.match)`) перемагає.
 Тому вужче правило, як-от `/api/chat/usage`, має стояти вище за ширше `/api/chat`,
 інакше широке правило його затінить.
 
