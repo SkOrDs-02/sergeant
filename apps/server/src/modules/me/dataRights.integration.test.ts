@@ -53,6 +53,30 @@ vi.mock("../../auth.js", async (importOriginal) => {
   };
 });
 
+// Засувка для тесту замка експорту. Без неї «одночасність» двох запитів
+// трималась на везінні: на малій тестовій базі перший експорт встигав
+// завершитись раніше, ніж другий проходив `requireFreshSession()`, і обидва
+// отримували 200. Засувка тримає перший запит усередині обробника (замок
+// уже взято), поки тест не відпустить його сам.
+const { exportGate } = vi.hoisted(() => ({
+  exportGate: {
+    entered: null as null | (() => void),
+    hold: null as null | Promise<void>,
+  },
+}));
+
+vi.mock("./dataRights.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./dataRights.js")>();
+  return {
+    ...actual,
+    buildMeExport: async (...args: Parameters<typeof actual.buildMeExport>) => {
+      exportGate.entered?.();
+      if (exportGate.hold) await exportGate.hold;
+      return actual.buildMeExport(...args);
+    },
+  };
+});
+
 // Динамічний імпорт навмисно: статичний тягнув би `../../db.js` (пул) ще до
 // того, як `bootIntegrationHarness` підставить адресу Testcontainers, і
 // весь застосунок у цьому файлі ходив би на localhost:5432 (ECONNREFUSED).
@@ -306,18 +330,37 @@ describe("GET /api/me/export — GDPR data export", () => {
   it("другий одночасний експорт відхиляється, послідовний проходить", async (ctx) => {
     if (!dockerAvailable || !app) return ctx.skip();
 
-    const [first, second] = await Promise.all([
-      request(app)
-        .get("/api/me/export")
-        .set("Authorization", "Bearer test-bearer"),
-      request(app)
-        .get("/api/me/export")
-        .set("Authorization", "Bearer test-bearer"),
-    ]);
+    let entered!: () => void;
+    let release!: () => void;
+    const enteredP = new Promise<void>((resolve) => (entered = resolve));
+    exportGate.entered = entered;
+    exportGate.hold = new Promise<void>((resolve) => (release = resolve));
 
-    // Який із двох виграв гонку — не визначено; визначено, що рівно один.
-    const statuses = [first.status, second.status].sort();
-    expect(statuses).toEqual([200, 409]);
+    try {
+      // `.then()` запускає запит; без нього supertest лінивий.
+      const firstP = request(app)
+        .get("/api/me/export")
+        .set("Authorization", "Bearer test-bearer")
+        .then((r) => r);
+
+      // Перший запит уже в обробнику і тримає замок.
+      await enteredP;
+      exportGate.entered = null;
+
+      const second = await request(app)
+        .get("/api/me/export")
+        .set("Authorization", "Bearer test-bearer");
+      expect(second.status).toBe(409);
+
+      exportGate.hold = null;
+      release();
+      const first = await firstP;
+      expect(first.status).toBe(200);
+    } finally {
+      exportGate.entered = null;
+      exportGate.hold = null;
+      release();
+    }
 
     // Замок знімається: наступний запит проходить.
     const third = await request(app)

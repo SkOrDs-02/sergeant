@@ -94,6 +94,7 @@ export * from "./lib/activeModules";
 // Defaults shared by web/mobile undo-toast helpers.
 export * from "./lib/undoToast";
 export * from "./lib/accountDeletion";
+export * from "./lib/healthConsent";
 
 // Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
 export * from "./lib/onboarding";
