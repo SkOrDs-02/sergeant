@@ -635,4 +635,26 @@ describe("useTransactionFilters", () => {
       expect(result.current.monthLabel.length).toBeGreaterThan(0);
     });
   });
+
+  describe("межі місяця — Київ, а не пристрій (ADR-0078, фінансові періоди)", () => {
+    it("банківська й ручна витрата о 00:30 за Києвом 1 травня потрапляють у травень", () => {
+      // 2025-05-01T00:30+03:00 = 2025-04-30T21:30Z: для пристрою в UTC/Нью-Йорку
+      // це ще квітень, для Києва (і Аналітики) — вже травень.
+      const instantSec = Date.parse("2025-05-01T00:30:00+03:00") / 1000;
+      const bank = mkTx("bank-edge", -10000, { time: instantSec });
+      const manual = mkManual("m-edge", 200, "2025-05-01T00:30:00+03:00");
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            historyTx: [bank],
+            manualExpenses: [manual],
+          }),
+        ),
+      );
+      act(() => result.current.goMonth(-1)); // червень → травень
+      const ids = result.current.activeTx.map((t) => t.id);
+      expect(ids).toContain("bank-edge");
+      expect(ids).toContain("manual_m-edge");
+    });
+  });
 });

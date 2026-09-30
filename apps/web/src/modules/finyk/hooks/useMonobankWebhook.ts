@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -380,6 +380,12 @@ export function useMonobankWebhook({
     [isConnected, fetchRangeRaw, backfillMirror],
   );
 
+  // AI-DANGER: `historyTx` належить ЛИШЕ останньому запиту `fetchMonth`.
+  // Дрил-даун стартує два запити поспіль (місяць + порівняння), і пізня
+  // відповідь давнього місяця інакше перетирала б `historyTx` вибраного:
+  // фільтр Операцій за місяцем тоді відсікав усе.
+  const latestMonthRequestRef = useRef(0);
+
   const fetchMonth = useCallback(
     async (year: number, month: number): Promise<Transaction[]> => {
       // Surface "not connected" as a rejected promise so callers can
@@ -387,6 +393,7 @@ export function useMonobankWebhook({
       // Resolving to `[]` here would let consumers cache an empty array
       // for a month that simply hasn't been fetched yet.
       if (!isConnected) throw new MonoNotConnectedError();
+      const requestId = ++latestMonthRequestRef.current;
       setLoadingHistory(true);
       try {
         // Kyiv-anchored month boundaries (consistent with the current-month
@@ -394,11 +401,16 @@ export function useMonobankWebhook({
         // outside EET. `month` is 0-based; shift to 1-based for `kyivMonthRangeIso`.
         const { from, to } = kyivMonthRangeIso(year, month + 1);
         const normalized = await fetchRangeRaw(from, to);
-        setHistoryTx(normalized);
+        // Застарілу відповідь у дзеркало пишемо, але стан списку не чіпаємо.
+        if (requestId === latestMonthRequestRef.current) {
+          setHistoryTx(normalized);
+        }
         await backfillMirror(normalized);
         return normalized;
       } finally {
-        setLoadingHistory(false);
+        if (requestId === latestMonthRequestRef.current) {
+          setLoadingHistory(false);
+        }
       }
     },
     [isConnected, fetchRangeRaw, backfillMirror],

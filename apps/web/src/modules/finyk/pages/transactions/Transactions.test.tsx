@@ -225,6 +225,37 @@ describe("Transactions page shell", () => {
     vi.useRealTimers();
   });
 
+  it("дрил-даун з Аналітики: категорія за минулий місяць відкриває Операції на тому ж місяці", () => {
+    const fetchMonth = vi.fn(() => Promise.resolve());
+    const mayTime = Math.floor(
+      new Date("2026-05-12T12:00:00+03:00").getTime() / 1000,
+    );
+    const foodMay = {
+      ...mkJuneTx("food-may", -100, { time: mayTime }),
+      description: "Травнева їжа",
+      date: "2026-05-12",
+    };
+    const taxiMay = {
+      ...mkJuneTx("taxi-may", -200, { time: mayTime }),
+      description: "Травневе таксі",
+      date: "2026-05-12",
+    };
+    renderTransactions({
+      mono: { fetchMonth, historyTx: [foodMay, taxiMay] },
+      storage: {
+        txCategories: { "food-may": "food", "taxi-may": "transport" },
+      },
+      categoryFilter: "food",
+      categoryMonth: { year: 2026, month: 5 },
+    });
+    expect(screen.getByText(/травень 2026/i)).toBeInTheDocument();
+    expect(fetchMonth).toHaveBeenCalledWith(2026, 4);
+    // Лишився рівно один рядок (категорія «food»), а не всі два за травень.
+    expect(
+      screen.getByRole("button", { name: "Вивантажити операції у CSV: 1" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the header month label for the current Kyiv month", () => {
     renderTransactions();
     expect(screen.getByText(/червень 2026/i)).toBeInTheDocument();

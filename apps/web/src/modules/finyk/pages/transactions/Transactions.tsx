@@ -154,6 +154,7 @@ export interface TransactionsProps {
   storage: TransactionsStorageSlice;
   showBalance?: boolean;
   categoryFilter?: string | null;
+  categoryMonth?: { year: number; month: number } | null;
   onClearCategoryFilter?: () => void;
   onEditManualExpense?: (id: string) => void;
   dayFilter?: string | null;
@@ -183,6 +184,7 @@ export function Transactions({
   storage,
   showBalance = true,
   categoryFilter,
+  categoryMonth,
   onClearCategoryFilter,
   onEditManualExpense,
   dayFilter,
@@ -239,6 +241,7 @@ export function Transactions({
     customCategories,
     fetchMonth,
     categoryFilter,
+    categoryMonth,
     onClearCategoryFilter,
     dayFilter,
   });
