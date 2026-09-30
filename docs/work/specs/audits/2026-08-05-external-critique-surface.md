@@ -313,6 +313,8 @@ ID»). Одночасно `01-monetization-and-pricing.md` планує плат
 
 ### 2.3 Open Food Facts: ODbL і відсутня атрибуція
 
+> **СТАТУС 2026-09-29: ЧАСТКОВО ЗАКРИТО.** Рядок-посилання «Open Food Facts (ліцензія ODbL)» показується під результатами пошуку їжі (`FoodPickerSection.tsx`), джерело додано в перелік довідкових сервісів політики приватності (`privacyDocument.ts`, `legalShared.ts`). README свідомо не чіпали.
+
 **Severity: середньо (реальне порушення ліцензії).**
 
 [`food-search.ts:17`](../../../../apps/server/src/modules/nutrition/food-search.ts) і

@@ -411,7 +411,7 @@ export default function App({
     tryShowCrossModulePrompt(toast, {
       id: promptId,
       msg,
-      acceptLabel: "Додати →",
+      acceptLabel: "Додати",
       onAccept: () => openHubModuleWithAction("nutrition", "add_meal"),
     });
   };
