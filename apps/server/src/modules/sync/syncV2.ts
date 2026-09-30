@@ -9,6 +9,10 @@ import {
 } from "../../http/schemas.js";
 import { logger } from "../../obs/logger.js";
 import {
+  decryptOpRowForPull,
+  encryptOpRowForStorage,
+} from "../../lib/healthTextCrypto.js";
+import {
   syncConflictsTotal,
   syncOpLogApplyTotal,
   syncOpLogNullOriginDeviceIdTotal,
@@ -449,7 +453,7 @@ export async function syncV2Push(req: Request, res: Response): Promise<void> {
             op.idempotency_key,
             op.table,
             op.op,
-            JSON.stringify(op.row),
+            JSON.stringify(encryptOpRowForStorage(op.table, op.row)),
             clientTs,
             originDeviceId,
             status,
@@ -663,7 +667,7 @@ export async function syncV2Pull(req: Request, res: Response): Promise<void> {
       id: Number(r.id),
       table: r.table_name,
       op: r.op,
-      row: r.row,
+      row: decryptOpRowForPull(r.table_name, r.row),
       client_ts: r.client_ts.toISOString(),
       server_ts: r.server_ts.toISOString(),
       // eslint-disable-next-line sergeant-design/no-bigint-string -- origin_device_id is an opaque TEXT device id (migration 027_sync_op_log.sql), not a pg bigint numeric; Hard Rule #1 N/A.

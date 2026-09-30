@@ -273,6 +273,684 @@
         }
       }
     },
+    "/api/me/export": {
+      "get": {
+        "summary": "Експорт усіх даних користувача (GDPR)",
+        "description": "Свіжа сесія (`requireFreshSession`), ліміт 5/год на людину; один активний експорт на акаунт.",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Повний зріз даних користувача.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeExportResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`export_in_flight` — попередній експорт ще готується.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Перевищено ліміт експортів.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/preferences": {
+      "get": {
+        "summary": "Налаштування користувача",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Поточні налаштування (з дефолтами).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Часткове оновлення налаштувань користувача",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPreferencesPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Оновлені налаштування.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPreferences"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/status": {
+      "get": {
+        "summary": "Публічний статус компонентів (status page)",
+        "tags": ["ops"],
+        "responses": {
+          "200": {
+            "description": "Зведений статус; завжди 200, навіть при `down`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": ["operational", "degraded", "down"]
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "components": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "enum": ["server", "database", "n8n"]
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["operational", "degraded", "down"]
+                          }
+                        },
+                        "required": ["id", "label", "status"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "lastIncident": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "at": {
+                              "type": "string"
+                            },
+                            "component": {
+                              "type": "string",
+                              "enum": ["server", "database", "n8n"]
+                            }
+                          },
+                          "required": ["at", "component"],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "components",
+                    "lastIncident"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sync/audit": {
+      "get": {
+        "summary": "Аудит-лог sync (self або admin-перегляд)",
+        "description": "Query: `user_id`, `before_id`, `limit`, `op_type`, `outcome`, `module`. Чужий `user_id` — лише для admin (інакше 403). `id` у рядках — number (BIGSERIAL, Hard Rule #1).",
+        "tags": ["sync"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Сторінка рядків аудиту + keyset-курсор.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "userId": {
+                      "type": "string"
+                    },
+                    "isAdminView": {
+                      "type": "boolean"
+                    },
+                    "rows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "userId": {
+                            "type": "string"
+                          },
+                          "opType": {
+                            "type": "string"
+                          },
+                          "module": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          },
+                          "conflict": {
+                            "type": "boolean"
+                          },
+                          "payloadSizeBytes": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "durationMs": {
+                            "anyOf": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "userId",
+                          "opType",
+                          "module",
+                          "outcome",
+                          "conflict",
+                          "payloadSizeBytes",
+                          "durationMs",
+                          "createdAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "nextBeforeId": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "ok",
+                    "userId",
+                    "isAdminView",
+                    "rows",
+                    "nextBeforeId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Не admin запитав чужий `user_id`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/sync/push": {
+      "post": {
+        "summary": "Надіслати пачку op-ів (insert/update/delete)",
+        "tags": ["sync"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncV2PushRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Результат по кожному op-у (`applied` / `duplicate` / `rejected` + `reason`). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accepted": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "last_op_id": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "idempotency_key": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": ["applied", "duplicate", "rejected"]
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["idempotency_key", "status"],
+                        "additionalProperties": false
+                      }
+                    },
+                    "server_now": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "accepted",
+                    "last_op_id",
+                    "results",
+                    "server_now"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/sync/pull": {
+      "get": {
+        "summary": "Отримати op-и інших пристроїв (cursor по id)",
+        "tags": ["sync"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "since",
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Op-и з `id > since`; `next_cursor` = null, коли сторінка неповна.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ops": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "table": {
+                            "type": "string"
+                          },
+                          "op": {
+                            "type": "string"
+                          },
+                          "row": {
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "client_ts": {
+                            "type": "string"
+                          },
+                          "server_ts": {
+                            "type": "string"
+                          },
+                          "origin_device_id": {
+                            "anyOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "table",
+                          "op",
+                          "row",
+                          "client_ts",
+                          "server_ts",
+                          "origin_device_id"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "next_cursor": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": ["ops", "next_cursor"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/sync/stream": {
+      "get": {
+        "summary": "SSE-стрім op-ів (hello / op / caught_up / heartbeat)",
+        "description": "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`.",
+        "tags": ["sync"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "since",
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "default": 100,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Потік SSE-подій.",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/chat": {
       "post": {
         "summary": "Anthropic-чат: streaming SSE або JSON",
@@ -1956,6 +2634,42 @@
         }
       }
     },
+    "/api/mono/jars": {
+      "get": {
+        "summary": "Список Mono-банок (jars) поточного користувача",
+        "tags": ["mono"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Нормалізовані рядки `mono_jar` (bigint → number).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonoJarsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mono/transactions": {
       "get": {
         "summary": "Cursor-paginated історія Mono-транзакцій",
@@ -3518,6 +4232,149 @@
         }
       }
     },
+    "/api/finyk/manual-expenses": {
+      "post": {
+        "summary": "Створити ручну (не-Mono) витрату",
+        "description": "`amount` у копійках; `date` (Kyiv day key) за замовчуванням — сьогодні за Києвом.",
+        "tags": ["finyk"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ManualExpenseCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Створена витрата.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ManualExpenseCreateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/csp-report": {
+      "post": {
+        "summary": "Приймач CSP-порушень від браузера",
+        "description": "Анонімний; ліміт 120/хв. Content-Type `application/csp-report`, `application/reports+json` або `application/json`. Відповідає 204.",
+        "tags": ["observability"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CspReportBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Прийнято (тіло не повертається)."
+          }
+        }
+      }
+    },
+    "/api/email/unsubscribe": {
+      "get": {
+        "summary": "Відписка від листів за HMAC-токеном із футера",
+        "description": "Публічний лінк із листа: `?u=<userId>.<hmac>`. Повертає HTML-сторінку (успіх або «недійсне посилання»).",
+        "tags": ["email"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "u",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTML-сторінка (успіх або невалідний токен).",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Секрет підпису не налаштовано."
+          }
+        }
+      }
+    },
+    "/api/telegram/webhook": {
+      "post": {
+        "summary": "Вебхук Telegram-бота вейтліста бети",
+        "description": "Викликає лише Telegram; автентифікація — заголовок `x-telegram-bot-api-secret-token`. Тіло — Telegram Update (не описується тут).",
+        "tags": ["integrations"],
+        "responses": {
+          "200": {
+            "description": "Апдейт прийнято.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  },
+                  "required": ["ok"],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Невірний secret-token."
+          },
+          "503": {
+            "description": "Вебхук не налаштовано."
+          }
+        }
+      }
+    },
     "/api/food-search": {
       "get": {
         "summary": "OpenFoodFacts search proxy",
@@ -4448,6 +5305,122 @@
         },
         "required": ["profile"],
         "description": "PUT /api/me/profile request body — write-through профіль/біометрія (migration 115, НЕ oplog-sync)."
+      },
+      "UserPreferencesPatch": {
+        "type": "object",
+        "properties": {
+          "analytics": {
+            "type": "boolean"
+          },
+          "aiMemory": {
+            "type": "boolean"
+          },
+          "pushNotifications": {
+            "type": "boolean"
+          },
+          "sergeantNudges": {
+            "type": "boolean"
+          },
+          "pushDailyCap": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "healthDataConsent": {
+            "type": "boolean"
+          },
+          "activeModules": {
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["finyk", "fizruk", "routine", "nutrition"]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubPrefs": {
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "description": "Тіло PATCH /api/me/preferences — часткове оновлення налаштувань."
+      },
+      "SyncV2PushRequest": {
+        "type": "object",
+        "properties": {
+          "ops": {
+            "minItems": 1,
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "table": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "op": {
+                  "type": "string",
+                  "enum": ["insert", "update", "delete", "increment"]
+                },
+                "row": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                },
+                "client_ts": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                },
+                "idempotency_key": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "pattern": "^[A-Za-z0-9_-]+$"
+                }
+              },
+              "required": ["table", "op", "row", "client_ts", "idempotency_key"]
+            }
+          }
+        },
+        "required": ["ops"],
+        "description": "Тіло POST /api/v2/sync/push — пачка op-ів per-row op-log sync."
       },
       "ChatRequest": {
         "type": "object",
@@ -6546,6 +7519,87 @@
         "required": ["metrics"],
         "description": "POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS)."
       },
+      "ManualExpenseCreate": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000000000
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": ["amount", "category"],
+        "additionalProperties": false,
+        "description": "Тіло POST /api/finyk/manual-expenses (сума в копійках)."
+      },
+      "CspReportBody": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "csp-report": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
+              }
+            },
+            "required": ["csp-report"],
+            "additionalProperties": false
+          },
+          {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                },
+                "url": {
+                  "type": "string"
+                },
+                "age": {
+                  "type": "number"
+                },
+                "user_agent": {
+                  "type": "string"
+                }
+              },
+              "required": ["type"]
+            }
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        ],
+        "description": "POST /api/csp-report — legacy `csp-report`, Reporting-API масив або bare-об'єкт (Safari)."
+      },
       "SilpoCartPreviewRequest": {
         "type": "object",
         "properties": {
@@ -6810,6 +7864,479 @@
         "required": ["profile", "updatedAt"],
         "additionalProperties": false,
         "description": "Відповідь GET/PUT /api/me/profile. `profile: {}` / `updatedAt: null` — дефолт, коли рядка ще немає."
+      },
+      "MeExportResponse": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "email": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "image": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "emailVerified": {
+                "type": "boolean"
+              },
+              "createdAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "email",
+              "name",
+              "image",
+              "emailVerified",
+              "createdAt"
+            ],
+            "additionalProperties": false
+          },
+          "preferences": {
+            "type": "object",
+            "properties": {
+              "analytics": {
+                "type": "boolean"
+              },
+              "aiMemory": {
+                "type": "boolean"
+              },
+              "pushNotifications": {
+                "type": "boolean"
+              },
+              "sergeantNudges": {
+                "default": false,
+                "type": "boolean"
+              },
+              "pushDailyCap": {
+                "default": 2,
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 4
+              },
+              "healthDataConsent": {
+                "default": false,
+                "type": "boolean"
+              },
+              "activeModules": {
+                "default": null,
+                "anyOf": [
+                  {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["finyk", "fizruk", "routine", "nutrition"]
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "hubPrefs": {
+                "default": null,
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "additionalProperties": {
+                      "anyOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "string",
+                          "maxLength": 256
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "updatedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "analytics",
+              "aiMemory",
+              "pushNotifications",
+              "sergeantNudges",
+              "pushDailyCap",
+              "healthDataConsent",
+              "activeModules",
+              "hubPrefs",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "moduleData": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "finyk": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "fizruk": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "nutrition": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "routine": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {}
+                  }
+                }
+              },
+              "mono": {
+                "type": "object",
+                "properties": {
+                  "connection": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "accounts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "transactions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  }
+                },
+                "required": ["connection", "accounts", "transactions"],
+                "additionalProperties": false
+              },
+              "billing": {
+                "type": "object",
+                "properties": {
+                  "subscriptions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  }
+                },
+                "required": ["subscriptions"],
+                "additionalProperties": false
+              },
+              "push": {
+                "type": "object",
+                "properties": {
+                  "webSubscriptions": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "devices": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  }
+                },
+                "required": ["webSubscriptions", "devices"],
+                "additionalProperties": false
+              },
+              "excluded": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "group": {
+                      "type": "string"
+                    },
+                    "tables": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "reason": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["group", "tables", "reason"],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "moduleData",
+              "finyk",
+              "fizruk",
+              "nutrition",
+              "routine",
+              "mono",
+              "billing",
+              "push",
+              "excluded"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": ["generatedAt", "user", "preferences", "data"],
+        "additionalProperties": false,
+        "description": "Відповідь GET /api/me/export — повний експорт даних користувача (GDPR-право на доступ)."
+      },
+      "UserPreferences": {
+        "type": "object",
+        "properties": {
+          "analytics": {
+            "type": "boolean"
+          },
+          "aiMemory": {
+            "type": "boolean"
+          },
+          "pushNotifications": {
+            "type": "boolean"
+          },
+          "sergeantNudges": {
+            "default": false,
+            "type": "boolean"
+          },
+          "pushDailyCap": {
+            "default": 2,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "healthDataConsent": {
+            "default": false,
+            "type": "boolean"
+          },
+          "activeModules": {
+            "default": null,
+            "anyOf": [
+              {
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": ["finyk", "fizruk", "routine", "nutrition"]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubPrefs": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "string",
+                      "maxLength": 256
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "updatedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "analytics",
+          "aiMemory",
+          "pushNotifications",
+          "sergeantNudges",
+          "pushDailyCap",
+          "healthDataConsent",
+          "activeModules",
+          "hubPrefs",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "description": "Відповідь GET/PATCH /api/me/preferences — налаштування користувача."
       },
       "ChatUsageResponse": {
         "type": "object",
@@ -7284,6 +8811,94 @@
           "additionalProperties": false
         },
         "description": "Відповідь GET /api/mono/accounts — масив MonoAccountDto."
+      },
+      "MonoJarsResponse": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "monoJarId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sendId": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "currencyCode": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "balance": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "goal": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastSeenAt": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "userId",
+            "monoJarId",
+            "sendId",
+            "title",
+            "description",
+            "currencyCode",
+            "balance",
+            "goal",
+            "lastSeenAt"
+          ],
+          "additionalProperties": false
+        },
+        "description": "Відповідь GET /api/mono/jars — масив MonoJarDto."
       },
       "MonoTransactionsPage": {
         "type": "object",
@@ -8812,6 +10427,58 @@
         "required": ["text", "durationSec", "model"],
         "additionalProperties": false,
         "description": "Відповідь на POST /api/transcribe — розпізнаний текст + тривалість аудіо."
+      },
+      "ManualExpenseCreateResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "expense": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "amountKopiykas": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "category": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "note": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string"
+              },
+              "updatedAt": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "amountKopiykas",
+              "category",
+              "date",
+              "note",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": ["ok", "expense"],
+        "additionalProperties": false,
+        "description": "Відповідь 201 POST /api/finyk/manual-expenses."
       },
       "SilpoDisconnectResponse": {
         "type": "object",

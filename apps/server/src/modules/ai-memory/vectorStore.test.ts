@@ -202,7 +202,8 @@ describe("createPgVectorStore", () => {
     const pool = makePool();
     pool.query
       .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-      .mockResolvedValueOnce({ rows: [], rowCount: 3 });
+      .mockResolvedValueOnce({ rows: [], rowCount: 3 })
+      .mockResolvedValueOnce({ rows: [], rowCount: 2 });
     const store = createPgVectorStore(pool);
 
     await store.deleteBySource(USER_ID, "cofounder", "tx-1");
@@ -214,6 +215,11 @@ describe("createPgVectorStore", () => {
 
     await expect(store.deleteAllForUser(USER_ID)).resolves.toBe(3);
     expect(pool.query.mock.calls[1]?.[1]).toEqual([USER_ID]);
+    // B11: DLQ чиститься тим самим викликом (user_id без FK).
+    expect(pool.query.mock.calls[2]?.[0]).toContain(
+      "DELETE FROM ai_memory_ingest_failed",
+    );
+    expect(pool.query.mock.calls[2]?.[1]).toEqual([USER_ID]);
   });
 
   it("health reports pgvector availability and fails closed on DB errors", async () => {
