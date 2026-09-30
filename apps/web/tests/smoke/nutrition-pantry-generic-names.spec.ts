@@ -123,6 +123,26 @@ async function mockSilpo(page: Page) {
   );
   await page.route(/\/silpo\/receipts(\/|\?|$)/, (route) => {
     const url = route.request().url();
+    // fe3984980: підтвердження поповнення спершу бронює позиції на сервері
+    // (`POST …/:id/pantry-claim`), і в комору пишеться лише `claimedItemIds`
+    // з відповіді. Без цього обробника POST падав у гілку деталі чека нижче,
+    // відповідь не проходила `SilpoPantryClaimResponseSchema`, а аркуш
+    // показував тост збою замість запису в комору.
+    if (/\/pantry-claim(\?|$)/.test(url)) {
+      const body = route.request().postDataJSON() as { itemIds: number[] };
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ claimedItemIds: body.itemIds }),
+      });
+    }
+    if (/\/pantry-release(\?|$)/.test(url)) {
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: true }),
+      });
+    }
     if (url.includes(`/silpo/receipts/${SECOND_RECEIPT_ID}`)) {
       return route.fulfill({
         status: 200,
