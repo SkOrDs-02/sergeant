@@ -9,7 +9,6 @@ import type {
 } from "@sergeant/fizruk-domain/data";
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
 import { deviceDayKey, pluralUa } from "@sergeant/shared";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { LastExerciseItem } from "./Workouts.types";
 
 /**
@@ -136,17 +135,18 @@ export function formatActiveDuration(
 }
 
 /**
- * Default retro-workout date — today's calendar date in `YYYY-MM-DD`,
- * anchored to **Europe/Kyiv** (domain invariant) rather than the device
- * clock, so late-evening users on a non-Kyiv host don't get the wrong day
- * (page-audit-06 F11). Name kept for call-site stability.
+ * Default retro-workout date — today's calendar date in `YYYY-MM-DD` за
+ * годинником ПРИСТРОЮ (ADR-0078, рішення власника 2026-09-29). Name kept
+ * for call-site stability.
  */
 export function todayLocalDateString(): string {
-  // AI-DANGER: day boundary is Europe/Kyiv, not the device clock or UTC.
-  // Must stay routed through `getKyivDayKey()`. Swapping to
-  // `new Date().toISOString().slice(0,10)` or `toLocaleDateString` silently
-  // shifts the date for late-evening / non-Kyiv hosts and breaks streaks.
-  return getKyivDayKey();
+  // AI-DANGER: day boundary is the DEVICE clock — the same one that
+  // `defaultPastWorkoutFields` uses for time-of-day and the "in the future"
+  // check, and that `dashboardKpis` uses for the daily streak. До 2026-09-29
+  // тут стояв Europe/Kyiv; повернення до `getKyivDayKey()` знову дасть
+  // форму, що пропонує «завтра» користувачу поза Києвом. НЕ
+  // `toISOString().slice(0,10)` — це UTC, а не пристрій.
+  return deviceDayKey();
 }
 
 /** Дефолтні поля форми «Внести проведене заняття». */
