@@ -15,7 +15,7 @@ import {
   type FoodProduct,
 } from "../../lib/foodDb/foodDb";
 import { useBarcodeProductLookup } from "../../hooks/useBarcodeProduct";
-import type { MealFormState } from "./mealFormUtils";
+import { macroToFieldString, type MealFormState } from "./mealFormUtils";
 import type { PickedFood } from "./FoodPickerSection";
 
 export interface UseBarcodeLookupParams {
@@ -150,19 +150,19 @@ export function useBarcodeLookup({
         name: [p?.name, p?.brand].filter(Boolean).join(" ").trim() || s.name,
         kcal:
           p?.kcal_100g != null
-            ? String(Math.round(p.kcal_100g * factor))
+            ? macroToFieldString(p.kcal_100g * factor)
             : s.kcal,
         protein_g:
           p?.protein_100g != null
-            ? String(Math.round(p.protein_100g * factor))
+            ? macroToFieldString(p.protein_100g * factor)
             : s.protein_g,
         fat_g:
           p?.fat_100g != null
-            ? String(Math.round(p.fat_100g * factor))
+            ? macroToFieldString(p.fat_100g * factor)
             : s.fat_g,
         carbs_g:
           p?.carbs_100g != null
-            ? String(Math.round(p.carbs_100g * factor))
+            ? macroToFieldString(p.carbs_100g * factor)
             : s.carbs_g,
         err: "",
       }));
