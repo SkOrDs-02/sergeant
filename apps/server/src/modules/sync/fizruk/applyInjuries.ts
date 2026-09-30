@@ -1,4 +1,5 @@
 import type { PoolClient } from "pg";
+import { encryptHealthText } from "../../../lib/healthTextCrypto.js";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import {
@@ -80,7 +81,11 @@ export async function applyFizrukInjuries(
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
-  const note = typeof row["note"] === "string" ? row["note"] : "";
+  // At-rest шифрування (spec health-text-encryption): у БД лягає
+  // `enc:v2:…`, клієнт бачить plaintext через pull/експорт.
+  const note = encryptHealthText(
+    typeof row["note"] === "string" ? row["note"] : "",
+  );
 
   if (!existing) {
     await client.query(

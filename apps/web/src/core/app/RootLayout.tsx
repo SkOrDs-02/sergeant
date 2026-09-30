@@ -438,6 +438,7 @@ function RootLayoutInner() {
     onOpenSearch: handleOpenSearchShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenAssistant: openAssistantChat,
+    assistantPageActive: location.pathname === "/chat",
     onNavigate: handleNavigateChord,
     onCreate: handleCreateShortcut,
     onUndo: handleUndoShortcut,

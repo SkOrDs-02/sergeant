@@ -58,7 +58,6 @@
         "src/modules/finyk/index.ts",
         "src/modules/fizruk/index.ts",
         "src/modules/nutrition/index.ts",
-        "src/modules/routine/index.ts",
         "src/shared/lib/insights/index.ts"
       ],
       "ignoreDependencies": [
@@ -74,13 +73,17 @@
     "apps/landing": {
       // entry-server.tsx — SSG-вхід (`vite build --ssr`, див. package.json
       // build): Vite-плагін knip бачить лише index.html → main.tsx.
-      // middleware.ts прибрано: файл видалено разом з edge-проксі (README
-      // § «Якщо тут колись зʼявиться запит до API») — патерн без збігів.
+      // middleware.ts — Vercel Edge Middleware (markdown-переговори за
+      // `Accept`): Vercel знаходить його за іменем, імпорту в коді немає.
       // site-url.d.mts — типова декларація для site-url.mjs. Імпорту на неї
       // немає і бути не може: TypeScript підхоплює .d.mts за іменем сусіднього
       // .mjs, тож для knip вона виглядає файлом-сиротою. Сам резолвер лишається
       // .mjs, бо його імпортують і Node-скрипти білда, і vite.config.ts.
-      "entry": ["src/entry-server.tsx", "scripts/generate-og.mjs"],
+      "entry": [
+        "src/entry-server.tsx",
+        "scripts/generate-og.mjs",
+        "middleware.ts"
+      ],
       "ignore": ["scripts/site-url.d.mts"]
     },
     "apps/server": {

@@ -119,6 +119,26 @@ describe("useHubKeyboardShortcuts", () => {
     ).not.toThrow();
   });
 
+  it("on the /chat page Cmd+/ focuses the chat input instead of opening the overlay", () => {
+    const onOpenAssistant = vi.fn();
+    const input = document.createElement("input");
+    input.setAttribute("aria-label", "Повідомлення Сержанту");
+    document.body.appendChild(input);
+    renderHook(() =>
+      useHubKeyboardShortcuts({
+        onOpenSearch: vi.fn(),
+        onOpenShortcuts: vi.fn(),
+        onOpenAssistant,
+        assistantPageActive: true,
+      }),
+    );
+
+    fireEvent.keyDown(window, { key: "/", metaKey: true });
+
+    expect(onOpenAssistant).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(input);
+  });
+
   // ── Cmd+S — context-aware save (R6) ────────────────────────────────────────
 
   it("Cmd+S calls requestSubmit on nearest form when focus is inside a form", () => {
