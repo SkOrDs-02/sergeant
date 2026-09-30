@@ -54,6 +54,7 @@
   "explicitExclude": [
     "docs/design/design/redesign-v2/handoff.md",
     "docs/work/specs/planning/model-eval-2026-08-04.md",
-    "docs/work/specs/planning/vision-eval-2026-08-04.md"
+    "docs/work/specs/planning/vision-eval-2026-08-04.md",
+    "docs/work/research/competitor-matrix.md"
   ]
 }
