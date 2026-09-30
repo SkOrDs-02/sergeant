@@ -126,6 +126,7 @@ describe("REDACT_KEY_NAMES", () => {
       "email",
       "phone",
       "anthropicKey",
+      "openrouterKey",
       // PR-49 (sentry-pii-roast 2026-05-13 §P0-S1): closing the gap that
       // `x-signature` / `otp` / `magicLink` were not in the canonical list.
       "x-signature",
@@ -191,6 +192,21 @@ describe("scrubPIIString", () => {
     expect(scrubPIIString("bearer short")).toBe("bearer short");
   });
 
+  it("redacts Anthropic and OpenRouter API keys in error text (B18)", () => {
+    const ant = `sk-ant-api03-${"A1b2C3d4".repeat(6)}_-xyz`;
+    const or = `sk-or-v1-${"0123456789abcdef".repeat(4)}`;
+    expect(scrubPIIString(`401 from anthropic: ${ant}`)).toBe(
+      "401 from anthropic: [anthropic-key redacted]",
+    );
+    expect(scrubPIIString(`openrouter rejected key=${or}.`)).toBe(
+      "openrouter rejected key=[openrouter-key redacted].",
+    );
+    // Короткий/нерелевантний префікс не чіпаємо.
+    expect(scrubPIIString("task sk-ant-short and sk-or-v1-x")).toBe(
+      "task sk-ant-short and sk-or-v1-x",
+    );
+  });
+
   it("is a no-op for empty / non-string inputs", () => {
     expect(scrubPIIString("")).toBe("");
     expect(scrubPIIString("plain message with no PII")).toBe(
@@ -206,6 +222,8 @@ describe("scrubPIIString", () => {
       "jwt",
       "aws-access-key",
       "bearer-token",
+      "anthropic-api-key",
+      "openrouter-api-key",
     ]);
   });
 });

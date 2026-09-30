@@ -76,6 +76,7 @@ lint:pii-handling-drift`): if a key is added/removed in shared but not
 - `groqKey`
 - `anthropicKey`
 - `voyageKey`
+- `openrouterKey`
 - `silpoToken`
 - `tool_calls_raw`
 - `tool_results`
