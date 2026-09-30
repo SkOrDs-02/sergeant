@@ -1,11 +1,17 @@
 # SPEC: `POST /api/account/recovery` - відновлення доступу до акаунта
 
-> **Last touched:** 2026-09-30 by @claude (перша чернетка, лише розвідка й питання). **Next review:** 2026-12-30.
-> **Status:** Scaffolded. **Блокер:** рішення власника «імплементувати» дане, але розвідка не знайшла потреби, яку не закриває Better Auth (§ Блокери). Виконавцю (`spec-executor`) не передавати, доки власник не відповів на Q1-Q3.
+> **Last touched:** 2026-09-30 by @claude (виконано варіантом C: контракт знято). **Next review:** 2026-12-30.
+> **Status:** Implemented (Варіант C: роут не імплементується, осиротілий контракт знято 2026-09-30). Історичний документ: розвідка нижче лишається як обґрунтування рішення.
 
 <!-- Спека самодостатня. Пише розвідку й контракт із наявного коду; продуктові рішення
 винесено питаннями (sergeant-spec § 2-4). Жодне число нижче не вигадане: кожне - з
 константи в репо або з відповіді власника, джерело вказано поруч. -->
+
+## Рішення
+
+**2026-09-30, власник: Варіант C.** Роут `/api/account/recovery` не імплементується. Скидання пароля лишається на Better Auth: `/api/auth/request-password-reset` і `/api/auth/reset-password` залишаються без змін (Q4 знято: другого входу не буде). Відновлення видаленого акаунта лишається за `/api/me/restore`. Q1-Q3, Q5-Q7 втратили предмет.
+
+Знято: схеми `AccountRecovery*` (`packages/shared/src/schemas/api.ts`), фікстури `contract-fixtures/accountRecovery.ts` з тестом, `apps/server/src/routes/account-recovery.contract.test.ts` і `apps/web/src/test/contract/account-recovery.contract.test.ts`, правило `/api/account/recovery` у `apps/server/src/sentry.ts` з кейсами `sentry-sampler.test.ts` і рядками `sentry-sampling.md`. Tombstone-guard: `packages/api-client/src/endpoints/accountRecoverySunset.test.ts` (за зразком `syncV1Sunset.test.ts`).
 
 ## Блокери (читати першими)
 
@@ -198,3 +204,4 @@
 ## Стан виконання
 
 - 2026-09-30: розвідка й чернетка (цей документ). Код не змінювався. Пункт аудиту `2026-08-05-orphaned-code-audit.md` § P1 (`account-recovery`) позначено «рішення власника дане, спека - тут».
+- 2026-09-30: власник обрав Варіант C, контракт знято (див. § Рішення). Код роуту не з'являвся.
