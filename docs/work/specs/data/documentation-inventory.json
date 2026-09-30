@@ -1220,6 +1220,7 @@
         "docs/operations/observability/engineering-metrics.md",
         "docs/operations/observability/hub-perf-baseline.md",
         "docs/operations/observability/runbook.md",
+        "docs/product/modules/hub-coach.md",
         "docs/start/instructions/add-feature-flag.md",
         "docs/start/instructions/billing-payments-launch.md",
         "docs/start/instructions/cleanup-dead-code.md",

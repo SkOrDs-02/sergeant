@@ -1,18 +1,11 @@
 import { useCallback, useState } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
 import { webKVStore } from "@shared/lib/storage/storage";
 import {
   ALL_MODULES,
   DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS,
-  DASHBOARD_DENSITIES,
-  DASHBOARD_DENSITY_LABELS,
-  DASHBOARD_DENSITY_DESCRIPTIONS,
-  DEFAULT_DASHBOARD_DENSITY,
-  normalizeDashboardDensity,
   getActiveModules,
   setActiveModules,
-  type DashboardDensity,
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { pushActiveModules } from "../hub/activeModulesSync";
@@ -23,26 +16,12 @@ import {
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
-import { useHubPref, HUB_PREF_DENSITY } from "./hubPrefs";
-import { useFlag } from "../lib/featureFlags";
+import { useHubPref } from "./hubPrefs";
 
 export function DashboardSection() {
-  // Вісь дії (спека `hub-action-axis.md`, рішення власника 2026-09-17):
-  // усе, що керувало сіткою — чистий режим, адаптивний порядок, картка
-  // «Сьогодні», щільність — під віссю не має предмета і з UI зникає.
-  // Лишаються два тумблери: «Порада й звіт тижня» і «Мотиваційний
-  // підпис». Значення в мішку не стираються — kill-switch повертає стару
-  // головну з ними. PR 3 прибере і тумблери, і поля.
-  const axis = useFlag("hub_action_axis_v1");
-  const [calmMode, setCalmMode] = useHubPref<boolean>("calmMode", false);
-  const [adaptiveBento, setAdaptiveBento] = useHubPref<boolean>(
-    "adaptiveBento",
-    true,
-  );
-  const [showTodayFocus, setShowTodayFocus] = useHubPref<boolean>(
-    "showTodayFocus",
-    true,
-  );
+  // Головна за віссю дії (спека `hub-action-axis.md`, рішення власника
+  // 2026-09-17): купи й рейок не вимикаються, тож у «Вигляді» лишаються два
+  // тумблери — «Порада й звіт тижня» і «Мотиваційний підпис».
   const [showInsights, setShowInsights] = useHubPref<boolean>(
     "showInsights",
     true,
@@ -50,21 +29,6 @@ export function DashboardSection() {
   const [showMotivational, setShowMotivational] = useHubPref<boolean>(
     "showMotivational",
     true,
-  );
-  // Щільність тепер живе в тому самому мішку, що й пʼять тумблерів вище,
-  // тож їде на акаунт разом із ними (залишок PR-S13). Власний ключ і
-  // власна `CustomEvent` більше не потрібні: `useHubPref` сам сповіщає і
-  // це вікно, і сусідні вкладки.
-  const [densityRaw, setDensityRaw] = useHubPref<string>(
-    HUB_PREF_DENSITY,
-    DEFAULT_DASHBOARD_DENSITY,
-  );
-  const density = normalizeDashboardDensity(densityRaw);
-  const handleDensityChange = useCallback(
-    (next: DashboardDensity) => {
-      setDensityRaw(next);
-    },
-    [setDensityRaw],
   );
   const toast = useToast();
 
@@ -110,48 +74,9 @@ export function DashboardSection() {
           <span className="text-style-label text-text">Тема</span>
           <ThemeSwitcher className="w-full" />
         </div>
-        {!axis && (
-          <ToggleRow
-            label="Чистий режим"
-            description="Ховає підказки, інсайти й мотиваційні блоки, лишає на головній лише модулі."
-            checked={calmMode === true}
-            onChange={setCalmMode}
-          />
-        )}
-        {/* L-10 (аудит 2026-08-08): перемикач «Показувати підказки» писав
-         * `showHints` у HUB_PREFS, але жоден web-код це поле не читав —
-         * grep по apps/web/src не дав жодного читача, окрім самого
-         * useHubPref-виклику вище. У apps/mobile є власний незалежний
-         * `showHints` (GeneralSection.tsx / core/hints/useHints.ts), але
-         * mobile і web мають окремі стори (MMKV vs localStorage), тож
-         * web-тумблер нічого там не вмикав і не вимикав. Прибрано лише
-         * UI+хук на web; поле лишається у вже збережених HUB_PREFS-блобах
-         * користувачів — hubPrefs.schema.ts валідує лише структурний
-         * конверт (open z.record), тож зайвий ключ безпечний і не потребує
-         * міграції. */}
-        {!axis && (
-          <ToggleRow
-            label="Адаптивний порядок"
-            description="Піднімає в топ модуль, актуальний зараз, за часом дня та сигналами. Твій порядок зберігається."
-            checked={adaptiveBento !== false}
-            onChange={setAdaptiveBento}
-          />
-        )}
-        {!axis && (
-          <ToggleRow
-            label="Картка «Сьогодні»"
-            description="Фокус дня над модулями. Вимкни, щоб головна починалася одразу з модулів."
-            checked={showTodayFocus !== false}
-            onChange={setShowTodayFocus}
-          />
-        )}
         <ToggleRow
-          label={axis ? "Порада й звіт тижня" : "Що зараз важливо"}
-          description={
-            axis
-              ? "Згорнутий блок із порадою Сержанта та звітом тижня внизу головної."
-              : "Згорнутий блок з підказками, порадою Сержанта та звітом тижня внизу головної."
-          }
+          label="Порада й звіт тижня"
+          description="Згорнутий блок із порадою Сержанта та звітом тижня внизу головної."
           checked={showInsights !== false}
           onChange={setShowInsights}
         />
@@ -161,63 +86,12 @@ export function DashboardSection() {
           checked={showMotivational !== false}
           onChange={setShowMotivational}
         />
-        {!axis && (
-          <div className="space-y-2">
-            {/* PR-S14: три кнопки щільності вже мали `aria-pressed`, але не
-              мали спільної назви — скрінрідер читав їх як три незвʼязані
-              контроли посеред секції. Абзац нижче є ОПИСОМ, не назвою, тож
-              група дістає власний `aria-label`, а не `aria-labelledby` на
-              нього. */}
-            <p className="text-style-caption text-subtle leading-snug">
-              Скільки простору між картками на головному екрані.
-            </p>
-            <div
-              className="flex gap-2"
-              role="group"
-              aria-label="Щільність карток на головному екрані"
-            >
-              {DASHBOARD_DENSITIES.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => handleDensityChange(d)}
-                  aria-pressed={d === density}
-                  className={cn(
-                    "flex-1 rounded-xl border px-3 py-2.5 text-left transition-colors",
-                    d === density
-                      ? "border-brand bg-brand/8 ring-1 ring-brand/30 shadow-soft"
-                      : "border-line bg-panel shadow-soft hover:bg-panelHi hover:border-brand/40",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "block text-style-label",
-                      d === density ? "text-brand-strong" : "text-text",
-                    )}
-                  >
-                    {DASHBOARD_DENSITY_LABELS[d]}
-                  </span>
-                  <span className="block text-style-caption text-muted mt-0.5">
-                    {DASHBOARD_DENSITY_DESCRIPTIONS[d]}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </SettingsSubGroup>
       <SettingsSubGroup title="Розділи на головній">
-        {/* UX-feedback 2026-05-08: removed the manual «Порядок модулів»
-         * reorder list (chevron-up / chevron-down + reset button). The
-         * dashboard already exposes a drag-to-reorder bento via the
-         * «Налаштувати» button next to the «Модулі» heading, so a second
-         * settings-side reorder UI was a confusing duplicate. Active /
-         * inactive checkboxes stay here because that toggle has no
-         * dashboard-side equivalent. */}
         <p className="text-style-body text-subtle leading-snug">
-          {axis
-            ? "Які розділи показувати на головній. Неактивні розділи лишаються в рейку приглушеними і не потрапляють у «Закрито сьогодні». Принаймні один має залишатися активним."
-            : "Які розділи показувати на головній. Неактивні розділи виглядають приглушено, без кнопки швидкого додавання. Принаймні один має залишатися активним. Порядок змінюється на головній через кнопку «Налаштувати» поруч із заголовком «Розділи»."}
+          Які розділи показувати на головній. Неактивні розділи лишаються в
+          рейку приглушеними і не потрапляють у «Закрито сьогодні». Принаймні
+          один має залишатися активним.
         </p>
         {/* Огляд 2026-09-04: тут стояв нативний чекбокс 16px, тоді як
             решта «увімкнути/вимкнути» на сторінці — `Switch`. Один

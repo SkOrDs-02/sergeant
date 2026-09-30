@@ -1,9 +1,4 @@
-import {
-  safeReadLS,
-  safeWriteLS,
-  webKVStore,
-} from "@shared/lib/storage/storage";
-import { STORAGE_KEYS, normalizeDashboardOrder } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 /**
  * `KVStore` adapter backed by `window.localStorage`. Used by shared
@@ -17,13 +12,3 @@ import { STORAGE_KEYS, normalizeDashboardOrder } from "@sergeant/shared";
  * from `@shared/lib/storage`.
  */
 export const localStorageStore = webKVStore;
-
-const DASHBOARD_ORDER_KEY = STORAGE_KEYS.DASHBOARD_ORDER;
-
-export function loadDashboardOrder() {
-  return normalizeDashboardOrder(safeReadLS(DASHBOARD_ORDER_KEY, null));
-}
-
-export function saveDashboardOrder(order: string[]) {
-  safeWriteLS(DASHBOARD_ORDER_KEY, order);
-}

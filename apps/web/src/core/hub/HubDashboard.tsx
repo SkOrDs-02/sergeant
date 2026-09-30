@@ -7,13 +7,12 @@ import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@serg
 import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationModal";
 import { MotivationalFooter, StaggerChild } from "./dashboard/dashboardCards";
 import { HubHeroBlock } from "./HubHeroBlock";
-import { HubModulesGrid } from "./HubModulesGrid";
 import {
   HubInsightsBlock,
   HUB_INSIGHTS_OPEN_STORAGE_KEY,
 } from "./HubInsightsBlock";
 import { useHubDashboardState } from "./useHubDashboardState";
-import { DENSITY_OUTER_SPACE, type HubDashboardProps } from "./hub.types";
+import type { HubDashboardProps } from "./hub.types";
 import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 import { useHubPref } from "../settings/hubPrefs";
 import { safeReadLS } from "@shared/lib/storage/storage";
@@ -23,10 +22,6 @@ import { NowPile } from "./now/NowPile";
 import { ClosedTodayPile } from "./now/ClosedTodayPile";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
-export {
-  loadDashboardOrder,
-  saveDashboardOrder,
-} from "./dashboard/dashboardStore";
 
 export function HubDashboard({
   onOpenModule,
@@ -73,28 +68,12 @@ export function HubDashboard({
     insightsOpen,
     authStatus: auth?.status,
   });
-  // C · Контроль: «Чистий режим» (toggle у HubHeader) ховає весь сигнальний
-  // шар головної — лишаються лише модулі (+ hero для FTUX). Реактивно
-  // оновлюється через спільний HUB_PREFS-стан.
-  const [calmPref] = useHubPref<boolean>("calmMode", false);
-  // Вісь дії (спека `hub-action-axis.md`): «Чистого режиму» під нею немає —
-  // збережене значення ігнорується, kill-switch повертає його як було.
-  const calmMode = s.axis ? false : calmPref;
-  // C · Контроль (per-section visibility): постійне тонке налаштування з
-  // Settings → Дашборд — на відміну від тимчасового «Чистого режиму», ці
-  // прапори назавжди прибирають конкретні секції. Today-focus ховаємо лише
-  // для досвідченого юзача; у FTUX hero — єдиний CTA, його не чіпаємо.
-  const [showTodayFocusPref] = useHubPref<boolean>("showTodayFocus", true);
-  // Купи під віссю не вимикаються — це і є головна.
-  const showTodayFocus = s.axis ? true : showTodayFocusPref;
   const [showInsights] = useHubPref<boolean>("showInsights", true);
   const [showMotivational] = useHubPref<boolean>("showMotivational", true);
 
-  // A · Тихо (redesign 2026-06): для досвідченого юзача (hasRealEntry)
-  // головна = пульт — модулі піднімаються над hero, а today-focus стає
-  // другорядним під ними. Новачок у FTUX-вікні бачить hero-CTA першим, бо
-  // там немає модульних даних і єдиний сигнал має бути дія. Виносимо обидва
-  // блоки у змінні, щоб не дублювати довгі props-списки між гілками.
+  // Hero-слот: FTUX-hero (OutcomeCard / чекліст / soft-auth) для новачка,
+  // купа «Зараз» для людини з реальними записами. Виносимо у змінну, щоб
+  // не дублювати довгий props-список між гілками.
   const hero = (
     // Keep the hero in normal document flow. A transform changes paint
     // position without reserving the translated space, so when modules are
@@ -120,7 +99,7 @@ export function HubDashboard({
         goals={s.goals}
         hasValueBar={s.hasValueBar}
         nowPile={
-          s.axis && s.hasRealEntry ? (
+          s.hasRealEntry ? (
             <NowPile onOpenTarget={s.openInsightTarget} />
           ) : undefined
         }
@@ -153,60 +132,25 @@ export function HubDashboard({
     </StaggerChild>
   );
 
-  const modules = (
-    <StaggerChild index={s.hasRealEntry ? 0 : 1}>
-      <HubModulesGrid
-        density={s.density}
-        editMode={s.editMode}
-        toggleEditMode={s.toggleEditMode}
-        displayOrder={s.displayOrder}
-        sortableHandlers={s.sortableHandlers}
-        onOpenModule={onOpenModule}
-        activeModules={s.activeModules}
-        adaptive={s.adaptive}
-        hasInactive={s.hasInactive}
-        hideInactive={s.hideInactive}
-        toggleHideInactive={s.toggleHideInactive}
-      />
-    </StaggerChild>
-  );
-
   return (
-    <div className={DENSITY_OUTER_SPACE[s.density]}>
-      {s.axis ? (
-        // Вісь дії: рейок → «Зараз» (у hero-слоті) → «Закрито сьогодні».
-        // Новачок без запису бачить FTUX-hero і рейок; куп немає, доки
-        // немає запису (рішення власника 2026-09-17).
-        <>
-          {rail}
-          {hero}
-          {s.hasRealEntry && closedPile}
-        </>
-      ) : s.hasRealEntry ? (
-        <>
-          {modules}
-          {showTodayFocus && hero}
-        </>
-      ) : (
-        <>
-          {hero}
-          {modules}
-        </>
-      )}
+    <div className="space-y-4">
+      {/* Вісь дії: рейок → «Зараз» (у hero-слоті) → «Закрито сьогодні».
+          Новачок без запису бачить FTUX-hero і рейок; куп немає, доки
+          немає запису (рішення власника 2026-09-17). */}
+      {rail}
+      {hero}
+      {s.hasRealEntry && closedPile}
 
-      {/* G4 — App-lock soft-prompt. Self-hides via LS dismissal. Hidden
-          entirely in calm mode. */}
-      {!calmMode && <PrivacyLockBanner />}
+      {/* G4 — App-lock soft-prompt. Self-hides via LS dismissal. */}
+      <PrivacyLockBanner />
 
-      {/* GROUP 2 — Insights (post-first-entry). A · Тихо: завжди згорнуті
-          за замовчуванням — увесь розумний шум (інсайти, AI-порада, nudge,
-          дайджест) живе під одним згорнутим pill, який користувач розгортає
-          на вимогу, а не зустрічає розгорнутим на кожному вході.
-          C · Контроль: у «Чистому режимі» прибирається повністю. */}
-      {s.hasRealEntry && !calmMode && showInsights && (
-        <StaggerChild index={s.axis ? 3 : 2}>
+      {/* GROUP 2 — «Порада й звіт тижня» (post-first-entry). Завжди
+          згорнутий за замовчуванням: порада коуча, nudge і звіт тижня
+          живуть під одним pill, який користувач розгортає на вимогу.
+          Інсайти й рекомендації — у купі «Зараз». */}
+      {s.hasRealEntry && showInsights && (
+        <StaggerChild index={3}>
           <HubInsightsBlock
-            axis={s.axis}
             finykActive={s.activeModules.includes("finyk")}
             insightsDefaultOpen={false}
             insightsOpen={insightsOpen}
@@ -216,14 +160,11 @@ export function HubDashboard({
             coachInsightText={s.coachInsightText}
             coachAdviceId={s.coachAdviceId}
             coachRefresh={s.coachRefresh}
-            rest={s.rest}
             digestFresh={s.digestFresh}
             activeNudge={s.activeNudge}
             reengagementShow={s.reengagement.show}
             sessionDays={s.sessionDays}
             dismissNudge={s.dismissNudge}
-            openInsightTarget={s.openInsightTarget}
-            dismiss={s.dismiss}
             digestExpanded={s.digestExpanded}
             setDigestExpanded={s.setDigestExpanded}
             showDigestFooter={s.showDigestFooter}
@@ -231,7 +172,7 @@ export function HubDashboard({
         </StaggerChild>
       )}
 
-      {!calmMode && showMotivational && <MotivationalFooter />}
+      {showMotivational && <MotivationalFooter />}
 
       <FirstEntryCelebrationModal
         open={s.celebration.open}

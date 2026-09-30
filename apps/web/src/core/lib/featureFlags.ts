@@ -65,20 +65,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    // Вісь дії хабу (спека `docs/work/specs/hub-action-axis.md`; рішення
-    // власника 2026-09-17). Дефолт УВІМКНЕНО — це kill-switch, а не
-    // бета-тумблер: усі бачать купи «Зараз»/«Закрито» і рейок модулів
-    // замість сітки плиток, а вимкнення повертає стару головну без деплою,
-    // якщо прод-дані зламають розкладку. Умова зняття: один цикл (≈2
-    // тижні) без відкату — PR 3 прибирає прапорець разом із сіткою.
-    id: "hub_action_axis_v1",
-    label: "Головна за віссю дії",
-    description:
-      "Замість сітки модулів: «Зараз» і «Закрито сьогодні», модулі в рейку під шапкою. Вимкни, щоб повернути стару головну.",
-    defaultValue: true,
-    experimental: true,
-  },
-  {
     id: "finyk_import_reminder",
     label: "Нагадування залити документи",
     description:
@@ -86,6 +72,10 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  // `hub_action_axis_v1` retired 2026-09-29 (спека `hub-action-axis.md`
+  // PR 3): вісь дії стала єдиною головною, стару сітку прибрано. Збережене
+  // у `hub_flags_v1` значення не читається — `getFlag` для невідомого id
+  // віддає `false`, а `getAllFlags`/UI перебирають лише `FLAG_REGISTRY`.
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.
