@@ -45,7 +45,7 @@ test("@critical finyk: empty transactions → add-expense CTA opens sheet", asyn
   // слово в слово. Герой `ModuleEmptyState module="finyk"` лишився за
   // Оглядом. Місяць-порожній і фільтр-порожній стани тут не при ділі:
   // перший вимагає історії в інших місяцях, другий — рядків під фільтром.
-  await expect(page.getByText("Записів ще немає")).toBeVisible({
+  await expect(page.getByText("Операцій ще немає")).toBeVisible({
     timeout: 10_000,
   });
 
