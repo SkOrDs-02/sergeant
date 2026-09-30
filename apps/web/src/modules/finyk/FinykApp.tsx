@@ -20,6 +20,7 @@ import {
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
 import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
+import { useBankBannerClock } from "./hooks/useBankBannerClock";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { Icon } from "@shared/components/ui/Icon";
@@ -154,8 +155,6 @@ export default function App({
     const n = Number(readRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, ""));
     return Number.isFinite(n) && n > 0 ? n : null;
   });
-  // Час монтування: банер перераховується при відкритті модуля, а не щосекунди.
-  const [mountedAt] = useState(() => Date.now());
   // Комбінований пікер «Запланувати» на Плануванні (founder-UX audit
   // round 2, F2): `Budgets` і `PlanningSubscriptions` мають КОЖЕН свій
   // `useAssetsState`-інстанс, тож пункт «Підписка» з пікера в `Budgets` не
@@ -270,12 +269,13 @@ export default function App({
 
   // Умова живе окремою чистою функцією поруч із самим банером — розбір
   // чому саме там, і що означає `inDemo`, у її докстрінгу (PR-F5).
+  const bankBannerNow = useBankBannerClock(page, bankBannerDismissedAt);
   const showNoBankBanner = shouldShowNoBankBanner({
     hasConnectedProvider,
     manualOnly,
     manualExpenseCount: (storage.manualExpenses || []).length,
     dismissedAt: bankBannerDismissedAt,
-    now: mountedAt,
+    now: bankBannerNow,
     page,
   });
 

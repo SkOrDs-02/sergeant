@@ -51,9 +51,9 @@ export function shouldShowNoBankBanner(params: {
   if (params.hasConnectedProvider) return false;
   if (params.manualOnly) return false;
   if (params.manualExpenseCount >= MANUAL_ENOUGH) return false;
-  // Закритий банер повертається через N днів. `now` у застосунку — час
-  // монтування, тож щойно записана позначка може бути трохи «в майбутньому»:
-  // різниця від'ємна, і банер справедливо ховається.
+  // Закритий банер повертається через N днів. `now` у застосунку оновлює
+  // `useBankBannerClock`, а щойно записана позначка може бути трохи «в
+  // майбутньому»: різниця від'ємна, і банер справедливо ховається.
   if (
     params.dismissedAt !== null &&
     params.now - params.dismissedAt < BANK_BANNER_SNOOZE_DAYS * DAY_MS
