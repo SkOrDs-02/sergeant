@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 
 // ─── Collaborator mocks ───────────────────────────────────────────────────────
 
@@ -9,11 +9,26 @@ const {
   useSqliteReadBootMock,
   bootFinykDualWriteMock,
   useAuthMock,
+  bootRoutineDualWriteMock,
+  useLocalUserIdMock,
 } = vi.hoisted(() => ({
   useFinykSqliteReadBootMock: vi.fn(),
   useSqliteReadBootMock: vi.fn(),
   bootFinykDualWriteMock: vi.fn(),
   useAuthMock: vi.fn(() => ({ user: null })),
+  bootRoutineDualWriteMock: vi.fn(
+    (_input: { getUserId: () => string | null }): (() => void) =>
+      () => {},
+  ),
+  useLocalUserIdMock: vi.fn((): string | null => null),
+}));
+
+vi.mock("../../auth/useLocalUserId", () => ({
+  useLocalUserId: useLocalUserIdMock,
+}));
+
+vi.mock("../../../modules/routine/lib/dualWriteBoot.js", () => ({
+  bootRoutineDualWrite: bootRoutineDualWriteMock,
 }));
 
 vi.mock("../../auth/AuthContext", () => ({
@@ -42,6 +57,7 @@ describe("useHubChatStorageBoot", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthMock.mockReturnValue({ user: null });
+    useLocalUserIdMock.mockReturnValue(null);
   });
 
   it("always calls the finyk sqlite read boot", () => {
@@ -86,5 +102,38 @@ describe("useHubChatStorageBoot", () => {
     rerender();
     rerender();
     expect(bootFinykDualWriteMock).toHaveBeenCalledTimes(1);
+  });
+
+  describe("routine dual-write (HubChat поза /routine)", () => {
+    it("does NOT register while the local id is unresolved", async () => {
+      renderHook(() => useHubChatStorageBoot());
+      await Promise.resolve();
+      expect(bootRoutineDualWriteMock).not.toHaveBeenCalled();
+    });
+
+    it("registers once (also for anonymous id) and survives re-renders", async () => {
+      useLocalUserIdMock.mockReturnValue("local-anon");
+      const { rerender } = renderHook(() => useHubChatStorageBoot());
+      await waitFor(() =>
+        expect(bootRoutineDualWriteMock).toHaveBeenCalledTimes(1),
+      );
+      rerender();
+      rerender();
+      expect(bootRoutineDualWriteMock).toHaveBeenCalledTimes(1);
+      const { getUserId } = bootRoutineDualWriteMock.mock.calls[0]?.[0] as {
+        getUserId: () => string | null;
+      };
+      expect(getUserId()).toBe("local-anon");
+    });
+
+    it("does not tear down the context on unmount", async () => {
+      const teardown = vi.fn();
+      bootRoutineDualWriteMock.mockReturnValueOnce(teardown);
+      useLocalUserIdMock.mockReturnValue("user-abc");
+      const { unmount } = renderHook(() => useHubChatStorageBoot());
+      await waitFor(() => expect(bootRoutineDualWriteMock).toHaveBeenCalled());
+      unmount();
+      expect(teardown).not.toHaveBeenCalled();
+    });
   });
 });

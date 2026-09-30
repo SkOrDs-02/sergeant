@@ -185,6 +185,248 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── /api/me/export ──────────────────────
+  "/api/me/export": {
+    get: {
+      summary: "Експорт усіх даних користувача (GDPR)",
+      description:
+        "Свіжа сесія (`requireFreshSession`), ліміт 5/год на людину; один активний експорт на акаунт.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Повний зріз даних користувача.",
+          content: {
+            "application/json": { schema: namedSchemas.MeExportResponse },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "`export_in_flight` — попередній експорт ще готується.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "429": {
+          description: "Перевищено ліміт експортів.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/preferences ──────────────────────
+  "/api/me/preferences": {
+    get: {
+      summary: "Налаштування користувача",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Поточні налаштування (з дефолтами).",
+          content: {
+            "application/json": { schema: namedSchemas.UserPreferences },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+    patch: {
+      summary: "Часткове оновлення налаштувань користувача",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.UserPreferencesPatch },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Оновлені налаштування.",
+          content: {
+            "application/json": { schema: namedSchemas.UserPreferences },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/status ──────────────────────
+  // Публічний, без автентифікації; завжди 200 (HTTP-статус відв'язаний від
+  // `body.status`). Shape — TS-інтерфейс `StatusResponse` у `http/status.ts`,
+  // спільної Zod-схеми немає, тож описано тут inline.
+  "/api/status": {
+    get: {
+      summary: "Публічний статус компонентів (status page)",
+      tags: ["ops"],
+      responses: {
+        "200": {
+          description: "Зведений статус; завжди 200, навіть при `down`.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                status: z.enum(["operational", "degraded", "down"]),
+                timestamp: z.string(),
+                components: z.array(
+                  z.object({
+                    id: z.enum(["server", "database", "n8n"]),
+                    label: z.string(),
+                    status: z.enum(["operational", "degraded", "down"]),
+                  }),
+                ),
+                lastIncident: z
+                  .object({
+                    at: z.string(),
+                    component: z.enum(["server", "database", "n8n"]),
+                  })
+                  .nullable(),
+              }),
+            },
+          },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/sync/audit ──────────────────────
+  "/api/sync/audit": {
+    get: {
+      summary: "Аудит-лог sync (self або admin-перегляд)",
+      description:
+        "Query: `user_id`, `before_id`, `limit`, `op_type`, `outcome`, `module`. Чужий `user_id` — лише для admin (інакше 403). `id` у рядках — number (BIGSERIAL, Hard Rule #1).",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Сторінка рядків аудиту + keyset-курсор.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                ok: z.literal(true),
+                userId: z.string(),
+                isAdminView: z.boolean(),
+                rows: z.array(
+                  z.object({
+                    id: z.number().int(),
+                    userId: z.string(),
+                    opType: z.string(),
+                    module: z.string(),
+                    outcome: z.string(),
+                    conflict: z.boolean(),
+                    payloadSizeBytes: z.number().nullable(),
+                    durationMs: z.number().nullable(),
+                    createdAt: z.string(),
+                  }),
+                ),
+                nextBeforeId: z.number().int().nullable(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "403": {
+          description: "Не admin запитав чужий `user_id`.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/v2/sync/* ──────────────────────
+  // Per-row op-log sync (заміна v1). Заголовок `x-origin-device-id`
+  // (опційно) виключає власні op-и клієнта з pull/stream.
+  "/api/v2/sync/push": {
+    post: {
+      summary: "Надіслати пачку op-ів (insert/update/delete)",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.SyncV2PushRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` + `reason`). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                accepted: z.number().int(),
+                last_op_id: z.number().int(),
+                results: z.array(
+                  z.object({
+                    idempotency_key: z.string(),
+                    status: z.enum(["applied", "duplicate", "rejected"]),
+                    reason: z.string().optional(),
+                  }),
+                ),
+                server_now: z.string(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/v2/sync/pull": {
+    get: {
+      summary: "Отримати op-и інших пристроїв (cursor по id)",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SyncV2PullQuery },
+      responses: {
+        "200": {
+          description:
+            "Op-и з `id > since`; `next_cursor` = null, коли сторінка неповна.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                ops: z.array(
+                  z.object({
+                    id: z.number().int(),
+                    table: z.string(),
+                    op: z.string(),
+                    row: z.record(z.string(), z.unknown()),
+                    client_ts: z.string(),
+                    server_ts: z.string(),
+                    origin_device_id: z.string().nullable(),
+                  }),
+                ),
+                next_cursor: z.number().int().nullable(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/v2/sync/stream": {
+    get: {
+      summary: "SSE-стрім op-ів (hello / op / caught_up / heartbeat)",
+      description:
+        "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`.",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SyncV2PullQuery },
+      responses: {
+        "200": {
+          description: "Потік SSE-подій.",
+          content: { "text/event-stream": { schema: { type: "string" } } },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
   // ────────────────────── /api/chat ──────────────────────
   "/api/chat": {
     post: {
@@ -821,6 +1063,22 @@ export const paths: ZodOpenApiPathsObject = {
           description: "Нормалізовані рядки `mono_accounts`.",
           content: {
             "application/json": { schema: namedSchemas.MonoAccountsResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/mono/jars": {
+    get: {
+      summary: "Список Mono-банок (jars) поточного користувача",
+      tags: ["mono"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Нормалізовані рядки `mono_jar` (bigint → number).",
+          content: {
+            "application/json": { schema: namedSchemas.MonoJarsResponse },
           },
         },
         "401": unauthorized,
@@ -1582,6 +1840,91 @@ export const paths: ZodOpenApiPathsObject = {
           description:
             "Accepted (завжди 204, незалежно від валідності payload).",
         },
+      },
+    },
+  },
+
+  // ────────────────────── /api/finyk/manual-expenses ──────────────────────
+  "/api/finyk/manual-expenses": {
+    post: {
+      summary: "Створити ручну (не-Mono) витрату",
+      description:
+        "`amount` у копійках; `date` (Kyiv day key) за замовчуванням — сьогодні за Києвом.",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ManualExpenseCreate },
+        },
+      },
+      responses: {
+        "201": {
+          description: "Створена витрата.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ManualExpenseCreateResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/csp-report ──────────────────────
+  "/api/csp-report": {
+    post: {
+      summary: "Приймач CSP-порушень від браузера",
+      description:
+        "Анонімний; ліміт 120/хв. Content-Type `application/csp-report`, `application/reports+json` або `application/json`. Відповідає 204.",
+      tags: ["observability"],
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.CspReportBody },
+        },
+      },
+      responses: {
+        "204": { description: "Прийнято (тіло не повертається)." },
+      },
+    },
+  },
+
+  // ────────────────────── /api/email/unsubscribe ──────────────────────
+  "/api/email/unsubscribe": {
+    get: {
+      summary: "Відписка від листів за HMAC-токеном із футера",
+      description:
+        "Публічний лінк із листа: `?u=<userId>.<hmac>`. Повертає HTML-сторінку (успіх або «недійсне посилання»).",
+      tags: ["email"],
+      requestParams: { query: z.object({ u: z.string() }) },
+      responses: {
+        "200": {
+          description: "HTML-сторінка (успіх або невалідний токен).",
+          content: { "text/html": { schema: { type: "string" } } },
+        },
+        "503": { description: "Секрет підпису не налаштовано." },
+      },
+    },
+  },
+
+  // ────────────────────── /api/telegram/webhook ──────────────────────
+  "/api/telegram/webhook": {
+    post: {
+      summary: "Вебхук Telegram-бота вейтліста бети",
+      description:
+        "Викликає лише Telegram; автентифікація — заголовок `x-telegram-bot-api-secret-token`. Тіло — Telegram Update (не описується тут).",
+      tags: ["integrations"],
+      responses: {
+        "200": {
+          description: "Апдейт прийнято.",
+          content: {
+            "application/json": { schema: z.object({ ok: z.literal(true) }) },
+          },
+        },
+        "401": { description: "Невірний secret-token." },
+        "503": { description: "Вебхук не налаштовано." },
       },
     },
   },
