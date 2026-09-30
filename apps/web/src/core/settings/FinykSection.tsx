@@ -19,6 +19,10 @@ import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 // / `main.tsx`) — bracket-доступ, бо ключ не в локальному `ImportMetaEnv`
 // (`vite-env.d.ts` декларує лише `VITE_BUILD_ID` / `VITE_TARGET`, інжектовані
 // unconditionally через `vite.config.js#define`).
+// AI-NOTE: нове підключення ПриватБанку сховано рішенням власника 2026-09-30,
+// поки у Привата немає API-токенів для користувачів. Код, серверні роути,
+// міграції й дані НЕ видаляти — стек у режимі очікування (finyk.md § Privatbank).
+// Дефолт off; не вмикай `VITE_PRIVAT_ENABLED` без нового рішення власника.
 const PRIVAT_ENABLED = import.meta.env["VITE_PRIVAT_ENABLED"] === "true";
 
 interface CustomCategory {

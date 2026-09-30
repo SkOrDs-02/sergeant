@@ -352,7 +352,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   aria-hidden
                   data-nav-label
                   className={cn(
-                    "text-style-caption font-semibold leading-none overflow-hidden text-ellipsis whitespace-nowrap",
+                    "text-style-caption font-semibold leading-tight overflow-hidden text-ellipsis whitespace-nowrap",
                     "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
                     active
                       ? "max-w-full opacity-100"

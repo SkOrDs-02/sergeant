@@ -80,6 +80,34 @@ export function currentTime(): string {
   return deviceTimeOfDay();
 }
 
+/**
+ * Значення макросу для поля форми: точність 0.1 (та сама, що в
+ * `macrosForGrams`), без округлення до цілих. Ціле лишається цілим
+ * ("12", не "12.0"). Округлення до цілих - лише на показі
+ * (`fmtMacro`/`Measure`), інакше сума позицій дня розходиться з
+ * підсумком.
+ */
+export function macroToFieldString(n: number): string {
+  return String(Math.round(n * 10) / 10);
+}
+
+/** Чотири поля КБЖВ форми з nullable-макросів; `null` -> порожнє поле. */
+export function macrosToFormFields(mac: {
+  kcal?: number | null;
+  protein_g?: number | null;
+  fat_g?: number | null;
+  carbs_g?: number | null;
+}): Pick<MealFormState, "kcal" | "protein_g" | "fat_g" | "carbs_g"> {
+  const f = (n: number | null | undefined) =>
+    n != null ? macroToFieldString(n) : "";
+  return {
+    kcal: f(mac.kcal),
+    protein_g: f(mac.protein_g),
+    fat_g: f(mac.fat_g),
+    carbs_g: f(mac.carbs_g),
+  };
+}
+
 export interface MealFormPhotoResult {
   dishName?: string | null;
   macros?: Partial<NullableMacros> | null;
@@ -116,11 +144,11 @@ export function emptyForm(
     // лізти в пікер і перемикати тип перед збереженням.
     mealType: mealType ?? mealTypeByNow(),
     time: currentTime(),
-    kcal: macros.kcal != null ? String(Math.round(macros.kcal)) : "",
+    kcal: macros.kcal != null ? macroToFieldString(macros.kcal) : "",
     protein_g:
-      macros.protein_g != null ? String(Math.round(macros.protein_g)) : "",
-    fat_g: macros.fat_g != null ? String(Math.round(macros.fat_g)) : "",
-    carbs_g: macros.carbs_g != null ? String(Math.round(macros.carbs_g)) : "",
+      macros.protein_g != null ? macroToFieldString(macros.protein_g) : "",
+    fat_g: macros.fat_g != null ? macroToFieldString(macros.fat_g) : "",
+    carbs_g: macros.carbs_g != null ? macroToFieldString(macros.carbs_g) : "",
     err: "",
   };
 }

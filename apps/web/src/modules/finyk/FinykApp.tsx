@@ -58,6 +58,8 @@ import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { getSyncTone } from "./components/SyncIndicator";
 import { AuthErrorBanner, FinykHeaderIcon, SyncPill } from "./FinykAppChrome";
 
+// AI-NOTE: інтеграцію ПриватБанку сховано рішенням власника 2026-09-30, поки
+// у Привата немає API-токенів для користувачів. Код і дані не видаляти.
 const PRIVAT_ENABLED = false;
 
 interface FinykAppProps {
@@ -409,7 +411,7 @@ export default function App({
     tryShowCrossModulePrompt(toast, {
       id: promptId,
       msg,
-      acceptLabel: "Додати →",
+      acceptLabel: "Додати",
       onAccept: () => openHubModuleWithAction("nutrition", "add_meal"),
     });
   };

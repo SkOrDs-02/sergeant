@@ -70,10 +70,10 @@ function macrosUsable(m: NullableMacros | undefined): m is NullableMacros {
 
 function nullableToChipMacros(m: NullableMacros): QuickChipMacros {
   return {
-    kcal: Math.round(Number(m.kcal) || 0),
-    protein_g: Math.round(Number(m.protein_g) || 0),
-    fat_g: Math.round(Number(m.fat_g) || 0),
-    carbs_g: Math.round(Number(m.carbs_g) || 0),
+    kcal: Math.round((Number(m.kcal) || 0) * 10) / 10,
+    protein_g: Math.round((Number(m.protein_g) || 0) * 10) / 10,
+    fat_g: Math.round((Number(m.fat_g) || 0) * 10) / 10,
+    carbs_g: Math.round((Number(m.carbs_g) || 0) * 10) / 10,
   };
 }
 

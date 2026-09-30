@@ -14,7 +14,7 @@
 
 ## Enforced by
 
-- **branch-protection** - SUSPENDED з 2026-09-23 (репо переїхало на Bitbucket, GitHub-акаунти заблоковані): старий GitHub branch protection мертвий. `AGENTS.md` заявляє Bitbucket branch restriction, з репо не перевірено; захист на дзеркалі Hetzner (другий pushurl `origin`) теж не перевірено
+- **branch-protection** - SUSPENDED з 2026-09-23, не перевірено після [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md): GitHub знову основний хост (2026-09-29), але захист `main` у `SkOrDs-02/sergeant` - налаштування репо, з чекауту його не перевірити; підтвердити в GitHub Settings -> Branches, а також на дзеркалах Bitbucket і Hetzner
 
 ## Why / What is enforced
 

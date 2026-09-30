@@ -1,3 +1,4 @@
+import { pluralUa } from "@sergeant/shared";
 import { useInRouterContext, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { usePlan } from "./usePlan";
@@ -55,12 +56,7 @@ const COPY = {
 } as const;
 
 function pluralizeDays(days: number): string {
-  const mod10 = days % 10;
-  const mod100 = days % 100;
-  if (mod10 === 1 && mod100 !== 11) return COPY.dayForms.one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return COPY.dayForms.few;
-  return COPY.dayForms.many;
+  return pluralUa(days, COPY.dayForms);
 }
 
 function formatDate(iso: string): string {

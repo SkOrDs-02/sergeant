@@ -83,7 +83,6 @@
   "apps/web/src/pages/strategy/StrategyPage.tsx",
   "apps/web/src/shared/components/ui/Avatar.tsx",
   "apps/web/src/shared/components/ui/CelebrationModal.tsx",
-  "apps/web/src/shared/components/ui/ProgressCircle.tsx",
   "apps/web/src/shared/components/ui/ProgressRing.tsx",
   "apps/web/src/shared/components/ui/SkipLink.tsx",
   "apps/web/src/shared/components/ui/StreakFlame.tsx"

@@ -61,9 +61,13 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
       "batch_categorize",
       // Стирає всі позиції активної комори одним викликом, без undo.
       "clear_pantry",
+      // B21/B22 (рішення власника 2026-09-29): канали ін'єкції з чужого тексту.
+      "create_transaction",
       "delete_transaction",
+      "export_module_data",
       "forget",
       "import_monobank_range",
+      "remember",
     ]);
   });
 
@@ -94,9 +98,16 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
     }
   });
 
+  it("B21: remember / create_transaction / export_module_data вимагають підтвердження", () => {
+    for (const id of ["remember", "create_transaction", "export_module_data"]) {
+      expect(requiresConfirmation(id), id).toBe(true);
+      expect(isRiskyTool(id), id).toBe(true);
+    }
+  });
+
   it("нериковий інструмент із каталогу не проходить жоден із гейтів", () => {
-    expect(isRiskyTool("create_transaction")).toBe(false);
-    expect(requiresConfirmation("create_transaction")).toBe(false);
+    expect(isRiskyTool("log_weight")).toBe(false);
+    expect(requiresConfirmation("log_weight")).toBe(false);
     // Кожен серверний тул каталогу без запису в TOOL_RISK — без діалогу.
     for (const c of ASSISTANT_CAPABILITIES) {
       const tool = getCapabilityServerTool(c);

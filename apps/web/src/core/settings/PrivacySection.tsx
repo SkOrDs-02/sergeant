@@ -11,7 +11,10 @@ import {
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
-import { setAnalyticsConsent } from "../observability/analyticsConsent";
+import {
+  hydrateAnalyticsConsent,
+  setAnalyticsConsent,
+} from "../observability/analyticsConsent";
 import {
   classifyPreferenceLoadFailure,
   PREFERENCE_LOAD_FAILURE_COPY,
@@ -83,7 +86,7 @@ export function PrivacySection() {
         setPreferencesLoaded(true);
         setPreferencesError(null);
         setLoadFailure(null);
-        setAnalyticsConsent(next.analytics);
+        hydrateAnalyticsConsent(next.analytics);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -123,7 +126,15 @@ export function PrivacySection() {
       const next = await meApi.updatePreferences({ [key]: checked });
       setPreferences(next);
       setPreferencesLoaded(true);
-      setAnalyticsConsent(next.analytics);
+      if (key === "analytics") {
+        // Явний вибір людини на цьому пристрої — фіксуємо як рішення.
+        setAnalyticsConsent(next.analytics);
+      } else {
+        // Інший тумблер (aiMemory, healthDataConsent…) — не відповідь про
+        // аналітику: лише синхронізуємо кеш із сервером, не записуючи
+        // «рішення» на пристрої (інакше банер згоди мовчки зникав би).
+        hydrateAnalyticsConsent(next.analytics);
+      }
     } catch {
       setPreferences(previous);
       if (key === "analytics") {
