@@ -11,17 +11,11 @@ name: Lighthouse CI
 # `NO_FCP` / server-start flakes are retried once and then soft-pass with
 # a GitHub warning while the underlying Chrome trace issue remains open.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".nvmrc"
-      - ".github/workflows/lighthouse-ci.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "10 5 * * 1"
 
 permissions:
   contents: read
