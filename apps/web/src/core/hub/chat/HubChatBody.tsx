@@ -98,7 +98,7 @@ export function HubChatBody({
       // з tabIndex — рекомендований axe спосіб, не інтерактивний «фейк».
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
-      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500/40"
+      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0 focus-ring"
       aria-busy={loading}
     >
       {/* Visually-hidden live region for streaming status — announced to
