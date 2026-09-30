@@ -19,7 +19,7 @@ pnpm snapshot --refresh                  # bypass 15-min cache
 ## Sections (always present, gracefully degraded)
 
 1. Repo (branch, base, worktree count, dirty state)
-2. CI last run on main — CI відсутній з 2026-09-23 (Bitbucket без pipelines), тому статична позначка замість `gh api …/check-runs`; main↔prod дрейф дивись через `pnpm deploy:status`
+2. CI last run on main - статичний вказівник на GitHub Actions (ADR-0101) і команду `gh run list --branch main -L 5`, без живого запиту; main↔prod дрейф дивись через `pnpm deploy:status`
 3. Budgets (apps/web JS/CSS bundle, Lighthouse CI)
 4. Open entropy-janitor issues (via `gh issue list --label 'entropy-janitor/*'`)
 5. Recent PR-ledger entries (read from `docs/governance/pr-ledger/index.json`)

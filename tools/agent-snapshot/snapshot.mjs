@@ -120,12 +120,11 @@ function sectionRepo() {
 }
 
 function sectionCi() {
-  // ponytail: no remote CI exists (Bitbucket has no pipelines, GitHub
-  // Actions don't run); querying `gh` here only burns a timeout every
-  // session. Static message until a real CI signal exists again.
+  // ponytail: static pointer instead of a `gh` call on every snapshot;
+  // query live status when needed.
   return [
     "## CI last run on main",
-    "- CI відсутній з 2026-09-23 (Bitbucket без pipelines, GitHub Actions не виконуються).",
+    "- CI: GitHub Actions (ADR-0101). Стан: `gh run list --branch main -L 5`.",
     "- Для main↔prod drift дивись `pnpm deploy:status`.",
   ].join("\n");
 }
