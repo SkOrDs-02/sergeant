@@ -49,7 +49,8 @@ export function NoBankBanner({
             <p className="text-style-label text-text">Без банку?</p>
             <p className="text-style-body text-muted mt-1 leading-snug">
               Записуй витрати вручну, або підключи Monobank, щоб операції
-              підтягувались автоматично. Підключити можна пізніше з Налаштувань.
+              підтягувались автоматично. Якщо не зараз, нагадаю за тиждень.
+              Підключити можна й з Налаштувань.
             </p>
           </div>
         </div>
@@ -71,7 +72,7 @@ export function NoBankBanner({
             className="flex-1"
             onClick={onContinueManually}
           >
-            Продовжити без банку
+            Не зараз
           </Button>
         </div>
       </Card>
