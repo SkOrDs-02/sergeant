@@ -137,13 +137,6 @@ export type {
   ProgressBarVariant,
 } from "./ProgressBar";
 
-export { ProgressCircle } from "./ProgressCircle";
-export type {
-  ProgressCircleProps,
-  ProgressCircleSize,
-  ProgressCircleVariant,
-} from "./ProgressCircle";
-
 export { ProgressRing } from "./ProgressRing";
 export type {
   ProgressRingProps,

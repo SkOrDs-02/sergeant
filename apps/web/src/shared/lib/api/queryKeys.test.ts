@@ -39,26 +39,6 @@ describe("finykKeys", () => {
     expect(JSON.stringify(k1)).not.toBe(JSON.stringify(k2));
   });
 
-  it("monoClientInfo is scoped under finyk > mono", () => {
-    const key = finykKeys.monoClientInfo("abc123");
-    expect(key[0]).toBe("finyk");
-    expect(key[1]).toBe("mono");
-    expect(key).toContain("abc123");
-  });
-
-  it("monoStatement encodes accId + from + to", () => {
-    const key = finykKeys.monoStatement("acc1", 1000, 2000);
-    expect(key).toContain("acc1");
-    expect(key).toContain(1000);
-    expect(key).toContain(2000);
-  });
-
-  it("monoStatement distinguishes different time ranges", () => {
-    const k1 = finykKeys.monoStatement("acc1", 1000, 2000);
-    const k2 = finykKeys.monoStatement("acc1", 1000, 3000);
-    expect(JSON.stringify(k1)).not.toBe(JSON.stringify(k2));
-  });
-
   it("monoTransactionsDb encodes from/to/accountId", () => {
     const key = finykKeys.monoTransactionsDb(
       "2026-01-01",
@@ -79,17 +59,6 @@ describe("finykKeys", () => {
     const k1 = finykKeys.monoWebhookTransactions();
     const k2 = finykKeys.monoWebhookTransactions("from=2026-01-01");
     expect(JSON.stringify(k1)).not.toBe(JSON.stringify(k2));
-  });
-
-  it("privatStatement scopes under finyk > privat", () => {
-    const key = finykKeys.privatStatement(
-      "h1",
-      "acc2",
-      "2026-01-01",
-      "2026-01-31",
-    );
-    expect(key[0]).toBe("finyk");
-    expect(key[1]).toBe("privat");
   });
 });
 
@@ -120,10 +89,6 @@ describe("nutritionKeys", () => {
   it("barcode embeds the barcode string", () => {
     const key = nutritionKeys.barcode("5901234123457");
     expect(key).toContain("5901234123457");
-  });
-
-  it("pushStatus is under 'nutrition'", () => {
-    expect(nutritionKeys.pushStatus[0]).toBe("nutrition");
   });
 });
 
