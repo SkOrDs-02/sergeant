@@ -218,7 +218,7 @@ function HubBottomNavTab({
         <span
           data-nav-label
           className={cn(
-            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap text-ellipsis",
+            "text-style-caption font-semibold leading-tight overflow-hidden whitespace-nowrap text-ellipsis",
             transition,
             "duration-base ease-standard",
             active

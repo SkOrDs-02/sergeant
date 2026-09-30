@@ -126,6 +126,11 @@ export const INFRA_PROCESSORS: ReadonlyArray<LegalProcessor> = [
 
 export const REFERENCE_PROCESSORS: ReadonlyArray<LegalProcessor> = [
   {
+    name: "Open Food Facts",
+    role: "Відкрита база продуктів. Отримує лише пошуковий запит або штрихкод, без даних акаунта",
+    region: "Франція",
+  },
+  {
     name: "USDA FoodData Central, UPCitemdb",
     role: "Довідники продуктів і штрихкодів. Отримують лише пошуковий запит або штрихкод, без даних акаунта",
     region: "США",

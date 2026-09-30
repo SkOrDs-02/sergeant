@@ -84,6 +84,7 @@ export const privacyDocument: LegalDocument = {
         ...INFRA_PROCESSORS.map(formatProcessor),
         "Довідкові сервіси (персональних даних не отримують):",
         ...REFERENCE_PROCESSORS.map(formatProcessor),
+        "Дані про продукти з Open Food Facts (openfoodfacts.org) відкриті за ліцензією ODbL: вони створені спільнотою, тому можуть бути неточними, а їхнє авторство належить учасникам проєкту.",
         "Ми повідомляємо email-ом за 30 днів до додавання нового субпроцесора, який отримуватиме персональні дані.",
       ],
     },

@@ -23,6 +23,7 @@
  * завислий екран. Кожна реальна фаза міняє `label` (`ScanStatus` § шар
  * 2), тож рух видно ще до відповіді сервера.
  */
+import { pluralUa } from "@sergeant/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
@@ -93,16 +94,19 @@ const SKIP_REASON_LABEL: Record<string, string> = {
  * підказки, що робити далі. Сервер тепер каже, що саме він відкинув
  * (`draft.dropped`) і чи обірвалась відповідь моделі (`draft.truncated`).
  */
+const NON_UAH_FORMS = { one: "операцію", few: "операції", many: "операцій" };
+const FAILED_FORMS = { one: "операція", few: "операції", many: "операцій" };
+
 function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.truncated) {
     return "На скріні забагато операцій, не встиг дочитати список. Зроби кілька скрінів по частинах.";
   }
   const { failed, nonUah, unreadable } = draft.dropped;
   if (nonUah > 0 && failed === 0 && unreadable === 0) {
-    return `Знайшов ${nonUah} ${plural(nonUah, "операцію", "операції", "операцій")}, але не в гривні. Імпорт поки працює лише з UAH.`;
+    return `Знайшов ${nonUah} ${pluralUa(nonUah, NON_UAH_FORMS)}, але не в гривні. Імпорт поки працює лише з операціями в гривні.`;
   }
   if (failed > 0 && nonUah === 0 && unreadable === 0) {
-    return `Усі ${failed} ${plural(failed, "операція", "операції", "операцій")} на скріні позначені як невдалі: гроші за ними не рухались.`;
+    return `Усі ${failed} ${pluralUa(failed, FAILED_FORMS)} на скріні позначені як невдалі: гроші за ними не рухались.`;
   }
   if (failed + nonUah + unreadable > 0) {
     return "Бачу операції, але жодну не вдалось прочитати повністю. Спробуй скрін крупніше або без обрізаних країв.";
@@ -111,16 +115,6 @@ function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
     return "Це не схоже на екран банківського застосунку. Відкрий список операцій у банку і зроби скрін звідти.";
   }
   return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список операцій із сумами.";
-}
-
-/** Українська трійка форм для лічильника (1 / 2-4 / 5+). */
-function plural(n: number, one: string, few: string, many: string): string {
-  const mod100 = n % 100;
-  if (mod100 >= 11 && mod100 <= 14) return many;
-  const mod10 = n % 10;
-  if (mod10 === 1) return one;
-  if (mod10 >= 2 && mod10 <= 4) return few;
-  return many;
 }
 
 function defaultCategoryFor(direction: "expense" | "income"): string {
