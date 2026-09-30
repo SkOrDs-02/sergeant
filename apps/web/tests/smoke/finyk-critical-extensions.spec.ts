@@ -63,7 +63,7 @@ test("@critical finyk: assets route opens subscription form", async ({
   await page.getByRole("button", { name: /Запланувати/ }).click();
   await page.getByRole("menuitem", { name: /^Підписка/ }).click();
   await expect(page.getByLabel("Назва підписки")).toBeVisible();
-  await expect(page.getByLabel("Пошук транзакції за описом")).toBeVisible();
+  await expect(page.getByLabel("Пошук операції за описом")).toBeVisible();
   await expect(page.getByLabel("День списання (1-31)")).toBeVisible();
 
   expect(errors, "Uncaught page errors on Finyk assets add flow").toEqual([]);

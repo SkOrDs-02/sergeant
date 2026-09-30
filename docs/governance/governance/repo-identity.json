@@ -1,10 +1,10 @@
 {
-  "_comment": "Єдине джерело слуга репо (GitHub або Bitbucket). `current` звіряється з `git remote get-url origin` (або GITHUB_REPOSITORY у Actions) гейтом `pnpm lint:repo-slug`; `previous` - домівки, з яких репо переїхало: посилання на них у доках лишаються історією і НЕ переписуються, бо нумерація PR кожного дому своя. 2026-09-23..29 код хостився на Bitbucket (`skords01/sergeant`), з 2026-09-30 знову на GitHub (`SkOrDs-02/sergeant`, публічний, ADR-0101). `legacyPrSlug` лишається GitHub-слугом - саме на нього досі показує реєстр `docs/governance/pr-ledger/index.json`. Переїхали - додайте старий слуг у `previous` і оновіть `current`.",
+  "_comment": "Єдине джерело слуга репо (GitHub або Bitbucket). `current` звіряється з `git remote get-url origin` (або GITHUB_REPOSITORY у Actions) гейтом `pnpm lint:repo-slug`; `previous` - домівки, з яких репо переїхало: посилання на них у доках лишаються історією і НЕ переписуються, бо нумерація PR кожного дому своя. З 2026-09-23 до 2026-09-30 код хостився на Bitbucket (`skords01/sergeant`); з 2026-09-30 основний хост знову GitHub (`SkOrDs-02/sergeant`) з живим GitHub Actions CI. `legacyPrSlug` лишається GitHub-слугом - саме на нього досі показує реєстр `docs/governance/pr-ledger/index.json`. Переїхали - додайте старий слуг у `previous` і оновіть `current`.",
   "current": "SkOrDs-02/sergeant",
   "previous": [
+    "skords01/sergeant",
     "klas149/Sergeant",
     "zaebal-beep/Sergeant",
-    "skords01/sergeant",
     "Skords-01/Sergeant"
   ],
   "legacyPrSlug": "Skords-01/Sergeant"

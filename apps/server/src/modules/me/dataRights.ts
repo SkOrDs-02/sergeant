@@ -570,7 +570,9 @@ export async function requestAccountDeletion(
 
     // Гасимо сесії на всіх пристроях: далі в акаунт можна лише ввійти
     // заново, і вхід упреться в гейт `requireSession` (рішення 3 спеки).
-    await client.query(`DELETE FROM session WHERE user_id = $1`, [userId]);
+    // Колонка Better Auth-таблиці `session` — camelCase `"userId"` (див.
+    // міграцію 003), а НЕ `user_id`, як у решті наших таблиць.
+    await client.query(`DELETE FROM session WHERE "userId" = $1`, [userId]);
 
     await client.query(
       `UPDATE subscriptions
