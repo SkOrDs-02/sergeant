@@ -83,7 +83,7 @@ describe("shared UI stories", () => {
     );
   }
 
-  it("renders Toast examples through the provider", () => {
+  it("renders Toast examples through the provider", async () => {
     const single = renderToastStory(ToastStories.Single);
 
     fireEvent.click(
@@ -127,7 +127,9 @@ describe("shared UI stories", () => {
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(screen.getByText("Скасовано.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Повторити" }));
-    expect(screen.getByText("Рецепт завантажено.")).toBeInTheDocument();
+    // Тост, що зникає, тримає слот до кінця exit-анімації (200 мс), тож новий
+    // із черги зʼявляється не миттєво.
+    expect(await screen.findByText("Рецепт завантажено.")).toBeInTheDocument();
     action.unmount();
 
     const stack = renderToastStory(ToastStories.Stack);
@@ -155,7 +157,7 @@ describe("shared UI stories", () => {
     );
     expect(screen.getByText("Видалено категорію «Кафе»")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Повернути" }));
-    expect(screen.getByText("Категорію повернуто.")).toBeInTheDocument();
+    expect(await screen.findByText("Категорію повернуто.")).toBeInTheDocument();
   });
 
   it("renders CommandPalette examples and opens seeded commands", async () => {
