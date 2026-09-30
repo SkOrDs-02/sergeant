@@ -41,7 +41,6 @@ export async function resolveHealthConsent(
   } catch (err) {
     logger.warn({
       msg: "health_consent_check_failed",
-      userId,
       err: err instanceof Error ? err.message : String(err),
     });
     return false;
