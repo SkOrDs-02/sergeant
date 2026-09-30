@@ -96,7 +96,9 @@ function safeName(name: string | undefined): string {
  * модель сприймає їх як data всередині `<tool_output>`.
  */
 function escapeToolOutputClose(s: string): string {
-  return s.replace(/<\/tool_output>/gi, "<\u200B/tool_output>");
+  // Ентіті, як і в `escapeUserDataClose`: zero-width-варіант (B8) візуально
+  // лишався закривальним тегом, ентіті однозначні.
+  return s.replace(/<\/tool_output>/gi, "&lt;/tool_output&gt;");
 }
 
 export interface NormalizedToolResult {
