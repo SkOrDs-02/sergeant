@@ -121,6 +121,29 @@ jobs:
           vuln-type: "os,library"
           exit-code: "1"
 
+      # SARIF у лог нічого не друкує, тож червона джоба не каже, ЩО саме
+      # знайдено: до цього кроку по CVE доводилось лізти в артефакт або в
+      # Code Scanning. Крок читає той самий SARIF і друкує кожну знахідку
+      # (правило, рівень, текст) і в лог, і в job summary.
+      - name: Print Trivy findings
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ ! -s trivy-image.sarif ]]; then
+            echo "trivy-image.sarif відсутній або порожній"
+            exit 0
+          fi
+          findings="$(jq -r '.runs[].results[]? | "- \(.ruleId) [\(.level)] \(.message.text | split("\n") | map(select(length > 0)) | join(" · "))"' trivy-image.sarif)"
+          if [[ -z "${findings}" ]]; then
+            echo "Trivy: знахідок у SARIF немає"
+            exit 0
+          fi
+          echo "${findings}"
+          {
+            echo "### Trivy findings (CRITICAL/HIGH)"
+            echo
+            echo "${findings}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload SARIF to code-scanning
         if: ${{ !cancelled() }}
         # github/codeql-action/upload-sarif v4.36.0 (SHA-pinned)
