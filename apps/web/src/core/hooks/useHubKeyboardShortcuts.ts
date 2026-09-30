@@ -15,6 +15,12 @@ interface HubKeyboardShortcutsOptions {
   /** Cmd/Ctrl+/ — open AI assistant drawer */
   onOpenAssistant?: () => void;
   /**
+   * `true`, коли поточний маршрут — сторінка чату (`/chat`). Cmd/Ctrl+/
+   * тоді НЕ відкриває оверлей (другий інстанс `useChatSessions` поверх
+   * сторінки = конкурентні LWW-записи сесій), а фокусує поле вводу.
+   */
+  assistantPageActive?: boolean;
+  /**
    * G+<letter> chord navigation.
    * H=hub, F=finyk, Z=fizruk, R=routine, N=nutrition
    */
@@ -57,6 +63,9 @@ function isEditableTarget(target: EventTarget | null) {
   );
 }
 
+/** Поле вводу `ChatInput` (`core/components/ChatInput.tsx`). */
+const CHAT_INPUT_SELECTOR = 'input[aria-label="Повідомлення Сержанту"]';
+
 /**
  * Returns the nearest ancestor `<form>` element (or the element itself if it
  * is a form). Used for R6 Cmd+S context-aware save mitigation.
@@ -71,6 +80,7 @@ export function useHubKeyboardShortcuts({
   onOpenSearch,
   onOpenShortcuts,
   onOpenAssistant,
+  assistantPageActive,
   onNavigate,
   onCreate,
   onUndo,
@@ -122,6 +132,12 @@ export function useHubKeyboardShortcuts({
       // Cmd/Ctrl+/ — AI Assistant drawer
       if (mod && event.key === "/") {
         event.preventDefault();
+        if (assistantPageActive) {
+          document
+            .querySelector<HTMLInputElement>(CHAT_INPUT_SELECTOR)
+            ?.focus();
+          return;
+        }
         onOpenAssistant?.();
         return;
       }
@@ -187,6 +203,7 @@ export function useHubKeyboardShortcuts({
     onOpenSearch,
     onOpenShortcuts,
     onOpenAssistant,
+    assistantPageActive,
     onNavigate,
     onCreate,
     onUndo,

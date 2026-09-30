@@ -1,7 +1,7 @@
 ---
 name: server-agent
 description: "Stage 2 of sergeant-deliver-squad — owns server-side implementation in apps/server. Writes route handlers, business logic, and the serializer that DEFINES the API response shape, coercing every bigint to number (Hard Rule #1) and honoring the ADR-0078 day-boundary split (device-local for personal entities, Europe/Kyiv for reports) and Better Auth session patterns. Trigger after migration-agent; run before api-client-agent. Boundary: does NOT touch migrations (migration-agent) or client types (api-client-agent) — publish the exact response shape for them to consume."
-tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 skills: sergeant-server-api
 ---

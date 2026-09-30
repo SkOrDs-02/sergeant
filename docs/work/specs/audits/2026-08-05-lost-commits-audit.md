@@ -82,6 +82,13 @@
 
 Обсяг: 2 файли, +71 / −13 (`useHubChatStorageBoot.ts` + `.test.ts`).
 
+> **ЗАКРИТО 2026-09-29** (гілка `claude/hubchat-routine-dualwrite`):
+> `apps/web/src/core/hub/chat/useHubChatStorageBoot.ts` реєструє
+> `bootRoutineDualWrite` через `useLocalUserId` і ДИНАМІЧНИЙ import (без
+> `vendor-sqlite` в eager). Реєстрація routine - стек, teardown знімає лише
+> власний контекст, тож шел `/routine` не страждає; хаб teardown не викликає
+> (як finyk). Тест - `useHubChatStorageBoot.test.ts`.
+
 > `claude/sergeant-anonymous-persistence-33b5da` (#419) у зведенні показує ті самі два файли —
 > це не окрема втрата: #420 влився саме в цю гілку, тому вона несе той самий коміт.
 
