@@ -82,6 +82,7 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
           >
             Назва страви
             <VoiceMicButton
+              module="nutrition"
               size="sm"
               onResult={handleVoiceMeal}
               onError={(e) => setForm((s) => ({ ...s, err: e }))}

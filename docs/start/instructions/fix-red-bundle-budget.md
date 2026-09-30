@@ -1,6 +1,6 @@
 # Playbook: Червоний бандл-бюджет (size-limit / eager)
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-01-24.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-01-25.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -20,7 +20,7 @@
 
 | Метрика                  | Що міряє                                                                | Ліміт       | Команда                                       |
 | ------------------------ | ----------------------------------------------------------------------- | ----------- | --------------------------------------------- |
-| `size-limit` (JS усього) | **суму всіх** емітованих чанків `apps/server/dist/assets/*.js` (brotli) | **1.48 MB** | `pnpm --filter @sergeant/web exec size-limit` |
+| `size-limit` (JS усього) | **суму всіх** емітованих чанків `apps/server/dist/assets/*.js` (brotli) | **1.51 MB** | `pnpm --filter @sergeant/web exec size-limit` |
 | `size-limit` (CSS)       | `apps/server/dist/assets/*.css` (brotli)                                | **40 kB**   | те саме                                       |
 | **eager**                | лише те, що Vite вписав у `index.html` як `modulepreload`/`script src`  | **268 kB**  | `node scripts/ci/check-eager-bundle.mjs`      |
 
