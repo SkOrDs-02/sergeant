@@ -51,7 +51,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Bundle budget
 
-Гейт `size-limit` і eager - джоба `bundle-budgets` у `ci.yml`, щопонеділка і вручну (ADR-0101), на PR - лише required-чек `Lighthouse CI`; локально `pnpm --filter @sergeant/web exec size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
+Гейт `size-limit` і eager - джоба `bundle-budgets` у `ci.yml`, щопонеділка і вручну (ADR-0101), `Lighthouse CI` теж щотижня і вручну; локально `pnpm --filter @sergeant/web exec size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
 
 **Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 
@@ -75,7 +75,7 @@ T5 gate from [`docs/work/specs/planning/sprint-roadmap-q2q3-2026.md`](https://gi
 
 **Як читати reports:**
 
-1. Відкрий job `Lighthouse CI (perf budgets)` у CI таб PR-а.
+1. Відкрий прогін workflow `Lighthouse CI` (щопонеділка або ручний `workflow_dispatch`) у вкладці Actions.
 2. В кінці кроку `Run Lighthouse CI` LHCI друкує `Open the report at <url>` — клік → HTML-репорт на `storage.googleapis.com/lighthouse-infrastructure...`. Один URL на route.
 3. Альтернативно: завантаж workflow-artifact `lighthouse-reports` (retention 14 днів) — містить `.lighthouseci/lhr-*.html` + `manifest.json` з тривалостями кожного run-у.
 4. Зелений job без warn-ів означає, що **median LCP / FCP / TBT всіх 4 LHCI routes** під порогами.

@@ -39,7 +39,7 @@
 - `pnpm deploy:api -- --yes` лишається запасним ручним шляхом.
 - **На PR і push у `main` біжить лише потрібне для мержу й деплою.** Перший же PR показав, що повний набір (`ci.yml` плюс ще ~15 workflow на кожен push) забиває чергу GitHub Actions на десятки хвилин. Тому:
   - `ci.yml` на PR/push: `check`, `Critical-flow E2E (Playwright)`, `migration-lint`, `migration-down-drill`, `commitlint`, `secret-scan`, на `main` ще `deploy-api`. Critical-flow лишається, бо це required-чек branch protection і частина `needs:` автодеплою; migration-джоби, бо міграції виконує прод; commitlint і gitleaks коштують менше хвилини і тримають Hard Rule #5 та secret scan.
-  - `lighthouse-ci.yml` лишається на PR (path-filtered): `Lighthouse CI` - required-чек branch protection, без нього PR, що чіпають web, висіли б у «pending». Прибрати його з PR можна лише разом зі зміною branch protection (рішення власника).
+  - `lighthouse-ci.yml` теж переведено на щопонеділковий розклад і ручний запуск. `Lighthouse CI` досі стоїть required-чеком у branch protection `main`, тож власник має прибрати його звідти, інакше PR чекатимуть на чек, який не стартує.
   - Решта джоб `ci.yml` (`bundle-budgets`, `coverage`, `a11y`, `mobile-ui-audit`, `landing-quality`, `knip-scan`, `security-audit`, `server-integration`, `rag-eval`, `tool-eval`, `actionlint`, `todo-freshness`, `pipeline-duration-summary`) - щопонеділка о 04:00 UTC і вручну.
   - Щопонеділка і вручну: `ai-legacy-scan`, `codeql`, `container-scan`, `contract-tests`, `docs-automation`, `docs-freshness`, `extended-e2e`, `skill-freshness`, `post-deploy-smoke` (без `deployment_status`), `docs-daily-brief`, `nightly-audit`, `pact-drift`, `web-route-ledger` (останні чотири були щоденні). Без змін: `db-backup-verify`, `mutation-testing`, `rag-eval-live` (уже щотижневі).
   - Лише вручну: `deploy-landing` (раніше автодеплой лендінгу на push), `deploy-config-staging-gate`, `mobile-shell-android`, `mobile-shell-ios` (мобільний контур на паузі, ADR-0094), `posthog-release-annotation`, `storybook-deploy`. Вже були ручними: `detox-*`, `mobile-flaky-verify`, `mobile-shell-*-release`.
@@ -72,7 +72,13 @@
 - Рішення 2026-09-24 про локальний merge-gate у `pre-push` і fast-forward-only мерж у Bitbucket скасовано: їхню роль виконує CI.
 - `pnpm deploy:status` лишається способом побачити розрив прод ↔ `main`.
 
+## Фронт і Vercel
+
+**Vercel, імовірно, знову збирає фронт із GitHub.** На PR #1233 зʼявились чеки `Vercel – sergeant` і `Vercel – sergeant-landing` (2026-09-30 червоні через денний ліміт збірок Hobby), тобто Git-інтеграція Vercel підключена до `SkOrDs-02/sergeant` і робить прев'ю на PR. Чи деплоїть вона Production-гілку `main` автоматично і як це співіснує з ручним `pnpm deploy:web`, не звірено: це налаштування Vercel-проєктів, їх перевіряє власник. Доки не звірено, не вважай `pnpm deploy:web` єдиним шляхом у прод фронта.
+
 ## Що має зробити власник
 
 - Додати секрети репозиторію `COOLIFY_URL` (база інстансу Coolify без шляху) і `COOLIFY_TOKEN` (API-токен із правом deploy і читання деплоїв). Старі `COOLIFY_DEPLOY_WEBHOOK` і `COOLIFY_DEPLOY_TOKEN` більше не читаються.
 - Полагодити critical-flow E2E, інакше автодеплой не спрацьовує.
+- Прибрати `Lighthouse CI` з required-чеків branch protection `main` (він більше не біжить на PR).
+- Звірити Vercel Git-інтеграцію: чи Production-гілка `main` деплоїться автоматично, і чи потрібен ще `pnpm deploy:web`.
