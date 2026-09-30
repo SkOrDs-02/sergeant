@@ -71,6 +71,7 @@
     "lint:duplicated-app-logic": "node scripts/check-duplicated-app-logic.mjs",
     "api:generate-openapi": "node scripts/api/generate-openapi.mjs",
     "api:check-openapi": "node scripts/api/check-openapi-fresh.mjs",
+    "test:deploy-confirm": "node --test scripts/__tests__/deploy-confirm.test.mjs scripts/__tests__/deploy-vercel.test.mjs",
     "test:contract-drift-cli": "node --test scripts/__tests__/pact-drift-check.test.mjs scripts/__tests__/post-deploy-smoke.test.mjs",
     "lint:plugins": "node --test packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs",
     "lint:discoverability": "node scripts/check-discoverability.mjs",

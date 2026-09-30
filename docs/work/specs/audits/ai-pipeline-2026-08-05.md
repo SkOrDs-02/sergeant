@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-01.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-12-02.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -225,6 +225,8 @@ const normalizedToolResults = truncateToolResults(tool_results, {
 
 ### B22 — «сувора» валідація tool-input перевіряє поля, яких не існує
 
+> **ЗАКРИТО 2026-09-29 (`claude/hubchat-tool-fixes`).** `SaveNoteInputSchema` у [`toolCallSchema.ts`](../../../../apps/web/src/core/hub/chat/toolCallSchema.ts) тепер `{text, tag?}`; тести на payload `{text, tag}` і батч із `save_note` у `toolCallSchema.test.ts`. Побічно в allow-list додано `get_daily_series` (його теж відкидав фаєрвол). `remember` виправлено раніше.
+
 [`toolCallSchema.ts:158-166`](../../../../apps/web/src/core/hub/chat/toolCallSchema.ts)
 вимагає для `remember` поля `key`/`value`, а для `save_note` — `content`/`title`.
 Реальний контракт інший: `remember` приймає `fact`/`category`
@@ -241,6 +243,8 @@ Fail-closed, тож не експлуатується. Але контроль �
 цих двох payload-ів не проганяють.
 
 ### B23 — авто-експорт + модельні посилання = ексфільтрація в один клік
+
+> **ЧАСТКОВО ЗАКРИТО 2026-09-29.** Protocol-relative `//evil.example` (і `/\evil.example`) більше не проходить `HREF_SAFE_RE` ([`AssistantMessageBody.tsx`](../../../../apps/web/src/shared/components/AssistantMessageBody.tsx), тест у `AssistantMessageBody.test.tsx`). `export_module_data` без `TOOL_RISK` лишається відкритим: потрібне рішення власника.
 
 `export_module_data` не в `TOOL_RISK`, тобто виконується автоматично, і віддає
 до 3000 символів сирого JSON модуля
@@ -269,7 +273,9 @@ plaintext JSON у localStorage
 не конфіденційність. Токен авторизації там **не** лежить (Better Auth —
 HttpOnly-кука), і це правильно.
 
-### B25 — `prior_result` у refine-photo необмежений
+### B25 — `prior_result` у refine-photo необмежений ✅ виправлено
+
+> **Закрито 2026-09-29:** `REFINE_PRIOR_RESULT_MAX_BYTES = 16 KB` (UTF-8 байти серіалізованого JSON) у [`api.ts`](../../../../packages/shared/src/schemas/api.ts); тест — [`refine-photo.test.ts`](../../../../apps/server/src/modules/nutrition/refine-photo.test.ts). Форма лишилась `unknown` (це вільна відповідь analyze-photo без схеми), межа лише за розміром.
 
 [`schemas/api.ts:286`](../../../../packages/shared/src/schemas/api.ts):
 `prior_result: z.unknown().optional()` — без обмеження розміру й форми, і
@@ -282,7 +288,9 @@ per-string і per-element cap-и ([`api.ts:301-443`](../../../../packages/shared
 що робить цю дірку помітною саме на їхньому тлі. ~600 КБ сміття ≈ 150k вхідних
 токенів Sonnet на запит, при дозволених ~6 запитах/хв.
 
-### B26 — стеля витрат на транскрипцію має TOCTOU-гонку
+### B26 — стеля витрат на транскрипцію має TOCTOU-гонку ✅ виправлено
+
+> **Закрито 2026-09-29:** `assertTranscribeUsdCap` резервує оцінку одним умовним UPSERT (`WHERE usd_micros + estimate <= cap`), провал Groq повертає резерв (`releaseTranscribeUsdReservation`); див. [`usdCap.ts`](../../../../apps/server/src/modules/transcribe/usdCap.ts), тести `usdCap.test.ts` (паралельний кейс) і e2e.
 
 [`usdCap.ts:130-161`](../../../../apps/server/src/modules/transcribe/usdCap.ts)
 робить `SELECT usd_micros`, порівнює `spent + estimate > cap` — а інкремент
@@ -297,6 +305,8 @@ per-string і per-element cap-и ([`api.ts:301-443`](../../../../packages/shared
 робить це одним умовним UPSERT-ом.
 
 ### B27 — `/api/internal/*` тримається на одному статичному секреті
+
+> **Частково закрито 2026-09-29** (`claude/server-internal-hardening`): rate-limit `api:internal` (120/хв per-IP) у [`routes/internal/index.ts`](../../../../apps/server/src/routes/internal/index.ts); опційний IP-allowlist `INTERNAL_ALLOWED_IPS` (порожній = шар не монтується, бо адреси n8n/Coolify-кронів не інвентаризовані, а fail-closed 503 зламав би їх); Zod-схема `CategorizeBodySchema` (description ≤ 500) у [`categorize.ts`](../../../../apps/server/src/routes/internal/categorize.ts). Тести: `routes/internal/index.test.ts`, `categorize.test.ts`. **Лишається:** HMAC-обовʼязковість — `WEBHOOK_HMAC_REQUIRED` уже `true` за замовчуванням, але шар пропускається при порожньому `WEBHOOK_HMAC_SECRET`; рішення (fail-startup у проді без секрету) потребує інвентаризації викликачів.
 
 [`routes/internal/index.ts:52-71`](../../../../apps/server/src/routes/internal/index.ts):
 Bearer `INTERNAL_API_KEY` (constant-time, fail-closed — це добре). Але:
@@ -314,7 +324,9 @@ LLM-ендпоінт `POST /api/internal/categorize` з будь-якої точ
 до того ж читає `req.body as CategorizeArgs` **без Zod**, тож 128 КБ
 «опису транзакції» стають ~32k токенів на виклик.
 
-### B28 — 10 МБ тіла парситься до автентифікації, зі стисненням
+### B28 — 10 МБ тіла парситься до автентифікації, зі стисненням ✅ виправлено (частково)
+
+> **Закрито 2026-09-29 у частині стиснення:** `inflate: false` на AI-правилах [`bodySizePolicy.ts`](../../../../apps/server/src/http/bodySizePolicy.ts) (фото, чеки, скрін, chat, transcribe, coach memory) → gzip-тіло дає 415 без розпаковки. Сам факт парсингу до `requireSession` (буферизація до 10 МБ нестисненого) лишається: перенесення парсерів після auth — окреме архітектурне рішення.
 
 `applyBodySizePolicy(app)` монтується на рівні застосунку
 ([`app.ts:147`](../../../../apps/server/src/app.ts)), а роутери — на `:169`. Тобто
@@ -327,6 +339,8 @@ LLM-ендпоінт `POST /api/internal/categorize` з будь-якої точ
 ~1000:1, при 120-секундному request timeout пам'ять тримається довго.
 
 ### B29 — weekly-digest кладе рядки користувача в **system**-промпт сирими
+
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): блок `ДАНІ` у [`weeklyDigestPrompt.ts`](../../../../apps/server/src/modules/digest/weeklyDigestPrompt.ts) іде через `wrapAndScanUserContext`, у промпті парний `DATA_FENCE_RULE`; тест `weeklyDigestPrompt.test.ts`. Персистентність у ai-memory лишається: огорожа стоїть на вході в LLM, не на виході.
 
 [`weekly-digest.ts:307-321`](../../../../apps/server/src/modules/digest/weekly-digest.ts):
 `systemPrompt` завершується `ДАНІ:\n${dataContext}`, а туди входять
@@ -396,6 +410,8 @@ unlimited) або валідувати JSON у Zod-схемі env, щоб бит
 
 ### B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею
 
+> **Закрито для `ANTHROPIC_BUDGET_*` 2026-09-29:** `strictBoolFromEnv` у [`envHelpers.ts`](../../../../apps/server/src/env/envHelpers.ts) кидає на старті для `ANTHROPIC_BUDGET_ALERT_ENABLED` / `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL` (тест `envHelpers.test.ts`). Решта `boolFromEnv`/`floatFromEnv` без змін.
+
 [`env.ts:28-38`](../../../../apps/server/src/env/env.ts) (`boolFromEnv`): будь-що,
 крім `true|1|false|0`, повертає дефолт **без помилки й без попередження**. Те
 саме `floatFromEnv` для чисел.
@@ -416,6 +432,8 @@ unlimited) або валідувати JSON у Zod-схемі env, щоб бит
 
 ### B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки
 
+> **Закрито 2026-09-29:** `founderIdsFromEnv` валідує формат при парсингу env (запис без пробілів усередині; кінцеві коми дозволені). Тест `envHelpers.test.ts`.
+
 [`env.ts:247`](../../../../apps/server/src/env/env.ts) — `z.string().optional()`,
 без валідації формату. Збіг за id знімає `assertAiQuota`, `consumeToolQuota` і
 Pro-деградацію ([`aiQuota.ts:243-247, 372, 525-527, 650`](../../../../apps/server/src/modules/chat/aiQuota.ts)).
@@ -426,6 +444,8 @@ Pro-деградацію ([`aiQuota.ts:243-247, 372, 525-527, 650`](../../../../
 метрик квоти — рівно та діра, яку hard-блок `AI_QUOTA_DISABLED` і закривав.
 
 ### B18 — редакція пропускає `api_key`, `openrouterKey` і самі формати ключів
+
+> **Частково закрито 2026-09-29:** `openrouterKey` у `REDACT_KEY_NAMES` і pino `redactPaths`; `PII_STRING_PATTERNS` доповнено `sk-ant-*` та `sk-or-v1-*` ([`pii.ts`](../../../../packages/shared/src/lib/pii.ts)). **Лишається:** `api_key` (snake_case), Voyage `pa-*`, payload-поля.
 
 [`pii.ts:49-105`](../../../../packages/shared/src/lib/pii.ts) — матчинг за **точною
 рівністю в нижньому регістрі** ([`pii.ts:142`](../../../../packages/shared/src/lib/pii.ts)),
@@ -469,6 +489,14 @@ LLM-шляхів (coach, digest, categorize) віддадуть заглушку
 Це правильний патерн, якого Anthropic- і OpenRouter-ключі не мають.
 
 ### B10 — стеля Voyage не діє на recall (блокер перед активацією AI-пам'яті)
+
+> **Статус 2026-09-29 (гілка `claude/ai-memory-preactivation`):** частково закрито.
+> Облік невідомої моделі — закрито: `recordVoyageUsage` рахує за консервативною
+> ціною (найдорожчий тариф таблиці) + one-shot warn, `embeddings.ts`.
+> Hard-cap на `recall()` — закрито: `service.ts` повертає `[]` без embed-виклику.
+> `requireAiQuota()` на `/recall` — **не зроблено**, бо `recall_memory` — tool-hop
+> уже оплаченого чат-ходу (AI-5 рішення 1), а квиток продовження цей роут не
+> несе; потрібне продуктове рішення. IP-ключ rate-limit лишається відкритим.
 
 **Спільний патерн із B1, і це головний висновок аудиту.** Два незалежні модулі
 зробили однакову помилку: **акаунтинг витрат вкладено всередину пошуку ціни в
@@ -540,6 +568,8 @@ if (pricePerMTok != null) {
 
 ### B3 — `/api/coach/insight` без огорожі, яку отримав `/api/chat`
 
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `memorySummary` і `snapshotText` в [`coach.ts`](../../../../apps/server/src/modules/chat/coach.ts) огороджені `wrapAndScanUserContext`, додано `DATA_FENCE_RULE` (єдине джерело в `systemPrompt.ts`, текст HubChat не змінено, кеш не інвалідовано). Прогін `eval` стенду не робився (платний).
+
 A2 попереднього аудиту закрили обгорткою `<user_data>` у `buildSystem`. Але
 сусідній AI-роут будує промпт із того самого класу даних — і огорожі не має.
 
@@ -571,6 +601,8 @@ founder свідомо поставив.
 `eval` стенду, бо промпт зміниться.
 
 ### B4 — деградацію моделі coach обходить fallback-ланцюг
+
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `opts.model` тепер `coachAnthropicModel(tier.tier)`: premium → `COACH_MODEL_ANTHROPIC`, standard/floor → `claude-haiku-4-5-20251001`. Літеральне «передати tier-модель» не годилось: `tier.model` — OpenRouter-id, а Anthropic на нього відповість 404, тож tier мапиться на Claude-id.
 
 `resolveProTier` віддає floor-модель (дешеву) при вичерпаній квоті або при
 hard-breach бюджету. Coach передає її як `openrouterModel`
@@ -628,6 +660,8 @@ B1. Поле додано.
 
 ### B8 — асиметрія екранування огорож
 
+> **Закрито 2026-09-29** (`claude/ai-user-data-fencing`): `</tool_output>` тепер екранується тією ж ентіті (`&lt;/tool_output&gt;`), що й `</user_data>`; тест оновлено.
+
 [`toolOutputWrapping.ts:78, 94`](../../../../apps/server/src/modules/chat/toolOutputWrapping.ts):
 `</tool_output>` екранується zero-width-символом (`<​/tool_output>`), а
 `</user_data>` — HTML-ентіті (`&lt;/user_data&gt;`). Обидва працюють, але
@@ -636,6 +670,10 @@ zero-width слабший: модель усе одно бачить послі�
 Варто звести до одного (сильнішого) варіанта.
 
 ### B11 — DLQ AI-пам'яті переживає видалення акаунта
+
+> **Статус 2026-09-29:** закрито кодом. `ai_memory_ingest_failed` чиститься в
+> `dataRights.ts` (видалення акаунта) і в `vectorStore.deleteAllForUser`
+> (`forgetUser` / «Очистити памʼять»). GDPR-експорт DLQ досі не включає.
 
 [`migrations/069_ai_memory_ingest_failed.sql:50-61`](../../../../apps/server/src/migrations/069_ai_memory_ingest_failed.sql):
 `ai_memory_ingest_failed.payload_json` містить **повний текст** пам'яті, а
@@ -656,6 +694,9 @@ GDPR-експорт ці рядки теж не включає — тобто д
 пряма GDPR-експозиція, і фіксити її треба разом із B10.
 
 ### B12 — очищення пам'яті без tombstone: in-flight ingest повертає стерте
+
+> **Статус 2026-09-29:** відкрито (свідомо не чіпали). DLQ-частина закрита в B11;
+> epoch/tombstone для задач BullMQ, що вже в Redis, не робили.
 
 [`clearRoute.ts:16`](../../../../apps/server/src/modules/ai-memory/clearRoute.ts)
 робить простий `DELETE FROM ai_memories WHERE user_id = $1`. Задачі BullMQ, уже

@@ -263,6 +263,13 @@ export function createPgVectorStore(pool: pg.Pool): VectorStore {
         `DELETE FROM ai_memories WHERE user_id = $1`,
         [userId],
       );
+      // B11: DLQ (`ai_memory_ingest_failed`, міграція 069) тримає повний
+      // текст пам'яті в `payload_json`, а `user_id` без FK — каскад його не
+      // дістає, і replay міг би воскресити стерте. Чистимо разом.
+      await pool.query(
+        `DELETE FROM ai_memory_ingest_failed WHERE user_id = $1`,
+        [userId],
+      );
       return result.rowCount ?? 0;
     },
 

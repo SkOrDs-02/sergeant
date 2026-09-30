@@ -10,6 +10,7 @@ import {
   syncStreamConnectionsActive,
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../../lib/timing.js";
+import { decryptOpRowForPull } from "../../lib/healthTextCrypto.js";
 
 /**
  * Stage 5 / PR #041 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — real-time pull
@@ -145,7 +146,7 @@ function rowToStreamOp(r: PullRow): SyncV2StreamOp {
     id: Number(r.id),
     table: r.table_name,
     op: r.op,
-    row: r.row,
+    row: decryptOpRowForPull(r.table_name, r.row),
     client_ts: r.client_ts.toISOString(),
     server_ts: r.server_ts.toISOString(),
     origin_device_id: r.origin_device_id,

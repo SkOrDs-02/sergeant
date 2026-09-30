@@ -492,6 +492,23 @@ describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
     expect(purgeCall![1]).toEqual(["u:user-1"]);
   });
 
+  // B11 (ai-pipeline-2026-08-05): DLQ AI-пам'яті без FK на user.
+  it("purges ai_memory_ingest_failed rows for the deleted user", async () => {
+    const pool = mockPoolWithTransaction();
+    await purgeUserData(pool, "user-1");
+
+    const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
+      .results[0]?.value;
+    const calls = (client.query as ReturnType<typeof vi.fn>).mock.calls;
+    const purgeCall = calls.find(
+      (c: unknown[]) =>
+        typeof c[0] === "string" &&
+        (c[0] as string).includes("DELETE FROM ai_memory_ingest_failed"),
+    );
+    expect(purgeCall).toBeDefined();
+    expect(purgeCall![1]).toEqual(["user-1"]);
+  });
+
   // Canon (this audit): hard-delete via FK CASCADE only — no separate
   // ai_memories soft-delete step. A prior revision soft-deleted
   // ai_memories.deleted_at and then hard-deleted "user" two statements

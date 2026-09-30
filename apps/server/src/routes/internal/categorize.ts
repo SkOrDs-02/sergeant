@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { z } from "zod";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
@@ -21,6 +22,17 @@ export const CATEGORIES = [
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
+
+/**
+ * Wire-схема `POST /api/internal/categorize`. `description` обмежений 500
+ * символами: без стелі 128 КБ тіла (~32k токенів) йшли в LLM за один виклик
+ * (аудит ai-pipeline B27). Непорожність — після trim (див. handler).
+ */
+export const CategorizeBodySchema = z.object({
+  description: z.string().trim().min(1).max(500),
+  amount: z.number().finite().nullish(),
+  mcc: z.number().int().min(0).max(9999).nullish(),
+});
 
 export interface CategorizeArgs {
   description: string;
@@ -173,15 +185,15 @@ export function createCategorizeInternalRouter(): Router {
   const r = Router();
 
   r.post("/api/internal/categorize", async (req, res) => {
-    const body = req.body as CategorizeArgs;
-    // `.trim()`-перевірка дзеркалить інваріант `categorizeTransaction`
-    // (якщо description порожній після trim — функція throw-ить, який
-    // catch-блок нижче прикриє як 502 "AI service error"). Робимо це
-    // тут, щоб whitespace-only payload отримав 400, а не misleading 502.
-    if (!body?.description?.trim()) {
+    // Zod замість `req.body as CategorizeArgs`. Trim-перевірка дзеркалить
+    // інваріант `categorizeTransaction` (порожній після trim → throw → 502),
+    // тож whitespace-only payload отримує 400, а не misleading 502.
+    const parsed = CategorizeBodySchema.safeParse(req.body);
+    if (!parsed.success) {
       res.status(400).json({ error: "description is required" });
       return;
     }
+    const body: CategorizeArgs = parsed.data;
     try {
       const result = await categorizeTransaction({
         description: body.description,
