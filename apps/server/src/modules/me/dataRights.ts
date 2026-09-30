@@ -14,6 +14,7 @@ import {
   PUSH_DAILY_CAP_DEFAULT,
 } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
+import { decryptHealthText } from "../../lib/healthTextCrypto.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
 import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
 
@@ -389,7 +390,17 @@ async function fetchModuleTables(
         `SELECT * FROM ${table} WHERE user_id = $1`,
         [userId],
       );
-      return [table, rowArray(rows)] as const;
+      // GDPR: людина забирає свій текст, а не шифротекст (spec
+      // health-text-encryption). Legacy plaintext проходить без змін.
+      const out =
+        table === "fizruk_injuries"
+          ? rows.map((r) =>
+              typeof r["note"] === "string"
+                ? { ...r, note: decryptHealthText(r["note"]) }
+                : r,
+            )
+          : rows;
+      return [table, rowArray(out)] as const;
     }),
   );
   return Object.fromEntries(results);
