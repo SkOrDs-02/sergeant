@@ -962,6 +962,12 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    // КБЖВ-план стоїть за `requireHealthConsent()` (#1250): без згоди на
+    // дані про здоровʼя роут віддає 403. Контракт описує людину, що згоду
+    // дала, тож перший запит у БД (перевірка згоди) її й повертає.
+    queryMock.mockResolvedValueOnce({
+      rows: [{ health_data_consent: true }],
+    });
     // The pact envelope is `{ plan, rawText: null }`. The day-plan
     // handler builds that envelope from the normalised plan + the raw
     // model output — for rawText to be `null` the model JSON must
