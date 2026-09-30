@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TranscribeModule } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { PendingVoiceChip } from "./voice/PendingVoiceChip";
@@ -42,6 +43,12 @@ export interface VoiceMicButtonProps {
    * у Web Speech-fallback.
    */
   promptHint?: string;
+  /**
+   * Модуль, з якого йде голос (`?module=` у `/api/transcribe`). Передавай
+   * ЗАВЖДИ: для `nutrition`/`fizruk` сервер без згоди на дані про здоровʼя
+   * відповідає 403 до Groq (GDPR Art. 9). Без тегу гейт не спрацює.
+   */
+  module?: TranscribeModule;
   /**
    * Якщо `true` (за замовчуванням), після успішного розпізнавання
    * показуємо preview-чипі з 3-секундним таймером авто-підтвердження
@@ -94,6 +101,7 @@ export function VoiceMicButton({
   label,
   disabled = false,
   promptHint,
+  module,
   confirmBeforeCommit = true,
   caption,
   captionWrapperClassName,
@@ -151,6 +159,7 @@ export function VoiceMicButton({
   const groq = useGroqVoiceInput({
     lang,
     promptHint,
+    module,
     onResult: handleTranscript,
     onError,
     onProviderUnavailable: () => {

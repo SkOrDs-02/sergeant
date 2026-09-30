@@ -343,6 +343,7 @@ export function WorkoutItemCard({
                 + Підхід
               </Button>
               <VoiceMicButton
+                module="fizruk"
                 size="md"
                 label="Голосовий ввід підходу"
                 // Domain prompt steers Whisper toward the canonical
