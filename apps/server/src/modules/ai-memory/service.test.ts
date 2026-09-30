@@ -506,3 +506,89 @@ describe("AiMemoryService — per-user consent", () => {
     expect(store.queryCalls).toBe(0);
   });
 });
+
+describe("AiMemoryService — згода на дані про здоровʼя (GDPR Art. 9)", () => {
+  // Рішення власника 2026-09-29: без `healthDataConsent` health-рядки не
+  // пишуться і не читаються (RAG чату, recall_memory). Ознаки — з metadata,
+  // яку самі продюсери кладуть у рядок (`healthRows.ts`).
+  const rows = [
+    {
+      source: "profile" as const,
+      sourceRef: "p1",
+      content: "тиск 140/90",
+      metadata: { category: "health" },
+    },
+    {
+      source: "profile" as const,
+      sourceRef: "p2",
+      content: "любить каву",
+      metadata: { category: "preferences" },
+    },
+    {
+      source: "digest" as const,
+      sourceRef: "w1",
+      content: "звіт зі спортом",
+      metadata: { sections: { finyk: true, fizruk: true, nutrition: false } },
+    },
+    {
+      source: "digest" as const,
+      sourceRef: "w2",
+      content: "звіт лише про гроші",
+      metadata: { sections: { finyk: true, fizruk: false, nutrition: false } },
+    },
+  ];
+
+  async function seed(healthConsent: boolean | "throws") {
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+      isConsentEnabled: vi.fn().mockResolvedValue(true),
+      isHealthConsentEnabled:
+        healthConsent === "throws"
+          ? vi.fn().mockRejectedValue(new Error("db down"))
+          : vi.fn().mockResolvedValue(healthConsent),
+    });
+    await svc.remember(rows.map((r) => ({ userId: "u1", ...r })));
+    return { svc, store };
+  }
+
+  it("без згоди: health-рядки не пишуться, решта пишеться", async () => {
+    const { store } = await seed(false);
+    expect(store.rows.map((r) => r.sourceRef).sort()).toEqual(["p2", "w2"]);
+  });
+
+  it("збій перевірки згоди = fail-closed (health не пишеться)", async () => {
+    const { store } = await seed("throws");
+    expect(store.rows.map((r) => r.sourceRef).sort()).toEqual(["p2", "w2"]);
+  });
+
+  it("зі згодою: пишеться все", async () => {
+    const { store } = await seed(true);
+    expect(store.rows).toHaveLength(4);
+  });
+
+  it("recall без згоди відфільтровує вже збережені health-рядки; зі згодою — віддає всі", async () => {
+    // Рядки лягли, поки згода була; потім її відкликали.
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    let granted = true;
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+      isConsentEnabled: vi.fn().mockResolvedValue(true),
+      isHealthConsentEnabled: async () => granted,
+    });
+    await svc.remember(rows.map((r) => ({ userId: "u1", ...r })));
+
+    const withConsent = await svc.recall({ userId: "u1", query: "q" });
+    expect(withConsent).toHaveLength(4);
+
+    granted = false;
+    const without = await svc.recall({ userId: "u1", query: "q" });
+    expect(without.map((r) => r.sourceRef).sort()).toEqual(["p2", "w2"]);
+  });
+});

@@ -9,6 +9,7 @@ import {
 } from "../../http/schemas.js";
 import {
   ExternalServiceError,
+  ForbiddenError,
   ValidationError,
   makeAiProviderError,
 } from "../../obs/errors.js";
@@ -25,7 +26,13 @@ import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { getAiMemory } from "../ai-memory/bootstrap.js";
 import { buildWeeklyDigestPrompt } from "./weeklyDigestPrompt.js";
 import { replaceLongDash } from "../../lib/modelText.js";
-import { countModuleSignals, MIN_SIGNAL_MODULES } from "@sergeant/shared";
+import {
+  countModuleSignals,
+  HEALTH_CONSENT_REQUIRED_CODE,
+  HEALTH_CONSENT_REQUIRED_MESSAGE,
+  MIN_SIGNAL_MODULES,
+} from "@sergeant/shared";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
 
 export { buildWeeklyDigestPrompt };
 
@@ -199,6 +206,11 @@ export interface WeeklyDigestHandlerOptions {
    * Корисно у тестах і у scoped deployments (e.g. e2e з `false`).
    */
   fallbackOnError?: boolean;
+  /**
+   * Підмінка перевірки `healthDataConsent` для тестів. Production читає
+   * збережену згоду з БД (`resolveHealthConsent`, fail-closed).
+   */
+  resolveHealthConsent?: (userId: string | undefined) => Promise<boolean>;
 }
 
 /**
@@ -212,7 +224,18 @@ export function createWeeklyDigestHandler(
   return async function handler(req: Request, res: Response): Promise<void> {
     const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-    const parsed = parseBody(WeeklyDigestSchema, req);
+    const rawParsed = parseBody(WeeklyDigestSchema, req);
+
+    // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
+    // без збереженої згоди секції Фізрука й Харчування відкидаємо ДО
+    // лічильника сигналів, промпту й шаблонного fallback-у — ні в модель, ні
+    // в `ai_memories` вони не потраплять. Фінанси/звички звіт не ламає.
+    const healthConsent = await (
+      options.resolveHealthConsent ?? resolveHealthConsent
+    )((req as WithSessionUser).user?.id);
+    const parsed: WeeklyDigestRequest = healthConsent
+      ? rawParsed
+      : { ...rawParsed, fizruk: null, nutrition: null };
     const { weekKey, weekRange, finyk, fizruk, nutrition, routine } = parsed;
 
     // Гейт СТОЇТЬ ПЕРЕД побудовою промпту й перед мережевим викликом — тиждень
@@ -220,6 +243,16 @@ export function createWeeklyDigestHandler(
     // нулів, ані палити виклик LLM. Заміняє стару структурну перевірку
     // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
     if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
+      // Якби health-секції дали б рівно той сигнал, якого бракує, — це не
+      // «замало даних», а «потрібна згода»: люди мають знати, що робити.
+      if (
+        !healthConsent &&
+        countDigestSignalModules(rawParsed) >= MIN_SIGNAL_MODULES
+      ) {
+        throw new ForbiddenError(HEALTH_CONSENT_REQUIRED_MESSAGE, {
+          code: HEALTH_CONSENT_REQUIRED_CODE,
+        });
+      }
       throw new ValidationError(
         "Замало даних за цей тиждень для звіту. Додай операцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
         { code: "INSUFFICIENT_DATA" },

@@ -181,6 +181,10 @@ RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
 #     CRITICAL/HIGH через bundle Go-stdlib `esbuild`.
 #   - `esbuild` / `@esbuild+*` / `tsx` — самі Go-binary артефакти.
 #   - `rollup` / `@rollup+*` — peer Vite-у, аналогічна логіка.
+#   - `image-size` — транзитив `metro` (бандлер React Native). Доїжджає сюди
+#     через auto-install peers: `@better-auth/expo` → drizzle-orm → expo-sqlite
+#     → expo → react-native → metro. Сервер metro не виконує, а Trivy фейлить
+#     HIGH (CVE-2025-71329/71330, фікс лише в мажорі 2.0.3).
 #
 # Distroless runtime НЕ виконує жодного з цих бінарів (немає shell-у), але
 # Trivy все одно scan-ить файли і фейлить, тому позбавляємось їх.
@@ -193,7 +197,8 @@ RUN find node_modules -maxdepth 3 -type d \
          -o -path 'node_modules/.pnpm/@esbuild+*' \
          -o -path 'node_modules/.pnpm/tsx@*' \
          -o -path 'node_modules/.pnpm/rollup@*' \
-         -o -path 'node_modules/.pnpm/@rollup+*' \) \
+         -o -path 'node_modules/.pnpm/@rollup+*' \
+         -o -path 'node_modules/.pnpm/image-size@*' \) \
       -prune -exec rm -rf {} +
 
 # ──────────────────────────────────────────────────────────────────────────────

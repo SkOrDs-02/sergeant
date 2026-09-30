@@ -1866,6 +1866,30 @@ export type BillingProvidersResponse = z.infer<
 
 const TRANSCRIBE_MAX_PROMPT_LENGTH = 1024;
 
+/**
+ * Модулі, з яких клієнт декларує голосовий запит (`?module=`).
+ *
+ * AI-NOTE: тег ДЕКЛАРАТИВНИЙ. Сервер не бачить, з якого екрана справді
+ * пішов запит, тож клієнт може збрехати або не передати тег зовсім. Це
+ * осмислений компроміс (рішення власника 2026-09-30): гейт згоди ловить
+ * чесний клієнт і не ламає старі, а не захищає від зловмисника з власним
+ * акаунтом (він і так може сам надиктувати що завгодно).
+ */
+export const TRANSCRIBE_MODULES = [
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "hub",
+] as const;
+export type TranscribeModule = (typeof TRANSCRIBE_MODULES)[number];
+
+/** Модулі, чий голос — дані про здоровʼя (GDPR Art. 9): потрібна `healthDataConsent`. */
+export const TRANSCRIBE_HEALTH_MODULES: readonly string[] = [
+  "nutrition",
+  "fizruk",
+];
+
 export const TranscribeQuerySchema = z.object({
   language: z
     .string()
@@ -1880,6 +1904,16 @@ export const TranscribeQuerySchema = z.object({
     .max(TRANSCRIBE_MAX_PROMPT_LENGTH)
     .optional()
     .describe("Доменна підказка (списки вправ, продуктів тощо)."),
+  // Навмисно `string`, а не enum: невідомий тег має поводитись як відсутній
+  // (відкрито), а не давати 400 старому/новішому клієнту.
+  module: z
+    .string()
+    .trim()
+    .max(32)
+    .optional()
+    .describe(
+      "Модуль-виклик: nutrition | fizruk | finyk | routine | hub. Для nutrition/fizruk без згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED. Відсутній або невідомий — без гейту.",
+    ),
 });
 export type TranscribeQuery = z.infer<typeof TranscribeQuerySchema>;
 
