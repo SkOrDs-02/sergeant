@@ -1,7 +1,7 @@
 # SPEC: вісь дії для хабу (A1 «дві купи»)
 
-> **Last touched:** 2026-09-20 by @claude (статус зведено з кодом: PR 1 і PR 2 в `main`). **Next review:** 2027-04-26.
-> **Status:** Active. PR 1 і PR 2 з § Нарізки в `main`: [`HubDashboard.tsx`](../../../apps/web/src/core/hub/HubDashboard.tsx) рендерить `NowPile`/`ClosedTodayPile`/`ModuleRail` за віссю, `ModuleSwitcher` уніфікований над `ModuleRail`, прапорець `hub_action_axis_v1` увімкнений за замовчуванням. **Відкритий рівно PR 3**: прибрати стару сітку, `calmMode`, `density` і сам прапорець після циклу kill-switch.
+> **Last touched:** 2026-09-30 by @claude (PR 3 виконано: прапорець і стара сітка зняті); 2026-09-20 by @claude (статус зведено з кодом: PR 1 і PR 2 в `main`). **Next review:** 2027-04-26.
+> **Status:** Active. PR 1, PR 2 і PR 3 з § Нарізки виконано. PR 3 (2026-09-30, гілка `claude/hub-action-axis-cleanup`) знято за рішенням власника без очікування двотижневого циклу kill-switch і без даних вимірювання: прапорець `hub_action_axis_v1`, `HubModulesGrid`, `BentoCard`/`BentoCardPeek`, `adaptiveSort`, `nativeSortable`, режим редагування, `HubInsightsPanel`, `calmMode`, `density`, `showTodayFocus`/`adaptiveBento` у Налаштуваннях і міграція `density` прибрані. Вісь дії — єдина головна. Лишилось поза скоупом (ADR-0094): мобільний хаб, `STORAGE_KEYS.DASHBOARD_ORDER`, `normalizeDashboardOrder`, `DashboardDensity` у `@sergeant/shared`.
 
 <!-- Спека несе ПРОДУКТОВІ рішення, ухвалені власником в інтерв'ю 2026-09-17
 (три раунди по чотири питання, кожне — вибір з наслідком), поверх рішень
@@ -150,7 +150,7 @@ https://claude.ai/artifact/MKfEeiJTQU3zmwXSX9Z9Xp. -->
   `useNowItems()` з dismiss в обидва сховища, тести паритету. UI не чіпається.
 - **PR 2 — вісь.** Купи, рейок, уніфікація `ModuleSwitcher`, прапорець,
   налаштування, канон `hub-coach.md` § 2 + журнал, § P3, аудит.
-- **PR 3 — після циклу kill-switch.** Прибрати `HubModulesGrid`, `BentoCard*`,
+- **PR 3 — після циклу kill-switch. ВИКОНАНО 2026-09-30** (за рішенням власника, без очікування циклу; `dashboardStore` більше не має ключа порядку веб-сторінки, спільний ключ лишився для мобільного). Прибрати `HubModulesGrid`, `BentoCard*`,
   `adaptiveSort`, `nativeSortable`, режим редагування, ключ порядку в
   `dashboardStore`, `calmMode`, `density`, прапорець. **[І]**.
 

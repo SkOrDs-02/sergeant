@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { computeStreakDays } from "./dashboardKpis.js";
 import {
@@ -144,5 +144,54 @@ describe("computeWeeklyStreakBreakdown", () => {
     const b = computeWeeklyStreakBreakdown(workouts, { now: NOW });
     expect(b.weeks).toBe(1);
     expect(b.brokenOnWeekStart).toBeNull();
+  });
+});
+
+describe("computeWeeklyStreakBreakdown — годинник пристрою (ADR-0078)", () => {
+  const originalTz = process.env["TZ"];
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
+  });
+
+  it("Мексика: тренування о 00:30 понеділка за пристроєм — у новому тижні", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    // Понеділок 2026-07-27 00:30 локально = 06:30Z; неділя 23:30 = 05:30Z.
+    // За Києвом обидва — вже понеділок 27-го, тож старий код рахував би їх
+    // в одному тижні.
+    const now = new Date("2026-07-29T18:00:00.000Z");
+    const workouts = [
+      workout("2026-07-27T05:30:00.000Z"), // неділя 26-го локально
+      workout("2026-07-27T06:30:00.000Z"), // понеділок 27-го локально
+      workout("2026-07-28T18:00:00.000Z"),
+    ];
+    const b = computeWeeklyStreakBreakdown(workouts, { now });
+    expect(b.currentWeekWorkouts).toBe(2);
+    expect(b.currentWeekPending).toBe(false);
+    expect(b.weeks).toBe(1);
+  });
+
+  it("Токіо: ключ обриву — календарний понеділок пристрою", () => {
+    process.env["TZ"] = "Asia/Tokyo"; // UTC+9
+    const now = new Date("2026-07-29T03:00:00.000Z");
+    // Пон. 2026-07-20 00:30 JST = 07-19T15:30Z: за Києвом це ще неділя 19-го
+    // (18:30), тобто інший тиждень. Пристрій: тиждень 07-20.
+    const workouts = [
+      ...weekOf("2026-07-27", 2),
+      workout("2026-07-19T15:30:00.000Z"), // 07-20 00:30 JST
+    ];
+    const b = computeWeeklyStreakBreakdown(workouts, { now });
+    expect(b.weeks).toBe(1);
+    expect(b.brokenOnWeekStart).toBe("2026-07-20");
+  });
+
+  it("київський пристрій дає той самий результат, що й раніше", () => {
+    process.env["TZ"] = "Europe/Kyiv";
+    const workouts = [
+      ...weekOf("2026-07-27", 2),
+      ...weekOf("2026-07-20", 3),
+      ...weekOf("2026-07-13", 2),
+    ];
+    expect(computeWeeklyStreakBreakdown(workouts, { now: NOW }).weeks).toBe(3);
   });
 });

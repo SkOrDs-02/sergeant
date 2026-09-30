@@ -66,7 +66,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 - [x] **Marketing-лендінг існує** як окремий workspace `apps/landing` (Vite + React 18 + Tailwind 4) з hero, module-showcase, cross-module-секцією і Telegram-CTA. Див. [§2](#2-лендінг--стан-і-що-лишилось).
 - [x] **Юридичний пак опубліковано** — `apps/web/src/core/legal/LegalPage.tsx` містить 4 документи (Privacy Policy, Terms, Cookie Policy, Публічна оферта), чинні з 12.07.2026. **Лишається:** підставити реквізити ФОП (зараз `CONTROLLER_PLACEHOLDER` + IBAN — плейсхолдери). Деталі — [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#1-юридичне-та-compliance).
 - [x] **Telegram-вейтліст живий** — бот `@serg_qa_bot`, webhook `POST /api/v1/telegram/webhook` (`apps/server/src/modules/telegram/waitlistBot.ts`), таблиця `telegram_waitlist` (міграція 089), ручна розсилка `scripts/telegram/broadcast-waitlist.mjs`.
-- [ ] **Domain `sergeant.com.ua` зареєстрований** і вказує на Vercel apex (status TBD — open question).
+- [x] **Domain `sergeant.com.ua` зареєстрований** і вказує на Vercel apex: домен живий ([agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)). Search Console лишається відкритим.
 - [ ] **Telegram-канал «Sergeant 🎖️»** створений (окремо від бота вейтліста).
 - [ ] **Founder написав bullet-список того, які 10 фіч web-стеку він вважає shippable** (а не «майже готово»).
 
@@ -115,7 +115,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 
 ### 2.3 Що лишилось
 
-- [ ] **Домен.** `sergeant.com.ua` не зареєстрований. Розділення apex (лендінг) ↔ `app.` (PWA) — досі цільова схема, але не діюча.
+- [x] **Домен.** `sergeant.com.ua` зареєстрований і живий ([agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)). Search Console лишається відкритим. Розділення apex (лендінг) ↔ `app.` (PWA) — перевір за фактичним DNS.
 - [ ] **Прив'язати Vercel-проєкт.** `apps/landing/vercel.json` у репо є; лишається створити окремий Vercel-проєкт і навести на нього apex-домен.
 - [ ] **PostHog production config.** Підтвердити `VITE_POSTHOG_KEY`/host і що події `landing_viewed` + `landing_telegram_clicked` доходять у вибраний проєкт.
 - [ ] **Юзернейм бота.** `serg_qa_bot` читається як внутрішній тестовий. Перейменування вб'є вже роздані deep link-и — робити **до** першої публічної роздачі, не після ([`telegram-waitlist.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/90-work/planning/specs/archive/telegram-waitlist.md)).
@@ -142,7 +142,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 
 **Concrete actions:**
 
-- [ ] **Купити `sergeant.com.ua`** (~₴500/рік через Imena.ua або UA-DNS). Налаштувати DNS на Vercel.
+- [x] **Купити `sergeant.com.ua`** - виконано, домен живий ([agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)). DNS на Vercel налаштовано; Search Console лишається відкритим.
 - [ ] **Deploy `apps/landing` на Vercel:** окремий Vercel-проєкт (конфіг уже є — `apps/landing/vercel.json`); apex `sergeant.com.ua` → landing, subdomain `app.sergeant.com.ua` → existing `apps/web`. Тест: SSL працює, `public/og.png` рендериться в Telegram-preview.
 - [ ] **Зареєструвати webhook бота:** `node scripts/telegram/setup-webhook.mjs` (після деплою серверного ендпоінта, не раніше — інакше Telegram піде в exponential backoff). Перевірка стану — `--check`.
 - [ ] **BotFather-налаштування:** `/setprivacy → Enable` (обов'язково — інакше бот читає переписку бета-групи), `/setdescription`, `/setabout`, `/setuserpic`. Порожній опис на екрані «почати діалог» ріже конверсію рівно в тій точці, заради якої все робиться.
@@ -217,7 +217,7 @@ Phase 1 — це **15-тижнева кампанія від "web-PWA шипит
 - [ ] **Тестова відправка на власний `chat_id`** перед реальною хвилею.
 - [ ] **Telegram-група «Sergeant Beta»:** приватна, вступ лише за інвайт-лінком із розсилки. Mini-rule «один пост — один bug-report АБО одна ідея».
 - [ ] **In-app feedback widget:** уже shipped — Settings → «Фідбек», події `feedback_widget_opened` / `feedback_submitted` у PostHog ([`feedback-loop.md`](../../../../operations/observability/feedback-loop.md)). Перевірити, що працює, не будувати заново.
-- [ ] **Bug-tracking templates:** GitHub Issue template `bug-from-beta.md` з полями: device, OS, browser, кроки, screenshot.
+- [ ] **Bug-tracking templates:** GitHub Issue template `bug-from-beta.md` з полями: device, OS, browser, кроки, screenshot. Шаблону немає (перевірено 2026-09-29), канал фідбеку - рішення власника.
 - [ ] **Dry-run launch day:** запустити демо-юзера-від-нуля у Chrome incognito + mobile-Chrome. Прогнати критичний flow: signup → Welcome → перший модуль → перший запис. Фіксувати кожен bug.
 - [ ] **Реквізити ФОП у юридичний пак:** підставити ПІБ, РНОКПП, адресу та IBAN замість плейсхолдерів у `apps/web/src/core/legal/LegalPage.tsx`. Тексти вже чинні з 12.07.2026 — бракує лише реквізитів.
 - [ ] **Сповістити founder-pulse Telegram alert channel:** додати alert на «signup spike > 10/hour» (закрита бета не повинна мати спайків — це signal помилкового сценарію).

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { STORAGE_KEYS, normalizeDashboardDensity } from "@sergeant/shared";
+import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   safeReadLSValidated,
   safeReadStringLS,
@@ -22,7 +22,6 @@ const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;
  * рядком тут — питання часу, а помилка була б тихою (значення просто
  * «не знайшлось», і людина побачила б дефолт).
  */
-export const HUB_PREF_DENSITY = "density";
 export const HUB_PREF_MONDAY_AUTO = "mondayAutoDigest";
 
 function loadHubPrefs(): HubPrefs {
@@ -134,13 +133,16 @@ function saveHubPref(key: string, value: unknown): void {
 }
 
 /**
- * Переїзд двох хабових налаштувань зі своїх ключів у спільний мішок.
+ * Переїзд хабового налаштування зі свого ключа у спільний мішок.
  *
- * Щільність дашборда і автогенерація дайджесту щопонеділка жили кожна у
- * власному ключі `localStorage` і НЕ їхали на акаунт — залишок знахідки
- * PR-S13, яку для пʼяти тумблерів головної закрив PR #1195. Мішок
- * `hub_prefs_v1` уже має серверний канал, тож переїзд дає їм синхронізацію
- * без нової колонки: обидва — скаляри, а мішок навмисно відкритий.
+ * Автогенерація дайджесту щопонеділка жила у власному ключі
+ * `localStorage` і НЕ їхала на акаунт — залишок знахідки PR-S13, яку для
+ * тумблерів головної закрив PR #1195. Мішок `hub_prefs_v1` уже має
+ * серверний канал, тож переїзд дає їй синхронізацію без нової колонки:
+ * це скаляр, а мішок навмисно відкритий. Щільність дашборда мігрувала
+ * тут само, доки жила стара сітка; з її зняттям (`hub-action-axis.md`
+ * PR 3) міграцію прибрано, а збережене значення `density` у мішку лишається
+ * нечитаним.
  *
  * AI-DANGER: викликати ЛИШЕ ПІСЛЯ гідратації, і це не стилістика.
  * Запис у мішок іде через `saveHubPref` → `pushHubPrefs`, а той зсуває
@@ -158,14 +160,6 @@ export function migrateLegacyHubPrefs(): void {
   const prefs = loadHubPrefs();
   const next: HubPrefs = { ...prefs };
   let changed = false;
-
-  if (!(HUB_PREF_DENSITY in prefs)) {
-    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
-    if (raw !== null) {
-      next[HUB_PREF_DENSITY] = normalizeDashboardDensity(raw);
-      changed = true;
-    }
-  }
 
   if (!(HUB_PREF_MONDAY_AUTO in prefs)) {
     // Історична форма — рядок «1»/«0», причому ВІДСУТНІСТЬ означала

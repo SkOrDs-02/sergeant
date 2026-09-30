@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import type { Workout } from "@sergeant/fizruk-domain";
 import {
@@ -10,6 +10,7 @@ import {
   formatAddExerciseDoneLabel,
   formatActiveDuration,
   MUSCLE_GROUP_ORDER,
+  todayLocalDateString,
 } from "./Workouts.helpers";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -278,6 +279,36 @@ describe("defaultPastWorkoutTimes", () => {
       expect(times?.inFuture, iso).toBe(false);
       expect(times?.implausiblyLong, iso).toBe(false);
     }
+  });
+});
+
+/**
+ * ADR-0078 (рішення власника 2026-09-29): дефолтна дата ретро-запису — доба
+ * ПРИСТРОЮ. Раніше була київська й для користувача поза Києвом підставляла
+ * «завтра». Пояс пристрою емулюємо через `process.env["TZ"]`.
+ */
+describe("todayLocalDateString", () => {
+  const originalTz = process.env["TZ"];
+  afterEach(() => {
+    vi.useRealTimers();
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
+  });
+
+  it("Мексика 23:30 (у Києві вже наступна доба) — лишається сьогоднішній день пристрою", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    // 2026-09-02 23:30 local = 2026-09-03T05:30Z = 08:30 у Києві.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-03T05:30:00Z"));
+    expect(todayLocalDateString()).toBe("2026-09-02");
+  });
+
+  it("Токіо 00:30 (у Києві ще вчора) — вже новий день пристрою", () => {
+    process.env["TZ"] = "Asia/Tokyo"; // UTC+9
+    // 2026-09-03 00:30 JST = 2026-09-02T15:30Z = 17:30 у Києві 02-го.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-02T15:30:00Z"));
+    expect(todayLocalDateString()).toBe("2026-09-03");
   });
 });
 

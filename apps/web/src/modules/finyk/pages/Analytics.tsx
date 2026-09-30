@@ -94,7 +94,10 @@ export interface AnalyticsProps {
    * Аналітику не глухим кутом: доти вона казала «скільки», але дійти від
    * числа до самих операцій було ніяк.
    */
-  onSelectCategory?: (categoryId: string) => void;
+  onSelectCategory?: (
+    categoryId: string,
+    period: { year: number; month: number },
+  ) => void;
   /**
    * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти сторінка
    * не приймала цей проп узагалі, тож перемикач з Огляду не діяв тут —
@@ -671,7 +674,14 @@ export function Analytics({
                 total={distributionTotal}
                 className=""
                 showBalance={showBalance}
-                {...(onSelectCategory ? { onSelectCategory } : {})}
+                {...(onSelectCategory
+                  ? {
+                      // Несемо вибраний місяць Аналітики (month 1-based),
+                      // інакше Операції відкриються на поточному (PR-F6).
+                      onSelectCategory: (categoryId: string) =>
+                        onSelectCategory(categoryId, { year, month }),
+                    }
+                  : {})}
               />
             </Suspense>
           )}

@@ -39,11 +39,11 @@
 - [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) — fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі _(2026-09-25)_
 - [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
 
-## 🔵 В роботі — 82 відкриті документи
+## 🔵 В роботі — 80 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 82       |
+| Активні спеки | 80       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -62,7 +62,6 @@ Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pend
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
-- [`work/specs/kv-warm-cache-user-partition.md`](./work/specs/kv-warm-cache-user-partition.md) — SPEC: KV-кеш читає розділ залогіненого користувача → **agent-ready** _(Активні спеки)_
 
 ## 🧱 Стек
 

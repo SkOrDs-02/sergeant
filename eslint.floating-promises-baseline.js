@@ -11,6 +11,7 @@
 //
 // Baseline captured 2026-09-16: 198 findings across 83 files.
 // 2026-09-29: TrialBanner.tsx fixed and dropped (82 files).
+// 2026-09-30: HubInsightsBlock.tsx no longer floats a promise (81 files).
 export const floatingPromisesBaseline = [
   "apps/mobile/src/components/ui/ConfirmDialog.tsx",
   "apps/mobile/src/components/ui/SwipeToAction.tsx",
@@ -44,7 +45,6 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/hooks/useHubUIState.ts",
   "apps/web/src/core/hub/HubChatOverlay.tsx",
   "apps/web/src/core/hub/HubChatPage.tsx",
-  "apps/web/src/core/hub/HubInsightsBlock.tsx",
   "apps/web/src/core/hub/HubSettingsPage.tsx",
   "apps/web/src/core/hub/chat/useChatSend.ts",
   "apps/web/src/core/hub/dashboard/useMondayAutoDigest.ts",

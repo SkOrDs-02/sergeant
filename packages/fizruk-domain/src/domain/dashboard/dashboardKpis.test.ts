@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   DEFAULT_WEIGHT_WINDOW_DAYS,
@@ -148,33 +148,69 @@ describe("computeWeeklyTotals", () => {
     });
   });
 
-  // Domain invariant: week boundaries are Europe/Kyiv, not the host tz.
-  // Mon 2026-06-08 00:00 Kyiv (EEST, UTC+3) = 2026-06-07T21:00:00Z.
-  it("anchors the week boundary to Europe/Kyiv regardless of host tz", () => {
-    const now = new Date("2026-06-10T12:00:00Z"); // Wed of that week
-    const workouts = [
-      strengthWorkout("2026-06-07T20:30:00Z", [[100, 1]]), // Sun 23:30 Kyiv → out
-      strengthWorkout("2026-06-07T21:30:00Z", [[60, 5]]), // Mon 00:30 Kyiv → in
-    ];
-    expect(computeWeeklyTotals(workouts, now)).toEqual({
-      count: 1,
-      volumeKg: 300,
+  // ADR-0078 (рішення власника 2026-09-29): межі тижня — за годинником
+  // ПРИСТРОЮ. Пояс пристрою емулюємо через `process.env["TZ"]`.
+  describe("device-clock week (ADR-0078)", () => {
+    const originalTz = process.env["TZ"];
+    afterEach(() => {
+      if (originalTz === undefined) delete process.env["TZ"];
+      else process.env["TZ"] = originalTz;
     });
-  });
 
-  // DST week: Kyiv springs forward Sun 2026-03-29 03:00 EET → 04:00 EEST,
-  // so this week is 167 hours long. A naive `weekStart + 7×24h` end bound
-  // would leak the first hour of next Monday into the current week.
-  it("keeps the 167-hour spring-forward DST week tight at both ends", () => {
-    const now = new Date("2026-03-25T12:00:00Z"); // Wed of DST week
-    const workouts = [
-      strengthWorkout("2026-03-22T22:30:00Z", [[60, 5]]), // Mon 00:30 Kyiv (EET) → in
-      strengthWorkout("2026-03-29T20:30:00Z", [[100, 1]]), // Sun 23:30 Kyiv (EEST) → in
-      strengthWorkout("2026-03-29T21:30:00Z", [[999, 1]]), // Mon 00:30 Kyiv next week → out
-    ];
-    expect(computeWeeklyTotals(workouts, now)).toEqual({
-      count: 2,
-      volumeKg: 60 * 5 + 100,
+    // Mon 2026-06-08 00:00 Kyiv (EEST, UTC+3) = 2026-06-07T21:00:00Z.
+    it("київський пристрій: межа тижня там, де й була", () => {
+      process.env["TZ"] = "Europe/Kyiv";
+      const now = new Date("2026-06-10T12:00:00Z");
+      const workouts = [
+        strengthWorkout("2026-06-07T20:30:00Z", [[100, 1]]), // Sun 23:30 Kyiv → out
+        strengthWorkout("2026-06-07T21:30:00Z", [[60, 5]]), // Mon 00:30 Kyiv → in
+      ];
+      expect(computeWeeklyTotals(workouts, now)).toEqual({
+        count: 1,
+        volumeKg: 300,
+      });
+    });
+
+    it("запис о 00:30 понеділка за пристроєм у Мексиці — це новий тиждень", () => {
+      process.env["TZ"] = "America/Mexico_City"; // UTC-6, без DST
+      const now = new Date("2026-06-10T18:00:00Z");
+      // Mon 2026-06-08 00:30 local = 06:30Z; Sun 23:30 local = 05:30Z.
+      const workouts = [
+        strengthWorkout("2026-06-08T05:30:00Z", [[100, 1]]), // Sun → out
+        strengthWorkout("2026-06-08T06:30:00Z", [[60, 5]]), // Mon → in
+      ];
+      expect(computeWeeklyTotals(workouts, now)).toEqual({
+        count: 1,
+        volumeKg: 300,
+      });
+    });
+
+    it("Токіо: неділя 23:30 локально лишається в старому тижні", () => {
+      process.env["TZ"] = "Asia/Tokyo"; // UTC+9
+      const now = new Date("2026-06-10T03:00:00Z");
+      // Mon 2026-06-08 00:30 JST = 06-07T15:30Z; Sun 23:30 JST = 14:30Z.
+      const workouts = [
+        strengthWorkout("2026-06-07T14:30:00Z", [[100, 1]]), // Sun → out
+        strengthWorkout("2026-06-07T15:30:00Z", [[60, 5]]), // Mon → in
+      ];
+      expect(computeWeeklyTotals(workouts, now)).toEqual({
+        count: 1,
+        volumeKg: 300,
+      });
+    });
+
+    it("тиждень зі spring-forward тримається щільно з обох боків", () => {
+      process.env["TZ"] = "Europe/Kyiv"; // 2026-03-29: 03:00 EET → 04:00 EEST
+      const now = new Date("2026-03-25T12:00:00Z");
+      const workouts = [
+        strengthWorkout("2026-03-22T22:30:00Z", [[60, 5]]), // Mon 00:30 (EET) → in
+        strengthWorkout("2026-03-29T20:30:00Z", [[100, 1]]), // Sun 23:30 (EEST) → in
+        strengthWorkout("2026-03-29T21:30:00Z", [[999, 1]]), // Mon 00:30 next → out
+      ];
+      expect(computeWeeklyTotals(workouts, now)).toEqual({
+        count: 2,
+        volumeKg: 60 * 5 + 100,
+      });
     });
   });
 });

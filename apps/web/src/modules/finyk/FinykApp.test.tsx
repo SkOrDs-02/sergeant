@@ -28,6 +28,7 @@
  */
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import {
+  act,
   configure,
   fireEvent,
   render,
@@ -339,6 +340,33 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
       screen.getByRole("button", { name: "Підключити Monobank" }),
     ).toBeInTheDocument();
     nowSpy.mockRestore();
+  });
+
+  it("shows the banner on the SAME mounted instance once the 7-day snooze elapses", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setTimeout", "clearTimeout"] });
+    try {
+      renderApp();
+      fireEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+      expect(
+        screen.queryByRole("button", { name: "Підключити Monobank" }),
+      ).not.toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(7 * 24 * 60 * 60 * 1000 - 1000);
+      });
+      expect(
+        screen.queryByRole("button", { name: "Підключити Monobank" }),
+      ).not.toBeInTheDocument();
+
+      act(() => {
+        vi.advanceTimersByTime(1000);
+      });
+      expect(
+        screen.getByRole("button", { name: "Підключити Monobank" }),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

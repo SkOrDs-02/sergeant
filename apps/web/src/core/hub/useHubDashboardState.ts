@@ -7,22 +7,16 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  DEFAULT_DASHBOARD_DENSITY,
   getActiveModules,
   getActiveNudge,
-  getHideInactiveModules,
   getModulesWithFirstAction,
   getOnboardingGoals,
   getVibePicks,
   hasSeenCrossModulePreview,
-  isActiveModule,
   isWithinChecklistWindow,
-  normalizeDashboardDensity,
   pluralUa,
   recordLastActiveDate,
-  setHideInactiveModules,
   shouldShowReengagement,
-  type DashboardDensity,
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -45,47 +39,11 @@ import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration
 import { isLocalOnlyBannerVisible } from "./localOnlyBannerVisibility";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
-import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { useHubStorageBump } from "./useHubStorageBump";
-import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
-import {
-  loadDashboardOrder,
-  localStorageStore,
-  saveDashboardOrder,
-} from "./dashboard/dashboardStore";
-import { type ModuleId } from "./dashboard/moduleConfigs";
-import {
-  arrayMove,
-  type NativeSortableHandlers,
-} from "./dashboard/nativeSortable";
-import {
-  applyAdaptiveLift,
-  pickAdaptiveLift,
-  pickStrongestSeverity,
-} from "./dashboard/adaptiveSort";
-import { useHubPref, HUB_PREF_DENSITY } from "../settings/hubPrefs";
-import { useFlag } from "../lib/featureFlags";
+import { localStorageStore } from "./dashboard/dashboardStore";
+import { useHubPref } from "../settings/hubPrefs";
 import { useMondayAutoDigest } from "./dashboard/useMondayAutoDigest";
 import type { User } from "./hub.types";
-
-// ─────────────────────────────────────────────────────────────────────
-// Dashboard density hook
-// ─────────────────────────────────────────────────────────────────────
-
-/**
- * Reactive read of the user's dashboard-density preference.
- *
- * Раніше тут жила власна машинерія: свій ключ `localStorage`, свій
- * `DASHBOARD_DENSITY_EVENT` (бо same-window запис не піднімає `storage`)
- * і свій слухач крос-табу. Тепер щільність — звичайний ключ мішка
- * `hub_prefs_v1`, тож усе це дає `useHubPref`: і same-window сповіщення,
- * і крос-таб, і — головне — синхронізацію між пристроями, якої в неї не
- * було (залишок PR-S13).
- */
-export function useDashboardDensity(): DashboardDensity {
-  const [raw] = useHubPref<string>(HUB_PREF_DENSITY, DEFAULT_DASHBOARD_DENSITY);
-  return normalizeDashboardDensity(raw);
-}
 
 // ─────────────────────────────────────────────────────────────────────
 // Ukrainian pluralisation
@@ -113,17 +71,16 @@ export function pluralize(
  * Чи видно блок з AI-порадою на екрані ЗАРАЗ.
  *
  * Дзеркалить умову рендеру `HubInsightsBlock` у `HubDashboard.tsx`
- * (`s.hasRealEntry && !calmMode && showInsights`) — обидва місця мають
- * лишатись синхронними, бо саме ця умова вирішує, чи варто взагалі бити
- * запит до `useCoachInsight` (денна AI-квота Free-плану, ADR-0085).
+ * (`s.hasRealEntry && showInsights`) — обидва місця мають лишатись
+ * синхронними, бо саме ця умова вирішує, чи варто взагалі бити запит до
+ * `useCoachInsight` (денна AI-квота Free-плану, ADR-0085).
  */
 export function shouldFetchCoachInsight(
   hasRealEntry: boolean,
-  calmMode: boolean,
   showInsights: boolean,
   insightsOpen: boolean,
 ): boolean {
-  return hasRealEntry && !calmMode && showInsights && insightsOpen;
+  return hasRealEntry && showInsights && insightsOpen;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -131,9 +88,6 @@ export function shouldFetchCoachInsight(
 // ─────────────────────────────────────────────────────────────────────
 
 export interface HubDashboardState {
-  // Layout
-  density: DashboardDensity;
-
   // Onboarding / FTUX
   hasRealEntry: boolean;
   sessionDays: number;
@@ -153,21 +107,10 @@ export interface HubDashboardState {
   activeNudge: ReturnType<typeof getActiveNudge>;
   dismissNudge: () => void;
 
-  // Module grid
+  // Module rail / piles
   activeModules: readonly string[];
-  hideInactive: boolean;
-  toggleHideInactive: () => void;
-  hasInactive: boolean;
-  editMode: boolean;
-  toggleEditMode: () => void;
-  displayOrder: readonly string[];
-  /** Вісь дії увімкнена (`hub_action_axis_v1`) — розкладка купами. */
-  axis: boolean;
   /** Тік сховища — купа «Закрито» перераховується після запису в модулі. */
   storageBump: number;
-  order: readonly string[];
-  sortableHandlers: NativeSortableHandlers;
-  adaptive: { liftedId: ModuleId | null; reason: string | null };
 
   // Focus / Insights
   focus: ReturnType<typeof useDashboardFocus>["focus"];
@@ -223,8 +166,6 @@ export function useHubDashboardState(props: {
 }): HubDashboardState {
   const { onOpenModule, user, onShowAuth, authStatus, insightsOpen } = props;
 
-  const [order, setOrder] = useState(loadDashboardOrder);
-  const density = useDashboardDensity();
   useMondayAutoDigest();
 
   // AI-CONTEXT: `bump` тут не декоративний. Докази «юзер уже не новий»
@@ -304,31 +245,6 @@ export function useHubDashboardState(props: {
   }, [sessionDays, nudgeDismissed]);
 
   const activeModules = useMemo(() => getActiveModules(localStorageStore), []);
-  const [hideInactive, setHideInactive] = useState(() =>
-    getHideInactiveModules(localStorageStore),
-  );
-  const toggleHideInactive = useCallback(() => {
-    setHideInactive((prev) => {
-      const next = !prev;
-      setHideInactiveModules(localStorageStore, next);
-      return next;
-    });
-  }, []);
-  const hasInactive = useMemo(
-    () => order.some((id) => !isActiveModule(activeModules, id)),
-    [order, activeModules],
-  );
-
-  const [editMode, setEditMode] = useState(false);
-  const toggleEditMode = useCallback(() => setEditMode((p) => !p), []);
-  const visibleOrder = useMemo(
-    () =>
-      hideInactive
-        ? order.filter((id) => isActiveModule(activeModules, id))
-        : order,
-    [order, activeModules, hideInactive],
-  );
-
   const { focus, rest, dismiss } = focusProbe;
 
   const openInsightTarget = useCallback(
@@ -342,22 +258,15 @@ export function useHubDashboardState(props: {
     [onOpenModule],
   );
 
-  // Ті самі два прапори, які `HubDashboard.tsx` читає для видимості
-  // `HubInsightsBlock` (`!calmMode && showInsights`) — читаємо тут-таки,
-  // щоб не робити мережевий запит/не палити AI-квоту заради поради, якої
-  // ніде не показують (аудит PR-A1, канон hub-coach §6.2).
-  const [calmPref] = useHubPref<boolean>("calmMode", false);
-  // Під віссю дії «Чистого режиму» немає (рішення власника 2026-09-17,
-  // спека `hub-action-axis.md`): він був відповіддю на шум сітки з
-  // акордеоном, а вісь цей шум знімає сама. Збережене значення ігнорується,
-  // не стирається — kill-switch мусить повертати стару головну як була.
-  const axis = useFlag("hub_action_axis_v1");
-  const calmMode = axis ? false : calmPref;
+  // Той самий прапор, який `HubDashboard.tsx` читає для видимості
+  // `HubInsightsBlock` (`showInsights`) — читаємо тут-таки, щоб не робити
+  // мережевий запит/не палити AI-квоту заради поради, якої ніде не
+  // показують (аудит PR-A1, канон hub-coach §6.2).
   const [showInsights] = useHubPref<boolean>("showInsights", true);
-  // AI-DANGER: `insightsOpen` — НЕ дублікат трьох прапорців вище, і
+  // AI-DANGER: `insightsOpen` — НЕ дублікат двох прапорців вище, і
   // прибрати його не можна.
   //
-  // Три прапорці кажуть «блок змонтований», а він монтується ЗГОРНУТИМ:
+  // Два прапорці кажуть «блок змонтований», а він монтується ЗГОРНУТИМ:
   // `HubDashboard` передає `insightsDefaultOpen={false}` навмисно
   // (рішення «Тихо» — увесь розумний шум живе під згорнутим pill).
   // Тобто без цього терма порада генерувалась у КОЖНОГО, хто просто
@@ -369,7 +278,6 @@ export function useHubDashboardState(props: {
   // `rest[0]?.title`), тож зникає лише блимання «Готую пораду Сержанта…».
   const coachInsightEnabled = shouldFetchCoachInsight(
     hasRealEntry,
-    calmMode,
     showInsights,
     insightsOpen,
   );
@@ -383,129 +291,6 @@ export function useHubDashboardState(props: {
     error: coachError,
     refresh: coachRefresh,
   } = useCoachInsight({ enabled: coachInsightEnabled });
-
-  const modulesWithSignal = useMemo(() => {
-    const all = focus ? [focus, ...rest] : rest;
-    const set = new Set<string>();
-    for (const r of all) {
-      if (r.module && r.module !== "hub") set.add(r.module);
-    }
-    return set;
-  }, [focus, rest]);
-
-  const [adaptivePref] = useHubPref<boolean>("adaptiveBento", true);
-
-  const severityByModule = useMemo(() => {
-    const all = focus ? [focus, ...rest] : rest;
-    const map: Partial<Record<ModuleId, "danger" | "warning" | undefined>> = {};
-    for (const r of all) {
-      if (!r.module || r.module === "hub") continue;
-      const id = r.module as ModuleId;
-      const sev =
-        r.severity === "danger" || r.severity === "warning"
-          ? r.severity
-          : undefined;
-      map[id] = pickStrongestSeverity([map[id], sev]);
-    }
-    return map;
-  }, [focus, rest]);
-
-  const [adaptiveNow, setAdaptiveNow] = useState(() => new Date());
-  const adaptiveTickerOn = adaptivePref && !editMode;
-  const [prevAdaptiveTickerOn, setPrevAdaptiveTickerOn] =
-    useState(adaptiveTickerOn);
-  if (adaptiveTickerOn !== prevAdaptiveTickerOn) {
-    setPrevAdaptiveTickerOn(adaptiveTickerOn);
-    if (adaptiveTickerOn) {
-      void Promise.resolve().then(() => setAdaptiveNow(new Date()));
-    }
-  }
-  useEffect(() => {
-    if (!adaptiveTickerOn) return;
-    const id = setInterval(() => setAdaptiveNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, [adaptiveTickerOn]);
-
-  const activeSet = useMemo(
-    () => new Set<string>(activeModules),
-    [activeModules],
-  );
-
-  const adaptive = useMemo(() => {
-    if (!adaptivePref || editMode) {
-      return {
-        liftedId: null as ModuleId | null,
-        reason: null as string | null,
-      };
-    }
-    const result = pickAdaptiveLift({
-      order: visibleOrder as ModuleId[],
-      modulesWithSignal,
-      severityByModule,
-      activeModules: activeSet,
-      now: adaptiveNow,
-    });
-    return { liftedId: result.liftedId, reason: result.reason };
-  }, [
-    adaptivePref,
-    editMode,
-    visibleOrder,
-    modulesWithSignal,
-    severityByModule,
-    activeSet,
-    adaptiveNow,
-  ]);
-
-  const displayOrder = useMemo(
-    () => applyAdaptiveLift(visibleOrder as ModuleId[], adaptive.liftedId),
-    [visibleOrder, adaptive.liftedId],
-  );
-
-  // Native pointer DnD (S10-T2): mouse activates after 8px movement;
-  // touch requires a 250ms long-press (see beginNativeSortablePointerDrag).
-  // Keyboard Arrow*/Home/End reorder when the grip handle is focused.
-  const { announce } = useAnnounce();
-
-  const handleDragStart = useCallback(
-    ({ activeId }: { activeId: string }) => {
-      const id = activeId as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[id] ?? activeId;
-      announce(`Підняли ${label}. Стрілками обери позицію, Enter фіксує.`);
-    },
-    [announce],
-  );
-
-  const handleDragEnd = useCallback(
-    ({ activeId, overId }: { activeId: string; overId: string | null }) => {
-      const id = activeId as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[id] ?? activeId;
-      if (overId && overId !== activeId) {
-        const oldIndex = order.indexOf(id);
-        const newIndex = order.indexOf(overId as ModuleId);
-        if (oldIndex < 0 || newIndex < 0) {
-          announce(`${label} залишилось на тому ж місці.`);
-          return;
-        }
-        const next = arrayMove(order, oldIndex, newIndex);
-        setOrder(next);
-        saveDashboardOrder(next);
-        announce(
-          `${label} пересунуто на позицію ${newIndex + 1} з ${next.length}.`,
-        );
-      } else {
-        announce(`${label} залишилось на тому ж місці.`);
-      }
-    },
-    [announce, order],
-  );
-
-  const sortableHandlers = useMemo<NativeSortableHandlers>(
-    () => ({
-      onDragStart: handleDragStart,
-      onDragEnd: handleDragEnd,
-    }),
-    [handleDragEnd, handleDragStart],
-  );
 
   const [digestExpanded, setDigestExpanded] = useState(false);
   const digestFresh = hasLiveWeeklyDigest();
@@ -563,7 +348,6 @@ export function useHubDashboardState(props: {
   const dismissNudge = useCallback(() => setNudgeDismissed(true), []);
 
   return {
-    density,
     hasRealEntry,
     sessionDays,
     entryCount,
@@ -576,17 +360,7 @@ export function useHubDashboardState(props: {
     activeNudge,
     dismissNudge,
     activeModules,
-    hideInactive,
-    toggleHideInactive,
-    hasInactive,
-    editMode,
-    toggleEditMode,
-    displayOrder,
-    axis,
     storageBump,
-    order,
-    sortableHandlers,
-    adaptive,
     focus,
     rest,
     dismiss,

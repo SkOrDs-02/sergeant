@@ -5,21 +5,11 @@
  * тумблера «Показувати підказки».
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  within,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { UserPreferences } from "@shared/api";
-import {
-  DASHBOARD_DENSITIES,
-  getActiveModules,
-  STORAGE_KEYS,
-} from "@sergeant/shared";
+import { getActiveModules } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 // pushActiveModules (activeModulesSync.ts) fire-and-forgets
@@ -46,7 +36,6 @@ vi.mock("@shared/api", () => {
 });
 
 import { DashboardSection } from "./DashboardSection";
-import { resetFlags, setFlag } from "../lib/featureFlags";
 
 function renderSection(): ReturnType<typeof render> {
   return render(
@@ -73,16 +62,10 @@ function openSection() {
 
 beforeEach(() => {
   localStorage.clear();
-  // Тести нижче описують налаштування СТАРОЇ головної (сітка); під віссю
-  // дії (`hub_action_axis_v1`, дефолт увімкнено) частина тумблерів зникає
-  // — див. `describe` наприкінці файлу.
-  resetFlags();
-  setFlag("hub_action_axis_v1", false);
 });
 
 afterEach(() => {
   cleanup();
-  resetFlags();
   localStorage.clear();
 });
 
@@ -103,36 +86,37 @@ describe("DashboardSection", () => {
     expect(screen.queryByText("Показувати підказки")).not.toBeInTheDocument();
   });
 
-  it("still renders the remaining «Вигляд» toggles untouched by the L-10 removal", () => {
-    renderSection();
-    expect(screen.getByText("Чистий режим")).toBeInTheDocument();
-    expect(screen.getByText("Адаптивний порядок")).toBeInTheDocument();
-    expect(screen.getByText("Картка «Сьогодні»")).toBeInTheDocument();
-    expect(screen.getByText("Що зараз важливо")).toBeInTheDocument();
-    expect(screen.getByText("Мотиваційний підпис")).toBeInTheDocument();
-  });
-
-  it("defaults «Адаптивний порядок» to on when no pref is stored", () => {
+  it("під віссю дії лишає два тумблери вигляду: «Порада й звіт тижня» і «Мотиваційний підпис»", () => {
     renderSection();
     openSection();
-    // Пошук за доступним іменем, не за `closest("label")` — рядок
-    // `ToggleRow` більше не `<label>` навколо тумблера (фікс axe
-    // `label: Form elements must have labels` на `/settings`).
-    const toggle = screen.getByRole("switch", { name: "Адаптивний порядок" });
+    expect(
+      screen.getByRole("switch", { name: "Порада й звіт тижня" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("switch", { name: "Мотиваційний підпис" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Чистий режим")).toBeNull();
+    expect(screen.queryByText("Адаптивний порядок")).toBeNull();
+    expect(screen.queryByText("Картка «Сьогодні»")).toBeNull();
+    expect(screen.queryByText("Що зараз важливо")).toBeNull();
+    expect(
+      screen.queryByRole("group", {
+        name: "Щільність карток на головному екрані",
+      }),
+    ).toBeNull();
+  });
+
+  it("flips «Порада й звіт тижня» on click and persists it to HUB_PREFS", () => {
+    renderSection();
+    openSection();
+    const toggle = screen.getByRole("switch", { name: "Порада й звіт тижня" });
     expect(toggle).toHaveAttribute("aria-checked", "true");
-  });
-
-  it("flips «Чистий режим» on click and persists it to HUB_PREFS", () => {
-    renderSection();
-    openSection();
-    const toggle = screen.getByRole("switch", { name: "Чистий режим" });
-    expect(toggle).toHaveAttribute("aria-checked", "false");
 
     fireEvent.click(toggle);
 
-    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(toggle).toHaveAttribute("aria-checked", "false");
     const stored = JSON.parse(localStorage.getItem("hub_prefs_v1") ?? "{}");
-    expect(stored.calmMode).toBe(true);
+    expect(stored.showInsights).toBe(false);
   });
 
   it("toggles a dashboard module switch and blocks removing the last active one", () => {
@@ -169,41 +153,6 @@ describe("DashboardSection", () => {
     expect(toastMsg.closest('[data-toast-type="warning"]')).toBeTruthy();
   });
 
-  // §6 аудиту 2026-08-08: «DashboardSection цілком» без тестів. Секцію
-  // покрито вище, але блок щільності (`DASHBOARD_DENSITIES`) не мав
-  // ЖОДНОГО тесту — ні дефолту, ні кліку, ні персисту, ні події, на яку
-  // підписаний дашборд для live-ресайзу карток без reload.
-  it("density selector: defaults to «Комфортно» and persists a click into the hub-prefs bag", () => {
-    renderSection();
-
-    const comfortableBtn = screen.getByText("Комфортно").closest("button");
-    const compactBtn = screen.getByText("Компактно").closest("button");
-    if (!comfortableBtn || !compactBtn) {
-      throw new Error("density buttons missing");
-    }
-    // Дефолт без збереженого значення — `DEFAULT_DASHBOARD_DENSITY`
-    // ("comfortable"), не перша чи остання кнопка списку.
-    expect(comfortableBtn).toHaveAttribute("aria-pressed", "true");
-    expect(compactBtn).toHaveAttribute("aria-pressed", "false");
-
-    fireEvent.click(compactBtn);
-
-    expect(compactBtn).toHaveAttribute("aria-pressed", "true");
-    expect(comfortableBtn).toHaveAttribute("aria-pressed", "false");
-
-    // Персист тепер у спільному мішку, а не у власному ключі: щільність
-    // переїхала туди разом із рештою хабових налаштувань, щоб їхати на
-    // акаунт (залишок PR-S13). Власна `CustomEvent` більше не потрібна —
-    // `useHubPref` сам сповіщає і це вікно (синтетичний StorageEvent), і
-    // сусідні вкладки. Саме тому тут перевіряється ВМІСТ МІШКА: без нього
-    // секція виглядала б зміненою, а хабовий грід і сусідній пристрій про
-    // це не дізнались би.
-    const bag = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.HUB_PREFS) ?? "{}",
-    ) as Record<string, unknown>;
-    expect(bag["density"]).toBe("compact");
-  });
-
   // Наявний тест "toggles a dashboard module checkbox…" вимикає модулі, але
   // ніколи не вмикає їх назад — гілка `ALL_MODULES.filter(x => prev.includes(x)
   // || x === id)` (повторне ввімкнення, збереження порядку ALL_MODULES) не
@@ -227,49 +176,6 @@ describe("DashboardSection", () => {
     expect(target).toBeChecked();
     const afterReEnable = getActiveModules(webKVStore);
     expect(afterReEnable).toHaveLength(checkboxes.length);
-  });
-
-  // PR-S14: кнопки щільності вже мали `aria-pressed`, але не мали спільної
-  // назви — скрінрідер читав три незвʼязані контроли посеред секції.
-  it("PR-S14: перемикач щільності — названа група", () => {
-    renderSection();
-    // Роль видно лише в розгорнутій секції — інваріант L-7, пояснений
-    // над `openSection` вище.
-    openSection();
-
-    const group = screen.getByRole("group", {
-      name: /щільність карток/i,
-    });
-    expect(within(group).getAllByRole("button")).toHaveLength(
-      DASHBOARD_DENSITIES.length,
-    );
-  });
-});
-
-describe("DashboardSection — вісь дії (hub_action_axis_v1)", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    resetFlags(); // дефолт — увімкнено
-  });
-
-  it("лишає два тумблери вигляду: «Порада й звіт тижня» і «Мотиваційний підпис»", () => {
-    renderSection();
-    openSection();
-    expect(
-      screen.getByRole("switch", { name: "Порада й звіт тижня" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("switch", { name: "Мотиваційний підпис" }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Чистий режим")).toBeNull();
-    expect(screen.queryByText("Адаптивний порядок")).toBeNull();
-    expect(screen.queryByText("Картка «Сьогодні»")).toBeNull();
-    expect(screen.queryByText("Що зараз важливо")).toBeNull();
-    expect(
-      screen.queryByRole("group", {
-        name: "Щільність карток на головному екрані",
-      }),
-    ).toBeNull();
   });
 
   it("тумблери модулів лишаються — рейок бере з них приглушення", () => {

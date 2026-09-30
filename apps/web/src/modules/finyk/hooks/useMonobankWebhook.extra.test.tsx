@@ -239,6 +239,55 @@ describe("useMonobankWebhook — extra callbacks", () => {
   });
 });
 
+describe("useMonobankWebhook — fetchMonth latest-request ownership", () => {
+  it("пізня відповідь давнього місяця не перетирає historyTx останнього запиту", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE_STATE);
+    const row = (id: string, time: string) => ({
+      monoTxId: id,
+      monoAccountId: "acc1",
+      time,
+      amount: -100,
+      operationAmount: -100,
+      currencyCode: 980,
+      mcc: 5411,
+      description: id,
+    });
+    let releaseApril!: (v: unknown[]) => void;
+    const aprilPending = new Promise<unknown[]>((r) => {
+      releaseApril = r;
+    });
+    // Квітень у Києві стартує 2026-03-31T21:00Z, травень — 2026-04-30T21:00Z.
+    fetchAllMonoTransactions.mockImplementation((range: { from: string }) => {
+      if (range.from.startsWith("2026-03-31")) return aprilPending;
+      if (range.from.startsWith("2026-04-30")) {
+        return Promise.resolve([row("may-1", "2026-05-10T09:00:00Z")]);
+      }
+      return Promise.resolve([]);
+    });
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("success");
+    });
+
+    let aprilCall!: Promise<unknown>;
+    await act(async () => {
+      aprilCall = result.current.fetchMonth(2026, 3); // квітень, ще у польоті
+      await result.current.fetchMonth(2026, 4); // травень, відповів першим
+    });
+    expect(result.current.historyTx.map((t) => t.id)).toEqual(["may-1"]);
+
+    await act(async () => {
+      releaseApril([row("apr-1", "2026-04-10T09:00:00Z")]);
+      await aprilCall;
+    });
+    // Застаріла відповідь квітня повернулась, але список лишився травневим.
+    expect(result.current.historyTx.map((t) => t.id)).toEqual(["may-1"]);
+    expect(result.current.loadingHistory).toBe(false);
+  });
+});
+
 describe("useMonobankWebhook — syncState status mapping", () => {
   it("maps 'pending' status → loading", async () => {
     mockedSyncState.mockResolvedValue({
