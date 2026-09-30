@@ -5,7 +5,7 @@
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.
 
-> **2026-09-23:** CI does not run (no `bitbucket-pipelines.yml`, `.github/workflows/*` idle since the Bitbucket migration). Every "CI" / "required checks" reference below means the local commands in [`AGENTS.md § Verification before PR`](../../../AGENTS.md#verification-before-pr) (`pnpm check` and the size/Lighthouse budgets), run and confirmed by the person merging. This note does not change the release classes or blockers themselves — it only names the mechanism that currently enforces them.
+> **2026-09-30:** CI runs again on GitHub Actions ([ADR-0101](../adr/0101-github-actions-ci-and-autodeploy.md)); 2026-09-23..29 it did not run at all. "Required checks" below are the branch-protection checks on `main` (`check`, `Critical-flow E2E (Playwright)`, `Lighthouse CI`). The backend deploys automatically after green `check`, critical-flow and both migration jobs.
 
 ## Release classes
 

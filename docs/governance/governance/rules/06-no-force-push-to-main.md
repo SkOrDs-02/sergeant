@@ -14,7 +14,7 @@
 
 ## Enforced by
 
-- **branch-protection** - SUSPENDED з 2026-09-23 (репо переїхало на Bitbucket, GitHub-акаунти заблоковані): старий GitHub branch protection мертвий. `AGENTS.md` заявляє Bitbucket branch restriction, з репо не перевірено; захист на дзеркалі Hetzner (другий pushurl `origin`) теж не перевірено
+- **branch-protection** - GitHub branch protection на `main` (`SkOrDs-02/sergeant`): force-push і видалення гілки заборонені (2026-09-23..29 репо тимчасово жило на Bitbucket без цього захисту; з 2026-09-30 знову на GitHub, ADR-0101). Захист на дзеркалі Hetzner (другий pushurl `origin`) не перевірено
 
 ## Why / What is enforced
 

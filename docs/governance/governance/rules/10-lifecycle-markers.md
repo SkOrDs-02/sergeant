@@ -17,8 +17,8 @@
 ## Enforced by
 
 - **eslint-rule** — sergeant-design/ai-marker-syntax (error)
-- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається, а `--require-issue` потребує `GITHUB_TOKEN`): pnpm lint:ai-legacy - локальної заміни немає
-- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається, не в `pnpm lint`/`pnpm check`): pnpm dead-code:files (honours @scaffolded markers) - локальної заміни немає
+- **ci** - `.github/workflows/ai-legacy-scan.yml` (PR, path-filtered): `node scripts/check-ai-legacy.mjs --check --require-issue` (відновлено 2026-09-30, ADR-0101)
+- **ci** - SUSPENDED: pnpm dead-code:files (honours @scaffolded markers) не стоїть ні в жодному workflow, ні в `pnpm lint`/`pnpm check`; сирий `pnpm knip` біжить у джобі `Dead Code (Knip)` у `ci.yml`
 
 > **Не гейт, а лічильник:** `pnpm lint:lifecycle-markers`
 > ([`check-lifecycle-markers.mjs`](../../../../scripts/docs/check-lifecycle-markers.mjs))

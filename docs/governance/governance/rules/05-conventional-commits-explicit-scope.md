@@ -13,7 +13,7 @@
 
 ## Enforced by
 
-- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається): ci.yml job `Commit messages (commitlint)` не виконується (`Workflow lint` у тому ж `ci.yml` - це actionlint, інший гейт)
+- **ci** - `ci.yml` job `Commit messages (commitlint)` (2026-09-23..29 не виконувався: код тимчасово жив на Bitbucket без pipelines; з 2026-09-30 знову виконується на GitHub Actions, ADR-0101) (`Workflow lint` у тому ж `ci.yml` - це actionlint, інший гейт)
 - **hook** — .husky/commit-msg
 
 ## Why / What is enforced
