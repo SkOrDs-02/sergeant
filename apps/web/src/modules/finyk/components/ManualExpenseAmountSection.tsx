@@ -175,6 +175,7 @@ export function ManualExpenseAmountSection({
           (провайдер не підтримується; з 2026-08-10 — вимкнений
           kill-switch). Привʼязка до компонента робить це неможливим. */}
       <VoiceMicButton
+        module="finyk"
         size="md"
         label="Сказати голосом"
         caption="Сказати"

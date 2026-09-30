@@ -1512,7 +1512,9 @@ export const paths: ZodOpenApiPathsObject = {
       description:
         "Body — сирий аудіо-блоб (`Content-Type: audio/webm | audio/ogg | audio/mp4 | …`), " +
         "ліміт 10 MB. Query визначає мову (auto-detect якщо порожньо) та prompt для " +
-        "доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше).",
+        "доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше). " +
+        "Query `module` (nutrition | fizruk | …) декларує модуль-виклик: для health-модулів " +
+        "без збереженої згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED до Groq і квоти.",
       tags: ["transcribe"],
       security: cookieOrBearer,
       requestParams: { query: namedSchemas.TranscribeQuery },
@@ -1543,6 +1545,13 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "400": validationError,
         "401": unauthorized,
+        "403": {
+          description:
+            "HEALTH_CONSENT_REQUIRED: `module=nutrition|fizruk` без згоди на дані про здоровʼя.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
         "413": {
           description: "Payload завеликий (>10 MB).",
           content: {

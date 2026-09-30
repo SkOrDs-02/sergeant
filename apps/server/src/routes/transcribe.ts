@@ -6,6 +6,8 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
+import { TRANSCRIBE_HEALTH_MODULES } from "@sergeant/shared";
+import { requireHealthConsent } from "../lib/healthConsent.js";
 import { requireFeature } from "../modules/billing/index.js";
 import transcribeHandler from "../modules/transcribe/transcribe.js";
 
@@ -27,6 +29,9 @@ import transcribeHandler from "../modules/transcribe/transcribe.js";
  *     B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`;
  *     без сесії перед лімітером бакет завжди фолбечиться на `ip:<addr>`, а
  *     IPv6-клієнт має /64, тож per-user ліміт обходиться зміною адреси);
+ *   - `requireHealthConsent` — лише для `?module=nutrition|fizruk`
+ *     (`isHealthVoiceRequest`): 403 `HEALTH_CONSENT_REQUIRED` до плану,
+ *     Groq і USD-cap;
  *   - `requirePlan(pool, "pro")` — голос є Pro-фічею (V1, рішення власника
  *     2026-09-11). Стоїть ПІСЛЯ обох лімітерів і ПЕРЕД `requireGroqKey` —
  *     той самий порядок, що в `nutrition.ts` для vision-ендпоінтів:
@@ -53,6 +58,25 @@ import transcribeHandler from "../modules/transcribe/transcribe.js";
  * зайвим: гейт відповідає на «хто має право», cap — на «скільки це може
  * коштувати», і друге питання лишається чинним для платників теж.
  */
+/**
+ * Чи заявлено health-модуль у `?module=`.
+ *
+ * AI-NOTE: тег декларативний, клієнт може збрехати або не передати його
+ * (старі клієнти) — тоді гейт мовчить. Це осмислений компроміс (рішення
+ * власника 2026-09-30): сервер не бачить екрана, з якого пішов запит, а
+ * гейт потрібен, щоб чесний клієнт не відправляв аудіо про їжу й тренування
+ * в Groq без згоди (GDPR Art. 9). Невідомий тег = відсутній = відкрито.
+ */
+export function isHealthVoiceRequest(req: {
+  query?: Record<string, unknown>;
+}): boolean {
+  const tag = req.query?.["module"];
+  return (
+    typeof tag === "string" &&
+    TRANSCRIBE_HEALTH_MODULES.includes(tag.trim().toLowerCase())
+  );
+}
+
 export function createTranscribeRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.post(
@@ -65,6 +89,9 @@ export function createTranscribeRouter({ pool }: { pool: Pool }): Router {
     }),
     requireSession(),
     rateLimitExpress({ key: "api:transcribe", limit: 60, windowMs: 60_000 }),
+    // Згода — ДО плану, ключа, USD-cap і Groq: людина, якій треба дати
+    // згоду, не платить за це квотою (той самий порядок, що в nutrition).
+    requireHealthConsent(isHealthVoiceRequest),
     requireFeature(pool, "ai.voice"),
     requireGroqKey(),
     transcribeHandler,
