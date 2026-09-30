@@ -158,3 +158,38 @@ describe("parseToolCalls — remember (regression)", () => {
     expect(out.ok).toBe(false);
   });
 });
+
+describe("parseToolCalls — save_note / get_daily_series", () => {
+  it("приймає справжній payload save_note {text, tag}", () => {
+    const r = parseToolCalls([
+      {
+        id: "n1",
+        name: "save_note",
+        input: { text: "купити протеїн", tag: "todo" },
+      },
+    ]);
+    expect(r.ok).toBe(true);
+  });
+
+  it("батч із save_note не відкидається цілком", () => {
+    const r = parseToolCalls([
+      { id: "a", name: "log_water", input: { amount_ml: 250 } },
+      { id: "b", name: "save_note", input: { text: "запис" } },
+    ]);
+    expect(r.ok).toBe(true);
+  });
+
+  it("відхиляє save_note без text", () => {
+    const r = parseToolCalls([
+      { id: "n2", name: "save_note", input: { tag: "x" } },
+    ]);
+    expect(r.ok).toBe(false);
+  });
+
+  it("allow-list містить кожен tool зі спільного реєстру", async () => {
+    const { ALL_HUBCHAT_TOOL_NAMES } = await import("@sergeant/shared");
+    expect(
+      ALL_HUBCHAT_TOOL_NAMES.filter((n) => !KNOWN_TOOL_NAMES.has(n)),
+    ).toEqual([]);
+  });
+});
