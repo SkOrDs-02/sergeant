@@ -318,7 +318,7 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
 });
 
 describe("handleAsyncChatAction — recall_memory 402 (Free)", () => {
-  it("→ 402 → чесний текст про Pro, без «спробуй ще раз»", async () => {
+  it("→ 402 → чесний текст про Premium, без «спробуй ще раз»", async () => {
     fetchMock.mockResolvedValueOnce(
       makeJsonResponse({ error: "plan_required" }, { status: 402 }),
     );
@@ -326,7 +326,7 @@ describe("handleAsyncChatAction — recall_memory 402 (Free)", () => {
       name: "recall_memory",
       input: { query: "що я їв" },
     } as unknown as ChatAction);
-    expect(String(out)).toContain("Pro");
+    expect(String(out)).toContain("Premium");
     expect(String(out)).not.toContain("Спробуй ще раз");
   });
 });

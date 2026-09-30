@@ -1,7 +1,7 @@
 {
   "budgets": {
     "legacyButton": 0,
-    "handRolledFocusRing": 225,
+    "handRolledFocusRing": 220,
     "offCanonRingOpacity": 0,
     "numericIconSize": 0,
     "cyrillicJsxAllowlist": 299,
