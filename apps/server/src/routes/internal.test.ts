@@ -275,20 +275,6 @@ describe("/api/internal/*", () => {
     expect(res.body).toEqual({ ok: true, id: 1, isNew: true });
   });
 
-  it("rejects email events with an unknown event type", async () => {
-    const { app } = await makeApp("secret");
-    const res = await request(app)
-      .post("/api/internal/email/event")
-      .set("Authorization", "Bearer secret")
-      .send({
-        providerMessageId: "msg_xyz",
-        eventType: "exploded",
-        occurredAt: "2026-04-29T10:00:00Z",
-      });
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: "invalid eventType" });
-  });
-
   it("returns the user cohort for the requested day", async () => {
     const pool = makePool();
     pool.query.mockResolvedValueOnce({

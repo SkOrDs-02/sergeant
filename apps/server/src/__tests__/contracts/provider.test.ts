@@ -282,7 +282,7 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 81 expected consumer interactions across 50 routes", () => {
+  it("pact file has 84 expected consumer interactions across 53 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
@@ -302,7 +302,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // 81, не 80: ще одна на тому ж маршруті — відповідь СТАРОГО сервера,
     // без полів провалу. Web і server деплояться окремо, тож це не
     // гіпотетичний випадок, а вікно між двома деплоями.
-    expect(pact.interactions).toHaveLength(81);
+    // 84, не 81: +3 інтеракції на НОВИХ маршрутах silpo — `PUT
+    // /silpo/settings` і пара `pantry-claim` / `pantry-release` (кожен по
+    // одній), тож росте і `expectedRoutes`.
+    expect(pact.interactions).toHaveLength(84);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -383,6 +386,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/silpo/cart",
       "POST /api/v1/silpo/cart/preview",
       "POST /api/v1/silpo/cart/apply",
+      // silpo налаштування і комора: 3 інтеракції / 3 маршрути
+      "PUT /api/v1/silpo/settings",
+      "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
+      "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),

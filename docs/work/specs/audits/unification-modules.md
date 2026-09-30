@@ -246,6 +246,8 @@
 
 ### 1.14. Одна mono-транзакція може отримати два чеки з двох таблиць лінків
 
+> **Статус: ЗАКРИТО (2026-09-29).** Дзеркальний `NOT EXISTS finyk_tx_receipt_links` (mono-гілка: `tx_kind='mono'`, manual-гілка: `tx_kind='manual'`, ізоляція через `receipts.user_id`) доданий у [receiptsMatch.ts](../../../../apps/server/src/modules/silpo/receiptsMatch.ts); тест «tx з finyk-лінком не є кандидатом Сільпо» — [receipts.test.ts](../../../../apps/server/src/modules/silpo/receipts.test.ts). Фінік-матчер уже мав зворотну перевірку. Текст нижче — опис знахідки до фіксу.
+
 - [apps/server/src/modules/finyk/receipts/matcher.ts:60](../../../../apps/server/src/modules/finyk/receipts/matcher.ts) і [:83](../../../../apps/server/src/modules/finyk/receipts/matcher.ts) (`NOT EXISTS` лише по `finyk_tx_receipt_links`)
 - [apps/server/src/modules/silpo/receiptsMatch.ts:101](../../../../apps/server/src/modules/silpo/receiptsMatch.ts) і [:120](../../../../apps/server/src/modules/silpo/receiptsMatch.ts) (`NOT EXISTS` лише по `silpo_tx_receipt_links`)
 

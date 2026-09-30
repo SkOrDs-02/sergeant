@@ -75,6 +75,16 @@ interface CapResult {
   reason?: "cap_hit" | "store_unavailable";
 }
 
+interface Reservation {
+  subject: string;
+  day: string;
+  bucket: string;
+  micros: number;
+}
+
+/** Резерви поточних запитів (ключ — сам `req`, щоб не розширювати типи). */
+const reservations = new WeakMap<Request, Reservation>();
+
 interface UsageRow {
   usd_micros: string | number;
 }
@@ -159,18 +169,47 @@ export async function assertTranscribeUsdCap(
   const day = toLocalISODate();
   const bucket = bucketKey(model);
 
+  if (estimate <= 0) return { ok: true, cap_micros: cap };
+
+  // B26 — АТОМАРНЕ резервування замість SELECT → порівняння → (пізніший)
+  // інкремент: паралельні виклики бачили той самий `spent` і всі
+  // проходили. Тепер один умовний UPSERT (зразок — `consumeQuota` в
+  // `chat/aiQuota.ts`): рядок оновлюється лише якщо `usd_micros + estimate
+  // <= cap`, інакше RETURNING порожній → блок. Оцінка резервується ДО
+  // виклику Groq; провал апстріму повертає її через
+  // `releaseTranscribeUsdReservation`. `estimate > cap` відсікаємо
+  // наперед: на INSERT-гілці (рядка ще немає) WHERE не діє.
+  let reserved = false;
   let spent = 0;
   try {
-    const { rows } = await pool.query<UsageRow>(
-      `SELECT usd_micros FROM ai_usage_daily
-       WHERE subject_key = $1 AND usage_day = $2 AND bucket = $3
-         AND endpoint = $4`,
-      [subject, day, bucket, TRANSCRIBE_ENDPOINT],
-    );
-    if (rows.length > 0) {
-      // pg `BIGINT` приходить як string — коерсимо у number (AGENTS.md
-      // hard rule #1).
-      spent = Number(rows[0]!.usd_micros) || 0;
+    if (estimate <= cap) {
+      const r = await pool.query<UsageRow>(
+        `INSERT INTO ai_usage_daily AS t
+           (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
+         VALUES ($1, $2::date, $3, $4, 1, $5)
+         ON CONFLICT (subject_key, usage_day, bucket, endpoint)
+         DO UPDATE SET
+           request_count = t.request_count + 1,
+           usd_micros = t.usd_micros + EXCLUDED.usd_micros
+           WHERE t.usd_micros + EXCLUDED.usd_micros <= $6
+         RETURNING usd_micros`,
+        [subject, day, bucket, TRANSCRIBE_ENDPOINT, estimate, cap],
+      );
+      if (r.rows.length > 0) {
+        reserved = true;
+        // pg `BIGINT` приходить як string — коерсимо у number (Hard Rule #1).
+        spent = Number(r.rows[0]!.usd_micros) || 0;
+      }
+    }
+    if (!reserved) {
+      // Лише для тіла 402 / логу: скільки вже витрачено (не для рішення).
+      const { rows } = await pool.query<UsageRow>(
+        `SELECT usd_micros FROM ai_usage_daily
+         WHERE subject_key = $1 AND usage_day = $2 AND bucket = $3
+           AND endpoint = $4`,
+        [subject, day, bucket, TRANSCRIBE_ENDPOINT],
+      );
+      spent = rows.length > 0 ? Number(rows[0]!.usd_micros) || 0 : 0;
     }
   } catch (err) {
     // Fail-open: при недоступності DB не блокуємо легітимного юзера.
@@ -193,7 +232,7 @@ export async function assertTranscribeUsdCap(
     };
   }
 
-  if (spent + estimate > cap) {
+  if (!reserved) {
     try {
       transcribeUsdCapEventsTotal.inc({ outcome: "cap_hit" });
     } catch {
@@ -231,7 +270,40 @@ export async function assertTranscribeUsdCap(
     };
   }
 
+  reservations.set(req, { subject, day, bucket, micros: estimate });
   return { ok: true, cap_micros: cap, spent_micros: spent };
+}
+
+/**
+ * Повертає резерв, узятий `assertTranscribeUsdCap`, якщо Groq-виклик
+ * провалився (upstream не виставляє рахунок за помилку). Ідемпотентний
+ * (тікет знімається з `req`), не кидає винятків. GREATEST захищає від
+ * від'ємних значень при повторі чи ролловері.
+ */
+export async function releaseTranscribeUsdReservation(
+  req: Request,
+): Promise<void> {
+  const t = reservations.get(req);
+  if (!t) return;
+  reservations.delete(req);
+  try {
+    await pool.query(
+      `UPDATE ai_usage_daily
+          SET usd_micros = GREATEST(0, usd_micros - $5),
+              request_count = GREATEST(0, request_count - 1)
+        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
+          AND endpoint = $4`,
+      [t.subject, t.day, t.bucket, TRANSCRIBE_ENDPOINT, t.micros],
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "transcribe_usd_cap_release_failed",
+      err: err instanceof Error ? err.message : String(err),
+      subject: t.subject,
+      day: t.day,
+      micros: t.micros,
+    });
+  }
 }
 
 /**
@@ -239,6 +311,7 @@ export async function assertTranscribeUsdCap(
  * (тобто не списуємо за виклик, що впав з 5xx — це чесно, бо upstream
  * нам теж не виставляє рахунку за provider-error).
  *
+ * Якщо резерв уже взято (B26), функція лише знімає тікет. Інакше:
  * UPSERT — atomic per-row у Postgres, race-у між двома паралельними
  * викликами не існує (ON CONFLICT bucket-PK). request_count теж
  * інкрементиться, щоб лічильник кількостей не розходився з лічильником
@@ -249,6 +322,10 @@ export async function recordTranscribeUsdSpend(
   audioBytes: number,
   model: string,
 ): Promise<void> {
+  // B26: якщо оцінку вже зарезервовано в `assertTranscribeUsdCap`, повторно
+  // не списуємо — лише знімаємо тікет. Шлях нижче лишається для fail-open
+  // (БД лежала на pre-check) і cap=0.
+  if (reservations.delete(req)) return;
   const subject = subjectFor(req);
   if (!subject) return; // не повинно статись після requireSession()
   const day = toLocalISODate();

@@ -56,7 +56,9 @@ function isSafeHref(href: string | undefined): boolean {
 
 const INLINE_TOKEN_RE =
   /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
-const HREF_SAFE_RE = /^(https?:\/\/|\/|#)/i;
+// `\/(?![\/\\])` — відносний шлях, але НЕ protocol-relative (`//evil.example`)
+// і не `/\evil.example` (браузер трактує `\` як `/`).
+const HREF_SAFE_RE = /^(https?:\/\/|\/(?![/\\])|#)/i;
 const LINK_TOKEN_RE = /^\[([^\]]+)\]\(([^)]+)\)$/;
 const H4_RE = /^####\s+(.*)$/;
 const H3_RE = /^###\s+(.*)$/;
