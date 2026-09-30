@@ -10,12 +10,17 @@
  * захист. Тут перевіряється рівно предикат.
  */
 import { describe, it, expect } from "vitest";
-import { shouldShowNoBankBanner } from "./NoBankBanner.visibility";
+import {
+  BANK_BANNER_SNOOZE_DAYS,
+  shouldShowNoBankBanner,
+} from "./NoBankBanner.visibility";
 
 const BASE = {
   hasConnectedProvider: false,
   manualOnly: false,
   manualExpenseCount: 0,
+  dismissedAt: null as number | null,
+  now: 1_800_000_000_000,
   page: "overview",
 };
 
@@ -50,5 +55,45 @@ describe("shouldShowNoBankBanner", () => {
 
   it("людина обрала «без банку» — не показується", () => {
     expect(shouldShowNoBankBanner({ ...BASE, manualOnly: true })).toBe(false);
+  });
+
+  describe("закриття на N днів", () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const at = (days: number) => BASE.now + days * DAY;
+
+    it("N = 7", () => {
+      expect(BANK_BANNER_SNOOZE_DAYS).toBe(7);
+    });
+
+    it("щойно закритий — ховається", () => {
+      expect(shouldShowNoBankBanner({ ...BASE, dismissedAt: BASE.now })).toBe(
+        false,
+      );
+    });
+
+    it("за мить до 7 днів — ще ховається, рівно через 7 — показується знову", () => {
+      const dismissedAt = BASE.now;
+      expect(
+        shouldShowNoBankBanner({
+          ...BASE,
+          dismissedAt,
+          now: at(7) - 1,
+        }),
+      ).toBe(false);
+      expect(shouldShowNoBankBanner({ ...BASE, dismissedAt, now: at(7) })).toBe(
+        true,
+      );
+    });
+
+    it("з підключеним банком не показується навіть після спливу N днів", () => {
+      expect(
+        shouldShowNoBankBanner({
+          ...BASE,
+          hasConnectedProvider: true,
+          dismissedAt: BASE.now,
+          now: at(30),
+        }),
+      ).toBe(false);
+    });
   });
 });

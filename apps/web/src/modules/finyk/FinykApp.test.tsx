@@ -176,7 +176,7 @@ describe("FinykApp — shell + default page (real component tree)", () => {
       screen.getByRole("button", { name: "Підключити Monobank" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Продовжити без банку" }),
+      screen.getByRole("button", { name: "Не зараз" }),
     ).toBeInTheDocument();
 
     // Real `Overview` page (sr-only page heading, not a stubbed testid).
@@ -305,20 +305,40 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     ).toBeInTheDocument();
   });
 
-  it("hides the NoBankBanner after Continue-without-bank is clicked (real LS write)", async () => {
+  it("hides the NoBankBanner on dismiss, writes a timestamp and keeps manual-only unset", async () => {
     renderApp();
-    expect(
-      screen.getByRole("button", { name: "Підключити Monobank" }),
-    ).toBeInTheDocument();
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Продовжити без банку" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Не зараз" }));
 
     expect(
       screen.queryByRole("button", { name: "Підключити Monobank" }),
     ).not.toBeInTheDocument();
-    expect(window.localStorage.getItem("finyk_manual_only_v1")).toBe("1");
+    expect(
+      Number(window.localStorage.getItem("finyk_bank_banner_dismissed_at_v1")),
+    ).toBeGreaterThan(0);
+    expect(window.localStorage.getItem("finyk_manual_only_v1")).toBeNull();
+  });
+
+  it("shows the NoBankBanner again 7 days after dismiss, not before", async () => {
+    const t0 = Date.now();
+    const nowSpy = vi.spyOn(Date, "now");
+    nowSpy.mockReturnValue(t0);
+    const first = renderApp();
+    await userEvent.click(screen.getByRole("button", { name: "Не зараз" }));
+    first.unmount();
+
+    nowSpy.mockReturnValue(t0 + 6 * 24 * 60 * 60 * 1000);
+    const second = renderApp();
+    expect(
+      screen.queryByRole("button", { name: "Підключити Monobank" }),
+    ).not.toBeInTheDocument();
+    second.unmount();
+
+    nowSpy.mockReturnValue(t0 + 7 * 24 * 60 * 60 * 1000);
+    renderApp();
+    expect(
+      screen.getByRole("button", { name: "Підключити Monobank" }),
+    ).toBeInTheDocument();
+    nowSpy.mockRestore();
   });
 });
 

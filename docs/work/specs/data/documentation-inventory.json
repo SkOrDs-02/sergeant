@@ -8401,7 +8401,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-13-product-full-review.md",
-      "inbound_count": 12,
+      "inbound_count": 13,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/design/design/README.md",
@@ -8412,6 +8412,7 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
+        "docs/product/modules/finyk.md",
         "docs/product/modules/hub-coach.md",
         "docs/product/modules/nutrition.md",
         "docs/work/specs/audits/README.md"
