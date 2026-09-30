@@ -323,12 +323,20 @@ describe("H9 e2e — POST /api/transcribe with real WAV fixture", () => {
     expect(transcribeAudioMock).toHaveBeenCalledOnce();
 
     // Symmetric with Groq's own billing: the user is not charged for an
-    // upstream failure. Ledger row must NOT exist for this attempt.
-    const { rows } = await testPool.query(
-      `SELECT 1 FROM ai_usage_daily WHERE subject_key = $1`,
+    // upstream failure. B26: оцінка резервується ДО Groq і повертається при
+    // провалі, тож рядок може існувати, але з нульовими лічильниками.
+    const { rows } = await testPool.query<{
+      request_count: string | number;
+      usd_micros: string | number;
+    }>(
+      `SELECT request_count, usd_micros FROM ai_usage_daily
+       WHERE subject_key = $1`,
       [`u:${TEST_USER_ID}`],
     );
-    expect(rows).toHaveLength(0);
+    for (const row of rows) {
+      expect(Number(row.usd_micros)).toBe(0);
+      expect(Number(row.request_count)).toBe(0);
+    }
   });
 
   it("oversized payload (>10MB) → 413 before pre-charge runs", async (ctx) => {
