@@ -288,6 +288,17 @@ export function createAiMemoryService(
       const topK = input.topK ?? env.AI_MEMORY_TOP_K;
       if (topK <= 0) return [];
 
+      // B10: hard-cap Voyage діє і на recall (раніше лише на remember, а
+      // `embedBatch` без опцій = criticality "critical", що обходить soft-cap).
+      // Fail-soft: порожній результат, щоб chat-RAG не падав.
+      if (isVoyageBudgetHardExceeded()) {
+        logger.warn({
+          msg: "ai_memory_recall_skipped_hard_budget",
+          caller: input.caller ?? "unknown",
+        });
+        return [];
+      }
+
       const [embedding] = await deps.embeddings.embedBatch([input.query]);
       if (!embedding) {
         throw new Error("Embedding provider returned empty result for query");

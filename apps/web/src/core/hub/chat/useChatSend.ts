@@ -41,7 +41,7 @@ import {
 } from "./useDestructiveConfirm";
 import { summarizeDestructiveToolInput } from "./destructiveConfirmSummary";
 import { VOICE_KEYWORDS, speak } from "../../lib/hubChatSpeech";
-import { buildActionCard } from "../../lib/hubChatActionCards";
+import { buildActionCard, isFailureResult } from "../../lib/hubChatActionCards";
 import { setHubStreaming } from "../streamingStore";
 import type { ChatActionCard } from "../../lib/hubChatActionCards";
 import { useFinykHubPreview } from "../useFinykHubPreview";
@@ -588,7 +588,10 @@ export function useChatSend({
            */
           const uncardedText = toolResults
             .filter((_, idx) => builtCards[idx] == null)
-            .map((r) => `✓ ${r.content}`)
+            // Помилковий результат не маркуємо «✓» — це б рапортувало успіх.
+            .map((r) =>
+              isFailureResult(r.content) ? r.content : `✓ ${r.content}`,
+            )
             .join("\n");
           const prefix = uncardedText ? `${uncardedText}\n\n` : "";
 

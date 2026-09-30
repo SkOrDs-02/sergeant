@@ -111,8 +111,8 @@ gh pr create --base main --title "fix(<scope>): <subject>" --body-file <(cat .gi
 #    - повний flow → docs/start/instructions/hotfix-prod-regression.md
 
 # 3. Автодеплою немає — викотити вручну після merge (AGENTS.md § Прод не оновлюється сам):
-pnpm deploy:api   # server-side build на Coolify, ~4 хв
-pnpm deploy:web   # локальний Vercel CLI, прямо в прод, без прев'ю
+pnpm deploy:api -- --yes   # server-side build на Coolify, ~4 хв; без --yes лише прев'ю
+pnpm deploy:web -- --yes   # локальний Vercel CLI, прямо в прод; без --yes лише прев'ю
 
 # 4. Smoke-verify:
 curl https://api.sergeant/healthz | jq '.status'         # "healthy"
@@ -144,7 +144,7 @@ n8n-шар виведено з репо ([ADR-0090](../../governance/adr/0090-n8
 
 1. **Субстрат:** серверні таймери / outbox за таблицею вибору в [ADR-0089](../../governance/adr/0089-job-substrates-outbox-broker-timer.md).
 2. **Алерти:** server-side shipper `/api/internal/alerts/send` → Telegram ([`alert-bot-routing.md`](../../operations/observability/alert-bot-routing.md)).
-3. **Деплой змін:** звичайний PR у `apps/server` → merge у `main` → вручну `pnpm deploy:api` (автодеплою немає).
+3. **Деплой змін:** звичайний PR у `apps/server` → merge у `main` → вручну `pnpm deploy:api -- --yes` (автодеплою немає).
 
 ## 7. Куди дивитися першим
 
