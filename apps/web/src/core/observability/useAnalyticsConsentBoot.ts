@@ -25,7 +25,10 @@ import { useEffect, useRef } from "react";
 import { meApi } from "@shared/api";
 import { logger } from "@shared/lib";
 import { useAuth } from "../auth/AuthContext";
-import { setAnalyticsConsent } from "./analyticsConsent";
+import {
+  hydrateAnalyticsConsent,
+  markAnalyticsServerHydrated,
+} from "./analyticsConsent";
 
 export function useAnalyticsConsentBoot(): void {
   const { user } = useAuth();
@@ -38,6 +41,7 @@ export function useAnalyticsConsentBoot(): void {
       // different account on a shared device) hydrates again instead of
       // keeping the previous user's cached consent value.
       hydratedForUserRef.current = null;
+      markAnalyticsServerHydrated(false);
       return;
     }
     if (hydratedForUserRef.current === userId) return;
@@ -48,10 +52,13 @@ export function useAnalyticsConsentBoot(): void {
       .getPreferences()
       .then((prefs) => {
         if (cancelled) return;
-        setAnalyticsConsent(prefs.analytics);
+        hydrateAnalyticsConsent(prefs.analytics);
       })
       .catch((err: unknown) => {
         logger.warn("[analyticsConsent] boot hydrate failed", err);
+        // Без відповіді сервера не тримаємо банер вічно прихованим:
+        // покладаємось на локальне рішення пристрою.
+        if (!cancelled) markAnalyticsServerHydrated(true);
       });
     return () => {
       cancelled = true;

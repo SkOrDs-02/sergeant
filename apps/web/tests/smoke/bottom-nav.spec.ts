@@ -27,6 +27,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_vibe_picks_v1: JSON.stringify({
     picks: ["finyk", "fizruk", "nutrition", "routine"],

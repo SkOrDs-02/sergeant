@@ -231,4 +231,35 @@ describe("бекенд бази у воркері", () => {
 
     expect(openSqliteInWorker).toHaveBeenCalledTimes(1);
   });
+
+  it("перша спроба висне, друга відкриває OPFS: не memory (аудит 2026-09-29)", async () => {
+    const hung = new Error("sqlite-worker: timed out");
+    hung.name = "SqliteWorkerOpenTimeoutError";
+    vi.mocked(openSqliteInWorker)
+      .mockRejectedValueOnce(hung)
+      .mockResolvedValue(fakeWorkerConnection());
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("opfs-sahpool");
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
+    // Повтор іде з коротшим таймаутом, щоб холодний старт лишався скінченним.
+    expect(vi.mocked(openSqliteInWorker).mock.calls[0]?.[1]).not.toHaveProperty(
+      "openTimeoutMs",
+    );
+    expect(vi.mocked(openSqliteInWorker).mock.calls[1]?.[1]).toMatchObject({
+      openTimeoutMs: 10_000,
+    });
+  });
+
+  it("два таймаути поспіль: одна повторна спроба і фолбек, не безмежно", async () => {
+    const hung = new Error("sqlite-worker: timed out");
+    hung.name = "SqliteWorkerOpenTimeoutError";
+    vi.mocked(openSqliteInWorker).mockRejectedValue(hung);
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).not.toBe("opfs-sahpool");
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
+  });
 });
