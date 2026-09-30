@@ -50,6 +50,7 @@ import {
   currentTime,
   emptyForm,
   gramsOrDefault,
+  macrosToFormFields,
   upsertMealTemplate,
   type MealFormState,
   type MealSaveTemplate,
@@ -248,11 +249,7 @@ export function AddMealSheet({
         name: String(initialMeal.name || ""),
         mealType: initialMeal.mealType || "breakfast",
         time: initialMeal.time || currentTime(),
-        kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
-        protein_g:
-          mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
-        fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
-        carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
+        ...macrosToFormFields(mac),
         err: "",
       });
     } else {

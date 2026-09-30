@@ -1,6 +1,10 @@
 import { drizzle, type SqliteRemoteDatabase } from "drizzle-orm/sqlite-proxy";
 import * as sqliteSchema from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+import {
+  openWithRetry,
+  type WorkerOpenAttemptOptions,
+} from "./workerOpenRetry.js";
 import { addSentryBreadcrumb, setSentryTag } from "../observability/sentry.js";
 import {
   isChunkLoadError,
@@ -412,21 +416,20 @@ async function initSqliteDb(
  * спрацьовує на будь-якій невдачі воркера.
  */
 async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await attemptWorkerBackedDb(userKey);
-    } catch (err) {
-      const delayMs = OPFS_LOCK_RETRY_DELAYS_MS[attempt];
-      if (delayMs !== undefined && isOpfsLockContention(err)) {
-        addSentryBreadcrumb({
-          category: "storage",
-          level: "info",
-          message: "sqlite: opfs pool busy, retrying",
-          data: { attempt: attempt + 1, delayMs },
-        });
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-        continue;
-      }
+  return openWithRetry((options) => attemptWorkerBackedDb(userKey, options), {
+    isLockContention: isOpfsLockContention,
+    onRetry: ({ reason, attempt, delayMs }) => {
+      addSentryBreadcrumb({
+        category: "storage",
+        level: "info",
+        message:
+          reason === "lock"
+            ? "sqlite: opfs pool busy, retrying"
+            : "sqlite: worker open timed out, retrying with fresh worker",
+        data: { attempt, delayMs },
+      });
+    },
+    onGiveUp: (err) => {
       if (isChunkLoadError(err)) reloadOnceForChunkError();
       // Ретраї вичерпано, а пул усе ще зайнятий - отже тримає його не наш
       // попередній воркер, а щось довговічніше. Причина доїжджає до аркуша
@@ -442,29 +445,9 @@ async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
           poolBusy: busy,
         },
       });
-      return null;
-    }
-  }
+    },
+  });
 }
-
-/**
- * Паузи між спробами взяти SAH-пул. Дві, і обидві короткі.
- *
- * AI-CONTEXT: пул захоплює `FileSystemSyncAccessHandle` на СВОЇ файли в
- * `SAH_POOL_DIRECTORY`, а не на одну базу, тож два власники пулу в одному
- * origin виключають один одного незалежно від імені бази. Найчастіший
- * власник-конкурент — воркер ПОПЕРЕДНЬОГО завантаження цієї ж сторінки:
- * браузер звільняє його хендли, лише коли добиває потік, і нове
- * завантаження встигає постукати раніше. Прод 2026-09-21 (Chrome 151,
- * Android): `createSyncAccessHandle` кидав «Access Handles cannot be
- * created…» через 70 мс після старту сторінки, і через одну-єдину
- * спробу вся сесія лишалась на kvvfs зі стелею ~5 МБ.
- *
- * Чому саме перечекати, а не закривати пул на `pagehide`: закриття їде у
- * воркер повідомленням, тобто асинхронно, і сторінка, яку вивантажують,
- * відповіді не дочекається. Гонку виграє той, хто готовий почекати.
- */
-const OPFS_LOCK_RETRY_DELAYS_MS = [150, 400] as const;
 
 /**
  * Чи це саме «пул зайнятий», а не чесна відмова середовища.
@@ -481,7 +464,10 @@ function isOpfsLockContention(err: unknown): boolean {
   );
 }
 
-async function attemptWorkerBackedDb(userKey: string): Promise<OpenedDb> {
+async function attemptWorkerBackedDb(
+  userKey: string,
+  options: WorkerOpenAttemptOptions = {},
+): Promise<OpenedDb> {
   const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
   const handoff = await import("./kvvfsHandoff.js");
   const dbName = `sergeant-${userKey}.db`;
@@ -497,6 +483,9 @@ async function attemptWorkerBackedDb(userKey: string): Promise<OpenedDb> {
     initialCapacity: SAH_POOL_INITIAL_CAPACITY,
     minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
     importBytes,
+    ...(options.openTimeoutMs !== undefined
+      ? { openTimeoutMs: options.openTimeoutMs }
+      : {}),
   });
   if (needsHandoff) {
     // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня

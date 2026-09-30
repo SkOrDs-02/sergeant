@@ -67,33 +67,20 @@ export function PWASection() {
     <SettingsGroup title={settingsSectionTitle("pwa")} icon="refresh-cw">
       <p className="text-style-body text-subtle leading-snug">
         Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
-        можна скинути кеш Service Worker і перезавантажити застосунок.
+        можна скинути збережені на пристрої файли застосунку й перезавантажити
+        його.
       </p>
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-10 flex-1"
-          disabled={swBusy || !("serviceWorker" in navigator)}
-          onClick={() => {
-            void runSwDiagnostics();
-          }}
-        >
-          Технічна діагностика
-        </Button>
-        <Button
-          type="button"
-          variant="soft"
-          tone="danger"
-          size="sm"
-          className="h-10 flex-1"
-          disabled={swBusy || !("serviceWorker" in navigator)}
-          onClick={() => setConfirmOpen(true)}
-        >
-          Скинути кеш PWA
-        </Button>
-      </div>
+      <Button
+        type="button"
+        variant="soft"
+        tone="danger"
+        size="sm"
+        className="h-10 w-full"
+        disabled={swBusy || !("serviceWorker" in navigator)}
+        onClick={() => setConfirmOpen(true)}
+      >
+        Скинути кеш PWA
+      </Button>
       {/* V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
           §5): цей блок НАВМИСНО не переведено на `SettingsSubGroup`.
           «Результат діагностики» — не структурний заголовок підрозділу, а
@@ -106,29 +93,54 @@ export function PWASection() {
           зламала б цей ряд «лейбл + дія», а вигадувати для неї фальшивий
           структурний заголовок заради самого примітиву гірше, ніж лишити
           як є. */}
-      {swSnapshot ? (
-        <div className="rounded-xl border border-line bg-panelHi p-3 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-style-label">Результат діагностики</span>
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={() => {
-                void navigator.clipboard?.writeText(
-                  JSON.stringify(swSnapshot, null, 2),
-                );
-                toast.success("Діагностику скопійовано");
-              }}
-            >
-              Скопіювати
-            </Button>
-          </div>
-          <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-style-caption text-subtle">
-            {JSON.stringify(swSnapshot, null, 2)}
-          </pre>
+      {/* PR-S10: сирий JSON діагностики SW — для підтримки, не для всіх.
+          Розкриття за замовчуванням закрите; summary ≥44px. */}
+      <details className="rounded-xl border border-line">
+        <summary className="flex min-h-[44px] cursor-pointer items-center px-3 text-style-label text-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-strong/40">
+          Для підтримки
+        </summary>
+        <div className="space-y-2 px-3 pb-3">
+          <p className="text-style-body text-subtle">
+            Потрібно, лише якщо підтримка попросить технічні дані про
+            застосунок.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-10"
+            disabled={swBusy || !("serviceWorker" in navigator)}
+            onClick={() => {
+              void runSwDiagnostics();
+            }}
+          >
+            Технічна діагностика
+          </Button>
+          {swSnapshot ? (
+            <div className="rounded-xl border border-line bg-panelHi p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-style-label">Результат діагностики</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    void navigator.clipboard?.writeText(
+                      JSON.stringify(swSnapshot, null, 2),
+                    );
+                    toast.success("Діагностику скопійовано");
+                  }}
+                >
+                  Скопіювати
+                </Button>
+              </div>
+              <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words text-style-caption text-subtle">
+                {JSON.stringify(swSnapshot, null, 2)}
+              </pre>
+            </div>
+          ) : null}
         </div>
-      ) : null}
+      </details>
       {/* AI-CONTEXT: попередження «несинхронізовані зміни в офлайн-черзі
           можуть бути втрачені» тут стояло помилково (browser-QA
           2026-09-03). `clearAppCaches` (`src/sw/cache.ts`) видаляє РІВНО

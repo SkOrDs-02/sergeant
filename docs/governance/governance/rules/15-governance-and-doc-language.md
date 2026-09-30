@@ -14,7 +14,7 @@
 ## Enforced by
 
 - **ci** - `pnpm lint` (крок `node scripts/check-governance-sync.mjs`, з 2026-09-23; errors on dangling apps/packages/scripts refs in non-aspirational docs)
-- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається, не в `pnpm lint`/`pnpm check`): pnpm docs:check-freshness-coverage - локальної заміни немає
+- **ci** - SUSPENDED з 2026-09-23 (у `.github/workflows/` кроку досі немає, не в `pnpm lint`/`pnpm check`, перевірено 2026-09-29): pnpm docs:check-freshness-coverage
 - **ci** - `pnpm lint` (крок `node scripts/check-hard-rules-registry.mjs`, з 2026-09-23; enforcer цього ж правила)
 - **pr-template** - .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes) - Bitbucket цей шаблон не підставляє автоматично (DG-30, рішення власника не прийняте)
 

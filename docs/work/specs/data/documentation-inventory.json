@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 670,
-  "total_entries": 670,
+  "tracked_files": 671,
+  "total_entries": 671,
   "target_collisions": [],
   "entries": [
     {
@@ -1208,7 +1208,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/feature-flags.md",
-      "inbound_count": 25,
+      "inbound_count": 26,
       "inbound_sources": [
         "docs/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -1220,6 +1220,7 @@
         "docs/operations/observability/engineering-metrics.md",
         "docs/operations/observability/hub-perf-baseline.md",
         "docs/operations/observability/runbook.md",
+        "docs/product/modules/hub-coach.md",
         "docs/start/instructions/add-feature-flag.md",
         "docs/start/instructions/billing-payments-launch.md",
         "docs/start/instructions/cleanup-dead-code.md",
@@ -2999,7 +3000,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0074-hosting-hetzner-coolify.md",
-      "inbound_count": 42,
+      "inbound_count": 43,
       "inbound_sources": [
         "docs/engineering/architecture/README.md",
         "docs/engineering/architecture/diagrams/c1-system-context.md",
@@ -3013,6 +3014,7 @@
         "docs/governance/adr/0075-openclaw-gateway-decommissioned.md",
         "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
         "docs/governance/adr/0090-n8n-decommissioned.md",
+        "docs/governance/adr/0101-github-primary-host-ci-returns.md",
         "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
         "docs/governance/security/api-internal-hmac.md",
         "docs/governance/security/pii-handling.md",
@@ -3245,7 +3247,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0082-private-storage-repo-posture.md",
-      "inbound_count": 24,
+      "inbound_count": 25,
       "inbound_sources": [
         "docs/design/design/storybook.md",
         "docs/engineering/architecture/module-ownership.md",
@@ -3255,6 +3257,7 @@
         "docs/governance/adr/0046-storybook-vrt-scope.md",
         "docs/governance/adr/0069-ai-pr-checklist.md",
         "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
+        "docs/governance/adr/0101-github-primary-host-ci-returns.md",
         "docs/governance/governance/README.md",
         "docs/governance/governance/ai-pr-checklist.md",
         "docs/governance/governance/harness-versioning.md",
@@ -3608,6 +3611,21 @@
         "docs/governance/pr-ledger/index.json",
         "docs/product/model/product-overview.md",
         "docs/product/modules/hub-coach.md"
+      ]
+    },
+    {
+      "old_path": null,
+      "new_path": "docs/governance/adr/0101-github-primary-host-ci-returns.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0101-github-primary-host-ci-returns.md",
+      "inbound_count": 5,
+      "inbound_sources": [
+        "docs/governance/governance/rules/05-conventional-commits-explicit-scope.md",
+        "docs/governance/governance/rules/06-no-force-push-to-main.md",
+        "docs/governance/governance/rules/10-lifecycle-markers.md",
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
       ]
     },
     {
@@ -8059,10 +8077,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
+        "docs/work/specs/audits/2026-07-31-legal-docs-beta-readiness.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
         "docs/work/specs/audits/verification/migration.md"
@@ -8519,8 +8538,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
+        "docs/governance/adr/0101-github-primary-host-ci-returns.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
@@ -8545,9 +8565,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/adr/0101-github-primary-host-ci-returns.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
         "docs/governance/pr-ledger/index.json",
@@ -8621,10 +8642,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-29-nutrition-handson.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md"
+        "docs/open-work.md",
+        "docs/product/modules/nutrition.md"
       ]
     },
     {

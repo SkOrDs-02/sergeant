@@ -42,9 +42,6 @@ export const nutritionKeys = {
 
   // Barcode lookup (shared between meal-sheet and pantry scan)
   barcode: (code: string) => ["nutrition", "barcode", code] as const,
-
-  // Push subscription status
-  pushStatus: ["nutrition", "push-status"] as const,
 };
 
 // ─── Finyk ────────────────────────────────────────────────────────────────
@@ -58,17 +55,10 @@ export const finykKeys = {
 
   // Monobank read endpoints
   mono: ["finyk", "mono"] as const,
-  monoClientInfo: (tokenHash: string) =>
-    ["finyk", "mono", "client-info", tokenHash] as const,
-  /** Префікс для всіх statement-ключів — зручно для bulk-invalidate/remove. */
-  monoStatements: ["finyk", "mono", "statement"] as const,
-  monoStatement: (accId: string, from: number, to: number) =>
-    ["finyk", "mono", "statement", accId, from, to] as const,
 
   // DB-backed webhook endpoints (Track B + Track C)
   monoSyncState: ["finyk", "mono", "sync-state"] as const,
   monoBackfillProgress: ["finyk", "mono", "backfill-progress"] as const,
-  monoAccounts: ["finyk", "mono", "accounts"] as const,
   monoTransactionsDb: (
     from: string | undefined,
     to: string | undefined,
@@ -87,10 +77,6 @@ export const finykKeys = {
 
   // Privatbank read endpoints
   privat: ["finyk", "privat"] as const,
-  privatAccounts: (idHash: string) =>
-    ["finyk", "privat", "accounts", idHash] as const,
-  privatStatement: (idHash: string, accId: string, from: string, to: string) =>
-    ["finyk", "privat", "statement", idHash, accId, from, to] as const,
 
   // Receipt scan (docs/work/specs/receipt-scan.md § Web UI).
   // `lookupReceipt`/`analyzeReceipt`/`saveReceipt` are mutations (no cache

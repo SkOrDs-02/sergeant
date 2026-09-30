@@ -68,6 +68,33 @@ export function summarizeDestructiveToolInput(
       // тепер червонить `sergeant-design/ukrainian-copy`.
       return from && to ? `період ${from} – ${to}` : undefined;
     }
+    case "remember": {
+      const rawFact = input["fact"];
+      const fact = typeof rawFact === "string" ? rawFact.trim() : "";
+      if (!fact) return undefined;
+      return `«${fact.length > 80 ? `${fact.slice(0, 79)}…` : fact}»`;
+    }
+    case "create_transaction": {
+      const amount = Number(input["amount"]);
+      if (!Number.isFinite(amount)) return undefined;
+      const kind = input["type"] === "income" ? "дохід" : "витрата";
+      const rawCat = input["category"];
+      const category = typeof rawCat === "string" ? rawCat.trim() : "";
+      return category
+        ? `${kind} ${amount} грн, ${category}`
+        : `${kind} ${amount} грн`;
+    }
+    case "export_module_data": {
+      const rawModule = input["module"];
+      const mod = typeof rawModule === "string" ? rawModule.trim() : "";
+      if (!mod) return undefined;
+      const rawFormat = input["format"];
+      const format =
+        typeof rawFormat === "string" && rawFormat.trim()
+          ? rawFormat.trim()
+          : "text";
+      return `модуль ${mod}, формат ${format}`;
+    }
     case "clear_pantry":
       return "усі позиції активної комори";
     default:
