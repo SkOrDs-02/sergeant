@@ -14,6 +14,7 @@ import {
   PUSH_DAILY_CAP_DEFAULT,
 } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
+import { decryptHealthText } from "../../lib/healthTextCrypto.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
 import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
 
@@ -389,7 +390,17 @@ async function fetchModuleTables(
         `SELECT * FROM ${table} WHERE user_id = $1`,
         [userId],
       );
-      return [table, rowArray(rows)] as const;
+      // GDPR: людина забирає свій текст, а не шифротекст (spec
+      // health-text-encryption). Legacy plaintext проходить без змін.
+      const out =
+        table === "fizruk_injuries"
+          ? rows.map((r) =>
+              typeof r["note"] === "string"
+                ? { ...r, note: decryptHealthText(r["note"]) }
+                : r,
+            )
+          : rows;
+      return [table, rowArray(out)] as const;
     }),
   );
   return Object.fromEntries(results);
@@ -689,6 +700,15 @@ export async function purgeUserData(
     await client.query(`DELETE FROM ai_usage_daily WHERE subject_key = $1`, [
       `u:${userId}`,
     ]);
+
+    // `ai_memory_ingest_failed.user_id` (міграція 069) — теж голий TEXT без
+    // FK, а `payload_json` містить повний текст пам'яті (B11 аудиту
+    // ai-pipeline-2026-08-05). Без явного purge DLQ-replay воскресив би
+    // контент видаленого акаунта.
+    await client.query(
+      `DELETE FROM ai_memory_ingest_failed WHERE user_id = $1`,
+      [userId],
+    );
 
     // NOTE: no separate `ai_memories` soft-delete step here. `ai_memories.
     // user_id` has `ON DELETE CASCADE` (migration 025) straight to

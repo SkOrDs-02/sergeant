@@ -82,8 +82,8 @@ describe("wrapAndScanToolResults — envelope shape", () => {
     expect(closingMatches.length).toBe(1);
     // І має бути саме в кінці.
     expect(out[0]!.content.endsWith("</tool_output>")).toBe(true);
-    // Зловмисний закриваючий тег має бути замінений (zero-width-space у "</")
-    expect(out[0]!.content).toMatch(/<\u200B\/tool_output>/);
+    // Зловмисний закриваючий тег має бути замінений ентіті (як у <user_data>)
+    expect(out[0]!.content).toContain("&lt;/tool_output&gt;");
   });
 
   it("НЕ мутує вхідний масив", () => {
