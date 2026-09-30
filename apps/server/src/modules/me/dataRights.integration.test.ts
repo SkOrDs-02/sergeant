@@ -28,7 +28,6 @@ import {
   ACCOUNT_DELETION_GRACE_DAYS,
   ACCOUNT_PENDING_DELETION_CODE,
 } from "@sergeant/shared";
-import { purgeUserData } from "./dataRights.js";
 import {
   bootIntegrationHarness,
   shutdownIntegrationHarness,
@@ -53,6 +52,16 @@ vi.mock("../../auth.js", async (importOriginal) => {
     getFreshSessionUser: getSessionUserMock,
   };
 });
+
+// Динамічний імпорт навмисно: статичний тягнув би `../../db.js` (пул) ще до
+// того, як `bootIntegrationHarness` підставить адресу Testcontainers, і
+// весь застосунок у цьому файлі ходив би на localhost:5432 (ECONNREFUSED).
+async function purgeUserData(
+  ...args: Parameters<typeof import("./dataRights.js").purgeUserData>
+) {
+  const mod = await import("./dataRights.js");
+  return mod.purgeUserData(...args);
+}
 
 const TEST_USER_ID = "user_datarights_int";
 const TEST_USER_EMAIL = `${TEST_USER_ID}@test.local`;
