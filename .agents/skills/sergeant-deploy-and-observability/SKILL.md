@@ -18,12 +18,12 @@ Production-facing зміни в Sergeant не вважаються заверш�
 
 ## Deploy targets (актуально — AGENTS.md § «Де живе код» і § «Прод не оновлюється сам»)
 
-CI - GitHub Actions (`ci.yml`) на кожен PR і push у `main`, з 2026-09-30 ([ADR-0101](../../../docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)). Бекенд автодеплоїться лише після зелених `check`, `critical-flow`, `migration-lint`, `migration-down-drill`; web лишається ручним.
+CI - GitHub Actions (`ci.yml`; на PR лише мінімальний набір, решта щотижня), з 2026-09-30 ([ADR-0101](../../../docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)). Бекенд автодеплоїться лише після зелених `check`, `critical-flow`, `migration-lint`, `migration-down-drill`; web лишається ручним.
 
 | Target | Repo source | Notes |
 |---|---|---|
 | Coolify app `sergeant-api-v2` (Hetzner) | `apps/server` via `Dockerfile.api` | Автодеплой: джоба `deploy-api` у `ci.yml` -> `deploy-api.yml` (Coolify API, секрети `COOLIFY_URL`/`COOLIFY_TOKEN`; перевіряє статус, задеплоєний коміт = `github.sha` і `/health`). Запасний шлях `pnpm deploy:api`. Образ білдиться на сервері з GitHub `main`, без GHCR; дзеркало Hetzner лише резервна копія. Міграції їдуть в ENTRYPOINT (`migrate.js && exec index.js`), не в Coolify `pre_deployment_command`. Health: `/health`. |
-| Vercel (`apps/web`, `apps/landing`) | `pnpm deploy:web` / `pnpm deploy:landing` | Vercel CLI без Git-інтеграції: pull env -> build -> deploy `--prebuilt`, кожен запуск викочує прод. Web - лише вручну; лендінг ще й `deploy-landing.yml` на push у `main`. |
+| Vercel (`apps/web`, `apps/landing`) | `pnpm deploy:web` / `pnpm deploy:landing` | Vercel CLI без Git-інтеграції: pull env -> build -> deploy `--prebuilt`, кожен запуск викочує прод. Web і лендінг - лише вручну (`deploy-landing.yml` теж лише `workflow_dispatch`). |
 
 Деплой-скрипти (`deploy:api`, `deploy:web`, `deploy:landing`) без `--yes` лише друкують прев'ю і виходять з кодом 0, без мережі (DG-32); викочує `pnpm deploy:api -- --yes` (так само web/landing). **Не запускай `deploy:*` заради перевірки коду** — тільки прев'ю без `--yes` чи `deploy:api -- --sync-only`.
 

@@ -51,7 +51,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Bundle budget
 
-Гейт `size-limit` і eager - джоба `bundle-budgets` у `ci.yml` на кожному PR (з 2026-09-30 знову GitHub Actions, ADR-0101); локально `pnpm --filter @sergeant/web exec size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
+Гейт `size-limit` і eager - джоба `bundle-budgets` у `ci.yml`, щопонеділка і вручну (ADR-0101), на PR - лише required-чек `Lighthouse CI`; локально `pnpm --filter @sergeant/web exec size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
 
 **Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 

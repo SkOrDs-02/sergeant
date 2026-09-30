@@ -16,7 +16,7 @@
 - **ci** - `pnpm lint` (крок `node scripts/check-governance-sync.mjs`, з 2026-09-23; errors on dangling apps/packages/scripts refs in non-aspirational docs)
 - **ci** - SUSPENDED: pnpm docs:check-freshness-coverage не стоїть ні в жодному workflow, ні в `pnpm lint`/`pnpm check`; `docs-automation.yml` ганяє лише cadence і single-marker
 - **ci** - `pnpm lint` (крок `node scripts/check-hard-rules-registry.mjs`, з 2026-09-23; enforcer цього ж правила)
-- **pr-template** - .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes) - GitHub підставляє його в нові PR, `docs-automation.yml` перевіряє тіло (`PR body validator`)
+- **pr-template** - .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes) - GitHub підставляє його в нові PR; `PR body validator` у `docs-automation.yml` з 2026-09-30 на PR не запускається (ADR-0101)
 
 ## Why / What is enforced
 

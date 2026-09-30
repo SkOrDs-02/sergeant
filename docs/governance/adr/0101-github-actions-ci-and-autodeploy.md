@@ -24,7 +24,7 @@
 
 ## Considered Options
 
-1. **GitHub Actions на кожен PR і `main` + автодеплой бекенду лише після обовʼязкових джоб.**
+1. **GitHub Actions на PR і `main` (мінімальний набір) + автодеплой бекенду лише після обовʼязкових джоб.**
 2. **GitHub Actions лише як гейт PR, деплой і далі ручний.** Прибирає ризик, але лишає прод відстаючим: `pnpm deploy:status` роками показував розрив, який ніхто не закривав вчасно.
 3. **Лишити локальний merge-gate у `pre-push` (реплей комітів на свіжий `main` у тимчасовому worktree).** Рішення 2026-09-24 для світу без CI. Спека так і не дійшла до коду: у `.husky/pre-push` жила лише перевірка змердженого PR на Bitbucket.
 4. **Нічого не міняти.** Тиждень показав, що без CI борг росте непомітно, а деплой тоді остаточно залежить від дисципліни.
@@ -36,7 +36,14 @@
 - `ci.yml` біжить на кожен `pull_request` і на `push` у `main`. Обовʼязкові для деплою джоби: `check` (format, `pnpm lint`, typecheck + тести, білд), `Critical-flow E2E (Playwright)`, `migration-lint`, `migration-down-drill`. `check` і critical-flow разом із `Lighthouse CI` вже стоять required-чеками в branch protection `main`.
 - Автодеплой бекенду: джоба `deploy-api` у `ci.yml` з `needs:` на чотири джоби вище, лише на `push` у `main`, викликає reusable `deploy-api.yml`. Власного `on: push` той воркфлоу не має. Кроки: пропуск, якщо не задані секрети `COOLIFY_URL` / `COOLIFY_TOKEN`; пропуск, якщо `main` уже пішов далі (Coolify збирає голову гілки, а не коміт); пропуск, якщо від коміту в проді (останній `finished` деплой у Coolify) не змінювались шляхи, що потрапляють в образ; `POST /api/v1/deploy?uuid=…`; опит `/api/v1/deployments/applications/<uuid>` до `finished`; звірка, що задеплоєний коміт дорівнює `github.sha`; `GET https://api.sergeant.com.ua/health` = 200. Будь-яке розходження фарбує джобу в червоне. `concurrency: deploy-api` без скасування.
 - Старий ghcr-шлях (білд образу в Actions, пуш у `ghcr.io`, webhook у Coolify) прибрано: Coolify з 2026-09-23 сам клонує репо і збирає `Dockerfile.api`.
-- `pnpm deploy:api` лишається запасним ручним шляхом.
+- `pnpm deploy:api -- --yes` лишається запасним ручним шляхом.
+- **На PR і push у `main` біжить лише потрібне для мержу й деплою.** Перший же PR показав, що повний набір (`ci.yml` плюс ще ~15 workflow на кожен push) забиває чергу GitHub Actions на десятки хвилин. Тому:
+  - `ci.yml` на PR/push: `check`, `Critical-flow E2E (Playwright)`, `migration-lint`, `migration-down-drill`, `commitlint`, `secret-scan`, на `main` ще `deploy-api`. Critical-flow лишається, бо це required-чек branch protection і частина `needs:` автодеплою; migration-джоби, бо міграції виконує прод; commitlint і gitleaks коштують менше хвилини і тримають Hard Rule #5 та secret scan.
+  - `lighthouse-ci.yml` лишається на PR (path-filtered): `Lighthouse CI` - required-чек branch protection, без нього PR, що чіпають web, висіли б у «pending». Прибрати його з PR можна лише разом зі зміною branch protection (рішення власника).
+  - Решта джоб `ci.yml` (`bundle-budgets`, `coverage`, `a11y`, `mobile-ui-audit`, `landing-quality`, `knip-scan`, `security-audit`, `server-integration`, `rag-eval`, `tool-eval`, `actionlint`, `todo-freshness`, `pipeline-duration-summary`) - щопонеділка о 04:00 UTC і вручну.
+  - Щопонеділка і вручну: `ai-legacy-scan`, `codeql`, `container-scan`, `contract-tests`, `docs-automation`, `docs-freshness`, `extended-e2e`, `skill-freshness`, `post-deploy-smoke` (без `deployment_status`), `docs-daily-brief`, `nightly-audit`, `pact-drift`, `web-route-ledger` (останні чотири були щоденні). Без змін: `db-backup-verify`, `mutation-testing`, `rag-eval-live` (уже щотижневі).
+  - Лише вручну: `deploy-landing` (раніше автодеплой лендінгу на push), `deploy-config-staging-gate`, `mobile-shell-android`, `mobile-shell-ios` (мобільний контур на паузі, ADR-0094), `posthog-release-annotation`, `storybook-deploy`. Вже були ручними: `detox-*`, `mobile-flaky-verify`, `mobile-shell-*-release`.
+  - `pr-backlinks.yml` лишається на `pull_request_target: closed`, але вимкнений змінною `PR_LEDGER_ON_GITHUB` (джоба одразу `skipped`).
 - З `.husky/pre-push` знято перевірку змердженого PR на Bitbucket (`scripts/pre-push-merged-pr.mjs`) разом із нагадуванням про реєстр PR. Оновлення `main` у трунку `D:\Sergeant` лишилось: від Bitbucket воно не залежить, а без нього застарівають хуки в усіх worktree.
 - PR створюються через `gh pr create`. Bitbucket лишається архівним remote `bitbucket`, дзеркало Hetzner - другою push-адресою `origin`.
 
@@ -52,7 +59,7 @@
 ### Positive
 
 - Кожен PR і кожен мерж у `main` знову має вердикт, а прод-бекенд доганяє `main` без ручного кроку.
-- Гейти, що з 2026-09-23 значились «вручну», знову виконуються: бандл-бюджети, a11y, mobile UI audit, Knip, commitlint, secret scan.
+- Гейти, що з 2026-09-23 значились «вручну», знову виконуються: commitlint і secret scan на кожному PR, бандл-бюджети, a11y, mobile UI audit і Knip щотижня. Регресія між тижневими прогонами може прожити до шести днів - це свідома ціна короткої черги.
 
 ### Negative
 
