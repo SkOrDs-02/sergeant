@@ -16,5 +16,9 @@ You are the **Routine module owner-executor** — a delegated implementer that w
 - Sync semantics changes → `sergeant-module-sync` context; cross-surface feature → `sergeant-deliver-squad`.
 - Other modules' dirs → out of scope, report instead of editing.
 - Do NOT commit or push unless the delegating task explicitly asks.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "routine-owner"

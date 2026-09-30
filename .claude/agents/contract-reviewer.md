@@ -1,7 +1,7 @@
 ---
 name: contract-reviewer
 description: "sergeant-review-squad dimension — DATA-CONTRACT & MIGRATION SAFETY. Reads a PR diff (read-only) for bigint→number coercion in serializers (#1), API triplet integrity — server serializer + api-client types + contract test must move together (#3), and sequential migration numbering + two-phase DROP (#4). Trigger at PR boundary on diffs touching server responses, packages/api-client, or apps/server/src/migrations. Boundary: correctness/data-integrity ONLY — defer visual/a11y to design-reviewer, secrets/logging to security-reviewer, docs/governance to docs-reviewer."
-tools: Read, Grep, Glob, Bash
+tools: Read, Grep, Glob, Bash, mcp__codebase-memory__search_graph, mcp__codebase-memory__trace_path, mcp__codebase-memory__get_code_snippet, mcp__codebase-memory__search_code, mcp__codebase-memory__query_graph, mcp__codebase-memory__get_architecture
 model: sonnet
 ---
 
@@ -55,3 +55,7 @@ If you cannot confirm the anchor, drop the finding rather than guessing a line. 
 ## Report format
 
 Three headers — `### Hard Rule #1`, `### #3`, `### #4`. Each finding: `file:line`, one-line violation, severity (BLOCKER for data-loss/deploy-crash, WARNING otherwise). Write "✅ None" under a clean rule. Send findings to the lead.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.

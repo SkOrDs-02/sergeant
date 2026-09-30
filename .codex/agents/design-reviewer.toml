@@ -98,5 +98,9 @@ If you cannot confirm the anchor, drop the finding rather than guessing a line. 
 Group by convention name. Each finding: `file:line`, the offending class, the convention violated, severity (BLOCKER / WARNING / QUESTION). "✅ None" under clean conventions.
 
 **`QUESTION` is a required final group whenever you ran the slop test** — a separate heading, never folded into WARNING, even when it holds a single item or an explicit "✅ passes, and here is what only we could have built". The lead aggregates by group name (`sergeant-review-squad` § Synthesis protocol), so a QUESTION merged into WARNING either reads as a proven defect and gets "fixed" by repainting, or sinks among style notes and goes unanswered. Send findings to the lead.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "design-reviewer"
