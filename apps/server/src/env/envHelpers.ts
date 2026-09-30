@@ -44,6 +44,55 @@ export const boolFromEnv = (defaultValue: boolean) =>
     });
 
 /**
+ * Fail-loud варіант `boolFromEnv` для прапорців, що керують витратами
+ * (`ANTHROPIC_BUDGET_*`). Тихий дефолт на `yes`/`on` під час інциденту витрат
+ * лишає «справжню стелю» вимкненою без жодного сигналу (аудит ai-pipeline B15).
+ * Приймає лише true/false/1/0 (регістр і крайні пробіли не важливі); порожнє
+ * або відсутнє значення дає дефолт; решта — ZodIssue, тобто throw на старті.
+ * Зразок — `STRIPE_ENABLED` в `env.ts`.
+ */
+export const strictBoolFromEnv = (name: string, defaultValue: boolean) =>
+  z
+    .string()
+    .optional()
+    .transform((v, ctx) => {
+      if (v === undefined || v.trim() === "") return defaultValue;
+      const lower = v.trim().toLowerCase();
+      if (lower === "true" || lower === "1") return true;
+      if (lower === "false" || lower === "0") return false;
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `${name} must be one of true/false/1/0 (got ${JSON.stringify(v)}) — refusing to guess on a cost-control flag`,
+      });
+      return z.NEVER;
+    });
+
+/**
+ * `AI_QUOTA_FOUNDER_IDS`: comma-separated Better Auth user id (opaque string,
+ * не UUID). Кожен запис після trim — непорожній і без пробільних символів
+ * усередині (типова помилка: пропущена кома дає «id1 id2», який мовчки не
+ * збігається з жодним юзером). Порожні сегменти (кінцева кома) ігноруються.
+ * Значення повертається як є — ран-тайм читає `process.env` напряму.
+ */
+export const founderIdsFromEnv = (name: string) =>
+  z
+    .string()
+    .optional()
+    .superRefine((v, ctx) => {
+      if (v === undefined) return;
+      for (const raw of v.split(",")) {
+        const id = raw.trim();
+        if (id === "") continue;
+        if (/\s/.test(id)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `${name} entry ${JSON.stringify(id)} contains whitespace — ids must be comma-separated opaque strings`,
+          });
+        }
+      }
+    });
+
+/**
  * Ран-тайм-двійник `boolFromEnv` для модулів, які свідомо читають
  * `process.env` напряму (щоб тест міг перемкнути прапорець без ре-імпорту
  * модуля, а ops — без редеплою).
