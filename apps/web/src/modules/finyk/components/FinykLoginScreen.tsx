@@ -253,7 +253,7 @@ export function FinykLoginScreen({
                 <p className="text-style-caption text-muted">{authError}</p>
                 {onOpenAuth && (
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     className="mt-1"
                     onClick={onOpenAuth}
