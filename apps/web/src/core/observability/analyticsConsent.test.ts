@@ -11,7 +11,21 @@ import {
   subscribeAnalyticsConsent,
 } from "./analyticsConsent";
 
+const { safeWriteLSMock, warnMock } = vi.hoisted(() => ({
+  safeWriteLSMock: vi.fn(),
+  warnMock: vi.fn(),
+}));
+vi.mock("@shared/lib/storage/storage", async () => {
+  const actual = await vi.importActual<
+    typeof import("@shared/lib/storage/storage")
+  >("@shared/lib/storage/storage");
+  safeWriteLSMock.mockImplementation(actual.safeWriteLS);
+  return { ...actual, safeWriteLS: safeWriteLSMock };
+});
+vi.mock("@shared/lib", () => ({ logger: { warn: warnMock } }));
+
 afterEach(() => {
+  warnMock.mockClear();
   __resetAnalyticsConsentForTests();
   localStorage.clear();
 });
@@ -90,5 +104,29 @@ describe("рішення пристрою (банер першого запус�
     const again = await import("./analyticsConsent");
     expect(again.getAnalyticsDecision()).toBe("denied");
     expect(again.getAnalyticsConsent()).toBe(false);
+  });
+});
+
+describe("analyticsConsent — збій запису рішення у сховище", () => {
+  it("лишає рішення в памʼяті, сповіщає підписників і логує попередження", () => {
+    safeWriteLSMock.mockImplementationOnce(() => {
+      throw new Error("QuotaExceededError");
+    });
+    const listener = vi.fn();
+    subscribeAnalyticsConsent(listener);
+
+    expect(() => setAnalyticsConsent(true)).not.toThrow();
+
+    expect(getAnalyticsConsent()).toBe(true);
+    expect(getAnalyticsDecision()).toBe("granted");
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(warnMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("логує попередження й коли запис повертає false", () => {
+    safeWriteLSMock.mockReturnValueOnce(false);
+    setAnalyticsConsent(false);
+    expect(getAnalyticsDecision()).toBe("denied");
+    expect(warnMock).toHaveBeenCalledTimes(1);
   });
 });

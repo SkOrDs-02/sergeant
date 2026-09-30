@@ -197,7 +197,6 @@ function applyConsent() {
   if (!posthogModule) return;
   const granted = getAnalyticsConsent();
   if (appliedConsent === granted) return;
-  appliedConsent = granted;
   try {
     if (granted) {
       posthogModule.opt_in_capturing({ captureEventName: false });
@@ -207,6 +206,9 @@ function applyConsent() {
     } else {
       posthogModule.opt_out_capturing();
     }
+    // Лише після успіху SDK: інакше збій лишив би `appliedConsent`
+    // «застосованим», і наступний виклик не повторив би спробу.
+    appliedConsent = granted;
   } catch {
     /* noop — аналітика не повинна падати */
   }

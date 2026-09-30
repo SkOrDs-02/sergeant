@@ -2,6 +2,17 @@ import { expect, test } from "@playwright/test";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+// Банер згоди на аналітику перекриває UI на першому запуску, тож рішення
+// «denied» засіваємо для всього файлу, а не для одного тесту.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "sergeant.analytics_consent_decision.v1",
+      JSON.stringify({ v: "denied" }),
+    );
+  });
+});
+
 test("@critical legal documents scroll inside the fixed PWA shell", async ({
   page,
 }) => {
@@ -44,10 +55,6 @@ test("@critical module headers keep their canonical names after onboarding", asy
 }) => {
   await page.addInitScript(() => {
     window.localStorage.setItem("hub_onboarding_done_v1", "1");
-    window.localStorage.setItem(
-      "sergeant.analytics_consent_decision.v1",
-      JSON.stringify({ v: "denied" }),
-    );
     window.localStorage.setItem(
       "hub_onboarding_vibes_v1",
       JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),

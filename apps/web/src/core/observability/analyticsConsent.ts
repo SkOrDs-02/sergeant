@@ -52,6 +52,7 @@
  *     already open.
  */
 
+import { logger } from "@shared/lib";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 const DECISION_KEY = "sergeant.analytics_consent_decision.v1";
@@ -90,7 +91,18 @@ function notify(): void {
 function persistDecision(next: AnalyticsDecision | null): void {
   decision = next;
   if (next === null) return;
-  safeWriteLS(DECISION_KEY, { v: next });
+  // Збій сховища (квота, приватний режим) не має губити рішення: воно
+  // лишається в памʼяті на цю сесію, підписники все одно отримують notify().
+  try {
+    if (!safeWriteLS(DECISION_KEY, { v: next })) {
+      logger.warn("[analyticsConsent] не вдалося зберегти рішення на пристрої");
+    }
+  } catch (err) {
+    logger.warn(
+      "[analyticsConsent] не вдалося зберегти рішення на пристрої",
+      err,
+    );
+  }
 }
 
 /** `true` when analytics events are currently allowed to fire. */

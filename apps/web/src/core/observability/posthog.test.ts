@@ -517,3 +517,38 @@ describe("згода на аналітику (opt-out за замовчуван�
     expect(posthogOptIn).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("applyConsent — повторна спроба після збою SDK", () => {
+  it("збій opt_out_capturing не позначає згоду застосованою: наступна зміна повторює спробу", async () => {
+    const consent = await import("./analyticsConsent");
+    const mod = await import("./posthog");
+    posthogOptOut.mockImplementationOnce(() => {
+      throw new Error("sdk down");
+    });
+
+    await mod.initPostHog();
+    expect(posthogOptOut).toHaveBeenCalledTimes(1);
+
+    consent.setAnalyticsConsent(false);
+    expect(posthogOptOut).toHaveBeenCalledTimes(2);
+
+    // Успішне застосування закріплюється: ще один notify нічого не дзвонить.
+    consent.setAnalyticsConsent(false);
+    expect(posthogOptOut).toHaveBeenCalledTimes(2);
+  });
+
+  it("збій opt_in_capturing теж не блокує повтор", async () => {
+    const consent = await import("./analyticsConsent");
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+    posthogOptIn.mockImplementationOnce(() => {
+      throw new Error("sdk down");
+    });
+
+    consent.setAnalyticsConsent(true);
+    expect(posthogOptIn).toHaveBeenCalledTimes(1);
+
+    consent.setAnalyticsConsent(true);
+    expect(posthogOptIn).toHaveBeenCalledTimes(2);
+  });
+});
