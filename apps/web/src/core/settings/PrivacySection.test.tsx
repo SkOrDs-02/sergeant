@@ -76,6 +76,7 @@ import { ApiError } from "@sergeant/api-client";
 import {
   __resetAnalyticsConsentForTests,
   getAnalyticsConsent,
+  getAnalyticsDecision,
 } from "../observability/analyticsConsent";
 import { DEFAULT_PREFERENCES, PrivacySection } from "./PrivacySection";
 
@@ -292,6 +293,30 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     fireEvent.click(analyticsToggle);
 
     await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+  });
+
+  it("тумблер aiMemory лише гідрує кеш аналітики з сервера і НЕ записує рішення на пристрої", async () => {
+    renderSection();
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+    // Гідрація з `analytics: true` вже записала «granted»; скидаємо, щоб
+    // перевірити саме шлях зміни ІНШОГО ключа.
+    __resetAnalyticsConsentForTests();
+    expect(getAnalyticsDecision()).toBeNull();
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      aiMemory: false,
+      analytics: false,
+    });
+
+    const aiMemoryToggle = await screen.findByRole("switch", {
+      name: /Памʼять для Сержанта/i,
+    });
+    fireEvent.click(aiMemoryToggle);
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+    // `setAnalyticsConsent` записав би «denied» — банер згоди не повернувся б.
+    expect(getAnalyticsDecision()).toBeNull();
   });
 
   it("sets analytics consent optimistically while the update request is still pending, and reverts it on failure (CodeRabbit PR #627)", async () => {

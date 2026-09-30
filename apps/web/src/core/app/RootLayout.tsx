@@ -23,6 +23,7 @@ import { useAuth } from "../auth/AuthContext";
 import { useOpenSignIn } from "../auth/useOpenSignIn";
 import { useActivationV2Boot } from "../activation";
 import { NpsSurveyGate } from "../feedback/useNpsSurveyTrigger";
+import { AnalyticsConsentGate } from "../observability/AnalyticsConsentGate";
 import { AppLock } from "../security/AppLock";
 import { usePendingDeletion } from "../profile/usePendingDeletion";
 import { useAppLockContext } from "../security/AppLockContext";
@@ -220,6 +221,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
         <RoutineBootCluster />
       </BootGate>
       <NpsSurveyGate />
+      <AnalyticsConsentGate />
       {children}
       <HubChatOverlay />
     </>

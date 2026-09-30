@@ -8,7 +8,8 @@
 //   1. Локальний ring-buffer (`hub_analytics_log_v1` у localStorage,
 //      max 200 подій) + `console.log("[analytics]", …)` — devtools
 //      і Sentry console-breadcrumbs. Працює завжди.
-//   2. PostHog — якщо виставлений `VITE_POSTHOG_KEY`. Fire-and-forget
+//   2. PostHog — якщо виставлений `VITE_POSTHOG_KEY` І людина дала згоду
+//      (`getAnalyticsConsent()`, банер першого запуску / тумблер). Fire-and-forget
 //      через `posthog.ts` (lazy dynamic import), буферизує події до
 //      завершення init.
 //
@@ -23,6 +24,7 @@
 import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
 import { containsPII } from "./containsPII";
+import { getAnalyticsConsent } from "./analyticsConsent";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export { ANALYTICS_EVENTS };
@@ -170,6 +172,10 @@ export function trackEvent(
   // `import.meta.env` шляхи теоретично можуть зловити edge-кейс — щит
   // тримаємо у викликача, бо ~10 call-sites покладаються на
   // fire-and-forget (див. Devin Review on #972).
+  // Згода (рішення власника 2026-09-29, аудит § 1.3): до явного
+  // «Дозволити» подія лишається тільки в локальному ring-buffer (він нікуди
+  // не йде) і в PostHog не потрапляє — ні напряму, ні через буфер init-у.
+  if (!getAnalyticsConsent()) return;
   try {
     capturePostHogEvent(eventName, event.payload as Record<string, unknown>);
   } catch {

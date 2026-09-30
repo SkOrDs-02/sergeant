@@ -126,6 +126,18 @@
 
 ### 1.3 Аналітика: згода є в даних, але не в тракті подій
 
+> **Закрито 2026-09-29** (рішення власника: банер згоди при першому запуску,
+> варіанти A + B + C). `trackEvent` не шле в PostHog без
+> `getAnalyticsConsent()` ([`analytics.ts`](../../../../apps/web/src/core/observability/analytics.ts));
+> `posthog.init()` має `opt_out_capturing_by_default: true` і
+> `opt_in_capturing` / `opt_out_capturing` за станом згоди
+> ([`posthog.ts`](../../../../apps/web/src/core/observability/posthog.ts));
+> банер — [`AnalyticsConsentBanner.tsx`](../../../../apps/web/src/core/observability/AnalyticsConsentBanner.tsx)
+> через ліниве [`AnalyticsConsentGate`](../../../../apps/web/src/core/observability/AnalyticsConsentGate.tsx);
+> одне джерело правди з тумблером у Налаштуваннях —
+> [`analyticsConsent.ts`](../../../../apps/web/src/core/observability/analyticsConsent.ts).
+> Текст нижче — стан до виправлення (історія рішення).
+
 **Severity: середньо (було високо — частину закрито в `main` 2026-08-04/05).**
 
 > **Оновлено після мержу `main` (`17d31a1`).** Перша редакція цієї секції
@@ -324,6 +336,8 @@ ID»). Одночасно `01-monetization-and-pricing.md` планує плат
 ім'я або назву ФОП, а не GitHub-нік — нік не є юридичною особою.
 
 ### 2.3 Open Food Facts: ODbL і відсутня атрибуція
+
+> **СТАТУС 2026-09-29: ЧАСТКОВО ЗАКРИТО.** Рядок-посилання «Open Food Facts (ліцензія ODbL)» показується під результатами пошуку їжі (`FoodPickerSection.tsx`), джерело додано в перелік довідкових сервісів політики приватності (`privacyDocument.ts`, `legalShared.ts`). README свідомо не чіпали.
 
 **Severity: середньо (реальне порушення ліцензії).**
 
@@ -661,7 +675,7 @@ URL немає**, і hero-скріншот теж (`README.md:16-18` — сло�
 
 ### Цей тиждень (малий код)
 
-5. **§ 1.3** — перенести `getAnalyticsConsent()` з двох call-site-ів у сам
+5. ✅ **§ 1.3** (закрито 2026-09-29, див. § 1.3) — перенести `getAnalyticsConsent()` з двох call-site-ів у сам
    `trackEvent` (+ `opt_out_capturing_by_default: true`). Дефолти в БД уже
    `FALSE` — бракує рівно перевірки в тракті подій.
 6. **§ 1.5** — `openrouter.ai` і Groq у `EXIT_MARKERS`; тест, що маркери

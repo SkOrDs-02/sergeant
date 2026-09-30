@@ -1081,6 +1081,8 @@ type="number"` 0–23 з підписом «год.» (`:269-287`), тобто �
 
 ### PR-S10. Діагностика Service Worker і техжаргон Фініка видимі всім · P3
 
+> **СТАТУС 2026-09-29: ЧАСТКОВО ЗАКРИТО.** Діагностика SW і її сирий JSON сховані за розкриттям «Для підтримки» (`PWASection.tsx`, summary ≥44px); «webhook»/«кеш» у `FinykWebhookServiceSection` переписано людською мовою.
+
 > **СТАТУС 2026-09-15: ЧИННА.** «Діагностика SW» (`PWASection.tsx:83`) із сирим `JSON.stringify(swSnapshot, null, 2)` у `<pre>` (`:126`) рендериться без жодного прапорця — `HubSettingsPage.tsx:118` віддає `pwa: () => <PWASection />` беззастережно. Жаргон Фініка теж на місці: `FinykWebhookServiceSection.tsx:255` «Monobank (Webhook)», `:398` «Сервіс», `:417` «Очистити кеш транзакцій» (рядки зʼїхали, суть та сама).
 > **Факт.** `PWASection.tsx:73-84` — кнопка «Діагностика SW», `:108-129` — сирий
 > JSON у `<pre>`, без жодного прапорця. `FinykWebhookServiceSection.tsx:255` —

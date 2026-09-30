@@ -186,6 +186,8 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 
 ### 3в. api-client: 6 методів + 10 хуків без споживачів
 
+> **Закрито частково (2026-09-29, гілка `claude/dead-rq-keys-api-hooks`):** прибрано хуки `useCoachMemory`, `useCoachInsightMutation`, `useChatMutation`, `useVapidPublicKey`, `usePrivatBalanceFinal`, `useWeeklyDigestMutation` ([`hooks.ts`](../../../../packages/api-client/src/react/hooks.ts)), обгортку `webVitals` (`createWebVitalsEndpoints`, файл `endpoints/webVitals.ts`) і `nutrition.postJson`. Типи відповідей і сервер не чіпали. Решта рядків таблиці (методи `push.subscribe`, `privat.balanceFinal`, `me.deleteAccount`) не в скоупі цього кроку.
+
 | Сутність                                                                                                                                                                                                                                                      | Класифікація                                                 | Чому                                                                                                                                                                                                                           |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `push.subscribe` / `push.unsubscribe` (`endpoints/push.ts:131,133`)                                                                                                                                                                                           | `legacy-replaced`                                            | Того ж дня (2026-04-20) уніфіковано на `register`/`unregister`. Сервер тримає `POST                                                                                                                                            | DELETE /api/push/subscribe` як deprecation-proxy для старих PWA-клієнтів (логує deprecation) — **проксі лишити, клієнтські методи зняти** |
@@ -221,6 +223,8 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 
 ### 4в. RQ key-фабрики: 8 ghost-методів у `queryKeys.ts`
 
+> **Закрито частково (2026-09-29):** видалено `finykKeys.{monoClientInfo,monoStatements,monoStatement,monoAccounts,privatAccounts,privatStatement}` і `nutritionKeys.pushStatus` разом із key-shape тестами (споживачів у монорепо, включно з mobile, не було; `privatAccounts/privatStatement` мали лише тести). Корінь `finykKeys.privat` лишається (його використовує тест-контракт неймспейсів). Privat-UI не чіпали.
+
 11 фабрик / 44 методи; живі опущено. Тести над ghost-методами — coverage поверх фабрики (додані 2026-06), а не захист споживачів, тож видалення безпечне (Hard Rule #2 вимагає фабрики для живих ключів, а не збереження мертвих).
 
 | Метод                                                                            | Класифікація           | Чому                                                                                                                                                                                  | Рекомендація                                         |
@@ -232,6 +236,8 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 | `*.all`-префікси без прямих викликів (6 шт.)                                     | `false-positive`       | Конвенційні invalidation-префікси за дизайном фабрик                                                                                                                                  | Лишити                                               |
 
 ### 4г. Scaffolded-барелі з `knip.json` ignore — 8/8 досі без споживачів + дрейф маркерів
+
+> **Закрито частково (2026-09-29):** знято застарілий `@scaffolded` із `core/billing/index.ts` (споживачі живі); `ui/ProgressCircle.tsx` (0 імпортерів, дублікат `ProgressRing`) видалено разом зі stories/тестом, барелем, записом в `eslint.raw-type-size-allowlist.json` і секцією в `04-components.md`.
 
 Дисципліна Hard Rule #10 загалом працює (усі 8 із `@scaffolded`+`@nextStep`; `injuryRepository` отримав `TODO(0589-injury-repo)` з дедлайном 2026-09-15 у день мержа). Але виріс **дрейф другого порядку**:
 
