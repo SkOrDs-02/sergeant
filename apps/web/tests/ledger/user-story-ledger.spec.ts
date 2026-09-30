@@ -4,6 +4,8 @@ import { installWorld } from "../utils/scenario";
 
 const WARM_STORAGE: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_first_real_entry_done_v1: "1",
   hub_onboarding_vibes_v1: JSON.stringify([

@@ -3,7 +3,7 @@
 // Shape-regression tests для автодеплою бекенду: джоба `deploy-api` у
 // `.github/workflows/ci.yml` викликає `.github/workflows/deploy-api.yml`.
 //
-// Що тут стережеться і чому (ADR-0101):
+// Що тут стережеться і чому (ADR-0102):
 //
 //   1. Деплой стоїть ПІСЛЯ обовʼязкових джоб і лише на push у main.
 //      Міграції БД їдуть в ENTRYPOINT образу, тож деплой без гейта

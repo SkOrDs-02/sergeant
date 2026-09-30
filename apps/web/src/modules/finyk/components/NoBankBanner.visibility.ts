@@ -24,6 +24,10 @@
  * назавжди, і банер доводилось ховати окремою умовою. Демо-режим знято
  * 2026-09-17 — умова пішла разом із ним.
  */
+/** Скільки днів банер мовчить після закриття (рішення власника 2026-09-30). */
+export const BANK_BANNER_SNOOZE_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 // ponytail: фіксований поріг; якщо стане сигналом продукту, винести в канон.
 const MANUAL_ENOUGH = 5;
 
@@ -37,12 +41,25 @@ export function shouldShowNoBankBanner(params: {
    * 2026-09-25).
    */
   manualExpenseCount: number;
+  /** Epoch ms останнього закриття банера; `null` — не закривали. */
+  dismissedAt: number | null;
+  /** Поточний час (ін'єкція заради тестів). */
+  now: number;
   /** Активна вкладка Фініка (`NAV_IDS` у `FinykApp`). */
   page: string;
 }): boolean {
   if (params.hasConnectedProvider) return false;
   if (params.manualOnly) return false;
   if (params.manualExpenseCount >= MANUAL_ENOUGH) return false;
+  // Закритий банер повертається через N днів. `now` у застосунку — час
+  // монтування, тож щойно записана позначка може бути трохи «в майбутньому»:
+  // різниця від'ємна, і банер справедливо ховається.
+  if (
+    params.dismissedAt !== null &&
+    params.now - params.dismissedAt < BANK_BANNER_SNOOZE_DAYS * DAY_MS
+  ) {
+    return false;
+  }
   // Лише Огляд: на mobile банер займав ~37% першого екрана кожної вкладки,
   // і порожній стан вкладки опинявся під згином (критика екранів
   // 2026-09-23). Вибір «банк чи вручну» робиться один раз.

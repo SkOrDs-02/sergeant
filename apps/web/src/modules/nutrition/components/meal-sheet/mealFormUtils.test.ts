@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   deviceDayKey,
   deviceWallClockToInstant,
+  getDayMacros,
 } from "@sergeant/nutrition-domain";
-import { currentTime, emptyForm } from "./mealFormUtils";
+import { macrosForGrams } from "../../lib/foodDb/foodDb";
+import { currentTime, emptyForm, macroToFieldString } from "./mealFormUtils";
 
 // mealTypeByNow comes from @sergeant/nutrition-domain via the mealTypes re-export.
 // We stub it so tests are not hour-sensitive.
@@ -79,24 +81,24 @@ describe("emptyForm", () => {
     expect(form.name).toBe("");
   });
 
-  it("populates kcal from photoResult.macros (rounded)", () => {
+  it("populates kcal from photoResult.macros (до 0.1)", () => {
     const form = emptyForm({ macros: { kcal: 312.7 } });
-    expect(form.kcal).toBe("313");
+    expect(form.kcal).toBe("312.7");
   });
 
-  it("populates protein_g from photoResult.macros (rounded)", () => {
+  it("populates protein_g from photoResult.macros (до 0.1)", () => {
     const form = emptyForm({ macros: { protein_g: 24.3 } });
-    expect(form.protein_g).toBe("24");
+    expect(form.protein_g).toBe("24.3");
   });
 
-  it("populates fat_g from photoResult.macros (rounded)", () => {
+  it("populates fat_g from photoResult.macros (до 0.1)", () => {
     const form = emptyForm({ macros: { fat_g: 8.9 } });
-    expect(form.fat_g).toBe("9");
+    expect(form.fat_g).toBe("8.9");
   });
 
-  it("populates carbs_g from photoResult.macros (rounded)", () => {
+  it("populates carbs_g from photoResult.macros (до 0.1)", () => {
     const form = emptyForm({ macros: { carbs_g: 45.1 } });
-    expect(form.carbs_g).toBe("45");
+    expect(form.carbs_g).toBe("45.1");
   });
 
   it("leaves kcal empty when photoResult.macros.kcal is null", () => {
@@ -125,5 +127,41 @@ describe("emptyForm", () => {
     // nudge the user to type one instead.
     const form = emptyForm({ dishName: "Результат" });
     expect(form.name).toBe("");
+  });
+});
+
+describe("macroToFieldString: сума позицій = підсумок дня", () => {
+  it("тримає 0.1 і не округлює до цілих", () => {
+    expect(macroToFieldString(12.34)).toBe("12.3");
+    expect(macroToFieldString(12)).toBe("12");
+    expect(macroToFieldString(0.04)).toBe("0");
+  });
+
+  it("сума збережених позицій дорівнює підсумку дня з точністю показу", () => {
+    const per100 = { kcal: 155, protein_g: 12.4, fat_g: 10.6, carbs_g: 1.1 };
+    const grams = [83, 47, 121];
+    const items = grams.map((g) => {
+      const m = macrosForGrams(per100, g);
+      // те, що форма пише в поля, а зберігання парсить назад
+      return {
+        kcal: Number(macroToFieldString(m.kcal)),
+        protein_g: Number(macroToFieldString(m.protein_g)),
+        fat_g: Number(macroToFieldString(m.fat_g)),
+        carbs_g: Number(macroToFieldString(m.carbs_g)),
+      };
+    });
+    const log = {
+      "2026-09-29": { meals: items.map((macros) => ({ macros })) },
+    };
+    const day = getDayMacros(log as never, "2026-09-29");
+    for (const k of ["kcal", "protein_g", "fat_g", "carbs_g"] as const) {
+      const sum = items.reduce((a, m) => a + m[k], 0);
+      expect(Math.round(day[k] * 10) / 10).toBe(Math.round(sum * 10) / 10);
+    }
+    // цілі округлення позицій розходилися б з підсумком (регресія NC1)
+    const roundedSum = grams
+      .map((g) => Math.round(macrosForGrams(per100, g).protein_g))
+      .reduce((a, b) => a + b, 0);
+    expect(roundedSum).not.toBe(Math.round(day.protein_g * 10) / 10);
   });
 });

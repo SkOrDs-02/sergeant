@@ -1,7 +1,7 @@
 # Аудит документації та governance: правила, ієрархія, рішення, enforcement
 
 > **Status:** Active - більшість знахідок закрито (розділ 11); розділ 9 чекає рішень власника (DG-32 закрито 2026-09-29).
-> **Last touched:** 2026-09-23 by @claude (перший прогін). **Next review:** 2026-12-23.
+> **Last touched:** 2026-09-29 by @claude (рішення власника про GitHub, [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)). Перший прогін 2026-09-23. **Next review:** 2026-12-23.
 > **Spec-lint:** skip - реєстр знахідок аудиту, не специфікація реалізації.
 
 ## 1. Що перевірено і як
@@ -63,6 +63,8 @@
 ### Critical
 
 ### DG-1. CI не існує, а правила й бюджети описані як CI-гейти
+
+> **Рішення 2026-09-29:** GitHub знову основний хост, CI (GitHub Actions) повертається як гейт PR, Bitbucket - дзеркало ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)). Записи `SUSPENDED` у `hard-rules.json` повернуто на CI-джоби для Hard Rules #5 (commitlint) і #10 (`ai-legacy-scan.yml`); лишаються `SUSPENDED`: #6 (захист `main` не перевірено), #10 `dead-code:files` і #15 `docs:check-freshness-coverage` (кроку у воркфлоу немає). Актуальний стан джобів після п'яти днів простою не перевірявся.
 
 **Докази.** `AGENTS.md:376`: «не шукай там CI»; `bitbucket-pipelines.yml` відсутній і в HEAD, і в `origin/main`. Водночас `AGENTS.md:87` («Same matrix runs in CI»), `:161` («блокуючий PR-гейт Mobile UI audit»), `:179` («CI gates fail on regression»), `:355` («commitlint CI gate»), `docs/README.md:35` («падає в CI»), `docs/governance/adr/0082-private-storage-repo-posture.md:30-31` (ci.yml, codeql, container-scan, pr-backlinks «лишаються»), `docs/governance/governance/release-policy.md:12,29,40` («required checks green»), записи `kind: ci` у `hard-rules.json`.
 
@@ -299,9 +301,9 @@
 
 ## 9. Рішення, потрібні від власника
 
-1. **CI.** Bitbucket Pipelines, self-hosted runner на Hetzner, чи лише локальні гейти (`pre-push` + pre-flight у `deploy-api.mjs`)? Від цього залежить формулювання ADR про хостинг (DG-6) і `enforced_by` усіх правил.
-2. **Hard Rule #26.** Зняти окремим ADR чи портувати писача ledger на Bitbucket API?
-3. **Стратегія merge у Bitbucket:** squash за замовчуванням (тоді заголовок PR знову стає subject-ом на `main`) чи merge-коміти (тоді оновити § Commit and PR conventions)?
+1. **CI - РІШЕНО 2026-09-29:** GitHub знову основний хост, CI (GitHub Actions) повертається як гейт PR, Bitbucket - дзеркало ([ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md); закриває DG-1 у частині «CI не існує» і DG-6). Питання нижче збережено для історії. Bitbucket Pipelines, self-hosted runner на Hetzner, чи лише локальні гейти (`pre-push` + pre-flight у `deploy-api.mjs`)? Від цього залежить формулювання ADR про хостинг (DG-6) і `enforced_by` усіх правил.
+2. **Hard Rule #26.** (Знято з порядку денного 2026-09-29: воркфлоу `pr-backlinks.yml` знову на GitHub.) Зняти окремим ADR чи портувати писача ledger на Bitbucket API?
+3. **Стратегія merge у Bitbucket** (втратила актуальність 2026-09-29: PR знову на GitHub): squash за замовчуванням (тоді заголовок PR знову стає subject-ом на `main`) чи merge-коміти (тоді оновити § Commit and PR conventions)?
 4. **Англомовні політики (DG-17):** перекласти чи оформити виняток із Rule #15?
 5. **Secondary reviewer:** прийняти соло-власність явно чи дати дедлайн?
 6. **Архівний пуш** опорних комітів `d068c73a` і `d1a37e0b` у Bitbucket.
@@ -323,7 +325,7 @@
 
 **Свідомо не додано:** `eslint-print-config-diff` у ланцюжок `pnpm lint` (2 хв 41 с на прогін), `docs:check-freshness-coverage` і `dead-code:files` (не заміряні).
 
-**Чекає рішень власника:** DG-4, DG-6 (ADR про хостинг, наступний номер 0100), DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer.
+**Чекає рішень власника:** DG-4, DG-6 (закрито 2026-09-29: [ADR-0101](../../../governance/adr/0101-github-primary-host-ci-returns.md)), DG-13, DG-14, DG-17, DG-23, DG-26, DG-30, ADR-0003/0044/0072, secondary reviewer.
 
 **Повний `pnpm lint` на гілці** зупиняється на кроках, які червоні на `main` і без цих змін (файли, що їх валять, у гілці не змінювались). Першим прогоном аудиту їх не зловлено, бо вони поза docs/governance-набором:
 

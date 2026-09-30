@@ -3,7 +3,8 @@ import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
-import { readRaw } from "./lib/finykStorage";
+import { readRaw, writeRaw } from "./lib/finykStorage";
+import { FINYK_BANK_BANNER_DISMISSED_AT_KEY } from "@sergeant/finyk-domain/storage-keys";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
@@ -58,6 +59,8 @@ import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { getSyncTone } from "./components/SyncIndicator";
 import { AuthErrorBanner, FinykHeaderIcon, SyncPill } from "./FinykAppChrome";
 
+// AI-NOTE: інтеграцію ПриватБанку сховано рішенням власника 2026-09-30, поки
+// у Привата немає API-токенів для користувачів. Код і дані не видаляти.
 const PRIVAT_ENABLED = false;
 
 interface FinykAppProps {
@@ -143,6 +146,16 @@ export default function App({
   const [manualOnly, setManualOnly] = useState(
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
+  // Закриття банера «підключити банк» ховає його на 7 днів, а не назавжди
+  // (рішення власника 2026-09-30); `manualOnly` лишається постійним вибором.
+  const [bankBannerDismissedAt, setBankBannerDismissedAt] = useState<
+    number | null
+  >(() => {
+    const n = Number(readRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, ""));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  });
+  // Час монтування: банер перераховується при відкритті модуля, а не щосекунди.
+  const [mountedAt] = useState(() => Date.now());
   // Комбінований пікер «Запланувати» на Плануванні (founder-UX audit
   // round 2, F2): `Budgets` і `PlanningSubscriptions` мають КОЖЕН свій
   // `useAssetsState`-інстанс, тож пункт «Підписка» з пікера в `Budgets` не
@@ -261,6 +274,8 @@ export default function App({
     hasConnectedProvider,
     manualOnly,
     manualExpenseCount: (storage.manualExpenses || []).length,
+    dismissedAt: bankBannerDismissedAt,
+    now: mountedAt,
     page,
   });
 
@@ -409,7 +424,7 @@ export default function App({
     tryShowCrossModulePrompt(toast, {
       id: promptId,
       msg,
-      acceptLabel: "Додати →",
+      acceptLabel: "Додати",
       onAccept: () => openHubModuleWithAction("nutrition", "add_meal"),
     });
   };
@@ -497,8 +512,9 @@ export default function App({
           <NoBankBanner
             onConnect={() => setShowLoginOverlay(true)}
             onContinueManually={() => {
-              enableFinykManualOnly();
-              setManualOnly(true);
+              const now = Date.now();
+              writeRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, String(now));
+              setBankBannerDismissedAt(now);
             }}
           />
         )}

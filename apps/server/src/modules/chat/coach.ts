@@ -12,6 +12,8 @@ import {
 import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
 import { refundQuotaOnUpstreamFailure } from "./chatShared.js";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
+import { stripHealthFromCoachInput } from "./healthGate.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
 import {
@@ -536,10 +538,20 @@ export function coachAnthropicModel(tier: ProTier): string {
  */
 export async function coachInsight(req: Request, res: Response): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
+  const parsedInput = parseBody(CoachInsightSchema, req) as {
     snapshot: CoachSnapshot;
     memory: CoachMemory | null;
   };
+
+  // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
+  // без збереженої згоди тренування, харчування й крос-модульні кореляції
+  // до моделі не йдуть. Пораду не блокуємо: вона вужчає до фінансів і звичок.
+  const healthConsent = await resolveHealthConsent(
+    (req as WithSessionUser).user?.id,
+  );
+  const { snapshot, memory } = healthConsent
+    ? parsedInput
+    : stripHealthFromCoachInput(parsedInput);
 
   const prompt = buildCoachInsightPrompt({ snapshot, memory });
 

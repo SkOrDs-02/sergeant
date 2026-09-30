@@ -171,6 +171,8 @@ vi.mock("../http/index.js", async () => {
       return;
     }
     res.locals["sessionUser"] = { id: userId };
+    // Як справжній `requireSession`: гейт згоди читає `req.user.id`.
+    (req as express.Request & { user?: { id: string } }).user = { id: userId };
     next();
   };
   return {
@@ -274,6 +276,13 @@ describe("nutrition route wiring", () => {
     ["/api/nutrition/week-plan", "weekPlan"],
     ["/api/nutrition/shopping-list", "shoppingList"],
   ])("routes %s through session + AI guards", async (path, handler) => {
+    // analyze-photo і day-plan стоять за гейтом згоди на дані про здоровʼя,
+    // який читає `user_preferences` через pool: даємо згоду.
+    mockPool.query.mockImplementation(async (sql: string) =>
+      sql.includes("health_data_consent")
+        ? { rows: [{ health_data_consent: true }] }
+        : undefined,
+    );
     const res = await request(
       appWith(createNutritionRouter({ pool: mockPool as unknown as Pool })),
     )

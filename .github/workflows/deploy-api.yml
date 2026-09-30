@@ -3,7 +3,7 @@ name: Deploy API (Coolify)
 # Owner: @klas149 (solo maintainer).
 #
 # Автодеплой бекенду `sergeant-api-v2` (Coolify на Hetzner) після зеленого CI.
-# Рішення власника 2026-09-30, ADR-0101.
+# Рішення власника 2026-09-30, ADR-0102.
 #
 # Хто викликає. Основний шлях - джоба `deploy-api` у `ci.yml`: вона стоїть
 # після обовʼязкових джоб (`needs:`) і стартує лише на push у `main`. Тут

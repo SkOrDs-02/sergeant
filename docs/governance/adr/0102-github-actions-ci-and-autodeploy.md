@@ -1,4 +1,4 @@
-# ADR-0101: Повернення CI на GitHub Actions і автодеплой бекенду після зеленого CI
+# ADR-0102: Повернення CI на GitHub Actions і автодеплой бекенду після зеленого CI
 
 - **Status:** Proposed
 - **Date:** 2026-09-30
@@ -7,6 +7,7 @@
 - **Deciders:** @SkOrDs-02
 - **Supersedes:** —
 - **Related:**
+  - [ADR-0101](./0101-github-primary-host-ci-returns.md) (GitHub знову основний хост, CI повертається; цей ADR звужує набір джоб на PR і додає автодеплой)
   - [ADR-0074](./0074-hosting-hetzner-coolify.md) (хостинг бекенду: Coolify на Hetzner, білд із `Dockerfile.api` на сервері)
   - [ADR-0082](./0082-private-storage-repo-posture.md) (постура репозиторію)
   - [`.github/workflows/ci.yml`](../../../.github/workflows/ci.yml), джоба `deploy-api`

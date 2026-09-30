@@ -174,6 +174,20 @@ export function FoodPickerSection({
           </ul>
         </div>
       )}
+      {offHitGroups.some((g) => g.label === EXTERNAL_SOURCE_LABELS["off"]) && (
+        <p className="text-style-caption text-subtle">
+          Дані про продукти:{" "}
+          <a
+            href="https://world.openfoodfacts.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline focus-ring"
+          >
+            Open Food Facts
+          </a>{" "}
+          (ліцензія ODbL)
+        </p>
+      )}
     </div>
   );
 }

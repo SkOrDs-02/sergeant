@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-29 by docs:gen-status. **Next review:** 2026-10-06.
+> **Last touched:** 2026-09-30 by docs:gen-status. **Next review:** 2026-10-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -20,7 +20,7 @@
 - **Три гейти більше не брешуть:** `lint:lifecycle-markers` не називає порушенням те, що правило дозволяє; `generate-playbook-index` розрізняє зафіксований виняток і реальний дрейф; `lint:dead-doc-links` опущено 255 → 251 після виносу мертвих покажчиків із текстів помилок лінтерів.
 - **Тиша замість шуму** — три хвилі фіксів злито (#96, #97, #100), лишились рішення власника — [`2026-09-16-product-noise-and-navigation.md`](./work/specs/audits/2026-09-16-product-noise-and-navigation.md).
 - **Сервер, БД, синк** — знахідки аудиту закриті (#95, #101); далі — операторський замір для 0024 PR-3.
-- **Код знову на GitHub, CI повернувся (2026-09-30, ADR-0101).** `SkOrDs-02/sergeant`, публічний; `origin` пушить у GitHub і в bare-дзеркало на Hetzner. Перший прогін CI показав борг тижня без гейтів: червоні critical-flow E2E, a11y `/chat`, dependency audit, інтеграційні тести сервера. Бекенд автодеплоїться після зелених обовʼязкових джоб.
+- **Код знову на GitHub, CI повернувся (2026-09-30, ADR-0102).** `SkOrDs-02/sergeant`, публічний; `origin` пушить у GitHub і в bare-дзеркало на Hetzner. Перший прогін CI показав борг тижня без гейтів: червоні critical-flow E2E, a11y `/chat`, dependency audit, інтеграційні тести сервера. Бекенд автодеплоїться після зелених обовʼязкових джоб.
 
 <!-- FOCUS:END -->
 

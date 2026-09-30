@@ -6,6 +6,16 @@ vi.mock("../ai-memory/ingestQueue.js", () => ({
   enqueueMemoryIngest: vi.fn(async () => undefined),
 }));
 
+// Гейт згоди на дані про здоровʼя читає БД. За замовчуванням у цьому файлі
+// згода «є» (поведінка до 2026-09-29); сценарії без неї — у окремому
+// `describe` внизу, вони перемикають мок явно.
+const { resolveHealthConsentMock } = vi.hoisted(() => ({
+  resolveHealthConsentMock: vi.fn(),
+}));
+vi.mock("../../lib/healthConsent.js", () => ({
+  resolveHealthConsent: resolveHealthConsentMock,
+}));
+
 import { enqueueMemoryIngest as _enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import defaultHandler, {
   buildTemplateReport,
@@ -104,6 +114,8 @@ const deliveredReport = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resolveHealthConsentMock.mockReset();
+  resolveHealthConsentMock.mockResolvedValue(true);
 });
 
 /**
@@ -1393,5 +1405,78 @@ describe("weekly-digest · prod regression — provider failure must not return 
     const body = res.body as { report: unknown; generatedAt: string };
     expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+});
+
+describe("weekly-digest handler · гейт згоди на дані про здоровʼя (GDPR Art. 9)", () => {
+  // Рішення власника 2026-09-29: без збереженої `healthDataConsent` секції
+  // Фізрука й Харчування не потрапляють ні в промпт, ні в памʼять AI.
+  const body = {
+    weekKey: "2026-01-05",
+    weekRange: "2026-W01",
+    finyk: { totalSpent: 500, totalIncome: 2000, txCount: 5 },
+    routine: { habitCount: 3, overallRate: 70 },
+    fizruk: { workoutsCount: 4, totalVolume: 9999 },
+    nutrition: { avgKcal: 2345, daysLogged: 5 },
+  };
+
+  it("без згоди: у промпті немає тренувань і калорій, решта є", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+
+    const call = provider.calls[0]!;
+    const prompt = `${call.system ?? ""}\n${JSON.stringify(call.messages)}`;
+    expect(prompt).not.toContain("9999");
+    expect(prompt).not.toContain("2345");
+    expect(prompt).toContain("500");
+  });
+
+  it("без згоди: памʼять AI не отримує health-секцій і прапорця healthData", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+    await vi.waitFor(() => expect(enqueueMemoryIngest).toHaveBeenCalled());
+    const payload = enqueueMemoryIngest.mock.calls[0]![0];
+    expect(payload.metadata.sections.fizruk).toBe(false);
+    expect(payload.metadata.sections.nutrition).toBe(false);
+    expect(payload.healthData).toBe(false);
+  });
+
+  it("зі згодою: health-секції в промпті, як раніше", async () => {
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+    const call = provider.calls[0]!;
+    const prompt = `${call.system ?? ""}\n${JSON.stringify(call.messages)}`;
+    expect(prompt).toContain("9999");
+    expect(prompt).toContain("2345");
+  });
+
+  it("без згоди, коли health давав рівно той сигнал, якого бракує: 403 із запитом згоди, не «замало даних»", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler, provider } = buildHandler();
+    await expect(
+      handler(
+        asReq({
+          anthropicKey: "k",
+          user: { id: "user_42" },
+          body: { weekKey: "2026-01-05", fizruk: { workoutsCount: 4 } },
+        }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: "HEALTH_CONSENT_REQUIRED",
+    });
+    expect(provider.calls).toHaveLength(0);
   });
 });

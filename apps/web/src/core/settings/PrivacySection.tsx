@@ -11,7 +11,10 @@ import {
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
-import { setAnalyticsConsent } from "../observability/analyticsConsent";
+import {
+  hydrateAnalyticsConsent,
+  setAnalyticsConsent,
+} from "../observability/analyticsConsent";
 import {
   classifyPreferenceLoadFailure,
   PREFERENCE_LOAD_FAILURE_COPY,
@@ -83,7 +86,7 @@ export function PrivacySection() {
         setPreferencesLoaded(true);
         setPreferencesError(null);
         setLoadFailure(null);
-        setAnalyticsConsent(next.analytics);
+        hydrateAnalyticsConsent(next.analytics);
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -123,7 +126,15 @@ export function PrivacySection() {
       const next = await meApi.updatePreferences({ [key]: checked });
       setPreferences(next);
       setPreferencesLoaded(true);
-      setAnalyticsConsent(next.analytics);
+      if (key === "analytics") {
+        // Явний вибір людини на цьому пристрої — фіксуємо як рішення.
+        setAnalyticsConsent(next.analytics);
+      } else {
+        // Інший тумблер (aiMemory, healthDataConsent…) — не відповідь про
+        // аналітику: лише синхронізуємо кеш із сервером, не записуючи
+        // «рішення» на пристрої (інакше банер згоди мовчки зникав би).
+        hydrateAnalyticsConsent(next.analytics);
+      }
     } catch {
       setPreferences(previous);
       if (key === "analytics") {
@@ -172,28 +183,22 @@ export function PrivacySection() {
               checked={preferences.aiMemory}
               onChange={(checked) => void updatePreference("aiMemory", checked)}
             />
-            {/* PR-S3 (рішення founder-а 2026-09-14). Копія доти обіцяла
-                «без неї ця інформація не використовується» — і це було
-                неправдою для КОЖНОГО, хто жодного разу не відкривав цей
-                екран: тумблер дефолтиться у `false`, а коуч, дайджест і чат
-                читали тренування й харчування однаково для всіх.
-
-                Рішення: гейтити не використання, а ПЕРСИСТЕНТНИЙ ЗАПИС у
-                памʼять (`ai-memory/ingestQueue.ts`, прапорець `healthData`).
-                Гейт на використання вимкнув би AI-шар за замовчуванням;
-                осідання назавжди — інша річ, бо вимкнути тумблер постфактум
-                і цим прибрати вже записане неможливо.
-
-                Копія тепер каже рівно те, що робить код. Не «ця інформація
-                не використовується», а «не осідає в памʼяті» — і прямо
-                проговорює, що відповідь у чаті працює без згоди. Обіцянка,
-                ширша за механізм, гірша за відсутність обіцянки. */}
+            {/* Рішення власника 2026-09-29 (вузький гейт, GDPR Art. 9): це
+                ЄДИНА згода на дані про здоровʼя, і вона працює на СЕРВЕРІ —
+                без неї тренування, вага, самопочуття й харчування не йдуть у
+                модель (чат, коуч, тижневий звіт, фото страв) і не осідають у
+                памʼяті AI. Модулі Фізрук/Харчування від неї не залежать.
+                Раніше (PR-S3, 2026-09-14) тумблер гейтив лише запис у памʼять
+                і чесно казав, що відповідь у чаті працює без згоди; це
+                скасовано, бо згода без наслідків не має юридичної сили.
+                Копія каже рівно те, що робить код, включно з тим, чого
+                тумблер НЕ охоплює (вільний текст у повідомленнях). */}
             <ToggleRow
-              label="Памʼять про здоровʼя"
+              label="Дані про здоровʼя для Сержанта"
               description={
                 savingPreference === "healthDataConsent"
                   ? "Зберігаю…"
-                  : "Дозволяє Сержанту запамʼятовувати тренування, самопочуття й харчування надовго: тижневі звіти й факти з категорії «Здоровʼя». Без неї Сержант відповідає на питання як завжди, але нічого з цього не зберігає. Вимкнення не видаляє вже збережене."
+                  : "Дозволяє Сержанту бачити й запамʼятовувати тренування, вагу, самопочуття та харчування: у чаті, повідомленнях дня, тижневих звітах і при аналізі фото страв. Без згоди він цього не бачить і скаже, що потрібен дозвіл; фінанси й звички працюють як завжди. Вимкнення не видаляє вже збережене."
               }
               checked={preferences.healthDataConsent}
               onChange={(checked) =>

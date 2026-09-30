@@ -14,7 +14,7 @@
 
 ## Enforced by
 
-- **branch-protection** - GitHub branch protection на `main` (`SkOrDs-02/sergeant`): force-push і видалення гілки заборонені (2026-09-23..29 репо тимчасово жило на Bitbucket без цього захисту; з 2026-09-30 знову на GitHub, ADR-0101). Захист на дзеркалі Hetzner (другий pushurl `origin`) не перевірено
+- **branch-protection** - SUSPENDED з 2026-09-23, не перевірено після [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md): GitHub знову основний хост (2026-09-29), але захист `main` у `SkOrDs-02/sergeant` - налаштування репо, з чекауту його не перевірити; підтвердити в GitHub Settings -> Branches, а також на дзеркалах Bitbucket і Hetzner
 
 ## Why / What is enforced
 

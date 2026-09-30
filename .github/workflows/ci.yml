@@ -10,7 +10,7 @@ name: CI
 # Actions minutes and queue latency for a solo maintainer. PR branches
 # now run only via pull_request (merge-ref, what actually lands); pushes
 # build only on main.
-# З 2026-09-30 (ADR-0101) на PR і push у main біжать лише джоби, потрібні
+# З 2026-09-30 (ADR-0102) на PR і push у main біжать лише джоби, потрібні
 # для мержу й автодеплою: commitlint, check, critical-flow, migration-lint,
 # migration-down-drill, secret-scan і deploy-api. Решта (бюджети, покриття,
 # a11y, mobile UI audit, лендінг, Knip, аудит залежностей, інтеграційні й
@@ -1338,7 +1338,7 @@ jobs:
   deploy-api:
     name: Deploy API (after green CI)
     # Автодеплой бекенду лише з `main` і лише після обовʼязкових джоб
-    # (ADR-0101). Міграції БД їдуть в ENTRYPOINT образу, тож деплой без
+    # (ADR-0102). Міграції БД їдуть в ENTRYPOINT образу, тож деплой без
     # цього гейта застосовував би неперевірену схему на живій базі.
     # `critical-flow` тут тому, що він єдиний ганяє справжній API-сервер
     # із міграціями проти браузера; `migration-*` - бо саме міграції

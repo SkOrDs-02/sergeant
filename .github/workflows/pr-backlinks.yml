@@ -70,7 +70,7 @@ concurrency:
 jobs:
   update-backlinks:
     name: Update PR backlinks
-    # Вимкнено з 2026-09-30 (ADR-0101): `update-pr-backlinks.mjs` з 2026-09-23
+    # Вимкнено з 2026-09-30 (ADR-0102): `update-pr-backlinks.mjs` з 2026-09-23
     # читає метадані PR лише з Bitbucket API, а PR тепер живуть на GitHub.
     # Запуск тут упав би на відсутньому BITBUCKET_TOKEN. Поки фетчер не
     # навчиться GitHub, реєстр дописується вручну, а вмикач - змінна

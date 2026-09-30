@@ -503,6 +503,7 @@ export function DebtForm({
           onChange={(e) => setNewDebt((a) => ({ ...a, name: e.target.value }))}
         />
         <VoiceMicButton
+          module="finyk"
           size="md"
           label="Голосовий ввід"
           promptHint="Пасив у гривнях: кредит 50000, борг 12000, іпотека."

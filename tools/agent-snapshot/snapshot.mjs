@@ -124,7 +124,7 @@ function sectionCi() {
   // query live status when needed.
   return [
     "## CI last run on main",
-    "- CI: GitHub Actions (ADR-0101). Стан: `gh run list --branch main -L 5`.",
+    "- CI: GitHub Actions (ADR-0102). Стан: `gh run list --branch main -L 5`.",
     "- Для main↔prod drift дивись `pnpm deploy:status`.",
   ].join("\n");
 }

@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-09-06 by Codex. **Last touched:** 2026-09-23 by @claude (enforced_by: CI-only записи позначено SUSPENDED - CI на Bitbucket не запускається). **Next review:** 2027-03-06.
+> **Last validated:** 2026-09-06 by Codex. **Last touched:** 2026-09-29 by @claude (ADR-0101: ai-legacy повернувся як гейт PR; dead-code:files лишається SUSPENDED). **Next review:** 2027-03-06.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #10. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -17,8 +17,8 @@
 ## Enforced by
 
 - **eslint-rule** — sergeant-design/ai-marker-syntax (error)
-- **ci** - `.github/workflows/ai-legacy-scan.yml` (щопонеділка і вручну з 2026-09-30, ADR-0101): `node scripts/check-ai-legacy.mjs --check --require-issue` (відновлено 2026-09-30, ADR-0101)
-- **ci** - SUSPENDED: pnpm dead-code:files (honours @scaffolded markers) не стоїть ні в жодному workflow, ні в `pnpm lint`/`pnpm check`; сирий `pnpm knip` біжить у джобі `Dead Code (Knip)` у `ci.yml`
+- **ci** - `.github/workflows/ai-legacy-scan.yml` (`node scripts/check-ai-legacy.mjs --check --require-issue`; з 2026-09-30 щопонеділка і вручну, на PR не біжить, [ADR-0102](../../adr/0102-github-actions-ci-and-autodeploy.md); до того гейт PR з 2026-09-29, [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md))
+- **ci** - SUSPENDED з 2026-09-23 (у `.github/workflows/` кроку досі немає, не в `pnpm lint`/`pnpm check`, перевірено 2026-09-29): pnpm dead-code:files (honours @scaffolded markers); `ci.yml` ганяє лише `pnpm knip`
 
 > **Не гейт, а лічильник:** `pnpm lint:lifecycle-markers`
 > ([`check-lifecycle-markers.mjs`](../../../../scripts/docs/check-lifecycle-markers.mjs))

@@ -1,6 +1,6 @@
 ﻿# Agents in Sergeant
 
-> **Last touched:** 2026-09-23 by @claude (аудит DG: відсутній CI, фактичний деплой, журнал ратчетів винесено). **Next review:** 2027-01-09.
+> **Last touched:** 2026-09-29 by @claude (GitHub знову основний хост, [ADR-0101](./docs/governance/adr/0101-github-primary-host-ci-returns.md); CI і автодеплой бекенду, [ADR-0102](./docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)). **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -85,7 +85,7 @@ Repo policy lives here in `AGENTS.md`. Platform-specific wrappers such as `CLAUD
 
 ## Quick commands
 
-> **One-liner pre-PR check:** `pnpm check` (= `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build`, where `check:typecheck-and-test` runs `turbo run typecheck test --concurrency=2` so the two task pipelines fan out concurrently without oversubscribing nested test workers). Той самий ланцюжок виконує джоба `check` у GitHub Actions на кожному PR і push у `main` (з 2026-09-30, [ADR-0101](./docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)); деталі в [`§ Verification before PR`](#verification-before-pr).
+> **One-liner pre-PR check:** `pnpm check` (= `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build`, where `check:typecheck-and-test` runs `turbo run typecheck test --concurrency=2` so the two task pipelines fan out concurrently without oversubscribing nested test workers). Той самий ланцюжок виконує джоба `check` у GitHub Actions на кожному PR і push у `main` (з 2026-09-30, [ADR-0102](./docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)); деталі в [`§ Verification before PR`](#verification-before-pr).
 
 ```bash
 pnpm install --frozen-lockfile        # exact deps from lockfile (Hard Rule — see CONTRIBUTING.md)
@@ -225,7 +225,7 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 ### Де живе код
 
-Код живе на **GitHub**: [`SkOrDs-02/sergeant`](https://github.com/SkOrDs-02/sergeant), **публічне** репо (з 2026-09-30, [ADR-0101](./docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)). `origin` = `https://github.com/SkOrDs-02/sergeant.git`, і пушить він одразу у дві адреси: GitHub і bare-дзеркало `root@167.233.98.92:/srv/git/sergeant.git` (резервна копія). Coolify збирає бекенд із GitHub напряму, тож дзеркало в ланцюгу деплою не бере участі.
+Код живе на **GitHub**: [`SkOrDs-02/sergeant`](https://github.com/SkOrDs-02/sergeant), **публічне** репо (GitHub знову основний хост з 2026-09-29, [ADR-0101](./docs/governance/adr/0101-github-primary-host-ci-returns.md); CI і автодеплой бекенду з 2026-09-30, [ADR-0102](./docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)). `origin` = `https://github.com/SkOrDs-02/sergeant.git`, і пушить він одразу у дві адреси: GitHub і bare-дзеркало `root@167.233.98.92:/srv/git/sergeant.git` (резервна копія). Coolify збирає бекенд із GitHub напряму, тож дзеркало в ланцюгу деплою не бере участі.
 
 Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-09-23..29 і тепер лише архів: його PR #1..#105 і посилання `bitbucket.org/.../pull-requests/NNN` у доках читаються як історія. Архівні GitHub-remote `oldgh` і `deadgh-zaebal` теж **не видаляй**: у них лежать refs, яких немає більше ніде (локальний `oldgh` на 731 ref). Посилання `github.com/Skords-01/Sergeant/pull/NNN` - історія старого репо, нумерація PR там своя.
 
@@ -241,7 +241,7 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 
 ## Verification before PR
 
-> **CI - GitHub Actions** ([`ci.yml`](./.github/workflows/ci.yml)) на кожен `pull_request` і push у `main`, з 2026-09-30 ([ADR-0101](./docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)); 2026-09-23..29 CI не було зовсім. На PR і push у `main` біжать лише `check` (той самий ланцюжок, що й `pnpm check`, плюс гейти форми CI), `Critical-flow E2E (Playwright)`, `migration-lint`, `migration-down-drill`, `commitlint`, `secret-scan` і на `main` `deploy-api`. Інші workflow, включно з `lighthouse-ci.yml`, на PR не біжать. Решта джоб `ci.yml` і решта workflow біжать щопонеділка за розкладом або вручну: повний набір на кожен push забивав чергу Actions. На PR застарілі прогони скасовуються, на `main` ні. Локально повний `pnpm check` на 7.9 ГБ RAM важкий: проганяй скоуповано, а вердикт бери з CI.
+> **CI - GitHub Actions** ([`ci.yml`](./.github/workflows/ci.yml)) на кожен `pull_request` і push у `main`, з 2026-09-30 ([ADR-0102](./docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)); 2026-09-23..29 CI не було зовсім. На PR і push у `main` біжать лише `check` (той самий ланцюжок, що й `pnpm check`, плюс гейти форми CI), `Critical-flow E2E (Playwright)`, `migration-lint`, `migration-down-drill`, `commitlint`, `secret-scan` і на `main` `deploy-api`. Інші workflow, включно з `lighthouse-ci.yml`, на PR не біжать. Решта джоб `ci.yml` і решта workflow біжать щопонеділка за розкладом або вручну: повний набір на кожен push забивав чергу Actions. На PR застарілі прогони скасовуються, на `main` ні. Локально повний `pnpm check` на 7.9 ГБ RAM важкий: проганяй скоуповано, а вердикт бери з CI.
 
 `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test --concurrency=2`, який запускає обидва pipelines паралельно без перепідписування вкладених test worker-ів). When changing UI: attach a screenshot. When shipping a heavy import: `pnpm --filter @sergeant/web size` (вручну, у `pnpm check` не входить; див. § Performance budgets). CI-матриця описана в [`docs/governance/governance/release-policy.md`](./docs/governance/governance/release-policy.md) і `.github/workflows/`. Markdown link checker (`node scripts/docs/check-markdown-links.mjs`, джоба в `docs-automation.yml`, щотижня) з `--strict-external` звіряє зовнішні посилання з [`docs/governance/governance/external-link-allowlist.json`](./docs/governance/governance/external-link-allowlist.json); у `pnpm lint` його немає.
 
@@ -259,7 +259,7 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 
 ### Прод не оновлюється сам
 
-Назва секції історична: з 2026-09-30 бекенд **автодеплоїться**, але лише після зеленого CI ([ADR-0101](./docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)). Міграції їдуть в ENTRYPOINT образу, тож кожен деплой застосовує схему з нового коду на живій базі, і гейт тут обовʼязковий.
+Назва секції історична: з 2026-09-30 бекенд **автодеплоїться**, але лише після зеленого CI ([ADR-0102](./docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)). Міграції їдуть в ENTRYPOINT образу, тож кожен деплой застосовує схему з нового коду на живій базі, і гейт тут обовʼязковий.
 
 - **Тригер:** push у `main` -> джоба `deploy-api` у [`ci.yml`](./.github/workflows/ci.yml) з `needs: [check, critical-flow, migration-lint, migration-down-drill]` -> reusable [`deploy-api.yml`](./.github/workflows/deploy-api.yml). Власного `on: push` він не має, щоб не обійти гейт.
 - **Умови:** секрети репо `COOLIFY_URL` і `COOLIFY_TOKEN` задані (інакше зелений пропуск); `main` ще на цьому коміті (Coolify збирає голову гілки, тож новіший коміт задеплоїть його власний CI); від коміту в проді змінились шляхи, що потрапляють в образ.

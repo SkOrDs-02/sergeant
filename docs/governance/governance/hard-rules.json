@@ -138,7 +138,7 @@
       "enforced_by": [
         {
           "kind": "branch-protection",
-          "ref": "GitHub branch protection on SkOrDs-02/sergeant `main` (force-push and deletion disabled; verified 2026-09-30). Protection on the Hetzner mirror (origin's second pushurl) is unverified"
+          "ref": "SUSPENDED since 2026-09-23 (unverified after ADR-0101): GitHub is primary again (2026-09-29), but the branch protection on SkOrDs-02/sergeant main is a repo setting that cannot be verified from this checkout; confirm in GitHub Settings -> Branches, and on the Bitbucket and Hetzner mirrors"
         }
       ],
       "links": [
@@ -185,11 +185,11 @@
         },
         {
           "kind": "ci",
-          "ref": ".github/workflows/ai-legacy-scan.yml (weekly schedule + workflow_dispatch since 2026-09-30, ADR-0101): node scripts/check-ai-legacy.mjs --check --require-issue"
+          "ref": ".github/workflows/ai-legacy-scan.yml (weekly schedule + workflow_dispatch since 2026-09-30, ADR-0102): node scripts/check-ai-legacy.mjs --check --require-issue"
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED: pnpm dead-code:files (honours @scaffolded markers) is not in any workflow nor in pnpm lint/check; raw `pnpm knip` runs in ci.yml job `Dead Code (Knip)`"
+          "ref": "SUSPENDED since 2026-09-23 (still no step in .github/workflows/ and not in pnpm lint/check, checked 2026-09-29): pnpm dead-code:files (honours @scaffolded markers); ci.yml runs only `pnpm knip` (job Dead Code (Knip))"
         }
       ],
       "links": [
@@ -212,7 +212,7 @@
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED: pnpm docs:check-freshness-coverage is not in any workflow nor in pnpm lint/check; docs-automation.yml runs only the cadence and single-marker checks"
+          "ref": "SUSPENDED since 2026-09-23 (still no step in .github/workflows/ and not in pnpm lint/check, checked 2026-09-29): pnpm docs:check-freshness-coverage"
         },
         {
           "kind": "ci",
@@ -426,7 +426,7 @@
       "enforced_by": [
         {
           "kind": "hook",
-          "ref": "SUSPENDED since 2026-09-30: повноту реєстру ніщо не стереже. Нагадування в pre-push прибрано разом із перевіркою PR на Bitbucket (ADR-0101), а .github/workflows/pr-backlinks.yml вимкнено (змінна репо PR_LEDGER_ON_GITHUB), доки фетчер не читає GitHub"
+          "ref": "SUSPENDED since 2026-09-30: повноту реєстру ніщо не стереже. Нагадування в pre-push прибрано разом із перевіркою PR на Bitbucket (ADR-0102), а .github/workflows/pr-backlinks.yml вимкнено (змінна репо PR_LEDGER_ON_GITHUB), доки фетчер не читає GitHub"
         },
         {
           "kind": "convention",

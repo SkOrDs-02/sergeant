@@ -111,6 +111,7 @@ vi.mock("../../core/onboarding/presetPrefill", () => ({
 
 vi.mock("./lib/finykStorage", () => ({
   readRaw: vi.fn(() => ""),
+  writeRaw: vi.fn(),
   writeJSON: vi.fn(),
   removeItem: vi.fn(),
 }));
@@ -761,12 +762,12 @@ describe("FinykApp (extra) — login overlay onConnect callback", () => {
 // ── NoBankBanner onContinueManually ──────────────────────────────────────────
 
 describe("FinykApp (extra) — NoBankBanner onContinueManually", () => {
-  it("calls enableFinykManualOnly and hides the banner when continuing manually", () => {
+  it("hides the banner on dismiss without setting manual-only", () => {
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     expect(screen.getByTestId("no-bank-banner")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Без банку"));
-    expect(enableFinykManualOnly).toHaveBeenCalled();
-    // Banner should be gone after manualOnly=true
+    expect(enableFinykManualOnly).not.toHaveBeenCalled();
+    // Banner should be gone after the dismiss timestamp is set
     expect(screen.queryByTestId("no-bank-banner")).not.toBeInTheDocument();
   });
 });

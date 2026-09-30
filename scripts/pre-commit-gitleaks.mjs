@@ -4,7 +4,7 @@
 // Pre-commit guard for secret leaks (closes I5 hardening item).
 //
 // CI (`ci.yml` job `secret-scan`, gitleaks) scans every PR since
-// 2026-09-30 (ADR-0101), but only after the push. This hook keeps the
+// 2026-09-30 (ADR-0102), but only after the push. This hook keeps the
 // secret out of the pushed history in the first place.
 //
 // Behaviour:

@@ -18,7 +18,7 @@ Production-facing зміни в Sergeant не вважаються заверш�
 
 ## Deploy targets (актуально — AGENTS.md § «Де живе код» і § «Прод не оновлюється сам»)
 
-CI - GitHub Actions (`ci.yml`; на PR лише мінімальний набір, решта щотижня), з 2026-09-30 ([ADR-0101](../../../docs/governance/adr/0101-github-actions-ci-and-autodeploy.md)). Бекенд автодеплоїться лише після зелених `check`, `critical-flow`, `migration-lint`, `migration-down-drill`; web лишається ручним.
+CI - GitHub Actions (`ci.yml`; на PR лише мінімальний набір, решта щотижня), з 2026-09-30 ([ADR-0102](../../../docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)). Бекенд автодеплоїться лише після зелених `check`, `critical-flow`, `migration-lint`, `migration-down-drill`; web лишається ручним.
 
 | Target | Repo source | Notes |
 |---|---|---|

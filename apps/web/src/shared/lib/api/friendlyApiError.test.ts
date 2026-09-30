@@ -1,7 +1,17 @@
 import { describe, it, expect } from "vitest";
+import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
 import { friendlyApiError } from "./friendlyApiError";
 
 describe("friendlyApiError (shared)", () => {
+  it("403 з текстом про згоду на дані про здоровʼя віддає його як є, а не «недоступна для акаунта»", () => {
+    expect(friendlyApiError(403, HEALTH_CONSENT_REQUIRED_MESSAGE)).toBe(
+      HEALTH_CONSENT_REQUIRED_MESSAGE,
+    );
+    expect(friendlyApiError(403, "Forbidden")).toBe(
+      "Ця дія недоступна для поточного акаунта.",
+    );
+  });
+
   it("для 429 віддає серверне повідомлення (AI-3: конкретний час очікування)", () => {
     // Сервер (`rateLimitExpress`) тепер сам називає, скільки чекати —
     // «Забагато запитів. Спробуй через 12 секунд.» — а не голе «пізніше».

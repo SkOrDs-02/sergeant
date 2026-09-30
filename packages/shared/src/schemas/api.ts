@@ -1866,6 +1866,30 @@ export type BillingProvidersResponse = z.infer<
 
 const TRANSCRIBE_MAX_PROMPT_LENGTH = 1024;
 
+/**
+ * Модулі, з яких клієнт декларує голосовий запит (`?module=`).
+ *
+ * AI-NOTE: тег ДЕКЛАРАТИВНИЙ. Сервер не бачить, з якого екрана справді
+ * пішов запит, тож клієнт може збрехати або не передати тег зовсім. Це
+ * осмислений компроміс (рішення власника 2026-09-30): гейт згоди ловить
+ * чесний клієнт і не ламає старі, а не захищає від зловмисника з власним
+ * акаунтом (він і так може сам надиктувати що завгодно).
+ */
+export const TRANSCRIBE_MODULES = [
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "hub",
+] as const;
+export type TranscribeModule = (typeof TRANSCRIBE_MODULES)[number];
+
+/** Модулі, чий голос — дані про здоровʼя (GDPR Art. 9): потрібна `healthDataConsent`. */
+export const TRANSCRIBE_HEALTH_MODULES: readonly string[] = [
+  "nutrition",
+  "fizruk",
+];
+
 export const TranscribeQuerySchema = z.object({
   language: z
     .string()
@@ -1880,6 +1904,16 @@ export const TranscribeQuerySchema = z.object({
     .max(TRANSCRIBE_MAX_PROMPT_LENGTH)
     .optional()
     .describe("Доменна підказка (списки вправ, продуктів тощо)."),
+  // Навмисно `string`, а не enum: невідомий тег має поводитись як відсутній
+  // (відкрито), а не давати 400 старому/новішому клієнту.
+  module: z
+    .string()
+    .trim()
+    .max(32)
+    .optional()
+    .describe(
+      "Модуль-виклик: nutrition | fizruk | finyk | routine | hub. Для nutrition/fizruk без згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED. Відсутній або невідомий — без гейту.",
+    ),
 });
 export type TranscribeQuery = z.infer<typeof TranscribeQuerySchema>;
 
@@ -2086,89 +2120,5 @@ export const CspReportBodySchema = z.union([
   CspReportBareSchema,
 ]);
 export type CspReportBody = z.infer<typeof CspReportBodySchema>;
-
-// ────────────────────── /api/account/recovery (planned) ──────────────────────
-/**
- * Wire shapes for the planned `POST /api/account/recovery` /
- * `POST /api/account/recovery/confirm` security-critical endpoints. The
- * routes are referenced in the Sentry sampling table
- * (`apps/server/src/sentry.ts` line 42, `100%` trace rate) and the
- * fail-closed rate-limit policy (`docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md`)
- * but have **no handler yet** — locking the contract here means the
- * eventual implementation can be reviewed against an already-agreed shape
- * instead of bike-shed-debated mid-PR.
- *
- * Hard rule applied: response shape **MUST NOT** distinguish "email is
- * registered" from "email is not registered" via status code or body
- * differences — the response is identical in both cases (HTTP 202 +
- * `{ ok: true }`) to prevent account-enumeration. See
- * `docs/audits/2026-05-13-security-observability-roast.md` § S7 for the
- * carry-over rationale and `OWASP ASVS v4.0 § 2.2.1` for the enumeration
- * threat model.
- */
-export const AccountRecoveryInitiateRequestSchema = z
-  .object({
-    email: z.string().email().max(254),
-  })
-  .strict();
-export type AccountRecoveryInitiateRequest = z.infer<
-  typeof AccountRecoveryInitiateRequestSchema
->;
-
-/**
- * Identical for both registered + unregistered emails (anti-enumeration).
- * `ok: true` is the only guaranteed field — the route is async / queue-based.
- */
-export const AccountRecoveryInitiateResponseSchema = z
-  .object({
-    ok: z.literal(true),
-  })
-  .strict();
-export type AccountRecoveryInitiateResponse = z.infer<
-  typeof AccountRecoveryInitiateResponseSchema
->;
-
-/**
- * Confirm step — caller submits the opaque single-use token from the
- * recovery email plus the new password. Schema validates the same minimum
- * password strength rule as Better Auth's `password.min` config in
- * `apps/server/src/auth.ts`; if Better Auth ever raises the floor, this
- * schema must move in lockstep (Hard Rule #3).
- */
-export const AccountRecoveryConfirmRequestSchema = z
-  .object({
-    token: z.string().min(16).max(512),
-    newPassword: z.string().min(8).max(128),
-  })
-  .strict();
-export type AccountRecoveryConfirmRequest = z.infer<
-  typeof AccountRecoveryConfirmRequestSchema
->;
-
-/**
- * Success: `{ ok: true }`. The route deliberately omits the rotated session
- * to force the client through a fresh `/api/auth/sign-in` — preventing
- * token-replay from re-authenticating an attacker mid-flow.
- */
-export const AccountRecoveryConfirmResponseSchema = z
-  .object({
-    ok: z.literal(true),
-  })
-  .strict();
-export type AccountRecoveryConfirmResponse = z.infer<
-  typeof AccountRecoveryConfirmResponseSchema
->;
-
-/**
- * Error envelope — kept generic-shaped because the route must NOT reveal
- * whether the token was wrong, expired, or already-used (uniform 400
- * response defeats token-existence probing).
- */
-export const AccountRecoveryErrorSchema = z
-  .object({
-    error: z.string().min(1).max(200),
-  })
-  .strict();
-export type AccountRecoveryError = z.infer<typeof AccountRecoveryErrorSchema>;
 
 export { z };

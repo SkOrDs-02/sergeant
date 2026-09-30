@@ -47,7 +47,7 @@ C10 і неіснуючий дефект PDF-експорту в M3. Кожна 
 
 - **convention** — `pnpm docs:sync-pr-ledger` дочитує метадані змерджених PR з Bitbucket API і перебудовує блоки. Покриває лише архівні Bitbucket-PR (2026-09-23..29).
 - **ci** — `pnpm docs:check-pr-ledger` (крок `pnpm lint`) звіряє реєстр ↔ блоки ↔ схему. Exit 1 на будь-якому дрейфі.
-- **Повнота зараз не стережеться (з 2026-09-30).** Код повернувся на GitHub ([ADR-0101](../../adr/0101-github-actions-ci-and-autodeploy.md)), а писач реєстру вміє читати лише Bitbucket. Нагадування в `pre-push` прибрано разом із перевіркою змердженого PR на Bitbucket, а [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) вимкнено змінною репозиторію `PR_LEDGER_ON_GITHUB`: без неї він упав би на відсутньому `BITBUCKET_TOKEN`. Повернути автоматику = навчити фетчер GitHub API (як було до 2026-09-23) і ввімкнути змінну.
+- **Повнота зараз не стережеться (з 2026-09-30).** Код повернувся на GitHub ([ADR-0102](../../adr/0102-github-actions-ci-and-autodeploy.md)), а писач реєстру вміє читати лише Bitbucket. Нагадування в `pre-push` прибрано разом із перевіркою змердженого PR на Bitbucket, а [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) вимкнено змінною репозиторію `PR_LEDGER_ON_GITHUB`: без неї він упав би на відсутньому `BITBUCKET_TOKEN`. Повернути автоматику = навчити фетчер GitHub API (як було до 2026-09-23) і ввімкнути змінну.
 
 ### Повернення на GitHub (2026-09-30)
 

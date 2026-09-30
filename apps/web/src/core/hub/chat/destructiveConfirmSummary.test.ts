@@ -80,6 +80,44 @@ describe("summarizeDestructiveToolInput", () => {
     );
   });
 
+  it("remember: показує факт, довгий обрізає", () => {
+    expect(summarizeDestructiveToolInput("remember", { fact: " цукор " })).toBe(
+      "«цукор»",
+    );
+    const long = summarizeDestructiveToolInput("remember", {
+      fact: "а".repeat(200),
+    });
+    expect(long).toBe(`«${"а".repeat(79)}…»`);
+    expect(summarizeDestructiveToolInput("remember", {})).toBeUndefined();
+  });
+
+  it("create_transaction: тип, сума, категорія", () => {
+    expect(
+      summarizeDestructiveToolInput("create_transaction", {
+        type: "income",
+        amount: 5000,
+      }),
+    ).toBe("дохід 5000 грн");
+    expect(
+      summarizeDestructiveToolInput("create_transaction", {
+        amount: 200,
+        category: "food",
+      }),
+    ).toBe("витрата 200 грн, food");
+    expect(
+      summarizeDestructiveToolInput("create_transaction", {}),
+    ).toBeUndefined();
+  });
+
+  it("export_module_data: модуль і формат (дефолт text)", () => {
+    expect(
+      summarizeDestructiveToolInput("export_module_data", { module: "fizruk" }),
+    ).toBe("модуль fizruk, формат text");
+    expect(
+      summarizeDestructiveToolInput("export_module_data", {}),
+    ).toBeUndefined();
+  });
+
   it("невідомий інструмент або биті аргументи → undefined, без throw", () => {
     expect(summarizeDestructiveToolInput("невідомий", {})).toBeUndefined();
     expect(
