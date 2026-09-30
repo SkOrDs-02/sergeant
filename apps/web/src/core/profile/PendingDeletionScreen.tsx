@@ -101,7 +101,7 @@ export function PendingDeletionScreen({
 
         <div className="flex flex-col gap-3">
           <Button
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={() => void handleRestore()}
             loading={restoring}

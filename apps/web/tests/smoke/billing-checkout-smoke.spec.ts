@@ -84,7 +84,9 @@ test("@critical billing: pricing Premium CTA creates a checkout session and redi
   );
 
   await page.goto("/pricing", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Тарифи" })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Плани", exact: true }),
+  ).toBeVisible({
     timeout: 10_000,
   });
 
