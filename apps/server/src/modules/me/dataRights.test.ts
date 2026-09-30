@@ -710,6 +710,11 @@ describe("requestAccountDeletion — позначає, а не видаляє", 
     );
     expect(killed).toBeDefined();
     expect(killed![1]).toEqual(["user-1"]);
+    // Better Auth-таблиця `session` має колонку `"userId"` (camelCase,
+    // міграція 003). `user_id` дало 42703 і 500 на DELETE /api/me — моки
+    // цього не ловлять, тож пінимо ім'я колонки в самому SQL.
+    expect(killed![0]).toContain('"userId" = $1');
+    expect(killed![0]).not.toContain("user_id");
   });
 
   it("не наповнює чергу очищення зовнішніх сервісів (це робота добивача)", async () => {

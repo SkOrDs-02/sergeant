@@ -22,9 +22,9 @@ test("@critical hub-chat: cold-load mounts the /chat assistant surface", async (
     .getByRole("region")
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
-  await expect(page.locator("#hub-chat-title")).toHaveText("Асистент");
+  await expect(page.locator("#hub-chat-title")).toHaveText("Сержант");
 
-  const input = page.getByLabel("Повідомлення асистенту");
+  const input = page.getByLabel("Повідомлення Сержанту");
   await expect(input).toBeVisible();
   await expect(input).toHaveValue("");
 
@@ -57,7 +57,7 @@ test("@critical hub-chat: chat API failure renders a retryable assistant message
     .filter({ has: page.locator("#hub-chat-title") });
   await expect(chatRegion).toBeVisible({ timeout: 10_000 });
 
-  const input = page.getByLabel("Повідомлення асистенту");
+  const input = page.getByLabel("Повідомлення Сержанту");
   await input.fill("Production readiness degraded-chat smoke ping.");
 
   const chatResponse = page.waitForResponse(

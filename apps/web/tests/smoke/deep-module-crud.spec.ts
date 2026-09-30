@@ -458,7 +458,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await page.getByLabel("Вага (кг)").fill("81.2");
     await page.getByLabel("Сон (год)").fill("7.5");
     await page
-      .getByPlaceholder("Як почуваєшся сьогодні…")
+      .getByPlaceholder("Як почуваєшся сьогодні")
       .fill("DCRUD body note");
     await waitForSqliteRefreshAfter(page, "fizruk", async () => {
       await page.getByRole("button", { name: "Записати" }).click();

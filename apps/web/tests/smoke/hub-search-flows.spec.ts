@@ -45,7 +45,7 @@ test("@critical hub-search: Fizruk catalogue hit opens module shell", async ({
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const dialog = await openGlobalSearch(page);
-  const search = dialog.getByPlaceholder("Пошук по всіх модулях…");
+  const search = dialog.getByPlaceholder("Пошук по всіх модулях");
 
   await search.fill("жим");
   await expect(dialog.getByText("Фізрук")).toBeVisible();
