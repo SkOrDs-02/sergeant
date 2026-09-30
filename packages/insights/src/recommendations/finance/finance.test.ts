@@ -46,6 +46,10 @@ function usage(
   const categoryIds = budget.categoryIds ?? [budget.categoryId];
   return {
     ...calculateLimitUsage(budget, spent),
+    // Темп (Р9) правило-«перевищено/на межі» не читає: нейтральний, без прогнозу.
+    forecast: null,
+    forecastOverLimit: false,
+    daysUntilOver: null,
     budget: { type: "limit", ...budget },
     categoryIds,
     key: categoryIds.join("+"),
