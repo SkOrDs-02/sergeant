@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-29 by @Skords-01. **Next review:** 2027-12-01.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-12-02.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -223,7 +223,26 @@ const normalizedToolResults = truncateToolResults(tool_results, {
 набрала. Він не вірний, коли в той самий промпт їде текст від третьої особи.
 Мінімум-мінімум: додати в реєстр усі перезаписи й показувати параметри.
 
+> **Статус B21 (залишок) на 2026-09-29: закрито рішенням власника.** `remember`,
+> `create_transaction` і `export_module_data` виконуються лише після явного
+> «Так» у діалозі підтвердження: додані в
+> [`toolRisk.ts`](../../../../packages/shared/src/lib/toolRisk.ts) (`TOOL_RISK`,
+> режим `destructive` = гейт підтвердження) і позначені `risky` у
+> [`assistantCatalogue.ts`](../../../../packages/shared/src/lib/assistantCatalogue.ts);
+> діалог показує підсумок аргументів
+> ([`destructiveConfirmSummary.ts`](../../../../apps/web/src/core/hub/chat/destructiveConfirmSummary.ts)).
+> Бюджетні тули (`set_budget_limit`, `set_monthly_plan`, `update_budget`,
+> `change_category`) мають `undo` і лишаються без підтвердження (B39). Тести:
+> `toolRisk.test.ts`, `useChatSend.test.tsx`, `destructiveConfirmSummary.test.ts`.
+> Закриває також «авто-виконання» в B23 (`export_module_data`); ризик посилань
+> у `AssistantMessageBody` цією зміною не чіпається.
+
 ### B22 — «сувора» валідація tool-input перевіряє поля, яких не існує
+
+> **Статус на 2026-09-29:** `remember` виправлено раніше (`RememberInputSchema`
+> у [`toolCallSchema.ts`](../../../../apps/web/src/core/hub/chat/toolCallSchema.ts)
+> відповідає `fact`/`category`); і `remember` тепер ще й за гейтом підтвердження
+> (див. B21). `save_note` — окремо, у гілці `claude/hubchat-tool-fixes`.
 
 [`toolCallSchema.ts:158-166`](../../../../apps/web/src/core/hub/chat/toolCallSchema.ts)
 вимагає для `remember` поля `key`/`value`, а для `save_note` — `content`/`title`.
