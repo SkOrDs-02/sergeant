@@ -12,6 +12,7 @@ import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalizatio
 import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { filterToKyivMonth } from "../../lib/monthWindow";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import {
@@ -172,33 +173,30 @@ export function useTransactionFilters({
   const isCurrentMonth =
     selMonth.year === kyivNowY && selMonth.month === kyivNowM;
 
-  const manualExpenseTxs = useMemo(() => {
-    const monthStart = new Date(selMonth.year, selMonth.month, 1).getTime();
-    const monthEnd = new Date(selMonth.year, selMonth.month + 1, 1).getTime();
-    return (manualExpenses || [])
-      .filter((e) => {
-        const ts = new Date(e.date).getTime();
-        return ts >= monthStart && ts < monthEnd;
-      })
-      .map((e) => manualExpenseToTransaction(e));
-  }, [manualExpenses, selMonth]);
+  // AI-CONTEXT: межі місяця — Київ (ADR-0078: фінансові періоди рахуються за
+  // Kyiv, як в Аналітиці й у `fetchMonth`), для банку і ручних витрат разом.
+  // Особистий день-ключ запису лишається device-local, але ПРИНАЛЕЖНІСТЬ до
+  // місяця — це період, а не доба.
+  const monthKey = `${selMonth.year}-${String(selMonth.month + 1).padStart(2, "0")}`;
+
+  const manualExpenseTxs = useMemo(
+    () =>
+      filterToKyivMonth(
+        (manualExpenses || []).map((e) => manualExpenseToTransaction(e)),
+        monthKey,
+      ),
+    [manualExpenses, monthKey],
+  );
 
   // The bank-side slice can carry rows outside `selMonth`: the read-overlay
   // in `useMonobankWebhook` falls back to the full SQLite mirror on a cold
   // start, and `historyTx` keeps the last fetched month while a new fetch is
   // in flight. Clamp to the selected month so the rendered rows always match
   // `monthLabel` instead of leaking adjacent-month groups under the header.
-  const monthBankTxs = useMemo(() => {
-    const monthStartSec =
-      new Date(selMonth.year, selMonth.month, 1).getTime() / 1000;
-    const monthEndSec =
-      new Date(selMonth.year, selMonth.month + 1, 1).getTime() / 1000;
-    const source = isCurrentMonth ? realTx : historyTx;
-    return source.filter((t) => {
-      const ts = t.time ?? 0;
-      return ts >= monthStartSec && ts < monthEndSec;
-    });
-  }, [isCurrentMonth, realTx, historyTx, selMonth]);
+  const monthBankTxs = useMemo(
+    () => filterToKyivMonth(isCurrentMonth ? realTx : historyTx, monthKey),
+    [isCurrentMonth, realTx, historyTx, monthKey],
+  );
 
   const activeTx = useMemo(
     () => [...monthBankTxs, ...manualExpenseTxs],
