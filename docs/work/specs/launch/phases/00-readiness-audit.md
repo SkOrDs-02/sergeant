@@ -3,7 +3,7 @@
 > **Last touched:** 2026-09-17 by @claude (таблиці §2/§5 приведені до TL;DR: LiqPay/Plata live, Stripe dormant; Devin → агент). **Next review:** 2026-12-16.
 > **Status:** Active
 
-> **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface `sergeant.com.ua` живий (станом на 2026-09-29, див. [agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)); з репо не підтверджені лише деталі зовнішнього Vercel production deployment. Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.
+> **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface `sergeant.com.ua` живий (станом на 2026-09-29, див. [agent-readiness § 6](../../audits/2026-09-21-agent-readiness.md)); з репо не підтверджено, що apex `sergeant.com.ua` маршрутизується саме на `apps/landing` і що Vercel production справді обслуговує landing (DNS-делегація сама по собі не є відкритим питанням). Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.
 
 > Read-only zoom-out на готовність 5 app surfaces (Web, Landing, Server, Capacitor shell, Native Expo) до запуску з реальними юзерами. Цей документ — baseline для 3 наступних phase-роадмапів (web/Capacitor/native). Зміни статусів — через окремі PR-и.
 
