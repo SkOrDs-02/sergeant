@@ -26,7 +26,11 @@ import { cn } from "@shared/lib/ui/cn";
 import { ProductNutrientsRow } from "./ProductNutrientsRow";
 import { ProductThumb } from "./ProductThumb";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
-import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
+import {
+  MAX_PORTION_GRAMS,
+  macroToFieldString,
+  type MealFormState,
+} from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
 import type { PickedFood } from "./FoodPickerSection";
 
@@ -98,10 +102,10 @@ export function PickedFoodCard({
         // (`продукт || s.name`) затирав уже перейменовану людиною страву
         // щоразу, коли вона крутила порцію.
         name: s.name || [p.name, p.brand].filter(Boolean).join(" ").trim(),
-        kcal: String(Math.round(Number(mac.kcal) || 0)),
-        protein_g: String(Math.round(Number(mac.protein_g) || 0)),
-        fat_g: String(Math.round(Number(mac.fat_g) || 0)),
-        carbs_g: String(Math.round(Number(mac.carbs_g) || 0)),
+        kcal: macroToFieldString(Number(mac.kcal) || 0),
+        protein_g: macroToFieldString(Number(mac.protein_g) || 0),
+        fat_g: macroToFieldString(Number(mac.fat_g) || 0),
+        carbs_g: macroToFieldString(Number(mac.carbs_g) || 0),
         err: "",
       }));
     },
