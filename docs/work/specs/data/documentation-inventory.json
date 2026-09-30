@@ -3490,7 +3490,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0094-mobile-web-first-freeze.md",
-      "inbound_count": 30,
+      "inbound_count": 31,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -3518,6 +3518,7 @@
         "docs/work/specs/launch/phases/01-web-launch-with-users.md",
         "docs/work/specs/launch/phases/02-capacitor-launch.md",
         "docs/work/specs/launch/phases/README.md",
+        "docs/work/specs/launch/product-os/ftux-master-tracker.md",
         "docs/work/specs/reward-loop-and-reminders.md",
         "docs/work/specs/sqlite-multi-tab-ownership.md",
         "docs/work/specs/sqlite-opfs-worker.md",
@@ -3530,13 +3531,15 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0095-demo-mode-removed.md",
-      "inbound_count": 6,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/design/design/specs/2026-09-16-onboarding-design.md",
         "docs/product/modules/finyk.md",
         "docs/start/agents/decisions.md",
         "docs/start/instructions/deep-module-audit.md",
         "docs/work/specs/import-external-trackers.md",
+        "docs/work/specs/launch/phases/00-readiness-audit.md",
+        "docs/work/specs/launch/product-os/ftux-master-tracker.md",
         "docs/work/specs/site-ia/README.md"
       ]
     },
@@ -8531,11 +8534,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-21-agent-readiness.md",
-      "inbound_count": 3,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
-        "docs/work/specs/audits/README.md"
+        "docs/work/specs/audits/README.md",
+        "docs/work/specs/launch/phases/00-readiness-audit.md",
+        "docs/work/specs/launch/phases/01-web-launch-with-users.md"
       ]
     },
     {
@@ -9578,13 +9583,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/kv-warm-cache-user-partition.md",
-      "inbound_count": 4,
-      "inbound_sources": [
-        "docs/STATUS.md",
-        "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md",
-        "docs/today.md"
-      ]
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
       "old_path": "docs/work/specs/launch/business/01-monetization-and-pricing.md",
@@ -10482,11 +10482,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/sqlite-multi-tab-ownership.md",
-      "inbound_count": 2,
-      "inbound_sources": [
-        "docs/governance/governance/freshness-dashboard.html",
-        "docs/open-work.md"
-      ]
+      "inbound_count": 1,
+      "inbound_sources": ["docs/governance/governance/freshness-dashboard.html"]
     },
     {
       "old_path": "docs/work/specs/sqlite-opfs-worker.md",

@@ -1,7 +1,7 @@
 # SPEC: Автоімпорт чеків Сільпо в комору і позначка «вже в коморі»
 
 > **Last touched:** 2026-09-29 by @claude (spec-інтервʼю з власником). **Next review:** 2026-12-29.
-> **Status:** Active - реалізовано в гілці `claude/silpo-pantry-auto-import`; click-through із живим акаунтом Сільпо ще не пройдено.
+> **Status:** Active - реалізовано і змерджено в `main` (міграція `151_silpo_pantry_import`, `apps/web/src/modules/nutrition/hooks/useSilpoPantryAutoImport.ts`); click-through із живим акаунтом Сільпо ще не пройдено.
 
 ## Проблема
 
