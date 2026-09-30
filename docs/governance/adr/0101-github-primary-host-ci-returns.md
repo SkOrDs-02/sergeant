@@ -5,7 +5,7 @@
 - **Last validated:** 2026-09-29
 - **Next review:** 2026-12-29
 - **Deciders:** @Skords-01
-- **Supersedes:** — (частково скасовує рішення про хостинг на Bitbucket від 2026-09-23, яке не оформлювалось окремим ADR; див. Context)
+- **Supersedes:** -
 - **Related:**
   - [Аудит docs/governance, DG-1 і DG-6](../../work/specs/audits/2026-09-23-docs-governance-audit.md)
   - [Аудит мертвих GitHub-remote](../../work/specs/audits/2026-09-23-dead-github-remotes.md)
