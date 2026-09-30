@@ -23,10 +23,11 @@ name: Web route ledger
 #        pact-drift 06:00, post-deploy-smoke 06:30), щоб не конкурувати за
 #        ранери з іншими nightly-лейнами.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  schedule:
-    - cron: "0 1 * * *"
   workflow_dispatch:
+  schedule:
+    - cron: "0 1 * * 1"
 
 permissions:
   contents: read

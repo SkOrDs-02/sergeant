@@ -19,17 +19,11 @@ name: Docs automation
 # others — a PR author fixing a broken internal link shouldn't also lose
 # the signal about a missing `## Why` section.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    # `edited` lets `pr-body-validator` re-run when the author fixes the
-    # body in the GitHub UI without pushing a new commit. The default
-    # trigger set (`opened, synchronize, reopened`) does not cover body
-    # edits, and "Re-run failed jobs" replays the original event payload —
-    # so without this the only way to re-validate a corrected body was to
-    # push a no-op commit.
-    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+  schedule:
+    - cron: "45 5 * * 1"
 
 permissions:
   contents: read

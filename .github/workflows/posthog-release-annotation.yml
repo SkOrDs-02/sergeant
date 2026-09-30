@@ -13,10 +13,8 @@ name: PostHog release annotation
 # Док: docs/operations/observability/frontend.md § Release annotations.
 # Логіка й контракт env — scripts/ci/posthog-release-annotation.mjs.
 
+# Лише вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,6 +25,7 @@ on:
 # Анотації не мають накопичувати чергу: якщо в main прилетіло кілька
 # комітів підряд, важливий останній стан, але кожен реліз усе одно вартий
 # своєї лінії — тому cancel-in-progress: false.
+
 concurrency:
   group: posthog-release-annotation-${{ github.ref }}
   cancel-in-progress: false

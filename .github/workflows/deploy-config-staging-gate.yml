@@ -33,9 +33,9 @@ name: Deploy-config staging gate
 #   docs/start/instructions/deploy-config-change.md (decision tree for verifying)
 #   AGENTS.md hard rule on deploy safety / vercel SSOT.
 
+# Лише вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
 
 permissions:
   pull-requests: read

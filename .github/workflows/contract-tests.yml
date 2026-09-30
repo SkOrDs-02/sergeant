@@ -1,23 +1,10 @@
 name: API contract tests
 
+# Щотижня і вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  pull_request:
-    paths:
-      - "apps/server/src/**"
-      - "packages/shared/src/openapi/**"
-      - "scripts/api/**"
-      - "scripts/pact-drift-check.mjs"
-      - "scripts/post-deploy-smoke.mjs"
-      - "scripts/smoke-tests.json"
-      - "scripts/__tests__/pact-drift-check.test.mjs"
-      - "scripts/__tests__/post-deploy-smoke.test.mjs"
-      - ".github/workflows/pact-drift.yml"
-      - ".github/workflows/post-deploy-smoke.yml"
-      - "docs/engineering/api/openapi.json"
-      - "packages/api-client/src/generated/openapi.d.ts"
-      - "apps/server/src/__tests__/contracts/**"
-      - ".github/workflows/contract-tests.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "15 5 * * 1"
 
 permissions:
   contents: read

@@ -10,10 +10,20 @@ name: CI
 # Actions minutes and queue latency for a solo maintainer. PR branches
 # now run only via pull_request (merge-ref, what actually lands); pushes
 # build only on main.
+# З 2026-09-30 (ADR-0101) на PR і push у main біжать лише джоби, потрібні
+# для мержу й автодеплою: commitlint, check, critical-flow, migration-lint,
+# migration-down-drill, secret-scan і deploy-api. Решта (бюджети, покриття,
+# a11y, mobile UI audit, лендінг, Knip, аудит залежностей, інтеграційні й
+# eval-тести, actionlint, TODO freshness) - щопонеділка за розкладом і
+# вручну (workflow_dispatch). Причина - черга GitHub Actions: повний набір
+# на кожен push забивав ліміт паралельних джоб.
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions:
   contents: read
@@ -332,6 +342,7 @@ jobs:
 
   todo-freshness:
     name: TODO freshness gate
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     # Винесено з `check` 2026-09-16 — той самий клас, що й `bundle-budgets`
     # нижче (див. коментар там): крок стояв ПІСЛЯ «Format, lint, test,
     # build», тож щойно той червонів, гейт не виконувався взагалі — і в
@@ -364,6 +375,7 @@ jobs:
 
   bundle-budgets:
     name: Bundle budgets (size-limit + eager)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     # Винесено з `check` в окрему джобу 2026-09-11, і це вже ТРЕТІЙ випадок
     # того самого класу після `security-audit` нижче. Обидва бандл-гейти
     # стояли кроками ПІСЛЯ «Format, lint, test, build»: коли той крок падав,
@@ -494,6 +506,7 @@ jobs:
 
   security-audit:
     name: Dependency audit (ledger-gated)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     # Винесено з `check` в окрему джобу 2026-09-01. `pnpm audit --json` на
     # цьому монорепо (17 workspaces) виявився здатен зжерти ~4 ГБ heap і
     # впасти FATAL ERROR OOM усередині власного процесу pnpm — ДО того, як
@@ -556,6 +569,7 @@ jobs:
 
   knip-scan:
     name: Dead Code (Knip)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
@@ -582,6 +596,7 @@ jobs:
 
   coverage:
     name: Test coverage (vitest)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       # contents: write — потрібен КРОКУ «Push coverage-ratchet baseline bump»,
@@ -726,6 +741,7 @@ jobs:
 
   a11y:
     name: Accessibility (axe-core)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # No `needs:` — та сама причина, що в `critical-flow`, `mobile-ui-audit`
     # і `server-integration`, просто знайдена пізніше: ця джоба лишалась
@@ -903,6 +919,7 @@ jobs:
 
   mobile-ui-audit:
     name: Mobile UI audit (44px touch targets)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # No `needs:` — same rationale as critical-flow: a lint/test failure in
     # `check` must not skip this gate.
@@ -987,6 +1004,7 @@ jobs:
 
   landing-quality:
     name: Landing quality (axe + Lighthouse)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Лендінг до 2026-09-15 не покривав ЖОДЕН гейт якості: `test:a11y` і
     # Lighthouse ганялись лише по `apps/web`. Для сайту, чий єдиний канал —
@@ -1047,6 +1065,7 @@ jobs:
 
   server-integration:
     name: Server integration tests (Testcontainers)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # No `needs:` — runs in parallel with other jobs (same rationale as
     # critical-flow). Audit 2026-06-11 ws-04: this tier — the syncV2
@@ -1085,6 +1104,7 @@ jobs:
 
   rag-eval:
     name: RAG eval gate (cached embeddings)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Окрема джоба, а не крок у `check` — свідомо. `size-limit` колись
     # стояв кроком ПІСЛЯ «Format, lint, test, build», і коли той червонів,
@@ -1124,6 +1144,7 @@ jobs:
 
   tool-eval:
     name: Tool eval gate (recorded cassette)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Окрема джоба з тієї самої причини, що й rag-eval: гейт, який стоїть
     # кроком після потенційно червоного кроку, не є гейтом — він просто не
@@ -1279,6 +1300,7 @@ jobs:
 
   actionlint:
     name: Workflow lint (actionlint)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -1333,7 +1355,7 @@ jobs:
     # Run after all main jobs; report even when some fail.
     needs:
       [check, bundle-budgets, coverage, a11y, critical-flow, mobile-ui-audit]
-    if: always()
+    if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
       pull-requests: write

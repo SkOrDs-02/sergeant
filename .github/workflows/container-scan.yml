@@ -14,27 +14,11 @@ name: Container image scan (Trivy)
 # Gateway (`Dockerfile.openclaw-gateway`) — decommissioned ADR-0075
 # (2026-07-20). Єдиний образ у цьому workflow: `Dockerfile.api`.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0101): на PR і push у main біжить тільки ci.yml.
 on:
-  pull_request:
-    paths:
-      - "Dockerfile.api"
-      - ".dockerignore"
-      - "pnpm-lock.yaml"
-      - "apps/server/**"
-      - "packages/shared/**"
-      - "packages/config/**"
-      - "packages/finyk-domain/**"
-      - "packages/routine-domain/**"
-      - "packages/tabular-import/**"
-      - "patches/**"
-      - ".github/workflows/container-scan.yml"
-  push:
-    branches: [main]
-  schedule:
-    # Daily 04:00 UTC — через годину після nightly-audit, щоб не шарити
-    # runner pool у пік (03:00 UTC).
-    - cron: "0 4 * * *"
   workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions:
   contents: read
