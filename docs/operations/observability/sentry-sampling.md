@@ -1,6 +1,6 @@
 # Sentry tracesSampler — per-route sampling policy
 
-> **Last touched:** 2026-09-17 by @claude (OpenClaw rule marked as legacy awaiting removal; PR-12 ref → permalink). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-30 by @claude (прибрано правило OpenClaw і приклад із ним; змінену прозу переведено українською). **Next review:** 2026-12-16.
 > **Status:** Active
 >
 > Source of truth for **server** rules: `apps/server/src/sentry.ts`
@@ -35,31 +35,23 @@ to keep the audit pattern consistent.
 
 ## Server rules (`SENTRY_SAMPLING_RULES`)
 
-| Match prefix                    | Rate    | Reason                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/api/internal/openclaw/write/` | `1.0`   | **Legacy — OpenClaw route, gateway decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)); nothing serves this prefix any more, so the rule matches no traffic.** Kept in `sentry.ts` pending a cleanup PR (drop rule + its shadowing test case together). Original rationale: OpenClaw write-tool mutations (ADR-0036 §3), every founder-approved side-effect captured for audit reconstruction. |
-| `/api/internal/`                | `1.0`   | All internal-namespace routes (cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                                                                                                                                                                                                                                                                                     |
-| `/api/admin/`                   | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                                                                                                                                                                                                                                                                                       |
-| `/api/auth/`                    | `1.0`   | Login / signup / SSO — security-critical, low-volume.                                                                                                                                                                                                                                                                                                                                                                                |
-| `/api/chat/usage`               | `0.01`  | Лічильник квоти — дешевий GET на кожному відкритті чату. Стоїть ПЕРЕД `/api/chat`: матч підрядковий, перший збіг виграє.                                                                                                                                                                                                                                                                                                             |
-| `/api/chat`                     | `0.5`   | Найдорожчий AI-роут (SSE ~30 с, до 8 tool-ітерацій). Правила не було — падав у fallback, хоча саме тут B46 показав 9 зривів із 12.                                                                                                                                                                                                                                                                                                   |
-| `/api/coach/insight`            | `0.5`   | Дорога генерація, ліміт 20/год. Саме `/insight`: memory-ендпоінти модель не викликають.                                                                                                                                                                                                                                                                                                                                              |
-| `/api/weekly-digest`            | `0.5`   | Фоновий тижневий дайджест — на його збій ніхто не поскаржиться.                                                                                                                                                                                                                                                                                                                                                                      |
-| `/api/nutrition/analyze-photo`  | `0.5`   | Vision (~5–10 с). Замінює мертве `/api/photo/analyze` — такого роута застосунок не віддає, тож правило не матчило нічого.                                                                                                                                                                                                                                                                                                            |
-| `/api/nutrition/refine-photo`   | `0.5`   | Той самий vision-shape і та сама ціна.                                                                                                                                                                                                                                                                                                                                                                                               |
-| `/api/v2/sync/`                 | `0.01`  | v2 op-log sync (push / pull / stream) fires every ~10 s per active client (Initiative 0003 Phase 5 / ADR-0047). 1 % is enough for latency trend without quota burn.                                                                                                                                                                                                                                                                  |
-| `/api/sync/poll`                | `0.01`  | Chatty heartbeat poll — 1 % is enough for trend.                                                                                                                                                                                                                                                                                                                                                                                     |
-| `/api/health`                   | `0.001` | Liveness probe — 0.1 % prevents quota burn.                                                                                                                                                                                                                                                                                                                                                                                          |
-| _(no match — fallback)_         | `0.05`  | Resolved via `defaultSampleRate()`: explicit `SENTRY_TRACES_SAMPLE_RATE` > `SENTRY_SAMPLE_PROFILE` preset > `0.05`.                                                                                                                                                                                                                                                                                                                  |
+| Match prefix                   | Rate    | Reason                                                                                                                                                              |
+| ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/internal/`               | `1.0`   | All internal-namespace routes (cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                    |
+| `/api/admin/`                  | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                      |
+| `/api/auth/`                   | `1.0`   | Login / signup / SSO — security-critical, low-volume.                                                                                                               |
+| `/api/chat/usage`              | `0.01`  | Лічильник квоти — дешевий GET на кожному відкритті чату. Стоїть ПЕРЕД `/api/chat`: матч підрядковий, перший збіг виграє.                                            |
+| `/api/chat`                    | `0.5`   | Найдорожчий AI-роут (SSE ~30 с, до 8 tool-ітерацій). Правила не було — падав у fallback, хоча саме тут B46 показав 9 зривів із 12.                                  |
+| `/api/coach/insight`           | `0.5`   | Дорога генерація, ліміт 20/год. Саме `/insight`: memory-ендпоінти модель не викликають.                                                                             |
+| `/api/weekly-digest`           | `0.5`   | Фоновий тижневий дайджест — на його збій ніхто не поскаржиться.                                                                                                     |
+| `/api/nutrition/analyze-photo` | `0.5`   | Vision (~5–10 с). Замінює мертве `/api/photo/analyze` — такого роута застосунок не віддає, тож правило не матчило нічого.                                           |
+| `/api/nutrition/refine-photo`  | `0.5`   | Той самий vision-shape і та сама ціна.                                                                                                                              |
+| `/api/v2/sync/`                | `0.01`  | v2 op-log sync (push / pull / stream) fires every ~10 s per active client (Initiative 0003 Phase 5 / ADR-0047). 1 % is enough for latency trend without quota burn. |
+| `/api/sync/poll`               | `0.01`  | Chatty heartbeat poll — 1 % is enough for trend.                                                                                                                    |
+| `/api/health`                  | `0.001` | Liveness probe — 0.1 % prevents quota burn.                                                                                                                         |
+| _(no match — fallback)_        | `0.05`  | Resolved via `defaultSampleRate()`: explicit `SENTRY_TRACES_SAMPLE_RATE` > `SENTRY_SAMPLE_PROFILE` preset > `0.05`.                                                 |
 
-The `/api/internal/` rule (added in PR-07, 2026-06-02) captures all internal-namespace
-routes at 100%. The specific `/api/internal/openclaw/write/` rule precedes it in the
-table and still matches first (longest-prefix-first ordering) — since ADR-0075 that
-is a dead prefix, and removing it changes nothing for live traffic because
-`/api/internal/` already covers it at the same rate. Sentry quota risk on
-cron/webhook spikes should be measured in the first week post-deploy; if span
-volume exceeds quota headroom, reduce the `/api/internal/` rate to `0.5` in a follow-up
-PR and update this table accordingly.
+Правило `/api/internal/` (додане в PR-07, 2026-06-02) семплить усі internal-роути на 100%. Вужчого правила `/api/internal/openclaw/write/` у `SENTRY_SAMPLING_RULES` немає: поверхню OpenClaw видалено [ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md), а окреме правило з тією самою ставкою нічого б не змінювало. Ризик квоти Sentry на сплесках cron/webhook варто виміряти в перший тиждень після деплою; якщо обсяг спанів перевищить запас квоти, зменш ставку `/api/internal/` до `0.5` наступним PR і онови цю таблицю.
 
 **Baseline before PR-07 (Sentry dashboard, last 7 days):** The project-level Sentry
 performance dashboard should be consulted before merge to confirm that `/api/internal/*`
@@ -69,13 +61,13 @@ use `0.5` with a note to revisit on upgrade.
 
 ### Order matters
 
-The rule table is consulted top-to-bottom; first prefix match wins.
-For example, a narrow rule such as `/api/internal/openclaw/write/` must stay
-above the broader `/api/internal/` one, otherwise the broad rule shadows it.
+Таблиця правил перебирається зверху вниз, перший збіг за префіксом перемагає.
+Тому вужче правило, як-от `/api/chat/usage`, має стояти вище за ширше `/api/chat`,
+інакше широке правило його затінить.
 
-The unit test in `apps/server/src/__tests__/sentry-sampler.test.ts`
-asserts that no rule is shadowed by an earlier one (failing the
-build if a future contributor reorders sloppily).
+Юніт-тест `apps/server/src/__tests__/sentry-sampler.test.ts`
+перевіряє, що жодне правило не затінене попереднім (збірка падає,
+якщо хтось переставить правила недбало).
 
 ### Kill-switch
 
