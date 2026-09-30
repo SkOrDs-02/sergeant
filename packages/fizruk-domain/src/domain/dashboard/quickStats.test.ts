@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect } from "vitest";
 import { computeFizrukQuickStats } from "./quickStats.js";
 
 // Повноцінне завершене тренування (45 хв по годиннику). `weekWorkouts`
@@ -12,7 +12,15 @@ const done = (id: string, endedAt: string) => ({
 });
 
 describe("computeFizrukQuickStats", () => {
-  it("counts this-week workouts on the Kyiv Monday boundary, not UTC", () => {
+  // ADR-0078: межа тижня — за годинником пристрою; пояс емулюємо через TZ.
+  const originalTz = process.env["TZ"];
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
+  });
+
+  it("counts this-week workouts on the device Monday boundary (Kyiv device), not UTC", () => {
+    process.env["TZ"] = "Europe/Kyiv";
     // now: Thu 2026-07-23 12:00 Kyiv. Week starts Mon 2026-07-20 00:00 Kyiv
     // = 2026-07-19T21:00:00Z (Kyiv is UTC+3 in July).
     const now = new Date("2026-07-23T09:00:00Z");
@@ -28,6 +36,21 @@ describe("computeFizrukQuickStats", () => {
     // already crossed into the Kyiv Monday and counts — a UTC-anchored week
     // would get this backwards.
     expect(weekWorkouts).toBe(2);
+  });
+
+  it("пристрій у Мексиці: 00:30 понеділка локально — новий тиждень", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    // Thu 2026-07-23 локально; тиждень стартує Mon 2026-07-20 00:00 local
+    // = 06:00Z.
+    const now = new Date("2026-07-23T18:00:00Z");
+    const { weekWorkouts } = computeFizrukQuickStats(
+      [
+        done("mon-00:30", "2026-07-20T06:30:00Z"), // Mon 00:30 local → in
+        done("sun-23:30", "2026-07-20T05:30:00Z"), // Sun 23:30 local → out
+      ],
+      now,
+    );
+    expect(weekWorkouts).toBe(1);
   });
 
   it("рахує ТИЖНЕВИЙ стрік, а не щоденний (канон §7)", () => {

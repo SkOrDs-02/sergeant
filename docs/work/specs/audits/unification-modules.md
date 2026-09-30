@@ -257,6 +257,8 @@
 
 ### 1.15. День тренування: три сусідні функції на двох годинниках
 
+> **Закрито 2026-09-29 (рішення власника: доба пристрою, ADR-0078).** `weeklyStreak` (через опцію `clock: "device"` у [`computeWeeklyStreakBreakdownFromInstants`](../../../../packages/shared/src/utils/weeklyStreak.ts)), `computeWeeklyTotals` ([dashboardKpis.ts](../../../../packages/fizruk-domain/src/domain/dashboard/dashboardKpis.ts)) і `todayLocalDateString` ([Workouts.helpers.ts](../../../../apps/web/src/modules/fizruk/pages/Workouts.helpers.ts)) тепер на годиннику пристрою; тести з різними поясами поруч із кодом. Лишок з тим самим розкладом (Київ): `muscleWeekMatrix`, `usePrLatest`, `useMonthlyPlan` — окремий крок. Опис нижче — стан ДО зміни.
+
 - [packages/fizruk-domain/src/domain/dashboard/dashboardKpis.ts:41](../../../../packages/fizruk-domain/src/domain/dashboard/dashboardKpis.ts) (`localYmdKey`, пристрій) → денний стрік на [:94](../../../../packages/fizruk-domain/src/domain/dashboard/dashboardKpis.ts)
 - [packages/fizruk-domain/src/domain/dashboard/weeklyStreak.ts:76](../../../../packages/fizruk-domain/src/domain/dashboard/weeklyStreak.ts) (`kyivMondayStartMs`, Київ) → тижневий стрік на тому самому дашборді
 - [apps/web/src/modules/fizruk/pages/Workouts.helpers.ts:136](../../../../apps/web/src/modules/fizruk/pages/Workouts.helpers.ts) (`getKyivDayKey`, дата за замовчуванням у формі ретро-запису, з AI-DANGER)
