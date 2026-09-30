@@ -216,7 +216,7 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
     }
   });
 
-  it("second delete is blocked by the pending-deletion gate and keeps the first deadline", async (ctx) => {
+  it("a fresh login during the grace window is blocked by the pending-deletion gate", async (ctx) => {
     if (!dockerAvailable || !app || !pool) return ctx.skip();
 
     const first = await request(app)
@@ -226,12 +226,22 @@ describe("DELETE /api/me — GDPR account deletion + CASCADE", () => {
     expect(first.status).toBe(200);
     expect(first.body.ok).toBe(true);
 
-    // Позначений акаунт не проходить `requireFreshSession()`: 403 з кодом
-    // вікна і тим самим дедлайном, а мітка не зсувається вперед.
+    // Перший запит гасить усі сесії з БД, тож реальний повтор зі старим
+    // токеном отримав би 401 ще до гейту. Тут змодельовано НОВИЙ вхід у
+    // межах вікна: `getFreshSessionUser` замокано і повертає користувача,
+    // як повернув би для свіжої сесії. Такий вхід теж не проходить
+    // `requireFreshSession()`: 403 з кодом вікна і тим самим дедлайном,
+    // а мітка не зсувається вперед.
+    const sessions = await pool.query(
+      `SELECT 1 FROM session WHERE "userId" = $1`,
+      [TEST_USER_ID],
+    );
+    expect(sessions.rowCount).toBe(0);
+
     const second = await request(app)
       .delete("/api/me")
       .set(CSRF_HEADERS)
-      .set("Authorization", "Bearer test-bearer");
+      .set("Authorization", "Bearer test-bearer-relogin");
     expect(second.status).toBe(403);
     expect(second.body.code).toBe(ACCOUNT_PENDING_DELETION_CODE);
     expect(second.body.scheduledPurgeAt).toBe(first.body.scheduledPurgeAt);
