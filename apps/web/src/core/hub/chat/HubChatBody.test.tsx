@@ -180,6 +180,14 @@ describe("HubChatBody", () => {
     expect(scrollable).toBeInTheDocument();
   });
 
+  it("keeps the scrollable message list reachable from the keyboard", () => {
+    // axe `scrollable-region-focusable`: без tabIndex стрічку без
+    // фокусованих елементів не прогорнути клавіатурою.
+    const { container } = renderBody({ loading: false });
+    const scrollable = container.querySelector('[aria-busy="false"]');
+    expect(scrollable).toHaveAttribute("tabindex", "0");
+  });
+
   it("has aria-live polite region for screen reader announcements", () => {
     const { container } = renderBody({ loading: true });
     const liveRegion = container.querySelector('[role="status"]');

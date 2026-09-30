@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 668,
-  "total_entries": 668,
+  "tracked_files": 670,
+  "total_entries": 670,
   "target_collisions": [],
   "entries": [
     {
@@ -894,12 +894,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/api/openapi.json",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/engineering/api/README.md",
         "docs/engineering/architecture/api-v1.md",
         "docs/governance/adr/0025-openapi-generation.md",
         "docs/governance/adr/README.md",
+        "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
         "docs/work/specs/audits/2026-09-21-agent-readiness.md"
       ]
     },
@@ -5635,7 +5636,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/product/copy/style-guide.uk.md",
-      "inbound_count": 42,
+      "inbound_count": 43,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/empty-states.md",
@@ -5677,6 +5678,7 @@
         "docs/work/specs/planning/finyk-analytics-v2.md",
         "docs/work/specs/receipt-scan.md",
         "docs/work/specs/reward-loop-and-reminders.md",
+        "docs/work/specs/silpo-pantry-auto-import.md",
         "docs/work/specs/site-ia/README.md",
         "docs/work/specs/user-deletion-grace-window.md"
       ]
@@ -5866,7 +5868,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/nutrition.md",
-      "inbound_count": 22,
+      "inbound_count": 23,
       "inbound_sources": [
         "docs/engineering/architecture/metric-registry.md",
         "docs/governance/adr/0077-pantry-append-only-ledger.md",
@@ -5889,7 +5891,8 @@
         "docs/work/specs/nutrition-hero-day-strip.md",
         "docs/work/specs/nutrition-plan-cross-device.md",
         "docs/work/specs/pantry-categorization-ai.md",
-        "docs/work/specs/pantry-storage-places.md"
+        "docs/work/specs/pantry-storage-places.md",
+        "docs/work/specs/silpo-pantry-auto-import.md"
       ]
     },
     {
@@ -8613,6 +8616,18 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/audits/2026-09-29-nutrition-handson.md",
+      "new_path": "docs/work/specs/audits/2026-09-29-nutrition-handson.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-09-29-nutrition-handson.md",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
@@ -9219,7 +9234,7 @@
       "inbound_sources": []
     },
     {
-      "old_path": null,
+      "old_path": "docs/work/specs/e2e-repeatable-states.md",
       "new_path": "docs/work/specs/e2e-repeatable-states.md",
       "action": "keep",
       "genre": "active-work",
@@ -10250,7 +10265,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/silpo-mcp-integration.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -10260,7 +10275,22 @@
         "docs/start/instructions/enable-silpo-integration.md",
         "docs/work/research/2026-08-25-mcp-and-integrations-landscape.md",
         "docs/work/specs/receipt-scan.md",
+        "docs/work/specs/silpo-pantry-auto-import.md",
         "docs/work/specs/strava-integration.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/silpo-pantry-auto-import.md",
+      "new_path": "docs/work/specs/silpo-pantry-auto-import.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/silpo-pantry-auto-import.md",
+      "inbound_count": 4,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/open-work.md",
+        "docs/product/modules/nutrition.md",
+        "docs/work/specs/silpo-mcp-integration.md"
       ]
     },
     {
