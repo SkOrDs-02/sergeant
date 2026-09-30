@@ -279,6 +279,8 @@ function makeFakeDb(
     manualExpenses?: FakeMonoTx[];
     /** Пари, які користувач уже розлінкував (`silpo_tx_receipt_link_rejections`). */
     rejections?: Array<{ transactionId: string; receiptId: string }>;
+    /** Транзакції, що вже мають фіскальний чек finyk (`finyk_tx_receipt_links`). */
+    finykLinkedTxIds?: string[];
   } = {},
 ) {
   const receipts = new Map<string, FakeReceiptRow>();
@@ -288,6 +290,7 @@ function makeFakeDb(
   const rejections = seed.rejections ?? [];
   const monoTx = seed.monoTransactions ?? [];
   const manualTx = seed.manualExpenses ?? [];
+  const finykLinked = new Set(seed.finykLinkedTxIds ?? []);
 
   const query = (async (text: string, values: unknown[] = []) => {
     if (text.includes("INSERT INTO silpo_receipts")) {
@@ -347,11 +350,14 @@ function makeFakeDb(
       // пройшло б непоміченим (саме так manual-витрати й лишались невидимі
       // для matcher-а до 2026-08-25).
       expect(text).toContain("finyk_manual_expenses");
+      // Крос-дедуп §1.14: обидві гілки UNION відсікають finyk-лінки.
+      expect(text.match(/FROM finyk_tx_receipt_links/g)).toHaveLength(2);
       const [, windowStart, windowEnd] = values as [string, Date, Date];
       const rows = [...monoTx, ...manualTx]
         .filter(
           (t) =>
             !links.some((l) => l.transactionId === t.id) &&
+            !finykLinked.has(t.id) &&
             t.time >= windowStart &&
             t.time <= windowEnd,
         )
@@ -494,6 +500,41 @@ describe("pullAndSyncReceipts", () => {
     expect(db.links).toEqual([
       { transactionId: "manual-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
     ]);
+  });
+
+  it("tx з finyk-лінком не є кандидатом Сільпо (mono і manual)", async () => {
+    // unification §1.14: фіскальний чек ДПС уже прилип до транзакції —
+    // Сільпо-матчер не має чіпляти другий чек до тієї самої суми.
+    const db = makeFakeDb({
+      monoTransactions: [
+        {
+          id: "mono-1",
+          amountKop: -5000,
+          time: new Date("2026-08-10T12:05:00.000Z"),
+          mcc: 5411,
+        },
+      ],
+      manualExpenses: [
+        {
+          id: "manual-1",
+          amountKop: -5000,
+          time: new Date("2026-08-10T12:00:00.000Z"),
+        },
+      ],
+      finykLinkedTxIds: ["mono-1", "manual-1"],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ matched: 0, unmatched: 1 });
+    expect(db.links).toEqual([]);
   });
 
   it("НЕ відновлює пару, яку користувач розлінкував руками", async () => {

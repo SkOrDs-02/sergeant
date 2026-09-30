@@ -51,5 +51,9 @@ expect(typeof acct.balance).toBe("number"); // NOT "string" — proves Hard Rule
 - Contract-test status (pass/fail + path).
 - Typecheck + `api:check-openapi` status (✅ or exact errors).
 - Any breaking change or new nullable field the UI must handle.
+
+## Навігація по коду
+
+Для пошуку по коду спершу граф codebase-memory, потім `Grep`/`Glob`: `search_graph` (функції, класи, роути; `query` природною мовою), `trace_path` (хто викликає і куди йдуть дані), `get_code_snippet` (точний код символу), `query_graph` (складні патерни). Проєкт завжди `project: "D-Sergeant"`: граф один, побудований з трунку на `main`, тож змін твоєї гілки в ньому ще немає, для них читай файли напряму. Якщо граф не знаходить символ, який точно є в `main`, скажи про застарілий індекс у звіті і переходь на `Grep`.
 """
 name = "api-client-agent"

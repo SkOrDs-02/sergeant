@@ -414,3 +414,34 @@ describe("isRiskyTool", () => {
     expect(isRiskyTool("morning_briefing")).toBe(false);
   });
 });
+
+describe("покриття карток (PR-A5)", () => {
+  it.each(["add_program_day", "get_daily_series", "import_monobank_range"])(
+    "будує картку для %s",
+    (name) => {
+      const card = buildActionCard({ name, input: {}, result: "ok" });
+      expect(card).not.toBeNull();
+      expect(card?.title).not.toBe(name);
+    },
+  );
+
+  it("гейт: кожен tool зі схеми має картку або є в явному allowlist", async () => {
+    const { ALL_HUBCHAT_TOOL_NAMES } = await import("@sergeant/shared");
+    // Свідомо без картки (порожньо: нові винятки — лише з обґрунтуванням).
+    const NO_CARD_ALLOWLIST = new Set<string>();
+    const missing = ALL_HUBCHAT_TOOL_NAMES.filter(
+      (name) =>
+        !NO_CARD_ALLOWLIST.has(name) &&
+        buildActionCard({ name, input: {}, result: "ok" }) === null,
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("isFailureResult розпізнає помилкові результати", async () => {
+    const { isFailureResult } = await import("./hubChatActionCards");
+    expect(isFailureResult("Помилка виконання")).toBe(true);
+    expect(isFailureResult("Не вдалося зберегти")).toBe(true);
+    expect(isFailureResult("Невідома дія: x")).toBe(true);
+    expect(isFailureResult("Нотатку збережено")).toBe(false);
+  });
+});

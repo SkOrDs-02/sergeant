@@ -293,7 +293,7 @@ describe("update_budget", () => {
       name: "update_budget",
       input: { scope: "limit", category_id: "food", limit: 5000 },
     });
-    expect(msg).toContain("5000");
+    expect(msg).toMatch(/5\s000/);
     const budgets = readLS<
       Array<{ type: string; categoryId?: string; limit?: number }>
     >("finyk_budgets", []);
@@ -324,7 +324,7 @@ describe("update_budget", () => {
       },
     });
     expect(msg).toContain("Відпустка");
-    expect(msg).toContain("5000/30000");
+    expect(msg).toMatch(/5\s000\/30\s000/);
     const budgets = readLS<
       Array<{
         type: string;
@@ -435,7 +435,7 @@ describe("add_asset", () => {
       name: "add_asset",
       input: { name: "Депозит ПриватБанк", amount: 100000 },
     });
-    expect(msg).toContain("100000");
+    expect(msg).toMatch(/100\s000/);
     expect(msg).toContain("UAH");
     const assets = readLS<
       Array<{ name: string; amount: number; currency?: string }>
@@ -618,7 +618,7 @@ describe("log_wellbeing", () => {
       },
     });
     expect(msg).toContain("вага 78");
-    expect(msg).toContain("сон 7.5");
+    expect(msg).toContain("сон 7,5");
     // LS-ключ `fizruk_daily_log_v1` tombstoned: журнал їде лише в SQLite
     // через dual-write, тож перевіряємо `next.dailyLog`, а не localStorage.
     const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
@@ -994,7 +994,7 @@ describe("set_daily_plan", () => {
       name: "set_daily_plan",
       input: { kcal: 2200, protein_g: 150, water_ml: 2500 },
     });
-    expect(msg).toContain("2200");
+    expect(msg).toMatch(/2\s200/);
     const prefs = mem.prefs as Record<string, number | null | undefined>;
     expect(prefs["dailyTargetKcal"]).toBe(2200);
     expect(prefs["dailyTargetProtein_g"]).toBe(150);
@@ -1016,7 +1016,7 @@ describe("log_weight", () => {
       name: "log_weight",
       input: { weight_kg: 77.3 },
     });
-    expect(msg).toContain("77.3");
+    expect(msg).toContain("77,3");
     const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
     expect(next?.dailyLog).toHaveLength(1);
     expect(next?.dailyLog[0]!.weightKg).toBe(77.3);
