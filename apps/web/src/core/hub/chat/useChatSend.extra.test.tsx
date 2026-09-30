@@ -167,12 +167,16 @@ describe("useChatSend — undo toast for tool actions", () => {
     const undoFn = vi.fn();
     sendMock.mockResolvedValue({
       tool_calls: [
-        { id: "tc1", name: "create_transaction", input: { amount: 100 } },
+        {
+          id: "tc1",
+          name: "set_budget_limit",
+          input: { category_id: "food", limit: 100 },
+        },
       ],
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "create_transaction", result: "Операцію додано", undo: undoFn },
+      { name: "set_budget_limit", result: "Ліміт змінено", undo: undoFn },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "Готово!" }), {

@@ -525,6 +525,110 @@ describe("useChatSend — підтвердження незворотних ді
     await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
   });
 
+  // B21/B22 (рішення власника 2026-09-29): канали ін'єкції з чужого тексту.
+  describe.each([
+    {
+      name: "remember",
+      input: { fact: "алергія на горіхи", category: "allergy" },
+      summary: "«алергія на горіхи»",
+    },
+    {
+      name: "create_transaction",
+      input: { type: "expense", amount: 200, category: "food" },
+      summary: "витрата 200 грн, food",
+    },
+    {
+      name: "export_module_data",
+      input: { module: "finyk", format: "json" },
+      summary: "модуль finyk, формат json",
+    },
+  ])("$name", ({ name, input, summary }) => {
+    function response() {
+      sendMock.mockResolvedValue({
+        tool_calls: [{ id: "tc1", name, input }],
+        tool_calls_raw: [{ id: "tc1" }],
+      });
+    }
+
+    it("не виконується без згоди («Ні» → нічого не виконано)", async () => {
+      response();
+      const { result } = renderSend();
+
+      let sending!: Promise<void>;
+      await act(async () => {
+        sending = result.current.send("тест");
+        await Promise.resolve();
+      });
+      await waitFor(() =>
+        expect(result.current.confirmDestructive.pending?.items).toEqual([
+          { name, summary },
+        ]),
+      );
+      expect(executeActionsMock).not.toHaveBeenCalled();
+
+      await act(async () => {
+        result.current.confirmDestructive.reject();
+        await sending;
+      });
+      expect(executeActionsMock).not.toHaveBeenCalled();
+      expect(streamMock).not.toHaveBeenCalled();
+    });
+
+    it("після «Так» виконується", async () => {
+      response();
+      executeActionsMock.mockResolvedValue([{ name, result: "ok", ok: true }]);
+      streamMock.mockResolvedValue(
+        new Response(JSON.stringify({ text: "Готово!" }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+      const { result } = renderSend();
+
+      let sending!: Promise<void>;
+      await act(async () => {
+        sending = result.current.send("тест");
+        await Promise.resolve();
+      });
+      await waitFor(() =>
+        expect(result.current.confirmDestructive.pending).not.toBeNull(),
+      );
+      await act(async () => {
+        result.current.confirmDestructive.accept();
+        await sending;
+      });
+      await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
+    });
+  });
+
+  it("бюджетний тул з undo (B39) виконується БЕЗ діалогу", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        {
+          id: "tc1",
+          name: "set_budget_limit",
+          input: { category_id: "food", limit: 5000 },
+        },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "set_budget_limit", result: "ok", ok: true },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    const { result } = renderSend();
+    await act(async () => {
+      await result.current.send("постав ліміт");
+    });
+    expect(result.current.confirmDestructive.pending).toBeNull();
+    await waitFor(() => expect(executeActionsMock).toHaveBeenCalledTimes(1));
+  });
+
   it("оборотний інструмент виконується БЕЗ діалогу", async () => {
     // Друга половина рішення founder-а #8. Без цього асерта найпростіший
     // спосіб «полагодити» падіння — гейтити все підряд, і діалог почав би
