@@ -2607,7 +2607,15 @@ per-user (`transcribe.ts:16-17`, `ai-memory.ts:28-34`).
 > сховища (`useChatSessions.ts:87-121`), тож останній таймер, що
 > спрацював, затирає повідомлення іншого інстансу.
 
+> **ЗАКРИТО 2026-09-29** (гілка `claude/hubchat-routine-dualwrite`):
+> `useHubKeyboardShortcuts` отримав `assistantPageActive` (`RootLayout` передає
+> `location.pathname === "/chat"`) - на `/chat` Cmd/Ctrl+/ фокусує поле вводу
+> чату і не відкриває оверлей. Тест у `useHubKeyboardShortcuts.test.tsx`. Інші
+> шляхи відкриття оверлея (FAB, hub-bus `openChat`) цим не охоплені.
+
 ### PR-A5. Три тули без картки, і «✓» ставиться навіть на помилку · P2
+
+> **ЗАКРИТО 2026-09-29 (`claude/hubchat-tool-fixes`).** Картки для `add_program_day`, `get_daily_series`, `import_monobank_range` у [`hubChatActionCards.ts`](../../../../apps/web/src/core/lib/hubChatActionCards.ts); `useChatSend.ts` не ставить «✓» на результат-помилку (`isFailureResult`); гейт-тест «кожен tool зі схеми має картку або є в allowlist» у `hubChatActionCards.test.ts`.
 
 > **СТАТУС 2026-09-15: ЧИННА.** `add_program_day`, `get_daily_series` і `import_monobank_range` у `KNOWN_TOOLS` (`hubChatActionCards.ts:70-146`) відсутні, хоч усі три — справжні виконувані тули (`toolCallSchema.ts:217,227`, `toolNames.ts:120`). Через `:177` вони не отримують картки, а `useChatSend.ts:585-588` клеїть «✓» до будь-якого тексту без картки — включно з «Помилка…», бо розбір статусу живе лише в картко-білдері (`:165-172`). Механічного гейта немає: єдина згадка — коментар у тесті, який фіксує відсутність картки як очікувану поведінку.
 > **Факт.** `KNOWN_TOOLS` (`hubChatActionCards.ts:70`) не покриває
@@ -2619,6 +2627,8 @@ per-user (`transcribe.ts:16-17`, `ai-memory.ts:28-34`).
 > **Перевірено 2026-09-22: ЧИННА, фікс не зроблено.** `KNOWN_TOOLS` (`apps/web/src/core/lib/hubChatActionCards.ts:70`) і зараз не містить жодного з трьох тулів, хоча всі зареєстровані на сервері (`apps/server/src/modules/chat/toolDefs/{fizruk,crossModule,finyk}.ts`). Галочка «✓» клеїться в `apps/web/src/core/hub/chat/useChatSend.ts` (рядки ~586-589) для кожного тула без картки незалежно від успіху: `toolResults` (рядки 530-533) будується лише з `content` і відкидає структурний `handlerResults[idx].ok`, який на рядку 526 поруч уже використовується для аналітики (`success: r.ok`).
 
 ### PR-A6. Premium-only тул показує сирий HTTP-код · P2
+
+> **ЗАКРИТО 2026-09-29.** [`serverActions.ts`](../../../../apps/web/src/core/lib/chatActions/serverActions.ts) має гілку 402 з чесним текстом про Pro; тест у `serverActions.test.ts`.
 
 > **СТАТУС 2026-09-15: ЧИННА.** `requirePlan(pool, "pro")` віддає 402 (`ai-memory.ts:84-91`, `requirePlan.ts:58`), а клієнт мапить лише 503 і 401 — усе інше падає у `Помилка серверу при recall (HTTP ${res.status})` (`serverActions.ts:103-122`; файл переїхав із `hub/chat/chatActions/` у `core/lib/chatActions/`). Тобто free-користувач і досі бачить «HTTP 402».
 > **Факт.** `recall_memory` за `requirePlan(pool, "pro")`

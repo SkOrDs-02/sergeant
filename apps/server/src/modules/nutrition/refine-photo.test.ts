@@ -8,6 +8,10 @@ import {
 vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
+import {
+  REFINE_PRIOR_RESULT_MAX_BYTES,
+  RefinePhotoSchema,
+} from "@sergeant/shared";
 import handler, { buildRefinePhotoPrompt } from "./refine-photo.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
@@ -168,6 +172,26 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
       handler(makeReq(baseReq({ image_base64: "" })), makeRes()),
     ).rejects.toMatchObject({ name: "ValidationError" });
     expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
+  it("B25: prior_result понад 16 KB → ValidationError (400), Anthropic не викликається", async () => {
+    const huge = { dishName: "x".repeat(REFINE_PRIOR_RESULT_MAX_BYTES + 1) };
+    await expect(
+      handler(makeReq(baseReq({ prior_result: huge })), makeRes()),
+    ).rejects.toMatchObject({ name: "ValidationError" });
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
+  it("B25: ліміт рахується в UTF-8 байтах, не в UTF-16 юнітах", () => {
+    // 9000 кирилічних літер = 9000 юнітів (< 16384), але ≈18 KB байтів.
+    const cyr = { dishName: "ж".repeat(9000) };
+    expect(
+      RefinePhotoSchema.safeParse({
+        ...(baseReq() as object),
+        prior_result: cyr,
+      }).success,
+    ).toBe(false);
+    expect(RefinePhotoSchema.safeParse(baseReq()).success).toBe(true);
   });
 
   it("throws ExternalServiceError when Anthropic returns a non-ok response", async () => {
