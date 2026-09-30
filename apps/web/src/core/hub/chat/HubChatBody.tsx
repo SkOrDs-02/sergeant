@@ -90,7 +90,15 @@ export function HubChatBody({
       // scrollable element for the chat — `-contain` alone still let the
       // browser paint its own rubber-band glow at this element's edge
       // (round-2 UI audit X2).
-      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0"
+      // `tabIndex={0}`: прокручувана стрічка мусить бути досяжна з
+      // клавіатури (axe `scrollable-region-focusable`, WCAG 2.1.1), інакше
+      // без миші історію чату не прогорнути, коли в ній немає фокусованих
+      // елементів (порожній чат або лише текстові відповіді). Правило
+      // jsx-a11y нижче цього випадку не розрізняє: прокручуваний контейнер
+      // з tabIndex — рекомендований axe спосіб, не інтерактивний «фейк».
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+      className="flex-1 overflow-y-auto overscroll-none touch-pan-y px-4 py-3 space-y-3 min-h-0 focus-ring"
       aria-busy={loading}
     >
       {/* Visually-hidden live region for streaming status — announced to
