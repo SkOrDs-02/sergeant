@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import express from "express";
+import { gzipSync } from "node:zlib";
 import request from "supertest";
 
 import {
@@ -217,5 +218,69 @@ describe("applyBodySizePolicy — payload acceptance", () => {
       .send('{"type":"checkout.session.completed"}');
     expect(res.status).toBe(200);
     expect(res.body.isBuffer).toBe(true);
+  });
+});
+
+describe("B28 — inflate:false на AI-роутах (gzip-тіло не розпаковується до auth)", () => {
+  const gz = gzipSync(JSON.stringify({ hello: "world" }));
+
+  it("JSON AI-роут (/api/chat): gzip-тіло → 415, handler не викликається", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("Content-Type", "application/json")
+      .set("Content-Encoding", "gzip")
+      .serialize((b: unknown) => b as unknown as string)
+      .send(gz);
+    expect(res.status).toBe(415);
+  });
+
+  it("JSON AI-роут: тіло без Content-Encoding проходить як раніше", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("Content-Type", "application/json")
+      .send({ hello: "world" });
+    expect(res.status).toBe(200);
+    expect(res.body.receivedKeys).toBe(1);
+  });
+
+  it("raw AI-роут (/api/transcribe): gzip-тіло → 415", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/transcribe")
+      .set("Content-Type", "audio/webm")
+      .set("Content-Encoding", "gzip")
+      .serialize((b: unknown) => b as unknown as string)
+      .send(gz);
+    expect(res.status).toBe(415);
+  });
+
+  it("не-AI роут (default) поведінку не змінює: gzip і надалі розпаковується", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/something-default")
+      .set("Content-Type", "application/json")
+      .set("Content-Encoding", "gzip")
+      .serialize((b: unknown) => b as unknown as string)
+      .send(gz);
+    expect(res.status).toBe(200);
+    expect(res.body.receivedKeys).toBe(1);
+  });
+
+  it("усі AI-правила з таблиці мають inflate:false", () => {
+    const ai = [
+      "/api/nutrition/analyze-photo",
+      "/api/nutrition/refine-photo",
+      "/api/finyk/receipts/analyze",
+      "/api/finyk/import/screenshot/analyze",
+      "/api/chat",
+      "/api/transcribe",
+      "/api/coach/memory",
+    ];
+    for (const prefix of ai) {
+      const rule = BODY_SIZE_POLICY.find((r) => r.pathPrefix === prefix);
+      expect(rule?.inflate, prefix).toBe(false);
+    }
   });
 });

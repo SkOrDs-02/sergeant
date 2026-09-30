@@ -24,6 +24,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { parseDeployArgs, printPreview } from "./lib/deploy-confirm.mjs";
+
 /**
  * Чи підтверджує вивід `vercel deploy` готовий production-деплой.
  *
@@ -79,7 +81,8 @@ const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 if (isMain) main();
 
 function main() {
-  const target = process.argv[2];
+  const { yes, positional } = parseDeployArgs(process.argv.slice(2));
+  const target = positional[0];
   const projectId = TARGETS[target];
 
   if (!projectId) {
@@ -87,6 +90,30 @@ function main() {
     console.error(`Використання: node scripts/deploy-vercel.mjs <${known}>`);
     console.error(`Отримано: ${target ?? "(нічого)"}`);
     process.exit(1);
+  }
+
+  // Без `--yes` лише прев'ю (аудит DG-32): ні pull, ні build, ні deploy.
+  if (!yes) {
+    let head = "(невідомо)";
+    try {
+      head = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim();
+    } catch {
+      // прев'ю не повинно падати через git
+    }
+    printPreview(
+      `деплой "${target}" у продакшн`,
+      [
+        `Проєкт Vercel: ${projectId}`,
+        `Збірка з локального HEAD: ${head} (їде те, що зараз у робочому дереві)`,
+        "Кроки: vercel pull, build --prod, deploy --prebuilt --prod",
+        "Наскільки прод відстає від main: pnpm deploy:status",
+      ],
+      `pnpm deploy:${target} -- --yes`,
+    );
+    process.exit(0);
   }
 
   const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");

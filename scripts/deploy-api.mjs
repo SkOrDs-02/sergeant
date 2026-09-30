@@ -15,8 +15,38 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+import { parseDeployArgs, printPreview } from "./lib/deploy-confirm.mjs";
+
 const ENV_PATH = "D:\\Sergeant\\.env";
 const APP_UUID = "hlyvmjeoqa31w6mewpfg9qgc";
+
+// Без `--yes` скрипт лише показує, що було б викочено, і виходить з кодом 0
+// (аудит DG-32). Це ПЕРЕД pre-flight і readEnv: прев'ю не читає .env, не
+// викликає fetch і не чіпає Coolify. `--sync-only` не деплоїть, тож проходить.
+const args = parseDeployArgs(process.argv.slice(2));
+if (!args.yes && !args.syncOnly) {
+  let mainSha = "(невідомо)";
+  try {
+    mainSha = execFileSync("git", ["rev-parse", "--short", "origin/main"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    // прев'ю не повинно падати через git
+  }
+  printPreview(
+    "деплой бекенда",
+    [
+      `Застосунок Coolify: sergeant-api-v2 (${APP_UUID})`,
+      "Джерело: git@bitbucket.org:skords01/sergeant.git, гілка main",
+      `Локальний origin/main: ${mainSha} (без fetch, може бути застарілим)`,
+      "Міграції застосуються в ENTRYPOINT з нового коду на живій БД.",
+      "Наскільки прод відстає від main: pnpm deploy:status",
+    ],
+    "pnpm deploy:api -- --yes",
+  );
+  process.exit(0);
+}
 
 // Pre-flight: ENTRYPOINT прожене ці міграції на живій БД (див. AI-DANGER
 // вище) - деплой з порушенням нумерації чи без two-phase DROP тут не
@@ -111,7 +141,7 @@ async function json(url, init) {
 syncMirror();
 
 // `--sync-only` існує, щоб синхронізацію можна було перевірити, не викочуючи прод.
-if (process.argv[2] === "--sync-only") {
+if (args.syncOnly) {
   console.log("Зупиняюсь: --sync-only.");
   process.exit(0);
 }

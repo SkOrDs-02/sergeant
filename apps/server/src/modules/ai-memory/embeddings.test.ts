@@ -325,19 +325,25 @@ describe("recordVoyageUsage — PR-33 cost recording", () => {
     );
   });
 
-  it("НЕ інкрементує cost для невідомої моделі (only tokens)", async () => {
-    const { recordVoyageUsage } = await import("./embeddings.js");
+  it("невідома модель: консервативна ціна, cost-counter і бюджет ростуть (B10)", async () => {
+    const { recordVoyageUsage, VOYAGE_FALLBACK_PRICE_USD_PER_MTOK } =
+      await import("./embeddings.js");
     const { register } = await import("../../obs/metrics.js");
+    const { __resetVoyageBudgetState, getVoyageDailyUsageUsd } =
+      await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
     recordVoyageUsage("voyage-future-model-99", 1_000_000);
     const text = await register.metrics();
-    // Tokens — записані (ми все ще хочемо бачити usage).
     expect(text).toMatch(
       /ai_tokens_total\{provider="voyage",model="voyage-future-model-99",endpoint="embed",kind="prompt"\} \d+/,
     );
-    // Cost — НЕ записано (no pricing → skip).
-    expect(text).not.toMatch(
-      /ai_cost_estimate_usd_total\{provider="voyage",model="voyage-future-model-99",[^}]*\}/,
+    expect(text).toMatch(
+      /ai_cost_estimate_usd_total\{provider="voyage",model="voyage-future-model-99",endpoint="embed"\} 0\.18/,
     );
+    expect(VOYAGE_FALLBACK_PRICE_USD_PER_MTOK).toBe(0.18);
+    // Головне: акумулятор денної стелі рухається і без запису в таблиці цін.
+    expect(getVoyageDailyUsageUsd()).toBeCloseTo(0.18, 6);
+    __resetVoyageBudgetState();
   });
 
   it("ігнорує zero / null / negative tokens (no-op)", async () => {
@@ -354,18 +360,21 @@ describe("recordVoyageUsage — PR-33 cost recording", () => {
     expect(text).not.toMatch(/endpoint="embed-neg"/);
   });
 
-  it("ігнорує `model='unknown'` (sentinel — pricing невідомий)", async () => {
+  it("`model='unknown'` теж рахується за консервативною ціною (B10)", async () => {
     const { recordVoyageUsage } = await import("./embeddings.js");
     const { register } = await import("../../obs/metrics.js");
+    const { __resetVoyageBudgetState, getVoyageDailyUsageUsd } =
+      await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
     recordVoyageUsage("unknown", 1_000_000, "embed-unknown-model");
     const text = await register.metrics();
-    // Tokens рахуємо (для діагностики usage без pricing).
     expect(text).toMatch(
       /ai_tokens_total\{provider="voyage",model="unknown",endpoint="embed-unknown-model",kind="prompt"\} \d+/,
     );
-    // Cost — НЕ записуємо (model="unknown" sentinel пропускається).
-    expect(text).not.toMatch(
-      /ai_cost_estimate_usd_total\{provider="voyage",model="unknown",endpoint="embed-unknown-model"\}/,
+    expect(text).toMatch(
+      /ai_cost_estimate_usd_total\{provider="voyage",model="unknown",endpoint="embed-unknown-model"\} 0\.18/,
     );
+    expect(getVoyageDailyUsageUsd()).toBeCloseTo(0.18, 6);
+    __resetVoyageBudgetState();
   });
 });

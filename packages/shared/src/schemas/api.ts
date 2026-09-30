@@ -709,6 +709,16 @@ export const AnalyzePhotoSchema = z.object({
   locale: Locale,
 });
 
+/**
+ * B25: стеля серіалізованого `prior_result` у refine-photo, у БАЙТАХ UTF-8.
+ * Поле потрапляє в промпт Anthropic як є (`safeJson(prior_result)`), а
+ * `z.unknown()` пропускало будь-що до 10mb (ліміт тіла з фото) — тобто
+ * токени на чужий рахунок. Реальний `prior_result` — це відповідь
+ * analyze-photo (страва, макро, інгредієнти, питання) на 1–4 KB; 16 KB
+ * лишає запас у 4×.
+ */
+export const REFINE_PRIOR_RESULT_MAX_BYTES = 16 * 1024;
+
 /** /api/nutrition/refine-photo */
 export const RefinePhotoSchema = z.object({
   image_base64: z
@@ -720,7 +730,29 @@ export const RefinePhotoSchema = z.object({
     .regex(/^image\/[a-z+.-]+$/i)
     .max(64)
     .optional(),
-  prior_result: z.unknown().optional(),
+  // Форма — відповідь analyze-photo (вільний JSON-об'єкт без column-level
+  // схеми), тому тип лишається `unknown`, а межа — за розміром (B25).
+  prior_result: z
+    .unknown()
+    .refine(
+      (v) => {
+        try {
+          const json = JSON.stringify(v);
+          // `undefined`/функція → json === undefined → нема що вкладати.
+          return (
+            json === undefined ||
+            new TextEncoder().encode(json).byteLength <=
+              REFINE_PRIOR_RESULT_MAX_BYTES
+          );
+        } catch {
+          return false;
+        }
+      },
+      {
+        message: `prior_result must be at most ${REFINE_PRIOR_RESULT_MAX_BYTES} bytes`,
+      },
+    )
+    .optional(),
   portion_grams: z.number().finite().positive().optional().nullable(),
   qna: z
     .array(

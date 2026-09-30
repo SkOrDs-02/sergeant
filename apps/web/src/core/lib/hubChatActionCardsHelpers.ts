@@ -116,6 +116,8 @@ export function iconFor(name: string): string | undefined {
       return "piggy-bank";
     case "export_report":
       return "file-text";
+    case "get_daily_series":
+      return "bar-chart";
     case "import_monobank_range":
       return "refresh-cw";
     // Nutrition
@@ -336,6 +338,8 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Операцію розділено${failedSuffix}`;
     case "recurring_expense":
       return `Періодичну витрату створено${failedSuffix}`;
+    case "import_monobank_range":
+      return `Імпорт з Monobank${failedSuffix}`;
     case "export_report":
       return `Звіт згенеровано${failedSuffix}`;
     // Nutrition
@@ -429,6 +433,8 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Виявлення аномалій${failedSuffix}`;
     case "habit_trend":
       return `Тренд звичок${failedSuffix}`;
+    case "get_daily_series":
+      return `Ряди метрик за днями${failedSuffix}`;
     // Utility
     case "calculate_1rm":
       return `1RM розраховано${failedSuffix}`;
