@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-09-28 by docs:gen-today. **Next review:** 2026-10-05.
+> **Last touched:** 2026-09-30 by docs:gen-today. **Next review:** 2026-10-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -13,7 +13,6 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
-- [`work/specs/kv-warm-cache-user-partition.md`](./work/specs/kv-warm-cache-user-partition.md) — SPEC: KV-кеш читає розділ залогіненого користувача → **agent-ready** _(Активні спеки)_
 
 ## Прострочений review (0)
 
