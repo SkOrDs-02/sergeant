@@ -45,6 +45,10 @@ test("@critical module headers keep their canonical names after onboarding", asy
   await page.addInitScript(() => {
     window.localStorage.setItem("hub_onboarding_done_v1", "1");
     window.localStorage.setItem(
+      "sergeant.analytics_consent_decision.v1",
+      JSON.stringify({ v: "denied" }),
+    );
+    window.localStorage.setItem(
       "hub_onboarding_vibes_v1",
       JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
     );

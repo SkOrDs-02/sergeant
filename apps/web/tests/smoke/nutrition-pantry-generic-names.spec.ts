@@ -27,6 +27,8 @@ const DEMO_LS: Record<string, string> = {
   hub_demo_seeded_social_v1: "1",
   hub_demo_cleanup_v1_done: "1",
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_real_entry_v1: "1",
   "sergeant.whatsNew.lastSeenId.v1": "2026-05-06-cold-start",
 };

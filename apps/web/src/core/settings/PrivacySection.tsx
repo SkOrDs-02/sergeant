@@ -11,7 +11,10 @@ import {
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
-import { setAnalyticsConsent } from "../observability/analyticsConsent";
+import {
+  hydrateAnalyticsConsent,
+  setAnalyticsConsent,
+} from "../observability/analyticsConsent";
 import {
   classifyPreferenceLoadFailure,
   PREFERENCE_LOAD_FAILURE_COPY,
@@ -83,7 +86,7 @@ export function PrivacySection() {
         setPreferencesLoaded(true);
         setPreferencesError(null);
         setLoadFailure(null);
-        setAnalyticsConsent(next.analytics);
+        hydrateAnalyticsConsent(next.analytics);
       })
       .catch((err: unknown) => {
         if (cancelled) return;

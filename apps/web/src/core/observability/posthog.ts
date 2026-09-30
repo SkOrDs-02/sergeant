@@ -9,6 +9,10 @@ import {
   scrubPIIString,
 } from "@sergeant/shared";
 import { resolveDeployEnvironment } from "./deployEnvironment.js";
+import {
+  getAnalyticsConsent,
+  subscribeAnalyticsConsent,
+} from "./analyticsConsent";
 
 /**
  * Lazy PostHog transport for product analytics.
@@ -143,6 +147,15 @@ let posthogModule: PostHogLib | null = null;
 let initPromise: Promise<void> | null = null;
 let initFailed = false;
 let queue: QueuedCall[] = [];
+let lastIdentify: {
+  userId: string;
+  traits?: Record<string, unknown> | undefined;
+} | null = null;
+let consentSubscribed = false;
+// Останній стан, який ми виставили SDK (`null` — SDK ще не вирівняний або
+// його стан скинув `reset()`). Гасить повторні opt_in/identify на кожну
+// гідрацію з сервера.
+let appliedConsent: boolean | null = null;
 
 const MAX_QUEUE = 100;
 
@@ -155,15 +168,47 @@ function flushQueue() {
       if (call.kind === "capture") {
         posthogModule.capture(call.name, call.payload);
       } else if (call.kind === "identify") {
+        lastIdentify = { userId: call.userId, traits: call.traits };
         posthogModule.identify(call.userId, call.traits);
       } else if (call.kind === "exception") {
         posthogModule.captureException(call.error, call.properties);
       } else {
+        lastIdentify = null;
         posthogModule.reset();
+        appliedConsent = null;
+        applyConsent();
       }
     } catch {
       /* noop — аналітика не повинна падати */
     }
+  }
+}
+
+/**
+ * Синхронізує SDK зі згодою (`analyticsConsent.ts`, єдине джерело правди).
+ * SDK стартує з `opt_out_capturing_by_default: true`, тож до `opt_in` не
+ * летить нічого — ні події, ні `$exception`, ні heatmap/replay.
+ *
+ * `identify` під opt-out не доходить до сервера, тому після згоди
+ * повторюємо останній: інакше події лишились би анонімними до наступного
+ * логіну.
+ */
+function applyConsent() {
+  if (!posthogModule) return;
+  const granted = getAnalyticsConsent();
+  if (appliedConsent === granted) return;
+  appliedConsent = granted;
+  try {
+    if (granted) {
+      posthogModule.opt_in_capturing({ captureEventName: false });
+      if (lastIdentify) {
+        posthogModule.identify(lastIdentify.userId, lastIdentify.traits);
+      }
+    } else {
+      posthogModule.opt_out_capturing();
+    }
+  } catch {
+    /* noop — аналітика не повинна падати */
   }
 }
 
@@ -195,6 +240,11 @@ export function initPostHog(): Promise<void> {
       const posthog = mod.default;
       posthog.init(key, {
         api_host: host,
+        // Згода на аналітику (рішення власника 2026-09-29): до явного
+        // «Дозволити» SDK нічого не захоплює. Стан opt-in/out SDK
+        // запамʼятовує сам, а `applyConsent` нижче вирівнює його з
+        // `analyticsConsent.ts` при кожному старті.
+        opt_out_capturing_by_default: true,
         // Explicit events only — не дублюємо з автокаптуром/пейджвʼю,
         // бо `trackEvent` вже покриває все, що нас цікавить, а payload
         // контролюється централізовано (без PII).
@@ -282,6 +332,11 @@ export function initPostHog(): Promise<void> {
       });
 
       posthogModule = posthog;
+      applyConsent();
+      if (!consentSubscribed) {
+        consentSubscribed = true;
+        subscribeAnalyticsConsent(applyConsent);
+      }
       flushQueue();
     } catch {
       // SDK не завантажився — лишаємось у true no-op режимі. Події з
@@ -361,6 +416,7 @@ export function identifyPostHogUser(
   traits?: Record<string, unknown>,
 ): void {
   if (!userId) return;
+  lastIdentify = { userId, traits };
   if (posthogModule) {
     try {
       posthogModule.identify(userId, traits);
@@ -379,9 +435,12 @@ export function identifyPostHogUser(
  * щоб наступна сесія не атрибутувалась попередньому юзеру.
  */
 export function resetPostHog(): void {
+  lastIdentify = null;
   if (posthogModule) {
     try {
       posthogModule.reset();
+      appliedConsent = null;
+      applyConsent();
     } catch {
       /* noop */
     }
