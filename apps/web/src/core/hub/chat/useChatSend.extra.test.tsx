@@ -73,6 +73,18 @@ vi.mock("../../lib/hubChatActions", () => ({
   executeActions: executeActionsMock,
 }));
 
+// Керований «tool без картки»: після PR-A5 кожен виконуваний tool має картку,
+// тож фолбек «✓ …» перевіряємо, примусово віддаючи `null` з білдера.
+const forceNoCard = vi.hoisted(() => ({ on: false }));
+vi.mock("../../lib/hubChatActionCards", async (orig) => {
+  const actual = await orig<typeof import("../../lib/hubChatActionCards")>();
+  return {
+    ...actual,
+    buildActionCard: (i: Parameters<typeof actual.buildActionCard>[0]) =>
+      forceNoCard.on ? null : actual.buildActionCard(i),
+  };
+});
+
 vi.mock("../../lib/hubChatSpeech", () => ({
   VOICE_KEYWORDS: /голосом|вголос|скажи|озвуч|прочитай/i,
   speak: speakMock,
@@ -318,15 +330,15 @@ describe("useChatSend — TTS in tool-call path", () => {
   });
 
   /**
-   * `add_program_day` є в allow-list-і диспетчера, але його немає в
-   * `KNOWN_TOOLS` картко-білдера — тобто картки він не отримує. Саме для
-   * таких інструментів текстовий рядок «✓ …» і лишається.
-   *
-   * Другий кандидат на цю роль, `import_monobank_range`, не годиться: він
-   * `destructive`, тож `send` спершу чекає на діалог підтвердження і тест
-   * висить у таймауті.
+   * Для інструментів, чия картка не збудувалась, текстовий рядок «✓ …»
+   * лишається єдиним підтвердженням (білдер тут примусово віддає `null`).
    */
+  afterEach(() => {
+    forceNoCard.on = false;
+  });
+
   it("для інструмента без картки озвучує текстовий рядок", async () => {
+    forceNoCard.on = true;
     sendMock.mockResolvedValue({
       tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
       tool_calls_raw: [{ id: "tc1" }],
@@ -354,6 +366,35 @@ describe("useChatSend — TTS in tool-call path", () => {
     expect(speakMock.mock.calls[0]![0] as string).toContain(
       "День програми додано",
     );
+  });
+
+  it("помилковий результат без картки не отримує «✓»", async () => {
+    forceNoCard.on = true;
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "add_program_day", result: "Помилка: програму не знайдено" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("додай день програми", true /* fromVoice */);
+    });
+
+    const spoken = speakMock.mock.calls[0]?.[0] as string | undefined;
+    expect(spoken ?? "").not.toContain("✓");
   });
 });
 

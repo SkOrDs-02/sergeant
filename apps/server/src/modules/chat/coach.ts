@@ -16,7 +16,13 @@ import { resolveHealthConsent } from "../../lib/healthConsent.js";
 import { stripHealthFromCoachInput } from "./healthGate.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
-import { PERSONA_RULE, VOICE_RULE_PLAIN } from "./toolDefs/systemPrompt.js";
+import {
+  DATA_FENCE_RULE,
+  PERSONA_RULE,
+  VOICE_RULE_PLAIN,
+} from "./toolDefs/systemPrompt.js";
+import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
+import type { ProTier } from "./aiQuotaTierModels.js";
 import { replaceLongDash } from "../../lib/modelText.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
@@ -483,11 +489,13 @@ ${ADVICE_BOUNDARY_RULE}
 КОНТЕКСТ ДАТИ (Київ):
 ${dateContextText}
 
+${DATA_FENCE_RULE}
+
 ПАМʼЯТЬ (попередні тижні):
-${memorySummary}
+${wrapAndScanUserContext(memorySummary)}
 
 ПОТОЧНИЙ ТИЖДЕНЬ:
-${snapshotText}
+${wrapAndScanUserContext(snapshotText)}
 
 ЯКЩО ДАНИХ БРАКУЄ, СКАЖИ ЦЕ, А НЕ ЗАПОВНЮЙ ПОРОЖНЕЧУ.
 Рядок «Даних за поточний тиждень ще немає» означає не дані, а їх відсутність.
@@ -508,6 +516,20 @@ ${VOICE_RULE_PLAIN}
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
 
   return { user: systemPrompt };
+}
+
+/**
+ * Anthropic-модель для fallback-гілки коуча (B4). `tier.model` — OpenRouter-id
+ * (`google/…`), на який прямий Anthropic віддає 404, тож його не можна класти в
+ * `opts.model`; натомість мапимо тир на Claude-id. Без цього деградація на
+ * floor при hard-breach бюджету мовчки поверталась на Sonnet, щойно шлюз
+ * падав, а при `LLM_COACH_PROVIDER=anthropic` тиринг був no-op.
+ */
+export const COACH_ANTHROPIC_DEGRADED_MODEL = "claude-haiku-4-5-20251001";
+export function coachAnthropicModel(tier: ProTier): string {
+  return tier === "premium"
+    ? env.COACH_MODEL_ANTHROPIC
+    : COACH_ANTHROPIC_DEGRADED_MODEL;
 }
 
 /**
@@ -560,7 +582,7 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
   let aiResult;
   try {
     aiResult = await invokeLLM(provider, {
-      model: env.COACH_MODEL_ANTHROPIC,
+      model: coachAnthropicModel(tier.tier),
       maxTokens: 300,
       messages: [{ role: "user", content: prompt.user }],
       timeoutMs: 20_000,

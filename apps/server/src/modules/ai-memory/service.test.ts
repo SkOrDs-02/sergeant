@@ -386,6 +386,35 @@ describe("AiMemoryService — enabled", () => {
     expect(store!.rows[0]!.sourceRef).toBe("tx-2");
   });
 
+  it("recall() — повертає [] без embed-call коли VOYAGE hard daily budget відстрелявся (B10)", async () => {
+    process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10";
+    process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";
+    const {
+      __resetVoyageBudgetState,
+      addVoyageDailyUsageUsd,
+      runVoyageBudgetTick,
+    } = await import("./voyageBudget.js");
+    __resetVoyageBudgetState();
+    addVoyageDailyUsageUsd(6);
+    runVoyageBudgetTick();
+
+    const store = makeFakeStore();
+    const embeddings = makeFakeEmbeddings();
+    const svc = createAiMemoryService({
+      embeddings,
+      vectorStore: store,
+      enabled: true,
+    });
+    const r = await svc.recall({ userId: "u1", query: "find me" });
+    expect(r).toEqual([]);
+    expect(embeddings.calls).toBe(0);
+    expect(store.queryCalls).toBe(0);
+
+    __resetVoyageBudgetState();
+    delete process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"];
+    delete process.env["VOYAGE_DAILY_BUDGET_USD_HARD"];
+  });
+
   it("remember() — skip-ить embed-call коли VOYAGE hard daily budget вже відстрелявся", async () => {
     process.env["VOYAGE_DAILY_BUDGET_USD_SOFT"] = "10"; // soft off-path
     process.env["VOYAGE_DAILY_BUDGET_USD_HARD"] = "5";

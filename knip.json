@@ -73,8 +73,8 @@
     "apps/landing": {
       // entry-server.tsx — SSG-вхід (`vite build --ssr`, див. package.json
       // build): Vite-плагін knip бачить лише index.html → main.tsx.
-      // middleware.ts — Vercel Edge Middleware (повернувся в PR #48):
-      // Vercel підхоплює його за іменем файлу, імпорту на нього немає.
+      // middleware.ts — Vercel Edge Middleware (markdown-переговори за
+      // `Accept`): Vercel знаходить його за іменем, імпорту в коді немає.
       // site-url.d.mts — типова декларація для site-url.mjs. Імпорту на неї
       // немає і бути не може: TypeScript підхоплює .d.mts за іменем сусіднього
       // .mjs, тож для knip вона виглядає файлом-сиротою. Сам резолвер лишається
