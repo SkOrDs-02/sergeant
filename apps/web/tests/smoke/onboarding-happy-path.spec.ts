@@ -91,6 +91,10 @@ const FRESH_USER_LS: Record<string, string> = {
   // `useWhatsNew`) does not race the hub-overview assertion. Value
   // mirrors the latest entry in `apps/web/src/core/whatsNew/releases.ts`.
   "sergeant.whatsNew.lastSeenId.v1": "2026-05-06-cold-start",
+  // Банер згоди на аналітику (#1244) перехоплює кліки по кнопках splash-у.
+  // Цей spec іде без спільного storageState, тож рішення кладемо тут.
+  // «granted», бо spec перевіряє події аналітики.
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "granted" }),
 };
 
 async function seedFreshUserLocalStorage(page: Page) {

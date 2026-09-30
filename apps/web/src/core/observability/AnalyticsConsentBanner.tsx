@@ -66,7 +66,7 @@ export default function AnalyticsConsentBanner() {
       </p>
       <Link
         to={LEGAL_PRIVACY_PATH}
-        className="mt-1 inline-flex min-h-[44px] items-center rounded-md text-style-body text-content underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-strong"
+        className="mt-1 inline-flex min-h-[44px] items-center rounded-md text-style-body text-content underline underline-offset-2 focus-ring"
       >
         {copy.privacyLink}
       </Link>

@@ -96,7 +96,7 @@ export function PWASection() {
       {/* PR-S10: сирий JSON діагностики SW — для підтримки, не для всіх.
           Розкриття за замовчуванням закрите; summary ≥44px. */}
       <details className="rounded-xl border border-line">
-        <summary className="flex min-h-[44px] cursor-pointer items-center px-3 text-style-label text-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-strong/40">
+        <summary className="flex min-h-[44px] cursor-pointer items-center px-3 text-style-label text-subtle focus-ring">
           Для підтримки
         </summary>
         <div className="space-y-2 px-3 pb-3">

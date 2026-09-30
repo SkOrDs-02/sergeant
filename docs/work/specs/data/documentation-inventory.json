@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 671,
-  "total_entries": 671,
+  "tracked_files": 672,
+  "total_entries": 672,
   "target_collisions": [],
   "entries": [
     {
@@ -1208,7 +1208,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/engineering/architecture/feature-flags.md",
-      "inbound_count": 25,
+      "inbound_count": 26,
       "inbound_sources": [
         "docs/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -1227,6 +1227,7 @@
         "docs/start/instructions/retire-feature-flag.md",
         "docs/start/instructions/run-weekly-operator-digest.md",
         "docs/work/specs/access-tiers.md",
+        "docs/work/specs/account-recovery.md",
         "docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/e2e-repeatable-states.md",
@@ -2250,14 +2251,15 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0017-better-auth-choice-and-session-model.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/design/design/specs/2026-09-17-auth-design.md",
         "docs/governance/adr/0018-api-versioning-policy.md",
         "docs/governance/adr/0042-password-hashing-strategy.md",
         "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/security/better-auth-audit-2026-05.md",
-        "docs/start/agents/specialists-mapping.md"
+        "docs/start/agents/specialists-mapping.md",
+        "docs/work/specs/account-recovery.md"
       ]
     },
     {
@@ -2676,10 +2678,11 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0049-auth-vendor-risk.md",
-      "inbound_count": 2,
+      "inbound_count": 3,
       "inbound_sources": [
         "docs/governance/security/better-auth-audit-2026-05.md",
-        "docs/governance/security/better-auth-crypto-review.md"
+        "docs/governance/security/better-auth-crypto-review.md",
+        "docs/work/specs/account-recovery.md"
       ]
     },
     {
@@ -3578,11 +3581,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0098-account-deletion-grace-window.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/adr/0016-user-deletion-and-pii-handling.md",
         "docs/governance/pr-ledger/index.json",
         "docs/start/agents/decisions.md",
+        "docs/work/specs/account-recovery.md",
         "docs/work/specs/user-deletion-grace-window.md"
       ]
     },
@@ -4582,14 +4586,15 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/better-auth-audit-2026-05.md",
-      "inbound_count": 6,
+      "inbound_count": 7,
       "inbound_sources": [
         "docs/engineering/integrations/env-vars.md",
         "docs/governance/adr/0017-better-auth-choice-and-session-model.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/README.md",
         "docs/governance/security/api-internal-hmac.md",
-        "docs/governance/security/rate-limit-failure-mode.md"
+        "docs/governance/security/rate-limit-failure-mode.md",
+        "docs/work/specs/account-recovery.md"
       ]
     },
     {
@@ -4847,12 +4852,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/security/threat-model.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/governance/security/README.md",
         "docs/governance/security/logging-redaction-policy.md",
+        "docs/work/specs/account-recovery.md",
         "docs/work/specs/security-hardening/README.md"
       ]
     },
@@ -5481,11 +5487,12 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/operations/observability/sentry-sampling.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/operations/observability/README.md",
-        "docs/operations/observability/metrics.md"
+        "docs/operations/observability/metrics.md",
+        "docs/work/specs/account-recovery.md"
       ]
     },
     {
@@ -7915,6 +7922,18 @@
       ]
     },
     {
+      "old_path": "docs/work/specs/account-recovery.md",
+      "new_path": "docs/work/specs/account-recovery.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/account-recovery.md",
+      "inbound_count": 2,
+      "inbound_sources": [
+        "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md"
+      ]
+    },
+    {
       "old_path": "docs/work/specs/ai-cost-ceiling.md",
       "new_path": "docs/work/specs/ai-cost-ceiling.md",
       "action": "keep",
@@ -8113,12 +8132,13 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/start/instructions/enable-silpo-integration.md",
+        "docs/work/specs/account-recovery.md",
         "docs/work/specs/audits/2026-08-05-external-critique-surface.md",
         "docs/work/specs/audits/README.md",
         "docs/work/specs/audits/verification/findings.json",
@@ -8404,7 +8424,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-13-product-full-review.md",
-      "inbound_count": 12,
+      "inbound_count": 13,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/design/design/README.md",
@@ -8415,6 +8435,7 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
+        "docs/product/modules/finyk.md",
         "docs/product/modules/hub-coach.md",
         "docs/product/modules/nutrition.md",
         "docs/work/specs/audits/README.md"
@@ -9139,11 +9160,12 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/beta-security-readiness.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/security/threat-model.md",
-        "docs/open-work.md"
+        "docs/open-work.md",
+        "docs/work/specs/account-recovery.md"
       ]
     },
     {
@@ -10650,10 +10672,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/user-deletion-grace-window.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/work/specs/account-recovery.md",
         "docs/work/specs/launch/business/04-launch-readiness.md"
       ]
     },
