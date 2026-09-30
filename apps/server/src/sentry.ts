@@ -44,11 +44,6 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
       "All internal namespace routes (n8n/cron/admin tooling) — low external volume, high blast radius. PR-07 (backend-perf-2026-05): baseline before enabling; reduce to 0.5 if Sentry quota is impacted.",
   },
   {
-    match: "/api/account/recovery",
-    rate: 1.0,
-    reason: "Security-critical, low volume — capture every trace.",
-  },
-  {
     match: "/api/admin/",
     rate: 1.0,
     reason: "Admin tooling, low volume + high blast radius.",
@@ -451,7 +446,7 @@ if (dsn) {
     // Dynamic per-route sampler (stack-pulse PR-12). Replaces a static 10%
     // sample rate that over-sampled chatty heartbeats (`/api/health`,
     // `/api/sync/poll`) and under-sampled security-critical low-volume
-    // routes (`/api/auth/*`, `/api/account/recovery`). The rule table is
+    // routes (`/api/auth/*`). The rule table is
     // declarative — see `SENTRY_SAMPLING_RULES` and
     // `docs/operations/observability/sentry-sampling.md` for rationale + budget.
     //

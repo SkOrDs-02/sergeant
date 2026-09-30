@@ -16,7 +16,7 @@
  * stays locked.
  *
  * Closes audit `docs/audits/2026-05-13-security-observability-roast.md`
- * § S7 (Contract test expansion — auth, csp-report, account-recovery).
+ * § S7 (Contract test expansion — auth, csp-report).
  */
 
 import { describe, expect, it } from "vitest";

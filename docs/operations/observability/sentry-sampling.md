@@ -22,8 +22,8 @@ opposing failure modes at the same time:
   pull, fires per active client) generate the bulk of traces. A flat
   10% rate means tens of thousands of identical health-check traces
   per day per environment with zero actionable signal.
-- **Under-sampled critical routes.** `/api/auth/sign-up`,
-  `/api/account/recovery` and `/api/admin/*` are low-volume but
+- **Under-sampled critical routes.** `/api/auth/sign-up`
+  and `/api/admin/*` are low-volume but
   every trace is gold for security incident triage. A 10% rate means
   ~1 trace per 10 sign-ups, so production incidents that touched the
   auth flow are usually invisible.
@@ -39,7 +39,6 @@ to keep the audit pattern consistent.
 | ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/api/internal/openclaw/write/` | `1.0`   | **Legacy — OpenClaw route, gateway decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)); nothing serves this prefix any more, so the rule matches no traffic.** Kept in `sentry.ts` pending a cleanup PR (drop rule + its shadowing test case together). Original rationale: OpenClaw write-tool mutations (ADR-0036 §3), every founder-approved side-effect captured for audit reconstruction. |
 | `/api/internal/`                | `1.0`   | All internal-namespace routes (cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                                                                                                                                                                                                                                                                                     |
-| `/api/account/recovery`         | `1.0`   | Security-critical, low volume — capture every trace.                                                                                                                                                                                                                                                                                                                                                                                 |
 | `/api/admin/`                   | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                                                                                                                                                                                                                                                                                       |
 | `/api/auth/`                    | `1.0`   | Login / signup / SSO — security-critical, low-volume.                                                                                                                                                                                                                                                                                                                                                                                |
 | `/api/chat/usage`               | `0.01`  | Лічильник квоти — дешевий GET на кожному відкритті чату. Стоїть ПЕРЕД `/api/chat`: матч підрядковий, перший збіг виграє.                                                                                                                                                                                                                                                                                                             |
@@ -71,11 +70,8 @@ use `0.5` with a note to revisit on upgrade.
 ### Order matters
 
 The rule table is consulted top-to-bottom; first prefix match wins.
-For example, `/api/account/recovery` is listed **before** any
-broader `/api/account` rule could exist — adding such a rule later
-in the list would not affect recovery (its earlier rule wins) but
-would silently shadow any future `/api/account/...` rules unless
-they are placed above the broader one.
+For example, a narrow rule such as `/api/internal/openclaw/write/` must stay
+above the broader `/api/internal/` one, otherwise the broad rule shadows it.
 
 The unit test in `apps/server/src/__tests__/sentry-sampler.test.ts`
 asserts that no rule is shadowed by an earlier one (failing the
@@ -158,13 +154,12 @@ Pre-PR baseline (static 10%):
 
 Post-PR with the new rules (single instance, illustrative):
 
-| Route                   | Pre   | Post  | Δ           |
-| ----------------------- | ----- | ----- | ----------- |
-| `/api/health`           | 8 640 | 86    | −99 %       |
-| `/api/sync/poll`        | 8 640 | 864   | −90 %       |
-| `/api/auth/sign-up`     | 0–10  | 0–100 | +10× signal |
-| `/api/account/recovery` | 0–1   | 0–10  | +10× signal |
-| _(other)_               | 10 %  | 5 %   | −50 %       |
+| Route               | Pre   | Post  | Δ           |
+| ------------------- | ----- | ----- | ----------- |
+| `/api/health`       | 8 640 | 86    | −99 %       |
+| `/api/sync/poll`    | 8 640 | 864   | −90 %       |
+| `/api/auth/sign-up` | 0–10  | 0–100 | +10× signal |
+| _(other)_           | 10 %  | 5 %   | −50 %       |
 
 Net: total Sentry trace volume should drop **30–50 %** while
 visibility into auth flows **increases**. Verify against the
