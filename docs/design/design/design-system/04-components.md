@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-04-05.
+> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-04-12.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -657,19 +657,6 @@ single-значення та range (дві тумби), тіки, валю-toolt
 <ProgressBar value={65} size="lg" variant="success" label="65%" />
 <ProgressBar indeterminate aria-label="Синхронізація" />
 ```
-
-### ProgressCircle
-
-Радіальний індикатор з тими ж статус-варіантами. Determinate —
-stroke-dasharray; indeterminate — чверть-дуга, яка обертається.
-
-- **Sizes**: `xs` 28 / `sm` 44 / `md` 64 / `lg` 96 px.
-- **Variants**: `brand` / `success` / `warning` / `danger` — stroke з
-  `text-{c}-strong` (AA на кремі).
-- Під reduced-motion — обертання вимикається, натомість `pulse-soft`.
-- `ProgressCircle` — коли потрібно progress-примітив без module-tint.
-  Для KPI-тайлів (`finyk` / `fizruk` / `routine` / `nutrition` акценти) —
-  продовжуй використовувати `ProgressRing`.
 
 ### Skeleton
 

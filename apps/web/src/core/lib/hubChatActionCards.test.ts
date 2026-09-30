@@ -409,7 +409,7 @@ describe("isRiskyTool", () => {
   });
 
   it("звичайні tools — не risky", () => {
-    expect(isRiskyTool("create_transaction")).toBe(false);
+    expect(isRiskyTool("log_water")).toBe(false);
     expect(isRiskyTool("log_meal")).toBe(false);
     expect(isRiskyTool("morning_briefing")).toBe(false);
   });

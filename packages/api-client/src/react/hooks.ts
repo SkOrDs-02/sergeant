@@ -6,8 +6,6 @@ import {
 } from "@tanstack/react-query";
 
 import type { MeResponse } from "../endpoints/me";
-import type { CoachInsightPayload } from "../endpoints/coach";
-import type { ChatRequestPayload, ChatResponse } from "../endpoints/chat";
 import type {
   PushRegisterRequest,
   PushRegisterResponse,
@@ -18,11 +16,6 @@ import type {
 } from "../endpoints/push";
 import type { BarcodeLookupResponse } from "../endpoints/barcode";
 import type { FoodSearchResponse } from "../endpoints/foodSearch";
-import type { PrivatBalanceFinalResponse } from "../endpoints/privat";
-import type {
-  WeeklyDigestPayload,
-  WeeklyDigestResponse,
-} from "../endpoints/weeklyDigest";
 
 import { useApiClient } from "./context";
 import { apiMutationKeys, apiQueryKeys } from "./queryKeys";
@@ -51,50 +44,7 @@ export function useUser(opts?: QueryOpts<MeResponse>) {
   });
 }
 
-// ── Coach ────────────────────────────────────────────────────────────────
-
-export function useCoachMemory(opts?: QueryOpts<{ memory?: unknown }>) {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: apiQueryKeys.coach.memory(),
-    queryFn: () => api.coach.getMemory(),
-    ...opts,
-  });
-}
-
-export function useCoachInsightMutation(
-  opts?: MutationOpts<{ insight?: string | null }, CoachInsightPayload>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: (payload: CoachInsightPayload) =>
-      api.coach.postInsight(payload),
-    ...opts,
-  });
-}
-
-// ── Chat ─────────────────────────────────────────────────────────────────
-
-export function useChatMutation(
-  opts?: MutationOpts<ChatResponse, ChatRequestPayload>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: (payload: ChatRequestPayload) => api.chat.send(payload),
-    ...opts,
-  });
-}
-
 // ── Push ─────────────────────────────────────────────────────────────────
-
-export function useVapidPublicKey(opts?: QueryOpts<{ publicKey: string }>) {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: apiQueryKeys.push.vapidPublic(),
-    queryFn: () => api.push.getVapidPublic(),
-    ...opts,
-  });
-}
 
 /**
  * `POST /api/push/register` — уніфікована реєстрація push-пристрою
@@ -176,44 +126,6 @@ export function useBarcodeLookup(
     queryKey: apiQueryKeys.barcode.lookup(barcode),
     queryFn: () => api.barcode.lookup(barcode),
     enabled: !!barcode,
-    ...opts,
-  });
-}
-
-// ── Privat ──────────────────────────────────────────────────────────────
-// Mono lives entirely in the webhook flow now (apps/server/src/modules/mono);
-// the legacy `useMonoClientInfo` / `useMonoStatement` hooks were removed when
-// the polling proxy was deleted in roadmap A.
-
-/**
- * `merchantId` більше не передається як креденшел — лише як ключ кешу й
- * ознака «підключення існує». Сам токен живе зашифрованим на сервері й
- * резолвиться за сесією (спека beta-security-readiness, F1), тож клієнту
- * нема чого надсилати.
- */
-export function usePrivatBalanceFinal(
-  merchantId: string | null,
-  opts?: QueryOpts<PrivatBalanceFinalResponse>,
-) {
-  const api = useApiClient();
-  return useQuery({
-    queryKey: apiQueryKeys.privat.balanceFinal(merchantId ?? ""),
-    queryFn: ({ signal }) => api.privat.balanceFinal({ signal }),
-    enabled: !!merchantId,
-    ...opts,
-  });
-}
-
-// ── Sync ─────────────────────────────────────────────────────────────────
-
-// ── Weekly Digest ────────────────────────────────────────────────────────
-
-export function useWeeklyDigestMutation(
-  opts?: MutationOpts<WeeklyDigestResponse, WeeklyDigestPayload>,
-) {
-  const api = useApiClient();
-  return useMutation({
-    mutationFn: (payload) => api.weeklyDigest.generate(payload),
     ...opts,
   });
 }

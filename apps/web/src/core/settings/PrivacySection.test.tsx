@@ -76,6 +76,7 @@ import { ApiError } from "@sergeant/api-client";
 import {
   __resetAnalyticsConsentForTests,
   getAnalyticsConsent,
+  getAnalyticsDecision,
 } from "../observability/analyticsConsent";
 import { DEFAULT_PREFERENCES, PrivacySection } from "./PrivacySection";
 
@@ -234,9 +235,9 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     // і ПЕРЕД правовими посиланнями/підказкою про Профіль.
     const text = container.textContent ?? "";
     const bannerIndex = text.indexOf("Не вдалося зберегти налаштування");
-    // PR-S3: тумблер перейменовано «Дані про здоровʼя» → «Памʼять про
-    // здоровʼя» разом зі звуженням обіцянки до того, що гейт справді робить.
-    const lastToggleIndex = text.indexOf("Памʼять про здоровʼя");
+    // 2026-09-29: тумблер — це згода на передачу даних про здоровʼя в AI
+    // (сервер гейтить чат, коуча, дайджест, фото їжі й памʼять).
+    const lastToggleIndex = text.indexOf("Дані про здоровʼя для Сержанта");
     expect(bannerIndex).toBeGreaterThan(-1);
     expect(lastToggleIndex).toBeGreaterThan(-1);
     expect(bannerIndex).toBeGreaterThan(lastToggleIndex);
@@ -292,6 +293,30 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     fireEvent.click(analyticsToggle);
 
     await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+  });
+
+  it("тумблер aiMemory лише гідрує кеш аналітики з сервера і НЕ записує рішення на пристрої", async () => {
+    renderSection();
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+    // Гідрація з `analytics: true` вже записала «granted»; скидаємо, щоб
+    // перевірити саме шлях зміни ІНШОГО ключа.
+    __resetAnalyticsConsentForTests();
+    expect(getAnalyticsDecision()).toBeNull();
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      aiMemory: false,
+      analytics: false,
+    });
+
+    const aiMemoryToggle = await screen.findByRole("switch", {
+      name: /Памʼять для Сержанта/i,
+    });
+    fireEvent.click(aiMemoryToggle);
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+    // `setAnalyticsConsent` записав би «denied» — банер згоди не повернувся б.
+    expect(getAnalyticsDecision()).toBeNull();
   });
 
   it("sets analytics consent optimistically while the update request is still pending, and reverts it on failure (CodeRabbit PR #627)", async () => {
@@ -355,7 +380,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     await openSection();
 
     const consentToggle = await screen.findByRole("switch", {
-      name: /Памʼять про здоровʼя/i,
+      name: /Дані про здоровʼя для Сержанта/i,
     });
     expect(consentToggle).not.toBeChecked();
     fireEvent.click(consentToggle);

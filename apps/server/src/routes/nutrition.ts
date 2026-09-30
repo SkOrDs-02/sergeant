@@ -8,6 +8,10 @@ import {
   setModule,
 } from "../http/index.js";
 import { requireFeature } from "../modules/billing/index.js";
+import {
+  requireHealthConsent,
+  scrubGoalWithoutHealthConsent,
+} from "../lib/healthConsent.js";
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
@@ -92,6 +96,9 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
+    // Фото страв — дані про здоровʼя (GDPR Art. 9, `privacyDocument.ts`). Гейт
+    // стоїть ПЕРЕД квотою: людина, якій треба дати згоду, не платить за це.
+    requireHealthConsent(),
     requireLlmUpstream("vision"),
     requireAiQuota("photo"),
     analyzePhoto,
@@ -117,6 +124,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
     }),
     // ponytail: refine не має власної квоти, стелю тримає лише rate limit
     // 20/хв; окреме відро, якщо refine почнуть ганяти без analyze.
+    requireHealthConsent(),
     requireLlmUpstream("vision"),
     refinePhoto,
   );
@@ -130,6 +138,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 2,
     }),
+    scrubGoalWithoutHealthConsent(),
     ...aiText,
     recommendRecipes,
   );
@@ -144,6 +153,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       cost: () => 3,
     }),
     requireFeature(pool, "nutrition.weekPlan"),
+    scrubGoalWithoutHealthConsent(),
     ...aiText,
     weekPlan,
   );
@@ -156,6 +166,8 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 2,
     }),
+    // День-план будується від КБЖВ-цілей: це калорії, тобто дані про здоровʼя.
+    requireHealthConsent(),
     ...aiText,
     dayPlan,
   );

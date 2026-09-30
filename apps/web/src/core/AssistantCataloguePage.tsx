@@ -10,6 +10,7 @@ import { useLocalStorageState } from "@shared/hooks";
 import { cn } from "@shared/lib/ui/cn";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { messages } from "@shared/i18n/uk";
+import { pluralUa } from "@sergeant/shared";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   ASSISTANT_CAPABILITIES,
@@ -353,18 +354,11 @@ function ModuleGroup({
   );
 }
 
-// Ukrainian plural form (1 / 2-4 / 5+) — used for the count subtitle on
-// each module card. Kept inline because no existing util covers this.
 function pluralizeUk(
   n: number,
   forms: readonly [string, string, string],
 ): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return forms[0];
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20))
-    return forms[1];
-  return forms[2];
+  return pluralUa(n, { one: forms[0], few: forms[1], many: forms[2] });
 }
 
 interface CapabilityRowProps {

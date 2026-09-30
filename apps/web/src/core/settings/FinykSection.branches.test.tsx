@@ -299,7 +299,9 @@ describe("FinykSection branch gaps", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(within(dialog).getByText("Вийти з Monobank?")).toBeInTheDocument();
     expect(
-      within(dialog).getByText(/Webhook-зʼєднання буде відʼєднано/),
+      within(dialog).getByText(
+        /Автоматичне отримання операцій з Monobank вимкнеться/,
+      ),
     ).toBeInTheDocument();
   });
 

@@ -2,6 +2,17 @@ import { expect, test } from "@playwright/test";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
+// Банер згоди на аналітику перекриває UI на першому запуску, тож рішення
+// «denied» засіваємо для всього файлу, а не для одного тесту.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "sergeant.analytics_consent_decision.v1",
+      JSON.stringify({ v: "denied" }),
+    );
+  });
+});
+
 test("@critical legal documents scroll inside the fixed PWA shell", async ({
   page,
 }) => {

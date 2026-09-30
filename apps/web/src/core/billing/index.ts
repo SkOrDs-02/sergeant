@@ -1,13 +1,9 @@
 /**
- * @scaffolded
- * @owner @Skords-01
- * @nextStep Migrate deep imports (`../billing/usePlan`, `../billing/PaywallModal`,
- *           `../billing/TrialBanner`) in `HubMainContent`, `HubChat`,
- *           `FinykSection`, `PlanSection`, and `useChatSend` to this barrel
- *           (`@/core/billing`). Once consumers exist, drop this tag.
+ * Status: Active
  *
- * Public entry point for the billing module — declared API surface kept for
- * cross-module consumers. See AGENTS.md → Hard Rule #10.
+ * Public entry point for the billing module — споживачі барелю живі
+ * (`HubMainContent`, `HubReports`, `PlanSection`, `WeekPlanButton`, `PhotoStep`,
+ * `useFinykVisionPaywall`). See AGENTS.md → Hard Rule #10.
  */
 
 export { usePlan } from "./usePlan";

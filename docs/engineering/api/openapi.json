@@ -4030,7 +4030,7 @@
     "/api/transcribe": {
       "post": {
         "summary": "Голосова транскрипція через Groq Whisper (audio/* → текст)",
-        "description": "Body — сирий аудіо-блоб (`Content-Type: audio/webm | audio/ogg | audio/mp4 | …`), ліміт 10 MB. Query визначає мову (auto-detect якщо порожньо) та prompt для доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше).",
+        "description": "Body — сирий аудіо-блоб (`Content-Type: audio/webm | audio/ogg | audio/mp4 | …`), ліміт 10 MB. Query визначає мову (auto-detect якщо порожньо) та prompt для доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше). Query `module` (nutrition | fizruk | …) декларує модуль-виклик: для health-модулів без збереженої згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED до Groq і квоти.",
         "tags": ["transcribe"],
         "security": [
           {
@@ -4061,6 +4061,16 @@
               "maxLength": 1024
             },
             "description": "Доменна підказка (списки вправ, продуктів тощо)."
+          },
+          {
+            "in": "query",
+            "name": "module",
+            "schema": {
+              "description": "Модуль-виклик: nutrition | fizruk | finyk | routine | hub. Для nutrition/fizruk без згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED. Відсутній або невідомий — без гейту.",
+              "type": "string",
+              "maxLength": 32
+            },
+            "description": "Модуль-виклик: nutrition | fizruk | finyk | routine | hub. Для nutrition/fizruk без згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED. Відсутній або невідомий — без гейту."
           }
         ],
         "requestBody": {
@@ -4150,6 +4160,16 @@
           },
           "401": {
             "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "HEALTH_CONSENT_REQUIRED: `module=nutrition|fizruk` без згоди на дані про здоровʼя.",
             "content": {
               "application/json": {
                 "schema": {

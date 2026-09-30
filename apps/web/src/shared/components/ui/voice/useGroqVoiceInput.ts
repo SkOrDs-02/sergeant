@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { transcribeApi } from "@shared/api";
+import { friendlyApiError } from "@shared/lib/api/friendlyApiError";
+import type { TranscribeModule } from "@sergeant/shared";
 import type { AccessDenial } from "@shared/lib/api/accessDenial";
 import { accessDenialCopy } from "../../../../core/access/accessDenialCopy";
 import { useCanUse } from "../../../../core/access/useCanUse";
@@ -47,6 +49,12 @@ function isGroqSupported(): boolean {
 export interface UseGroqVoiceInputOptions {
   lang?: string | undefined;
   promptHint?: string | undefined;
+  /**
+   * Модуль-виклик (`?module=`). Для `nutrition`/`fizruk` сервер без згоди на
+   * дані про здоровʼя відповідає 403 ДО Groq. Декларативний тег: без нього
+   * гейту немає.
+   */
+  module?: TranscribeModule | undefined;
   onResult?: ((transcript: string) => void) | undefined;
   onError?: ((message: string) => void) | undefined;
   /**
@@ -75,6 +83,7 @@ export interface UseGroqVoiceInputReturn {
 export function useGroqVoiceInput({
   lang = "uk-UA",
   promptHint,
+  module,
   onResult,
   onError,
   onProviderUnavailable,
@@ -116,7 +125,9 @@ export function useGroqVoiceInput({
       try {
         // Whisper бере 2-літерний ISO-код (`uk-UA` → `uk`).
         const isoLang = lang.split("-")[0]?.trim();
-        const query: { language?: string; prompt?: string } = {};
+        const query: { language?: string; prompt?: string; module?: string } =
+          {};
+        if (module) query.module = module;
         if (isoLang) query.language = isoLang;
         if (promptHint && promptHint.trim()) {
           query.prompt = promptHint.trim().slice(0, 1024);
@@ -146,6 +157,11 @@ export function useGroqVoiceInput({
             if (onProviderUnavailable) onProviderUnavailable();
             else onError?.("Голосовий сервер тимчасово недоступний.");
             return;
+          case "health_consent_required":
+            // Той самий текст-дія, що в чаті (#1250): «Налаштування → Дані
+            // та приватність». Сухе «щось пішло не так» тут глухий кут.
+            onError?.(friendlyApiError(403, result.message));
+            return;
           case "unauthorized":
             onError?.(
               "Сесія завершилась. Увійди знову, щоб користуватись голосом.",
@@ -173,7 +189,7 @@ export function useGroqVoiceInput({
         abortRef.current = null;
       }
     },
-    [lang, promptHint, onResult, onError, onProviderUnavailable],
+    [lang, promptHint, module, onResult, onError, onProviderUnavailable],
   );
 
   const stop = useCallback(() => {

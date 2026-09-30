@@ -524,6 +524,16 @@ export const messagesEn: Partial<{
           "Weekly reports the assistant compiled itself from your modules. This is not a fact you told it — it is its own summary.",
       },
     },
+
+    // Mirrors uk.privacy.ts: first-launch analytics consent banner.
+    analyticsConsent: {
+      title: "Help make Sergeant better?",
+      body: "We can collect usage statistics: which screens are opened and where things break. No amounts, names or text you type.",
+      changeLater: "You can change your mind in Settings, under privacy.",
+      privacyLink: "About privacy",
+      accept: "Allow",
+      decline: "No, thanks",
+    },
   },
 
   biometrics: {
