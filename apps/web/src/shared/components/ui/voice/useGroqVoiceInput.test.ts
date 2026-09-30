@@ -27,6 +27,7 @@ vi.mock("../../../../core/access/useCanUse", async () => {
   return { ...actual, useCanUse: () => () => null };
 });
 
+import { HEALTH_CONSENT_REQUIRED_MESSAGE } from "@sergeant/shared";
 import { useGroqVoiceInput } from "./useGroqVoiceInput";
 
 let clock = 1_000_000;
@@ -180,6 +181,42 @@ describe("useGroqVoiceInput", () => {
       onError.mockClear();
       unmount();
     }
+  });
+
+  it("передає module у query транскрипції", async () => {
+    send.mockResolvedValue({ outcome: "ok", data: { text: "гречка" } });
+    const { result } = renderHook(() =>
+      useGroqVoiceInput({ module: "nutrition", onResult: vi.fn() }),
+    );
+    await recordAndStop(result);
+    await waitFor(() => expect(send).toHaveBeenCalled());
+    expect(send.mock.calls[0]?.[1]).toMatchObject({ module: "nutrition" });
+  });
+
+  it("без module тег у query не йде (старий контракт)", async () => {
+    send.mockResolvedValue({ outcome: "ok", data: { text: "x" } });
+    const { result } = renderHook(() =>
+      useGroqVoiceInput({ onResult: vi.fn() }),
+    );
+    await recordAndStop(result);
+    await waitFor(() => expect(send).toHaveBeenCalled());
+    expect(send.mock.calls[0]?.[1]).not.toHaveProperty("module");
+  });
+
+  it("health_consent_required показує текст-дію про згоду", async () => {
+    send.mockResolvedValue({
+      outcome: "health_consent_required",
+      status: 403,
+      message: HEALTH_CONSENT_REQUIRED_MESSAGE,
+    });
+    const onError = vi.fn();
+    const { result } = renderHook(() =>
+      useGroqVoiceInput({ module: "fizruk", onError }),
+    );
+    await recordAndStop(result);
+    await waitFor(() =>
+      expect(onError).toHaveBeenCalledWith(HEALTH_CONSENT_REQUIRED_MESSAGE),
+    );
   });
 
   it("rejects a too-short recording before uploading", async () => {

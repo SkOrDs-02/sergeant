@@ -220,6 +220,30 @@ IBAN, картка, ІПН), голос — ні, бо в аудіо маску�
 тексту), і окремий прапорець на голосове введення. Колонка вже є; бракує рівно
 перевірки.
 
+> **Закрито частково 2026-09-29 (рішення власника: ВУЗЬКИЙ гейт).** Модулі
+> Фізрук/Харчування лишаються відкритими (дані локальні), а enforcement стоїть
+> там, де дані виходять за периметр: без збереженої `healthDataConsent` health
+> не йде в LLM і `ai_memories`. Гейт на сервері (fail-closed), покриває чат
+> (контекст, tools, tool_results — [`chat/healthGate.ts`](../../../../apps/server/src/modules/chat/healthGate.ts)),
+> коуч, тижневий дайджест, фото страв і денний КБЖВ-план
+> ([`lib/healthConsent.ts`](../../../../apps/server/src/lib/healthConsent.ts)),
+> запис і читання `ai_memories`
+> ([`ai-memory/service.ts`](../../../../apps/server/src/modules/ai-memory/service.ts),
+> [`healthRows.ts`](../../../../apps/server/src/modules/ai-memory/healthRows.ts)).
+> Політика приватності приведена до поведінки
+> ([`privacyDocument.ts`](../../../../apps/web/src/core/legal/privacyDocument.ts)),
+> рішення записано в [`hub-coach.md`](../../../product/modules/hub-coach.md) §
+> Журнал рішень. **Голос закрито 2026-09-30 (рішення
+> власника: модуль-тег):** клієнт передає `?module=` у `/api/transcribe`,
+> для `nutrition`/`fizruk` без згоди сервер відповідає 403
+> `HEALTH_CONSENT_REQUIRED` до Groq і квоти
+> ([`routes/transcribe.ts`](../../../../apps/server/src/routes/transcribe.ts),
+> тест `transcribe.healthConsent.test.ts`). Тег декларативний (клієнт може
+> збрехати), відсутній або невідомий тег = відкрито для старих клієнтів.
+> **Лишається відкритим:** вільний текст у повідомленнях чату (класифікатора немає), і
+> окремий екран explicit consent із датою та версією тексту при першому
+> використанні.
+
 ### 1.5 Гейт покриття LLM-периметра сліпий до двох провайдерів із чотирьох
 
 **Severity: середньо, але це «мета-баг».**

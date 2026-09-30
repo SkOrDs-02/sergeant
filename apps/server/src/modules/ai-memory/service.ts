@@ -24,6 +24,7 @@ import type {
 } from "./types.js";
 import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
 import { isVoyageBudgetHardExceeded } from "./voyageBudget.js";
+import { isHealthMemoryRow } from "./healthRows.js";
 import {
   aiMemoryRecallTopScore,
   aiMemoryRecallResultsTotal,
@@ -123,6 +124,13 @@ interface CreateAiMemoryServiceDeps {
   /** Per-user privacy gate supplied by the production bootstrap. */
   isConsentEnabled?: (userId: string) => Promise<boolean>;
   /**
+   * Окрема згода на дані про здоровʼя (`healthDataConsent`, GDPR Art. 9).
+   * Без неї health-рядки не пишуться (`remember`) і не читаються (`recall`).
+   * Fail-closed: збій перевірки = «згоди немає». Дефолт `true` лише для
+   * тестів без цього гейта; production bootstrap передає реальну перевірку.
+   */
+  isHealthConsentEnabled?: (userId: string) => Promise<boolean>;
+  /**
    * Override `enabled` flag для тестів. Default — `env.AI_MEMORY_ENABLED`.
    * У production не передавай — тут флаг має один source-of-truth.
    */
@@ -134,6 +142,19 @@ export function createAiMemoryService(
 ): AiMemoryService {
   const enabled = deps.enabled ?? env.AI_MEMORY_ENABLED;
   const isConsentEnabled = deps.isConsentEnabled ?? (async () => true);
+  const isHealthConsentEnabledRaw =
+    deps.isHealthConsentEnabled ?? (async () => true);
+  const isHealthConsentEnabled = async (userId: string): Promise<boolean> => {
+    try {
+      return (await isHealthConsentEnabledRaw(userId)) === true;
+    } catch (err) {
+      logger.warn({
+        msg: "ai_memory_health_consent_check_failed",
+        err: err instanceof Error ? err.message : String(err),
+      });
+      return false;
+    }
+  };
 
   return {
     async remember(inputs: RememberInput[]): Promise<void> {
@@ -150,8 +171,24 @@ export function createAiMemoryService(
       for (const userId of new Set(inputs.map((input) => input.userId))) {
         consentByUser.set(userId, await isConsentEnabled(userId));
       }
+      const healthConsentByUser = new Map<string, boolean>();
+      for (const input of inputs) {
+        if (
+          consentByUser.get(input.userId) === true &&
+          isHealthMemoryRow(input) &&
+          !healthConsentByUser.has(input.userId)
+        ) {
+          healthConsentByUser.set(
+            input.userId,
+            await isHealthConsentEnabled(input.userId),
+          );
+        }
+      }
       const consentedInputs = inputs.filter(
-        (input) => consentByUser.get(input.userId) === true,
+        (input) =>
+          consentByUser.get(input.userId) === true &&
+          (!isHealthMemoryRow(input) ||
+            healthConsentByUser.get(input.userId) === true),
       );
       if (consentedInputs.length === 0) {
         logger.debug({
@@ -311,8 +348,18 @@ export function createAiMemoryService(
         sources: input.sources,
       });
 
-      recordRecallQuality(input.caller ?? "unknown", results);
-      return results;
+      // Гейт на дані про здоровʼя (рішення власника 2026-09-29): без
+      // `healthDataConsent` такі рядки не потрапляють ні в RAG-блок чату,
+      // ні у `recall_memory`. Фільтр ПІСЛЯ ANN-запиту, бо ознака живе в
+      // `metadata`; топ-K може стати коротшим, і це прийнятно.
+      const visible = results.some(isHealthMemoryRow)
+        ? (await isHealthConsentEnabled(input.userId))
+          ? results
+          : results.filter((r) => !isHealthMemoryRow(r))
+        : results;
+
+      recordRecallQuality(input.caller ?? "unknown", visible);
+      return visible;
     },
 
     async forgetUser(userId: string): Promise<number> {

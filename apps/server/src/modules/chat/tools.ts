@@ -113,6 +113,53 @@ export function filterToolsByActiveModules<T extends { name: string }>(
 }
 
 /**
+ * Tools Харчування, що НЕ несуть даних про здоровʼя: комора й список покупок
+ * (запаси продуктів, не «записи про їжу» у сенсі `privacyDocument.ts`).
+ * Решта tools Харчування (журнал, вода, КБЖВ-плани, рецепти з макросами) —
+ * health.
+ */
+const NON_HEALTH_NUTRITION_TOOLS: ReadonlySet<string> = new Set([
+  "add_to_shopping_list",
+  "consume_from_pantry",
+  "clear_pantry",
+]);
+
+/**
+ * Tools, чий ВХІД і ВИХІД — дані про здоровʼя за визначенням: увесь Фізрук
+ * (тренування, вага, заміри, самопочуття), Харчування без комори/покупок і
+ * `weight_chart`. Без `healthDataConsent` вони не потрапляють у payload моделі
+ * (`filterToolsByHealthConsent`), а їхні `tool_result` на round-trip замінює
+ * `healthGate.ts`. Змішані крос-модульні tools (briefing, compare_weeks,
+ * get_daily_series тощо) сюди НЕ входять — їх розбирає `healthGate.ts` за
+ * вхідними параметрами.
+ */
+export const HEALTH_ONLY_TOOL_NAMES: ReadonlySet<string> = new Set([
+  ...TOOL_NAMES_BY_MODULE.fizruk,
+  ...[...TOOL_NAMES_BY_MODULE.nutrition].filter(
+    (n) => !NON_HEALTH_NUTRITION_TOOLS.has(n),
+  ),
+  "weight_chart",
+  // Ціль «схуднути на 5 кг» = вага + калорії + тренування в одному виклику.
+  "set_goal",
+]);
+
+/**
+ * Прибирає з реєстру health-only tools, коли згоди на дані про здоровʼя немає.
+ * `granted === true` → реєстр без змін (той самий референс).
+ *
+ * Це ПЕРШИЙ рубіж: модель навіть не бачить, що такі tools існують, тож не
+ * пропонує їх. Другий рубіж (`healthGate.redactHealthToolResults`) ловить
+ * `tool_use`, який модель відтворила з історії розмови.
+ */
+export function filterToolsByHealthConsent<T extends { name: string }>(
+  tools: readonly T[],
+  granted: boolean,
+): readonly T[] {
+  if (granted) return tools;
+  return tools.filter((t) => !HEALTH_ONLY_TOOL_NAMES.has(t.name));
+}
+
+/**
  * Validate tool registry at startup:
  * - Tool names are unique
  * - Strict tools ≤ 20 (Anthropic limit)

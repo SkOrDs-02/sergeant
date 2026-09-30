@@ -1,4 +1,5 @@
 import {
+  HEALTH_CONSENT_REQUIRED_CODE,
   TranscribeQuerySchema as SharedTranscribeQuerySchema,
   TranscribeResponseSchema as SharedTranscribeResponseSchema,
   z,
@@ -38,6 +39,7 @@ export type TranscribeOutcome =
   | { outcome: "ok"; data: TranscribeResponse }
   | { outcome: "provider_unavailable"; status: 503 }
   | { outcome: "unauthorized"; status: 401 }
+  | { outcome: "health_consent_required"; status: 403; message: string }
   | { outcome: "rate_limited"; status: 429 }
   | { outcome: "payload_too_large"; status: 413 }
   | { outcome: "unsupported_media_type"; status: 415 }
@@ -88,6 +90,24 @@ export function createTranscribeEndpoints(
             return { outcome: "provider_unavailable", status: 503 };
           case 401:
             return { outcome: "unauthorized", status: 401 };
+          case 403: {
+            const code =
+              apiErr.body && typeof apiErr.body === "object"
+                ? (apiErr.body as { code?: unknown }).code
+                : undefined;
+            if (code === HEALTH_CONSENT_REQUIRED_CODE) {
+              return {
+                outcome: "health_consent_required",
+                status: 403,
+                message: apiErr.message,
+              };
+            }
+            return {
+              outcome: "error",
+              status: 403,
+              message: apiErr.message,
+            };
+          }
           case 429:
             return { outcome: "rate_limited", status: 429 };
           case 413:
