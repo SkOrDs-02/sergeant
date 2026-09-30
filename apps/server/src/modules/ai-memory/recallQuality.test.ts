@@ -37,7 +37,7 @@ vi.mock("../../env/env.js", () => ({
 }));
 
 vi.mock("./voyageBudget.js", () => ({
-  isVoyageBudgetHardExceeded: vi.fn().mockResolvedValue(false),
+  isVoyageBudgetHardExceeded: vi.fn().mockReturnValue(false),
 }));
 
 const hit = (score: number, content = "секретний вміст памʼяті") => ({

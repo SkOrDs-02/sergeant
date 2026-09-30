@@ -690,6 +690,15 @@ export async function purgeUserData(
       `u:${userId}`,
     ]);
 
+    // `ai_memory_ingest_failed.user_id` (міграція 069) — теж голий TEXT без
+    // FK, а `payload_json` містить повний текст пам'яті (B11 аудиту
+    // ai-pipeline-2026-08-05). Без явного purge DLQ-replay воскресив би
+    // контент видаленого акаунта.
+    await client.query(
+      `DELETE FROM ai_memory_ingest_failed WHERE user_id = $1`,
+      [userId],
+    );
+
     // NOTE: no separate `ai_memories` soft-delete step here. `ai_memories.
     // user_id` has `ON DELETE CASCADE` (migration 025) straight to
     // `"user"(id)` — the hard `DELETE FROM "user"` below already removes
