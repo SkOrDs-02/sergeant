@@ -22,6 +22,15 @@ vi.mock("../../lib/anthropic.js", () => ({
   ),
 }));
 
+// Гейт згоди на дані про здоровʼя читає БД; за замовчуванням у цьому файлі
+// згода «є» (поведінка до 2026-09-29), сценарій без неї перемикає мок явно.
+const { resolveHealthConsentMock } = vi.hoisted(() => ({
+  resolveHealthConsentMock: vi.fn(),
+}));
+vi.mock("../../lib/healthConsent.js", () => ({
+  resolveHealthConsent: resolveHealthConsentMock,
+}));
+
 vi.mock("../../obs/logger.js", () => ({
   logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
@@ -80,6 +89,8 @@ function asReq(v: unknown): Request {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resolveHealthConsentMock.mockReset();
+  resolveHealthConsentMock.mockResolvedValue(true);
   // Force the Anthropic path: these tests assert the prompt payload via the
   // `anthropicMessages` mock, so they must route through AnthropicProvider
   // regardless of the prod default (`LLM_COACH_PROVIDER=openrouter`).
@@ -553,6 +564,64 @@ describe("coachInsight", () => {
     expect(prompt).toContain("Groceries 1700");
     expect(prompt).toContain("12500");
     expect(prompt).toContain("2100");
+    expect(prompt).toContain("82%");
+  });
+
+  it("без згоди на дані про здоровʼя: тренувань, харчування і кореляцій у промпті немає, фінанси й звички є", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "ok" }] },
+    });
+
+    const res = makeRes();
+    await coachInsight(
+      makeReq({
+        snapshot: {
+          finyk: { totalSpent: 4200, totalIncome: 9000, txCount: 12 },
+          fizruk: { workoutsCount: 3, totalVolume: 12_500 },
+          nutrition: { avgKcal: 2111, avgProtein: 130, daysLogged: 6 },
+          routine: { overallRate: 82, habitCount: 5 },
+        },
+        memory: {
+          weeklyDigests: [
+            {
+              weekKey: "2026-W10",
+              weekRange: "2-8 Mar",
+              generatedAt: "2026-03-08T00:00:00.000Z",
+              finyk: { summary: "finyk summary" },
+              fizruk: { summary: "fizruk summary" },
+              nutrition: { summary: "nutrition summary" },
+              routine: { summary: "routine summary" },
+              correlations: ["corr-with-workouts"],
+              overallRecommendations: ["drink water"],
+            },
+          ],
+        },
+      }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const [, payload] = anthropicMessages.mock.calls[0] as [
+      unknown,
+      { messages: { content: string }[] },
+    ];
+    const prompt = payload!.messages[0]!.content;
+    for (const leak of [
+      "fizruk summary",
+      "nutrition summary",
+      "12500",
+      "2111",
+      "corr-with-workouts",
+      "ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ",
+      "ХАРЧУВАННЯ ЦЬОГО ТИЖНЯ",
+    ]) {
+      expect(prompt).not.toContain(leak);
+    }
+    expect(prompt).toContain("finyk summary");
+    expect(prompt).toContain("routine summary");
+    expect(prompt).toContain("4200");
     expect(prompt).toContain("82%");
   });
 

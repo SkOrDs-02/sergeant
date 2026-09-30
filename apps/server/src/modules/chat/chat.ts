@@ -56,6 +56,12 @@ import { replaceLongDash } from "../../lib/modelText.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
 import { getUserPreferences } from "../me/dataRights.js";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
+import {
+  redactHealthToolCalls,
+  redactHealthToolResults,
+  stripHealthContext,
+} from "./healthGate.js";
 import { pool } from "../../db.js";
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
@@ -478,6 +484,17 @@ export default async function handler(
   const sessionUser = (req as AuthedRequest).user ?? null;
   const ledgerUserId = sessionUser?.id ?? undefined;
 
+  // Гейт «дані про здоровʼя → модель» (GDPR Art. 9, рішення власника
+  // 2026-09-29). Джерело правди — збережена `healthDataConsent`, читається
+  // ТУТ, на сервері; клієнтський стан нічого не вирішує. Fail-closed:
+  // збій БД = «згоди немає». Стоїть ДО response-cache: `system` без health-
+  // частини дає інший ключ, тож закешована відповідь «зі згодою» не віддасться
+  // тому, хто її не давав.
+  const healthConsent = await timePhase("health_consent", () =>
+    resolveHealthConsent(ledgerUserId),
+  );
+  const clientContext = healthConsent ? context : stripHealthContext(context);
+
   // Маскування перед відправкою за периметр (рішення founder-а #10).
   //
   // AI-DANGER: три входи чату мають РІЗНІ класи маскування, і плутати їх
@@ -575,7 +592,9 @@ export default async function handler(
     // те кладе повний оригінал у Sentry-breadcrumb); тому всі три живуть
     // одним конвеєром у `prepareToolResults`, а не тут поодинці.
     const toolResultMessages = prepareToolResults(
-      tool_results,
+      healthConsent
+        ? tool_results
+        : redactHealthToolResults(tool_results, tool_calls_raw),
       tool_calls_raw,
       {
         knownValues,
@@ -597,7 +616,12 @@ export default async function handler(
 
     const fullMessages = [
       ...(lastUserMsg ? [{ role: "user", content: lastUserMsg.content }] : []),
-      { role: "assistant", content: tool_calls_raw },
+      {
+        role: "assistant",
+        content: healthConsent
+          ? tool_calls_raw
+          : redactHealthToolCalls(tool_calls_raw),
+      },
       { role: "user", content: toolResultMessages },
     ];
 
@@ -622,7 +646,11 @@ export default async function handler(
       // Preset іде і в tool-result тур: інструкція інтервʼю має діяти й на
       // синтезі після `remember`, інакше модель «забуває» ліміт у 4
       // повідомлення рівно там, де підбиває підсумок.
-      system: buildSystem(maskMachineText(context, knownValues), preset),
+      system: buildSystem(
+        maskMachineText(clientContext, knownValues),
+        preset,
+        healthConsent,
+      ),
       // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
       // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
       // підтримують не всі моделі, тож payload будується під фактичну.
@@ -702,14 +730,16 @@ export default async function handler(
   // context **тільки на першому турі**, тим самим шляхом що й RAG нижче.
   // Дешевий point-lookup (<1мс) — на відміну від RAG не ходить у Voyage,
   // тож fail-safe і без помітної затримки.
-  const correlationsBlock = sessionUser?.id
-    ? await timePhase("correlations", () =>
-        getCoachCorrelationsBlock(sessionUser.id),
-      )
-    : "";
+  // Кореляції зшивають Фізрук/Харчування з рештою — без згоди їх немає.
+  const correlationsBlock =
+    sessionUser?.id && healthConsent
+      ? await timePhase("correlations", () =>
+          getCoachCorrelationsBlock(sessionUser.id),
+        )
+      : "";
   const contextWithCorrelations = correlationsBlock
-    ? `${context}\n${correlationsBlock}`
-    : context;
+    ? `${clientContext}\n${correlationsBlock}`
+    : clientContext;
 
   // RAG-injection: підмішуємо top-K схожих ai_memories у system context
   // **тільки на першому турі** (тут), не на tool-result-турі вище. Sync
@@ -726,7 +756,7 @@ export default async function handler(
     knownValues,
   );
 
-  const firstTurnSystem = buildSystem(augmentedContext, preset);
+  const firstTurnSystem = buildSystem(augmentedContext, preset, healthConsent);
 
   // Ініціатива 0025, Фаза 2 — `$ai_trace_id` першого туру. Генеруємо тут
   // (ДО live-виклику і ДО cache-check), а не всередині `attachRoundTripTicket`,
@@ -800,7 +830,11 @@ export default async function handler(
         model: env.CHAT_MODEL_FIRST_TURN,
         max_tokens: 1500,
         system: firstTurnSystem,
-        tools: buildToolsPayload(env.CHAT_MODEL_FIRST_TURN, activeModules),
+        tools: buildToolsPayload(
+          env.CHAT_MODEL_FIRST_TURN,
+          activeModules,
+          healthConsent,
+        ),
         // 3-й cache breakpoint: кешуємо префікс історії діалогу, щоб наступний
         // тур читав попередні повідомлення з кешу замість повного re-білінгу.
         messages: applyMessagesCacheBreakpoint(cleaned),

@@ -190,6 +190,7 @@ export function HabitForm({
             }
           />
           <VoiceMicButton
+            module="routine"
             size="md"
             onResult={(transcript: string) => {
               const t = (transcript || "").trim();

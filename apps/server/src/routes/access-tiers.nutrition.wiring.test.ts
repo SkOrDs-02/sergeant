@@ -13,11 +13,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * там, де списання бути не повинно (refine-photo), його немає.
  */
 
-const { handler } = vi.hoisted(() => ({
+const { handler, poolQuery } = vi.hoisted(() => ({
   handler: (_req: unknown, res: express.Response) => res.json({ ok: true }),
+  // Гейт згоди на дані про здоровʼя (`lib/healthConsent.ts`) читає
+  // `user_preferences` через `pool`; окремого `vi.mock` на нього немає
+  // (cap 5 на файл), тож підміняємо лише відповідь БД.
+  poolQuery: vi.fn(),
 }));
 
-vi.mock("../db.js", () => ({ default: { query: vi.fn() } }));
+vi.mock("../db.js", () => ({
+  default: { query: vi.fn() },
+  pool: { query: poolQuery },
+}));
 
 vi.mock("../modules/nutrition/analyze-photo.js", () => ({ default: handler }));
 vi.mock("../modules/nutrition/refine-photo.js", () => ({ default: handler }));
@@ -34,7 +41,13 @@ vi.mock("../http/index.js", () => {
   return {
     setModule: () => (_req: unknown, _res: unknown, next: () => void) => next(),
     rateLimitExpress: pass,
-    requireSession: pass,
+    // Проставляє `req.user`, як справжній `requireSession()`: гейт згоди
+    // читає id звідти.
+    requireSession:
+      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        req.user = { id: "u1" };
+        next();
+      },
     requireLlmUpstream: pass,
     // Відро, яке списав би справжній `assertAiQuota`, їде в заголовок.
     requireAiQuota:
@@ -52,6 +65,17 @@ function app(): express.Express {
   const a = express();
   a.use(express.json());
   a.use(createNutritionRouter({ pool: {} as Pool }));
+  // Мінімальний аналог `errorHandler`: `AppError` → його status + code.
+  a.use(
+    (
+      err: { status?: number; code?: string },
+      _req: express.Request,
+      res: express.Response,
+      _next: express.NextFunction,
+    ) => {
+      res.status(err.status ?? 500).json({ code: err.code });
+    },
+  );
   return a;
 }
 
@@ -64,7 +88,24 @@ async function meterOf(path: string): Promise<string | undefined> {
 describe("access-tiers: яке тижневе відро списує nutrition-роут", () => {
   beforeEach(() => {
     vi.unstubAllEnvs();
+    poolQuery.mockReset();
+    poolQuery.mockResolvedValue({ rows: [{ health_data_consent: true }] });
   });
+
+  it.each([
+    "/api/nutrition/analyze-photo",
+    "/api/nutrition/refine-photo",
+    "/api/nutrition/day-plan",
+  ])(
+    "%s без згоди на дані про здоровʼя: 403 до квоти, відро не списано",
+    async (path) => {
+      poolQuery.mockResolvedValue({ rows: [{ health_data_consent: false }] });
+      const res = await request(app()).post(path).send({});
+      expect(res.status).toBe(403);
+      expect(res.body).toMatchObject({ code: "HEALTH_CONSENT_REQUIRED" });
+      expect(res.headers["x-quota-meter"]).toBeUndefined();
+    },
+  );
 
   it("analyze-photo списує відро фото, а не спільні дії", async () => {
     expect(await meterOf("/api/nutrition/analyze-photo")).toBe("photo");
