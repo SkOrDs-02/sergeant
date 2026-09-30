@@ -185,7 +185,6 @@ export interface NutritionBackupDownloadResponse {
 }
 
 export interface NutritionEndpoints {
-  postJson: <T = unknown>(url: string, body: unknown) => Promise<T>;
   analyzePhoto: (body: unknown) => Promise<NutritionPhotoResponse>;
   refinePhoto: (body: unknown) => Promise<NutritionPhotoResponse>;
   recommendRecipes: (body: unknown) => Promise<NutritionRecipesResponse>;
@@ -205,8 +204,6 @@ export function createNutritionEndpoints(http: HttpClient): NutritionEndpoints {
   }
 
   return {
-    postJson: <T = unknown>(url: string, body: unknown) =>
-      postNutrition<T>(url, body),
     analyzePhoto: (body) =>
       postNutrition<NutritionPhotoResponse>(
         "/api/nutrition/analyze-photo",

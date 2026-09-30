@@ -10,7 +10,11 @@ import { TimeField } from "@shared/components/ui/TimeField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseMealSpeech } from "@sergeant/shared";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
-import { currentTime, type MealFormState } from "./mealFormUtils";
+import {
+  currentTime,
+  macroToFieldString,
+  type MealFormState,
+} from "./mealFormUtils";
 
 interface NameTimeRowProps {
   form: MealFormState;
@@ -50,10 +54,10 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
       setForm((s) => ({
         ...s,
         name: spokenName || s.name,
-        kcal: parsed.kcal != null ? String(Math.round(parsed.kcal)) : s.kcal,
+        kcal: parsed.kcal != null ? macroToFieldString(parsed.kcal) : s.kcal,
         protein_g:
           parsed.protein != null
-            ? String(Math.round(parsed.protein))
+            ? macroToFieldString(parsed.protein)
             : s.protein_g,
         err: "",
       }));

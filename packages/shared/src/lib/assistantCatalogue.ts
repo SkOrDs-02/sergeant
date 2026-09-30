@@ -144,6 +144,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Додай витрату: ",
     requiresInput: true,
+    // Пише на сервер без undo; чат питає згоду перед виконанням (B21).
+    risky: true,
     isQuickAction: true,
     quickActionPriority: 10,
     requiresOnline: true,
@@ -1201,6 +1203,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     examples: ["експортуй дані Фініка в csv", "вивантаж тренування в json"],
     prompt: "Експортуй дані: ",
     requiresInput: true,
+    // Віддає сирий JSON модуля в чат: чат питає згоду (B21/B23).
+    risky: true,
     requiresOnline: true,
   },
 
@@ -1218,6 +1222,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Запамʼятай: ",
     requiresInput: true,
+    // Memory Bank підмішується в промпт назад: чат питає згоду (B21/B22).
+    risky: true,
     requiresOnline: true,
   },
   {

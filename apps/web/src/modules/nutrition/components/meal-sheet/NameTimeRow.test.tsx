@@ -145,8 +145,8 @@ describe("NameTimeRow", () => {
     ) => MealFormState;
     expect(update(makeForm({ err: "old error" }))).toMatchObject({
       name: "Омлет",
-      kcal: "250",
-      protein_g: "30",
+      kcal: "249.6",
+      protein_g: "30.4",
       err: "",
     });
   });

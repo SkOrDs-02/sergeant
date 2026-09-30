@@ -19,6 +19,8 @@ const posthogIdentify = vi.fn();
 const posthogReset = vi.fn();
 const posthogRegister = vi.fn();
 const posthogCaptureException = vi.fn();
+const posthogOptIn = vi.fn();
+const posthogOptOut = vi.fn();
 
 vi.mock("posthog-js", () => ({
   default: {
@@ -28,6 +30,8 @@ vi.mock("posthog-js", () => ({
     reset: posthogReset,
     register: posthogRegister,
     captureException: posthogCaptureException,
+    opt_in_capturing: posthogOptIn,
+    opt_out_capturing: posthogOptOut,
   },
 }));
 
@@ -68,6 +72,9 @@ beforeEach(() => {
   posthogReset.mockReset();
   posthogRegister.mockReset();
   posthogCaptureException.mockReset();
+  posthogOptIn.mockReset();
+  posthogOptOut.mockReset();
+  localStorage.clear();
   isCapacitorMock.mockReset().mockReturnValue(false);
   getPlatformMock.mockReset().mockReturnValue("web");
   vi.stubEnv("VITE_POSTHOG_KEY", "phc_test_key");
@@ -457,5 +464,91 @@ describe("capturePostHogException", () => {
     await mod.initPostHog();
 
     expect(posthogCaptureException).not.toHaveBeenCalled();
+  });
+});
+
+describe("згода на аналітику (opt-out за замовчуванням)", () => {
+  it("init стартує з opt_out_capturing_by_default і без згоди лишає SDK вимкненим", async () => {
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogInit.mock.calls[0]![1]).toMatchObject({
+      opt_out_capturing_by_default: true,
+    });
+    expect(posthogOptOut).toHaveBeenCalled();
+    expect(posthogOptIn).not.toHaveBeenCalled();
+  });
+
+  it("збережена згода → opt_in одразу після init", async () => {
+    const consent = await import("./analyticsConsent");
+    consent.setAnalyticsConsent(true);
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+
+    expect(posthogOptIn).toHaveBeenCalledTimes(1);
+    expect(posthogOptOut).not.toHaveBeenCalled();
+  });
+
+  it("«Дозволити» після init → opt_in і повторний identify; відкликання → opt_out", async () => {
+    const consent = await import("./analyticsConsent");
+    const mod = await import("./posthog");
+    mod.identifyPostHogUser("u1", { plan: "free" });
+    await mod.initPostHog();
+    posthogIdentify.mockClear();
+
+    consent.setAnalyticsConsent(true);
+    expect(posthogOptIn).toHaveBeenCalledTimes(1);
+    expect(posthogIdentify).toHaveBeenCalledWith("u1", { plan: "free" });
+
+    posthogOptOut.mockClear();
+    consent.setAnalyticsConsent(false);
+    expect(posthogOptOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("reset() скидає стан SDK, тож згода виставляється наново", async () => {
+    const consent = await import("./analyticsConsent");
+    consent.setAnalyticsConsent(true);
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+    posthogOptIn.mockClear();
+
+    mod.resetPostHog();
+    expect(posthogReset).toHaveBeenCalled();
+    expect(posthogOptIn).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("applyConsent — повторна спроба після збою SDK", () => {
+  it("збій opt_out_capturing не позначає згоду застосованою: наступна зміна повторює спробу", async () => {
+    const consent = await import("./analyticsConsent");
+    const mod = await import("./posthog");
+    posthogOptOut.mockImplementationOnce(() => {
+      throw new Error("sdk down");
+    });
+
+    await mod.initPostHog();
+    expect(posthogOptOut).toHaveBeenCalledTimes(1);
+
+    consent.setAnalyticsConsent(false);
+    expect(posthogOptOut).toHaveBeenCalledTimes(2);
+
+    // Успішне застосування закріплюється: ще один notify нічого не дзвонить.
+    consent.setAnalyticsConsent(false);
+    expect(posthogOptOut).toHaveBeenCalledTimes(2);
+  });
+
+  it("збій opt_in_capturing теж не блокує повтор", async () => {
+    const consent = await import("./analyticsConsent");
+    const mod = await import("./posthog");
+    await mod.initPostHog();
+    posthogOptIn.mockImplementationOnce(() => {
+      throw new Error("sdk down");
+    });
+
+    consent.setAnalyticsConsent(true);
+    expect(posthogOptIn).toHaveBeenCalledTimes(1);
+
+    consent.setAnalyticsConsent(true);
+    expect(posthogOptIn).toHaveBeenCalledTimes(2);
   });
 });

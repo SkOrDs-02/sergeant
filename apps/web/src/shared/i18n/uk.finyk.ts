@@ -18,8 +18,8 @@ export const finykPageMessages = {
    */
   monoCardLink: {
     repayment: "Погашення",
-    cardPurchase: "↑ Покупка по картці: борг не гасить",
-    otherIncome: "↑ Рух на іншому рахунку: картки не торкався",
+    cardPurchase: "Покупка по картці: борг не гасить",
+    otherIncome: "Рух на іншому рахунку: картки не торкався",
   },
   /** Пікер привʼязки транзакцій до пасиву / дебіторки (§ 4a канону). */
   debtTxLink: {

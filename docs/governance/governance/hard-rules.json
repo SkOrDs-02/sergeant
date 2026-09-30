@@ -115,7 +115,7 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket): ci.yml job `Commit messages (commitlint)` does not run"
+          "ref": "ci.yml job `Commit messages (commitlint)` (returned as PR gate 2026-09-29, ADR-0101)"
         },
         {
           "kind": "hook",
@@ -138,7 +138,7 @@
       "enforced_by": [
         {
           "kind": "branch-protection",
-          "ref": "SUSPENDED since 2026-09-23 (repo moved to Bitbucket, GitHub accounts blocked): the old GitHub branch protection is dead. AGENTS.md claims a Bitbucket branch restriction, unverified from this repo; protection on the Hetzner mirror (origin's second pushurl) is also unverified"
+          "ref": "SUSPENDED since 2026-09-23 (unverified after ADR-0101): GitHub is primary again (2026-09-29), but the branch protection on SkOrDs-02/sergeant main is a repo setting that cannot be verified from this checkout; confirm in GitHub Settings -> Branches, and on the Bitbucket and Hetzner mirrors"
         }
       ],
       "links": [
@@ -185,11 +185,11 @@
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, and lint:ai-legacy --require-issue needs GITHUB_TOKEN): pnpm lint:ai-legacy - no local replacement"
+          "ref": "workflow .github/workflows/ai-legacy-scan.yml (node scripts/check-ai-legacy.mjs --check --require-issue; returned as PR gate 2026-09-29, ADR-0101)"
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, not in pnpm lint/check): pnpm dead-code:files (honours @scaffolded markers) - no local replacement"
+          "ref": "SUSPENDED since 2026-09-23 (still no step in .github/workflows/ and not in pnpm lint/check, checked 2026-09-29): pnpm dead-code:files (honours @scaffolded markers); ci.yml runs only `pnpm knip` (job Dead Code (Knip))"
         }
       ],
       "links": [
@@ -212,7 +212,7 @@
         },
         {
           "kind": "ci",
-          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, not in pnpm lint/check): pnpm docs:check-freshness-coverage - no local replacement"
+          "ref": "SUSPENDED since 2026-09-23 (still no step in .github/workflows/ and not in pnpm lint/check, checked 2026-09-29): pnpm docs:check-freshness-coverage"
         },
         {
           "kind": "ci",

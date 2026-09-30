@@ -34,6 +34,18 @@ import type {
 /** Скільки чекаємо на `open`: ініціалізація WASM + підняття пулу. */
 const OPEN_TIMEOUT_MS = 30_000;
 
+/**
+ * Відкриття не вклалось у таймаут. Окремий клас, щоб `sqlite.ts` міг
+ * відрізнити «воркер мовчить» (варто одна повторна спроба з новим
+ * воркером) від чесної відмови середовища (ретрай безглуздий).
+ */
+export class SqliteWorkerOpenTimeoutError extends Error {
+  constructor() {
+    super("sqlite-worker: timed out");
+    this.name = "SqliteWorkerOpenTimeoutError"; // зіставляється за name у workerOpenRetry.ts
+  }
+}
+
 export interface SqliteWorkerConnection {
   readonly dbName: string;
   /** Скільки слотів пул доростив на відкритті. */
@@ -63,6 +75,8 @@ export interface SqliteWorkerOpenOptions {
    * на головному потоці порожній. Так і задумано — база важить мегабайти.
    */
   readonly importBytes?: ArrayBuffer | null;
+  /** Перевизначає {@link OPEN_TIMEOUT_MS}; для повторної спроби після таймауту. */
+  readonly openTimeoutMs?: number;
 }
 
 /**
@@ -132,6 +146,7 @@ export async function openSqliteInWorker(
     request: SqliteWorkerCall,
     timeoutMs?: number,
     transfer?: Transferable[],
+    onTimeout?: () => Error,
   ): Promise<SqliteWorkerResponse> => {
     if (dead) return Promise.reject(dead);
     const id = nextId++;
@@ -141,7 +156,9 @@ export async function openSqliteInWorker(
           ? null
           : setTimeout(() => {
               pending.delete(id);
-              reject(new Error("sqlite-worker: timed out"));
+              reject(
+                onTimeout ? onTimeout() : new Error("sqlite-worker: timed out"),
+              );
             }, timeoutMs);
       pending.set(id, {
         resolve: (response) => {
@@ -164,8 +181,9 @@ export async function openSqliteInWorker(
     request: SqliteWorkerCall,
     timeoutMs?: number,
     transfer?: Transferable[],
+    onTimeout?: () => Error,
   ): Promise<SqliteWorkerResponse> => {
-    const response = await send(request, timeoutMs, transfer);
+    const response = await send(request, timeoutMs, transfer, onTimeout);
     if (!response.ok) {
       throw new SqliteWorkerError(
         response.error.name,
@@ -188,8 +206,9 @@ export async function openSqliteInWorker(
         minFreeSlots: options.minFreeSlots,
         ...(importBytes ? { importBytes } : {}),
       },
-      OPEN_TIMEOUT_MS,
+      options.openTimeoutMs ?? OPEN_TIMEOUT_MS,
       importBytes ? [importBytes] : undefined,
+      () => new SqliteWorkerOpenTimeoutError(),
     );
   } catch (err) {
     // Невдале відкриття — воркер більше ні для чого не потрібен. Лишити

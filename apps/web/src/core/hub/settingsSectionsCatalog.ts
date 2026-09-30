@@ -101,8 +101,10 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
   {
     id: "finyk",
     title: "Фінік",
-    keywords:
-      "фінанси фінік finyk monobank privatbank token api transactions budget",
+    // AI-NOTE: `privatbank` прибрано з ключових слів пошуку — інтеграцію
+    // ПриватБанку сховано рішенням власника 2026-09-30 (у Привата поки
+    // немає API-токенів для користувачів), пошук не має вести в нікуди.
+    keywords: "фінанси фінік finyk monobank token api transactions budget",
   },
   {
     id: "nutrition",
