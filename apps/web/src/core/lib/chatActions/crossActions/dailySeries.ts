@@ -5,8 +5,13 @@
  * різної форми з кількох query-тулів «в умі», що ненадійно.
  *
  * Усі читання йдуть ЛИШЕ через доменні storage-обгортки, не сирі LS-ключі
- * (Фінік — `readFinykStatsContext`, див. `loadFinykSpending`). День — завжди
- * `Europe/Kyiv` (`getKyivDayKey`). Гроші (finyk) віддаються у гривнях —
+ * (Фінік — `readFinykStatsContext`, див. `loadFinykSpending`). Межа доби
+ * різна за родом даних (рішення власника 2026-10-01, f6; ADR-0078): ГРОШІ
+ * (витрати, доходи, алкоголь, цигарки) ріжуться за `Europe/Kyiv`
+ * (`getKyivDayKey`), решта (звички, їжа, тренування, вага, самопочуття) —
+ * за годинником ПРИСТРОЮ (`deviceDayKey`): саме так Рутина й Харчування
+ * пишуть свої день-ключі. Вісь днів — календарні дати за годинником пристрою,
+ * і «сьогодні» на ній — доба телефона. Гроші (finyk) віддаються у гривнях —
  * `getTxStatAmount` вже ділить копійки на 100.
  *
  * `buildDailySeries` та `computePairwiseCorrelations` — чисті й експортовані
@@ -14,7 +19,11 @@
  * обчислювальний код замість дублювання статистики.
  */
 import { calcCategorySpent } from "@sergeant/finyk-domain";
-import { CORRELATION_MIN_N, formatNumberUk } from "@sergeant/shared";
+import {
+  CORRELATION_MIN_N,
+  deviceDayKey,
+  formatNumberUk,
+} from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { readFinykStatsContext } from "../../../../modules/finyk/lib/lsStats";
@@ -146,13 +155,17 @@ function isoOrUndef(value: unknown): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
 }
 
-/** Inclusive `[from, to]` Kyiv day-key window; explicit dates win over period. */
+/**
+ * Inclusive `[from, to]` day-key window; explicit dates win over period.
+ * Кінець за замовчуванням — сьогодні за годинником пристрою (вісь спільна для
+ * грошей і решти, межу доби кожної метрики ріже її власний читач).
+ */
 function resolveRange(
   dateFrom: unknown,
   dateTo: unknown,
   periodDays: unknown,
 ): { from: string; to: string } {
-  const to = isoOrUndef(dateTo) ?? getKyivDayKey();
+  const to = isoOrUndef(dateTo) ?? deviceDayKey();
   const explicitFrom = isoOrUndef(dateFrom);
   if (explicitFrom) return { from: explicitFrom, to };
   const raw = Number(periodDays);
@@ -165,7 +178,7 @@ function resolveRange(
   return { from, to };
 }
 
-/** Ordered inclusive list of Kyiv day-keys in `[from, to]` (noon-UTC step). */
+/** Ordered inclusive list of calendar day-keys in `[from, to]` (noon-UTC step). */
 function dayRange(from: string, to: string): string[] {
   const out: string[] = [];
   let cur = Date.parse(`${from}T12:00:00Z`);
@@ -319,7 +332,8 @@ function readFizrukWorkoutMetric(
   const out = new Map<string, number>();
   for (const w of readFizrukWorkouts()) {
     if (!w.endedAt || !w.startedAt) continue;
-    const day = getKyivDayKey(new Date(w.startedAt));
+    // Тренування — особиста подія: доба пристрою, не київська (ADR-0078).
+    const day = deviceDayKey(new Date(w.startedAt));
     if (kind === "workouts") {
       addTo(out, day, 1);
     } else {
@@ -342,7 +356,8 @@ function readFizrukDaily(kind: "weight" | "wellbeing"): Map<string, number> {
   const out = new Map<string, number>();
   for (const e of readFizrukDailyLog()) {
     if (!e.at) continue;
-    const day = getKyivDayKey(new Date(e.at));
+    // Вага й самопочуття — запис про себе: доба пристрою (ADR-0078).
+    const day = deviceDayKey(new Date(e.at));
     const value =
       kind === "weight" ? e.weightKg : (e.moodScore ?? e.mood ?? null);
     if (typeof value === "number" && Number.isFinite(value))
