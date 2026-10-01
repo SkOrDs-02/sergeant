@@ -6,7 +6,10 @@
  * промпт і голден-сет із пастками.
  */
 
-import type { LLMProviderName } from "../../src/lib/llm/provider.js";
+import type {
+  LLMProviderName,
+  ReasoningEffort,
+} from "../../src/lib/llm/provider.js";
 import type { VoiceMode } from "./judges.js";
 
 /**
@@ -25,6 +28,8 @@ export interface Candidate {
   provider: Extract<LLMProviderName, "anthropic" | "openrouter">;
   model: string;
   label: string;
+  /** `reasoning.effort` для OpenRouter; без поля шлюз вирішує сам, як у проді. */
+  reasoning?: ReasoningEffort;
 }
 
 /**
