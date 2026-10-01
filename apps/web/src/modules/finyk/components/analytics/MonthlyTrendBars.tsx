@@ -79,7 +79,7 @@ function MonthlyTrendBarsComponent({
     <div className={cn("space-y-3", className)}>
       <div>
         <div
-          className="h-4 mb-1 text-style-caption text-center text-text"
+          className="h-4 mb-1 truncate text-style-caption text-center text-text"
           aria-hidden
         >
           {selectedPoint ? describe(selectedPoint) : null}

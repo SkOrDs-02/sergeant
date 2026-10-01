@@ -489,6 +489,20 @@ describe("finyk/recurringDetect", () => {
         }
       });
 
+      it("a subscription linked to a charge older than the window still covers the merchant", () => {
+        // Підписку привʼязали до списання 125 днів тому; чотири наступні
+        // місячні списання у вікні не мають пропонуватись як нова підписка.
+        const txs = monthly(now - 125 * DAY, 5);
+        expect(
+          detectRecurring(txs, {
+            nowSec: now,
+            subscriptions: [
+              { id: "s", name: "Netflix", linkedTxId: "Netflix-0" },
+            ],
+          }),
+        ).toEqual([]);
+      });
+
       it("yearly charges fall outside the default window", () => {
         const yearly = [
           tx({ id: "y1", time: now - 375 * DAY, description: "Adobe" }),

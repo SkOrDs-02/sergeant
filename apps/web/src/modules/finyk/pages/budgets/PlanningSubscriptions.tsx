@@ -2,8 +2,9 @@
  * Last validated: 2026-09-11
  * Status: Active
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { pluralUa } from "@sergeant/shared";
+import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
@@ -84,8 +85,15 @@ export function PlanningSubscriptions({
 
   // Підказки «схоже на підписку» читають дзеркало з фіксованим вікном, а не
   // `transactions` (див. `useRecurringHistory`: воно міняло зміст разом зі
-  // станом завантаження, і кандидати зʼявлялись хвилями).
-  const recurringTx = useRecurringHistory(mono.fetchRange);
+  // станом завантаження, і кандидати зʼявлялись хвилями). Ручні витрати
+  // домішуються так само, як в Огляді (`useOverviewData`), інакше
+  // регулярна готівкова чи імпортована витрата зникала б з «Можливих
+  // підписок», а інсайт Огляду на неї вказував би далі.
+  const recurringBank = useRecurringHistory(mono.fetchRange);
+  const recurringTx = useMemo(
+    () => withManualExpenses(recurringBank, storage.manualExpenses),
+    [recurringBank, storage.manualExpenses],
+  );
 
   const prevSubscriptionSignal = useRef(openSubscriptionSignal);
   useEffect(() => {

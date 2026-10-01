@@ -118,6 +118,37 @@ describe("PlanningSubscriptions", () => {
     expect(screen.getByTestId("recurring")).not.toHaveTextContent("sep");
   });
 
+  it("keeps manual expenses in «Можливі підписки», as Overview does", () => {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "jun", amount: -19_900, time: 1_780_000_000 } as Transaction,
+      ],
+    });
+
+    render(
+      wrap(
+        <PlanningSubscriptions
+          mono={mono}
+          storage={makeStorage({
+            manualExpenses: [
+              {
+                id: "cash-1",
+                amount: 199,
+                date: "2026-06-04",
+                description: "Netflix",
+                category: "subscriptions",
+              },
+            ],
+          })}
+        />,
+      ),
+    );
+
+    expect(screen.getByTestId("recurring")).toHaveTextContent(
+      "jun,manual_cash-1",
+    );
+  });
+
   it("opens the section and its form when openSubscriptionSignal changes", () => {
     const { rerender } = render(
       wrap(

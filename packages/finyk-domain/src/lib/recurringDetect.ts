@@ -271,15 +271,22 @@ export function detectRecurring(
 
   // Групування за нормалізованим merchant-ключем.
   const groups = new Map<string, RecurringTx[]>();
+  // Усі id мерчанта, включно з тими, що старші за вікно: вікно обмежує лише
+  // розрахунок ритму, а підписка з `linkedTxId` на давнє списання мусить і
+  // далі гасити кандидата (інакше її пропонують удруге).
+  const allIdsByKey = new Map<string, Set<string>>();
   for (const tx of transactions) {
     if (!tx || typeof tx.amount !== "number") continue;
     // Нуль не належить жодному боку: він не витрата й не надходження.
     if (flow === "expense" ? tx.amount >= 0 : tx.amount <= 0) continue;
     if (!tx.id || excluded.has(tx.id)) continue;
-    if (windowStartSec !== null && (tx.time || 0) < windowStartSec) continue;
     const key = normalizeMerchantKey(tx.description);
     if (!key) continue;
     if (dismissed.has(key)) continue;
+    const ids = allIdsByKey.get(key);
+    if (ids) ids.add(tx.id);
+    else allIdsByKey.set(key, new Set([tx.id]));
+    if (windowStartSec !== null && (tx.time || 0) < windowStartSec) continue;
     const bucket = groups.get(key);
     if (bucket) bucket.push(tx);
     else groups.set(key, [tx]);
@@ -326,7 +333,7 @@ export function detectRecurring(
     if (ageDays > maxAgeDays) continue;
 
     // Пропустити, якщо вже є підписка, що покриває цей ключ.
-    const groupIds = new Set(sorted.map((t) => t.id));
+    const groupIds = allIdsByKey.get(key) ?? new Set(sorted.map((t) => t.id));
     if (
       subscriptions.some((sub) => subscriptionCoversKey(sub, key, groupIds))
     ) {
