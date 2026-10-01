@@ -115,7 +115,7 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "ci.yml job `Commit messages (commitlint)` (returned as PR gate 2026-09-29, ADR-0101)"
+          "ref": "ci.yml job `Commit messages (commitlint)` (GitHub Actions, PR-only; restored 2026-09-30, ADR-0101)"
         },
         {
           "kind": "hook",
@@ -185,7 +185,7 @@
         },
         {
           "kind": "ci",
-          "ref": "workflow .github/workflows/ai-legacy-scan.yml (node scripts/check-ai-legacy.mjs --check --require-issue; returned as PR gate 2026-09-29, ADR-0101)"
+          "ref": ".github/workflows/ai-legacy-scan.yml (weekly schedule + workflow_dispatch since 2026-09-30, ADR-0102): node scripts/check-ai-legacy.mjs --check --require-issue"
         },
         {
           "kind": "ci",
@@ -426,15 +426,15 @@
       "enforced_by": [
         {
           "kind": "hook",
-          "ref": "pre-push (scripts/pre-push-merged-pr.mjs) - після пуша повідомляє, скільки змерджених PR бракує в реєстрі, і радить `pnpm docs:sync-pr-ledger`. Попередження, не блок: запис у реєстр треба комітити окремо"
+          "ref": "SUSPENDED since 2026-09-30: повноту реєстру ніщо не стереже. Нагадування в pre-push прибрано разом із перевіркою PR на Bitbucket (ADR-0102), а .github/workflows/pr-backlinks.yml вимкнено (змінна репо PR_LEDGER_ON_GITHUB), доки фетчер не читає GitHub"
         },
         {
           "kind": "convention",
-          "ref": "pnpm docs:sync-pr-ledger - дочитує метадані змерджених PR з Bitbucket API (з 2026-09-23; до того це робив .github/workflows/pr-backlinks.yml через `gh`, обидва мертві)"
+          "ref": "pnpm docs:sync-pr-ledger - дочитує метадані змерджених PR лише з Bitbucket API (архівні PR 2026-09-23..29); PR на GitHub з 2026-09-30 він не бачить"
         },
         {
           "kind": "ci",
-          "ref": "pnpm docs:check-pr-ledger (крок pnpm lint) - звіряє реєстр ↔ блоки ↔ схему. Перевіряє ФОРМУ, не повноту: за повнотою стежить pre-push"
+          "ref": "pnpm docs:check-pr-ledger (крок pnpm lint) - звіряє реєстр ↔ блоки ↔ схему. Перевіряє ФОРМУ, не повноту"
         }
       ],
       "links": [
