@@ -1,4 +1,10 @@
-import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
+import {
+  CATEGORY_RESOLUTION_ORDER,
+  INCOME_CATEGORIES,
+  MCC_CATEGORIES,
+  P2P_TRANSFER_ID,
+  P2P_TRANSFER_MCCS,
+} from "../constants";
 import {
   findMerchantRule,
   type MerchantRuleIndex,
@@ -158,15 +164,16 @@ export function getIncomeCategory(
 
 /**
  * «Поповнення «Назва»» (інколи «Поповнення банки «Назва»») — переказ у банку
- * Monobank. Те, що стоїть у лапках, — ІМʼЯ банки, яке дала людина, а не опис
- * покупки.
+ * Monobank. Те, що стоїть у лапках, — ІМʼЯ банки, яке дала людина (збір, ціль
+ * накопичення), а не опис покупки й не імʼя людини-отримувача.
  *
  * AI-CONTEXT (2026-10-01): ключові слова категорій шукалися по всьому опису,
  * тож «Поповнення «На закриття боргів🙏»» ловило «борг» і їхало в «Борги та
- * кредити»: імʼя чужої банки (збір) читалось як ознака боргу людини. Власні
- * банки закриває парний матчер переказів (`transferMatching.ts`), а решту
- * краще лишити в «Інше», доки людина не перекатегоризує, ніж вгадувати за
- * словами, яких вона не писала.
+ * кредити»: імʼя чужої банки (збір) читалось як ознака боргу людини. Тому імʼя
+ * банки не матчиться ключовими словами (`keywordHaystack`), а саме поповнення
+ * чужої банки — це «Перекази людям» (рішення власника 4Б, 2026-10-01; див.
+ * фолбек наприкінці `getCategory`). Пари картка ↔ ВЛАСНА банка окремо закриває
+ * парний матчер переказів (`transferMatching.ts`).
  */
 const JAR_TOP_UP_RE = /^\s*поповнення\s+(?:банки\s+)?[«"“„]/iu;
 
@@ -192,10 +199,23 @@ export function getCategory(
     if (found) return found;
   }
   const haystack = keywordHaystack(desc);
-  for (const cat of MCC_CATEGORIES as readonly CategoryLike[]) {
+  for (const cat of CATEGORY_RESOLUTION_ORDER as readonly CategoryLike[]) {
     if ((cat.mccs ?? []).includes(mcc)) return cat;
     if ((cat.keywords ?? []).some((k: string) => haystack.includes(k)))
       return cat;
+  }
+  // Слабка підказка в самому кінці: код card-to-card переказу без жодного
+  // іншого доказу (ні MCC каталогу, ні ключового слова) — це «Перекази
+  // людям». Не з `mccs` каталогу: див. AI-DANGER біля `P2P_TRANSFER_MCCS`.
+  // Поповнення чужої банки теж сюди, і незалежно від коду: гроші пішли в
+  // банку іншої людини (рішення 4Б, 2026-10-01). Імʼя банки ключовими словами
+  // не читається (`keywordHaystack`), тож збір «На закриття боргів» не стає
+  // «Боргами»; MCC каталогу, якщо він є, перемагає вище.
+  if (P2P_TRANSFER_MCCS.includes(mcc) || JAR_TOP_UP_RE.test(desc)) {
+    const p2p = MCC_CATEGORIES.find(
+      (c: CategoryLike) => c.id === P2P_TRANSFER_ID,
+    );
+    if (p2p) return p2p;
   }
   return { id: "other", label: "Інше", mccs: [], keywords: [] };
 }

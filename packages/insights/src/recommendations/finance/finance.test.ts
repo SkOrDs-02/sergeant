@@ -191,6 +191,23 @@ describe("frequentNoBudgetRule", () => {
     const rec = frequentNoBudgetRule.evaluate(ctx)[0];
     expect(rec?.title).toContain("Собача їжа");
   });
+
+  // Короткий `BUILTIN` знав дев'ять категорій; решта (зокрема нові з
+  // 2026-10-01) діставала в заголовку сирий id: «p2p_transfer — твоя
+  // найчастіша категорія без ліміту».
+  it.each([
+    ["p2p_transfer", "Перекази людям"],
+    ["telecom", "Звʼязок та інтернет"],
+    ["charity", "Благодійність"],
+  ])(
+    "підпис вбудованої категорії %s береться з каталогу, а не сирим id",
+    (id, label) => {
+      const ctx = baseCtx({ canonicalTotalCount: new Map([[id, 9]]) });
+      const rec = frequentNoBudgetRule.evaluate(ctx)[0];
+      expect(rec?.title).toContain(label);
+      expect(rec?.title).not.toContain(id);
+    },
+  );
 });
 
 describe("goalProgressRule", () => {

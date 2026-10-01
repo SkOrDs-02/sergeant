@@ -65,6 +65,11 @@ export type CategoryColorKey =
   | "beauty"
   | "health"
   | "debt"
+  | "telecom"
+  | "home"
+  | "pets"
+  | "gifts"
+  | "p2p_transfer"
   | "other"
   /** Спільний тир усіх надходжень — див. `categoryColors` в `tokens.js`. */
   | "income";

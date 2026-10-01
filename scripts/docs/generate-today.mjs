@@ -13,7 +13,7 @@
 //   2. Overdue review — documents whose `Next review:` date is in the past.
 //   3. WIP warnings — per-tracker count vs limits, surfaced only when at
 //      least one tracker is at soft or hard.
-//   4. Quick links — open-work, freshness dashboard, hard rules.
+//   4. Quick links — open-work, freshness docs, hard rules.
 //
 // Usage:
 //   node scripts/docs/generate-today.mjs            # write `docs/today.md`
@@ -249,7 +249,7 @@ function render({ priority, overdue, wipRows }) {
     if (overdue.length > TOP_OVERDUE) {
       lines.push("");
       lines.push(
-        `_… ще ${overdue.length - TOP_OVERDUE} — див. [freshness dashboard](./governance/governance/freshness-dashboard.html)._`,
+        `_… ще ${overdue.length - TOP_OVERDUE} — повний список: \`pnpm docs:freshness-dashboard\` (див. [doc-freshness.md](./governance/governance/doc-freshness.md))._`,
       );
     }
   }
@@ -294,7 +294,7 @@ function render({ priority, overdue, wipRows }) {
     `- [\`open-work.md\`](./open-work.md) — повний rollup усіх ${TRACKERS.length} tracker${TRACKERS.length === 1 ? "" : "s"}`,
   );
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — повний freshness огляд",
+    "- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; повний огляд: `pnpm docs:freshness-dashboard` або CI-артефакт `docs-freshness-dashboard`",
   );
   lines.push(
     "- [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",

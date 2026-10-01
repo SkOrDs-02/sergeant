@@ -53,6 +53,13 @@ jobs:
         # Always produce the dashboard so engineers can download a single
         # HTML file from any run instead of grepping the allowlist or the
         # open-issues list.
+        #
+        # З 2026-10-01 це ЄДИНА опублікована копія дашборда: у репо він не
+        # комітиться (gitignored). `OUTPUT` обовʼязковий: без нього генератор
+        # писав у `docs/governance/governance/`, а крок нижче вивантажував
+        # `dist/…`, якого не існувало, тож артефакт виходив порожнім.
+        env:
+          OUTPUT: dist/freshness-dashboard.html
         run: node scripts/docs/generate-freshness-dashboard.mjs
 
       - name: Upload freshness dashboard
@@ -61,4 +68,7 @@ jobs:
         with:
           name: docs-freshness-dashboard
           path: dist/freshness-dashboard.html
+          # `error`, а не дефолтний `warn`: розходження шляхів тут уже раз
+          # мовчки давало порожній артефакт.
+          if-no-files-found: error
           retention-days: 30

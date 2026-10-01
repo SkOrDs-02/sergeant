@@ -59,6 +59,34 @@ function repoPath(path) {
   return relative(ROOT, path).replaceAll("\\", "/");
 }
 
+/**
+ * Відкидає gitignored-шляхи з дискового обходу.
+ *
+ * AI-CONTEXT: обхід `walk()` бачить ВЕСЬ диск, а в CI диск = чистий
+ * чекаут. Gitignored-файл під `docs/` (з 2026-10-01 це локально згенерований
+ * `freshness-dashboard.html`) робив матрицю залежною від того, чи автор
+ * запускав генератор: локальний `--check` червонів, CI був зелений, або
+ * навпаки. Дашборд іще й містить шляхи всіх ~500 відстежуваних доків, тож
+ * додавав себе в `inbound_sources` кожного з них.
+ */
+function dropIgnored(paths) {
+  if (paths.length === 0) return paths;
+  let out = "";
+  try {
+    out = execFileSync("git", ["check-ignore", "--stdin"], {
+      cwd: ROOT,
+      input: paths.join("\n"),
+      encoding: "utf8",
+    });
+  } catch (error) {
+    // `git check-ignore` виходить з 1, коли жоден шлях не ігнорується.
+    if (error?.status === 1) return paths;
+    throw error;
+  }
+  const ignored = new Set(out.split(/\r?\n/u).filter(Boolean));
+  return paths.filter((path) => !ignored.has(path));
+}
+
 const baseline = execFileSync(
   "git",
   ["ls-tree", "-r", "--name-only", "HEAD", "docs"],
@@ -70,7 +98,7 @@ const baseline = execFileSync(
   .split(/\r?\n/u)
   .filter(Boolean)
   .sort();
-const current = walk(resolve(ROOT, "docs")).map(repoPath).sort();
+const current = dropIgnored(walk(resolve(ROOT, "docs")).map(repoPath)).sort();
 const currentSet = new Set(current);
 
 function finalPathFor(oldPath) {

@@ -49,6 +49,11 @@ export type CategorySlug =
   | "beauty"
   | "debt"
   | "charity"
+  | "telecom"
+  | "home"
+  | "pets"
+  | "gifts"
+  | "p2p_transfer"
   | "other";
 
 export interface CategoryDisplay {

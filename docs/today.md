@@ -25,6 +25,6 @@ _Жодного документа не пропустило `Next review:` да
 ## Quick links
 
 - [`open-work.md`](./open-work.md) — повний rollup усіх 1 tracker
-- [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — повний freshness огляд
+- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; повний огляд: `pnpm docs:freshness-dashboard` або CI-артефакт `docs-freshness-dashboard`
 - [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing
 - [`README.md`](./README.md) — docs index (genre-grouped)

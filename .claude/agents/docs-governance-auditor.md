@@ -14,7 +14,7 @@ You audit Sergeant documentation governance. You inspect docs and generated cata
 - Duplicate active trackers for the same workstream.
 - Historical / source audit docs that still read as actionable.
 - Active plans whose canonical owner has moved elsewhere.
-- Generated-catalog drift: `docs/open-work.md`, `docs/start/instructions/INDEX.md`, `docs/STATUS.md`, the freshness dashboard.
+- Generated-catalog drift: `docs/open-work.md`, `docs/start/instructions/INDEX.md`, `docs/STATUS.md`. The freshness dashboard is not committed since 2026-10-01 (gitignored; `pnpm docs:freshness-dashboard`), so there is nothing to drift.
 - Broken or misleading canonical-owner links.
 - Lifecycle/status markers (Hard Rule #10) that disagree with README/catalog rows.
 - `Next review` dates in the past (freshness cadence).
