@@ -125,7 +125,9 @@ export function HubDashboard({
     <StaggerChild index={2}>
       <ClosedTodayPile
         activeModules={s.activeModules}
-        recs={s.focus ? [s.focus, ...s.rest] : s.rest}
+        // Усі активні рекомендації, не відфільтровані відкиданням: сховану
+        // картку `budget_over_*` рядок Фініка все одно мусить враховувати.
+        recs={s.allRecs}
         onOpenModule={onOpenModule}
         storageBump={s.storageBump}
       />

@@ -4,12 +4,15 @@
  * Джерело — `useNowItems` (обидва ранкери в одному списку). Cap за рішенням
  * власника 2026-09-17: **3 розгорнуто + «ще N»**. Перший рядок — hero з
  * інлайн-дією (той самий `TodayFocusCard`, що й раніше), ще два — рядками,
- * хвіст згорнутий і сам ніколи не розгортається; рядок із
+ * хвіст згорнутий і сам ніколи не розгортається, а розгорнутий згортається
+ * назад тим самим перемикачем («ще N» ↔ «Згорнути»); рядок із
  * `severity: "danger"` завжди пробивається в трійку. Число 3 — `DEFAULT_CAP`
  * з `useAllInsights`, винесений на екран, не нова константа.
  *
  * Порожня купа — один рядок «Сьогодні все закрито», без CTA: у тихий день
- * винагорода живе в купі «Закрито сьогодні» нижче, не тут.
+ * винагорода живе в купі «Закрито сьогодні» нижче, не тут. Якщо ж вона порожня
+ * лише тому, що рядки відкладено («✕» діє до кінця доби, рішення власника
+ * 2026-10-01), замість цього — «Відкладено N · показати» з поверненням.
  *
  * Last validated: 2026-09-17
  * Status: Active
@@ -204,7 +207,7 @@ export interface NowPileProps {
 }
 
 export function NowPile({ onOpenTarget }: NowPileProps) {
-  const { items, dismiss } = useNowItems();
+  const { items, dismiss, postponed, restorePostponed } = useNowItems();
   const run = useRunAction(onOpenTarget);
   const askAiDisabled = useAskAiQuotaExhausted();
   const [tailOpen, setTailOpen] = useState(false);
@@ -236,12 +239,28 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
       </div>
 
       {!hero ? (
-        <p
-          data-testid="now-empty"
-          className="rounded-xl border border-line bg-bg px-3 py-3 text-style-body text-muted"
-        >
-          {coreMessages.hub.nowPile.empty}
-        </p>
+        // «Все закрито» лише коли справді нічого не було. Якщо порожньо через
+        // «✕» сьогодні — чесно кажемо, скільки відкладено, і даємо повернути.
+        postponed > 0 ? (
+          <button
+            type="button"
+            data-testid="now-postponed"
+            onClick={restorePostponed}
+            className="w-full touch-target rounded-xl focus-ring border border-line bg-bg px-3 py-3 text-left text-style-body text-muted hover:bg-panelHi transition-colors"
+          >
+            {coreMessages.hub.nowPile.postponed} {postponed} ·{" "}
+            <span className="font-semibold text-text">
+              {coreMessages.hub.nowPile.showPostponed}
+            </span>
+          </button>
+        ) : (
+          <p
+            data-testid="now-empty"
+            className="rounded-xl border border-line bg-bg px-3 py-3 text-style-body text-muted"
+          >
+            {coreMessages.hub.nowPile.empty}
+          </p>
+        )
       ) : (
         <>
           <TodayFocusCard
@@ -277,16 +296,6 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
               onDismiss={dismiss}
             />
           ))}
-          {tail.length > 0 && !tailOpen && (
-            <button
-              type="button"
-              onClick={() => setTailOpen(true)}
-              aria-expanded={false}
-              className="w-full touch-target rounded-xl focus-ring border border-dashed border-line px-3 text-style-caption font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
-            >
-              {coreMessages.hub.nowPile.more} {tail.length}
-            </button>
-          )}
           {tailOpen &&
             tail.map((item) => (
               <NowRow
@@ -298,6 +307,21 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
                 onDismiss={dismiss}
               />
             ))}
+          {/* Один перемикач на обидва стани: після розгортання він стоїть
+              під хвостом і веде назад («Згорнути»). Той самий DOM-вузол у
+              обох станах — фокус клавіатури не губиться при перемиканні. */}
+          {tail.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setTailOpen((open) => !open)}
+              aria-expanded={tailOpen}
+              className="w-full touch-target rounded-xl focus-ring border border-dashed border-line px-3 text-style-caption font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+            >
+              {tailOpen
+                ? coreMessages.actions.collapse
+                : `${coreMessages.hub.nowPile.more} ${tail.length}`}
+            </button>
+          )}
         </>
       )}
     </section>

@@ -28,6 +28,7 @@ import {
 import { getDayMacros, resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { WEEK_KCAL_OVER_TOLERANCE } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
+import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
@@ -49,7 +50,12 @@ export interface ClosedTodayItem {
 
 export interface ClosedTodayInput {
   activeModules: readonly string[];
-  /** Активні рекомендації — щоб «у межах ліміту» не сказати при перевищенні. */
+  /**
+   * УСІ активні рекомендації, **без відкинутих** («✕» у «Зараз»): перевищення
+   * ліміту не зникає від того, що людина сховала картку про нього. Відфільтрований
+   * список (`focus` + `rest`) сюди не годиться — з ним рядок Фініка казав би
+   * «в межах лімітів» поруч із реально перевищеним лімітом.
+   */
   recs: readonly Rec[];
   now?: Date;
 }
@@ -166,7 +172,7 @@ function fizrukClosed(todayKey: string): ClosedTodayItem | null {
 function finykClosed(now: Date, recs: readonly Rec[]): ClosedTodayItem | null {
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);
-  const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
+  const { txs, excludedTxIds, txSplits, budgets } = readFinykStatsContext();
   const { totalSpent } = calcFinykPeriodAggregate(txs, {
     start: startOfDay.getTime(),
     excludedTxIds,
@@ -177,10 +183,14 @@ function finykClosed(now: Date, recs: readonly Rec[]): ClosedTodayItem | null {
   // рекомендацій як `budget_over_*`; поки воно активне, витрати не «закриті»,
   // а стоять у «Зараз».
   if (recs.some((r) => r.id.startsWith("budget_over_"))) return null;
+  // «У межах лімітів» — твердження про ліміти, тож без жодного ліміту його
+  // немає про що казати: спека `hub-action-axis.md` — без лімітів це просто
+  // «є витрата».
+  const hasLimits = getLimitBudgets(budgets).length > 0;
   return {
     module: "finyk",
     label: CLOSED_TODAY_LABELS.finyk,
-    statement: "записано, перевищень немає",
+    statement: hasLimits ? "записано · у межах лімітів" : "записано",
     value: formatMoney(totalSpent),
   };
 }

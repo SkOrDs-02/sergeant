@@ -115,6 +115,8 @@ export interface HubDashboardState {
   // Focus / Insights
   focus: ReturnType<typeof useDashboardFocus>["focus"];
   rest: ReturnType<typeof useDashboardFocus>["rest"];
+  /** Усі активні рекомендації без відфільтрованих відкиданням (див. `useDashboardFocus`). */
+  allRecs: ReturnType<typeof useDashboardFocus>["allRecs"];
   dismiss: ReturnType<typeof useDashboardFocus>["dismiss"];
   openInsightTarget: (module: string, hash?: string) => void;
   coachInsightText: string | null;
@@ -245,7 +247,7 @@ export function useHubDashboardState(props: {
   }, [sessionDays, nudgeDismissed]);
 
   const activeModules = useMemo(() => getActiveModules(localStorageStore), []);
-  const { focus, rest, dismiss } = focusProbe;
+  const { focus, rest, allRecs, dismiss } = focusProbe;
 
   const openInsightTarget = useCallback(
     (module: string, hash?: string) => {
@@ -363,6 +365,7 @@ export function useHubDashboardState(props: {
     storageBump,
     focus,
     rest,
+    allRecs,
     dismiss,
     openInsightTarget,
     coachInsightText,
