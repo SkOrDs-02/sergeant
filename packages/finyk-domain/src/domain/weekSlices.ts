@@ -42,10 +42,29 @@ export interface WeekSliceWindows {
  * без зони, тож крок іде через UTC-полудень: UTC не має переходів, і доба
  * завжди рівно доба (на відміну від додавання мілісекунд у київській зоні).
  */
-function shiftDayKey(key: string, days: number): string {
+export function shiftDayKey(key: string, days: number): string {
   const d = new Date(`${key}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Тиждень, названий ключем свого понеділка (`YYYY-MM-DD`): київські доби
+ * `mondayKey` … `mondayKey` + 6, вікно `[початок, кінець)`.
+ *
+ * Для звітів, чий тиждень ідентифікує ключ ПРИСТРОЮ (тижневий дайджест,
+ * знімок коуча, понеділкова картка «Підсумок минулого тижня»: ключ спільний
+ * із звичками, їжею й тренуваннями, що пишуться за годинником телефона,
+ * ADR-0078). Ключ лише називає календарні дати, а гроші до цих дат відносить
+ * київський день транзакції — те саме правило, що в «Звітах» хабу
+ * (`reportWindows().money`). Для київського пристрою вікно збігається з
+ * `[deviceMonday 00:00, +7 днів)`, тож жодне число не рухається.
+ */
+export function weekWindowByMondayKey(mondayKey: string): WeekSliceRange {
+  return {
+    startMs: kyivDayStartMs(mondayKey),
+    endMs: kyivDayStartMs(shiftDayKey(mondayKey, 7)),
+  };
 }
 
 /**

@@ -16,6 +16,7 @@ import {
 } from "@nutrition/lib/nutritionStorage";
 import { resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import {
   formatNumberUk,
@@ -532,13 +533,20 @@ function buildWeeklyDigestRecs(): Rec[] {
   // про готівку. Число в цьому нагадуванні розходилось із дайджестом на тих
   // самих даних.
   //
-  // Межа вікна: `sunPrev` — остання мілісекунда перед `monThis`, а канон бере
-  // `end` ЕКСКЛЮЗИВНО, тож сюди йде `monThis`, а не `sunPrev`. Пряма підстановка
-  // `sunPrev` втратила б останню мілісекунду тижня.
+  // Межа вікна: канон бере `end` ЕКСКЛЮЗИВНО, тож кінець тижня — це початок
+  // наступного (`weekWindowByMondayKey` дає саме `[пн, наступний пн)`), а не
+  // його остання мілісекунда.
+  //
+  // Тиждень названо понеділком пристрою (той самий ключ у `weekly_digest_*`,
+  // звички й тренування вище — за годинником телефона, ADR-0078), а гроші до
+  // його семи дат відносить КИЇВСЬКИЙ день транзакції (рішення власника
+  // 2026-10-01): так само рахує тижневий дайджест, тож «витрати N ₴» тут
+  // збігається з його підсумком. Для київського пристрою вікно те саме.
   const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
+  const lastWeekMoney = weekWindowByMondayKey(localDateKey(monPrev));
   const { totalSpent: spendLastWeek } = calcFinykPeriodAggregate(txs, {
-    start: monPrev.getTime(),
-    end: monThis.getTime(),
+    start: lastWeekMoney.startMs,
+    end: lastWeekMoney.endMs,
     excludedTxIds,
     txSplits,
   });

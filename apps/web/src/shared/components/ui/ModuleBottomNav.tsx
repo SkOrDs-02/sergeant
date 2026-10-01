@@ -21,7 +21,8 @@ import {
  * `HubBottomNav`) so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
- * - Height 60 px (64 px on coarse-pointer devices).
+ * - Min height 60 px (64 px on coarse-pointer devices); the track grows with
+ *   scaled text (low-vision, 200% root) instead of clipping the active label.
  * - Docked edge-to-edge in both browser and PWA standalone via
  *   `bottom-nav-shell` — no horizontal margins, flat bottom, rounded only
  *   at the top. The panel background fills the safe-area strip
@@ -248,9 +249,11 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
         className,
       )}
     >
+      {/* AI-DANGER: висота треку — МІНІМУМ, не фіксована; пояснення — у
+          `HubBottomNav` (там той самий трек). */}
       <div
         ref={tablistRef}
-        className="relative grid h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        className="relative grid min-h-[60px] pointer-coarse:min-h-[64px] gap-1 px-1"
         style={{
           gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
         }}
@@ -298,7 +301,14 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   // Підпис активного лишається у власному рядку під
                   // іконкою (`flex-col`) — він стискається/обривається
                   // всередині вже наявного боксу, а не розпирає його.
-                  "relative flex h-full w-full min-w-0 items-center justify-center rounded-xl px-1 py-1",
+                  // `py-0.5`, не `py-1`: трек тепер `min-h`, тож вертикальний
+                  // відступ пілюлі входить у ВНУТРІШНЮ висоту рядка. Із
+                  // `py-1` вміст (іконка + підпис + відступи + `my-1.5`
+                  // кнопки) на 16px-корені та fine-pointer давав 61px проти
+                  // мінімуму 60 — нав став би на 1px вищим уже на 100%
+                  // тексту. Пілюля все одно розтягується на весь трек
+                  // (`h-full`) і центрує вміст, тож видимо нічого не міняється.
+                  "relative flex h-full w-full min-w-0 items-center justify-center rounded-xl px-1 py-0.5",
                   "transition-[background-color,color] duration-base",
                   active
                     ? cn(

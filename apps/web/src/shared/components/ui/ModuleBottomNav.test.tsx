@@ -46,6 +46,29 @@ describe("ModuleBottomNav", () => {
     expect(statsTab.className).toContain("justify-center");
   });
 
+  // Low-vision (200% кореневого тексту): фіксована висота треку зрізала підпис
+  // активного таба до 0px (`tests/a11y/low-vision.spec.ts`). Трек має лише
+  // МІНІМУМ 60px (64px на coarse), тож росте разом із текстом, а на 100%
+  // виглядає як раніше. JSDOM не рахує layout, тому стережемо контракт класів;
+  // поведінку міряє Playwright-спек.
+  it("трек нав-бару має мінімальну, а не фіксовану висоту", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const track = screen.getByRole("navigation", { name: "Module sections" })
+      .firstElementChild as HTMLElement;
+
+    expect(track).toHaveClass("min-h-[60px]", "pointer-coarse:min-h-[64px]");
+    expect(track.className).not.toMatch(/(?:^|[\s:])h-\[\d+px\]/);
+  });
+
   it("active tab gets a solid accent fill + ink foreground in both themes (fix spec v2 § 1)", () => {
     render(
       <ModuleBottomNav

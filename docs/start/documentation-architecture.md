@@ -1,6 +1,6 @@
 # Архітектура документації Sergeant
 
-> **Last touched:** 2026-09-17 by @claude (додано `docs/assets/`; `Last validated` → `Last touched`; superpowers-стаб). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-01 by @claude (інвентар без лічильників і графа посилань, граф — `--inbound` на вимогу); 2026-09-17 by @claude (додано `docs/assets/`; `Last validated` → `Last touched`; superpowers-стаб). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ задає чинну архітектуру документації: призначення жанрів, джерело
@@ -74,7 +74,12 @@
 Машинний baseline для першого кроку —
 [`documentation-inventory.json`](../work/specs/data/documentation-inventory.json).
 Оновлюй його через `pnpm docs:gen-inventory`; ручні правки до JSON не
-приймаються.
+приймаються. Лічильників і графа вхідних посилань у файлі немає з 2026-10-01:
+git зливав ці агрегати з двох PR без конфлікту, але в хибні числа, і
+`pnpm docs:check-inventory` червонів на `main` після кожної пачки мерджів.
+Граф рахується на вимогу:
+`node scripts/docs/generate-documentation-inventory.mjs --inbound` друкує ту
+саму матрицю з `inbound_count` і `inbound_sources` у stdout і нічого не пише.
 
 ## Критерій завершення
 
@@ -88,8 +93,8 @@
 Фізичний move групи дозволений лише коли всі чотири умови виконані для цієї
 групи:
 
-1. У `documentation-inventory.json` є запис для кожного файла групи з дією,
-   цільовим шляхом і `inbound_count`.
+1. У `documentation-inventory.json` є запис для кожного файла групи з дією і
+   цільовим шляхом, а прогін з `--inbound` дає для нього `inbound_count`.
 2. Для кожного `remove` немає inbound-посилань або всі вони вже переведені на
    перевірений permalink/канон.
 3. Для кожного `move` немає невирішеного `target_collisions`; merge-пари
