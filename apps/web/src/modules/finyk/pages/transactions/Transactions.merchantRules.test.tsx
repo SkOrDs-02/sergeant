@@ -79,11 +79,6 @@ vi.mock("@shared/hooks/useCloudPullPending", () => ({
 vi.mock("@shared/hooks/useToast", () => ({
   useToast: vi.fn(() => mockToast),
 }));
-vi.mock("@shared/components/ui/PullToRefresh", () => ({
-  PullToRefresh: ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-  ),
-}));
 
 import { Transactions } from "./Transactions";
 import type {
