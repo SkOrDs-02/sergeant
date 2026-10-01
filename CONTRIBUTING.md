@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-01-17.
+> **Last touched:** 2026-09-30 by @test. **Next review:** 2027-01-24.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/start/instructions/README.md](./docs/start/instructions/README.md).
@@ -29,7 +29,7 @@ pnpm dev:db
 
 ### `pnpm install --frozen-lockfile` як дефолт ([L14](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/L14-pnpm-frozen-lockfile-dev.md))
 
-CI на цьому репо немає (Bitbucket, немає `bitbucket-pipelines.yml`; `.github/workflows/*` не виконуються), тож `--frozen-lockfile` - це дисципліна кожного локального `pnpm install`, а не гейт, що підстрахує. Це supply-chain hardening: `pnpm install` без прапорця може мовчки переписати lockfile (наприклад, після `pnpm add foo` без `pnpm-lock.yaml` у staged-files), і регресія/malicious-bump просочиться у feature-гілку без рев'ю diff-а в lock-файлі.
+CI (GitHub Actions, `.github/workflows/ci.yml`) ставить залежності з `--frozen-lockfile`, але локально це дисципліна кожного `pnpm install`. Це supply-chain hardening: `pnpm install` без прапорця може мовчки переписати lockfile (наприклад, після `pnpm add foo` без `pnpm-lock.yaml` у staged-files), і регресія/malicious-bump просочиться у feature-гілку без рев'ю diff-а в lock-файлі.
 
 Локально дотримуйся того ж паттерна:
 
@@ -74,7 +74,7 @@ pnpm dev:web
 
 ### Локальний secret-scan (gitleaks)
 
-Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни. CI (`.github/workflows/ci.yml :: secret-scan`, [I5](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I5-pre-commit-secret-detection.md)) цей самий сканер запускав раніше, але на Bitbucket цей workflow не виконується - цей hook тепер єдиний secret-scan, не другий шар.
+Pre-commit hook (`scripts/pre-commit-gitleaks.mjs`) запускає `gitleaks protect --staged` на staged-зміни. CI (`.github/workflows/ci.yml :: secret-scan`, [I5](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I5-pre-commit-secret-detection.md)) запускає цей самий сканер на кожному PR і push у `main` (2026-09-23..29, поки CI не було, hook був єдиним шаром).
 
 Встанови `gitleaks` один раз:
 
@@ -98,7 +98,7 @@ go install github.com/gitleaks/gitleaks/v8@latest
 pnpm lint:secrets
 ```
 
-Якщо `gitleaks` не встановлено, hook блокує коміт (fail-closed): CI, який міг би підстрахувати, не існує, тож цей hook - єдиний secret-scan. Якщо hook ловить false-positive, додай entry у `.gitleaksignore` у **тому самому коміті** - Hard Rule #7 забороняє `--no-verify`. Break-glass (пропустити скан взагалі): одноразовий `SERGEANT_SKIP_GITLEAKS=1 git commit …` - друкує гучне попередження в stderr, бо нічого інше цей коміт не просканує.
+Якщо `gitleaks` не встановлено, hook блокує коміт (fail-closed): CI-скан ловить лише те, що вже запушено, тож локальний шар потрібен. Якщо hook ловить false-positive, додай entry у `.gitleaksignore` у **тому самому коміті** - Hard Rule #7 забороняє `--no-verify`. Break-glass (пропустити скан взагалі): одноразовий `SERGEANT_SKIP_GITLEAKS=1 git commit …` - друкує гучне попередження в stderr, бо нічого інше цей коміт не просканує.
 
 ## Щоденний цикл
 
@@ -118,7 +118,7 @@ pnpm typecheck
 pnpm dedupe --check   # P2-1: lockfile-drift guard (див. нижче)
 ```
 
-`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності - типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс - `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. CI, де цей gate раніше стояв (`format-lint-test-build` matrix у `.github/workflows/ci.yml`), не виконується (Bitbucket, немає pipelines) - це історичний контекст, не діюча перевірка; audit item P2-1 у [`docs/work/specs/audits/2026-05-13-testing-devx-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md).
+`pnpm dedupe --check` падає з non-zero exit, коли `pnpm install` (без `--frozen-lockfile`) ввів дубль транзитивної залежності - типовий шлях drift-а, коли локальний `pnpm add` дозволив новішу мінорну версію того ж пакета поруч зі старою. Фікс - `pnpm dedupe` локально + коміт `pnpm-lock.yaml`-delta у той самий PR. У CI цей gate стоїть кроком джоби `check` у `.github/workflows/ci.yml`; audit item P2-1 у [`docs/work/specs/audits/2026-05-13-testing-devx-roast.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md).
 
 Далі додатково за surface:
 
@@ -182,7 +182,7 @@ Husky `pre-commit` запускає два кроки послідовно пі�
 
 Запис для `pr-ledger/index.json` винесено окремою групою, а не додано в `--docs`, з ціни: `docs:check-pr-ledger` коштує ~2 с (ліниво тягне prettier) — утричі більше за всю решту разом. Реєстр правиться рідко й здебільшого автоматикою `pr-backlinks.yml`, тож платити за нього на кожному коміті з `.md` немає за що.
 
-Opt-out - `SERGEANT_NO_DERIVED_CHECK=1 git commit …` для проміжного коміту в гілці. Це не обхід хука (Hard Rule #7 лишається чинним), але й нічого іншого перевірку не підхопить: CI немає, тож розсинхрон лишається до наступного запуску цього самого хука.
+Opt-out - `SERGEANT_NO_DERIVED_CHECK=1 git commit …` для проміжного коміту в гілці. Це не обхід хука (Hard Rule #7 лишається чинним), розсинхрон підхопить CI (`pnpm lint` у джобі `check`).
 
 Хук обгорнуто wrapper-ом [`scripts/pre-commit-timing.mjs`](./scripts/pre-commit-timing.mjs), що міряє wall-clock час і друкує markdown summary одразу після commit-у. Історичний p50/p95 — `pnpm pre-commit:timings`. Деталі (env-контракт `SERGEANT_TIMING_LOG`, opt-out `SERGEANT_SKIP_TIMING=1`) — [`docs/engineering/development/pre-commit-timing.md`](./docs/engineering/development/pre-commit-timing.md).
 

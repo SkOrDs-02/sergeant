@@ -35,12 +35,11 @@ name: Docs daily brief
 #     A cron firing on a clean tree exits before committing anything.
 #   - `workflow_dispatch` stays, so a manual refresh is still one click.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  schedule:
-    # 05:30 UTC daily — see the Schedule note in the header for why this
-    # slot and not the historical 06:00.
-    - cron: "30 5 * * *"
   workflow_dispatch: {}
+  schedule:
+    - cron: "30 5 * * 1"
 
 permissions:
   contents: write
