@@ -24,11 +24,7 @@ import { recordWeeklyChecks } from "./crossModuleLinkHistory";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
-import {
-  getCategory,
-  resolveExpenseCategoryMeta,
-} from "@sergeant/finyk-domain/lib/categories";
-import { canonicalManualCategoryId } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import { finykExpenseCategoryLabel } from "./finykCategoryLabel";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
@@ -50,13 +46,6 @@ import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 import { failedCopy } from "@shared/i18n/failedCopy";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
-
-interface Category {
-  id?: string;
-  label?: string;
-  name?: string;
-  mccs?: number[];
-}
 
 // Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
 // з `@sergeant/routine-domain` замість колишньої інлайн-копії.
@@ -152,48 +141,10 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
     end: sunday,
     excludedTxIds,
     txSplits,
-    categoryKey: (tx) => {
-      // W1-CANON-AGG стадія 2d: ручний запис не має ані рядка в
-      // `finyk_tx_cats` (там ключі банківських id), ані MCC — його
-      // категорія приїжджає полем `categoryId` з
-      // `manualExpenseToTransaction`. Без цієї гілки вся готівка осідала б
-      // у «Інше», і топ-категорії брехали б рівно на суму ручного світу.
-      // Гілка навмисно звужена до `manual`: банківські рядки теж несуть
-      // `categoryId`, і зчитувати його тут означало б тихо перекроїти вже
-      // показану користувачу розбивку банківських витрат.
-      const manualTx = tx as typeof tx & {
-        manual?: boolean;
-        categoryId?: string;
-      };
-      const manualCategory =
-        manualTx.manual && manualTx.categoryId ? manualTx.categoryId : null;
-      const override = txCategories[tx.id] ?? manualCategory ?? null;
-      // AI-CONTEXT (bug 2026-08-09): резолвимо КАНОНІЧНОЮ `getCategory` —
-      // тією самою, що друкує підпис у стрічці транзакцій і в Звітах.
-      // Власний резолвер дайджесту не знав ані keyword-матчингу, ані
-      // фолбеку «Інше»: невідомий MCC витікав користувачеві сирим рядком
-      // `MCC 4829` (це «переказ коштів»), і той самий рядок ішов у промпт
-      // моделі, яка потім пояснювала людині її ж «категорію MCC 4829».
-      const resolved = getCategory(
-        tx.description ?? "",
-        tx.mcc ?? 0,
-        override,
-        customCategories as Category[],
-      );
-      // Ключ — підпис КАНОНІЧНОЇ категорії. Детальні слаги ручної форми
-      // (`cafe`, `tech`, `groceries`) не мають запису в MCC-каталозі, тож
-      // без цього зведення `cafe` давав рядок «☕ Кафе та ресторани»
-      // ПОРУЧ із банківським «🍔 Кафе та ресторани» — дві позиції з
-      // однаковою назвою і різним емодзі, бо ключування за label-ом
-      // мерджить лише те, що вже має однаковий підпис. Кастомні id
-      // проходять недоторканими.
-      const canonicalId = canonicalManualCategoryId(resolved.id);
-      if (canonicalId === resolved.id) return resolved.label;
-      return (
-        resolveExpenseCategoryMeta(canonicalId, customCategories as Category[])
-          ?.label ?? resolved.label
-      );
-    },
+    // Резолв підпису — спільний із коучем (`finykExpenseCategoryLabel`):
+    // оверрайд → категорія ручного запису → MCC / ключові слова → «Інше».
+    categoryKey: (tx) =>
+      finykExpenseCategoryLabel(tx, txCategories, customCategories),
   });
 
   const topCategories = Object.entries(aggregate.byCategory)
