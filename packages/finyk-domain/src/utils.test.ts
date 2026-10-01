@@ -79,9 +79,11 @@ describe("getCategory (expense)", () => {
   // будь-який card-to-card, тож кошик «Борги та кредити» наповнювався
   // переказами. Боргом лишається те, що має ВЛАСНИЙ доказ — опис.
   it("не вважає боргом переказ card-to-card (MCC 4829) без доказу в описі", () => {
-    expect(getCategory("На білу картку", 4829).id).toBe("other");
-    expect(getCategory("луїзка", 4829).id).toBe("other");
-    expect(getCategory("522119******5309", 4829).id).toBe("other");
+    // Після 2026-10-01 такий переказ — «Перекази людям», а не «Інше» (рішення
+    // власника «c1»): головне, що НЕ борг. Деталі — `categories.newBase.test.ts`.
+    expect(getCategory("На білу картку", 4829).id).toBe("p2p_transfer");
+    expect(getCategory("луїзка", 4829).id).toBe("p2p_transfer");
+    expect(getCategory("522119******5309", 4829).id).toBe("p2p_transfer");
   });
 
   it("лишає боргом платіж по кредитці за описом — незалежно від MCC", () => {

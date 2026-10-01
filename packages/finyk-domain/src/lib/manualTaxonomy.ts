@@ -183,6 +183,42 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
     iconName: "heart",
     canonicalId: "charity",
   },
+  // П'ять категорій 2026-10-01 (рішення власника, «c1»). Гліфи — з уже
+  // наявного закритого набору `CATEGORY_ICON_SLUGS`: новий slug змусив би
+  // дописати проєкцію на мобільній поверхні (`Record<CategoryIconName, …>`),
+  // а вона на паузі (ADR-0094). Кожна категорія — сама собі канонічна,
+  // власного кольору в палітрі (`categoryColors`) вона й так має.
+  {
+    id: "telecom",
+    label: "Звʼязок та інтернет",
+    iconName: "monitor",
+    canonicalId: "telecom",
+  },
+  {
+    id: "home",
+    label: "Дім і ремонт",
+    iconName: "home",
+    canonicalId: "home",
+  },
+  {
+    id: "pets",
+    label: "Тварини",
+    iconName: "heart",
+    canonicalId: "pets",
+  },
+  {
+    // Не `gift`: цей id уже займає надходження «Подарунок» нижче.
+    id: "gifts",
+    label: "Подарунки",
+    iconName: "package",
+    canonicalId: "gifts",
+  },
+  {
+    id: "p2p_transfer",
+    label: "Перекази людям",
+    iconName: "hand-coins",
+    canonicalId: "p2p_transfer",
+  },
   {
     id: "other",
     label: "Інше",
