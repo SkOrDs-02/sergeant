@@ -117,6 +117,11 @@ export const CANONICAL_TO_MANUAL_LABEL: Record<string, string> = {
   beauty: "shopping",
   travel: "travel",
   education: "education",
+  telecom: "telecom",
+  home: "home",
+  pets: "pets",
+  gifts: "gifts",
+  p2p_transfer: "p2p_transfer",
   other: "other",
 };
 

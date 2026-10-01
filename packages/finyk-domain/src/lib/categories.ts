@@ -1,4 +1,10 @@
-import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
+import {
+  CATEGORY_RESOLUTION_ORDER,
+  INCOME_CATEGORIES,
+  MCC_CATEGORIES,
+  P2P_TRANSFER_ID,
+  P2P_TRANSFER_MCCS,
+} from "../constants";
 import {
   legacyManualCategoryId,
   MANUAL_EXPENSE_TAXONOMY,
@@ -150,6 +156,17 @@ export function getIncomeCategory(
   return getIncomeCategory("", "in_other", customCategories);
 }
 
+/**
+ * «Поповнення «Назва»» (інколи «Поповнення банки «Назва»») — переказ у банку
+ * Monobank. Те, що стоїть у лапках, — ІМʼЯ банки, яке дала людина (збір, ціль
+ * накопичення), а не опис покупки й не імʼя людини-отримувача.
+ *
+ * Рішення власника 4Б (2026-10-01): такий рядок лишається «Інше», доки
+ * людина не перекатегоризує. Тому код переказу 4829 для нього НЕ дає
+ * «Перекази людям» (див. фолбек наприкінці `getCategory`).
+ */
+const JAR_TOP_UP_RE = /^\s*поповнення\s+(?:банки\s+)?[«"“„]/iu;
+
 export function getCategory(
   desc = "",
   mcc = 0,
@@ -162,12 +179,23 @@ export function getCategory(
     const found = MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
     if (found) return found;
   }
-  for (const cat of MCC_CATEGORIES as readonly CategoryLike[]) {
+  for (const cat of CATEGORY_RESOLUTION_ORDER as readonly CategoryLike[]) {
     if ((cat.mccs ?? []).includes(mcc)) return cat;
     if (
       (cat.keywords ?? []).some((k: string) => desc.toLowerCase().includes(k))
     )
       return cat;
+  }
+  // Слабка підказка в самому кінці: код card-to-card переказу без жодного
+  // іншого доказу (ні MCC каталогу, ні ключового слова) — це «Перекази
+  // людям». Не з `mccs` каталогу: див. AI-DANGER біля `P2P_TRANSFER_MCCS`.
+  // Поповнення банки сюди не потрапляє: його лапки — імʼя збору, а не
+  // людина-отримувач (рішення 4Б, 2026-10-01 — лишається «Інше»).
+  if (P2P_TRANSFER_MCCS.includes(mcc) && !JAR_TOP_UP_RE.test(desc)) {
+    const p2p = MCC_CATEGORIES.find(
+      (c: CategoryLike) => c.id === P2P_TRANSFER_ID,
+    );
+    if (p2p) return p2p;
   }
   return { id: "other", label: "Інше", mccs: [], keywords: [] };
 }
