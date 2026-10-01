@@ -12,6 +12,7 @@ import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { readFinykStatsContext } from "@finyk/utils";
+import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
 import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
@@ -142,6 +143,26 @@ function BarChart({
   );
 }
 
+/**
+ * Чип зміни витрат до попереднього періоду за правилом Р4 (канон finyk,
+ * журнал 2026-09-24): відсоток лише коли попередня сума є базою
+ * (`compareAmounts`: ≥ 10 % поточної), інакше абсолютна дельта в гривнях.
+ * Без цього «+946 %» проти минулого періоду з однією витратою на 75 ₴
+ * читалось як дефект. Агрегат картки — цілі гривні (`calcFinykSpendingByDate`
+ * округлює по днях), тож копійки тут `× 100`: точніших значень картка не має.
+ */
+function SpendingDelta({ cur, prev }: { cur: number; prev: number }) {
+  const { pct } = compareAmounts(Math.round(cur * 100), Math.round(prev * 100));
+  return (
+    <DeltaChip
+      cur={cur}
+      prev={prev}
+      higherIsBetter={false}
+      {...(pct === null ? { absoluteUnit: "₴" } : {})}
+    />
+  );
+}
+
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface ExpensesCardProps {
@@ -237,11 +258,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
                   amount={cur.total}
                   className="text-style-body font-bold text-text"
                 />
-                <DeltaChip
-                  cur={cur.total}
-                  prev={prev.total}
-                  higherIsBetter={false}
-                />
+                <SpendingDelta cur={cur.total} prev={prev.total} />
               </>
             )}
           </span>
@@ -276,11 +293,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
               amount={cur.total}
               className="text-style-headline text-text"
             />
-            <DeltaChip
-              cur={cur.total}
-              prev={prev.total}
-              higherIsBetter={false}
-            />
+            <SpendingDelta cur={cur.total} prev={prev.total} />
           </div>
           <p className="text-style-caption text-muted">
             {partial
