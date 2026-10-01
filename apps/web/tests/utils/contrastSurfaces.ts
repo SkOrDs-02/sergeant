@@ -857,9 +857,20 @@ export function measureFocusInPage(): FocusFinding | null {
    * (hero-картка). Плаский `parentBg` там бреше: кільце кольору градієнта
    * (`#115e59` на `#115e59 → #0f766e`) виглядало як 6:1 проти столу, хоча
    * на екрані зливалось із фоном (follow-up аудиту 2026-10-01). Повертає
-   * зупинки градієнта, складені на плаский фон; `null` — градієнта немає.
+   * зупинки градієнта з усіма заливками, що лежать МІЖ градієнтом і
+   * елементом; `null` — градієнта немає.
+   *
+   * Проміжні заливки обовʼязкові: кнопка «Зрозуміло» підказки `MonthStrip`
+   * стоїть у блоці `bg-hero-ink/5` усередині hero-градієнта, і голі зупинки
+   * завищували контраст її кільця (5.22 проти реальних ≈4.7). Тому ланцюжок
+   * предків від `node.parentElement` до градієнтного предка (не включно)
+   * збирається, і кожна його заливка (з урахуванням накопиченої `opacity`
+   * від кореня) кладеться на зупинку — від зовнішньої до внутрішньої. Фон
+   * ПІД градієнтом (`base`) береться без проміжних заливок, щоб не
+   * порахувати їх двічі, коли самі зупинки напівпрозорі.
    */
-  function gradientBackdrops(node: Element, base: RGBA): RGBA[] | null {
+  function gradientBackdrops(node: Element): RGBA[] | null {
+    const between: Element[] = [];
     let n: Element | null = node.parentElement;
     while (n) {
       const bi = getComputedStyle(n).backgroundImage;
@@ -868,8 +879,37 @@ export function measureFocusInPage(): FocusFinding | null {
           bi.match(
             /(?:rgba?|oklab|oklch|lab|lch|color)\([^)]*\)|#[0-9a-f]{3,8}/gi,
           ) ?? [];
-        return stops.length > 0 ? stops.map((s) => over(parse(s), base)) : null;
+        if (stops.length === 0) return null;
+        // Фон під градієнтом: заливки від кореня до самого градієнтного
+        // елемента включно (його власний `background-color` лежить під
+        // зображенням), без проміжних.
+        const above: Element[] = [];
+        for (let a: Element | null = n; a; a = a.parentElement) above.push(a);
+        above.reverse();
+        let base: RGBA = { r: 255, g: 255, b: 255, a: 1 };
+        let cum = 1;
+        for (const x of above) {
+          const xcs = getComputedStyle(x);
+          const op = parseFloat(xcs.opacity);
+          cum *= Number.isNaN(op) ? 1 : op;
+          const bg = parse(xcs.backgroundColor);
+          if (bg.a > 0) base = over({ ...bg, a: bg.a * cum }, base);
+        }
+        // Проміжні шари: від зовнішнього до внутрішнього, `cum` продовжує
+        // накопичуватись від градієнтного елемента.
+        const layers: RGBA[] = [];
+        for (const x of between.reverse()) {
+          const xcs = getComputedStyle(x);
+          const op = parseFloat(xcs.opacity);
+          cum *= Number.isNaN(op) ? 1 : op;
+          const bg = parse(xcs.backgroundColor);
+          if (bg.a > 0) layers.push({ ...bg, a: bg.a * cum });
+        }
+        return stops.map((st) =>
+          layers.reduce((acc, l) => over(l, acc), over(parse(st), base)),
+        );
       }
+      between.push(n);
       n = n.parentElement;
     }
     return null;
@@ -919,9 +959,7 @@ export function measureFocusInPage(): FocusFinding | null {
 
   const pb = parentBgOf(el);
   // Фони під елементом: зупинки градієнта-предка (hero-картка) або плаский.
-  const backdrops: RGBA[] = (pb.u ? gradientBackdrops(el, pb.c) : null) ?? [
-    pb.c,
-  ];
+  const backdrops: RGBA[] = (pb.u ? gradientBackdrops(el) : null) ?? [pb.c];
 
   // box-shadow ring: шари без розмиття зі spread>0, не inset.
   const raw = cs.boxShadow;
