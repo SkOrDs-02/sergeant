@@ -12,7 +12,9 @@
  * nudge і звіт тижня.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { onHubBus } from "@shared/lib/modules/hubBus";
 import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
 import { LocalWeekReport } from "./LocalWeekReport";
 import { useFinykWeekReport } from "../../modules/finyk/hooks/useFinykWeekReport";
@@ -88,6 +90,15 @@ export function HubInsightsBlock({
   // фактом, а не «Готую пораду Сержанта…».
   const weekReport = useFinykWeekReport(finykActive);
   const weekHeadline = weekReport[0];
+  // «Відкрити звіт тижня» з картки про темп витрат: розгорнути блок і
+  // підвести до рядків «Тиждень у цифрах» (рішення власника 2026-10-01). Блок
+  // згорнутий за замовчуванням, тож без цього картка вела б повз нього.
+  const weekReportRef = useRef<HTMLElement>(null);
+  const [openSignal, setOpenSignal] = useState(0);
+  useEffect(
+    () => onHubBus("openWeekReport", () => setOpenSignal((n) => n + 1)),
+    [],
+  );
   // Реальний стан розгорнутості секції тепер живе в `HubDashboard`.
   // `CollapsibleSection` тримає дітей у DOM і згорнутою, тож він потрібен
   // тут, щоб AI-порада й дайджест не рахували показ, якого користувач не
@@ -101,6 +112,8 @@ export function HubInsightsBlock({
       storageKey={HUB_INSIGHTS_OPEN_STORAGE_KEY}
       defaultOpen={insightsDefaultOpen}
       onOpenChange={onInsightsOpenChange}
+      openSignal={openSignal}
+      revealRef={weekReportRef}
       title="Порада й звіт тижня"
       collapsedIcon="sergeant"
       collapsedSubtitle={
@@ -129,7 +142,7 @@ export function HubInsightsBlock({
         sectionOpen={insightsOpen}
       />
       {/* AI-порада над локальним звітом, не замість нього (Р23). */}
-      <LocalWeekReport lines={weekReport} />
+      <LocalWeekReport lines={weekReport} sectionRef={weekReportRef} />
       {activeNudge && !reengagementShow && (
         <DailyNudge
           nudge={activeNudge}

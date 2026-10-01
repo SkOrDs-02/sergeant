@@ -1,7 +1,7 @@
 # SPEC: RLS на таблицях AI-шару + гейт крос-юзер ізоляції
 
-> **Last touched:** 2026-09-30 by @claude (Стадія 1 у роботі: гейт `crossUserIsolation.test.ts`). **Next review:** 2027-05-14.
-> **Status:** In progress (Стадія 1 з 4)
+> **Last touched:** 2026-10-01 by @claude (Стадії 2-3: helper контексту і bypass у фонових задачах, без політик). **Next review:** 2027-05-14.
+> **Status:** In progress (Стадії 1-3 з 4)
 
 <!-- Спека самодостатня: виконавець у свіжій сесії реалізує зміну, читаючи лише
 цей файл, AGENTS.md і названий тут код. Контексту попередньої сесії немає. -->
@@ -233,12 +233,24 @@ allowlist із коментарем-причиною.
 
 ## Статус виконання
 
-| Стадія                         | Стан                                                                                                                                                                                                                                                                                                                  |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. Гейт ізоляції (Б1-Б3)       | **Частково виконано.** [`apps/server/src/http/crossUserIsolation.test.ts`](../../../apps/server/src/http/crossUserIsolation.test.ts): перевірка повноти списку роутів (без БД) + 12 кейсів (`ai-memory` list/delete, `coach/memory`, `me/*`). Решта user-scoped роутів у `TODO_UNCOVERED` (список лише скорочується). |
-| 2. A5 helper `withUserContext` | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                 |
-| 3. A4 bypass у поллерах        | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                 |
-| 4. A1-A3 міграція з політиками | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                 |
+| Стадія                         | Стан                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Гейт ізоляції (Б1-Б3)       | **Частково виконано.** [`apps/server/src/http/crossUserIsolation.test.ts`](../../../apps/server/src/http/crossUserIsolation.test.ts): перевірка повноти списку роутів (без БД) + 12 кейсів (`ai-memory` list/delete, `coach/memory`, `me/*`). Решта user-scoped роутів у `TODO_UNCOVERED` (список лише скорочується).                                                                                                                             |
+| 2. A5 helper `withUserContext` | **Виконано** (гілка `claude/rls-ai-stage-2-3`). [`dbContext.ts`](../../../apps/server/src/dbContext.ts) (`runWith{User,Bypass,Subject}Context` над будь-яким пулом) + обгортки `withUserContext` / `withBypassContext` / `withSubjectContext` у `db.ts`. Переписано: ai-memory (`vectorStore`, `listRoute`, `profileMirror`), `coach.ts`, ledger `ai_usage_daily` (`aiQuota`, `aiQuotaWeekly`, `usdCap`, `anthropicUsageStore`), `purgeUserData`. |
+| 3. A4 bypass у поллерах        | **Виконано** (та сама гілка). Bypass рівно у трьох місцях: `selectNudgeCandidates` у `sweep.ts` (reminder-sweep), `/api/internal/ai-usage` (обидва handler-и), `readSpendFromLedger` (бюджет-гард). Ledger-рядки без `u:` (`ip:`, `provider:anthropic`, `n8n:`) ідуть під bypass через `withSubjectContext`.                                                                                                                                      |
+| 4. A1-A3 міграція з політиками | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+Перевірка Стадій 2-3 на живому Postgres (2026-10-01, Testcontainers `pgvector/pgvector:pg17`): серверний `vitest run` 5802 passed / 5 skipped, інтеграційний лейн 171/171. Верифікація №2 виконана: з `WHERE user_id = $1` у `listRoute.ts`, заміненим на `WHERE $1::text IS NOT NULL`, гейт падає рівно на `GET /api/ai-memory/list` («відповідь для А містить дані Б»), після відкату 16/16. Інтеграційний прогін знайшов один застарілий тест: `vectorStore.integration` рахував `SELECT set_config(...)` як пошуковий запит, виправлено.
+
+Нотатки Стадій 2-3 (розбіжності зі спекою, звірені grep-ом):
+
+- **Чат-таблиць на сервері немає** (рядок `chat_` у A1): міграції з `chat_` лише `tg_*` і nutrition, сервер чат-історії не зберігає. Стадія 4 їх не охоплює, рядок A1 знімається.
+- **`apps/server/src/lib/strategicGoals.ts` таблиць із A1 не торкається** (`strategic_goals` не в списку), тож не переписувався.
+- **Поза переліком A5 теж торкаються таблиць A1**: `usdCap.ts`, `anthropicUsageStore.ts`, `aiQuotaWeekly.ts`, `routes/internal/ai-usage.ts`, `obs/anthropicBudgetGuard.ts`, `purgeUserData` у `me/dataRights.ts`. Без них Стадія 4 дала б порожні/впалі відповіді (fail-closed), тож їх переписано тут.
+- **Реплік-пул (A6)**: `dbReplica.ts` використовує лише `index.ts`; жодного запиту до таблиць A1 через нього немає, код не ускладнено.
+- **Міграційний runner (A4.1)**: DML над цими таблицями в `db.ts::runPendingSqlMigrations` немає; bypass не ставиться.
+- **Ingest-черга ai-memory** пише через `vectorStore.upsert`: батч одного користувача іде під `app.user_id`, змішаний - під bypass.
+- **Тестові стенди** з прямим SQL по цих таблицях без контексту (сід/перевірка): `transcribe-usd-cap.e2e.test.ts`, `vectorStore.integration.test.ts`, `dataRights.integration.test.ts`, `coach.integration.test.ts`, `migrations/__tests__/054-ai-memories-persona-topic.test.ts`, `crossUserIsolation.test.ts`. На Стадії 4 їм потрібен `app.bypass` (або `set_config` у сіді); тут вони не чіпались, бо без політик нічого не змінюється, а Docker у цій сесії недоступний.
 
 Відкриті хвости Стадії 1: покрити `POST /api/ai-memory/recall`, `GET /api/chat/usage` (`ai_usage_daily`), `DELETE /api/me` і роути Finyk/Mono/Silpo/Nutrition/Push/Sync зі списку `TODO_UNCOVERED`. БД-частина гейта скіпається без Docker (як інші integration-тести); `REQUIRE_ISOLATION_DB=1` перетворює скіп на помилку.
 

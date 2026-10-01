@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { Recommendations } from "@sergeant/insights";
 import type { Rec } from "../../lib/recommendationEngine";
 import type { Insight } from "@shared/lib/insights/types";
 import {
@@ -7,6 +8,7 @@ import {
   UNKNOWN_INSIGHT_PRIORITY,
   insightPriority,
   mergeNowItems,
+  withoutWeekReportTarget,
 } from "./nowItems";
 
 function rec(over: Partial<Rec> & { id: string; priority: number }): Rec {
@@ -217,5 +219,45 @@ describe("mergeNowItems — форма рядка", () => {
 
   it("порожні джерела — порожній список", () => {
     expect(mergeNowItems([], [])).toEqual([]);
+  });
+});
+
+// f3 (рішення власника 2026-10-01): тижнева картка про темп веде в «Звіт
+// тижня» на хабі, і ця ціль має власний вид дії, а не модуль.
+describe("mergeNowItems — ціль «Звіт тижня»", () => {
+  const weekRec = rec({
+    id: "spending_velocity_high",
+    module: "finyk",
+    priority: 75,
+    action: Recommendations.WEEK_REPORT_ACTION,
+  });
+
+  it("Rec із дією week_report дає open_week_report, а не відкриття модуля", () => {
+    const [item] = mergeNowItems([weekRec], []);
+    expect(item?.action).toEqual({ kind: "open_week_report" });
+  });
+
+  it("звичайна навігація в модуль не зачеплена", () => {
+    const [item] = mergeNowItems(
+      [rec({ id: "x", module: "finyk", priority: 60, action: "finyk" })],
+      [],
+    );
+    expect(item?.action).toEqual({ kind: "open_module", module: "finyk" });
+  });
+
+  it("коли блоку «Порада й звіт тижня» немає, дія повертається в модуль", () => {
+    const [item] = mergeNowItems([weekRec], []);
+    expect(withoutWeekReportTarget(item!).action).toEqual({
+      kind: "open_module",
+      module: "finyk",
+    });
+  });
+
+  it("інші дії fallback не чіпає", () => {
+    const [item] = mergeNowItems(
+      [rec({ id: "a", priority: 70, pwaAction: "add_meal" })],
+      [],
+    );
+    expect(withoutWeekReportTarget(item!)).toBe(item);
   });
 });

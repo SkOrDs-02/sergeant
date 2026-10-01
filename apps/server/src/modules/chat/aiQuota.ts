@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { getSessionUser } from "../../auth.js";
-import pool from "../../db.js";
+import pool, { withSubjectContext } from "../../db.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -869,14 +869,16 @@ async function consumeQuota({
       WHERE t.request_count + EXCLUDED.request_count <= $6
     RETURNING request_count
   `;
-  const r = await pool.query<ConsumeQuotaRow>(sql, [
-    subject,
-    day,
-    bucket,
-    AI_QUOTA_ENDPOINT,
-    cost,
-    limit,
-  ]);
+  const r = await withSubjectContext(subject, (db) =>
+    db.query<ConsumeQuotaRow>(sql, [
+      subject,
+      day,
+      bucket,
+      AI_QUOTA_ENDPOINT,
+      cost,
+      limit,
+    ]),
+  );
   if (r.rows.length === 0) {
     return { ok: false, remaining: 0, limit };
   }
@@ -893,18 +895,20 @@ async function consumeQuota({
 async function refundConsumed(ticket: ConsumedTicket): Promise<void> {
   if (!process.env["DATABASE_URL"]) return;
   try {
-    await pool.query(
-      `UPDATE ai_usage_daily
-          SET request_count = GREATEST(0, request_count - $4)
-        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
-          AND endpoint = $5`,
-      [
-        ticket.subject,
-        ticket.day,
-        ticket.bucket,
-        ticket.cost,
-        AI_QUOTA_ENDPOINT,
-      ],
+    await withSubjectContext(ticket.subject, (db) =>
+      db.query(
+        `UPDATE ai_usage_daily
+            SET request_count = GREATEST(0, request_count - $4)
+          WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
+            AND endpoint = $5`,
+        [
+          ticket.subject,
+          ticket.day,
+          ticket.bucket,
+          ticket.cost,
+          AI_QUOTA_ENDPOINT,
+        ],
+      ),
     );
   } catch (e: unknown) {
     const err = e as { message?: string; code?: string } | undefined;

@@ -8,6 +8,7 @@ import {
   useEffect,
   useRef,
   type ReactNode,
+  type RefObject,
 } from "react";
 import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
@@ -52,6 +53,19 @@ export interface CollapsibleSectionProps {
    * лямбда змінює identity щорендеру і ефект перевикликатиметься дарма.
    */
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Лічильник запитів «покажи секцію» ззовні (діп-лінк з картки в іншому
+   * місці сторінки). Кожне ЗБІЛЬШЕННЯ розгортає секцію так само, як клік
+   * (стан пишеться в `storageKey`), і докручує до неї. Значення на монтуванні
+   * не діє: секція реагує лише на зміну.
+   */
+  openSignal?: number;
+  /**
+   * Що показати після розгортання за `openSignal`: елемент усередині секції
+   * (наприклад, рядки звіту), а не її верх. Фокус іде туди ж, тож елемент має
+   * бути фокусованим програмно (`tabIndex={-1}`). Без значення — верх секції.
+   */
+  revealRef?: RefObject<HTMLElement | null>;
   children?: ReactNode;
   className?: string;
 }
@@ -101,6 +115,8 @@ export function CollapsibleSection({
   collapsedIcon,
   collapsedSubtitle,
   onOpenChange,
+  openSignal,
+  revealRef,
   children,
   className,
 }: CollapsibleSectionProps) {
@@ -124,45 +140,52 @@ export function CollapsibleSection({
     onOpenChange?.(open);
   }, [open, onOpenChange]);
 
+  /**
+   * Скрол після того, як рядок сітки доїхав.
+   *
+   * AI-DANGER: чекати фіксованим таймером НЕ можна — CSS-перехід іде на
+   * `duration-base`, тобто на токені, і будь-яка його зміна розсинхронила б
+   * пару. Доти тут стояло 210 ms проти коментаря «200ms» проти фактичних
+   * 220 ms токена: три різні числа про одну подію. `transitionend` знає
+   * точно.
+   *
+   * Запасний таймер лишається на випадок, коли події не буде зовсім:
+   * перехід не запускається, якщо секція вже потрібної висоти або рух
+   * вимкнено системно.
+   */
+  const scrollWhenSettled = useCallback(
+    (reveal: () => void) => {
+      const grid = gridRef.current;
+      if (!grid) {
+        reveal();
+        return;
+      }
+      let done = false;
+      const once = () => {
+        if (done) return;
+        done = true;
+        grid.removeEventListener("transitionend", once);
+        reveal();
+      };
+      grid.addEventListener("transitionend", once, { once: true });
+      // Стеля — помітно більша за `slowest` (680 ms), щоб таймер не
+      // випереджав подію на повільному пристрої.
+      setTimeout(once, 800);
+    },
+    [gridRef],
+  );
+
   const toggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
       safeWriteLS(storageKey, next);
       if (next) {
-        /*
-          Скрол після того, як рядок сітки доїхав.
-
-          AI-DANGER: чекати фіксованим таймером НЕ можна — CSS-перехід
-          іде на `duration-base`, тобто на токені, і будь-яка його
-          зміна розсинхронила б пару. Доти тут стояло 210 ms проти
-          коментаря «200ms» проти фактичних 220 ms токена: три різні
-          числа про одну подію. `transitionend` знає точно.
-
-          Запасний таймер лишається на випадок, коли події не буде
-          зовсім: перехід не запускається, якщо секція вже потрібної
-          висоти або рух вимкнено системно.
-        */
-        const grid = gridRef.current;
-        const scroll = () =>
-          sectionRef.current?.scrollIntoView({
+        scrollWhenSettled(() =>
+          sectionRef.current?.scrollIntoView?.({
             behavior: motionScrollBehavior(),
             block: "nearest",
-          });
-        if (!grid) {
-          scroll();
-          return next;
-        }
-        let done = false;
-        const once = () => {
-          if (done) return;
-          done = true;
-          grid.removeEventListener("transitionend", once);
-          scroll();
-        };
-        grid.addEventListener("transitionend", once, { once: true });
-        // Стеля — помітно більша за `slowest` (680 ms), щоб таймер не
-        // випереджав подію на повільному пристрої.
-        setTimeout(once, 800);
+          }),
+        );
       }
       return next;
     });
@@ -171,7 +194,46 @@ export function CollapsibleSection({
     // виносу L-7 у спільний хук ref приходить із виклику функції, і правило
     // `react-hooks/exhaustive-deps` більше не може довести стабільність.
     // Додати в масив чесніше, ніж глушити правило — на поведінку не впливає.
-  }, [storageKey, gridRef]);
+  }, [storageKey, scrollWhenSettled]);
+
+  // Запит «покажи секцію» ззовні (`openSignal`). Розгортання — під час
+  // рендеру, за лічильником (патерн «підтягнути стан із пропа»): `setState`
+  // в ефекті дав би зайвий каскадний рендер. Побічні дії (сховище, скрол,
+  // фокус) — у ефекті нижче.
+  const [seenSignal, setSeenSignal] = useState(openSignal);
+  if (openSignal !== undefined && openSignal !== seenSignal) {
+    setSeenSignal(openSignal);
+    if (!open) setOpen(true);
+  }
+
+  // Після розгортання: записати стан як від кліку, дочекатись кінця переходу
+  // (або діяти одразу, якщо секція вже була розгорнута), показати й
+  // сфокусувати `revealRef`. Фокус — для скрінрідера: без нього «Відкрити» з
+  // картки лишало б курсор на кнопці, яка вже нічого не показує.
+  const handledSignalRef = useRef(openSignal);
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (openSignal === undefined || openSignal === handledSignalRef.current) {
+      return;
+    }
+    handledSignalRef.current = openSignal;
+    const reveal = () => {
+      const target = revealRef?.current ?? sectionRef.current;
+      target?.scrollIntoView?.({
+        behavior: motionScrollBehavior(),
+        block: "nearest",
+      });
+      if (revealRef?.current) revealRef.current.focus({ preventScroll: true });
+    };
+    if (wasOpen) {
+      reveal();
+      return;
+    }
+    safeWriteLS(storageKey, true);
+    scrollWhenSettled(reveal);
+  }, [openSignal, open, revealRef, storageKey, scrollWhenSettled]);
 
   return (
     <section ref={sectionRef} className={cn("space-y-2", className)}>

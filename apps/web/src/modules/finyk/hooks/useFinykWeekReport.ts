@@ -18,11 +18,12 @@ const fill = (tpl: string, vars: Record<string, string | number>) =>
   tpl.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ""));
 
 /**
- * Три рядки звіту тижня з локальних даних (Р23): найбільша категорія за
- * 7 днів, найбільше зростання проти попередніх 7 днів, ліміт із найгіршим
- * темпом. Без записів за тиждень повертає один рядок про це. Коли Фінік
- * вимкнено, звіту немає зовсім: рядок «записів немає» людині, яка веде лише
- * тренування, був би неправдою.
+ * Рядки звіту тижня з локальних даних (Р23): підсумок календарного тижня
+ * (пн–нд за Києвом) проти того самого відрізка минулого, найбільша категорія,
+ * найбільше зростання проти тих самих днів минулого тижня, ліміт із
+ * найгіршим темпом. Без записів за тиждень повертає один рядок про це. Коли
+ * Фінік вимкнено, звіту немає зовсім: рядок «записів немає» людині, яка веде
+ * лише тренування, був би неправдою.
  */
 export function useFinykWeekReport(enabled = true): string[] {
   const { statTransactions, slots } = useFinykStatTransactions();
@@ -42,6 +43,31 @@ export function useFinykWeekReport(enabled = true): string[] {
     if (!report.hasRecords) return [copy.empty];
 
     const lines: string[] = [];
+    if (report.total) {
+      const { spentMinor, prevMinor, delta } = report.total;
+      const vars = {
+        spent: money(spentMinor / 100),
+        prev: money(prevMinor / 100),
+        change:
+          delta.pct === null
+            ? ""
+            : `${Math.round(Math.abs(delta.pct))}${NARROW_NBSP}%`,
+      };
+      lines.push(
+        fill(
+          prevMinor <= 0
+            ? copy.totalNew
+            : delta.diffMinor === 0
+              ? copy.totalSame
+              : delta.pct === null
+                ? copy.totalAbs
+                : delta.diffMinor > 0
+                  ? copy.totalMore
+                  : copy.totalLess,
+          vars,
+        ),
+      );
+    }
     if (report.top) {
       lines.push(
         fill(copy.top, {

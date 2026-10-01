@@ -1,6 +1,6 @@
 # SPEC: вісь дії для хабу (A1 «дві купи»)
 
-> **Last touched:** 2026-09-30 by @claude (PR 3 виконано: прапорець і стара сітка зняті); 2026-09-20 by @claude (статус зведено з кодом: PR 1 і PR 2 в `main`). **Next review:** 2027-04-26.
+> **Last touched:** 2026-10-01 by @claude («Закрито сьогодні»: Фінік не закритий при попередженні про темп, f5); 2026-09-30 by @claude (PR 3 виконано: прапорець і стара сітка зняті); 2026-09-20 by @claude (статус зведено з кодом: PR 1 і PR 2 в `main`). **Next review:** 2027-04-26.
 > **Status:** Active. PR 1, PR 2 і PR 3 з § Нарізки виконано. PR 3 (2026-09-30, гілка `claude/hub-action-axis-cleanup`) знято за рішенням власника без очікування двотижневого циклу kill-switch і без даних вимірювання: прапорець `hub_action_axis_v1`, `HubModulesGrid`, `BentoCard`/`BentoCardPeek`, `adaptiveSort`, `nativeSortable`, режим редагування, `HubInsightsPanel`, `calmMode`, `density`, `showTodayFocus`/`adaptiveBento` у Налаштуваннях і міграція `density` прибрані. Вісь дії — єдина головна. Лишилось поза скоупом (ADR-0094): мобільний хаб, `STORAGE_KEYS.DASHBOARD_ORDER`, `normalizeDashboardOrder`, `DashboardDensity` у `@sergeant/shared`.
 
 <!-- Спека несе ПРОДУКТОВІ рішення, ухвалені власником в інтерв'ю 2026-09-17
@@ -111,6 +111,10 @@ https://claude.ai/artifact/MKfEeiJTQU3zmwXSX9Z9Xp. -->
   (`resolveEffectiveGoal`), а без цілі — ≥1 прийом сьогодні. Фізрук:
   тренування завершене сьогодні. Фінік: є витрата сьогодні і місяць у межах
   ліміту (`budget_over_*` не активний), без лімітів — просто є витрата.
+  З 2026-10-01 (рішення власника, f5) Фінік не «закритий» і поки висить
+  попередження про темп витрат (`finyk_daily_vs_weekly_pace` або
+  `spending_velocity_high`; похвала `spending_velocity_low` не блокує): галочка
+  «записано» поруч із карткою «на 51% вище середнього» їй суперечила.
   Число в рядку — те саме, що сьогодні показує плитка (`ModulePreview.main` /
   `sub` через `selectModulePreview`), тобто жодного нового запиту даних.
   **[І]**, відкинуто «м'яко» (слово «закрито» бреше) і «суворо скрізь»

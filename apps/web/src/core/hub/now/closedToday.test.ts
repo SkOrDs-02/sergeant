@@ -256,6 +256,52 @@ describe("computeClosedToday", () => {
       } as Rec;
       expect(compute([over])).toEqual([]);
     });
+
+    // f5 (рішення власника 2026-10-01): поки висить попередження про ТЕМП
+    // витрат, галочка «записано» поруч із ним суперечить картці в «Зараз».
+    describe("попередження про темп знімає рядок", () => {
+      const paceRec = (id: string) =>
+        ({
+          id,
+          module: "finyk",
+          priority: 72,
+          icon: "clock",
+          title: "",
+          body: "",
+          action: "finyk",
+        }) as Rec;
+
+      beforeEach(() => {
+        finykMock.txs = [
+          { id: "t1", amount: -25000, time: NOW.getTime() - 3600_000 },
+        ];
+      });
+
+      it("денна «Сьогодні вище середнього» не дає Фініку потрапити в «Закрито»", () => {
+        expect(compute([paceRec("finyk_daily_vs_weekly_pace")])).toEqual([]);
+      });
+
+      it("тижнева «Витрати вище ніж минулого тижня» теж", () => {
+        expect(compute([paceRec("spending_velocity_high")])).toEqual([]);
+      });
+
+      it("похвала «Витрати нижче ніж минулого тижня» не блокує: це не попередження", () => {
+        const [row] = compute([paceRec("spending_velocity_low")]);
+        expect(row).toMatchObject({ module: "finyk", statement: "записано" });
+      });
+
+      it("без попередження про темп рядок на місці", () => {
+        expect(compute([paceRec("nutrition_protein_low")])[0]?.module).toBe(
+          "finyk",
+        );
+      });
+
+      it("попередження блокує лише Фінік: решта модулів закриваються", () => {
+        seedRoutine([habit("a")], { a: [TODAY] });
+        const rows = compute([paceRec("finyk_daily_vs_weekly_pace")]);
+        expect(rows.map((r) => r.module)).toEqual(["routine"]);
+      });
+    });
   });
 
   it("неактивний модуль рядка не отримує, порядок — сталий порядок модулів", () => {

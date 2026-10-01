@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -9,6 +10,7 @@ import {
   within,
 } from "@testing-library/react";
 import type { NudgeDefinition } from "@sergeant/shared";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   HubInsightsBlock,
   type HubInsightsBlockProps,
@@ -35,19 +37,28 @@ vi.mock("@shared/components/ui/CollapsibleSection", () => ({
     collapsedSubtitle,
     onOpenChange,
     defaultOpen,
+    openSignal,
+    revealRef,
     children,
   }: {
     title: string;
     collapsedSubtitle: ReactNode;
     onOpenChange?: (open: boolean) => void;
     defaultOpen?: boolean;
+    openSignal?: number;
+    revealRef?: RefObject<HTMLElement | null>;
     children: ReactNode;
   }) => (
-    <section>
+    <section data-open-signal={openSignal ?? 0}>
       <h2>{title}</h2>
       <p data-testid="collapsed-subtitle">{collapsedSubtitle}</p>
       <button type="button" onClick={() => onOpenChange?.(!defaultOpen)}>
         toggle section
+      </button>
+      {/* Те, що справжня секція робить після розгортання за `openSignal`:
+          показує й фокусує `revealRef`. */}
+      <button type="button" onClick={() => revealRef?.current?.focus()}>
+        reveal target
       </button>
       {children}
     </section>
@@ -256,6 +267,49 @@ describe("HubInsightsBlock", () => {
       "Найбільше за тиждень: Продукти, 807 ₴",
     );
     weekReportState.lines = [];
+  });
+
+  // f3 (рішення власника 2026-10-01): «Відкрити звіт тижня» з картки про
+  // темп витрат шле подію на шині; блок розгортає секцію (`openSignal`) і
+  // підводить до рядків «Тиждень у цифрах» (`revealRef`).
+  describe("«Відкрити звіт тижня» з картки", () => {
+    it("подія хабу збільшує openSignal секції; стартове значення — нуль", () => {
+      weekReportState.lines = ["За тиждень витрачено 900 ₴"];
+      const { container } = render(<HubInsightsBlock {...props()} />);
+      const section = container.querySelector("section[data-open-signal]");
+      expect(section?.getAttribute("data-open-signal")).toBe("0");
+
+      act(() => emitHubBus("openWeekReport", undefined));
+      expect(section?.getAttribute("data-open-signal")).toBe("1");
+
+      act(() => emitHubBus("openWeekReport", undefined));
+      expect(section?.getAttribute("data-open-signal")).toBe("2");
+      weekReportState.lines = [];
+    });
+
+    it("revealRef указує на регіон «Тиждень у цифрах», і він може прийняти фокус", () => {
+      weekReportState.lines = ["За тиждень витрачено 900 ₴"];
+      render(<HubInsightsBlock {...props()} />);
+      const report = screen.getByRole("region", { name: "Тиждень у цифрах" });
+
+      fireEvent.click(screen.getByText("reveal target"));
+
+      expect(document.activeElement).toBe(report);
+      weekReportState.lines = [];
+    });
+
+    it("після розмонтування блок більше не слухає шину", () => {
+      weekReportState.lines = ["За тиждень витрачено 900 ₴"];
+      const { container, unmount } = render(<HubInsightsBlock {...props()} />);
+      const section = container.querySelector("section[data-open-signal]");
+      unmount();
+      // Не кидає й нічого не оновлює в розмонтованому дереві.
+      expect(() =>
+        act(() => emitHubBus("openWeekReport", undefined)),
+      ).not.toThrow();
+      expect(section?.getAttribute("data-open-signal")).toBe("0");
+      weekReportState.lines = [];
+    });
   });
 
   it("hides the money week report when Finyk is not an active module", () => {
