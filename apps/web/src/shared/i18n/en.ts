@@ -298,6 +298,8 @@ export const messagesEn: Partial<{
     nowPile: {
       heading: "Now",
       empty: "Everything is closed for today, nothing needs your attention.",
+      postponed: "Postponed",
+      showPostponed: "show",
       more: "more",
       doIt: "Do it",
       open: "Open",

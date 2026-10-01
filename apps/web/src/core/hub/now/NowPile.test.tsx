@@ -6,6 +6,8 @@ import type { NowItem } from "./nowItems";
 
 const mocks = vi.hoisted(() => ({
   items: [] as NowItem[],
+  postponed: 0,
+  restorePostponed: vi.fn(),
   dismiss: vi.fn(),
   navigate: vi.fn(),
   emitHubBus: vi.fn(),
@@ -14,7 +16,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("./useNowItems", () => ({
-  useNowItems: () => ({ items: mocks.items, dismiss: mocks.dismiss }),
+  useNowItems: () => ({
+    items: mocks.items,
+    dismiss: mocks.dismiss,
+    postponed: mocks.postponed,
+    restorePostponed: mocks.restorePostponed,
+  }),
 }));
 vi.mock("react-router-dom", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-router-dom")>()),
@@ -69,6 +76,8 @@ describe("promoteDanger", () => {
 describe("NowPile", () => {
   beforeEach(() => {
     mocks.items = [];
+    mocks.postponed = 0;
+    mocks.restorePostponed.mockClear();
     mocks.dismiss.mockClear();
     mocks.navigate.mockClear();
     mocks.emitHubBus.mockClear();
@@ -82,6 +91,43 @@ describe("NowPile", () => {
       "Сьогодні все закрито",
     );
     expect(screen.queryByRole("button")).toBeNull();
+  });
+
+  it("порожньо лише через «✕» сьогодні: «Відкладено N · показати» замість «все закрито»", () => {
+    mocks.postponed = 3;
+    renderPile();
+
+    expect(screen.queryByTestId("now-empty")).toBeNull();
+    expect(
+      screen.queryByText(/Сьогодні все закрито/, { exact: false }),
+    ).toBeNull();
+    const restore = screen.getByRole("button", {
+      name: "Відкладено 3 · показати",
+    });
+    // ≥44 px на coarse pointer.
+    expect(restore.className).toContain("touch-target");
+
+    fireEvent.click(restore);
+    expect(mocks.restorePostponed).toHaveBeenCalledTimes(1);
+  });
+
+  it("«все закрито» лишається, коли відкладеного справді немає", () => {
+    mocks.postponed = 0;
+    renderPile();
+    expect(screen.getByTestId("now-empty")).toHaveTextContent(
+      "Сьогодні все закрито",
+    );
+    expect(screen.queryByTestId("now-postponed")).toBeNull();
+  });
+
+  it("є рядки в «Зараз» — «Відкладено» не показується навіть із відкладеним", () => {
+    mocks.postponed = 2;
+    mocks.items = [item({ id: "a", priority: 90 })];
+    renderPile();
+    expect(screen.queryByTestId("now-postponed")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "title a" }),
+    ).toBeInTheDocument();
   });
 
   it("hero + два рядки + «ще N»; хвіст розгортається лише тапом", () => {

@@ -127,7 +127,9 @@ describe("useNowItems", () => {
     );
     expect(Object.keys(recs)).toEqual(["nutrition_protein_low"]);
     expect(
-      JSON.parse(localStorage.getItem(INSIGHTS_DISMISSED_KEY) ?? "[]"),
+      Object.keys(
+        JSON.parse(localStorage.getItem(INSIGHTS_DISMISSED_KEY) ?? "{}"),
+      ),
     ).toEqual(["nutrition-protein-low"]);
   });
 
@@ -143,11 +145,11 @@ describe("useNowItems", () => {
     // старому hero (сховище рекомендацій).
     localStorage.setItem(
       INSIGHTS_DISMISSED_KEY,
-      JSON.stringify(["nutrition-protein-low"]),
+      JSON.stringify({ "nutrition-protein-low": Date.now() }),
     );
     localStorage.setItem(
       HUB_RECS_DISMISSED_KEY,
-      JSON.stringify({ routine_evening_reminder: 1 }),
+      JSON.stringify({ routine_evening_reminder: Date.now() }),
     );
 
     const { result } = renderHook(() => useNowItems());
@@ -164,7 +166,151 @@ describe("useNowItems", () => {
 
     expect(localStorage.getItem(HUB_RECS_DISMISSED_KEY)).toBeNull();
     expect(
-      JSON.parse(localStorage.getItem(INSIGHTS_DISMISSED_KEY) ?? "[]"),
+      Object.keys(
+        JSON.parse(localStorage.getItem(INSIGHTS_DISMISSED_KEY) ?? "{}"),
+      ),
     ).toEqual(["nutrition-streak-7-days-2026-W38"]);
+  });
+
+  describe("«✕» діє до кінця поточної доби (рішення власника 2026-10-01)", () => {
+    // Локальні компоненти: межа доби — годинник пристрою (ADR-0078).
+    const NOON = new Date(2026, 9, 1, 12, 0, 0);
+    const YESTERDAY = new Date(2026, 8, 30, 21, 0, 0).getTime();
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOON);
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("відкинуте вчора рекомендація повертається: статичний id правила не глушиться навіки", () => {
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80, "fizruk"),
+      ]);
+      localStorage.setItem(
+        HUB_RECS_DISMISSED_KEY,
+        JSON.stringify({ fizruk_long_break: YESTERDAY }),
+      );
+
+      const { result } = renderHook(() => useNowItems());
+
+      expect(result.current.items.map((i) => i.id)).toEqual([
+        "fizruk_long_break",
+      ]);
+      expect(result.current.postponed).toBe(0);
+    });
+
+    it("відкинутий вчора інсайт повертається так само", () => {
+      nutritionMock.mockReturnValue([insight("nutrition-protein-low")]);
+      localStorage.setItem(
+        INSIGHTS_DISMISSED_KEY,
+        JSON.stringify({ "nutrition-protein-low": YESTERDAY }),
+      );
+
+      const { result } = renderHook(() => useNowItems());
+
+      expect(result.current.items.map((i) => i.id)).toEqual([
+        "nutrition-protein-low",
+      ]);
+    });
+
+    it("застарілі «назавжди»-записи (мапа з `1`, масив id) вважаються простроченими", () => {
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80, "fizruk"),
+      ]);
+      nutritionMock.mockReturnValue([insight("nutrition-protein-low")]);
+      localStorage.setItem(
+        HUB_RECS_DISMISSED_KEY,
+        JSON.stringify({ fizruk_long_break: 1 }),
+      );
+      localStorage.setItem(
+        INSIGHTS_DISMISSED_KEY,
+        JSON.stringify(["nutrition-protein-low"]),
+      );
+
+      const { result } = renderHook(() => useNowItems());
+
+      expect(result.current.items.map((i) => i.id).sort()).toEqual([
+        "fizruk_long_break",
+        "nutrition-protein-low",
+      ]);
+    });
+
+    it("відкинуте сьогодні лишається схованим до півночі, а тоді повертається без перезавантаження", () => {
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80, "fizruk"),
+      ]);
+      const { result, rerender } = renderHook(() => useNowItems());
+      act(() => result.current.dismiss(result.current.items[0]!));
+      expect(result.current.items).toEqual([]);
+
+      vi.setSystemTime(new Date(2026, 9, 1, 23, 58, 0));
+      rerender();
+      expect(result.current.items).toEqual([]);
+
+      vi.setSystemTime(new Date(2026, 9, 2, 0, 2, 0));
+      rerender();
+      expect(result.current.items.map((i) => i.id)).toEqual([
+        "fizruk_long_break",
+      ]);
+      expect(result.current.postponed).toBe(0);
+    });
+
+    it("postponed рахує відкладені сьогодні рядки; restorePostponed повертає їх з обох сховищ", () => {
+      generateRecommendationsMock.mockReturnValue([
+        rec("nutrition_protein_low", 68),
+        rec("fizruk_long_break", 80, "fizruk"),
+      ]);
+      // Близнюк (rec + insight) і окремий рядок: два рядки, три id.
+      nutritionMock.mockReturnValue([insight("nutrition-protein-low")]);
+
+      const { result } = renderHook(() => useNowItems());
+      expect(result.current.items).toHaveLength(2);
+      expect(result.current.postponed).toBe(0);
+
+      act(() => {
+        for (const item of result.current.items) result.current.dismiss(item);
+      });
+      expect(result.current.items).toEqual([]);
+      expect(result.current.postponed).toBe(2);
+
+      act(() => result.current.restorePostponed());
+
+      expect(result.current.items.map((i) => i.id).sort()).toEqual([
+        "fizruk_long_break",
+        "nutrition_protein_low",
+      ]);
+      expect(result.current.postponed).toBe(0);
+      // Обидва сховища очищені від id повернутих рядків.
+      expect(
+        JSON.parse(localStorage.getItem(HUB_RECS_DISMISSED_KEY) ?? "{}"),
+      ).toEqual({});
+      expect(
+        JSON.parse(localStorage.getItem(INSIGHTS_DISMISSED_KEY) ?? "{}"),
+      ).toEqual({});
+    });
+
+    it("restorePostponed не чіпає відкидання, якого цей список не бачить", () => {
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80, "fizruk"),
+      ]);
+      // Рядок іншого правила, якого зараз немає в списку, але відкинутого сьогодні.
+      localStorage.setItem(
+        HUB_RECS_DISMISSED_KEY,
+        JSON.stringify({ other_rule: NOON.getTime() }),
+      );
+      const { result } = renderHook(() => useNowItems());
+      act(() => result.current.dismiss(result.current.items[0]!));
+
+      act(() => result.current.restorePostponed());
+
+      expect(
+        Object.keys(
+          JSON.parse(localStorage.getItem(HUB_RECS_DISMISSED_KEY) ?? "{}"),
+        ),
+      ).toEqual(["other_rule"]);
+    });
   });
 });

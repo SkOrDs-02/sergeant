@@ -10,7 +10,9 @@
  * з `useAllInsights`, винесений на екран, не нова константа.
  *
  * Порожня купа — один рядок «Сьогодні все закрито», без CTA: у тихий день
- * винагорода живе в купі «Закрито сьогодні» нижче, не тут.
+ * винагорода живе в купі «Закрито сьогодні» нижче, не тут. Якщо ж вона порожня
+ * лише тому, що рядки відкладено («✕» діє до кінця доби, рішення власника
+ * 2026-10-01), замість цього — «Відкладено N · показати» з поверненням.
  *
  * Last validated: 2026-09-17
  * Status: Active
@@ -205,7 +207,7 @@ export interface NowPileProps {
 }
 
 export function NowPile({ onOpenTarget }: NowPileProps) {
-  const { items, dismiss } = useNowItems();
+  const { items, dismiss, postponed, restorePostponed } = useNowItems();
   const run = useRunAction(onOpenTarget);
   const askAiDisabled = useAskAiQuotaExhausted();
   const [tailOpen, setTailOpen] = useState(false);
@@ -237,12 +239,28 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
       </div>
 
       {!hero ? (
-        <p
-          data-testid="now-empty"
-          className="rounded-xl border border-line bg-bg px-3 py-3 text-style-body text-muted"
-        >
-          {coreMessages.hub.nowPile.empty}
-        </p>
+        // «Все закрито» лише коли справді нічого не було. Якщо порожньо через
+        // «✕» сьогодні — чесно кажемо, скільки відкладено, і даємо повернути.
+        postponed > 0 ? (
+          <button
+            type="button"
+            data-testid="now-postponed"
+            onClick={restorePostponed}
+            className="w-full touch-target rounded-xl focus-ring border border-line bg-bg px-3 py-3 text-left text-style-body text-muted hover:bg-panelHi transition-colors"
+          >
+            {coreMessages.hub.nowPile.postponed} {postponed} ·{" "}
+            <span className="font-semibold text-text">
+              {coreMessages.hub.nowPile.showPostponed}
+            </span>
+          </button>
+        ) : (
+          <p
+            data-testid="now-empty"
+            className="rounded-xl border border-line bg-bg px-3 py-3 text-style-body text-muted"
+          >
+            {coreMessages.hub.nowPile.empty}
+          </p>
+        )
       ) : (
         <>
           <TodayFocusCard

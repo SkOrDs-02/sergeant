@@ -11,7 +11,13 @@
  *
  * Storage namespace: `sergeant.v2.insights.dismissed`. Decoupled from
  * v1 storage keys so a future cleanup migration doesn't accidentally
- * re-show every insight. Values are JSON arrays of stable insight ids.
+ * re-show every insight.
+ *
+ * Dismissal lasts until the end of the CURRENT personal day (device-local,
+ * ADR-0078; owner decision 2026-10-01), not forever. Value is a JSON object
+ * `{ [insightId]: dismissedAtMs }`. The previous format — a bare array of
+ * ids with no timestamp — is a legacy permanent entry and counts as
+ * expired (see `dismissedToday.ts`).
  *
  * `safeReadStringLS` / `safeWriteLS` are reused so the hook degrades
  * gracefully when localStorage is unavailable (private browsing, quota
@@ -20,33 +26,37 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  dismissalsOfToday,
+  isDismissedToday,
+  type DismissalMap,
+} from "./dismissedToday";
 import type { InsightId } from "./types";
 
 const DISMISSED_KEY = "sergeant.v2.insights.dismissed";
 
-function parseDismissed(raw: string | null): Set<InsightId> {
-  if (!raw) return new Set();
+function parseDismissed(raw: string | null): DismissalMap {
+  if (!raw) return {};
   try {
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr)
-      ? new Set(arr.filter((x): x is string => typeof x === "string"))
-      : new Set();
+    return dismissalsOfToday(JSON.parse(raw));
   } catch {
-    return new Set();
+    return {};
   }
 }
 
 export interface UseInsightDismissalResult {
-  /** True iff `id` has been dismissed in this browser. */
+  /** True iff `id` was dismissed in this browser TODAY (device-local day). */
   isDismissed: (id: InsightId) => boolean;
-  /** Mark `id` as dismissed (persists immediately + notifies other tabs). */
+  /** Hide `id` until the end of today (persists immediately + notifies other tabs). */
   dismiss: (id: InsightId) => void;
+  /** Un-hide the given ids (the hub's «показати» for today's dismissed cards). */
+  restore: (ids: readonly InsightId[]) => void;
   /** Clear all dismissals — used by settings "Reset insights" action. */
   clear: () => void;
 }
 
 export function useInsightDismissal(): UseInsightDismissalResult {
-  const [dismissed, setDismissed] = useState<Set<InsightId>>(() =>
+  const [dismissed, setDismissed] = useState<DismissalMap>(() =>
     parseDismissed(safeReadStringLS(DISMISSED_KEY)),
   );
 
@@ -65,25 +75,37 @@ export function useInsightDismissal(): UseInsightDismissalResult {
     return () => window.removeEventListener("storage", handler);
   }, []);
 
+  // Звіряємо з ПОТОЧНОЮ добою на кожен виклик, а не лише на парсі: застосунок,
+  // відкритий через північ, мусить повернути вчорашні відкидання без перезавантаження.
   const isDismissed = useCallback(
-    (id: InsightId): boolean => dismissed.has(id),
+    (id: InsightId): boolean => isDismissedToday(dismissed[id]),
     [dismissed],
   );
 
   const dismiss = useCallback((id: InsightId) => {
     setDismissed((prev) => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.add(id);
-      safeWriteLS(DISMISSED_KEY, JSON.stringify(Array.from(next)));
+      if (isDismissedToday(prev[id])) return prev;
+      // Заодно викидаємо прострочені id, щоб сховище не росло.
+      const next = { ...dismissalsOfToday(prev), [id]: Date.now() };
+      safeWriteLS(DISMISSED_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const restore = useCallback((ids: readonly InsightId[]) => {
+    setDismissed((prev) => {
+      if (!ids.some((id) => id in prev)) return prev;
+      const next = dismissalsOfToday(prev);
+      for (const id of ids) delete next[id];
+      safeWriteLS(DISMISSED_KEY, JSON.stringify(next));
       return next;
     });
   }, []);
 
   const clear = useCallback(() => {
-    setDismissed(new Set());
-    safeWriteLS(DISMISSED_KEY, "[]");
+    setDismissed({});
+    safeWriteLS(DISMISSED_KEY, "{}");
   }, []);
 
-  return { isDismissed, dismiss, clear };
+  return { isDismissed, dismiss, restore, clear };
 }
