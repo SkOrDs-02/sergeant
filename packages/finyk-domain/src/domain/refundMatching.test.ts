@@ -45,6 +45,14 @@ describe("cancelledMerchantOf", () => {
   ])("«%s» не є скасуванням", (description) => {
     expect(cancelledMerchantOf(description)).toBeNull();
   });
+
+  it("довга серія пробілів у описі не дає квадратичного розбору (CodeQL)", () => {
+    const spaces = " ".repeat(100_000);
+    const started = performance.now();
+    expect(cancelledMerchantOf(`Скасування !${spaces}!`)).toBe(`!${spaces}!`);
+    expect(cancelledMerchantOf(`Скасування.${spaces}`)).toBeNull();
+    expect(performance.now() - started).toBeLessThan(500);
+  });
 });
 
 describe("findCancellationPairs — реальні приклади власника", () => {

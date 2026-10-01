@@ -39,8 +39,12 @@ export const REFUND_MAX_GAP_DAYS = 30;
 
 const DAY_MS = 86_400_000;
 
-/** «Скасування. Uklon», «скасування Uklon», «СКАСУВАННЯ: Uklon» → «Uklon». */
-const CANCELLATION_RE = /^\s*скасування(?:[.:]\s*|\s+)(\S.*?)\s*$/iu;
+/**
+ * Префікс опису скасування: слово, за яким іде крапка, двокрапка чи пробіл.
+ * Мерчанта далі вирізає `trim()`, а не регекс: хвіст `(\S.*?)\s*$` давав
+ * поліноміальний бектрекінг на описах із довгими пробілами (CodeQL).
+ */
+const CANCELLATION_PREFIX_RE = /^скасування(?=[.:\s])/iu;
 
 /** Мінімальна форма транзакції для парування. */
 export interface RefundTxLike {
@@ -68,13 +72,22 @@ export interface CancellationMatchOptions {
   maxGapDays?: number | undefined;
 }
 
-/** Мерчант із опису скасування, або `null`, коли опис не скасування. */
+/**
+ * Мерчант із опису скасування, або `null`, коли опис не скасування.
+ * «Скасування. Uklon», «скасування Uklon», «СКАСУВАННЯ: Uklon» → «Uklon».
+ */
 export function cancelledMerchantOf(
   description: string | null | undefined,
 ): string | null {
   if (typeof description !== "string") return null;
-  const match = CANCELLATION_RE.exec(description);
-  return match?.[1] ?? null;
+  const text = description.trim();
+  const prefix = CANCELLATION_PREFIX_RE.exec(text);
+  if (!prefix) return null;
+  // Один розділовий знак одразу після слова — частина префікса.
+  let rest = text.slice(prefix[0].length);
+  if (rest.startsWith(".") || rest.startsWith(":")) rest = rest.slice(1);
+  const merchant = rest.trim();
+  return merchant === "" ? null : merchant;
 }
 
 function accountIdOf(tx: RefundTxLike): string | null {
