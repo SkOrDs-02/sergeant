@@ -501,6 +501,12 @@ export default defineConfig(({ mode }) => {
           __dirname,
           "../../packages/shared/src/data/genericFoods.ts",
         ),
+        // Те саме для реєстру міток категорій комори (одна таксономія
+        // Харчування): його імпортує `nutrition-domain/foodCategories.ts`.
+        "@sergeant/shared/data/pantryCategories": resolve(
+          __dirname,
+          "../../packages/shared/src/data/pantryCategories.ts",
+        ),
         "@sergeant/shared": resolve(
           __dirname,
           "../../packages/shared/src/index.ts",
