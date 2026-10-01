@@ -96,7 +96,6 @@ export function FinykMerchantRulesSection({
                 <Button
                   type="button"
                   variant="ghost"
-                  tone="danger"
                   size="md"
                   className="shrink-0"
                   aria-label={fillRuleCopy(copy.settings.removeAria, {

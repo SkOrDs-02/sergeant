@@ -133,7 +133,6 @@ export function MerchantRuleOffer({
         </div>
         <Button
           variant="ghost"
-          tone="finyk"
           size="md"
           className="w-full"
           onClick={() => onRemove(rule)}
