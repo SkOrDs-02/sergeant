@@ -240,6 +240,8 @@ allowlist із коментарем-причиною.
 | 3. A4 bypass у поллерах        | **Виконано** (та сама гілка). Bypass рівно у трьох місцях: `selectNudgeCandidates` у `sweep.ts` (reminder-sweep), `/api/internal/ai-usage` (обидва handler-и), `readSpendFromLedger` (бюджет-гард). Ledger-рядки без `u:` (`ip:`, `provider:anthropic`, `n8n:`) ідуть під bypass через `withSubjectContext`.                                                                                                                                      |
 | 4. A1-A3 міграція з політиками | Не почато (потребує рішення власника)                                                                                                                                                                                                                                                                                                                                                                                                             |
 
+Перевірка Стадій 2-3 на живому Postgres (2026-10-01, Testcontainers `pgvector/pgvector:pg17`): серверний `vitest run` 5802 passed / 5 skipped, інтеграційний лейн 171/171. Верифікація №2 виконана: з `WHERE user_id = $1` у `listRoute.ts`, заміненим на `WHERE $1::text IS NOT NULL`, гейт падає рівно на `GET /api/ai-memory/list` («відповідь для А містить дані Б»), після відкату 16/16. Інтеграційний прогін знайшов один застарілий тест: `vectorStore.integration` рахував `SELECT set_config(...)` як пошуковий запит, виправлено.
+
 Нотатки Стадій 2-3 (розбіжності зі спекою, звірені grep-ом):
 
 - **Чат-таблиць на сервері немає** (рядок `chat_` у A1): міграції з `chat_` лише `tg_*` і nutrition, сервер чат-історії не зберігає. Стадія 4 їх не охоплює, рядок A1 знімається.
