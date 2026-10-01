@@ -1181,7 +1181,10 @@ jobs:
   # ENOENT on every push to main.
 
   migration-lint:
-    name: Migration lint (AGENTS rule #4)
+    # Лапки обовʼязкові: без них YAML читає ` #4)` як коментар, і GitHub
+    # отримував назву «Migration lint (AGENTS rule», яку доводилось
+    # прописувати в required-чеки `main` саме в такому обрізаному вигляді.
+    name: "Migration lint (AGENTS rule #4)"
     runs-on: ubuntu-latest
     # Свідомо БЕЗ `if: github.event_name == 'pull_request'` (на відміну від
     # решти PR-only джоб): дубль 091 у 2026-07-31 проліз саме тому, що обидва
@@ -1209,7 +1212,7 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
 
   migration-down-drill:
-    name: Migration down drill (AGENTS rule #4)
+    name: "Migration down drill (AGENTS rule #4)"
     # PR-32 (`docs/work/specs/planning/archive/pr-plan-2026-05.md`). Static lint above guarantees
     # sequential numbering + two-phase DROP, but down-migrations themselves
     # are not validated by the linter — they could `DROP COLUMN` a column

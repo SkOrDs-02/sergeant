@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "8.1.0",
+  "current": "8.1.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -730,6 +730,14 @@
       "releasedAt": "2026-10-01",
       "changes": [
         "bump from 8.0.0 -> 8.1.0: freshness-dashboard.html більше не комітиться (локально `pnpm docs:freshness-dashboard`, у CI артефакт docs-freshness.yml); Hard Rule #25 і AGENTS.md § See also уточнено. Minor за рішенням власника 2026-10-01: змінився процес довкола похідного артефакту, а не правила для агентів"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.1.1": {
+      "releasedAt": "2026-10-01",
+      "changes": [
+        "bump from 8.1.0 -> 8.1.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
