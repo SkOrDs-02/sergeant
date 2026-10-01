@@ -5,9 +5,11 @@
 // порожній/негодящий input → "other", trim+lowercase, перший cat-match wins,
 // (в) bucket-агрегатор зберігає порядок категорій + filter порожніх.
 import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+import { PANTRY_CATEGORY_LABELS } from "@sergeant/shared/data/pantryCategories";
 import { describe, expect, it } from "vitest";
 
 import {
+  ALL_FOOD_CATEGORIES,
   CORPUS_CATEGORY_TO_ID,
   FOOD_CATEGORIES,
   categorizeFood,
@@ -17,6 +19,27 @@ import {
 describe("FOOD_CATEGORIES catalog", () => {
   it("має 17 базових категорій", () => {
     expect(FOOD_CATEGORIES).toHaveLength(17);
+  });
+
+  // Мітки живуть в одному місці (`@sergeant/shared`), бо їх друкує й серверний
+  // промпт списку покупок; каталог лише бере їх звідти. Гейт тримає, що id
+  // каталогу й ключ реєстру не розʼїхались (опечатка в id тип не ловить).
+  describe("мітки категорій", () => {
+    it("кожна мітка каталогу береться з реєстру за своїм id", () => {
+      for (const cat of ALL_FOOD_CATEGORIES) {
+        expect(cat.label, cat.id).toBe(
+          (PANTRY_CATEGORY_LABELS as Record<string, string>)[cat.id],
+        );
+      }
+    });
+
+    it("реєстр і каталог мають однаковий склад і порядок, «Інше» останнє", () => {
+      expect(ALL_FOOD_CATEGORIES.map((c) => c.id)).toEqual(
+        Object.keys(PANTRY_CATEGORY_LABELS),
+      );
+      expect(ALL_FOOD_CATEGORIES.at(-1)?.id).toBe("other");
+      expect(ALL_FOOD_CATEGORIES.slice(0, -1)).toEqual([...FOOD_CATEGORIES]);
+    });
   });
 
   it("всі id унікальні", () => {

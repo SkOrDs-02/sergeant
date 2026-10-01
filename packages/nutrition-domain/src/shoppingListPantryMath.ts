@@ -297,8 +297,10 @@ function collectCanonicalKeys(calculated: CalculatedShoppingList): Set<string> {
  * Найспорідненіша категорія списку для нової low-stock позиції: інша
  * позиція списку/«Вже вдома» з тим самим food-category-словником
  * (`categorizeFood`) підказує, куди природно лягла б ця назва — незалежно
- * від того, як AI назвав категорію (лейбли AI і `foodCategories.ts`
- * історично розходяться в пунктуації/формулюванні).
+ * від того, як AI назвав категорію (до 2026-10-01 лейбли AI і
+ * `foodCategories.ts` розходились у переліку й формулюванні; тепер
+ * таксономія одна, але звірка за id категорії лишається надійнішою за
+ * порівняння назв).
  */
 function findRelatedCategoryName(
   calculated: CalculatedShoppingList,

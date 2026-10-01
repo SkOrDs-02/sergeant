@@ -1,4 +1,5 @@
 import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+import { PANTRY_CATEGORY_LABELS } from "@sergeant/shared/data/pantryCategories";
 import { DEFAULT_PLACE_ID } from "./nutritionPantries.js";
 
 export interface FoodCategory {
@@ -61,7 +62,7 @@ export interface GroupedCategoryBucket<T = unknown> {
 export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "sweets_snacks",
-    label: "Солодощі та снеки",
+    label: PANTRY_CATEGORY_LABELS.sweets_snacks,
     iconName: "sparkle",
     collapseBrand: false,
     keywords: [
@@ -93,7 +94,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "drinks",
-    label: "Напої та вода",
+    label: PANTRY_CATEGORY_LABELS.drinks,
     iconName: "coffee",
     collapseBrand: false,
     keywords: [
@@ -118,7 +119,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "ready_meals",
-    label: "Готова кулінарія",
+    label: PANTRY_CATEGORY_LABELS.ready_meals,
     iconName: "utensils",
     collapseBrand: true,
     keywords: [
@@ -169,7 +170,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "sauces",
-    label: "Соуси та пасти",
+    label: PANTRY_CATEGORY_LABELS.sauces,
     iconName: "bottle",
     collapseBrand: true,
     keywords: [
@@ -191,7 +192,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "spreads",
-    label: "Спреди та намазки",
+    label: PANTRY_CATEGORY_LABELS.spreads,
     iconName: "jar",
     // Як і в соусів: бренд тут шум («Паста арахісова Лавка традицій Aumi
     // кранч» і «Паста арахісова» — та сама позиція), саме так вони й
@@ -240,7 +241,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "nuts_seeds",
-    label: "Горіхи та насіння",
+    label: PANTRY_CATEGORY_LABELS.nuts_seeds,
     iconName: "leaf",
     collapseBrand: true,
     keywords: [
@@ -259,7 +260,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "canned",
-    label: "Консерви",
+    label: PANTRY_CATEGORY_LABELS.canned,
     iconName: "archive",
     collapseBrand: true,
     keywords: [
@@ -277,7 +278,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "vegetables",
-    label: "Овочі",
+    label: PANTRY_CATEGORY_LABELS.vegetables,
     iconName: "carrot",
     collapseBrand: true,
     keywords: [
@@ -317,7 +318,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "legumes",
-    label: "Бобові",
+    label: PANTRY_CATEGORY_LABELS.legumes,
     iconName: "bean",
     collapseBrand: true,
     keywords: [
@@ -332,7 +333,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "fruits",
-    label: "Фрукти та ягоди",
+    label: PANTRY_CATEGORY_LABELS.fruits,
     iconName: "apple",
     collapseBrand: true,
     keywords: [
@@ -376,7 +377,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "alcohol",
-    label: "Алкоголь",
+    label: PANTRY_CATEGORY_LABELS.alcohol,
     iconName: "wine",
     // Конкретне вино — це конкретний товар, а не «вино взагалі»: згорнувши
     // бренд, ми злили б у купу речі, які людина розрізняє.
@@ -407,7 +408,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "fish",
-    label: "Риба та морепродукти",
+    label: PANTRY_CATEGORY_LABELS.fish,
     iconName: "fish",
     collapseBrand: true,
     keywords: [
@@ -440,7 +441,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "meat",
-    label: "Мʼясо та птиця",
+    label: PANTRY_CATEGORY_LABELS.meat,
     iconName: "drumstick",
     collapseBrand: true,
     keywords: [
@@ -482,7 +483,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "dairy_eggs",
-    label: "Молочні та яйця",
+    label: PANTRY_CATEGORY_LABELS.dairy_eggs,
     iconName: "egg",
     collapseBrand: true,
     keywords: [
@@ -507,7 +508,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "grains",
-    label: "Крупи та хліб",
+    label: PANTRY_CATEGORY_LABELS.grains,
     iconName: "wheat",
     collapseBrand: true,
     keywords: [
@@ -551,7 +552,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "sports",
-    label: "Спортивне харчування",
+    label: PANTRY_CATEGORY_LABELS.sports,
     iconName: "dumbbell",
     // Конкретний протеїн — конкретний товар: смак і бренд тут і є вибором.
     collapseBrand: false,
@@ -569,7 +570,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "pantry",
-    label: "Олії, спеції та бакалія",
+    label: PANTRY_CATEGORY_LABELS.pantry,
     iconName: "droplet",
     collapseBrand: true,
     keywords: [
@@ -595,7 +596,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
 
 const OTHER: FoodCategory = {
   id: "other",
-  label: "Інше",
+  label: PANTRY_CATEGORY_LABELS.other,
   iconName: "package",
   keywords: [],
   // Останній фолбек: якщо ми не впізнали продукт, то не впізнали й того,
@@ -649,7 +650,18 @@ export const CORPUS_CATEGORY_TO_ID: Readonly<Record<string, string>> = {
   Яйця: "dairy_eggs",
 };
 
-const BY_ID = new Map(FOOD_CATEGORIES.map((c) => [c.id, c]));
+/**
+ * Усі категорії комори в порядку каталогу плюс «Інше» в кінці. Це ЄДИНА
+ * таксономія Харчування: комора, список покупок і промпт його генерації
+ * беруть назви звідси (рішення власника 2026-10-01, n3), а не мають власних
+ * переліків.
+ */
+export const ALL_FOOD_CATEGORIES: readonly FoodCategory[] = [
+  ...FOOD_CATEGORIES,
+  OTHER,
+];
+
+const BY_ID = new Map(ALL_FOOD_CATEGORIES.map((c) => [c.id, c]));
 
 /**
  * Хвіст «зі смаком …» / «з ароматом …» несе слова чужих категорій:
