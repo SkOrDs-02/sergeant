@@ -105,6 +105,13 @@ export interface TransactionsMonoSlice {
   lastUpdated: Date | null;
   syncState: MonoSyncState;
   accounts: ReadonlyArray<TxAccount> | undefined;
+  /**
+   * Банки Monobank (`MonoJarDto`). Їхні id збігаються з `accountId`
+   * транзакцій банки, і матчер переказів лічить таку ногу маркером
+   * «картка ↔ банка» (див. `transferMatching.jarAccountIds`). У `accounts`
+   * банок немає — сервер виносить їх окремим списком.
+   */
+  jars?: ReadonlyArray<{ monoJarId?: string | undefined }> | undefined;
   fetchMonth: (year: number, month: number) => Promise<unknown>;
   fetchRange?: (from: string, to: string) => Promise<unknown>;
   historyTx: Transaction[];
@@ -200,6 +207,7 @@ export function Transactions({
     lastUpdated,
     syncState,
     accounts,
+    jars,
     fetchMonth,
     historyTx,
     loadingHistory,
@@ -280,6 +288,14 @@ export function Transactions({
       ) ?? {},
   );
 
+  // `jars` приходить новим масивом на кожен рендер FinykApp, тож у залежності
+  // memo йде стабільний рядок id, а не сам масив.
+  const jarIdsKey = (jars ?? []).flatMap((j) => j.monoJarId ?? []).join("|");
+  const jarAccountIds = useMemo(
+    () => new Set(jarIdsKey ? jarIdsKey.split("|") : []),
+    [jarIdsKey],
+  );
+
   const transferSuggestions = useMemo(() => {
     // До прогріву вже підтверджені перекази ще без категорії й поверталися
     // б у чергу пропозицій цілою пачкою.
@@ -287,7 +303,7 @@ export function Transactions({
     const hidden = new Set(hiddenTxIds);
     const raw = findInternalTransferSuggestions(
       filters.activeTx.filter((tx) => !hidden.has(tx.id)),
-      { txCategories },
+      { txCategories, jarAccountIds },
     );
     return filterTransferSuggestions(raw, {
       rejectedPairKeys: rejectedTransferPairs,
@@ -299,6 +315,7 @@ export function Transactions({
     filters.activeTx,
     hiddenTxIds,
     txCategories,
+    jarAccountIds,
     rejectedTransferPairs,
     snoozedTransferPairs,
   ]);

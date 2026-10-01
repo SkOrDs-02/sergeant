@@ -338,6 +338,57 @@ describe("Transactions page shell", () => {
     );
   });
 
+  describe("card ↔ jar transfers", () => {
+    // Реальні описи виписки Monobank (звіт власника): жоден не містить
+    // слова «переказ», а в `accounts` банок немає — вони лише в `jars`.
+    const jarLeg = {
+      ...SAMPLE_TX,
+      id: "jar-leg",
+      amount: -40_000,
+      description: "На білу картку",
+      accountId: "jar-1",
+      _accountId: "jar-1",
+    };
+    const cardLeg = {
+      ...SAMPLE_TX,
+      id: "card-leg",
+      amount: 40_000,
+      description: "Часткове зняття банки «просто»",
+      accountId: "white",
+      _accountId: "white",
+      type: "income" as const,
+    };
+    const accounts = [{ id: "white", type: "white", maskedPan: ["****2222"] }];
+
+    it("suggests the pair from the real Monobank phrasing alone", () => {
+      renderTransactions({ mono: { realTx: [jarLeg, cardLeg], accounts } });
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+    });
+
+    it("a leg on a known jar is a marker even when no description is", () => {
+      const neutral = [
+        { ...jarLeg, description: "Витрата" },
+        { ...cardLeg, description: "Надходження" },
+      ];
+      const { unmount } = renderTransactions({
+        mono: { realTx: neutral, accounts },
+      });
+      expect(
+        screen.queryByText("Схоже на внутрішній переказ"),
+      ).not.toBeInTheDocument();
+      unmount();
+
+      renderTransactions({
+        mono: { realTx: neutral, accounts, jars: [{ monoJarId: "jar-1" }] },
+      });
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+    });
+  });
+
   function buildTransferPair() {
     return [
       {
