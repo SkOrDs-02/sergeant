@@ -101,7 +101,7 @@ export interface BoundaryFinding extends NodeRef {
 
 export interface FocusFinding extends NodeRef {
   kind: "focus";
-  /** `ring` | `outline` | `ua-auto` (браузерний дефолт) | `none`. */
+  /** `ring` | `ring-inset` | `outline` | `ua-auto` (браузерний дефолт) | `none`. */
   mechanism: string;
   /** Сирі `box-shadow` / `outline` для розбору. */
   raw: string;
@@ -399,11 +399,11 @@ export function measureInPage(opts: MeasureOptions): PageMeasure {
         cs.getPropertyValue(`border-${s.toLowerCase()}-width`),
       );
       if (style === "none" || style === "hidden" || !(w > 0)) continue;
-      if (w > best.w)
-        best = {
-          w,
-          color: cs.getPropertyValue(`border-${s.toLowerCase()}-color`),
-        };
+      const color = cs.getPropertyValue(`border-${s.toLowerCase()}-color`);
+      // Прозора межа (`border-transparent`) не є межею: інакше кожна
+      // невибрана вкладка/кнопка з `border` рахувалась би «пласкою карткою».
+      if (parse(color).a <= 0.02) continue;
+      if (w > best.w) best = { w, color };
     }
     return best;
   }
@@ -454,10 +454,30 @@ export function measureInPage(opts: MeasureOptions): PageMeasure {
 
   const FIELD_SEL =
     "input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),textarea,select";
+  /** Видима межа поля: сам `input`, а якщо він «голий» усередині обгортки
+   *  (`TimeField`/`DateField`: контур малює контейнер) — найближчий предок
+   *  (≤2 рівні), який має межу й майже повністю збігається з полем за площею. */
+  function fieldBox(el: Element): Element {
+    const own = boundaryOf(el);
+    if (own.borderPx > 0 || own.fillRatio > 1.02) return el;
+    const r0 = el.getBoundingClientRect();
+    let n: Element | null = el.parentElement;
+    for (let i = 0; i < 4 && n; i++, n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      const rn = n.getBoundingClientRect();
+      if (
+        sideBorder(cs).w > 0 &&
+        r0.width * r0.height >= 0.5 * rn.width * rn.height
+      )
+        return n;
+    }
+    return el;
+  }
+
   for (const el of Array.from(root.querySelectorAll(FIELD_SEL))) {
     const r = visible(el, 8, 8);
     if (!r) continue;
-    const m = boundaryOf(el);
+    const m = boundaryOf(fieldBox(el));
     const best = Math.max(m.fillRatio, m.borderRatio ?? 1);
     bump("field");
     boundary.push({
@@ -902,6 +922,9 @@ export function measureFocusInPage(): FocusFinding | null {
   const rings = layers.filter(
     (l) => !l.inset && l.blur === 0 && l.spread > 0 && l.color.a > 0,
   );
+  const insetRings = layers.filter(
+    (l) => l.inset && l.blur === 0 && l.spread > 0 && l.color.a > 0,
+  );
   const outlineW = parseFloat(cs.outlineWidth) || 0;
   const hasOutline = cs.outlineStyle !== "none" && outlineW > 0;
   // Контрольна точка: тривалість переходу може лишити кільце напівзгаслим.
@@ -923,6 +946,14 @@ export function measureFocusInPage(): FocusFinding | null {
       // Кільце впритул до контролу: ще й проти власної заливки.
       ratioV = Math.min(ratioV, ratio(ringColor, ownFill(el, pb.c)));
     }
+  } else if (insetRings.length > 0) {
+    // Внутрішнє кільце (`ring-inset`): малюється ПОВЕРХ власної заливки.
+    mechanism = "ring-inset";
+    const outer = [...insetRings].sort((a, b) => b.spread - a.spread)[0]!;
+    ringPx = outer.spread;
+    const fill = ownFill(el, pb.c);
+    ringColor = over(outer.color, fill);
+    ratioV = ratio(ringColor, fill);
   } else if (hasOutline) {
     mechanism = cs.outlineStyle === "auto" ? "ua-auto" : "outline";
     ringPx = outlineW;
