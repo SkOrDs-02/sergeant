@@ -177,6 +177,15 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     expect(SYSTEM_PREFIX).toContain("batch_categorize (dry_run спершу)");
   });
 
+  it("забороняє переказувати id, назви інструментів і їхні параметри (v27)", () => {
+    // Регресія: модель витягла в текст користувачу внутрішній параметр
+    // («З group_by=category, але агрегація…»). Рядок про переказ результату
+    // інструмента мусить називати всі три категорії витоку, а не лише id.
+    expect(SYSTEM_PREFIX).toContain(
+      "Результат інструмента переказуй своїми словами, без id, назв інструментів і їхніх параметрів.",
+    );
+  });
+
   it("does NOT contain the legacy /help instruction (PR #795 redirected it)", () => {
     expect(SYSTEM_PREFIX).not.toContain("/help");
     expect(SYSTEM_PREFIX).not.toContain("/допомога");
