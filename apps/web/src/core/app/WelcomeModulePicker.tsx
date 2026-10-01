@@ -41,7 +41,9 @@ import { messages } from "@shared/i18n/uk";
 
 /**
  * Per-module visual tokens. Maps each module to:
- *   - `border` — outline when the card is picked.
+ *   - `border` — outline when the card is picked: `{m}-edge` (≥3:1 проти
+ *     столу в обох темах; було `{m}/60` = 2.7-2.9:1, A4, рішення власника
+ *     2026-10-01).
  *   - `bg` — soft tint applied to the picked card body.
  *   - `icon` — chip background for the top-left module icon.
  *   - `ring` — focus / picked outer ring.
@@ -56,28 +58,28 @@ const MODULE_VISUALS: Record<
   { border: string; bg: string; icon: string; ring: string; check: string }
 > = {
   finyk: {
-    border: "border-finyk/60",
+    border: "border-finyk-edge",
     bg: "bg-finyk/8",
     icon: "bg-finyk/15 text-finyk",
     ring: "ring-finyk/40",
     check: "bg-finyk-strong dark:bg-finyk dark:text-bg",
   },
   fizruk: {
-    border: "border-fizruk/60",
+    border: "border-fizruk-edge",
     bg: "bg-fizruk/8",
     icon: "bg-fizruk/15 text-fizruk",
     ring: "ring-fizruk/40",
     check: "bg-fizruk-strong dark:bg-fizruk dark:text-bg",
   },
   routine: {
-    border: "border-routine/60",
+    border: "border-routine-edge",
     bg: "bg-routine/8",
     icon: "bg-routine/15 text-routine",
     ring: "ring-routine/40",
     check: "bg-routine-strong dark:bg-routine dark:text-bg",
   },
   nutrition: {
-    border: "border-nutrition/60",
+    border: "border-nutrition-edge",
     bg: "bg-nutrition/8",
     icon: "bg-nutrition/15 text-nutrition",
     ring: "ring-nutrition/40",
@@ -230,7 +232,8 @@ export function WelcomeModulePicker({
       {/* До 2026-09-16 це був ручний `<button>` із власною фокус-рамкою і
           власним 44px-підлогою — борг дизайн-контракту онбордингу. Канон
           примітива дає і те, і те; лишились тільки візуальні оверрайди
-          (напівпрозора панель замість суцільної), а `h-11 min-h-[44px]`
+          (суцільна панель: напівпрозора `bg-panel/60` прибрана 2026-10-01,
+          A8.3 аудиту контрасту), а `h-11 min-h-[44px]`
           тримає ту саму висоту й на fine-pointer, де `Button` підлогу
           навмисно не застосовує. */}
       <Button
@@ -238,7 +241,7 @@ export function WelcomeModulePicker({
         onClick={onOpenAuth}
         variant="outline"
         size="md"
-        className="w-full h-11 min-h-[44px] rounded-2xl border-line bg-panel/60 text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
+        className="w-full h-11 min-h-[44px] rounded-2xl border-line bg-panel text-style-label text-text hover:bg-panelHi hover:border-brand-500/40"
       >
         <Icon name="user" size="md" strokeWidth={2} aria-hidden />
         <span>{copy.haveAccount}</span>

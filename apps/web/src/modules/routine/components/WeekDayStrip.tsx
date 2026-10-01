@@ -92,8 +92,12 @@ export function WeekDayStrip({
                 // grid-а, а не flex-елемент, тож тягнеться на всю колонку.
                 // `min-w-[44px]` лишається як floor на найвужчих екранах.
                 "focus-ring flex min-h-[44px] w-full min-w-[44px] flex-col items-center justify-center rounded-xl border py-1 font-semibold",
+                // Вибраний день — тонований фон + контур `routine-edge` (≥3:1
+                // проти сусідів в обох темах). Тихий `routine-ring` давав
+                // 1.63 (світла) / 2.41 (темна), а м'яке кільце `ring-1` лише
+                // розмивало край — A4, рішення власника 2026-10-01.
                 isSel
-                  ? "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm ring-1 ring-routine-line/50 dark:ring-routine-border-dark/30"
+                  ? "border-routine-edge bg-routine-surface2 dark:bg-routine-surface-dark/15 text-text shadow-sm"
                   : "border-transparent bg-panelHi/50 text-muted hover:bg-panelHi hover:text-text",
                 isToday && !isSel && "ring-1 ring-routine/40",
               )}

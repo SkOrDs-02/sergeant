@@ -5,9 +5,12 @@
  * Status: Active. Дзеркало повного аудиту `contrast-surfaces.audit.ts`, але
  * лише на екранах без бекенду й світу (як `axe.spec.ts`) і лише на метриках,
  * які токенний фікс 2026-10-01 довів до зеленого (знахідки A1-A3 аудиту
- * `docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md`). Що ще
- * червоне в повному аудиті (стани вибору A4, hero-ink A9), сюди НЕ входить:
- * гейт, який червоний із народження, ніхто не читає.
+ * `docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md`) і
+ * follow-up того ж дня (A4: стани вибору модуля — плитки `/welcome`;
+ * окремий блок унизу; тиждень Рутини без світу з даними не рендериться, його
+ * тримає юніт-тест `WeekDayStrip.test.tsx`). hero-ink A9 тримають храповик
+ * `heroInkAlpha` = 0 і `contrast.test.js`: сюди його не тягнемо, бо для
+ * hero-тексту потрібен світ із даними, а гейт без нього був би порожнім.
  *
  * Метрики й пороги — у шапці `tests/utils/contrastSurfaces.ts`.
  */
@@ -152,6 +155,62 @@ for (const theme of ["light", "dark"] as Theme[]) {
           (s) => `${s.mechanism} ${s.ratio} ${s.sel} | ${s.raw.slice(0, 90)}`,
         ),
         `зупинки Tab без індикатора ≥3:1 на ${path} [${theme}]`,
+      ).toEqual([]);
+    });
+  }
+}
+
+/**
+ * A4 (follow-up аудиту 2026-10-01): обраний стан (`aria-pressed/selected/
+ * checked/current`) відрізняється від сусіда ≥3:1 — «тонований фон + контур
+ * `{module}-edge`». Екран, де вибір живе поза спільними примітивами й
+ * рендериться без бекенду та світу: плитки модулів на `/welcome`
+ * (`WelcomeModulePicker`, усі чотири обрані за замовчуванням).
+ */
+const STATE_SURFACES: ReadonlyArray<{
+  name: string;
+  path: string;
+  mode: "post-ftux" | "cold";
+}> = [{ name: "welcome-tiles", path: "/welcome", mode: "cold" }];
+
+for (const theme of ["light", "dark"] as Theme[]) {
+  for (const { name, path, mode } of STATE_SURFACES) {
+    test(`non-text contrast: ${name} [${theme}] — стани вибору ≥ 3:1`, async ({
+      page,
+    }) => {
+      await seedFTUX(page, mode, {
+        theme,
+        extra: { hub_theme_v2: theme },
+      });
+      await page.addInitScript((t: string) => {
+        if (t === "dark") document.documentElement.classList.add("dark");
+      }, theme);
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await page
+        .waitForLoadState("networkidle", { timeout: 15_000 })
+        .catch(() => undefined);
+      // Ліниві чанки `/welcome` приходять після `networkidle` (скелет із
+      // `SuspenseWithMinDelay`): чекаємо саме на контрол із станом вибору, а
+      // не на «тишу» DOM, яка настає ще на скелеті.
+      await page
+        .locator("button[aria-pressed]")
+        .first()
+        .waitFor({ state: "visible", timeout: 20_000 });
+      await settle(page);
+
+      const measure = await page.evaluate(measureInPage, {});
+      const states = measure.boundary.filter(
+        (b) => b.kind === "state" && !b.uncertain,
+      );
+      // Порожній набір означав би, що екран перестав бути перевіркою.
+      expect(states.length, `жодного стану вибору на ${path}`).toBeGreaterThan(
+        0,
+      );
+      expect(
+        states
+          .filter((b) => b.ratio < b.required)
+          .map((b) => `state ${b.ratio} ${b.sel}`),
+        `стани вибору нижче 3:1 на ${path} [${theme}]`,
       ).toEqual([]);
     });
   }
