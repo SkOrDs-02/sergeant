@@ -316,3 +316,89 @@ describe("computeClosedToday", () => {
     ]);
   });
 });
+
+// Доба для ГРОШЕЙ у «Закрито сьогодні» — київська (рішення власника
+// 2026-10-01, ADR-0078); решта рядків лишаються на добі телефона. Пояс
+// пристрою перемикається прямо в тесті (Node перечитує `process.env.TZ` на
+// льоту; `vitest.config.js` пінить UTC лише як стартове значення).
+//
+// NOW = 2026-09-17 19:30 за Києвом (16:30Z). Київська доба — від 16.09 21:00Z.
+describe("computeClosedToday: початок доби для витрат — київський", () => {
+  const ORIGINAL_TZ = process.env["TZ"];
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    finykMock.txs = [];
+    finykMock.budgets = [];
+  });
+  afterEach(() => {
+    if (ORIGINAL_TZ === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = ORIGINAL_TZ;
+    vi.useRealTimers();
+  });
+
+  const spentRow = (tz: string) => {
+    process.env["TZ"] = tz;
+    return compute([], ["finyk"])[0];
+  };
+
+  it("покупка о 01:30 за Києвом — сьогоднішня, хоч у Нью-Йорку на пристрої ще вчора", () => {
+    // 16.09 22:30Z = 17.09 01:30 Київ = 16.09 18:30 Нью-Йорк (початок «доби
+    // телефона» там — 17.09 04:00Z, тож за годинником пристрою вона вчорашня).
+    finykMock.txs = [
+      { id: "t1", amount: -30000, time: Date.parse("2026-09-16T22:30:00Z") },
+    ];
+    const row = spentRow("America/New_York");
+    expect(row).toMatchObject({ module: "finyk", statement: "записано" });
+    expect(row?.value).toContain("300");
+  });
+
+  it("покупка о 23:30 за Києвом учора — вчорашня, хоч у Дубаї на пристрої вже сьогодні", () => {
+    // 16.09 20:30Z = 16.09 23:30 Київ = 17.09 00:30 Дубай (UTC+4; початок
+    // «доби телефона» там — 16.09 20:00Z, тож за пристроєм вона сьогоднішня).
+    finykMock.txs = [
+      { id: "t1", amount: -30000, time: Date.parse("2026-09-16T20:30:00Z") },
+    ];
+    expect(spentRow("Asia/Dubai")).toBeUndefined();
+  });
+
+  it("покупка о 13:00 за Києвом — сьогоднішня, хоч у Токіо (де вже 18.09) на пристрої вона вчорашня", () => {
+    // 17.09 10:00Z = 17.09 13:00 Київ = 17.09 19:00 Токіо. «Зараз» у Токіо —
+    // 18.09 01:30, початок «доби телефона» — 17.09 15:00Z, тож покупка за
+    // пристроєм лишилась учорашньою.
+    finykMock.txs = [
+      { id: "t1", amount: -30000, time: Date.parse("2026-09-17T10:00:00Z") },
+    ];
+    const row = spentRow("Asia/Tokyo");
+    expect(row).toMatchObject({ module: "finyk", statement: "записано" });
+    expect(row?.value).toContain("300");
+  });
+
+  it("київський пристрій і пристрої поза Києвом бачать одну й ту саму суму", () => {
+    finykMock.txs = [
+      { id: "today", amount: -25000, time: Date.parse("2026-09-17T10:00:00Z") },
+      {
+        id: "late-yesterday",
+        amount: -9900,
+        time: Date.parse("2026-09-16T20:30:00Z"),
+      },
+    ];
+    for (const tz of ["Europe/Kyiv", "UTC", "America/New_York", "Asia/Tokyo"]) {
+      const row = spentRow(tz);
+      expect(row?.value, `пояс пристрою: ${tz}`).toContain("250");
+      expect(row?.value, `пояс пристрою: ${tz}`).not.toContain("349");
+    }
+  });
+
+  it("запис, датований наперед (завтра за Києвом), у сьогоднішні витрати не входить", () => {
+    finykMock.txs = [
+      {
+        id: "future",
+        amount: -50000,
+        time: Date.parse("2026-09-17T21:00:00Z"),
+      },
+    ];
+    expect(spentRow("Europe/Kyiv")).toBeUndefined();
+  });
+});

@@ -329,8 +329,10 @@ describe("noTxRecentRule", () => {
 
 describe("dailyVsWeeklyPaceRule", () => {
   const DAY = 86_400_000;
-  // 16:00 локального часу, щоб пройти MIN_HOUR=14.
-  const now = new Date("2025-06-15T16:00:00");
+  // 16:00 за Києвом (літо, UTC+3 → 13:00Z), щоб пройти MIN_HOUR=14. Явний UTC,
+  // а не «локальний» рядок: картка читає КИЇВСЬКУ годину й добу, тож годинник
+  // машини, на якій біжить тест, не мусить на неї впливати.
+  const now = new Date("2025-06-15T13:00:00Z");
   const mkTx = (id: string, daysAgo: number, uah: number) => ({
     id,
     amount: -Math.round(uah * 100),
@@ -385,7 +387,7 @@ describe("dailyVsWeeklyPaceRule", () => {
   });
 
   it("мовчить до 14:00", () => {
-    const early = new Date("2025-06-15T10:00:00");
+    const early = new Date("2025-06-15T09:00:00Z"); // 12:00 за Києвом
     const ctx = baseCtx({
       now: early,
       transactions: [

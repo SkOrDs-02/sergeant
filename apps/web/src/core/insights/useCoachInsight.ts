@@ -6,6 +6,7 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
   loadNutritionGoalPeriods,
@@ -150,8 +151,17 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   // ЛЮДСЬКИМ підписом (спільний з дайджестом `finykExpenseCategoryLabel`) —
   // coach API назв не розкриває, друкує `name` у промпт як є. Ключ-підпис
   // сам зливає різні id в одну позицію, окремого кроку злиття не треба.
+  //
+  // Межі тижня для ГРОШЕЙ — київські (рішення власника 2026-10-01,
+  // `METRICS_VERSION` 17): тиждень названо понеділком пристрою (він спільний
+  // зі звичками, їжею й тренуваннями нижче, ADR-0078), а транзакція лягає в
+  // нього за своїм КИЇВСЬКИМ днем — так само, як у дайджесті й «Звітах».
+  // Для київського пристрою це те саме вікно; `end` тепер явний кінець
+  // тижня, а не «усе від понеділка».
+  const moneyWeek = weekWindowByMondayKey(localDateKey(weekStart));
   const aggregate = calcFinykPeriodAggregate(txs, {
-    start: weekStart.getTime(),
+    start: moneyWeek.startMs,
+    end: moneyWeek.endMs,
     excludedTxIds,
     txSplits,
     categoryKey: (tx) =>

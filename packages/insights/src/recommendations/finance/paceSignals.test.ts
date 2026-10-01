@@ -4,9 +4,10 @@
 // сьогодні» (f5). Однакові відрізки тижня (f1) — у `spendingVelocity.test.ts`.
 //
 // Правила читають `ctx.now`, а не системний годинник, тож дата в тестах
-// задається в контексті. Денна картка дивиться на ЛОКАЛЬНИЙ час
-// (`getHours() >= 14`), тому її тести будують `now` локальним конструктором і
-// покладаються на UTC-середовище (CI runner і dev-VM усі в UTC).
+// задається в контексті. Денна картка дивиться на КИЇВСЬКУ годину й добу
+// (рішення власника 2026-10-01, ADR-0078), тому її тести будують `now` явним
+// UTC-моментом (літо, Київ = UTC+3) і від поясу машини не залежать; пояс
+// пристрою поза Києвом перевіряє `dailyVsWeeklyPace.kyivDay.test.ts`.
 import { describe, it, expect } from "vitest";
 import {
   dailyVsWeeklyPaceRule,
@@ -53,9 +54,11 @@ const spendingAt = (id: string, uah: number, iso: string): Transaction =>
 
 describe("f2: одна картка про темп за раз", () => {
   // Середа 2025-06-18. Ранок (до 14:00) денна картка ще мовчить, вечір – може.
-  const MORNING = new Date(2025, 5, 18, 10, 0, 0);
-  const EVENING = new Date(2025, 5, 18, 16, 0, 0);
-  const at = (day: number, hour = 16) => new Date(2025, 5, day, hour).getTime();
+  const kyiv = (day: number, hour: number) =>
+    new Date(Date.UTC(2025, 5, day, hour - 3));
+  const MORNING = kyiv(18, 10);
+  const EVENING = kyiv(18, 16);
+  const at = (day: number, hour = 16) => kyiv(day, hour).getTime();
 
   // Попередні 7 днів (11–17 червня) по 200 ₴ (середня 200) + сьогодні 500 ₴:
   // денна картка «+150%». Тиждень пн–ср 16–18 = 200 + 200 + 500 = 900.
@@ -140,7 +143,7 @@ describe("f3: «Відкрити» з тижневої картки веде в 
   });
 
   it("денна картка лишається імперативною: ведe в «Додати витрату»", () => {
-    const NOW = new Date(2025, 5, 18, 16, 0, 0);
+    const NOW = new Date("2025-06-18T13:00:00Z"); // 16:00 за Києвом
     const rec = dailyVsWeeklyPaceRule.evaluate(
       ctx({
         now: NOW,
@@ -159,7 +162,7 @@ describe("f3: «Відкрити» з тижневої картки веде в 
 
 describe("f4: текст денної картки", () => {
   it("просить додати готівку, а не «зафіксувати поточні витрати»", () => {
-    const NOW = new Date(2025, 5, 18, 16, 0, 0);
+    const NOW = new Date("2025-06-18T13:00:00Z"); // 16:00 за Києвом
     const rec = dailyVsWeeklyPaceRule.evaluate(
       ctx({
         now: NOW,
@@ -189,7 +192,7 @@ describe("f5: які id читає хаб як попередження про �
   });
 
   it("id збігаються з тим, що правила реально віддають", () => {
-    const NOW = new Date(2025, 5, 18, 16, 0, 0);
+    const NOW = new Date("2025-06-18T13:00:00Z"); // 16:00 за Києвом
     const daily = dailyVsWeeklyPaceRule.evaluate(
       ctx({
         now: NOW,
