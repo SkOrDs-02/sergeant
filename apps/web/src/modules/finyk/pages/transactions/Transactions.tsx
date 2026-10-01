@@ -3,6 +3,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { failedCopy } from "@shared/i18n/failedCopy";
 import { TransactionsHeader } from "./TransactionsHeader";
 import { exportTransactionsCsv } from "./exportTransactionsCsv";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
@@ -364,17 +365,33 @@ export function Transactions({
   // CSV-експорт видимого місяця. `monthKey` збирається з `selMonth` (у
   // ньому `month` — індекс 0..11, як у `Date`), щоб імʼя файла називало
   // саме той місяць, який людина бачила на екрані.
-  const handleExportCsv = useCallback(() => {
-    const monthKey = `${filters.selMonth.year}-${String(
-      filters.selMonth.month + 1,
-    ).padStart(2, "0")}`;
-    const count = exportTransactionsCsv(
-      filters.filtered,
-      filters.getEffectiveCat,
-      monthKey,
-    );
-    toast?.success(`Вивантажено операцій: ${count}`);
-  }, [filters.selMonth, filters.filtered, filters.getEffectiveCat, toast]);
+  const handleExportCsv = useCallback(
+    async function exportCsv(): Promise<void> {
+      const monthKey = `${filters.selMonth.year}-${String(
+        filters.selMonth.month + 1,
+      ).padStart(2, "0")}`;
+      try {
+        const { count, result } = await exportTransactionsCsv(
+          filters.filtered,
+          filters.getEffectiveCat,
+          monthKey,
+        );
+        // Закрили аркуш «Поділитись» без вибору — це не вивантаження, тост
+        // «Вивантажено…» тут збрехав би.
+        if (result !== "cancelled") {
+          toast?.success(`Вивантажено операцій: ${count}`);
+        }
+      } catch {
+        // Повтор безпечний: файл збирається заново з того, що на екрані. Кнопка
+        // в тості теж жест користувача, тож `navigator.share` знову дозволений.
+        toast?.error(failedCopy("вивантажити операції"), undefined, {
+          label: "Повторити",
+          onClick: () => void exportCsv(),
+        });
+      }
+    },
+    [filters.selMonth, filters.filtered, filters.getEffectiveCat, toast],
+  );
 
   // PR-F4 founder-UX audit 2026-09-13: `excludedStatTxIds` — джерело
   // правди для «не враховувати у статистиці» — доти доходило лише до

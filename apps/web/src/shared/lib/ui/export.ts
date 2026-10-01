@@ -2,6 +2,7 @@
  * Data Export Utilities — CSV & PDF generation for reports.
  */
 import { formatDateNumeric } from "@shared/lib/time/formatDate";
+import { isIOSStandalonePWA } from "@shared/lib/platform/iosStandalone";
 
 export interface ExportColumn<T> {
   key: keyof T | string;
@@ -106,15 +107,84 @@ export function downloadString(
 }
 
 /**
- * Exports data as CSV file.
+ * Чим закінчилась віддача файла.
+ *
+ * - `shared` — файл віддано в системне «Поділитись» (iOS PWA);
+ * - `downloaded` — спрацювало звичайне завантаження (`<a download>`);
+ * - `cancelled` — людина закрила аркуш «Поділитись» без вибору. Це не збій
+ *   і не успіх: тост «Вивантажено…» тут не доречний.
+ */
+export type FileDeliveryResult = "shared" | "downloaded" | "cancelled";
+
+/**
+ * Віддає рядок як файл людині.
+ *
+ * AI-CONTEXT (2026-10-01, звіт власника: тап «Вивантажити» в застосунку з
+ * іконки на iPhone): у standalone-PWA на iOS `<a download>` з blob-URL не
+ * качає файл, а ВОДИТЬ сам застосунок на blob — без кнопки «назад», тож
+ * він виглядає завислим (тост не зникає, нав перезавантажує Операції).
+ * Відкладене `revokeObjectURL` це не лікує. Там єдиний чесний шлях —
+ * системне «Поділитись» (`navigator.share` з файлом): аркуш пропонує
+ * «Зберегти у Файли», і застосунок нікуди не йде.
+ *
+ * Правила:
+ *  - «Поділитись» лише в iOS standalone-PWA і лише коли `canShare({ files })`
+ *    підтверджує, що браузер візьме цей файл; скрізь інде — звичайне
+ *    завантаження, як і раніше;
+ *  - закриття аркуша (`AbortError`) — тиха відмова, `cancelled`;
+ *  - будь-яка інша відмова `share` (нема активації жесту, тип не
+ *    підтримано) — фолбек на завантаження, а не втрачений експорт;
+ *  - `navigator.share` викликається СИНХРОННО на початку функції: iOS
+ *    вимагає активації жесту, і будь-який `await` до виклику її з'їдає.
+ *    Тому викликай це з обробника кліку, не після мережевого запиту.
+ */
+export async function saveStringAsFile(
+  content: string,
+  filename: string,
+  mimeType: string = "text/plain",
+): Promise<FileDeliveryResult> {
+  if (
+    isIOSStandalonePWA() &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function"
+  ) {
+    // BOM лишається: Excel без нього читає UTF-8 як Windows-1251.
+    const file = new File(["\uFEFF" + content], filename, { type: mimeType });
+    let canShare = false;
+    try {
+      canShare = navigator.canShare({ files: [file] });
+    } catch {
+      canShare = false;
+    }
+    if (canShare) {
+      try {
+        await navigator.share({ files: [file] });
+        return "shared";
+      } catch (error) {
+        // За імʼям, а не `instanceof`: DOMException може прийти з іншого
+        // realm-а й не бути нащадком `Error` у цьому.
+        if ((error as { name?: unknown } | null)?.name === "AbortError") {
+          return "cancelled";
+        }
+        // Інша відмова — падаємо в завантаження нижче.
+      }
+    }
+  }
+  downloadString(content, filename, mimeType);
+  return "downloaded";
+}
+
+/**
+ * Exports data as CSV file (системне «Поділитись» в iOS PWA, інакше
+ * завантаження — див. {@link saveStringAsFile}).
  */
 export function exportToCSV<T extends Record<string, unknown>>(
   data: T[],
   columns: ExportColumn<T>[],
   filename: string = "export.csv",
-): void {
+): Promise<FileDeliveryResult> {
   const csv = arrayToCSV(data, columns);
-  downloadString(csv, filename, "text/csv");
+  return saveStringAsFile(csv, filename, "text/csv");
 }
 
 /**

@@ -2,6 +2,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -40,15 +41,30 @@ vi.mock("@shared/api", async () => {
   };
 });
 
-const { mockRequestCloudPull, mockMonoRefresh, mockToast } = vi.hoisted(() => ({
-  mockRequestCloudPull: vi.fn(() => Promise.resolve()),
-  mockMonoRefresh: vi.fn(() => Promise.resolve()),
-  mockToast: {
-    success: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-  },
-}));
+const { mockRequestCloudPull, mockMonoRefresh, mockToast, mockExportCsv } =
+  vi.hoisted(() => ({
+    mockExportCsv: vi.fn(),
+    mockRequestCloudPull: vi.fn(() => Promise.resolve()),
+    mockMonoRefresh: vi.fn(() => Promise.resolve()),
+    mockToast: {
+      success: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+    },
+  }));
+
+// Експорт CSV підміняємо: тут пінується лише те, КОЛИ сторінка каже
+// «Вивантажено…» (після шерингу/завантаження, не після скасування аркуша).
+// Сама збірка й віддача файла — у `exportTransactionsCsv.test.ts` і
+// `shared/lib/ui/export.test.ts`.
+vi.mock("./exportTransactionsCsv", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("./exportTransactionsCsv")>();
+  return {
+    ...actual,
+    exportTransactionsCsv: (...args: unknown[]) => mockExportCsv(...args),
+  };
+});
 
 vi.mock("@shared/components/ui/VirtualList", () => ({
   VirtualList: ({
@@ -254,6 +270,68 @@ describe("Transactions page shell", () => {
     expect(
       screen.getByRole("button", { name: "Вивантажити операції у CSV: 1" }),
     ).toBeInTheDocument();
+  });
+
+  describe("CSV-експорт: коли казати «Вивантажено»", () => {
+    const clickExport = async () => {
+      renderTransactions({ mono: { realTx: [SAMPLE_TX] } });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Вивантажити операції у CSV/ }),
+        );
+      });
+    };
+
+    it.each(["shared", "downloaded"] as const)(
+      "після %s показує тост із кількістю рядків",
+      async (result) => {
+        mockExportCsv.mockResolvedValue({ count: 1, result });
+        await clickExport();
+        expect(mockToast.success).toHaveBeenCalledWith(
+          "Вивантажено операцій: 1",
+        );
+        expect(mockToast.error).not.toHaveBeenCalled();
+      },
+    );
+
+    it("скасування аркуша «Поділитись» — без тосту: вивантаження не було", async () => {
+      mockExportCsv.mockResolvedValue({ count: 1, result: "cancelled" });
+      await clickExport();
+      expect(mockToast.success).not.toHaveBeenCalled();
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
+    it("збій віддачі — тост «Не вдалося вивантажити операції», а не «Вивантажено»", async () => {
+      mockExportCsv.mockRejectedValue(new Error("boom"));
+      await clickExport();
+      expect(mockToast.success).not.toHaveBeenCalled();
+      expect(mockToast.error).toHaveBeenCalledTimes(1);
+      expect(String(mockToast.error.mock.calls[0]![0])).toMatch(
+        /вивантажити операції/,
+      );
+
+      // «Повторити» збирає файл заново і, коли віддача вдалась, каже
+      // «Вивантажено…».
+      const action = mockToast.error.mock.calls[0]![2] as {
+        label: string;
+        onClick: () => void;
+      };
+      expect(action.label).toBe("Повторити");
+      mockExportCsv.mockResolvedValue({ count: 1, result: "shared" });
+      await act(async () => {
+        action.onClick();
+      });
+      expect(mockExportCsv).toHaveBeenCalledTimes(2);
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+    });
+
+    it("експорт отримує відфільтровані операції й ключ видимого місяця", async () => {
+      mockExportCsv.mockResolvedValue({ count: 1, result: "downloaded" });
+      await clickExport();
+      const [txs, , monthKey] = mockExportCsv.mock.calls[0]!;
+      expect(txs).toHaveLength(1);
+      expect(monthKey).toBe("2026-06");
+    });
   });
 
   it("renders the header month label for the current Kyiv month", () => {
