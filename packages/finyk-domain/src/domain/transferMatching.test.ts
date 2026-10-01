@@ -122,6 +122,202 @@ describe("findInternalTransferSuggestions", () => {
   });
 });
 
+describe("findInternalTransferSuggestions — real Monobank card↔jar phrasings", () => {
+  // Виписка власника, одна доба: банка віддала на білу картку 400 і 700.
+  // Рахунок ноги з банки в Mono не підписаний, а описи — «На білу картку» і
+  // «Часткове зняття банки «просто»» — без слова «переказ».
+  const base = 1_700_000_000;
+  const jarToCard400 = tx("jar-400", -40_000, "jar-1", base, "На білу картку");
+  const cardFromJar400 = tx(
+    "card-400",
+    40_000,
+    "white",
+    base + 4,
+    "Часткове зняття банки «просто»",
+  );
+  const jarToCard700 = tx(
+    "jar-700",
+    -70_000,
+    "jar-1",
+    base + 3_600,
+    "На білу картку",
+  );
+  const cardFromJar700 = tx(
+    "card-700",
+    70_000,
+    "white",
+    base + 3_605,
+    "Часткове зняття банки «просто»",
+  );
+
+  it("pairs «На білу картку» with «Часткове зняття банки» (adjective before «картку», no preposition before «банки»)", () => {
+    const result = findInternalTransferSuggestions([
+      jarToCard400,
+      cardFromJar400,
+      jarToCard700,
+      cardFromJar700,
+    ]);
+
+    expect(result.map((s) => `${s.outgoing.id}:${s.incoming.id}`)).toEqual([
+      "jar-700:card-700",
+      "jar-400:card-400",
+    ]);
+    expect(result.map((s) => s.amountMinor)).toEqual([70_000, 40_000]);
+  });
+
+  it("one phrase alone is enough: «На білу картку» against a neutral card leg", () => {
+    const neutralLeg = tx(
+      "card-neutral",
+      40_000,
+      "white",
+      base + 4,
+      "Надходження",
+    );
+
+    expect(
+      findInternalTransferSuggestions([jarToCard400, neutralLeg]),
+    ).toHaveLength(1);
+  });
+
+  it.each([
+    "На білу картку",
+    "На чорну картку",
+    "З Чорної картки",
+    "із білої картки",
+    "На мою білу картку",
+    "Часткове зняття банки «просто»",
+    "Зняття банки",
+    "Поповнення банки «на машину»",
+    "Закриття банки",
+  ])("treats «%s» as a transfer marker", (description) => {
+    const out = tx("out", -10_000, "black", base, description);
+    const incoming = tx("in", 10_000, "jar-9", base + 10, "Надходження");
+
+    expect(findInternalTransferSuggestions([out, incoming])).toHaveLength(1);
+  });
+
+  it.each([
+    "Сільпо",
+    "Кава на вулицю",
+    "Оплата з розрахунковим рахунком",
+    "Зняття готівки",
+    "Поповнення мобільного",
+    "Поповнення «Київстар»",
+    "Закриття кредиту",
+  ])("does not treat «%s» as a transfer marker", (description) => {
+    const out = tx("out", -10_000, "black", base, description);
+    const incoming = tx("in", 10_000, "white", base + 10, "Надходження");
+
+    expect(findInternalTransferSuggestions([out, incoming])).toEqual([]);
+  });
+
+  it("keeps every other guard for the extended phrases", () => {
+    const candidates = [
+      tx("same-account", 40_000, "jar-1", base + 4, "З білої картки"),
+      tx("wrong-amount", 40_001, "white", base + 4, "З білої картки"),
+      tx("same-sign", -40_000, "white", base + 4, "З білої картки"),
+      tx("too-late", 40_000, "white", base + 6 * 60 * 60 + 1, "З білої картки"),
+      tx("cashback", 40_000, "white", base + 4, "Кешбек на картку"),
+    ];
+
+    // По одному кандидату проти ноги з банки: кандидати між собою теж
+    // утворювали б пари й маскували б, який саме запобіжник спрацював.
+    for (const candidate of candidates) {
+      expect(
+        findInternalTransferSuggestions([jarToCard400, candidate]),
+        candidate.id,
+      ).toEqual([]);
+    }
+  });
+
+  it("stays silent on a lone «Поповнення «На закриття боргів🙏»» without a matching leg", () => {
+    const lone = tx(
+      "lone",
+      -7_235,
+      "black",
+      base,
+      "Поповнення «На закриття боргів🙏»",
+    );
+    // Усі «сусіди» не збігаються з лоном хоча б одним запобіжником: інша
+    // сума, той самий рахунок, той самий знак, поза шістьма годинами.
+    const unrelated = [
+      tx("other-1", 7_234, "white", base + 5, "Надходження"),
+      tx("other-2", 7_235, "black", base + 5, "Надходження"),
+      tx("other-3", -7_235, "white", base + 5, "Надходження"),
+      tx("other-4", 7_235, "white", base + 8 * 60 * 60, "Надходження"),
+      tx("other-jar", 5_000, "jar-1", base + 5, "Надходження"),
+    ];
+
+    expect(findInternalTransferSuggestions([lone])).toEqual([]);
+    expect(findInternalTransferSuggestions([lone, ...unrelated])).toEqual([]);
+    // Навіть якщо банка відома: без другої ноги нічого пропонувати.
+    expect(
+      findInternalTransferSuggestions([lone, ...unrelated], {
+        jarAccountIds: ["jar-1"],
+      }),
+    ).toEqual([]);
+  });
+
+  describe("jarAccountIds", () => {
+    // Жоден опис не несе маркера: єдиний доказ — що одна нога лежить на банці.
+    const topUp = tx(
+      "top-up",
+      -7_235,
+      "black",
+      base,
+      "Поповнення «На закриття боргів🙏»",
+    );
+    const jarLeg = tx("jar-leg", 7_235, "jar-1", base + 2, "Надходження");
+
+    it("without the jar list neither description is a marker", () => {
+      expect(findInternalTransferSuggestions([topUp, jarLeg])).toEqual([]);
+    });
+
+    it("counts a leg on a known jar as a marker (array or Set)", () => {
+      for (const jarAccountIds of [["jar-1"], new Set(["jar-1"])]) {
+        expect(
+          findInternalTransferSuggestions([topUp, jarLeg], { jarAccountIds }),
+        ).toEqual([
+          {
+            outgoing: topUp,
+            incoming: jarLeg,
+            amountMinor: 7_235,
+            timeDeltaSeconds: 2,
+          },
+        ]);
+      }
+    });
+
+    it("a jar id on its own never overrides the amount/sign/time guards", () => {
+      const donation = tx("donation", 7_236, "jar-1", base + 2, "Надходження");
+      const late = tx(
+        "late",
+        7_235,
+        "jar-1",
+        base + 7 * 60 * 60,
+        "Надходження",
+      );
+
+      expect(
+        findInternalTransferSuggestions([topUp, donation, late], {
+          jarAccountIds: ["jar-1"],
+        }),
+      ).toEqual([]);
+    });
+
+    it("stays silent when two own legs are equally plausible partners of the jar leg", () => {
+      const first = tx("c-1", -7_235, "black", base, "Витрата");
+      const second = tx("c-2", -7_235, "white", base, "Витрата");
+
+      expect(
+        findInternalTransferSuggestions([first, second, jarLeg], {
+          jarAccountIds: ["jar-1"],
+        }),
+      ).toEqual([]);
+    });
+  });
+});
+
 describe("transferSuggestionPairKey", () => {
   it("joins outgoing and incoming ids with a colon", () => {
     const outgoing = tx("out", -10_000, "black", 1_000);

@@ -26,6 +26,7 @@
  */
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { findCancelledTxIds } from "../domain/refundMatching.js";
 import {
   manualExpenseToTransaction,
   type ManualExpenseEntry,
@@ -43,6 +44,10 @@ export interface FinykUniverseTx extends SpendingTxLike {
   time?: number;
   categoryId?: string | undefined;
   type?: string | undefined;
+  /** Рахунок і валюта — для парування скасувань (`refundMatching.ts`). */
+  accountId?: string | null | undefined;
+  _accountId?: string | null | undefined;
+  currencyCode?: number | undefined;
 }
 
 /** Запис отримуваного боргу; важливі лише привʼязані транзакції. */
@@ -70,6 +75,11 @@ export interface FinykExcludedTxIdsInput {
    * (`domain/transferMatching.ts`) уже читає всі три джерела. Без цього
    * поля excluded-set бачив лише мапу, тож ручний запис або імпорт із
    * переказною категорією рахувався витратою.
+   *
+   * Із цього ж списку ловляться пари «списання ↔ скасування»
+   * (`findCancellationPairs`, рішення власника 2026-10-01): обидві ноги
+   * пари теж виходять зі статистики. Тому викликач, який хоче правило, має
+   * передавати сюди й БАНКІВСЬКІ транзакції, а не лише ручні.
    */
   transactions?: readonly (FinykUniverseTx | null | undefined)[] | null;
 }
@@ -81,7 +91,8 @@ function isTxLevelTransfer(tx: FinykUniverseTx): boolean {
 
 /**
  * Канонічний excluded-set Фініка: `hidden` + внутрішні перекази +
- * привʼязані до receivables транзакції + явно виключені зі статистики.
+ * привʼязані до receivables транзакції + явно виключені зі статистики +
+ * обидві ноги скасованих платежів («Скасування. …», `refundMatching.ts`).
  *
  * Це та сама четвірка, що її збирає web-адаптер
  * `getFinykExcludedTxIdsFromStorage` (`apps/web/.../lib/lsStats.ts`) — але
@@ -107,6 +118,10 @@ export function buildFinykExcludedTxIds(
   for (const tx of input.transactions ?? []) {
     if (tx?.id && isTxLevelTransfer(tx)) out.add(String(tx.id));
   }
+
+  // «Uklon −189» і «Скасування. Uklon +189» — обидві ноги: ні витрата, ні
+  // дохід. Рішення власника 2026-10-01; правила пари — `refundMatching.ts`.
+  for (const id of findCancelledTxIds(input.transactions)) out.add(id);
 
   for (const r of input.receivables ?? []) {
     for (const id of r?.linkedTxIds ?? []) {
