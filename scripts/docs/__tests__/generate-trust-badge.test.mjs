@@ -36,7 +36,10 @@ describe("computeTrust", () => {
   });
 
   it("warning on exactly one WIP violation", () => {
-    const t = computeTrust({ wipRows: [{ severity: "warn" }], overdueCount: 0 });
+    const t = computeTrust({
+      wipRows: [{ severity: "warn" }],
+      overdueCount: 0,
+    });
     assert.equal(t.status, "warning");
     assert.equal(t.violations, 1);
   });
