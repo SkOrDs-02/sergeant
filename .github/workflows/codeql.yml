@@ -23,15 +23,11 @@ name: CodeQL (JavaScript / TypeScript SAST)
 #
 # Усі actions SHA-pinned згідно з repo convention (див. ci.yml /
 # container-scan.yml).
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-  pull_request:
-  schedule:
-    # Понеділок 06:00 UTC — після weekend-у, до початку робочого тижня.
-    # Не перетинається з 03:00 (nightly-audit) і 04:00 (container-scan).
-    - cron: "0 6 * * 1"
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read

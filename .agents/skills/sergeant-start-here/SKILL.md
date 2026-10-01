@@ -29,7 +29,7 @@ pnpm snapshot           # writes .agents/snapshot.md
 
 Read `.agents/snapshot.md` and react:
 
-- Немає віддаленого CI-сигналу (Bitbucket без pipelines) — перевіряй main↔prod дрейф через `pnpm deploy:status`, не через розділ CI у снапшоті.
+- CI-сигнал - GitHub Actions (`gh pr checks <n>`, `gh run list`); main↔prod дрейф - `pnpm deploy:status`.
 - Bundle budgets breached (>95%) or Lighthouse failing → load `sergeant-deploy-and-observability`.
 - Entropy-сигнали по зачепленій поверхні (dead code, docs drift, cycles — прямі перевірки, див. `sergeant-tech-debt` § «Прямі entropy checks») → load `sergeant-tech-debt`.
 - Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.

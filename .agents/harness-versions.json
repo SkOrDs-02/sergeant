@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "7.0.6",
+  "current": "8.0.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -714,6 +714,14 @@
       "releasedAt": "2026-09-29",
       "changes": [
         "bump from 7.0.5 -> 7.0.6: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "8.0.0": {
+      "releasedAt": "2026-09-30",
+      "changes": [
+        "bump from 7.0.6 -> 8.0.0: Hard Rule files changed; AGENTS.md modified; skill file added/modified; pre-commit hooks modified"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

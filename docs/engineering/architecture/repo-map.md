@@ -69,9 +69,9 @@
 
 ## Build / deployment outputs
 
-- `apps/web` — ручний `pnpm deploy:web` (локальний Vercel CLI, `--prebuilt`, прямо в прод); прев'ю на PR немає, Git-інтеграція на Bitbucket не працює. Bundle output copied into `apps/server/dist/assets/*` for unified-mode serving. `size-limit` paths point through that copy.
+- `apps/web` — ручний `pnpm deploy:web` (локальний Vercel CLI, `--prebuilt`, прямо в прод); автодеплою web на merge немає. Bundle output copied into `apps/server/dist/assets/*` for unified-mode serving. `size-limit` paths point through that copy.
 - `apps/landing` — standalone Vercel static build from `apps/landing/vercel.json`; public domain is configured outside the repo.
-- `apps/server` — Hetzner CX23 + Coolify via `Dockerfile.api`, білдиться на сервері (GitHub Actions/`ghcr.io` не задіяні з переїзду на Bitbucket); викотити — `pnpm deploy:api` (тригерить Coolify API, автодеплою на merge немає). Міграції: ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`) — окремий процес, але вже з НОВОГО коду; Coolify `pre_deployment_command` порожній навмисно (він виконувався у старому контейнері, тому міграція відставала на деплой). Health endpoint: `/health`. Міграції беруть `MIGRATE_DATABASE_URL`, якщо заданий, інакше `DATABASE_URL` (у Coolify це одна й та сама внутрішня адреса Postgres, див. [`apps/server/AGENTS.md`](../../../apps/server/AGENTS.md)). Rationale: [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md).
+- `apps/server` — Hetzner CX23 + Coolify via `Dockerfile.api`, білдиться на сервері з GitHub `main`; автодеплой після зеленого CI (джоба `deploy-api` у `ci.yml`, ADR-0102), запасний шлях `pnpm deploy:api`. Міграції: ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`) — окремий процес, але вже з НОВОГО коду; Coolify `pre_deployment_command` порожній навмисно (він виконувався у старому контейнері, тому міграція відставала на деплой). Health endpoint: `/health`. Міграції беруть `MIGRATE_DATABASE_URL`, якщо заданий, інакше `DATABASE_URL` (у Coolify це одна й та сама внутрішня адреса Postgres, див. [`apps/server/AGENTS.md`](../../../apps/server/AGENTS.md)). Rationale: [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md).
 - `apps/mobile` — Expo build (EAS).
 - `apps/mobile-shell` — Capacitor build wrapping `apps/web` output.
 
