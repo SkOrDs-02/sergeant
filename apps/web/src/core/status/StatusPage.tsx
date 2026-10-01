@@ -347,9 +347,9 @@ const PILL_LABEL: Record<ComponentStatus, string> = {
 // `dark:text-{status}` — той самий патерн, що вже стоїть у `HabitForm`,
 // `HabitListItem` і `RoutineTimeline`.
 const PILL_CLASSES: Record<ComponentStatus, string> = {
-  operational: "bg-success-soft text-success-strong dark:text-success",
-  degraded: "bg-warning-soft text-warning-strong dark:text-warning",
-  down: "bg-danger-soft text-danger-strong dark:text-danger",
+  operational: "bg-success-soft text-success-soft-fg",
+  degraded: "bg-warning-soft text-warning-soft-fg",
+  down: "bg-danger-soft text-danger-soft-fg",
 };
 
 const DOT_CLASSES: Record<ComponentStatus, string> = {

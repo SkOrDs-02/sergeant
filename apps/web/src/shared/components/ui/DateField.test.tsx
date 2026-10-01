@@ -14,7 +14,7 @@ describe("DateField", () => {
     expect(input.parentElement?.parentElement?.parentElement).toHaveClass(
       "overflow-hidden",
       "border",
-      "border-line",
+      "border-control",
       "focus-within:border-brand-400",
     );
     expect(input).toHaveClass("border-0", "focus-visible:ring-0");

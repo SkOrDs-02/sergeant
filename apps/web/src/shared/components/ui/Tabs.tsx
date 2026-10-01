@@ -101,7 +101,9 @@ const VARIANT_UNDERLINE: Record<TabsVariant, string> = {
 // settings group switcher measured 4.28:1 in HC). Module variants keep
 // their dark surface-tint override; only the text token changes.
 const VARIANT_PILL: Record<TabsVariant, string> = {
-  brand: "bg-brand-soft text-brand-soft-fg",
+  // `border-control`: вибраний піл (`brand-soft` на `panelHi`) відрізнявся від
+  // сусідів лише 1.09-1.44:1, а стан мусить читатись ≥3:1 (аудит 2026-10-01, A4).
+  brand: "border-control bg-brand-soft text-brand-soft-fg",
   finyk: "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk-surface-dark/15",
   fizruk: "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk-surface-dark/15",
   routine:

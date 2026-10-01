@@ -154,7 +154,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     ? "bg-brand-strong dark:bg-brand-400"
     : error
       ? "bg-danger-soft"
-      : "bg-line";
+      : "bg-control";
 
   const ringColor = error
     ? "peer-focus-visible:ring-danger/45"

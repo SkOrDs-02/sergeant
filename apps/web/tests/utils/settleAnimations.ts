@@ -17,8 +17,8 @@ import type { Page } from "@playwright/test";
  * Чекаємо лише СКІНЧЕННІ анімації (лупи shimmer/pulse ніколи не
  * закінчуються) і кількома проходами, бо stagger-діти стартують із
  * затримкою до 150 ms, а Suspense-контент може змонтуватись після першого
- * проходу. Стеля — 3 с: анімація, яку хтось поставив на паузу, не має
- * вішати тест. Та сама схема, що в `tests/mobile/audit.ts` (там rect-и,
+ * проходу; кожен прохід починається з «тиші» DOM (300 мс без змін). Стеля —
+ * 4 с: анімація, яку хтось поставив на паузу, не має вішати тест. Та сама схема, що в `tests/mobile/audit.ts` (там rect-и,
  * тут кольори — мотив один: міряти кадр, який уже приземлився).
  *
  * Спільний для `axe.spec.ts` і `low-vision.spec.ts`: обидва роблять
@@ -26,8 +26,40 @@ import type { Page } from "@playwright/test";
  */
 export async function settleAnimations(page: Page): Promise<void> {
   await page.evaluate(async () => {
-    const deadline = performance.now() + 3_000;
+    const deadline = performance.now() + 4_000;
+    // Тиша DOM: 300 мс без змін дерева/класів. Без неї перший прохід бачить
+    // лише анімації, які ВЖЕ існують; обгортка, що перемонтувалась після
+    // приходу даних зі сховища (хаб, `StaggerChild`), стартує нову анімацію
+    // вже після нього. Так CI 2026-10-01 піймав підписи рейка модулів
+    // `.text-{finyk,fizruk,routine}-strong > .truncate` на кадрі
+    // `opacity ≈ 0.82`: 4.11/3.98/3.84 замість усталених 6.02/5.77/5.47
+    // (розбір — docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md § 3).
+    const quiet = (ms: number) =>
+      new Promise<void>((resolve) => {
+        let timer = setTimeout(done, ms);
+        const mo = new MutationObserver(() => {
+          clearTimeout(timer);
+          timer = setTimeout(done, ms);
+        });
+        mo.observe(document.body, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ["class", "style"],
+        });
+        function done() {
+          clearTimeout(timer);
+          mo.disconnect();
+          resolve();
+        }
+      });
     for (let pass = 0; pass < 5; pass++) {
+      const budget = deadline - performance.now();
+      if (budget <= 0) return;
+      await Promise.race([
+        quiet(300),
+        new Promise((resolve) => setTimeout(resolve, budget)),
+      ]);
       const pending = document
         .getAnimations()
         .filter(
@@ -35,11 +67,12 @@ export async function settleAnimations(page: Page): Promise<void> {
             a.playState !== "finished" &&
             a.effect?.getComputedTiming().iterations !== Infinity,
         );
-      const budget = deadline - performance.now();
-      if (pending.length === 0 || budget <= 0) return;
+      if (pending.length === 0) return;
+      const left = deadline - performance.now();
+      if (left <= 0) return;
       await Promise.race([
         Promise.all(pending.map((a) => a.finished.catch(() => undefined))),
-        new Promise((resolve) => setTimeout(resolve, budget)),
+        new Promise((resolve) => setTimeout(resolve, left)),
       ]);
     }
   });
