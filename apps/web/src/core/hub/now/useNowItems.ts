@@ -35,7 +35,12 @@ import {
 } from "@shared/lib/insights/dismissedToday";
 import { generateRecommendations } from "../../lib/recommendationEngine";
 import { HUB_RECS_DISMISSED_KEY } from "../../insights/TodayFocusCard";
-import { mergeNowItems, type NowItem } from "./nowItems";
+import { useHubPref } from "../../settings/hubPrefs";
+import {
+  mergeNowItems,
+  withoutWeekReportTarget,
+  type NowItem,
+} from "./nowItems";
 
 /**
  * Рекомендації залежать від часу доби (вечірні нагадування, вікно
@@ -77,7 +82,11 @@ export function useNowItems(): UseNowItemsResult {
   // `useDashboardFocus`; мемоізувати нема на чому, масив щоразу новий.
   const recs = generateRecommendations();
 
-  const all = mergeNowItems(recs, insights);
+  // Цільовий блок «Порада й звіт тижня» вимикається в налаштуваннях: тоді
+  // «Відкрити» з тижневої картки має куди вести лише в модуль.
+  const [showInsights] = useHubPref<boolean>("showInsights", true);
+  const merged = mergeNowItems(recs, insights);
+  const all = showInsights ? merged : merged.map(withoutWeekReportTarget);
   // Відкинуто за БУДЬ-ЯКИМ із двох id, але лише СЬОГОДНІ: вчорашнє і запис без
   // мітки часу не ховають нічого.
   const isPostponed = (item: NowItem) =>

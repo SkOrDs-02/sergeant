@@ -313,4 +313,33 @@ describe("useNowItems", () => {
       ).toEqual(["other_rule"]);
     });
   });
+
+  // f3: «Звіт тижня» як ціль працює, лише коли блок «Порада й звіт тижня»
+  // є на екрані. Вимкнений у налаштуваннях, він не слухає подію, і «Відкрити»
+  // мовчки нічого б не робило, тож рядок повертається до переходу в модуль.
+  describe("ціль «Звіт тижня» і налаштування showInsights", () => {
+    const weekRec = (): Rec => ({
+      ...rec("spending_velocity_high", 75, "finyk"),
+      action: "week_report",
+    });
+
+    it("блок увімкнено (за замовчуванням): дія — звіт тижня", () => {
+      generateRecommendationsMock.mockReturnValue([weekRec()]);
+      const { result } = renderHook(() => useNowItems());
+      expect(result.current.items[0]?.action).toEqual({
+        kind: "open_week_report",
+      });
+    });
+
+    it("блок вимкнено: дія повертається в огляд Фініка", async () => {
+      const { writeHubPrefsBag } = await import("../../settings/hubPrefs");
+      writeHubPrefsBag({ showInsights: false });
+      generateRecommendationsMock.mockReturnValue([weekRec()]);
+      const { result } = renderHook(() => useNowItems());
+      expect(result.current.items[0]?.action).toEqual({
+        kind: "open_module",
+        module: "finyk",
+      });
+    });
+  });
 });

@@ -65,9 +65,10 @@ describe("Money — тири суми", () => {
   it("inherit-тон бере колір самого числа, а не власний приглушений", () => {
     const { container } = render(<Money amount={-7} tone="inherit" />);
     const sign = container.querySelector(".text-\\[0\\.78em\\]");
-    // Жодного власного кольору — лише прозорість поверх currentColor.
-    expect(sign).toHaveClass("opacity-65");
-    expect(sign!.className).not.toMatch(/text-(muted|hero-ink)/);
+    // Жодного власного кольору і жодної прозорості: `opacity-65` давала
+    // 3.14-4.18:1 на забарвлених сумах (аудит 2026-10-01, A5) — тир лишається
+    // того самого кольору, тиша тримається розміром і вагою.
+    expect(sign!.className).not.toMatch(/text-(muted|hero-ink)|opacity-/);
   });
 
   it("нескінченність і NaN не ламають рендер", () => {
@@ -135,7 +136,7 @@ describe("Delta — зміна як типографіка, а не бейдж",
     const sym = container.querySelector(".text-\\[0\\.72em\\]");
     expect(container.firstElementChild).toHaveClass("text-danger");
     for (const tier of [sign, sym]) {
-      expect(tier).toHaveClass("opacity-65");
+      expect(tier!.className).not.toMatch(/opacity-/);
       expect(tier!.className).not.toMatch(/text-muted/);
     }
   });

@@ -4,7 +4,10 @@ import type { Request, Response } from "express";
 vi.mock("../../auth.js", () => ({ getSessionUser: vi.fn() }));
 vi.mock("../../db.js", () => {
   const pool = { connect: vi.fn(), query: vi.fn() };
-  return { default: pool, pool };
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  const withSubjectContext = (_subject: string, fn: (db: unknown) => unknown) =>
+    fn(pool);
+  return { default: pool, pool, withSubjectContext };
 });
 vi.mock("../billing/getUserPlan.js", () => ({ getUserPlan: vi.fn() }));
 vi.mock("../../obs/anthropicBudgetGuard.js", () => ({

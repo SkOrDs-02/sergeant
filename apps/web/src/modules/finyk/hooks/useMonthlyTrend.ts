@@ -12,6 +12,8 @@ import {
   type MonthlyTrendPoint,
 } from "@sergeant/finyk-domain/domain/trends";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type {
   Category,
   Transaction,
@@ -26,6 +28,8 @@ export interface MonthlyTrendStorage {
   txSplits: TxSplitsMap;
   manualExpenses?: ManualExpense[] | undefined;
   txCategories?: Record<string, string | undefined> | undefined;
+  /** Правила «Завжди так для цього магазину»: тренд категорії бачить їх так само, як список. */
+  merchantRules?: MerchantRuleIndex | undefined;
   customCategories?: Category[] | undefined;
 }
 
@@ -82,14 +86,21 @@ export function useMonthlyTrend(
     txSplits,
     manualExpenses,
     txCategories,
+    merchantRules,
     customCategories,
   } = storage;
   return useMemo(() => {
     void dayKey;
-    const points = buildMonthlyTrend(withManualExpenses(bank, manualExpenses), {
+    const all = withManualExpenses(bank, manualExpenses);
+    const points = buildMonthlyTrend(all, {
       excludedTxIds,
       txSplits,
-      txCategories: txCategories ?? {},
+      txCategories: withMerchantRuleOverrides(
+        all,
+        txCategories ?? {},
+        merchantRules,
+        customCategories ?? [],
+      ),
       customCategories: customCategories ?? [],
       categoryId,
     });
@@ -110,6 +121,7 @@ export function useMonthlyTrend(
     excludedTxIds,
     txSplits,
     txCategories,
+    merchantRules,
     customCategories,
     categoryId,
   ]);

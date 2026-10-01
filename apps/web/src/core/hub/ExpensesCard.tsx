@@ -11,6 +11,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { toKyivISODate } from "@sergeant/shared";
 import { readFinykStatsContext } from "@finyk/utils";
 import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
@@ -18,7 +19,6 @@ import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
   reportWindows,
-  localDateKey,
   type Period,
   type SpendingInputs,
 } from "./hubReports.aggregation";
@@ -91,7 +91,8 @@ function BarChart({
           >
             {vals.map((v, i) => {
               const pct = Math.max(0, Math.min(100, (v / max) * 100));
-              const isToday = dates[i] === localDateKey();
+              // «Сьогодні» для грошей — київське (f6), як і межа доби в агрегаті.
+              const isToday = dates[i] === toKyivISODate();
               const isSelected = selected === i;
               return (
                 <button
@@ -211,13 +212,15 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       txSplits: txSplits as Record<string, unknown[]>,
     };
 
+    // Гроші ріжуться за Києвом (f6): вікна «до сьогодні» — `w.money`, не
+    // `w.cur`, а день транзакції `aggregateSpending` бере київський.
     const w = reportWindows(period, offset);
     return {
-      cur: aggregateSpending(inputs, w.cur),
-      prev: aggregateSpending(inputs, w.prev),
+      cur: aggregateSpending(inputs, w.money.cur),
+      prev: aggregateSpending(inputs, w.money.prev),
       prevAny: aggregateSpending(inputs, w.prevAll).total > 0,
       dates: w.dates,
-      partial: w.partial,
+      partial: w.money.partial,
     };
   }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
 

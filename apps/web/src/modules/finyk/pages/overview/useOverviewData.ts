@@ -22,6 +22,7 @@ import {
 } from "@sergeant/finyk-domain/domain/budget";
 import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import { dailySpendSeries } from "@sergeant/finyk-domain/lib/dailySpendSeries";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import {
   filterStatTransactions,
   withManualExpenses,
@@ -76,7 +77,8 @@ export function useOverviewData({
     monthlyPlan,
     networthHistory,
     saveNetworthSnapshot,
-    txCategories,
+    txCategories: explicitTxCategories,
+    merchantRuleIndex,
     txSplits,
     manualAssets,
     customCategories,
@@ -128,6 +130,21 @@ export function useOverviewData({
         excludedTxIds,
       ),
     [realTx, manualExpenses, excludedTxIds],
+  );
+  // Правила «Завжди так для цього магазину» (2026-10-01). Бюджетні агрегати
+  // й інсайти нижче читають категорію з мапи `txCategories`, тож віддаємо їм
+  // ЕФЕКТИВНУ мапу: явні override-и плюс категорії, виведені правилами. Це
+  // копія для читання, у слот вона не потрапляє. `insightTx` ширший за
+  // `statTx` (без місячного clamp-у), тож одна мапа покриває обидва.
+  const txCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        insightTx,
+        explicitTxCategories,
+        merchantRuleIndex,
+        customCategories,
+      ),
+    [insightTx, explicitTxCategories, merchantRuleIndex, customCategories],
   );
 
   // Інсайт «Знайшов повторення» читає дзеркало з фіксованим вікном, а не

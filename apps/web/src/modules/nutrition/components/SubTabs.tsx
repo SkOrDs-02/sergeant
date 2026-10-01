@@ -54,9 +54,13 @@ export function SubTabs({
             className={cn(
               "text-style-label flex-1 min-h-[40px] px-3 py-2 rounded-xl transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+              // Вибраний піл — `border-control`: біла заливка на `panelHi` дає
+              // лише 1.09:1, а стан вибору мусить читатись ≥3:1 (аудит
+              // 2026-10-01, A4). Невибраний має прозору межу, щоб висота не стрибала.
+              "border",
               active
-                ? "bg-panel text-text shadow-sm"
-                : "text-muted hover:text-text",
+                ? "border-control bg-panel text-text shadow-sm"
+                : "border-transparent text-muted hover:text-text",
             )}
           >
             {t.label}

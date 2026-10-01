@@ -124,7 +124,24 @@ function fakePool(
     throw new Error(`unexpected query: ${sql.slice(0, 60)}`);
   });
 
-  return { pool: { query } as unknown as Pool, claims, budget, deletes };
+  // Нудж-кандидати читаються через `connect()` (RLS bypass, `dbContext.ts`):
+  // службові BEGIN/COMMIT/set_config ковтаємо, решту SQL віддаємо в `query`.
+  const client = {
+    query: (sql: string, params?: unknown[]) =>
+      /^\s*(BEGIN|COMMIT|ROLLBACK)\b|set_config\(/i.test(sql)
+        ? Promise.resolve({ rows: [] })
+        : query(sql, params),
+    release: vi.fn(),
+  };
+  return {
+    pool: {
+      query,
+      connect: vi.fn().mockResolvedValue(client),
+    } as unknown as Pool,
+    claims,
+    budget,
+    deletes,
+  };
 }
 
 function habitDbRow(

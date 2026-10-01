@@ -27,6 +27,12 @@ interface TxRowMetaChipsProps {
   catName: string;
   isIncome: boolean;
   overrideCatId?: string | null | undefined;
+  /**
+   * Категорію дало правило «Завжди так для цього магазину», а не здогадка за
+   * MCC. Статус «за правилом» чесніше за позначку «визначив Сержант» (яку
+   * тоді ховаємо): це рішення людини, яке вона ухвалила один раз.
+   */
+  fromMerchantRule?: boolean | undefined;
   existingSplitsCount: number;
   isCreditCard: boolean;
   account: MonoAccount | undefined;
@@ -71,6 +77,7 @@ export function TxRowMetaChips({
   catName,
   isIncome,
   overrideCatId,
+  fromMerchantRule = false,
   existingSplitsCount,
   isCreditCard,
   account,
@@ -92,6 +99,7 @@ export function TxRowMetaChips({
   if (isCancelled) statuses.push("скасовано");
   else if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
   if (overrideCatId && !isTransfer) statuses.push("змін.");
+  if (fromMerchantRule && !isTransfer) statuses.push("за правилом");
   if (tx._source === "privatbank") statuses.push("П24");
   if (existingSplitsCount > 0) statuses.push("розбито");
 
@@ -99,6 +107,7 @@ export function TxRowMetaChips({
   const showAiMark =
     !tx._manual &&
     !overrideCatId &&
+    !fromMerchantRule &&
     !isIncome &&
     !isTransfer &&
     catId !== "other";

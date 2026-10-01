@@ -37,6 +37,7 @@
  *
  *   - singleton prefs (per-user)
  *     - `finyk_monthly_plan` + `finyk_show_balance_v1` → `finyk_prefs`
+ *     - правила мерчантів → `finyk_prefs.prefs_json` (2026-10-01)
  *
  * `finyk_tx_filters_v1` is intentionally NOT yet wired here — there is
  * no LS source on `main` today; the table waits for the future filter
@@ -112,6 +113,18 @@ export interface FinykPrefsSnapshot {
    * (Stage 13 / PR #075 — was `finyk_rec_dismissed` LS-only.)
    */
   readonly dismissedRecurringJson: string;
+  /**
+   * Відкритий `prefs_json` (JSON-обʼєкт): сьогодні лише
+   * `{ merchantRules: MerchantRule[] }` — правила «Завжди так для цього
+   * магазину» (рішення власника 2026-10-01). Адаптер пише його дослівно в
+   * `finyk_prefs.prefs_json` і шле в op-log під тим самим ключем: серверний
+   * `applyFinykPrefs` уже читає `row.prefs_json`, тож контракт не мінявся.
+   *
+   * Колонка `prefs_json` існувала з міграції 039 і до цього лишалась `{}`:
+   * жоден писар її не торкав, тож чужих ключів у ній немає, і цей зріз
+   * володіє нею цілком.
+   */
+  readonly prefsJson: string;
 }
 
 // -----------------------------------------------------------------------
@@ -463,6 +476,7 @@ function prefsChanged(
     prev.monthlyPlanJson !== next.monthlyPlanJson ||
     prev.showBalance !== next.showBalance ||
     prev.excludedStatTxIdsJson !== next.excludedStatTxIdsJson ||
-    prev.dismissedRecurringJson !== next.dismissedRecurringJson
+    prev.dismissedRecurringJson !== next.dismissedRecurringJson ||
+    prev.prefsJson !== next.prefsJson
   );
 }

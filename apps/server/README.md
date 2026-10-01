@@ -48,6 +48,7 @@ pnpm --filter @sergeant/server mutation:normalizers  # Stryker mutation-тест
 pnpm --filter @sergeant/server db:migrate            # SQL-міграції зі збірки (`dist-server/migrate.js`) — так само в pre-deploy Coolify
 pnpm --filter @sergeant/server db:migrate:dev        # SQL-міграції з сорсів через `tsx` (локально)
 pnpm --filter @sergeant/server reencrypt:tokens      # ротація ключа шифрування токенів (`scripts/token-reencrypt-rollover.ts`)
+pnpm --filter @sergeant/server backfill:health-text  # разовий бекфіл шифрування `fizruk_injuries.note` (`src/scripts/healthTextBackfill.ts`; за замовчуванням `--dry-run`)
 pnpm --filter @sergeant/server eval:models           # оцінка моделей (`scripts/model-eval.ts`)
 pnpm --filter @sergeant/server eval:tools            # eval вибору tool-ів на корпусі
 pnpm --filter @sergeant/server eval:stream           # перевірка стрімінгу відповідей чату
