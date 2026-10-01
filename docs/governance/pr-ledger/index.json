@@ -4,6 +4,32 @@
   "generated_at": "2026-09-29",
   "prs": [
     {
+      "number": 1283,
+      "title": "ci(web): deploy web and landing from main only, no per-PR Vercel builds",
+      "merged_at": "2026-10-01T16:43:04Z",
+      "author": "@SkOrDs-02",
+      "host": "github",
+      "repo": "SkOrDs-02/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md"
+      ]
+    },
+    {
+      "number": 1233,
+      "title": "ci(ci): GitHub Actions CI and backend autodeploy after green CI",
+      "merged_at": "2026-10-01T12:58:17Z",
+      "author": "@SkOrDs-02",
+      "host": "github",
+      "repo": "SkOrDs-02/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
+        "docs/governance/governance/rules/10-lifecycle-markers.md",
+        "docs/governance/governance/rules/15-governance-and-doc-language.md",
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md"
+      ]
+    },
+    {
       "number": 101,
       "title": "fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах",
       "merged_at": "2026-09-29T20:23:49Z",

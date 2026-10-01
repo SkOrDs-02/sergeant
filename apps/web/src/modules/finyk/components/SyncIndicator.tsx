@@ -61,7 +61,7 @@ export function getSyncTone(
     return {
       dot: "bg-danger",
       text: "не синхронізовано",
-      pill: "bg-danger-soft  text-danger-strong dark:text-danger  border-danger/20",
+      pill: "bg-danger-soft  text-danger-soft-fg  border-danger/20",
       icon: "alert-circle",
       needsAttention: true,
     };

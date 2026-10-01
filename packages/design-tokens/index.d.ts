@@ -163,6 +163,13 @@ export declare const inkTheme: Readonly<{
   accent: Readonly<Record<ModuleAccent, string>>;
 }>;
 
+/**
+ * Межа контролу (поле вводу, трек перемикача, непозначений чекбокс) — окрема
+ * роль із порогом 3:1 проти кожної поверхні (WCAG 1.4.11). Mirrors
+ * `controlEdge` in `tokens.js`; CSS-дзеркало — `--c-control` у `theme.css`.
+ */
+export declare const controlEdge: Readonly<{ light: string; dark: string }>;
+
 /** Status / semantic colours, keyed by `StatusColor`. */
 export declare const statusColors: Readonly<Record<StatusColor, string>>;
 

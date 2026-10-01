@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-09-30 by @test. **Next review:** 2027-01-24.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-01-25.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/start/instructions/README.md](./docs/start/instructions/README.md).
@@ -88,8 +88,8 @@ curl -fsSL -o /tmp/gitleaks.tgz \
 tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
 sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
 
-# Go install (будь-яка платформа)
-go install github.com/gitleaks/gitleaks/v8@latest
+# Go install (будь-яка платформа). Шлях модуля - `zricethezav/gitleaks`: репо перейменовано, go.mod ні
+go install github.com/zricethezav/gitleaks/v8@latest
 ```
 
 Перевірка staged-файлів вручну:

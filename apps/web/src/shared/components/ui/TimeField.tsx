@@ -57,7 +57,7 @@ export const TimeField = forwardRef<HTMLInputElement, TimeFieldProps>(
             {label}
           </label>
         ) : null}
-        <div className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-line bg-panelHi focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-focus/30">
+        <div className="grid w-full min-w-0 max-w-full grid-cols-[minmax(0,1fr)] overflow-hidden rounded-2xl border border-control bg-panelHi focus-within:border-brand-400 focus-within:ring-2 focus-within:ring-focus/30">
           <Input
             {...props}
             ref={ref}

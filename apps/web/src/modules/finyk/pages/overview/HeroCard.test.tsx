@@ -197,10 +197,10 @@ describe("HeroCard", () => {
     // тири беруть hero-ink-палітру (інакше text-muted тоне в градієнті).
     const amount = money("1 191 ₴");
     expect(amount.closest("div")?.className).toContain("text-hero-ink");
-    // Тир не має власного кольору — гаситься прозорістю поверх currentColor,
-    // тож на градієнті лишається того самого чорнила, що й число.
-    expect(amount.querySelector(".text-\\[0\\.72em\\]")?.className).toContain(
-      "opacity-65",
+    // Тир не має власного кольору й не гаситься прозорістю (аудит
+    // 2026-10-01, A5): на градієнті лишається того самого чорнила, що й число.
+    expect(amount.querySelector(".text-\\[0\\.72em\\]")?.className).not.toMatch(
+      /opacity-/,
     );
     expect(screen.getByText("В нормі").className).toContain("text-hero-ink");
   });
