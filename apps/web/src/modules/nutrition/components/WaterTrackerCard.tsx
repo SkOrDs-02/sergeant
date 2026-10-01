@@ -146,7 +146,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             onClick={() => handleAdd(ml)}
             className={cn(
               "h-9 rounded-xl text-style-caption transition-colors focus-ring",
-              "bg-info-soft text-info-strong dark:text-info border border-info/20",
+              "bg-info-soft text-info-soft-fg border border-info/20",
               "hover:bg-info/20 active:scale-95",
             )}
           >
@@ -185,7 +185,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
           disabled={!customMl || Number(customMl) <= 0}
           className={cn(
             "h-11 px-3 rounded-xl text-style-caption transition-colors shrink-0 whitespace-nowrap focus-ring",
-            "bg-info-soft text-info-strong dark:text-info border border-info/20",
+            "bg-info-soft text-info-soft-fg border border-info/20",
             "hover:bg-info/20 disabled:opacity-50 active:scale-95",
           )}
         >
