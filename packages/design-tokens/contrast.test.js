@@ -12,6 +12,9 @@
  * retune), update the WCAG-AA proposal doc + BRANDBOOK in the same PR.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   brandColors,
   chartHex,
@@ -40,6 +43,41 @@ function contrastRatio(hex1, hex2) {
   const lighter = Math.max(l1, l2);
   const darker = Math.min(l1, l2);
   return (lighter + 0.05) / (darker + 0.05);
+}
+
+/**
+ * Зупинки світлого геро-градієнта модуля, прочитані з `theme.css` (`:root`,
+ * перший збіг — HC-перевизначення йдуть нижче в тому ж файлі). Джерело
+ * правди для градієнтів — саме CSS, а не `tokens.js`: тест міряє те, що
+ * реально малюється, а не копію.
+ */
+const THEME_CSS = readFileSync(
+  path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "apps",
+    "web",
+    "src",
+    "styles",
+    "theme.css",
+  ),
+  "utf8",
+);
+
+function heroGradientStops(module) {
+  const decl = new RegExp(
+    `--hero-grad-${module}:\\s*linear-gradient\\(([^)]*)\\)`,
+  ).exec(THEME_CSS);
+  if (!decl) throw new Error(`--hero-grad-${module} не знайдено в theme.css`);
+  return [...decl[1].matchAll(/#([0-9a-fA-F]{6})\b/g)].map((m) =>
+    `#${m[1]}`.toLowerCase(),
+  );
+}
+
+/** Найсвітліша зупинка: саме під нею чорнило найгірше. */
+function lightestStop(stops) {
+  return stops.reduce((a, b) => (luminance(b) > luminance(a) ? b : a));
 }
 
 /** `moduleAccentRgb` тримає значення як "R G B"; тут потрібен hex. */
@@ -165,7 +203,10 @@ const PAIRS = [
     true,
   ],
   [
-    "nutrition hero-ink on lime-700 (hero light end)",
+    // Колишній світлий кінець. Голий він проходить (4.67), але під заливкою
+    // осередка `MealStrip` — ні (4.27), тому з 2026-10-01 кінець `#4e6f10`;
+    // реальні зупинки й заливку міряє блок «кожна зупинка» нижче.
+    "nutrition hero-ink on lime-700 (колишній світлий кінець, голий)",
     "#fdf9f3",
     brandColors.lime[700],
     true,
@@ -485,21 +526,27 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
    * `scripts/check-ui-canon-ratchet.mjs` (з 2026-10-01 baseline = 0: це
    * заборона, не стеля над боргом; 20 місць прибрано, градієнт не чіпали).
    * Тут закріплені ЧИСЛА, які пояснюють, чому нуль, а не «трохи менше
-   * прозорості»: на жодному з чотирьох градієнтів прохідного кроку нижче
-   * /100 немає. Якщо хтось освітлить геро-градієнт, впаде перший тест і
-   * назве модуль; якщо потемнить настільки, що /80 почне проходити, впаде
-   * другий і змусить перечитати рішення, а не мовчки лишить заборону без
-   * підстав.
+   * прозорості»: /80 і нижче не тримає жоден із чотирьох градієнтів, а
+   * проміжні кроки (/90-/95) тримають на одних і не тримають на інших
+   * (teal-700 /90 = 4.55, rose-700 /90 = 4.42), тож «безпечної» альфи
+   * немає навіть формально. Якщо хтось освітлить геро-градієнт, впаде
+   * перший тест і назве модуль; якщо потемнить настільки, що /80 почне
+   * проходити, впаде другий і змусить перечитати рішення, а не мовчки
+   * лишить заборону без підстав.
+   *
+   * Світлий кінець береться зі `theme.css` (див. `heroGradientStops`), а не
+   * з палітри: з 2026-10-01 кінець градієнта Їжі — `#4e6f10`, середина між
+   * lime-800 і lime-700, і в палітрі такого щабля немає.
    */
   describe("«Чорнило» на геро-градієнті — альфа", () => {
     const HERO_INK = "#fdf9f3";
     // Світлий (гірший) кінець кожного геро-градієнта зі `theme.css`.
-    const heroLightEnds = {
-      finyk: brandColors.teal[700],
-      fizruk: brandColors.cyan[700],
-      routine: brandColors.rose[700],
-      nutrition: brandColors.lime[700],
-    };
+    const heroLightEnds = Object.fromEntries(
+      ["finyk", "fizruk", "routine", "nutrition"].map((m) => [
+        m,
+        lightestStop(heroGradientStops(m)),
+      ]),
+    );
 
     /** sRGB-композит чорнила з альфою поверх непрозорого фону. */
     function compositeHex(fgHex, bgHex, alpha) {
@@ -530,15 +577,74 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
       });
     }
 
-    it("nutrition — найтісніший модуль: навіть /95 не тримає AA", () => {
-      // Саме цей замір робить «просто підняти альфу» непрацюючим рецептом:
-      // на lime-700 прохідна лише повна непрозорість (4.67 проти порога
-      // 4.5), тож будь-який крок прозорості вже провал.
-      const bg = brandColors.lime[700];
-      expect(contrastRatio(compositeHex(HERO_INK, bg, 0.95), bg)).toBeLessThan(
-        4.5,
-      );
+    it("nutrition — найтісніший модуль: кінець градієнта темніший за lime-700", () => {
+      // До 2026-10-01 кінець був lime-700 `#567c0f` (4.67): прохідна лише
+      // повна непрозорість, навіть /95 давав 4.40. Рішення власника
+      // («темніший кінець градієнта») затемнило його до `#4e6f10` (5.55):
+      // тепер /95 і /90 формально проходять, /80 ні (цикл вище). Цей тест
+      // не дає тихо повернути кінець назад на lime-700.
+      const end = heroLightEnds.nutrition;
+      expect(luminance(end)).toBeLessThan(luminance(brandColors.lime[700]));
+      expect(contrastRatio(HERO_INK, end)).toBeGreaterThanOrEqual(5.5);
     });
+  });
+});
+
+/**
+ * Чорнило проти КОЖНОЇ зупинки геро-градієнта й проти найсвітлішої зупинки
+ * під заливкою осередка (follow-up аудиту контрасту 2026-10-01, A9;
+ * рішення власника по Їжі: «темніший кінець градієнта»).
+ *
+ * Пари вище міряють чорнило проти ГОЛОЇ зупинки. Але осередки `MealStrip`
+ * (Сніданок/Обід/Вечеря/Перекус) мають заливку `bg-hero-ink/5`, тож текст
+ * у них лежить на зупинці, підсвіченій чорнилом: на колишньому кінці
+ * lime-700 це 4.27 замість 4.67 (піксельний замір цього ж дня давав
+ * 3.98-4.32 на найсвітлішому пікселі під написом). Тест міряє саме цей
+ * найгірший реальний випадок для всіх чотирьох модулів: решта проходить із
+ * запасом (4.59-4.73), Їжа до зміни — ні.
+ */
+describe("«Чорнило» на геро-градієнті — кожна зупинка і заливка осередка", () => {
+  const HERO_INK = "#fdf9f3";
+  const WASH_ALPHA = 0.05; // `bg-hero-ink/5` у MealStrip
+  const mixHex = (fg, bg, a) =>
+    "#" +
+    [0, 1, 2]
+      .map((i) => {
+        const f = parseInt(fg.slice(1 + i * 2, 3 + i * 2), 16);
+        const b = parseInt(bg.slice(1 + i * 2, 3 + i * 2), 16);
+        return Math.round(f * a + b * (1 - a))
+          .toString(16)
+          .padStart(2, "0");
+      })
+      .join("");
+
+  for (const module of ["finyk", "fizruk", "routine", "nutrition"]) {
+    const stops = heroGradientStops(module);
+    it(`${module}: у градієнті щонайменше дві зупинки`, () => {
+      expect(stops.length).toBeGreaterThanOrEqual(2);
+    });
+    for (const stop of stops) {
+      it(`${module}: hero-ink проти зупинки ${stop} ≥ 4.5:1`, () => {
+        expect(contrastRatio(HERO_INK, stop)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+    it(`${module}: найсвітліша зупинка під заливкою осередка (/5) ≥ 4.5:1`, () => {
+      const lightest = lightestStop(stops);
+      expect(
+        contrastRatio(HERO_INK, mixHex(HERO_INK, lightest, WASH_ALPHA)),
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
+  it("nutrition: колишній кінець lime-700 під заливкою осередка не проходить (чому градієнт затемнено)", () => {
+    // Негативна пара фіксує причину зміни: без неї «повернути як було»
+    // виглядало б безпечним, бо голий lime-700 проходить (4.67).
+    expect(
+      contrastRatio(
+        HERO_INK,
+        mixHex(HERO_INK, brandColors.lime[700], WASH_ALPHA),
+      ),
+    ).toBeLessThan(4.5);
   });
 });
 
