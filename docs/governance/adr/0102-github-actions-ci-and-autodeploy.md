@@ -75,11 +75,13 @@
 
 ## Фронт і Vercel
 
-**Vercel, імовірно, знову збирає фронт із GitHub.** На PR #1233 зʼявились чеки `Vercel – sergeant` і `Vercel – sergeant-landing` (2026-09-30 червоні через денний ліміт збірок Hobby), тобто Git-інтеграція Vercel підключена до `SkOrDs-02/sergeant` і робить прев'ю на PR. Чи деплоїть вона Production-гілку `main` автоматично і як це співіснує з ручним `pnpm deploy:web`, не звірено: це налаштування Vercel-проєктів, їх перевіряє власник. Доки не звірено, не вважай `pnpm deploy:web` єдиним шляхом у прод фронта.
+**Vercel збирає фронт із GitHub сам** (звірено 2026-10-01). Мерж #1233 (`9680d27`) Vercel одразу викотив як `Production – sergeant`. Прев'ю на PR теж працювали, але 2026-09-30 вичерпали ліміт Hobby (100 деплоїв на добу): кожен push у PR створював два деплої, з них 71 прев'ю лендінгу, і `ignoreCommand` цього не рятував, бо ліміт рахує деплой ще до його виконання.
+
+Рішення власника 2026-10-01: прод фронта викочує Vercel з `main`, CI фронт не деплоїть. `git.deploymentEnabled` в обох `vercel.json` вмикає лише `main` (і `beta` для web), тож PR-пуші деплоїв не створюють і ліміт не витрачають. Наслідок, прийнятий свідомо: фронт виходить у прод на ~25 хв раніше за бекенд, який чекає зеленого CI. `pnpm deploy:web` і `pnpm deploy:landing` лишаються запасним ручним шляхом.
 
 ## Що має зробити власник
 
-- Додати секрети репозиторію `COOLIFY_URL` (база інстансу Coolify без шляху) і `COOLIFY_TOKEN` (API-токен із правом deploy і читання деплоїв). Старі `COOLIFY_DEPLOY_WEBHOOK` і `COOLIFY_DEPLOY_TOKEN` більше не читаються.
-- Полагодити critical-flow E2E, інакше автодеплой не спрацьовує.
-- Прибрати `Lighthouse CI` з required-чеків branch protection `main` (він більше не біжить на PR).
-- Звірити Vercel Git-інтеграцію: чи Production-гілка `main` деплоїться автоматично, і чи потрібен ще `pnpm deploy:web`.
+- ~~Додати секрети репозиторію `COOLIFY_URL` і `COOLIFY_TOKEN`.~~ Зроблено 2026-10-01. Старі `COOLIFY_DEPLOY_WEBHOOK` і `COOLIFY_DEPLOY_TOKEN` більше не читаються, видалити після першого успішного автодеплою.
+- ~~Полагодити critical-flow E2E.~~ Зелений на `main` 2026-10-01.
+- ~~Прибрати `Lighthouse CI` з required-чеків branch protection `main`.~~ Зроблено 2026-10-01: required тепер `check`, `Critical-flow E2E (Playwright)`, `Migration lint`, `Migration down drill`, `Commit messages (commitlint)`, `Secret scan (gitleaks)`.
+- ~~Звірити Vercel Git-інтеграцію.~~ Звірено 2026-10-01, див. § Фронт і Vercel.
