@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-30 by docs:gen-status. **Next review:** 2026-10-07.
+> **Last touched:** 2026-10-01 by docs:gen-status. **Next review:** 2026-10-08.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -28,6 +28,8 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#1283](https://github.com/SkOrDs-02/sergeant/pull/1283) — ci(web): deploy web and landing from main only, no per-PR Vercel builds _(2026-10-01)_
+- [#1233](https://github.com/SkOrDs-02/sergeant/pull/1233) — ci(ci): GitHub Actions CI and backend autodeploy after green CI _(2026-10-01)_
 - [#101](https://bitbucket.org/skords01/sergeant/pull-requests/101) — fix(root): червоні кроки pnpm lint на main і три Windows-баги в гейтах _(2026-09-29)_
 - [#92](https://bitbucket.org/skords01/sergeant/pull-requests/92) — fix(server,web): живий прогін AI-пайплайнів: обірвані відповіді OpenRouter, зламаний чат, дайджест і формат чисел _(2026-09-28)_
 - [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) — feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу _(2026-09-28)_
@@ -36,8 +38,6 @@
 - [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
-- [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) — fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі _(2026-09-25)_
-- [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
 
 ## 🔵 В роботі — 80 відкритих документів
 
@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/audits/2026-09-23-docs-governance-audit.md`](./work/specs/audits/2026-09-23-docs-governance-audit.md) — Аудит документації та governance: правила, ієрархія, рішення, enforcement — Active - більшість знахідок закрито (розділ 11); розділ 9 чекає рішень власника (DG-32 закрито 2026-09-29). _(Активні спеки)_
 - [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active _(Активні спеки)_
 - [`work/specs/launch/phases/00-readiness-audit.md`](./work/specs/launch/phases/00-readiness-audit.md) — 00 — Launch readiness audit: 5 застосунків Sergeant — Active _(Активні спеки)_
-- [`work/specs/pr-body-validator-template-race.md`](./work/specs/pr-body-validator-template-race.md) — SPEC: `PR body validator` червоніє на PR, створених через API — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
