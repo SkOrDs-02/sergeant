@@ -3,6 +3,10 @@
 // неповний тиждень проти повного (`weekSliceWindows`, рішення власника
 // 2026-10-01, f1). Спрацьовує тільки з середи, щоб не блимати у пн/вт із
 // мінімумом даних.
+//
+// Одна картка про темп за раз (f2): коли спрацювала денна «Сьогодні вище
+// середнього» (`evaluateDailyPace`), ця мовчить в обох гілках. Інакше поруч
+// стояли б «вище середнього» і «Чудовий темп» про ті самі гроші.
 
 import type { Rule } from "../types.js";
 import {
@@ -12,6 +16,11 @@ import {
 import { formatNumberUk } from "@sergeant/shared";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { weekSliceWindows } from "@sergeant/finyk-domain/domain/weekSlices";
+import { evaluateDailyPace } from "./dailyVsWeeklyPace.js";
+import {
+  WEEKLY_PACE_HIGH_REC_ID,
+  WEEKLY_PACE_LOW_REC_ID,
+} from "./paceSignals.js";
 
 /** Мінімум прожитих днів тижня (пн = 1), з якого порівняння має сенс: з середи. */
 const MIN_DAYS_ELAPSED = 3;
@@ -22,6 +31,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
   evaluate(ctx) {
     const { daysElapsed, current, previous } = weekSliceWindows(ctx.now);
     if (daysElapsed < MIN_DAYS_ELAPSED) return [];
+    if (evaluateDailyPace(ctx)) return [];
 
     const excludedTxIds = financeExcludedTxIds(ctx);
 
@@ -53,7 +63,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
       const pctMore = Math.round((ratio - 1) * 100);
       return [
         {
-          id: "spending_velocity_high",
+          id: WEEKLY_PACE_HIGH_REC_ID,
           module: "finyk" as const,
           priority: 75,
           icon: "trending-up",
@@ -67,7 +77,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
       const pctLess = Math.round((1 - ratio) * 100);
       return [
         {
-          id: "spending_velocity_low",
+          id: WEEKLY_PACE_LOW_REC_ID,
           module: "finyk" as const,
           priority: 45,
           icon: "award",
