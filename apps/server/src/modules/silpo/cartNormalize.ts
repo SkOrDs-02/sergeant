@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { foldApostrophes } from "@sergeant/shared";
 
 /**
  * Pure (no I/O, no logger) parsing/normalization for the "build a Silpo cart
@@ -175,38 +176,88 @@ export interface CartMatch {
 }
 
 /**
- * Normalizes one catalog hit into a client-facing match. Returns `null`
- * (dropped, never thrown) when any field the CART-WRITE path needs
- * (`id`/`companyId`/`branchId` → the `lagerId` triplet, `name`, `price`) is
- * missing — a hit usable only for display but not for `/cart/apply` is worse
- * than no hit (it would 400 later with no way for the user to know why).
+ * Чому хіт не став матчем. Окремий тип, а не рядок, бо за ним лічать у
+ * логах (`cart.ts`): «скільки хітів і чому відпало» мусить мати закритий
+ * набір причин, інакше лічильник розповзається на довільні тексти.
  */
-export function normalizeCartMatch(raw: RawCartCatalogHit): CartMatch | null {
-  if (
-    !raw.id ||
-    !raw.name ||
-    raw.price === undefined ||
-    !raw.companyId ||
-    !raw.branchId
-  ) {
-    return null;
-  }
+export type CartHitDropReason =
+  "no_id" | "no_name" | "no_price" | "no_company_id" | "no_branch_id";
+
+export interface NormalizeCartMatchOptions {
+  /**
+   * Філія, у якій робився пошук. Tool віддає `branchId` nullable, а пошук
+   * ішов саме по цій філії, тож `null` у хіті безпечно читати як «ця сама».
+   * `companyId` так підставити не можна — у контексті запиту його немає.
+   */
+  fallbackBranchId?: string | undefined;
+}
+
+export type CartMatchOutcome =
+  | { ok: true; match: CartMatch; branchFilled: boolean }
+  | { ok: false; reason: CartHitDropReason };
+
+/**
+ * Normalizes one catalog hit into a client-facing match, or says why not.
+ * A hit missing any field the CART-WRITE path needs
+ * (`id`/`companyId`/`branchId` → the `lagerId` triplet, `name`, `price`) is
+ * dropped — a hit usable only for display but not for `/cart/apply` is worse
+ * than no hit (it would 400 later with no way for the user to know why).
+ * Never throws.
+ */
+export function evaluateCartMatch(
+  raw: RawCartCatalogHit,
+  opts: NormalizeCartMatchOptions = {},
+): CartMatchOutcome {
+  if (!raw.id) return { ok: false, reason: "no_id" };
+  if (!raw.name) return { ok: false, reason: "no_name" };
+  if (raw.price === undefined) return { ok: false, reason: "no_price" };
+  if (!raw.companyId) return { ok: false, reason: "no_company_id" };
+  const branchFilled = !raw.branchId && !!opts.fallbackBranchId;
+  const branchId = raw.branchId || opts.fallbackBranchId;
+  if (!branchId) return { ok: false, reason: "no_branch_id" };
   return {
-    lagerId: encodeLagerId({
-      productId: raw.id,
-      companyId: raw.companyId,
-      branchId: raw.branchId,
-    }),
-    name: raw.name,
-    priceKop: uahToKop(raw.price),
-    oldPriceKop: isNotablePromo(raw.oldPrice, raw.price)
-      ? uahToKop(raw.oldPrice)
-      : null,
-    // `stock: 0` — теж «немає», навіть коли прапорець мовчить.
-    available: raw.available !== false && raw.stock !== 0,
-    unit: deriveUnit(raw.displayRatio, raw.weighted),
-    displayRatio: raw.displayRatio ?? null,
+    ok: true,
+    branchFilled,
+    match: {
+      lagerId: encodeLagerId({
+        productId: raw.id,
+        companyId: raw.companyId,
+        branchId,
+      }),
+      name: raw.name,
+      priceKop: uahToKop(raw.price),
+      oldPriceKop: isNotablePromo(raw.oldPrice, raw.price)
+        ? uahToKop(raw.oldPrice)
+        : null,
+      // `stock: 0` — теж «немає», навіть коли прапорець мовчить.
+      available: raw.available !== false && raw.stock !== 0,
+      unit: deriveUnit(raw.displayRatio, raw.weighted),
+      displayRatio: raw.displayRatio ?? null,
+    },
   };
+}
+
+/** {@link evaluateCartMatch} без причини відмови: матч або `null`. */
+export function normalizeCartMatch(
+  raw: RawCartCatalogHit,
+  opts: NormalizeCartMatchOptions = {},
+): CartMatch | null {
+  const outcome = evaluateCartMatch(raw, opts);
+  return outcome.ok ? outcome.match : null;
+}
+
+/**
+ * Ключ, за яким текст запиту зіставляється з рядком списку: NFC, єдиний
+ * апостроф, схлопнуті пробіли, без регістру. Сільпо ехоїть `query` не
+ * обовʼязково дослівно (регістр, пробіли, форма апострофа чи Unicode-форма
+ * літер можуть змінитись), а точне `===` тоді мовчки віддавало рядок як
+ * «не знайдено», хоча хіти були.
+ */
+export function queryMatchKey(text: string): string {
+  return foldApostrophes(text.normalize("NFC"))
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 // ──────────────────── Raw shapes — cart read (get_my_shopping_cart) ─────────
