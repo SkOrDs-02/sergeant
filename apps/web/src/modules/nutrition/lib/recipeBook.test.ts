@@ -14,6 +14,7 @@ import {
 import {
   deleteSavedRecipe,
   listSavedRecipes,
+  listSavedRecipesOrThrow,
   normalizeRecipeForSave,
   saveRecipeToBook,
   scaleMacros,
@@ -194,6 +195,18 @@ describe("saveRecipeToBook + listSavedRecipes", () => {
       error: "Не вдалося зберегти рецепт",
     });
     expect(await deleteSavedRecipe("rcp_broken")).toBe(false);
+
+    txSpy.mockRestore();
+  });
+
+  it("listSavedRecipesOrThrow не ховає збій читання під порожній список", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    const txSpy = vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("tx failed");
+    });
+
+    await expect(listSavedRecipesOrThrow()).rejects.toThrow("tx failed");
 
     txSpy.mockRestore();
   });

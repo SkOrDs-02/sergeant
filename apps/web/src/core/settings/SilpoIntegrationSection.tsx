@@ -13,12 +13,14 @@
  * already turns that 503 into `status: "disabled"`.
  */
 import { useState } from "react";
-import { silpoConnectUrl } from "@shared/api";
+import { isApiError, silpoConnectUrl } from "@shared/api";
 import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
+import { formatApiError } from "@shared/lib/api/apiErrorFormat";
+import { friendlyApiError } from "@shared/lib/api/friendlyApiError";
 import { useToast } from "@shared/hooks/useToast";
 import {
   useSilpoDisconnect,
@@ -85,6 +87,13 @@ const COPY = {
   autoImportDescription:
     "Нові чеки додають продукти в комору без підтвердження. Старі чеки лишаються для ручного імпорту.",
   autoImportToggleError: "Не вдалося змінити налаштування.",
+  // Старий бекенд без `PUT /api/silpo/settings` віддає 404: веб деплоїться
+  // окремо від API, тож тумблер може зʼявитись раніше за ендпоінт. Без цього
+  // тексту людина бачила те саме загальне «Не вдалося…», що й при збої мережі,
+  // і повтор нічого не міг змінити.
+  autoImportNotDeployed:
+    "Сервер ще не оновлено, тому це налаштування поки недоступне. Спробуй пізніше.",
+  autoImportServerDown: "Сервер тимчасово не відповідає. Спробуй ще раз.",
   disconnect: "Відключити",
   disconnectTitle: "Відключити Сільпо?",
   disconnectBody:
@@ -103,6 +112,33 @@ const COPY = {
 } as const;
 
 type ConfirmKind = "disconnect" | "wipe" | null;
+
+/**
+ * Текст тосту, коли `PUT /api/silpo/settings` не вдався. Раніше `catch {}`
+ * ковтав помилку й показував одне загальне «Не вдалося змінити
+ * налаштування.» на будь-яку причину. Тепер причина видима: 404 (бекенд
+ * старіший за веб), шлюзові збої, текст сервера, мережа/офлайн (їх
+ * розрізняє `formatApiError`) і, коли сервер нічого не сказав, код статусу.
+ * Не-API помилки (наприклад, `ZodError` на формі відповіді) несуть технічний
+ * `message`, його людині не показуємо.
+ */
+function autoImportToggleErrorMessage(error: unknown): string {
+  if (!isApiError(error)) return COPY.autoImportToggleError;
+  const message = formatApiError(error, {
+    fallback: COPY.autoImportToggleError,
+    httpStatusToMessage: (status, serverMessage) => {
+      if (status === 404) return COPY.autoImportNotDeployed;
+      if (status === 502 || status === 503 || status === 504) {
+        return COPY.autoImportServerDown;
+      }
+      if (serverMessage || status === 401 || status === 403 || status === 429) {
+        return friendlyApiError(status, serverMessage);
+      }
+      return `${COPY.autoImportToggleError} Код помилки: ${status}. Спробуй ще раз.`;
+    },
+  });
+  return message || COPY.autoImportToggleError;
+}
 
 function formatKyivDateTime(iso: string): string {
   return new Date(iso).toLocaleString("uk-UA", {
@@ -135,8 +171,8 @@ export function SilpoIntegrationSection({
   const runToggleAutoImport = async (checked: boolean) => {
     try {
       await updateSettingsMutation.mutateAsync(checked);
-    } catch {
-      toast.error(COPY.autoImportToggleError, undefined, {
+    } catch (error) {
+      toast.error(autoImportToggleErrorMessage(error), undefined, {
         label: "Повторити",
         onClick: () => void runToggleAutoImport(checked),
       });

@@ -3,8 +3,10 @@ import {
   decodeLagerId,
   deriveUnit,
   encodeLagerId,
+  evaluateCartMatch,
   normalizeCartDetail,
   normalizeCartMatch,
+  queryMatchKey,
 } from "./cartNormalize.js";
 
 describe("encodeLagerId / decodeLagerId (opaque cart-selection token)", () => {
@@ -151,6 +153,92 @@ describe("normalizeCartMatch", () => {
   it("rounds fractional kopiykas", () => {
     const match = normalizeCartMatch({ ...RAW_HIT, price: 12.345 });
     expect(match?.priceKop).toBe(1235); // 12.345 * 100 = 1234.5 -> round = 1235
+  });
+
+  describe("fallbackBranchId — філія, по якій шукали", () => {
+    it("добудовує nullable branchId філією пошуку замість того, щоб відкинути хіт", () => {
+      const match = normalizeCartMatch(
+        { ...RAW_HIT, branchId: null },
+        { fallbackBranchId: "search-branch" },
+      );
+      expect(match).not.toBeNull();
+      expect(decodeLagerId(match!.lagerId)).toEqual({
+        productId: "prod-1",
+        companyId: "company-1",
+        branchId: "search-branch",
+      });
+    });
+
+    it("не перебиває branchId, який Сільпо віддала сама", () => {
+      const match = normalizeCartMatch(RAW_HIT, {
+        fallbackBranchId: "search-branch",
+      });
+      expect(decodeLagerId(match!.lagerId)?.branchId).toBe("branch-1");
+    });
+
+    it("companyId з контексту не добудовується: його там немає", () => {
+      expect(
+        normalizeCartMatch(
+          { ...RAW_HIT, companyId: null },
+          { fallbackBranchId: "search-branch" },
+        ),
+      ).toBeNull();
+    });
+  });
+});
+
+describe("evaluateCartMatch — причина відмови", () => {
+  const RAW_HIT = {
+    id: "prod-1",
+    name: "Хліб",
+    price: 30,
+    companyId: "company-1",
+    branchId: "branch-1",
+  };
+
+  it.each([
+    ["no_id", { id: undefined }],
+    ["no_name", { name: undefined }],
+    ["no_price", { price: undefined }],
+    ["no_company_id", { companyId: null }],
+    ["no_branch_id", { branchId: null }],
+  ] as const)("%s", (reason, patch) => {
+    expect(evaluateCartMatch({ ...RAW_HIT, ...patch })).toEqual({
+      ok: false,
+      reason,
+    });
+  });
+
+  it("повідомляє, що branchId добудовано", () => {
+    expect(
+      evaluateCartMatch(
+        { ...RAW_HIT, branchId: null },
+        { fallbackBranchId: "search-branch" },
+      ),
+    ).toMatchObject({ ok: true, branchFilled: true });
+    expect(
+      evaluateCartMatch(RAW_HIT, { fallbackBranchId: "search-branch" }),
+    ).toMatchObject({ ok: true, branchFilled: false });
+  });
+});
+
+describe("queryMatchKey", () => {
+  it("не залежить від регістру, крайніх і подвійних пробілів", () => {
+    expect(queryMatchKey("  ХЛІБ  білий ")).toBe(queryMatchKey("хліб білий"));
+  });
+
+  it("зводить Unicode-форми літер до однієї (NFC)", () => {
+    // «й» як одна літера U+0439 і як «и» + комбінований бревіс U+0306.
+    expect(queryMatchKey("йogurt")).toBe(queryMatchKey("йogurt"));
+  });
+
+  it("зводить форми апострофа", () => {
+    const forms = ["'", "’", "ʼ"].map((a) => queryMatchKey(`м${a}ясо`));
+    expect(new Set(forms).size).toBe(1);
+  });
+
+  it("різні слова лишаються різними", () => {
+    expect(queryMatchKey("хліб")).not.toBe(queryMatchKey("хлібці"));
   });
 });
 

@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   resolveBranchContext: vi.fn(),
   dbQuery: vi.fn(),
   loggerWarn: vi.fn(),
+  loggerInfo: vi.fn(),
 }));
 
 vi.mock("./tokenStore.js", () => ({
@@ -24,7 +25,11 @@ vi.mock("./branchContext.js", () => ({
 vi.mock("../../db.js", () => ({ query: mocks.dbQuery }));
 
 vi.mock("../../obs/logger.js", () => ({
-  logger: { warn: mocks.loggerWarn, info: vi.fn(), error: vi.fn() },
+  logger: {
+    warn: mocks.loggerWarn,
+    info: mocks.loggerInfo,
+    error: vi.fn(),
+  },
 }));
 
 import {
@@ -34,7 +39,7 @@ import {
   getCart,
   previewCart,
 } from "./cart.js";
-import { encodeLagerId } from "./cartNormalize.js";
+import { decodeLagerId, encodeLagerId } from "./cartNormalize.js";
 
 beforeEach(() => {
   mocks.callWithFreshAccessToken.mockReset();
@@ -42,6 +47,7 @@ beforeEach(() => {
   mocks.resolveBranchContext.mockReset();
   mocks.dbQuery.mockReset();
   mocks.loggerWarn.mockReset();
+  mocks.loggerInfo.mockReset();
 });
 
 /** Mirrors `foodSource.test.ts`'s helper — makes `callWithFreshAccessToken` actually invoke the passed `fn`. */
@@ -173,6 +179,184 @@ describe("buildPreviewResults (pure)", () => {
       "Яблука 3",
     ]);
   });
+
+  describe("«Хліб — Не знайшлось у Сільпо» (регресії)", () => {
+    const hit = (n: number, patch: Record<string, unknown> = {}) => ({
+      id: `p${n}`,
+      name: `Хліб ${n}`,
+      price: 20 + n,
+      companyId: "c1",
+      branchId: "b1",
+      ...patch,
+    });
+
+    it("зіставляє запит без урахування регістру, зайвих пробілів і Unicode-форм", () => {
+      const results = buildPreviewResults(
+        [{ name: " Хліб  білий " }],
+        [{ query: "хліб БІЛИЙ", totalFound: 1, products: [hit(1)] }],
+      );
+      expect(results[0]?.unmatched).toBe(false);
+      expect(results[0]?.matches).toHaveLength(1);
+      // Дослівний текст рядка списку лишається в `query` відповіді.
+      expect(results[0]?.query).toBe("Хліб  білий");
+    });
+
+    it("однакові рядки списку беруть різні записи, а не один двічі", () => {
+      const results = buildPreviewResults(
+        [{ name: "хліб" }, { name: "Хліб" }],
+        [
+          { query: "хліб", totalFound: 1, products: [hit(1)] },
+          { query: "ХЛІБ", totalFound: 1, products: [hit(2)] },
+        ],
+      );
+      expect(results.map((r) => r.matches[0]?.name)).toEqual([
+        "Хліб 1",
+        "Хліб 2",
+      ]);
+    });
+
+    it("лишає перші три ПРИДАТНІ хіти, коли перші непридатні (без companyId)", () => {
+      const products = [
+        hit(1, { companyId: null }),
+        hit(2, { companyId: null }),
+        hit(3, { companyId: null }),
+        hit(4),
+        hit(5),
+        hit(6),
+        hit(7),
+      ];
+      const results = buildPreviewResults(
+        [{ name: "хліб" }],
+        [{ query: "хліб", totalFound: 7, products }],
+      );
+      expect(results[0]?.matches.map((m) => m.name)).toEqual([
+        "Хліб 4",
+        "Хліб 5",
+        "Хліб 6",
+      ]);
+    });
+
+    it("добудовує nullable branchId філією пошуку замість того, щоб відкинути хіт", () => {
+      const results = buildPreviewResults(
+        [{ name: "хліб" }],
+        [
+          {
+            query: "хліб",
+            totalFound: 1,
+            products: [hit(1, { branchId: null })],
+          },
+        ],
+        { fallbackBranchId: "search-branch" },
+      );
+      expect(results[0]?.unmatched).toBe(false);
+      expect(decodeLagerId(results[0]!.matches[0]!.lagerId)?.branchId).toBe(
+        "search-branch",
+      );
+      // Без філії пошуку той самий хіт відпадає, як і раніше.
+      expect(
+        buildPreviewResults(
+          [{ name: "хліб" }],
+          [
+            {
+              query: "хліб",
+              totalFound: 1,
+              products: [hit(1, { branchId: null })],
+            },
+          ],
+        )[0]?.unmatched,
+      ).toBe(true);
+    });
+
+    it("рядок, чий текст у відповіді змінився до невпізнання, добирається за порядком, коли кількість збіглась", () => {
+      const results = buildPreviewResults(
+        [{ name: "молоко" }, { name: "хліб" }],
+        [
+          { query: "молоко", totalFound: 1, products: [hit(1)] },
+          // Латинська «i» замість української: нормалізація тут безсила.
+          { query: "xлiб", totalFound: 1, products: [hit(2)] },
+        ],
+      );
+      expect(results[1]?.unmatched).toBe(false);
+      expect(results[1]?.matches[0]?.name).toBe("Хліб 2");
+      expect(mocks.loggerWarn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: "silpo_cart_preview_query_positional_fallback",
+          positionalFallbacks: 1,
+        }),
+      );
+    });
+
+    it("порядковий добір не чіпає запис, який рядок уже забрав за текстом", () => {
+      // Відповідь переставлена: «хліб» лежить на місці «молоко» і навпаки.
+      // «молоко» зіставилось за текстом (запис 0 її), тож добір за порядком
+      // віддасть «хлібу» лише єдиний нічийний запис 1.
+      const results = buildPreviewResults(
+        [{ name: "хліб" }, { name: "молоко" }],
+        [
+          { query: "молоко", totalFound: 1, products: [hit(1)] },
+          { query: "xлiб", totalFound: 1, products: [hit(2)] },
+        ],
+      );
+      expect(results[0]?.matches[0]?.name).toBe("Хліб 2");
+      expect(results[1]?.matches[0]?.name).toBe("Хліб 1");
+    });
+
+    it("без збігу кількості порядкового добору немає: рядок чесно лишається «не знайдено»", () => {
+      const results = buildPreviewResults(
+        [{ name: "молоко" }, { name: "хліб" }],
+        [{ query: "молоко", totalFound: 1, products: [hit(1)] }],
+      );
+      expect(results[1]).toEqual({
+        query: "хліб",
+        matches: [],
+        unmatched: true,
+      });
+      expect(mocks.loggerWarn).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          msg: "silpo_cart_preview_query_positional_fallback",
+        }),
+      );
+    });
+
+    it("логує скільки хітів відпало і чому, без назв товарів (Hard Rule #21)", () => {
+      buildPreviewResults(
+        [{ name: "секретнийтовар" }],
+        [
+          {
+            query: "секретнийтовар",
+            totalFound: 4,
+            products: [
+              hit(1, { companyId: null }),
+              hit(2, { companyId: null }),
+              hit(3, { price: undefined }),
+              { name: "Не обʼєкт-хіт", price: "дорого" },
+            ],
+          },
+        ],
+      );
+      expect(mocks.loggerWarn).toHaveBeenCalledWith({
+        msg: "silpo_cart_preview_hits_dropped",
+        itemIndex: 0,
+        received: 4,
+        examined: 4,
+        kept: 0,
+        dropped: { no_company_id: 2, no_price: 1, schema: 1 },
+        branchFilled: 0,
+      });
+      const logged = JSON.stringify(mocks.loggerWarn.mock.calls);
+      expect(logged).not.toContain("секретнийтовар");
+      expect(logged).not.toContain("Хліб");
+    });
+
+    it("не шумить у логах, коли жоден хіт не відпав", () => {
+      buildPreviewResults(
+        [{ name: "хліб" }],
+        [{ query: "хліб", totalFound: 1, products: [hit(1)] }],
+      );
+      expect(mocks.loggerWarn).not.toHaveBeenCalled();
+      expect(mocks.loggerInfo).not.toHaveBeenCalled();
+    });
+  });
 });
 
 // ─────────────────────────────── previewCart ─────────────────────────────────
@@ -201,6 +385,88 @@ describe("previewCart", () => {
 
     expect(results).toHaveLength(35);
     expect(mocks.callMcpTool).toHaveBeenCalledTimes(2); // 30 + 5
+  });
+
+  it("просить у Сільпо запас хітів (limit 10), а віддає лише перші три придатні, добудувавши branchId філією кошика", async () => {
+    // Регресія «Хліб — Не знайшлось у Сільпо»: з `limit: 3` три хіти без
+    // companyId/branchId давали порожній рядок, хоча далі йшли придатні.
+    passThroughAccessToken();
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_CTX);
+    mocks.callMcpTool.mockResolvedValue({
+      ok: true,
+      data: {
+        queries: [
+          {
+            query: "Хліб",
+            totalFound: 10,
+            products: [
+              {
+                id: "p1",
+                name: "Х1",
+                price: 10,
+                companyId: null,
+                branchId: null,
+              },
+              {
+                id: "p2",
+                name: "Х2",
+                price: 10,
+                companyId: null,
+                branchId: "b",
+              },
+              // branchId nullable, але companyId є: добудовується з контексту.
+              {
+                id: "p3",
+                name: "Х3",
+                price: 10,
+                companyId: "c",
+                branchId: null,
+              },
+              {
+                id: "p4",
+                name: "Х4",
+                price: 10,
+                companyId: "c",
+                branchId: "b",
+              },
+              {
+                id: "p5",
+                name: "Х5",
+                price: 10,
+                companyId: "c",
+                branchId: "b",
+              },
+              {
+                id: "p6",
+                name: "Х6",
+                price: 10,
+                companyId: "c",
+                branchId: "b",
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const [result] = await previewCart("user-1", [{ name: "Хліб" }]);
+
+    const call = mocks.callMcpTool.mock.calls[0]?.[0] as {
+      toolName: string;
+      args: { limit: number; products: string[] };
+    };
+    expect(call.toolName).toBe("silpo_find_products_batch");
+    expect(call.args.limit).toBe(10);
+    expect(call.args.products).toEqual(["Хліб"]);
+
+    expect(result?.unmatched).toBe(false);
+    expect(result?.matches.map((m) => m.name)).toEqual(["Х3", "Х4", "Х5"]);
+    // branchId для Х3 — філія, по якій шукали (BRANCH_CTX), не вигаданий.
+    expect(decodeLagerId(result!.matches[0]!.lagerId)).toEqual({
+      productId: "p3",
+      companyId: "c",
+      branchId: "branch-1",
+    });
   });
 
   it("propagates a branch-context resolution failure as a mapped AppError (never crashes)", async () => {
