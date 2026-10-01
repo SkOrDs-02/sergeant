@@ -11,6 +11,8 @@
 
 export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
+  startWorkoutFab: "Почати тренування",
+  resumeWorkoutFab: "Продовжити тренування",
   // Progress page (`pages/Progress.tsx`) — analytics dashboard, PR board.
   progress: {
     title: "Прогрес",

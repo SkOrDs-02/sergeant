@@ -162,12 +162,13 @@ export const WithBadge: Story = {
 };
 
 /**
- * Routine special-case — 2-tab pill з центральним FAB як sibling
- * (НЕ nested усередині nav). FAB sits at `z-40` 22 px above the
- * pill's top edge, зберігаючи власний coral gradient та `shadow-float`.
- * Використовується в RoutineApp як основна навігація.
+ * Routine 2-tab pill. The bespoke center-docked "+" FAB this story used to
+ * showcase was replaced by the shared `FloatingActionButton` (variant
+ * "v2-routine", bottom-right, mounted in `RoutineActions`/`RoutineApp`) as
+ * part of the fab-and-manual-income spec's cross-module FAB unification —
+ * see `Shared / FloatingActionButton` for that story instead.
  */
-export const RoutineWithFab: StoryObj<typeof RoutineBottomNav> = {
+export const RoutineNav: StoryObj<typeof RoutineBottomNav> = {
   render: (args) => (
     <div className="relative h-[200px] w-full bg-bg">
       <div className="absolute inset-x-0 bottom-0">
@@ -178,7 +179,6 @@ export const RoutineWithFab: StoryObj<typeof RoutineBottomNav> = {
   args: {
     mainTab: "calendar",
     onSelectTab: () => {},
-    onAddHabit: () => {},
   },
   parameters: { chromatic: { viewports: [375, 768] } },
 };

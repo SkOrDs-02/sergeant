@@ -19,8 +19,13 @@ import {
   calculateTotalExpenseFact,
   filterTransactionsForLimitPeriod,
 } from "@sergeant/finyk-domain/domain/budget";
-import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import {
+  filterStatTransactions,
+  manualExpenseToTransaction,
+} from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import { MonthlyPlanCard } from "../../components/budgets/MonthlyPlanCard";
 import { AddBudgetForm } from "../../components/budgets/AddBudgetForm";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
@@ -79,6 +84,7 @@ export interface BudgetsStorageSlice {
   subscriptions?: readonly unknown[];
   manualDebts?: readonly unknown[];
   receivables?: readonly unknown[];
+  manualExpenses?: ManualExpense[];
 }
 
 export interface BudgetsProps {
@@ -133,22 +139,51 @@ export function Budgets({
     subscriptions = [],
     manualDebts = [],
     receivables = [],
+    manualExpenses = [],
   } = storage;
-  const statTx = useMemo(
-    () => filterStatTransactions(realTx, excludedTxIds),
-    [realTx, excludedTxIds],
-  );
-  const monthlySummary = useMemo(
-    () => getMonthlySummary(realTx, { excludedTxIds, txSplits }),
-    [realTx, excludedTxIds, txSplits],
-  );
-  const factIncome = monthlySummary.income;
-  const [editIdx, setEditIdx] = useState<number | null>(null);
-  const [showForm, setShowForm] = useState(false);
 
   // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
   const now = useMemo(() => new Date(), []);
   const { monthStart } = getCurrentMonthContext(now);
+
+  // Manual expenses/income live in storage (LS + React state), not in the
+  // bank tx stream — the fact-vs-plan selectors below must merge them in
+  // explicitly, or a manually-added salary/expense never moves the Plan
+  // card's progress. Mirrors the merge pattern `useOverviewData` already
+  // uses for Overview's own income/spent totals; scoped to the current
+  // calendar month to match `getMonthlySummary`'s implicit window.
+  const manualExpenseTxs = useMemo(() => {
+    // `getKyivDateParts` (not `monthStart.getFullYear()/getMonth()`) so the
+    // upper bound stays anchored to Europe/Kyiv per the domain invariant —
+    // `month` is 1-based, so `new Date(year, month, 1)` is next month's start.
+    const kyivToday = getKyivDateParts(now);
+    const monthStartMs = monthStart.getTime();
+    const monthEndMs = new Date(kyivToday.year, kyivToday.month, 1).getTime();
+    return manualExpenses
+      .filter((e) => {
+        const ts = new Date(e.date).getTime();
+        return ts >= monthStartMs && ts < monthEndMs;
+      })
+      .map((e) => manualExpenseToTransaction(e));
+  }, [manualExpenses, monthStart, now]);
+
+  const txForStats = useMemo(
+    () =>
+      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx,
+    [realTx, manualExpenseTxs],
+  );
+
+  const statTx = useMemo(
+    () => filterStatTransactions(txForStats, excludedTxIds),
+    [txForStats, excludedTxIds],
+  );
+  const monthlySummary = useMemo(
+    () => getMonthlySummary(txForStats, { excludedTxIds, txSplits }),
+    [txForStats, excludedTxIds, txSplits],
+  );
+  const factIncome = monthlySummary.income;
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [showForm, setShowForm] = useState(false);
   const expenseCategoryList = useMemo(
     () => buildExpenseCategoryList(customCategories, { excludeIncome: false }),
     [customCategories],

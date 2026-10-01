@@ -80,7 +80,11 @@ vi.mock("./hooks/useFinykRoute", () => ({
 
 vi.mock("./hooks/useUnifiedFinanceData", () => ({
   useUnifiedFinanceData: vi.fn(() => ({
-    mergedMono: { accounts: [], transactions: [], syncState: null },
+    // `realTx` mirrors `transactions` per the real hook's contract —
+    // missing it made `useFinykQuickStatsWriter` crash (`realTx is not
+    // iterable`) as soon as a test primed a non-empty manual-expense
+    // fixture (pre-existing mock gap, unrelated to fab-and-manual-income).
+    mergedMono: { accounts: [], transactions: [], realTx: [], syncState: null },
     mergedRefresh: vi.fn(),
   })),
 }));

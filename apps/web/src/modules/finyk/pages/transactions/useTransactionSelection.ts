@@ -170,6 +170,11 @@ export function useTransactionSelection({
     // the canonical `Transaction` interface but the runtime payload may
     // still carry it — read it through an unknown cast for the snapshot.
     const legacyCategory = (tx as { _category?: unknown })._category;
+    // Sign is the single source of truth for kind (manualExpenseToTransaction
+    // makes income positive, expense negative) — deriving it here means undo
+    // resurrects the record under its original kind instead of silently
+    // defaulting back to expense.
+    const isIncome = Number(tx.amount || 0) > 0;
     const snapshot: ManualExpense = {
       id: String(manualId),
       date: tx.time
@@ -177,11 +182,12 @@ export function useTransactionSelection({
         : new Date().toISOString(),
       description: String(tx.description || ""),
       amount: Math.abs(Number(tx.amount || 0) / 100),
-      category: String(legacyCategory || "інше"),
+      category: String(legacyCategory || tx.categoryId || "інше"),
+      kind: isIncome ? "income" : "expense",
     };
     removeManualExpense(String(manualId));
     showUndoToast(toast, {
-      msg: "Витрату видалено",
+      msg: isIncome ? "Надходження видалено" : "Витрату видалено",
       onUndo: () => addManualExpense(snapshot),
     });
   }, []);

@@ -10,6 +10,7 @@ import { getCategory } from "../../../modules/finyk/utils";
 import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
+import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { Recommendations } from "@sergeant/insights";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getCachedFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
@@ -63,9 +64,16 @@ export function buildFinanceContext(): FinanceContext {
       .filter(([, v]) => v === "internal_transfer")
       .map(([k]) => k),
   );
-  const manualExpenses = safeLS<ManualExpense[]>(
-    "finyk_manual_expenses_v1",
-    [],
+  // `@sergeant/insights`' ManualExpense contract is expense-only (its rules
+  // add every entry's `amount` straight to spend/velocity/pace totals).
+  // The manual-income feature (fab-and-manual-income spec) writes income
+  // rows into the same `finyk_manual_expenses_v1` array, so they must be
+  // filtered out here — otherwise a salary entry would count as spending
+  // in every AI-advice rule (budget-limit warnings, spending velocity…).
+  const manualExpenses = safeLS<
+    Array<ManualExpense & { kind?: string; type?: string }>
+  >("finyk_manual_expenses_v1", []).filter(
+    (e) => resolveManualExpenseKind(e) === "expense",
   );
   const txSplitsRaw = safeLS<TxSplitsLike>("finyk_tx_splits", {});
   const txSplits: TxSplitsLike =

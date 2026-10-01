@@ -22,6 +22,8 @@ export interface ManualExpense {
   description?: string;
   amount: number;
   category?: string;
+  /** Відсутнє поле = `"expense"` — старі записи валідні без міграції даних. */
+  kind?: "expense" | "income";
 }
 
 export interface FrequentCategory {

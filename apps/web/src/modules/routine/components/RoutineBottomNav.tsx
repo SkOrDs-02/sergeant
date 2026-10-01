@@ -65,68 +65,26 @@ const NAV: readonly RoutineNavItem[] = [
 export interface RoutineBottomNavProps {
   mainTab: RoutineMainTab;
   onSelectTab: (tab: RoutineMainTab) => void;
-  onAddHabit?: () => void;
 }
 
 export function RoutineBottomNav({
   mainTab,
   onSelectTab,
-  onAddHabit,
 }: RoutineBottomNavProps) {
-  // Sergeant v2 (PR-8) — center FAB rendered as a sibling of the
-  // floating-pill `ModuleBottomNav`, NOT nested inside it. The nav now
-  // owns its own glass pill + safe-area-pb; positioning the FAB inside
-  // would clip it under `overflow-hidden` and double-shadow it on the
-  // pill bezel. As a sibling at `z-40` it sits above the nav's stacking
-  // context and overlaps the pill's top edge by ~22 px so it reads as
-  // "floating above the dock", matching the v2 module-hero language.
+  // The bespoke center-docked "+" FAB (Sergeant v2 PR-8, locked spec §3.2)
+  // was replaced by the shared `FloatingActionButton` (variant="v2-routine",
+  // bottom-right, mounted in `RoutineApp.tsx`) as part of the
+  // fab-and-manual-income spec's cross-module FAB placement unification —
+  // Routine's center-over-nav position was exactly the "неконсистентне
+  // розміщення" that spec calls out. See RoutineApp.tsx for the new mount.
   return (
-    <div className="relative shrink-0">
-      <ModuleBottomNav
-        items={NAV}
-        activeId={mainTab}
-        onChange={(id) => onSelectTab(id as RoutineMainTab)}
-        module="routine"
-        role="tablist"
-        ariaLabel={messages.nav.routineSections}
-      />
-      {onAddHabit && (
-        <button
-          type="button"
-          onClick={onAddHabit}
-          aria-label="Додати звичку"
-          className={[
-            // `-top-[22px]` lifts the FAB above the pill's top edge by
-            // 22 px (per locked spec §3.2). `z-40` clears the nav's
-            // `z-30` wrapper. `border-bg` punches a halo through the
-            // glass pill so the coral disk doesn't read as merged.
-            "absolute left-1/2 -translate-x-1/2 -top-[22px]",
-            "w-14 h-14 rounded-full z-40",
-            "bg-linear-to-br from-coral-600 to-coral-700 text-white",
-            // Light keeps the drop shadow; dark «Чорнило» swaps it for a
-            // luminescent coral glow (spec § 4: FAB = accent + glow 24px/40%).
-            "shadow-float dark:shadow-glow-fab-coral border-4 border-bg",
-            "flex items-center justify-center",
-            "transition-transform duration-150 active:scale-95 hover:scale-[1.04]",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-          ].join(" ")}
-        >
-          <svg
-            width="26"
-            height="26"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </button>
-      )}
-    </div>
+    <ModuleBottomNav
+      items={NAV}
+      activeId={mainTab}
+      onChange={(id) => onSelectTab(id as RoutineMainTab)}
+      module="routine"
+      role="tablist"
+      ariaLabel={messages.nav.routineSections}
+    />
   );
 }

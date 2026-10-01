@@ -24,6 +24,11 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // Finyk / activation
   EXPENSE_ADDED: "expense_added",
   EXPENSE_DELETED: "expense_deleted",
+  // Manual income (fab-and-manual-income spec) — symmetric to EXPENSE_ADDED/
+  // DELETED above, kept as separate named events rather than a payload
+  // discriminator to match the existing convention for this event pair.
+  INCOME_ADDED: "income_added",
+  INCOME_DELETED: "income_deleted",
   BUDGET_SET: "budget_set",
   ANALYTICS_OPENED: "analytics_opened",
   BANK_CONNECT_STARTED: "bank_connect_started",

@@ -347,6 +347,9 @@ export interface ManualExpenseMirrorEntry {
   /** Amount in **гривні** (minor-unit ×100 is server-only — Hard Rule #1). */
   readonly amount: number;
   readonly category?: string;
+  /** expense | income — see `resolveManualExpenseKind` in finyk-domain. */
+  readonly kind?: string;
+  /** Legacy alias for `kind`, predates the manual-income feature. */
   readonly type?: string;
   readonly [extra: string]: unknown;
 }

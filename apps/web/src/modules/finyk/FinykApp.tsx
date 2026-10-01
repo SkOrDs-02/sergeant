@@ -302,14 +302,19 @@ export default function App({
   };
 
   // Show nutrition prompt after save (lines extracted for clarity)
-  const handleExpenseSave = (expense?: { id?: string; category?: string }) => {
+  const handleExpenseSave = (expense?: {
+    id?: string;
+    category?: string;
+    kind?: "expense" | "income";
+  }) => {
+    const isIncome = expense?.kind === "income";
     if (expense?.id) {
       storage.editManualExpense?.(expense.id, expense);
-      toast.success("Витрату оновлено.");
+      toast.success(isIncome ? "Надходження оновлено." : "Витрату оновлено.");
       return "updated";
     }
     storage.addManualExpense(expense ?? {});
-    toast.success("Витрату додано.");
+    toast.success(isIncome ? "Надходження додано." : "Витрату додано.");
     return "added";
   };
 
@@ -458,11 +463,12 @@ export default function App({
             const snapshot = (storage.manualExpenses || []).find(
               (e) => String(e.id) === String(id),
             );
+            const isIncome = snapshot?.kind === "income";
             storage.removeManualExpense(id);
             setEditingManualExpenseId(null);
             if (snapshot) {
               showUndoToast(toast, {
-                msg: "Видалив витрату",
+                msg: isIncome ? "Видалив надходження" : "Видалив витрату",
                 onUndo: () => storage.addManualExpense(snapshot),
               });
             } else {

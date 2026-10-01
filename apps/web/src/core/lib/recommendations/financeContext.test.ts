@@ -310,3 +310,42 @@ describe("buildFinanceContext — budgets", () => {
     expect(ctx.limits).toEqual([]);
   });
 });
+
+describe("buildFinanceContext — manual income excluded from spend (fab-and-manual-income spec)", () => {
+  // `@sergeant/insights` treats every `ctx.manualExpenses` row as spend
+  // (dailyVsWeeklyPace, spendingVelocity, noTxRecent rules all add `amount`
+  // straight to their totals). The manual-income feature writes income rows
+  // into the same `finyk_manual_expenses_v1` array — without this filter a
+  // salary entry would trip budget-limit / spending-velocity AI advice as
+  // if the user overspent.
+  it("drops kind: income entries from ctx.manualExpenses entirely", () => {
+    localStorage.setItem(
+      "finyk_manual_expenses_v1",
+      JSON.stringify([
+        { id: "m1", amount: 25, date: "2026-04-10", category: "food" },
+        {
+          id: "m2",
+          amount: 5000,
+          date: "2026-04-10",
+          category: "salary",
+          kind: "income",
+        },
+      ]),
+    );
+    const ctx = buildFinanceContext();
+    expect(ctx.manualExpenses.map((e) => e.id)).toEqual(["m1"]);
+  });
+
+  it("legacy type: income rows (HubChat, pre-kind) are also excluded", () => {
+    localStorage.setItem(
+      "finyk_manual_expenses_v1",
+      JSON.stringify([
+        { id: "m1", amount: 5000, date: "2026-04-10", type: "income" },
+      ]),
+    );
+    const ctx = buildFinanceContext();
+    expect(ctx.manualExpenses).toEqual([]);
+    expect(ctx.categorySpend).toEqual({});
+    expect(ctx.canonicalTotalCount.size).toBe(0);
+  });
+});
