@@ -251,10 +251,10 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 
 ## Deployment & test users
 
-- **Frontend:** Vercel: ручний шлях `pnpm deploy:web` і `pnpm deploy:landing` (локальний CLI, див. застереження про Git-інтеграцію нижче, [`scripts/deploy-vercel.mjs`](./scripts/deploy-vercel.mjs)). [`deploy-landing.yml`](./.github/workflows/deploy-landing.yml) з 2026-09-30 лише вручну. Автодеплоїться тільки бекенд.
+- **Frontend:** Vercel Git-інтеграція з `SkOrDs-02/sergeant`: push у `main` викочує web і лендінг у прод сам (звірено 2026-10-01: мерж `9680d27` став `Production – sergeant`). Прев'ю на PR немає: `git.deploymentEnabled` у `apps/web/vercel.json` і `apps/landing/vercel.json` вмикає лише `main` (і `beta` для web), бо Hobby дає 100 деплоїв на добу, а кожен push у PR з'їдав два. `ignoreCommand` далі пропускає збірку, якщо зміна не зачепила пакет. Ручний запасний шлях: `pnpm deploy:web` і `pnpm deploy:landing` (локальний CLI, [`scripts/deploy-vercel.mjs`](./scripts/deploy-vercel.mjs)). [`deploy-landing.yml`](./.github/workflows/deploy-landing.yml) з 2026-09-30 лише вручну.
 - **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS), застосунок `sergeant-api-v2`, білд із `Dockerfile.api` **на самому сервері**. Джерело - `https://github.com/SkOrDs-02/sergeant.git`, гілка `main` (з 2026-09-30; 2026-09-23..29 був Bitbucket). Образу в `ghcr.io` більше немає, дзеркало Hetzner у ланцюгу не бере участі. Викочує джоба `deploy-api` у CI після зелених обовʼязкових джоб (див. нижче), запасний шлях - `pnpm deploy:api -- --yes`. Health endpoint: `/health`, і він віддає просто `"ok"` — версії не повідомляє, тож доказом свіжості служить коміт у Coolify, а не health. Топологія та rationale — [ADR-0074](./docs/governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
 - **Міграції їдуть в ENTRYPOINT образу** (`node dist-server/migrate.js && exec node dist-server/index.js`), тобто застосовуються з нового коду ще до старту сервера. `pre_deployment_command` у Coolify порожній і має таким лишатись: він виконувався через `docker exec` у СТАРОМУ контейнері, через що міграція відставала на один деплой.
-- **Vercel, імовірно, знову збирає фронт із GitHub.** На PR #1233 зʼявились чеки `Vercel – sergeant` і `Vercel – sergeant-landing` (2026-09-30 червоні через денний ліміт збірок Hobby), тобто Git-інтеграція Vercel підключена до `SkOrDs-02/sergeant` і робить прев'ю на PR. Чи деплоїть вона Production-гілку `main` автоматично і як це співіснує з ручним `pnpm deploy:web`, не звірено: це налаштування Vercel-проєктів, їх перевіряє власник. Доки не звірено, не вважай `pnpm deploy:web` єдиним шляхом у прод фронта.
+- **Фронт їде раніше за бекенд.** Vercel збирає `main` одразу після мержу, а `deploy-api` чекає зеленого CI (~25 хв), тож у цьому вікні свіжий фронт говорить зі старим API. Рішення власника 2026-10-01: прийнятно. Зміна контракту, яку старий API не переживе, потребує сумісного з обома боками кроку або ручного порядку (спершу бекенд).
 - **Test users:** primary test-user ID живе поза репо (Coolify env vars / локальний `.env`-нотатник власника). Репо **публічне** (з 2026-09-30), тож реальні user ID, фінансову топологію і будь-які секрети не комітьте.
 
 ### Прод не оновлюється сам
@@ -264,7 +264,7 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 - **Тригер:** push у `main` -> джоба `deploy-api` у [`ci.yml`](./.github/workflows/ci.yml) з `needs: [check, critical-flow, migration-lint, migration-down-drill]` -> reusable [`deploy-api.yml`](./.github/workflows/deploy-api.yml). Власного `on: push` він не має, щоб не обійти гейт.
 - **Умови:** секрети репо `COOLIFY_URL` і `COOLIFY_TOKEN` задані (інакше зелений пропуск); `main` ще на цьому коміті (Coolify збирає голову гілки, тож новіший коміт задеплоїть його власний CI); від коміту в проді змінились шляхи, що потрапляють в образ.
 - **Перевірка:** статус деплою по uuid = `finished`, **задеплоєний коміт = `github.sha`**, `/health` = 200. Інакше джоба червона. Деплой коротший за хвилину найчастіше означає, що зібрано вже задеплоєний коміт, тому звіряється коміт, а не статус.
-- Фронт web і лендінг і далі ручні (`pnpm deploy:web`, `pnpm deploy:landing`).
+- Фронт web і лендінг викочує сам Vercel з `main` (див. § Deployment), не CI.
 
 Розрив прод ↔ `main` видно так:
 
@@ -272,9 +272,9 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 pnpm deploy:status
 ```
 
-Вердикт окремо по бекенду, фронту і лендингу. По бекенду він **точний** (Coolify зберігає коміт деплою), по фронту це **оцінка за часом**: Vercel їде CLI без Git-інтеграції.
+Вердикт окремо по бекенду, фронту і лендингу. По бекенду він **точний** (Coolify зберігає коміт деплою), по фронту це **оцінка за часом**: скрипт не читає коміт деплою Vercel.
 
-**Агент, який мерджив зміни в `main`, проганяє `pnpm deploy:status` перед завершенням сесії.** Бекенд, що відстає, означає: автодеплой пропущено (секрети, червоний CI) або він упав; причина в прогоні `CI` на `main`. Ручний `pnpm deploy:api -- --yes` лише після зеленого CI. Фронт, що відстає, викочується `pnpm deploy:web -- --yes` (лендінг `pnpm deploy:landing -- --yes`) після бекенду, інакше свіжий фронт деякий час говоритиме зі старим API.
+**Агент, який мерджив зміни в `main`, проганяє `pnpm deploy:status` перед завершенням сесії.** Бекенд, що відстає, означає: автодеплой пропущено (секрети, червоний CI) або він упав; причина в прогоні `CI` на `main`. Ручний `pnpm deploy:api -- --yes` лише після зеленого CI. Фронт, що відстає, означає, що Vercel пропустив або провалив збірку `main` (ліміт Hobby, `ignoreCommand`): дивись деплої проєкту у Vercel, запасний шлях `pnpm deploy:web -- --yes` (лендінг `pnpm deploy:landing -- --yes`).
 
 **Без `--yes` деплой-скрипти нічого не викочують:** `pnpm deploy:api`, `deploy:web` і `deploy:landing` лише друкують прев'ю (що і куди поїде) та виходять з кодом 0 без мережевих викликів. `pnpm`-скрипти прапорець не передають навмисно, `--yes` додає той, хто вирішив викочувати ([DG-32](./docs/work/specs/audits/2026-09-23-docs-governance-audit.md)). **Не запускай `deploy:*` заради перевірки коду:** для цього є прев'ю без `--yes` і `pnpm deploy:api -- --sync-only`.
 

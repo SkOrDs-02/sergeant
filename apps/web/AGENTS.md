@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: ручний `pnpm deploy:web` (локальний Vercel CLI, прямо в прод), автодеплою web на merge немає (автодеплоїться лише бекенд, ADR-0102). Деталі — [`AGENTS.md § Де живе код`](../../AGENTS.md). Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
+React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: Vercel Git-інтеграція викочує `main` у прод сама, прев'ю на PR вимкнені (`git.deploymentEnabled` у `vercel.json`); ручний запасний шлях `pnpm deploy:web`. Деталі — [`AGENTS.md § Де живе код`](../../AGENTS.md). Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
 
 ## Quick commands
 
