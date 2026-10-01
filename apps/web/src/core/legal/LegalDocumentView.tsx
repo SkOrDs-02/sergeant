@@ -10,13 +10,9 @@ import type { LegalDocument } from "./legalDocumentTypes";
 
 interface LegalDocumentViewProps {
   readonly document: LegalDocument;
-  readonly lastUpdated: string;
 }
 
-export function LegalDocumentView({
-  document,
-  lastUpdated,
-}: LegalDocumentViewProps) {
+export function LegalDocumentView({ document }: LegalDocumentViewProps) {
   return (
     <MeshBackground
       className="h-app-dvh min-h-0 overflow-y-auto overscroll-contain px-5 py-8 sm:py-12"
@@ -49,7 +45,7 @@ export function LegalDocumentView({
             {messages.legal.reviewGateNotice}
           </div>
           <p className="text-style-caption text-subtle">
-            {messages.legal.lastUpdatedPrefix} {lastUpdated}
+            {messages.legal.lastUpdatedPrefix} {document.lastUpdated}
           </p>
         </header>
 

@@ -11,6 +11,7 @@ import {
 export const termsDocument: LegalDocument = {
   eyebrow: "Terms",
   title: "Умови користування",
+  lastUpdated: "31 липня 2026",
   intro: `Це правила доступу до Sergeant: акаунт, AI, фінансові та health-модулі, обмеження відповідальності. Діють з ${EFFECTIVE_DATE}.`,
   sections: [
     {
