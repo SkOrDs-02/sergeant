@@ -15,8 +15,12 @@ interface CategoryDeltaTableProps {
 }
 
 /**
- * «Категорія · минулий · цей · зміна» (Р12). Відсоток лише там, де
- * попередній місяць є базою, інакше абсолютна дельта в гривнях (Р4).
+ * «Категорія · минулий · цей · зміна» (Р12). Зміна тут завжди в гривнях:
+ * обидві суми стоять у сусідніх колонках, тож відсоток нічого не додає, а
+ * різний формат рядків («+226 %» поруч із «+490 ₴») не дає порівняти їх
+ * між собою. Це уточнення Р4 (відсоток лише з базою, `compareAmounts`) —
+ * для цієї таблиці рішення власника 2026-10-01; у блоці «Порівняння» й
+ * решті місць Р4 діє як раніше.
  */
 function CategoryDeltaTableComponent({
   rows,
@@ -44,7 +48,6 @@ function CategoryDeltaTableComponent({
       <tbody>
         {rows.map((r) => {
           const diff = Math.round(r.delta.diffMinor / 100);
-          const pct = r.delta.pct;
           return (
             <tr key={r.categoryId} className="border-t border-line">
               <th scope="row" className="text-left font-normal py-1.5 pr-2">
@@ -64,10 +67,10 @@ function CategoryDeltaTableComponent({
                 {showBalance ? <Money amount={r.currentMinor / 100} /> : "••••"}
               </td>
               <td className="text-right py-1.5 pl-2 whitespace-nowrap">
-                {showBalance && (pct !== null || diff !== 0) && (
+                {showBalance && diff !== 0 && (
                   <Delta
-                    value={pct === null ? diff : Math.round(pct)}
-                    symbol={pct === null ? "₴" : "%"}
+                    value={diff}
+                    symbol="₴"
                     polarity="negative"
                     className="text-style-caption font-normal"
                   />

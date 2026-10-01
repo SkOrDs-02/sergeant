@@ -73,6 +73,7 @@ function trialingResponse(daysFromNow: number): BillingStatusResponse {
       status: "trialing",
       active: true,
       currentPeriodEnd: periodEnd,
+      cancelAtPeriodEnd: false,
     },
     access: accessFixture(daysFromNow >= 0 ? "trial" : "free", {
       trialEndsAt: daysFromNow >= 0 ? periodEnd : null,
@@ -134,6 +135,7 @@ describe("TrialBanner (спека access-tiers)", () => {
         currentPeriodEnd: new Date(
           NOW + 30 * 24 * 60 * 60 * 1000,
         ).toISOString(),
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("pro"),
     });
@@ -196,6 +198,7 @@ describe("TrialBanner (спека access-tiers)", () => {
         status: "past_due",
         active: true,
         currentPeriodEnd: "2026-05-12T12:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("grace", {
         graceEndsAt: "2026-05-15T12:00:00.000Z",

@@ -134,6 +134,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
       status: null,
       active: false,
       currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
     });
     expect(response.body.access.state).toBe("free");
     expect(response.body.access.meters.aiActions.limit).toBe(20);
@@ -150,6 +151,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
           plan: "pro",
           status: "active",
           current_period_end: new Date("2026-08-01T00:00:00.000Z"),
+          cancel_at_period_end: true,
         },
       ],
     });
@@ -178,6 +180,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
       plan: "pro",
       status: "active",
       active: true,
+      cancelAtPeriodEnd: true,
     });
     expect(response.body.access.state).toBe("pro");
     expectMatchesOpenApi("/api/billing/status", 200, response.body);

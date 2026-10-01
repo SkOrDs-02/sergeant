@@ -287,6 +287,7 @@ export function Overview({
 
                   <FinykInsightsBlock
                     transactions={d.insightTx}
+                    recurringTransactions={d.recurringTx}
                     budgets={storage.budgets}
                     subscriptions={storage.subscriptions}
                     dismissedRecurring={storage.dismissedRecurring}

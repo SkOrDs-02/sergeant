@@ -248,6 +248,50 @@ describe("TransactionList — DataState routing", () => {
     expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
   });
 
+  // Рішення власника 2026-10-01: обидві ноги скасованого платежу
+  // («Uklon −189» / «Скасування. Uklon +189») не рахуються у статистиці, і
+  // рядок каже чому — «скасовано», а не загальне «не в статистиці».
+  it("shows «скасовано» for rows in cancelledTxIdSet", () => {
+    const refund = {
+      ...SAMPLE_TX,
+      id: "tx-2",
+      description: "Скасування. Сільпо",
+      amount: 250,
+    } as unknown as Transaction;
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX, refund]}
+        filtered={[SAMPLE_TX, refund]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX, refund] }]}
+        groupCounts={[2]}
+        flatItems={[SAMPLE_TX, refund]}
+        cancelledTxIdSet={new Set([SAMPLE_TX.id, refund.id])}
+      />,
+    );
+
+    expect(screen.getAllByText("скасовано")).toHaveLength(2);
+    expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
+  });
+
+  it("does not mark rows outside cancelledTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        cancelledTxIdSet={new Set<string>()}
+      />,
+    );
+
+    expect(screen.queryByText("скасовано")).not.toBeInTheDocument();
+  });
+
   it("keeps the list visible during a background refetch (loading=true with prior activeTx)", () => {
     // Stale-revalidate: a refetch is in flight but we already have a
     // payload from the previous tick. The list must NOT collapse to

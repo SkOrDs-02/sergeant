@@ -315,6 +315,7 @@ export function billingStatus(): BillingStatusResponse {
       status: null,
       active: false,
       currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
     },
     access: {
       state: "free",

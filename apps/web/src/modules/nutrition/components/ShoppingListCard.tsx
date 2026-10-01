@@ -2,8 +2,8 @@
  * Last validated: 2026-08-18
  * Status: Active
  */
-import { useState } from "react";
-import { pluralDays } from "@sergeant/shared";
+import { useMemo, useState } from "react";
+import { pluralDays, pluralUa } from "@sergeant/shared";
 import type {
   AtHomeShoppingItem,
   ShoppingItemWithCalc,
@@ -17,8 +17,15 @@ import { openHubModule } from "@shared/lib/modules/hubNav";
 import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { getTotalCount } from "../lib/shoppingListStorage";
+import {
+  SHOPPING_RECIPES_MAX,
+  buildRecipeOptions,
+  pickSelectedRecipes,
+} from "../lib/shoppingRecipes";
+import type { SavedRecipe } from "../lib/recipeBook";
 import { useShoppingListPantryMath } from "../hooks/useShoppingListPantryMath";
 import { SilpoCartEntry } from "./SilpoCartEntry";
+import { ShoppingRecipePicker } from "./ShoppingRecipePicker";
 import type {
   AddShoppingItemInput,
   PantryItem,
@@ -62,6 +69,7 @@ function getCategoryIcon(name: string): IconName {
 
 const pm = messages.nutrition.shoppingListPantryMath;
 const ma = messages.nutrition.shoppingListManualAdd;
+const pk = messages.nutrition.shoppingRecipePicker;
 
 interface ShoppingItemRowProps {
   item: ShoppingItemWithCalc;
@@ -233,12 +241,23 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
 }
 
 interface ShoppingListCardProps {
+  /** Згенеровані рецепти поточного сеансу. */
   recipes?: unknown[];
+  /** Збережені («Мої рецепти»): разом зі згенерованими складають джерело «Рецепти». */
+  savedRecipes?: SavedRecipe[];
+  /** Збережені ще читаються з книги. */
+  savedRecipesBusy?: boolean;
+  /** Книгу збережених не вдалося прочитати. */
+  savedRecipesError?: boolean;
   weekPlan?: NutritionWeekPlan | null;
   pantryItems?: PantryItem[];
   shoppingList: ShoppingList | null;
   shoppingBusy?: boolean;
-  onGenerate: (source: string) => void | Promise<void>;
+  /**
+   * `recipes` - позначені в переліку рецепти (лише для джерела «recipes»);
+   * без нього хук бере всі згенеровані, як було до вибору.
+   */
+  onGenerate: (source: string, recipes?: unknown[]) => void | Promise<void>;
   onToggleItem: (categoryName: string, itemId: string) => void;
   onClearChecked: () => void;
   onClearAll: () => void;
@@ -249,6 +268,9 @@ interface ShoppingListCardProps {
 
 export function ShoppingListCard({
   recipes,
+  savedRecipes,
+  savedRecipesBusy,
+  savedRecipesError,
   weekPlan,
   pantryItems,
   shoppingList,
@@ -276,13 +298,52 @@ export function ShoppingListCard({
     calculated.categories.reduce((n, c) => n + c.items.length, 0) +
     calculated.athome.length;
   const hasItems = total > 0 || calculatedCount > 0;
+  // `calculatedCount` залежить від самого тумблера: вимкнув на порожньому
+  // сирому списку → довлиті «Закінчується» зникли → `hasItems` став `false`.
+  // Тумблер у стані «вимкнено» мусить лишатись видимим незалежно від цього,
+  // інакше стан, збережений у LS, не повернути. Увімкнений тумблер без
+  // списку нічого не міняє, тож його ховаємо, як і раніше.
+  const showPantryToggle =
+    pantryMath.available && (hasItems || !pantryMath.enabled);
 
-  const hasRecipes = Array.isArray(recipes) && recipes.length > 0;
+  // Джерело «Рецепти» - збережені («Мої рецепти») і згенеровані разом;
+  // список складається з усіх ПОЗНАЧЕНИХ. Раніше картка бачила лише
+  // згенеровані в памʼяті й казала «немає рецептів» при повній книзі.
+  const recipeOptions = useMemo(
+    () => buildRecipeOptions(savedRecipes ?? [], recipes ?? []),
+    [savedRecipes, recipes],
+  );
+  const allRecipeOptions = useMemo(
+    () => [...recipeOptions.saved, ...recipeOptions.generated],
+    [recipeOptions],
+  );
+  const [selectedKeys, setSelectedKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const selectedRecipes = pickSelectedRecipes(allRecipeOptions, selectedKeys);
+  const toggleRecipe = (key: string) =>
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else if (
+        pickSelectedRecipes(allRecipeOptions, prev).length <
+        SHOPPING_RECIPES_MAX
+      )
+        next.add(key);
+      return next;
+    });
+  const hasRecipes = allRecipeOptions.length > 0;
   const hasWeekPlan = (weekPlan?.days?.length ?? 0) > 0;
 
   const canGenerate =
-    (source === "recipes" && hasRecipes) ||
+    (source === "recipes" && selectedRecipes.length > 0) ||
     (source === "weekplan" && hasWeekPlan);
+  const generateHint =
+    source === "weekplan"
+      ? "Спершу згенеруй тижневий план у Меню → Тижневий план"
+      : hasRecipes
+        ? pk.pickHint
+        : null;
 
   return (
     <Card className="p-4">
@@ -342,7 +403,12 @@ export function ShoppingListCard({
             >
               <div>Рецепти</div>
               <div className="text-style-caption opacity-70 mt-0.5">
-                {hasRecipes ? `${recipes.length} рецептів` : "немає рецептів"}
+                {hasRecipes
+                  ? `${allRecipeOptions.length} ${pluralUa(
+                      allRecipeOptions.length,
+                      { one: "рецепт", few: "рецепти", many: "рецептів" },
+                    )}`
+                  : "немає рецептів"}
               </div>
             </button>
             <button
@@ -367,18 +433,47 @@ export function ShoppingListCard({
             </button>
           </div>
 
-          {!canGenerate && (
+          {source === "recipes" && (
+            <div className="mt-2">
+              <ShoppingRecipePicker
+                saved={recipeOptions.saved}
+                generated={recipeOptions.generated}
+                savedBusy={savedRecipesBusy}
+                savedError={savedRecipesError}
+                selectedKeys={selectedKeys}
+                onToggle={toggleRecipe}
+                onSelectAll={() =>
+                  setSelectedKeys(
+                    new Set(
+                      allRecipeOptions
+                        .slice(0, SHOPPING_RECIPES_MAX)
+                        .map((o) => o.key),
+                    ),
+                  )
+                }
+                onClear={() => setSelectedKeys(new Set())}
+                disabled={shoppingBusy}
+              />
+            </div>
+          )}
+
+          {!canGenerate && generateHint && (
             <div className="mt-2 text-style-caption text-muted text-center">
-              {source === "recipes"
-                ? "Спершу згенеруй рецепти у Меню → Рецепти"
-                : "Спершу згенеруй тижневий план у Меню → Тижневий план"}
+              {generateHint}
             </div>
           )}
         </div>
 
         <button
           type="button"
-          onClick={() => onGenerate(source)}
+          onClick={() =>
+            source === "recipes"
+              ? onGenerate(
+                  source,
+                  selectedRecipes.map((o) => o.source),
+                )
+              : onGenerate(source)
+          }
           disabled={shoppingBusy || !canGenerate}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
@@ -435,39 +530,43 @@ export function ShoppingListCard({
                 />
               </div>
             )}
+          </>
+        )}
 
-            {pantryMath.available && (
-              <button
-                type="button"
-                onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
-                aria-pressed={pantryMath.enabled}
-                className={cn(
-                  "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
-                  "flex items-center justify-between gap-2 transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-                  pantryMath.enabled
-                    ? "bg-nutrition/10 border-nutrition/40 text-nutrition-strong dark:text-nutrition"
-                    : "border-line text-muted",
-                )}
-              >
-                <span>{pm.toggleLabel}</span>
-                <span
-                  className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
-                    pantryMath.enabled ? "bg-nutrition-strong" : "bg-line",
-                  )}
-                  aria-hidden
-                >
-                  <span
-                    className={cn(
-                      "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
-                      pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
-                    )}
-                  />
-                </span>
-              </button>
+        {showPantryToggle && (
+          <button
+            type="button"
+            onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
+            aria-pressed={pantryMath.enabled}
+            className={cn(
+              "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
+              "flex items-center justify-between gap-2 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              pantryMath.enabled
+                ? "bg-nutrition/10 border-nutrition/40 text-nutrition-strong dark:text-nutrition"
+                : "border-line text-muted",
             )}
+          >
+            <span>{pm.toggleLabel}</span>
+            <span
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
+                pantryMath.enabled ? "bg-nutrition-strong" : "bg-line",
+              )}
+              aria-hidden
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
+                  pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
+                )}
+              />
+            </span>
+          </button>
+        )}
 
+        {hasItems && (
+          <>
             <div className="space-y-3">
               {calculated.categories.map((cat) => (
                 <div

@@ -1789,6 +1789,18 @@ export const BillingSubscriptionSchema = z.object({
   status: z.string().nullable(),
   active: z.boolean(),
   currentPeriodEnd: z.string().nullable(),
+  /**
+   * Підписку скасовано, але доступ діє до `currentPeriodEnd` (колонка
+   * `subscriptions.cancel_at_period_end`). Статус рядка при цьому лишається
+   * `active`, тож без цього поля UI не відрізнив би «скасовано» від «діє»:
+   * кнопка «Скасувати» не зникала, а «Наступне списання» брехало.
+   *
+   * `.default(false)`, а не просто `z.boolean()`: веб (Vercel) і сервер
+   * (Coolify) деплояться окремо, тож у вікні між деплоями новий клієнт читає
+   * відповідь старого сервера, який поля ще не віддає. «Поля нема» тут
+   * означає рівно те саме, що `false`: старий сервер скасування не показував.
+   */
+  cancelAtPeriodEnd: z.boolean().default(false),
 });
 export type BillingSubscription = z.infer<typeof BillingSubscriptionSchema>;
 
@@ -1843,7 +1855,16 @@ export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
 // `POST /api/billing/cancel` (Phase 7 UA billing) — власна кнопка «Скасувати
 // Pro» замість Customer Portal (якого немає в LiqPay/Plata). Тіла запиту
 // немає (діє над поточним юзером). Доступ лишається до кінця оплаченого
-// періоду (`cancel_at_period_end`).
+// періоду (`cancel_at_period_end`, у `/api/billing/status` це
+// `subscription.cancelAtPeriodEnd`).
+//
+// `200 {ok:true}` означає, що скасування підтверджено провайдером АБО вже було
+// заплановане раніше (повторний виклик ідемпотентний і провайдера не смикає).
+// Помилки йдуть стандартною формою `{error, code}`:
+//   - `409 NO_ACTIVE_SUBSCRIPTION` — жоден провайдер не має що скасовувати
+//     (немає підписки, founder-байпас або `provider='manual'`);
+//   - `502 PROVIDER_CANCEL_FAILED` — провайдер відмовив або не відповів,
+//     підписка лишається активною, можна повторити.
 export const BillingCancelResponseSchema = z.object({
   ok: z.literal(true),
 });

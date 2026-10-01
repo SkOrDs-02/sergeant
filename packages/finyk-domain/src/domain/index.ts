@@ -18,6 +18,7 @@ export * from "./importReminder.js";
 // його вже раз видалили.
 export * from "./balanceReconciliation.js";
 export * from "./transferMatching.js";
+export * from "./refundMatching.js";
 export * from "./receiptMatching.js";
 export * from "./receiptSplitSuggestion.js";
 export * from "./assets/index.js";
