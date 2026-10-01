@@ -35,11 +35,16 @@ name: Docs daily brief
 #     A cron firing on a clean tree exits before committing anything.
 #   - `workflow_dispatch` stays, so a manual refresh is still one click.
 
-# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
+# Лише вручну з 2026-10-01 (рішення власника). Розклад знято вдруге, і з
+# іншої причини, ніж 2026-07-09: бот-PR, відкритий через GITHUB_TOKEN, не
+# запускає `pull_request`-воркфлоу, тож обовʼязкові чеки на ньому не
+# стартують, auto-merge висить, а щотижня додається ще один PR, який власник
+# землить руками. Розбіжність похідних доків ловить pre-commit
+# (`pre-commit-derived-artifacts.mjs` у кожному коміті з `.md`, з командою
+# регенерації), а ця кнопка лишається для ручного освіження. Повертаєш
+# `schedule:` — спершу розвʼяжи питання токена (AI-NOTE на кроці PR нижче).
 on:
   workflow_dispatch: {}
-  schedule:
-    - cron: "30 5 * * 1"
 
 permissions:
   contents: write
