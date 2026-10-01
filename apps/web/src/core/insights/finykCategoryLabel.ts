@@ -12,6 +12,7 @@
  */
 import {
   getCategory,
+  getExpenseCategoryForTransaction,
   resolveExpenseCategoryMeta,
 } from "@sergeant/finyk-domain/lib/categories";
 import { canonicalManualCategoryId } from "@sergeant/finyk-domain/lib/manualTaxonomy";
@@ -50,12 +51,29 @@ export function finykExpenseCategoryLabel(
   // фолбеку «Інше»: невідомий MCC витікав користувачеві сирим рядком
   // `MCC 4829` (це «переказ коштів»), і той самий рядок ішов у промпт
   // моделі, яка потім пояснювала людині її ж «категорію MCC 4829».
-  const resolved = getCategory(
-    tx.description ?? "",
-    tx.mcc ?? 0,
-    override,
-    customCategories,
-  );
+  //
+  // Ручний запис іде через `getExpenseCategoryForTransaction`: лише він
+  // знає легасі-підписи ер 1–2 (`"їжа"`, `"🍴 їжа"` замість слага), які
+  // `getCategory` не матчить і віддає «Інше». Банківські рядки лишаються
+  // на `getCategory` з тієї ж причини, що й вище: не перекроювати їхню
+  // розбивку серверним `categoryId`.
+  const resolved = tx.manual
+    ? getExpenseCategoryForTransaction(
+        {
+          description: tx.description ?? "",
+          mcc: tx.mcc ?? 0,
+          categoryId: tx.categoryId,
+          manual: true,
+        },
+        txCategories[tx.id] ?? null,
+        customCategories as unknown[],
+      )
+    : getCategory(
+        tx.description ?? "",
+        tx.mcc ?? 0,
+        override,
+        customCategories,
+      );
   // Ключ — підпис КАНОНІЧНОЇ категорії. Детальні слаги ручної форми
   // (`cafe`, `tech`, `groceries`) не мають запису в MCC-каталозі, тож
   // без цього зведення `cafe` давав рядок «☕ Кафе та ресторани»
