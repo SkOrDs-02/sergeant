@@ -506,7 +506,11 @@ describe("pgVectorStore query SQL — active-model predicate (unit)", () => {
               values?: unknown[],
             ) => {
               if (typeof textOrObj === "string") {
-                const isSelect = /^\s*SELECT/i.test(textOrObj);
+                // `SELECT set_config(...)` — RLS-контекст із withUserContext,
+                // а не пошуковий запит; його не рахуємо.
+                const isSelect =
+                  /^\s*SELECT/i.test(textOrObj) &&
+                  !/set_config\(/i.test(textOrObj);
                 if (isSelect) {
                   capturedQueries.push({
                     text: textOrObj,
