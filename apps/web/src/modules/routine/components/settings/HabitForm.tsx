@@ -248,7 +248,7 @@ export function HabitForm({
             "rounded-2xl border p-3 transition-colors",
             errors?.weekdays
               ? "border-danger bg-danger/5"
-              : "border-line bg-panel/40",
+              : "border-line bg-panel",
           )}
           aria-invalid={errors?.weekdays ? true : undefined}
           aria-describedby={errors?.weekdays ? weekdaysErrId : undefined}
@@ -276,7 +276,7 @@ export function HabitForm({
           Стеля 7: ціль «8 разів на тиждень» означала б двічі за день, а
           відмітка в моделі одна на день. */}
       {habitDraft.recurrence === "flexible" && (
-        <div className="rounded-2xl border border-line bg-panel/40 p-3">
+        <div className="rounded-2xl border border-line bg-panel p-3">
           <div
             role="radiogroup"
             aria-label="Скільки разів на тиждень"

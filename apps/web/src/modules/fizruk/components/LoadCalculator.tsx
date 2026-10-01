@@ -98,7 +98,7 @@ export function LoadCalculator({
               {zone.entries.map((entry) => (
                 <div
                   key={entry.percent}
-                  className="text-center bg-panel/60 rounded-xl py-1.5 px-1"
+                  className="text-center bg-panel rounded-xl py-1.5 px-1"
                 >
                   <div className="text-style-caption text-subtle leading-none mb-0.5">
                     {entry.percent}%
