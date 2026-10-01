@@ -83,14 +83,12 @@ jobs:
         #   3. today.md            — consumes open-work
         #   4. trust badge         — reads pickOverdueReview from today
         #   5. hard-rules matrix   — date-stamped; re-stamps Last validated
-        #   6. freshness dashboard — consumes tracker headers across all trackers
-        #   7. repo map            — workspace manifest snapshot
-        #   8. service catalog     — surfaces tag snapshot
-        # follow-ups + hard-rules are sequenced before the freshness dashboard
-        # so the dashboard reflects their refreshed Last-validated dates in the
-        # same run (they were previously off-cron and drifted every new day).
-        # Steps 1–6 are the original "light" artifacts (sub-second each).
-        # Steps 7–8 walk workspace manifests and surface metadata.
+        #   6. repo map            — workspace manifest snapshot
+        #   7. service catalog     — surfaces tag snapshot
+        # Steps 1–5 are the original "light" artifacts (sub-second each).
+        # Steps 6–7 walk workspace manifests and surface metadata.
+        # Freshness dashboard тут більше немає (2026-10-01): він не
+        # комітиться, а збирається артефактом у docs-freshness.yml.
         run: pnpm docs:gen-daily
 
       - name: Open auto-merge PR with refreshed artifacts (if any drift)
@@ -116,7 +114,6 @@ jobs:
             docs/STATUS.md
             docs/README.md
             docs/governance/governance/hard-rules-matrix.md
-            docs/governance/governance/freshness-dashboard.html
             docs/governance/governance/repo-map.auto.json
             docs/governance/governance/service-catalog.auto.json
           )

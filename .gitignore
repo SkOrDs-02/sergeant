@@ -86,3 +86,10 @@ artifacts/
 # regenerated on demand, never hand-edited — must not be tracked.
 plans/agent-fanout-plan-*.md
 bash.exe.stackdump
+
+# Дашборд свіжості доків: звіт, а не джерело. Генерується на вимогу
+# (`pnpm docs:freshness-dashboard`) і як CI-артефакт `docs-freshness-dashboard`
+# у docs-freshness.yml. Закомічена копія конфліктувала в кожному відкритому PR
+# після кожного мерджу (рішення власника 2026-10-01, див.
+# docs/governance/governance/doc-freshness.md § «Чому дашборд не комітиться»).
+docs/governance/governance/freshness-dashboard.html

@@ -234,10 +234,10 @@ jobs:
         # the drift class where a doc accumulates multiple Last validated rows.
         run: node scripts/docs/check-freshness-single-marker.mjs
 
-      - name: Check docs/governance/governance/freshness-dashboard.html is up to date
-        # Committed dashboard ignores daily relative counters in --check mode,
-        # but catches changed row membership and freshness header values.
-        run: node scripts/docs/generate-freshness-dashboard.mjs --check
+      # Перевірки синхронності freshness-dashboard.html тут більше немає:
+      # з 2026-10-01 дашборд не комітиться (gitignored), його збирає
+      # docs-freshness.yml як артефакт. Див. doc-freshness.md § «Чому дашборд
+      # не комітиться».
 
   freshness-cadence:
     # Окрема джоба навмисно. Доти цей крок стояв усередині `pnpm lint` і

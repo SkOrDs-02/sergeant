@@ -90,5 +90,5 @@ pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 13 
 
 - [`open-work.md`](./open-work.md) — повний rollup усіх трекерів
 - [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)
-- [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — freshness огляд
+- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; огляд: `pnpm docs:freshness-dashboard`
 - [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing

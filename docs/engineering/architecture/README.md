@@ -85,7 +85,7 @@ System architecture and runtime surface inventory for Sergeant.
 
 ## 📊 Легенда статусів
 
-- Свіжість (`Last touched` / `Next review`) — у шапці кожного доку; зведення — [`freshness-dashboard.html`](../../governance/governance/freshness-dashboard.html) (гейт `pnpm docs:check-freshness-cadence`). Колонку дат у таблицях вище прибрано 2026-09-17 — вона дублювала шапки й застарівала.
+- Свіжість (`Last touched` / `Next review`) — у шапці кожного доку; зведення генерує `pnpm docs:freshness-dashboard` (HTML не комітиться, див. [doc-freshness.md](../../governance/governance/doc-freshness.md#чому-дашборд-не-комітиться-2026-10-01); гейт `pnpm docs:check-freshness-cadence`). Колонку дат у таблицях вище прибрано 2026-09-17 — вона дублювала шапки й застарівала.
 - 🔄 **Status = Active** — часто змінюється, перевіри з основним branch
 - 🟡 **Status = Stabilize** — контракт більш-менш заморожений
 - 📦 **Status = Migration** — в процесі переносу, очікується deadline

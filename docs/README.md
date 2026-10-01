@@ -31,7 +31,7 @@ Main documentation index for Sergeant.
 | **Загальна панель — почни звідси** | [`STATUS.md`](./STATUS.md) — одна сторінка: 🎯 фокус · 🟢 зроблено (pr-ledger) · 🔵 в роботі · ⏭️ далі · 🧱 стек · 🗺️ карта доків. Ручний лише блок FOCUS; решта — `pnpm docs:gen-status`. |
 | **Що мені робити сьогодні?**       | [`today.md`](./today.md) — auto-brief: top-7 actionable items (`Phase X next` / `blocked`), прострочений review, WIP load. Regen `pnpm docs:gen-today`. **Daily ритуал — відкрий вранці.** |
 | **Що НЕ доробленого?**             | [`open-work.md`](./open-work.md) — auto-rollup усіх `Status: Active / Draft / In progress / Phase *` документів з єдиного каталогу спек. Regen `pnpm docs:gen-open-work`; drift gate в CI. |
-| **Чи документи свіжі?**            | [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — `Last validated` / `Next review` по всьому tracked-set.                                        |
+| **Чи документи свіжі?**            | [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — `Last touched` / `Next review`, каденція, гейти. Огляд: `pnpm docs:freshness-dashboard` (HTML не комітиться).  |
 | **Що шипнули у whats-new?**        | [`whats-new/`](./product/whats-new/README.md) — markdown side; canonical source = `apps/web/src/core/whatsNew/releases.ts` (drift caught by `releases.test.ts`).                           |
 
 > Чому довіряти: `open-work.md` парсить `> **Status:**` headers (Rule #10) програмно — будь-який drift ловить `pnpm docs:check-open-work` (локальний ручний прогін; CI не виконується з 2026-09-23). Якщо документ показується тут зі статусом `Active`, значить його джерело справді у такому стані.
