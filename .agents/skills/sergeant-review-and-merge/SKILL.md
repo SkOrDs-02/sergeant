@@ -76,7 +76,7 @@ lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); 
 
 **Канон гейта живе в [`sergeant-verify-before-done`](../sergeant-verify-before-done/SKILL.md)** — таблиця «claim → proving command», правило повного scope і цитування exit code. Не дублюй його тут і не веди власний список команд: розбіжні списки вже одного разу розійшлись (цей skill колись вимагав `pnpm lint && typecheck && test && build` без `format:check`, тож PR міг пройти гейт і впасти в CI на prettier).
 
-Одна команда, що покриває весь матрицю: **`pnpm check`** (= `format:check && lint && check:typecheck-and-test && build`). CI відсутній (Bitbucket без pipelines) — доказ це саме свіжий локальний прогін, не «CI зелений».
+Одна команда, що покриває весь матрицю: **`pnpm check`** (= `format:check && lint && check:typecheck-and-test && build`). Той самий ланцюжок виконує джоба `check` у GitHub Actions (ADR-0102): доказ - посилання на зелений прогін CI цього коміту або свіжий локальний прогін торкнутих поверхонь.
 
 Цей skill додає поверх канону лише те, що специфічне для **PR-межі**:
 
