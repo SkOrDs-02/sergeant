@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { useTransactionFilters } from "./useTransactionFilters";
 import type { TxAccount } from "./Transactions";
 
@@ -655,6 +656,78 @@ describe("useTransactionFilters", () => {
       const ids = result.current.activeTx.map((t) => t.id);
       expect(ids).toContain("bank-edge");
       expect(ids).toContain("manual_m-edge");
+    });
+  });
+
+  describe("правила «Завжди так для цього магазину» (2026-10-01)", () => {
+    const RULES = buildMerchantRuleIndex([
+      {
+        id: "mr_1",
+        kind: "expense",
+        merchantKey: "сільпо",
+        categoryId: "transport",
+        label: "Сільпо",
+        createdAt: "2026-10-01T10:00:00.000Z",
+        updatedAt: "2026-10-01T10:00:00.000Z",
+      },
+    ]);
+    const silpo = (id: string, amount = -10_000): Transaction => ({
+      ...mkTx(id, amount),
+      description: "Сільпо №5",
+    });
+
+    it("підсумки по категоріях рахують операції мерчанта в категорії правила", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [silpo("s1"), silpo("s2", -20_000)],
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      const transport = result.current.catSpends.find(
+        (c) => c.id === "transport",
+      );
+      expect(transport?.spent).toBe(300);
+    });
+
+    it("фільтр за категорією показує операції, чию категорію дає правило", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [
+              silpo("s1"),
+              { ...mkTx("x1", -5_000), description: "АТБ" },
+            ],
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      act(() => result.current.setFilter("transport"));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["s1"]);
+    });
+
+    it("явний override операції сильніший за правило", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [silpo("s1"), silpo("s2")],
+            txCategories: { s2: "food" },
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      act(() => result.current.setFilter("transport"));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["s1"]);
+    });
+
+    it("без правил категорія лишається за MCC: транспорту в підсумках нема", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams({ realTx: [silpo("s1")] })),
+      );
+      expect(
+        result.current.catSpends.find((c) => c.id === "transport"),
+      ).toBeUndefined();
     });
   });
 });

@@ -14,4 +14,6 @@ export * from "./metrics.js";
 export * from "./quickStats.js";
 export * from "./limitCategorySpend.js";
 export * from "./recurringDetect.js";
+export * from "./merchantRules.js";
+export * from "./merchantRuleOverrides.js";
 export * from "./forecastEngine.js";

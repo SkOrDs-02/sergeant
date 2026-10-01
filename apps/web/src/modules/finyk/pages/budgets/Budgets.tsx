@@ -32,6 +32,8 @@ import {
   manualExpenseToTransaction,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import { MonthlyPlanCard } from "../../components/budgets/MonthlyPlanCard";
 import {
@@ -97,6 +99,12 @@ export interface BudgetsStorageSlice {
   monthlyPlan: MonthlyPlan | null | undefined;
   setMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
   txCategories: TxCategoriesMap;
+  /**
+   * Правила «Завжди так для цього магазину»: ліміти рахують витрати за тією ж
+   * категорією, яку показує список операцій, тож правила підмішуються в
+   * ефективну мапу категорій (див. `withMerchantRuleOverrides`).
+   */
+  merchantRuleIndex?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   customCategories: Category[] | undefined;
   subscriptions?: readonly unknown[];
@@ -170,7 +178,8 @@ export function Budgets({
     excludedTxIds,
     monthlyPlan,
     setMonthlyPlan,
-    txCategories,
+    txCategories: explicitTxCategories,
+    merchantRuleIndex,
     txSplits,
     customCategories,
     manualExpenses = [],
@@ -222,6 +231,20 @@ export function Budgets({
   const allStatTx = useMemo(
     () => filterStatTransactions(allTx, excludedTxIds),
     [allTx, excludedTxIds],
+  );
+
+  // Ефективна мапа категорій: явні override-и плюс виведене правилами
+  // мерчантів. Лише для читання агрегаторами нижче; у слот не пишеться.
+  // `allStatTx` ширший за місячний `statTx`, тож покриває обидва.
+  const txCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        allStatTx,
+        explicitTxCategories,
+        merchantRuleIndex,
+        customCategories,
+      ),
+    [allStatTx, explicitTxCategories, merchantRuleIndex, customCategories],
   );
 
   /** Month-clamped counterpart — for the monthly plan-vs-fact card only. */

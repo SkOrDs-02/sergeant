@@ -130,6 +130,7 @@ async function seedFinyk(): Promise<void> {
       showBalance: false,
       excludedStatTxIdsJson: "[]",
       dismissedRecurringJson: "[]",
+      prefsJson: "{}",
     },
   };
   const outcome = await dualWriteFinykState(EMPTY_FINYK_STATE, next);

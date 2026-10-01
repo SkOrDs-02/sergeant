@@ -101,6 +101,18 @@ export function useFinykDualWriteSync(slots: FinykStorageSlots): void {
       prevRef.current = next;
       return;
     }
+    // Поки SQLite-кеш не прогрітий, слоти, яких немає в LS (правила
+    // мерчантів у `prefs_json`), тримають порожнє значення за
+    // замовчуванням. Зміна будь-якого pref у цей момент (напр. тумблер
+    // `showBalance`) дала б `prefs-upsert` з `merchantRules: []` і стерла
+    // збережені правила — локально й на сервері (LWW цілим рядком). Тому до
+    // прогріву лише тримаємо базу; перший overlay після прогріву змінює
+    // read-tick і стає новою базою (гілка вище). Локальна зміна до прогріву
+    // однаково не виживає: overlay перезапише слот значенням із кешу.
+    if (slots.storageReady === false) {
+      prevRef.current = next;
+      return;
+    }
     // `useFinykStorageSlots` returns a fresh object literal on every
     // render, so this effect fires on every render — including the ones
     // it causes itself: `triggerFinykDualWrite` always ends with

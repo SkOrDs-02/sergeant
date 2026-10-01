@@ -33,6 +33,10 @@ import type {
   TxSplitsMap,
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable, TxSplit } from "@sergeant/finyk-domain/domain";
+import {
+  sanitizeMerchantRules,
+  type MerchantRule,
+} from "@sergeant/finyk-domain/lib/merchantRules";
 
 export interface SqliteFinykCache {
   /** Account ids hidden from balances (set membership). */
@@ -76,6 +80,13 @@ export interface SqliteFinykCache {
    * (parsed from `dismissed_recurring_json`).
    */
   dismissedRecurring: string[] | null;
+  /**
+   * Правила «Завжди так для цього магазину» (parsed from
+   * `prefs_json.merchantRules`). `null` — як і в сусідніх prefs-полів — до
+   * першого прогріву й коли рядка prefs ще немає: тоді слот лишає те, що має,
+   * а не затирає його порожнім списком.
+   */
+  merchantRules: MerchantRule[] | null;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -98,6 +109,7 @@ const EMPTY_CACHE: SqliteFinykCache = {
   showBalance: null,
   excludedStatTxIds: null,
   dismissedRecurring: null,
+  merchantRules: null,
   refreshedAt: null,
 };
 
@@ -406,6 +418,9 @@ export async function refreshFinykSqliteState(
   const dismissedRecurring = prefsRow
     ? safeStringArray(prefsRow.dismissed_recurring_json)
     : null;
+  const merchantRules = prefsRow
+    ? parseMerchantRules(prefsRow.prefs_json)
+    : null;
 
   if (seq <= publishedSeq) return cache;
   publishedSeq = seq;
@@ -427,10 +442,20 @@ export async function refreshFinykSqliteState(
     showBalance,
     excludedStatTxIds,
     dismissedRecurring,
+    merchantRules,
     // eslint-disable-next-line no-restricted-syntax -- UTC-anchored refresh timestamp (updatedAt-style), not a Kyiv day boundary; pre-existing
     refreshedAt: new Date().toISOString(),
   };
   return cache;
+}
+
+/** `finyk_prefs.prefs_json` → правила мерчантів; зіпсований JSON = порожньо. */
+function parseMerchantRules(raw: string | null | undefined): MerchantRule[] {
+  const parsed = safeParseJson<unknown>(raw ?? null, null);
+  if (!parsed || typeof parsed !== "object") return [];
+  return sanitizeMerchantRules(
+    (parsed as { merchantRules?: unknown }).merchantRules,
+  );
 }
 
 function safeStringArray(raw: string | null | undefined): string[] {

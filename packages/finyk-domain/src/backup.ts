@@ -50,6 +50,12 @@ export interface FinykBackup {
   networthHistory?: unknown[];
   customCategories?: unknown[];
   dismissedRecurring?: unknown[];
+  /**
+   * Правила «Завжди так для цього магазину» (`MerchantRule[]`, 2026-10-01).
+   * Необовʼязкове поле: старі файли його не мають і лишають правила на
+   * пристрої як є.
+   */
+  merchantRules?: unknown[];
 }
 
 /**
@@ -105,6 +111,7 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
     "hiddenAccounts",
     "hiddenTxIds",
     "excludedStatTxIds",
+    "merchantRules",
   ] as const;
   for (const field of ARRAY_FIELDS) {
     const v = needArr(obj[field], field);

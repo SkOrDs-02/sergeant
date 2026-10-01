@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 
 vi.mock("../../../core/observability/analytics", () => ({
   trackEvent: vi.fn(),
@@ -407,6 +408,92 @@ describe("BankTransactionDetailsSheet", () => {
 
       expect(
         screen.getByText(/Зараховано як сплату по «Кредитка ПриватБанк»/),
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("правила «Завжди так для цього магазину» (рішення власника 2026-10-01)", () => {
+    const RULE: MerchantRule = {
+      id: "mr_1",
+      kind: "expense",
+      merchantKey: "сільпо",
+      categoryId: "transport",
+      label: "Сільпо",
+      createdAt: "2026-10-01T10:00:00.000Z",
+      updatedAt: "2026-10-01T10:00:00.000Z",
+    };
+
+    it("після явної зміни категорії пропонує правило й передає операцію та категорію", () => {
+      const onCreateMerchantRule = vi.fn();
+      renderSheet({ overrideCatId: "transport", onCreateMerchantRule });
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Завжди так для «Сільпо»" }),
+      );
+      expect(onCreateMerchantRule).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "bank-1" }),
+        "transport",
+      );
+    });
+
+    it("поки категорія автоматична, нічого не пропонує", () => {
+      renderSheet({ onCreateMerchantRule: vi.fn() });
+      expect(
+        screen.queryByRole("button", { name: /Завжди так для/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("категорію без override-а дає правило: вона обрана в пікері, а блок дозволяє його прибрати", () => {
+      const onRemoveMerchantRule = vi.fn();
+      renderSheet({
+        merchantRules: new Map([["expense:сільпо", RULE]]),
+        onRemoveMerchantRule,
+      });
+
+      // Пікер показує категорію правила («Транспорт»), а не серверний слаг.
+      expect(
+        screen.getByRole("button", { name: "Транспорт" }),
+      ).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Прибрати правило" }));
+      expect(onRemoveMerchantRule).toHaveBeenCalledWith(RULE);
+    });
+
+    it("явний override сильніший за правило: пікер показує override і пропонує оновити правило", () => {
+      renderSheet({
+        merchantRules: new Map([["expense:сільпо", RULE]]),
+        overrideCatId: "food",
+        onCreateMerchantRule: vi.fn(),
+        onRemoveMerchantRule: vi.fn(),
+      });
+      expect(
+        screen.getByRole("button", { name: "Продукти" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /Оновити правило для/ }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Прибрати правило" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("не пропонує правило на «Внутрішній переказ»", () => {
+      renderSheet({
+        overrideCatId: "internal_transfer",
+        onCreateMerchantRule: vi.fn(),
+      });
+      expect(
+        screen.queryByRole("button", { name: /Завжди так для/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("для надходження правило береться з боку «income»", () => {
+      renderSheet({
+        transaction: INCOME_TRANSACTION,
+        overrideCatId: "freelance",
+        onCreateMerchantRule: vi.fn(),
+      });
+      expect(
+        screen.getByRole("button", { name: "Завжди так для «Зарахування»" }),
       ).toBeInTheDocument();
     });
   });
