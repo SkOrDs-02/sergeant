@@ -215,6 +215,10 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       /\n:is\(\s*a\[href\][\s\S]*?\):focus-visible:not\(\.focus-ring\):not\(\[class\*="ring-"\]\)\s*\{/,
     "межа голих input/select/textarea.border-line":
       /\ninput\.border-line:not\(/,
+    "peer-кільце (Switch)":
+      /\n\.peer:focus-visible ~ \[class\*="peer-focus-visible:ring"\]\s*\{/,
+    "кільце невалідного поля":
+      /\n\*:focus-visible\[aria-invalid="true"\]:not\(\.focus-ring\)\s*\{/,
   };
   for (const [name, re] of Object.entries(RULES)) {
     it(`${name}: правило є і стоїть на нульовій глибині`, () => {

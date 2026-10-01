@@ -1690,6 +1690,22 @@ html.hc *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0),
   --tw-ring-color: rgb(var(--c-focus-solid));
 }
 
+/* `peer`-кільце (Switch: input `sr-only` фокусується, кільце малює СУСІДНІЙ
+   `span`-трек через `peer-focus-visible:ring-*`) — загальне правило вище
+   його не бачить, бо `:focus-visible` стоїть на input, а не на треку. */
+.peer:focus-visible ~ [class*="peer-focus-visible:ring"] {
+  --tw-ring-color: rgb(var(--c-focus-solid));
+}
+
+/* Невалідне поле зберігає danger-відтінок кільця, але суцільний `-ink` тир
+   (red-800 / red-400), а не `danger/25`-`/45` з прозорістю. */
+*:focus-visible[aria-invalid="true"]:not(.focus-ring) {
+  --tw-ring-color: rgb(var(--c-danger-ink));
+}
+.peer[aria-invalid="true"]:focus-visible ~ [class*="peer-focus-visible:ring"] {
+  --tw-ring-color: rgb(var(--c-danger-ink));
+}
+
 :is(
     a[href],
     button,
