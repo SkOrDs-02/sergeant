@@ -71,6 +71,9 @@ vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withUserContext: (_userId: string, fn: (db: unknown) => unknown) =>
+    fn(mockPool),
   ensureSchema: vi.fn().mockResolvedValue(undefined),
 }));
 
