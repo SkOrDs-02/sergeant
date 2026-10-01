@@ -394,17 +394,13 @@ export function PricingPage() {
               // tiers, so ink tone must branch on `isPremium`.
               const inkTone = "text-hero-ink dark:text-brand-900";
               const headingTone = isPremium ? inkTone : "text-text";
-              // Альфа на hero-ink: `#fdf9f3` на stone-800 дає ~13:1, тож
-              // /95 і /90 тут з великим запасом (на колишньому teal-700
-              // вони давали 4.88:1 і 4.55:1, і саме тому нижче за /90 не
-              // спускались, аудит 2026-09-16, WF-23). Лінт цього не ловить:
-              // `no-opacity-on-text-token` не знає токена `hero-ink`.
-              const mutedTone = isPremium
-                ? "text-hero-ink/95 dark:text-brand-900/95"
-                : "text-muted";
-              const subtleTone = isPremium
-                ? "text-hero-ink/90 dark:text-brand-900/90"
-                : "text-subtle";
+              // Чорнило без альфи (A9, рішення власника 2026-10-01): на
+              // Premium-картці приглушені рівні `muted`/`subtle` раніше були
+              // `/95` і `/90` від `hero-ink`. Тепер це те саме повне чорнило,
+              // а ієрархію тримають кегль (`text-style-caption` для лімітів)
+              // і ваги, не прозорість. Храповик `heroInkAlpha` = 0.
+              const mutedTone = isPremium ? inkTone : "text-muted";
+              const subtleTone = isPremium ? inkTone : "text-subtle";
               const checkTone = isPremium ? inkTone : "text-brand-strong";
               // Solid-кнопка має ту саму заливку, що й чорнильна картка
               // (stone-800 / світла плитка в «Чорнилі»), тож на Premium

@@ -67,7 +67,9 @@ describe("KpiRowCompact", () => {
     const { getByText } = render(
       <KpiRowCompact items={[{ label: "A", value: 1 }]} tone="hero-ink" />,
     );
-    expect(getByText("A").className).toContain("text-hero-ink/60");
+    // A9 (2026-10-01): чорнило без альфи, ієрархію дає кегль (caption/label).
+    expect(getByText("A").className).toContain("text-hero-ink");
+    expect(getByText("A").className).not.toMatch(/text-hero-ink\//);
     expect(getByText("1").className).toContain("text-hero-ink");
   });
 

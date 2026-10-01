@@ -106,7 +106,7 @@ export function ElevationSection() {
                 <div className="text-style-label font-bold text-hero-ink">
                   {module}
                 </div>
-                <div className="text-style-caption text-hero-ink/70 mt-1">
+                <div className="text-style-caption text-hero-ink mt-1">
                   module=&quot;{module}&quot; prominence=&quot;hero&quot;
                 </div>
               </Card>

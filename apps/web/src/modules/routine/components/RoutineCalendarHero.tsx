@@ -170,7 +170,7 @@ export function RoutineCalendarHero({
         <div
           className={flame.visible ? "min-w-0 flex-1 pr-12" : "min-w-0 flex-1"}
         >
-          <p className="text-style-caption font-semibold text-hero-ink/95">
+          <p className="text-style-caption font-semibold text-hero-ink">
             {SLICE_LABEL[timeMode]}
           </p>
           {/* Дата — ДРУГИЙ рівень: рішення власника 2026-09-12 (D1 крок 3).

@@ -203,7 +203,11 @@ const MonthStripImpl = function MonthStrip({
               aria-label={cellAriaLabel(day, dayBudget, showBalance)}
               className={cn(
                 "relative flex-1 min-w-0 h-full",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-finyk",
+                // Стрічка лежить на hero-градієнті модуля: контур кольору Фініка
+                // (`#115e59`) зливався з початком градієнта (≈1.0:1, follow-up
+                // аудиту контрасту 2026-10-01). Чорнило hero-картки тримає ≥4.7:1
+                // проти кожної зупинки в обох темах.
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-hero-ink",
                 isToday && "ring-1 ring-finyk-strong dark:ring-finyk",
               )}
             >
@@ -229,7 +233,7 @@ const MonthStripImpl = function MonthStrip({
       {lastDay > 0 && (
         <div
           aria-hidden="true"
-          className="mt-1 flex justify-between text-style-caption text-hero-ink/70 tabular-nums"
+          className="mt-1 flex justify-between text-style-caption text-hero-ink tabular-nums"
         >
           <span>1</span>
           <span>{Math.ceil(lastDay / 2)}</span>
@@ -277,7 +281,7 @@ export function MonthStripHint({
           setDismissed(true);
         }}
         aria-label={m.hintDismiss}
-        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-full p-2 text-hero-ink/70 hover:text-hero-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-full p-2 text-hero-ink hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
         <Icon name="close" size="sm" aria-hidden />
       </button>

@@ -236,10 +236,10 @@ export function MealStrip({
                   isAccent ? "bg-nutrition" : "bg-hero-ink/60",
                 )}
               />
-              <span className="relative text-style-caption text-hero-ink/90 truncate w-full">
+              <span className="relative text-style-caption text-hero-ink truncate w-full">
                 {seg.label}
               </span>
-              <span className="relative text-style-caption text-hero-ink tabular-nums truncate w-full">
+              <span className="relative text-style-caption font-semibold text-hero-ink tabular-nums truncate w-full">
                 {seg.kcal > 0 ? Math.round(seg.kcal) : "—"}
               </span>
             </>
@@ -255,7 +255,13 @@ export function MealStrip({
                 className={cn(
                   "relative isolate flex w-full flex-col items-center justify-center",
                   "overflow-hidden rounded-lg border border-hero-ink/20 px-1 py-1.5",
-                  isEmpty ? "bg-hero-ink/10" : "bg-hero-ink/5",
+                  // Однакова легка заливка для порожнього й заповненого прийому:
+                  // `bg-hero-ink/10` під порожнім осередком світлило фон під
+                  // повним чорнилом `Сніданок/Обід/Вечеря/Перекус` (піксельний
+                  // замір 2026-10-01 на nutrition-hero: 4.29-4.92:1 замість
+                  // 4.67+ без заливки). Різницю «порожньо / є» несе смуга
+                  // частки знизу і число, а не яскравість осередку.
+                  "bg-hero-ink/5",
                   // 44×44 під coarse pointer — сегмент тепер найдрібніший
                   // тапабельний контрол hero-картки.
                   "pointer-coarse:min-h-[44px] motion-safe:transition-colors",
@@ -306,7 +312,7 @@ export function MealStrip({
       )}
 
       {incompleteNote && (
-        <p className="text-style-caption text-hero-ink/80 text-center">
+        <p className="text-style-caption text-hero-ink text-center">
           {incompleteNote}
         </p>
       )}

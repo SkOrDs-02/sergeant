@@ -234,7 +234,7 @@ const HeroCardImpl = function HeroCard({
             </p>
             <p
               data-testid="hero-today-subline"
-              className="text-style-caption text-hero-ink/80 mt-0.5"
+              className="text-style-caption text-hero-ink mt-0.5"
             >
               {showBalance ? (
                 <>

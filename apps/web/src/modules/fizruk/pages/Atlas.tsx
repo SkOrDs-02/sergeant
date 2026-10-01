@@ -61,14 +61,14 @@ export function Atlas({ onOpenBody, focusMuscleId }: AtlasProps = {}) {
               size="xs"
               variant="fizruk"
               as="p"
-              className="text-hero-ink/80"
+              className="text-hero-ink"
             >
               Атлас мʼязів
             </SectionHeading>
             <h1 className="text-style-headline font-black text-hero-ink mt-2 leading-tight">
               Стан відновлення
             </h1>
-            <p className="text-style-body text-hero-ink/75 mt-2">
+            <p className="text-style-body text-hero-ink mt-2">
               Карта втоми, давності тренувань і обʼєму по групах мʼязів.
             </p>
           </div>
