@@ -47,7 +47,7 @@ import {
   type FinykDualWriteState,
   type FinykPrefsSnapshot,
 } from "./diff.js";
-import { stateWithSlice } from "./extract.js";
+import { serializePrefsJson, stateWithSlice } from "./extract.js";
 import { getFinykDualWriteRuntime } from "./index.js";
 import {
   getCachedFinykSqliteState,
@@ -135,10 +135,10 @@ export async function mirrorFinykChatDualWrite(
 /**
  * Mirror a monthly-plan change into the singleton `finyk_prefs` row.
  *
- * Prefs is one row carrying four fields (monthly plan, show-balance,
- * excluded-stat-tx ids, dismissed-recurring ids). The chat action only
- * knows the monthly plan, so we MUST merge against the other three
- * canonical fields — otherwise the upsert would clobber them with
+ * Prefs is one row carrying five fields (monthly plan, show-balance,
+ * excluded-stat-tx ids, dismissed-recurring ids, `prefs_json` з правилами
+ * мерчантів). The chat action only knows the monthly plan, so we MUST
+ * merge against the other four canonical fields — otherwise the upsert would clobber them with
  * defaults. We read them from the SQLite cache, warming it first when
  * cold so a user with existing prefs is never overwritten.
  */
@@ -168,6 +168,9 @@ export async function mirrorFinykChatMonthlyPlan(
     showBalance: cache.showBalance ?? true,
     excludedStatTxIdsJson: safeStringify(cache.excludedStatTxIds ?? [], "[]"),
     dismissedRecurringJson: safeStringify(cache.dismissedRecurring ?? [], "[]"),
+    // Чат знає лише місячний план, а `prefs_json` пишеться дослівно: без
+    // правил із кешу цей апсерт обнулив би їх разом із планом.
+    prefsJson: serializePrefsJson(cache.merchantRules),
   };
 
   const ops = diffFinykDualWriteOps(

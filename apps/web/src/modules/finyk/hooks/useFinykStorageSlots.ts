@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
 import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
@@ -72,6 +73,13 @@ export interface FinykStorageSlots {
   setExcludedStatTxIds: Dispatch<SetStateAction<string[]>>;
   dismissedRecurring: string[];
   setDismissedRecurring: Dispatch<SetStateAction<string[]>>;
+  /**
+   * Правила «Завжди так для цього магазину» (2026-10-01). Живуть у
+   * `finyk_prefs.prefs_json`, а не в LS: слот стартує порожнім і вкочується
+   * з SQLite-кешу, тож до `storageReady` правил немає (як і в усіх prefs).
+   */
+  merchantRules: MerchantRule[];
+  setMerchantRules: Dispatch<SetStateAction<MerchantRule[]>>;
   /**
    * Balance-visibility flag (Stage 13 PR #074). LS first-paint fallback,
    * SQLite-overlay once warm. Mutations flow through dual-write —
@@ -159,6 +167,9 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   const [dismissedRecurring, setDismissedRecurring] = useReadonlyPersist<
     string[]
   >("finyk_rec_dismissed", []);
+  // Правила мерчантів: нового LS-ключа свідомо немає — слот живе лише в
+  // SQLite (`prefs_json`) і sync-у, переносити нема чого.
+  const [merchantRules, setMerchantRules] = useState<MerchantRule[]>([]);
   // Stage 13 PR #074 — `finyk_show_balance_v1` slot. Default `true`
   // (UI shows balances unless user toggled off). Raw-string LS shape
   // (`"0"` / `"1"`), не JSON, тож беремо ручну useState + readRaw
@@ -218,6 +229,9 @@ export function useFinykStorageSlots(): FinykStorageSlots {
       if (cache.showBalance !== null) {
         setShowBalance(cache.showBalance);
       }
+      if (cache.merchantRules !== null) {
+        setMerchantRules(cache.merchantRules);
+      }
     }
   }
 
@@ -259,6 +273,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setExcludedStatTxIds,
     dismissedRecurring,
     setDismissedRecurring,
+    merchantRules,
+    setMerchantRules,
     showBalance,
     setShowBalance,
     networthSnapshotRef,

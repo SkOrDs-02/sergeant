@@ -12,6 +12,14 @@
  *
  * AI-DANGER: не оновлюй `__snapshots__/adapter.snapshot.test.ts.snap`
  * «щоб тест пройшов» — розберись, чому SQL змінився.
+ *
+ * Семантичні зміни snapshot-а (кожна — окремий PR з поясненням):
+ *
+ * - 2026-10-01, правила «Завжди так для цього магазину»: рядок `finyk_prefs`
+ *   дістав шосту колонку `prefs_json` у INSERT/ON CONFLICT і зайвий `?` у
+ *   параметрах. Це НЕ рефакторинг: колонка існувала з міграції 039 і раніше
+ *   лишалась `{}`, а тепер несе `{ merchantRules }`. Серверний
+ *   `applyFinykPrefs` уже читає `row.prefs_json`, тож контракт не міняється.
  */
 import { describe, expect, it, vi } from "vitest";
 import { applyFinykDualWriteOps } from "./adapter";
@@ -74,6 +82,7 @@ const CANONICAL_OPS: FinykDualWriteOp[] = [
       showBalance: true,
       excludedStatTxIdsJson: "[]",
       dismissedRecurringJson: "[]",
+      prefsJson: "{}",
     },
   },
 ];

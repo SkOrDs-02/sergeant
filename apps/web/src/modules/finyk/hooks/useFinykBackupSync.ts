@@ -7,6 +7,7 @@ import {
   type FinykBackup,
 } from "../lib/finykBackup";
 import { downloadJson, toLocalISODate } from "@sergeant/shared";
+import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
 import { reportSilentError } from "./useStorage.persist";
 import type {
   Subscription,
@@ -71,6 +72,8 @@ export function useFinykBackupSync(
     setCustomCategories,
     dismissedRecurring,
     setDismissedRecurring,
+    merchantRules,
+    setMerchantRules,
   } = slots;
 
   const applyData = (data: FinykBackup) => {
@@ -96,6 +99,8 @@ export function useFinykBackupSync(
       setCustomCategories(data.customCategories as CustomCategory[]);
     if (data.dismissedRecurring)
       setDismissedRecurring(data.dismissedRecurring as string[]);
+    if (data.merchantRules)
+      setMerchantRules(sanitizeMerchantRules(data.merchantRules));
     notifyFinykRoutineCalendarSync();
   };
 
@@ -117,6 +122,7 @@ export function useFinykBackupSync(
       networthHistory,
       customCategories,
       dismissedRecurring,
+      merchantRules,
     };
     await downloadJson(`finyk-backup-${toLocalISODate()}.json`, data);
   };

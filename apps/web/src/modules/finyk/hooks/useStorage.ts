@@ -6,6 +6,7 @@ import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useFinykStorageMutations } from "./useFinykStorageMutations";
 import { useFinykBackupSync } from "./useFinykBackupSync";
+import { useFinykMerchantRules } from "./useFinykMerchantRules";
 import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
@@ -55,6 +56,7 @@ export function useStorage({
 } = {}) {
   const slots = useFinykStorageSlots();
   const mutations = useFinykStorageMutations(slots);
+  const merchantRulesApi = useFinykMerchantRules(slots);
   const backupSync = useFinykBackupSync(slots, toast);
 
   // Mirror every slot mutation into SQLite (best-effort). `FinykBootGate`
@@ -218,6 +220,14 @@ export function useStorage({
     editCustomCategory: mutations.editCustomCategory,
     removeCustomCategory: mutations.removeCustomCategory,
     overrideCategory: mutations.overrideCategory,
+    // Правила «Завжди так для цього магазину» (2026-10-01). Резолвер бере
+    // `merchantRuleIndex`; агрегатори — `withMerchantRuleOverrides`.
+    merchantRules: merchantRulesApi.merchantRules,
+    merchantRuleIndex: merchantRulesApi.merchantRuleIndex,
+    upsertMerchantRule: merchantRulesApi.upsertMerchantRule,
+    undoMerchantRule: merchantRulesApi.undoMerchantRule,
+    deleteMerchantRule: merchantRulesApi.deleteMerchantRule,
+    restoreMerchantRules: merchantRulesApi.restoreMerchantRules,
     txNotes,
     setTxNote: mutations.setTxNote,
     txSplits,
