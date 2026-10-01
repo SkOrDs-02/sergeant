@@ -124,13 +124,9 @@ jobs:
         # same run (they were previously off-cron and drifted every new day).
         # Steps 1–6 are the original "light" artifacts (sub-second each).
         # Steps 7–8 walk workspace manifests and surface metadata.
+        # GH_TOKEN тут не потрібен: з 2026-10-01 trust badge не питає
+        # `gh run list` і рахує лише те, що лежить у дереві.
         run: pnpm docs:gen-daily
-        # Той самий GH_TOKEN, що й у кроці коміту. Trust badge питає `gh run
-        # list` про здоровʼя крону, а pre-commit (`pre-commit-derived-artifacts`)
-        # перерендерює badge і звіряє. Різні умови проби в генерації і в
-        # звірці дали б різний badge, і хук блокував би коміт.
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Open auto-merge PR with refreshed artifacts (if any drift)
         # Direct push to `main` is blocked by branch protection (4 required
