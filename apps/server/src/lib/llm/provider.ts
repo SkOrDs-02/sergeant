@@ -104,6 +104,28 @@ export interface LLMGenerateOpts {
    * `Stub` ігнорує. Без нього — випадковий per-call UUID (Фаза 1 дефолт).
    */
   traceId?: string | undefined;
+  /**
+   * Бюджет міркувань для OpenRouter (`reasoning.effort`). Моделі на кшталт
+   * `claude-sonnet-5.5` чи `gemini-3.8-flash` міркують за замовчуванням і
+   * витрачають на це `max_tokens`: на коучі з лімітом 300 відповідь виходила
+   * порожньою. Без поля шлюз вирішує сам, як і досі. Anthropic ігнорує.
+   */
+  reasoning?: { effort: ReasoningEffort } | undefined;
+}
+
+export const REASONING_EFFORTS = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+
+export function isReasoningEffort(v: string): v is ReasoningEffort {
+  return (REASONING_EFFORTS as readonly string[]).includes(v);
 }
 
 /**
@@ -476,6 +498,7 @@ export class OpenRouterProvider implements LLMProvider {
       usage: { include: true },
     };
     if (opts.temperature !== undefined) body["temperature"] = opts.temperature;
+    if (opts.reasoning) body["reasoning"] = opts.reasoning;
 
     const controller = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | null = null;

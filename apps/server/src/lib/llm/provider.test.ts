@@ -477,6 +477,14 @@ describe("OpenRouterProvider — model precedence", () => {
     expect(lastBody?.model).toBe("@preset/sergeant-digest");
   });
 
+  it("reasoning доходить до тіла запиту, а без нього поля немає", async () => {
+    const p = new OpenRouterProvider("or-key", "");
+    await p.generate({ ...opts, reasoning: { effort: "none" } });
+    expect(lastBody).toMatchObject({ reasoning: { effort: "none" } });
+    await p.generate(opts);
+    expect(lastBody).not.toHaveProperty("reasoning");
+  });
+
   it("HTTP 200 з finish_reason=error (апстрім упав посеред генерації) → ok=false", async () => {
     global.fetch = vi.fn(
       async () =>

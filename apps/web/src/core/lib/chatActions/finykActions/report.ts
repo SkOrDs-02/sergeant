@@ -8,7 +8,7 @@ import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type { ExportReportAction, ChatActionResult } from "../types";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, kyivDayEndMs, kyivDayStartMs } from "@sergeant/shared";
 
 export function exportReport(action: ExportReportAction): ChatActionResult {
   const { period, from, to } = action.input || {};
@@ -18,8 +18,12 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
   if (period === "week") {
     fromDate = new Date(now.getTime() - 7 * 86400000);
   } else if (period === "custom" && from && to) {
-    fromDate = new Date(`${from}T00:00:00`);
-    toDate = new Date(`${to}T23:59:59`);
+    // Межі діапазону — київські доби: від 00:00 дня `from` до 23:59:59.999
+    // дня `to` за Києвом (гроші, ADR-0078). `new Date("…T00:00:00")` читав би
+    // їх за годинником пристрою, тож підпис «Звіт за …» (він у Києві) на
+    // пристрої східніше показував би попередню дату.
+    fromDate = new Date(kyivDayStartMs(from));
+    toDate = new Date(kyivDayEndMs(to));
   } else {
     // Default: from the 1st of the current Kyiv month (00:00 Kyiv) so the
     // period boundary follows Europe/Kyiv, not the host timezone.

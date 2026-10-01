@@ -231,7 +231,7 @@ Bitbucket (`skords01/sergeant`, remote `bitbucket`) був основою 2026-0
 
 **PR створюється через `gh pr create`** (CLI залогінений на власника). Тіло за шаблоном вище; кирилицю передавай файлом (`--body-file`). Агент відкриває PR як draft; draft -> ready і мерж - рішення власника.
 
-Захист `main` на GitHub: заборонені force-push і видалення, required-чеки `check`, `Critical-flow E2E (Playwright)` і `Lighthouse CI`. `Lighthouse CI` з 2026-09-30 на PR не запускається, тож його треба прибрати з required у налаштуваннях `main` (рішення власника), інакше PR чекатимуть на нього вічно. Апрувів не вимагається.
+Захист `main` на GitHub: заборонені force-push і видалення, required-чеки `check`, `Critical-flow E2E (Playwright)`, `Migration lint (AGENTS rule #4)`, `Migration down drill (AGENTS rule #4)`, `Commit messages (commitlint)` і `Secret scan (gitleaks)` (з 2026-10-01; `Lighthouse CI` прибрано, бо на PR він не запускається). Required-чек звіряється з `name:` джоби буквально: перейменував джобу в `ci.yml` - онови список у налаштуваннях `main` тим самим кроком, інакше PR чекатимуть на чек, якого більше немає. Апрувів не вимагається.
 
 **Власник мерджить швидко, часто поки сесія ще працює.** Перед тим, як дописати щось у свою гілку, звір стан PR (`gh pr view <n> --json state`): якщо його вже змерджено, коміт доїде в гілку, але в `main` не потрапить, а `git push` при цьому скаже `ok`. Тоді нова гілка від свіжого `main` і cherry-pick. Механічної перевірки в хуку більше немає: вона читала Bitbucket API і знята разом із переїздом.
 

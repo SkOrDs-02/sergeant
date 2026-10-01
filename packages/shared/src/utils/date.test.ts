@@ -3,6 +3,7 @@ import {
   kyivCalendarDaysBetween,
   kyivDayEndMs,
   kyivDayStartMs,
+  kyivHour,
   kyivMondayStartMs,
   toKyivISODate,
   toLocalISODate,
@@ -179,5 +180,31 @@ describe("shared/lib/date – kyivCalendarDaysBetween", () => {
     const b = kyivDayStartMs("2026-03-27") + 12 * 3600_000;
     const a = kyivDayStartMs("2026-04-03") + 12 * 3600_000;
     expect(kyivCalendarDaysBetween(a, b)).toBe(7);
+  });
+});
+
+describe("shared/lib/date – kyivHour", () => {
+  it("віддає київську годину незалежно від пояса хоста (літо UTC+3)", () => {
+    // 11:00 UTC = 14:00 за Києвом; 10:59 UTC = 13:59.
+    expect(kyivHour(Date.parse("2026-07-15T11:00:00Z"))).toBe(14);
+    expect(kyivHour(Date.parse("2026-07-15T10:59:00Z"))).toBe(13);
+  });
+
+  it("взимку UTC+2: той самий UTC-момент дає годиною менше", () => {
+    expect(kyivHour(Date.parse("2026-01-15T12:00:00Z"))).toBe(14);
+    expect(kyivHour(Date.parse("2026-01-15T11:59:00Z"))).toBe(13);
+  });
+
+  it("північ — це 0, а не 24", () => {
+    expect(kyivHour(kyivDayStartMs("2026-07-15"))).toBe(0);
+    expect(kyivHour(kyivDayStartMs("2026-01-15"))).toBe(0);
+    expect(kyivHour(kyivDayEndMs("2026-07-15"))).toBe(23);
+  });
+
+  it("приймає Date і ISO-рядок, а на сміттєвий вхід віддає NaN", () => {
+    const iso = "2026-07-15T21:30:00Z"; // 00:30 наступної доби за Києвом
+    expect(kyivHour(new Date(iso))).toBe(0);
+    expect(kyivHour(iso)).toBe(0);
+    expect(kyivHour("not-a-date")).toBeNaN();
   });
 });

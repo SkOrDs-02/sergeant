@@ -67,6 +67,28 @@ describe("app viewport shell CSS contract", () => {
     expect(hubEnter).not.toMatch(/\bboth\b|\bforwards\b/);
   });
 
+  /**
+   * Трек нав-бару росте разом із текстом (`min-h-[60px]`, а не `h-[60px]`),
+   * тож усе, що стоїть НАД ним, мусить читати ВИМІРЯНУ смугу
+   * (`--sgt-bottom-nav-inset`, `useBottomInsetVar`), а `60px` — лише нижня
+   * межа через `max()`. Без цього контент і fixed-шари заїжджають під нав на
+   * 200% кореневого тексту (low-vision).
+   */
+  it("тримає відступи над нав-баром на виміряній висоті, а 60px лишає нижньою межею", () => {
+    for (const name of [
+      "fizruk-above-tabbar",
+      "above-bottom-nav-pb",
+      "bottom-nav-height-var",
+    ]) {
+      const block = utilitiesCss
+        .split(`@utility ${name}`)[1]
+        ?.split("@utility")[0];
+      expect(block, name).toBeDefined();
+      expect(block, name).toContain("--sgt-bottom-nav-inset");
+      expect(block, name).toContain("max(");
+    }
+  });
+
   it("does not paint an out-of-flow apron below the bottom nav", () => {
     const bottomNavUtility = utilitiesCss
       .split("@utility bottom-nav-shell")[1]

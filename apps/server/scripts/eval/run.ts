@@ -68,6 +68,9 @@ export async function runOne(
     maxTokens: pipeline.maxTokens,
     endpoint: `internal/model-eval/${pipeline.key}`,
     timeoutMs: 60_000,
+    ...(candidate.reasoning
+      ? { reasoning: { effort: candidate.reasoning } }
+      : {}),
   });
   const latencyMs = Date.now() - t0;
 

@@ -31,6 +31,8 @@
  *                                          # ідентичними прогонами буває
  *                                          # більшим за різницю між моделями
  *   pnpm eval:models -- --extra=digest:openrouter:some/model-id:label
+ *   pnpm eval:models -- --extra=coach-insight:openrouter:anthropic/claude-sonnet-5.5:s55-none:none
+ *                                          # 5-те поле — reasoning.effort
  *   pnpm eval:models -- --out=docs/work/specs/planning/model-eval-2026-08-04.md
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
@@ -46,6 +48,10 @@ import { PIPELINES } from "./eval/pipelines.js";
 import { toMarkdown } from "./eval/report.js";
 import { candidateProviderAvailable, runOne } from "./eval/run.js";
 import type { Candidate, RunResult } from "./eval/types.js";
+import {
+  isReasoningEffort,
+  REASONING_EFFORTS,
+} from "../src/lib/llm/provider.js";
 
 async function main(): Promise<void> {
   const { values } = parseArgs({
@@ -83,15 +89,16 @@ async function main(): Promise<void> {
     : PIPELINES;
 
   for (const raw of values.extra ?? []) {
-    const [key, provider, model, label] = raw.split(":");
+    const [key, provider, model, label, effort] = raw.split(":");
     const pipeline = pipelines.find((p) => p.key === key);
     if (
       !pipeline ||
       (provider !== "anthropic" && provider !== "openrouter") ||
-      !model
+      !model ||
+      (effort !== undefined && !isReasoningEffort(effort))
     ) {
       console.error(
-        `Ignoring malformed --extra="${raw}" (expected pipeline:provider:model[:label])`,
+        `Ignoring malformed --extra="${raw}" (expected pipeline:provider:model[:label[:effort]], effort one of ${REASONING_EFFORTS.join("|")})`,
       );
       continue;
     }
@@ -99,6 +106,7 @@ async function main(): Promise<void> {
       provider,
       model,
       label: label ?? "extra candidate",
+      ...(effort === undefined ? {} : { reasoning: effort }),
     });
   }
 
