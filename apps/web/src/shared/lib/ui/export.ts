@@ -71,6 +71,19 @@ function getColumnValue<T extends Record<string, unknown>>(
 }
 
 /**
+ * Скільки blob-URL лишається живим після кліку по `<a download>`, мс.
+ *
+ * AI-CONTEXT: до 2026-10-01 `URL.revokeObjectURL` ішов одразу за `click()`.
+ * Chromium читає blob синхронно під час кліку, а iOS Safari/PWA віддає його
+ * системі (Files, лист «Поділитись») ПІСЛЯ повернення з обробника: відкликаний
+ * URL тоді вказує в нікуди, навігація зависає, і застосунок виглядає
+ * завислим (тост «Вивантажено операцій…» не зникає, нав перезавантажує
+ * Операції — звіт власника з iOS PWA). Відкликати треба, бо URL тримає blob у
+ * памʼяті до закриття вкладки; хвилина дає системі час забрати файл.
+ */
+const BLOB_URL_REVOKE_DELAY_MS = 60_000;
+
+/**
  * Downloads a string as a file.
  */
 export function downloadString(
@@ -88,7 +101,8 @@ export function downloadString(
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  // Не одразу: див. `BLOB_URL_REVOKE_DELAY_MS`.
+  setTimeout(() => URL.revokeObjectURL(url), BLOB_URL_REVOKE_DELAY_MS);
 }
 
 /**

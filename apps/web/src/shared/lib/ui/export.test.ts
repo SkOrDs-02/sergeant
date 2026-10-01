@@ -107,11 +107,13 @@ describe("downloadString / exportToCSV", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   it("downloadString створює <a> з href, проставляє download та клікає", () => {
+    vi.useFakeTimers();
     const clickSpy = vi.fn();
     const origCreate = document.createElement.bind(document);
     const createSpy = vi
@@ -127,10 +129,34 @@ describe("downloadString / exportToCSV", () => {
     downloadString("hello", "file.txt", "text/plain");
 
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
     expect(clickSpy).toHaveBeenCalledTimes(1);
+    // URL відкликається, але не одразу (див. наступний тест).
+    vi.runAllTimers();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
 
     createSpy.mockRestore();
+  });
+
+  // iOS Safari/PWA забирає blob уже після повернення з обробника кліку:
+  // відкликаний одразу URL лишав застосунок «завислим» (звіт власника).
+  it("downloadString не відкликає blob-URL одразу після кліку, а лише за хвилину", () => {
+    vi.useFakeTimers();
+    vi.spyOn(document, "createElement").mockImplementation(((tag: string) => {
+      const el = document.implementation
+        .createHTMLDocument()
+        .createElement(tag);
+      if (tag === "a") (el as HTMLAnchorElement).click = vi.fn();
+      return el;
+    }) as typeof document.createElement);
+
+    downloadString("hello", "file.txt", "text/plain");
+
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(59_999);
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
   });
 
   it("downloadString дефолтний mime-type — text/plain", () => {
