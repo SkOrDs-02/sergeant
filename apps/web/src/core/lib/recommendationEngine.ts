@@ -567,7 +567,12 @@ function buildWeeklyDigestRecs(): Rec[] {
       icon: "activity",
       title: "Підсумок минулого тижня",
       body: parts.join(" · "),
-      action: "reports",
+      // «Звіт тижня» на хабі (блок «Порада й звіт тижня»), а не `"reports"`:
+      // «Відкрити» йде через `openModule`, який мовчки ігнорує все, що не є id
+      // модуля, тож колишнє значення робило кнопку мертвою. Блок тримає й
+      // тижневий дайджест, тобто саме звіт про цей тиждень (рішення власника
+      // 2026-10-01). Паритет дій — `hub/now/recActionParity.test.ts`.
+      action: Recommendations.WEEK_REPORT_ACTION,
     },
   ];
 }

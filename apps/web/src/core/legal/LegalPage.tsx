@@ -7,7 +7,6 @@ import {
 import { cookiesDocument } from "./cookiesDocument";
 import { LegalDocumentView } from "./LegalDocumentView";
 import type { LegalDocument } from "./legalDocumentTypes";
-import { LAST_UPDATED } from "./legalShared";
 import { offerDocument } from "./offerDocument";
 import { privacyDocument } from "./privacyDocument";
 import { termsDocument } from "./termsDocument";
@@ -42,7 +41,7 @@ export function LegalPage({ pathname }: LegalPageProps) {
   const document =
     documents[isLegalPath(pathname) ? pathname : LEGAL_PRIVACY_PATH];
 
-  return <LegalDocumentView document={document} lastUpdated={LAST_UPDATED} />;
+  return <LegalDocumentView document={document} />;
 }
 
 export default LegalPage;

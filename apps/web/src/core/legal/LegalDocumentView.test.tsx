@@ -11,11 +11,11 @@ describe("LegalDocumentView", () => {
     render(
       <MemoryRouter>
         <LegalDocumentView
-          lastUpdated="15 липня 2026"
           document={{
             eyebrow: "Юридичне",
             title: "Умови використання",
             intro: "Вступ",
+            lastUpdated: "15 липня 2026",
             sections: [{ title: "Розділ", body: ["Текст"] }],
           }}
         />

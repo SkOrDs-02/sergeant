@@ -30,7 +30,10 @@ export default defineConfig({
       LAST_SEEN_TRACKING_ENABLED: "false",
       CHAT_INJECTION_JEV_SHADOW: "false",
     },
-    include: ["src/**/*.test.ts"],
+    // `scripts/**` включено свідомо: `scripts/token-reencrypt-rollover.test.ts`
+    // (ротація ключа шифрування токенів) раніше лежав поза include і не
+    // запускався ніколи. Гейт `scripts/check-test-orphans.mjs` ловить повтор.
+    include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
     // The server suite contains hundreds of module-heavy files. Letting Vitest
