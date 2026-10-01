@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-09-23 by @claude (deploy-рядок і «CI gate» формулювання приведено до реального стану: CI не виконується). **Next review:** 2027-01-13.
+> **Last touched:** 2026-10-01 by @claude (кольори категорій Фініка: 21 категорія витрат після пʼяти нових). **Next review:** 2027-01-13.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
