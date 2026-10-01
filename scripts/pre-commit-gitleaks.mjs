@@ -35,7 +35,7 @@ const SKIP_ENV = "SERGEANT_SKIP_GITLEAKS";
 const INSTALL_HINT = [
   "  • macOS:        brew install gitleaks",
   "  • Linux (apt):  see https://github.com/gitleaks/gitleaks/releases",
-  "  • Go install:   go install github.com/gitleaks/gitleaks/v8@latest",
+  "  • Go install:   go install github.com/zricethezav/gitleaks/v8@latest",
 ].join("\n");
 
 function isGitleaksAvailable() {
