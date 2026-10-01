@@ -32,3 +32,11 @@ export const SPENDING_PACE_WARNING_REC_IDS: readonly string[] = [
   DAILY_PACE_REC_ID,
   WEEKLY_PACE_HIGH_REC_ID,
 ];
+
+/**
+ * Значення `Rec.action`, що веде не в модуль, а в «Звіт тижня» на хабі
+ * (блок «Порада й звіт тижня» з рядками «Тиждень у цифрах»). Тижнева картка
+ * про темп відкриває його замість огляду Фініка за місяць, де тижневого
+ * порівняння немає ніде (рішення власника 2026-10-01, f3).
+ */
+export const WEEK_REPORT_ACTION = "week_report";

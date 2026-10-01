@@ -2,7 +2,8 @@
 // тиждень (пн–нд за Києвом)» vs «той самий відрізок минулого». Покривають усі
 // гілки: dow guard, prevSpend floor, ratio thresholds, hidden/transfer
 // фільтрацію, агрегування manualExpenses, а також однакові відрізки тижня
-// (рішення власника 2026-10-01, f1).
+// (рішення власника 2026-10-01, f1). Одна картка про темп, «Звіт тижня» і
+// текст денної картки — у `paceSignals.test.ts`.
 //
 // Часові зони: правило читає `ctx.now`, а день тижня й межі бере за Києвом
 // (`weekSliceWindows`). Тести задають `now` у UTC-полудень, де київська й
@@ -11,6 +12,7 @@ import { describe, it, expect } from "vitest";
 import { formatNumberUk } from "@sergeant/shared";
 import { buildWeekReport } from "@sergeant/finyk-domain/domain/weekReport";
 import { spendingVelocityRule } from "./spendingVelocity.js";
+import { WEEK_REPORT_ACTION } from "./paceSignals.js";
 import type {
   FinanceContext,
   ManualExpense,
@@ -104,7 +106,8 @@ describe("spendingVelocityRule — high-velocity rec (ratio >= 1.4)", () => {
     expect(rec?.title).toContain("50%");
     expect(rec?.body).toContain("1");
     expect(rec?.icon).toBeTruthy();
-    expect(rec?.action).toBe("finyk");
+    // f3: «Відкрити» веде в «Звіт тижня» на хабі, а не в огляд Фініка.
+    expect(rec?.action).toBe(WEEK_REPORT_ACTION);
     expect(rec?.module).toBe("finyk");
   });
 

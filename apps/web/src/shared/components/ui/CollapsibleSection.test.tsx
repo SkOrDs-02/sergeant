@@ -1,6 +1,13 @@
 /** @vitest-environment jsdom */
+import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 describe("CollapsibleSection", () => {
@@ -145,5 +152,101 @@ describe("CollapsibleSection", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Інсайти/ }));
     expect(onOpenChange.mock.calls.map((c) => c[0])).toEqual([false, true]);
+  });
+
+  // `openSignal` / `revealRef`: діп-лінк з картки в іншому місці сторінки
+  // («Відкрити звіт тижня», рішення власника 2026-10-01). Клік по заголовку
+  // тут нічого не знає про те, ЩО саме людина хоче побачити всередині.
+  describe("запит «покажи» ззовні (openSignal + revealRef)", () => {
+    const scrollIntoView = vi.fn();
+
+    function Host({
+      signal,
+      defaultOpen = false,
+    }: {
+      signal?: number;
+      defaultOpen?: boolean;
+    }) {
+      const target = useRef<HTMLElement>(null);
+      return (
+        <CollapsibleSection
+          storageKey="sergeant.test.signal"
+          title="Звіт"
+          defaultOpen={defaultOpen}
+          {...(signal === undefined ? {} : { openSignal: signal })}
+          revealRef={target}
+        >
+          <section ref={target} tabIndex={-1} aria-label="Тиждень у цифрах">
+            payload
+          </section>
+        </CollapsibleSection>
+      );
+    }
+
+    beforeEach(() => {
+      scrollIntoView.mockClear();
+      // jsdom не має scrollIntoView.
+      Element.prototype.scrollIntoView = scrollIntoView;
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+      Reflect.deleteProperty(Element.prototype, "scrollIntoView");
+    });
+
+    it("згорнута секція розгортається, стан пишеться у сховище, а ціль отримує фокус і скрол", () => {
+      const { rerender } = render(<Host signal={0} />);
+      const toggle = screen.getByRole("button", { name: /Звіт/ });
+      expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+      rerender(<Host signal={1} />);
+      expect(screen.getByRole("button", { name: /Звіт/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+      expect(localStorage.getItem("sergeant.test.signal")).toBe("true");
+
+      // `transitionend` у jsdom не буває: спрацьовує запасний таймер.
+      act(() => {
+        vi.advanceTimersByTime(800);
+      });
+      const target = screen.getByRole("region", { name: "Тиждень у цифрах" });
+      expect(document.activeElement).toBe(target);
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+      expect(scrollIntoView.mock.instances[0]).toBe(target);
+    });
+
+    it("уже розгорнута секція показує ціль одразу, без очікування переходу", () => {
+      const { rerender } = render(<Host signal={0} defaultOpen />);
+      rerender(<Host signal={1} defaultOpen />);
+      const target = screen.getByRole("region", { name: "Тиждень у цифрах" });
+      expect(document.activeElement).toBe(target);
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    });
+
+    it("значення на монтуванні нічого не розгортає: реагує лише зміна", () => {
+      render(<Host signal={5} />);
+      expect(screen.getByRole("button", { name: /Звіт/ })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      expect(scrollIntoView).not.toHaveBeenCalled();
+    });
+
+    it("повторний рендер із тим самим значенням не показує ціль вдруге", () => {
+      const { rerender } = render(<Host signal={0} defaultOpen />);
+      rerender(<Host signal={1} defaultOpen />);
+      rerender(<Host signal={1} defaultOpen />);
+      expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    });
+
+    it("без сигналу секція поводиться як і раніше", () => {
+      render(<Host />);
+      fireEvent.click(screen.getByRole("button", { name: /Звіт/ }));
+      expect(screen.getByRole("button", { name: /Звіт/ })).toHaveAttribute(
+        "aria-expanded",
+        "true",
+      );
+    });
   });
 });

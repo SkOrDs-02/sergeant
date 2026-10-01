@@ -14,6 +14,7 @@ import { dailyVsWeeklyPaceRule } from "./dailyVsWeeklyPace.js";
 export {
   DAILY_PACE_REC_ID,
   SPENDING_PACE_WARNING_REC_IDS,
+  WEEK_REPORT_ACTION,
   WEEKLY_PACE_HIGH_REC_ID,
   WEEKLY_PACE_LOW_REC_ID,
 } from "./paceSignals.js";

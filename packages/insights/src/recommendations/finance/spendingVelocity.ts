@@ -7,6 +7,9 @@
 // Одна картка про темп за раз (f2): коли спрацювала денна «Сьогодні вище
 // середнього» (`evaluateDailyPace`), ця мовчить в обох гілках. Інакше поруч
 // стояли б «вище середнього» і «Чудовий темп» про ті самі гроші.
+//
+// «Відкрити» веде в «Звіт тижня» на хабі (`WEEK_REPORT_ACTION`), а не в огляд
+// Фініка за місяць, де тижневого порівняння немає ніде (f3).
 
 import type { Rule } from "../types.js";
 import {
@@ -18,6 +21,7 @@ import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { weekSliceWindows } from "@sergeant/finyk-domain/domain/weekSlices";
 import { evaluateDailyPace } from "./dailyVsWeeklyPace.js";
 import {
+  WEEK_REPORT_ACTION,
   WEEKLY_PACE_HIGH_REC_ID,
   WEEKLY_PACE_LOW_REC_ID,
 } from "./paceSignals.js";
@@ -69,7 +73,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
           icon: "trending-up",
           title: `Витрати на ${pctMore}% вище ніж минулого тижня`,
           body: `За такий же проміжок: ${formatNumberUk(Math.round(thisSpend))} ₴ vs ${formatNumberUk(Math.round(prevSpend))} ₴`,
-          action: "finyk",
+          action: WEEK_REPORT_ACTION,
         },
       ];
     }
@@ -83,7 +87,7 @@ export const spendingVelocityRule: Rule<FinanceContext> = {
           icon: "award",
           title: `Витрати на ${pctLess}% нижче ніж минулого тижня`,
           body: `Чудовий темп: ${formatNumberUk(Math.round(thisSpend))} ₴ vs ${formatNumberUk(Math.round(prevSpend))} ₴`,
-          action: "finyk",
+          action: WEEK_REPORT_ACTION,
         },
       ];
     }

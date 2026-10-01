@@ -20,6 +20,7 @@
  *           `useAllInsights`; до того UI цей модуль не читає — навмисно, щоб
  *           PR 1 не мав видимих змін.
  */
+import { Recommendations } from "@sergeant/insights";
 import type { Rec } from "../../lib/recommendationEngine";
 import type { StatusColor } from "@sergeant/design-tokens";
 import type { Insight } from "@shared/lib/insights/types";
@@ -34,6 +35,8 @@ export type NowAction =
     }
   /** `Rec.action` (+ `actionHash`) — відкрити модуль чи «reports». */
   | { kind: "open_module"; module: string; hash?: string }
+  /** `Rec.action === WEEK_REPORT_ACTION` — «Звіт тижня» на хабі, не модуль. */
+  | { kind: "open_week_report" }
   /** `Insight.action` — маршрут, чат із префілом або колбек. */
   | { kind: "navigate"; path: string }
   | { kind: "open_chat"; prompt: string }
@@ -150,6 +153,9 @@ function isTwin(rec: Rec, insight: Insight): boolean {
 }
 
 function actionOfRec(rec: Rec): NowAction {
+  if (rec.action === Recommendations.WEEK_REPORT_ACTION) {
+    return { kind: "open_week_report" };
+  }
   if (rec.pwaAction) {
     return { kind: "module_action", module: rec.action, action: rec.pwaAction };
   }
@@ -168,6 +174,18 @@ function actionOfInsight(insight: Insight): NowAction {
     case "callback":
       return { kind: "callback", fn: a.fn };
   }
+}
+
+/**
+ * «Звіт тижня» як ціль працює, лише коли блок «Порада й звіт тижня» є на
+ * екрані. Коли його вимкнено в налаштуваннях, подію не слухає ніхто, і
+ * «Відкрити» мовчки нічого б не робило: повертаємо рядку перехід у модуль,
+ * яким він був до рішення 2026-10-01.
+ */
+export function withoutWeekReportTarget(item: NowItem): NowItem {
+  return item.action.kind === "open_week_report"
+    ? { ...item, action: { kind: "open_module", module: item.module } }
+    : item;
 }
 
 function fromRec(rec: Rec, insight?: Insight): NowItem {

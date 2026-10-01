@@ -266,4 +266,58 @@ describe("NowPile", () => {
       screen.queryByRole("button", { name: "Спитати Сержанта про це" }),
     ).toBeNull();
   });
+
+  // f3 (рішення власника 2026-10-01): «Відкрити» з тижневої картки веде в
+  // «Звіт тижня» на хабі, а не в огляд Фініка за місяць.
+  describe("тижнева картка про темп: ціль «Звіт тижня»", () => {
+    const weekCard = (over: Partial<NowItem> = {}) =>
+      item({
+        id: "spending_velocity_high",
+        module: "finyk",
+        action: { kind: "open_week_report" },
+        recId: "spending_velocity_high",
+        ...over,
+      });
+
+    it("hero: кнопка називає призначення й шле подію хабу, а не відкриває Фінік", () => {
+      mocks.items = [weekCard()];
+      const onOpenTarget = renderPile();
+      // Без підпису hero казав би «Відкрити Фінік» і вів повз звіт.
+      expect(
+        screen.queryByRole("button", { name: /Відкрити Фінік/ }),
+      ).toBeNull();
+      fireEvent.click(
+        screen.getByRole("button", { name: /Відкрити звіт тижня/ }),
+      );
+      expect(mocks.emitHubBus).toHaveBeenCalledWith(
+        "openWeekReport",
+        undefined,
+      );
+      expect(onOpenTarget).not.toHaveBeenCalled();
+    });
+
+    it("рядок нижче за hero: так само, не через onOpenTarget", () => {
+      mocks.items = [item({ id: "hero", priority: 99 }), weekCard()];
+      const onOpenTarget = renderPile();
+      const row = screen.getByTestId("now-row");
+      fireEvent.click(
+        within(row).getByRole("button", { name: /Відкрити звіт тижня/ }),
+      );
+      expect(mocks.emitHubBus).toHaveBeenCalledWith(
+        "openWeekReport",
+        undefined,
+      );
+      expect(onOpenTarget).not.toHaveBeenCalled();
+      expect(mocks.navigate).not.toHaveBeenCalled();
+    });
+
+    it("кнопка не менша за 44 px на touch: клас touch-target на рядку", () => {
+      mocks.items = [item({ id: "hero", priority: 99 }), weekCard()];
+      renderPile();
+      const button = within(screen.getByTestId("now-row")).getByRole("button", {
+        name: /Відкрити звіт тижня/,
+      });
+      expect(button.className).toContain("touch-target");
+    });
+  });
 });
