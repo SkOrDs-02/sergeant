@@ -6,6 +6,7 @@ import {
   fireEvent,
   render,
   screen,
+  within,
 } from "@testing-library/react";
 
 import { JournalSection } from "./JournalSection";
@@ -190,5 +191,62 @@ describe("JournalSection — pagination affordance (defect #1)", () => {
     expect(
       screen.queryByRole("button", { name: "Показати ще" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("JournalSection — кілька записів (контракт для E2E)", () => {
+  // `tests/smoke/deep-module-crud.spec.ts` (fizruk) скоупить «Видалити
+  // запис» до шапки картки: кнопка є в КОЖНІЙ картці, згорнутій і
+  // розгорнутій, тож без скоупу вона не унікальна, а в smoke журнал тіла
+  // ділиться з іншими spec-ами акаунта. Скоуп тримається на двох речах —
+  // перемикач знаходиться за `aria-controls` = `journal-entry-<id запису>`,
+  // а кнопка видалення лежить у тій самій шапці, що й він. Тут це
+  // зафіксовано, щоб розʼїзд ловився за секунди, а не в E2E-лейні.
+  it("кнопка видалення є в кожній картці, згорнутій чи ні", () => {
+    renderJournal({ entries: buildEntries(3) });
+
+    expect(
+      screen.getAllByRole("button", { name: "Видалити запис" }),
+    ).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole("button", { name: /81\u202Fкг/ }));
+
+    expect(
+      screen.getAllByRole("button", { name: "Видалити запис" }),
+    ).toHaveLength(3);
+  });
+
+  it("кнопка видалення в шапці картки видаляє саме свій запис, розгорнутий чи згорнутий", () => {
+    const onDelete = vi.fn();
+    const { container } = renderJournal({
+      entries: buildEntries(3),
+      onDelete,
+    });
+    const toggleOf = (id: string) =>
+      container.querySelector<HTMLButtonElement>(
+        `button[aria-controls="journal-entry-${id}"]`,
+      ) as HTMLButtonElement;
+
+    // Згорнута картка: шапка — батько перемикача.
+    fireEvent.click(
+      within(toggleOf("entry-2").parentElement as HTMLElement).getByRole(
+        "button",
+        { name: "Видалити запис" },
+      ),
+    );
+    expect(onDelete).toHaveBeenLastCalledWith("entry-2");
+
+    // Розгорнута картка: імʼя перемикача втрачає підсумок, `aria-controls` —
+    // ні, тож тримаємо її за ним.
+    fireEvent.click(toggleOf("entry-1"));
+    expect(toggleOf("entry-1")).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(
+      within(toggleOf("entry-1").parentElement as HTMLElement).getByRole(
+        "button",
+        { name: "Видалити запис" },
+      ),
+    );
+    expect(onDelete).toHaveBeenLastCalledWith("entry-1");
+    expect(onDelete).toHaveBeenCalledTimes(2);
   });
 });

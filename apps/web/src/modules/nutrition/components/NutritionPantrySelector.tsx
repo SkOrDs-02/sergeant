@@ -51,7 +51,7 @@ export function NutritionPantrySelector({
         disabled={busy}
         aria-label="Місце зберігання"
         className={cn(
-          "input-focus-nutrition min-h-[44px] min-w-0 rounded-xl border border-nutrition/30 bg-panel/60 px-3 text-style-caption text-text truncate",
+          "input-focus-nutrition min-h-[44px] min-w-0 rounded-xl border border-control bg-panel/60 px-3 text-style-caption text-text truncate",
           compact ? "flex-1" : "max-w-[42%]",
         )}
       >

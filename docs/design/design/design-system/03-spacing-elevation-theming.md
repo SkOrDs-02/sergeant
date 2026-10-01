@@ -1,6 +1,6 @@
 # Design System — Spacing, Elevation та Theming
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-25.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-04-06.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює spacing scale, радіуси, тіні, мобільні брейкпоінти та темну тему / High Contrast.
@@ -230,7 +230,7 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
 | `--c-text`         | `#0f1713` → `#000000`             | `#f2f6f2` → `#ffffff`             | ≥ 18 : 1             |
 | `--c-muted`        | `#535c56` → `#1f1c19`             | `#a3aea6` → `#e6e0da`             | ≥ 14 : 1             |
 | `--c-subtle`       | `#605a54` → `#332e29`             | `#98a49c` → `#cfc7bf`             | ≥ 9 : 1              |
-| `--c-line`         | `#e2e0da` → `#574b3c`             | `#48423e` → `#a89c8e`             | ≥ 4.7 : 1            |
+| `--c-line`         | `#d2cec5` → `#574b3c`             | `#48423e` → `#a89c8e`             | ≥ 4.7 : 1            |
 | `--c-border`       | = `--c-line`                      | = `--c-line`                      | ≥ 4.7 : 1            |
 | `--c-success-soft` | `emerald-100` → `emerald-200`     | `#065f46` → `emerald-700`         | ≥ 4.6 : 1            |
 | `--c-danger-soft`  | `red-100` → `red-200`             | `red-800` → `red-700`             | ≥ 4.6 : 1            |

@@ -467,7 +467,7 @@ function AddBudgetFormComponent({
             />
             {limitCategoriesError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitCategoriesError}
@@ -522,7 +522,7 @@ function AddBudgetFormComponent({
             />
             {limitAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {limitAmountError}
@@ -603,7 +603,7 @@ function AddBudgetFormComponent({
             />
             {goalNameError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalNameError}
@@ -624,7 +624,7 @@ function AddBudgetFormComponent({
             />
             {goalAmountError && (
               <p
-                className="mt-1 text-style-caption text-danger-strong dark:text-danger bg-danger-soft rounded-xl px-3 py-2"
+                className="mt-1 text-style-caption text-danger-soft-fg bg-danger-soft rounded-xl px-3 py-2"
                 role="alert"
               >
                 {goalAmountError}

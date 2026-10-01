@@ -1,4 +1,5 @@
 import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+import { PANTRY_CATEGORY_LABELS } from "@sergeant/shared/data/pantryCategories";
 import { DEFAULT_PLACE_ID } from "./nutritionPantries.js";
 
 export interface FoodCategory {
@@ -10,6 +11,13 @@ export interface FoodCategory {
    */
   iconName: string;
   keywords: readonly string[];
+  /**
+   * Узагальнені слова: «філе», «стейк», «фарш» однаково стосуються мʼяса,
+   * птиці й риби, тож за позицію в назві вони НЕ змагаються — «Філе лосося»
+   * це риба, хоч «філе» стоїть у назві першим. Їх читають лише тоді, коли
+   * жоден звичайний корінь у назві не спрацював («Філе», «Стейк свинячий»).
+   */
+  genericKeywords?: readonly string[];
   /**
    * Чи згортати назву з чека до родової (`genericFoodName`).
    *
@@ -26,28 +34,35 @@ export interface GroupedCategoryBucket<T = unknown> {
 }
 
 /**
- * AI-DANGER: ПОРЯДОК масиву — значуща частина поведінки, не косметика.
- * Це арбітр ФОЛБЕКУ за ключовими словами (перший збіг виграє), тож
- * перестановка записів мовчки перекидає між категоріями ті назви, яких
- * немає в кураторському корпусі. Порядок покритий тестом
- * (`foodCategories.test.ts` § «порядок каталогу»).
+ * AI-DANGER: ПОРЯДОК масиву — частина поведінки, не косметика. Це ОСТАННІЙ
+ * арбітр фолбеку за ключовими словами: спершу вирішує ПОЗИЦІЯ в назві
+ * (збіг, що стоїть раніше, виграє — голова назви це продукт, хвіст це
+ * начинка, смак чи бренд; рішення власника 2026-10-01), за рівної позиції
+ * довший корінь, і лише за повної рівності — індекс категорії тут. Той самий
+ * порядок задає послідовність груп у коморі. Перестановка записів мовчки
+ * перекидає між категоріями ті назви, яких немає в кураторському корпусі;
+ * порядок покритий тестом (`foodCategories.test.ts` § «порядок каталогу»).
  *
  * Чому саме такий порядок — залежності з реальних чеків:
  *  - `sweets_snacks` перед `drinks`: «шоколад» містить підрядок «кола»;
  *  - `ready_meals` перед `sauces`: страва в голові назви виграє соус у
  *    хвості — «Удон з куркою в соусі терияки» це удон;
- *  - `sauces` перед `nuts_seeds`: «Паста арахісова» — соус, не горіхи;
+ *  - `sauces` перед `spreads`: паста-соус («Томатна паста») і паста-намазка
+ *    однаково починаються зі слова «паста»; намазку ловлять довші фрази
+ *    («паста арахіс»), тож вони виграють за довжиною, а порядок лише
+ *    групує обидві пасти поруч у списку;
+ *  - `spreads` перед `nuts_seeds`: «Паста арахісова» — намазка, не горіхи;
  *  - `nuts_seeds` перед `vegetables`: «Насіння Roni гарбуза» — не овоч;
  *  - `ready_meals` перед `meat`: «Котлети курячі» — готова страва;
  *  - `fruits` перед `alcohol`: корінь «вино» стоїть на початку «виноград»,
- *    і межа слова тут не рятує — рятує лише порядок;
- *  - `fish` перед `meat`: «філе» належить мʼясу, тож «Філе лосося» без
- *    цього порядку поїхало б у мʼясо.
+ *    і межа слова тут не рятує — рятує довший корінь, а порядок страхує;
+ *  - `fish` перед `meat`: узагальнені «філе», «стейк», «фарш» мʼясної
+ *    категорії (`genericKeywords`) однаково стосуються риби.
  */
 export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   {
     id: "sweets_snacks",
-    label: "Солодощі та снеки",
+    label: PANTRY_CATEGORY_LABELS.sweets_snacks,
     iconName: "sparkle",
     collapseBrand: false,
     keywords: [
@@ -79,7 +94,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "drinks",
-    label: "Напої та вода",
+    label: PANTRY_CATEGORY_LABELS.drinks,
     iconName: "coffee",
     collapseBrand: false,
     keywords: [
@@ -104,7 +119,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "ready_meals",
-    label: "Готова кулінарія",
+    label: PANTRY_CATEGORY_LABELS.ready_meals,
     iconName: "utensils",
     collapseBrand: true,
     keywords: [
@@ -155,7 +170,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "sauces",
-    label: "Соуси та пасти",
+    label: PANTRY_CATEGORY_LABELS.sauces,
     iconName: "bottle",
     collapseBrand: true,
     keywords: [
@@ -176,8 +191,57 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     ],
   },
   {
+    id: "spreads",
+    label: PANTRY_CATEGORY_LABELS.spreads,
+    iconName: "jar",
+    // Як і в соусів: бренд тут шум («Паста арахісова Лавка традицій Aumi
+    // кранч» і «Паста арахісова» — та сама позиція), саме так вони й
+    // поводились, поки жили в «Соусах та пастах».
+    collapseBrand: true,
+    keywords: [
+      // Горіхові й насіннєві пасти, обидва порядки слів: рітейлер друкує
+      // «Паста арахісова», людина пише «арахісова паста». Голі «паста» (соус)
+      // і «арахіс» (горіхи) тут не годяться, тому лише фрази: вони довші, а
+      // за рівної позиції довший корінь виграє («паста арахіс» проти
+      // «паста»), і зворотний порядок слів («арахісова паста») теж ловиться.
+      "паста арахіс",
+      "арахісова паста",
+      "арахісове масло",
+      "масло арахіс",
+      "паста мигдал",
+      "мигдальна паста",
+      "мигдальне масло",
+      "масло мигдал",
+      "паста горіх",
+      "горіхова паста",
+      "горіхове масло",
+      "масло горіх",
+      "паста фундук",
+      "фундукова паста",
+      "паста фісташк",
+      "фісташкова паста",
+      "паста кеш",
+      // Шоколадні пасти й креми для хліба. Сам «шоколад» лишається солодощами:
+      // тут лише намазка.
+      "паста шоколад",
+      "шоколадна паста",
+      "шоколадно-горіхов",
+      "горіхово-шоколадн",
+      "крем шоколадн",
+      "шоколадний крем",
+      "нутелла",
+      "nutella",
+      "урбеч",
+      // Сам жанр. «Спред» ще й жировий (вершково-рослинний), але покупець
+      // шукає його саме тут; «Сир плавлений для намазування» сюди НЕ
+      // потрапляє: «намазування» не містить «намазк», а це молочне.
+      "спред",
+      "намазк",
+    ],
+  },
+  {
     id: "nuts_seeds",
-    label: "Горіхи та насіння",
+    label: PANTRY_CATEGORY_LABELS.nuts_seeds,
     iconName: "leaf",
     collapseBrand: true,
     keywords: [
@@ -196,7 +260,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "canned",
-    label: "Консерви",
+    label: PANTRY_CATEGORY_LABELS.canned,
     iconName: "archive",
     collapseBrand: true,
     keywords: [
@@ -214,7 +278,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "vegetables",
-    label: "Овочі",
+    label: PANTRY_CATEGORY_LABELS.vegetables,
     iconName: "carrot",
     collapseBrand: true,
     keywords: [
@@ -254,7 +318,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "legumes",
-    label: "Бобові",
+    label: PANTRY_CATEGORY_LABELS.legumes,
     iconName: "bean",
     collapseBrand: true,
     keywords: [
@@ -269,7 +333,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "fruits",
-    label: "Фрукти та ягоди",
+    label: PANTRY_CATEGORY_LABELS.fruits,
     iconName: "apple",
     collapseBrand: true,
     keywords: [
@@ -313,7 +377,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "alcohol",
-    label: "Алкоголь",
+    label: PANTRY_CATEGORY_LABELS.alcohol,
     iconName: "wine",
     // Конкретне вино — це конкретний товар, а не «вино взагалі»: згорнувши
     // бренд, ми злили б у купу речі, які людина розрізняє.
@@ -344,7 +408,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "fish",
-    label: "Риба та морепродукти",
+    label: PANTRY_CATEGORY_LABELS.fish,
     iconName: "fish",
     collapseBrand: true,
     keywords: [
@@ -377,7 +441,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "meat",
-    label: "Мʼясо та птиця",
+    label: PANTRY_CATEGORY_LABELS.meat,
     iconName: "drumstick",
     collapseBrand: true,
     keywords: [
@@ -399,7 +463,6 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "кролик",
       "качка",
       "гусятин",
-      "фарш",
       "ковбас",
       "сосиск",
       "шинк",
@@ -409,17 +472,18 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "хамон",
       "бастурма",
       "сал",
-      "філе",
-      "стейк",
       "грудк",
-      "печінк",
       "шашлик",
-      "нагетс",
     ],
+    // Позиційне ранжування віддало б «Філе лосося» мʼясу: «філе» стоїть у
+    // назві першим. Ці слова однаково стосуються риби («Печінка тріски»,
+    // «Нагетси рибні», «Фарш рибний»), тож змагатись за позицію їм
+    // нічим — вони ловлять назву лише там, де нічого конкретнішого нема.
+    genericKeywords: ["філе", "стейк", "фарш", "печінк", "нагетс"],
   },
   {
     id: "dairy_eggs",
-    label: "Молочні та яйця",
+    label: PANTRY_CATEGORY_LABELS.dairy_eggs,
     iconName: "egg",
     collapseBrand: true,
     keywords: [
@@ -444,7 +508,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "grains",
-    label: "Крупи та хліб",
+    label: PANTRY_CATEGORY_LABELS.grains,
     iconName: "wheat",
     collapseBrand: true,
     keywords: [
@@ -488,7 +552,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "sports",
-    label: "Спортивне харчування",
+    label: PANTRY_CATEGORY_LABELS.sports,
     iconName: "dumbbell",
     // Конкретний протеїн — конкретний товар: смак і бренд тут і є вибором.
     collapseBrand: false,
@@ -506,7 +570,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
   },
   {
     id: "pantry",
-    label: "Олії, спеції та бакалія",
+    label: PANTRY_CATEGORY_LABELS.pantry,
     iconName: "droplet",
     collapseBrand: true,
     keywords: [
@@ -532,7 +596,7 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
 
 const OTHER: FoodCategory = {
   id: "other",
-  label: "Інше",
+  label: PANTRY_CATEGORY_LABELS.other,
   iconName: "package",
   keywords: [],
   // Останній фолбек: якщо ми не впізнали продукт, то не впізнали й того,
@@ -578,6 +642,7 @@ export const CORPUS_CATEGORY_TO_ID: Readonly<Record<string, string>> = {
   Салати: "ready_meals",
   Солодощі: "sweets_snacks",
   "Соуси і спеції": "sauces",
+  "Спреди і намазки": "spreads",
   "Спортивне харчування": "sports",
   "Українська кухня": "ready_meals",
   "Фрукти і ягоди": "fruits",
@@ -585,7 +650,18 @@ export const CORPUS_CATEGORY_TO_ID: Readonly<Record<string, string>> = {
   Яйця: "dairy_eggs",
 };
 
-const BY_ID = new Map(FOOD_CATEGORIES.map((c) => [c.id, c]));
+/**
+ * Усі категорії комори в порядку каталогу плюс «Інше» в кінці. Це ЄДИНА
+ * таксономія Харчування: комора, список покупок і промпт його генерації
+ * беруть назви звідси (рішення власника 2026-10-01, n3), а не мають власних
+ * переліків.
+ */
+export const ALL_FOOD_CATEGORIES: readonly FoodCategory[] = [
+  ...FOOD_CATEGORIES,
+  OTHER,
+];
+
+const BY_ID = new Map(ALL_FOOD_CATEGORIES.map((c) => [c.id, c]));
 
 /**
  * Хвіст «зі смаком …» / «з ароматом …» несе слова чужих категорій:
@@ -710,7 +786,30 @@ function matchCorpus(orderedTokens: readonly string[]): string | null {
   return bestId;
 }
 
+interface LocatedToken {
+  text: string;
+  /** Індекс першого символа токена у вихідному рядку (разом з апострофами). */
+  at: number;
+}
+
 /**
+ * Той самий поділ на токени, що й `splitTokens`, але з позицією в рядку:
+ * ранжування ключових слів за позицією (`matchKeywords`) мусить знати, де
+ * саме в назві стоїть збіг.
+ */
+function locateTokens(name: string): LocatedToken[] {
+  const located: LocatedToken[] = [];
+  for (const m of name.matchAll(/[\p{L}\p{N}ʼ’'`]+/gu)) {
+    const text = m[0].replace(/[ʼ’'`]/gu, "");
+    if (text) located.push({ text, at: m.index });
+  }
+  return located;
+}
+
+/**
+ * Позиція (індекс символа в `lowered`), з якої корінь влучає в назву, або
+ * -1, якщо не влучає.
+ *
  * Корінь коротший за 5 літер матчиться лише з ПОЧАТКУ токена: інакше
  * «г**риб**и» їхали в рибу, а «рук**кола**» — у напої. Довгі корені
  * лишаються підрядком будь-де — саме на цьому тримається впізнавання
@@ -719,22 +818,169 @@ function matchCorpus(orderedTokens: readonly string[]): string | null {
  * Виняток — корені з не-літерами («с/м»): токенізатор їх розриває, тож
  * межа слова для них не визначена.
  */
-function keywordHit(
+function keywordAt(
   lowered: string,
-  tokens: readonly string[],
+  tokens: readonly LocatedToken[],
   keyword: string,
-): boolean {
+): number {
   if (keyword.length >= 5 || !/^\p{L}+$/u.test(keyword)) {
-    return lowered.includes(keyword);
+    return lowered.indexOf(keyword);
   }
-  return tokens.some((t) => t.startsWith(keyword));
+  return tokens.find((t) => t.text.startsWith(keyword))?.at ?? -1;
 }
 
 /**
- * Каскад: кураторський корпус → ключові слова.
+ * Дериваційний суфікс + відмінкове закінчення, якими корінь-інгредієнт
+ * стає прикметником: «томат**ний**», «картопл**яні**», «часник**ові**»,
+ * «мигдал**ьна**», «вишн**евий**». Іменникові форми («томати», «картопля»,
+ * «сиром») під нього не потрапляють: там нема дериваційного суфікса.
+ */
+const ATTRIBUTIVE_SUFFIX =
+  /^(?:ь?н|ов|ев|єв|ян|ськ|цьк|зьк|яч|ач)(?:ий|ій|а|я|е|є|і|ї|их|ого|ої|ому|ими|ою)$/u;
+
+/**
+ * Чи влучив корінь у ПРИКМЕТНИК, що стоїть на початку токена: «томатний сік»,
+ * «картопляні чипси». Прикметник не може бути головою назви — голова це
+ * іменник виробу, який стоїть далі, тож такий збіг програє будь-якому
+ * неприкметниковому (але лишається запасним, коли іншого нема: «Суміш
+ * овочева» все одно овочі).
+ */
+function isAttributiveHit(
+  tokens: readonly LocatedToken[],
+  keyword: string,
+  at: number,
+): boolean {
+  const token = tokens.find((t) => t.at === at);
+  if (!token?.text.startsWith(keyword)) return false;
+  return ATTRIBUTIVE_SUFFIX.test(token.text.slice(keyword.length));
+}
+
+/**
+ * Ключові слова з ранжуванням за позицією (рішення власника 2026-10-01,
+ * «фаза А» спеки `pantry-categorization-ai.md`): виграє збіг, що стоїть у
+ * назві РАНІШЕ. Голова назви — це продукт, хвіст — начинка, смак чи бренд:
+ * «Шоколад з мигдалем» це шоколад, «Наливка вишнева» це наливка.
  *
- * Корпус перший, бо в ньому категорія проставлена людиною, а ключові
- * слова лише вгадують. Ключові слова лишаються для брендових назв із
+ * Прикметникові збіги («томатний», «картопляні») не рахуються головою й
+ * програють іменникам виробу, що стоять далі («Томатний сік» це напій):
+ * саме вони були ціною чистої позиції, бо рітейлер друкує «Сік томатний»,
+ * а людина в полі «По одному» пише і так, і так.
+ *
+ * Рівна позиція → довший корінь («виноград» проти «вино» в «Виноград»; фраза
+ * «паста арахіс» проти «паста»). Повна рівність → порядок категорій у
+ * `FOOD_CATEGORIES`. До цієї дати вирішував ЛИШЕ порядок масиву, тож третину
+ * чека класифікувало впорядкування, а не слово в голові назви.
+ */
+function matchKeywords(head: string): FoodCategory | null {
+  const tokens = locateTokens(head);
+
+  let best: FoodCategory | null = null;
+  let bestAttributive = true;
+  let bestAt = Number.POSITIVE_INFINITY;
+  let bestLen = 0;
+  for (const cat of FOOD_CATEGORIES) {
+    for (const kw of cat.keywords) {
+      const at = keywordAt(head, tokens, kw);
+      if (at < 0) continue;
+      const attributive = isAttributiveHit(tokens, kw, at);
+      const better =
+        best === null ||
+        (attributive !== bestAttributive
+          ? !attributive
+          : at < bestAt || (at === bestAt && kw.length > bestLen));
+      if (better) {
+        best = cat;
+        bestAttributive = attributive;
+        bestAt = at;
+        bestLen = kw.length;
+      }
+    }
+  }
+  if (best) return best;
+
+  // Узагальнені слова («філе», «стейк») не змагаються за позицію: вони
+  // стосуються і мʼяса, і риби, тож читаються лише коли конкретнішого нема.
+  for (const cat of FOOD_CATEGORIES) {
+    for (const kw of cat.genericKeywords ?? []) {
+      if (keywordAt(head, tokens, kw) >= 0) return cat;
+    }
+  }
+  return null;
+}
+
+/**
+ * Правила форми: «Х у/в <покриття чи тісто>» — виріб, а не Х. Голова назви
+ * тут начинка («мигдаль», «сосиска»), і саме на ній позиційне ранжування
+ * помилилось би, тому правило спрацьовує ДО корпусу й ключових слів, як і
+ * відсікання хвоста «зі смаком …» (`FLAVOUR_TAIL`).
+ *
+ *  - «Мигдаль у шоколаді», «Арахіс у глазурі», «Яблуко в карамелі» → солодощі
+ *    (рішення власника 2026-10-01);
+ *  - «Сосиска в тісті» → готова кулінарія: те саме правило форми, яке тримала
+ *    пара «ready_meals перед meat», доки ранжування не стало позиційним;
+ *  - «Арахісове масло», «Масло мигдальне» → спреди, а не молочні: корпусний
+ *    синонім «масло» інакше забрав би назву раніше за ключові слова.
+ *
+ * Між прийменником і покриттям допустимі до двох слів: «в молочному
+ * шоколаді», «у білій шоколадній глазурі». Сирки в глазурі — виняток:
+ * охолоджений молочний десерт лишається у «Молочних» (так само, як
+ * «Сирок глазурований» у корпусі), інакше він поїхав би з холодильника на
+ * полицю солодощів.
+ */
+const FORM_QUALIFIERS = String.raw`(?:[\p{L}ʼ’'-]+\s+){0,2}`;
+const FORM_PREPOSITION = String.raw`(?:^|\s)[ув]\s+`;
+const FORM_END = String.raw`(?=$|[\s,.;)])`;
+const CHILLED_COATED_DESSERT = /^сир(?:ок|к)/u;
+// «Масло арахісове» і «Арахісове масло»: корінь горіха стоїть поряд зі словом
+// «масло» в будь-якому порядку.
+const FORM_NUT = String.raw`(?:арахіс|мигдал|горіх|фундук|фісташк|кеш)`;
+const FORM_BUTTER_AFTER_NUT = String.raw`(?:^|\s)масл[оа]\s+${FORM_NUT}`;
+const FORM_BUTTER_BEFORE_NUT = String.raw`${FORM_NUT}\S*\s+масл[оа](?=$|[\s,.;)])`;
+
+const FORM_RULES: ReadonlyArray<{
+  pattern: RegExp;
+  catId: string;
+  except?: RegExp;
+}> = [
+  {
+    pattern: new RegExp(
+      `${FORM_PREPOSITION}${FORM_QUALIFIERS}(?:шоколаді|глазурі|карамелі)${FORM_END}`,
+      "u",
+    ),
+    catId: "sweets_snacks",
+    except: CHILLED_COATED_DESSERT,
+  },
+  {
+    pattern: new RegExp(
+      `${FORM_PREPOSITION}${FORM_QUALIFIERS}тісті${FORM_END}`,
+      "u",
+    ),
+    catId: "ready_meals",
+  },
+  // Горіхове масло — намазка («Арахісове масло Skippy»), а не молочне. Корпус
+  // тут безсилий: його однослівний синонім «масло» (до вершкового) повертає
+  // молочні для будь-якої назви з цим словом, тож правило стоїть перед ним.
+  {
+    pattern: new RegExp(
+      `${FORM_BUTTER_AFTER_NUT}|${FORM_BUTTER_BEFORE_NUT}`,
+      "u",
+    ),
+    catId: "spreads",
+  },
+];
+
+function matchFormRule(head: string): string | null {
+  for (const rule of FORM_RULES) {
+    if (rule.pattern.test(head) && !rule.except?.test(head)) return rule.catId;
+  }
+  return null;
+}
+
+/**
+ * Каскад: правила форми → кураторський корпус → ключові слова.
+ *
+ * Корпус вище за ключові слова, бо в ньому категорія проставлена людиною, а
+ * ключові слова лише вгадують. Ключові слова лишаються для брендових назв із
  * чека, яких у корпусі немає й ніколи не буде.
  */
 export function categorizeFood(name: unknown): FoodCategory {
@@ -745,16 +991,13 @@ export function categorizeFood(name: unknown): FoodCategory {
 
   const head = raw.replace(FLAVOUR_TAIL, "").trim() || raw;
 
+  const fromRule = matchFormRule(head);
+  if (fromRule) return BY_ID.get(fromRule) ?? OTHER;
+
   const fromCorpus = matchCorpus(indexTokens(head));
   if (fromCorpus) return BY_ID.get(fromCorpus) ?? OTHER;
 
-  const tokens = splitTokens(head);
-  for (const cat of FOOD_CATEGORIES) {
-    for (const kw of cat.keywords) {
-      if (keywordHit(head, tokens, kw)) return cat;
-    }
-  }
-  return OTHER;
+  return matchKeywords(head) ?? OTHER;
 }
 
 /**
@@ -798,9 +1041,9 @@ export function placeForFood(name: unknown): string {
     .trim();
   if (!raw) return DEFAULT_PLACE_ID;
   const head = raw.replace(FLAVOUR_TAIL, "").trim() || raw;
-  const tokens = splitTokens(head);
+  const tokens = locateTokens(head);
   for (const kw of FREEZER_KEYWORDS) {
-    if (keywordHit(head, tokens, kw)) return "freezer";
+    if (keywordAt(head, tokens, kw) >= 0) return "freezer";
   }
   return CATEGORY_TO_PLACE[categorizeFood(head).id] ?? DEFAULT_PLACE_ID;
 }

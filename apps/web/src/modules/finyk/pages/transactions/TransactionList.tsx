@@ -25,6 +25,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { TxAccount } from "./Transactions";
 
 /** Typical rendered height of one `TxListItem` row, in px. */
@@ -179,7 +180,10 @@ export interface TransactionListProps {
    * «скасовано» замість «не в статистиці» (`TxRowMetaChips`).
    */
   cancelledTxIdSet?: ReadonlySet<string> | undefined;
+  /** Явні override-и користувача (НЕ ефективна мапа з правилами). */
   txCategories: TxCategoriesMap;
+  /** Правила «Завжди так для цього магазину» — рядок малює їхню категорію. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation per bank transaction. */
   txNotes?: Record<string, string | undefined> | undefined;
@@ -241,6 +245,7 @@ export function TransactionList({
   excludedStatTxIdSet,
   cancelledTxIdSet,
   txCategories,
+  merchantRules,
   txSplits,
   txNotes = {},
   accounts,
@@ -475,6 +480,7 @@ export function TransactionList({
                       isExcludedFromStats={excludedStatTxIdSet.has(t.id)}
                       isCancelled={cancelledTxIdSet?.has(t.id) ?? false}
                       overrideCatId={txCategories[t.id]}
+                      merchantRules={merchantRules}
                       txSplits={txSplits}
                       note={txNotes[t.id]}
                       accounts={accounts ?? []}

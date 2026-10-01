@@ -83,7 +83,9 @@ const VARIANT_SOLID: Record<SegmentedVariant, string> = {
 // the fixed `-strong` hex went sub-AA once HC bumped the `-soft` surface a
 // step darker. Module variants keep their dark surface/border tint.
 const VARIANT_SOFT: Record<SegmentedVariant, string> = {
-  brand: "border-brand-soft-border bg-brand-soft text-brand-soft-fg shadow-sm",
+  // `border-control` (а не тихий `brand-soft-border` 1.1-1.5:1): вибраний стан
+  // мусить відрізнятись від сусіда ≥3:1 (WCAG 1.4.11, аудит 2026-10-01, A4).
+  brand: "border-control bg-brand-soft text-brand-soft-fg shadow-sm",
   fizruk:
     "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15",
   routine:

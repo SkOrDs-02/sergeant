@@ -37,6 +37,7 @@ import {
   idsFromArray,
   monoDebtLinksFromMap,
   networthHistoryFrom,
+  serializePrefsJson,
   txCatsFromMap,
   txSplitsFromMap,
 } from "./sqliteWriter/extract.js";
@@ -125,6 +126,10 @@ export function readFinykBackupFromStorage() {
       warm && cache.dismissedRecurring !== null
         ? cache.dismissedRecurring
         : readJSON(FINYK_FIELD_TO_STORAGE_KEY.dismissedRecurring, []),
+    // Правила «Завжди так» живуть лише в SQLite (`prefs_json`), LS-ключа
+    // нема: холодний кеш → порожньо, як і для решти prefs без LS-дубля.
+    merchantRules:
+      warm && cache.merchantRules !== null ? cache.merchantRules : [],
   };
 }
 
@@ -191,6 +196,7 @@ function cacheToDualWriteState(): FinykDualWriteState {
       showBalance: cache.showBalance ?? true,
       excludedStatTxIdsJson: toJson(cache.excludedStatTxIds ?? [], "[]"),
       dismissedRecurringJson: toJson(cache.dismissedRecurring ?? [], "[]"),
+      prefsJson: serializePrefsJson(cache.merchantRules),
     },
   };
 }
@@ -238,6 +244,7 @@ function prefsOntoSnapshot(
     showBalance: true,
     excludedStatTxIdsJson: "[]",
     dismissedRecurringJson: "[]",
+    prefsJson: "{}",
   };
   return {
     showBalance: base.showBalance,
@@ -250,6 +257,11 @@ function prefsOntoSnapshot(
     dismissedRecurringJson: b.dismissedRecurring
       ? toJson(onlyStrings(b.dismissedRecurring), "[]")
       : base.dismissedRecurringJson,
+    // Файл без правил (старий бекап) лишає наявні: «Замінити» діє на
+    // зріз лише тоді, коли файл його несе — як і для решти полів.
+    prefsJson: b.merchantRules
+      ? serializePrefsJson(b.merchantRules)
+      : base.prefsJson,
   };
 }
 

@@ -227,6 +227,7 @@ describe("refreshFinykSqliteState", () => {
           showBalance: false,
           excludedStatTxIdsJson: JSON.stringify(["tx-1", "tx-2"]),
           dismissedRecurringJson: JSON.stringify(["banner-x"]),
+          prefsJson: "{}",
         },
       },
     ]);

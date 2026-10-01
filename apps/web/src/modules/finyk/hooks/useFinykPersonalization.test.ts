@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useFinykPersonalization } from "./useFinykPersonalization";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
 function tx(id: string, description: string, mcc: number): Transaction {
   return {
@@ -51,5 +52,37 @@ describe("useFinykPersonalization", () => {
       storage: { excludedTxIds: new Set(["x", "y"]) },
     });
     expect(result.current.frequentCategories).toBe(first);
+  });
+
+  it("частота категорій враховує правила мерчантів (явні override-и сильніші)", () => {
+    const txs = [
+      tx("a", "Сільпо №1", 5411),
+      tx("b", "СІЛЬПО 2", 5411),
+      tx("c", "Сільпо №3", 5411),
+    ];
+    const merchantRuleIndex = buildMerchantRuleIndex([
+      {
+        id: "mr_1",
+        kind: "expense",
+        merchantKey: "сільпо",
+        categoryId: "transport",
+        label: "Сільпо",
+        createdAt: "2026-10-01T10:00:00.000Z",
+        updatedAt: "2026-10-01T10:00:00.000Z",
+      },
+    ]);
+    const { result } = renderHook(() =>
+      useFinykPersonalization({
+        mono: { realTx: txs },
+        storage: { merchantRuleIndex, txCategories: { c: "food" } },
+        now: new Date("2026-06-15T09:00:00Z"),
+      }),
+    );
+    const byId = Object.fromEntries(
+      result.current.frequentCategories.map((c) => [c.id, c.count]),
+    );
+    // a, b — за правилом, c — явний вибір; серверного слага/MCC нема в рахунку.
+    expect(byId["transport"]).toBe(2);
+    expect(byId["food"]).toBe(1);
   });
 });

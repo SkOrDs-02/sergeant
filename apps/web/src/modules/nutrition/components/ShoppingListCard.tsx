@@ -34,37 +34,25 @@ import type {
 } from "@sergeant/nutrition-domain";
 import type { NutritionWeekPlan } from "../hooks/useNutritionUiState";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { foldApostrophes } from "@sergeant/shared";
+import {
+  LOW_STOCK_CATEGORY_NAME,
+  findShoppingCategory,
+} from "@sergeant/nutrition-domain";
 
-// Іконка групи в списку покупок. До 2026-08-03 тут лежали emoji, які
-// малювалися системним шрифтом: «🫒» на Windows деградувало в порожній
-// прямокутник, а «🥦» на старому Android — у чорно-білий гліф.
-const CATEGORY_ICONS: Record<string, IconName> = {
-  "Мʼясо та риба": "utensils",
-  "Молочні продукти": "droplet",
-  Овочі: "leaf",
-  "Овочі та гриби": "leaf",
-  Фрукти: "leaf",
-  "Крупи та злаки": "package",
-  "Хлібобулочні вироби": "package",
-  Яйця: "egg",
-  "Олії та жири": "droplet",
-  "Приправи та соуси": "utensils",
-  Напої: "coffee",
-  Інше: "shopping-cart",
-  "Закінчується вдома": "trending-down",
-};
-
+// Іконка групи в списку покупок - це гліф категорії комори (одна таксономія
+// Харчування, рішення власника 2026-10-01): список більше не має власного
+// переліку категорій і власної мапи іконок. До 2026-08-03 тут лежали emoji,
+// які малювалися системним шрифтом («🫒» на Windows деградувало в порожній
+// прямокутник), а до 2026-10-01 - мапа з 11 назв, яких комора не знала.
+//
+// Назву віддає модель за промптом сервера (`shopping-list.ts`), тож апостроф і
+// регістр у ній не гарантовані; `findShoppingCategory` порівнює згорнутими
+// формами. «Закінчується вдома» - не категорія комори, а підсумкова група
+// вдоповнених low-stock позицій, тож гліф у неї власний.
 function getCategoryIcon(name: string): IconName {
-  // Назву категорії віддає модель за промптом сервера
-  // (`shopping-list.ts`), тобто апостроф у ній не гарантований. Ключі тут
-  // канонічні (§1.10), тож звіряємо згорнутими формами — інакше
-  // «М'ясо та риба» з ASCII-апострофом мовчки падає у дефолтний кошик.
-  const folded = foldApostrophes(name);
-  const key = Object.keys(CATEGORY_ICONS).find(
-    (k) => foldApostrophes(k) === folded,
-  );
-  return (key && CATEGORY_ICONS[key]) || "shopping-cart";
+  if (name === LOW_STOCK_CATEGORY_NAME) return "trending-down";
+  const category = findShoppingCategory(name);
+  return (category?.iconName as IconName | undefined) ?? "shopping-cart";
 }
 
 const pm = messages.nutrition.shoppingListPantryMath;
@@ -402,7 +390,7 @@ export function ShoppingListCard({
               )}
             >
               <div>Рецепти</div>
-              <div className="text-style-caption opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-80 mt-0.5">
                 {hasRecipes
                   ? `${allRecipeOptions.length} ${pluralUa(
                       allRecipeOptions.length,
@@ -423,7 +411,7 @@ export function ShoppingListCard({
               )}
             >
               <div>Тижневий план</div>
-              <div className="text-style-caption opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-80 mt-0.5">
                 {hasWeekPlan
                   ? `${weekPlan?.days?.length ?? 0} ${pluralDays(
                       weekPlan?.days?.length ?? 0,

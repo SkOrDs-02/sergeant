@@ -57,6 +57,9 @@ export * from "./weekKcalChart.js";
 export * from "./waterLog.js";
 export * from "./waterHistory.js";
 export * from "./shoppingList.js";
+// Категорії списку покупок = категорії комори (одна таксономія), плюс
+// зведення старих назв і відповіді моделі до них.
+export * from "./shoppingCategories.js";
 // «Рівень 1» списку покупок (детермінований, без AI): точне віднімання
 // залишків комори + авто-вливання low-stock позицій. Реюзить той самий
 // low-stock поріг, що і бейдж комори (`pantryLowStock.ts`).

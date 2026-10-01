@@ -552,6 +552,50 @@ describe("useNutritionRemoteActions", () => {
       expect(apiFetchShoppingList).not.toHaveBeenCalled();
     });
 
+    // Одна таксономія з коморою (рішення власника 2026-10-01): відповідь моделі
+    // зводиться до категорій комори до того, як потрапить у список.
+    it("зводить старі й невідомі назви категорій відповіді до категорій комори", async () => {
+      apiFetchShoppingList.mockResolvedValueOnce({
+        categories: [
+          {
+            name: "Мʼясо та риба",
+            items: [
+              { name: "Лосось", quantity: "300 г", note: "" },
+              { name: "Куряче філе", quantity: "500 г", note: "" },
+            ],
+          },
+          {
+            name: "Спреди та намазки",
+            items: [{ name: "Паста арахісова", quantity: "1 шт", note: "" }],
+          },
+          {
+            name: "Щось своє",
+            items: [{ name: "Кефір", quantity: "1 л", note: "" }],
+          },
+        ],
+      });
+      const { result, spies } = makeHarness({
+        recipes: [{ id: "r1", name: "Сендвіч" }],
+      });
+      act(() => {
+        result.current.generateShoppingList("recipes");
+      });
+      await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+
+      const generated = spies.setGeneratedList.mock.calls[0]?.[0] as Array<{
+        name: string;
+        items: Array<{ name: string }>;
+      }>;
+      expect(
+        generated.map((c) => [c.name, c.items.map((i) => i.name)]),
+      ).toEqual([
+        ["Риба та морепродукти", ["Лосось"]],
+        ["Мʼясо та птиця", ["Куряче філе"]],
+        ["Спреди та намазки", ["Паста арахісова"]],
+        ["Молочні та яйця", ["Кефір"]],
+      ]);
+    });
+
     it("posts recipes when source fallback and feeds categories to shopping", async () => {
       apiFetchShoppingList.mockResolvedValueOnce({
         categories: [

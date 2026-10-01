@@ -165,6 +165,115 @@ describe("loadShoppingList", () => {
     expect(loaded.categories).toHaveLength(1);
     expect(loaded.categories[0]!.items).toHaveLength(1);
   });
+
+  // Одна таксономія з коморою (рішення власника 2026-10-01): список, що лежить
+  // у SQLite зі старими 11 назвами, на читанні зводиться до категорій комори,
+  // а галочки й ручні позиції переживають зведення.
+  it("мігрує збережені стару категорії в категорії комори при читанні", () => {
+    __setNutritionSqliteCacheForTests({
+      shoppingList: {
+        categories: [
+          {
+            name: "Мʼясо та риба",
+            items: [
+              {
+                id: "1",
+                name: "Лосось",
+                quantity: "300 г",
+                note: "",
+                checked: true,
+              },
+            ],
+          },
+          {
+            name: "Хлібобулочні вироби",
+            items: [
+              {
+                id: "2",
+                name: "Батон",
+                quantity: "",
+                note: "",
+                checked: false,
+                source: "manual",
+              },
+            ],
+          },
+          {
+            name: "Молочні продукти",
+            items: [
+              {
+                id: "3",
+                name: "Кефір",
+                quantity: "",
+                note: "",
+                checked: false,
+              },
+            ],
+          },
+          {
+            name: "Яйця",
+            items: [
+              { id: "4", name: "Яйця", quantity: "", note: "", checked: false },
+            ],
+          },
+        ],
+      },
+    });
+
+    const loaded = loadShoppingList();
+    expect(loaded.categories.map((c) => c.name)).toEqual([
+      "Риба та морепродукти",
+      "Крупи та хліб",
+      "Молочні та яйця",
+    ]);
+    expect(loaded.categories[0]!.items[0]).toMatchObject({
+      id: "1",
+      checked: true,
+      quantity: "300 г",
+    });
+    expect(loaded.categories[1]!.items[0]).toMatchObject({
+      id: "2",
+      source: "manual",
+    });
+    expect(loaded.categories[2]!.items.map((i) => i.id)).toEqual(["3", "4"]);
+  });
+
+  it("список, що вже в категоріях комори, лишається як є", () => {
+    __setNutritionSqliteCacheForTests({
+      shoppingList: {
+        categories: [
+          {
+            name: "Овочі",
+            items: [
+              {
+                id: "1",
+                name: "Огірок",
+                quantity: "",
+                note: "",
+                checked: false,
+              },
+            ],
+          },
+          {
+            name: "Інше",
+            items: [
+              {
+                id: "2",
+                name: "Серветки",
+                quantity: "",
+                note: "",
+                checked: false,
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(loadShoppingList().categories.map((c) => c.name)).toEqual([
+      "Овочі",
+      "Інше",
+    ]);
+  });
 });
 
 describe("persistShoppingList", () => {

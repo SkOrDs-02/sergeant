@@ -11,6 +11,8 @@ import {
   withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain/utils";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
 /** Банківська історія з SQLite-дзеркала, реактивна до його оновлень. */
 export function useFinykMirrorTransactions() {
@@ -62,5 +64,33 @@ export function useFinykStatTransactions() {
       slots.excludedStatTxIds,
     ],
   );
-  return { statTransactions, slots };
+  // Правила «Завжди так для цього магазину» (2026-10-01): споживачі цього
+  // хука (тижневий звіт, інсайти бюджету) рахують категорії по
+  // `slots.txCategories`, тож віддаємо їм ЕФЕКТИВНУ мапу — явні override-и
+  // плюс виведене правилами. Це копія для читання: сам слот не міняється,
+  // а запис іде лише крізь `useStorage`.
+  const merchantRuleIndex = useMemo(
+    () => buildMerchantRuleIndex(slots.merchantRules),
+    [slots.merchantRules],
+  );
+  const effectiveTxCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        mergedTransactions,
+        slots.txCategories,
+        merchantRuleIndex,
+        slots.customCategories,
+      ),
+    [
+      mergedTransactions,
+      slots.txCategories,
+      merchantRuleIndex,
+      slots.customCategories,
+    ],
+  );
+  const readSlots = useMemo(
+    () => ({ ...slots, txCategories: effectiveTxCategories }),
+    [slots, effectiveTxCategories],
+  );
+  return { statTransactions, slots: readSlots };
 }

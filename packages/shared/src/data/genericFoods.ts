@@ -1578,12 +1578,15 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
     category: "Горіхи і насіння",
     per100: { kcal: 573, protein_g: 17, fat_g: 50, carbs_g: 23 },
   },
+
+  // ── Спреди і намазки ────────────────────────────────────────────
   {
     slug: "pasta-arakhisova",
     name: "Паста арахісова",
-    // Не горіхи: у коморі це намазка, і той самий висновок уже стоїть
-    // окремим правилом порядку категорій у `foodCategories.ts`.
-    category: "Соуси і спеції",
+    // Не горіхи й не соус: у коморі це намазка, власна категорія «Спреди і
+    // намазки» (рішення власника 2026-10-01). Хумус і тахіні лишаються в
+    // соусах: це інгредієнти кухні й дипи, а не те, що мажуть на хліб.
+    category: "Спреди і намазки",
     per100: { kcal: 588, protein_g: 25, fat_g: 50, carbs_g: 20 },
   },
 
@@ -2065,6 +2068,34 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
     name: "Курага в шоколаді",
     category: "Солодощі",
     per100: { kcal: 383, protein_g: 3.5, fat_g: 14, carbs_g: 64 },
+  },
+  // Горіхи в шоколаді чи глазурі — солодощі, а не горіхи (рішення власника
+  // 2026-10-01): покриття ховає начинку й міняє суть продукту, тож у коморі
+  // це полиця солодкого. Загальне правило «у/в шоколаді | глазурі | карамелі»
+  // живе в `foodCategories.ts`; ці позиції дають тим назвам КБЖВ і пошук.
+  {
+    slug: "myhdal-u-shokoladi",
+    name: "Мигдаль у шоколаді",
+    category: "Солодощі",
+    per100: { kcal: 545, protein_g: 11, fat_g: 37, carbs_g: 40 },
+  },
+  {
+    slug: "horikhy-v-shokoladi",
+    name: "Горіхи в шоколаді",
+    category: "Солодощі",
+    per100: { kcal: 535, protein_g: 10, fat_g: 35, carbs_g: 45 },
+  },
+  {
+    slug: "arakhis-u-hlazuri",
+    name: "Арахіс у глазурі",
+    category: "Солодощі",
+    per100: { kcal: 500, protein_g: 13, fat_g: 30, carbs_g: 45 },
+  },
+  {
+    slug: "funduk-u-shokoladi",
+    name: "Фундук у шоколаді",
+    category: "Солодощі",
+    per100: { kcal: 555, protein_g: 9, fat_g: 40, carbs_g: 38 },
   },
   {
     slug: "karamel",

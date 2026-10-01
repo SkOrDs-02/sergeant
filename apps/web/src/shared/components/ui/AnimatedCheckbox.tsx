@@ -165,7 +165,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
     "relative inline-flex items-center justify-center rounded-xl",
     "border-2 transition-all duration-base",
     sizes.box,
-    checked ? cn(styles.fill, "border-transparent") : "border-line bg-panel",
+    checked ? cn(styles.fill, "border-transparent") : "border-control bg-panel",
     isAnimating && "motion-safe:animate-check-bounce",
     disabled && "opacity-50",
   );

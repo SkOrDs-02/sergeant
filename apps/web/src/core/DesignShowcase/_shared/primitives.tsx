@@ -24,15 +24,15 @@ const MATURITY_LABEL: Record<
 > = {
   stable: {
     label: "stable",
-    tone: "bg-success-soft text-success-strong dark:text-success border-success/40",
+    tone: "bg-success-soft text-success-soft-fg border-success/40",
   },
   beta: {
     label: "beta",
-    tone: "bg-warning-soft text-warning-strong dark:text-warning border-warning/40",
+    tone: "bg-warning-soft text-warning-soft-fg border-warning/40",
   },
   experimental: {
     label: "experimental",
-    tone: "bg-info-soft text-info-strong dark:text-info border-info/40",
+    tone: "bg-info-soft text-info-soft-fg border-info/40",
   },
 };
 

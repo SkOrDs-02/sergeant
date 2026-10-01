@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-20.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-04-01.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** на теплій нейтральній базі:
@@ -281,7 +281,7 @@ Cross-platform: `-strong`-Tailwind-утиліти вивезені через
 Page Background:    #ecebe7 (Warm neutral — Б1, 2026-08-07)
 Panel/Card:         #ffffff (Pure white)
 Panel Hover:        #f6f5f2 (Warm hover)
-Border:             #e2e0da (Warm gray)
+Border:             #d2cec5 (Warm gray; було #e2e0da до 2026-10-01)
 ```
 
 > **Було `#fdf9f3` / `#faf7f1` / `#ebe4da` до 2026-08-07.** `#fdf9f3` не

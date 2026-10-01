@@ -9,6 +9,8 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
@@ -57,6 +59,12 @@ export interface UseTransactionFiltersParams {
   excludedTxIds: Set<string>;
   txSplits: TxSplitsMap;
   txCategories: TxCategoriesMap;
+  /**
+   * Правила «Завжди так для цього магазину» (2026-10-01). Діють на категорію
+   * банківських операцій без явного override-а — у фільтрі, підсумках по
+   * категоріях і CSV, тобто там, де список і цифри мусять збігатися з рядком.
+   */
+  merchantRules?: MerchantRuleIndex | undefined;
   customCategories: Category[] | undefined;
   fetchMonth: (year: number, month: number) => Promise<unknown>;
   /** External-driven category filter (e.g. tap on a category card). */
@@ -99,6 +107,7 @@ export function useTransactionFilters({
   excludedTxIds,
   txSplits,
   txCategories,
+  merchantRules,
   customCategories,
   fetchMonth,
   categoryFilter,
@@ -268,16 +277,29 @@ export function useTransactionFilters({
     [hiddenTxIds],
   );
 
+  // Явні override-и + виведене правилами. ЛИШЕ для читання (фільтр, підсумки
+  // по категоріях, CSV): у запис ця мапа не йде, див. `merchantRuleOverrides`.
+  const effectiveTxCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        activeTx,
+        txCategories,
+        merchantRules,
+        customCategories ?? [],
+      ),
+    [activeTx, txCategories, merchantRules, customCategories],
+  );
+
   const getEffectiveCat = useCallback(
     (t: Transaction) =>
       t.amount > 0
-        ? getIncomeCategoryForTransaction(t, txCategories[t.id])
+        ? getIncomeCategoryForTransaction(t, effectiveTxCategories[t.id])
         : getExpenseCategoryForTransaction(
             t,
-            txCategories[t.id],
+            effectiveTxCategories[t.id],
             customCategories,
           ),
-    [txCategories, customCategories],
+    [effectiveTxCategories, customCategories],
   );
 
   const statTx = useMemo(
@@ -293,14 +315,14 @@ export function useTransactionFilters({
           spent: calcCategorySpent(
             statTx,
             cat.id,
-            txCategories,
+            effectiveTxCategories,
             txSplits,
             customCategories,
           ),
         }))
         .filter((c) => c.spent > 0)
         .sort((a, b) => b.spent - a.spent),
-    [statTx, txSplits, txCategories, customCategories],
+    [statTx, txSplits, effectiveTxCategories, customCategories],
   );
 
   /**
