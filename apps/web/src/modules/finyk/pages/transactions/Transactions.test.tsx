@@ -41,30 +41,15 @@ vi.mock("@shared/api", async () => {
   };
 });
 
-const { mockRequestCloudPull, mockMonoRefresh, mockToast, mockExportCsv } =
-  vi.hoisted(() => ({
-    mockExportCsv: vi.fn(),
-    mockRequestCloudPull: vi.fn(() => Promise.resolve()),
-    mockMonoRefresh: vi.fn(() => Promise.resolve()),
-    mockToast: {
-      success: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-    },
-  }));
-
-// Експорт CSV підміняємо: тут пінується лише те, КОЛИ сторінка каже
-// «Вивантажено…» (після шерингу/завантаження, не після скасування аркуша).
-// Сама збірка й віддача файла — у `exportTransactionsCsv.test.ts` і
-// `shared/lib/ui/export.test.ts`.
-vi.mock("./exportTransactionsCsv", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("./exportTransactionsCsv")>();
-  return {
-    ...actual,
-    exportTransactionsCsv: (...args: unknown[]) => mockExportCsv(...args),
-  };
-});
+const { mockRequestCloudPull, mockMonoRefresh, mockToast } = vi.hoisted(() => ({
+  mockRequestCloudPull: vi.fn(() => Promise.resolve()),
+  mockMonoRefresh: vi.fn(() => Promise.resolve()),
+  mockToast: {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 
 vi.mock("@shared/components/ui/VirtualList", () => ({
   VirtualList: ({
@@ -273,6 +258,60 @@ describe("Transactions page shell", () => {
   });
 
   describe("CSV-експорт: коли казати «Вивантажено»", () => {
+    // Справжній ланцюжок `exportTransactionsCsv` → `saveStringAsFile`;
+    // підмінена лише межа браузера: blob-URL, клік по `<a download>`,
+    // `navigator.share` і ознаки iOS standalone-PWA. Деталі віддачі файла
+    // пінує `shared/lib/ui/export.test.ts`.
+    const NAV_PROPS = ["share", "canShare", "standalone"] as const;
+    let createObjectURL: ReturnType<typeof vi.fn>;
+    let downloadName: string | null;
+
+    beforeEach(() => {
+      createObjectURL = vi.fn(() => "blob:mock-url");
+      Object.defineProperty(URL, "createObjectURL", {
+        value: createObjectURL,
+        configurable: true,
+      });
+      Object.defineProperty(URL, "revokeObjectURL", {
+        value: vi.fn(),
+        configurable: true,
+      });
+      downloadName = null;
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+        function (this: HTMLAnchorElement) {
+          downloadName = this.download;
+        },
+      );
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      for (const key of NAV_PROPS) {
+        Reflect.deleteProperty(navigator, key);
+      }
+    });
+
+    /** iOS standalone-PWA з `navigator.share`, що відповідає `share`. */
+    function asIosPwa(share: () => Promise<void>) {
+      vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+      );
+      const shareFn = vi.fn(share);
+      Object.defineProperty(navigator, "standalone", {
+        value: true,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "canShare", {
+        value: () => true,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "share", {
+        value: shareFn,
+        configurable: true,
+      });
+      return shareFn;
+    }
+
     const clickExport = async () => {
       renderTransactions({ mono: { realTx: [SAMPLE_TX] } });
       await act(async () => {
@@ -282,27 +321,37 @@ describe("Transactions page shell", () => {
       });
     };
 
-    it.each(["shared", "downloaded"] as const)(
-      "після %s показує тост із кількістю рядків",
-      async (result) => {
-        mockExportCsv.mockResolvedValue({ count: 1, result });
-        await clickExport();
-        expect(mockToast.success).toHaveBeenCalledWith(
-          "Вивантажено операцій: 1",
-        );
-        expect(mockToast.error).not.toHaveBeenCalled();
-      },
-    );
+    it("звичайне завантаження → тост із кількістю рядків і файл видимого місяця", async () => {
+      await clickExport();
+      expect(downloadName).toBe("finyk-2026-06.csv");
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
+    it("iOS PWA: файл іде в «Поділитись», тост після шерингу", async () => {
+      const share = asIosPwa(() => Promise.resolve());
+      await clickExport();
+      expect(share).toHaveBeenCalledTimes(1);
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+    });
 
     it("скасування аркуша «Поділитись» — без тосту: вивантаження не було", async () => {
-      mockExportCsv.mockResolvedValue({ count: 1, result: "cancelled" });
+      asIosPwa(() =>
+        Promise.reject(
+          Object.assign(new Error("closed"), { name: "AbortError" }),
+        ),
+      );
       await clickExport();
+      expect(createObjectURL).not.toHaveBeenCalled();
       expect(mockToast.success).not.toHaveBeenCalled();
       expect(mockToast.error).not.toHaveBeenCalled();
     });
 
-    it("збій віддачі — тост «Не вдалося вивантажити операції», а не «Вивантажено»", async () => {
-      mockExportCsv.mockRejectedValue(new Error("boom"));
+    it("збій віддачі — тост «Не вдалося вивантажити операції» з «Повторити»", async () => {
+      createObjectURL.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
       await clickExport();
       expect(mockToast.success).not.toHaveBeenCalled();
       expect(mockToast.error).toHaveBeenCalledTimes(1);
@@ -317,20 +366,11 @@ describe("Transactions page shell", () => {
         onClick: () => void;
       };
       expect(action.label).toBe("Повторити");
-      mockExportCsv.mockResolvedValue({ count: 1, result: "shared" });
       await act(async () => {
         action.onClick();
       });
-      expect(mockExportCsv).toHaveBeenCalledTimes(2);
+      expect(createObjectURL).toHaveBeenCalledTimes(2);
       expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
-    });
-
-    it("експорт отримує відфільтровані операції й ключ видимого місяця", async () => {
-      mockExportCsv.mockResolvedValue({ count: 1, result: "downloaded" });
-      await clickExport();
-      const [txs, , monthKey] = mockExportCsv.mock.calls[0]!;
-      expect(txs).toHaveLength(1);
-      expect(monthKey).toBe("2026-06");
     });
   });
 
