@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   dashboardFocus: {
     focus: null as TestRec | null,
     rest: [] as TestRec[],
+    allRecs: [] as TestRec[],
     dismiss: vi.fn(),
   },
   digestFresh: false,
