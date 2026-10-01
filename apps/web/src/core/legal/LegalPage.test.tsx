@@ -51,4 +51,21 @@ describe("LegalPage", () => {
       );
     },
   );
+
+  // Документи оновлюються незалежно: правка тексту політик 2026-10-01 не
+  // мусить показувати «оновлення» на умовах і оферті (рішення власника).
+  it.each([
+    [LEGAL_PRIVACY_PATH, "1 жовтня 2026"],
+    [LEGAL_COOKIES_PATH, "1 жовтня 2026"],
+    [LEGAL_TERMS_PATH, "31 липня 2026"],
+    [LEGAL_OFFER_PATH, "31 липня 2026"],
+  ] as const)("%s показує власну дату оновлення: %s", (pathname, date) => {
+    render(
+      <MemoryRouter>
+        <LegalPage pathname={pathname} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText(`Останнє оновлення: ${date}`)).toBeInTheDocument();
+  });
 });

@@ -10,7 +10,8 @@
  * потім у `docs/governance/security/llm-subprocessors.md`.
  */
 
-export const LAST_UPDATED = "1 жовтня 2026";
+// Дата набрання чинності спільна; дата останнього оновлення тексту — у
+// кожного документа своя (`LegalDocument.lastUpdated`).
 export const EFFECTIVE_DATE = "31 липня 2026";
 export const CONTACT_EMAIL = "legal@sergeant.app";
 export const PRIVACY_EMAIL = "privacy@sergeant.app";

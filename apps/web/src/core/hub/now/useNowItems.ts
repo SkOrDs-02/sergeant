@@ -83,7 +83,8 @@ export function useNowItems(): UseNowItemsResult {
   const recs = generateRecommendations();
 
   // Цільовий блок «Порада й звіт тижня» вимикається в налаштуваннях: тоді
-  // «Відкрити» з тижневої картки має куди вести лише в модуль.
+  // «Відкрити» з тижневої картки веде в модуль, а з крос-модульної (понеділковий
+  // «Підсумок минулого тижня») — у вкладку «Звіти» (`withoutWeekReportTarget`).
   const [showInsights] = useHubPref<boolean>("showInsights", true);
   const merged = mergeNowItems(recs, insights);
   const all = showInsights ? merged : merged.map(withoutWeekReportTarget);

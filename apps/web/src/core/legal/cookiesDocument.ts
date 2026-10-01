@@ -1,11 +1,14 @@
 /** @status Active */
 
 import type { LegalDocument } from "./legalDocumentTypes";
-import { EFFECTIVE_DATE, LAST_UPDATED, PRIVACY_EMAIL } from "./legalShared";
+import { EFFECTIVE_DATE, PRIVACY_EMAIL } from "./legalShared";
+
+const LAST_UPDATED = "1 жовтня 2026";
 
 export const cookiesDocument: LegalDocument = {
   eyebrow: "Cookie Policy",
   title: "Політика cookies",
+  lastUpdated: LAST_UPDATED,
   intro: `Описуємо cookies, local storage та подібні технології, які потрібні для входу, безпеки, аналітики і якості продукту. Діє з ${EFFECTIVE_DATE}.`,
   sections: [
     {

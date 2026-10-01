@@ -788,3 +788,77 @@ describe("groupItemsByCategory", () => {
     expect(groups.map((g) => g.cat.id).sort()).toEqual(["other", "vegetables"]);
   });
 });
+
+// Баги перезаміру А′ (2026-10-01): знайдені, коли звіряли категоризацію з
+// відповіддю моделі. Кожен тест тут писався до фіксу й падав.
+describe("перезамір А′ — виправлені баги категоризації", () => {
+  describe("1. корпус не перебиває явну голову назви", () => {
+    it.each([
+      ["Чипси Lays Сметана і цибуля", "sweets_snacks"],
+      ["Чипси Pringles Сир і цибуля", "sweets_snacks"],
+      ["Сухарики Три корочки Сметана і зелень", "sweets_snacks"],
+      ["Снеки Сметана цибуля", "sweets_snacks"],
+    ])("%s → %s", (name, id) => {
+      expect(categorizeFood(name).id).toBe(id);
+    });
+
+    it("корпус і далі виграє, коли голови-ключового слова раніше немає", () => {
+      expect(categorizeFood("Сметана Гірська 20%").id).toBe("dairy_eggs");
+      expect(categorizeFood("Томатний сік").id).toBe("drinks");
+      expect(categorizeFood("Салат з тунцем").id).toBe("ready_meals");
+    });
+  });
+
+  describe("2. мелена й сушена приправа це бакалія, не овоч", () => {
+    it.each([
+      ["Паприка мелена", "pantry"],
+      ["Мелена паприка Kamis", "pantry"],
+      ["Імбир сушений", "pantry"],
+      ["Куркума мелена", "pantry"],
+    ])("%s → %s", (name, id) => {
+      expect(categorizeFood(name).id).toBe(id);
+    });
+
+    it("свіжа паприка лишається овочем, мелена кава напоєм", () => {
+      expect(categorizeFood("Паприка").id).toBe("vegetables");
+      expect(categorizeFood("Кава мелена Lavazza").id).toBe("drinks");
+    });
+  });
+
+  describe("3. скорочення «конс.» читається як «консервовані»", () => {
+    it.each([
+      ["Сурімі конс.", "canned"],
+      ["Конс. кукурудза", "canned"],
+      ["Лечо конс", "canned"],
+    ])("%s → %s", (name, id) => {
+      expect(categorizeFood(name).id).toBe(id);
+    });
+
+    it("слова, що лише починаються на «конс», не чіпає", () => {
+      expect(categorizeFood("Консистенція").id).not.toBe("canned");
+    });
+  });
+
+  describe("4. апострофи нормалізуються на вході порівняння", () => {
+    it.each(["Кешʼю", "Кеш'ю", "Кеш’ю смажені", "Кеш`ю солоні", "КЕШ‘Ю"])(
+      "%s → горіхи",
+      (name) => {
+        expect(categorizeFood(name).id).toBe("nuts_seeds");
+      },
+    );
+
+    it("інші слова з апострофом не зламались", () => {
+      expect(categorizeFood("М'ясо курки").id).toBe("meat");
+      expect(categorizeFood("Мʼясо курки").id).toBe("meat");
+    });
+
+    it("у каталозі коренів лише канонічний апостроф ʼ", () => {
+      const bad = FOOD_CATEGORIES.flatMap((c) =>
+        [...c.keywords, ...(c.genericKeywords ?? [])].filter((k) =>
+          /['’`ʻ‘]/u.test(k),
+        ),
+      );
+      expect(bad).toEqual([]);
+    });
+  });
+});
