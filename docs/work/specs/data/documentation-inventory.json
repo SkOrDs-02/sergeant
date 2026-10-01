@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 674,
-  "total_entries": 674,
+  "tracked_files": 675,
+  "total_entries": 675,
   "target_collisions": [],
   "entries": [
     {
@@ -9294,6 +9294,15 @@
         "docs/product/modules/nutrition.md",
         "docs/work/specs/pantry-categorization-ai.md"
       ]
+    },
+    {
+      "old_path": "docs/work/specs/data/pantry-categorization-remeasure-a-prime.json",
+      "new_path": "docs/work/specs/data/pantry-categorization-remeasure-a-prime.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/data/pantry-categorization-remeasure-a-prime.json",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/work/specs/pantry-categorization-ai.md"]
     },
     {
       "old_path": "docs/work/specs/data/pantry-categorization-seed-other.json",
