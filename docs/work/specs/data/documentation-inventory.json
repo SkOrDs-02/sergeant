@@ -3648,11 +3648,12 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/release-policy.md",
         "docs/governance/governance/rules/10-lifecycle-markers.md",
         "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/governance/security/disaster-recovery.md"
       ]
     },
@@ -4349,7 +4350,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 111,
+      "inbound_count": 112,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -4388,6 +4389,7 @@
         "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+        "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
         "docs/governance/adr/README.md",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/hard-rules.json",
@@ -8614,8 +8616,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
-      "inbound_count": 9,
+      "inbound_count": 10,
       "inbound_sources": [
+        "docs/STATUS.md",
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/0101-github-primary-host-ci-returns.md",
         "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
@@ -10200,9 +10203,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/pr-body-validator-template-race.md",
-      "inbound_count": 3,
+      "inbound_count": 2,
       "inbound_sources": [
-        "docs/STATUS.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md"
       ]
