@@ -423,6 +423,117 @@ describe("парність метрики «₴ за день» у Звʼязк�
   });
 });
 
+// ── Метрика 1в: скасований платіж («Uklon −189» + «Скасування. Uklon +189») ──
+
+describe("парність: скасований платіж виходить з усіх конвеєрів", () => {
+  // Рішення власника 2026-10-01 (варіант А). До цього списання рахувалось
+  // витратою (Транспорт), а скасування — доходом (Інше). Правило живе в
+  // excluded-set (`buildFinykExcludedTxIds`), тож кожен конвеєр, що читає
+  // його, успадковує пару без власної арифметики.
+  const REFUND_BANK_TXS = [
+    { id: "r-food", amount: -30_000, time: noonSec("2026-05-05"), mcc: 5411 },
+    {
+      id: "r-uklon-out",
+      amount: -18_900,
+      time: noonSec("2026-05-05"),
+      description: "Uklon",
+      mcc: 4121,
+    },
+    {
+      id: "r-uklon-in",
+      amount: 18_900,
+      time: noonSec("2026-05-05") + 3_600,
+      description: "Скасування. Uklon",
+    },
+  ];
+
+  beforeEach(() => {
+    localStorage.clear();
+    __setFinykMonoMirrorCacheForTests({
+      transactions: REFUND_BANK_TXS as never[],
+      accounts: [],
+      refreshedAt: "2026-05-11T00:00:00.000Z",
+    });
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [],
+      txCategories: {},
+      txSplits: {},
+      hiddenTransactions: [],
+      receivables: [],
+      excludedStatTxIds: [],
+      monthlyPlan: null,
+    });
+  });
+
+  it("канон: витрати 300 грн, доходу немає", () => {
+    const { transactions, excludedTxIds } = buildFinykSpendingUniverse({
+      bankTxs: REFUND_BANK_TXS,
+    });
+    const canon = calcFinykPeriodAggregate(transactions, {
+      start: localMidnightMs(WEEK_KEY),
+      end: localMidnightMs(WEEK_KEY) + 7 * 86_400_000,
+      excludedTxIds,
+    });
+    expect(canon.totalSpent).toBe(300);
+    expect(canon.totalIncome).toBe(0);
+  });
+
+  it("ЗБІГ: тижневий дайджест — 300 грн витрат, 0 доходу", () => {
+    const digest = aggregateFinyk(WEEK_KEY);
+    expect(digest.totalSpent).toBe(300);
+    expect(digest.totalIncome).toBe(0);
+  });
+
+  it("ЗБІГ: Hub-Reports — 300 грн", () => {
+    const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
+    const reports = aggregateSpendingByDate(
+      {
+        txList: txs as never,
+        excludedTxIds,
+        txSplits: txSplits as Record<string, unknown[]>,
+      },
+      WEEK_DAYS,
+    );
+    expect(reports.total).toBe(300);
+  });
+
+  it("ЗБІГ: HubChat-контекст виключає обидві ноги", () => {
+    const d = readAllData();
+    expect(d.excludedIds.has("r-uklon-out")).toBe(true);
+    expect(d.excludedIds.has("r-uklon-in")).toBe(true);
+    expect(calcFinykSpendingTotal(d.statTx, { txSplits: {} })).toBe(300);
+  });
+
+  it("ЗБІГ: чат-тулза aggregate_spending — 300 грн", () => {
+    const out = chatAggregateSpending({
+      type: "aggregate_spending",
+      input: {
+        date_from: "2026-05-04",
+        date_to: "2026-05-10",
+        group_by: "category",
+        type: "expense",
+      },
+    } as never);
+    expect(String(out).replace(/[\u00a0\u202f]/g, " ")).toContain(
+      "300 грн усього (1 операц.)",
+    );
+  });
+
+  it("ЗБІГ: Звʼязки — витрата дня 300, доходу немає", () => {
+    const series = buildDailySeries(["spending", "income"], {
+      from: WEEK_DAYS[0]!,
+      to: WEEK_DAYS[6]!,
+    });
+    const i = WEEK_DAYS.indexOf("2026-05-05");
+    expect(series.raw["spending"]![i]).toBe(300);
+    const incomeTotal = (series.raw["income"] ?? []).reduce<number>(
+      (sum, v) => sum + (v ?? 0),
+      0,
+    );
+    expect(incomeTotal).toBe(0);
+  });
+});
+
 // ── Метрика 2: % виконання звичок ────────────────────────────────────────────
 
 describe("парність метрики «% виконання звичок»", () => {

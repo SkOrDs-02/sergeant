@@ -129,6 +129,12 @@ export interface TransactionsStorageSlice {
   hiddenTxIds: string[];
   hideTx: (id: string) => void;
   excludedTxIds: Set<string>;
+  /**
+   * Обидві ноги скасованих платежів («Скасування. …»): уже в `excludedTxIds`,
+   * тут окремо, щоб рядок мав своє слово («скасовано»), а не загальне
+   * «не в статистиці».
+   */
+  cancelledTxIds?: ReadonlySet<string> | undefined;
   excludedStatTxIds: string[] | undefined;
   toggleExcludeFromStats: (id: string) => void;
   txCategories: TxCategoriesMap;
@@ -218,6 +224,7 @@ export function Transactions({
     hiddenTxIds,
     hideTx,
     excludedTxIds,
+    cancelledTxIds,
     excludedStatTxIds,
     toggleExcludeFromStats,
     txCategories,
@@ -437,6 +444,7 @@ export function Transactions({
         selectedIds={selection.selectedIds}
         hiddenTxIdSet={filters.hiddenTxIdSet}
         excludedStatTxIdSet={excludedStatTxIdSet}
+        cancelledTxIdSet={cancelledTxIds}
         txCategories={txCategories}
         txSplits={txSplits}
         txNotes={txNotes}

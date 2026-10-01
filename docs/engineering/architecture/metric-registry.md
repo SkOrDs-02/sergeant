@@ -1,6 +1,6 @@
 # Реєстр метрик — одна метрика, одна агрегація
 
-> **Last touched:** 2026-10-01 by @claude (рядок 6b: «₴ за день» у Звʼязках зійшовся з каноном); 2026-08-09 by Claude (§ Фікс 2026-08-09: адаптер excluded-set перейшов із дренованих LS-ключів на канонічний SQLite-кеш). **Next review:** 2026-12-02.
+> **Last touched:** 2026-10-01 by @claude (excluded-set: обидві ноги скасованих платежів, § Витрати за період); 2026-10-01 by @claude (рядок 6b: «₴ за день» у Звʼязках зійшовся з каноном); 2026-08-09 by Claude (§ Фікс 2026-08-09: адаптер excluded-set перейшов із дренованих LS-ключів на канонічний SQLite-кеш). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > Канон, який цей файл обслуговує: [`hub-coach.md §6.1`](../../product/modules/hub-coach.md) —
@@ -127,7 +127,14 @@ mobile обмінюються даними тільки через `/api/sync`, 
 **Канонічний excluded-set** (`buildFinykExcludedTxIds`): `hidden` + внутрішні
 перекази (з мапи оверрайдів **і** з мітки на самій транзакції —
 `categoryId: "internal_transfer"` / `type: "transfer"`) + `recv.linkedTxIds` +
-«виключено зі статистики». Web-адаптер, який читає ці набори зі сховища,
+«виключено зі статистики» + **обидві ноги скасованих платежів**
+(«Uklon −189» / «Скасування. Uklon +189», рішення власника 2026-10-01,
+`finyk-domain/domain/refundMatching.ts`; пара ловиться лише коли у вході
+`transactions` є й банківські транзакції, тому `useStorage`,
+`readFinykStatsContext`, quick-stats і чат-тули передають туди дзеркало банку).
+Читачі, що досі рахують «лише `hidden`» (`crossActions/financeAnalytics.ts`,
+`finykActions/report.ts`, `queryRoutineActions.ts`), цього правила не мають —
+вони в боргу разом із переказами й сплітами. Web-адаптер, який читає ці набори зі сховища,
 лишається
 в [`apps/web/src/modules/finyk/lib/lsStats.ts`](../../../apps/web/src/modules/finyk/lib/lsStats.ts) —
 доменна функція навмисно DOM-free і приймає вже прочитані структури.

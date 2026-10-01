@@ -170,11 +170,17 @@ function readStatTransactions(): FinykSearchTx[] {
     txCategories: sqlite.txCategories,
     receivables: sqlite.receivables,
     excludedStatTxIds: sqlite.excludedStatTxIds,
-    transactions: sqlite.manualExpenses.map((entry) => ({
-      id: String(entry.id ?? ""),
-      amount: 0,
-      categoryId: String(entry.category ?? ""),
-    })),
+    transactions: [
+      ...sqlite.manualExpenses.map((entry) => ({
+        id: String(entry.id ?? ""),
+        amount: 0,
+        categoryId: String(entry.category ?? ""),
+      })),
+      // Банк: пари «списання ↔ скасування» ловляться лише коли обидві ноги
+      // у вході (рішення власника 2026-10-01), тож чат рахує їх так само,
+      // як Огляд і Звіти.
+      ...getVisibleFinykMonoMirrorState().transactions,
+    ],
   });
   return readQueryTransactions().filter((tx) => !excluded.has(tx.id));
 }
