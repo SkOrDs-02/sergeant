@@ -1,5 +1,5 @@
 import { weekStartKyiv, type FeatureId } from "@sergeant/shared";
-import pool from "../../db.js";
+import { withUserContext } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 
 /**
@@ -64,16 +64,18 @@ export async function getWeeklyUsage(
   if (!process.env["DATABASE_URL"]) return out;
   const meters = Object.keys(WEEKLY_METERS) as WeeklyMeter[];
   try {
-    const r = await pool.query<{ bucket: string; request_count: number }>(
-      `SELECT bucket, request_count FROM ai_usage_daily
-        WHERE subject_key = $1 AND usage_day = $2::date
-          AND bucket = ANY($3::text[]) AND endpoint = $4`,
-      [
-        `u:${userId}`,
-        weekStartKyiv(),
-        meters.map((m) => WEEKLY_METERS[m].bucket),
-        AI_QUOTA_ENDPOINT,
-      ],
+    const r = await withUserContext(userId, (db) =>
+      db.query<{ bucket: string; request_count: number }>(
+        `SELECT bucket, request_count FROM ai_usage_daily
+          WHERE subject_key = $1 AND usage_day = $2::date
+            AND bucket = ANY($3::text[]) AND endpoint = $4`,
+        [
+          `u:${userId}`,
+          weekStartKyiv(),
+          meters.map((m) => WEEKLY_METERS[m].bucket),
+          AI_QUOTA_ENDPOINT,
+        ],
+      ),
     );
     for (const row of r.rows) {
       const meter = meters.find((m) => WEEKLY_METERS[m].bucket === row.bucket);

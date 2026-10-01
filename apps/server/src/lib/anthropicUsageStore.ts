@@ -36,7 +36,7 @@
  */
 
 import { toLocalISODate } from "@sergeant/shared";
-import pool from "../db.js";
+import { withSubjectContext } from "../db.js";
 import { logger } from "../obs/logger.js";
 import {
   estimateAnthropicCostUsd,
@@ -127,53 +127,55 @@ export async function recordAnthropicUsageToDb(
 
   try {
     for (const subject of subjects) {
-      await pool.query(
-        `INSERT INTO ai_usage_daily (
-           subject_key,
-           usage_day,
-           bucket,
-           request_count,
-           input_tokens,
-           output_tokens,
-           total_tokens,
-           est_cost_usd,
-           endpoint,
-           cache_read_tokens,
-           cache_creation_tokens,
-           actual_cost_usd
-         )
-         VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7, $8, $9, $10, $11)
-         ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
-           request_count = ai_usage_daily.request_count + 1,
-           input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
-           output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
-           total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens,
-           est_cost_usd  = ai_usage_daily.est_cost_usd  + EXCLUDED.est_cost_usd,
-           cache_read_tokens =
-             COALESCE(ai_usage_daily.cache_read_tokens, 0)
-             + COALESCE(EXCLUDED.cache_read_tokens, 0),
-           cache_creation_tokens =
-             COALESCE(ai_usage_daily.cache_creation_tokens, 0)
-             + COALESCE(EXCLUDED.cache_creation_tokens, 0),
-           actual_cost_usd =
-             COALESCE(ai_usage_daily.actual_cost_usd, 0)
-             + COALESCE(EXCLUDED.actual_cost_usd, 0)`,
-        [
-          subject,
-          day,
-          bucket,
-          inputCol,
-          outTok,
-          totalTok,
-          estCost,
-          // Sentinel-канон 'legacy' (не 'unknown') — узгоджено з backfill-ом
-          // у міграціях 104/106, щоб `GROUP BY endpoint` в /internal/ai-usage
-          // не розділяв один логічний "без ендпоінта" кейс на два рядки.
-          endpoint ?? "legacy",
-          crTok,
-          cwTok,
-          actualCostUsd ?? null,
-        ],
+      await withSubjectContext(subject, (db) =>
+        db.query(
+          `INSERT INTO ai_usage_daily (
+             subject_key,
+             usage_day,
+             bucket,
+             request_count,
+             input_tokens,
+             output_tokens,
+             total_tokens,
+             est_cost_usd,
+             endpoint,
+             cache_read_tokens,
+             cache_creation_tokens,
+             actual_cost_usd
+           )
+           VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
+             request_count = ai_usage_daily.request_count + 1,
+             input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
+             output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
+             total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens,
+             est_cost_usd  = ai_usage_daily.est_cost_usd  + EXCLUDED.est_cost_usd,
+             cache_read_tokens =
+               COALESCE(ai_usage_daily.cache_read_tokens, 0)
+               + COALESCE(EXCLUDED.cache_read_tokens, 0),
+             cache_creation_tokens =
+               COALESCE(ai_usage_daily.cache_creation_tokens, 0)
+               + COALESCE(EXCLUDED.cache_creation_tokens, 0),
+             actual_cost_usd =
+               COALESCE(ai_usage_daily.actual_cost_usd, 0)
+               + COALESCE(EXCLUDED.actual_cost_usd, 0)`,
+          [
+            subject,
+            day,
+            bucket,
+            inputCol,
+            outTok,
+            totalTok,
+            estCost,
+            // Sentinel-канон 'legacy' (не 'unknown') — узгоджено з backfill-ом
+            // у міграціях 104/106, щоб `GROUP BY endpoint` в /internal/ai-usage
+            // не розділяв один логічний "без ендпоінта" кейс на два рядки.
+            endpoint ?? "legacy",
+            crTok,
+            cwTok,
+            actualCostUsd ?? null,
+          ],
+        ),
       );
     }
   } catch (err) {

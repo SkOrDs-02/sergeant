@@ -7,7 +7,10 @@ vi.mock("../../auth.js", () => ({
 
 vi.mock("../../db.js", () => {
   const pool = { connect: vi.fn(), query: vi.fn() };
-  return { default: pool, pool };
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  const withSubjectContext = (_subject: string, fn: (db: unknown) => unknown) =>
+    fn(pool);
+  return { default: pool, pool, withSubjectContext };
 });
 
 import { getSessionUser as _getSessionUser } from "../../auth.js";
