@@ -21,6 +21,7 @@
 import {
   defaultNutritionPrefs,
   makeDefaultPantry,
+  migrateShoppingListCategories,
   normalizeNutritionLog,
   normalizeNutritionPrefs,
   normalizePantries,
@@ -235,7 +236,9 @@ export function loadShoppingList(): ShoppingList {
   // `normalizeShoppingList(null)` returns the canonical empty document
   // `{ categories: [] }` so a cold cache renders without crashing.
   const cache = getCachedNutritionSqliteState();
-  return normalizeShoppingList(cache.shoppingList);
+  // Один перелік категорій із коморою: списки, збережені до 2026-10-01 зі
+  // старими назвами («Мʼясо та риба»), зводяться до категорій комори.
+  return migrateShoppingListCategories(cache.shoppingList);
 }
 
 export function saveShoppingList(list: unknown): boolean {

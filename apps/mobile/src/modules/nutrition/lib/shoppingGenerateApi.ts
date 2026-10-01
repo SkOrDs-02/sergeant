@@ -13,7 +13,11 @@ import type {
   ApiClient,
   NutritionShoppingListResponse,
 } from "@sergeant/api-client";
-import type { PantryItem, ShoppingCategory } from "@sergeant/nutrition-domain";
+import {
+  migrateShoppingListCategories,
+  type PantryItem,
+  type ShoppingCategory,
+} from "@sergeant/nutrition-domain";
 
 import type { SavedRecipe } from "./recipeBookStore";
 
@@ -99,7 +103,7 @@ export async function callShoppingList(
   // `id`/`checked` — добудовуємо їх локально (паритет із web
   // `adaptShoppingCategories`). `normalizeShoppingList` усередині
   // `setGeneratedList` робить фінальний dedupe.
-  return data.categories.map((cat, catIdx) => ({
+  const minted = data.categories.map((cat, catIdx) => ({
     name: String(cat.name ?? ""),
     items: (Array.isArray(cat.items) ? cat.items : []).map((it, itIdx) => ({
       id: `sl_${catIdx}_${itIdx}_${crypto.randomUUID()}`,
@@ -109,4 +113,7 @@ export async function callShoppingList(
       checked: false,
     })),
   }));
+  // Одна таксономія з коморою (рішення власника 2026-10-01): стара чи вигадана
+  // назва категорії зводиться до категорій комори за назвою позиції.
+  return migrateShoppingListCategories({ categories: minted }).categories;
 }
