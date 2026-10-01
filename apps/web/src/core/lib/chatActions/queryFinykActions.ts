@@ -2,12 +2,15 @@ import { formatNumberUk, getWeekKey } from "@sergeant/shared";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 
 /**
- * Підпис періоду для фінансових зведень. `todayKey` не передаємо навмисно:
- * фінансові вибірки майже завжди про минуле, і «сьогодні» посеред звіту за
- * місяць читається гірше за дату.
+ * Підпис періоду для фінансових зведень. `todayKey` потрібен, щоб рік
+ * дописувався лише тоді, коли він відрізняється від поточного: без нього
+ * `formatDayKeyUk` пише його завжди («28 вер 2026 – 1 жов 2026»). Відносні
+ * слова вимкнено навмисно (`relative: false`): фінансові вибірки майже
+ * завжди про минуле, і «сьогодні» посеред звіту за місяць читається гірше за
+ * дату.
  */
 const finykRange = (from: string, to: string): string =>
-  formatDayRangeUk(from, to);
+  formatDayRangeUk(from, to, { todayKey: getKyivDayKey(), relative: false });
 import {
   buildFinykExcludedTxIds,
   getExpenseCategoryForTransaction,
