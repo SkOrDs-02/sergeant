@@ -2,16 +2,21 @@ import { formatNumberUk, getWeekKey } from "@sergeant/shared";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 
 /**
- * Підпис періоду для фінансових зведень. `todayKey` не передаємо навмисно:
- * фінансові вибірки майже завжди про минуле, і «сьогодні» посеред звіту за
- * місяць читається гірше за дату.
+ * Підпис періоду для фінансових зведень. `todayKey` потрібен, щоб рік
+ * дописувався лише тоді, коли він відрізняється від поточного: без нього
+ * `formatDayKeyUk` пише його завжди («28 вер 2026 – 1 жов 2026»). Відносні
+ * слова вимкнено навмисно (`relative: false`): фінансові вибірки майже
+ * завжди про минуле, і «сьогодні» посеред звіту за місяць читається гірше за
+ * дату.
  */
 const finykRange = (from: string, to: string): string =>
-  formatDayRangeUk(from, to);
+  formatDayRangeUk(from, to, { todayKey: getKyivDayKey(), relative: false });
 import {
   buildFinykExcludedTxIds,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
   getTxStatAmount,
-  resolveExpenseCategoryMeta,
+  type CategoryLike,
   type TxSplitsLike,
 } from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
@@ -102,7 +107,11 @@ type RawTx = {
   description?: string;
   merchant?: string;
   amount?: number | string;
+  /** Ручна витрата: збережений id категорії. У банківського рядка поля немає. */
   category?: string;
+  /** Банківський рядок: MCC і серверний слаг категорії (`categorySlug`). */
+  mcc?: number | string;
+  categoryId?: string;
   type?: string;
 };
 
@@ -110,8 +119,15 @@ type RawTx = {
 
 /**
  * Unified read of Finyk transactions (manual грн + bank kopiykas), hidden
- * filtered, category overrides applied. Mirror of the private
- * `readSearchTransactions` in `finykActions/search.ts`.
+ * filtered. Mirror of the private `readSearchTransactions` in
+ * `finykActions/search.ts`.
+ *
+ * `category` тут — лише ЯВНИЙ id: користувацький override
+ * (`txCategories[id]`) > серверний `categoryId` банківського рядка > збережена
+ * категорія ручної витрати. Підпис і групування дає `resolveTxCategory`, що
+ * додає MCC / ключові слова — банківська транзакція власного `category` не має,
+ * тож без цього кроку все, що не перекатегоризовано вручну, падало в «Без
+ * категорії».
  */
 function readQueryTransactions(): FinykSearchTx[] {
   const sqlite = getCachedFinykSqliteState();
@@ -126,12 +142,14 @@ function readQueryTransactions(): FinykSearchTx[] {
       const id = String(tx.id || "").trim();
       if (!id || hidden.has(id)) return null;
       const amount = Number(tx.amount);
+      const mcc = Number(tx.mcc);
       return {
         id,
         date: toIsoDay(dateField(tx)),
         amount: Number.isFinite(amount) ? amount : 0,
         description: String(tx.description || tx.merchant || ""),
-        category: txCategories[id] || tx.category || "",
+        category: txCategories[id] || tx.categoryId || tx.category || "",
+        mcc: Number.isFinite(mcc) ? mcc : 0,
         type: tx.type,
         source,
       };
@@ -253,13 +271,31 @@ function readCustomCats(): unknown[] {
   return getCachedFinykSqliteState().customCategories;
 }
 
-function categoryLabel(
-  categoryId: string | undefined,
+/**
+ * Категорія операції — той самий резолв, що в рядку транзакції, деталях і
+ * HubChat-контексті (`hubChatContext/finance.ts`): явний id (override /
+ * серверний слаг / збережена категорія) → MCC → ключові слова опису →
+ * «Інше». Розгалуження за напрямком обовʼязкове: expense-резолвер віддав би
+ * ручній зарплаті «Інше» замість «Зарплата».
+ */
+function resolveTxCategory(
+  tx: FinykSearchTx,
   customCats: unknown[],
-): string {
-  if (!categoryId) return "Без категорії";
-  const meta = resolveExpenseCategoryMeta(categoryId, customCats);
-  return meta?.label || categoryId;
+): CategoryLike {
+  const input = {
+    description: tx.description,
+    mcc: tx.mcc ?? 0,
+    source: txSource(tx),
+    date: tx.date || undefined,
+  };
+  return txDirection(tx) === "income"
+    ? getIncomeCategoryForTransaction(input, tx.category, customCats)
+    : getExpenseCategoryForTransaction(input, tx.category, customCats);
+}
+
+function categoryLabel(tx: FinykSearchTx, customCats: unknown[]): string {
+  const cat = resolveTxCategory(tx, customCats);
+  return cat.label || cat.id;
 }
 
 function withinRange(
@@ -290,7 +326,7 @@ function groupKeyFor(
     case "merchant":
       return tx.description.trim() || "Без опису";
     case "category":
-      return categoryLabel(tx.category, customCats);
+      return categoryLabel(tx, customCats);
   }
 }
 
@@ -329,8 +365,11 @@ export function queryTransactions(
       if (!haystack.includes(query)) return false;
     }
     if (category) {
+      // Явний id + резолвнуті id/підпис: фільтр і за «transport», і за
+      // «Транспорт» ловить і банківський рядок без власного `category`.
+      const resolved = resolveTxCategory(tx, customCats);
       const catText = normalizeText(
-        `${tx.category ?? ""} ${categoryLabel(tx.category, customCats)}`,
+        `${tx.category ?? ""} ${resolved.id} ${resolved.label}`,
       );
       if (!catText.includes(category)) return false;
     }
@@ -350,9 +389,7 @@ export function queryTransactions(
   const shown = matched.slice(0, limit);
   const list = shown
     .map((tx) => {
-      const cat = tx.category
-        ? ` · ${categoryLabel(tx.category, customCats)}`
-        : "";
+      const cat = ` · ${categoryLabel(tx, customCats)}`;
       const desc = tx.description ? ` · ${tx.description}` : "";
       return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(roundGrn(txAmountGrn(tx)))} грн${desc}${cat}`;
     })
