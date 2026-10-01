@@ -21,20 +21,9 @@ name: Storybook deploy
 # repeated failure (> 2x/week) → reopen and pair with the round-N
 # initiative author.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
-      - ".github/workflows/storybook-deploy.yml"
-      - "mockups/**"
-  pull_request:
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
-      - ".github/workflows/storybook-deploy.yml"
-      - "mockups/**"
+  workflow_dispatch:
 
 permissions:
   contents: read

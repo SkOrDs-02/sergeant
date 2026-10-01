@@ -21,16 +21,8 @@ name: Deploy landing (Vercel CLI)
 # `ignoreCommand` з `vercel.json` тут НЕ діє: він існує для Git-інтеграції.
 # Замість нього фільтрує `paths` нижче.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/landing/**"
-      - "packages/design-tokens/**"
-      - "packages/shared/**"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/deploy-landing.yml"
   workflow_dispatch:
 
 permissions:
