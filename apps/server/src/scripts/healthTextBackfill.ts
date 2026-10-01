@@ -56,16 +56,24 @@ export function parseCliArgs(argv: readonly string[]): {
   parsed?: BackfillArgs;
   error?: string;
 } {
-  const { values } = parseArgs({
-    args: [...argv],
-    allowPositionals: false,
-    options: {
-      execute: { type: "boolean", default: false },
-      "dry-run": { type: "boolean", default: false },
-      "batch-size": { type: "string" },
-      help: { type: "boolean", short: "h", default: false },
-    },
-  });
+  // `pnpm <script> -- --execute` передає роздільник `--` далі як аргумент, а
+  // parseArgs вважає все після нього позиційним і кидає TypeError.
+  const args = argv[0] === "--" ? argv.slice(1) : [...argv];
+  let values;
+  try {
+    ({ values } = parseArgs({
+      args,
+      allowPositionals: false,
+      options: {
+        execute: { type: "boolean", default: false },
+        "dry-run": { type: "boolean", default: false },
+        "batch-size": { type: "string" },
+        help: { type: "boolean", short: "h", default: false },
+      },
+    }));
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "invalid arguments" };
+  }
   if (values.execute && values["dry-run"]) {
     return { error: "--execute and --dry-run are mutually exclusive" };
   }

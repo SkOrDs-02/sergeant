@@ -119,6 +119,14 @@ describe("parseCliArgs", () => {
     expect(parseCliArgs(["--execute"]).parsed?.execute).toBe(true);
     expect(parseCliArgs(["--execute", "--dry-run"]).error).toBeDefined();
   });
+
+  it("приймає роздільник `--`, який передає `pnpm <script> -- --execute`", () => {
+    expect(parseCliArgs(["--", "--execute"]).parsed?.execute).toBe(true);
+  });
+
+  it("невідомий прапорець дає error, а не виняток", () => {
+    expect(parseCliArgs(["--nope"]).error).toBeDefined();
+  });
   it("--batch-size валідується", () => {
     expect(parseCliArgs(["--batch-size=0"]).error).toBeDefined();
     expect(parseCliArgs(["--batch-size=1001"]).error).toBeDefined();
