@@ -74,6 +74,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "006_sync_op_outbox_user_id.sql",
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
+      "009_routine_habit_skips.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -92,6 +93,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "routine_completion_notes",
       "routine_entries",
       "routine_habit_order",
+      "routine_habit_skips",
       "routine_habits",
       "routine_prefs",
       "routine_pushups",
@@ -225,6 +227,7 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
       "006_sync_op_outbox_user_id.sql",
       "007_routine_completion_events.sql",
       "008_anonymous_profile_migration.sql",
+      "009_routine_habit_skips.sql",
     ]);
   });
 

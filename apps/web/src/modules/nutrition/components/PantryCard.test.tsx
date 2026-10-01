@@ -115,9 +115,10 @@ describe("PantryCard add modes", () => {
 });
 
 describe("PantryCard inventory", () => {
-  it("renders nothing for an empty inventory", () => {
+  it("renders an empty state instead of hiding the inventory card", () => {
     render(<Card {...baseProps()} />);
     expect(screen.queryByText("Моя комора")).not.toBeInTheDocument();
+    expect(screen.getByText("Тут поки порожньо")).toBeInTheDocument();
   });
 
   it("renders inventory items and routes edit/remove", () => {

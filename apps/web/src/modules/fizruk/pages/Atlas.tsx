@@ -1,9 +1,10 @@
 /**
- * Last validated: 2026-06-12
+ * Last validated: 2026-08-02
  * Status: Active
  */
 import { useMemo } from "react";
 import { BodyAtlas } from "../components/BodyAtlas";
+import { InjurySection } from "../components/InjurySection";
 import { buildAtlasData } from "../lib/atlasData";
 import { useRecovery } from "../hooks/useRecovery";
 import { Card } from "@shared/components/ui/Card";
@@ -59,6 +60,8 @@ export function Atlas() {
         <Card radius="lg" padding="lg">
           <BodyAtlas data={atlasData} />
         </Card>
+
+        <InjurySection />
       </div>
     </div>
   );

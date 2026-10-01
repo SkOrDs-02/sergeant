@@ -73,16 +73,24 @@ export async function applyRoutineHabits(
     "weekdays_json",
     "[0,1,2,3,4,5,6]",
   );
+  // Датовані інтервали паузи (Хвиля 4). Старі клієнти поля не шлють —
+  // `readJsonbField` віддасть дефолт, і колонка лишиться порожнім масивом.
+  const pauseIntervals = readJsonbField(
+    row,
+    "pause_intervals",
+    "pause_intervals_json",
+    "[]",
+  );
 
   if (!existing) {
     await client.query(
       `INSERT INTO routine_habits
          (id, user_id, name, emoji, tag_ids, category_id,
           archived, paused, recurrence, start_date, end_date,
-          time_of_day, reminder_times, weekdays,
+          time_of_day, reminder_times, weekdays, pause_intervals,
           created_at, updated_at, deleted_at)
        VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11,
-               $12, $13::jsonb, $14::jsonb, $15, $16, $17)`,
+               $12, $13::jsonb, $14::jsonb, $15::jsonb, $16, $17, $18)`,
       [
         id,
         userId,
@@ -98,6 +106,7 @@ export async function applyRoutineHabits(
         typeof row["time_of_day"] === "string" ? row["time_of_day"] : "",
         reminderTimes,
         weekdays,
+        pauseIntervals,
         createdAt ?? clientTs,
         clientTs,
         deletedAt ?? null,
@@ -110,8 +119,9 @@ export async function applyRoutineHabits(
              archived = $5, paused = $6, recurrence = $7,
              start_date = $8, end_date = $9, time_of_day = $10,
              reminder_times = $11::jsonb, weekdays = $12::jsonb,
-             updated_at = $13, deleted_at = $14
-       WHERE id = $15 AND user_id = $16`,
+             pause_intervals = $13::jsonb,
+             updated_at = $14, deleted_at = $15
+       WHERE id = $16 AND user_id = $17`,
       [
         name,
         emoji,
@@ -125,6 +135,7 @@ export async function applyRoutineHabits(
         typeof row["time_of_day"] === "string" ? row["time_of_day"] : "",
         reminderTimes,
         weekdays,
+        pauseIntervals,
         clientTs,
         deletedAt ?? null,
         id,
@@ -373,6 +384,78 @@ export async function applyRoutineCompletionNotes(
      ON CONFLICT (user_id, note_key) DO UPDATE
        SET note = EXCLUDED.note, updated_at = EXCLUDED.updated_at, deleted_at = NULL`,
     [userId, noteKey, note, clientTs],
+  );
+  return { status: "applied" };
+}
+
+/**
+ * Третій стан дня — «не зміг з причиною» (Хвиля 4, канон `routine.md` §5).
+ *
+ * Форма один-в-один як `applyRoutineCompletionNotes`: композитний PK
+ * `(user_id, skip_key)`, LWW по `updated_at`, tombstone-guard.
+ *
+ * AI-NOTE: взаємну виключність із відміткою виконання сервер НЕ нав'язує.
+ * Два девайси можуть надіслати «зробив» і «не зміг» на той самий день —
+ * розсуджує їх LWW за часом, а не відмова обом. Клієнтський домен
+ * (`applySetHabitSkip`) тримає інваріант локально.
+ */
+export async function applyRoutineHabitSkips(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const userReject = assertRowUserId(row, userId);
+  if (userReject) return userReject;
+
+  const skipKey = typeof row["skip_key"] === "string" ? row["skip_key"] : null;
+  if (!skipKey) return { status: "rejected", reason: "missing_skip_key" };
+
+  const existing = await queryOne<ExistingUuidRow>(
+    client,
+    `SELECT user_id, updated_at, deleted_at FROM routine_habit_skips WHERE user_id = $1 AND skip_key = $2`,
+    [userId, skipKey],
+  );
+  if (existing) {
+    if (existing.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+    if (existing.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+    if (existing.deleted_at !== null && op.op !== "delete") {
+      return { status: "rejected", reason: "tombstoned" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (!existing) return { status: "rejected", reason: "not_found" };
+    await client.query(
+      `UPDATE routine_habit_skips
+         SET deleted_at = $1, updated_at = $1
+       WHERE user_id = $2 AND skip_key = $3`,
+      [clientTs, userId, skipKey],
+    );
+    return { status: "applied" };
+  }
+
+  // `reason` навмисно не валідується проти серверного enum — словник причин
+  // живе в домені й може рости, а нерозпізнане значення клієнт зводить до
+  // `other` при нормалізації. Серверний enum означав би, що додавання
+  // причини вимагає деплою бекенду перед фронтом.
+  const reason = typeof row["reason"] === "string" ? row["reason"] : "other";
+  const note = typeof row["note"] === "string" ? row["note"] : "";
+  const at = parseOptionalDate(row["at"]);
+  if (at === "invalid") return { status: "rejected", reason: "invalid_at" };
+
+  await client.query(
+    `INSERT INTO routine_habit_skips (user_id, skip_key, reason, note, at, updated_at, deleted_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NULL)
+     ON CONFLICT (user_id, skip_key) DO UPDATE
+       SET reason = EXCLUDED.reason, note = EXCLUDED.note, at = EXCLUDED.at,
+           updated_at = EXCLUDED.updated_at, deleted_at = NULL`,
+    [userId, skipKey, reason, note, at ?? clientTs, clientTs],
   );
   return { status: "applied" };
 }

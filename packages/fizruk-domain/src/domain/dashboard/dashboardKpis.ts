@@ -19,6 +19,8 @@
 
 import { kyivMondayStartMs } from "@sergeant/shared";
 
+import { computeWeeklyStreakBreakdown } from "./weeklyStreak.js";
+
 import type {
   DashboardKpis,
   DashboardMeasurementInput,
@@ -245,6 +247,8 @@ export interface ComputeDashboardKpisOptions {
   readonly measurements?: readonly DashboardMeasurementInput[] | null;
   readonly now?: Date;
   readonly weightWindowDays?: number;
+  /** Поріг тижневого стріку (канон §7). Дефолт — `DEFAULT_WEEKLY_STREAK_TARGET`. */
+  readonly weeklyStreakTargetPerWeek?: number;
 }
 
 /**
@@ -260,7 +264,15 @@ export function computeDashboardKpis(
     measurements = null,
     now = new Date(),
     weightWindowDays = DEFAULT_WEIGHT_WINDOW_DAYS,
+    weeklyStreakTargetPerWeek,
   } = options;
+
+  const weekly = computeWeeklyStreakBreakdown(workouts, {
+    now,
+    ...(weeklyStreakTargetPerWeek === undefined
+      ? {}
+      : { targetPerWeek: weeklyStreakTargetPerWeek }),
+  });
 
   const { count: weeklyWorkoutsCount, volumeKg: weeklyVolumeKg } =
     computeWeeklyTotals(workouts, now);
@@ -269,6 +281,10 @@ export function computeDashboardKpis(
 
   return {
     streakDays: computeStreakDays(workouts, now),
+    streakWeeks: weekly.weeks,
+    streakTargetPerWeek: weekly.targetPerWeek,
+    currentWeekWorkouts: weekly.currentWeekWorkouts,
+    currentWeekPending: weekly.currentWeekPending,
     weeklyWorkoutsCount,
     weeklyVolumeKg: Math.round(weeklyVolumeKg),
     totalCompletedCount,

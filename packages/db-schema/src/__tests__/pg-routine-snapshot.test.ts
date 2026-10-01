@@ -173,6 +173,7 @@ describe("pg/routineHabits schema snapshot", () => {
       "time_of_day",
       "reminder_times",
       "weekdays",
+      "pause_intervals",
       "created_at",
       "updated_at",
       "deleted_at",

@@ -36,6 +36,7 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
     });
   });
 });

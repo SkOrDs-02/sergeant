@@ -22,7 +22,6 @@ import type {
   WorkoutGroup,
 } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";
-import type { InjuryMark } from "@sergeant/fizruk-domain";
 import type { MeasurementEntry } from "../hooks/useMeasurements";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -61,6 +60,15 @@ export interface CachedWorkoutTemplate {
   lastUsedAt?: string | null;
 }
 
+/** Injury mark as stored locally. `clearedAt === null` = still active. */
+export interface CachedInjury {
+  id: string;
+  site: string;
+  startedAt: string;
+  clearedAt: string | null;
+  note: string;
+}
+
 export interface SqliteFizrukCache {
   /** Workouts ordered newest-first by `startedAt`. */
   workouts: Workout[];
@@ -84,8 +92,13 @@ export interface SqliteFizrukCache {
    * PR #070f-dualwrite. Empty array means «no template rows yet».
    */
   workoutTemplates: CachedWorkoutTemplate[];
-  /** Injury history ordered newest-first; active rows have `clearedAt=null`. */
-  injuries: InjuryMark[];
+  /**
+   * Injury marks ordered newest-first by `startedAt`. Includes CLEARED
+   * marks — the history screen shows them, and `activeInjurySites` is what
+   * filters down to the blocking set (ADR-0083). Filtering here instead
+   * would make "зняти позначку" indistinguishable from "видалити".
+   */
+  injuries: CachedInjury[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -271,16 +284,6 @@ interface WorkoutTemplateRow {
   [key: string]: unknown;
 }
 
-interface InjuryRow {
-  id: string;
-  site: string;
-  started_at: string;
-  cleared_at: string | null;
-  note: string | null;
-  deleted_at: string | null;
-  [key: string]: unknown;
-}
-
 function rowToDailyLog(row: DailyLogRow): CachedDailyLogEntry {
   return {
     id: row.id,
@@ -301,6 +304,27 @@ function rowToWorkoutTemplate(row: WorkoutTemplateRow): CachedWorkoutTemplate {
     groups: safeParseJson<unknown[]>(row.groups_json, []),
     updatedAt: row.updated_at ?? "",
     lastUsedAt: row.last_used_at ?? null,
+  };
+}
+
+interface InjuryRow {
+  id: string;
+  site: string;
+  started_at: string | null;
+  cleared_at: string | null;
+  note: string | null;
+  [key: string]: unknown;
+}
+
+function rowToInjury(row: InjuryRow): CachedInjury {
+  return {
+    id: row.id,
+    site: row.site,
+    startedAt: row.started_at ?? "",
+    // Normalized to `null` so the dual-write diff never sees `undefined`
+    // and emits a phantom op.
+    clearedAt: row.cleared_at ?? null,
+    note: row.note ?? "",
   };
 }
 
@@ -407,7 +431,7 @@ export async function refreshFizrukSqliteState(
       [userId],
     ),
     client.all<InjuryRow>(
-      `SELECT id, site, started_at, cleared_at, note, deleted_at
+      `SELECT id, site, started_at, cleared_at, note
          FROM fizruk_injuries
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY started_at DESC, id ASC`,
@@ -443,14 +467,7 @@ export async function refreshFizrukSqliteState(
   const dailyLog = dailyLogRows.map(rowToDailyLog);
   const monthlyPlan = rowToMonthlyPlan(monthlyPlanRows[0]);
   const workoutTemplates = workoutTemplateRows.map(rowToWorkoutTemplate);
-  const injuries: InjuryMark[] = injuryRows.map((row) => ({
-    id: row.id,
-    site: row.site,
-    startedAt: row.started_at,
-    clearedAt: row.cleared_at,
-    note: row.note ?? "",
-    deletedAt: row.deleted_at,
-  }));
+  const injuries = injuryRows.map(rowToInjury);
 
   cache = {
     workouts,

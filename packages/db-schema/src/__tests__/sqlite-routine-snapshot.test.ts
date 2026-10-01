@@ -377,6 +377,7 @@ describe("sqlite/routineHabits schema snapshot", () => {
       "time_of_day",
       "reminder_times_json",
       "weekdays_json",
+      "pause_intervals_json",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -527,8 +528,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the ordered Routine migrations through anonymous-profile migration 008", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(8);
+  it("exports the ordered Routine migrations through habit-skips migration 009", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(9);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,

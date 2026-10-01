@@ -41,8 +41,8 @@ const HABIT_UPSERT_SPEC: TableSpec = {
            (id, user_id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            created_at, updated_at, deleted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+            pause_intervals_json, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "name" },
@@ -57,6 +57,7 @@ const HABIT_UPSERT_SPEC: TableSpec = {
     { column: "time_of_day" },
     { column: "reminder_times_json" },
     { column: "weekdays_json" },
+    { column: "pause_intervals_json" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },
   ],
@@ -155,6 +156,25 @@ const COMPLETION_NOTE_UPSERT_SPEC: TableSpec = {
   alignSetColumns: false,
 };
 
+const HABIT_SKIP_UPSERT_SPEC: TableSpec = {
+  table: "routine_habit_skips",
+  insertClause: `INSERT INTO routine_habit_skips
+           (user_id, skip_key, reason, note, at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)`,
+  conflictTarget: ["user_id", "skip_key"],
+  updateColumns: [
+    { column: "reason" },
+    { column: "note" },
+    { column: "at" },
+    { column: "updated_at" },
+    { column: "deleted_at", value: "NULL" },
+  ],
+  upsertGuard: "strictly-newer",
+  conflictIndent: 9,
+  setIndent: 11,
+  alignSetColumns: false,
+};
+
 // -----------------------------------------------------------------------
 // Pre-built SQL strings
 // -----------------------------------------------------------------------
@@ -169,6 +189,7 @@ export const HABIT_ORDER_UPSERT_SQL = buildLwwUpsert(HABIT_ORDER_UPSERT_SPEC);
 export const COMPLETION_NOTE_UPSERT_SQL = buildLwwUpsert(
   COMPLETION_NOTE_UPSERT_SPEC,
 );
+export const HABIT_SKIP_UPSERT_SQL = buildLwwUpsert(HABIT_SKIP_UPSERT_SPEC);
 
 /**
  * Append-only insert у журнал відміток (W1-ROUTINE-APPEND, стадія 1).
@@ -214,4 +235,9 @@ export const COMPLETION_NOTE_SOFT_DELETE_SQL = `UPDATE routine_completion_notes
             SET deleted_at = ?, updated_at = ?
           WHERE user_id = ?
             AND note_key = ?
+            AND updated_at < ?`;
+export const HABIT_SKIP_SOFT_DELETE_SQL = `UPDATE routine_habit_skips
+            SET deleted_at = ?, updated_at = ?
+          WHERE user_id = ?
+            AND skip_key = ?
             AND updated_at < ?`;

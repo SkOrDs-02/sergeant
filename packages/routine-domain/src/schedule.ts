@@ -12,7 +12,22 @@
  */
 
 import { isoWeekdayFromDateKey, parseDateKey } from "./dateKeys.js";
-import type { Habit } from "./types.js";
+import type { Habit, PauseInterval } from "./types.js";
+
+/** Чи потрапляє день у будь-який заявлений інтервал паузи (межі включні). */
+export function dateKeyInPauseInterval(
+  intervals: PauseInterval[] | undefined,
+  dateKey: string,
+): boolean {
+  if (!Array.isArray(intervals)) return false;
+  for (const iv of intervals) {
+    if (!iv || typeof iv.from !== "string") continue;
+    if (dateKey < iv.from) continue;
+    if (iv.to === null || iv.to === undefined) return true;
+    if (dateKey <= iv.to) return true;
+  }
+  return false;
+}
 
 /** Опції предиката розкладу. */
 export interface HabitScheduledOptions {
@@ -39,6 +54,10 @@ export function habitScheduledOnDate(
   opts: HabitScheduledOptions = {},
 ): boolean {
   if (habit.archived) return false;
+  // Датовані інтервали — канонічна форма паузи (канон §4). Вони самі несуть
+  // обидві межі, тож не залежать від `pausedFrom` і однаково чесні для
+  // минулого й для заявленої наперед відпустки.
+  if (dateKeyInPauseInterval(habit.pauseIntervals, dateKey)) return false;
   // `pausedFrom` присутній → пауза ретроактивною не є: минулі дати
   // лишаються запланованими, майбутні й сьогоднішня — ні.
   if (habit.paused) {

@@ -215,6 +215,11 @@ describe("050_routine_full_state migration", () => {
         "created_at",
         "updated_at",
         "deleted_at",
+        // 098_routine_habit_skips.sql — датовані інтервали планованої паузи
+        // (Хвиля 4, канон `routine.md` §4). `ALTER TABLE ... ADD COLUMN`
+        // дописує колонку В КІНЕЦЬ, тому вона тут після `deleted_at`, а не
+        // поруч із легасі-прапором `paused`.
+        "pause_intervals",
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
@@ -423,6 +428,11 @@ describe("050_routine_full_state migration", () => {
       await execSqlFile(pool, "050_routine_full_state.down.sql");
       await execSqlFile(pool, "050_routine_full_state.sql");
       await execSqlFile(pool, "094_routine_pk_text.sql");
+      // 098 так само надбудовується над `routine_habits` (додає
+      // `pause_intervals`). 050's down дропає таблицю цілком, тож без
+      // повторного накату 098 `after` лишився б без колонки, яку `before`
+      // уже має. Та сама причина, що й для 094 вище.
+      await execSqlFile(pool, "098_routine_habit_skips.sql");
 
       const after = {
         tables: await listFullStateTables(pool),

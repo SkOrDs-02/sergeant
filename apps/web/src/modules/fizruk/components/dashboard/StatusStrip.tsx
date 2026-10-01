@@ -20,7 +20,7 @@
  */
 
 import { Card } from "@shared/components/ui/Card";
-import { pluralDays as pluralDaysUa, pluralUa } from "@sergeant/shared";
+import { pluralUa } from "@sergeant/shared";
 import type { DashboardKpis } from "@sergeant/fizruk-domain/domain";
 import type { MuscleState } from "@sergeant/fizruk-domain";
 
@@ -77,8 +77,8 @@ function Chip({ label, value, tone, onClick, ariaLabel }: ChipProps) {
   );
 }
 
-function pluralDays(n: number): string {
-  return `${n} ${pluralDaysUa(n)}`;
+function pluralWeeks(n: number): string {
+  return `${n} ${pluralUa(n, { one: "тиждень", few: "тижні", many: "тижнів" })}`;
 }
 
 function pluralWorkouts(n: number): string {
@@ -131,9 +131,16 @@ export function StatusStrip({
   className,
 }: StatusStripProps) {
   const readiness = summariseReadiness(recovery.avoid);
+  // Канон §7: стрік тижневий, не щоденний — щоденна логіка карала за
+  // правильний день відпочинку. `kpis.streakDays` лишається в payload-і
+  // для мобілки (поза скоупом), але веб його більше не показує.
   const streakValue =
-    kpis.streakDays > 0 ? pluralDays(kpis.streakDays) : "0 днів";
-  const streakTone: ChipTone = kpis.streakDays > 0 ? "success" : "default";
+    kpis.streakWeeks > 0
+      ? pluralWeeks(kpis.streakWeeks)
+      : kpis.currentWeekPending && kpis.currentWeekWorkouts > 0
+        ? `${kpis.currentWeekWorkouts} з ${kpis.streakTargetPerWeek} цього тижня`
+        : "0 тижнів";
+  const streakTone: ChipTone = kpis.streakWeeks > 0 ? "success" : "default";
   const weeklyValue = pluralWorkouts(kpis.weeklyWorkoutsCount);
   const weeklyTone: ChipTone =
     kpis.weeklyWorkoutsCount > 0 ? "default" : "default";

@@ -119,6 +119,22 @@ const envSchema = z.object({
   BETTER_AUTH_URL: z.string().url().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
 
+  /**
+   * Origin веб-застосунку (Vercel у проді, Vite локально). Використовується
+   * як `callbackURL` у транзакційних листах Better Auth — куди повертається
+   * користувач після кліку «Підтвердити email».
+   *
+   * Окремий від `BETTER_AUTH_URL`: фронт і API живуть на різних хостах
+   * (Vercel ↔ Coolify), а API не роздає SPA (`config.servesFrontend === false`),
+   * тож редирект на API-домен дає 404.
+   *
+   * Необовʼязковий: без нього `getWebAppOrigin()` бере перший http(s)-запис
+   * із `ALLOWED_ORIGINS` — у проді там уже стоїть домен Vercel. Задавай явно
+   * лише тоді, коли перший allowed-origin не є основним доменом застосунку.
+   * Значення автоматично потрапляє у `trustedOrigins` (див. `auth.ts`).
+   */
+  WEB_APP_URL: z.string().url().optional(),
+
   BETTER_AUTH_CROSS_SITE_COOKIES: z.string().optional(),
 
   BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
@@ -702,6 +718,12 @@ export function assertStartupEnv(): void {
       !env.PUBLIC_API_BASE_URL.startsWith("https://")
     ) {
       insecureUrls.push(`PUBLIC_API_BASE_URL=${env.PUBLIC_API_BASE_URL}`);
+    }
+    // `WEB_APP_URL` їде у листи як `callbackURL` і додається у
+    // `trustedOrigins`. http-значення у проді означало б, що ми самі
+    // надсилаємо користувачам посилання на незахищений origin.
+    if (env.WEB_APP_URL && !env.WEB_APP_URL.startsWith("https://")) {
+      insecureUrls.push(`WEB_APP_URL=${env.WEB_APP_URL}`);
     }
     if (insecureUrls.length > 0) {
       throw new Error(

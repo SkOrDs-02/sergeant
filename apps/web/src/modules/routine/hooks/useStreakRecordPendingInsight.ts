@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { maxActiveStreak, maxStreakAllTime } from "../lib/streaks";
+import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
@@ -8,8 +8,9 @@ import type { Insight } from "@shared/lib/insights/types";
  * Fires when the current cross-habit streak is exactly one day away from
  * the user's personal all-time record — i.e. `currentStreak === longestStreak - 1`.
  *
- * `currentStreak` = `maxActiveStreak` across all active habits (today's date
- * in Kyiv tz as anchor).
+ * `currentStreak` = `flexibleMaxActiveStreak` across all active habits
+ * (today's date in Kyiv tz as anchor) — гнучкий стрік, тож заявлена пауза
+ * чи пропуск із причиною рекорд не обнуляють.
  * `longestStreak` = max of `maxStreakAllTime` per active habit — purely local,
  * derived from completion history.
  *
@@ -21,8 +22,14 @@ export function useStreakRecordPendingInsight(
   const todayKey = getKyivDayKey();
 
   const currentStreak = useMemo(
-    () => maxActiveStreak(routine.habits, routine.completions, todayKey),
-    [routine.habits, routine.completions, todayKey],
+    () =>
+      flexibleMaxActiveStreak(
+        routine.habits,
+        routine.completions,
+        todayKey,
+        routine.skips ?? {},
+      ),
+    [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
   const longestStreak = useMemo(() => {

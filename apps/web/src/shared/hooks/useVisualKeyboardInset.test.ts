@@ -36,6 +36,20 @@ function installVisualViewport(height: number, offsetTop = 0): FakeVV {
   return vv;
 }
 
+/**
+ * The hook reports a non-zero inset ONLY while a text-entry element has
+ * focus — there is no keyboard without a focused field, and the gap alone
+ * is ambiguous (browser chrome on a cold push-open produces the same
+ * layout↔visual delta and used to hide `HubBottomNav`). Every case that
+ * asserts a lift therefore has to focus something first.
+ */
+function focusTextInput(): HTMLInputElement {
+  const input = document.createElement("input");
+  document.body.appendChild(input);
+  input.focus();
+  return input;
+}
+
 describe("useWebVisualKeyboardInset", () => {
   beforeEach(() => {
     Object.defineProperty(window, "innerHeight", {
@@ -43,6 +57,11 @@ describe("useWebVisualKeyboardInset", () => {
       writable: true,
       value: 800,
     });
+    // jsdom ships no `scrollIntoView`. The hook calls it on the H2 fallback
+    // whenever the keyboard opens with a focused field, so without a stub
+    // every "keyboard is open" case throws inside the effect. Environment
+    // gap, not product behaviour — the H2 test still asserts the call.
+    Element.prototype.scrollIntoView = vi.fn();
   });
 
   afterEach(() => {
@@ -51,6 +70,7 @@ describe("useWebVisualKeyboardInset", () => {
       writable: true,
       value: undefined,
     });
+    document.body.innerHTML = "";
     vi.restoreAllMocks();
   });
 
@@ -62,6 +82,7 @@ describe("useWebVisualKeyboardInset", () => {
 
   it("reports the keyboard gap when active and gap exceeds 56px", () => {
     // innerHeight 800, vv.height 500 → gap 300 > 56
+    focusTextInput();
     installVisualViewport(500);
     const { result } = renderHook(() => useWebVisualKeyboardInset(true));
     expect(result.current).toBe(300);
@@ -74,6 +95,7 @@ describe("useWebVisualKeyboardInset", () => {
   });
 
   it("recomputes on visualViewport resize events", () => {
+    focusTextInput();
     const vv = installVisualViewport(800);
     const { result } = renderHook(() => useWebVisualKeyboardInset(true));
     expect(result.current).toBe(0);
@@ -87,6 +109,7 @@ describe("useWebVisualKeyboardInset", () => {
   it("ignores offsetTop — the gap is derived from height alone", () => {
     // Would have been 800 - 500 - 50 = 250 under the old formula; the
     // stabilized inset only cares about the height delta (300).
+    focusTextInput();
     installVisualViewport(500, 50);
     const { result } = renderHook(() => useWebVisualKeyboardInset(true));
     expect(result.current).toBe(300);
@@ -98,6 +121,7 @@ describe("useWebVisualKeyboardInset", () => {
     // on every frame. The inset must stay put through that churn —
     // only a real `resize` (keyboard height actually changing) may
     // move it. See keyboard-and-scroll.md § H1.
+    focusTextInput();
     const vv = installVisualViewport(500); // gap = 300
     const { result } = renderHook(() => useWebVisualKeyboardInset(true));
     expect(result.current).toBe(300);
@@ -123,6 +147,7 @@ describe("useWebVisualKeyboardInset", () => {
   });
 
   it("resets to 0 when toggled inactive", () => {
+    focusTextInput();
     installVisualViewport(500);
     const { result, rerender } = renderHook(
       ({ active }) => useWebVisualKeyboardInset(active),
@@ -131,6 +156,31 @@ describe("useWebVisualKeyboardInset", () => {
     expect(result.current).toBe(300);
     rerender({ active: false });
     expect(result.current).toBe(0);
+  });
+
+  it("stays at 0 when the gap is real but nothing is focused (push-open regression)", () => {
+    // Cold-opening the app from a push notification shows browser chrome,
+    // which produces the very same layout↔visual gap as a keyboard. Without
+    // the focus predicate the nav bar hid itself with no keyboard on screen
+    // (user report; fixed in 9380fd1). Nothing is focused here, so the gap
+    // must NOT be read as a keyboard.
+    installVisualViewport(500); // gap 300 — keyboard-sized, but no field
+    const { result } = renderHook(() => useWebVisualKeyboardInset(true));
+    expect(result.current).toBe(0);
+  });
+
+  it("recomputes on focus changes, not only on resize", () => {
+    // The snapshot depends on `document.activeElement`, so focus has to be
+    // a notification source too — otherwise the value would only refresh
+    // when the viewport happened to resize.
+    installVisualViewport(500); // gap 300, still unfocused
+    const { result } = renderHook(() => useWebVisualKeyboardInset(true));
+    expect(result.current).toBe(0);
+
+    act(() => {
+      focusTextInput();
+    });
+    expect(result.current).toBe(300);
   });
 
   it("is a no-op when visualViewport is unavailable", () => {
@@ -166,6 +216,7 @@ describe("useWebVisualKeyboardInset", () => {
     const scrollToSpy = vi
       .spyOn(window, "scrollTo")
       .mockImplementation(() => {});
+    focusTextInput();
     const vv = installVisualViewport(500); // starts open, gap 300
     renderHook(() => useWebVisualKeyboardInset(true));
     expect(scrollToSpy).not.toHaveBeenCalled();

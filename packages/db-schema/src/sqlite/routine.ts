@@ -173,6 +173,8 @@ export const routineHabits = sqliteTable(
     timeOfDay: text("time_of_day").notNull().default(""),
     reminderTimesJson: text("reminder_times_json").notNull().default("[]"),
     weekdaysJson: text("weekdays_json").notNull().default("[0,1,2,3,4,5,6]"),
+    /** Датовані інтервали паузи (Хвиля 4) — JSON-масив як TEXT. */
+    pauseIntervalsJson: text("pause_intervals_json").notNull().default("[]"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -298,6 +300,33 @@ export const routineHabitOrder = sqliteTable("routine_habit_order", {
  * завершення звички. Дзеркалить `RoutineState.completionNotes`.
  * `noteKey` — це `completionNoteKey(habitId, dateKey)`.
  */
+/**
+ * SQLite counterpart of `routine_habit_skips` (Хвиля 4, канон §5).
+ * Shipped by client migration `009_routine_habit_skips.sql`.
+ */
+export const routineHabitSkips = sqliteTable(
+  "routine_habit_skips",
+  {
+    userId: text("user_id").notNull(),
+    skipKey: text("skip_key").notNull(),
+    reason: text().notNull().default("other"),
+    note: text().notNull().default(""),
+    at: text()
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.skipKey] }),
+    index("routine_habit_skips_user_active_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
 export const routineCompletionNotes = sqliteTable(
   "routine_completion_notes",
   {

@@ -353,7 +353,7 @@ export const fizrukWorkoutTemplates = pgTable(
 /**
  * Postgres schema for `fizruk_injuries`.
  *
- * Mirrors migration `096_fizruk_injuries.sql`. Backs the "не можна" model —
+ * Mirrors migration `097_fizruk_injuries.sql`. Backs the "не можна" model —
  * a user-placed mark on an injured body zone that removes matching exercises
  * from recovery advice until the mark is cleared (ADR-0083, канон fizruk §5).
  *

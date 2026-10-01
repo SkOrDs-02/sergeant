@@ -12,7 +12,7 @@ import {
 
 /**
  * Apply a `fizruk_injuries` sync op — the "не можна" model's storage
- * (ADR-0083, migration `096_fizruk_injuries.sql`).
+ * (ADR-0083, migration `097_fizruk_injuries.sql`).
  *
  * AI-CONTEXT: `site` is NOT validated against a server-side enum. The
  * canonical keyspace lives in `packages/fizruk-domain/src/data/injurySites.ts`

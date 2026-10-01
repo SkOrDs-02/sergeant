@@ -59,6 +59,7 @@ function emptyDualWriteState(
     dailyLog: [],
     monthlyPlan: null,
     workoutTemplates: [],
+    injuries: [],
     ...overrides,
   };
 }

@@ -10,6 +10,7 @@
     "./constants": "./src/constants.ts",
     "./date-keys": "./src/dateKeys.ts",
     "./drafts": "./src/drafts.ts",
+    "./flex-streak": "./src/flexStreak.ts",
     "./habit-order": "./src/habitOrder.ts",
     "./period-completion": "./src/periodCompletion.ts",
     "./quick-stats": "./src/quickStats.ts",

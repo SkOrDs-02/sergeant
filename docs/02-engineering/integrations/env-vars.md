@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -53,7 +53,7 @@
 
 ### `RESEND_API_KEY`, `RESEND_FROM` _(optional, recommended for prod)_
 
-Resend — транзакційні листи Better Auth (скидання пароля, верифікація email). Без ключа листи не відправляються; у production сервер логне попередження на старті.
+Resend — транзакційні листи Better Auth (скидання пароля, верифікація email, підтвердження зміни email). Без ключа листи не відправляються; у production сервер логне попередження на старті.
 
 - `RESEND_API_KEY=re_...`
 - `RESEND_FROM=Sergeant <noreply@yourdomain.com>` — від кого; має бути з верифікованого домену в Resend (для тесту: `onboarding@resend.dev`).
@@ -66,6 +66,19 @@ Google OAuth (Better Auth `socialProviders.google`). Активує кнопку
 - Authorized redirect URIs мають містити `<BETTER_AUTH_URL>/api/auth/callback/google`.
 - У production redirect URI має бути на домені фронта (Vercel Edge Middleware проксує `/api/*`): `https://sergeant.vercel.app/api/auth/callback/google`. Інакше state-cookie ставиться на API-домен як 3rd-party, Safari ITP / Chrome Tracking Protection її ріже → callback повертається з `error=state_mismatch`.
 - Локально: `http://localhost:5000/api/auth/callback/google`.
+
+### `WEB_APP_URL` _(optional)_
+
+Origin веб-застосунку — куди повертається користувач після кліку «Підтвердити email» у листі. Better Auth будує посилання виду `{BETTER_AUTH_URL}/api/auth/verify-email?token=…&callbackURL=…` і за замовчуванням ставить `callbackURL=/`, тобто **корінь API-домену**. API не роздає SPA (`config.servesFrontend === false`), тож такий редирект віддавав 404 JSON. `getWebAppOrigin()` ([`apps/server/src/auth/verificationMail.ts`](../../../apps/server/src/auth/verificationMail.ts)) перезаписує параметр на `{WEB_APP_URL}/verify-email`.
+
+Порядок резолву:
+
+1. `WEB_APP_URL` — явний override.
+2. Перший `http(s)`-запис із `ALLOWED_ORIGINS` (кастомні схеми `sergeant://` / `exp://` пропускаються) — **zero-config для проду**, бо там уже стоїть домен Vercel.
+3. `BETTER_AUTH_URL`.
+4. `http://localhost:5173` — **тільки поза production**.
+
+Задавай явно лише тоді, коли перший `ALLOWED_ORIGINS` не є основним доменом застосунку. Значення автоматично додається у `trustedOrigins`: Better Auth ганяє `callbackURL` через `originCheck` і 403-ить усе, чого немає у списку. У production `http://`-значення відхиляється на старті (`assertStartupEnv`) — ми не шлемо користувачам посилання на незахищений origin.
 
 ### `REQUIRE_EMAIL_VERIFICATION` _(optional, default `false`)_
 

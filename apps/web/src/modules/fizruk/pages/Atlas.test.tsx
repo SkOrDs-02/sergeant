@@ -15,6 +15,7 @@ vi.mock("../hooks/useRecovery", () => ({
     ready: [],
     avoid: [],
     wellbeingMult: 1,
+    injurySites: new Set<never>(),
   })),
 }));
 

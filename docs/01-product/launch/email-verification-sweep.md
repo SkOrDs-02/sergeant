@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-10-31.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                                                             |
@@ -33,17 +33,20 @@ Residual risk, що фіксували pen-test sweep 2026-05-06 ([§ H6 — Res
 
 Цей документ розписує план, як вийти з `Closed (partial)` у `Closed` до launch-window, тобто закрити residual-ризик без UX-катастрофи.
 
-## Поточний стан (2026-05-20)
+## Поточний стан (зріз 2026-05-20, три рядки оновлено 2026-08-02)
 
-| Сигнал                                                     | Значення                                                                                                                                   |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `emailVerification.sendOnSignUp`                           | `true` ([`apps/server/src/auth.ts:182-191`](../../../apps/server/src/auth.ts))                                                             |
-| `emailAndPassword.requireEmailVerification`                | `env.REQUIRE_EMAIL_VERIFICATION` (default `false`, [`apps/server/src/env/env.ts:322-325`](../../../apps/server/src/env/env.ts))            |
-| `requireVerifiedEmail()` middleware                        | Wired лише на `POST /api/mono/connect` ([`apps/server/src/routes/mono-webhook.ts:70-75`](../../../apps/server/src/routes/mono-webhook.ts)) |
-| Legacy users (`email_verified=false` на 2026-05-04 момент) | **Не виміряно** — потребує `SELECT COUNT(*) FROM "user" WHERE "emailVerified" = false` на prod read-replica. Tracked як Phase 0 нижче.     |
-| `VerifyEmailGate` UI banner                                | Не існує. Згаданий у H6 § Deferred як «коли лендить — drop `requireVerifiedEmail()` на похідні route-и».                                   |
-| Reminder-email cadence                                     | Не існує. Лише `sendOnSignUp` один лист. Resend → `auth-mail` BullMQ queue вже піднята, є інфраструктура для додаткових емейлів.           |
-| `REQUIRE_EMAIL_VERIFICATION` в prod (Railway)              | `false` (підтверджено A1 audit 2026-05-06 — `docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md` § Resolution log)        |
+| Сигнал                                                     | Значення                                                                                                                                                                                  |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `emailVerification.sendOnSignUp`                           | `true` ([`apps/server/src/auth.ts:182-191`](../../../apps/server/src/auth.ts))                                                                                                            |
+| `emailAndPassword.requireEmailVerification`                | `env.REQUIRE_EMAIL_VERIFICATION` (default `false`, [`apps/server/src/env/env.ts:322-325`](../../../apps/server/src/env/env.ts))                                                           |
+| `requireVerifiedEmail()` middleware                        | Wired лише на `POST /api/mono/connect` ([`apps/server/src/routes/mono-webhook.ts:70-75`](../../../apps/server/src/routes/mono-webhook.ts))                                                |
+| Legacy users (`email_verified=false` на 2026-05-04 момент) | **Не виміряно** — потребує `SELECT COUNT(*) FROM "user" WHERE "emailVerified" = false` на prod read-replica. Tracked як Phase 0 нижче.                                                    |
+| `VerifyEmailGate` UI banner                                | Не існує. Згаданий у H6 § Deferred як «коли лендить — drop `requireVerifiedEmail()` на похідні route-и».                                                                                  |
+| Профільний resend + бейдж «Не підтверджено»                | Є ([`PersonalInfoSection.tsx`](../../../apps/web/src/core/profile/PersonalInfoSection.tsx)). Це не `VerifyEmailGate` — банер живе лише у профілі й нічого не блокує.                      |
+| Лендинг `/verify-email`                                    | Є з 2026-08-02 ([`VerifyEmailPage.tsx`](../../../apps/web/src/core/auth/VerifyEmailPage.tsx)). До цього `callbackURL` дефолтився у `/` на API-домені й давав 404 після кліку в листі.     |
+| `user.changeEmail`                                         | Увімкнений з 2026-08-02. До цього конфіг був відсутній, і `POST /api/auth/change-email` безумовно віддавав `400 CHANGE_EMAIL_DISABLED` — зміна пошти у профілі не працювала жодного разу. |
+| Reminder-email cadence                                     | Не існує. Лише `sendOnSignUp` один лист. Resend → `auth-mail` BullMQ queue вже піднята, є інфраструктура для додаткових емейлів.                                                          |
+| `REQUIRE_EMAIL_VERIFICATION` в prod (Railway)              | `false` (підтверджено A1 audit 2026-05-06 — `docs/90-work/audits/archive/2026-05-04-csp-disable-retrospective.md` § Resolution log)                                                       |
 
 ## Threat model recap
 

@@ -37,6 +37,9 @@ export const APPLY_REJECT_REASONS = [
   "missing_pantry_id",
   "missing_date_key",
   "missing_note_key",
+  // Хвиля 4 — `routine_habit_skips` (третій стан дня, канон routine.md §5).
+  "missing_skip_key",
+  "invalid_at",
   // Field validation — timestamps
   "invalid_completed_at",
   "invalid_deleted_at",

@@ -102,6 +102,9 @@ export async function importFizrukResidualFromLs(
     workoutTemplates: workoutTemplates
       ? extractWorkoutTemplateSnapshots(workoutTemplates)
       : [],
+    // Injury marks were born SQLite-only (ADR-0083) — there is no
+    // localStorage slot to salvage, so residual import always sees none.
+    injuries: [],
   };
 
   const ops = diffFizrukDualWriteOps(EMPTY_FIZRUK_DUAL_WRITE_STATE, next);

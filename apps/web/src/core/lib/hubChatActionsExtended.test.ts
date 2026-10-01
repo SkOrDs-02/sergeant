@@ -808,7 +808,10 @@ describe("pause_habit", () => {
     });
     expect(msg).toContain("на паузу");
     const state = loadRoutineState();
-    expect(state.habits[0]!.paused).toBe(true);
+    // Хвиля 4: тул пише ДАТОВАНИЙ інтервал. Легасі-прапор навмисно не
+    // вмикається — саме він ретроактивно вимивав звичку з історії (E-3).
+    expect(state.habits[0]!.pauseIntervals).toHaveLength(1);
+    expect(state.habits[0]!.paused).not.toBe(true);
   });
 
   it("paused=false знімає з паузи", () => {
@@ -818,7 +821,7 @@ describe("pause_habit", () => {
       name: "pause_habit",
       input: { habit_id: id, paused: false },
     });
-    expect(msg).toContain("знято з паузи");
+    expect(msg).toContain("повернуто з паузи");
     const state = loadRoutineState();
     expect(state.habits[0]!.paused).toBe(false);
   });
@@ -830,7 +833,7 @@ describe("pause_habit", () => {
       name: "pause_habit",
       input: { habit_id: id },
     });
-    expect(msg).toContain("вже на паузі");
+    expect(msg).toContain("уже на паузі");
   });
 
   it("повертає помилку для відсутнього habit_id / неіснуючої звички", () => {

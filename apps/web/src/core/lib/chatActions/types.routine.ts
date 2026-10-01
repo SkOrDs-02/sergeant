@@ -69,7 +69,7 @@ export interface SetHabitScheduleAction {
 
 export interface PauseHabitAction {
   name: "pause_habit";
-  input: { habit_id: string; paused?: boolean };
+  input: { habit_id: string; paused?: boolean; from?: string; to?: string };
 }
 
 export interface HabitTrendAction {

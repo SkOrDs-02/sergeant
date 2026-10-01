@@ -8,7 +8,7 @@
 
 import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
 import { habitScheduledOnDate } from "./schedule.js";
-import type { Habit } from "./types.js";
+import type { Habit, HabitSkip } from "./types.js";
 
 function dateKeyMinusDays(baseKey: string, daysBack: number): string {
   const d = parseDateKey(baseKey);
@@ -124,6 +124,17 @@ export interface CompletionRateOptions {
    * Дефолт (не передано) зберігає історичну поведінку: пауза ретроактивна.
    */
   pausedFrom?: string | undefined;
+  /**
+   * Пропуски з причиною: `habitId → dateKey → HabitSkip`.
+   *
+   * Канон §5: «не зміг» **не є провалом**, тож такий день виходить зі
+   * ЗНАМЕННИКА — не рахується ні як виконаний, ні як пропущений. Без
+   * цього тристанова модель була б косметикою: причина зберігалась би,
+   * а відсоток усе одно падав би так само, як від мовчазного пропуску.
+   *
+   * Дефолт (не передано) зберігає історичну поведінку: пропуск = провал.
+   */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
 export function completionRateForRange(
@@ -151,8 +162,11 @@ export function completionRateForRange(
   for (const h of habits) {
     if (h.archived) continue;
     const set = new Set(completions[h.id] || []);
+    const habitSkips = opts.skips?.[h.id];
     for (const dk of days) {
       if (!habitScheduledOnDate(h, dk, scheduleOpts)) continue;
+      // «Не зміг з причиною» виходить зі знаменника, а не рахується провалом.
+      if (habitSkips?.[dk] && !set.has(dk)) continue;
       scheduled += 1;
       if (set.has(dk)) completed += 1;
     }

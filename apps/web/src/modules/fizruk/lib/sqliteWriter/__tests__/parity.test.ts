@@ -18,6 +18,7 @@ const EMPTY_STATE: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
 };
 
 async function seedWorkout(

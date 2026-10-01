@@ -98,6 +98,9 @@ export function NutritionPantryPage({
               }}
               pantryItemsLength={pantry.pantryItems.length}
               pantrySummary={pantry.pantrySummary}
+              parsePreview={pantry.parsePreview}
+              confirmParsePreview={pantry.confirmParsePreview}
+              dismissParsePreview={pantry.dismissParsePreview}
               onScanBarcode={() => {
                 setPantryScanStatus("");
                 setPantryScannerOpen(true);

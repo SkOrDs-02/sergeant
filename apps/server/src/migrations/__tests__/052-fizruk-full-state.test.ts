@@ -199,7 +199,7 @@ describe("052_fizruk_full_state migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      // 097_finyk_fizruk_pk_text.sql widened id uuid -> text: the
+      // 096_finyk_fizruk_pk_text.sql widened id uuid -> text: the
       // client's `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`
       // id isn't a bare UUID, so the original `uuid` column type
       // 22P02'd every push (see the AI-DANGER comment on
@@ -343,7 +343,7 @@ describe("052_fizruk_full_state migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      // 097_finyk_fizruk_pk_text.sql widened id uuid -> text (same
+      // 096_finyk_fizruk_pk_text.sql widened id uuid -> text (same
       // client-prefixed-id class of bug as fizruk_daily_log above).
       expect(byName["id"]!.type).toBe("text");
       expect(byName["name"]!.nullable).toBe("NO");
@@ -567,17 +567,17 @@ describe("052_fizruk_full_state migration", () => {
         workoutTemplates: await listColumns(pool, "fizruk_workout_templates"),
       };
 
-      // 097_finyk_fizruk_pk_text.sql widens fizruk_daily_log.id and
+      // 096_finyk_fizruk_pk_text.sql widens fizruk_daily_log.id and
       // fizruk_workout_templates.id (plus 5 baseline fizruk tables and
       // 8 finyk tables) uuid -> text in one transaction. It must be
       // unwound before 052's down.sql drops the two tables it owns,
       // and re-applied after 052's up.sql recreates them fresh as uuid
       // — else `after` would still be uuid while `before` (captured
       // post-097) is text.
-      await execSqlFile(pool, "097_finyk_fizruk_pk_text.down.sql");
+      await execSqlFile(pool, "096_finyk_fizruk_pk_text.down.sql");
       await execSqlFile(pool, "052_fizruk_full_state.down.sql");
       await execSqlFile(pool, "052_fizruk_full_state.sql");
-      await execSqlFile(pool, "097_finyk_fizruk_pk_text.sql");
+      await execSqlFile(pool, "096_finyk_fizruk_pk_text.sql");
 
       const after = {
         tables: await listFullStateTables(pool),

@@ -31,6 +31,7 @@ import {
 import { applyRoutineCompletionEvents } from "./routine/applyCompletionEvents.js";
 import {
   applyRoutineCompletionNotes,
+  applyRoutineHabitSkips,
   applyRoutineHabitOrder,
   applyRoutineHabits,
   applyRoutinePrefs,
@@ -155,6 +156,8 @@ const OP_LOG_TABLE_REGISTRY: Record<string, ApplyFn> = {
   routine_pushups: applyRoutinePushups,
   routine_habit_order: applyRoutineHabitOrder,
   routine_completion_notes: applyRoutineCompletionNotes,
+  // Хвиля 4 — третій стан дня «не зміг з причиною» (канон §5).
+  routine_habit_skips: applyRoutineHabitSkips,
   // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. `op='update'`
   // / `'delete'` відхиляються з `append_only_violation`; читачів у цій
   // стадії нема.

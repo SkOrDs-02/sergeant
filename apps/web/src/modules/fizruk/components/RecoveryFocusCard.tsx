@@ -12,6 +12,8 @@ import { BodyAtlas } from "./BodyAtlas";
 import { buildAtlasData } from "../lib/atlasData";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useRecovery } from "../hooks/useRecovery";
+import { useReplicaFreshness } from "../hooks/useReplicaFreshness";
+import { RecoveryHonestyNotes } from "./RecoveryHonestyNotes";
 
 export function RecoveryFocusCard({
   onOpenAtlas,
@@ -19,6 +21,7 @@ export function RecoveryFocusCard({
   onOpenAtlas?: () => void;
 }) {
   const rec = useRecovery();
+  const freshness = useReplicaFreshness();
   const { musclesUk } = useExerciseCatalog();
   const [open, setOpen] = useState(false);
 
@@ -103,6 +106,15 @@ export function RecoveryFocusCard({
               <span className="w-2 h-2 rounded-full bg-danger" /> рано
             </span>
           </div>
+
+          {/*
+            Межі поради йдуть ПЕРЕД самою порадою: якщо картина неповна,
+            людина має дізнатись про це до того, як прочитає «готово».
+          */}
+          <RecoveryHonestyNotes
+            freshness={freshness}
+            wellbeing={rec.wellbeingSignal}
+          />
 
           {rec.wellbeingMult > 1.1 && (
             <div className="mb-3 px-3 py-2 rounded-xl bg-warning/10 border border-warning/25 flex items-start gap-2">

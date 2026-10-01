@@ -64,6 +64,8 @@ function makeCalendarActions(): RoutineCalendarActions {
     setMainTab: vi.fn(),
     onBulkMarkDay: vi.fn(),
     onOpenQuickAddHabit: vi.fn(),
+    onSetHabitSkip: vi.fn(),
+    onClearHabitSkip: vi.fn(),
   };
 }
 

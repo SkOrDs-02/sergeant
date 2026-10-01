@@ -9,6 +9,7 @@ import {
   applyRoutinePushups,
   applyRoutineHabitOrder,
   applyRoutineCompletionNotes,
+  applyRoutineHabitSkips,
 } from "./routine/applySyncFullState.js";
 import {
   applyNutritionWaterLog,
@@ -65,11 +66,13 @@ function op(
 }
 
 describe("Phase 2 registry expansion", () => {
-  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries (46 total)", () => {
-    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(46);
+  it("SYNC_V2_SUPPORTED_TABLES includes 15 Phase 2 tables + 3 append-only ledgers + fizruk_injuries + routine_habit_skips (47 total)", () => {
+    expect(SYNC_V2_SUPPORTED_TABLES).toHaveLength(47);
     expect(SYNC_V2_SUPPORTED_TABLES).toEqual(
       expect.arrayContaining([
         "routine_habits",
+        // Хвиля 4 — третій стан дня «не зміг з причиною».
+        "routine_habit_skips",
         "nutrition_water_log",
         "fizruk_daily_log",
         "fizruk_programs",
@@ -374,6 +377,87 @@ describe("routine full-state appliers", () => {
       CLIENT_TS,
     );
     expect(result).toEqual({ status: "applied" });
+  });
+
+  it("applyRoutineHabitSkips rejects when skip_key is missing", async () => {
+    const client = makeClient([]);
+    const result = await applyRoutineHabitSkips(
+      client,
+      op("routine_habit_skips", { user_id: USER_ID }),
+      USER_ID,
+      CLIENT_TS,
+    );
+    expect(result).toEqual({ status: "rejected", reason: "missing_skip_key" });
+  });
+
+  it("applyRoutineHabitSkips inserts a new skip", async () => {
+    const client = makeClient([]);
+    const result = await applyRoutineHabitSkips(
+      client,
+      op("routine_habit_skips", {
+        user_id: USER_ID,
+        skip_key: "habit-1__2026-07-10",
+        reason: "sick",
+        note: "температура",
+        at: "2026-07-10T08:00:00.000Z",
+      }),
+      USER_ID,
+      CLIENT_TS,
+    );
+    expect(result).toEqual({ status: "applied" });
+    expect(client.query).toHaveBeenLastCalledWith(
+      expect.stringContaining("INSERT INTO routine_habit_skips"),
+      [
+        USER_ID,
+        "habit-1__2026-07-10",
+        "sick",
+        "температура",
+        new Date("2026-07-10T08:00:00.000Z"),
+        CLIENT_TS,
+      ],
+    );
+  });
+
+  it("applyRoutineHabitSkips: нерозпізнана причина зводиться до other, а не відхиляється", async () => {
+    // Словник причин живе в домені й росте. Серверний enum означав би, що
+    // додавання причини вимагає деплою бекенду ПЕРЕД фронтом.
+    const client = makeClient([]);
+    const result = await applyRoutineHabitSkips(
+      client,
+      op("routine_habit_skips", {
+        user_id: USER_ID,
+        skip_key: "habit-1__2026-07-10",
+        reason: 42,
+      }),
+      USER_ID,
+      CLIENT_TS,
+    );
+    expect(result).toEqual({ status: "applied" });
+    expect(client.query).toHaveBeenLastCalledWith(
+      expect.stringContaining("INSERT INTO routine_habit_skips"),
+      expect.arrayContaining(["other"]),
+    );
+  });
+
+  it("applyRoutineHabitSkips rejects an older write (LWW)", async () => {
+    const client = makeClient([
+      {
+        user_id: USER_ID,
+        updated_at: new Date("2026-07-11T00:00:00.000Z"),
+        deleted_at: null,
+      },
+    ]);
+    const result = await applyRoutineHabitSkips(
+      client,
+      op("routine_habit_skips", {
+        user_id: USER_ID,
+        skip_key: "habit-1__2026-07-10",
+        reason: "sick",
+      }),
+      USER_ID,
+      CLIENT_TS,
+    );
+    expect(result).toEqual({ status: "rejected", reason: "lww_conflict" });
   });
 
   it("applyRoutineCompletionNotes rejects fk_violation for another user's row", async () => {

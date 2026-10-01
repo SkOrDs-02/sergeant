@@ -214,6 +214,10 @@ describe("computeDashboardKpis", () => {
     const kpis = computeDashboardKpis(null, { now: FROZEN_NOW });
     expect(kpis).toEqual({
       streakDays: 0,
+      streakWeeks: 0,
+      streakTargetPerWeek: 2,
+      currentWeekWorkouts: 0,
+      currentWeekPending: false,
       weeklyWorkoutsCount: 0,
       weeklyVolumeKg: 0,
       totalCompletedCount: 0,

@@ -55,7 +55,11 @@ export default async function handler(
   });
   const result = await invokeLLM(provider, {
     model: env.NUTRITION_MODEL,
-    maxTokens: 500,
+    // 500 обрізало JSON посеред масиву вже на ~25 позиціях — відповідь
+    // не парсилась і користувач втрачав увесь список. 2000 покриває
+    // стелю `normalizePantryItems` (80 позицій); довші списки все одно
+    // ріжуться там, а обірваний JSON ловить `extractJsonFromText` нижче.
+    maxTokens: 2000,
     temperature: 0.2,
     system: SYSTEM,
     messages: [

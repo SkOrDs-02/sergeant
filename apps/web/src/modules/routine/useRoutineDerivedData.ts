@@ -24,7 +24,7 @@ import {
 } from "./lib/hubCalendarAggregate";
 import { FINYK_SUB_GROUP_LABEL } from "./lib/finykSubscriptionCalendar";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
-import { completionRateForRange, maxActiveStreak } from "./lib/streaks";
+import { completionRateForRange, flexibleMaxActiveStreak } from "./lib/streaks";
 import {
   groupEventsForList,
   monthBounds,
@@ -197,9 +197,20 @@ export function useRoutineDerivedData({
 
   const todayKey = dateKeyFromDate(todayDate());
 
+  // AI-CONTEXT: гнучкий стрік (Хвиля 4, канон §4). Жорсткий `maxActiveStreak`
+  // ламався на першому порожньому дні — включно з СЬОГОДНІШНІМ, тож щоранку
+  // до першої відмітки герой показував «серія обірвалась». Гнучкий поважає
+  // датовані паузи, пропуски з причиною й grace-бюджет. Число рухається
+  // вгору — саме тому цей cutover іде разом із бампом METRICS_VERSION.
   const streakMax = useMemo(
-    () => maxActiveStreak(routine.habits, routine.completions, todayKey),
-    [routine.habits, routine.completions, todayKey],
+    () =>
+      flexibleMaxActiveStreak(
+        routine.habits,
+        routine.completions,
+        todayKey,
+        routine.skips ?? {},
+      ),
+    [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
   // AI-CONTEXT: `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2).
@@ -215,11 +226,12 @@ export function useRoutineDerivedData({
         routine.completions,
         range.startKey,
         range.endKey,
-        { pausedFrom: todayKey },
+        { pausedFrom: todayKey, skips: routine.skips ?? {} },
       ),
     [
       routine.habits,
       routine.completions,
+      routine.skips,
       range.startKey,
       range.endKey,
       todayKey,
@@ -236,9 +248,9 @@ export function useRoutineDerivedData({
         routine.completions,
         todayKey,
         todayKey,
-        { pausedFrom: todayKey },
+        { pausedFrom: todayKey, skips: routine.skips ?? {} },
       ),
-    [routine.habits, routine.completions, todayKey],
+    [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
   const canBulkMark = useMemo(() => {

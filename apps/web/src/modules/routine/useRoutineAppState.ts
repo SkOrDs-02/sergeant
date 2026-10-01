@@ -39,6 +39,8 @@ import {
   loadRoutineState,
   toggleHabitCompletion,
   markAllScheduledHabitsComplete,
+  setHabitSkip,
+  clearHabitSkip,
   ROUTINE_EVENT,
   ROUTINE_STORAGE_ERROR,
 } from "./lib/routineStorage";
@@ -57,6 +59,7 @@ import type {
   RoutineCalendarData,
   RoutineMainTab,
 } from "./context/RoutineCalendarContext";
+import type { SkipReason } from "@sergeant/routine-domain";
 import type { RoutineState } from "./lib/types";
 import { FIZRUK_PLAN_SYNC } from "./RoutineApp.helpers";
 import { useRoutineTimeState } from "./useRoutineTimeState";
@@ -463,6 +466,30 @@ export function useRoutineAppState({
     [derived, routine, time, listQuery, tagFilter],
   );
 
+  // Третій стан дня (канон §5). Eager-compute + persist поза updater-ом — та
+  // сама причина, що описана в `onToggleHabit`: доменні врапери персистять і
+  // емітять `ROUTINE_EVENT` синхронно, тож у render-фазі їм не місце.
+  const onSetHabitSkip = useCallback(
+    (habitId: string, dateKey: string, reason: SkipReason) => {
+      hapticTap();
+      const prev = loadRoutineState();
+      const next = setHabitSkip(prev, habitId, dateKey, reason);
+      if (next === prev) return;
+      setRoutine(next);
+    },
+    [setRoutine],
+  );
+
+  const onClearHabitSkip = useCallback(
+    (habitId: string, dateKey: string) => {
+      const prev = loadRoutineState();
+      const next = clearHabitSkip(prev, habitId, dateKey);
+      if (next === prev) return;
+      setRoutine(next);
+    },
+    [setRoutine],
+  );
+
   const calendarActions = useMemo<RoutineCalendarActions>(
     () => ({
       applyTimeMode: time.applyTimeMode,
@@ -472,6 +499,8 @@ export function useRoutineAppState({
       onOpenModule,
       onBulkMarkDay,
       onOpenQuickAddHabit: openQuickAddHabit,
+      onSetHabitSkip,
+      onClearHabitSkip,
     }),
     [
       time.applyTimeMode,
@@ -481,6 +510,8 @@ export function useRoutineAppState({
       onOpenModule,
       onBulkMarkDay,
       openQuickAddHabit,
+      onSetHabitSkip,
+      onClearHabitSkip,
     ],
   );
 
