@@ -15,6 +15,8 @@ vi.mock("../lib/redis.js", () => ({
 }));
 vi.mock("../db.js", () => ({
   default: { query: queryMock },
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withBypassContext: (fn: (db: unknown) => unknown) => fn({ query: queryMock }),
 }));
 
 import {
