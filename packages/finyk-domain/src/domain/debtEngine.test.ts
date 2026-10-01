@@ -104,6 +104,28 @@ describe("debtEngine — борг (я винен)", () => {
   });
 });
 
+describe("debtEngine — категорія «Борг» у надходженнях (PR-3)", () => {
+  it("пасив, створений з надходження, зростає на суму боргу рівно один раз", () => {
+    // Той самий запис, який будує BankTransactionDetailsSheet: totalAmount
+    // = сума транзакції, і та сама транзакція одразу привʼязана роллю
+    // source — вона лише пояснює походження боргу, не додає суму поверх.
+    const incomeTx = { id: "income-1", amount: 500_00 };
+    const debt = {
+      id: "debt-1",
+      amount: 500,
+      totalAmount: 500,
+      linkedTxIds: [incomeTx.id],
+      txLinks: { [incomeTx.id]: { role: "source", amount: 500 } },
+    } as never;
+
+    expect(calcDebtRemaining(debt, [incomeTx])).toBe(500);
+
+    // Повторний перегляд (та сама привʼязка вже застосована) не подвоює
+    // підсумок — рахунок ідемпотентний відносно вже застосованої привʼязки.
+    expect(calcDebtRemaining(debt, [incomeTx])).toBe(500);
+  });
+});
+
 describe("debtEngine — дебіторка (мені винні)", () => {
   it("calcReceivableRemaining: база + збільшення − погашення", () => {
     const rec = {

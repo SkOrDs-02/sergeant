@@ -1,4 +1,10 @@
-import { useCallback, useMemo, useState } from "react";
+import {
+  useCallback,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useToast } from "@shared/hooks/useToast";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -33,6 +39,11 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { Category } from "@sergeant/finyk-domain/domain/types";
+import type {
+  Debt,
+  LinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
+import type { CreateDebtFromTransactionInput } from "../../components/DebtIncomeLinkSection";
 
 /**
  * Merged-account shape produced by `useUnifiedFinanceData` (Mono + Privat).
@@ -123,6 +134,17 @@ export interface TransactionsStorageSlice {
   manualExpenses: ManualExpense[] | undefined;
   addManualExpense: (expense: Omit<ManualExpense, "id">) => void;
   removeManualExpense: (id: string) => void;
+  /** Ручні пасиви — привʼязка/створення з категорії «Борг» (PR-3, спека
+   * `finyk-observations.md`). */
+  manualDebts: Debt[];
+  setManualDebts: Dispatch<SetStateAction<Debt[]>>;
+  setLinkedTxRole: (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH?: number,
+  ) => void;
 }
 
 export interface TransactionsProps {
@@ -195,6 +217,9 @@ export function Transactions({
     manualExpenses,
     addManualExpense,
     removeManualExpense,
+    manualDebts,
+    setManualDebts,
+    setLinkedTxRole,
   } = storage;
 
   const filters = useTransactionFilters({
@@ -289,6 +314,38 @@ export function Transactions({
       requestCloudPull(2500),
     ]);
   }, [monoRefresh]);
+
+  // Категорія «Борг» у надходженнях (PR-3, спека `finyk-observations.md`).
+  // Роль завжди `source` — вона пояснює походження боргу і НЕ додається
+  // поверх суми (`debtEngine.getDebtEffectiveTotal` рахує лише `increase`),
+  // тож підсумок пасивів росте рівно на суму боргу один раз.
+  const attachDebtSource = useCallback(
+    (debtId: string, txId: string, amountUAH: number) => {
+      setLinkedTxRole(debtId, txId, "debt", "source", amountUAH);
+    },
+    [setLinkedTxRole],
+  );
+  const createDebtFromTransaction = useCallback(
+    (input: CreateDebtFromTransactionInput) => {
+      const id = crypto.randomUUID();
+      setManualDebts((debts) => [
+        ...debts,
+        {
+          id,
+          name: input.name,
+          emoji: "\u{1F4B8}",
+          amount: input.amountUAH,
+          totalAmount: input.amountUAH,
+          dueDate: input.dueDate,
+          linkedTxIds: [input.txId],
+          txLinks: {
+            [input.txId]: { role: "source", amount: input.amountUAH },
+          },
+        },
+      ]);
+    },
+    [setManualDebts],
+  );
 
   const selection = useTransactionSelection({
     hiddenTxIds,
@@ -454,11 +511,14 @@ export function Transactions({
             receiptLinks?.getReceiptId(editingBankTransaction.id) ?? null
           }
           hideAmount={!showBalance}
+          manualDebts={manualDebts}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}
           onSplitChange={selection.stableSetSplitTx}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}
+          onAttachDebtSource={attachDebtSource}
+          onCreateDebtFromTransaction={createDebtFromTransaction}
           onClose={() => setEditingBankTransaction(null)}
         />
       )}

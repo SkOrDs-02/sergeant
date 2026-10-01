@@ -55,6 +55,23 @@ const TRANSACTION: Transaction = {
   _manual: false,
 };
 
+const INCOME_TRANSACTION: Transaction = {
+  id: "bank-income-1",
+  amount: 500_00,
+  date: "2026-08-10",
+  categoryId: "in_other",
+  type: "income",
+  source: "mono",
+  time: Math.floor(new Date("2026-08-10T09:30:00+03:00").getTime() / 1000),
+  description: "Позика від Олега",
+  mcc: 0,
+  accountId: "account-1",
+  manual: false,
+  _source: "mono",
+  _accountId: "account-1",
+  _manual: false,
+};
+
 function renderSheet(
   overrides: Partial<Parameters<typeof BankTransactionDetailsSheet>[0]> = {},
 ) {
@@ -64,6 +81,8 @@ function renderSheet(
     onSplitChange: vi.fn(),
     onToggleHidden: vi.fn(),
     onToggleExcludedFromStats: vi.fn(),
+    onAttachDebtSource: vi.fn(),
+    onCreateDebtFromTransaction: vi.fn(),
     onClose: vi.fn(),
   };
   const client = new QueryClient({
@@ -170,5 +189,79 @@ describe("BankTransactionDetailsSheet", () => {
     const handlers = renderSheet();
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(handlers.onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("BankTransactionDetailsSheet — категорія «Борг» у надходженнях (PR-3)", () => {
+  it("не показує прив'язку пасиву поза категорією «Борг»", () => {
+    renderSheet({ transaction: INCOME_TRANSACTION, overrideCatId: "in_other" });
+    expect(
+      screen.queryByText("Це надходження - борг?"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("пропонує привʼязати до наявного пасиву й підставляє суму без ручного перенабору", () => {
+    const handlers = renderSheet({
+      transaction: INCOME_TRANSACTION,
+      overrideCatId: "in_debt",
+      manualDebts: [
+        { id: "debt-1", name: "Позика в Олега", amount: 300, totalAmount: 300 },
+      ],
+    });
+
+    expect(screen.getByText("Це надходження - борг?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Позика в Олега" }));
+
+    expect(handlers.onAttachDebtSource).toHaveBeenCalledWith(
+      "debt-1",
+      "bank-income-1",
+      500,
+    );
+  });
+
+  it("створює новий пасив із сумою й датою транзакції без повторного набору", () => {
+    const handlers = renderSheet({
+      transaction: INCOME_TRANSACTION,
+      overrideCatId: "in_debt",
+      manualDebts: [],
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Створити новий пасив" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "Створити й привʼязати" }),
+    );
+
+    expect(handlers.onCreateDebtFromTransaction).toHaveBeenCalledWith({
+      name: "Позика від Олега",
+      amountUAH: 500,
+      dueDate: "2026-08-10",
+      txId: "bank-income-1",
+    });
+  });
+
+  it("транзакція, вже привʼязана до пасиву, не пропонує повторну прив'язку", () => {
+    renderSheet({
+      transaction: INCOME_TRANSACTION,
+      overrideCatId: "in_debt",
+      manualDebts: [
+        {
+          id: "debt-1",
+          name: "Позика в Олега",
+          amount: 500,
+          totalAmount: 500,
+          linkedTxIds: [INCOME_TRANSACTION.id],
+          txLinks: { [INCOME_TRANSACTION.id]: { role: "source", amount: 500 } },
+        },
+      ],
+    });
+
+    expect(
+      screen.getByText(/Привʼязано до пасиву.*Позика в Олега/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Створити новий пасив" }),
+    ).not.toBeInTheDocument();
   });
 });

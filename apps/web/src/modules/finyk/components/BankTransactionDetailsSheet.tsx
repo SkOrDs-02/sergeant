@@ -13,6 +13,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { Debt } from "@sergeant/finyk-domain/domain/debtEngine";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
@@ -30,6 +31,10 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
+import {
+  DebtIncomeLinkSection,
+  type CreateDebtFromTransactionInput,
+} from "./DebtIncomeLinkSection";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
@@ -54,11 +59,18 @@ export interface BankTransactionDetailsSheetProps {
    * — `null` коли цей пристрій про чек не знає (`useFinykReceiptLinks`). */
   receiptId?: number | null | undefined;
   hideAmount?: boolean | undefined;
+  /** Ручні пасиви — потрібні лише для пропозиції прив'язки на категорії
+   * «Борг» (`DebtIncomeLinkSection`). Порожній масив, коли не передано. */
+  manualDebts?: readonly Debt[] | undefined;
   onCategoryChange: (id: string, categoryId: string | null) => void;
   onNoteChange: (id: string, note: string | null) => void;
   onSplitChange: (id: string, splits: TxSplit[] | null) => void;
   onToggleHidden: (id: string) => void;
   onToggleExcludedFromStats: (id: string) => void;
+  onAttachDebtSource?:
+    ((debtId: string, txId: string, amountUAH: number) => void) | undefined;
+  onCreateDebtFromTransaction?:
+    ((input: CreateDebtFromTransactionInput) => void) | undefined;
   onClose: () => void;
 }
 
@@ -113,11 +125,14 @@ export function BankTransactionDetailsSheet({
   customCategories = [],
   receiptId = null,
   hideAmount = false,
+  manualDebts = [],
   onCategoryChange,
   onNoteChange,
   onSplitChange,
   onToggleHidden,
   onToggleExcludedFromStats,
+  onAttachDebtSource,
+  onCreateDebtFromTransaction,
   onClose,
 }: BankTransactionDetailsSheetProps) {
   const copy = messages.finyk.transactionDetails;
@@ -262,6 +277,18 @@ export function BankTransactionDetailsSheet({
             onClose={() => undefined}
           />
         </section>
+
+        {isIncome &&
+          category.id === "in_debt" &&
+          onAttachDebtSource &&
+          onCreateDebtFromTransaction && (
+            <DebtIncomeLinkSection
+              transaction={transaction}
+              manualDebts={manualDebts}
+              onAttachExisting={onAttachDebtSource}
+              onCreateNew={onCreateDebtFromTransaction}
+            />
+          )}
 
         {!isIncome && (
           <section className="rounded-2xl border border-line bg-panel p-3">

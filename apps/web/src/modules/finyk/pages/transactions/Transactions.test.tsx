@@ -171,6 +171,9 @@ function buildStorage(
     manualExpenses: [],
     addManualExpense: vi.fn(),
     removeManualExpense: vi.fn(),
+    manualDebts: [],
+    setManualDebts: vi.fn(),
+    setLinkedTxRole: vi.fn(),
     ...overrides,
   };
 }
