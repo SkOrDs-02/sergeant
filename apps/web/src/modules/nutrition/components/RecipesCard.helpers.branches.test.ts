@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { guessMealTypeIdNow } from "./RecipesCard.helpers";
+import { guessMealTypeIdNow, parsePortionFactor } from "./RecipesCard.helpers";
 
 describe("guessMealTypeIdNow", () => {
   beforeEach(() => {
@@ -27,4 +27,22 @@ describe("guessMealTypeIdNow", () => {
     vi.setSystemTime(new Date(2026, 5, 2, hour, 30, 0));
     expect(guessMealTypeIdNow()).toBe(expected);
   });
+});
+
+describe("parsePortionFactor", () => {
+  it.each([
+    ["2", 2],
+    ["1.5", 1.5],
+    ["1,5", 1.5],
+    [" 3 ", 3],
+  ] as const)("«%s» → %d", (raw, expected) => {
+    expect(parsePortionFactor(raw)).toBe(expected);
+  });
+
+  it.each([[undefined], [null], [""], ["abc"], ["0"], ["-2"], ["Infinity"]])(
+    "%j → 1 (порожнє, нечислове, ≤ 0 чи нескінченне)",
+    (raw) => {
+      expect(parsePortionFactor(raw)).toBe(1);
+    },
+  );
 });

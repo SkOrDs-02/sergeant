@@ -37,7 +37,11 @@ import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
-import { guessMealTypeIdNow, type RecipeLike } from "./RecipesCard.helpers";
+import {
+  guessMealTypeIdNow,
+  parsePortionFactor,
+  type RecipeLike,
+} from "./RecipesCard.helpers";
 import { SavedSection } from "./RecipesCard.SavedSection";
 import { GeneratorCard } from "./RecipesCard.Generator";
 
@@ -147,15 +151,7 @@ export function RecipesCard({
   ): Promise<void> {
     if (typeof addMealToLog !== "function") return;
     const key = String(idKey || r?.id || r?.title || "");
-    const factorRaw = portionById[key];
-    const factor =
-      factorRaw == null || factorRaw === ""
-        ? 1
-        : Number(String(factorRaw).replace(",", "."));
-    const macros = scaleMacros(
-      r?.macros,
-      Number.isFinite(factor) && factor > 0 ? factor : 1,
-    );
+    const macros = scaleMacros(r?.macros, parsePortionFactor(portionById[key]));
     const mealType = guessMealTypeIdNow();
     const label =
       MEAL_TYPES.find((x) => x.id === mealType)?.label || "Прийом їжі";
