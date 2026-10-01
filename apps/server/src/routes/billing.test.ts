@@ -85,6 +85,7 @@ import {
 } from "@sergeant/shared";
 
 import { createBillingRouter } from "./billing.js";
+import { errorHandler } from "../http/errorHandler.js";
 import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { getUserPlan } from "../modules/billing/index.js";
 
@@ -103,6 +104,9 @@ function createTestApp(pool: ReturnType<typeof createQueryPool>) {
   const app = express();
   app.use(express.json());
   app.use(createBillingRouter({ pool: pool as never }));
+  // Відмови cancel (409/502) кидаються як AppError і стають тілом
+  // `{error, code, requestId}` лише в термінальному errorHandler.
+  app.use(errorHandler);
   return app;
 }
 

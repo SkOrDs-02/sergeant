@@ -37,7 +37,11 @@ import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
-import { ValidationError } from "../obs/errors.js";
+import {
+  AppError,
+  ExternalServiceError,
+  ValidationError,
+} from "../obs/errors.js";
 
 type AuthedRequest = Request & {
   user?: { id: string; email?: string | null };
@@ -290,15 +294,17 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
         res.json(BillingCancelResponseSchema.parse({ ok: true }));
         return;
       }
+      // Через errorHandler, а не інлайновий `res.status().json()`: так
+      // клієнт отримує ще й `requestId`, а подія — метрику й структурований
+      // лог (гейт `check-inline-error-responses`).
       if (attempts.some((a) => a.outcome === "failed")) {
-        res.status(502).json({
-          error: "Payment provider did not confirm the cancellation",
-          code: "PROVIDER_CANCEL_FAILED",
-        });
-        return;
+        throw new ExternalServiceError(
+          "Payment provider did not confirm the cancellation",
+          { code: "PROVIDER_CANCEL_FAILED" },
+        );
       }
-      res.status(409).json({
-        error: "No active subscription to cancel",
+      throw new AppError("No active subscription to cancel", {
+        status: 409,
         code: "NO_ACTIVE_SUBSCRIPTION",
       });
     },
