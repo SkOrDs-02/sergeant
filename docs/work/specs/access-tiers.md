@@ -1,6 +1,6 @@
 # SPEC: Free і Premium: пакетування, єдиний реєстр доступу, reverse trial
 
-> **Last touched:** 2026-09-28 by @Skords-01. **Next review:** 2027-03-30.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-04-02.
 > **Status:** Active - реалізовано в коді: `packages/shared/src/billing/entitlements.ts`, міграція `149_ai_usage_daily_week_buckets`, `apps/server/src/modules/chat/aiQuotaWeekly.ts`, `billing/reverseTrial.ts`, `billing/accessSnapshot.ts`, `apps/web/src/core/billing/TrialBanner.tsx` (`effectiveLimits.ts` і `premiumFeatures.ts` видалені); лишився click-through з § Верифікація п. 5 на живому стенді.
 
 <!-- Інтервʼю провела сесія «Спека free/premium доступу» (4 раунди, 2026-09-27); 5-й раунд (vision Фініка, плани харчування, tool-квоти, функції без AI) додано того ж дня після інвентаризації всіх AI-маршрутів. -->
@@ -50,6 +50,7 @@
 - **Одна спека на пакетування і реєстр.** Лише пакетування без реєстру відкинуто: копії лишились би і розійшлися б знову.
 - **Реєстр живе в `packages/shared/src/billing/entitlements.ts`** (нова тека). Формат такий: `FEATURES: Record<FeatureId, { free: Access; pro: Access }>`, де `Access = boolean | { perWeek: number }` (а для Pro `null` означає «без ліміту»). З цього файла читають сервер (гейти й квоти), web (через знімок) і `PricingPage`. Варіант, де web сам рахує доступ із `plan`, відкинуто, бо під час trial і grace два місця обчислення розходяться.
 - **Сервер віддає знімок.** `GET /api/billing/status` доповнюється полем `access`:
+
   ```ts
   access: {
     state: "free" | "trial" | "pro" | "grace";
@@ -75,7 +76,11 @@
     }
   }
   ```
+
   Поле `subscription` лишається як є, щоб не ламати `PlanSection`. Діє Hard Rule #3: серверна схема `BillingStatusResponseSchema` у `packages/shared/src/schemas/api.ts`, тип у `packages/api-client/src/endpoints/billing.ts` і `billing.contract.test.ts` міняються в одному PR.
+
+  Єдине доповнення до `subscription` після релізу: `cancelAtPeriodEnd: boolean` (колонка `subscriptions.cancel_at_period_end`, на клієнті `.default(false)` для rolling deploy). Після «Скасувати Premium» рядок лишається `active`, а доступ діє до `currentPeriodEnd`, тож без цього прапорця UI не відрізнив би «скасовано» від «діє». `PlanSection` тоді замість кнопки пише «Підписку скасовано. Premium діє до …». Для Premium без провайдера (founder, `provider: "manual"`, зокрема reverse trial) кнопки «Скасувати» немає. `POST /api/billing/cancel` віддає `409 NO_ACTIVE_SUBSCRIPTION`, коли жоден провайдер не має що скасовувати, і `502 PROVIDER_CANCEL_FAILED`, коли провайдер відмовив; повторний виклик на вже скасованій підписці ідемпотентний.
+
 - **Тижневе відро Free: 20 дій, скидання в понеділок 00:00 Europe/Kyiv.** Ключ відра = дата понеділка ISO-тижня за Києвом (`YYYY-MM-DD`), який пишеться в наявну колонку `usage_day`. Нова таблиця не потрібна. Бакети: `week:ai` (чат, порада коуча та інші ендпойнти, що зараз списують `default`), `week:photo` і `week:finyk-vision`. Ковзне вікно відкинуто: його складно пояснити і потрібен журнал подій замість лічильника. Функцію «понеділок тижня за Києвом» кладемо поруч із `toLocalISODate()` у `@sergeant/shared` і покриваємо тестом на межі неділя 23:59 / понеділок 00:00 Kyiv, а також на перехід DST.
 - **Що вважається однією дією, не змінюється.** Один HTTP-запит до AI-маршруту = 1 (`assertAiQuota`, `aiQuota.ts` ~L382). Другий запит tool round-trip, як і раніше, звільняє `chatRoundTripTicket.ts`. Власний бюджет інтервʼю (`AI_QUOTA_PRESET`) і виведення дайджесту з квоти лишаються без змін.
 - **Фото: окреме відро на 3 на тиждень.** `analyze-photo` списує 1 з `week:photo` і не чіпає `week:ai`. `refine-photo` того самого знімка нічого не списує, бо це продовження тієї самої дії. `requirePlan(pool, "pro")` з обох маршрутів у `apps/server/src/routes/nutrition.ts` знімається. Коли відро вичерпано, сервер повертає 429 `{ code: "AI_PHOTO_QUOTA", resetsAt }`, і web відкриває `PaywallModal` з surface `unlimited_ai_photo`. Варіант «фото = 2 дії зі спільних 20» відкинуто, бо правило 8 канону прямо каже «поза загальною квотою».

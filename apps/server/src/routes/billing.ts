@@ -22,6 +22,7 @@ import {
   getEnabledProviders,
   providerRegistry,
   resolveProvider,
+  type CancelSubscriptionOutcome,
   type ProviderId,
   liqpayProvider,
   verifyStripeSignature,
@@ -82,6 +83,11 @@ function handleBillingError(err: unknown, res: Response): boolean {
   }
   return false;
 }
+
+type CancelAttempt = {
+  id: ProviderId;
+  outcome: CancelSubscriptionOutcome | "failed";
+};
 
 export function createBillingRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
@@ -168,6 +174,7 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
             status: "active",
             active: true,
             currentPeriodEnd: null,
+            cancelAtPeriodEnd: false,
           }
         : (await liqpayProvider.getSubscriptionStatus(pool, userId))
             .subscription;
@@ -238,25 +245,62 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     }),
     async (req: AuthedRequest, res: Response) => {
       const userId = req.user!.id;
-      // Best-effort по всіх провайдерах (кожен — no-op без своєї підписки).
+      // Питаємо всіх провайдерів (кожен — `none` без своєї підписки).
       // Per-provider try/catch — щоб транзієнтна помилка одного провайдера
       // (LiqPay 5xx, Stripe not-configured на UA-деплої) не валила cancel,
-      // який в інших уже пройшов. Той самий патерн, що dataRights +
+      // який в іншого уже пройшов. Той самий патерн, що dataRights +
       // internal/billing (ADR-0016).
-      await Promise.all(
-        (["stripe", "liqpay", "plata"] as ProviderId[]).map(async (id) => {
-          try {
-            await providerRegistry[id].cancelSubscription(pool, userId);
-          } catch (err) {
-            logger.warn({
-              msg: "billing_cancel_provider_failed",
-              provider: id,
-              err: err instanceof Error ? err.message : String(err),
-            });
-          }
-        }),
+      //
+      // Але відповідь роблять РЕЗУЛЬТАТИ, а не відсутність винятків: раніше
+      // роут завжди віддавав `{ok:true}`, тож «Скасувати Premium» виглядало
+      // як no-op і для тих, кому скасовувати нічого (founder, `manual`), і
+      // для тих, кому провайдер відмовив.
+      const attempts = await Promise.all(
+        (["stripe", "liqpay", "plata"] as ProviderId[]).map(
+          async (id): Promise<CancelAttempt> => {
+            try {
+              return {
+                id,
+                outcome: await providerRegistry[id].cancelSubscription(
+                  pool,
+                  userId,
+                ),
+              };
+            } catch (err) {
+              logger.warn({
+                msg: "billing_cancel_provider_failed",
+                provider: id,
+                err: err instanceof Error ? err.message : String(err),
+              });
+              return { id, outcome: "failed" };
+            }
+          },
+        ),
       );
-      res.json(BillingCancelResponseSchema.parse({ ok: true }));
+
+      const accepted = attempts.find(
+        (a) => a.outcome === "canceled" || a.outcome === "already_canceling",
+      );
+      if (accepted) {
+        logger.info({
+          msg: "billing_cancel_accepted",
+          provider: accepted.id,
+          outcome: accepted.outcome,
+        });
+        res.json(BillingCancelResponseSchema.parse({ ok: true }));
+        return;
+      }
+      if (attempts.some((a) => a.outcome === "failed")) {
+        res.status(502).json({
+          error: "Payment provider did not confirm the cancellation",
+          code: "PROVIDER_CANCEL_FAILED",
+        });
+        return;
+      }
+      res.status(409).json({
+        error: "No active subscription to cancel",
+        code: "NO_ACTIVE_SUBSCRIPTION",
+      });
     },
   );
 

@@ -593,6 +593,7 @@ describe("liqpayProvider — checkout / portal / status", () => {
           plan: "pro",
           status: "active",
           current_period_end: new Date("2026-08-01T00:00:00.000Z"),
+          cancel_at_period_end: false,
         },
       ],
     });
@@ -609,8 +610,36 @@ describe("liqpayProvider — checkout / portal / status", () => {
         status: "active",
         active: true,
         currentPeriodEnd: "2026-08-01T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
     });
+  });
+
+  it("getSubscriptionStatus exposes cancel_at_period_end as cancelAtPeriodEnd (status stays active)", async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        {
+          id: "5",
+          provider: "liqpay",
+          plan: "pro",
+          status: "active",
+          current_period_end: new Date("2026-08-01T00:00:00.000Z"),
+          cancel_at_period_end: true,
+        },
+      ],
+    });
+    const result = await liqpayProvider.getSubscriptionStatus(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { query } as any,
+      "usr_1",
+    );
+    expect(result.subscription).toMatchObject({
+      status: "active",
+      active: true,
+      cancelAtPeriodEnd: true,
+    });
+    // Поле читається з колонки, тож SELECT мусить її просити.
+    expect(String(query.mock.calls[0]?.[0])).toContain("cancel_at_period_end");
   });
 
   it("getSubscriptionStatus returns the null shape with no rows", async () => {
@@ -622,6 +651,7 @@ describe("liqpayProvider — checkout / portal / status", () => {
     );
     expect(result.subscription.active).toBe(false);
     expect(result.subscription.id).toBeNull();
+    expect(result.subscription.cancelAtPeriodEnd).toBe(false);
   });
 
   it("verifyWebhookSignature validates a signature computed with the same private key", () => {
@@ -641,28 +671,54 @@ describe("liqpayProvider.cancelSubscription", () => {
     vi.unstubAllGlobals();
   });
 
-  it("is a no-op when the user has no active LiqPay subscription", async () => {
+  const ACTIVE_ROW = {
+    provider_subscription_id: "srg_abc_1",
+    cancel_at_period_end: false,
+  };
+  // LiqPay `/api/request` віддає JSON; `result:"ok"` — єдине підтвердження.
+  const okResponse = () =>
+    new Response(JSON.stringify({ result: "ok", status: "unsubscribed" }), {
+      status: 200,
+    });
+
+  it("returns none and does not call LiqPay when the user has no active LiqPay subscription", async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const fetchSpy = vi.spyOn(globalThis, "fetch");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await liqpayProvider.cancelSubscription({ query } as any, "usr_1");
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      liqpayProvider.cancelSubscription({ query } as any, "usr_1"),
+    ).resolves.toBe("none");
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("is idempotent: an already cancel_at_period_end subscription is not sent to LiqPay again", async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [{ ...ACTIVE_ROW, cancel_at_period_end: true }],
+    });
+    const fetchMock = vi.fn().mockResolvedValue(okResponse());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      liqpayProvider.cancelSubscription({ query } as any, "usr_1"),
+    ).resolves.toBe("already_canceling");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(query).toHaveBeenCalledTimes(1); // жодного UPDATE
   });
 
   it("unsubscribes via LiqPay then marks cancel_at_period_end", async () => {
     const query = vi
       .fn()
-      .mockResolvedValueOnce({
-        rows: [{ provider_subscription_id: "srg_abc_1" }],
-      })
+      .mockResolvedValueOnce({ rows: [ACTIVE_ROW] })
       .mockResolvedValueOnce({ rows: [] });
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(new Response("OK", { status: 200 }));
+    const fetchMock = vi.fn().mockResolvedValue(okResponse());
     vi.stubGlobal("fetch", fetchMock);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await liqpayProvider.cancelSubscription({ query } as any, "usr_1");
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      liqpayProvider.cancelSubscription({ query } as any, "usr_1"),
+    ).resolves.toBe("canceled");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
@@ -681,9 +737,7 @@ describe("liqpayProvider.cancelSubscription", () => {
   });
 
   it("throws when the LiqPay unsubscribe HTTP call fails", async () => {
-    const query = vi
-      .fn()
-      .mockResolvedValue({ rows: [{ provider_subscription_id: "srg_abc_1" }] });
+    const query = vi.fn().mockResolvedValue({ rows: [ACTIVE_ROW] });
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(new Response("err", { status: 500 })),
@@ -692,5 +746,77 @@ describe("liqpayProvider.cancelSubscription", () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       liqpayProvider.cancelSubscription({ query } as any, "usr_1"),
     ).rejects.toThrow("LiqPay unsubscribe failed: HTTP 500");
+  });
+
+  // Регресія: `if (!response.ok)` пропускав відмову LiqPay з HTTP 200 і
+  // `result:"error"`, і підписку позначали скасованою, хоча LiqPay її не
+  // відписав.
+  it.each([
+    [
+      "result:error with HTTP 200",
+      { result: "error", status: "error", err_code: "order_not_found" },
+    ],
+    ["status:failure", { status: "failure", err_code: "limit" }],
+    ["an unrecognised body", { hello: "world" }],
+    ["an empty object", {}],
+  ])(
+    "throws and does NOT mark cancel_at_period_end on %s",
+    async (_label, payload) => {
+      const query = vi.fn().mockResolvedValue({ rows: [ACTIVE_ROW] });
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(
+            new Response(JSON.stringify(payload), { status: 200 }),
+          ),
+      );
+      await expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        liqpayProvider.cancelSubscription({ query } as any, "usr_1"),
+      ).rejects.toThrow("LiqPay unsubscribe rejected");
+      // Лише SELECT; UPDATE не виконувався.
+      expect(query).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("throws on a non-JSON 200 body (the unsubscribe cannot be confirmed)", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [ACTIVE_ROW] });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("OK", { status: 200 })),
+    );
+    await expect(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      liqpayProvider.cancelSubscription({ query } as any, "usr_1"),
+    ).rejects.toThrow("LiqPay unsubscribe rejected");
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the rejection message free of LiqPay free-text fields (Hard Rule #21)", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [ACTIVE_ROW] });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            result: "error",
+            err_code: "order_not_found",
+            err_description: "card 4111 1111 1111 1111 of Ivan",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    let message = "";
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await liqpayProvider.cancelSubscription({ query } as any, "usr_1");
+    } catch (err) {
+      message = err instanceof Error ? err.message : String(err);
+    }
+    expect(message).toContain("order_not_found");
+    expect(message).not.toContain("4111");
+    expect(message).not.toContain("Ivan");
   });
 });
