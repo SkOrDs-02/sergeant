@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-09-24 by @Skords-01. **Next review:** 2027-01-02.
+> **Last touched:** 2026-10-01 by @claude (контраст: суцільний фокус-токен, межа контролу, світла лінія). **Next review:** 2027-01-02.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -91,7 +91,8 @@ Display+body: **Manrope Variable** (fallback DM Sans → системний ст
 
 ## Взаємодія
 
-- Фокус — тільки `focus-visible:` (дизайн-конвенція), ring видимий, з'являється миттєво; непрозорість кільця одна — `ring-focus/45` (храповик `pnpm lint:ui-canon`).
+- Фокус — тільки `focus-visible:` (дизайн-конвенція), ring видимий, з'являється миттєво; непрозорість кільця одна — `ring-focus/45` (храповик `pnpm lint:ui-canon`). **Колір** кільця — суцільний токен `--c-focus-solid` (≥3:1 проти кожної поверхні, WCAG 1.4.11; у піддереві модуля це його `-ink` тир): правило `:focus-visible` в кінці `theme.css` підставляє його поверх прозорості класу (аудит 2026-10-01: прозорі кільця давали 1.2-2.9:1, 0 з 381 зупинок Tab проходили 3:1). Кнопка чи посилання без власного кільця отримують `outline` того ж кольору.
+- **Межа контролу — не `border-line`.** Поле вводу, трек вимкненого перемикача й непозначений чекбокс беруть `border-control` / `bg-control` (світла `#7c756e`, темна `#827b77`, ≥3:1 проти кожної поверхні); `border-line` лишається тихим контуром картки й роздільником (світла `#d2cec5`, 1.57 над карткою — паритет із темною). Голі `input/select/textarea.border-line` у модулях добирає страхувальне правило в `theme.css`. Гейт обох ролей — `theme.controlFocus.test.ts`.
 - Кнопка — дві осі, `variant` (`solid` · `soft` · `outline` · `ghost`) × `tone` (`neutral` · модуль · `danger` · `success` · `ink`). Легасі `primary` / `secondary` / `module=` — нуль у коді й заборонені тим самим храповиком; таблиця «яку клітинку брати» — [`04-components.md § Button`](./docs/design/design/design-system/04-components.md). Розміри іконок — токени `xs…xl`, не числа.
 - Анімація: бюджет max 2 одночасні, 3 tiers (дизайн-конвенція). `transform`/`opacity` only. Без bounce/overshoot на UI.
 

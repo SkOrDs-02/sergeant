@@ -9,7 +9,7 @@
 //      max 200 подій) + `console.log("[analytics]", …)` — devtools
 //      і Sentry console-breadcrumbs. Працює завжди.
 //   2. PostHog — якщо виставлений `VITE_POSTHOG_KEY` І людина дала згоду
-//      (`getAnalyticsConsent()`, банер першого запуску / тумблер). Fire-and-forget
+//      (`getAnalyticsConsent()`: крок онбордингу, банер / тумблер). Fire-and-forget
 //      через `posthog.ts` (lazy dynamic import), буферизує події до
 //      завершення init.
 //

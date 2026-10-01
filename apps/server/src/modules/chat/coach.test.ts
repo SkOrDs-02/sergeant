@@ -4,7 +4,10 @@ import type { Mock } from "vitest";
 
 vi.mock("../../db.js", () => {
   const pool = { query: vi.fn() };
-  return { default: pool, pool };
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  const withUserContext = (_userId: string, fn: (db: unknown) => unknown) =>
+    fn(pool);
+  return { default: pool, pool, withUserContext };
 });
 
 vi.mock("../../lib/anthropic.js", () => ({

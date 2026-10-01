@@ -179,11 +179,10 @@ export const StreakFlame = memo(function StreakFlame({
 
       {showLabel && (
         <span
-          className={cn(
-            "ml-1.5 font-bold tabular-nums",
-            styles.text,
-            intensity.color,
-          )}
+          // Число — ТЕКСТ (поріг 4.5:1), а щабель драбини розрахований на
+          // іконку (3:1): `tier-30` у темній темі давав на ньому 3.37 (аудит
+          // 2026-10-01, A6). Колір лишається за іконкою.
+          className={cn("ml-1.5 font-bold tabular-nums text-text", styles.text)}
         >
           {streak}
         </span>
@@ -216,14 +215,20 @@ export const StreakBadge = memo(function StreakBadge({
       className={cn(
         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
         "bg-panelHi border border-line",
-        "text-style-label",
-        intensity.color,
+        "text-style-label text-text",
         className,
       )}
       role="status"
       aria-label={streakLabel(streak, label || undefined)}
     >
-      <Icon name="zap" size="sm" strokeWidth={2.5} />
+      {/* Колір щабля — лише на іконці; число — текст і бере `text-text`
+          (аудит 2026-10-01, A6: `tier-30` на `panelHi` давав 3.37:1). */}
+      <Icon
+        name="zap"
+        size="sm"
+        strokeWidth={2.5}
+        className={intensity.color}
+      />
       <span className="tabular-nums">{streak}</span>
       {label && <span className="text-style-caption text-muted">{label}</span>}
     </span>

@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { toLocalISODate } from "@sergeant/shared";
-import pool from "../../db.js";
+import { withSubjectContext } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { transcribeUsdCapEventsTotal } from "../../obs/metrics.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
@@ -183,17 +183,19 @@ export async function assertTranscribeUsdCap(
   let spent = 0;
   try {
     if (estimate <= cap) {
-      const r = await pool.query<UsageRow>(
-        `INSERT INTO ai_usage_daily AS t
-           (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
-         VALUES ($1, $2::date, $3, $4, 1, $5)
-         ON CONFLICT (subject_key, usage_day, bucket, endpoint)
-         DO UPDATE SET
-           request_count = t.request_count + 1,
-           usd_micros = t.usd_micros + EXCLUDED.usd_micros
-           WHERE t.usd_micros + EXCLUDED.usd_micros <= $6
-         RETURNING usd_micros`,
-        [subject, day, bucket, TRANSCRIBE_ENDPOINT, estimate, cap],
+      const r = await withSubjectContext(subject, (db) =>
+        db.query<UsageRow>(
+          `INSERT INTO ai_usage_daily AS t
+             (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
+           VALUES ($1, $2::date, $3, $4, 1, $5)
+           ON CONFLICT (subject_key, usage_day, bucket, endpoint)
+           DO UPDATE SET
+             request_count = t.request_count + 1,
+             usd_micros = t.usd_micros + EXCLUDED.usd_micros
+             WHERE t.usd_micros + EXCLUDED.usd_micros <= $6
+           RETURNING usd_micros`,
+          [subject, day, bucket, TRANSCRIBE_ENDPOINT, estimate, cap],
+        ),
       );
       if (r.rows.length > 0) {
         reserved = true;
@@ -203,11 +205,13 @@ export async function assertTranscribeUsdCap(
     }
     if (!reserved) {
       // Лише для тіла 402 / логу: скільки вже витрачено (не для рішення).
-      const { rows } = await pool.query<UsageRow>(
-        `SELECT usd_micros FROM ai_usage_daily
-         WHERE subject_key = $1 AND usage_day = $2 AND bucket = $3
-           AND endpoint = $4`,
-        [subject, day, bucket, TRANSCRIBE_ENDPOINT],
+      const { rows } = await withSubjectContext(subject, (db) =>
+        db.query<UsageRow>(
+          `SELECT usd_micros FROM ai_usage_daily
+           WHERE subject_key = $1 AND usage_day = $2 AND bucket = $3
+             AND endpoint = $4`,
+          [subject, day, bucket, TRANSCRIBE_ENDPOINT],
+        ),
       );
       spent = rows.length > 0 ? Number(rows[0]!.usd_micros) || 0 : 0;
     }
@@ -287,13 +291,15 @@ export async function releaseTranscribeUsdReservation(
   if (!t) return;
   reservations.delete(req);
   try {
-    await pool.query(
-      `UPDATE ai_usage_daily
-          SET usd_micros = GREATEST(0, usd_micros - $5),
-              request_count = GREATEST(0, request_count - 1)
-        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
-          AND endpoint = $4`,
-      [t.subject, t.day, t.bucket, TRANSCRIBE_ENDPOINT, t.micros],
+    await withSubjectContext(t.subject, (db) =>
+      db.query(
+        `UPDATE ai_usage_daily
+            SET usd_micros = GREATEST(0, usd_micros - $5),
+                request_count = GREATEST(0, request_count - 1)
+          WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
+            AND endpoint = $4`,
+        [t.subject, t.day, t.bucket, TRANSCRIBE_ENDPOINT, t.micros],
+      ),
     );
   } catch (err) {
     logger.warn({
@@ -333,14 +339,16 @@ export async function recordTranscribeUsdSpend(
   const cost = estimateMicros(audioBytes);
   if (cost <= 0) return;
   try {
-    await pool.query(
-      `INSERT INTO ai_usage_daily
-         (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
-       VALUES ($1, $2, $3, $4, 1, $5)
-       ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
-         request_count = ai_usage_daily.request_count + 1,
-         usd_micros = ai_usage_daily.usd_micros + EXCLUDED.usd_micros`,
-      [subject, day, bucket, TRANSCRIBE_ENDPOINT, cost],
+    await withSubjectContext(subject, (db) =>
+      db.query(
+        `INSERT INTO ai_usage_daily
+           (subject_key, usage_day, bucket, endpoint, request_count, usd_micros)
+         VALUES ($1, $2, $3, $4, 1, $5)
+         ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
+           request_count = ai_usage_daily.request_count + 1,
+           usd_micros = ai_usage_daily.usd_micros + EXCLUDED.usd_micros`,
+        [subject, day, bucket, TRANSCRIBE_ENDPOINT, cost],
+      ),
     );
   } catch (err) {
     // Не блокуємо успішну транскрипцію через збій ledger-а; залогуємо.

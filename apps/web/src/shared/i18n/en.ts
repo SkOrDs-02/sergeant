@@ -303,6 +303,7 @@ export const messagesEn: Partial<{
       more: "more",
       doIt: "Do it",
       open: "Open",
+      openWeekReport: "Open the week report",
       askAiChip: "AI",
       askAi: "Ask Sergeant about this",
       askAiLimit: "Daily limit of Sergeant requests reached",

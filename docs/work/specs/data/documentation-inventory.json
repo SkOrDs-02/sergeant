@@ -1,8 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "tracked_files": 672,
-  "total_entries": 672,
+  "tracked_files": 674,
+  "total_entries": 674,
   "target_collisions": [],
   "entries": [
     {
@@ -3314,7 +3314,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0094-mobile-web-first-freeze.md",
-      "inbound_count": 33,
+      "inbound_count": 34,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -3340,6 +3340,7 @@
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/2026-09-23-anti-slop-round2.md",
         "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md",
         "docs/work/specs/launch/phases/00-readiness-audit.md",
         "docs/work/specs/launch/phases/01-web-launch-with-users.md",
         "docs/work/specs/launch/phases/02-capacitor-launch.md",
@@ -3468,12 +3469,13 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/doc-freshness.md",
         "docs/governance/governance/release-policy.md",
         "docs/governance/governance/rules/10-lifecycle-markers.md",
         "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/governance/pr-ledger/index.json",
         "docs/governance/security/disaster-recovery.md"
       ]
     },
@@ -4123,7 +4125,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 111,
+      "inbound_count": 112,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -4162,6 +4164,7 @@
         "docs/governance/adr/0098-account-deletion-grace-window.md",
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/0100-free-premium-weekly-quotas-registry.md",
+        "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
         "docs/governance/adr/README.md",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/hard-rules.json",
@@ -5569,7 +5572,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/hub-coach.md",
-      "inbound_count": 30,
+      "inbound_count": 31,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/specs/2026-09-17-hubchat-design.md",
@@ -5581,6 +5584,7 @@
         "docs/governance/adr/0085-free-ai-quota-five-per-day.md",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
+        "docs/product/modules/finyk.md",
         "docs/product/modules/fizruk.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",
@@ -8126,8 +8130,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
-      "inbound_count": 8,
+      "inbound_count": 9,
       "inbound_sources": [
+        "docs/STATUS.md",
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/adr/0101-github-primary-host-ci-returns.md",
         "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md",
@@ -8203,6 +8208,19 @@
       "inbound_sources": [
         "docs/open-work.md",
         "docs/product/modules/nutrition.md"
+      ]
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md",
+      "inbound_count": 3,
+      "inbound_sources": [
+        "docs/design/design/design-system/01-tokens-colors.md",
+        "docs/open-work.md",
+        "docs/work/specs/audits/README.md"
       ]
     },
     {
@@ -8752,6 +8770,15 @@
         "docs/product/modules/nutrition.md",
         "docs/work/specs/pantry-categorization-ai.md"
       ]
+    },
+    {
+      "old_path": "docs/work/specs/data/pantry-categorization-remeasure-a-prime.json",
+      "new_path": "docs/work/specs/data/pantry-categorization-remeasure-a-prime.json",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/data/pantry-categorization-remeasure-a-prime.json",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/work/specs/pantry-categorization-ai.md"]
     },
     {
       "old_path": "docs/work/specs/data/pantry-categorization-seed-other.json",
@@ -9620,8 +9647,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/pr-body-validator-template-race.md",
-      "inbound_count": 2,
-      "inbound_sources": ["docs/STATUS.md", "docs/open-work.md"]
+      "inbound_count": 1,
+      "inbound_sources": ["docs/open-work.md"]
     },
     {
       "old_path": "docs/work/specs/README.md",

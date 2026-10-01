@@ -1,6 +1,7 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { toLocalISODate } from "@sergeant/shared";
+import { runWithBypassContext } from "../../dbContext.js";
 import { ANTHROPIC_PROVIDER_SUBJECT } from "../../lib/anthropicUsageStore.js";
 interface AiUsageBody {
   source: string;
@@ -33,36 +34,40 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
     // anthropicUsageStore і читається як Kyiv-день у aiCostSummary.
     const usageDay = toLocalISODate();
 
-    await pool.query(
-      `INSERT INTO ai_usage_daily (
-           subject_key,
-           usage_day,
-           bucket,
-           request_count,
-           input_tokens,
-           output_tokens,
-           total_tokens,
-           endpoint
-         )
-         VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7)
-         ON CONFLICT (subject_key, usage_day, bucket, endpoint)
-         DO UPDATE SET
-           request_count = ai_usage_daily.request_count + 1,
-           input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
-           output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
-           total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens`,
-      [
-        `n8n:${source}`,
-        usageDay,
-        bucket,
-        inputTokens,
-        outputTokens,
-        totalTokens,
-        // Без ендпоінта рядок не дедуплікується PK (міграції 104/106):
-        // NULL-и в Postgres унікальні між собою, тож кожен виклик
-        // створював би окремий рядок замість інкременту.
-        `n8n:${source}`,
-      ],
+    // `/api/internal/*` не має сесії користувача: рядок `n8n:<source>` не
+    // належить жодному юзеру -> bypass (A4).
+    await runWithBypassContext(pool, (client) =>
+      client.query(
+        `INSERT INTO ai_usage_daily (
+             subject_key,
+             usage_day,
+             bucket,
+             request_count,
+             input_tokens,
+             output_tokens,
+             total_tokens,
+             endpoint
+           )
+           VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7)
+           ON CONFLICT (subject_key, usage_day, bucket, endpoint)
+           DO UPDATE SET
+             request_count = ai_usage_daily.request_count + 1,
+             input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
+             output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
+             total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens`,
+        [
+          `n8n:${source}`,
+          usageDay,
+          bucket,
+          inputTokens,
+          outputTokens,
+          totalTokens,
+          // Без ендпоінта рядок не дедуплікується PK (міграції 104/106):
+          // NULL-и в Postgres унікальні між собою, тож кожен виклик
+          // створював би окремий рядок замість інкременту.
+          `n8n:${source}`,
+        ],
+      ),
     );
 
     res.json({ ok: true });
@@ -93,22 +98,24 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
     // із сьогоднішнім. Було на день більше, і `середнє за добу` ділило
     // 31 день витрат на 30.
     const today = toLocalISODate();
-    const { rows } = await pool.query(
-      `SELECT
-         COALESCE(endpoint, 'legacy')           AS endpoint,
-         bucket,
-         SUM(request_count)::bigint             AS calls,
-         SUM(input_tokens)::bigint              AS input_tokens,
-         SUM(COALESCE(cache_read_tokens, 0))::bigint AS cache_read_tokens,
-         SUM(output_tokens)::bigint             AS output_tokens,
-         SUM(COALESCE(actual_cost_usd, est_cost_usd))::numeric AS cost_usd
-       FROM ai_usage_daily
-       WHERE usage_day >= ($1::date - ($2::int - 1))
-         AND usage_day <= $1::date
-         AND subject_key = $3
-       GROUP BY 1, 2
-       ORDER BY cost_usd DESC NULLS LAST`,
-      [today, days, ANTHROPIC_PROVIDER_SUBJECT],
+    const { rows } = await runWithBypassContext(pool, (client) =>
+      client.query(
+        `SELECT
+           COALESCE(endpoint, 'legacy')           AS endpoint,
+           bucket,
+           SUM(request_count)::bigint             AS calls,
+           SUM(input_tokens)::bigint              AS input_tokens,
+           SUM(COALESCE(cache_read_tokens, 0))::bigint AS cache_read_tokens,
+           SUM(output_tokens)::bigint             AS output_tokens,
+           SUM(COALESCE(actual_cost_usd, est_cost_usd))::numeric AS cost_usd
+         FROM ai_usage_daily
+         WHERE usage_day >= ($1::date - ($2::int - 1))
+           AND usage_day <= $1::date
+           AND subject_key = $3
+         GROUP BY 1, 2
+         ORDER BY cost_usd DESC NULLS LAST`,
+        [today, days, ANTHROPIC_PROVIDER_SUBJECT],
+      ),
     );
 
     // Hard Rule #1: pg віддає bigint/numeric рядками — коерцимо на межі API,

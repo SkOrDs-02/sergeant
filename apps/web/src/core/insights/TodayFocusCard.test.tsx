@@ -363,6 +363,56 @@ describe("TodayFocusCard", () => {
     expect(onAction).toHaveBeenCalledWith("finyk");
   });
 
+  it("primaryLabel підміняє підпис «Відкрити <модуль>», коли картка веде не в модуль", () => {
+    const focus = {
+      id: "spending_velocity_high",
+      module: "finyk" as const,
+      title: "Витрати на 50% вище",
+      icon: "trending-up",
+      action: "week_report",
+    };
+
+    render(
+      <TodayFocusCard
+        focus={focus}
+        onAction={onAction}
+        onDismiss={onDismiss}
+        primaryLabel="Відкрити звіт тижня"
+      />,
+    );
+
+    expect(screen.queryByText("Відкрити Фінік")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Відкрити звіт тижня/ }),
+    );
+    expect(onAction).toHaveBeenCalledWith("week_report");
+  });
+
+  it("primaryLabel не чіпає імперативну дію: підпис береться з quick-action модуля", () => {
+    const focus = {
+      id: "finyk_daily_vs_weekly_pace",
+      module: "finyk" as const,
+      title: "Сьогодні 500 ₴",
+      icon: "clock",
+      action: "finyk",
+      pwaAction: "add_expense" as const,
+    };
+
+    render(
+      <TodayFocusCard
+        focus={focus}
+        onAction={onAction}
+        onDismiss={onDismiss}
+        primaryLabel="Відкрити звіт тижня"
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: /Додати витрату/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Відкрити звіт тижня")).toBeNull();
+  });
+
   it("рекомендація з pwaAction показує secondary кнопку 'Відкрити <модуль>'", () => {
     const focus = {
       id: "nutrition_no_meals",

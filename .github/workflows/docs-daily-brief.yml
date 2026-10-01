@@ -35,11 +35,16 @@ name: Docs daily brief
 #     A cron firing on a clean tree exits before committing anything.
 #   - `workflow_dispatch` stays, so a manual refresh is still one click.
 
-# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
+# Лише вручну з 2026-10-01 (рішення власника). Розклад знято вдруге, і з
+# іншої причини, ніж 2026-07-09: бот-PR, відкритий через GITHUB_TOKEN, не
+# запускає `pull_request`-воркфлоу, тож обовʼязкові чеки на ньому не
+# стартують, auto-merge висить, а щотижня додається ще один PR, який власник
+# землить руками. Розбіжність похідних доків ловить pre-commit
+# (`pre-commit-derived-artifacts.mjs` у кожному коміті з `.md`, з командою
+# регенерації), а ця кнопка лишається для ручного освіження. Повертаєш
+# `schedule:` — спершу розвʼяжи питання токена (AI-NOTE на кроці PR нижче).
 on:
   workflow_dispatch: {}
-  schedule:
-    - cron: "30 5 * * 1"
 
 permissions:
   contents: write
@@ -76,6 +81,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Чому тут Go і gitleaks. `pnpm install` запускає `prepare: husky`, тож
+      # `git commit` у кроці PR нижче проходить той самий pre-commit, що й у
+      # людини (Hard Rule #7), а його gitleaks-крок fail-closed: без бінарника
+      # коміт блокується. Саме так падали прогони 2026-09-30 і 2026-10-01
+      # (run 36857268041: «gitleaks is not installed - commit blocked»).
+      # Обходу для CI ні хук, ні CONTRIBUTING.md не дають: `HUSKY=0` ніде не
+      # санкціоновано, а `SERGEANT_SKIP_GITLEAKS=1` — одноразовий break-glass
+      # для людини. Тому ставимо сканер, як радить CONTRIBUTING § «Локальний
+      # secret-scan»: `go install`. Цілісність гарантує checksum-база Go
+      # (sum.golang.org), тож окремий sha256 не потрібен. Шлях модуля —
+      # `zricethezav/gitleaks`, а не `gitleaks/gitleaks`: репо перейменовано,
+      # go.mod — ні, і `go install github.com/gitleaks/gitleaks/v8@…` падає.
+      # actions/setup-go v6.5.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: stable
+          # go.sum у репо немає, кешувати нічого.
+          cache: false
+
+      - name: Install gitleaks (pre-commit hook requires it)
+        env:
+          GITLEAKS_VERSION: v8.30.1
+        run: |
+          set -euo pipefail
+          go install "github.com/zricethezav/gitleaks/v8@${GITLEAKS_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          "$(go env GOPATH)/bin/gitleaks" version
+
       - name: Regenerate all daily auto-gen artifacts
         # `docs:gen-daily` orchestrates the full daily refresh:
         #   1. open-work.md        — depends on tracker headers
@@ -89,6 +122,8 @@ jobs:
         # Steps 6–7 walk workspace manifests and surface metadata.
         # Freshness dashboard тут більше немає (2026-10-01): він не
         # комітиться, а збирається артефактом у docs-freshness.yml.
+        # GH_TOKEN тут не потрібен: з 2026-10-01 trust badge не питає
+        # `gh run list` і рахує лише те, що лежить у дереві.
         run: pnpm docs:gen-daily
 
       - name: Open auto-merge PR with refreshed artifacts (if any drift)
@@ -97,6 +132,14 @@ jobs:
         # labeled PR, and rely on GitHub's auto-merge to land it once the
         # protected-branch checks pass. This keeps branch protection intact
         # while preserving the daily-refresh cadence.
+        #
+        # AI-NOTE: обмеження, яке цей крок сам не знімає. PR, відкритий через
+        # GITHUB_TOKEN, не запускає `pull_request`-воркфлоу (GitHub глушить
+        # події від GITHUB_TOKEN, щоб не було рекурсії), тож обовʼязкові чеки
+        # branch protection (`check`, critical-flow, migration-*, commitlint,
+        # secret-scan) на ньому не стартують і auto-merge висить. Землить PR
+        # або власник вручну (адмін, протекція `non_admins`), або токен
+        # GitHub App/PAT замість GITHUB_TOKEN. Рішення за власником.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

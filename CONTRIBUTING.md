@@ -88,8 +88,8 @@ curl -fsSL -o /tmp/gitleaks.tgz \
 tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
 sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
 
-# Go install (будь-яка платформа)
-go install github.com/gitleaks/gitleaks/v8@latest
+# Go install (будь-яка платформа). Шлях модуля - `zricethezav/gitleaks`: репо перейменовано, go.mod ні
+go install github.com/zricethezav/gitleaks/v8@latest
 ```
 
 Перевірка staged-файлів вручну:

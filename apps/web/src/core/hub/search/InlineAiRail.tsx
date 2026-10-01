@@ -120,7 +120,7 @@ export function InlineAiRail({
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
                 state.status === "error"
-                  ? "bg-danger-soft text-danger-strong"
+                  ? "bg-danger-soft text-danger-soft-fg"
                   : "bg-brand-soft text-brand-strong dark:text-brand-300",
               )}
               aria-hidden="true"

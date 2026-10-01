@@ -656,6 +656,11 @@ export async function purgeUserData(
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+    // RLS-контекст (spec rls-ai-tables-and-isolation-gate, A5): транзакція
+    // вже є, тож `DELETE FROM ai_usage_daily` нижче виконується під
+    // `app.user_id` цього користувача. Викликається і з роута, і з фонового
+    // добивача `AccountDeletionPoller`; обидва передають конкретний userId.
+    await client.query("SELECT set_config('app.user_id', $1, true)", [userId]);
 
     // Snapshot email + Stripe customer id BEFORE any deletion, for the
     // external-services cleanup queue (ADR-0016 § ADR-6.3). Skipped
