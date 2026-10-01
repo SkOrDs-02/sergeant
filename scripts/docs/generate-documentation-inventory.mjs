@@ -18,10 +18,23 @@
  * воркфлоу — підключений він валив би все. А непідключений мовчав, і файл
  * стояв простроченим до звірки 2026-09-19.
  *
- * Тепер в артефакті лишається тільки те, що описує САМУ матрицю (`entries`,
- * `target_collisions`, `tracked_files` як розмір об'єднання закоміченого й
- * дискового стану). Ревізія і момент зняття йдуть у лог прогону, не у файл.
- * Розбір — `docs/work/specs/docs-code-drift-2026-09-19.md`, PR-9.
+ * Тепер в артефакті лишається тільки те, що описує САМУ матрицю (`entries`
+ * і `target_collisions`). Ревізія і момент зняття йдуть у лог прогону, не у
+ * файл. Розбір — `docs/work/specs/docs-code-drift-2026-09-19.md`, PR-9.
+ *
+ * **Чому в артефакті немає лічильників і графа посилань (2026-10-01).** Доти
+ * файл ніс `tracked_files`, `total_entries` і в кожному записі
+ * `inbound_count`/`inbound_sources`. Це агрегати по всьому дереву, і git
+ * зливав їх без конфлікту, але хибно: два PR, кожен із перегенерованим
+ * інвентарем, додають посилання на той самий док або по новому доку, і після
+ * мерджу обох число не дорівнює жодному з реальних станів. `--check` на
+ * `main` червонів після кожної пачки мерджів, а через merge-ref і на всіх
+ * відкритих PR, доки хтось не перегенерує (рішення власника 2026-10-01).
+ * Записи без агрегатів зливаються правильно: новий док це новий блок у
+ * сортованому списку, і дрейф лишається лише там, де його й треба бачити, при
+ * додаванні, видаленні чи перенесенні доку. Граф посилань для планування
+ * перенесень (`docs/start/documentation-architecture.md` § «Умови майбутнього
+ * структурного перенесення») рахує `--inbound` на вимогу і друкує в stdout.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -36,6 +49,13 @@ const OUTPUT = resolve(
   "docs/work/specs/data/documentation-inventory.json",
 );
 const CHECK = process.argv.includes("--check");
+const WITH_INBOUND = process.argv.includes("--inbound");
+if (CHECK && WITH_INBOUND) {
+  console.error(
+    "--check і --inbound не поєднуються: граф посилань не комітиться.",
+  );
+  process.exit(2);
+}
 const SHA = execFileSync("git", ["rev-parse", "HEAD"], {
   cwd: ROOT,
   encoding: "utf8",
@@ -160,7 +180,10 @@ function addInbound(target, source) {
 }
 
 for (const sourcePath of current.filter(
-  (path) => TEXT_EXTENSIONS.test(path) && resolve(ROOT, path) !== OUTPUT,
+  (path) =>
+    WITH_INBOUND &&
+    TEXT_EXTENSIONS.test(path) &&
+    resolve(ROOT, path) !== OUTPUT,
 )) {
   const source = readFileSync(resolve(ROOT, sourcePath), "utf8");
   const withoutUrls = source.replace(/https?:\/\/\S+/gu, "");
@@ -197,6 +220,13 @@ for (const sourcePath of current.filter(
  * Зараз таких записів нуль (міграція доків завершена), але без цієї правки
  * перший же видалений док повернув би самопожирання артефакту.
  */
+/** Поля графа посилань — лише для `--inbound`, у закомічений файл не йдуть. */
+function inboundFields(path) {
+  if (!WITH_INBOUND) return {};
+  const sources = [...(inbound.get(path) ?? [])].sort();
+  return { inbound_count: sources.length, inbound_sources: sources };
+}
+
 const permalinkRevCache = new Map();
 function permalinkRevFor(path) {
   if (permalinkRevCache.has(path)) return permalinkRevCache.get(path);
@@ -231,7 +261,6 @@ const entries = baseline.map((oldPath) => {
   const newPath = removed
     ? `${LEGACY_BLOB_BASE}/${permalinkRevFor(oldPath)}/${oldPath}`
     : proposed;
-  const sources = [...(inbound.get(exists ? proposed : oldPath) ?? [])].sort();
   const mergedReadme =
     oldPath === "docs/start/playbooks/README.md" ||
     oldPath === "docs/operations/runbooks/README.md";
@@ -247,8 +276,7 @@ const entries = baseline.map((oldPath) => {
           : "move",
     genre: genreFor(proposed),
     canonical_owner: newPath,
-    inbound_count: sources.length,
-    inbound_sources: sources,
+    ...inboundFields(exists ? proposed : oldPath),
   };
 });
 
@@ -256,15 +284,13 @@ const baselineSet = new Set(baseline);
 for (const path of current) {
   if (baselineSet.has(path)) continue;
   if (entries.some((entry) => entry.new_path === path)) continue;
-  const sources = [...(inbound.get(path) ?? [])].sort();
   entries.push({
     old_path: null,
     new_path: path,
     action: "keep",
     genre: genreFor(path),
     canonical_owner: path,
-    inbound_count: sources.length,
-    inbound_sources: sources,
+    ...inboundFields(path),
   });
 }
 entries.sort((a, b) =>
@@ -287,10 +313,8 @@ const targetCollisions = [...targets.entries()]
   })
   .map(([new_path, old_paths]) => ({ new_path, old_paths }));
 
-// Розмір ОБ'ЄДНАННЯ закоміченого й дискового стану. Саме об'єднання, а не
-// `baseline.length`: після коміту, який додає док, `git ls-tree HEAD` бачить
-// новий файл, і лічильник «baseline» стрибає — тобто чергове число, що
-// змінюється від самого факту коміту.
+// Розмір ОБ'ЄДНАННЯ закоміченого й дискового стану — лише для логу прогону.
+// У файл не пишеться: див. «Чому в артефакті немає лічильників» у шапці.
 const trackedFiles = new Set([...baseline, ...current]).size;
 
 const output = await format(
@@ -298,10 +322,10 @@ const output = await format(
     {
       _generated: true,
       generated_by: "scripts/docs/generate-documentation-inventory.mjs",
-      // `baseline_revision` і `baseline_files` тут НЕ пишуться навмисно — див.
-      // коментар «Чому артефакт не несе часу» у шапці файла.
-      tracked_files: trackedFiles,
-      total_entries: entries.length,
+      // `baseline_revision`, `baseline_files`, `tracked_files`,
+      // `total_entries` і поля графа посилань тут НЕ пишуться навмисно — див.
+      // коментарі «Чому артефакт не несе часу» і «Чому в артефакті немає
+      // лічильників» у шапці файла.
       target_collisions: targetCollisions,
       entries,
     },
@@ -311,7 +335,9 @@ const output = await format(
   { parser: "json" },
 );
 
-if (CHECK) {
+if (WITH_INBOUND) {
+  process.stdout.write(output);
+} else if (CHECK) {
   let existing = "";
   try {
     existing = readFileSync(OUTPUT, "utf8");
