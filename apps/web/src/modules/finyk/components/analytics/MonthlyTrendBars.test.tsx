@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MonthlyTrendBars } from "./MonthlyTrendBars";
 import { CategoryDeltaTable } from "./CategoryDeltaTable";
 
@@ -24,7 +24,9 @@ describe("MonthlyTrendBars", () => {
         /Ведеш з серпня: тренд стане корисним після трьох місяців/,
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText(/місяць ще триває/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /місяць ще триває/ }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/У середньому/)).toHaveTextContent(/12\s?345/);
     expect(screen.getByText(/на день/)).toHaveTextContent(/200/);
   });
@@ -42,8 +44,88 @@ describe("MonthlyTrendBars", () => {
         showBalance={false}
       />,
     );
-    expect(screen.getAllByText(/суму приховано/)).toHaveLength(2);
+    expect(
+      screen.getAllByRole("button", { name: /суму приховано/ }),
+    ).toHaveLength(2);
     expect(screen.queryByText(/У середньому/)).toBeNull();
+  });
+
+  // Раніше стовпці були `aria-hidden` дівами, а точна сума жила лише в
+  // sr-only: побачити, скільки витрачено в серпні, можна було тільки за
+  // висотою. Тепер стовпець тапається (патерн BarChart із хаб-звіту).
+  describe("тап по стовпцю", () => {
+    const bars = () => screen.getAllByRole("button", { name: /р\.: / });
+
+    it("кожен стовпець — кнопка з підписом «місяць: сума», нічого не вибрано", () => {
+      render(<MonthlyTrendBars points={points} />);
+      expect(bars()).toHaveLength(2);
+      expect(
+        screen.getByRole("button", { name: /серпень 2026 р\.: 12\s?345\s?₴/ }),
+      ).toHaveAttribute("aria-pressed", "false");
+      expect(
+        screen.getByRole("button", {
+          name: /вересень 2026 р\.: 3\s?000\s?₴, місяць ще триває/,
+        }),
+      ).toHaveAttribute("aria-pressed", "false");
+    });
+
+    it("тап показує суму місяця над стовпцями й позначає кнопку натиснутою", () => {
+      render(<MonthlyTrendBars points={points} />);
+      const august = screen.getByRole("button", { name: /серпень 2026/ });
+
+      fireEvent.click(august);
+
+      expect(august).toHaveAttribute("aria-pressed", "true");
+      expect(
+        screen.getByText(/^серпень 2026 р\.: 12\s?345\s?₴$/),
+      ).toBeInTheDocument();
+    });
+
+    it("поточний місяць у рядку вибору лишається позначений як неповний", () => {
+      render(<MonthlyTrendBars points={points} />);
+      fireEvent.click(screen.getByRole("button", { name: /вересень 2026/ }));
+      expect(
+        screen.getByText(/^вересень 2026 р\.: 3\s?000\s?₴, місяць ще триває$/),
+      ).toBeInTheDocument();
+    });
+
+    it("повторний тап знімає вибір, інший стовпець переносить його", () => {
+      render(<MonthlyTrendBars points={points} />);
+      const [august, september] = bars();
+
+      fireEvent.click(august!);
+      fireEvent.click(september!);
+      expect(august).toHaveAttribute("aria-pressed", "false");
+      expect(september).toHaveAttribute("aria-pressed", "true");
+      expect(screen.queryByText(/^серпень 2026 р\.: /)).toBeNull();
+
+      fireEvent.click(september!);
+      expect(september).toHaveAttribute("aria-pressed", "false");
+      expect(screen.queryByText(/^вересень 2026 р\.: /)).toBeNull();
+    });
+
+    it("«Приховати суми»: рядок вибору каже «суму приховано», число не світиться", () => {
+      const { container } = render(
+        <MonthlyTrendBars points={points} showBalance={false} />,
+      );
+      fireEvent.click(bars()[0]!);
+
+      expect(
+        screen.getByText(/^серпень 2026 р\.: суму приховано$/),
+      ).toBeInTheDocument();
+      expect(container).not.toHaveTextContent(/12\s?345/);
+      expect(container.innerHTML).not.toMatch(/12\s?345/);
+    });
+
+    it("стовпці лишаються пунктами списку, а вибір не зсуває розкладку: рядок суми має фіксовану висоту", () => {
+      const { container } = render(<MonthlyTrendBars points={points} />);
+      expect(screen.getAllByRole("listitem")).toHaveLength(2);
+      const readout = container.querySelector(".h-4.mb-1");
+      expect(readout).not.toBeNull();
+      expect(readout).toBeEmptyDOMElement();
+      fireEvent.click(bars()[0]!);
+      expect(container.querySelector(".h-4.mb-1")).not.toBeEmptyDOMElement();
+    });
   });
 });
 

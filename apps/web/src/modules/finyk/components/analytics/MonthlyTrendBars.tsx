@@ -2,7 +2,7 @@
  * Last validated: 2026-09-25
  * Status: Active
  */
-import { memo } from "react";
+import { memo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
@@ -40,6 +40,11 @@ const midMonth = (key: string) => new Date(`${key}-15T12:00:00Z`);
 /**
  * Стовпці витрат за місяцями (Р11). Поточний місяць неповний і так і
  * позначений, коротка історія показується як є з підписом, а не ховається.
+ *
+ * Стовпець тапається: сума місяця виводиться рядком над стовпцями (повторний
+ * тап знімає вибір). Той самий патерн, що в `BarChart` хаб-звіту
+ * (`core/hub/ExpensesCard.tsx`): кнопки з `aria-pressed`, а рядок суми має
+ * фіксовану висоту, тож вибір не зсуває розкладку.
  */
 function MonthlyTrendBarsComponent({
   points,
@@ -48,52 +53,79 @@ function MonthlyTrendBarsComponent({
   showBalance = true,
   className,
 }: MonthlyTrendBarsProps) {
+  // Ключ місяця, а не індекс: тренд дотягує історію зі дзеркала, і індекс
+  // тоді вказував би вже на інший стовпець.
+  const [selected, setSelected] = useState<string | null>(null);
   const first = points[0];
   if (!first) return null;
   const max = Math.max(...points.map((p) => p.spentMinor), 1);
 
+  // «Місяць: сума» — і підпис стовпця для скрінрідера, і рядок вибору.
+  // «Приховати суми» діє однаково в обох місцях.
+  const describe = (p: MonthlyTrendPoint): string => {
+    const amount = showBalance
+      ? `${formatNumberUk(Math.round(p.spentMinor / 100))}${NARROW_NBSP}₴`
+      : copy.hiddenAmount;
+    return [
+      `${LONG_MONTH.format(midMonth(p.month))}: ${amount}`,
+      p.isCurrent ? copy.monthInProgress : null,
+    ]
+      .filter(Boolean)
+      .join(", ");
+  };
+  const selectedPoint = points.find((p) => p.month === selected);
+
   return (
     <div className={cn("space-y-3", className)}>
-      <ul className="flex items-end gap-1 h-28" aria-label={copy.listLabel}>
-        {points.map((p) => {
-          const date = midMonth(p.month);
-          const amount = showBalance
-            ? `${formatNumberUk(Math.round(p.spentMinor / 100))}${NARROW_NBSP}₴`
-            : copy.hiddenAmount;
-          const label = [
-            `${LONG_MONTH.format(date)}: ${amount}`,
-            p.isCurrent ? copy.monthInProgress : null,
-          ]
-            .filter(Boolean)
-            .join(", ");
-          return (
-            <li
-              key={p.month}
-              className="flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-1"
-            >
-              <span className="sr-only">{label}</span>
-              <div
-                className={cn(
-                  "w-full max-w-8 rounded-t-md",
-                  p.isCurrent
-                    ? "bg-finyk/30 border border-dashed border-finyk"
-                    : "bg-finyk",
-                )}
-                style={{
-                  height: `${Math.max((p.spentMinor / max) * 100, p.spentMinor > 0 ? 4 : 1)}%`,
-                }}
-                aria-hidden
-              />
-              <span
-                className="text-style-caption text-subtle truncate"
-                aria-hidden
-              >
-                {SHORT_MONTH.format(date).replace(".", "")}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+      <div>
+        <div
+          className="h-4 mb-1 text-style-caption text-center text-text"
+          aria-hidden
+        >
+          {selectedPoint ? describe(selectedPoint) : null}
+        </div>
+        <ul className="flex items-end gap-1 h-28" aria-label={copy.listLabel}>
+          {points.map((p) => {
+            const date = midMonth(p.month);
+            const isSelected = selected === p.month;
+            return (
+              <li key={p.month} className="flex-1 min-w-0 h-full">
+                <button
+                  type="button"
+                  data-compact
+                  aria-label={describe(p)}
+                  aria-pressed={isSelected}
+                  className="w-full h-full flex flex-col items-center justify-end gap-1 appearance-none bg-transparent border-0 p-0 cursor-pointer"
+                  onClick={() => setSelected(isSelected ? null : p.month)}
+                >
+                  <div
+                    className={cn(
+                      "w-full max-w-8 rounded-t-md transition-opacity",
+                      p.isCurrent
+                        ? "bg-finyk/30 border border-dashed border-finyk"
+                        : "bg-finyk",
+                      selectedPoint && !isSelected && "opacity-60",
+                    )}
+                    style={{
+                      height: `${Math.max((p.spentMinor / max) * 100, p.spentMinor > 0 ? 4 : 1)}%`,
+                    }}
+                    aria-hidden
+                  />
+                  <span
+                    className={cn(
+                      "h-4 text-style-caption truncate",
+                      isSelected ? "text-text font-medium" : "text-subtle",
+                    )}
+                    aria-hidden
+                  >
+                    {SHORT_MONTH.format(date).replace(".", "")}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       {points.length < 3 && (
         <p className="text-style-caption text-muted">
           {copy.shortHistory.replace(
