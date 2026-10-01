@@ -25,6 +25,10 @@ const copy = messages.privacy.analyticsConsent;
  * онбордингу). Після вибору `AnalyticsConsentGate` знімає банер, і він не
  * повертається.
  *
+ * Без темних патернів: «Дозволити» і «Ні, дякую» однакового вигляду й
+ * розміру, як у кроці онбордингу. Залита згода поруч з обведеною відмовою
+ * підштовхувала б до «так» (рішення власника 2026-10-01).
+ *
  * Монтується лише через `AnalyticsConsentGate` і ліниво, тож не важить на
  * критичному шляху.
  */
@@ -69,7 +73,7 @@ export default function AnalyticsConsentBanner() {
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="solid"
           size="md"
           className="min-h-[44px] flex-1"
           onClick={() => choose(false)}

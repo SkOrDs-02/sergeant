@@ -78,6 +78,17 @@ describe("AnalyticsConsentGate", () => {
     ).toBeInTheDocument();
   });
 
+  it("обидві відповіді однакового вигляду: відмова не слабша за згоду", async () => {
+    renderGate();
+    const accept = await screen.findByRole(
+      "button",
+      { name: "Дозволити" },
+      LAZY_WAIT,
+    );
+    const decline = screen.getByRole("button", { name: "Ні, дякую" });
+    expect(decline.className).toBe(accept.className);
+  });
+
   it("«Дозволити» вмикає згоду, знімає банер і не повертає його", async () => {
     const user = userEvent.setup();
     const { unmount } = renderGate();
