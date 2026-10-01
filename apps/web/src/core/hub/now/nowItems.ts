@@ -177,15 +177,28 @@ function actionOfInsight(insight: Insight): NowAction {
 }
 
 /**
+ * Вкладка «Звіти» хабу (`useHubUIState` читає її з `?tab=reports`). Запасна
+ * ціль «Звіту тижня» для крос-модульної картки, у якої модуля немає.
+ */
+export const HUB_REPORTS_PATH = "/?tab=reports";
+
+/**
  * «Звіт тижня» як ціль працює, лише коли блок «Порада й звіт тижня» є на
  * екрані. Коли його вимкнено в налаштуваннях, подію не слухає ніхто, і
- * «Відкрити» мовчки нічого б не робило: повертаємо рядку перехід у модуль,
- * яким він був до рішення 2026-10-01.
+ * «Відкрити» мовчки нічого б не робило. Рядок із модуля повертається до
+ * переходу в модуль, яким був до рішення 2026-10-01; крос-модульний
+ * (`module: "hub"`, понеділковий «Підсумок минулого тижня») модуля не має, а
+ * `openModule("hub")` теж проковтнув би клік, тож його веде вкладка «Звіти».
  */
 export function withoutWeekReportTarget(item: NowItem): NowItem {
-  return item.action.kind === "open_week_report"
-    ? { ...item, action: { kind: "open_module", module: item.module } }
-    : item;
+  if (item.action.kind !== "open_week_report") return item;
+  return {
+    ...item,
+    action:
+      item.module === "hub"
+        ? { kind: "navigate", path: HUB_REPORTS_PATH }
+        : { kind: "open_module", module: item.module },
+  };
 }
 
 function fromRec(rec: Rec, insight?: Insight): NowItem {
