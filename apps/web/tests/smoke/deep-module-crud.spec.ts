@@ -107,6 +107,8 @@ async function expandTodayAndExpect(
     // уже лежить «DCRUD кава оновлено», і локатор резолвиться у два
     // вузли — strict mode падає. Так одна перервана навігація у спробі 1
     // перетворилась на жорстке падіння всієї джоби (PR #100, 2026-09-17).
+    // З 2026-10-01 назва в сценарії Фініка унікальна на кожну спробу, тож
+    // колізії між спробами немає. `exact` лишається через префікс.
     await expect(page.getByText(text, { exact: true })).toBeVisible({
       timeout: 1500,
     });
@@ -131,7 +133,16 @@ test.describe("@critical deep module CRUD browser loop", () => {
 
   test("finyk: creates, edits, deletes, and restores a manual expense", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    // Назва унікальна на КОЖНУ спробу. Акаунт smoke-lane-у спільний
+    // (`apps/web/AGENTS.md` § E2E smoke, п. 8), тож retry стартує на
+    // серверному стані попередньої спроби, де витрата з тією самою назвою
+    // вже лежить, часто вже відредагована. Тоді будь-який локатор за текстом
+    // резолвиться у два рядки (strict mode), а `.first()` міг узяти чужий.
+    // Так було на #1304 (2026-10-01): спроба 1 впала на перерваній
+    // навігації, retry на двох «DCRUD кава оновлено».
+    const name = `DCRUD кава ${testInfo.retry}${Date.now().toString(36)}`;
+    const renamed = `${name} оновлено`;
     await seedCrudState(page);
     const errors = await collectPageErrors(page);
 
@@ -145,7 +156,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     const createDialog = page.getByRole("dialog", { name: "Додати витрату" });
     await expect(createDialog).toBeVisible();
     await page.getByLabel("Сума ₴").fill("123");
-    await page.getByLabel("Назва").fill("DCRUD кава");
+    await page.getByLabel("Назва").fill(name);
     await waitForSqliteRefreshAfter(page, "finyk", async () => {
       await createDialog
         .getByRole("button", { name: "Додати витрату", exact: true })
@@ -157,25 +168,19 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // «Розгорнути Сьогодні» більше не знаходить кнопки — вона вже
     // «Згорнути Сьогодні». `expandTodayAndExpect` ідемпотентний: клікає
     // лише коли група справді згорнута, тому працює для обох станів.
-    await expandTodayAndExpect(page, "DCRUD кава");
+    await expandTodayAndExpect(page, name);
 
-    // Той самий підрядковий капкан, що й у `expandTodayAndExpect` вище.
-    await page.getByText("DCRUD кава", { exact: true }).click();
+    // Той самий підрядковий капкан, що й у `expandTodayAndExpect` вище:
+    // `name` — префікс `renamed`.
+    await page.getByText(name, { exact: true }).click();
     await expect(
       page.getByRole("dialog", { name: "Редагувати витрату" }),
     ).toBeVisible();
-    await page.getByLabel("Назва").fill("DCRUD кава оновлено");
+    await page.getByLabel("Назва").fill(renamed);
     await waitForSqliteRefreshAfter(page, "finyk", async () => {
       await page.getByRole("button", { name: "Зберегти" }).click();
     });
-    // `.first()` — та сама причина, що й `exact` у `expandTodayAndExpect`:
-    // retry стартує на СПІЛЬНОМУ серверному стані, де «DCRUD кава оновлено»
-    // від попередньої спроби вже лежить, тож після редагування рядків два і
-    // strict mode падає (PR #107, 2026-09-17). Тут достатньо, що хоч один
-    // видимий: ідентичність запису далі перевіряє delete → undo.
-    await expect(
-      page.getByText("DCRUD кава оновлено", { exact: true }).first(),
-    ).toBeVisible();
+    await expect(page.getByText(renamed, { exact: true })).toBeVisible();
     // Dual-write: дочекатися flush у sync-queue ПЕРЕД full reload,
     // інакше cold SQLite boot підтягне stale server snapshot без edit.
     await waitForSyncQueueIdle(page);
@@ -191,7 +196,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // на повільному CI без цього wait день-група ще не існує.
     await waitForInitialSqliteRefresh(page, "finyk");
     await waitForSyncQueueIdle(page);
-    await expandTodayAndExpect(page, "DCRUD кава оновлено", {
+    await expandTodayAndExpect(page, renamed, {
       timeoutMs: 60_000,
     });
 
@@ -207,7 +212,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(async () => {
       await page
         .getByRole("button")
-        .filter({ hasText: "DCRUD кава оновлено" })
+        .filter({ hasText: renamed })
         .dispatchEvent("click");
       const editDialog = page.getByRole("dialog", {
         name: "Редагувати витрату",
@@ -230,10 +235,10 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // анти-резурекцію після undo фіксує фінальний expand-assert нижче.
     await undoBtn.dispatchEvent("click");
     await waitForSyncQueueIdle(page);
-    await expandTodayAndExpect(page, "DCRUD кава оновлено", {
+    await expandTodayAndExpect(page, renamed, {
       timeoutMs: 60_000,
     });
-    await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
+    await expect(page.getByText(renamed, { exact: true })).toBeVisible();
 
     expect(errors, "Uncaught page errors during Finyk CRUD").toEqual([]);
   });
