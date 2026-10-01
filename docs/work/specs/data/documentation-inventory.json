@@ -8711,8 +8711,9 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md",
-      "inbound_count": 4,
+      "inbound_count": 5,
       "inbound_sources": [
+        "docs/STATUS.md",
         "docs/design/design/design-system/01-tokens-colors.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
@@ -8955,13 +8956,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/README.md",
-      "inbound_count": 7,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/work/README.md",
         "docs/work/research/2026-09-01-competitor-research-modules.md",
         "docs/work/specs/audits/2026-09-01-product-audit/README.md",
+        "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md",
         "docs/work/specs/audits/verification/migration.md",
         "docs/work/specs/planning/README.md"
       ]
@@ -9797,9 +9799,8 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/launch/phases/00-readiness-audit.md",
-      "inbound_count": 6,
+      "inbound_count": 5,
       "inbound_sources": [
-        "docs/STATUS.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",

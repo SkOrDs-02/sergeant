@@ -52,9 +52,9 @@
 - [`work/specs/tech-debt/backend.md`](./work/specs/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Активні спеки)_
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md`](./work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md) — Аудит контрасту й плоских поверхонь (WCAG AA, світла і темна тема) — Active. Реєстр знахідок із виміряними числами; виправлення на рівні токенів зроблені гілкою `claude/design-contrast-toke _(Активні спеки)_
 - [`work/specs/audits/2026-09-23-docs-governance-audit.md`](./work/specs/audits/2026-09-23-docs-governance-audit.md) — Аудит документації та governance: правила, ієрархія, рішення, enforcement — Active - більшість знахідок закрито (розділ 11); розділ 9 чекає рішень власника (DG-32 закрито 2026-09-29). _(Активні спеки)_
 - [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active _(Активні спеки)_
-- [`work/specs/launch/phases/00-readiness-audit.md`](./work/specs/launch/phases/00-readiness-audit.md) — 00 — Launch readiness audit: 5 застосунків Sergeant — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
