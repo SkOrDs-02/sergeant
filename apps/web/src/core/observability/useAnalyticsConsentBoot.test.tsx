@@ -6,13 +6,19 @@ import { vi } from "vitest";
  * (CodeRabbit PR #627). Mirrors `useProfileWriteThroughBoot.test.tsx`'s
  * boot-wiring test shape.
  */
-const { mockUseAuth, mockGetPreferences } = vi.hoisted(() => ({
-  mockUseAuth: vi.fn(),
-  mockGetPreferences: vi.fn(),
-}));
+const { mockUseAuth, mockGetPreferences, mockUpdatePreferences } = vi.hoisted(
+  () => ({
+    mockUseAuth: vi.fn(),
+    mockGetPreferences: vi.fn(),
+    mockUpdatePreferences: vi.fn(),
+  }),
+);
 vi.mock("../auth/AuthContext", () => ({ useAuth: mockUseAuth }));
 vi.mock("@shared/api", () => ({
-  meApi: { getPreferences: mockGetPreferences },
+  meApi: {
+    getPreferences: mockGetPreferences,
+    updatePreferences: mockUpdatePreferences,
+  },
 }));
 
 import { renderHook, waitFor } from "@testing-library/react";
@@ -20,13 +26,19 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
   __resetAnalyticsConsentForTests,
   getAnalyticsConsent,
+  getAnalyticsDecision,
+  getPendingAnalyticsSync,
+  isAnalyticsServerHydrated,
+  setAnalyticsConsent,
 } from "./analyticsConsent";
 import { useAnalyticsConsentBoot } from "./useAnalyticsConsentBoot";
 
 beforeEach(() => {
   mockUseAuth.mockReset();
   mockGetPreferences.mockReset();
+  mockUpdatePreferences.mockReset();
   __resetAnalyticsConsentForTests();
+  localStorage.clear();
 });
 
 describe("useAnalyticsConsentBoot", () => {
@@ -114,5 +126,34 @@ describe("useAnalyticsConsentBoot", () => {
     rerender();
 
     await waitFor(() => expect(mockGetPreferences).toHaveBeenCalledTimes(2));
+  });
+
+  it("гість погодився в онбордингу → після входу вибір іде на сервер, а не перетирається дефолтом", async () => {
+    setAnalyticsConsent(true, { pendingServerSync: true });
+    mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+    mockUpdatePreferences.mockResolvedValue({ analytics: true });
+    mockGetPreferences.mockResolvedValue({ analytics: false, updatedAt: null });
+
+    renderHook(() => useAnalyticsConsentBoot());
+
+    await waitFor(() => expect(getPendingAnalyticsSync()).toBeNull());
+    expect(mockUpdatePreferences).toHaveBeenCalledWith({ analytics: true });
+    expect(mockGetPreferences).not.toHaveBeenCalled();
+    expect(getAnalyticsConsent()).toBe(true);
+    expect(getAnalyticsDecision()).toBe("granted");
+    expect(isAnalyticsServerHydrated()).toBe(true);
+  });
+
+  it("синк рішення гостя впав → локальний вибір діє, прапорець чекає наступного входу", async () => {
+    setAnalyticsConsent(true, { pendingServerSync: true });
+    mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+    mockUpdatePreferences.mockRejectedValue(new Error("offline"));
+
+    renderHook(() => useAnalyticsConsentBoot());
+
+    await waitFor(() => expect(isAnalyticsServerHydrated()).toBe(true));
+    expect(getPendingAnalyticsSync()).toBe("granted");
+    expect(getAnalyticsConsent()).toBe(true);
+    expect(mockGetPreferences).not.toHaveBeenCalled();
   });
 });

@@ -62,15 +62,28 @@ const DECISION_KEY = "sergeant.analytics_consent_decision.v1";
 
 export type AnalyticsDecision = "granted" | "denied";
 
-function readDecision(): AnalyticsDecision | null {
+type StoredDecision = { v?: unknown; p?: unknown };
+
+function readStored(): StoredDecision | null {
   // Обʼєкт, а не голий рядок: `safeWriteLS` пише рядки як є (без JSON), а
   // `safeReadLS` їх парсить як JSON — голе `granted` не прочиталось би.
-  const raw = safeReadLS<{ v?: unknown }>(DECISION_KEY);
-  const value = raw && typeof raw === "object" ? raw.v : null;
+  const raw = safeReadLS<StoredDecision>(DECISION_KEY);
+  return raw && typeof raw === "object" ? raw : null;
+}
+
+function readDecision(): AnalyticsDecision | null {
+  const value = readStored()?.v;
   return value === "granted" || value === "denied" ? value : null;
 }
 
 let decision: AnalyticsDecision | null = readDecision();
+// Рішення гостя, яке ще не потрапило на сервер. Без цього прапорця перша
+// серверна гідрація після реєстрації (`analytics: false` — дефолт колонки,
+// міграція 111) перетирала б щойно дане «Дозволити» на «Ні»: з 2026-10-01
+// згоду питає крок онбордингу, тож майже всі нові люди відповідають гостями.
+// `useAnalyticsConsentBoot` бачить прапорець і віддає вибір на сервер замість
+// того, щоб читати звідти дефолт.
+let pendingServerSync = decision !== null && readStored()?.p === true;
 // Скільки знає кеш: `true` лише після явного «granted» на пристрої або
 // після того, як сервер підтвердив `analytics: true`.
 let cachedAnalyticsConsent = decision === "granted";
@@ -91,13 +104,18 @@ function notify(): void {
   }
 }
 
-function persistDecision(next: AnalyticsDecision | null): void {
+function persistDecision(
+  next: AnalyticsDecision | null,
+  pendingSync = false,
+): void {
   decision = next;
+  pendingServerSync = next !== null && pendingSync;
   if (next === null) return;
   // Збій сховища (квота, приватний режим) не має губити рішення: воно
   // лишається в памʼяті на цю сесію, підписники все одно отримують notify().
   try {
-    if (!safeWriteLS(DECISION_KEY, { v: next })) {
+    const stored = pendingServerSync ? { v: next, p: true } : { v: next };
+    if (!safeWriteLS(DECISION_KEY, stored)) {
       logger.warn("[analyticsConsent] не вдалося зберегти рішення на пристрої");
     }
   } catch (err) {
@@ -126,10 +144,28 @@ export function isAnalyticsServerHydrated(): boolean {
  * ЯВНИЙ вибір людини (банер або тумблер): оновлює кеш, запамʼятовує
  * рішення на пристрої й сповіщає підписників (PostHog opt-in/out).
  */
-export function setAnalyticsConsent(value: boolean): void {
+export function setAnalyticsConsent(
+  value: boolean,
+  opts: { pendingServerSync?: boolean } = {},
+): void {
   cachedAnalyticsConsent = value;
-  persistDecision(value ? "granted" : "denied");
+  persistDecision(value ? "granted" : "denied", opts.pendingServerSync);
   notify();
+}
+
+/**
+ * Рішення, ухвалене гостем на цьому пристрої й ще не записане на сервер
+ * (`setAnalyticsConsent(..., { pendingServerSync: true })`); `null` — такого
+ * нема. Читає `useAnalyticsConsentBoot` після входу.
+ */
+export function getPendingAnalyticsSync(): AnalyticsDecision | null {
+  return pendingServerSync ? decision : null;
+}
+
+/** Сервер прийняв рішення гостя: далі джерело правди — сервер. */
+export function markAnalyticsDecisionSynced(): void {
+  if (!pendingServerSync || decision === null) return;
+  persistDecision(decision, false);
 }
 
 /**
@@ -165,6 +201,7 @@ export function subscribeAnalyticsConsent(listener: () => void): () => void {
 export function __resetAnalyticsConsentForTests(): void {
   cachedAnalyticsConsent = false;
   decision = null;
+  pendingServerSync = false;
   serverHydrated = false;
   listeners.clear();
 }

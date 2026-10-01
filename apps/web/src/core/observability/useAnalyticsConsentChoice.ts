@@ -19,7 +19,8 @@ import { setAnalyticsConsent } from "./analyticsConsent";
  *
  * Вибір іде в `setAnalyticsConsent` — єдине джерело правди згоди (воно ж
  * живить PostHog opt-in/out і тумблер у Налаштування → Приватність); для
- * залогіненого дублюється на сервер, гість лишає рішення на пристрої.
+ * залогіненого дублюється на сервер; гість лишає рішення на пристрої з
+ * позначкою «ще не на сервері» — його віддасть сервер-гідрація після входу.
  * `onChosen` викликається після локального запису, тож подія, яку хост шле
  * наступним рядком, уже бачить нове значення згоди.
  */
@@ -38,7 +39,9 @@ export function useAnalyticsConsentChoice(
     chosenRef.current = true;
     setSaving(true);
     // Локально й одразу: PostHog opt-in/out і зникнення банера без мережі.
-    setAnalyticsConsent(granted);
+    // Гість позначає рішення як ще не віддане серверу: після реєстрації його
+    // забере `useAnalyticsConsentBoot`, а не перетре серверний дефолт.
+    setAnalyticsConsent(granted, { pendingServerSync: !user });
     if (user) {
       meApi.updatePreferences({ analytics: granted }).catch((err: unknown) => {
         // Вибір на пристрої вже діє; сервер підтягнеться тумблером.

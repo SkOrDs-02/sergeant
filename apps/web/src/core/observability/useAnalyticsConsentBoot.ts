@@ -26,7 +26,9 @@ import { meApi } from "@shared/api";
 import { logger } from "@shared/lib";
 import { useAuth } from "../auth/AuthContext";
 import {
+  getPendingAnalyticsSync,
   hydrateAnalyticsConsent,
+  markAnalyticsDecisionSynced,
   markAnalyticsServerHydrated,
 } from "./analyticsConsent";
 
@@ -48,6 +50,33 @@ export function useAnalyticsConsentBoot(): void {
     hydratedForUserRef.current = userId;
 
     let cancelled = false;
+
+    // Гість відповів на крок згоди (чи банер) і щойно увійшов: його вибір
+    // свіжіший за серверний дефолт `analytics: false`, тож віддаємо його на
+    // сервер, а не читаємо звідти. Без цього «Дозволити» гостя після
+    // реєстрації мовчки ставало «Ні». Свідомий компроміс: якщо акаунт уже
+    // мав явну відмову з іншого пристрою, перемагає останній явний вибір.
+    const pending = getPendingAnalyticsSync();
+    if (pending !== null) {
+      const granted = pending === "granted";
+      meApi
+        .updatePreferences({ analytics: granted })
+        .then(() => {
+          if (cancelled) return;
+          markAnalyticsDecisionSynced();
+          hydrateAnalyticsConsent(granted);
+        })
+        .catch((err: unknown) => {
+          logger.warn("[analyticsConsent] guest decision sync failed", err);
+          // Прапорець лишається — спробуємо при наступному вході. На цьому
+          // пристрої діє локальне рішення.
+          if (!cancelled) markAnalyticsServerHydrated(true);
+        });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     meApi
       .getPreferences()
       .then((prefs) => {
