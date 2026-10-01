@@ -37,6 +37,31 @@ describe("categorizeMcc", () => {
     expect(categorizeMcc(7011)).toBe("travel");
   });
 
+  // П'ять категорій 2026-10-01: вебхук штампує слаг із цього ж каталогу.
+  it("повертає слаги нових категорій", () => {
+    expect(categorizeMcc(4814)).toBe("telecom");
+    expect(categorizeMcc(4812)).toBe("telecom");
+    expect(categorizeMcc(4816)).toBe("telecom");
+    expect(categorizeMcc(5200)).toBe("home");
+    expect(categorizeMcc(5712)).toBe("home");
+    // 742, а не 0742: восьмеричний літерал у модулі — SyntaxError.
+    expect(categorizeMcc(742)).toBe("pets");
+    expect(categorizeMcc(5995)).toBe("pets");
+    expect(categorizeMcc(5947)).toBe("gifts");
+    expect(categorizeMcc(5992)).toBe("gifts");
+  });
+
+  // AI-DANGER: штамп `category_slug` живе в БД вічно й читається вебом як
+  // канонічний `categoryId` (див. міграцію 136). 4829 бачить лише клієнтський
+  // резолвер: у нього є опис (поповнення банки → «Інше») і override.
+  it("мовчить на 4829 — перекази людям резолвить клієнт, а не штамп", () => {
+    expect(categorizeMcc(4829)).toBeNull();
+  });
+
+  it("4899 лишається «Підписками» — не перекладений у звʼязок", () => {
+    expect(categorizeMcc(4899)).toBe("subscriptions");
+  });
+
   it("повертає null для MCC = 0", () => {
     expect(categorizeMcc(0)).toBeNull();
   });
