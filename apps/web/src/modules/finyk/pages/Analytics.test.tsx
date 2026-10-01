@@ -472,7 +472,8 @@ describe("Analytics page", () => {
     expect(within(comparisonCard).getByText(/2\s?518/)).toBeInTheDocument();
   });
 
-  // Р12: та сама дельта по категорії, з тим самим правилом Р4.
+  // Р12: дельта по категорії. Таблиця показує її завжди в гривнях (рішення
+  // власника 2026-10-01): обидві суми вже в сусідніх колонках.
   it("lists category deltas against the previous month", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
@@ -490,8 +491,9 @@ describe("Analytics page", () => {
     const table = await screen.findByRole("table");
     expect(within(table).getByText("Цей")).toBeInTheDocument();
     expect(within(table).getAllByRole("row")).toHaveLength(2);
-    expect(table).toHaveTextContent(/50/);
-    expect(table).toHaveTextContent("%");
+    // 200 ₴ у травні → 300 ₴ у червні: +100 ₴, а не «+50 %».
+    expect(table).toHaveTextContent(/\+100/);
+    expect(table).not.toHaveTextContent("%");
   });
 
   // Р15: рівень заощаджень і план проти факту.

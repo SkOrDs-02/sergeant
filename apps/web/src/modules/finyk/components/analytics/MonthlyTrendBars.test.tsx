@@ -130,34 +130,79 @@ describe("MonthlyTrendBars", () => {
 });
 
 describe("CategoryDeltaTable", () => {
-  it("показує відсоток лише з базою, інакше дельту в гривнях", () => {
+  const rows = [
+    {
+      categoryId: "food",
+      label: "Продукти",
+      color: "#000",
+      currentMinor: 80_750,
+      prevMinor: 24_750,
+      delta: { diffMinor: 56_000, pct: 226.26 },
+    },
+    {
+      categoryId: "cafe",
+      label: "Кафе",
+      color: "#111",
+      currentMinor: 50_000,
+      prevMinor: 1_000,
+      delta: { diffMinor: 49_000, pct: null },
+    },
+    {
+      categoryId: "transport",
+      label: "Транспорт",
+      color: "#222",
+      currentMinor: 30_000,
+      prevMinor: 45_000,
+      delta: { diffMinor: -15_000, pct: -33.33 },
+    },
+  ];
+
+  // Рішення власника 2026-10-01: у цій таблиці зміна завжди в гривнях,
+  // навіть коли Р4 дозволяє відсоток (обидві суми вже в сусідніх колонках).
+  it("зміна завжди в гривнях: і з базою для відсотка, і без неї", () => {
+    render(<CategoryDeltaTable rows={rows} />);
+    const food = screen.getByRole("row", { name: /Продукти/ });
+    expect(food).toHaveTextContent(/\+560/);
+    expect(food).toHaveTextContent("₴");
+    expect(food).not.toHaveTextContent("%");
+    expect(food).not.toHaveTextContent(/226/);
+    const cafe = screen.getByRole("row", { name: /Кафе/ });
+    expect(cafe).toHaveTextContent(/\+490/);
+    expect(cafe).not.toHaveTextContent("%");
+  });
+
+  it("спад — зі знаком мінус і теж у гривнях", () => {
+    render(<CategoryDeltaTable rows={rows} />);
+    const transport = screen.getByRole("row", { name: /Транспорт/ });
+    expect(transport).toHaveTextContent(/[-−]150/);
+    expect(transport).toHaveTextContent("₴");
+    expect(transport).not.toHaveTextContent("%");
+  });
+
+  it("без зміни (0 ₴ після округлення) колонка зміни порожня", () => {
     render(
       <CategoryDeltaTable
         rows={[
           {
-            categoryId: "food",
-            label: "Продукти",
-            color: "#000",
-            currentMinor: 80_750,
-            prevMinor: 24_750,
-            delta: { diffMinor: 56_000, pct: 226.26 },
-          },
-          {
-            categoryId: "cafe",
-            label: "Кафе",
-            color: "#111",
-            currentMinor: 50_000,
-            prevMinor: 1_000,
-            delta: { diffMinor: 49_000, pct: null },
+            categoryId: "same",
+            label: "Стабільна",
+            color: "#333",
+            currentMinor: 10_040,
+            prevMinor: 10_000,
+            delta: { diffMinor: 40, pct: 0.4 },
           },
         ]}
       />,
     );
+    const row = screen.getByRole("row", { name: /Стабільна/ });
+    expect(row).not.toHaveTextContent("%");
+    expect(row).not.toHaveTextContent(/[+−-]\s?\d/);
+  });
+
+  it("«Приховати суми» ховає зміну разом із сумами", () => {
+    render(<CategoryDeltaTable rows={rows} showBalance={false} />);
     const food = screen.getByRole("row", { name: /Продукти/ });
-    expect(food).toHaveTextContent(/226/);
-    expect(food).toHaveTextContent("%");
-    const cafe = screen.getByRole("row", { name: /Кафе/ });
-    expect(cafe).toHaveTextContent(/490/);
-    expect(cafe).not.toHaveTextContent("%");
+    expect(food).not.toHaveTextContent("₴");
+    expect(food).not.toHaveTextContent(/560/);
   });
 });
