@@ -477,16 +477,41 @@ test.describe("@critical deep module CRUD browser loop", () => {
 
     await page.goto("/fizruk/body", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "fizruk");
-    const journalEntry = page.getByRole("button", {
-      // Фізрук друкує числа українським роздільником (`fmtLoose` →
-      // `formatNumberUk`), тож у назві кнопки саме «81,2 кг · 7,5 год».
-      name: /81,2 кг.*7,5 год/,
-    });
+    // Журнал тіла в smoke не обовʼязково містить лише наш запис, а «Видалити
+    // запис» стоїть у КОЖНІЙ картці, згорнутій теж (`JournalEntryCard`), тож
+    // `getByRole("button", { name: "Видалити запис" })` без скоупу резолвиться
+    // у стільки вузлів, скільки є записів. Чужі записи приїжджають із двох
+    // місць: акаунт спільний на весь lane, а `activity-logging.spec.ts` пише
+    // вагу в журнал тіла (`onRecordWeight` → `addDailyLogEntry`); плюс записи
+    // попередньої спроби, якщо ця — ретрай. Усе це тягне pull, який
+    // стартує після власного push цього контексту (`onTickComplete` у
+    // `singleton.ts`), тож скільки встигне до кліку, вирішує швидкість
+    // раннера, а не код. Запис тримаємо за id, а не за кількістю карток.
+    //
+    // Фізрук друкує числа українським роздільником (`fmtLoose` →
+    // `formatNumberUk`), тож у назві кнопки саме «81,2 кг · 7,5 год».
+    // `.first()`: журнал відсортований від новішого, і наш запис завжди
+    // найсвіжіший, а старіші дублі за тими самими числами (ретрай) лишаються
+    // нижче.
+    const journalEntry = page
+      .getByRole("button", { name: /81,2 кг.*7,5 год/ })
+      .first();
     await expect(journalEntry).toBeVisible();
-    await journalEntry.click();
+    // Підсумок «81,2 кг · 7,5 год» картка показує лише згорнутою, тож після
+    // розгортання імʼя кнопки вже не матчить — а `aria-controls` стабільний
+    // і дорівнює id запису. Далі тримаємо саме цей запис.
+    const entryContentId = await journalEntry.getAttribute("aria-controls");
+    expect(entryContentId).toBeTruthy();
+    const entryToggle = page.locator(
+      `button[aria-controls="${entryContentId}"]`,
+    );
+    // Перемикач і «Видалити запис» — сусіди в одній шапці картки; батько
+    // перемикача і є «розгорнута картка», у якій шукаємо кнопку видалення.
+    const entryHeader = entryToggle.locator("..");
+    await entryToggle.click();
     await expect(page.getByText("DCRUD body note")).toBeVisible();
 
-    await page.getByRole("button", { name: "Видалити запис" }).click();
+    await entryHeader.getByRole("button", { name: "Видалити запис" }).click();
     await expect(page.getByText("DCRUD body note")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Повернути" }).click();
@@ -503,25 +528,16 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // Harness correction (mirrors DCRUD-001): після restore картка
     // журналу ре-рендериться згорнутою — нотатка видима лише в
     // розгорнутому стані, тож спершу розгортаємо відновлений запис.
-    const restoredEntry = page.getByRole("button", {
-      // Фізрук друкує числа українським роздільником (`fmtLoose` →
-      // `formatNumberUk`), тож у назві кнопки саме «81,2 кг · 7,5 год».
-      name: /81,2 кг.*7,5 год/,
-    });
-    await expect(restoredEntry).toBeVisible();
-    await expect(restoredEntry).toHaveAttribute("aria-expanded", "false");
-    // Розгорнута картка прибирає підсумок «81,2 кг · 7,5 год» із кнопки
-    // (`JournalEntryCard` показує його лише згорнутим), тож після кліку та
-    // сама кнопка вже не матчить імʼя — тримаємо її за `aria-controls`.
-    const restoredContentId = await restoredEntry.getAttribute("aria-controls");
-    expect(restoredContentId).toBeTruthy();
-    const restoredToggle = page.locator(
-      `button[aria-controls="${restoredContentId}"]`,
-    );
-    await restoredEntry.click();
+    // Повертається саме ТОЙ запис: `restoreEntry` зберігає id, тож перемикач
+    // з тим самим `aria-controls` знову в DOM (інший id означав би, що undo
+    // створив новий запис, а не відновив старий).
+    await expect(entryToggle).toBeVisible();
+    await expect(entryToggle).toHaveAttribute("aria-expanded", "false");
+    await expect(entryToggle).toHaveAccessibleName(/81,2 кг.*7,5 год/);
+    await entryToggle.click();
     // Клік, що влучив у ще старий вузол, лишає свіжий згорнутим — тоді це
     // видно тут, а не як «нотатки немає» пʼятьма секундами пізніше.
-    await expect(restoredToggle).toHaveAttribute("aria-expanded", "true");
+    await expect(entryToggle).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByText("DCRUD body note")).toBeVisible();
 
     expect(errors, "Uncaught page errors during Fizruk body CRUD").toEqual([]);
