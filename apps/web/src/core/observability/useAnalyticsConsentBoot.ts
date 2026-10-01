@@ -63,6 +63,12 @@ export function useAnalyticsConsentBoot(): void {
         .updatePreferences({ analytics: granted })
         .then(() => {
           if (cancelled) return;
+          // Поки запит летів, людина могла змінити вибір (тумблер у
+          // Налаштуваннях знімає позначку синку). Новіше рішення не чіпаємо.
+          if (getPendingAnalyticsSync() !== pending) {
+            markAnalyticsServerHydrated(true);
+            return;
+          }
           markAnalyticsDecisionSynced();
           hydrateAnalyticsConsent(granted);
         })

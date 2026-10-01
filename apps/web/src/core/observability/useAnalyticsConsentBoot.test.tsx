@@ -156,4 +156,26 @@ describe("useAnalyticsConsentBoot", () => {
     expect(getAnalyticsConsent()).toBe(true);
     expect(mockGetPreferences).not.toHaveBeenCalled();
   });
+
+  it("вибір, змінений поки летів синк гостя, не перетирається відповіддю сервера", async () => {
+    setAnalyticsConsent(true, { pendingServerSync: true });
+    mockUseAuth.mockReturnValue({ user: { id: "user-1" } });
+    let resolveUpload: (v: unknown) => void = () => {};
+    mockUpdatePreferences.mockReturnValue(
+      new Promise((resolve) => {
+        resolveUpload = resolve;
+      }),
+    );
+
+    renderHook(() => useAnalyticsConsentBoot());
+    await waitFor(() => expect(mockUpdatePreferences).toHaveBeenCalled());
+
+    // Людина вимикає аналітику в Налаштуваннях, поки запит ще в дорозі.
+    setAnalyticsConsent(false);
+    resolveUpload({ analytics: true });
+
+    await waitFor(() => expect(isAnalyticsServerHydrated()).toBe(true));
+    expect(getAnalyticsConsent()).toBe(false);
+    expect(getAnalyticsDecision()).toBe("denied");
+  });
 });
