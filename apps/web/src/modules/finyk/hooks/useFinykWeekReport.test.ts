@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 
@@ -36,8 +36,17 @@ function tx(id: string, amount: number, daysAgo: number, mcc = 5411) {
 
 describe("useFinykWeekReport", () => {
   beforeEach(() => {
+    // Ліміт рахується за поточний місяць, а записи тесту датовані відносно
+    // «зараз»: першого числа витрата «1 день тому» падає в минулий місяць,
+    // і рядка про ліміт немає. Середина місяця тримає всі записи в одному.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-17T12:00:00+03:00"));
     state.statTransactions = [];
     state.budgets = [];
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("каже одним рядком, що за тиждень записів немає", () => {
