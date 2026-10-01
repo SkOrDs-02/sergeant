@@ -25,7 +25,8 @@ import { messages } from "@shared/i18n/uk";
  * `ModuleBottomNav` so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
- * - 60 px height (64 px on coarse-pointer devices).
+ * - Мінімальна висота треку 60 px (64 px on coarse-pointer devices); при
+ *   збільшеному тексті (low-vision, 200% root) трек росте разом із підписом.
  * - Docked edge-to-edge against the screen bottom in both browser and PWA
  *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
  *   rounded only at the top. The panel background fills the safe-area strip
@@ -45,7 +46,9 @@ import { messages } from "@shared/i18n/uk";
  * Layout contract:
  * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
  *   `ActiveWorkoutBanner` and other floating chrome must offset
- *   their `bottom:` by 60 px + safe-area-inset-bottom to sit above it.
+ *   their `bottom:` by the nav's real height to sit above it: at least
+ *   60 px + safe-area-inset-bottom, more when the text is scaled — read the
+ *   measured `--sgt-bottom-nav-inset` instead of hardcoding the 60 px.
  * - Tab strip is a CSS grid with `repeat(N, minmax(0, 1fr))` columns and a
  *   fixed-width pill (`h-full w-full`) per tab, identical to
  *   `ModuleBottomNav` — до фіксу R1 (founder-аудит 2026-09-11) тут стояв
@@ -447,8 +450,18 @@ export function HubBottomNav({
         kbHidden && "translate-y-full pointer-events-none",
       )}
     >
+      {/*
+        AI-DANGER: висота треку — МІНІМУМ (`min-h-*`), не фіксована. Фіксована
+        `h-[60px]` зрізала підпис активного таба до 0-20px при 200% кореневого
+        тексту (low-vision, `tests/a11y/low-vision.spec.ts`): текст росте з
+        rem, а трек — ні. На 100% тексту вміст нижчий за мінімум, тож нав
+        виглядає як раніше (60px, 64px на coarse pointer). Усе, що рахує
+        «скільки зайнято знизу», бере ВИМІРЯНЕ `--sgt-bottom-nav-inset`
+        (`useBottomInsetVar`), а не цифри 60/64 — інакше нав росте, а контент
+        заїжджає під нього.
+      */}
       <div
-        className="relative grid h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        className="relative grid min-h-[60px] pointer-coarse:min-h-[64px] gap-1 px-1"
         style={{
           gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
         }}

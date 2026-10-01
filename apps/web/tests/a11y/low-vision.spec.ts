@@ -93,37 +93,18 @@ async function waitForNavLabelsExpanded(page: Page) {
     .toBe(true);
 }
 
-interface ClippedItem {
-  /** Людиночитний опис вузла для звіту. */
-  label: string;
-  /** Підпис таба нижньої навігації (`[data-nav-label]`) — див. `KNOWN_DEFECT_TAG`. */
-  navLabel: boolean;
-}
-
 /**
- * Відомий дефект, який цей спек знайшов під час відновлення (2026-10-01) і
- * свідомо НЕ лагодить: це окрема робота, а не частина повернення тесту.
+ * Елементи, текст яких зрізає контейнер, що не може вирости.
  *
- * TODO(low-vision-nav-label-clip): 2026-12-31 — підпис активного таба
- * нижньої навігації (`[data-nav-label]`; `HubBottomNav` на hub-root і в
- * налаштуваннях, `ModuleBottomNav` у модулях) при 200% кореневого тексту на
- * 320px стискається до 0–20px висоти при тексті 31px: на hub-root і в
- * налаштуваннях видно лише верх літер, у Фініку/Харчуванні/Рутині підпису
- * немає взагалі (лишаються іконки; доступна назва `sr-only` ціла).
- * Корінь — нав-бар має ФІКСОВАНУ висоту (`h-[60px] pointer-coarse:h-[64px]`
- * у `HubBottomNav`), а текст росте разом із rem. Прибрати цей виняток
- * ПОРУЧ із фіксом висоти нав-бару, а не окремо.
- *
- * Виняток вузький: лише `[data-nav-label]`, будь-який інший зрізаний текст
- * на цих маршрутах, як і раніше, валить тест. Сам факт відомого дефекту
- * лишається видимим у звіті — анотація `known-defect` нижче.
+ * Підписи нав-бару (`[data-nav-label]`) міряються тут БЕЗ винятків: трек
+ * нав-бару має мінімальну (`min-h-[60px]`), а не фіксовану висоту, тож
+ * активний підпис росте разом із кореневим текстом. Колись для них стояв
+ * вузький виняток `TODO(low-vision-nav-label-clip)` — дефект виправлено і
+ * виняток знято; не повертай його, а лагодь висоту нав-бару.
  */
-const KNOWN_DEFECT_TAG = "TODO(low-vision-nav-label-clip): 2026-12-31";
-
-/** Елементи, текст яких зрізає контейнер, що не може вирости. */
-async function clippedText(page: Page): Promise<ClippedItem[]> {
+async function clippedText(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const clipped: ClippedItem[] = [];
+    const clipped: string[] = [];
     for (const el of Array.from(
       document.body.querySelectorAll<HTMLElement>("*"),
     )) {
@@ -167,13 +148,11 @@ async function clippedText(page: Page): Promise<ClippedItem[]> {
       // шуму.
       if (el.scrollHeight > el.clientHeight * 1.1) {
         const cls = typeof el.className === "string" ? el.className.trim() : "";
-        clipped.push({
-          label:
-            `<${el.tagName.toLowerCase()}${cls ? "." + cls.split(/\s+/).slice(0, 4).join(".") : ""}> ` +
+        clipped.push(
+          `<${el.tagName.toLowerCase()}${cls ? "." + cls.split(/\s+/).slice(0, 4).join(".") : ""}> ` +
             `"${el.textContent.trim().slice(0, 40)}" ` +
             `(${el.scrollHeight}px of text in ${el.clientHeight}px)`,
-          navLabel: el.hasAttribute("data-nav-label"),
-        });
+        );
       }
       if (clipped.length >= 5) break;
     }
@@ -256,18 +235,7 @@ for (const { name, path } of ROUTES) {
     await settleAnimations(page);
 
     const { scrollWidth, clientWidth } = await horizontalOverflow(page);
-    const all = await clippedText(page);
-    const known = all.filter((c) => c.navLabel);
-    const clipped = all.filter((c) => !c.navLabel).map((c) => c.label);
-
-    if (known.length > 0) {
-      test.info().annotations.push({
-        type: "known-defect",
-        description:
-          `${KNOWN_DEFECT_TAG} — підпис нав-бару зрізаний на ${path}: ` +
-          known.map((c) => c.label).join("; "),
-      });
-    }
+    const clipped = await clippedText(page);
 
     expect(
       { scrollWidth, clientWidth, clipped },

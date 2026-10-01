@@ -175,7 +175,35 @@
 }
 
 @utility fizruk-above-tabbar {
-  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  /* Плаваючі шари Фізрука (таймер відпочинку, підсумок тренування) стоять
+     рівно НА верхній межі треку табів. Нав має МІНІМАЛЬНУ висоту треку
+     (60/64px), а при збільшеному тексті росте — тож константа `60px` тут
+     лишилась лише нижньою межею (нав відсутній / сховався під клавіатурою:
+     змінної немає і діє вона), а реальну позицію дає виміряне
+     `--sgt-bottom-nav-inset` (`useBottomInsetVar`) мінус `border` (2px) і
+     `padding-top` оболонки (0.375rem), які лежать над треком. На 100% тексту
+     й fine-pointer це рівно `60px`, як і було; на coarse трек 64px, тож
+     шар піднімається на 4px і більше не накриває верх табів. */
+  bottom: max(
+    calc(60px + env(safe-area-inset-bottom, 0px)),
+    calc(var(--sgt-bottom-nav-inset, 0px) - 0.375rem - 2px)
+  );
+}
+
+@utility above-bottom-nav-pb {
+  /* Нижній відступ для fixed-смуги, що мусить стояти НАД нав-баром (панель
+     пакетних дій Фініка). `60px + 0.375rem + 0.5rem` — це нав на 100% тексту
+     (трек 60px + верхній відступ оболонки) і 0.5rem повітря; при збільшеному
+     тексті нав вищий, тож береться більше з двох: ця константа або виміряний
+     нав без safe-area (її вже додає зовнішній `safe-area-pb` смуги) +
+     0.375rem повітря. Без нав-бара (змінної немає) діє константа. */
+  padding-bottom: max(
+    calc(60px + 0.375rem + 0.5rem),
+    calc(
+      var(--sgt-bottom-nav-inset, 0px) - env(safe-area-inset-bottom, 0px) +
+        0.375rem
+    )
+  );
 }
 
 @utility routine-touch-field {
@@ -405,7 +433,15 @@
      enough to detach the row from the rounded corner. Any consumer that
      offsets itself above this nav via `--bottom-nav-height` / the `60px`
      inner-track constant must add this same `0.375rem` term — see
-     HubHomeView.tsx, ModuleShell.tsx, TransactionsBatchToolbar.tsx.
+     HubHomeView.tsx, ModuleShell.tsx, `above-bottom-nav-pb` /
+     `fizruk-above-tabbar` in this file.
+
+     The inner track is `min-h-[60px]` (`min-h-[64px]` on coarse), NOT a
+     fixed height: at 200% root text the active label (24px font) needs more
+     than 60px, and a fixed track clipped it to 0-20px (low-vision spec,
+     2026-10-01). So `60px` is a FLOOR, not the nav's height — the real
+     occupied band is the measured `--sgt-bottom-nav-inset` published by
+     `useBottomInsetVar`. Prefer it over any hardcoded 60/64.
 
      Do not add an out-of-flow apron below this box. The old 4rem `::after`
      workaround became a visible 64px extension, while a fixed `::before`
@@ -422,17 +458,29 @@
   /* Exposes `--bottom-nav-height` for portaled <Sheet>s to offset above
      the hub bottom nav. Must equal the nav's REAL occupied box, not the
      inner track alone: `bottom-nav-shell`'s `border` (1px top + 1px
-     bottom) and `padding-top: 0.375rem` sit outside the `h-[60px]`
-     (`h-[64px]` coarse) track — round-3 UI audit measured the box at
+     bottom) and `padding-top: 0.375rem` sit outside the `min-h-[60px]`
+     (`min-h-[64px]` coarse) track — round-3 UI audit measured the box at
      68px (fine) while the old formula (`60px + 0.375rem`) only produced
      66px, a 2px `border` shortfall. Track + border explicitly instead
-     of guessing. */
-  --bottom-nav-height: calc(60px + 0.375rem + 2px);
+     of guessing.
+
+     Track + border is the nav's height at 100% text only: the track grows
+     with scaled text, so the floor below is `max()`-ed with the measured
+     band (`--sgt-bottom-nav-inset` on <html>, which includes the safe-area
+     padding this variable excludes). With no measurement yet (first paint,
+     nav hidden under the keyboard) the floor wins, as before. */
+  --bottom-nav-height: max(
+    calc(60px + 0.375rem + 2px),
+    calc(var(--sgt-bottom-nav-inset, 0px) - env(safe-area-inset-bottom, 0px))
+  );
 }
 
 @media (pointer: coarse) {
   .bottom-nav-height-var {
-    --bottom-nav-height: calc(64px + 0.375rem + 2px);
+    --bottom-nav-height: max(
+      calc(64px + 0.375rem + 2px),
+      calc(var(--sgt-bottom-nav-inset, 0px) - env(safe-area-inset-bottom, 0px))
+    );
   }
 }
 
