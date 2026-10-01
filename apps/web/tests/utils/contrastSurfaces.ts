@@ -852,6 +852,41 @@ export function measureFocusInPage(): FocusFinding | null {
     const bg = parse(getComputedStyle(node).backgroundColor);
     return bg.a > 0 ? over(bg, base) : base;
   }
+  /**
+   * Фон «під» елементом, коли найближчий предок із заливкою — ГРАДІЄНТ
+   * (hero-картка). Плаский `parentBg` там бреше: кільце кольору градієнта
+   * (`#115e59` на `#115e59 → #0f766e`) виглядало як 6:1 проти столу, хоча
+   * на екрані зливалось із фоном (follow-up аудиту 2026-10-01). Повертає
+   * зупинки градієнта, складені на плаский фон; `null` — градієнта немає.
+   */
+  function gradientBackdrops(node: Element, base: RGBA): RGBA[] | null {
+    let n: Element | null = node.parentElement;
+    while (n) {
+      const bi = getComputedStyle(n).backgroundImage;
+      if (/gradient\(/.test(bi)) {
+        const stops =
+          bi.match(
+            /(?:rgba?|oklab|oklch|lab|lch|color)\([^)]*\)|#[0-9a-f]{3,8}/gi,
+          ) ?? [];
+        return stops.length > 0 ? stops.map((s) => over(parse(s), base)) : null;
+      }
+      n = n.parentElement;
+    }
+    return null;
+  }
+  /**
+   * Найгірший коефіцієнт `fg` проти кожного можливого фону під елементом:
+   * кожна зупинка градієнта-предка або (якщо градієнта нема) плаский фон.
+   * `fill` — власна (можливо напівпрозора) заливка елемента, що лежить
+   * поверх цього фону; без неї фон і є сусідом кільця.
+   */
+  function worstOver(fg: RGBA, backdrops: RGBA[], fill?: RGBA): number {
+    return Math.min(
+      ...backdrops.map((b) =>
+        ratio(fg, fill && fill.a > 0 ? over(fill, b) : b),
+      ),
+    );
+  }
 
   const cs = getComputedStyle(el);
   const r = el.getBoundingClientRect();
@@ -883,6 +918,10 @@ export function measureFocusInPage(): FocusFinding | null {
   };
 
   const pb = parentBgOf(el);
+  // Фони під елементом: зупинки градієнта-предка (hero-картка) або плаский.
+  const backdrops: RGBA[] = (pb.u ? gradientBackdrops(el, pb.c) : null) ?? [
+    pb.c,
+  ];
 
   // box-shadow ring: шари без розмиття зі spread>0, не inset.
   const raw = cs.boxShadow;
@@ -940,11 +979,16 @@ export function measureFocusInPage(): FocusFinding | null {
     const inner = sorted[1];
     ringPx = outer.spread - (inner ? inner.spread : 0);
     ringColor = over(outer.color, pb.c);
-    // Ефективне кільце проти фону, на якому воно малюється.
-    ratioV = ratio(ringColor, pb.c);
+    // Ефективне кільце проти фону, на якому воно малюється (градієнт —
+    // найгірша зупинка, а не плаский стіл).
+    ratioV = worstOver(ringColor, backdrops);
     if (!inner) {
-      // Кільце впритул до контролу: ще й проти власної заливки.
-      ratioV = Math.min(ratioV, ratio(ringColor, ownFill(el, pb.c)));
+      // Кільце впритул до контролу: ще й проти власної заливки (яка лежить
+      // на тому самому фоні; без власної заливки сусід — сам фон, уже
+      // враховано вище).
+      const own = parse(cs.backgroundColor);
+      if (own.a > 0)
+        ratioV = Math.min(ratioV, worstOver(ringColor, backdrops, own));
     }
   } else if (insetRings.length > 0) {
     // Внутрішнє кільце (`ring-inset`): малюється ПОВЕРХ власної заливки.
@@ -953,13 +997,20 @@ export function measureFocusInPage(): FocusFinding | null {
     ringPx = outer.spread;
     const fill = ownFill(el, pb.c);
     ringColor = over(outer.color, fill);
-    ratioV = ratio(ringColor, fill);
+    // Градієнт-предок: кільце й заливка складаються на кожну зупинку.
+    const own = parse(cs.backgroundColor);
+    ratioV = Math.min(
+      ...backdrops.map((b) => {
+        const f = own.a > 0 ? over(own, b) : b;
+        return ratio(over(outer.color, f), f);
+      }),
+    );
   } else if (hasOutline) {
     mechanism = cs.outlineStyle === "auto" ? "ua-auto" : "outline";
     ringPx = outlineW;
     const oc = parse(cs.outlineColor);
     ringColor = over(oc, pb.c);
-    ratioV = ratio(ringColor, pb.c);
+    ratioV = worstOver(ringColor, backdrops);
   }
   return {
     kind: "focus",

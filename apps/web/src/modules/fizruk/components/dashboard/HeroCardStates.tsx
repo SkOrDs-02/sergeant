@@ -218,8 +218,9 @@ function HeroKicker({
 /**
  * Secondary eyebrow that labels each state ("Тренування триває", etc.)
  * Sits directly under the `HeroKicker` and uses the theme-invariant
- * `hero-ink/80` so it reads as an overlay label on the saturated fizruk
- * hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes).
+ * full-opacity `hero-ink` so it reads as an overlay label on the saturated
+ * fizruk hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes;
+ * без альфи, A9 2026-10-01).
  */
 function HeroStateLabel({ children }: { readonly children: ReactNode }) {
   return (
@@ -293,9 +294,16 @@ export function ActiveState({
       </p>
       <p className="mt-2 text-style-body text-hero-ink">{meta}</p>
       <div className="mt-6">
+        {/* Фокус CTA (follow-up аудиту контрасту 2026-10-01): кільце того ж
+            кольору, що й заливка кнопки, лише «розширювало» її (ratio 1.0).
+            Світла тема: `hero-ink` ≥4.7:1 проти градієнта й заливки (правило
+            `bg-hero-grad-*` у `theme.css` ставить колір кільця, клас тут
+            лише називає намір). Темна: заливка `dark:bg-fizruk` = `-400`
+            = колір кільця, тож кільце відсунуте на 2px (`ring-offset-bg`).
+            Та сама рецептура на двох інших CTA нижче. */}
         <button
           type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg"
+          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
           onClick={onResume}
           aria-label="Повернутись до активного тренування"
         >
@@ -309,7 +317,7 @@ export function ActiveState({
             <SectionHeading
               as="span"
               size="xs"
-              className="block text-white/70 dark:text-bg/70"
+              className="block text-white dark:text-bg"
             >
               Продовжити
             </SectionHeading>
@@ -362,7 +370,7 @@ export function TodayState({
       <div className="mt-6">
         <button
           type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg"
+          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
           onClick={onStartToday}
           aria-label={`Почати тренування: ${state.label}`}
         >
@@ -376,7 +384,7 @@ export function TodayState({
             <SectionHeading
               as="span"
               size="xs"
-              className="block text-white/70 dark:text-bg/70"
+              className="block text-white dark:text-bg"
             >
               Почати
             </SectionHeading>
@@ -499,7 +507,7 @@ export function EmptyState({
         */}
         <button
           type="button"
-          className="w-full py-4 rounded-2xl text-style-label font-bold bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg"
+          className="w-full py-4 rounded-2xl text-style-label font-bold bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg dark:focus-visible:ring-offset-2 dark:focus-visible:ring-offset-bg"
           onClick={onQuickStart ?? onOpenTemplates}
         >
           {primaryLabel}
