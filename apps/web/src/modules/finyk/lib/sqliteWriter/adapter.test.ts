@@ -62,6 +62,7 @@ describe("applyFinykDualWriteOps", () => {
           showBalance: true,
           excludedStatTxIdsJson: "[]",
           dismissedRecurringJson: "[]",
+          prefsJson: "{}",
         },
       },
     ] as never;

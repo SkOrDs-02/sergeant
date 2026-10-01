@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-11-13.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-11-14.
 > **Status:** Active
 
 > **Питання, на яке відповідає документ:** якщо на репозиторій і продукт
@@ -136,6 +136,20 @@
 > через ліниве [`AnalyticsConsentGate`](../../../../apps/web/src/core/observability/AnalyticsConsentGate.tsx);
 > одне джерело правди з тумблером у Налаштуваннях —
 > [`analyticsConsent.ts`](../../../../apps/web/src/core/observability/analyticsConsent.ts).
+>
+> **Оновлення 2026-10-01 (рішення власника): згода — крок онбордингу, а не
+> плаваючий банер над ним.** Банер перекривав картки модулів першого екрана
+> `/welcome` («З чого почати?»). Тепер після вибору модулів іде
+> [`OnboardingConsentStep`](../../../../apps/web/src/core/onboarding/OnboardingConsentStep.tsx)
+> (обидві відповіді однакового вигляду; «Про приватність» відкриває політику в
+> аркуші без втрати вибору). Запис — той самий `setAnalyticsConsent`
+> ([`useAnalyticsConsentChoice`](../../../../apps/web/src/core/observability/useAnalyticsConsentChoice.ts)),
+> нового сховища чи зміни API немає. Банер лишився запасним шляхом для тих, хто
+> вже минув онбординг і ніколи не відповідав; `AnalyticsConsentGate` не
+> показує його на `/welcome` та `/onboarding/*`. Події воронки
+> `onboarding_vibe_picked` / `onboarding_completed` тепер стартують ПІСЛЯ
+> рішення, тож потрапляють у PostHog, якщо згода є.
+>
 > Текст нижче — стан до виправлення (історія рішення).
 
 **Severity: середньо (було високо — частину закрито в `main` 2026-08-04/05).**

@@ -4,8 +4,10 @@ import {
   __resetAnalyticsConsentForTests,
   getAnalyticsConsent,
   getAnalyticsDecision,
+  getPendingAnalyticsSync,
   hydrateAnalyticsConsent,
   isAnalyticsServerHydrated,
+  markAnalyticsDecisionSynced,
   markAnalyticsServerHydrated,
   setAnalyticsConsent,
   subscribeAnalyticsConsent,
@@ -128,5 +130,40 @@ describe("analyticsConsent — збій запису рішення у схов�
     setAnalyticsConsent(false);
     expect(getAnalyticsDecision()).toBe("denied");
     expect(warnMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("рішення гостя, ще не віддане серверу", () => {
+  it("звичайний вибір не позначається як очікування синку", () => {
+    setAnalyticsConsent(true);
+    expect(getPendingAnalyticsSync()).toBeNull();
+  });
+
+  it("вибір гостя чекає синку і переживає перезавантаження", async () => {
+    setAnalyticsConsent(true, { pendingServerSync: true });
+    expect(getPendingAnalyticsSync()).toBe("granted");
+
+    vi.resetModules();
+    const fresh = await import("./analyticsConsent");
+    expect(fresh.getAnalyticsDecision()).toBe("granted");
+    expect(fresh.getPendingAnalyticsSync()).toBe("granted");
+  });
+
+  it("після синку прапорець знімається, рішення лишається", async () => {
+    setAnalyticsConsent(false, { pendingServerSync: true });
+    markAnalyticsDecisionSynced();
+    expect(getPendingAnalyticsSync()).toBeNull();
+    expect(getAnalyticsDecision()).toBe("denied");
+
+    vi.resetModules();
+    const fresh = await import("./analyticsConsent");
+    expect(fresh.getPendingAnalyticsSync()).toBeNull();
+    expect(fresh.getAnalyticsDecision()).toBe("denied");
+  });
+
+  it("новий явний вибір залогіненого знімає очікування", () => {
+    setAnalyticsConsent(true, { pendingServerSync: true });
+    setAnalyticsConsent(false);
+    expect(getPendingAnalyticsSync()).toBeNull();
   });
 });

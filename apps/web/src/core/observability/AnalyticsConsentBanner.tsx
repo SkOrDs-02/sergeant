@@ -2,48 +2,38 @@
  * @status Active
  * @owner @Skords-01
  */
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
-import { meApi } from "@shared/api";
-import { logger } from "@shared/lib";
 import { messages } from "@shared/i18n/uk";
-import { useAuth } from "../auth/AuthContext";
 import { LEGAL_PRIVACY_PATH } from "../app/appPaths";
-import { setAnalyticsConsent } from "./analyticsConsent";
+import { useAnalyticsConsentChoice } from "./useAnalyticsConsentChoice";
 
 const copy = messages.privacy.analyticsConsent;
 
 /**
- * Банер згоди на продуктову аналітику при першому запуску (рішення власника
- * 2026-09-29, аудит external-critique § 1.3).
+ * Банер згоди на продуктову аналітику (рішення власника 2026-09-29, аудит
+ * external-critique § 1.3).
+ *
+ * З 2026-10-01 це ЗАПАСНИЙ шлях: нові люди відповідають кроком онбордингу
+ * (`OnboardingConsentStep`), а `AnalyticsConsentGate` не показує банер на
+ * `/welcome` і `/onboarding/*`. Тут лишається той, хто вже минув онбординг і
+ * ніколи не відповідав.
  *
  * Неблокуючий: плаває знизу над таббаром (`--sgt-bottom-nav-inset`, той самий
  * інсет, що читають `Sheet` і тости), фокус не краде, решту екрана не
- * закриває. Вибір іде в `setAnalyticsConsent` — те саме джерело правди, що й
- * тумблер у Налаштування → Приватність; для залогіненого дублюється на
- * сервер, гість лишає рішення на пристрої. Після вибору
- * `AnalyticsConsentGate` знімає банер, і він не повертається.
+ * закриває. Запис вибору — `useAnalyticsConsentChoice` (спільний із кроком
+ * онбордингу). Після вибору `AnalyticsConsentGate` знімає банер, і він не
+ * повертається.
+ *
+ * Без темних патернів: «Дозволити» і «Ні, дякую» однакового вигляду й
+ * розміру, як у кроці онбордингу. Залита згода поруч з обведеною відмовою
+ * підштовхувала б до «так» (рішення власника 2026-10-01).
  *
  * Монтується лише через `AnalyticsConsentGate` і ліниво, тож не важить на
  * критичному шляху.
  */
 export default function AnalyticsConsentBanner() {
-  const { user } = useAuth();
-  const [saving, setSaving] = useState(false);
-
-  const choose = (granted: boolean) => {
-    if (saving) return;
-    setSaving(true);
-    // Локально й одразу: PostHog opt-in/out і зникнення банера без мережі.
-    setAnalyticsConsent(granted);
-    if (user) {
-      meApi.updatePreferences({ analytics: granted }).catch((err: unknown) => {
-        // Вибір на пристрої вже діє; сервер підтягнеться тумблером.
-        logger.warn("[analyticsConsent] banner persist failed", err);
-      });
-    }
-  };
+  const { choose, saving } = useAnalyticsConsentChoice();
 
   return (
     <section
@@ -83,7 +73,7 @@ export default function AnalyticsConsentBanner() {
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="solid"
           size="md"
           className="min-h-[44px] flex-1"
           onClick={() => choose(false)}

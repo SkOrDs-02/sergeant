@@ -254,4 +254,22 @@ describe("FinykSection", () => {
     const badge = container.querySelector(`.text-${"finyk"}`);
     expect(badge).not.toBeNull();
   });
+
+  // Правила «Завжди так для цього магазину» (рішення власника 2026-10-01):
+  // керування живе тут, у Налаштуваннях → Фінік.
+  it("показує підрозділ «Правила категорій» з порожнім станом, поки правил нема", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    renderWithProviders();
+    expect(screen.getByText("Правила категорій")).toBeInTheDocument();
+    expect(screen.getByText("Правил поки немає")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
+    });
+  });
 });

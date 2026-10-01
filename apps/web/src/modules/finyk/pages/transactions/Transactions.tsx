@@ -16,6 +16,11 @@ import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import { useDebtPaymentSplitSync } from "../../hooks/useDebtPaymentSplitSync";
+import {
+  useMerchantRuleActions,
+  type MerchantRuleActionsDeps,
+} from "../../hooks/useMerchantRuleActions";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -139,6 +144,15 @@ export interface TransactionsStorageSlice {
   excludedStatTxIds: string[] | undefined;
   toggleExcludeFromStats: (id: string) => void;
   txCategories: TxCategoriesMap;
+  /**
+   * Правила «Завжди так для цього магазину» і їхні мутатори. Усе необовʼязкове:
+   * без них список працює як раніше, а аркуш операції не пропонує правил.
+   */
+  merchantRuleIndex?: MerchantRuleIndex | undefined;
+  upsertMerchantRule?: MerchantRuleActionsDeps["upsertMerchantRule"];
+  undoMerchantRule?: MerchantRuleActionsDeps["undoMerchantRule"];
+  deleteMerchantRule?: MerchantRuleActionsDeps["deleteMerchantRule"];
+  restoreMerchantRules?: MerchantRuleActionsDeps["restoreMerchantRules"];
   customCategories: Category[] | undefined;
   overrideCategory: (id: string, catId: string | null) => void;
   txSplits: TxSplitsMap;
@@ -229,6 +243,11 @@ export function Transactions({
     excludedStatTxIds,
     toggleExcludeFromStats,
     txCategories,
+    merchantRuleIndex,
+    upsertMerchantRule,
+    undoMerchantRule,
+    deleteMerchantRule,
+    restoreMerchantRules,
     customCategories,
     overrideCategory,
     txSplits,
@@ -254,6 +273,7 @@ export function Transactions({
     excludedTxIds,
     txSplits,
     txCategories,
+    merchantRules: merchantRuleIndex,
     customCategories,
     fetchMonth,
     categoryFilter,
@@ -405,6 +425,17 @@ export function Transactions({
     [excludedStatTxIds],
   );
 
+  // «Завжди так для цього магазину»: створення/прибирання правила з тостом
+  // скасування (рішення власника 2026-10-01).
+  const merchantRuleActions = useMerchantRuleActions({
+    upsertMerchantRule,
+    undoMerchantRule,
+    deleteMerchantRule,
+    restoreMerchantRules,
+    customCategories,
+    toast,
+  });
+
   const selection = useTransactionSelection({
     hiddenTxIds,
     excludedStatTxIds,
@@ -463,6 +494,7 @@ export function Transactions({
         excludedStatTxIdSet={excludedStatTxIdSet}
         cancelledTxIdSet={cancelledTxIds}
         txCategories={txCategories}
+        merchantRules={merchantRuleIndex}
         txSplits={txSplits}
         txNotes={txNotes}
         accounts={accounts}
@@ -562,6 +594,7 @@ export function Transactions({
                   txSplits,
                   manualExpenses,
                   txCategories,
+                  merchantRules: merchantRuleIndex,
                   customCategories,
                 }}
                 fetchRange={mono.fetchRange}
@@ -604,6 +637,16 @@ export function Transactions({
           note={txNotes[editingBankTransaction.id]}
           txSplits={txSplits}
           customCategories={customCategories}
+          merchantRules={merchantRuleIndex}
+          onCreateMerchantRule={
+            upsertMerchantRule
+              ? (tx, categoryId) =>
+                  merchantRuleActions.createRule(tx, categoryId)
+              : undefined
+          }
+          onRemoveMerchantRule={
+            deleteMerchantRule ? merchantRuleActions.removeRule : undefined
+          }
           receiptId={
             receiptLinks?.getReceiptId(editingBankTransaction.id) ?? null
           }

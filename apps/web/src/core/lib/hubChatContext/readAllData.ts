@@ -6,6 +6,8 @@
    tombstoned keys (finyk_tx_cache / finyk_info_cache) were removed in
    Dual-write teardown Phase 3 and replaced by the mirror reader below. */
 import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
 import { ls } from "../hubChatUtils";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
@@ -71,6 +73,17 @@ export function readAllData(): AllData {
     (t) => !excludedIds.has(t.id),
   ) as AllData["statTx"];
 
+  // Правила «Завжди так для цього магазину» (2026-10-01): чат-контекст бере
+  // категорію з `txCategories[tx.id]`, тож віддаємо ефективну мапу (явні
+  // override-и + виведене правилами). Виключення вище рахувались з явних
+  // override-ів, і правило не може зробити операцію переказом.
+  const effectiveTxCategories = withMerchantRuleOverrides(
+    universe.transactions,
+    txCategories,
+    buildMerchantRuleIndex(getCachedFinykSqliteState().merchantRules),
+    customCategories,
+  ) as Record<string, string>;
+
   return {
     transactions,
     accounts,
@@ -80,7 +93,7 @@ export function readAllData(): AllData {
     budgets,
     manualDebts,
     receivables,
-    txCategories,
+    txCategories: effectiveTxCategories,
     txSplits,
     customCategories,
     monthlyPlan,

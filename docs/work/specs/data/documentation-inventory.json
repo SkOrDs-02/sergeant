@@ -3495,7 +3495,7 @@
       "action": "keep",
       "genre": "adr",
       "canonical_owner": "docs/governance/adr/0094-mobile-web-first-freeze.md",
-      "inbound_count": 33,
+      "inbound_count": 34,
       "inbound_sources": [
         "docs/design/design/README.md",
         "docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md",
@@ -3515,6 +3515,7 @@
         "docs/governance/adr/0052-mobile-strategy-capacitor-primary.md",
         "docs/governance/pr-ledger/index.json",
         "docs/operations/observability/telemetry-rollout-plan.md",
+        "docs/product/modules/finyk.md",
         "docs/product/modules/hub-coach.md",
         "docs/start/agents/decisions.md",
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
