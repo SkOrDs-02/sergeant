@@ -48,6 +48,18 @@ const MAX_AMOUNT_CV = 0.25;
 /** Мінімум 2 повторення — 2 транзакції достатньо для гіпотези. */
 const MIN_OCCURRENCES = 2;
 
+/**
+ * Фіксоване вікно історії для детекції, днів.
+ *
+ * AI-CONTEXT: до 2026-10-01 рушій їв усе, що дали на вхід, а входом був
+ * `mono.transactions`: до відповіді мережі це ВСЕ SQLite-дзеркало, після —
+ * лише поточний київський місяць. Кандидати зʼявлялись і зникали хвилями
+ * залежно від стану завантаження, а не від даних. 120 днів покривають
+ * щомісячні (3 списання) і щоквартальні (2) платежі; щорічні (355+ днів)
+ * вікно відсікає — з дзеркала, яке веб тримає, їх і так не було чим ловити.
+ */
+export const RECURRING_LOOKBACK_DAYS = 120;
+
 export interface RecurringTx {
   id: string;
   /** Unix seconds. */
@@ -108,6 +120,13 @@ export interface DetectOptions {
    * Default: 45 днів (поріг трошки більший за місяць).
    */
   maxAgeDays?: number;
+  /**
+   * Скільки днів історії брати до уваги: транзакції старші за
+   * `nowSec - lookbackDays` ігноруються, хоч би що передав виклик.
+   * Default: {@link RECURRING_LOOKBACK_DAYS}. `Infinity` або `<= 0`
+   * вимикають вікно (усе, що дали на вхід).
+   */
+  lookbackDays?: number;
   /**
    * Який бік грошового потоку шукати.
    *
@@ -237,6 +256,7 @@ export function detectRecurring(
     excludedTxIds = [],
     nowSec = Math.floor(Date.now() / 1000),
     maxAgeDays = 45,
+    lookbackDays = RECURRING_LOOKBACK_DAYS,
     flow = "expense",
   } = options;
 
@@ -244,6 +264,10 @@ export function detectRecurring(
 
   const excluded = new Set(excludedTxIds);
   const dismissed = new Set(dismissedKeys);
+  const windowStartSec =
+    Number.isFinite(lookbackDays) && lookbackDays > 0
+      ? nowSec - lookbackDays * DAY_SECONDS
+      : null;
 
   // Групування за нормалізованим merchant-ключем.
   const groups = new Map<string, RecurringTx[]>();
@@ -252,6 +276,7 @@ export function detectRecurring(
     // Нуль не належить жодному боку: він не витрата й не надходження.
     if (flow === "expense" ? tx.amount >= 0 : tx.amount <= 0) continue;
     if (!tx.id || excluded.has(tx.id)) continue;
+    if (windowStartSec !== null && (tx.time || 0) < windowStartSec) continue;
     const key = normalizeMerchantKey(tx.description);
     if (!key) continue;
     if (dismissed.has(key)) continue;

@@ -416,5 +416,90 @@ describe("finyk/recurringDetect", () => {
       ];
       expect(detectRecurring(txs, { nowSec: now })).toHaveLength(0);
     });
+
+    // AI-CONTEXT: кандидати зʼявлялись хвилями, бо входом було «усе дзеркало»
+    // до відповіді мережі й «лише поточний місяць» після неї. Вікно робить
+    // результат функцією даних у вікні, а не того, скільки їх передали.
+    describe("lookbackDays (фіксоване вікно історії)", () => {
+      const monthly = (from: number, count: number, description = "Netflix") =>
+        Array.from({ length: count }, (_, i) =>
+          tx({
+            id: `${description}-${i}`,
+            time: from + i * 30 * DAY,
+            description,
+          }),
+        );
+
+      it("ignores charges older than the 120-day default window", () => {
+        // −125, −95, −65, −35, −5: найстаріше випадає за вікно.
+        const out = detectRecurring(monthly(now - 125 * DAY, 5), {
+          nowSec: now,
+        });
+        expect(out).toHaveLength(1);
+        expect(out[0]!.occurrences).toBe(4);
+        expect(out[0]!.sampleTxIds).not.toContain("Netflix-0");
+      });
+
+      it("gives the same candidates whatever older history the caller adds", () => {
+        const inWindow = monthly(now - 95 * DAY, 4);
+        const withOlder = [
+          ...monthly(now - 400 * DAY, 8),
+          ...inWindow,
+          tx({ id: "ancient", time: now - 900 * DAY, description: "Netflix" }),
+        ];
+
+        expect(detectRecurring(withOlder, { nowSec: now })).toEqual(
+          detectRecurring(inWindow, { nowSec: now }),
+        );
+      });
+
+      it("does not depend on input order", () => {
+        const txs = monthly(now - 95 * DAY, 4);
+        expect(detectRecurring([...txs].reverse(), { nowSec: now })).toEqual(
+          detectRecurring(txs, { nowSec: now }),
+        );
+      });
+
+      it("needs two charges inside the window: one month of data cannot make a monthly candidate", () => {
+        expect(
+          detectRecurring([tx({ id: "only", time: now - 5 * DAY })], {
+            nowSec: now,
+          }),
+        ).toEqual([]);
+      });
+
+      it("a custom window widens or narrows the history", () => {
+        const txs = monthly(now - 125 * DAY, 5);
+        expect(
+          detectRecurring(txs, { nowSec: now, lookbackDays: 200 })[0]
+            ?.occurrences,
+        ).toBe(5);
+        expect(
+          detectRecurring(txs, { nowSec: now, lookbackDays: 40 })[0]
+            ?.occurrences,
+        ).toBe(2);
+      });
+
+      it("Infinity or a non-positive window turns the window off", () => {
+        const txs = monthly(now - 125 * DAY, 5);
+        for (const lookbackDays of [Infinity, 0, -1]) {
+          expect(
+            detectRecurring(txs, { nowSec: now, lookbackDays })[0]?.occurrences,
+          ).toBe(5);
+        }
+      });
+
+      it("yearly charges fall outside the default window", () => {
+        const yearly = [
+          tx({ id: "y1", time: now - 375 * DAY, description: "Adobe" }),
+          tx({ id: "y2", time: now - 10 * DAY, description: "Adobe" }),
+        ];
+        expect(detectRecurring(yearly, { nowSec: now })).toEqual([]);
+        expect(
+          detectRecurring(yearly, { nowSec: now, lookbackDays: Infinity })[0]
+            ?.cadence,
+        ).toBe("yearly");
+      });
+    });
   });
 });

@@ -12,7 +12,15 @@ import { ToastProvider } from "@shared/hooks/useToast";
 import type { ReactNode } from "react";
 
 vi.mock("../../components/RecurringSuggestions", () => ({
-  RecurringSuggestions: () => <div data-testid="recurring" />,
+  RecurringSuggestions: ({
+    transactions,
+  }: {
+    transactions?: ReadonlyArray<{ id: string }>;
+  }) => (
+    <div data-testid="recurring">
+      {(transactions ?? []).map((tx) => tx.id).join(",")}
+    </div>
+  ),
 }));
 vi.mock("../AssetsSubscriptionsSection", () => ({
   AssetsSubscriptionsSection: ({
@@ -32,8 +40,16 @@ vi.mock("../AssetsTxPickerView", () => ({
 import { PlanningSubscriptions } from "./PlanningSubscriptions";
 import type { AssetsProps } from "../useAssetsState";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../lib/monoMirrorReader";
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  clearFinykMonoMirrorCache();
+});
 
 function wrap(children: ReactNode) {
   return <ToastProvider>{children}</ToastProvider>;
@@ -80,6 +96,26 @@ describe("PlanningSubscriptions", () => {
     // Own "+ Підписка" trigger removed (F2) — it now lives inside the
     // combined «Запланувати» picker on `Budgets.tsx`.
     expect(screen.queryByRole("button", { name: "+ Підписка" })).toBeNull();
+  });
+
+  // Корінь «хвиль» кандидатів: `mono.transactions` після відповіді мережі
+  // лише поточний місяць. Підказки читають дзеркало, не цей слайс.
+  it("feeds «Можливі підписки» from the mirror, not from the current-month slice", () => {
+    const mirrored = ["jun", "jul", "aug"].map(
+      (id) => ({ id, amount: -19_900, time: 1_780_000_000 }) as Transaction,
+    );
+    __setFinykMonoMirrorCacheForTests({ transactions: mirrored });
+    const monthOnly: AssetsProps["mono"] = {
+      accounts: [],
+      transactions: [{ id: "sep", amount: -19_900 } as Transaction],
+    };
+
+    render(
+      wrap(<PlanningSubscriptions mono={monthOnly} storage={makeStorage()} />),
+    );
+
+    expect(screen.getByTestId("recurring")).toHaveTextContent("jun,jul,aug");
+    expect(screen.getByTestId("recurring")).not.toHaveTextContent("sep");
   });
 
   it("opens the section and its form when openSubscriptionSignal changes", () => {
