@@ -32,8 +32,11 @@ describe("parseFinykSegments", () => {
     });
   });
 
-  it("falls back to overview for unknown pages", () => {
-    expect(parseFinykSegments(["nope"])).toEqual({ page: "overview" });
+  it("marks unknown pages for canonicalization to overview", () => {
+    expect(parseFinykSegments(["nope"])).toEqual({
+      page: "overview",
+      invalidSegment: "nope",
+    });
   });
 });
 

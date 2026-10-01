@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useFinykRoute, useFinykQueryParam } from "./useFinykRoute";
 
@@ -46,9 +46,12 @@ describe("useFinykRoute", () => {
     expect(screen.getByTestId("page")).toHaveTextContent("budgets");
   });
 
-  it("falls back to overview for an unknown segment", () => {
-    renderAt("/finyk/nonsense");
+  it("replaces an unknown segment with the canonical overview URL", async () => {
+    renderAt("/finyk/cards");
     expect(screen.getByTestId("page")).toHaveTextContent("overview");
+    await waitFor(() => {
+      expect(screen.getByTestId("path")).toHaveTextContent("/finyk");
+    });
   });
 
   it("navigates to a typed page", () => {

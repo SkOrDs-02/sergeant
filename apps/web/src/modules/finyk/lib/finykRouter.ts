@@ -20,6 +20,8 @@ const LEGACY_REDIRECTS: Record<string, FinykPage> = {
 export interface ParsedFinykRoute {
   page: FinykPage;
   redirectFrom?: string;
+  /** Unsupported path segment that must be replaced with the canonical URL. */
+  invalidSegment?: string;
 }
 
 /**
@@ -30,7 +32,9 @@ export interface ParsedFinykRoute {
  * path-router (`useFinykRoute`) and the one-time hash-compat shim share the
  * same rules.
  *
- * Returns `{ page: "overview" }` for empty / unknown / malformed inputs.
+ * Returns `{ page: "overview" }` for empty inputs. Unknown or malformed
+ * inputs additionally carry `invalidSegment` so the path router can replace
+ * the misleading deep link with the canonical overview URL.
  */
 export function parseFinykSegments(
   segments: readonly string[],
@@ -40,7 +44,7 @@ export function parseFinykSegments(
   const redirect = LEGACY_REDIRECTS[page];
   if (redirect) return { page: redirect, redirectFrom: page };
   if (!VALID_FINYK_PAGES.includes(page as FinykPage)) {
-    return { page: "overview" };
+    return { page: "overview", invalidSegment: page };
   }
   return { page: page as FinykPage };
 }

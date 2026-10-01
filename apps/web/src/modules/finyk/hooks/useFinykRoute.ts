@@ -22,7 +22,7 @@ import {
  *   - `/finyk#/budgets`             → `/finyk/budgets`
  *   - `/finyk#payments`             → `/finyk/budgets` (legacy alias)
  *
- * Unknown ids fall back to `defaultPage` (default `"overview"`).
+ * Unknown ids redirect to the canonical overview URL.
  */
 export function useFinykRoute(
   defaultPage: FinykPage = "overview",
@@ -35,11 +35,23 @@ export function useFinykRoute(
   const location = routerLocation;
   const navigate = useNavigate();
 
-  const page = useMemo(() => {
+  const parsedRoute = useMemo(() => {
     const segments = pathnameToSegments(location.pathname);
-    if (segments.length === 0) return defaultPage;
-    return parseFinykSegments(segments).page;
+    if (segments.length === 0) return { page: defaultPage };
+    return parseFinykSegments(segments);
   }, [location.pathname, defaultPage]);
+
+  const page = parsedRoute.page;
+
+  // Never leave an unsupported Finyk segment in the address bar while
+  // rendering the overview. A bad deep link such as `/finyk/cards` now has
+  // an explicit canonical destination instead of silently masquerading as a
+  // valid overview URL.
+  useEffect(() => {
+    if (!parsedRoute.invalidSegment) return;
+    const targetPath = finykRoutePath(page);
+    navigate(`${targetPath}${location.search}`, { replace: true });
+  }, [location.search, navigate, page, parsedRoute.invalidSegment]);
 
   // Hash compat: when a legacy URL (`/finyk#budgets`, `/finyk#budgets?cat=…`,
   // `/finyk#/budgets`, `/finyk#payments`) lands on this hook, rewrite to the
