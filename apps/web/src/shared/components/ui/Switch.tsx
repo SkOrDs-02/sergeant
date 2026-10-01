@@ -147,11 +147,13 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
 
   // `brand-strong` — це stone-800 (#292524). У «Чорнилі» вимкнений трек
   // (`--c-line` = #1f2a25) майже не відрізняється від нього, тож обидва стани
-  // читались як один темний піл (user report). `dark:bg-brand-400` дає той
-  // самий світлий-на-темному контраст, який `HubBottomNav` уже застосовує до
-  // активного таба.
+  // читались як один темний піл (user report). Увімкнений трек у темній —
+  // `dark:bg-brand-200` (#e7e5e4): проти вимкненого `bg-control` (#827b77) це
+  // 3.31:1, а `brand-400` (#a8a29e), який стояв тут із #1286, давав лише 1.65:1
+  // (знахідка CodeRabbit на #1286; гейт — `theme.controlFocus.test.ts`,
+  // «Switch: трек»). Світла (`brand-strong` проти `control`) — 3.34:1.
   const trackBg = currentChecked
-    ? "bg-brand-strong dark:bg-brand-400"
+    ? "bg-brand-strong dark:bg-brand-200"
     : error
       ? "bg-danger-soft"
       : "bg-control";
@@ -209,8 +211,11 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           className={cn(
             // Бігунок світлий в обох темах (iOS-конвенція). У «Чорнилі»
             // `bg-panel` (#2a231f) зливався з вимкненим треком (#1f2a25) і
-            // стан не читався навіть по позиції.
+            // стан не читався навіть по позиції. Виняток — увімкнений стан у
+            // темній: трек там майже білий (`brand-200`), світлий бігунок на
+            // ньому давав 1.15:1, тож бігунок темний (`bg-bg`, 15:1).
             "pointer-events-none absolute left-[3px] rounded-full bg-panel dark:bg-text shadow-card",
+            currentChecked && "dark:bg-bg",
             "transition-transform duration-base",
             thumbSize[size],
             thumbCheckedTranslate[size],

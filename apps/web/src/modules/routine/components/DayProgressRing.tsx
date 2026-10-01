@@ -90,9 +90,8 @@ export function DayProgressRing({
             cy={SIZE / 2}
             r={RADIUS}
             fill="none"
-            stroke="currentColor"
             strokeWidth={STROKE}
-            className="text-hero-ink/20"
+            className="stroke-hero-ink/20"
           />
           <circle
             cx={SIZE / 2}
@@ -160,7 +159,7 @@ export function DayProgressRing({
           </span>
         </div>
       </div>
-      <span className="text-style-caption text-hero-ink/95 font-medium group-hover:text-hero-ink transition-colors">
+      <span className="text-style-caption text-hero-ink font-medium group-hover:underline underline-offset-2">
         {messages.routine.dayReport}
       </span>
     </button>

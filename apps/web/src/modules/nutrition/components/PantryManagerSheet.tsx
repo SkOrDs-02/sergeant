@@ -274,7 +274,7 @@ export function PantryManagerSheet({
         має побачити її, поки ще може передумати.
       */}
       {redistributePlan.length > 0 && (
-        <div className="mt-4 rounded-2xl border border-line/60 bg-bg/40 p-4">
+        <div className="mt-4 rounded-2xl border border-line bg-panel p-4">
           <SectionHeading as="div" size="xs" variant="nutrition">
             Розкласти по місцях
           </SectionHeading>

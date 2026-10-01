@@ -108,7 +108,7 @@ export function SavedSection({
                 return (
                   <div
                     key={r.id}
-                    className="rounded-2xl border border-line bg-bg/40 p-3 overflow-hidden"
+                    className="rounded-2xl border border-line bg-panel p-3 overflow-hidden"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <button

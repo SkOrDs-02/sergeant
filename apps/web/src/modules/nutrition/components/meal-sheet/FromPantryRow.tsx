@@ -66,7 +66,7 @@ export function FromPantryRow({
       collapsedSubtitle={fromPantryItem ?? `${pantryItems.length} позицій`}
       className="mb-4"
     >
-      <div className="rounded-2xl border border-line bg-panel/40 px-3 py-3">
+      <div className="rounded-2xl border border-line bg-panel px-3 py-3">
         <div className="flex flex-wrap gap-1.5">
           {pantryItems.slice(0, 20).map((item) => {
             const isActive = fromPantryItem === item.name;

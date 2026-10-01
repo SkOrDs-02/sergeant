@@ -197,7 +197,11 @@ const preset = {
         // BOTH themes (light: the new `--hero-grad-*` anchor; dark: the
         // `--hero-ink-*` near-black fill from § 2) — the surface is always
         // dark enough to need light text, so this is one flat colour with
-        // no `.dark` flip. `text-hero-ink/75` is the eyebrow/muted tier.
+        // no `.dark` flip. Always full opacity as TEXT (owner decision
+        // 2026-10-01, contrast audit A9: no `text-hero-ink/NN` — any alpha
+        // mixes the gradient into the ink and fails AA); hierarchy comes from
+        // size and weight. Alpha stays legal only for decor (`bg-`, `border-`,
+        // `stroke-hero-ink/NN`).
         "hero-ink": "#fdf9f3",
 
         // ═══════════════════════════════════════════════════════════════════
@@ -361,6 +365,17 @@ const preset = {
           // text clears WCAG AA on `bg-finyk/15` over the dark panel.
           // Backed by `--c-finyk-soft-fg` (light/dark/HC in theme.css).
           "soft-fg": "rgb(var(--c-finyk-soft-fg) / <alpha-value>)",
+          // `edge` — КОНТУР вибраного стану модуля (рішення власника
+          // 2026-10-01, аудит контрасту A4): тонований фон + цей контур.
+          // Резолвиться в `--c-{m}-ink` — рівно той щабель, що вже несе
+          // `text-{m}-strong` (світла -800, темна -400), тож ≥3:1 проти
+          // столу, зони, картки й тонованої заливки в обох темах гарантують
+          // ті самі гейти, що й для тексту (`theme.controlFocus.test.ts`).
+          // НЕ `border-{m}-strong`: `colors.{m}.strong` — статичний -800 для
+          // заливок під `text-white`, у темній темі він темний по темному.
+          // Fallback — світлий тир, щоб платформа без змінних (mobile)
+          // рендерила -800.
+          edge: `rgb(var(--c-finyk-ink, ${hexToRgbTriple(accentStrongHex.finyk)}) / <alpha-value>)`,
         },
 
         /** Фізрук — Cyan fitness tracker (v2 redesign 2026-05; was teal). */
@@ -392,6 +407,8 @@ const preset = {
           // prior cyan-700 ink measured ~1.77:1). Backed by
           // `--c-fizruk-soft-fg`.
           "soft-fg": "rgb(var(--c-fizruk-soft-fg) / <alpha-value>)",
+          // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
+          edge: `rgb(var(--c-fizruk-ink, ${hexToRgbTriple(accentStrongHex.fizruk)}) / <alpha-value>)`,
           // `tile` + `tile-border` — subtle stat-tile wash on the
           // fizruk hero gradient (Wave 2a). Light=teal-800,
           // dark=white. Apply with the registered opacity scale,
@@ -439,6 +456,8 @@ const preset = {
           // clears WCAG AA on `bg-routine/15` over the dark panel. Backed by
           // `--c-routine-soft-fg`.
           "soft-fg": "rgb(var(--c-routine-soft-fg) / <alpha-value>)",
+          // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
+          edge: `rgb(var(--c-routine-ink, ${hexToRgbTriple(accentStrongHex.routine)}) / <alpha-value>)`,
         },
 
         /** Харчування — Fresh lime nutrition tracker */
@@ -459,6 +478,8 @@ const preset = {
           // clears WCAG AA on `bg-nutrition/15` over the dark panel. Backed
           // by `--c-nutrition-soft-fg`.
           "soft-fg": "rgb(var(--c-nutrition-soft-fg) / <alpha-value>)",
+          // `edge` — контур вибраного стану модуля, див. `finyk.edge`.
+          edge: `rgb(var(--c-nutrition-ink, ${hexToRgbTriple(accentStrongHex.nutrition)}) / <alpha-value>)`,
         },
 
         // ═══════════════════════════════════════════════════════════════════

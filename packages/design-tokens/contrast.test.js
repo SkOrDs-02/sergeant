@@ -474,16 +474,22 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   });
 
   /**
-   * Альфа на `hero-ink` — знахідка WF-23 (аудит шуму 2026-09-16).
+   * Альфа на `hero-ink` — знахідка WF-23 (аудит шуму 2026-09-16), рішення
+   * власника 2026-10-01 (аудит контрасту, A9): «чорнило без альфи».
    *
    * Пари вище міряють РІВНО 100%-чорнило, і саме тому дефект прожив довго:
    * `text-hero-ink/70` у коді композитно підмішує колір градієнта, а гейт
    * цього не бачив. Тест нижче міряє те, чим воно стає на екрані.
    *
    * Лічильник call-site-ів живе окремо — метрика `heroInkAlpha` у
-   * `scripts/check-ui-canon-ratchet.mjs` (стеля над боргом, 20 місць).
-   * Тут закріплені ЧИСЛА: якщо хтось освітлить геро-градієнт, впаде саме
-   * цей тест і назве модуль.
+   * `scripts/check-ui-canon-ratchet.mjs` (з 2026-10-01 baseline = 0: це
+   * заборона, не стеля над боргом; 20 місць прибрано, градієнт не чіпали).
+   * Тут закріплені ЧИСЛА, які пояснюють, чому нуль, а не «трохи менше
+   * прозорості»: на жодному з чотирьох градієнтів прохідного кроку нижче
+   * /100 немає. Якщо хтось освітлить геро-градієнт, впаде перший тест і
+   * назве модуль; якщо потемнить настільки, що /80 почне проходити, впаде
+   * другий і змусить перечитати рішення, а не мовчки лишить заборону без
+   * підстав.
    */
   describe("«Чорнило» на геро-градієнті — альфа", () => {
     const HERO_INK = "#fdf9f3";
@@ -513,11 +519,11 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
         expect(contrastRatio(HERO_INK, bg)).toBeGreaterThanOrEqual(4.5);
       });
 
-      it(`${name}: /80 і нижче AA НЕ тримає — задокументовано, не випадковість`, () => {
+      it(`${name}: /80 і нижче AA НЕ тримає — чому чорнило без альфи, а не випадковість`, () => {
         // Негативне твердження навмисне: воно фіксує, ЧОМУ метрика
-        // `heroInkAlpha` існує. Якщо градієнт колись потемнішає настільки,
-        // що /80 почне проходити, цей тест впаде і змусить перечитати
-        // рішення, а не мовчки лишить стелю над неіснуючим боргом.
+        // `heroInkAlpha` стоїть на нулі. Якщо градієнт колись потемнішає
+        // настільки, що /80 почне проходити, цей тест впаде і змусить
+        // перечитати рішення, а не мовчки лишить заборону без підстав.
         expect(contrastRatio(compositeHex(HERO_INK, bg, 0.8), bg)).toBeLessThan(
           4.5,
         );
@@ -534,4 +540,62 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
       );
     });
   });
+});
+
+/**
+ * `{module}-edge` — контур вибраного стану модуля (follow-up аудиту
+ * контрасту 2026-10-01, A4; рішення власника: «тонований фон + контур
+ * -strong з контрастом ≥3:1 проти сусідньої поверхні»).
+ *
+ * Токен — аліас на `--c-{module}-ink` (світла -800, темна -400), тож
+ * гарантії дає той самий щабель, що вже тримає текст модуля. Тут пінимо
+ * (1) зв'язок пресета з цією змінною, щоб `-edge` не розʼїхався з `-ink`,
+ * і (2) 3:1 проти УСІХ сусідніх поверхонь вибраного стану: картка, стіл,
+ * зона, `panelHi` і тонована заливка самого вибору (`surface`).
+ */
+describe("@sergeant/design-tokens — `{module}-edge`: контур вибраного стану ≥ 3:1", () => {
+  const MODULES = ["finyk", "fizruk", "routine", "nutrition"];
+  const LIGHT_PANEL = "#ffffff";
+  const LIGHT_PANEL_HI = "#f6f5f2";
+  const DARK = inkTheme.surface;
+
+  const triple = (hex) =>
+    [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
+
+  for (const m of MODULES) {
+    it(`${m}.edge → --c-${m}-ink з fallback на світлий -strong`, async () => {
+      const { default: preset } = await import("./tailwind-preset.js");
+      expect(preset.theme.extend.colors[m].edge).toBe(
+        `rgb(var(--c-${m}-ink, ${triple(accentStrongHex[m])}) / <alpha-value>)`,
+      );
+    });
+
+    for (const [name, surface] of [
+      ["картка", LIGHT_PANEL],
+      ["panelHi", LIGHT_PANEL_HI],
+      ["стіл модуля", moduleSurfaces[m].light.desk],
+      ["зона модуля", moduleSurfaces[m].light.zone],
+      ["стіл хаба", "#e7e5df"],
+      ["тонована заливка (surface)", moduleColors[m].surface],
+    ]) {
+      it(`light: ${m}-edge проти ${name} ≥ 3:1`, () => {
+        expect(
+          contrastRatio(accentStrongHex[m], surface),
+        ).toBeGreaterThanOrEqual(3);
+      });
+    }
+
+    for (const [name, surface] of [
+      ["картка", DARK.surface],
+      ["panelHi", DARK.surfaceHi],
+      ["фон", DARK.bg],
+      ["зона модуля", moduleSurfaces[m].dark.zone],
+    ]) {
+      it(`dark: ${m}-edge проти ${name} ≥ 3:1`, () => {
+        expect(contrastRatio(accentInkHex[m], surface)).toBeGreaterThanOrEqual(
+          3,
+        );
+      });
+    }
+  }
 });

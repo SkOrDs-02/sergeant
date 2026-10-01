@@ -104,12 +104,16 @@ const VARIANT_PILL: Record<TabsVariant, string> = {
   // `border-control`: вибраний піл (`brand-soft` на `panelHi`) відрізнявся від
   // сусідів лише 1.09-1.44:1, а стан мусить читатись ≥3:1 (аудит 2026-10-01, A4).
   brand: "border-control bg-brand-soft text-brand-soft-fg",
-  finyk: "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk-surface-dark/15",
-  fizruk: "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk-surface-dark/15",
+  // Модульні піли: тонований фон + контур `{m}-edge` (A4, рішення власника
+  // 2026-10-01) — той самий вибір, що в `Segmented`.
+  finyk:
+    "border-finyk-edge bg-finyk-soft text-finyk-soft-fg dark:bg-finyk-surface-dark/15",
+  fizruk:
+    "border-fizruk-edge bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk-surface-dark/15",
   routine:
-    "bg-routine-surface text-routine-soft-fg dark:bg-routine-surface-dark/15",
+    "border-routine-edge bg-routine-surface text-routine-soft-fg dark:bg-routine-surface-dark/15",
   nutrition:
-    "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition-surface-dark/15",
+    "border-nutrition-edge bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition-surface-dark/15",
 };
 
 // `brand` tabs use the semantic `ring-focus` token so the keyboard focus

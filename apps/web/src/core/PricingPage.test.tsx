@@ -582,14 +582,15 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     ).toBe(true);
   });
 
-  it("тримає розведене чорнило Premium-героя над порогом AA", () => {
+  it("малює Premium-героя чорнилом без альфи", () => {
     // Регресія WF-23: `text-hero-ink/70` і `/60` давали 3.40:1 і 2.90:1 на
     // світлому кінці градієнта (teal-700) при 12-14px тексті, де поріг
-    // 4.5:1. Лінт цього не бачить — `no-opacity-on-text-token` не знає
-    // токена `hero-ink`, а контрастний гейт міряє лише 100%-пари.
+    // 4.5:1. Рішення власника 2026-10-01 (A9): чорнило завжди повне, жодного
+    // кроку прозорості, ієрархію тримають кегль і вага. Лінт цього не
+    // бачить — `no-opacity-on-text-token` не знає токена `hero-ink`.
     const { container } = renderPricing();
-    expect(container.querySelector('[class*="text-hero-ink/70"]')).toBeNull();
-    expect(container.querySelector('[class*="text-hero-ink/60"]')).toBeNull();
+    expect(container.querySelector('[class*="text-hero-ink/"]')).toBeNull();
+    expect(container.querySelector('[class*="text-brand-900/"]')).toBeNull();
   });
 
   it("малює Premium чорнилом хаба, а не hero-градієнтом Фініка", () => {

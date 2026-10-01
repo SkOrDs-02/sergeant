@@ -16,7 +16,11 @@
  * Тому тут пінимо не лише числа, а й ЛОКАЦІЮ правил.
  */
 import { readFileSync } from "node:fs";
-import { controlEdge, moduleSurfaces } from "@sergeant/design-tokens/tokens";
+import {
+  brandColors,
+  controlEdge,
+  moduleSurfaces,
+} from "@sergeant/design-tokens/tokens";
 import { describe, expect, it } from "vitest";
 
 const css = readFileSync(new URL("./theme.css", import.meta.url), "utf8");
@@ -171,6 +175,109 @@ describe("--c-focus-solid (суцільний колір індикатора ф
   }
 });
 
+describe("фокус на світлому hero-градієнті: `hero-ink` ≥ 4.5:1 проти кожної зупинки", () => {
+  // Follow-up аудиту 2026-10-01: у піддереві модуля `--c-focus-solid` =
+  // `--c-{m}-ink` (світла -800), а початок hero-градієнта — той самий тир, тож
+  // кільце зливалось із фоном (≈1.0-1.3:1). Правило в кінці `theme.css`
+  // підставляє чорнило `#fdf9f3`; тут пінимо, що воно тримає ≥4.5:1 (вище за
+  // 3:1 індикатора: те саме чорнило несе текст hero) і що правило справді
+  // ставить саме цей колір.
+  const HERO_INK = "253 249 243";
+  it("правило ставить `--c-focus-solid: 253 249 243`", () => {
+    expect(css).toMatch(
+      /html:not\(\.dark\) \[class\*="bg-hero-grad-"\]\s*\{\s*--c-focus-solid:\s*253 249 243;/,
+    );
+  });
+  for (const module of ["finyk", "fizruk", "routine", "nutrition"] as const) {
+    const decl = new RegExp(
+      `--hero-grad-${module}:\\s*linear-gradient\\(([^)]*)\\)`,
+    ).exec(css);
+    it(`${module}: градієнт у :root знайдено`, () => {
+      expect(
+        decl,
+        `--hero-grad-${module} не знайдено в theme.css`,
+      ).not.toBeNull();
+    });
+    const stops = [...(decl?.[1] ?? "").matchAll(/#([0-9a-fA-F]{6})\b/g)].map(
+      (m) => hexToTriplet(`#${m[1]}`),
+    );
+    it(`${module}: у градієнті є щонайменше дві зупинки`, () => {
+      expect(stops.length).toBeGreaterThanOrEqual(2);
+    });
+    for (const stop of stops) {
+      it(`${module}: hero-ink проти зупинки rgb(${stop}) ≥ 4.5:1`, () => {
+        expect(contrast(HERO_INK, stop)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+});
+
+describe("Switch: трек і бігунок — стани розрізняються ≥3:1 (CodeRabbit на #1286)", () => {
+  // `dark:bg-brand-400` (#a8a29e) проти вимкненого `bg-control` (#827b77) давав
+  // 1.65:1: стани майже не розрізнялись. Тут числа беруться ЗІ ДЖЕРЕЛА
+  // компонента (regex по `Switch.tsx`), а не з копії: правка класу без правки
+  // пари валить саме цей гейт.
+  const source = readFileSync(
+    new URL("../shared/components/ui/Switch.tsx", import.meta.url),
+    "utf8",
+  );
+  // `stone` є в `brandColors` у runtime, але не в `BrandColor` у `index.d.ts`.
+  const stoneRamp = (
+    brandColors as unknown as Record<string, Record<string, string>>
+  )["stone"]!;
+  const stone = (tier: string): string => hexToTriplet(stoneRamp[tier]!);
+  const darkTrackTier = /"bg-brand-strong dark:bg-brand-(\d+)"/.exec(
+    source,
+  )?.[1];
+
+  it("клас увімкненого треку знайдено в джерелі", () => {
+    expect(
+      darkTrackTier,
+      "не знайдено `dark:bg-brand-NNN` у Switch.tsx",
+    ).toBeDefined();
+  });
+  it("світла: увімкнений `brand-strong` (stone-800) проти вимкненого `control` ≥ 3:1", () => {
+    expect(contrast(stone("800"), root["c-control"]!)).toBeGreaterThanOrEqual(
+      3,
+    );
+  });
+  it("темна: увімкнений трек проти вимкненого `control` ≥ 3:1", () => {
+    expect(
+      contrast(stone(darkTrackTier!), dark["c-control"]!),
+    ).toBeGreaterThanOrEqual(3);
+  });
+  it("темна: увімкнений трек проти картки й `panelHi` ≥ 3:1", () => {
+    for (const surface of [dark["c-panel"]!, dark["c-panel-hi"]!]) {
+      expect(contrast(stone(darkTrackTier!), surface)).toBeGreaterThanOrEqual(
+        3,
+      );
+    }
+  });
+  it("темна: вимкнений трек проти картки й `panelHi` ≥ 3:1", () => {
+    for (const surface of [dark["c-panel"]!, dark["c-panel-hi"]!]) {
+      expect(contrast(dark["c-control"]!, surface)).toBeGreaterThanOrEqual(3);
+    }
+  });
+  it("темна: бігунок увімкненого (`dark:bg-bg`) проти треку ≥ 3:1, а світлий `dark:bg-text` на ньому б зник", () => {
+    expect(source).toMatch(/currentChecked && "dark:bg-bg"/);
+    expect(
+      contrast(dark["c-bg"]!, stone(darkTrackTier!)),
+    ).toBeGreaterThanOrEqual(3);
+    expect(contrast(dark["c-text"]!, stone(darkTrackTier!))).toBeLessThan(3);
+  });
+  it("темна: бігунок вимкненого (`dark:bg-text`) проти `control` ≥ 3:1", () => {
+    expect(
+      contrast(dark["c-text"]!, dark["c-control"]!),
+    ).toBeGreaterThanOrEqual(3);
+  });
+  it("світла: бігунок `bg-panel` проти обох треків ≥ 3:1", () => {
+    expect(contrast(root["c-panel"]!, stone("800"))).toBeGreaterThanOrEqual(3);
+    expect(
+      contrast(root["c-panel"]!, root["c-control"]!),
+    ).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe("світла `--c-line`: контур картки читається на столі", () => {
   // Аудит A8: `#e2e0da` давав 1.05 проти столу хаба — межа картки на столі
   // була невидима. Паритет із темною (1.56 проти картки): ≥1.5 / ≥1.2.
@@ -196,7 +303,7 @@ describe("світла `--c-line`: контур картки читається 
   });
 });
 
-describe("локація правил: ПОЗА `@layer` (інакше вони не діють)", () => {
+describe("локація правил: ПОЗА `@layer` (інакше вони не діють); виняток — межа полів у `utilities`", () => {
   /** Глибина дужок на позиції `index` (рахуємо `{`/`}` поза коментарями). */
   function depthAt(index: number): number {
     const text = css.slice(0, index).replace(/\/\*[\s\S]*?\*\//g, "");
@@ -213,12 +320,12 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       /\n\*:focus-visible:not\(\.focus-ring\)\s*\{/,
     "контур для елементів без кільця":
       /\n:is\(\s*a\[href\][\s\S]*?\):focus-visible:not\(\.focus-ring\):not\(\[class\*="ring-"\]\)\s*\{/,
-    "межа голих input/select/textarea.border-line":
-      /\ninput\.border-line:not\(/,
     "peer-кільце (Switch)":
       /\n\.peer:focus-visible ~ \[class\*="peer-focus-visible:ring"\]\s*\{/,
     "кільце невалідного поля":
       /\n\*:focus-visible\[aria-invalid="true"\]:not\(\.focus-ring\)\s*\{/,
+    "фокус на світлому hero-градієнті (hero-ink)":
+      /\nhtml:not\(\.dark\) \[class\*="bg-hero-grad-"\]\s*\{/,
   };
   for (const [name, re] of Object.entries(RULES)) {
     it(`${name}: правило є і стоїть на нульовій глибині`, () => {
@@ -227,6 +334,51 @@ describe("локація правил: ПОЗА `@layer` (інакше вони 
       expect(depthAt(match!.index + 1)).toBe(0);
     });
   }
+
+  describe("межа голих input/select/textarea.border-line (CodeRabbit на #1286)", () => {
+    // Правило мусить (а) перебивати `.border-line` (0,1,0) і (б) поступатись
+    // станові утиліті компонента (`hover:`/`focus:`/`aria-invalid:`/
+    // `disabled:border-*`, усі (0,2,0)). Це можливо лише в `@layer utilities`
+    // зі специфічністю (0,1,1): колишня форма поза шарами з голими `:not(...)`
+    // мала (0,3,1) і перебивала всі ці утиліти (заміряно в Chromium).
+    const re = /\n {2}input\.border-line:where\(/;
+    const match = re.exec(css);
+
+    it("правило є і стоїть у `@layer utilities` (глибина 1)", () => {
+      expect(
+        match,
+        "правило межі полів не знайдено в theme.css",
+      ).not.toBeNull();
+      expect(depthAt(match!.index + 1)).toBe(1);
+      const before = css.slice(0, match!.index);
+      expect(before.lastIndexOf("@layer utilities")).toBeGreaterThan(
+        before.lastIndexOf("@layer components"),
+      );
+    });
+    it("колишньої форми — поза шарами, зі специфічністю (0,3,1) — немає", () => {
+      expect(css).not.toMatch(/\ninput\.border-line:not\(/);
+    });
+    it("виняток для типів і `:focus-visible` загорнуто в `:where()` (специфічність 0)", () => {
+      const block = css.slice(match!.index, css.indexOf("}", match!.index));
+      expect(block).toMatch(
+        /input\.border-line:where\(\s*:not\([\s\S]*?\)\s*\):where\(:not\(:focus-visible\)\)/,
+      );
+      expect(block).toContain("select.border-line:where(:not(:focus-visible))");
+      expect(block).toContain(
+        "textarea.border-line:where(:not(:focus-visible))",
+      );
+      // Жодного «голого» `:not(` поза `:where(`: він піднімає специфічність.
+      const stripped = block.replace(
+        /:where\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)/g,
+        "",
+      );
+      expect(stripped).not.toMatch(/:not\(/);
+    });
+    it("не доповнено блокуванням станів (:hover/:disabled), яке прибрало б 3:1 з кожного поля на hover", () => {
+      const block = css.slice(match!.index, css.indexOf("}", match!.index));
+      expect(block).not.toMatch(/:hover|:disabled|aria-invalid/);
+    });
+  });
 
   it("`.zone-chip` — у `@layer components`, а не поза шарами", () => {
     // Відступ у два пробіли — це саме правило, а не згадка в коментарі.

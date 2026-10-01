@@ -127,4 +127,31 @@ describe("Switch", () => {
     expect(input.name).toBe("sound");
     expect(input.value).toBe("yes");
   });
+
+  describe("трек і бігунок: стани розрізняються ≥3:1 в обох темах (CodeRabbit #1286)", () => {
+    // Числа гейтить `theme.controlFocus.test.ts` («Switch: трек»), тут — що
+    // класи компонента справді ті, які той гейт зчитує з джерела.
+    const parts = (container: HTMLElement) => {
+      const spans = container.querySelectorAll("label > span[aria-hidden]");
+      return { track: spans[0] as HTMLElement, thumb: spans[1] as HTMLElement };
+    };
+
+    it("вимкнений: трек `bg-control`, бігунок світлий `dark:bg-text`", () => {
+      const { container } = render(<Switch label="A" />);
+      const { track, thumb } = parts(container);
+      expect(track).toHaveClass("bg-control");
+      expect(thumb).toHaveClass("dark:bg-text");
+      expect(thumb).not.toHaveClass("dark:bg-bg");
+    });
+
+    it("увімкнений: трек `dark:bg-brand-200` (не -400, 1.65:1 проти вимкненого), бігунок темний `dark:bg-bg`", () => {
+      const { container } = render(<Switch label="A" defaultChecked />);
+      const { track, thumb } = parts(container);
+      expect(track).toHaveClass("bg-brand-strong", "dark:bg-brand-200");
+      expect(track).not.toHaveClass("dark:bg-brand-400");
+      // Світлий бігунок на майже білому треку (1.15:1) зник би.
+      expect(thumb).toHaveClass("dark:bg-bg");
+      expect(thumb).not.toHaveClass("dark:bg-text");
+    });
+  });
 });

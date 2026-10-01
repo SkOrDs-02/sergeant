@@ -165,11 +165,11 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
   return (
-    <div className="rounded-2xl border border-line bg-bg/30 overflow-hidden">
+    <div className="rounded-2xl border border-line bg-panel overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full px-3 py-2 min-h-[44px] flex items-center gap-1.5 border-b border-line/40 bg-panel/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="w-full px-3 py-2 min-h-[44px] flex items-center gap-1.5 border-b border-line bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
         aria-expanded={open}
       >
         <Icon
@@ -530,8 +530,10 @@ export function ShoppingListCard({
               "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
               "flex items-center justify-between gap-2 transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              // Увімкнено: тонований фон + контур `nutrition-edge` (≥3:1 проти
+              // картки, A4 2026-10-01; `border-nutrition/40` давав 2.14).
               pantryMath.enabled
-                ? "bg-nutrition/10 border-nutrition/40 text-nutrition-strong dark:text-nutrition"
+                ? "bg-nutrition/10 border-nutrition-edge text-nutrition-strong dark:text-nutrition"
                 : "border-line text-muted",
             )}
           >
@@ -539,7 +541,7 @@ export function ShoppingListCard({
             <span
               className={cn(
                 "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
-                pantryMath.enabled ? "bg-nutrition-strong" : "bg-line",
+                pantryMath.enabled ? "bg-nutrition-strong" : "bg-control",
               )}
               aria-hidden
             >
@@ -559,9 +561,9 @@ export function ShoppingListCard({
               {calculated.categories.map((cat) => (
                 <div
                   key={cat.name}
-                  className="rounded-2xl border border-line bg-bg/30 overflow-hidden"
+                  className="rounded-2xl border border-line bg-panel overflow-hidden"
                 >
-                  <div className="px-3 py-2 border-b border-line/40 bg-panel/40">
+                  <div className="px-3 py-2 border-b border-line bg-panelHi">
                     <div className="flex items-center gap-1.5">
                       <Icon
                         name={getCategoryIcon(cat.name)}

@@ -131,7 +131,7 @@ function RecoveryRowButton({
       </span>
       <span className="min-w-0 flex-1" />
       {row.kind === "muscle" && <FatigueBar percent={pct} />}
-      <span className="shrink-0 text-style-caption text-hero-ink/80">
+      <span className="shrink-0 text-style-caption text-hero-ink">
         {caption.short}
       </span>
     </button>
@@ -145,7 +145,7 @@ function RecoveryRowButton({
  */
 function EmptyBody() {
   return (
-    <p className="mt-4 text-style-body text-hero-ink/80">
+    <p className="mt-4 text-style-body text-hero-ink">
       Тіло ще не має історії. Перше тренування покаже, що відновлюється.
     </p>
   );

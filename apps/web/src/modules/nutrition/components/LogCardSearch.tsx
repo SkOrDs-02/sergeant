@@ -42,7 +42,7 @@ export function LogCardSearch({
       variant="flat"
       radius="lg"
       padding="none"
-      className="bg-panel/40 px-3 py-3 space-y-2"
+      className="px-3 py-3 space-y-2"
     >
       <SectionHeading as="div" size="xs" variant="nutrition">
         Пошук по журналу

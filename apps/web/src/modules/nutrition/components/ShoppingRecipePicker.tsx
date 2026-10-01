@@ -105,7 +105,7 @@ function Group({
   if (options.length === 0) return null;
   return (
     <div role="group" aria-label={title}>
-      <div className="px-3 py-1.5 text-style-caption text-muted bg-panel/40 border-b border-line/40">
+      <div className="px-3 py-1.5 text-style-caption text-muted bg-panelHi border-b border-line">
         {title}
       </div>
       <ul className="divide-y divide-line/30">
@@ -168,11 +168,11 @@ export function ShoppingRecipePicker({
 
   return (
     <div
-      className="rounded-2xl border border-line bg-bg/30 overflow-hidden"
+      className="rounded-2xl border border-line bg-panel overflow-hidden"
       aria-label={pk.listAria}
       role="group"
     >
-      <div className="px-3 py-1 flex items-center justify-between gap-2 border-b border-line/40">
+      <div className="px-3 py-1 flex items-center justify-between gap-2 border-b border-line">
         <span className="text-style-caption text-text">
           {pk.selectedLabel} {selectedCount} {pk.selectedOf} {total}
         </span>
@@ -225,7 +225,7 @@ export function ShoppingRecipePicker({
         )}
       </div>
       {atLimit && (
-        <div className="px-3 py-1.5 text-style-caption text-muted border-t border-line/40">
+        <div className="px-3 py-1.5 text-style-caption text-muted border-t border-line">
           {pk.maxHint}
         </div>
       )}

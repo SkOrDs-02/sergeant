@@ -54,7 +54,7 @@ export function DailyPlanMealRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="rounded-2xl border border-line bg-bg/40 p-3">
+    <div className="rounded-2xl border border-line bg-panel p-3">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 mb-0.5">

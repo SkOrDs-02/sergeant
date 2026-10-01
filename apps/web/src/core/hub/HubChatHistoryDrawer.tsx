@@ -259,7 +259,7 @@ function HistoryPanel({
                             "w-full flex items-start gap-3 pl-3 pr-12 py-2.5 rounded-2xl text-left transition-colors border outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                             isActive
                               ? "bg-brand-soft border-brand-soft-border/60 text-text"
-                              : "bg-panel/60 border-transparent hover:bg-panelHi text-text",
+                              : "bg-panel border-transparent hover:bg-panelHi text-text",
                           )}
                         >
                           {/* Активна бесіда позначена бренд-рискою зліва, а не
