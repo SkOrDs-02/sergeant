@@ -76,7 +76,7 @@ const sizes: Record<InputSize, string> = {
  */
 const variants: Record<InputVariant, string> = {
   default:
-    "bg-panelHi border border-line caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
+    "bg-panelHi border border-control caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
   filled:
     "bg-panelHi border-transparent caret-brand focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
   ghost:

@@ -65,6 +65,8 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 | 🟡 warning  | ≤3 stale OR 1 violation         |
 | 🔴 critical | >3 stale OR >1 violation        |
 
+Третій сигнал, хвіст падінь scheduled-воркфлоу через `gh run list` (додано 2026-05-31), знято 2026-10-01 рішенням власника. Через нього закомічений бейдж залежав від середовища: з авторизованим `gh` виходило WARNING, без нього HEALTHY, і pre-commit червонів на незміненому дереві. Обґрунтування — у шапці `scripts/docs/generate-trust-badge.mjs`.
+
 **Priority rule для today.md:** items з `Phase X next` маркером у Status header — top 3 за recency mention.
 
 ### Phase 2 — Bundle Beta — shipped (плановий ETA був 2026-06-30)

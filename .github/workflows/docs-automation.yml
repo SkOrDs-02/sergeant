@@ -152,7 +152,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check docs/today.md is up to date
-        # `today.md` is regenerated daily by docs-daily-brief.yml. This
+        # `today.md` drift is caught by the pre-commit derived-artifacts hook
+        # (docs-daily-brief.yml is manual-only since 2026-10-01). This
         # check catches PRs that touch a Status header or initiative
         # frontmatter without re-running the generator.
         run: pnpm docs:check-today

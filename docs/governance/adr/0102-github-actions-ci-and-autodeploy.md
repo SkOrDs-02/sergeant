@@ -42,7 +42,7 @@
   - `ci.yml` на PR/push: `check`, `Critical-flow E2E (Playwright)`, `migration-lint`, `migration-down-drill`, `commitlint`, `secret-scan`, на `main` ще `deploy-api`. Critical-flow лишається, бо це required-чек branch protection і частина `needs:` автодеплою; migration-джоби, бо міграції виконує прод; commitlint і gitleaks коштують менше хвилини і тримають Hard Rule #5 та secret scan.
   - `lighthouse-ci.yml` теж переведено на щопонеділковий розклад і ручний запуск. `Lighthouse CI` досі стоїть required-чеком у branch protection `main`, тож власник має прибрати його звідти, інакше PR чекатимуть на чек, який не стартує.
   - Решта джоб `ci.yml` (`bundle-budgets`, `coverage`, `a11y`, `mobile-ui-audit`, `landing-quality`, `knip-scan`, `security-audit`, `server-integration`, `rag-eval`, `tool-eval`, `actionlint`, `todo-freshness`, `pipeline-duration-summary`) - щопонеділка о 04:00 UTC і вручну.
-  - Щопонеділка і вручну: `ai-legacy-scan`, `codeql`, `container-scan`, `contract-tests`, `docs-automation`, `docs-freshness`, `extended-e2e`, `skill-freshness`, `post-deploy-smoke` (без `deployment_status`), `docs-daily-brief`, `nightly-audit`, `pact-drift`, `web-route-ledger` (останні чотири були щоденні). Без змін: `db-backup-verify`, `mutation-testing`, `rag-eval-live` (уже щотижневі).
+  - Щопонеділка і вручну: `ai-legacy-scan`, `codeql`, `container-scan`, `contract-tests`, `docs-automation`, `docs-freshness`, `extended-e2e`, `skill-freshness`, `post-deploy-smoke` (без `deployment_status`), `docs-daily-brief`, `nightly-audit`, `pact-drift`, `web-route-ledger` (останні чотири були щоденні). Поправка 2026-10-01: `docs-daily-brief` переведено на лише ручний запуск (рішення власника, причина в шапці воркфлоу). Без змін: `db-backup-verify`, `mutation-testing`, `rag-eval-live` (уже щотижневі).
   - Лише вручну: `deploy-landing` (раніше автодеплой лендінгу на push), `deploy-config-staging-gate`, `mobile-shell-android`, `mobile-shell-ios` (мобільний контур на паузі, ADR-0094), `posthog-release-annotation`, `storybook-deploy`. Вже були ручними: `detox-*`, `mobile-flaky-verify`, `mobile-shell-*-release`.
   - `pr-backlinks.yml` лишається на `pull_request_target: closed`, але вимкнений змінною `PR_LEDGER_ON_GITHUB` (джоба одразу `skipped`).
 - З `.husky/pre-push` знято перевірку змердженого PR на Bitbucket (`scripts/pre-push-merged-pr.mjs`) разом із нагадуванням про реєстр PR. Оновлення `main` у трунку `D:\Sergeant` лишилось: від Bitbucket воно не залежить, а без нього застарівають хуки в усіх worktree.
@@ -85,3 +85,15 @@
 - ~~Полагодити critical-flow E2E.~~ Зелений на `main` 2026-10-01.
 - ~~Прибрати `Lighthouse CI` з required-чеків branch protection `main`.~~ Зроблено 2026-10-01: required тепер `check`, `Critical-flow E2E (Playwright)`, `Migration lint`, `Migration down drill`, `Commit messages (commitlint)`, `Secret scan (gitleaks)`.
 - ~~Звірити Vercel Git-інтеграцію.~~ Звірено 2026-10-01, див. § Фронт і Vercel.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                   | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#1283](https://github.com/SkOrDs-02/sergeant/pull/1283) | ci(web): deploy web and landing from main only, no per-PR Vercel builds | 2026-10-01 |
+| [#1233](https://github.com/SkOrDs-02/sergeant/pull/1233) | ci(ci): GitHub Actions CI and backend autodeploy after green CI         | 2026-10-01 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -390,7 +390,7 @@ export function ShoppingListCard({
               )}
             >
               <div>Рецепти</div>
-              <div className="text-style-caption opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-80 mt-0.5">
                 {hasRecipes
                   ? `${allRecipeOptions.length} ${pluralUa(
                       allRecipeOptions.length,
@@ -411,7 +411,7 @@ export function ShoppingListCard({
               )}
             >
               <div>Тижневий план</div>
-              <div className="text-style-caption opacity-70 mt-0.5">
+              <div className="text-style-caption opacity-80 mt-0.5">
                 {hasWeekPlan
                   ? `${weekPlan?.days?.length ?? 0} ${pluralDays(
                       weekPlan?.days?.length ?? 0,

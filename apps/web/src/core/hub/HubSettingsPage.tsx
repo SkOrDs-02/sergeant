@@ -660,12 +660,13 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
             // в пошуку вище). На такому треці дефолтний активний піл
             // `bg-brand-soft` (stone-100) був би невідрізнюваний від
             // фону — тому активний перекрито на панельно-білий чип із
-            // hairline + e1 через `aria-selected:` (cn = twMerge, і
+            // контуром `control` (≥3:1, аудит 2026-10-01, A4: hairline
+            // `line` давав 1.3-1.44) + e1 через `aria-selected:` (cn = twMerge, і
             // `[aria-selected="true"]` специфічніший за базові класи
             // Tabs). `rounded-lg` — концентричний радіус до треку
             // `rounded-xl` з його p-1.
             className="overflow-x-auto bg-panelHi rounded-xl"
-            tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-line aria-selected:shadow-e1"
+            tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-control aria-selected:shadow-e1"
           />
         </div>
       </div>

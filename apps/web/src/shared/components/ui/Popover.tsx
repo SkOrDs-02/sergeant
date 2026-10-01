@@ -285,7 +285,7 @@ export function PopoverItem({
         "transition-colors duration-fast rounded-xl mx-1 outline-none",
         "focus-visible:ring-2 focus-visible:ring-accent/60",
         destructive
-          ? "text-danger-strong dark:text-danger hover:bg-danger-soft"
+          ? "text-danger-strong dark:text-danger hover:bg-danger-soft hover:text-danger-soft-fg"
           : "text-text hover:bg-panelHi",
         disabled && "opacity-50 pointer-events-none",
         className,

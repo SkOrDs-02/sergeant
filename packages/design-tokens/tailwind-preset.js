@@ -124,6 +124,12 @@ const preset = {
         "fg-subtle": "rgb(var(--c-subtle) / <alpha-value>)",
         border: "rgb(var(--c-border) / <alpha-value>)",
         "border-strong": "rgb(var(--c-border-strong) / <alpha-value>)",
+        // `control` — межа/трек КОНТРОЛУ (поле вводу, непозначений чекбокс,
+        // вимкнений трек перемикача). WCAG 1.4.11: ≥3:1 проти кожної
+        // поверхні, на якій контрол стоїть; `line`/`border` (1.3-1.6:1) для
+        // цього занадто тихі. `border-control` / `bg-control`. Значення —
+        // `--c-control` у theme.css, дзеркало — `controlEdge` у tokens.js.
+        control: "rgb(var(--c-control) / <alpha-value>)",
         accent: "rgb(var(--c-accent) / <alpha-value>)",
         ring: "rgb(var(--c-accent) / <alpha-value>)",
 

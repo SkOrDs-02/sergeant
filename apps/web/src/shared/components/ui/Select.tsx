@@ -25,7 +25,7 @@ const sizes: Record<SelectSize, string> = {
 };
 
 const variants: Record<SelectVariant, string> = {
-  default: "bg-panelHi border border-line",
+  default: "bg-panelHi border border-control",
   filled: "bg-panelHi border-transparent focus-visible:bg-panel",
   ghost:
     "bg-transparent border-transparent hover:bg-panelHi focus-visible:bg-panelHi",
