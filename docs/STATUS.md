@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-30 by docs:gen-status. **Next review:** 2026-10-07.
+> **Last touched:** 2026-10-01 by docs:gen-status. **Next review:** 2026-10-08.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) — fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі _(2026-09-25)_
 - [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
 
-## 🔵 В роботі — 80 відкритих документів
+## 🔵 В роботі — 81 відкритий документ
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 80       |
+| Активні спеки | 81       |
 
 **Найактивніше (8, за останніми PR):**
 
