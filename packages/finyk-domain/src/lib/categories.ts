@@ -1,5 +1,11 @@
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
 import {
+  findMerchantRule,
+  type MerchantRuleIndex,
+  type MerchantRuleKind,
+  type MerchantRuleTxLike,
+} from "./merchantRules.js";
+import {
   legacyManualCategoryId,
   MANUAL_EXPENSE_TAXONOMY,
   MANUAL_INCOME_TAXONOMY,
@@ -172,12 +178,65 @@ export function getCategory(
   return { id: "other", label: "Інше", mccs: [], keywords: [] };
 }
 
+/**
+ * Id категорії зі збереженого правила мерчанта — або `null`.
+ *
+ * `null` і тоді, коли правило є, але його категорія вже не існує (власну
+ * категорію видалено): тоді правило мовчки не діє, а операція дістає те, що
+ * мала б без нього, включно із серверним слагом. Підставити «осиротілий» id
+ * означало б зʼїсти слаг, а `getCategory` усе одно не знайшов би за ним
+ * категорії.
+ */
+export function getMerchantRuleCategoryId(
+  transaction: MerchantRuleTxLike,
+  merchantRules: MerchantRuleIndex | null | undefined,
+  kind: MerchantRuleKind,
+  customCategories: CategoryLikeInput = [],
+): string | null {
+  const rule = findMerchantRule(merchantRules, transaction, kind);
+  if (!rule) return null;
+  const known =
+    kind === "income"
+      ? isKnownIncomeCategoryId(rule.categoryId, customCategories)
+      : resolveExpenseOverride(rule.categoryId, customCategories) !== null;
+  return known ? rule.categoryId : null;
+}
+
+function isKnownIncomeCategoryId(
+  id: string,
+  customCategories: CategoryLikeInput,
+): boolean {
+  if (MANUAL_INCOME_CATEGORIES.some((c) => c.id === id)) return true;
+  if (INCOME_CATEGORIES.some((c: CategoryLike) => c.id === id)) return true;
+  return customCategories
+    .filter(isCategoryLike)
+    .some((c) => c.kind === "income" && c.id === id);
+}
+
+/**
+ * Категорія ВИТРАТИ. Порядок джерел (сильніше → слабше):
+ *
+ *   1. `overrideId` — явний вибір людини на цій операції;
+ *   2. правило мерчанта (`merchantRules`, 2026-10-01) — лише для банківських
+ *      витрат; ручні записи несуть власну явну категорію;
+ *   3. `transaction.categoryId` — серверний слаг із MCC;
+ *   4. MCC і ключові слова опису.
+ */
 export function getExpenseCategoryForTransaction(
   transaction: CategorizedTransactionLike,
   overrideId: string | null | undefined = null,
   customCategories: CategoryLikeInput = [],
+  merchantRules?: MerchantRuleIndex | null,
 ): CategoryLike {
-  const explicitId = overrideId || transaction.categoryId || null;
+  const ruleId = overrideId
+    ? null
+    : getMerchantRuleCategoryId(
+        transaction,
+        merchantRules,
+        "expense",
+        customCategories,
+      );
+  const explicitId = overrideId || ruleId || transaction.categoryId || null;
   const isManual =
     transaction.manual === true ||
     transaction._manual === true ||
@@ -220,12 +279,22 @@ export function getExpenseCategoryForTransaction(
   );
 }
 
+/** Категорія НАДХОДЖЕННЯ; порядок джерел той самий, що у витрати. */
 export function getIncomeCategoryForTransaction(
   transaction: CategorizedTransactionLike,
   overrideId: string | null | undefined = null,
   customCategories: CategoryLikeInput = [],
+  merchantRules?: MerchantRuleIndex | null,
 ): CategoryLike {
-  const explicitId = overrideId || transaction.categoryId || null;
+  const ruleId = overrideId
+    ? null
+    : getMerchantRuleCategoryId(
+        transaction,
+        merchantRules,
+        "income",
+        customCategories,
+      );
+  const explicitId = overrideId || ruleId || transaction.categoryId || null;
   const isManual =
     transaction.manual === true ||
     transaction._manual === true ||
