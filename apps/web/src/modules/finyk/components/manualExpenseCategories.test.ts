@@ -18,6 +18,24 @@ describe("isCategorySlug", () => {
     expect(isCategorySlug("")).toBe(false);
     expect(isCategorySlug("Їжа")).toBe(false);
   });
+
+  // П'ять категорій 2026-10-01: без слага в `CategorySlug`/пікері ручна
+  // витрата з такою категорією дошкуляла б «Інше» при збереженні.
+  it("knows the five categories added 2026-10-01 and offers them in the picker", () => {
+    for (const slug of [
+      "telecom",
+      "home",
+      "pets",
+      "gifts",
+      "p2p_transfer",
+    ] as const) {
+      expect(isCategorySlug(slug)).toBe(true);
+      expect(CATEGORY_SLUGS).toContain(slug);
+      expect(upgradeCategory(slug)).toBe(slug);
+    }
+    // Подарунок-надходження (`gift`) і подарунки-витрата (`gifts`) — різні id.
+    expect(isCategorySlug("gift")).toBe(false);
+  });
 });
 
 describe("upgradeCategory", () => {
