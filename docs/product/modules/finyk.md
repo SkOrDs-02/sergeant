@@ -938,6 +938,10 @@ PG-таблиці й міграції. Розглянуто й відкинут�
 в Активах (`AssetsTxPickerView`, `AssetsDebtTxPicker`) і мобайл (пауза за
 [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md)): вони читають
 категорії зі «сирого» `txCategories` і правил не бачать.
+Метрики: загальні суми не рухаються, змінюється лише розбивка по категоріях
+для тих, хто створив правило (топ-категорії дайджесту, коуч-інсайт, ліміти,
+аналітика). Чи піднімати `METRICS_VERSION` через це, вирішує власник окремо, у
+цій зміні константа не чіпана.
 Реалізація: `packages/finyk-domain/src/lib/merchantRules.ts`
 (`merchantRuleOverrides.ts`, `categories.ts`), `useFinykMerchantRules`,
 `MerchantRuleOffer`, `FinykMerchantRulesSection`.
