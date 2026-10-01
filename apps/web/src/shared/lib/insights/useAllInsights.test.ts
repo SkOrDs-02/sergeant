@@ -30,6 +30,7 @@ function makeInsight(id: string, showOn: Insight["showOn"]): Insight {
     module: null,
     title: id,
     subtitle: id,
+    askAiPrompt: id,
     action: { type: "callback", fn: () => {} },
     showOn,
   };

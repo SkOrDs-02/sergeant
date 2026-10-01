@@ -22,6 +22,7 @@ import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
 import { WeeklyDigestFooter } from "./dashboard/dashboardCards";
 import { InsightCard } from "@shared/components/ui/InsightCard";
 import { useAllInsights } from "@shared/lib/insights/useAllInsights";
+import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import type { Insight } from "@shared/lib/insights/types";
 import type { Rec, NudgeDefinition } from "@sergeant/shared";
@@ -71,6 +72,7 @@ export function HubInsightsBlock({
 }: HubInsightsBlockProps) {
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
+  const askAiDisabled = useAskAiQuotaExhausted();
   // Реальний стан розгорнутості секції. `CollapsibleSection` тримає дітей у
   // DOM і згорнутою, тож без цього AI-порада і дайджест рахували б показ,
   // якого користувач не бачив (подвійний collapse). Ініціалізація значенням
@@ -89,6 +91,10 @@ export function HubInsightsBlock({
     } else if (insight.action.type === "callback") {
       insight.action.fn();
     }
+  }
+
+  function handleAskAi(insight: Insight) {
+    emitHubBus("openChat", { message: insight.askAiPrompt, autoSend: false });
   }
 
   return (
@@ -129,6 +135,8 @@ export function HubInsightsBlock({
               // `surface: "module"` і зіпсували б розріз по поверхнях.
               surface="hub"
               onActivate={() => handleInsightActivate(insight)}
+              onAskAi={() => handleAskAi(insight)}
+              askAiDisabled={askAiDisabled}
             />
           ))}
         </div>

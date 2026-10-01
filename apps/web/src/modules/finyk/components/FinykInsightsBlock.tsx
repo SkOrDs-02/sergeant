@@ -15,6 +15,8 @@
 
 import { useNavigate } from "react-router-dom";
 import { InsightCard } from "@shared/components/ui/InsightCard";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useCoffeeLimitInsight } from "../hooks/useCoffeeLimitInsight";
 import { useBudgetOverrunInsight } from "../hooks/useBudgetOverrunInsight";
 import { useRecurringDetectedInsight } from "../hooks/useRecurringDetectedInsight";
@@ -58,6 +60,7 @@ export function FinykInsightsBlock({
   excludedTxIds,
 }: FinykInsightsBlockProps) {
   const navigate = useNavigate();
+  const askAiDisabled = useAskAiQuotaExhausted();
 
   const overrunInsight = useBudgetOverrunInsight({
     budgets,
@@ -112,6 +115,13 @@ export function FinykInsightsBlock({
           title={insight.title}
           subtitle={insight.subtitle}
           onActivate={() => handleActivate(insight)}
+          onAskAi={() =>
+            emitHubBus("openChat", {
+              message: insight.askAiPrompt,
+              autoSend: false,
+            })
+          }
+          askAiDisabled={askAiDisabled}
         />
       ))}
     </div>

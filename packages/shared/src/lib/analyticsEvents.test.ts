@@ -165,6 +165,7 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED).toBe(
       "value_signal_dismissed",
     );
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI).toBe("value_signal_ask_ai");
 
     // Друга половина петлі — «дію зроблено», по одній події на модуль.
     expect(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED).toBe(
@@ -214,6 +215,7 @@ describe("ANALYTICS_EVENTS registry", () => {
       ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN,
       ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED,
       ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED,
+      ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI,
       ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED,
       ANALYTICS_EVENTS.FIZRUK_WORKOUT_STARTED,
       ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED,
