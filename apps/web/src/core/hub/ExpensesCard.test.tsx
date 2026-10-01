@@ -85,6 +85,7 @@ function emptySqliteCache(): SqliteFinykCache {
     showBalance: null,
     excludedStatTxIds: null,
     dismissedRecurring: null,
+    merchantRules: null,
     refreshedAt: null,
   };
 }

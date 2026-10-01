@@ -16,7 +16,9 @@ import {
   markOnboardingDone,
 } from "../onboarding/onboardingGate";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { useCallback } from "react";
+import { getAnalyticsDecision } from "../observability/analyticsConsent";
+import { OnboardingConsentStep } from "../onboarding/OnboardingConsentStep";
+import { useCallback, useState } from "react";
 import { WelcomeModulePicker } from "./WelcomeModulePicker";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
@@ -199,6 +201,11 @@ interface WelcomeScreenProps {
  * До 2026-09-17 картка несла ще й другорядний CTA «Подивитись
  * приклад», що сіяв демо-payload. Демо-режим знято — лишається один
  * шлях: обрати модулі або увійти в наявний акаунт.
+ *
+ * З 2026-10-01 після вибору модулів іде другий крок — згода на продуктову
+ * аналітику (`OnboardingConsentStep`, рішення власника): вона частина
+ * онбордингу, а не плаваючий банер над ним (`AnalyticsConsentGate` на цих
+ * маршрутах мовчить). Крок пропускається, якщо рішення на пристрої вже є.
  */
 export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   // "У мене вже є акаунт" — just navigates to `/sign-in`. Does NOT mark
@@ -214,12 +221,21 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     onOpenAuth();
   }, [onOpenAuth]);
 
+  // Два кроки на одному маршруті: вибір модулів → згода на аналітику
+  // (рішення власника 2026-10-01). Обрані модулі чекають у стані, доки людина
+  // не відповість; нічого не пишемо в сховище й не шлемо в аналітику до кінця
+  // кроку згоди, тож `onboarding_vibe_picked` / `onboarding_completed`
+  // стартують ПІСЛЯ рішення і потрапляють у PostHog, якщо згода є.
+  const [pendingPicks, setPendingPicks] = useState<DashboardModuleId[] | null>(
+    null,
+  );
+
   // Phase 7 D4 preset-picker submit path. Persists the user's module
   // selection, marks onboarding done, fires the canonical analytics
   // funnel and bubbles the picks up to App-level navigation. Mirrors
   // `useOnboardingWizardState.finish()` so legacy consumers
   // (onboardingGate) see identical state.
-  const handlePicksComplete = useCallback(
+  const completeOnboarding = useCallback(
     (picks: DashboardModuleId[]) => {
       saveVibePicks(picks);
       // Див. `useOnboardingWizardState`: boot-гідрація вже відпрацювала на
@@ -245,6 +261,25 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     },
     [onDone],
   );
+
+  // Модулі обрано. Рішення про аналітику на цьому пристрої вже є (повторний
+  // прохід, тумблер у налаштуваннях, згода з іншого пристрою) — питати вдруге
+  // не треба, завершуємо одразу.
+  const handlePicksSelected = useCallback(
+    (picks: DashboardModuleId[]) => {
+      if (getAnalyticsDecision() !== null) {
+        completeOnboarding(picks);
+        return;
+      }
+      setPendingPicks(picks);
+    },
+    [completeOnboarding],
+  );
+
+  // `OnboardingConsentStep` викликає це вже ПІСЛЯ запису згоди.
+  const handleConsentDecided = useCallback(() => {
+    if (pendingPicks) completeOnboarding(pendingPicks);
+  }, [pendingPicks, completeOnboarding]);
 
   // 2026-05-08 — окремий scroll-шар на page-wrapper'і.
   // `html`/`body` не прокручуються, а `#root` має точну висоту viewport
@@ -288,10 +323,14 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
               OnboardingWizard as the cold-start surface. The wizard
               still ships for tour-replay (Settings → "Подивитись
               екскурсію"); only this `/welcome` entry point swaps. */}
-          <WelcomeModulePicker
-            onComplete={handlePicksComplete}
-            onOpenAuth={handleOpenAuth}
-          />
+          {pendingPicks ? (
+            <OnboardingConsentStep onDecided={handleConsentDecided} />
+          ) : (
+            <WelcomeModulePicker
+              onComplete={handlePicksSelected}
+              onOpenAuth={handleOpenAuth}
+            />
+          )}
         </div>
       </div>
     </main>

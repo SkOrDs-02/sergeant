@@ -410,6 +410,7 @@ async function upsertPrefs(
     prefs.showBalance ? 1 : 0,
     prefs.excludedStatTxIdsJson ?? "[]",
     prefs.dismissedRecurringJson ?? "[]",
+    prefs.prefsJson ?? "{}",
     clientTs,
     clientTs,
   ]);
@@ -423,6 +424,10 @@ async function upsertPrefs(
       show_balance: prefs.showBalance ? 1 : 0,
       excluded_stat_tx_ids_json: prefs.excludedStatTxIdsJson ?? "[]",
       dismissed_recurring_json: prefs.dismissedRecurringJson ?? "[]",
+      // Завжди в рядку, навіть коли не змінився: серверний `applyFinykPrefs`
+      // перезаписує `prefs_json` значенням `row.prefs_json ?? "{}"`, тож
+      // оп без цього ключа обнулив би правила в PG.
+      prefs_json: prefs.prefsJson ?? "{}",
     },
     clientTs,
     idempotencyKey: crypto.randomUUID(),

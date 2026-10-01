@@ -183,4 +183,87 @@ describe("applyFinykPrefs", () => {
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
     expect(fake.queries).toHaveLength(1);
   });
+
+  // Правила «Завжди так для цього магазину» (рішення власника 2026-10-01)
+  // живуть у `finyk_prefs.prefs_json.merchantRules`: окремої таблиці й
+  // міграції немає, тож сервер мусить віддати JSON як є — і при створенні
+  // рядка, і при оновленні (whole-row LWW).
+  describe("prefs_json.merchantRules", () => {
+    const rules = {
+      merchantRules: [
+        {
+          id: "mr_1",
+          kind: "expense",
+          merchantKey: "сільпо",
+          categoryId: "transport",
+          label: "Сільпо №5",
+          createdAt: "2026-10-01T10:00:00.000Z",
+          updatedAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
+    };
+
+    it("зберігає правила в prefs_json без змін при створенні рядка", async () => {
+      const fake = new FakeClient();
+      const clientTs = new Date("2026-10-01T10:00:00.000Z");
+
+      await expect(
+        applyFinykPrefs(
+          asClient(fake),
+          syncOp("finyk_prefs", "insert", {
+            user_id: "user-1",
+            prefs_json: rules,
+          }),
+          "user-1",
+          clientTs,
+        ),
+      ).resolves.toEqual({ status: "applied" });
+
+      const insert = lastQuery(fake);
+      expect(insert.sql).toContain("INSERT INTO finyk_prefs");
+      expect(JSON.parse(insert.params[1] as string)).toEqual(rules);
+    });
+
+    it("перезаписує prefs_json цілком при новішому оновленні (видалення правила доходить)", async () => {
+      const fake = new FakeClient();
+      fake.queueRows([{ updated_at: new Date("2026-10-01T09:00:00.000Z") }]);
+      const clientTs = new Date("2026-10-01T10:00:00.000Z");
+
+      await expect(
+        applyFinykPrefs(
+          asClient(fake),
+          syncOp("finyk_prefs", "update", {
+            user_id: "user-1",
+            prefs_json: { merchantRules: [] },
+          }),
+          "user-1",
+          clientTs,
+        ),
+      ).resolves.toEqual({ status: "applied" });
+
+      const update = lastQuery(fake);
+      expect(update.sql).toContain("UPDATE finyk_prefs");
+      expect(update.sql).toContain("prefs_json           = $1::jsonb");
+      expect(JSON.parse(update.params[0] as string)).toEqual({
+        merchantRules: [],
+      });
+    });
+
+    it("старіше за серверне оновлення правило не затирає (LWW)", async () => {
+      const fake = new FakeClient();
+      fake.queueRows([{ updated_at: new Date("2026-10-01T10:00:00.000Z") }]);
+
+      await expect(
+        applyFinykPrefs(
+          asClient(fake),
+          syncOp("finyk_prefs", "update", {
+            user_id: "user-1",
+            prefs_json: { merchantRules: [] },
+          }),
+          "user-1",
+          new Date("2026-10-01T09:59:00.000Z"),
+        ),
+      ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
+    });
+  });
 });

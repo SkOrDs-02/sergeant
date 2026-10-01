@@ -16,6 +16,7 @@
  */
 import {
   SHOPPING_LIST_KEY,
+  migrateShoppingListCategories,
   normalizeShoppingList,
   type ShoppingList,
 } from "@sergeant/nutrition-domain";
@@ -29,6 +30,7 @@ export {
   getCheckedItems,
   getTotalCount,
   mergeGeneratedShoppingList,
+  migrateShoppingListCategories,
   normalizeShoppingList,
   removeCheckedItems,
   toggleShoppingItem,
@@ -48,7 +50,12 @@ export function loadShoppingList(
   const cache = getCachedNutritionSqliteState();
   // SQLite-only: before the warm cache lands, first paint is an empty list
   // and the overlay fills in once it warms (R9, no LS fallback).
-  return normalizeShoppingList(
+  //
+  // `migrateShoppingListCategories` - це `normalizeShoppingList` плюс зведення
+  // категорій до комори: збережені до 2026-10-01 списки несли власні 11 назв
+  // («Мʼясо та риба», «Хлібобулочні вироби»), а список тепер живе в одній
+  // таксономії з коморою. Перший запис (`persistShoppingList`) закріплює міграцію.
+  return migrateShoppingListCategories(
     cache.refreshedAt !== null ? cache.shoppingList : null,
   );
 }

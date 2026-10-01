@@ -8,6 +8,8 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { useInView } from "@shared/hooks/useInView";
 import { useStorage as useFinykStorage } from "@finyk/hooks/useStorage";
+import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
+import { FinykMerchantRulesSection } from "./FinykMerchantRulesSection";
 import { FinykPrivatBankSection } from "./FinykPrivatBankSection";
 import { FinykWebhookServiceSection } from "./FinykWebhookServiceSection";
 import { SilpoIntegrationSection } from "./SilpoIntegrationSection";
@@ -48,7 +50,14 @@ interface FinykStorageShape {
   ) => void;
   removeCustomCategory: (id: string) => void;
   addManualExpense: (expense: ManualExpenseDraft) => void;
+  // Правила категорій мерчантів. Необовʼязкові у цьому «вужчому вигляді» хука:
+  // секція нижче терпить їх відсутність (мок `useStorage` у тестах).
+  merchantRules?: readonly MerchantRule[] | undefined;
+  deleteMerchantRule?: ((id: string) => MerchantRule[]) | undefined;
+  restoreMerchantRules?: ((rules: readonly MerchantRule[]) => void) | undefined;
 }
+
+const NO_MERCHANT_RULES: readonly MerchantRule[] = [];
 
 export function FinykSection() {
   // Відкладаємо Monobank-запит і poller backfill, доки секція вперше не
@@ -59,6 +68,9 @@ export function FinykSection() {
     addCustomCategory,
     removeCustomCategory,
     addManualExpense,
+    merchantRules,
+    deleteMerchantRule,
+    restoreMerchantRules,
   } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
   const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
@@ -173,6 +185,13 @@ export function FinykSection() {
             />
           )}
         </SettingsSubGroup>
+
+        <FinykMerchantRulesSection
+          rules={merchantRules ?? NO_MERCHANT_RULES}
+          customCategories={customCategories}
+          deleteMerchantRule={deleteMerchantRule}
+          restoreMerchantRules={restoreMerchantRules}
+        />
 
         <FinykWebhookServiceSection inView={inView} />
         <SilpoIntegrationSection

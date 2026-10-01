@@ -28,6 +28,7 @@
  * (`apps/mobile/src/modules/finyk/lib/sqliteWriter/extract.ts`).
  */
 
+import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { FinykStorageSlots } from "../../hooks/useFinykStorageSlots";
 import {
   EMPTY_FINYK_STATE,
@@ -176,6 +177,7 @@ export function extractFinykDualWriteState(
   // щоб серверний `applyFinykPrefs` отримав чистий `string[]`.
   const excludedStatTxIdsJson = serializeStringArray(slots.excludedStatTxIds);
   const dismissedRecurringJson = serializeStringArray(slots.dismissedRecurring);
+  const prefsJson = serializePrefsJson(slots.merchantRules);
 
   return {
     hiddenAccounts: idsFromArray(slots.hiddenAccounts),
@@ -196,6 +198,7 @@ export function extractFinykDualWriteState(
       showBalance,
       excludedStatTxIdsJson,
       dismissedRecurringJson,
+      prefsJson,
     },
   };
 }
@@ -211,6 +214,24 @@ export function stateWithSlice<K extends keyof FinykDualWriteState>(
   value: FinykDualWriteState[K],
 ): FinykDualWriteState {
   return { ...EMPTY_FINYK_STATE, [key]: value };
+}
+
+/**
+ * `prefs_json` = `{ merchantRules }`. Порядок масиву лишається як у слоті:
+ * діф порівнює РЯДКИ, тож перестановка без зміни складу не має чіпати
+ * мережу, а стабільний порядок із SQLite (перечитується тим самим JSON)
+ * гарантує, що ехо власного запису не виглядає як зміна.
+ */
+export function serializePrefsJson(
+  merchantRules: readonly unknown[] | null | undefined,
+): string {
+  try {
+    return JSON.stringify({
+      merchantRules: sanitizeMerchantRules(merchantRules),
+    });
+  } catch {
+    return "{}";
+  }
 }
 
 function serializeStringArray(value: readonly unknown[] | undefined): string {

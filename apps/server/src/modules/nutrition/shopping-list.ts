@@ -3,6 +3,7 @@ import type { z } from "zod";
 import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
+import { PANTRY_CATEGORY_LABELS } from "@sergeant/shared/data/pantryCategories";
 import { ShoppingListSchema } from "../../http/schemas.js";
 import { ValidationError, makeAiProviderError } from "../../obs/errors.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
@@ -32,6 +33,19 @@ interface ShoppingCategory {
   items: ShoppingItem[];
 }
 
+const L = PANTRY_CATEGORY_LABELS;
+
+/**
+ * Перелік категорій для промпту - ті самі мітки, що й у коморі (одна
+ * таксономія Харчування, рішення власника 2026-10-01). До цієї дати промпт
+ * просив у моделі власні 11 назв («Мʼясо та риба», «Хлібобулочні вироби»),
+ * яких комора не знала; клієнт зводить стару й нову відповідь до категорій
+ * комори (`@sergeant/nutrition-domain`, `migrateShoppingListCategories`).
+ */
+const CATEGORY_LIST = Object.values(L)
+  .map((label) => `"${label}"`)
+  .join(", ");
+
 export const SYSTEM = `Ти помічник з планування покупок і харчування. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
 ${JSON_TEXT_STYLE_RULE}
@@ -48,15 +62,17 @@ ${JSON_TEXT_STYLE_RULE}
   ]
 }
 
-Категорії (використовуй лише доречні):
-"Мʼясо та риба", "Молочні продукти", "Овочі та гриби", "Фрукти", "Крупи та злаки",
-"Хлібобулочні вироби", "Яйця", "Олії та жири", "Приправи та соуси", "Напої", "Інше"
+Категорії (поле "name" категорії бери ЛИШЕ з цього переліку, дослівно; нових назв не вигадуй, використовуй лише доречні):
+${CATEGORY_LIST}
 
-Правила класифікації:
-- Гриби (печериці, шампіньйони, лисички, гливи тощо) → "Овочі та гриби"
-- Молоко, сир, йогурт, вершки, масло, кефір → "Молочні продукти"
-- Мʼясо, птиця, риба, морепродукти → "Мʼясо та риба"
-- Яйця → "Яйця"
+Правила класифікації (категорія залежить від того, що це за товар у магазині, а не з чого його зроблено):
+- Гриби (печериці, шампіньйони, лисички, гливи тощо) → "${L.vegetables}"
+- Молоко, сир, йогурт, вершки, вершкове масло, кефір, яйця → "${L.dairy_eggs}"
+- Мʼясо, птиця, ковбаси, сосиски → "${L.meat}"; риба, морепродукти → "${L.fish}"
+- Крупи, макарони, борошно, хліб → "${L.grains}"
+- Олія, сіль, цукор, мед, спеції, оцет → "${L.pantry}"
+- Соуси, кетчуп, майонез, томатна паста → "${L.sauces}"; арахісова чи шоколадна паста → "${L.spreads}"
+- Товар, якому не підходить жодна категорія вище → "${L.other}"
 
 ГОЛОВНЕ ПРАВИЛО – що НЕ потрапляє в список:
 1. Продукт уже є в коморі (блок нижче). Пройдись по коморі ПЕРЕД тим, як
@@ -193,7 +209,10 @@ export default async function handler(
     .map((cat): ShoppingCategory | null => {
       if (!cat || typeof cat !== "object") return null;
       const catRec = cat as Record<string, unknown>;
-      const name = String(catRec["name"] || "Інше").trim();
+      // Назву категорії віддаємо як є (форма відповіді не змінилась): моделі
+      // ставлять мітку з переліку, а старі чи вигадані назви клієнт зводить
+      // до категорій комори за назвою позиції. Порожня назва - «Інше».
+      const name = String(catRec["name"] || "").trim() || L.other;
       const rawItems = Array.isArray(catRec["items"])
         ? (catRec["items"] as unknown[])
         : [];

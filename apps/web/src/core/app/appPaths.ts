@@ -126,6 +126,25 @@ export const CHAT_PATH = "/chat";
 // dashboard.
 export const WELCOME_PATH = "/welcome";
 
+// Другий вхід у той самий онбординг: `router.tsx` → `onboarding/*` → лінивий
+// `onboarding/route.tsx`, що рендерить `WelcomeScreen`.
+export const ONBOARDING_PATH = "/onboarding";
+
+/**
+ * `true` на екранах онбордингу (`/welcome`, `/onboarding`, `/onboarding/*`).
+ * Згоду на аналітику там питає крок самого онбордингу, тож плаваючий банер
+ * (`AnalyticsConsentGate`) на цих маршрутах мовчить. Кінцевий слеш не
+ * враховується: `/welcome/` — той самий екран.
+ */
+export function isOnboardingPath(pathname: string): boolean {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return (
+    path === WELCOME_PATH ||
+    path === ONBOARDING_PATH ||
+    path.startsWith(`${ONBOARDING_PATH}/`)
+  );
+}
+
 export const RESET_PASSWORD_PATH = "/reset-password";
 
 // Лендинг, куди Better Auth редиректить після `GET /api/auth/verify-email`.

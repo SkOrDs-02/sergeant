@@ -50,6 +50,7 @@ function makePrefs(
     showBalance: true,
     excludedStatTxIdsJson: "[]",
     dismissedRecurringJson: "[]",
+    prefsJson: "{}",
     ...overrides,
   };
 }
@@ -669,6 +670,12 @@ describe("diffFinykDualWriteOps — prefs singleton", () => {
       field: "dismissedRecurringJson" as const,
       prevVal: "[]",
       nextVal: '["banner-a"]',
+    },
+    {
+      // Правила мерчантів (2026-10-01) їдуть у `prefs_json` того ж рядка.
+      field: "prefsJson" as const,
+      prevVal: '{"merchantRules":[]}',
+      nextVal: '{"merchantRules":[{"id":"mr_1"}]}',
     },
   ])(
     "emit prefs-upsert коли поле `$field` змінилося",

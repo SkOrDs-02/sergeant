@@ -38,6 +38,7 @@ function makeSlots(
     monthlyPlan: {},
     excludedStatTxIds: [],
     dismissedRecurring: [],
+    merchantRules: [],
   };
   return { ...base, ...overrides } as unknown as FinykStorageSlots;
 }
@@ -96,6 +97,7 @@ describe("extractFinykDualWriteState — порожні slots дають мін�
         showBalance: false,
         excludedStatTxIdsJson: "[]",
         dismissedRecurringJson: "[]",
+        prefsJson: '{"merchantRules":[]}',
       },
     });
   });
@@ -662,6 +664,7 @@ describe("extractFinykDualWriteState — integration / happy path", () => {
       showBalance: true,
       excludedStatTxIdsJson: JSON.stringify(["tx-skip"]),
       dismissedRecurringJson: JSON.stringify(["rec-skip"]),
+      prefsJson: '{"merchantRules":[]}',
     });
   });
 

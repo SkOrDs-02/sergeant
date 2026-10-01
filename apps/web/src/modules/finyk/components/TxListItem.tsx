@@ -5,6 +5,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 
 interface TxListItemProps {
@@ -18,6 +19,8 @@ interface TxListItemProps {
   /** Нога скасованого платежу — threaded straight to `TxRow`. */
   isCancelled?: boolean | undefined;
   overrideCatId?: string | null | undefined;
+  /** Правила мерчантів — threaded straight to `TxRow`. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation for this transaction. */
   note?: string | undefined;
@@ -42,6 +45,7 @@ function TxListItemImpl({
   isExcludedFromStats = false,
   isCancelled = false,
   overrideCatId,
+  merchantRules,
   txSplits,
   note,
   accounts,
@@ -123,6 +127,7 @@ function TxListItemImpl({
             isExcludedFromStats={isExcludedFromStats}
             isCancelled={isCancelled}
             overrideCatId={overrideCatId}
+            merchantRules={merchantRules}
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}

@@ -10,10 +10,15 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "./sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "./monoMirrorReader";
 
 beforeEach(() => {
   localStorage.clear();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
 });
 
 describe("lsStats — тепле SQLite-джерело", () => {
@@ -91,5 +96,62 @@ describe("lsStats — холодний кеш, LS-fallback на перший к�
       customCategories: [],
       txSplits: { tx1: [{ categoryId: "food", amount: 100 }] },
     });
+  });
+});
+
+describe("lsStats — правила «Завжди так для цього магазину»", () => {
+  const RULE = {
+    id: "mr_1",
+    kind: "expense" as const,
+    merchantKey: "сільпо",
+    categoryId: "transport",
+    label: "Сільпо",
+    createdAt: "2026-10-01T10:00:00.000Z",
+    updatedAt: "2026-10-01T10:00:00.000Z",
+  };
+
+  function seed(overrides: Record<string, unknown> = {}) {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "t1", amount: -100, description: "Сільпо №5" },
+        { id: "t2", amount: -200, description: "АТБ" },
+        { id: "t3", amount: -300, description: "СІЛЬПО 12" },
+      ] as never[],
+      refreshedAt: "2026-10-01T00:00:00.000Z",
+    });
+    __setFinykSqliteStateCacheForTests({
+      txCategories: { t3: "food" },
+      merchantRules: [RULE],
+      ...overrides,
+    } as never);
+  }
+
+  it("віддає дайджесту/коучу ефективну мапу: правило виводить категорію, явний override сильніший", () => {
+    seed();
+    const ctx = readFinykStatsContext();
+    // t1 — за правилом; t2 — інший мерчант, мапа без запису; t3 — явний вибір.
+    expect(ctx.txCategories).toEqual({ t1: "transport", t3: "food" });
+  });
+
+  it("правила не потрапляють у виключення зі статистики (переказ не виводиться правилом)", () => {
+    seed();
+    const ctx = readFinykStatsContext();
+    expect(ctx.excludedTxIds.has("t1")).toBe(false);
+  });
+
+  it("без правил мапа лишається тотожною явним override-ам", () => {
+    seed({ merchantRules: null });
+    expect(readFinykStatsContext().txCategories).toEqual({ t3: "food" });
+  });
+
+  it("холодний кеш (LS-fallback): правил там не було, мапа не змінюється", () => {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "t1", amount: -100, description: "Сільпо №5" },
+      ] as never[],
+      refreshedAt: "2026-10-01T00:00:00.000Z",
+    });
+    localStorage.setItem("finyk_tx_cats", JSON.stringify({ t9: "food" }));
+    expect(readFinykStatsContext().txCategories).toEqual({ t9: "food" });
   });
 });

@@ -8,6 +8,8 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
 // Memo-обгортка навколо чистих селекторів персоналізації. Повертає список
 // найчастіших категорій і мерчантів для поточного користувача — використовується
@@ -19,6 +21,8 @@ interface PersonalizationOptions {
         manualExpenses?: readonly ManualExpense[] | undefined;
         customCategories?: Category[] | undefined;
         txCategories?: Readonly<Record<string, string | undefined>> | undefined;
+        /** Правила «Завжди так для цього магазину»: частота категорій рахується за ними. */
+        merchantRuleIndex?: MerchantRuleIndex | undefined;
         excludedTxIds?: Set<string> | undefined;
       }
     | undefined;
@@ -47,7 +51,27 @@ export function useFinykPersonalization({
     () => rawCustomCategories || [],
     [rawCustomCategories],
   );
-  const txCategories = useMemo(() => rawTxCategories || {}, [rawTxCategories]);
+  const explicitTxCategories = useMemo(
+    () => rawTxCategories || {},
+    [rawTxCategories],
+  );
+  // Явні override-и + виведене правилами мерчантів (лише читання).
+  const rawMerchantRuleIndex = storage?.merchantRuleIndex;
+  const txCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        transactions,
+        explicitTxCategories as Record<string, string>,
+        rawMerchantRuleIndex,
+        customCategories,
+      ),
+    [
+      transactions,
+      explicitTxCategories,
+      rawMerchantRuleIndex,
+      customCategories,
+    ],
+  );
 
   // `storage.excludedTxIds` — `new Set(...)` збирається у useStorage кожного
   // рендера, тож її посилання нестабільне. Використовуємо відсортований вміст

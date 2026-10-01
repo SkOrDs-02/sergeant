@@ -35,6 +35,8 @@ import {
   getSavingsRate,
 } from "@sergeant/finyk-domain/domain/trends";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type {
   Category,
@@ -85,6 +87,8 @@ export interface AnalyticsProps {
     txSplits: TxSplitsMap;
     manualExpenses?: ManualExpense[];
     txCategories?: Record<string, string | undefined>;
+    /** Правила «Завжди так для цього магазину»: категорії тут мусять збігатися зі списком. */
+    merchantRuleIndex?: MerchantRuleIndex;
     customCategories?: Category[];
     /** Фінплан: план накопичень ставиться поруч із фактом (Р15). */
     monthlyPlan?: { savings?: string | number };
@@ -446,10 +450,25 @@ export function Analytics({
     [mono, activeTx, loading],
   );
 
+  // Явні override-и + виведене правилами мерчантів: кільце категорій і дельти
+  // рахуються тією самою категорією, що намальована в списку. Лише читання.
+  const analyticsStorage = useMemo(
+    () => ({
+      ...storage,
+      txCategories: withMerchantRuleOverrides(
+        prevKey in monthCache ? [...activeTx, ...prevTx] : activeTx,
+        storage.txCategories ?? {},
+        storage.merchantRuleIndex,
+        storage.customCategories ?? [],
+      ),
+    }),
+    [storage, activeTx, prevTx, prevKey, monthCache],
+  );
+
   const { summary, distribution, distributionTotal, topMerchants } =
     useAnalytics({
       mono: analyticsMono,
-      storage,
+      storage: analyticsStorage,
       prevTx: prevKey in monthCache ? prevTx : null,
     });
 
@@ -474,7 +493,11 @@ export function Analytics({
     storage.txSplits,
   ]);
 
-  const trend = useMonthlyTrend(storage, null, mono.fetchRange);
+  const trend = useMonthlyTrend(
+    { ...storage, merchantRules: storage.merchantRuleIndex },
+    null,
+    mono.fetchRange,
+  );
 
   const categoryDeltas = useMemo(
     () =>
@@ -482,7 +505,7 @@ export function Analytics({
         ? getCategoryDeltas(activeTx, prevTx, {
             excludedTxIds: storage.excludedTxIds,
             txSplits: storage.txSplits,
-            txCategories: storage.txCategories ?? {},
+            txCategories: analyticsStorage.txCategories,
             customCategories: storage.customCategories ?? [],
           })
         : [],
@@ -492,7 +515,7 @@ export function Analytics({
       prevTx,
       storage.excludedTxIds,
       storage.txSplits,
-      storage.txCategories,
+      analyticsStorage.txCategories,
       storage.customCategories,
     ],
   );

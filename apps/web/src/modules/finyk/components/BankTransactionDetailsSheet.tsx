@@ -34,7 +34,13 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
+import {
+  findMerchantRule,
+  type MerchantRule,
+  type MerchantRuleIndex,
+} from "@sergeant/finyk-domain/lib/merchantRules";
 import { DebtTxLinkSection } from "./DebtTxLinkSection";
+import { MerchantRuleOffer } from "./MerchantRuleOffer";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
@@ -59,6 +65,15 @@ export interface BankTransactionDetailsSheetProps {
   note?: string | undefined;
   txSplits: TxSplitsMap;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /**
+   * Правила «Завжди так для цього магазину»: категорія операції без явного
+   * override-а береться з правила, а після зміни категорії нижче зʼявляється
+   * пропозиція закріпити її за мерчантом.
+   */
+  merchantRules?: MerchantRuleIndex | undefined;
+  onCreateMerchantRule?:
+    ((transaction: Transaction, categoryId: string) => void) | undefined;
+  onRemoveMerchantRule?: ((rule: MerchantRule) => void) | undefined;
   /** Device-local чек, привʼязаний до цієї транзакції (спека § Розгортка)
    * — `null` коли цей пристрій про чек не знає (`useFinykReceiptLinks`). */
   receiptId?: number | null | undefined;
@@ -134,6 +149,9 @@ export function BankTransactionDetailsSheet({
   note,
   txSplits,
   customCategories = [],
+  merchantRules,
+  onCreateMerchantRule,
+  onRemoveMerchantRule,
   receiptId = null,
   hideAmount = false,
   manualDebts,
@@ -153,12 +171,19 @@ export function BankTransactionDetailsSheet({
         transaction,
         overrideCatId,
         customCategories,
+        merchantRules,
       )
     : getExpenseCategoryForTransaction(
         transaction,
         overrideCatId,
         customCategories as readonly unknown[],
+        merchantRules,
       );
+  const merchantRule = findMerchantRule(
+    merchantRules,
+    transaction,
+    isIncome ? "income" : "expense",
+  );
   const categoryOptions = useMemo(() => {
     if (isIncome) return mergeIncomeCategoryDefinitions(customCategories);
     const merged = mergeExpenseCategoryDefinitions(
@@ -313,6 +338,22 @@ export function BankTransactionDetailsSheet({
             onClose={() => undefined}
           />
         </section>
+
+        {(onCreateMerchantRule || onRemoveMerchantRule) && (
+          <MerchantRuleOffer
+            transaction={transaction}
+            isIncome={isIncome}
+            overrideCatId={overrideCatId}
+            rule={merchantRule}
+            customCategories={customCategories}
+            onCreate={
+              onCreateMerchantRule
+                ? (categoryId) => onCreateMerchantRule(transaction, categoryId)
+                : undefined
+            }
+            onRemove={onRemoveMerchantRule}
+          />
+        )}
 
         {isIncome && category.id === "debt-income" && (
           <DebtTxLinkSection
