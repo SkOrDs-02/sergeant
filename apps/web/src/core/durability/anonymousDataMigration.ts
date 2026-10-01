@@ -159,7 +159,25 @@ async function getOrCreateClaim(
   const claim = existing[0];
   if (claim) {
     if (claim.target_user_id !== targetUserId) {
-      throw new AnonymousMigrationStepError("claim-bound-elsewhere", "");
+      if (claim.status !== "completed") {
+        throw new AnonymousMigrationStepError(
+          "claim",
+          "pending-for-other-user",
+        );
+      }
+      const batchId = crypto.randomUUID();
+      await client.run(
+        `UPDATE anonymous_profile_migrations
+            SET target_user_id = ?, batch_id = ?, status = 'pending',
+                started_at = ?, completed_at = NULL
+          WHERE source_user_id = ?`,
+        [targetUserId, batchId, new Date().toISOString(), LOCAL_ANON_USER_ID],
+      );
+      return {
+        target_user_id: targetUserId,
+        batch_id: batchId,
+        status: "pending",
+      };
     }
     return claim;
   }
@@ -899,6 +917,7 @@ export const __anonymousMigrationInternals = {
   assertServerAcknowledged,
   flushUntilSettled,
   decodeJsonColumns,
+  getOrCreateClaim,
   idempotencyKey,
   rekeySharedLocalIds,
   rekeyStuckOutboxRows,

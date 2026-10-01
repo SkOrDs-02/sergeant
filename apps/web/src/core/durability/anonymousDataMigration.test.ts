@@ -517,6 +517,45 @@ describe("anonymous data migration invariants", () => {
     });
   });
 
+  it("reopens a completed claim for the next new account", async () => {
+    const randomUUID = vi
+      .spyOn(crypto, "randomUUID")
+      .mockReturnValue(
+        "batch-user-c" as `${string}-${string}-${string}-${string}-${string}`,
+      );
+    const run = vi.fn(async () => undefined);
+    const client = {
+      all: vi.fn(async () => [
+        {
+          target_user_id: "user-a",
+          batch_id: "batch-user-a",
+          status: "completed",
+        },
+      ]),
+      run,
+      exec: vi.fn(),
+    } as unknown as SqliteMigrationClient;
+
+    try {
+      const claim = await __anonymousMigrationInternals.getOrCreateClaim(
+        client,
+        "user-c",
+      );
+
+      expect(claim).toEqual({
+        target_user_id: "user-c",
+        batch_id: "batch-user-c",
+        status: "pending",
+      });
+      expect(run).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE anonymous_profile_migrations"),
+        expect.arrayContaining(["user-c", "batch-user-c", "local-anon"]),
+      );
+    } finally {
+      randomUUID.mockRestore();
+    }
+  });
+
   it("treats an LWW rejection as an authoritative conflict winner", async () => {
     const run = vi.fn(async () => undefined);
     const client = {
