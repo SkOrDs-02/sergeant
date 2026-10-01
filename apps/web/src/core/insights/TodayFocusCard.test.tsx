@@ -634,4 +634,102 @@ describe("useDashboardFocus", () => {
     expect(result.current.focus?.id).toBe("r2");
     expect(result.current.rest).toHaveLength(0);
   });
+
+  describe("«✕» діє до кінця доби, а не назавжди (рішення власника 2026-10-01)", () => {
+    const rec = (id: string, priority: number) => ({
+      id,
+      module: "fizruk",
+      priority,
+      icon: "🏋️",
+      title: id,
+      body: "body",
+      action: "fizruk",
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("відкинуте вчора повертається: статичний id правила не глушиться навіки", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 1, 9, 0, 0));
+      localStorage.setItem(
+        "hub_recs_dismissed_v1",
+        JSON.stringify({
+          fizruk_long_break: new Date(2026, 8, 30, 21, 0, 0).getTime(),
+        }),
+      );
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80),
+      ]);
+
+      const { result } = renderHook(() => useDashboardFocus());
+
+      expect(result.current.focus?.id).toBe("fizruk_long_break");
+    });
+
+    it("відкинуте сьогодні лишається схованим до півночі, потім повертається", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 1, 9, 0, 0));
+      generateRecommendationsMock.mockReturnValue([
+        rec("fizruk_long_break", 80),
+      ]);
+
+      const { result, rerender } = renderHook(() => useDashboardFocus());
+      act(() => {
+        result.current.dismiss("fizruk_long_break");
+      });
+      expect(result.current.focus).toBeNull();
+
+      // Пізно ввечері тієї ж доби — досі схована.
+      vi.setSystemTime(new Date(2026, 9, 1, 23, 59, 0));
+      rerender();
+      expect(result.current.focus).toBeNull();
+
+      // Північ за годинником пристрою — повернулась, перезавантаження не потрібне.
+      vi.setSystemTime(new Date(2026, 9, 2, 0, 1, 0));
+      rerender();
+      expect(result.current.focus?.id).toBe("fizruk_long_break");
+    });
+
+    it("застарілі записи без мітки часу (`true`, `1`) вважаються простроченими", () => {
+      localStorage.setItem(
+        "hub_recs_dismissed_v1",
+        JSON.stringify({ legacy_true: true, legacy_one: 1 }),
+      );
+      generateRecommendationsMock.mockReturnValue([
+        rec("legacy_true", 90),
+        rec("legacy_one", 80),
+      ]);
+
+      const { result } = renderHook(() => useDashboardFocus());
+
+      expect(result.current.focus?.id).toBe("legacy_true");
+      expect(result.current.rest.map((r) => r.id)).toEqual(["legacy_one"]);
+    });
+
+    it("dismiss прибирає з мапи прострочені id", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 9, 1, 9, 0, 0));
+      localStorage.setItem(
+        "hub_recs_dismissed_v1",
+        JSON.stringify({
+          stale: 1,
+          yesterday: new Date(2026, 8, 30).getTime(),
+        }),
+      );
+      generateRecommendationsMock.mockReturnValue([rec("fresh", 80)]);
+
+      const { result } = renderHook(() => useDashboardFocus());
+      act(() => {
+        result.current.dismiss("fresh");
+      });
+
+      expect(
+        Object.keys(
+          JSON.parse(localStorage.getItem("hub_recs_dismissed_v1") || "{}"),
+        ),
+      ).toEqual(["fresh"]);
+    });
+  });
 });

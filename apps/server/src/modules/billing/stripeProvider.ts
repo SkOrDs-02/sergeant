@@ -19,6 +19,7 @@ import type {
 import { env } from "../../env/env.js";
 import type {
   BillingProvider,
+  CancelSubscriptionOutcome,
   ProviderCheckoutInput,
   ProviderPortalInput,
 } from "./provider.js";
@@ -77,11 +78,15 @@ export const stripeProvider: BillingProvider = {
     await processStripeWebhook(pool, stripeEvent, raw);
   },
 
-  async cancelSubscription(pool: Pool, userId: string): Promise<void> {
+  async cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome> {
     const { rows } = await pool.query<{
       provider_subscription_id: string | null;
+      cancel_at_period_end: boolean;
     }>(
-      `SELECT provider_subscription_id
+      `SELECT provider_subscription_id, cancel_at_period_end
          FROM subscriptions
         WHERE user_id = $1 AND provider = 'stripe'
           AND status IN ('active', 'trialing', 'past_due')
@@ -89,9 +94,13 @@ export const stripeProvider: BillingProvider = {
         LIMIT 1`,
       [userId],
     );
-    const subscriptionId = rows[0]?.provider_subscription_id;
+    const row = rows[0];
+    if (!row) return "none";
+    // Уже скасовано до кінця періоду — Stripe вдруге не смикаємо.
+    if (row.cancel_at_period_end === true) return "already_canceling";
+    const subscriptionId = row.provider_subscription_id;
     const secretKey = env.STRIPE_SECRET_KEY;
-    if (!subscriptionId || !secretKey) return; // no-op — DB-side cancel covers it
+    if (!subscriptionId || !secretKey) return "none"; // no-op — DB-side cancel covers it
 
     // `cancel_at_period_end=true` — доступ до кінця оплаченого періоду
     // (паритет із LiqPay/Plata cancel-семантикою, ADR-1.11).
@@ -117,5 +126,6 @@ export const stripeProvider: BillingProvider = {
           AND status IN ('active', 'trialing', 'past_due')`,
       [userId],
     );
+    return "canceled";
   },
 };

@@ -194,7 +194,7 @@ export function GeneratorCard({
                   {r.macros?.kcal != null && (
                     <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption text-muted">
                       <div className="text-style-caption text-muted">
-                        ≈ ккал
+                        ≈ ккал / порція
                       </div>
                       <div className="text-style-label text-text">
                         {fmtMacro(r.macros.kcal)}

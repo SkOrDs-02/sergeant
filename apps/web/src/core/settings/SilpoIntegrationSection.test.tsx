@@ -300,4 +300,97 @@ describe("SilpoIntegrationSection", () => {
       }),
     );
   });
+
+  describe("тумблер автоімпорту: причина відмови в тості", () => {
+    const TOGGLE_NAME = "Додавати продукти з чеків у комору автоматично";
+
+    async function clickToggleExpectingFailure(error: unknown) {
+      mockedSyncState.mockResolvedValue({
+        status: "connected",
+        accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
+        lastSyncAt: "2026-08-17T09:15:00.000Z",
+        receiptsCount: 5,
+        pantryAutoImportSince: null,
+      });
+      mockedUpdateSettings.mockRejectedValue(error);
+      renderSection();
+      fireEvent.click(await screen.findByRole("switch", { name: TOGGLE_NAME }));
+      await vi.waitFor(() => expect(toastMock.error).toHaveBeenCalledTimes(1));
+      return toastMock.error.mock.calls[0] as [
+        string,
+        undefined,
+        { label: string; onClick: () => void },
+      ];
+    }
+
+    function httpError(status: number, body?: unknown) {
+      return new ApiError({
+        kind: "http",
+        message: `HTTP ${status}`,
+        status,
+        body,
+        url: "/api/silpo/settings",
+      });
+    }
+
+    it("404 (бекенд старіший за веб) каже, що сервер ще не оновлено, а не загальне «не вдалося»", async () => {
+      const [message, , action] = await clickToggleExpectingFailure(
+        httpError(404),
+      );
+      expect(message).toContain("Сервер ще не оновлено");
+      expect(message).not.toBe("Не вдалося змінити налаштування.");
+      expect(action.label).toBe("Повторити");
+    });
+
+    it("текст сервера віддається як є", async () => {
+      const [message] = await clickToggleExpectingFailure(
+        httpError(409, { error: "Спершу звʼяжи акаунт Сільпо." }),
+      );
+      expect(message).toBe("Спершу звʼяжи акаунт Сільпо.");
+    });
+
+    it("шлюзовий збій дає дію, а не голий номер", async () => {
+      const [message] = await clickToggleExpectingFailure(httpError(503));
+      expect(message).toBe("Сервер тимчасово не відповідає. Спробуй ще раз.");
+    });
+
+    it("500 без тексту сервера показує код статусу", async () => {
+      const [message] = await clickToggleExpectingFailure(httpError(500));
+      expect(message).toContain("Не вдалося змінити налаштування.");
+      expect(message).toContain("500");
+    });
+
+    it("збій мережі відрізняється від збою сервера", async () => {
+      const [message] = await clickToggleExpectingFailure(
+        new ApiError({
+          kind: "network",
+          message: "Failed to fetch",
+          url: "/api/silpo/settings",
+        }),
+      );
+      expect(message).toContain("зʼєднатися із сервером");
+      expect(message).not.toContain("Failed to fetch");
+    });
+
+    it("не-API помилка (наприклад, ZodError) не світить технічний message", async () => {
+      const [message] = await clickToggleExpectingFailure(
+        new Error('[{"code":"invalid_type","path":["pantryAutoImportSince"]}]'),
+      );
+      expect(message).toBe("Не вдалося змінити налаштування.");
+    });
+
+    it("«Повторити» повторює той самий PUT", async () => {
+      const [, , action] = await clickToggleExpectingFailure(httpError(404));
+      mockedUpdateSettings.mockClear();
+      mockedUpdateSettings.mockResolvedValue({
+        pantryAutoImportSince: "2026-10-01T10:00:00.000Z",
+      });
+      action.onClick();
+      await vi.waitFor(() =>
+        expect(mockedUpdateSettings).toHaveBeenCalledWith({
+          pantryAutoImport: true,
+        }),
+      );
+    });
+  });
 });

@@ -150,6 +150,29 @@ export function getIncomeCategory(
   return getIncomeCategory("", "in_other", customCategories);
 }
 
+/**
+ * «Поповнення «Назва»» (інколи «Поповнення банки «Назва»») — переказ у банку
+ * Monobank. Те, що стоїть у лапках, — ІМʼЯ банки, яке дала людина, а не опис
+ * покупки.
+ *
+ * AI-CONTEXT (2026-10-01): ключові слова категорій шукалися по всьому опису,
+ * тож «Поповнення «На закриття боргів🙏»» ловило «борг» і їхало в «Борги та
+ * кредити»: імʼя чужої банки (збір) читалось як ознака боргу людини. Власні
+ * банки закриває парний матчер переказів (`transferMatching.ts`), а решту
+ * краще лишити в «Інше», доки людина не перекатегоризує, ніж вгадувати за
+ * словами, яких вона не писала.
+ */
+const JAR_TOP_UP_RE = /^\s*поповнення\s+(?:банки\s+)?[«"“„]/iu;
+
+/**
+ * Опис у нижньому регістрі, яким можна матчити ключові слова. Для поповнення
+ * банки порожній: імʼя в лапках не є описом покупки. MCC-мапа це не
+ * стосується — вона працює окремо.
+ */
+function keywordHaystack(desc: string): string {
+  return JAR_TOP_UP_RE.test(desc) ? "" : desc.toLowerCase();
+}
+
 export function getCategory(
   desc = "",
   mcc = 0,
@@ -162,11 +185,10 @@ export function getCategory(
     const found = MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
     if (found) return found;
   }
+  const haystack = keywordHaystack(desc);
   for (const cat of MCC_CATEGORIES as readonly CategoryLike[]) {
     if ((cat.mccs ?? []).includes(mcc)) return cat;
-    if (
-      (cat.keywords ?? []).some((k: string) => desc.toLowerCase().includes(k))
-    )
+    if ((cat.keywords ?? []).some((k: string) => haystack.includes(k)))
       return cat;
   }
   return { id: "other", label: "Інше", mccs: [], keywords: [] };

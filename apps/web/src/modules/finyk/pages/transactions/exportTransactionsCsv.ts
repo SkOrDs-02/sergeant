@@ -48,7 +48,11 @@ import type {
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
-import { exportToCSV, type ExportColumn } from "@shared/lib/ui/export";
+import {
+  exportToCSV,
+  type ExportColumn,
+  type FileDeliveryResult,
+} from "@shared/lib/ui/export";
 import { dayKeyFromTx } from "./transactionsLib";
 import { formatTimeHm, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 import { isExpenseDayPlaceholder } from "../../components/manualExpenseForm";
@@ -128,13 +132,20 @@ export function csvFilename(monthKey?: string | null): string {
   return monthKey ? `finyk-${monthKey}.csv` : "finyk.csv";
 }
 
-/** Зібрати й віддати файл. Повертає кількість вивантажених рядків. */
-export function exportTransactionsCsv(
+/**
+ * Зібрати й віддати файл. Повертає кількість рядків і те, ЧИМ закінчилась
+ * віддача: «Вивантажено…» годиться казати лише після `shared`/`downloaded`,
+ * а `cancelled` (людина закрила аркуш «Поділитись») — не успіх.
+ *
+ * Викликай із обробника кліку: файл збирається синхронно, і саме тому
+ * `navigator.share` ще в межах активації жесту (див. `saveStringAsFile`).
+ */
+export async function exportTransactionsCsv(
   transactions: readonly Transaction[],
   getEffectiveCat: EffectiveCategoryResolver,
   monthKey?: string | null,
-): number {
+): Promise<{ count: number; result: FileDeliveryResult }> {
   const rows = toCsvRows(transactions, getEffectiveCat);
-  exportToCSV(rows, COLUMNS, csvFilename(monthKey));
-  return rows.length;
+  const result = await exportToCSV(rows, COLUMNS, csvFilename(monthKey));
+  return { count: rows.length, result };
 }

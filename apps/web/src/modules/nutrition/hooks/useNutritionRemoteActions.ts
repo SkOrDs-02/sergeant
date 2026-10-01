@@ -24,6 +24,7 @@ import type {
 import { formatNutritionError } from "../lib/nutritionErrors";
 import { writeRecipeCache } from "../lib/recipeCache";
 import { stableRecipeId } from "../lib/recipeIds";
+import { SHOPPING_RECIPES_MAX, toShoppingRecipe } from "../lib/shoppingRecipes";
 import { newMealId } from "../lib/mealId";
 import type { Meal, NutritionLogLike } from "../lib/nutritionStorage";
 import type { PantryItem } from "../lib/pantryTextParser";
@@ -559,10 +560,16 @@ export function useNutritionRemoteActions({
     pantryItems: PantryItem[];
     locale: string;
     weekPlan?: UiNutritionWeekPlan;
-    recipes?: UiNutritionRecipe[];
+    recipes?: UiNutritionRecipe[] | ReturnType<typeof toShoppingRecipe>[];
   }
   const shoppingMutation = useMutation({
-    mutationFn: (source: string) => {
+    mutationFn: ({
+      source,
+      selected,
+    }: {
+      source: string;
+      selected?: unknown[] | undefined;
+    }) => {
       const body: ShoppingRequestBody = {
         pantryItems: pantry.effectiveItems.slice(0, 50),
         locale: "uk-UA",
@@ -570,6 +577,15 @@ export function useNutritionRemoteActions({
       const weekPlanDays = Array.isArray(weekPlan?.days) ? weekPlan.days : [];
       if (source === "weekplan" && weekPlan && weekPlanDays.length > 0) {
         body.weekPlan = weekPlan;
+      } else if (selected !== undefined) {
+        // Вибір із переліку «Мої рецепти» + «Згенеровані»: список складається
+        // з позначених, а не з усього, що лежить у памʼяті.
+        if (selected.length === 0) {
+          throw new Error("Немає рецептів чи тижневого плану для генерації.");
+        }
+        body.recipes = selected
+          .slice(0, SHOPPING_RECIPES_MAX)
+          .map(toShoppingRecipe);
       } else if (recipes.length > 0) {
         body.recipes = recipes;
       } else {
@@ -606,8 +622,10 @@ export function useNutritionRemoteActions({
   });
 
   const generateShoppingList = useCallback(
-    (source: string) =>
-      guard("shopping-list", () => shoppingMutation.mutate(source)),
+    (source: string, selected?: unknown[]) =>
+      guard("shopping-list", () =>
+        shoppingMutation.mutate({ source, selected }),
+      ),
     [guard, shoppingMutation],
   );
 

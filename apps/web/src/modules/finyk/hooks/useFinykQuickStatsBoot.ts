@@ -38,7 +38,9 @@ export function useFinykQuickStatsBoot(): void {
       txCategories: storage.txCategories,
       receivables: storage.receivables,
       excludedStatTxIds: storage.excludedStatTxIds,
-      transactions: manualTxs,
+      // Банк теж: пари «списання ↔ скасування» ловляться лише коли обидві
+      // ноги у вході (рішення власника 2026-10-01).
+      transactions: [...manualTxs, ...mono.transactions],
     });
 
     writeFinykQuickStatsSnapshot({

@@ -69,6 +69,8 @@ export type AssetsProps = {
     error?: unknown;
     refetchTransactions?: () => void;
     jars?: readonly JarLike[] | undefined;
+    /** Дотягує банківський діапазон у дзеркало (`useMonobankWebhook`). */
+    fetchRange?: ((from: string, to: string) => Promise<unknown>) | undefined;
   };
   storage: StorageSlice;
   showBalance?: boolean;

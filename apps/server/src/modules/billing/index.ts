@@ -23,6 +23,7 @@ export {
 } from "./provider.js";
 export type {
   BillingProvider,
+  CancelSubscriptionOutcome,
   ProviderId,
   ProviderCheckoutInput,
   ProviderPortalInput,

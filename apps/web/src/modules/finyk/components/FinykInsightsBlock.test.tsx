@@ -61,4 +61,41 @@ describe("FinykInsightsBlock", () => {
     // The recurring insight surfaces the merchant name in its title.
     expect(screen.getByText(/Netflix/)).toBeInTheDocument();
   });
+
+  // Інсайт читає `recurringTransactions` (вікно в кілька місяців), а не
+  // `transactions` (поточний місяць, потрібний решті інсайтів): інакше
+  // щомісячний платіж зникає, щойно мережа віддала лише поточний місяць.
+  it("detects the recurring pattern from recurringTransactions when the month slice is empty", () => {
+    renderBlock(
+      <FinykInsightsBlock
+        transactions={[tx("n1", 5, 39900)]}
+        recurringTransactions={[
+          tx("n1", 5, 39900),
+          tx("n2", 35, 39900),
+          tx("n3", 65, 39900),
+        ]}
+        budgets={[]}
+        txCategories={{}}
+        txSplits={{}}
+      />,
+    );
+    expect(screen.getByText(/Netflix/)).toBeInTheDocument();
+  });
+
+  it("does not look for recurring payments in the month slice when a window is given", () => {
+    const { container } = renderBlock(
+      <FinykInsightsBlock
+        transactions={[
+          tx("n1", 5, 39900),
+          tx("n2", 35, 39900),
+          tx("n3", 65, 39900),
+        ]}
+        recurringTransactions={[]}
+        budgets={[]}
+        txCategories={{}}
+        txSplits={{}}
+      />,
+    );
+    expect(container.firstChild).toBeNull();
+  });
 });

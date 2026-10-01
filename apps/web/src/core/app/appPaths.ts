@@ -142,6 +142,22 @@ export const LEGAL_TERMS_PATH = "/legal/terms";
 export const LEGAL_COOKIES_PATH = "/legal/cookies";
 export const LEGAL_OFFER_PATH = "/legal/offer";
 
+const LEGAL_ROUTE_PATHS: ReadonlySet<string> = new Set([
+  LEGAL_PRIVACY_PATH,
+  LEGAL_TERMS_PATH,
+  LEGAL_COOKIES_PATH,
+  LEGAL_OFFER_PATH,
+]);
+
+/**
+ * `true` для чотирьох юридичних сторінок (`/legal/*`). Збіг точний — так само,
+ * як у `StandaloneRoutes` (`paths.includes(pathname)`), тож жодного префікса:
+ * новий юридичний шлях додається константою вище і сюди.
+ */
+export function isLegalRoutePath(pathname: string): boolean {
+  return LEGAL_ROUTE_PATHS.has(pathname);
+}
+
 // Anonymous public status page (`/status`). Renders the per-component
 // view from `/api/status`. No auth — same intent as `/pricing` (public
 // trust surface, must be reachable without a session).
