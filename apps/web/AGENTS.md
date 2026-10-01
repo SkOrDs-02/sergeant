@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: ручний `pnpm deploy:web` (локальний Vercel CLI, прямо в прод) — прев'ю на PR немає, Git-інтеграція на Bitbucket не працює; автодеплою на merge теж немає. Деталі — [`AGENTS.md § Де живе код`](../../AGENTS.md). Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
+React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: ручний `pnpm deploy:web` (локальний Vercel CLI, прямо в прод), автодеплою web на merge немає (автодеплоїться лише бекенд, ADR-0102). Деталі — [`AGENTS.md § Де живе код`](../../AGENTS.md). Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
 
 ## Quick commands
 
@@ -51,7 +51,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Bundle budget
 
-Локальний обов'язковий гейт через `size-limit` — CI, який раніше це перевіряв, не виконується з переїзду на Bitbucket (2026-09-23). Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
+Гейт `size-limit` і eager - джоба `bundle-budgets` у `ci.yml`, щопонеділка і вручну (ADR-0102), `Lighthouse CI` теж щотижня і вручну; локально `pnpm --filter @sergeant/web exec size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
 
 **Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 
@@ -75,7 +75,7 @@ T5 gate from [`docs/work/specs/planning/sprint-roadmap-q2q3-2026.md`](https://gi
 
 **Як читати reports:**
 
-1. Відкрий job `Lighthouse CI (perf budgets)` у CI таб PR-а.
+1. Відкрий прогін workflow `Lighthouse CI` (щопонеділка або ручний `workflow_dispatch`) у вкладці Actions.
 2. В кінці кроку `Run Lighthouse CI` LHCI друкує `Open the report at <url>` — клік → HTML-репорт на `storage.googleapis.com/lighthouse-infrastructure...`. Один URL на route.
 3. Альтернативно: завантаж workflow-artifact `lighthouse-reports` (retention 14 днів) — містить `.lighthouseci/lhr-*.html` + `manifest.json` з тривалостями кожного run-у.
 4. Зелений job без warn-ів означає, що **median LCP / FCP / TBT всіх 4 LHCI routes** під порогами.

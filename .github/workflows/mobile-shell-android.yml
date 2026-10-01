@@ -24,20 +24,8 @@ name: Mobile Shell (Android)
 # `workflow_dispatch`. Повернути `apps/web/**` у paths, коли mobile знову
 # в обов'язковому CI-контурі.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/mobile-shell/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/mobile-shell-android.yml"
-  pull_request:
-    paths:
-      - "apps/mobile-shell/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".github/workflows/mobile-shell-android.yml"
   workflow_dispatch:
 
 permissions:

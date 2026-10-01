@@ -251,7 +251,7 @@ jobs:
               '',
               'See [database-backup-restore.md](docs/start/instructions/database-backup-restore.md) for investigation steps.',
               '',
-              'cc @zaebal-beep',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             // Dedup: only create if no open issue with this title prefix exists.

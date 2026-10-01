@@ -29,7 +29,7 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 - Secret rotation procedure ready for auth and provider keys.
 - Backup restore drill performed on a regular cadence, not only after incidents.
 
-> **2026-09-23:** the weekly automated restore verification (`.github/workflows/db-backup-verify.yml`, Sunday 04:00 UTC) stopped running when GitHub Actions went dark with the Bitbucket migration — no equivalent runs on Bitbucket today. The manual drill in [test-backup-restore.md](../../start/instructions/test-backup-restore.md) is the only check left; treat its 6-month cadence (§ Drill cadence below) as the sole freshness signal until an automated replacement exists.
+> **2026-09-30:** the weekly automated restore verification (`.github/workflows/db-backup-verify.yml`, Sunday 04:00 UTC) is scheduled on GitHub Actions again ([ADR-0102](../adr/0102-github-actions-ci-and-autodeploy.md)); it did not run 2026-09-23..29. Whether its secrets are configured on `SkOrDs-02/sergeant` is not verified yet, so until its first green run the manual drill in [test-backup-restore.md](../../start/instructions/test-backup-restore.md) stays the freshness signal.
 
 ## Recovery ownership
 

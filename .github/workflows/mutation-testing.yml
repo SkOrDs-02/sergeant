@@ -333,7 +333,7 @@ jobs:
               '3. Do NOT lower `thresholds.break` to make the job green; a bump',
               '   needs an explicit owner decision in the PR description.',
               '',
-              'cc @zaebal-beep',
+              'cc @SkOrDs-02',
             ].join('\n');
 
             // Idempotent: refresh the existing open issue rather than creating
