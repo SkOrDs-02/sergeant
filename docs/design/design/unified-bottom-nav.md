@@ -1,6 +1,6 @@
 # Unified Bottom Navigation
 
-> **Last validated:** 2026-07-28 by Codex (solid active indicator, active-only label і tablist keyboard contract verified). **Next review:** 2027-03-11.
+> **Last validated:** 2026-07-28 by Codex (solid active indicator, active-only label і tablist keyboard contract verified; 2026-10-01 @claude: висота треку нав-бару — мінімум, а не константа). **Next review:** 2027-03-11.
 > **Status:** Active — **form unified**. `HubBottomNav` і `ModuleBottomNav` ділять один shell.
 
 > **TL;DR:** Хаб і 4 модулі живуть під **одним** навігаційним патерном —
@@ -43,7 +43,7 @@
   <OfflineBanner />
   <HubHeader />            ← safe-area-top власним inline style
   <HubMainContent />       ← flex-1 overflow-y-auto; pb-28 для FAB clearance
-  <HubBottomNav />         ← shrink-0 safe-area-pb; 60/64 px
+  <HubBottomNav />         ← shrink-0 safe-area-pb; мін. 60/64 px (росте з текстом)
   <HubFloatingActions compact />
   <ActiveWorkoutBanner />  ← bottom: 5.25rem + safe-area (над bottom-nav)
   <HubModals />
@@ -59,7 +59,13 @@
 - FAB (`HubFloatingActions`) завжди `compact` у хабі — piks-identичний
   з тим що рендериться в модулях.
 - `ActiveWorkoutBanner` вже має `bottom: 5.25rem` (84 px), що вище
-  60-64 px нав-бару. Без змін.
+  60-64 px нав-бару; `rem` росте разом із текстом, як і нав. Без змін.
+- Висота треку нав-бару — **мінімум** (`min-h-[60px]`, `pointer-coarse:min-h-[64px]`),
+  а не фіксована: при 200% кореневого тексту підпис активного таба вищий за 60 px
+  і раніше зрізався до 0-20 px (`tests/a11y/low-vision.spec.ts`). На 100% тексту
+  нав рівно 60/64 px. Усе, що стоїть НАД навом, читає виміряне
+  `--sgt-bottom-nav-inset` (`useBottomInsetVar`), а 60/64 лишає нижньою межею
+  через `max()` — не хардкодь висоту нава.
 
 ## `HubBottomNav` vs `ModuleBottomNav`
 

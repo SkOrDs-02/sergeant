@@ -153,6 +153,19 @@ describe("HubBottomNav", () => {
     });
   });
 
+  // Low-vision (200% кореневого тексту): фіксована висота треку зрізала підпис
+  // активного таба до 0-20px (`tests/a11y/low-vision.spec.ts`). Трек має лише
+  // МІНІМУМ 60px (64px на coarse), тож росте разом із текстом, а на 100%
+  // виглядає як раніше. JSDOM не рахує layout, тому стережемо сам контракт
+  // класів; поведінку міряє Playwright-спек.
+  it("трек нав-бару має мінімальну, а не фіксовану висоту", () => {
+    const { container } = renderNav({});
+    const track = container.querySelector("nav > div") as HTMLElement;
+
+    expect(track).toHaveClass("min-h-[60px]", "pointer-coarse:min-h-[64px]");
+    expect(track.className).not.toMatch(/(?:^|[\s:])h-\[\d+px\]/);
+  });
+
   it("виклик onChange при кліку на таб", () => {
     const { onChange } = renderNav({});
     fireEvent.click(screen.getByRole("tab", { name: /Налаштування/ }));
