@@ -262,6 +262,67 @@ describe("ShoppingListCard — pantry math (рівень 1)", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("тумблер лишається на екрані й вмикається назад, коли сирий список порожній", () => {
+    // Регресія: тумблер жив усередині `hasItems`, а `hasItems` залежить від
+    // самого тумблера. Порожній сирий список + «Закінчується» з комори:
+    // вимкнув → довлиті позиції зникли → `hasItems` став `false` → зник і
+    // тумблер, а вимкнений стан лишився в LS, тож повернути його було
+    // нічим.
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: { categories: [] } as never,
+          pantryItems: [{ name: "сіль", qty: 50, unit: "г", notes: null }],
+        })}
+      />,
+    );
+    expect(screen.getByText("сіль")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Враховувати комору/ }));
+    // Вимкнено: довлитого «сіль» немає, а тумблер на місці у стані «вимкнено».
+    expect(screen.queryByText("сіль")).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /Враховувати комору/ });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(toggle);
+    expect(screen.getByText("сіль")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Враховувати комору/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("вимкнений стан із LS не ховає тумблер на порожньому списку", () => {
+    // Той самий корінь через персист: користувач уже вимкнув тумблер раніше,
+    // відкриває картку з порожнім списком — тумблер має бути видимим.
+    localStorage.setItem("nutrition_shopping_pantry_math_v1", "false");
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: { categories: [] } as never,
+          pantryItems: [{ name: "сіль", qty: 50, unit: "г", notes: null }],
+        })}
+      />,
+    );
+    const toggle = screen.getByRole("button", { name: /Враховувати комору/ });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(toggle);
+    expect(screen.getByText("сіль")).toBeInTheDocument();
+  });
+
+  it("порожній список і комора без «Закінчується»: тумблера немає, його нема чого перемикати", () => {
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: { categories: [] } as never,
+          pantryItems: [{ name: "рис", qty: 5, unit: "кг", notes: null }],
+        })}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Враховувати комору/ }),
+    ).not.toBeInTheDocument();
+  });
+
   it("озвучує стан «куплено» через aria-pressed, а не лише візуально", () => {
     // Регресія WF-17 (аудит 2026-09-16): коло-індикатор має `aria-hidden`,
     // а `opacity-50`/`line-through` скрінрідер не читає — куплений і

@@ -276,6 +276,13 @@ export function ShoppingListCard({
     calculated.categories.reduce((n, c) => n + c.items.length, 0) +
     calculated.athome.length;
   const hasItems = total > 0 || calculatedCount > 0;
+  // `calculatedCount` залежить від самого тумблера: вимкнув на порожньому
+  // сирому списку → довлиті «Закінчується» зникли → `hasItems` став `false`.
+  // Тумблер у стані «вимкнено» мусить лишатись видимим незалежно від цього,
+  // інакше стан, збережений у LS, не повернути. Увімкнений тумблер без
+  // списку нічого не міняє, тож його ховаємо, як і раніше.
+  const showPantryToggle =
+    pantryMath.available && (hasItems || !pantryMath.enabled);
 
   const hasRecipes = Array.isArray(recipes) && recipes.length > 0;
   const hasWeekPlan = (weekPlan?.days?.length ?? 0) > 0;
@@ -435,39 +442,43 @@ export function ShoppingListCard({
                 />
               </div>
             )}
+          </>
+        )}
 
-            {pantryMath.available && (
-              <button
-                type="button"
-                onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
-                aria-pressed={pantryMath.enabled}
-                className={cn(
-                  "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
-                  "flex items-center justify-between gap-2 transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
-                  pantryMath.enabled
-                    ? "bg-nutrition/10 border-nutrition/40 text-nutrition-strong dark:text-nutrition"
-                    : "border-line text-muted",
-                )}
-              >
-                <span>{pm.toggleLabel}</span>
-                <span
-                  className={cn(
-                    "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
-                    pantryMath.enabled ? "bg-nutrition-strong" : "bg-line",
-                  )}
-                  aria-hidden
-                >
-                  <span
-                    className={cn(
-                      "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
-                      pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
-                    )}
-                  />
-                </span>
-              </button>
+        {showPantryToggle && (
+          <button
+            type="button"
+            onClick={() => pantryMath.setEnabled(!pantryMath.enabled)}
+            aria-pressed={pantryMath.enabled}
+            className={cn(
+              "w-full min-h-[44px] px-3 py-2 rounded-xl border text-style-caption",
+              "flex items-center justify-between gap-2 transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              pantryMath.enabled
+                ? "bg-nutrition/10 border-nutrition/40 text-nutrition-strong dark:text-nutrition"
+                : "border-line text-muted",
             )}
+          >
+            <span>{pm.toggleLabel}</span>
+            <span
+              className={cn(
+                "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-colors",
+                pantryMath.enabled ? "bg-nutrition-strong" : "bg-line",
+              )}
+              aria-hidden
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform",
+                  pantryMath.enabled ? "translate-x-4" : "translate-x-0.5",
+                )}
+              />
+            </span>
+          </button>
+        )}
 
+        {hasItems && (
+          <>
             <div className="space-y-3">
               {calculated.categories.map((cat) => (
                 <div
