@@ -1,6 +1,6 @@
 ﻿# Agents in Sergeant
 
-> **Last touched:** 2026-09-29 by @claude (GitHub знову основний хост, [ADR-0101](./docs/governance/adr/0101-github-primary-host-ci-returns.md); CI і автодеплой бекенду, [ADR-0102](./docs/governance/adr/0102-github-actions-ci-and-autodeploy.md)). **Next review:** 2027-01-09.
+> **Last touched:** 2026-10-01 by @claude (дашборд свіжості більше не комітиться, § See also). **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -294,7 +294,7 @@ pnpm deploy:status
 - [`docs/engineering/architecture/`](docs/engineering/architecture/) — repo map, module ownership, domain invariants, C4 diagrams.
 - [`docs/engineering/architecture/feature-flags.md`](docs/engineering/architecture/feature-flags.md) — **реєстр усіх тумблерів**: чотири системи (build-time `VITE_*`, серверні env, користувацькі `FLAG_REGISTRY`, in-memory kill-switch), дефолти, що ламається при протилежному значенні і **умова зняття**. Читай перед тим, як додавати новий прапорець — там же критерій вибору системи і чому `VITE_*` ніколи не секрет.
 - [`docs/governance/governance/rules/`](docs/governance/governance/rules/) — per-rule canonical bodies with BAD/GOOD examples.
-- [`docs/governance/governance/freshness-dashboard.html`](docs/governance/governance/freshness-dashboard.html) — generated `Last validated` / `Next review` dashboard for tracked docs.
+- [`docs/governance/governance/doc-freshness.md`](docs/governance/governance/doc-freshness.md) — свіжість доків (`Last touched` / `Next review`, каденція, гейти). HTML-дашборд не комітиться: згенеруй локально `pnpm docs:freshness-dashboard` (пише gitignored `docs/governance/governance/freshness-dashboard.html`) або візьми артефакт `docs-freshness-dashboard` з `docs-freshness.yml`.
 - [`docs/governance/security/audit-exceptions.md`](docs/governance/security/audit-exceptions.md) — tracked vulnerabilities with no available fix.
 - [`docs/work/specs/tech-debt/frontend.md`](docs/work/specs/tech-debt/frontend.md), [`docs/work/specs/tech-debt/backend.md`](docs/work/specs/tech-debt/backend.md).
 

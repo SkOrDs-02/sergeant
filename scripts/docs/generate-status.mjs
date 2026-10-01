@@ -402,7 +402,7 @@ function render({ focus, shipped, inflight, priority }) {
   );
   lines.push("- [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)");
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — freshness огляд",
+    "- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; огляд: `pnpm docs:freshness-dashboard`",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",
