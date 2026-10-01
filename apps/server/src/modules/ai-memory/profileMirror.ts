@@ -77,6 +77,7 @@ import { createHash } from "node:crypto";
 import type { Pool } from "pg";
 
 import { env } from "../../env.js";
+import { runWithUserContext } from "../../dbContext.js";
 import { logger, serializeError } from "../../obs/logger.js";
 import { getAiMemory } from "./bootstrap.js";
 import { enqueueMemoryIngest } from "./ingestQueue.js";
@@ -388,14 +389,16 @@ export async function mirrorProfileMemoryEntries(
     normalizeIncomingEntries(rawEntries);
 
   try {
-    const existing = await pool.query<ExistingProfileMemoryRow>(
-      `SELECT source_ref, content
-         FROM ai_memories
-        WHERE user_id = $1
-          AND source = $2
-          AND source_ref IS NOT NULL
-          AND deleted_at IS NULL`,
-      [userId, PROFILE_SOURCE],
+    const existing = await runWithUserContext(pool, userId, (client) =>
+      client.query<ExistingProfileMemoryRow>(
+        `SELECT source_ref, content
+           FROM ai_memories
+          WHERE user_id = $1
+            AND source = $2
+            AND source_ref IS NOT NULL
+            AND deleted_at IS NULL`,
+        [userId, PROFILE_SOURCE],
+      ),
     );
 
     const existingBySourceRef = new Map<string, string>();

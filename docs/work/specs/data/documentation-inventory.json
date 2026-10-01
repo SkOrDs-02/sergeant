@@ -5880,7 +5880,7 @@
       "action": "keep",
       "genre": "product-canon",
       "canonical_owner": "docs/product/modules/hub-coach.md",
-      "inbound_count": 31,
+      "inbound_count": 32,
       "inbound_sources": [
         "docs/design/design/anti-slop-strategy.md",
         "docs/design/design/specs/2026-09-17-hubchat-design.md",
@@ -5893,6 +5893,7 @@
         "docs/governance/governance/freshness-dashboard.html",
         "docs/product/model/README.md",
         "docs/product/model/product-overview.md",
+        "docs/product/modules/finyk.md",
         "docs/product/modules/fizruk.md",
         "docs/product/modules/nutrition.md",
         "docs/product/modules/routine.md",

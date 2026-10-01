@@ -1,5 +1,4 @@
-import { CORRELATION_NOTABLE_R } from "@sergeant/shared";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { CORRELATION_NOTABLE_R, deviceDayKey } from "@sergeant/shared";
 import {
   buildDailySeries,
   computePairwiseCorrelations,
@@ -317,7 +316,7 @@ export function correlationsFromPairs(pairs: NotablePair[]): string[] {
  */
 export function shiftDayKey(dayKey: string, deltaDays: number): string {
   // UTC-полудень навмисно: це не читання «зараз», а чиста календарна
-  // арифметика над уже київським ключем дня.
+  // арифметика над готовим ключем дня.
   const d = new Date(`${dayKey}T12:00:00.000Z`);
   d.setUTCDate(d.getUTCDate() + deltaDays);
   return d.toISOString().slice(0, 10);
@@ -329,7 +328,10 @@ export function shiftDayKey(dayKey: string, deltaDays: number): string {
  * інакше та сама пара показала б різні `n` у різних місцях.
  */
 export function buildCrossModuleSeries(now: number = Date.now()): DailySeries {
-  const to = getKyivDayKey(now);
+  // Кінець вікна — сьогодні за годинником пристрою: вісь рядів спільна для
+  // грошей і решти, межу доби кожної метрики ріже її читач (`dailySeries.ts`,
+  // рішення власника 2026-10-01, f6).
+  const to = deviceDayKey(now);
   return buildDailySeries(METRICS, {
     from: shiftDayKey(to, -(WINDOW_DAYS - 1)),
     to,

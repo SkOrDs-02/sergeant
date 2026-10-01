@@ -17,6 +17,9 @@ vi.mock("../db.js", () => ({
   default: { query: queryMock },
   pool: { query: queryMock },
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withSubjectContext: (_subject: string, fn: (db: unknown) => unknown) =>
+    fn({ query: queryMock }),
 }));
 
 vi.mock("../obs/logger.js", () => ({

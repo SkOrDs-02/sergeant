@@ -1,13 +1,17 @@
 // Локальний звіт тижня без AI (фаза 5 спеки аналітики v2, Р23).
 //
-// Три факти з тих самих селекторів, що й решта аналітики: на що пішло
-// найбільше за 7 днів, що виросло найбільше проти попередніх 7 днів
-// (відсоток за правилом Р4) і ліміт із найгіршим темпом (Р8). Працює з
-// переданим списком, тож і офлайн, і анонімно.
-import { toLocalISODate } from "@sergeant/shared";
+// Факти з тих самих селекторів, що й решта аналітики: скільки витрачено за
+// тиждень проти того самого відрізка минулого, на що пішло найбільше, що
+// виросло найбільше (відсоток за правилом Р4) і ліміт із найгіршим темпом
+// (Р8). «Тиждень» — календарний пн–нд за Києвом, і порівнюються однакові
+// відрізки (`weekSliceWindows`, рішення власника 2026-10-01): це те саме
+// вікно, що читає картка «Витрати на N% вище ніж минулого тижня», тож числа
+// картки й звіту збігаються. Працює з переданим списком, тож і офлайн, і
+// анонімно.
 import { resolveExpenseCategoryMeta, txTimeMs } from "../utils";
 import { compareAmounts, computeCategorySpendIndex } from "./selectors";
 import { calcLimitUsages, type LimitUsageEntry } from "./budget";
+import { weekSliceWindows } from "./weekSlices";
 import type {
   AmountDelta,
   Budget,
@@ -15,8 +19,6 @@ import type {
   Transaction,
   TxSplitsMap,
 } from "./types";
-
-export const WEEK_DAYS = 7;
 
 export interface WeekCategoryFact {
   categoryId: string;
@@ -29,9 +31,20 @@ export interface WeekGrowthFact extends WeekCategoryFact {
   delta: AmountDelta;
 }
 
+export interface WeekTotalFact {
+  /** Витрати цього тижня від понеділка до сьогодні, копійки. */
+  spentMinor: number;
+  /** Витрати за ті самі дні минулого тижня, копійки. */
+  prevMinor: number;
+  /** Відсоток — лише коли попередня сума є базою (Р4). */
+  delta: AmountDelta;
+}
+
 export interface WeekReport {
-  /** За останні 7 днів є хоч один запис. */
+  /** На цьому календарному тижні (від понеділка до сьогодні) є хоч один запис. */
   hasRecords: boolean;
+  /** Підсумок тижня проти того самого відрізка минулого; `null`, коли витрат за тиждень ще немає. */
+  total: WeekTotalFact | null;
   top: WeekCategoryFact | null;
   growth: WeekGrowthFact | null;
   /** Ліміт із найбільшим відношенням прогнозу (або факту) до ліміту. */
@@ -44,12 +57,6 @@ export interface WeekReportOptions {
   txSplits?: TxSplitsMap | undefined;
   customCategories?: Category[] | undefined;
   now?: Date | undefined;
-}
-
-function dayKeyShift(key: string, days: number): string {
-  const d = new Date(`${key}T12:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -67,24 +74,24 @@ export function buildWeekReport(
     customCategories = [],
     now = new Date(),
   } = opts;
-  // Межі тижня в київських днях: сьогодні і шість попередніх.
-  const today = toLocalISODate(now);
-  const weekStart = dayKeyShift(today, -(WEEK_DAYS - 1));
-  const prevStart = dayKeyShift(weekStart, -WEEK_DAYS);
+  // Календарний тиждень за Києвом: від понеділка до кінця сьогодні проти
+  // тих самих днів минулого тижня.
+  const { current, previous } = weekSliceWindows(now);
 
   const week: Transaction[] = [];
   const prev: Transaction[] = [];
   for (const tx of transactions) {
     const ms = txTimeMs(tx.time);
     if (!Number.isFinite(ms) || ms <= 0) continue;
-    const key = toLocalISODate(new Date(ms));
-    if (key > today || key < prevStart) continue;
-    (key >= weekStart ? week : prev).push(tx);
+    if (ms >= current.startMs && ms < current.endMs) week.push(tx);
+    else if (ms >= previous.startMs && ms < previous.endMs) prev.push(tx);
   }
 
   const index = { txSplits, txCategories, customCategories };
-  const curr = computeCategorySpendIndex(week, index).catSpend;
-  const before = computeCategorySpendIndex(prev, index).catSpend;
+  const weekIndex = computeCategorySpendIndex(week, index);
+  const prevIndex = computeCategorySpendIndex(prev, index);
+  const curr = weekIndex.catSpend;
+  const before = prevIndex.catSpend;
   const label = (id: string) =>
     resolveExpenseCategoryMeta(id, customCategories)?.label ?? "Інше";
 
@@ -128,5 +135,21 @@ export function buildWeekReport(
     }
   }
 
-  return { hasRecords: week.length > 0, top, growth, limit };
+  const hasRecords = week.length > 0;
+  const spentMinor = Math.round(weekIndex.totalSpent * 100);
+  const prevMinor = Math.round(prevIndex.totalSpent * 100);
+  return {
+    hasRecords,
+    total:
+      spentMinor > 0
+        ? {
+            spentMinor,
+            prevMinor,
+            delta: compareAmounts(spentMinor, prevMinor),
+          }
+        : null,
+    top,
+    growth,
+    limit,
+  };
 }

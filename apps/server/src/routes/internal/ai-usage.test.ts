@@ -20,7 +20,21 @@ function extractHandler(
   query: ReturnType<typeof vi.fn>,
   index: number,
 ): RequestHandler {
-  const router = createAiUsageInternalRouter({ pool: { query } as never });
+  // `connect()` віддає клієнта, який службові BEGIN/COMMIT/set_config ковтає,
+  // а решту SQL передає в `query` (RLS-контекст, `dbContext.ts`).
+  const client = {
+    query: (sql: string, params?: unknown[]) =>
+      /^\s*(BEGIN|COMMIT|ROLLBACK)\b|set_config\(/i.test(sql)
+        ? Promise.resolve({ rows: [] })
+        : (query as unknown as (s: string, p?: unknown[]) => unknown)(
+            sql,
+            params,
+          ),
+    release: vi.fn(),
+  };
+  const router = createAiUsageInternalRouter({
+    pool: { query, connect: vi.fn().mockResolvedValue(client) } as never,
+  });
   const layers = (
     router as unknown as {
       stack: Array<{ route?: { stack: Array<{ handle: RequestHandler }> } }>;

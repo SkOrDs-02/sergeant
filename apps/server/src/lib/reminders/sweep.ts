@@ -60,6 +60,7 @@ import {
   type NutritionPrefsRow,
   type RoutineHabitRow,
 } from "./due.js";
+import { runWithBypassContext } from "../../dbContext.js";
 import { nudgeReason, selectNudgeCandidates } from "./nudge.js";
 import { kyivDayKey, kyivDayKeyMinusDays, kyivHm } from "./time.js";
 
@@ -486,7 +487,11 @@ export async function runReminderSweep(
       loadRoutineCandidates(pool),
       loadFizrukCandidates(pool, dayKey),
       loadNutritionCandidates(pool),
-      selectNudgeCandidates(pool, now),
+      // Фоновий прохід по всіх користувачах: `sergeant_nudge_cache` читається
+      // LEFT JOIN-ом без `app.user_id`, тож під RLS потрібен bypass (A4).
+      runWithBypassContext(pool, (client) =>
+        selectNudgeCandidates(client, now),
+      ),
     ]);
 
   const routineUserIds = [...new Set(routineRows.map((r) => r.userId))];

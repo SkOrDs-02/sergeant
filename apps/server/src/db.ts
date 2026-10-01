@@ -15,6 +15,11 @@ import {
 } from "./obs/metrics.js";
 import { elapsedMs, sleep } from "./lib/timing.js";
 import { installInt8Parser } from "./lib/pgInt8.js";
+import {
+  runWithBypassContext,
+  runWithSubjectContext,
+  runWithUserContext,
+} from "./dbContext.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -489,6 +494,34 @@ export async function ensureSchema(): Promise<void> {
     }
     client.release();
   }
+}
+
+/**
+ * RLS-контекст на глобальному пулі (spec `rls-ai-tables-and-isolation-gate`,
+ * A5). Транзакція + `set_config(..., true)`; деталі й застереження про
+ * pgBouncer — у `dbContext.ts`. Для пулу, переданого через DI, викликай
+ * `runWith*Context` з `dbContext.ts` напряму.
+ */
+export function withUserContext<T>(
+  userId: string,
+  fn: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  return runWithUserContext(pool, userId, fn);
+}
+
+/** Bypass-контекст (A4): фонові задачі й `/api/internal/*`. */
+export function withBypassContext<T>(
+  fn: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  return runWithBypassContext(pool, fn);
+}
+
+/** Контекст за `ai_usage_daily.subject_key` (`u:<id>` -> user, інакше bypass). */
+export function withSubjectContext<T>(
+  subjectKey: string,
+  fn: (client: PoolClient) => Promise<T>,
+): Promise<T> {
+  return runWithSubjectContext(pool, subjectKey, fn);
 }
 
 export { pool };

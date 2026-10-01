@@ -14,11 +14,9 @@ Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟡 **Docs trust: WARNING** — _оновлено 2026-10-01 via `pnpm docs:gen-trust-badge`_
+> 🟢 **Docs trust: HEALTHY** — _оновлено 2026-10-01 via `pnpm docs:gen-trust-badge`_
 >
-> 0 stale, 0 WIP soft-violation — варто прибрати найближчим тижнем. Деталі → [`today.md`](./today.md).
->
-> ⚠ Cron health: docs-daily-brief.yml failed 2× поспіль. Перевір `gh run list --workflow=<name> --status=failure`.
+> 0 stale docs · 0 WIP violations — система здорова, працюй спокійно. Деталі → [`today.md`](./today.md).
 
 <!-- TRUST-BADGE:END -->
 

@@ -75,6 +75,12 @@ function useRunAction(onOpenTarget: (module: string, hash?: string) => void) {
         case "open_module":
           onOpenTarget(a.module, a.hash);
           return;
+        case "open_week_report":
+          // Слухач — `HubInsightsBlock`: розгортає блок і веде до рядків
+          // «Тиждень у цифрах». Коли блок вимкнено в налаштуваннях,
+          // `useNowItems` підміняє дію ще до цього місця.
+          emitHubBus("openWeekReport", undefined);
+          return;
         case "navigate":
           void navigate(a.path);
           return;
@@ -123,7 +129,9 @@ function NowRow({
   const runLabel =
     item.action.kind === "module_action"
       ? coreMessages.hub.nowPile.doIt
-      : coreMessages.hub.nowPile.open;
+      : item.action.kind === "open_week_report"
+        ? coreMessages.hub.nowPile.openWeekReport
+        : coreMessages.hub.nowPile.open;
   return (
     <div
       data-testid="now-row"
@@ -281,6 +289,13 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
                   : undefined,
             }}
             onAction={() => run(hero)}
+            // Без цього hero-кнопка тижневої картки казала б «Відкрити
+            // Фінік» і вела в звіт на цій же сторінці.
+            primaryLabel={
+              hero.action.kind === "open_week_report"
+                ? coreMessages.hub.nowPile.openWeekReport
+                : undefined
+            }
             onDismiss={() => dismiss(hero)}
             onAskAi={hero.askAiPrompt ? () => askAi(hero) : undefined}
             askAiDisabled={askAiDisabled}

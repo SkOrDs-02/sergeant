@@ -64,6 +64,15 @@ export interface HubBusEvents {
    * call-sites) to keep the storm bounded.
    */
   storageUpdated: void;
+  /**
+   * Показати «Звіт тижня» на головній: розгорнути блок «Порада й звіт тижня»
+   * і підвести людину до рядків «Тиждень у цифрах». Шле тижнева картка про
+   * темп витрат замість переходу в огляд Фініка за місяць (рішення власника
+   * 2026-10-01). Слухач — `HubInsightsBlock`; коли блоку на екрані немає
+   * (налаштування `showInsights`), подію не слухає ніхто, тож емітер сам
+   * перевіряє це й іде запасним шляхом (`useNowItems`).
+   */
+  openWeekReport: void;
 }
 
 type Handler<K extends keyof HubBusEvents> = (detail: HubBusEvents[K]) => void;

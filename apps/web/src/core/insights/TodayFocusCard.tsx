@@ -150,6 +150,7 @@ export function TodayFocusCard({
   onDismiss,
   onAskAi,
   askAiDisabled = false,
+  primaryLabel,
   kicker = true,
 }: {
   focus: FocusRec | null;
@@ -163,6 +164,12 @@ export function TodayFocusCard({
    */
   onAskAi?: (() => void) | undefined;
   askAiDisabled?: boolean | undefined;
+  /**
+   * Підпис основної кнопки, коли дія НЕ імперативна (`pwaAction` немає): за
+   * замовчуванням «Відкрити <модуль>». Потрібен картці, що веде не в модуль
+   * (тижнева картка про темп → «Відкрити звіт тижня»).
+   */
+  primaryLabel?: string | undefined;
   /**
    * Кікер «Зараз» над заголовком. Під віссю дії його вже несе заголовок
    * купи (`NowPile`), і другий «Зараз» на тому ж екрані — дубль.
@@ -208,7 +215,7 @@ export function TodayFocusCard({
         };
       })()
     : {
-        label: MODULE_OPEN_CTA[focus.module] || "Відкрити",
+        label: primaryLabel || MODULE_OPEN_CTA[focus.module] || "Відкрити",
         run: () => {
           trackCta("primary");
           onAction(focus.action);

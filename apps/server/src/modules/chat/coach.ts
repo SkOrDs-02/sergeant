@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { CORRELATION_MIN_N, CORRELATION_NOTABLE_R } from "@sergeant/shared";
-import pool from "../../db.js";
+import { withUserContext } from "../../db.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { env } from "../../env/env.js";
 import { resolveProTier } from "./aiQuota.js";
@@ -95,9 +95,11 @@ async function getMemory(userId: string): Promise<CoachMemory | null> {
   // До 2026-05-06 row жив у `module_data WHERE module='coach'`; перенесено
   // у власну таблицю міграцією 045 як precondition для Stage 7 drop-у
   // module_data column-у.
-  const result = await pool.query<{ data: unknown }>(
-    `SELECT data FROM coach_memory WHERE user_id = $1`,
-    [userId],
+  const result = await withUserContext(userId, (db) =>
+    db.query<{ data: unknown }>(
+      `SELECT data FROM coach_memory WHERE user_id = $1`,
+      [userId],
+    ),
   );
   if (result.rows.length === 0) return null;
   const raw = result!.rows[0]!.data;
@@ -143,12 +145,14 @@ async function saveMemory(userId: string, memory: CoachMemory): Promise<void> {
   if (blob.length > MAX_BLOB_SIZE) {
     throw new CoachMemoryTooLargeError(blob.length);
   }
-  await pool.query(
-    `INSERT INTO coach_memory (user_id, data, client_updated_at, version)
-     VALUES ($1, $2, NOW(), 1)
-     ON CONFLICT (user_id) DO UPDATE
-       SET data = $2, server_updated_at = NOW(), version = coach_memory.version + 1`,
-    [userId, blob],
+  await withUserContext(userId, (db) =>
+    db.query(
+      `INSERT INTO coach_memory (user_id, data, client_updated_at, version)
+       VALUES ($1, $2, NOW(), 1)
+       ON CONFLICT (user_id) DO UPDATE
+         SET data = $2, server_updated_at = NOW(), version = coach_memory.version + 1`,
+      [userId, blob],
+    ),
   );
 }
 
@@ -346,12 +350,14 @@ const NUDGE_BODY_MAX = 200;
  */
 async function saveNudgeCache(userId: string, body: string): Promise<void> {
   try {
-    await pool.query(
-      `INSERT INTO sergeant_nudge_cache (user_id, body, generated_at)
-         VALUES ($1, $2, NOW())
-         ON CONFLICT (user_id) DO UPDATE
-           SET body = EXCLUDED.body, generated_at = NOW()`,
-      [userId, body.slice(0, NUDGE_BODY_MAX)],
+    await withUserContext(userId, (db) =>
+      db.query(
+        `INSERT INTO sergeant_nudge_cache (user_id, body, generated_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (user_id) DO UPDATE
+             SET body = EXCLUDED.body, generated_at = NOW()`,
+        [userId, body.slice(0, NUDGE_BODY_MAX)],
+      ),
     );
   } catch (err) {
     logger.warn({

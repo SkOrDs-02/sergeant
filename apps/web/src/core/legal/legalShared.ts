@@ -10,7 +10,7 @@
  * потім у `docs/governance/security/llm-subprocessors.md`.
  */
 
-export const LAST_UPDATED = "31 липня 2026";
+export const LAST_UPDATED = "1 жовтня 2026";
 export const EFFECTIVE_DATE = "31 липня 2026";
 export const CONTACT_EMAIL = "legal@sergeant.app";
 export const PRIVACY_EMAIL = "privacy@sergeant.app";
