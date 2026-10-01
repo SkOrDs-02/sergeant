@@ -38,7 +38,12 @@ vi.mock("../../obs/logger.js", () => ({
 import _pool from "../../db.js";
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import { env } from "../../env/env.js";
-import { coachInsight, coachMemoryGet, coachMemoryPost } from "./coach.js";
+import {
+  buildCoachInsightPrompt,
+  coachInsight,
+  coachMemoryGet,
+  coachMemoryPost,
+} from "./coach.js";
 import { MAX_BLOB_SIZE } from "./coach.js";
 import { ExternalServiceError } from "../../obs/errors.js";
 import { logger as _logger } from "../../obs/logger.js";
@@ -786,5 +791,48 @@ describe("coachInsight", () => {
       { messages: { content: string }[] },
     ];
     expect(payload!.messages[0]!.content).toContain("Поточну дату не передано");
+  });
+});
+
+describe("buildCoachInsightPrompt — що можна просити в людини", () => {
+  // Регресія: коуч бачить лише підсумки й топ-5 {назва, сума}, але радив
+  // «запиши, що ховається за тими 7169 грн в «Іншому»» - тобто просив дію,
+  // ефекту якої не побачить (нотаток, описів і мерчантів він не отримує).
+  // Бачить він перекатегоризацію банківських операцій, тож велике «Інше»
+  // має вести саме туди.
+  const snapshot = {
+    finyk: {
+      totalSpent: 9000,
+      totalIncome: 0,
+      txCount: 40,
+      topCategories: [
+        { name: "Інше", amount: 7169 },
+        { name: "Продукти", amount: 1200 },
+      ],
+    },
+  } as never;
+
+  /** Промпт у перенесеннях рядків читається як суцільний текст. */
+  const promptText = (): string =>
+    buildCoachInsightPrompt({ snapshot, memory: null }).user.replace(
+      /\s+/g,
+      " ",
+    );
+
+  it("для великого «Інше» називає єдину досяжну дію: перенести операції в категорії", () => {
+    expect(promptText()).toContain(
+      "«Перенеси операції з «Іншого» у потрібні категорії»",
+    );
+  });
+
+  it("забороняє просити те, чого коуч не прочитає, і дозволяє дії, що змінюють його дані", () => {
+    const text = promptText();
+    expect(text).toContain("нотаток, описів операцій і мерчантів не бачиш");
+    expect(text).toContain(
+      "Не проси «запиши причину», «поясни» чи «додай нотатку»",
+    );
+    expect(text).toContain(
+      "віднести операції до категорій, записати їжу, тренування чи витрату, відмітити звичку",
+    );
   });
 });
