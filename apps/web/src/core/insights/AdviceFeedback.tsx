@@ -31,9 +31,12 @@
  *   дають хибну поведінку після очищення браузера, а PostHog і так
  *   дедуплікує за `distinct_id`. Практично: перезавантажив — можеш
  *   оцінити ту саму пораду ще раз, і це прийнятний шум.
- * - **Подія одна на натиснуту кнопку.** Повторний клік по вже обраній
- *   оцінці — no-op; зміна думки (👍 після 👎) емітить другу подію
- *   навмисно, бо це окремий факт, а не виправлення одруку.
+ * - **Оцінка остаточна: одна подія на пораду.** Після вибору лишається
+ *   тільки обрана іконка (натиснута) і «Дякую», друга кнопка зникає — зміну
+ *   думки не пропонуємо (рішення власника 2026-10-01). Так 👍 і 👎 від однієї
+ *   людини не накладаються в статистиці, і UI не обіцяє того, що вже
+ *   зараховане. Обрана кнопка лишається тим самим DOM-вузлом, тож фокус
+ *   клавіатури не губиться; клік по ній — no-op.
  */
 
 import { useState } from "react";
@@ -51,8 +54,9 @@ export interface AdviceFeedbackProps {
 }
 
 /**
- * Пара кнопок оцінки. Нічого не рендерить без `adviceId`: подія-сирота
- * роздула б чисельник без відповідного знаменника `ai_advice_shown`.
+ * Пара кнопок оцінки; після вибору лишається лише обрана іконка + «Дякую».
+ * Нічого не рендерить без `adviceId`: подія-сирота роздула б чисельник без
+ * відповідного знаменника `ai_advice_shown`.
  */
 export function AdviceFeedback({ adviceId, className }: AdviceFeedbackProps) {
   // Оцінка зберігається РАЗОМ з id поради, до якої вона належить, і
@@ -72,7 +76,8 @@ export function AdviceFeedback({ adviceId, className }: AdviceFeedbackProps) {
   const choose = (next: AdviceVerdict) => (e: React.MouseEvent) => {
     // Картка-контейнер клікабельна (розгортання) — оцінка не має її чіпати.
     e.stopPropagation();
-    if (verdict === next) return;
+    // Оцінка остаточна: друга подія на ту саму пораду не емітиться.
+    if (verdict) return;
     setAnswered({ id: adviceId, verdict: next });
     trackAdviceReaction(adviceId, next);
   };
@@ -85,30 +90,38 @@ export function AdviceFeedback({ adviceId, className }: AdviceFeedbackProps) {
       "p-1.5 rounded-xl touch-target transition-colors",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
       verdict === own
-        ? "text-brand bg-brand-soft"
+        ? "text-brand bg-brand-soft cursor-default"
         : "text-muted hover:text-text hover:bg-panelHi",
     );
 
+  // Після оцінки лишається лише обрана іконка: умовний рендер за позицією
+  // зберігає DOM-вузол кнопки, тож фокус не зникає разом із прихованою.
   return (
     <div className={cn("flex items-center gap-1", className)}>
-      <button
-        type="button"
-        onClick={choose("helpful")}
-        aria-label={messages.adviceFeedback.helpful}
-        aria-pressed={verdict === "helpful"}
-        className={buttonClass("helpful")}
-      >
-        <Icon name="thumbs-up" size="sm" />
-      </button>
-      <button
-        type="button"
-        onClick={choose("not_helpful")}
-        aria-label={messages.adviceFeedback.notHelpful}
-        aria-pressed={verdict === "not_helpful"}
-        className={buttonClass("not_helpful")}
-      >
-        <Icon name="thumbs-down" size="sm" />
-      </button>
+      {verdict !== "not_helpful" && (
+        <button
+          type="button"
+          onClick={choose("helpful")}
+          aria-label={messages.adviceFeedback.helpful}
+          aria-pressed={verdict === "helpful"}
+          aria-disabled={verdict === "helpful" || undefined}
+          className={buttonClass("helpful")}
+        >
+          <Icon name="thumbs-up" size="sm" />
+        </button>
+      )}
+      {verdict !== "helpful" && (
+        <button
+          type="button"
+          onClick={choose("not_helpful")}
+          aria-label={messages.adviceFeedback.notHelpful}
+          aria-pressed={verdict === "not_helpful"}
+          aria-disabled={verdict === "not_helpful" || undefined}
+          className={buttonClass("not_helpful")}
+        >
+          <Icon name="thumbs-down" size="sm" />
+        </button>
+      )}
       {verdict && (
         <span className="text-style-caption text-muted ml-0.5">
           {messages.adviceFeedback.thanks}
