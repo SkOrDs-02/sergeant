@@ -89,13 +89,33 @@ export interface BillingProvider {
   /**
    * Скасовує активну підписку користувача. Жоден UA-provider не має
    * Customer Portal (як Stripe), тож скасування йде через власну кнопку в
-   * застосунку: LiqPay → `action:unsubscribe`; Plata → stop-scheduler +
-   * видалення card-token. Idempotent (повторний виклик на вже скасованій —
-   * no-op). Best-effort: провайдер-помилка не мусить валити deletion юзера
-   * (ADR-0016) — caller логує й продовжує.
+   * застосунку: LiqPay → `action:unsubscribe`; Plata → `subscription/edit`
+   * (`action:cancel`). Idempotent: повторний виклик на вже скасованій
+   * (`cancel_at_period_end`) підписці провайдера не смикає і повертає
+   * `already_canceling`.
+   *
+   * Результат каже викликачеві, що сталось насправді — без нього роут
+   * відповідав `ok` навіть тоді, коли скасовувати було нічого
+   * ({@link CancelSubscriptionOutcome}). Провайдер-помилка = `throw`; caller
+   * логує й вирішує сам: deletion юзера й admin-downgrade продовжують
+   * (ADR-0016), користувацький `/api/billing/cancel` віддає 502.
    */
-  cancelSubscription(pool: Pool, userId: string): Promise<void>;
+  cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome>;
 }
+
+/**
+ * Що зробив {@link BillingProvider.cancelSubscription}:
+ *  - `canceled` — провайдеру наказано зупинити списання, `cancel_at_period_end`
+ *    виставлено;
+ *  - `already_canceling` — підписка вже скасована до кінця періоду, провайдера
+ *    не чіпали;
+ *  - `none` — у цього провайдера в користувача немає активної підписки.
+ */
+export type CancelSubscriptionOutcome =
+  "canceled" | "already_canceling" | "none";
 
 /**
  * Чи білінг узагалі увімкнено — тобто чи приймає гроші бодай один провайдер.

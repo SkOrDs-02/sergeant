@@ -12,6 +12,7 @@ import {
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { ApiError } from "@sergeant/api-client";
 import type { BillingStatusResponse } from "@sergeant/shared";
 import { accessFixture } from "../../test/helpers/billingAccess";
 
@@ -73,6 +74,7 @@ const FREE_RESPONSE: BillingStatusResponse = {
     status: null,
     active: false,
     currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
   },
   access: accessFixture("free"),
 };
@@ -85,6 +87,7 @@ const PRO_ACTIVE_RESPONSE: BillingStatusResponse = {
     status: "active",
     active: true,
     currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+    cancelAtPeriodEnd: false,
   },
   access: accessFixture("pro"),
 };
@@ -97,6 +100,7 @@ const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
     status: "canceled",
     active: true,
     currentPeriodEnd: "2026-05-30T10:00:00.000Z",
+    cancelAtPeriodEnd: false,
   },
   access: accessFixture("pro"),
 };
@@ -109,6 +113,7 @@ const PRO_TRIAL_RESPONSE: BillingStatusResponse = {
     status: "trialing",
     active: true,
     currentPeriodEnd: "2026-06-07T10:00:00.000Z",
+    cancelAtPeriodEnd: false,
   },
   access: accessFixture("trial"),
 };
@@ -233,6 +238,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
         status: "past_due",
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("grace"),
     });
@@ -255,6 +261,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
         status: "past_due",
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("grace"),
     });
@@ -264,6 +271,200 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     const pastDue = await screen.findByTestId("plan-past-due-info");
     expect(pastDue).toHaveTextContent(/платіжному порталі/i);
     expect(screen.getByTestId("plan-manage-button")).toBeInTheDocument();
+  });
+
+  // ── «Скасувати Premium» виглядало як no-op (три стани UI) ─────────────
+  // 1) скасовано, але доступ діє до кінця періоду; 2) Premium без підписки
+  // (founder / manual), скасовувати нічого; 3) помилки сервера не ковтаються.
+
+  const LIQPAY_ACTIVE_RESPONSE: BillingStatusResponse = {
+    subscription: {
+      id: 50,
+      provider: "liqpay",
+      plan: "pro",
+      status: "active",
+      active: true,
+      currentPeriodEnd: "2026-06-01T10:00:00.000Z",
+      cancelAtPeriodEnd: false,
+    },
+    access: accessFixture("pro"),
+  };
+  const LIQPAY_CANCEL_SCHEDULED_RESPONSE: BillingStatusResponse = {
+    subscription: {
+      ...LIQPAY_ACTIVE_RESPONSE.subscription,
+      cancelAtPeriodEnd: true,
+    },
+    access: accessFixture("pro"),
+  };
+
+  function apiError(status: number, code: string): ApiError {
+    return new ApiError({
+      kind: "http",
+      message: `HTTP ${status}`,
+      status,
+      body: { error: "nope", code },
+      url: "/api/v1/billing/cancel",
+    });
+  }
+
+  it("для активної LiqPay-підписки показує «Наступне списання» і кнопку «Скасувати»", async () => {
+    statusMock.mockResolvedValue(LIQPAY_ACTIVE_RESPONSE);
+    renderSection();
+    await openSection();
+
+    expect(await screen.findByTestId("plan-active-info")).toHaveTextContent(
+      /1 червня 2026/,
+    );
+    expect(screen.getByTestId("plan-cancel-button")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("plan-cancel-scheduled-info"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-manual-info")).not.toBeInTheDocument();
+  });
+
+  it("cancelAtPeriodEnd: пише «Підписку скасовано. Premium діє до …» і ховає «Скасувати» та «Наступне списання»", async () => {
+    statusMock.mockResolvedValue(LIQPAY_CANCEL_SCHEDULED_RESPONSE);
+    renderSection();
+    await openSection();
+
+    const info = await screen.findByTestId("plan-cancel-scheduled-info");
+    expect(info).toHaveTextContent(/Підписку скасовано/);
+    expect(info).toHaveTextContent(/Premium діє до 1 червня 2026/);
+
+    expect(screen.queryByTestId("plan-cancel-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("plan-cancel-confirm-button"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-active-info")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-trial-info")).not.toBeInTheDocument();
+    // Premium ще діє: бейдж не падає на Free.
+    expect(screen.getByTestId("plan-badge")).toHaveTextContent("Premium");
+  });
+
+  it("cancelAtPeriodEnd без дати кінця періоду все одно не лишає «Скасувати»", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        ...LIQPAY_CANCEL_SCHEDULED_RESPONSE.subscription,
+        currentPeriodEnd: null,
+      },
+      access: accessFixture("pro"),
+    });
+    renderSection();
+    await openSection();
+
+    expect(
+      await screen.findByTestId("plan-cancel-scheduled-info"),
+    ).toHaveTextContent(/до кінця оплаченого періоду/);
+    expect(screen.queryByTestId("plan-cancel-button")).not.toBeInTheDocument();
+  });
+
+  it("після успішного скасування підтягує статус і замість кнопки показує, до коли діє Premium", async () => {
+    statusMock
+      .mockResolvedValueOnce(LIQPAY_ACTIVE_RESPONSE)
+      .mockResolvedValue(LIQPAY_CANCEL_SCHEDULED_RESPONSE);
+    cancelMock.mockResolvedValue({ ok: true });
+    renderSection();
+    await openSection();
+
+    fireEvent.click(await screen.findByTestId("plan-cancel-button"));
+    fireEvent.click(screen.getByTestId("plan-cancel-confirm-button"));
+
+    expect(
+      await screen.findByTestId("plan-cancel-scheduled-info"),
+    ).toHaveTextContent(/Premium діє до 1 червня 2026/);
+    expect(cancelMock).toHaveBeenCalledTimes(1);
+    expect(statusMock).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("plan-cancel-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("plan-cancel-confirm-button"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-cancel-error")).not.toBeInTheDocument();
+  });
+
+  it("founder (id: null, provider: manual): без кнопки «Скасувати», з поясненням", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        id: null,
+        provider: "manual",
+        plan: "pro",
+        status: "active",
+        active: true,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      },
+      access: accessFixture("pro"),
+    });
+    renderSection();
+    await openSection();
+
+    const info = await screen.findByTestId("plan-manual-info");
+    expect(info).toHaveTextContent(/надано без підписки/);
+    expect(info).toHaveTextContent(/скасовувати нічого/);
+    expect(screen.getByTestId("plan-badge")).toHaveTextContent("Premium");
+    expect(screen.queryByTestId("plan-cancel-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-manage-button")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-active-info")).not.toBeInTheDocument();
+  });
+
+  it("reverse trial (provider: manual, trialing): без «стане платною» і без кнопки «Скасувати», з датою", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        id: 60,
+        provider: "manual",
+        plan: "pro",
+        status: "trialing",
+        active: true,
+        currentPeriodEnd: "2026-06-07T10:00:00.000Z",
+        cancelAtPeriodEnd: false,
+      },
+      access: accessFixture("trial"),
+    });
+    renderSection();
+    await openSection();
+
+    const info = await screen.findByTestId("plan-manual-info");
+    expect(info).toHaveTextContent(/Діє до 7 червня 2026/);
+    expect(screen.queryByTestId("plan-trial-info")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("plan-cancel-button")).not.toBeInTheDocument();
+  });
+
+  it("409 від сервера: показує, що скасовувати нічого, закриває підтвердження і оновлює статус", async () => {
+    statusMock.mockResolvedValue(LIQPAY_ACTIVE_RESPONSE);
+    cancelMock.mockRejectedValue(apiError(409, "NO_ACTIVE_SUBSCRIPTION"));
+    renderSection();
+    await openSection();
+
+    fireEvent.click(await screen.findByTestId("plan-cancel-button"));
+    fireEvent.click(screen.getByTestId("plan-cancel-confirm-button"));
+
+    expect(await screen.findByTestId("plan-cancel-error")).toHaveTextContent(
+      "Активної підписки, яку можна скасувати, немає.",
+    );
+    expect(
+      screen.queryByTestId("plan-cancel-confirm-button"),
+    ).not.toBeInTheDocument();
+    await waitFor(() => expect(statusMock).toHaveBeenCalledTimes(2));
+  });
+
+  it("502 від сервера: каже, що платіжний сервіс не підтвердив, і лишає підтвердження для повтору", async () => {
+    statusMock.mockResolvedValue(LIQPAY_ACTIVE_RESPONSE);
+    cancelMock.mockRejectedValue(apiError(502, "PROVIDER_CANCEL_FAILED"));
+    renderSection();
+    await openSection();
+
+    fireEvent.click(await screen.findByTestId("plan-cancel-button"));
+    fireEvent.click(screen.getByTestId("plan-cancel-confirm-button"));
+
+    expect(await screen.findByTestId("plan-cancel-error")).toHaveTextContent(
+      /Платіжний сервіс не підтвердив скасування.*спробуй ще раз/,
+    );
+    expect(
+      screen.getByTestId("plan-cancel-confirm-button"),
+    ).toBeInTheDocument();
+    // Підписка не скасована, тож статус не міняється.
+    expect(
+      screen.queryByTestId("plan-cancel-scheduled-info"),
+    ).not.toBeInTheDocument();
   });
 
   it("не стверджує «Free» і не пропонує апгрейд, поки статус ще вантажиться", async () => {
