@@ -36,7 +36,22 @@ const mocks = vi.hoisted(() => ({
    * ньому. Тут вона була й на вебі.
    */
   coachInsightCalls: [] as Array<{ enabled?: boolean } | undefined>,
+  /** Витрати Фініка для купи «Закрито»; порожньо — як холодний кеш. */
+  finykTxs: [] as Array<{ id: string; amount: number; time: number }>,
 }));
+
+vi.mock("@finyk/lib/lsStats", async (importOriginal) => {
+  // Купа «Закрито» реальна; підміняємо лише витрати, решта контексту
+  // (ліміти, виключення) — справжня з порожніх сховищ.
+  const actual = await importOriginal<typeof import("@finyk/lib/lsStats")>();
+  return {
+    ...actual,
+    readFinykStatsContext: () => ({
+      ...actual.readFinykStatsContext(),
+      txs: mocks.finykTxs,
+    }),
+  };
+});
 
 vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
   // Частковий мок ламався, щойно граф дашборда дотягнувся до `appPaths`
@@ -396,6 +411,8 @@ describe("HubDashboard — вісь дії", () => {
     );
     mocks.dashboardFocus.focus = null;
     mocks.dashboardFocus.rest = [];
+    mocks.dashboardFocus.allRecs = [];
+    mocks.finykTxs = [];
     mocks.openHubModule.mockClear();
   });
   afterEach(() => {
@@ -431,6 +448,40 @@ describe("HubDashboard — вісь дії", () => {
     expect(screen.getByTestId("module-rail")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Зараз" })).toBeNull();
     expect(screen.queryByTestId("now-empty")).toBeNull();
+  });
+
+  describe("«Закрито» бачить усі активні рекомендації, а не лише показані", () => {
+    // Баг: купа отримувала `[focus, ...rest]` — рекомендації ПІСЛЯ фільтра
+    // відкинутих. Сховав картку `budget_over_*` («✕»), і рядок «Витрати»
+    // казав «закрито» поруч із реально перевищеним лімітом.
+    const OVER = {
+      id: "budget_over_food",
+      module: "finyk",
+      priority: 90,
+      icon: "alert",
+      title: "Продукти: перевищено на 62%",
+      body: "",
+      action: "finyk",
+    } as TestRec;
+
+    beforeEach(() => {
+      // Суми — у копійках: 250 ₴ за годину до «зараз».
+      mocks.finykTxs = [
+        { id: "t1", amount: -25000, time: Date.now() - 3_600_000 },
+      ];
+    });
+
+    it("без перевищення витрати сьогодні закриті", () => {
+      renderDashboard();
+      expect(screen.getByTestId("closed-row")).toHaveTextContent("Витрати");
+    });
+
+    it("сховане перевищення лишає витрати незакритими", () => {
+      // Картку сховали: у `focus`/`rest` її вже немає, але вона активна.
+      mocks.dashboardFocus.allRecs = [OVER];
+      renderDashboard();
+      expect(screen.queryByTestId("closed-row")).toBeNull();
+    });
   });
 
   it("збережений застарілий calmMode ігнорується: порада й звіт лишаються", () => {
