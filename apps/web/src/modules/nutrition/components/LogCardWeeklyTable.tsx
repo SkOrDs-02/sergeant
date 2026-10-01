@@ -30,7 +30,7 @@ export function LogCardWeeklyTable({
   );
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/40 px-3 py-2">
+    <div className="rounded-2xl border border-line bg-panel px-3 py-2">
       <SectionHeading
         as="button"
         size="xs"

@@ -197,7 +197,7 @@ function CategorySection({
 }: CategorySectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-line/40 bg-bg/30">
+    <div className="rounded-xl border border-line bg-panel">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

@@ -432,7 +432,7 @@ function CapabilityLegend({ showNew }: { showNew: boolean }) {
     <div
       data-testid="catalogue-legend"
       className={cn(
-        "mb-4 bg-panel/60 border border-line rounded-2xl px-3 py-2.5",
+        "mb-4 bg-panel border border-line rounded-2xl px-3 py-2.5",
         "flex flex-wrap items-center gap-x-3 gap-y-2",
       )}
       aria-label="Що означають позначки"

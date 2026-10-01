@@ -37,26 +37,29 @@ const MODULE_ACCENT = {
 };
 
 // Subtle module-tinted background wash for the primary hero card. Uses the
-// low-saturation "soft"/"surface" color tokens defined in tailwind.config;
-// opacity is tuned so the card dominates without fighting dark mode.
+// low-saturation "soft"/"surface" color tokens defined in tailwind.config.
+// Світла тема — СУЦІЛЬНИЙ тон (A8.3 аудиту контрасту, рішення власника
+// 2026-10-01): `bg-{m}-soft/60` над столом хаба давав S = 1.18 («слабка»
+// картка). У темній темі тон лежить на `dark:bg-panel` (непрозорий), тож
+// `/10`-`/20` там — лише відтінок, а не прозорість панелі.
 const MODULE_WASH = {
-  finyk: "bg-finyk-soft/60 dark:bg-finyk-soft/10",
-  fizruk: "bg-fizruk-soft/60 dark:bg-fizruk-soft/10",
-  routine: "bg-routine-surface/60 dark:bg-routine-surface/20",
-  nutrition: "bg-nutrition-soft/60 dark:bg-nutrition-soft/10",
+  finyk: "bg-finyk-soft dark:bg-finyk-soft/10",
+  fizruk: "bg-fizruk-soft dark:bg-fizruk-soft/10",
+  routine: "bg-routine-surface dark:bg-routine-surface/20",
+  nutrition: "bg-nutrition-soft dark:bg-nutrition-soft/10",
   hub: "bg-panelHi",
 };
 
 const SEVERITY_TONE = {
   danger: {
     accent: "bg-danger",
-    wash: "bg-danger-soft/70 dark:bg-danger/10",
+    wash: "bg-danger-soft dark:bg-danger/10",
     border: "border-danger/30",
     eyebrow: "text-danger-strong dark:text-danger",
   },
   warning: {
     accent: "bg-warning",
-    wash: "bg-warning-soft/70 dark:bg-warning/10",
+    wash: "bg-warning-soft dark:bg-warning/10",
     border: "border-warning/35",
     eyebrow: "text-warning-strong dark:text-warning",
   },

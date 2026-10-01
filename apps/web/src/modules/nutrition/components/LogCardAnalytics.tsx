@@ -65,7 +65,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
   );
 
   return (
-    <div className="rounded-2xl border border-line bg-panel/40 px-3 py-3 space-y-3">
+    <div className="rounded-2xl border border-line bg-panel px-3 py-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
         <SectionHeading as="div" size="xs" variant="nutrition">
           Аналітика (тренди)

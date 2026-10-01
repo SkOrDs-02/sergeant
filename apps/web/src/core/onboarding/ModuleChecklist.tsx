@@ -338,7 +338,7 @@ export function ModuleChecklist({
               "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left",
               "transition-all duration-base",
               interactive
-                ? "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer"
+                ? "bg-panel hover:bg-panelHi border border-line cursor-pointer"
                 : "bg-transparent cursor-default",
               interactive &&
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",

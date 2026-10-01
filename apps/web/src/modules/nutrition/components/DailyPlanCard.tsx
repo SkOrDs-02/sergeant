@@ -483,7 +483,7 @@ export function DailyPlanCard({
             </div>
 
             {dayPlan?.note && (
-              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-style-caption text-muted">
+              <div className="rounded-xl bg-panel border border-line px-3 py-2 text-style-caption text-muted">
                 {dayPlan.note}
               </div>
             )}

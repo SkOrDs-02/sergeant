@@ -118,7 +118,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
                 key={n.id}
                 className="flex items-start gap-3 px-2.5 py-2.5 rounded-xl"
               >
-                <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel/60">
+                <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel">
                   <Icon name={n.icon} size="md" />
                 </span>
                 <div className="flex-1 min-w-0">

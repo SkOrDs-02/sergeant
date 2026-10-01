@@ -665,7 +665,7 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
             // `[aria-selected="true"]` специфічніший за базові класи
             // Tabs). `rounded-lg` — концентричний радіус до треку
             // `rounded-xl` з його p-1.
-            className="overflow-x-auto bg-panelHi rounded-xl"
+            className="overflow-x-auto bg-panelHi rounded-xl border border-line"
             tabsClassName="rounded-lg border-transparent aria-selected:bg-panel aria-selected:border-control aria-selected:shadow-e1"
           />
         </div>

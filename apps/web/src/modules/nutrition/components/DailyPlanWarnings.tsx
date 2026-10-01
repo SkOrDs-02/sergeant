@@ -100,7 +100,7 @@ export function MacroKcalWarning({
           }
           className={cn(
             "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
-            "border-line/60 bg-bg/40 text-subtle hover:text-text hover:bg-panelHi",
+            "border-line bg-panel text-subtle hover:text-text hover:bg-panelHi",
             "disabled:opacity-50 transition-colors",
           )}
         >

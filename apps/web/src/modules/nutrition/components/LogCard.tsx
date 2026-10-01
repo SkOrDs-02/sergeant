@@ -127,7 +127,7 @@ export function LogCard({
             <button
               type="button"
               onClick={() => setDuplicateConfirm(true)}
-              className="w-full h-10 touch-target rounded-2xl border border-line bg-panel/40 px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
+              className="w-full h-10 touch-target rounded-2xl border border-line bg-panel px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
             >
               {/* Підпис бере той самий `formatDate`, що й заголовок вище:
                 він уміє «Вчора» / «Сьогодні» і лише для дальших дат падає

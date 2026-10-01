@@ -104,7 +104,7 @@ export function WorkoutsHome({
   return (
     <div className="space-y-4">
       {hasActive ? (
-        <div className="rounded-2xl border border-fizruk-ring/40 bg-fizruk/10 p-4">
+        <div className="rounded-2xl border border-fizruk-ring bg-fizruk-surface p-4 dark:border-fizruk-ring/40 dark:bg-fizruk/10">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-style-caption text-fizruk-strong">

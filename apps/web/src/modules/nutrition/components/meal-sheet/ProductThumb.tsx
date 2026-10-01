@@ -42,7 +42,7 @@ export function ProductThumb({ name, imageUrl }: ProductThumbProps) {
 
   return (
     <div
-      className="shrink-0 w-11 h-11 rounded-xl bg-panelHi border border-line/40 overflow-hidden flex items-center justify-center"
+      className="shrink-0 w-11 h-11 rounded-xl bg-panelHi border border-line overflow-hidden flex items-center justify-center"
       // Категорія — це здогадка по назві, і показувати її як підпис було б
       // надто впевнено. Але для скрінрідера квадратик має бути чимось, а
       // не безіменною картинкою.
