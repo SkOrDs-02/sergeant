@@ -6,7 +6,11 @@ import { useRef, useState } from "react";
 import { meApi } from "@shared/api";
 import { logger } from "@shared/lib";
 import { useAuth } from "../auth/AuthContext";
-import { setAnalyticsConsent } from "./analyticsConsent";
+import {
+  getPendingAnalyticsSync,
+  markAnalyticsDecisionSynced,
+  setAnalyticsConsent,
+} from "./analyticsConsent";
 
 /**
  * Явний вибір людини про продуктову аналітику: «Дозволити» / «Ні, дякую».
@@ -18,9 +22,11 @@ import { setAnalyticsConsent } from "./analyticsConsent";
  *     вже минув онбординг і ніколи не відповідав.
  *
  * Вибір іде в `setAnalyticsConsent` — єдине джерело правди згоди (воно ж
- * живить PostHog opt-in/out і тумблер у Налаштування → Приватність); для
- * залогіненого дублюється на сервер; гість лишає рішення на пристрої з
- * позначкою «ще не на сервері» — його віддасть сервер-гідрація після входу.
+ * живить PostHog opt-in/out і тумблер у Налаштування → Приватність). Рішення
+ * лягає на пристрій із позначкою «ще не на сервері»: залогінений знімає її,
+ * щойно сервер підтвердив запис; гість і невдалий запит лишають її для
+ * `useAnalyticsConsentBoot`, який віддасть рішення серверу на наступному
+ * вході, а не дасть серверному дефолту його перетерти.
  * `onChosen` викликається після локального запису, тож подія, яку хост шле
  * наступним рядком, уже бачить нове значення згоди.
  */
@@ -39,14 +45,23 @@ export function useAnalyticsConsentChoice(
     chosenRef.current = true;
     setSaving(true);
     // Локально й одразу: PostHog opt-in/out і зникнення банера без мережі.
-    // Гість позначає рішення як ще не віддане серверу: після реєстрації його
-    // забере `useAnalyticsConsentBoot`, а не перетре серверний дефолт.
-    setAnalyticsConsent(granted, { pendingServerSync: !user });
+    // Позначка «ще не на сервері» знімається лише після успішного запису.
+    setAnalyticsConsent(granted, { pendingServerSync: true });
     if (user) {
-      meApi.updatePreferences({ analytics: granted }).catch((err: unknown) => {
-        // Вибір на пристрої вже діє; сервер підтягнеться тумблером.
-        logger.warn("[analyticsConsent] persist failed", err);
-      });
+      const decision = granted ? "granted" : "denied";
+      meApi
+        .updatePreferences({ analytics: granted })
+        .then(() => {
+          // Поки летів запит, людина могла змінити вибір у Налаштуваннях:
+          // тоді позначка вже не про це рішення.
+          if (getPendingAnalyticsSync() === decision) {
+            markAnalyticsDecisionSynced();
+          }
+        })
+        .catch((err: unknown) => {
+          // Вибір на пристрої вже діє; на сервер його віддасть boot.
+          logger.warn("[analyticsConsent] persist failed", err);
+        });
     }
     onChosen?.(granted);
   };
