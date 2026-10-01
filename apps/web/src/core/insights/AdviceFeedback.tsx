@@ -79,6 +79,9 @@ export function AdviceFeedback({ adviceId, className }: AdviceFeedbackProps) {
 
   const buttonClass = (own: AdviceVerdict) =>
     cn(
+      // На coarse-pointer `touch-target` розтягує кнопку до 44×44; без
+      // inline-flex-центрування SVG лишається в лівому верхньому куті.
+      "inline-flex items-center justify-center",
       "p-1.5 rounded-xl touch-target transition-colors",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand",
       verdict === own

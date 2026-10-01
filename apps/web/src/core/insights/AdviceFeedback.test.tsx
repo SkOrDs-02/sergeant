@@ -27,6 +27,17 @@ describe("AdviceFeedback", () => {
     trackAdviceReactionMock.mockClear();
   });
 
+  it("центрує іконку в кнопці, яку coarse-pointer розтягує до 44×44", () => {
+    render(<AdviceFeedback adviceId="adv-1" />);
+
+    for (const name of ["Порада корисна", "Порада не корисна"]) {
+      const { className } = screen.getByRole("button", { name });
+      expect(className).toContain("inline-flex");
+      expect(className).toContain("items-center");
+      expect(className).toContain("justify-center");
+    }
+  });
+
   it("не рендериться без adviceId", () => {
     const { container } = render(<AdviceFeedback adviceId={null} />);
     expect(container).toBeEmptyDOMElement();
