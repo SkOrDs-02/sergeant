@@ -97,10 +97,11 @@ export function SavedSection({
               {saved.slice(0, 8).map((r) => {
                 const key = r.id;
                 const factorRaw = portionById[key] ?? "1";
-                // Усе, що показано в рядку, рахується тим самим множником,
-                // що піде в журнал (`addRecipeAsMeal` бере той самий
-                // `parsePortionFactor`), — інакше «≈ ккал» стояло б на
-                // місці, поки людина міняє порції.
+                // `r.macros` — КБЖВ на ОДНУ порцію (рішення власника
+                // 2026-10-01), тож підрядок і «На порцію» показують їх як є,
+                // а множник — це скільки порцій зʼїдено: підсумок
+                // рахується тим самим множником, що піде в журнал
+                // (`addRecipeAsMeal` бере той самий `parsePortionFactor`).
                 const factor = parsePortionFactor(factorRaw);
                 const scaled = scaleMacros(r.macros, factor);
                 const isOpen = openSavedId === r.id;
@@ -127,7 +128,7 @@ export function SavedSection({
                             {r.timeMinutes ? `${r.timeMinutes} хв` : "—"} ·{" "}
                             {r.servings ? `${r.servings} порц.` : "—"}
                             {r.macros?.kcal != null
-                              ? ` · ≈ ${fmtMacro(scaled.kcal)} ккал`
+                              ? ` · ≈ ${fmtMacro(r.macros.kcal)} ккал / порція`
                               : ""}
                           </span>
                         </span>
@@ -155,7 +156,7 @@ export function SavedSection({
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="text-style-caption text-muted">
-                        Порції:
+                        Скільки порцій:
                       </span>
                       <Input
                         value={factorRaw}
@@ -166,12 +167,12 @@ export function SavedSection({
                           }))
                         }
                         inputMode="decimal"
-                        aria-label={`Порції: ${r.title}`}
+                        aria-label={`Скільки порцій: ${r.title}`}
                         className="w-20"
                       />
-                      {r.macros?.kcal != null && (
+                      {r.macros?.kcal != null && factor !== 1 && (
                         <span className="text-style-caption text-muted">
-                          → ≈ {fmtMacro(scaled.kcal)} ккал
+                          → усього ≈ {fmtMacro(scaled.kcal)} ккал
                         </span>
                       )}
                     </div>
@@ -215,10 +216,20 @@ export function SavedSection({
                           (r.macros.protein_g != null ||
                             r.macros.fat_g != null ||
                             r.macros.carbs_g != null) && (
-                            <div className="text-style-caption text-muted">
-                              Б: {fmtMacro(scaled.protein_g)} г · Ж:{" "}
-                              {fmtMacro(scaled.fat_g)} г · В:{" "}
-                              {fmtMacro(scaled.carbs_g)} г
+                            <div className="text-style-caption text-muted space-y-0.5">
+                              <div>
+                                На порцію: Б: {fmtMacro(r.macros.protein_g)} г ·
+                                Ж: {fmtMacro(r.macros.fat_g)} г · В:{" "}
+                                {fmtMacro(r.macros.carbs_g)} г
+                              </div>
+                              {factor !== 1 && (
+                                <div>
+                                  Разом ×{formatFactor(factor)}: Б:{" "}
+                                  {fmtMacro(scaled.protein_g)} г · Ж:{" "}
+                                  {fmtMacro(scaled.fat_g)} г · В:{" "}
+                                  {fmtMacro(scaled.carbs_g)} г
+                                </div>
+                              )}
                             </div>
                           )}
                         {!Array.isArray(r.ingredients) &&
