@@ -195,3 +195,105 @@ export function findMerchantRule(
   if (!merchantKey) return null;
   return index.get(merchantRuleIndexKey(kind, merchantKey)) ?? null;
 }
+
+// ---------------------------------------------------------------------------
+// Зміни списку правил — чисті функції, щоб хук лишався тонкою обгорткою
+// ---------------------------------------------------------------------------
+
+export interface MerchantRuleInput {
+  kind: MerchantRuleKind;
+  merchantKey: string;
+  categoryId: string;
+  label: string;
+}
+
+/** Результат створення/оновлення: новий список, саме правило й що було до. */
+export interface MerchantRuleChange {
+  list: MerchantRule[];
+  rule: MerchantRule;
+  /** Правило до зміни; `null`, якщо це було створення. */
+  previous: MerchantRule | null;
+}
+
+/**
+ * Створює правило або оновлює наявне за `(kind, merchantKey)`.
+ *
+ * `null` (нічого не змінюється): порожній ключ чи категорія, «Внутрішній
+ * переказ», перевищено {@link MERCHANT_RULES_LIMIT} для нового правила.
+ *
+ * Дублі за тим самим ключем (гонка двох пристроїв) зводяться в один: лишається
+ * переможець індексу, його `id` зберігається — тому скасування повертає
+ * саме його, а не вигадує нове.
+ */
+export function applyMerchantRule(
+  list: readonly MerchantRule[],
+  input: MerchantRuleInput,
+  ctx: { now: string; newId: () => string },
+): MerchantRuleChange | null {
+  const merchantKey = input.merchantKey.trim();
+  const categoryId = input.categoryId.trim();
+  if (!merchantKey || !categoryId || categoryId === INTERNAL_TRANSFER_ID) {
+    return null;
+  }
+  const label =
+    input.label.replace(/\s+/g, " ").trim().slice(0, MERCHANT_RULE_LABEL_MAX) ||
+    merchantKey;
+
+  const same = list.filter(
+    (r) => r.kind === input.kind && r.merchantKey === merchantKey,
+  );
+  const previous = same.reduce<MerchantRule | null>(
+    (best, r) => (!best || outranks(r, best) ? r : best),
+    null,
+  );
+  if (!previous && list.length >= MERCHANT_RULES_LIMIT) return null;
+
+  const rule: MerchantRule = previous
+    ? { ...previous, categoryId, label, updatedAt: ctx.now }
+    : {
+        id: ctx.newId(),
+        kind: input.kind,
+        merchantKey,
+        categoryId,
+        label,
+        createdAt: ctx.now,
+        updatedAt: ctx.now,
+      };
+  const rest = list.filter((r) => !same.includes(r));
+  return { list: [...rest, rule], rule, previous };
+}
+
+/** Скасування {@link applyMerchantRule}: повертає попередній стан правила. */
+export function revertMerchantRuleChange(
+  list: readonly MerchantRule[],
+  change: Pick<MerchantRuleChange, "rule" | "previous">,
+): MerchantRule[] {
+  const without = list.filter((r) => r.id !== change.rule.id);
+  return change.previous ? [...without, change.previous] : without;
+}
+
+/**
+ * Видаляє правило мерчанта: усі записи з тим самим `(kind, merchantKey)`, що
+ * й у правила з цим `id` (інакше дубль від другого пристрою «воскресив» би
+ * видалене). `removed` — для скасування.
+ */
+export function removeMerchantRule(
+  list: readonly MerchantRule[],
+  id: string,
+): { list: MerchantRule[]; removed: MerchantRule[] } {
+  const target = list.find((r) => r.id === id);
+  if (!target) return { list: [...list], removed: [] };
+  const removed = list.filter(
+    (r) => r.kind === target.kind && r.merchantKey === target.merchantKey,
+  );
+  return { list: list.filter((r) => !removed.includes(r)), removed };
+}
+
+/** Скасування {@link removeMerchantRule}: повертає видалені правила (без дублів id). */
+export function restoreMerchantRules(
+  list: readonly MerchantRule[],
+  removed: readonly MerchantRule[],
+): MerchantRule[] {
+  const have = new Set(list.map((r) => r.id));
+  return [...list, ...removed.filter((r) => !have.has(r.id))];
+}

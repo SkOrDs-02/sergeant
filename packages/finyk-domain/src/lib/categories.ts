@@ -202,6 +202,25 @@ export function getMerchantRuleCategoryId(
   return known ? rule.categoryId : null;
 }
 
+/**
+ * Категорія, на яку вказує правило (id + підпис), або `null`, якщо її вже нема
+ * (власну категорію видалили). Для списку правил у Налаштуваннях і для
+ * підписів у тостах: резолвер сам показує категорію операції, а тут потрібна
+ * категорія САМОГО правила, без операції.
+ */
+export function resolveMerchantRuleCategory(
+  kind: MerchantRuleKind,
+  categoryId: string,
+  customCategories: CategoryLikeInput = [],
+): CategoryLike | null {
+  if (kind === "income") {
+    return isKnownIncomeCategoryId(categoryId, customCategories)
+      ? getIncomeCategory("", categoryId, customCategories)
+      : null;
+  }
+  return resolveExpenseOverride(categoryId, customCategories);
+}
+
 function isKnownIncomeCategoryId(
   id: string,
   customCategories: CategoryLikeInput,

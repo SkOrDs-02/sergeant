@@ -11,6 +11,7 @@ import { calcCategorySpent } from "./transactions";
 import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
+  resolveMerchantRuleCategory,
 } from "./categories";
 import { withMerchantRuleOverrides } from "./merchantRuleOverrides";
 import {
@@ -354,5 +355,44 @@ describe("withMerchantRuleOverrides — ефективна мапа для аг�
     const noRule = withMerchantRuleOverrides(txs, {}, new Map());
     expect(calcCategorySpent(txs, "restaurant", noRule)).toBe(0);
     expect(calcCategorySpent(txs, "food", noRule)).toBe(350);
+  });
+});
+
+describe("resolveMerchantRuleCategory — категорія самого правила (для списку в Налаштуваннях)", () => {
+  it("витрата: вбудована, ручна таксономія й власна категорія", () => {
+    expect(resolveMerchantRuleCategory("expense", "transport")?.id).toBe(
+      "transport",
+    );
+    expect(
+      resolveMerchantRuleCategory("expense", "custom-hobby", [
+        { id: "custom-hobby", label: "Хобі" },
+      ])?.label,
+    ).toBe("Хобі");
+  });
+
+  it("надходження: канонічні id й власна категорія надходжень", () => {
+    expect(resolveMerchantRuleCategory("income", "freelance")?.id).toBe(
+      "freelance",
+    );
+    expect(
+      resolveMerchantRuleCategory("income", "custom-rent", [
+        { id: "custom-rent", label: "Оренда", kind: "income" },
+      ])?.label,
+    ).toBe("Оренда");
+  });
+
+  it("видалена власна категорія → null (правило не діє)", () => {
+    expect(
+      resolveMerchantRuleCategory("expense", "custom-gone", []),
+    ).toBeNull();
+    expect(resolveMerchantRuleCategory("income", "custom-gone", [])).toBeNull();
+  });
+
+  it("власна категорія ВИТРАТ не годиться для надходження", () => {
+    expect(
+      resolveMerchantRuleCategory("income", "custom-hobby", [
+        { id: "custom-hobby", label: "Хобі" },
+      ]),
+    ).toBeNull();
   });
 });
