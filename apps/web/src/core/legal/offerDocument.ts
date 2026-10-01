@@ -11,6 +11,7 @@ import {
 export const offerDocument: LegalDocument = {
   eyebrow: "Public Offer",
   title: "Публічна оферта",
+  lastUpdated: "31 липня 2026",
   intro: `Цей документ – публічна оферта на укладення договору про надання платного доступу до Sergeant відповідно до статей 633, 641 Цивільного кодексу України. Оприлюднена ${EFFECTIVE_DATE}.`,
   sections: [
     {
