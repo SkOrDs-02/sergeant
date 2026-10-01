@@ -1,6 +1,6 @@
 # Плани харчування між пристроями
 
-> **Last touched:** 2026-08-10 by @claude. **Next review:** 2026-11-08.
+> **Last touched:** 2026-08-13 by @codex. **Next review:** 2026-11-11.
 > **Status:** Proposed — чекає на рішення founder-а. Не почато.
 
 Денний і тижневий плани харчування живуть на пристрої й **не** переїжджають
@@ -15,13 +15,19 @@
 (`/nutrition/*` — lazy-роут). Полагоджено в [#787](https://github.com/SkOrDs-02/sergeant/pull/787):
 плани тепер у localStorage через `nutritionStorage`
 ([`planStorage.ts`](../../../../apps/web/src/modules/nutrition/lib/planStorage.ts)).
+З 2026-08-13 ці device-local записи ізольовані за owner: ключ має owner-suffix,
+а envelope — `ownerId`. План одного account не видно іншому; новий план
+`local-anon` переноситься після входу, а legacy-запис без owner безпечно
+видаляється, бо його неможливо доведено приписати поточному account.
 
 Крос-девайс свідомо лишили поза тим PR — це не баг, а окрема фіча з іншою
 ціною.
 
 ## Чому localStorage, а не оп-лог
 
-У плану немає ані `id`, ані власника, ані історії. Сервер його **не
+У доменного плану немає ані `id`, ані серверного власника, ані історії.
+Локальний `ownerId` — лише privacy-partition сховища, а не нова синхронізована сутність.
+Сервер план **не
 зберігає взагалі**: [`day-plan.ts`](../../../../apps/server/src/modules/nutrition/day-plan.ts)
 і [`week-plan.ts`](../../../../apps/server/src/modules/nutrition/week-plan.ts) —
 чистий прохід у LLM, який віддає JSON і забуває про нього.

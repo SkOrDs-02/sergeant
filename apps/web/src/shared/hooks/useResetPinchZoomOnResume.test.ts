@@ -19,6 +19,19 @@ function setViewportMeta(content: string): HTMLMetaElement {
   return meta;
 }
 
+function openImagePicker(): HTMLInputElement {
+  const label = document.createElement("label");
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/*";
+  label.appendChild(input);
+  document.body.appendChild(label);
+  // Mirrors PhotoAnalyzeCard: the visible drop-zone is a label that
+  // activates its nested file input.
+  label.click();
+  return input;
+}
+
 describe("useResetPinchZoomOnResume", () => {
   const ORIGINAL_CONTENT = "width=device-width, initial-scale=1.0";
 
@@ -29,6 +42,7 @@ describe("useResetPinchZoomOnResume", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    document.body.innerHTML = "";
     document
       .querySelectorAll('meta[name="viewport"]')
       .forEach((el) => el.remove());
@@ -40,6 +54,7 @@ describe("useResetPinchZoomOnResume", () => {
       'meta[name="viewport"]',
     )!;
 
+    openImagePicker();
     Object.defineProperty(document, "visibilityState", {
       configurable: true,
       value: "visible",
@@ -75,6 +90,44 @@ describe("useResetPinchZoomOnResume", () => {
       'meta[name="viewport"]',
     )!;
 
+    openImagePicker();
+    window.dispatchEvent(new Event("pageshow"));
+
+    expect(meta.getAttribute("content")).toBe(
+      `${ORIGINAL_CONTENT}, maximum-scale=1`,
+    );
+    vi.advanceTimersByTime(50);
+    expect(meta.getAttribute("content")).toBe(ORIGINAL_CONTENT);
+  });
+
+  it("does not reset pinch zoom on an ordinary app resume", () => {
+    renderHook(() => useResetPinchZoomOnResume());
+    const meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="viewport"]',
+    )!;
+
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+    window.dispatchEvent(new Event("pageshow"));
+
+    expect(meta.getAttribute("content")).toBe(ORIGINAL_CONTENT);
+  });
+
+  it("coalesces overlapping resume events and restores the canonical viewport", () => {
+    renderHook(() => useResetPinchZoomOnResume());
+    const meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="viewport"]',
+    )!;
+
+    openImagePicker();
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
     window.dispatchEvent(new Event("pageshow"));
 
     expect(meta.getAttribute("content")).toBe(
@@ -95,5 +148,10 @@ describe("useResetPinchZoomOnResume", () => {
       expect.any(Function),
     );
     expect(removeWinSpy).toHaveBeenCalledWith("pageshow", expect.any(Function));
+    expect(removeDocSpy).toHaveBeenCalledWith(
+      "click",
+      expect.any(Function),
+      true,
+    );
   });
 });

@@ -141,6 +141,50 @@ describe("nutritionResponse normalizers", () => {
     expect(out.macros.kcal).toBe(165);
   });
 
+  it("normalizePhotoResult preserves explicit null macros as unknown", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Нечітка страва",
+      confidence: 0.4,
+      macros: {
+        kcal: null,
+        protein_g: null,
+        fat_g: null,
+        carbs_g: null,
+      },
+      questions: [],
+    });
+
+    expect(out.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+  });
+
+  it("normalizePhotoResult does not coerce blank or boolean macros to zero", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Нечітка страва",
+      confidence: 0.4,
+      macros: {
+        kcal: "",
+        protein_g: "   ",
+        fat_g: false,
+        carbs_g: "12.5",
+      },
+      questions: [],
+    });
+
+    expect(out.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: 12.5,
+    });
+  });
+
   it("normalizePhotoResult carries the not-food category through", () => {
     const cat = normalizePhotoResult({
       isFood: false,

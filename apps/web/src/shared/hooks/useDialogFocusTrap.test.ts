@@ -208,6 +208,89 @@ describe("useDialogFocusTrap — focus restoration", () => {
     unmount();
   });
 
+  it("cycles through an interactive toast action above the open dialog", () => {
+    const panel = document.createElement("div");
+    const first = document.createElement("button");
+    first.textContent = "First";
+    const last = document.createElement("button");
+    last.textContent = "Last";
+    panel.append(first, last);
+    document.body.appendChild(panel);
+
+    const toastTray = document.createElement("div");
+    toastTray.setAttribute("data-dialog-inert-exempt", "");
+    const undo = document.createElement("button");
+    undo.textContent = "Undo";
+    toastTray.appendChild(undo);
+    document.body.appendChild(toastTray);
+
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+    const { unmount } = renderHook(() => useDialogFocusTrap(true, ref));
+
+    last.focus();
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", cancelable: true }),
+    );
+    expect(document.activeElement).toBe(undo);
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", cancelable: true }),
+    );
+    expect(document.activeElement).toBe(first);
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        shiftKey: true,
+        cancelable: true,
+      }),
+    );
+    expect(document.activeElement).toBe(undo);
+    unmount();
+  });
+
+  it("lets only the top stacked dialog handle Tab with a toast present", () => {
+    const sheet = document.createElement("div");
+    const sheetFirst = document.createElement("button");
+    const sheetLast = document.createElement("button");
+    sheet.append(sheetFirst, sheetLast);
+    document.body.appendChild(sheet);
+
+    const confirm = document.createElement("div");
+    const confirmFirst = document.createElement("button");
+    const confirmLast = document.createElement("button");
+    confirm.append(confirmFirst, confirmLast);
+    document.body.appendChild(confirm);
+
+    const toastTray = document.createElement("div");
+    toastTray.setAttribute("data-dialog-inert-exempt", "");
+    const undo = document.createElement("button");
+    toastTray.appendChild(undo);
+    document.body.appendChild(toastTray);
+
+    const sheetRef = createRef<HTMLElement>();
+    Object.defineProperty(sheetRef, "current", { value: sheet });
+    const confirmRef = createRef<HTMLElement>();
+    Object.defineProperty(confirmRef, "current", { value: confirm });
+    const sheetHook = renderHook(() => useDialogFocusTrap(true, sheetRef));
+    const confirmHook = renderHook(() => useDialogFocusTrap(true, confirmRef));
+
+    confirmLast.focus();
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
+    );
+    expect(document.activeElement).toBe(undo);
+
+    document.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Tab", bubbles: true }),
+    );
+    expect(document.activeElement).toBe(confirmFirst);
+
+    confirmHook.unmount();
+    sheetHook.unmount();
+  });
+
   it("does not attempt to restore focus to <body>", () => {
     document.body.focus();
     expect(document.activeElement).toBe(document.body);

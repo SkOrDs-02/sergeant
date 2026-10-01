@@ -24,6 +24,7 @@ import {
   markSignalShown,
   resetSignalAttribution,
 } from "../../../core/observability/valueSignalAttribution";
+import { getCatTiers } from "@sergeant/finyk-domain/domain/categories";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 
 const CATEGORIES = [
@@ -49,6 +50,7 @@ function renderPicker(
     overrideCatId: string | null;
     note: string | undefined;
     onNoteChange: (id: string, note: string | null) => void;
+    categories: typeof CATEGORIES;
   }> = {},
 ) {
   const onCatChange = vi.fn();
@@ -56,7 +58,7 @@ function renderPicker(
   const onNoteChange = props.onNoteChange ?? vi.fn();
   render(
     <TxRowCategoryPicker
-      categories={CATEGORIES}
+      categories={props.categories ?? CATEGORIES}
       currentCatId="food"
       overrideCatId={props.overrideCatId ?? null}
       txId="tx-1"
@@ -105,6 +107,18 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
     const payload = JSON.stringify(categorizedPayload());
     expect(payload).not.toContain("custom_1755000000");
     expect(payload).not.toContain("репетитор");
+  });
+
+  it("тримає той самий колір кастомної категорії після зміни порядку", () => {
+    renderPicker();
+    const before = screen.getByText("Мій репетитор").closest("button");
+    const expectedTint = getCatTiers("custom_1755000000").tint;
+    expect(before?.style.getPropertyValue("--cat-tint")).toBe(expectedTint);
+
+    cleanup();
+    renderPicker({ categories: [...CATEGORIES].reverse() });
+    const after = screen.getByText("Мій репетитор").closest("button");
+    expect(after?.style.getPropertyValue("--cat-tint")).toBe(expectedTint);
   });
 
   it("скидання override їде як action=cleared", () => {

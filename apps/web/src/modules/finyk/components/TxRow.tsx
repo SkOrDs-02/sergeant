@@ -68,19 +68,11 @@ function TxRowImpl({
         customCategories as readonly unknown[],
       );
   const catName = cat.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
-  const rawDescription = tx.description?.trim() ?? "";
-  // До 2026-08-13 форма підставляла підпис вибраної категорії в порожню
-  // необов'язкову назву. На старих ручних записах не дублюємо цей
-  // згенерований текст над таким самим чипом категорії. Власні назви, які
-  // відрізняються від підпису категорії, лишаються без змін.
-  const hasLegacyGeneratedDescription =
-    tx._manual === true &&
-    rawDescription.localeCompare(catName, "uk-UA", {
-      sensitivity: "accent",
-    }) === 0;
-  const displayDescription = hasLegacyGeneratedDescription
-    ? ""
-    : rawDescription;
+  // Старі записи не мають provenance-поля, яке відрізняє автопідставлений
+  // підпис категорії від власної назви користувача. Тому рядкова рівність
+  // не є безпечною евристикою: справжня назва «Кава» у категорії «Кава»
+  // мусить лишитися видимою.
+  const displayDescription = tx.description?.trim() ?? "";
 
   const account: MonoAccount | undefined = accounts?.find(
     (a) => a.id === tx._accountId,

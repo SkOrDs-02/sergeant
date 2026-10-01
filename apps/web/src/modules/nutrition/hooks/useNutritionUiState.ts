@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-13
  * Status: Active
  */
 import { useState, type Dispatch, type SetStateAction } from "react";
@@ -87,7 +87,10 @@ export interface UseNutritionUiStateResult {
   setPantryScanStatus: Dispatch<SetStateAction<string>>;
 }
 
-export function useNutritionUiState(): UseNutritionUiStateResult {
+export function useNutritionUiState(
+  planOwnerId: string | null = null,
+  claimAnonymousPlan = false,
+): UseNutritionUiStateResult {
   const [editingMeal, setEditingMeal] = useState<EditingMealState | null>(null);
 
   const [recipes, setRecipes] = useState<NutritionRecipe[]>([]);
@@ -105,7 +108,7 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
     dayPlan,
     setDayPlan,
     dayPlanSavedAt,
-  } = useNutritionPlanState();
+  } = useNutritionPlanState(planOwnerId, claimAnonymousPlan);
   const [weekPlanBusy, setWeekPlanBusy] = useState(false);
 
   const [dayPlanBusy, setDayPlanBusy] = useState(false);

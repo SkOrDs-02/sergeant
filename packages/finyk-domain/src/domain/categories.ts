@@ -61,26 +61,38 @@ const CATEGORY_COLOR_ALIASES: Readonly<Record<string, string>> = {
   tech: "shopping",
 };
 
-/**
- * Порядок кольорів для КАСТОМНИХ категорій — беремо за `idx`, щоб колір
- * не стрибав між рендерами.
- */
+/** Палітра для кастомних категорій; конкретний tier визначається лише з id. */
 const FALLBACK_TIERS: CategoryColorTiers[] = categoryFallbackOrder.map(
   (id) => categoryColors[id],
 );
 
+function stableFallbackIndex(categoryId: string): number {
+  // FNV-1a over UTF-16 code units. IDs are persisted values, so hashing the
+  // ID keeps a category on the same tier in pickers, rows and charts even
+  // when each surface sorts its list differently.
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < categoryId.length; i += 1) {
+    hash ^= categoryId.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) % FALLBACK_TIERS.length;
+}
+
 /**
- * Повний набір тирів для категорії: вбудована → з палітри за індексом.
+ * Повний набір тирів для категорії: вбудована → стабільна палітра за id.
  *
  * Кастомний колір користувача (`custom.color`) тут НЕ враховується — це
  * один довільний hex без пари під текст, тож із нього не можна зібрати
  * читабельну пару фон/чорнило. Для сирого кольору є `getCatColor`.
  */
-export function getCatTiers(categoryId: string, idx = 0): CategoryColorTiers {
+export function getCatTiers(categoryId: string, _idx = 0): CategoryColorTiers {
   const paletteId = CATEGORY_COLOR_ALIASES[categoryId] ?? categoryId;
   const base = CAT_TIERS[paletteId];
   if (base) return base;
-  return FALLBACK_TIERS[idx % FALLBACK_TIERS.length] ?? FALLBACK_TIERS[0]!;
+  // `_idx` лишився у сигнатурі для source compatibility зі старими
+  // викликами. Позиція у списку більше не впливає на колір.
+  void _idx;
+  return FALLBACK_TIERS[stableFallbackIndex(categoryId)] ?? FALLBACK_TIERS[0]!;
 }
 
 // Повертає HEX-колір для категорії: базовий → користувацький → з палітри.

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-10
+ * Last validated: 2026-08-13
  * Status: Active
  * Стан денного і тижневого планів + їхня персистенція.
  *
@@ -49,56 +49,119 @@ export interface UseNutritionPlanStateResult {
   dayPlanSavedAt: number | null;
 }
 
-export function useNutritionPlanState(): UseNutritionPlanStateResult {
+interface NutritionPlanSnapshot {
+  dayPlan: NutritionDayPlan | null;
+  dayPlanSavedAt: number | null;
+  weekPlan: NutritionWeekPlan | null;
+  weekPlanRaw: string;
+}
+
+function loadSnapshot(
+  ownerId: string | null,
+  claimAnonymous: boolean,
+): NutritionPlanSnapshot {
+  const day = loadDayPlan(ownerId, claimAnonymous);
+  const week = loadWeekPlan(ownerId, claimAnonymous);
+  return {
+    dayPlan: day?.plan ?? null,
+    dayPlanSavedAt: day?.savedAt ?? null,
+    weekPlan: week?.plan ?? null,
+    weekPlanRaw: week?.raw ?? "",
+  };
+}
+
+export function useNutritionPlanState(
+  ownerId: string | null,
+  claimAnonymous = false,
+): UseNutritionPlanStateResult {
+  const [initialSnapshot] = useState(() =>
+    loadSnapshot(ownerId, claimAnonymous),
+  );
   const [dayPlan, setDayPlan] = useState<NutritionDayPlan | null>(
-    () => loadDayPlan()?.plan ?? null,
+    initialSnapshot.dayPlan,
   );
   const [dayPlanSavedAt, setDayPlanSavedAt] = useState<number | null>(
-    () => loadDayPlan()?.savedAt ?? null,
+    initialSnapshot.dayPlanSavedAt,
   );
 
   const [weekPlan, setWeekPlan] = useState<NutritionWeekPlan | null>(
-    () => loadWeekPlan()?.plan ?? null,
+    initialSnapshot.weekPlan,
   );
   const [weekPlanRaw, setWeekPlanRaw] = useState<string>(
-    () => loadWeekPlan()?.raw ?? "",
+    initialSnapshot.weekPlanRaw,
   );
+
+  const activeOwnerRef = useRef(ownerId);
+  const pendingDayHydrationRef = useRef<{
+    ownerId: string | null;
+    value: NutritionDayPlan | null;
+  } | null>({ ownerId, value: dayPlan });
+  const pendingWeekHydrationRef = useRef<{
+    ownerId: string | null;
+    plan: NutritionWeekPlan | null;
+    raw: string;
+  } | null>({ ownerId, plan: weekPlan, raw: weekPlanRaw });
+
+  useEffect(() => {
+    if (activeOwnerRef.current === ownerId) return;
+    const next = loadSnapshot(ownerId, claimAnonymous);
+    activeOwnerRef.current = ownerId;
+    pendingDayHydrationRef.current = { ownerId, value: next.dayPlan };
+    pendingWeekHydrationRef.current = {
+      ownerId,
+      plan: next.weekPlan,
+      raw: next.weekPlanRaw,
+    };
+    setDayPlan(next.dayPlan);
+    setDayPlanSavedAt(next.dayPlanSavedAt);
+    setWeekPlan(next.weekPlan);
+    setWeekPlanRaw(next.weekPlanRaw);
+  }, [claimAnonymous, ownerId]);
 
   // Перший прогін ефекту пропускається — і це не мікрооптимізація. Стан на
   // маунті вже дорівнює тому, що лежить у сховищі (його звідти й прочитали),
   // тож запис був би не просто зайвим: `saveDayPlan` штампує новий `savedAt`,
   // і кожне перемонтування «омолоджувало» б план, який ніхто не генерував.
   // Мітка часу перестала б означати те, для чого існує.
-  const dayPlanPristine = useRef(true);
   useEffect(() => {
-    if (dayPlanPristine.current) {
-      dayPlanPristine.current = false;
+    const pending = pendingDayHydrationRef.current;
+    if (pending?.ownerId === ownerId) {
+      if (Object.is(pending.value, dayPlan)) {
+        pendingDayHydrationRef.current = null;
+      }
       return;
     }
     // Мітка йде зі сховища, а не з окремого `Date.now()` тут — інакше вони
     // розійшлися б, і підпис у картці показував би не те, що збережено.
-    setDayPlanSavedAt(saveDayPlan(dayPlan));
-  }, [dayPlan]);
+    setDayPlanSavedAt(saveDayPlan(dayPlan, ownerId));
+  }, [dayPlan, ownerId]);
 
   // Обидва поля тижневого плану пишуться одним записом: `plan` і `raw` — це
   // два представлення однієї відповіді LLM, і розʼїхавшись вони дали б картку,
   // де структура з одного покоління, а сирий текст із іншого.
-  const weekPlanPristine = useRef(true);
   useEffect(() => {
-    if (weekPlanPristine.current) {
-      weekPlanPristine.current = false;
+    const pending = pendingWeekHydrationRef.current;
+    if (pending?.ownerId === ownerId) {
+      if (Object.is(pending.plan, weekPlan) && pending.raw === weekPlanRaw) {
+        pendingWeekHydrationRef.current = null;
+      }
       return;
     }
-    saveWeekPlan(weekPlan, weekPlanRaw);
-  }, [weekPlan, weekPlanRaw]);
+    saveWeekPlan(weekPlan, weekPlanRaw, ownerId);
+  }, [ownerId, weekPlan, weekPlanRaw]);
+
+  const ownerMatchesSnapshot = activeOwnerRef.current === ownerId;
 
   return {
-    weekPlan,
+    // Never expose one owner's snapshot during the render before the
+    // owner-change hydration effect runs. The setters stay stable; the UI
+    // sees an empty transition frame instead of account A's health data.
+    weekPlan: ownerMatchesSnapshot ? weekPlan : null,
     setWeekPlan,
-    weekPlanRaw,
+    weekPlanRaw: ownerMatchesSnapshot ? weekPlanRaw : "",
     setWeekPlanRaw,
-    dayPlan,
+    dayPlan: ownerMatchesSnapshot ? dayPlan : null,
     setDayPlan,
-    dayPlanSavedAt,
+    dayPlanSavedAt: ownerMatchesSnapshot ? dayPlanSavedAt : null,
   };
 }

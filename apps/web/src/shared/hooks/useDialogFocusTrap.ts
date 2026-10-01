@@ -1,5 +1,9 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+// Document key events reach every mounted trap. Keep an explicit stack so a
+// confirm dialog above a sheet is the only layer that handles Tab/Escape.
+const activeTrapPanels: HTMLElement[] = [];
+
 export interface DialogFocusTrapOptions {
   onEscape?: (() => void) | undefined;
   /**
@@ -69,6 +73,7 @@ export function useDialogFocusTrap(
     if (!open) return;
     const panel = containerRef.current;
     if (!panel) return;
+    activeTrapPanels.push(panel);
 
     // Snapshot the currently-focused element so we can restore focus
     // after the dialog closes. Skip body itself — restoring focus to
@@ -77,9 +82,9 @@ export function useDialogFocusTrap(
     previouslyFocusedRef.current =
       active instanceof HTMLElement && active !== document.body ? active : null;
 
-    const getFocusable = (): HTMLElement[] =>
+    const getFocusableWithin = (root: Element): HTMLElement[] =>
       Array.from(
-        panel.querySelectorAll<HTMLElement>(
+        root.querySelectorAll<HTMLElement>(
           'button:not([disabled]), [href], input:not([disabled]), select, textarea, [tabindex]:not([tabindex="-1"])',
         ),
       ).filter(
@@ -87,6 +92,26 @@ export function useDialogFocusTrap(
           !el.hasAttribute("disabled") &&
           el.getAttribute("aria-hidden") !== "true",
       );
+
+    const getPanelFocusable = (): HTMLElement[] => getFocusableWithin(panel);
+
+    // A portalled live surface can be deliberately exempt from modal
+    // background inerting (for example an Undo toast). Its actions must join
+    // the same keyboard loop or they remain clickable but unreachable by Tab.
+    const getFocusable = (): HTMLElement[] => {
+      const seen = new Set<HTMLElement>();
+      const nodes: HTMLElement[] = [];
+      const append = (node: HTMLElement) => {
+        if (seen.has(node)) return;
+        seen.add(node);
+        nodes.push(node);
+      };
+      getPanelFocusable().forEach(append);
+      document
+        .querySelectorAll<HTMLElement>("[data-dialog-inert-exempt]")
+        .forEach((root) => getFocusableWithin(root).forEach(append));
+      return nodes;
+    };
 
     // Move initial focus into the panel. Without this, modals opened
     // without a user-driven trigger (e.g. the WhatsNew release-notes
@@ -97,7 +122,7 @@ export function useDialogFocusTrap(
     // to the panel itself (with a transient `tabindex="-1"`) so that
     // even a content-only dialog keeps focus inside.
     if (!panel.contains(document.activeElement)) {
-      const initial = getFocusable()[0];
+      const initial = getPanelFocusable()[0];
       if (initial) {
         initial.focus({ preventScroll: true });
       } else {
@@ -120,6 +145,7 @@ export function useDialogFocusTrap(
     if (inertRoot) registerInertRoot(inertRoot);
 
     const onKeyDown = (e: KeyboardEvent) => {
+      if (activeTrapPanels[activeTrapPanels.length - 1] !== panel) return;
       if (e.key === "Escape") {
         const cb = onEscapeRef.current;
         if (cb) {
@@ -137,25 +163,29 @@ export function useDialogFocusTrap(
       // unmount that re-parented the focused node, an Esc-cancelled
       // close handler, etc.), pull it back to the appropriate edge of
       // the trap instead of letting Tab continue out of the dialog.
-      if (!panel.contains(document.activeElement)) {
+      const active = document.activeElement;
+      const activeIndex =
+        active instanceof HTMLElement ? nodes.indexOf(active) : -1;
+      if (activeIndex < 0) {
         e.preventDefault();
         (e.shiftKey ? last : first).focus();
         return;
       }
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else if (document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
+
+      // Portal DOM order is not stable, so drive one explicit sequence:
+      // dialog controls first, then global inert-exempt actions.
+      e.preventDefault();
+      const nextIndex = e.shiftKey
+        ? (activeIndex - 1 + nodes.length) % nodes.length
+        : (activeIndex + 1) % nodes.length;
+      nodes[nextIndex]?.focus();
     };
 
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      const stackIndex = activeTrapPanels.lastIndexOf(panel);
+      if (stackIndex >= 0) activeTrapPanels.splice(stackIndex, 1);
       // Un-inert the background BEFORE restoring focus: the restore
       // target lives in the subtree we just inerted, and `.focus()` is a
       // no-op on an element inside an `inert` subtree.
@@ -322,6 +352,7 @@ function syncInert(): void {
  * `afterEach` to keep cases independent.
  */
 export function __resetDialogInertForTests(): void {
+  activeTrapPanels.length = 0;
   for (const [el, record] of managedEls) {
     if (record.inert) el.removeAttribute("inert");
     if (record.ariaHidden) el.removeAttribute("aria-hidden");

@@ -74,20 +74,26 @@ describe("TxRow", () => {
     }
   });
 
-  it("does not duplicate a legacy auto-filled category label as the title", () => {
-    render(
+  it("keeps a genuine manual title that matches its custom category label", () => {
+    const { container } = render(
       <TxRow
         tx={mkTx({
-          description: "Розваги",
+          description: "Кава",
           mcc: 0,
-          categoryId: "entertainment",
+          categoryId: "custom-coffee",
           _manual: true,
         })}
+        customCategories={[{ id: "custom-coffee", label: "Кава" }]}
       />,
     );
 
-    expect(screen.getByText("Ручна витрата")).toBeInTheDocument();
-    expect(screen.getAllByText("Розваги")).toHaveLength(1);
+    expect(screen.getAllByText("Кава")).toHaveLength(2);
+    const expectedTint = getCatTiers("custom-coffee").tint;
+    const categoryChips = container.querySelectorAll<HTMLElement>(".cat-chip");
+    expect(categoryChips).toHaveLength(2);
+    for (const chip of categoryChips) {
+      expect(chip.style.getPropertyValue("--cat-tint")).toBe(expectedTint);
+    }
   });
 
   it("shows the AI badge for an auto-categorized expense", () => {

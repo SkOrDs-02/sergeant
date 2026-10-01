@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-08-13
  * Status: Active
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -58,6 +58,8 @@ import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { todayISODate } from "./lib/nutritionFormat";
 import { useToast } from "@shared/hooks/useToast";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
+import { useAuth } from "../../core/auth/AuthContext";
+import { useLocalUserId } from "../../core/auth/useLocalUserId";
 
 interface NutritionAppProps {
   onBackToHub?: () => void;
@@ -79,6 +81,13 @@ export default function NutritionApp({
   pwaAction,
   onPwaActionConsumed,
 }: NutritionAppProps = {}) {
+  const { user } = useAuth();
+  const localUserId = useLocalUserId();
+  // Plans live in localStorage, not SQLite. Once auth has a real user id,
+  // scope them immediately instead of waiting for the separate anonymous
+  // SQLite migration gate; otherwise a plan generated during that gate would
+  // be written under `null` and silently lost.
+  const planOwnerId = user?.id ?? localUserId;
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -134,7 +143,7 @@ export default function NutritionApp({
 
   const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
   const log = useNutritionLog();
-  const ui = useNutritionUiState();
+  const ui = useNutritionUiState(planOwnerId, Boolean(user?.id));
   const photo = usePhotoAnalysis({ setBusy, setErr, setStatusText });
   const shopping = useShoppingList();
 

@@ -9,6 +9,7 @@ const PLAN = {
   meals: [{ type: "lunch", title: "Гречка з куркою", kcal: 610 }],
   totalKcal: 610,
 };
+const OWNER_A = "account-a";
 
 describe("useNutritionPlanState", () => {
   beforeEach(() => {
@@ -16,7 +17,7 @@ describe("useNutritionPlanState", () => {
   });
 
   it("починає з порожнього стану, коли в сховищі нічого немає", () => {
-    const { result } = renderHook(() => useNutritionPlanState());
+    const { result } = renderHook(() => useNutritionPlanState(OWNER_A));
     expect(result.current.dayPlan).toBeNull();
     expect(result.current.weekPlan).toBeNull();
     expect(result.current.weekPlanRaw).toBe("");
@@ -26,26 +27,26 @@ describe("useNutritionPlanState", () => {
     // Перемонтування тут моделює і закриття застосунку, і перехід
     // «Хаб → Харчування»: `/nutrition/*` — lazy-роут, тож `NutritionApp`
     // розмонтовується в обох випадках однаково.
-    const first = renderHook(() => useNutritionPlanState());
+    const first = renderHook(() => useNutritionPlanState(OWNER_A));
     act(() => {
       first.result.current.setDayPlan(PLAN);
     });
     first.unmount();
 
-    const second = renderHook(() => useNutritionPlanState());
+    const second = renderHook(() => useNutritionPlanState(OWNER_A));
     expect(second.result.current.dayPlan).toEqual(PLAN);
   });
 
   it("повертає тижневий план разом із сирим текстом", () => {
     const weekPlan = { days: [{ day: "Пн", meals: [] }] };
-    const first = renderHook(() => useNutritionPlanState());
+    const first = renderHook(() => useNutritionPlanState(OWNER_A));
     act(() => {
       first.result.current.setWeekPlan(weekPlan);
       first.result.current.setWeekPlanRaw("сирий текст");
     });
     first.unmount();
 
-    const second = renderHook(() => useNutritionPlanState());
+    const second = renderHook(() => useNutritionPlanState(OWNER_A));
     expect(second.result.current.weekPlan).toEqual(weekPlan);
     expect(second.result.current.weekPlanRaw).toBe("сирий текст");
   });
@@ -54,15 +55,15 @@ describe("useNutritionPlanState", () => {
     // Регресійний пін на причину, через яку тут lazy-`useState`, а не
     // гідрація в ефекті: ефект запису відпрацював би раніше за гідрацію і
     // зніс би збережений план початковим `null`.
-    const first = renderHook(() => useNutritionPlanState());
+    const first = renderHook(() => useNutritionPlanState(OWNER_A));
     act(() => {
       first.result.current.setDayPlan(PLAN);
     });
     first.unmount();
 
-    renderHook(() => useNutritionPlanState()).unmount();
+    renderHook(() => useNutritionPlanState(OWNER_A)).unmount();
 
-    const third = renderHook(() => useNutritionPlanState());
+    const third = renderHook(() => useNutritionPlanState(OWNER_A));
     expect(third.result.current.dayPlan).toEqual(PLAN);
   });
 
@@ -73,41 +74,41 @@ describe("useNutritionPlanState", () => {
     //
     // Годинник підмінено навмисно: без цього обидва записи впали б в одну
     // мілісекунду і тест проходив би вхолосту, нічого не доводячи.
-    const first = renderHook(() => useNutritionPlanState());
+    const first = renderHook(() => useNutritionPlanState(OWNER_A));
     act(() => {
       first.result.current.setDayPlan(PLAN);
     });
     first.unmount();
-    const savedAt = loadDayPlan()?.savedAt;
+    const savedAt = loadDayPlan(OWNER_A)?.savedAt;
 
     const clock = vi
       .spyOn(Date, "now")
       .mockReturnValue((savedAt ?? 0) + 60_000);
-    renderHook(() => useNutritionPlanState()).unmount();
+    renderHook(() => useNutritionPlanState(OWNER_A)).unmount();
     clock.mockRestore();
 
-    expect(loadDayPlan()?.savedAt).toBe(savedAt);
+    expect(loadDayPlan(OWNER_A)?.savedAt).toBe(savedAt);
   });
 
   it("не «омолоджує» savedAt тижневого плану на перемонтуванні", () => {
-    const first = renderHook(() => useNutritionPlanState());
+    const first = renderHook(() => useNutritionPlanState(OWNER_A));
     act(() => {
       first.result.current.setWeekPlan({ days: [{ day: "Пн" }] });
     });
     first.unmount();
-    const savedAt = loadWeekPlan()?.savedAt;
+    const savedAt = loadWeekPlan(OWNER_A)?.savedAt;
 
     const clock = vi
       .spyOn(Date, "now")
       .mockReturnValue((savedAt ?? 0) + 60_000);
-    renderHook(() => useNutritionPlanState()).unmount();
+    renderHook(() => useNutritionPlanState(OWNER_A)).unmount();
     clock.mockRestore();
 
-    expect(loadWeekPlan()?.savedAt).toBe(savedAt);
+    expect(loadWeekPlan(OWNER_A)?.savedAt).toBe(savedAt);
   });
 
   it("прибирає план зі сховища, коли його знято", () => {
-    const first = renderHook(() => useNutritionPlanState());
+    const first = renderHook(() => useNutritionPlanState(OWNER_A));
     act(() => {
       first.result.current.setDayPlan(PLAN);
     });
@@ -116,7 +117,25 @@ describe("useNutritionPlanState", () => {
     });
     first.unmount();
 
-    const second = renderHook(() => useNutritionPlanState());
+    const second = renderHook(() => useNutritionPlanState(OWNER_A));
     expect(second.result.current.dayPlan).toBeNull();
+  });
+
+  it("гідратує ізольований стан при переході account A → anonymous → account B", () => {
+    const { result, rerender } = renderHook(
+      ({ ownerId }) => useNutritionPlanState(ownerId),
+      { initialProps: { ownerId: OWNER_A as string | null } },
+    );
+    act(() => {
+      result.current.setDayPlan(PLAN);
+    });
+
+    rerender({ ownerId: "local-anon" });
+    expect(result.current.dayPlan).toBeNull();
+
+    rerender({ ownerId: "account-b" });
+    expect(result.current.dayPlan).toBeNull();
+    expect(loadDayPlan(OWNER_A)?.plan).toEqual(PLAN);
+    expect(loadDayPlan("account-b")).toBeNull();
   });
 });

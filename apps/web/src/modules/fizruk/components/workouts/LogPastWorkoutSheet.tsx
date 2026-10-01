@@ -67,6 +67,7 @@ export function LogPastWorkoutSheet({
   const dateId = `${fieldsId}-date`;
   const startId = `${fieldsId}-start`;
   const endId = `${fieldsId}-end`;
+  const feedbackId = `${fieldsId}-feedback`;
 
   // Перераховуємо на КОЖНЕ відкриття, а не раз на монтування. Шіт живе в
   // дереві постійно (закритий = `open: false`), тож обчислений один раз
@@ -93,6 +94,12 @@ export function LogPastWorkoutSheet({
   );
 
   const blocked = !times || times.inFuture || times.implausiblyLong;
+  const dateInFuture = Boolean(date && today && date > today);
+  const dateInvalid = dateInFuture;
+  const startInvalid = Boolean(times?.implausiblyLong);
+  const endInvalid = Boolean(
+    times?.implausiblyLong || (times?.inFuture && !dateInFuture),
+  );
 
   return (
     <Sheet
@@ -131,6 +138,8 @@ export function LogPastWorkoutSheet({
               // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
               // сьогодні цим не ловиться — це робить `times.inFuture` нижче.
               max={today}
+              aria-invalid={dateInvalid || undefined}
+              aria-describedby={dateInvalid ? feedbackId : undefined}
               className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
               value={date}
               onChange={(e) => setDate(e.target.value)}
@@ -146,6 +155,8 @@ export function LogPastWorkoutSheet({
             <input
               id={startId}
               type="time"
+              aria-invalid={startInvalid || undefined}
+              aria-describedby={startInvalid ? feedbackId : undefined}
               className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
               value={start}
               onChange={(e) => setStart(e.target.value)}
@@ -161,6 +172,8 @@ export function LogPastWorkoutSheet({
             <input
               id={endId}
               type="time"
+              aria-invalid={endInvalid || undefined}
+              aria-describedby={endInvalid ? feedbackId : undefined}
               className="input-focus-fizruk mt-1 w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-style-body text-text"
               value={end}
               onChange={(e) => setEnd(e.target.value)}
@@ -173,11 +186,32 @@ export function LogPastWorkoutSheet({
             перенесений кінець їде в завтра; показати тут «завершення ще не
             настало» означало б пояснити наслідок і сховати причину. */}
         {times?.implausiblyLong ? (
-          <p className="text-style-caption text-subtle">{t.implausiblyLong}</p>
+          <p
+            id={feedbackId}
+            role="status"
+            aria-live="polite"
+            className="text-style-caption text-subtle"
+          >
+            {t.implausiblyLong}
+          </p>
         ) : times?.inFuture ? (
-          <p className="text-style-caption text-subtle">{t.inFuture}</p>
+          <p
+            id={feedbackId}
+            role="status"
+            aria-live="polite"
+            className="text-style-caption text-subtle"
+          >
+            {t.inFuture}
+          </p>
         ) : times?.crossesMidnight ? (
-          <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
+          <p
+            id={feedbackId}
+            role="status"
+            aria-live="polite"
+            className="text-style-caption text-subtle"
+          >
+            {t.crossesMidnight}
+          </p>
         ) : null}
       </div>
     </Sheet>

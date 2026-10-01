@@ -159,6 +159,20 @@ describe("LogPastWorkoutSheet", () => {
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
+  it("пов'язує помилку часу з полями й оголошує її допоміжним технологіям", () => {
+    setup();
+    fireEvent.change(field("Початок"), { target: { value: "18:00" } });
+    fireEvent.change(field("Завершення"), { target: { value: "16:00" } });
+
+    const message = screen.getByRole("status");
+    expect(message).toHaveTextContent(/Завершення раніше за початок/);
+    expect(message.id).not.toBe("");
+    expect(field("Початок")).toHaveAttribute("aria-invalid", "true");
+    expect(field("Завершення")).toHaveAttribute("aria-invalid", "true");
+    expect(field("Початок")).toHaveAttribute("aria-describedby", message.id);
+    expect(field("Завершення")).toHaveAttribute("aria-describedby", message.id);
+  });
+
   it("на минулій даті описка теж не проходить мовчки", () => {
     // Без стелі це просто лягало б у журнал 22-годинною сесією — тихо, бо
     // «наступного дня» звучить як нормальний стан.

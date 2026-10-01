@@ -10,37 +10,75 @@
  * `overflow: hidden`, which does nothing here because pinch-zoom pans the
  * *visual* viewport, not the document).
  *
- * Fix: on `visibilitychange`/`pageshow` — both fire when the camera sheet
- * closes and the page becomes visible again — briefly force
- * `maximum-scale=1` onto the viewport meta tag and restore the original
- * value right after. Toggling the attribute is what makes WebKit actually
- * recompute and reset the stuck scale; setting `maximum-scale=1`
- * permanently would block intentional pinch-zoom everywhere else.
+ * Fix: arm the reset only when an image file input opens, then consume the
+ * next `visibilitychange`/`pageshow` resume signal. Both resume events can
+ * fire for one picker, so the reset is single-flight and always restores the
+ * canonical pre-reset value. Ordinary app resumes stay untouched and
+ * intentional pinch-zoom keeps working everywhere else.
  */
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const VIEWPORT_RESET_DELAY_MS = 50;
 
-function resetPinchZoom(): void {
-  const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
-  const original = meta?.getAttribute("content");
-  if (!meta || !original) return;
-  meta.setAttribute("content", `${original}, maximum-scale=1`);
-  window.setTimeout(() => {
-    meta.setAttribute("content", original);
-  }, VIEWPORT_RESET_DELAY_MS);
-}
-
 export function useResetPinchZoomOnResume(): void {
+  const pickerPendingRef = useRef(false);
+  const resetTimerRef = useRef<number | null>(null);
+  const originalViewportRef = useRef<string | null>(null);
+  const resetMetaRef = useRef<HTMLMetaElement | null>(null);
+
   useEffect(() => {
+    const armForImagePicker = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.type !== "file" || !target.accept.includes("image/")) return;
+      pickerPendingRef.current = true;
+    };
+
+    const resetPinchZoom = () => {
+      if (!pickerPendingRef.current) return;
+      pickerPendingRef.current = false;
+      if (resetTimerRef.current !== null) return;
+
+      const meta = document.querySelector<HTMLMetaElement>(
+        'meta[name="viewport"]',
+      );
+      const original = meta?.getAttribute("content");
+      if (!meta || !original) return;
+
+      originalViewportRef.current = original;
+      resetMetaRef.current = meta;
+      meta.setAttribute("content", `${original}, maximum-scale=1`);
+      resetTimerRef.current = window.setTimeout(() => {
+        meta.setAttribute("content", original);
+        resetTimerRef.current = null;
+        originalViewportRef.current = null;
+        resetMetaRef.current = null;
+      }, VIEWPORT_RESET_DELAY_MS);
+    };
+
     const onVisibilityChange = () => {
       if (document.visibilityState === "visible") resetPinchZoom();
     };
+    document.addEventListener("click", armForImagePicker, true);
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("pageshow", resetPinchZoom);
     return () => {
+      document.removeEventListener("click", armForImagePicker, true);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("pageshow", resetPinchZoom);
+      pickerPendingRef.current = false;
+      if (resetTimerRef.current !== null) {
+        window.clearTimeout(resetTimerRef.current);
+        resetTimerRef.current = null;
+      }
+      if (resetMetaRef.current && originalViewportRef.current) {
+        resetMetaRef.current.setAttribute(
+          "content",
+          originalViewportRef.current,
+        );
+      }
+      originalViewportRef.current = null;
+      resetMetaRef.current = null;
     };
   }, []);
 }

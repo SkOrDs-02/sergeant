@@ -74,7 +74,9 @@ test("@critical nutrition: photo preview stays inside a 390px viewport", async (
   await waitForInitialSqliteRefresh(page, "nutrition");
 
   const photoDetails = page.getByTestId("nutrition-photo-details");
-  await photoDetails.getByText("Аналіз фото страви", { exact: true }).click();
+  await photoDetails
+    .getByRole("button", { name: /Аналіз фото страви/ })
+    .click();
   await photoDetails
     .locator('input[type="file"]')
     .setInputFiles(

@@ -3,6 +3,8 @@ function safeString(x: unknown, fallback = ""): string {
 }
 
 function safeNumberOrNull(x: unknown): number | null {
+  if (typeof x !== "number" && typeof x !== "string") return null;
+  if (typeof x === "string" && x.trim() === "") return null;
   const n = Number(x);
   return Number.isFinite(n) ? n : null;
 }

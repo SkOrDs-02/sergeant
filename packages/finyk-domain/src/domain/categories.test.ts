@@ -17,13 +17,13 @@ describe("categories: getCatColor", () => {
     expect(getCatColor("restaurant")).toBe(categoryColors.restaurant.solid);
   });
 
-  it("falls back to custom color, then palette by idx", () => {
+  it("falls back to a custom color, then a stable palette color by id", () => {
     expect(
       getCatColor("custom1", [{ id: "custom1", color: "#abcdef" } as never]),
     ).toBe("#abcdef");
     const a = getCatColor("unknown", [], 0);
     const b = getCatColor("unknown", [], 1);
-    expect(a).not.toBe(b);
+    expect(a).toBe(b);
   });
 });
 
@@ -34,10 +34,10 @@ describe("categories: getCatTiers", () => {
 
   // Кастомний hex свідомо ігнорується: один довільний колір не дає пари
   // фон/чорнило, тож чип із нього був би нечитабельним.
-  it("ignores the user's raw hex and wraps the fallback palette by idx", () => {
+  it("ignores the user's raw hex and keeps the fallback stable across list positions", () => {
     const a = getCatTiers("custom1", 0);
     const b = getCatTiers("custom1", 1);
-    expect(a).not.toBe(b);
+    expect(a).toBe(b);
     expect(getCatTiers("custom1", 0)).toBe(a);
   });
 });

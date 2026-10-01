@@ -16,8 +16,8 @@ import type { CSSProperties } from "react";
 import { getCatTiers } from "@sergeant/finyk-domain/domain/categories";
 
 /**
- * Змінні одного чипа. `idx` потрібен лише для кастомних категорій —
- * вбудовані мають власний тир і індекс ігнорують.
+ * Змінні одного чипа. `idx` збережений лише для сумісності зі старими
+ * викликами; fallback стабільно визначається з id категорії.
  */
 export function catChipVars(categoryId: string, idx = 0): CSSProperties {
   const t = getCatTiers(categoryId, idx);
