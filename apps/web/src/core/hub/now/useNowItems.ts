@@ -14,6 +14,14 @@
  * своїм id походження), а фільтр читає обидва — рядок зникає, за яким би id
  * його не відкинули.
  *
+ * «✕» ховає рядок до кінця ПОТОЧНОЇ особистої доби, не назавжди (рішення
+ * власника 2026-10-01; межа доби — годинник пристрою, ADR-0078). Id правил
+ * рекомендацій статичні, тож «назавжди» глушило сигнал на весь вік акаунта.
+ * Обидва сховища несуть мітку часу, застарілі записи без неї прострочені
+ * (`@shared/lib/insights/dismissedToday`). Відкинуте сьогодні — не втрачене:
+ * коли «Зараз» порожня лише через це, купа показує «Відкладено N · показати»,
+ * а `restorePostponed` повертає ці рядки.
+ *
  * Status: Scaffolded
  * @nextStep PR 2 осі дії монтує цей хук у `HubDashboard` (див. `nowItems.ts`).
  */
@@ -21,6 +29,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { useAllInsights } from "@shared/lib/insights/useAllInsights";
 import { useInsightDismissal } from "@shared/lib/insights/useInsightDismissal";
+import {
+  dismissalsOfToday,
+  isDismissedToday,
+} from "@shared/lib/insights/dismissedToday";
 import { generateRecommendations } from "../../lib/recommendationEngine";
 import { HUB_RECS_DISMISSED_KEY } from "../../insights/TodayFocusCard";
 import { mergeNowItems, type NowItem } from "./nowItems";
@@ -33,10 +45,14 @@ import { mergeNowItems, type NowItem } from "./nowItems";
 const RECOMPUTE_INTERVAL_MS = 2 * 60 * 1000;
 
 export interface UseNowItemsResult {
-  /** Відсортовано за спаданням пріоритету, без відкинутих. Без cap. */
+  /** Відсортовано за спаданням пріоритету, без відкинутих сьогодні. Без cap. */
   items: NowItem[];
-  /** Пише id походження в обидва сховища; рядок зникає негайно. */
+  /** Пише id походження в обидва сховища (до кінця доби); рядок зникає негайно. */
   dismiss: (item: NowItem) => void;
+  /** Скільки рядків сьогодні відкладено («✕») і зараз приховано. */
+  postponed: number;
+  /** Повертає всі відкладені сьогодні рядки («показати»). */
+  restorePostponed: () => void;
 }
 
 export function useNowItems(): UseNowItemsResult {
@@ -61,22 +77,53 @@ export function useNowItems(): UseNowItemsResult {
   // `useDashboardFocus`; мемоізувати нема на чому, масив щоразу новий.
   const recs = generateRecommendations();
 
-  const items = mergeNowItems(recs, insights).filter(
-    (item) =>
-      !(item.recId && dismissedRecs[item.recId]) &&
-      !(item.insightId && insightDismissal.isDismissed(item.insightId)),
-  );
+  const all = mergeNowItems(recs, insights);
+  // Відкинуто за БУДЬ-ЯКИМ із двох id, але лише СЬОГОДНІ: вчорашнє і запис без
+  // мітки часу не ховають нічого.
+  const isPostponed = (item: NowItem) =>
+    Boolean(
+      (item.recId && isDismissedToday(dismissedRecs[item.recId])) ||
+      (item.insightId && insightDismissal.isDismissed(item.insightId)),
+    );
+  const items = all.filter((item) => !isPostponed(item));
+  const postponedItems = all.filter(isPostponed);
 
   const dismiss = useCallback(
     (item: NowItem) => {
       if (item.recId) {
         const recId = item.recId;
-        setDismissedRecs((prev) => ({ ...prev, [recId]: Date.now() }));
+        // Заодно викидаємо прострочені id, щоб мапа не росла.
+        setDismissedRecs((prev) => ({
+          ...dismissalsOfToday(prev),
+          [recId]: Date.now(),
+        }));
       }
       if (item.insightId) insightDismissal.dismiss(item.insightId);
     },
     [setDismissedRecs, insightDismissal],
   );
 
-  return { items, dismiss };
+  // Знімає відкидання з обох сховищ для кожного відкладеного рядка (кожен
+  // зі своїм id походження).
+  const restorePostponed = () => {
+    const recIds = postponedItems.flatMap((i) => (i.recId ? [i.recId] : []));
+    const insightIds = postponedItems.flatMap((i) =>
+      i.insightId ? [i.insightId] : [],
+    );
+    if (recIds.length > 0) {
+      setDismissedRecs((prev) => {
+        const next = dismissalsOfToday(prev);
+        for (const id of recIds) delete next[id];
+        return next;
+      });
+    }
+    if (insightIds.length > 0) insightDismissal.restore(insightIds);
+  };
+
+  return {
+    items,
+    dismiss,
+    postponed: postponedItems.length,
+    restorePostponed,
+  };
 }

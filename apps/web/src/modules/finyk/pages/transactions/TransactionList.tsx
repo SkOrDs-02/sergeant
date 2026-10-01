@@ -174,6 +174,11 @@ export interface TransactionListProps {
    * Аналітики без жодного сліду в самому списку.
    */
   excludedStatTxIdSet: Set<string>;
+  /**
+   * Ноги скасованих платежів («Скасування. …»): рядок несе слово
+   * «скасовано» замість «не в статистиці» (`TxRowMetaChips`).
+   */
+  cancelledTxIdSet?: ReadonlySet<string> | undefined;
   txCategories: TxCategoriesMap;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation per bank transaction. */
@@ -234,6 +239,7 @@ export function TransactionList({
   selectedIds,
   hiddenTxIdSet,
   excludedStatTxIdSet,
+  cancelledTxIdSet,
   txCategories,
   txSplits,
   txNotes = {},
@@ -467,6 +473,7 @@ export function TransactionList({
                       selected={selectMode && selectedIds.has(t.id)}
                       hidden={hiddenTxIdSet.has(t.id)}
                       isExcludedFromStats={excludedStatTxIdSet.has(t.id)}
+                      isCancelled={cancelledTxIdSet?.has(t.id) ?? false}
                       overrideCatId={txCategories[t.id]}
                       txSplits={txSplits}
                       note={txNotes[t.id]}

@@ -27,6 +27,7 @@ import { logger } from "../../obs/logger.js";
 import {
   BillingConfigurationError,
   type BillingProvider,
+  type CancelSubscriptionOutcome,
   type ProviderCheckoutInput,
   type ProviderPortalInput,
 } from "./provider.js";
@@ -162,6 +163,7 @@ interface BillingRow {
   plan: string | null;
   status: string;
   current_period_end: Date | string | null;
+  cancel_at_period_end: boolean;
 }
 
 function serializeBillingRow(
@@ -177,6 +179,7 @@ function serializeBillingRow(
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
+          cancelAtPeriodEnd: row.cancel_at_period_end === true,
         }
       : {
           id: null,
@@ -185,8 +188,60 @@ function serializeBillingRow(
           status: null,
           active: false,
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
         },
   };
+}
+
+/**
+ * Відповідь `POST /api/request` — звичайний JSON (на відміну від callback-ів,
+ * де він загорнутий у base64 `data`). Нас цікавлять лише `result`/`status` і
+ * `err_code`; `err_description` і решту тіла навмисно не читаємо й не логуємо
+ * (Hard Rule #21: чужий текст відповіді може нести поля платежу).
+ */
+interface LiqPayApiResult {
+  result?: unknown;
+  status?: unknown;
+  err_code?: unknown;
+}
+
+async function readLiqPayApiResult(
+  response: Response,
+): Promise<LiqPayApiResult | null> {
+  try {
+    const parsed: unknown = await response.json();
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as LiqPayApiResult)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeToken(value: unknown): string {
+  return typeof value === "string" || typeof value === "number"
+    ? String(value).slice(0, 64)
+    : "-";
+}
+
+/**
+ * `unsubscribe` прийнято лише за явного підтвердження: `result:"ok"` або
+ * `status:"unsubscribed"`. Помилка, нерозпізнане тіло й не-JSON — відмова:
+ * «не знаю» тут гірше за «ні», бо людині скажуть «скасовано», а списання
+ * триватимуть.
+ */
+function assertUnsubscribeAccepted(body: LiqPayApiResult | null): void {
+  const accepted =
+    body !== null &&
+    body.result !== "error" &&
+    body.status !== "error" &&
+    body.status !== "failure" &&
+    (body.result === "ok" || body.status === "unsubscribed");
+  if (accepted) return;
+  throw new Error(
+    `LiqPay unsubscribe rejected: result=${safeToken(body?.result)} ` +
+      `status=${safeToken(body?.status)} err_code=${safeToken(body?.err_code)}`,
+  );
 }
 
 async function readLatestSubscription(
@@ -194,7 +249,7 @@ async function readLatestSubscription(
   userId: string,
 ): Promise<BillingRow | null> {
   const { rows } = await pool.query<BillingRow>(
-    `SELECT id, provider, plan, status, current_period_end
+    `SELECT id, provider, plan, status, current_period_end, cancel_at_period_end
        FROM subscriptions
       WHERE user_id = $1
       ORDER BY
@@ -439,11 +494,15 @@ export const liqpayProvider: BillingProvider = {
     }
   },
 
-  async cancelSubscription(pool: Pool, userId: string): Promise<void> {
+  async cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome> {
     const { rows } = await pool.query<{
       provider_subscription_id: string | null;
+      cancel_at_period_end: boolean;
     }>(
-      `SELECT provider_subscription_id
+      `SELECT provider_subscription_id, cancel_at_period_end
          FROM subscriptions
         WHERE user_id = $1 AND provider = 'liqpay'
           AND status IN ('active', 'trialing', 'past_due')
@@ -451,8 +510,14 @@ export const liqpayProvider: BillingProvider = {
         LIMIT 1`,
       [userId],
     );
-    const orderId = rows[0]?.provider_subscription_id;
-    if (!orderId) return; // нема активної LiqPay-підписки — no-op
+    const row = rows[0];
+    if (!row) return "none"; // нема активної LiqPay-підписки
+    // Уже скасовано до кінця періоду — LiqPay вдруге не смикаємо: що він
+    // відповість на повторний `unsubscribe`, нам не гарантовано, а скасування
+    // без того підтверджене.
+    if (row.cancel_at_period_end === true) return "already_canceling";
+    const orderId = row.provider_subscription_id;
+    if (!orderId) return "none"; // без order_id провайдеру нічого не наказати
 
     const { privateKey, publicKey } = getKeys();
     const payload = {
@@ -472,6 +537,11 @@ export const liqpayProvider: BillingProvider = {
     if (!response.ok) {
       throw new Error(`LiqPay unsubscribe failed: HTTP ${response.status}`);
     }
+    // LiqPay віддає помилки бізнес-рівня з HTTP 200 і `result:"error"` у JSON,
+    // тож `response.ok` нічого не доводить. Без цієї перевірки відмова
+    // провайдера читалась як успіх, а підписку позначали скасованою, хоча
+    // LiqPay далі списував гроші.
+    assertUnsubscribeAccepted(await readLiqPayApiResult(response));
 
     // Доступ лишається до кінця оплаченого періоду (ADR-1.11 семантика).
     await pool.query(
@@ -481,5 +551,6 @@ export const liqpayProvider: BillingProvider = {
           AND status IN ('active', 'trialing', 'past_due')`,
       [userId],
     );
+    return "canceled";
   },
 };

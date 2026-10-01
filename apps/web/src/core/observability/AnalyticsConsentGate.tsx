@@ -5,7 +5,7 @@
 import { lazy, Suspense, useSyncExternalStore } from "react";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { isOnboardingPath } from "../app/appPaths";
+import { isLegalRoutePath, isOnboardingPath } from "../app/appPaths";
 import {
   getAnalyticsDecision,
   isAnalyticsServerHydrated,
@@ -27,10 +27,15 @@ const AnalyticsConsentBanner = lazy(() => import("./AnalyticsConsentBanner"));
  * З 2026-10-01 банер — запасний шлях: на екранах онбордингу згоду питає його
  * власний крок (`OnboardingConsentStep`), тож тут банер там не показується.
  * Лишається для тих, хто вже минув онбординг і ніколи не відповідав.
+ *
+ * На юридичних сторінках (`/legal/*`) банер теж не показується: його посилання
+ * «Про приватність» веде якраз туди, і фіксований банер лишався б поверх самого
+ * тексту політики. Рішення при цьому не ухвалюється — на решті маршрутів банер
+ * з'явиться, доки згоди немає.
  */
 export function AnalyticsConsentGate() {
-  const { status } = useAuth();
   const { pathname } = useLocation();
+  const { status } = useAuth();
   const decision = useSyncExternalStore(
     subscribeAnalyticsConsent,
     getAnalyticsDecision,
@@ -44,6 +49,7 @@ export function AnalyticsConsentGate() {
 
   if (decision !== null) return null;
   if (isOnboardingPath(pathname)) return null;
+  if (isLegalRoutePath(pathname)) return null;
   if (status === "loading") return null;
   if (status === "authenticated" && !hydrated) return null;
 

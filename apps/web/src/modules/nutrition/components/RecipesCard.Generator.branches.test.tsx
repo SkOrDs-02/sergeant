@@ -68,6 +68,31 @@ describe("GeneratorCard", () => {
     expect(onAddToLog).toHaveBeenCalled();
   });
 
+  it("підписує ккал згенерованого рецепта як «на порцію»", () => {
+    // Макроси рецепта - на ОДНУ порцію (рішення власника 2026-10-01), а
+    // «+ У журнал» на згенерованій картці пише рівно одну порцію.
+    render(
+      <GeneratorCard
+        prefs={PREFS}
+        setPrefs={vi.fn()}
+        recommendRecipes={vi.fn()}
+        recipes={[
+          {
+            id: "gen-1",
+            title: "Салат",
+            servings: 2,
+            macros: { kcal: 180, protein_g: 5, fat_g: 10, carbs_g: 20 },
+          },
+        ]}
+        fmtMacro={(v) => String(v)}
+        onSave={vi.fn()}
+        onAddToLog={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("≈ ккал / порція")).toBeInTheDocument();
+    expect(screen.getByText("180")).toBeInTheDocument();
+  });
+
   it("shows empty-state after tried with no recipes", () => {
     render(
       <GeneratorCard

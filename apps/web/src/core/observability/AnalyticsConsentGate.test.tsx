@@ -12,8 +12,14 @@ vi.mock("@shared/api", () => ({
 
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useNavigate } from "react-router-dom";
+import { Link, MemoryRouter, useNavigate } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  LEGAL_COOKIES_PATH,
+  LEGAL_OFFER_PATH,
+  LEGAL_PRIVACY_PATH,
+  LEGAL_TERMS_PATH,
+} from "../app/appPaths";
 import { AnalyticsConsentGate } from "./AnalyticsConsentGate";
 import {
   __resetAnalyticsConsentForTests,
@@ -209,5 +215,37 @@ describe("AnalyticsConsentGate", () => {
         expect(screen.queryByTestId(BANNER)).toBeNull();
       },
     );
+  });
+
+  describe("юридичні сторінки", () => {
+    it.each([
+      LEGAL_PRIVACY_PATH,
+      LEGAL_TERMS_PATH,
+      LEGAL_COOKIES_PATH,
+      LEGAL_OFFER_PATH,
+    ])("не показує банер на %s, хоча рішення немає", async (path) => {
+      renderGate(path);
+      // Банер ліниво імпортується; даємо Suspense шанс відрендерити його,
+      // якщо гейт помилково його монтує.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      expect(screen.queryByTestId(BANNER)).toBeNull();
+      expect(getAnalyticsDecision()).toBeNull();
+    });
+
+    it("показує банер після виходу з юридичної сторінки, поки рішення немає", async () => {
+      const user = userEvent.setup();
+      render(
+        <MemoryRouter initialEntries={[LEGAL_PRIVACY_PATH]}>
+          <AnalyticsConsentGate />
+          <Link to="/">на головну</Link>
+        </MemoryRouter>,
+      );
+      expect(screen.queryByTestId(BANNER)).toBeNull();
+
+      await user.click(screen.getByRole("link", { name: "на головну" }));
+      expect(
+        await screen.findByTestId(BANNER, {}, LAZY_WAIT),
+      ).toBeInTheDocument();
+    });
   });
 });

@@ -51,6 +51,19 @@ describe("useNutritionRecipeCache", () => {
     expect(readMock).not.toHaveBeenCalled();
   });
 
+  it("читає кеш на сторінці «Комора»: вкладка «Покупки» бере згенеровані рецепти як джерело", () => {
+    readMock.mockReturnValue({
+      recipes: [{ id: "g1", title: "Омлет" }],
+      recipesRaw: "",
+    });
+    const setters = renderCache(
+      "pantry" as NutritionPage,
+      "plan" as MenuSubTab,
+    );
+    expect(readMock).toHaveBeenCalledWith("k1");
+    expect(setters.setRecipes).toHaveBeenCalledTimes(1);
+  });
+
   it("ignores an empty cache", () => {
     readMock.mockReturnValue({ recipes: [], recipesRaw: "" });
     const setters = renderCache(

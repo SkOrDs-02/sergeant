@@ -110,24 +110,35 @@ export function normalizeRecipeForSave(r: unknown): SavedRecipe {
 
 export async function listSavedRecipes(limit = 200): Promise<SavedRecipe[]> {
   try {
-    await ensureMigrated();
-    const db = await openSergeantDb();
-    if (!db) return [];
-    const tx = db.transaction(STORE, "readonly");
-    const store = tx.objectStore(STORE);
-    const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
-      const r = store.getAll();
-      r.onsuccess = () =>
-        resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
-      r.onerror = () => reject(r.error);
-    });
-    await txDone(tx);
-    return all
-      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
-      .slice(0, Math.max(1, Number(limit) || 200));
+    return await listSavedRecipesOrThrow(limit);
   } catch {
     return [];
   }
+}
+
+/**
+ * Те саме читання книги, але збій не перетворюється на `[]`. Для екранів, яким
+ * треба відрізнити «рецептів немає» від «книгу не вдалося прочитати»
+ * (`useSavedRecipes`). Решта читачів лишаються на `listSavedRecipes`.
+ */
+export async function listSavedRecipesOrThrow(
+  limit = 200,
+): Promise<SavedRecipe[]> {
+  await ensureMigrated();
+  const db = await openSergeantDb();
+  if (!db) throw new Error("Saved recipe storage unavailable");
+  const tx = db.transaction(STORE, "readonly");
+  const store = tx.objectStore(STORE);
+  const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
+    const r = store.getAll();
+    r.onsuccess = () =>
+      resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
+    r.onerror = () => reject(r.error);
+  });
+  await txDone(tx);
+  return all
+    .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+    .slice(0, Math.max(1, Number(limit) || 200));
 }
 
 export async function saveRecipeToBook(
