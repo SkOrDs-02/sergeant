@@ -29,7 +29,10 @@ export type FinykSearchTx = {
   date: string;
   amount: number;
   description: string;
+  /** Явний id категорії (override / серверний слаг / збережена), не резолвнутий. */
   category?: string | undefined;
+  /** MCC банківського рядка; ручні витрати його не мають. */
+  mcc?: number | undefined;
   type?: string | undefined;
   /**
    * Origin of the row, tagged at read time. Manual expenses (грн) come
