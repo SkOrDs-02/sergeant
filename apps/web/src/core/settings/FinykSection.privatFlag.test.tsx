@@ -30,6 +30,11 @@ vi.mock("./FinykWebhookServiceSection", () => ({
 vi.mock("./SilpoIntegrationSection", () => ({
   SilpoIntegrationSection: () => null,
 }));
+// Список правил категорій користується `useToast`, а цей набір не тримає
+// `ToastProvider` і перевіряє лише env-гейт ПриватБанку.
+vi.mock("./FinykMerchantRulesSection", () => ({
+  FinykMerchantRulesSection: () => null,
+}));
 vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => ({
     customCategories: [],

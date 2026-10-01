@@ -5,6 +5,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 
 interface TxListItemProps {
@@ -16,6 +17,8 @@ interface TxListItemProps {
   /** «Не враховувати у статистиці» (PR-F4) — threaded straight to `TxRow`. */
   isExcludedFromStats?: boolean | undefined;
   overrideCatId?: string | null | undefined;
+  /** Правила мерчантів — threaded straight to `TxRow`. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation for this transaction. */
   note?: string | undefined;
@@ -39,6 +42,7 @@ function TxListItemImpl({
   hidden,
   isExcludedFromStats = false,
   overrideCatId,
+  merchantRules,
   txSplits,
   note,
   accounts,
@@ -119,6 +123,7 @@ function TxListItemImpl({
             hidden={hidden}
             isExcludedFromStats={isExcludedFromStats}
             overrideCatId={overrideCatId}
+            merchantRules={merchantRules}
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}

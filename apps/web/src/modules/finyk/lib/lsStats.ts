@@ -11,6 +11,11 @@ import {
   buildFinykSpendingUniverse,
 } from "@sergeant/finyk-domain";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import {
+  buildMerchantRuleIndex,
+  type MerchantRule,
+} from "@sergeant/finyk-domain/lib/merchantRules";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
 import { getCachedFinykSqliteState } from "./sqliteReader";
@@ -45,6 +50,8 @@ interface FinykPrefsSources {
   txSplits: Record<string, unknown>;
   customCategories: CategoryLike[];
   budgets: Budget[];
+  /** Правила «Завжди так для цього магазину» (лише SQLite: у LS їх ніколи не було). */
+  merchantRules: MerchantRule[];
 }
 
 function asObject<T extends object>(value: unknown, fallback: T): T {
@@ -70,6 +77,7 @@ function readFinykPrefsSources(): FinykPrefsSources {
       txSplits: cache.txSplits as Record<string, unknown>,
       customCategories: cache.customCategories as CategoryLike[],
       budgets: cache.budgets,
+      merchantRules: cache.merchantRules ?? [],
     };
   }
   return {
@@ -92,6 +100,7 @@ function readFinykPrefsSources(): FinykPrefsSources {
       safeReadLS<CategoryLike[]>("finyk_custom_cats_v1", []),
     ),
     budgets: asArray<Budget>(safeReadLS<Budget[]>("finyk_budgets", [])),
+    merchantRules: [],
   };
 }
 
@@ -181,6 +190,18 @@ export function readFinykStatsContext(): FinykStatsContext {
     excludedStatTxIds: prefs.excludedStatTxIds,
   });
 
+  // Правила «Завжди так для цього магазину»: дайджест, коуч і quick-stats
+  // читають категорію з `txCategories[tx.id]`, тож віддаємо їм ЕФЕКТИВНУ мапу
+  // (явні override-и + виведене правилами). Виключення (`universe` вище) і
+  // тут рахуються з явних override-ів: правило не може зробити операцію
+  // переказом. Мапа лише для читання, у сховище не пишеться.
+  const txCategories = withMerchantRuleOverrides(
+    universe.transactions as BankTxLike[],
+    prefs.txCategories,
+    buildMerchantRuleIndex(prefs.merchantRules),
+    prefs.customCategories,
+  ) as Record<string, string>;
+
   return {
     txs: universe.transactions as BankTxLike[],
     // Excluded-set бере і мапу оверрайдів, і мітку на самій транзакції
@@ -189,7 +210,7 @@ export function readFinykStatsContext(): FinykStatsContext {
     excludedTxIds: universe.excludedTxIds,
     hiddenTxIds: prefs.hiddenTxIds,
     txSplits: prefs.txSplits,
-    txCategories: prefs.txCategories,
+    txCategories,
     customCategories: prefs.customCategories,
     budgets: prefs.budgets,
   };
