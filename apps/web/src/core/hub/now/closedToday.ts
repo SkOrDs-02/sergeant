@@ -19,7 +19,12 @@
  * Status: Active
  */
 
-import { formatMoney, pluralUa } from "@sergeant/shared";
+import {
+  formatMoney,
+  kyivDayStartMs,
+  pluralUa,
+  toKyivISODate,
+} from "@sergeant/shared";
 import { Recommendations } from "@sergeant/insights";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
@@ -32,6 +37,7 @@ import { getDayMacros, resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { WEEK_KCAL_OVER_TOLERANCE } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
+import { shiftDayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
@@ -173,11 +179,15 @@ function fizrukClosed(todayKey: string): ClosedTodayItem | null {
 }
 
 function finykClosed(now: Date, recs: readonly Rec[]): ClosedTodayItem | null {
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
+  // Доба для ГРОШЕЙ — київська (рішення власника 2026-10-01, ADR-0078): так
+  // само її ріжуть денна картка про темп і «Звіти», тож «Витрати: N ₴» тут
+  // збігається з «Сьогодні N ₴» там. Решта рядків купи (звички, їжа,
+  // тренування) лишаються на добі телефона — `todayKey` у `computeClosedToday`.
+  const todayKey = toKyivISODate(now);
   const { txs, excludedTxIds, txSplits, budgets } = readFinykStatsContext();
   const { totalSpent } = calcFinykPeriodAggregate(txs, {
-    start: startOfDay.getTime(),
+    start: kyivDayStartMs(todayKey),
+    end: kyivDayStartMs(shiftDayKey(todayKey, 1)),
     excludedTxIds,
     txSplits,
   });

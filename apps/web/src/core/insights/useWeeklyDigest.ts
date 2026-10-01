@@ -34,6 +34,7 @@ import {
   loadNutritionLog,
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import {
@@ -126,8 +127,14 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
   const { txs, excludedTxIds, txSplits, txCategories, customCategories } =
     readFinykStatsContext();
 
-  const monday = weekKeyToDeviceMondayMs(weekKey);
-  const sunday = monday + 7 * 86_400_000;
+  // Тиждень дайджесту названо ключем-понеділком ПРИСТРОЮ (він спільний зі
+  // звичками, їжею й тренуваннями, які пишуться за годинником телефона,
+  // ADR-0078), а гроші до цих семи дат відносить КИЇВСЬКИЙ день транзакції:
+  // пн–нд за Києвом, вікно `[пн 00:00, наступний пн 00:00)` (рішення власника
+  // 2026-10-01, `METRICS_VERSION` 17). Для київського пристрою це те саме
+  // вікно, що було; поза Києвом біля опівночі транзакція лягає в той самий
+  // тиждень, що й у Звітах і Аналітиці Фініка, а не в сусідній.
+  const { startMs: monday, endMs: sunday } = weekWindowByMondayKey(weekKey);
 
   // AI-NOTE: Раніше aggregateFinyk парсив `finyk_tx_cache`/`finyk_hidden_txs`/
   // `finyk_tx_cats` напряму і виключав лише hidden + internal_transfer. Тепер

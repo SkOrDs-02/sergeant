@@ -75,6 +75,29 @@ export function kyivCalendarDaysBetween(aMs: number, bMs: number): number {
   return Math.round((a - b) / DAY_MS);
 }
 
+const KYIV_HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Kyiv",
+  hour: "numeric",
+  // h23, а не hour12:false: деякі рушії при hour12:false віддають "24" о
+  // півночі, а нам потрібен 0..23.
+  hourCycle: "h23",
+});
+
+/**
+ * Година доби (0–23) за **Europe/Kyiv** для моменту `d`. Пара до
+ * {@link toKyivISODate}: та каже, до якої київської доби належить момент, ця —
+ * котра там зараз година. Потрібна порогам «після 14:00» над грошима, які
+ * рахують ДОБУ за Києвом: ні годинник пристрою, ні його пояс не мають на
+ * неї впливу. Returns `NaN` for unparseable input.
+ */
+export function kyivHour(d: Date | number | string = Date.now()): number {
+  const ms = (d instanceof Date ? d : new Date(d)).getTime();
+  if (Number.isNaN(ms)) return NaN;
+  const hour = Number(KYIV_HOUR_FORMATTER.format(ms));
+  // Страховка від рушія, що попри h23 віддає "24": це північ.
+  return hour === 24 ? 0 : hour;
+}
+
 const KYIV_WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
   timeZone: "Europe/Kyiv",
   weekday: "short",
