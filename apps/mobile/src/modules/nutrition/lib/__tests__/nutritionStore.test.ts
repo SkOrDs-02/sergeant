@@ -283,6 +283,35 @@ describe("mobile nutritionStore — shopping list", () => {
     expect(out.categories[0]!.items[0]!.name).toBe("Морква");
   });
 
+  // Одна таксономія з коморою (рішення власника 2026-10-01): збережений список
+  // зі старими назвами категорій на читанні зводиться до категорій комори.
+  it("loadShoppingList мігрує старі назви категорій у категорії комори", () => {
+    const item = (id: string, name: string) => ({
+      id,
+      name,
+      quantity: "",
+      note: "",
+      checked: false,
+    });
+    __setNutritionSqliteCacheForTests({
+      shoppingList: {
+        categories: [
+          {
+            name: "Мʼясо та риба",
+            items: [item("a", "Лосось"), item("b", "Курка")],
+          },
+          { name: "Яйця", items: [item("c", "Яйця")] },
+        ],
+      },
+    });
+    const out = loadShoppingList();
+    expect(out.categories.map((c) => c.name)).toEqual([
+      "Риба та морепродукти",
+      "Мʼясо та птиця",
+      "Молочні та яйця",
+    ]);
+  });
+
   it("saveShoppingList dispatches a dual-write op and never touches MMKV", () => {
     saveShoppingList({
       categories: [{ name: "Овочі", items: [{ id: "a", name: "Морква" }] }],

@@ -33,6 +33,7 @@ import {
   Milk,
   Moon,
   Package,
+  Sandwich,
   Sparkle,
   UtensilsCrossed,
   Wheat,
@@ -54,6 +55,9 @@ export const NUTRITION_GLYPH_ICONS: Record<string, LucideIcon> = {
   dumbbell: Dumbbell,
   egg: Egg,
   fish: Fish,
+  // Банка намазок: у lucide-react-native немає `Jar`, а `Sandwich` читається
+  // як «щось, що мажуть на хліб».
+  jar: Sandwich,
   leaf: Leaf,
   moon: Moon,
   package: Package,

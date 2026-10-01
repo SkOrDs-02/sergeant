@@ -10,7 +10,7 @@ import {
   toggleShoppingItem,
   removeCheckedItems,
   getCheckedItems,
-  normalizeShoppingList,
+  migrateShoppingListCategories,
   addManualShoppingItem,
   mergeGeneratedShoppingList,
   type AddShoppingItemInput,
@@ -39,7 +39,7 @@ export function useShoppingList(): UseShoppingListResult {
       const cache = getCachedNutritionSqliteState();
       return cache.refreshedAt === null
         ? undefined
-        : normalizeShoppingList(cache.shoppingList);
+        : migrateShoppingListCategories(cache.shoppingList);
     },
     () => loadShoppingList(),
   );

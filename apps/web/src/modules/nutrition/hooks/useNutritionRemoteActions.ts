@@ -33,7 +33,10 @@ import type {
   NutritionRecipe as UiNutritionRecipe,
   NutritionWeekPlan as UiNutritionWeekPlan,
 } from "./useNutritionUiState";
-import type { ShoppingCategory } from "../lib/shoppingListStorage";
+import {
+  migrateShoppingListCategories,
+  type ShoppingCategory,
+} from "../lib/shoppingListStorage";
 import { failedCopy } from "@shared/i18n/failedCopy";
 
 type AnySetter<T = unknown> =
@@ -239,7 +242,7 @@ function toNumber(value: unknown, fallback: number): number {
 function adaptShoppingCategories(
   categories: readonly NutritionShoppingCategory[],
 ): ShoppingCategory[] {
-  return categories.map((cat, catIdx) => ({
+  const minted = categories.map((cat, catIdx) => ({
     name: String(cat.name ?? ""),
     items: (Array.isArray(cat.items) ? cat.items : []).map((it, itIdx) => ({
       id: `sl_${catIdx}_${itIdx}_${generatePrefixedId("sl")}`,
@@ -249,6 +252,10 @@ function adaptShoppingCategories(
       checked: false,
     })),
   }));
+  // Одна таксономія з коморою (рішення власника 2026-10-01): модель просить
+  // категорії комори, але стара чи вигадана назва («Мʼясо та риба») зводиться
+  // до них за назвою позиції, а не потрапляє в список як є.
+  return migrateShoppingListCategories({ categories: minted }).categories;
 }
 
 export function useNutritionRemoteActions({
