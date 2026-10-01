@@ -17,7 +17,7 @@
 ## Enforced by
 
 - **eslint-rule** — sergeant-design/ai-marker-syntax (error)
-- **ci** - `.github/workflows/ai-legacy-scan.yml` (`node scripts/check-ai-legacy.mjs --check --require-issue`, гейт PR з 2026-09-29, [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md))
+- **ci** - `.github/workflows/ai-legacy-scan.yml` (`node scripts/check-ai-legacy.mjs --check --require-issue`; з 2026-09-30 щопонеділка і вручну, на PR не біжить, [ADR-0102](../../adr/0102-github-actions-ci-and-autodeploy.md); до того гейт PR з 2026-09-29, [ADR-0101](../../adr/0101-github-primary-host-ci-returns.md))
 - **ci** - SUSPENDED з 2026-09-23 (у `.github/workflows/` кроку досі немає, не в `pnpm lint`/`pnpm check`, перевірено 2026-09-29): pnpm dead-code:files (honours @scaffolded markers); `ci.yml` ганяє лише `pnpm knip`
 
 > **Не гейт, а лічильник:** `pnpm lint:lifecycle-markers`

@@ -4,10 +4,11 @@ name: Nightly full audit + dependency check
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  schedule:
-    - cron: "0 3 * * *" # UTC 03:00 daily
   workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
 
 permissions:
   contents: read

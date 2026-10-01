@@ -1,1 +1,4 @@
-node scripts/pre-push-merged-pr.mjs "$@"
+# Тримає `main` у трунку D:\Sergeant свіжим, бо `core.hooksPath` указує на
+# `.husky/_` саме трунку (див. scripts/lib/refresh-trunk-main.mjs). Не гейт:
+# будь-яка помилка тут мовчазна, пуш не зупиняє.
+node --input-type=module -e "import(\"./scripts/lib/refresh-trunk-main.mjs\").then((m) => m.refreshTrunkMain())"
