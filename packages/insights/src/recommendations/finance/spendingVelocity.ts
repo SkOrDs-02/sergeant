@@ -1,59 +1,51 @@
-// Rule: тренд витрат — цей тиждень vs минулий (нормалізуємо до того ж дня
-// тижня). Спрацьовує тільки з середи (dowIdx ≥ 2), щоб не блимати у пн/вт
-// з мінімумом даних.
+// Rule: тренд витрат — цей календарний тиждень (пн–нд за Києвом) проти того
+// самого відрізка минулого: на початку тижня пн–ср стоять проти пн–ср, а не
+// неповний тиждень проти повного (`weekSliceWindows`, рішення власника
+// 2026-10-01, f1). Спрацьовує тільки з середи, щоб не блимати у пн/вт із
+// мінімумом даних.
 
 import type { Rule } from "../types.js";
 import {
   financeExcludedTxIds,
   type FinanceContext,
 } from "../financeContext.js";
-import { formatNumberUk, kyivMondayStartMs } from "@sergeant/shared";
+import { formatNumberUk } from "@sergeant/shared";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
+import { weekSliceWindows } from "@sergeant/finyk-domain/domain/weekSlices";
 
-// Фінансовий період — Kyiv-anchored (domain invariant, AGENTS.md § Domain
-// invariants), не годинник пристрою.
-function startOfWeek(d: Date): Date {
-  return new Date(kyivMondayStartMs(d));
-}
+/** Мінімум прожитих днів тижня (пн = 1), з якого порівняння має сенс: з середи. */
+const MIN_DAYS_ELAPSED = 3;
 
 export const spendingVelocityRule: Rule<FinanceContext> = {
   id: "finyk.spending_velocity",
   module: "finyk",
   evaluate(ctx) {
-    const now = ctx.now;
-    const thisWeekStart = startOfWeek(now);
-    const prevWeekStart = new Date(thisWeekStart);
-    prevWeekStart.setDate(prevWeekStart.getDate() - 7);
-    const dowIdx = (now.getDay() + 6) % 7;
-    if (dowIdx < 2) return [];
+    const { daysElapsed, current, previous } = weekSliceWindows(ctx.now);
+    if (daysElapsed < MIN_DAYS_ELAPSED) return [];
 
     const excludedTxIds = financeExcludedTxIds(ctx);
 
     // Банк — через канонічний агрегатор (враховує спліти й виключені id),
     // ручні витрати — окремо, calcFinykPeriodAggregate їх не бачить.
-    const sumSpending = (start: Date, end: Date): number => {
+    const sumSpending = (startMs: number, endMs: number): number => {
       const bank = calcFinykPeriodAggregate(ctx.transactions, {
-        start: start.getTime(),
-        end: end.getTime(),
+        start: startMs,
+        end: endMs,
         excludedTxIds,
         txSplits: ctx.txSplits ?? {},
       }).totalSpent;
       let manual = 0;
       for (const me of ctx.manualExpenses) {
         const ts = new Date(me.date).getTime();
-        if (ts >= start.getTime() && ts < end.getTime()) {
+        if (ts >= startMs && ts < endMs) {
           manual += Math.abs(Number(me.amount) || 0);
         }
       }
       return bank + manual;
     };
 
-    const cmpEnd = new Date(thisWeekStart);
-    cmpEnd.setDate(cmpEnd.getDate() + dowIdx + 1);
-    const prevCmpEnd = new Date(prevWeekStart);
-    prevCmpEnd.setDate(prevCmpEnd.getDate() + dowIdx + 1);
-    const thisSpend = sumSpending(thisWeekStart, cmpEnd);
-    const prevSpend = sumSpending(prevWeekStart, prevCmpEnd);
+    const thisSpend = sumSpending(current.startMs, current.endMs);
+    const prevSpend = sumSpending(previous.startMs, previous.endMs);
     if (prevSpend < 500 || thisSpend <= 0) return [];
 
     const ratio = thisSpend / prevSpend;

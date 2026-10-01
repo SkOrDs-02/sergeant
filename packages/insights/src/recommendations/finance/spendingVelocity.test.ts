@@ -1,13 +1,15 @@
-// Per-rule тести для `spendingVelocityRule` — тренд витрат «цей тиждень» vs
-// «минулий тиждень», нормалізований до того ж дня тижня. Покривають усі
+// Per-rule тести для `spendingVelocityRule` — тренд витрат «цей календарний
+// тиждень (пн–нд за Києвом)» vs «той самий відрізок минулого». Покривають усі
 // гілки: dow guard, prevSpend floor, ratio thresholds, hidden/transfer
-// фільтрацію, агрегування manualExpenses.
+// фільтрацію, агрегування manualExpenses, а також однакові відрізки тижня
+// (рішення власника 2026-10-01, f1).
 //
-// Часові зони: рулза у `setHours(0,0,0,0)` спирається на локальну TZ, тому
-// тести покладаються на UTC-середовище (CI runner і dev-VM усі в UTC). Якщо
-// у майбутньому це зміниться — заюзаємо `vi.useFakeTimers()` + детермінований
-// TZ. Поки що легше тримати тести максимально близько до прод-форми Date-API.
+// Часові зони: правило читає `ctx.now`, а день тижня й межі бере за Києвом
+// (`weekSliceWindows`). Тести задають `now` у UTC-полудень, де київська й
+// локальна дати збігаються.
 import { describe, it, expect } from "vitest";
+import { formatNumberUk } from "@sergeant/shared";
+import { buildWeekReport } from "@sergeant/finyk-domain/domain/weekReport";
 import { spendingVelocityRule } from "./spendingVelocity.js";
 import type {
   FinanceContext,
@@ -310,5 +312,83 @@ describe("spendingVelocityRule — manualExpenses агрегування", () =>
     expect(() => spendingVelocityRule.evaluate(c)).not.toThrow();
     const rec = spendingVelocityRule.evaluate(c)[0];
     expect(rec?.id).toBe("spending_velocity_high");
+  });
+});
+
+describe("spendingVelocityRule — однакові відрізки календарного тижня (f1)", () => {
+  const spendingAt = (id: string, uah: number, iso: string): Transaction =>
+    spending(id, uah, new Date(iso).getTime());
+
+  it("у середу порівнює пн–ср з пн–ср минулого тижня, а не з повним тижнем", () => {
+    const c = ctx({
+      // Ср 2025-06-18: цей тиждень пн 16 – ср 18, минулий пн 9 – ср 11.
+      transactions: [
+        spendingAt("this", 1500, "2025-06-17T10:00:00Z"),
+        spendingAt("prev", 1000, "2025-06-10T10:00:00Z"),
+        // Четвер–неділя минулого тижня — поза відрізком: повний тиждень
+        // (6000) дав би ratio < 1, і картка промовчала б.
+        spendingAt("prev-thu", 2500, "2025-06-12T10:00:00Z"),
+        spendingAt("prev-sun", 2500, "2025-06-15T10:00:00Z"),
+      ],
+    });
+    const rec = spendingVelocityRule.evaluate(c)[0];
+    expect(rec?.id).toBe("spending_velocity_high");
+    expect(rec?.title).toContain("50%");
+  });
+
+  it("день тижня й межі рахуються за Києвом, а не за годинником пристрою", () => {
+    // Вівторок 22:30 UTC = середа 01:30 за Києвом (UTC+3 влітку): у Києві це
+    // вже середа, тож відрізок «пн–ср», і картка активна. За годинником
+    // пристрою в UTC це ще вівторок, і правило мовчало.
+    // Витрата цього тижня стоїть на понеділку, а не на «сьогодні» пристрою:
+    // інакше спрацювала б денна картка, і тижнева мовчала б (f2).
+    const c = ctx({
+      now: new Date("2025-06-17T22:30:00Z"),
+      transactions: [
+        spendingAt("this", 1500, "2025-06-16T10:00:00Z"),
+        spendingAt("prev", 1000, "2025-06-10T10:00:00Z"),
+      ],
+    });
+    expect(spendingVelocityRule.evaluate(c)[0]?.id).toBe(
+      "spending_velocity_high",
+    );
+  });
+
+  it("тиждень через перехід на зимовий час: межі доби лишаються київськими", () => {
+    // Київ переходить на зимовий час 2025-10-26 о 04:00 (+3 → +2): неділя має
+    // 25 годин. Середа 2025-10-29 — тиждень пн 27 – ср 29 проти пн 20 – ср 22.
+    const c = ctx({
+      now: new Date("2025-10-29T12:00:00Z"),
+      transactions: [
+        // Перша мить тижня за Києвом: 2025-10-27T00:00+02:00.
+        spendingAt("this-edge", 1500, "2025-10-26T22:00:00Z"),
+        // Перша мить минулого тижня: 2025-10-20T00:00+03:00.
+        spendingAt("prev-edge", 1000, "2025-10-19T21:00:00Z"),
+        // Четвер 23 — вже поза відрізком «пн–ср» минулого тижня.
+        spendingAt("prev-after", 9000, "2025-10-22T21:00:00Z"),
+      ],
+    });
+    const rec = spendingVelocityRule.evaluate(c)[0];
+    expect(rec?.id).toBe("spending_velocity_high");
+    expect(rec?.title).toContain("50%");
+  });
+
+  it("числа картки збігаються з «Тиждень у цифрах» на тих самих даних", () => {
+    const txs: Transaction[] = [
+      spendingAt("this", 1500, "2025-06-17T10:00:00Z"),
+      spendingAt("prev", 1000, "2025-06-10T10:00:00Z"),
+      spendingAt("prev-thu", 2500, "2025-06-12T10:00:00Z"),
+    ];
+    const rec = spendingVelocityRule.evaluate(ctx({ transactions: txs }))[0];
+    const report = buildWeekReport(txs as never, { now: WED_NOON });
+    expect(report.total).toMatchObject({
+      spentMinor: 150_000,
+      prevMinor: 100_000,
+    });
+    expect(Math.round(report.total?.delta.pct ?? 0)).toBe(50);
+    expect(rec?.title).toContain("50%");
+    expect(rec?.body).toBe(
+      `За такий же проміжок: ${formatNumberUk(1500)} ₴ vs ${formatNumberUk(1000)} ₴`,
+    );
   });
 });

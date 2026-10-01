@@ -19,7 +19,7 @@ import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-com
 import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import type { Habit } from "@sergeant/routine-domain/types";
-import { deviceMondayStart } from "@sergeant/shared";
+import { deviceMondayStart, toKyivISODate } from "@sergeant/shared";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -42,12 +42,14 @@ export function localDateKey(d: Date = new Date()): string {
 export { addDays };
 
 /* eslint-disable sergeant-design/prefer-kyiv-time --
-   Pre-existing kyiv-time burndown (Theme 1), успадкований від inline-логіки
-   `HubReports.tsx`. Ці date-helper-и читають host-local частини дати; переведення
-   їх на `@shared/lib/time/kyivTime` рухає МЕЖІ ДОБИ для всіх чотирьох звітних
-   карток одразу, тож це окрема задача з власним `METRICS_VERSION`, а не
-   побічний ефект зміни знаменника. Скоуп disable-у обмежений блоком
-   date-helper-ів нижче — агрегатори під ним правило перевіряє як завжди. */
+   Вісь днів (пн–нд, 1-ше – останнє) — календарні дати за годинником ПРИСТРОЮ
+   (ADR-0078): так живуть звички, їжа й тренування. Гроші ріжуться за Києвом,
+   і це робить не вісь, а те, ЯК кожен запис потрапляє на день: `aggregateSpending`
+   бере київський день-ключ транзакції, а `reportWindows().money` — київське
+   «сьогодні» (рішення власника 2026-10-01, f6; інакше Звіти біля опівночі
+   розходились з Аналітикою Фініка, що ріже дні за Києвом). Скоуп disable-у
+   обмежений блоком date-helper-ів нижче — агрегатори під ним правило
+   перевіряє як завжди. */
 
 /**
  * Тиждень: пн–нд (Kyiv-style; getDay() = 0 = неділя). Місяць: 1-ше – останнє
@@ -104,6 +106,28 @@ export interface ReportWindows {
   prevAll: string[];
   /** Поточний період ще не скінчився, тож `prev` обрізано до тієї ж довжини. */
   partial: boolean;
+  /**
+   * Ті самі вікна для ГРОШЕЙ: «сьогодні» тут київське, а не годинник
+   * телефона. Біля опівночі (або поза Києвом) воно може на день відрізнятись
+   * від `cur`/`prev`, тож витрати рахуються до тієї ж доби, до якої їх
+   * відносить Аналітика Фініка. Вісь `dates` спільна.
+   */
+  money: { cur: string[]; prev: string[]; partial: boolean };
+}
+
+/** Вікна «до сьогодні» і «стільки ж перших днів попереднього періоду». */
+function windowsUpTo(
+  dates: readonly string[],
+  prevDates: readonly string[],
+  today: string,
+): { cur: string[]; prev: string[]; partial: boolean } {
+  const cur = dates.filter((d) => d <= today);
+  const partial = cur.length < dates.length;
+  return {
+    cur,
+    prev: partial ? prevDates.slice(0, cur.length) : [...prevDates],
+    partial,
+  };
 }
 
 /**
@@ -123,15 +147,12 @@ export function reportWindows(
   const prevRange = getPeriodRange(period, offset - 1, now);
   const dates = datesInRange(curRange.start, curRange.end);
   const prevDates = datesInRange(prevRange.start, prevRange.end);
-  const today = localDateKey(now);
-  const cur = dates.filter((d) => d <= today);
-  const partial = cur.length < dates.length;
+  const device = windowsUpTo(dates, prevDates, localDateKey(now));
   return {
     dates,
-    cur,
-    prev: partial ? prevDates.slice(0, cur.length) : prevDates,
+    ...device,
     prevAll: prevDates,
-    partial,
+    money: windowsUpTo(dates, prevDates, toKyivISODate(now)),
   };
 }
 
@@ -213,7 +234,8 @@ export interface SpendingInputs {
  * Делегує до `calcFinykSpendingByDate` (єдиний source-of-truth для
  * Фінік-агрегації — використовується також у Overview/digest). Тут лише
  * адаптуємо вхід під Hub-Reports форму (dateSet з рядкових ключів +
- * `localDateKey` як локалізатор).
+ * київський день-ключ як локалізатор: гроші ріжуться за Києвом, а не за
+ * годинником телефона, f6 «Одна правда про витрати»).
  */
 export function aggregateSpending(
   inputs: SpendingInputs,
@@ -223,7 +245,7 @@ export function aggregateSpending(
     excludedTxIds: inputs.excludedTxIds,
     txSplits: inputs.txSplits,
     dateSet: new Set(dates),
-    localDateKeyFn: localDateKey,
+    localDateKeyFn: toKyivISODate,
   });
 }
 
@@ -380,8 +402,8 @@ export function aggregateReport(
       prev: aggregateWorkouts(inputs.rawFizrukWorkouts, w.prev),
     },
     spending: {
-      cur: aggregateSpending(inputs.finyk, w.cur),
-      prev: aggregateSpending(inputs.finyk, w.prev),
+      cur: aggregateSpending(inputs.finyk, w.money.cur),
+      prev: aggregateSpending(inputs.finyk, w.money.prev),
     },
     habits: {
       cur: aggregateHabits(inputs.routineState, w.cur),
