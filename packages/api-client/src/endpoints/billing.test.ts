@@ -11,6 +11,7 @@
 //    server-side regression that drops the field would surface as a
 //    parsing error rather than an undefined redirect on the web client.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { isApiError } from "../ApiError";
 import { createHttpClient } from "../httpClient";
 import { firstCall } from "../__test-utils/firstCall";
 import {
@@ -135,6 +136,7 @@ describe("createBillingEndpoints.status", () => {
       status: "active",
       active: true,
       currentPeriodEnd: "2026-05-20T00:00:00.000Z",
+      cancelAtPeriodEnd: true,
     };
     const fetchMock = mockFetchOnce({ subscription, access: ACCESS });
     const http = createHttpClient({ baseUrl: "https://api.example.com" });
@@ -143,9 +145,51 @@ describe("createBillingEndpoints.status", () => {
     const res = await billing.status();
 
     expect(res).toEqual({ subscription, access: ACCESS });
+    expect(res.subscription.cancelAtPeriodEnd).toBe(true);
     const [url, init] = firstCall(fetchMock);
     expect(String(url)).toBe("https://api.example.com/api/v1/billing/status");
     expect((init as RequestInit).method ?? "GET").toBe("GET");
+  });
+
+  // Rolling deploy: web (Vercel) і сервер (Coolify) викочуються окремо, тож
+  // новий клієнт читає відповідь старого сервера без `cancelAtPeriodEnd`.
+  // Схема мусить не кидати, а читати це як «не скасовано».
+  it("defaults cancelAtPeriodEnd to false when an older server omits it", async () => {
+    mockFetchOnce({
+      subscription: {
+        id: 42,
+        provider: "liqpay",
+        plan: "pro",
+        status: "active",
+        active: true,
+        currentPeriodEnd: "2026-05-20T00:00:00.000Z",
+      },
+      access: ACCESS,
+    });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+
+    const res = await billing.status();
+
+    expect(res.subscription.cancelAtPeriodEnd).toBe(false);
+  });
+
+  it("rejects a non-boolean cancelAtPeriodEnd", async () => {
+    mockFetchOnce({
+      subscription: {
+        id: 42,
+        provider: "liqpay",
+        plan: "pro",
+        status: "active",
+        active: true,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: "yes",
+      },
+      access: ACCESS,
+    });
+    const http = createHttpClient({ baseUrl: "https://api.example.com" });
+    const billing = createBillingEndpoints(http);
+    await expect(billing.status()).rejects.toThrow();
   });
 
   it("returns a null subscription (no active plan) verbatim", async () => {
@@ -247,6 +291,32 @@ describe("createBillingEndpoints.cancel", () => {
     expect(String(url)).toBe("https://api.example.com/api/v1/billing/cancel");
     expect((init as RequestInit).method).toBe("POST");
   });
+
+  it.each([
+    [409, "NO_ACTIVE_SUBSCRIPTION"],
+    [502, "PROVIDER_CANCEL_FAILED"],
+  ])(
+    "surfaces a %i %s response as an ApiError instead of a fake success",
+    async (status, code) => {
+      globalThis.fetch = vi.fn(async () =>
+        jsonResponse({ error: "nope", code }, { status }),
+      ) as unknown as typeof fetch;
+      const http = createHttpClient({ baseUrl: "https://api.example.com" });
+      const billing = createBillingEndpoints(http);
+
+      let caught: unknown;
+      try {
+        await billing.cancel();
+      } catch (err) {
+        caught = err;
+      }
+
+      expect(isApiError(caught)).toBe(true);
+      if (!isApiError(caught)) return;
+      expect(caught.status).toBe(status);
+      expect(caught.body).toMatchObject({ code });
+    },
+  );
 });
 
 describe("createBillingEndpoints.providers", () => {

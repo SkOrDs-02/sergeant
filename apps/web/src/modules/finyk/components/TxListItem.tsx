@@ -16,6 +16,8 @@ interface TxListItemProps {
   hidden: boolean;
   /** «Не враховувати у статистиці» (PR-F4) — threaded straight to `TxRow`. */
   isExcludedFromStats?: boolean | undefined;
+  /** Нога скасованого платежу — threaded straight to `TxRow`. */
+  isCancelled?: boolean | undefined;
   overrideCatId?: string | null | undefined;
   /** Правила мерчантів — threaded straight to `TxRow`. */
   merchantRules?: MerchantRuleIndex | undefined;
@@ -41,6 +43,7 @@ function TxListItemImpl({
   selected,
   hidden,
   isExcludedFromStats = false,
+  isCancelled = false,
   overrideCatId,
   merchantRules,
   txSplits,
@@ -122,6 +125,7 @@ function TxListItemImpl({
             onClick={onOpenDetails ? () => onOpenDetails(tx) : undefined}
             hidden={hidden}
             isExcludedFromStats={isExcludedFromStats}
+            isCancelled={isCancelled}
             overrideCatId={overrideCatId}
             merchantRules={merchantRules}
             accounts={accounts}

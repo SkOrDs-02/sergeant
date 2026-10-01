@@ -23,6 +23,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PactV4 } from "@pact-foundation/pact";
 
+import { isApiError } from "../../ApiError";
 import { createHttpClient } from "../../httpClient";
 import { createBillingEndpoints } from "../../endpoints/billing";
 import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
@@ -133,6 +134,7 @@ describe(
               status: "active",
               active: true,
               currentPeriodEnd: "2026-06-20T00:00:00.000Z",
+              cancelAtPeriodEnd: false,
             },
             access: accessSnapshot("pro"),
           });
@@ -147,8 +149,52 @@ describe(
           // leak Hard Rule #1 guards for money fields.
           expect(typeof out.subscription.id).toBe("number");
           expect(out.subscription.id).toBe(42);
+          expect(out.subscription.cancelAtPeriodEnd).toBe(false);
           expect(out.access.state).toBe("pro");
           expect(out.access.meters.aiActions.limit).toBeNull();
+        });
+    });
+
+    // «Скасувати Premium» лишало рядок `active`, а `cancel_at_period_end`
+    // у відповідь не потрапляв, тож UI не відрізняв «діє» від «скасовано,
+    // діє до кінця періоду».
+    it("returns an active subscription that is scheduled to cancel at period end", async () => {
+      await pact
+        .addInteraction()
+        .given(
+          "user-pact-001 has an active liqpay subscription with cancel_at_period_end",
+        )
+        .uponReceiving(
+          "a GET /api/v1/billing/status request (cancel scheduled)",
+        )
+        .withRequest("GET", "/api/v1/billing/status", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            subscription: {
+              id: 42,
+              provider: "liqpay",
+              plan: "pro",
+              status: "active",
+              active: true,
+              currentPeriodEnd: "2026-06-20T00:00:00.000Z",
+              cancelAtPeriodEnd: true,
+            },
+            access: accessSnapshot("pro"),
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const billing = createBillingEndpoints(http);
+          const out = await billing.status();
+          // Статус лишається `active`: саме тому прапорець окремий.
+          expect(out.subscription.status).toBe("active");
+          expect(out.subscription.cancelAtPeriodEnd).toBe(true);
+          expect(out.subscription.currentPeriodEnd).toBe(
+            "2026-06-20T00:00:00.000Z",
+          );
         });
     });
 
@@ -170,6 +216,7 @@ describe(
               status: null,
               active: false,
               currentPeriodEnd: null,
+              cancelAtPeriodEnd: false,
             },
             access: accessSnapshot("free"),
           });
@@ -257,6 +304,44 @@ describe(
           const billing = createBillingEndpoints(http);
           const out = await billing.cancel();
           expect(out).toEqual({ ok: true });
+        });
+    });
+
+    // Раніше роут віддавав `{ok:true}` завжди, тож «нічого скасовувати»
+    // (founder, `provider='manual'`, немає підписки) виглядало як успіх.
+    it("rejects with 409 NO_ACTIVE_SUBSCRIPTION when there is nothing to cancel", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-003 has a manual grant and no provider subscription")
+        .uponReceiving(
+          "a POST /api/v1/billing/cancel request (nothing to cancel)",
+        )
+        .withRequest("POST", "/api/v1/billing/cancel", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(409, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            error: "No active subscription to cancel",
+            code: "NO_ACTIVE_SUBSCRIPTION",
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const billing = createBillingEndpoints(http);
+
+          let caught: unknown;
+          try {
+            await billing.cancel();
+          } catch (err) {
+            caught = err;
+          }
+
+          expect(isApiError(caught)).toBe(true);
+          if (!isApiError(caught)) return;
+          expect(caught.status).toBe(409);
+          expect(caught.serverMessage).toBe("No active subscription to cancel");
+          expect(caught.body).toMatchObject({ code: "NO_ACTIVE_SUBSCRIPTION" });
         });
     });
   },

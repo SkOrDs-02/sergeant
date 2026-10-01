@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { StatusColor } from "@sergeant/design-tokens";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
@@ -13,10 +13,16 @@ import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { generateRecommendations } from "../lib/recommendationEngine";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import {
+  dismissalsOfToday,
+  isDismissedToday,
+} from "@shared/lib/insights/dismissedToday";
 import { coreMessages } from "@shared/i18n/uk.core";
 
-// Reuse the same dismissed-map key HubRecommendations used so user
-// dismissals remain stable across the redesign. Експортується для
+// Reuse the same dismissed-map key HubRecommendations used so the storage
+// contract stays stable across the redesign. Значення — `ts` відкидання, і
+// діє воно ДО КІНЦЯ ПОТОЧНОЇ ОСОБИСТОЇ ДОБИ (рішення власника 2026-10-01):
+// старі записи без сьогоднішньої мітки прострочені. Експортується для
 // `core/hub/now/useNowItems.ts`: об'єднаний список «Зараз» пише dismiss у
 // ТЕ САМЕ сховище, а не заводить третє (спека `hub-action-axis.md`).
 export const HUB_RECS_DISMISSED_KEY = "hub_recs_dismissed_v1";
@@ -86,14 +92,19 @@ export function useDashboardFocus() {
 
   const recs = generateRecommendations();
 
-  const visible = useMemo(
-    () => recs.filter((r) => !dismissed[r.id]),
-    [recs, dismissed],
-  );
+  // Без `useMemo`: `recs` — новий масив на кожен рендер (мемо нічого не
+  // економило), а предикат залежить від поточної доби, якої в залежностях
+  // немає, — застосунок, відкритий через північ, мусить повернути вчорашні
+  // відкидання на найближчому рендері (тік раз на дві хвилини).
+  const visible = recs.filter((r) => !isDismissedToday(dismissed[r.id]));
 
   const dismiss = useCallback(
     (id: string) => {
-      setDismissed((prev) => ({ ...prev, [id]: Date.now() }));
+      // Заодно викидаємо прострочені id, щоб мапа не росла.
+      setDismissed((prev) => ({
+        ...dismissalsOfToday(prev),
+        [id]: Date.now(),
+      }));
     },
     [setDismissed],
   );
@@ -101,6 +112,13 @@ export function useDashboardFocus() {
   return {
     focus: visible[0] || null,
     rest: visible.slice(1),
+    /**
+     * Усі активні рекомендації, НЕ відфільтровані відкиданням. Потрібні тому,
+     * хто питає «чи активна ця ситуація», а не «що показати»: купа «Закрито
+     * сьогодні» не має казати «перевищень немає», бо картку про перевищення
+     * сховали.
+     */
+    allRecs: recs,
     dismiss,
   };
 }

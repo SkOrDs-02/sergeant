@@ -296,6 +296,69 @@
           },
           "subscription": {
             "active": true,
+            "cancelAtPeriodEnd": false,
+            "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
+            "id": 42,
+            "plan": "pro",
+            "provider": "liqpay",
+            "status": "active"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (cancel scheduled)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription with cancel_at_period_end"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
+          "subscription": {
+            "active": true,
+            "cancelAtPeriodEnd": true,
             "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
             "id": 42,
             "plan": "pro",
@@ -357,6 +420,7 @@
           },
           "subscription": {
             "active": false,
+            "cancelAtPeriodEnd": false,
             "currentPeriodEnd": null,
             "id": null,
             "plan": null,
@@ -1855,6 +1919,32 @@
           "content-type": "application/json"
         },
         "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/cancel request (nothing to cancel)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a manual grant and no provider subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/cancel"
+      },
+      "response": {
+        "body": {
+          "code": "NO_ACTIVE_SUBSCRIPTION",
+          "error": "No active subscription to cancel"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 409
       }
     },
     {

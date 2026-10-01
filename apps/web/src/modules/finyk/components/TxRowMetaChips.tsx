@@ -55,6 +55,13 @@ interface TxRowMetaChipsProps {
    * жодного видимого сліду в самому рядку.
    */
   isExcludedFromStats?: boolean | undefined;
+  /**
+   * Нога скасованого платежу («Uklon −189» + «Скасування. Uklon +189»,
+   * `findCancellationPairs`, рішення власника 2026-10-01). Обидві ноги вже
+   * виключені зі статистики, тому слово «скасовано» замінює загальне «не в
+   * статистиці»: людина бачить причину, а не лише наслідок.
+   */
+  isCancelled?: boolean | undefined;
   /** Чи знає ЦЕЙ пристрій про чек, привʼязаний до цієї транзакції
    * (`useFinykReceiptLinks`, device-local — див. `lib/receiptLinks.ts`).
    * Розгортка позицій живе в `BankTransactionDetailsSheet`/
@@ -80,6 +87,7 @@ export function TxRowMetaChips({
   note,
   customCategories = [],
   isExcludedFromStats = false,
+  isCancelled = false,
 }: TxRowMetaChipsProps) {
   const isTransfer = catId === INTERNAL_TRANSFER_ID;
   // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
@@ -88,7 +96,8 @@ export function TxRowMetaChips({
   // окремою дією людини; обидва шляхи ведуть до того самого видимого
   // маркера, бо для людини наслідок однаковий: рядок не рахується в
   // підсумках.
-  if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
+  if (isCancelled) statuses.push("скасовано");
+  else if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
   if (overrideCatId && !isTransfer) statuses.push("змін.");
   if (fromMerchantRule && !isTransfer) statuses.push("за правилом");
   if (tx._source === "privatbank") statuses.push("П24");

@@ -3,7 +3,7 @@
  * Р5 спеки аналітики v2: одне джерело стану ліміту.
  *
  * Сліпий замір 2026-09-24 бачив на одному екрані хаба картку «Продукти:
- * використано 162% ліміту» і рядок «записано, перевищень немає». Три
+ * використано 162% ліміту» і рядок «записано, перевищень немає» (тепер «записано · у межах лімітів»). Три
  * поверхні рахували стан ліміту трьома шляхами; тут усі три читають
  * `calcLimitUsages` на тих самих даних, і тест тримає їх разом: той самий
  * `pctRaw` у рекомендації `budget_over_*` і в хаб-картці, а «Закрито
@@ -32,6 +32,7 @@ vi.mock("@finyk/lib/monoMirrorReader", () => {
 const { generateRecommendations } =
   await import("../../lib/recommendationEngine");
 const { computeClosedToday } = await import("./closedToday");
+const { useDashboardFocus } = await import("../../insights/TodayFocusCard");
 
 // 24 вересня 2026, 04:15 за Києвом: записи датасету v2 внесено о 04:00-04:30.
 const NOW = new Date("2026-09-24T01:15:00Z");
@@ -66,6 +67,7 @@ describe("стан ліміту: хаб-картка, рекомендація �
 
   afterEach(() => {
     clearFinykSqliteCache();
+    localStorage.clear();
     vi.useRealTimers();
   });
 
@@ -92,13 +94,47 @@ describe("стан ліміту: хаб-картка, рекомендація �
     );
 
     // Сьогоднішні витрати є, тож без активного перевищення рядок був би:
-    // саме так «перевищень немає» і зʼявлялось поруч із карткою 162 %.
+    // саме так «в межах» і зʼявлялось поруч із карткою 162 %.
     expect(
       computeClosedToday({ now: NOW, activeModules: ["finyk"], recs: [] })[0]
         ?.statement,
-    ).toBe("записано, перевищень немає");
+    ).toBe("записано · у межах лімітів");
     expect(
       computeClosedToday({ now: NOW, activeModules: ["finyk"], recs }),
+    ).toEqual([]);
+  });
+
+  it("сховали картку перевищення («✕»): ліміт усе одно перевищено, рядка Фініка немає", () => {
+    // Те, що HubDashboard віддавав у «Закрито сьогодні», — `focus` + `rest`,
+    // тобто рекомендації ПІСЛЯ фільтра відкинутих. Сховав картку — перевищення
+    // зникало зі списку, і рядок казав «в межах лімітів» поруч із 162 %.
+    localStorage.setItem(
+      "hub_recs_dismissed_v1",
+      JSON.stringify({ budget_over_food: NOW.getTime() }),
+    );
+    const { result } = renderHook(() => useDashboardFocus());
+
+    const shown = [result.current.focus, ...result.current.rest].flatMap((r) =>
+      r ? [r] : [],
+    );
+    expect(shown.map((r) => r.id)).not.toContain("budget_over_food");
+    // Перевищення нікуди не ділось — лише картка схована.
+    expect(result.current.allRecs.map((r) => r.id)).toContain(
+      "budget_over_food",
+    );
+
+    // Стара проводка (`[focus, ...rest]`) давала хибний рядок:
+    expect(
+      computeClosedToday({ now: NOW, activeModules: ["finyk"], recs: shown })[0]
+        ?.statement,
+    ).toBe("записано · у межах лімітів");
+    // Нова — усі активні рекомендації — рядка не дає:
+    expect(
+      computeClosedToday({
+        now: NOW,
+        activeModules: ["finyk"],
+        recs: result.current.allRecs,
+      }),
     ).toEqual([]);
   });
 });

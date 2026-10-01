@@ -175,6 +175,11 @@ export interface TransactionListProps {
    * Аналітики без жодного сліду в самому списку.
    */
   excludedStatTxIdSet: Set<string>;
+  /**
+   * Ноги скасованих платежів («Скасування. …»): рядок несе слово
+   * «скасовано» замість «не в статистиці» (`TxRowMetaChips`).
+   */
+  cancelledTxIdSet?: ReadonlySet<string> | undefined;
   /** Явні override-и користувача (НЕ ефективна мапа з правилами). */
   txCategories: TxCategoriesMap;
   /** Правила «Завжди так для цього магазину» — рядок малює їхню категорію. */
@@ -238,6 +243,7 @@ export function TransactionList({
   selectedIds,
   hiddenTxIdSet,
   excludedStatTxIdSet,
+  cancelledTxIdSet,
   txCategories,
   merchantRules,
   txSplits,
@@ -472,6 +478,7 @@ export function TransactionList({
                       selected={selectMode && selectedIds.has(t.id)}
                       hidden={hiddenTxIdSet.has(t.id)}
                       isExcludedFromStats={excludedStatTxIdSet.has(t.id)}
+                      isCancelled={cancelledTxIdSet?.has(t.id) ?? false}
                       overrideCatId={txCategories[t.id]}
                       merchantRules={merchantRules}
                       txSplits={txSplits}

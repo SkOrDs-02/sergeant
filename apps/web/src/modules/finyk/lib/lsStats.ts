@@ -118,6 +118,9 @@ export function getFinykExcludedTxIdsFromStorage() {
     txCategories: prefs.txCategories,
     receivables: prefs.receivables,
     excludedStatTxIds: prefs.excludedStatTxIds,
+    // Банк із дзеркала: пара «списання ↔ скасування» потребує обох ніг
+    // (рішення власника 2026-10-01).
+    transactions: getVisibleFinykMonoMirrorState().transactions,
   });
 }
 

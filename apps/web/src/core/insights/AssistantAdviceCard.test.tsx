@@ -78,6 +78,24 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
     ).toBeInTheDocument();
   });
 
+  it("centres the refresh icon inside its (coarse-pointer stretched) button", () => {
+    render(
+      <AssistantAdviceCard
+        insight="Сьогодні ти витратив на 18% більше за середній тиждень."
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    // На coarse-pointer кнопку розтягує до 44×44; без inline-flex-центрування
+    // SVG липне до лівого верхнього кута.
+    const refresh = screen.getByRole("button", { name: /оновити пораду/i });
+    expect(refresh.className).toContain("inline-flex");
+    expect(refresh.className).toContain("items-center");
+    expect(refresh.className).toContain("justify-center");
+  });
+
   it("keeps the cached insight visible while a refresh is in flight (no skeleton flash, refresh button spins)", () => {
     render(
       <AssistantAdviceCard

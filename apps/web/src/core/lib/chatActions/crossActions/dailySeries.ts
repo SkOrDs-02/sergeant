@@ -1,15 +1,11 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Cross-module daily-series reader (outside React): tx splits stay on LS;
-   bank transactions now come from the Mono mirror reader (Dual-write
-   teardown Phase 3). */
 /**
  * `get_daily_series` — вирівняні по днях ряди метрик з усіх 4 модулів +
  * пораховані КОДОМ кореляції (Pearson/Spearman) для кожної пари. Це базовий
  * примітив для «чи повʼязано X з Y»: раніше модель мусила зіставляти агрегати
  * різної форми з кількох query-тулів «в умі», що ненадійно.
  *
- * Усі читання йдуть ЛИШЕ через доменні storage-обгортки (не сирі LS-ключі, крім
- * `finyk_tx_cache`/`finyk_tx_splits`, які не мають SQLite-канону). День — завжди
+ * Усі читання йдуть ЛИШЕ через доменні storage-обгортки, не сирі LS-ключі
+ * (Фінік — `readFinykStatsContext`, див. `loadFinykSpending`). День — завжди
  * `Europe/Kyiv` (`getKyivDayKey`). Гроші (finyk) віддаються у гривнях —
  * `getTxStatAmount` вже ділить копійки на 100.
  *
@@ -17,16 +13,11 @@
  * навмисно: WP3 (кореляції у weekly digest → памʼять коуча) переюзає той самий
  * обчислювальний код замість дублювання статистики.
  */
-import {
-  buildFinykSpendingUniverse,
-  calcCategorySpent,
-} from "@sergeant/finyk-domain";
+import { calcCategorySpent } from "@sergeant/finyk-domain";
 import { CORRELATION_MIN_N, formatNumberUk } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
-import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
-import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
+import { readFinykStatsContext } from "../../../../modules/finyk/lib/lsStats";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { getCachedNutritionSqliteState } from "../../../../modules/nutrition/lib/sqliteReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
@@ -196,24 +187,30 @@ function addTo(map: Map<string, number>, day: string, amount: number): void {
 // ─── Читачі метрик → Map<dayKey, value> (лише дні з реальними даними) ─────────
 
 /**
- * Видимі транзакції + спліти — спільна основа для `readFinyk` і
- * `readFinykCategory`. Обидва читачі раніше самі кликали
- * `buildFinykSpendingUniverse` і самі парсили `finyk_tx_splits`, тож пара
- * `spending × alcohol_spending` в одному вікні робила цю роботу двічі.
+ * Транзакції, що рахуються у статистиці Фініка, + спліти + мапи категорій —
+ * спільна основа для `readFinyk` і `readFinykCategory`.
+ *
+ * AI-CONTEXT (2026-10-01): до цього читач збирав всесвіт сам і виключав лише
+ * приховані операції, тож внутрішні перекази, погашення боргів і операції
+ * «не в статистиці» рахувались витратою — «₴ за день» у Звʼязках розходився з
+ * числами Фініка, Звітів і дайджесту на тих самих даних. Спліти він брав із
+ * `finyk_tx_splits`, а той LS-ключ tombstoned (чиститься на буті,
+ * `lsStats.ts`): розбивка за чеком не доходила, і `alcohol_spending` рахував
+ * повну суму покупки або нуль. Тепер — той самий `readFinykStatsContext`, що
+ * й у решти дашбордних споживачів (excluded-set + спліти з SQLite-кешу).
  */
 function loadFinykSpending(): {
   txs: Array<{ id: string; amount: number; time?: number }>;
   splits: Record<string, unknown>;
+  txCategories: Record<string, string>;
+  customCategories: unknown[];
 } {
-  const cached = getCachedFinykSqliteState();
-  const all = buildFinykSpendingUniverse({
-    bankTxs: getVisibleFinykMonoMirrorState().transactions,
-    manualExpenses: cached.manualExpenses,
-  }).transactions as Array<{ id: string; amount: number; time?: number }>;
-  const hidden = cached.hiddenTransactions;
+  const ctx = readFinykStatsContext();
   return {
-    txs: all.filter((t) => !hidden.includes(t.id || "")),
-    splits: ls<Record<string, unknown>>("finyk_tx_splits", {}),
+    txs: ctx.txs.filter((t) => !ctx.excludedTxIds.has(t.id || "")),
+    splits: ctx.txSplits,
+    txCategories: ctx.txCategories,
+    customCategories: ctx.customCategories,
   };
 }
 
@@ -255,8 +252,7 @@ function readFinyk(sign: "spending" | "income"): Map<string, number> {
  */
 function readFinykCategory(categoryId: string): Map<string, number> {
   const out = new Map<string, number>();
-  const cached = getCachedFinykSqliteState();
-  const { txs, splits } = loadFinykSpending();
+  const { txs, splits, txCategories, customCategories } = loadFinykSpending();
 
   // Групуємо по днях, а суму за категорією рахує `calcCategorySpent` —
   // їй байдуже, скільки транзакцій у масиві.
@@ -273,9 +269,9 @@ function readFinykCategory(categoryId: string): Map<string, number> {
     const spent = calcCategorySpent(
       dayTxs as never,
       categoryId,
-      cached.txCategories,
+      txCategories,
       splits,
-      cached.customCategories,
+      customCategories,
     );
     if (spent > 0) out.set(day, spent);
   }

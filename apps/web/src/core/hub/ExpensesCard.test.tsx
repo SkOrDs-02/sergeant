@@ -185,6 +185,55 @@ describe("ExpensesCard", () => {
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 
+  // Р4 (канон finyk, журнал 2026-09-24): відсоток лише коли попередня сума
+  // є базою (≥ 10 % поточної), інакше абсолютна дельта в гривнях. Раніше
+  // чип рахував відсоток із круглих гривень без цього правила.
+  describe("дельта до минулого періоду (Р4)", () => {
+    // Середа 2026-08-05: «ті ж дні» минулого тижня — пн-ср 07-27…07-29.
+    const sameDaysLastWeek = Math.floor(
+      new Date("2026-07-29T09:00:00.000Z").getTime() / 1000,
+    );
+    const seed = (prevMinor: number) =>
+      localStorage.setItem(
+        "finyk_tx_cache",
+        JSON.stringify({
+          txs: [
+            ...txCacheToday().txs,
+            {
+              id: "prev",
+              amount: -prevMinor,
+              time: sameDaysLastWeek,
+              description: "Минулий тиждень",
+            },
+          ],
+        }),
+      );
+    const chipText = () =>
+      (screen.getByTestId("delta-chip").textContent ?? "").replace(
+        /[\s\u00a0\u202f]/g,
+        " ",
+      );
+
+    it("минуле ≥ 10 % поточного — відсоток", () => {
+      seed(40_000); // 400 ₴ проти 500 ₴ → +25 %
+      render(<ExpensesCard period="week" offset={0} />);
+      expect(chipText()).toBe("+25%");
+    });
+
+    it("минуле < 10 % поточного — абсолютна дельта в гривнях, без відсотка", () => {
+      seed(2_000); // 20 ₴ проти 500 ₴: «+2400 %» було б шумом
+      render(<ExpensesCard period="week" offset={0} />);
+      expect(chipText()).toBe("+480 ₴");
+    });
+
+    it("те саме в розгорнутому стані картки", () => {
+      seed(2_000);
+      render(<ExpensesCard period="week" offset={0} />);
+      fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+      expect(chipText()).toBe("+480 ₴");
+    });
+  });
+
   it("не каже «ще не записано», коли минулого тижня витрати були пізніше ніж сьогодні", () => {
     // Середа: «ті ж дні» минулого тижня (пн-ср) порожні, але в пʼятницю
     // витрата була. Предмет звіту є, тож порожнього стану не має бути.

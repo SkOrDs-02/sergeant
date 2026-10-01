@@ -212,3 +212,92 @@ describe("buildFinykSpendingUniverse", () => {
     expect(universe.excludedTxIds.size).toBe(0);
   });
 });
+
+// Рішення власника 2026-10-01 (варіант А): «Uklon −189» і «Скасування. Uklon
+// +189» рахувались витратою (Транспорт) і доходом (Інше). Тепер обидві ноги
+// пари виходять зі статистики в самому excluded-set, тож кожен споживач
+// набору успадковує правило без власної арифметики.
+describe("скасування платежів у excluded-set", () => {
+  const T0 = MONDAY / 1000 + 3_600;
+  const bankTxs = [
+    { id: "uklon-out", amount: -18_900, time: T0, description: "Uklon" },
+    {
+      id: "uklon-in",
+      amount: 18_900,
+      time: T0 + 7_200,
+      description: "Скасування. Uklon",
+    },
+    { id: "bolt-out", amount: -49_989, time: T0 + 86_400, description: "Bolt" },
+    {
+      id: "bolt-in",
+      amount: 49_989,
+      time: T0 + 86_400 + 900,
+      description: "Скасування. Bolt",
+    },
+    {
+      id: "coffee",
+      amount: -9_500,
+      time: T0 + 2 * 86_400,
+      description: "Кава",
+    },
+    // Часткове скасування: сума інша, пара не ставиться.
+    {
+      id: "taxi-out",
+      amount: -30_000,
+      time: T0 + 3 * 86_400,
+      description: "Taxi",
+    },
+    {
+      id: "taxi-in",
+      amount: 12_000,
+      time: T0 + 3 * 86_400 + 600,
+      description: "Скасування. Taxi",
+    },
+  ];
+
+  it("buildFinykExcludedTxIds виключає обидві ноги кожної пари", () => {
+    const excluded = buildFinykExcludedTxIds({ transactions: bankTxs });
+    expect([...excluded].sort()).toEqual([
+      "bolt-in",
+      "bolt-out",
+      "uklon-in",
+      "uklon-out",
+    ]);
+  });
+
+  it("без банківських транзакцій у вході правило нічого не виключає", () => {
+    expect(buildFinykExcludedTxIds({ txCategories: {} }).size).toBe(0);
+    expect(buildFinykExcludedTxIds({ transactions: [] }).size).toBe(0);
+  });
+
+  it("всесвіт витрат: скасована поїздка не рахується ні витратою, ні доходом", () => {
+    const { transactions, excludedTxIds } = buildFinykSpendingUniverse({
+      bankTxs,
+    });
+    // Лишились кава 95 + таксі 300 (часткове скасування не парується).
+    expect(calcFinykSpendingTotal(transactions, { excludedTxIds })).toBe(395);
+    // Без правила: 189 + 499,89 + 95 + 300 = 1083,89.
+    expect(calcFinykSpendingTotal(transactions)).toBeCloseTo(1_083.89, 2);
+    // Дохід теж: скасування Uklon/Bolt не рахується, часткове — так.
+    const income = transactions
+      .filter((t) => t.amount > 0 && !excludedTxIds.has(t.id))
+      .reduce((sum, t) => sum + t.amount / 100, 0);
+    expect(income).toBe(120);
+  });
+
+  it("явне виключення й приховування працюють разом із парою", () => {
+    const excluded = buildFinykExcludedTxIds({
+      transactions: bankTxs,
+      hiddenTxIds: ["coffee"],
+      excludedStatTxIds: ["taxi-out"],
+    });
+    expect([...excluded].sort()).toEqual([
+      "bolt-in",
+      "bolt-out",
+      "coffee",
+      "taxi-out",
+      "uklon-in",
+      "uklon-out",
+    ]);
+  });
+});

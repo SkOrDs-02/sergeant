@@ -17,6 +17,7 @@ import type {
 } from "../hooks/useNutritionUiState";
 import type { useNutritionPantries } from "../hooks/useNutritionPantries";
 import type { useShoppingList } from "../hooks/useShoppingList";
+import { useSavedRecipes } from "../hooks/useSavedRecipes";
 import type { PantryBarcodeNotice } from "../hooks/usePantryBarcodeScan";
 import type { PantrySubTab } from "../lib/nutritionRouter";
 
@@ -40,7 +41,10 @@ interface NutritionPantryPageProps {
   onRetryPantryBarcode?: (() => void) | undefined;
   onDismissPantryBarcodeNotice?: (() => void) | undefined;
   toast: Toast;
-  generateShoppingList: (source: string) => void | Promise<void>;
+  generateShoppingList: (
+    source: string,
+    recipes?: unknown[],
+  ) => void | Promise<void>;
   addCheckedItemsToPantry: () => void;
 }
 
@@ -63,6 +67,13 @@ export function NutritionPantryPage({
   generateShoppingList,
   addCheckedItemsToPantry,
 }: NutritionPantryPageProps) {
+  // «Мої рецепти» читаємо лише на вкладці «Покупки»: це джерело списку
+  // покупок поруч зі згенерованими `recipes`.
+  const {
+    saved: savedRecipes,
+    busy: savedRecipesBusy,
+    error: savedRecipesError,
+  } = useSavedRecipes(pantrySubTab === "shopping");
   return (
     <SectionErrorBoundary
       key="page-pantry"
@@ -145,6 +156,9 @@ export function NutritionPantryPage({
         ) : (
           <ShoppingListCard
             recipes={recipes}
+            savedRecipes={savedRecipes}
+            savedRecipesBusy={savedRecipesBusy}
+            savedRecipesError={savedRecipesError}
             weekPlan={weekPlan}
             pantryItems={pantry.effectiveItems}
             shoppingList={shopping.shoppingList}

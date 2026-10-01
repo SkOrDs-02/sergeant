@@ -32,6 +32,7 @@ import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
+import { useRecurringHistory } from "../../hooks/useRecurringHistory";
 import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 type StorageLike = ReturnType<typeof useStorage>;
@@ -144,6 +145,19 @@ export function useOverviewData({
         customCategories,
       ),
     [insightTx, explicitTxCategories, merchantRuleIndex, customCategories],
+  );
+
+  // Інсайт «Знайшов повторення» читає дзеркало з фіксованим вікном, а не
+  // `realTx`: той після відповіді мережі лише поточний місяць, і щомісячні
+  // платежі ловились би тільки до неї (`useRecurringHistory`).
+  const recurringBank = useRecurringHistory(mono.fetchRange);
+  const recurringTx = useMemo(
+    () =>
+      filterStatTransactions(
+        withManualExpenses(recurringBank, manualExpenses),
+        excludedTxIds,
+      ),
+    [recurringBank, manualExpenses, excludedTxIds],
   );
 
   // AI-DANGER: this clamp is what makes every "цього місяця" number on Огляд
@@ -536,6 +550,7 @@ export function useOverviewData({
     budgetAlerts,
     statTx,
     insightTx,
+    recurringTx,
     txCategories,
     txSplits,
     customCategories,

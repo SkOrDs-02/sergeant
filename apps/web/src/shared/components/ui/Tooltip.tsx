@@ -22,11 +22,19 @@ import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
  * Accessible, controlled-ish tooltip that replaces the drift-prone
  * `title="..."` native-HTML tooltip pattern.
  *
- * - Opens on `mouseenter` / `focusin` (focus-visible) of the trigger
- *   after a short `openDelay` (defaults to 150 ms — long enough to
- *   avoid flicker when moving through a toolbar, short enough to
- *   feel responsive).
- * - Closes on `mouseleave` / `focusout` / `Escape` / outside-click.
+ * - Opens on pointer hover of the trigger (**mouse only** — a touch tap
+ *   is not a hover) or on keyboard focus (`:focus-visible` only), after a
+ *   short `openDelay` (defaults to 150 ms — long enough to avoid flicker
+ *   when moving through a toolbar, short enough to feel responsive).
+ * - Closes on `pointerleave` / `focusout` / `Escape` / outside-click, and
+ *   immediately on `pointerdown` on the trigger (a press is an action, not
+ *   a request for help).
+ * - Why not `mouseenter` / plain `focusin`: on touch, iOS Safari emits the
+ *   compat `mouseenter` on tap and never `mouseleave`, so the pill stuck
+ *   (and, portaled above the modal layer, hovered over the chat sheet);
+ *   and closing a sheet restores focus to the trigger, which re-opened it.
+ *   Programmatic focus after a pointer press is not `:focus-visible`, so
+ *   the focus-visible gate covers that too.
  * - Aria-wired: the floating panel owns `role="tooltip"` + a stable
  *   `id`; the trigger receives `aria-describedby` pointing to that id.
  * - `motion-safe:` on the fade-in respects
@@ -38,8 +46,8 @@ import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
  * API:
  * - `content` — the tooltip body (string or JSX).
  * - `children` — a **single** React element that becomes the trigger.
- *   Must forward `onMouseEnter` / `onMouseLeave` / `onFocus` / `onBlur`
- *   / `aria-describedby` handlers through to its rendered DOM node.
+ *   Must render a DOM node that receives pointer / focus events and
+ *   forwards `aria-describedby`.
  *   Native `<button>`, `<a>`, and Sergeant primitives (Button,
  *   IconButton, Badge) all satisfy this out of the box.
  * - `placement` — 12-direction grid: `top|right|bottom|left` +
@@ -84,6 +92,21 @@ interface TriggerExtraProps {
   onFocus?: (e: React.FocusEvent) => void;
   onBlur?: (e: React.FocusEvent) => void;
   onKeyDown?: (e: ReactKeyboardEvent) => void;
+}
+
+/**
+ * Чи показує браузер фокус-кільце для цього елемента (клавіатурний фокус).
+ * Тап/клік мишею по кнопці і програмне повернення фокуса після нього — не
+ * `:focus-visible`. Рушії без підтримки селектора кидають SyntaxError —
+ * тоді вважаємо фокус клавіатурним, щоб підказка не зникла для клавіатури.
+ */
+function isKeyboardFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return true;
+  try {
+    return target.matches(":focus-visible");
+  } catch {
+    return true;
+  }
 }
 
 export function Tooltip({
@@ -148,13 +171,21 @@ export function Tooltip({
       ?.firstElementChild as HTMLElement | null;
     if (!triggerEl) return;
 
-    const onMouseEnter = () => {
+    // Hover лише для миші: тап дає pointerenter з pointerType "touch"/"pen",
+    // а iOS ще й сумісний mouseenter без mouseleave — підказка застрягала.
+    const onPointerEnter = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
       scheduleOpen();
     };
-    const onMouseLeave = () => {
+    const onPointerLeave = () => {
       closeNow();
     };
-    const onFocusIn = () => {
+    // Натискання закриває підказку одразу й скасовує відкладене відкриття.
+    const onPointerDown = () => {
+      closeNow();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      if (!isKeyboardFocus(e.target)) return;
       scheduleOpen();
     };
     const onFocusOut = () => {
@@ -166,15 +197,17 @@ export function Tooltip({
       }
     };
 
-    triggerEl.addEventListener("mouseenter", onMouseEnter);
-    triggerEl.addEventListener("mouseleave", onMouseLeave);
+    triggerEl.addEventListener("pointerenter", onPointerEnter);
+    triggerEl.addEventListener("pointerleave", onPointerLeave);
+    triggerEl.addEventListener("pointerdown", onPointerDown);
     triggerEl.addEventListener("focusin", onFocusIn);
     triggerEl.addEventListener("focusout", onFocusOut);
     triggerEl.addEventListener("keydown", onKeyDown);
 
     return () => {
-      triggerEl.removeEventListener("mouseenter", onMouseEnter);
-      triggerEl.removeEventListener("mouseleave", onMouseLeave);
+      triggerEl.removeEventListener("pointerenter", onPointerEnter);
+      triggerEl.removeEventListener("pointerleave", onPointerLeave);
+      triggerEl.removeEventListener("pointerdown", onPointerDown);
       triggerEl.removeEventListener("focusin", onFocusIn);
       triggerEl.removeEventListener("focusout", onFocusOut);
       triggerEl.removeEventListener("keydown", onKeyDown);

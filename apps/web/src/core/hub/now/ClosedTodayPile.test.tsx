@@ -44,7 +44,7 @@ describe("ClosedTodayPile", () => {
       {
         module: "finyk",
         label: "Витрати",
-        statement: "записано, перевищень немає",
+        statement: "записано · у межах лімітів",
         value: "250 ₴",
       },
     ];

@@ -3,8 +3,19 @@ import type { Transaction, TxCategoriesMap } from "./types";
 
 const DEFAULT_MAX_TIME_DELTA_SECONDS = 6 * 60 * 60;
 
+/**
+ * Фрази, якими Monobank сам описує рух між власними рахунками.
+ *
+ * AI-CONTEXT: реальні описи виписки рідко містять слово «переказ».
+ * Банка → картка: «На білу картку» (між «на» і «картку» стоїть прикметник,
+ * тож `на\s+картк` його не ловив), картка ← банка: «Часткове зняття банки
+ * «просто»» (прийменника перед «банки» немає взагалі). Тому прикметники
+ * між прийменником і «картк…» дозволені (до двох слів), а «зняття /
+ * поповнення / закриття банки» — окрема фраза. Прийменники `з/із/на/у`
+ * стоять після `(?<!\p{L})`, щоб не ловити їх як кінець іншого слова.
+ */
 const TRANSFER_MARKER_RE =
-  /(?:переказ\p{L}*|перевод\p{L}*|\btransfer\w*\b|між\s+(?:власними\s+)?(?:картк|рахунк)|(?:з|із|на)\s+картк|(?:з|із|на|у)\s+банк(?:у|и)?|\bjar\b)/iu;
+  /(?:переказ\p{L}*|перевод\p{L}*|\btransfer\w*\b|між\s+(?:власними\s+)?(?:картк|рахунк)|(?<!\p{L})(?:з|із|на)\s+(?:\p{L}+\s+){0,2}картк|(?<!\p{L})(?:з|із|на|у)\s+банк(?:у|и)?|(?:зняття|поповнення|закриття)\s+(?:\p{L}+\s+)?банк[иу](?!\p{L})|\bjar\b)/iu;
 
 const REAL_INCOME_MARKER_RE =
   /(?:кешбек|cashback|відсот|процент|interest|зарплат|salary)/iu;
@@ -12,6 +23,14 @@ const REAL_INCOME_MARKER_RE =
 export interface TransferMatchOptions {
   txCategories?: TxCategoriesMap | undefined;
   maxTimeDeltaSeconds?: number | undefined;
+  /**
+   * Id банок Monobank (`mono_jar_id`; він же `accountId` транзакцій банки).
+   * Нога з відомої банки лічиться маркером переказу сама по собі: рух
+   * картка ↔ банка того ж розміру й часу, що й протилежна нога, є
+   * переказом, навіть коли жоден опис не каже «переказ». Без цього
+   * списку матчер спирається лише на текст описів.
+   */
+  jarAccountIds?: ReadonlySet<string> | readonly string[] | undefined;
 }
 
 export interface InternalTransferSuggestion {
@@ -93,10 +112,11 @@ function bestUnambiguousEdge(
  * Finds high-confidence internal-transfer pairs without changing any data.
  *
  * A suggestion needs opposite signs, exactly equal absolute minor units,
- * different account ids, compatible currency, a transfer-like description,
- * and a short time distance. The edge must be the unique best match for both
- * endpoints. Ambiguous groups intentionally produce no result: user-facing
- * analytics must not change on a guess.
+ * different account ids, compatible currency, a transfer marker (a
+ * transfer-like description on either leg, or one leg living on a known
+ * jar — see `jarAccountIds`), and a short time distance. The edge must be
+ * the unique best match for both endpoints. Ambiguous groups intentionally
+ * produce no result: user-facing analytics must not change on a guess.
  */
 export function findInternalTransferSuggestions(
   transactions: readonly Transaction[] | null | undefined,
@@ -109,6 +129,10 @@ export function findInternalTransferSuggestions(
     Number.isFinite(configuredDelta) && configuredDelta > 0
       ? configuredDelta
       : DEFAULT_MAX_TIME_DELTA_SECONDS;
+  const jarIds =
+    options.jarAccountIds instanceof Set
+      ? options.jarAccountIds
+      : new Set(options.jarAccountIds ?? []);
   const edges: MatchEdge[] = [];
 
   for (let i = 0; i < list.length; i += 1) {
@@ -161,7 +185,8 @@ export function findInternalTransferSuggestions(
       }
       const markerCount =
         Number(TRANSFER_MARKER_RE.test(leftDescription)) +
-        Number(TRANSFER_MARKER_RE.test(rightDescription));
+        Number(TRANSFER_MARKER_RE.test(rightDescription)) +
+        Number(jarIds.has(leftAccountId) || jarIds.has(rightAccountId));
       if (markerCount === 0) continue;
 
       const outgoing = left.amount < 0 ? left : right;

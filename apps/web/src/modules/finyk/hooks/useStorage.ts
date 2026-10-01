@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { findCancelledTxIds } from "@sergeant/finyk-domain/domain/refundMatching";
 import { writeJSON } from "../lib/finykStorage";
 import { toLocalISODate } from "@sergeant/shared";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
@@ -11,6 +12,7 @@ import { useFinykDualWriteBoot } from "./useFinykDualWriteBoot";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import { useFinykSqliteReadBoot } from "./useFinykSqliteReadBoot";
 import { useFinykMonoMirrorBoot } from "./useFinykMonoMirrorBoot";
+import { useFinykMirrorTransactions } from "./useFinykStatTransactions";
 
 // Public type re-exports — стабільний import path для зовнішніх consumer-ів
 // (`AssetsForm.tsx`, `Overview.tsx`, тощо). Декомпозиція внутрішнього коду
@@ -148,17 +150,49 @@ export function useStorage({
   // у залежності десятка `useMemo` Огляду й аналітики. Нова ідентичність на
   // кожному рендері перераховувала всю статистику по всіх записах щоразу,
   // коли будь-що перемальовувало Фінік.
-  const excludedTxIds = useMemo(
+  const manualTxs = useMemo(
+    () => manualExpenses.map(manualExpenseToTransaction),
+    [manualExpenses],
+  );
+  const excludedBase = useMemo(
     () =>
       buildFinykExcludedTxIds({
         hiddenTxIds,
         txCategories,
         receivables,
         excludedStatTxIds,
-        transactions: manualExpenses.map(manualExpenseToTransaction),
+        transactions: manualTxs,
       }),
-    [hiddenTxIds, txCategories, receivables, excludedStatTxIds, manualExpenses],
+    [hiddenTxIds, txCategories, receivables, excludedStatTxIds, manualTxs],
   );
+
+  // Скасовані платежі («Uklon −189» + «Скасування. Uklon +189», рішення
+  // власника 2026-10-01): обидві ноги теж виходять зі статистики. Банківські
+  // операції беремо з SQLite-дзеркала, а не з `mono`: цей хук від банку не
+  // залежить, а пара потребує обох ніг (вікно історії — те, що вже в дзеркалі).
+  //
+  // AI-CONTEXT: у залежності йде ключ-рядок, а не сам Set. Дзеркало
+  // оновлюється після кожного мережевого запиту, і нова ідентичність
+  // `excludedTxIds` на кожне оновлення перераховувала б усю статистику
+  // Огляду, хоча набір скасованих майже ніколи не змінюється.
+  const bankTxs = useFinykMirrorTransactions();
+  const cancelledKey = useMemo(
+    () =>
+      JSON.stringify(
+        [...findCancelledTxIds([...manualTxs, ...bankTxs])].sort(),
+      ),
+    [manualTxs, bankTxs],
+  );
+  const cancelledTxIds = useMemo(
+    () => new Set<string>(JSON.parse(cancelledKey) as string[]),
+    [cancelledKey],
+  );
+  const excludedTxIds = useMemo(() => {
+    if (cancelledTxIds.size === 0) return excludedBase;
+    const merged = new Set(excludedBase);
+    for (const id of cancelledTxIds) merged.add(id);
+    return merged;
+  }, [excludedBase, cancelledTxIds]);
 
   const saveNetworthSnapshot = (networth: number) => {
     const today = toLocalISODate();
@@ -213,6 +247,7 @@ export function useStorage({
     generateSyncLink: backupSync.generateSyncLink,
     loadFromUrl: backupSync.loadFromUrl,
     excludedTxIds,
+    cancelledTxIds,
     debtTxIds: debtLinkedTxIds, // зворотна сумісність
     txCategories,
     customCategories,

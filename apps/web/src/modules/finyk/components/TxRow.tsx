@@ -30,6 +30,8 @@ interface TxRowProps {
   hidden?: boolean | undefined;
   /** «Не враховувати у статистиці» (PR-F4) — рендерить маркер у мета-рядку. */
   isExcludedFromStats?: boolean | undefined;
+  /** Нога скасованого платежу — маркер «скасовано» в мета-рядку. */
+  isCancelled?: boolean | undefined;
   overrideCatId?: string | null | undefined;
   /**
    * Правила «Завжди так для цього магазину»: категорія банківської операції
@@ -61,6 +63,7 @@ function TxRowImpl({
   highlighted,
   hidden,
   isExcludedFromStats = false,
+  isCancelled = false,
   overrideCatId,
   merchantRules,
   note,
@@ -163,6 +166,7 @@ function TxRowImpl({
           account={account}
           accountName={accountName}
           isExcludedFromStats={isExcludedFromStats}
+          isCancelled={isCancelled}
           showAccount={(accounts?.length ?? 0) > 1}
           hasReceipt={hasReceipt}
           note={note}

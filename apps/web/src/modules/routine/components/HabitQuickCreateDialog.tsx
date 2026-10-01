@@ -228,11 +228,7 @@ export function HabitQuickCreateDialog({
         habitDraft={draft}
         setHabitDraft={setDraft}
         editingId={editingId ?? null}
-        onSave={handleSave}
-        onCancel={onClose}
         focusTick={internalFocusTick}
-        hideHeading
-        hideActions
         errors={errors}
       />
     </Sheet>
