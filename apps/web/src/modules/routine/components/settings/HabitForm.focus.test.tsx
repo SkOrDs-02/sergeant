@@ -25,9 +25,6 @@ function Harness() {
       habitDraft={draft}
       setHabitDraft={setDraft}
       editingId={null}
-      onSave={() => {}}
-      onCancel={() => {}}
-      hideHeading
     />
   );
 }
