@@ -69,9 +69,11 @@ export function NutritionPantryPage({
 }: NutritionPantryPageProps) {
   // «Мої рецепти» читаємо лише на вкладці «Покупки»: це джерело списку
   // покупок поруч зі згенерованими `recipes`.
-  const { saved: savedRecipes, busy: savedRecipesBusy } = useSavedRecipes(
-    pantrySubTab === "shopping",
-  );
+  const {
+    saved: savedRecipes,
+    busy: savedRecipesBusy,
+    error: savedRecipesError,
+  } = useSavedRecipes(pantrySubTab === "shopping");
   return (
     <SectionErrorBoundary
       key="page-pantry"
@@ -156,6 +158,7 @@ export function NutritionPantryPage({
             recipes={recipes}
             savedRecipes={savedRecipes}
             savedRecipesBusy={savedRecipesBusy}
+            savedRecipesError={savedRecipesError}
             weekPlan={weekPlan}
             pantryItems={pantry.effectiveItems}
             shoppingList={shopping.shoppingList}

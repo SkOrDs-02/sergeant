@@ -11,7 +11,9 @@ const { listSavedRecipes } = vi.hoisted(() => ({
   listSavedRecipes: vi.fn(),
 }));
 
-vi.mock("../lib/recipeBook", () => ({ listSavedRecipes }));
+vi.mock("../lib/recipeBook", () => ({
+  listSavedRecipesOrThrow: listSavedRecipes,
+}));
 vi.mock("../lib/sqliteReader", () => ({
   getCachedNutritionSqliteState: () => ({
     recipes: [],

@@ -295,6 +295,8 @@ export const nutritionPageMessages = {
     emptyHint:
       "Збережи рецепти або згенеруй їх у Меню → Рецепти, і вони зʼявляться тут.",
     savedLoading: "Завантажую збережені рецепти…",
+    savedError:
+      "Не вдалося прочитати збережені рецепти. Онови сторінку, щоб спробувати ще раз.",
     noIngredients: "без списку інгредієнтів",
     ingredientsOne: "інгредієнт",
     ingredientsFew: "інгредієнти",

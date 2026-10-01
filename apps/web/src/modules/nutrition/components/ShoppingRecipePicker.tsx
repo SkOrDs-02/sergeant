@@ -24,6 +24,11 @@ interface ShoppingRecipePickerProps {
   generated: readonly RecipeOption[];
   /** Збережені ще читаються з книги: показуємо це, а не «порожньо». */
   savedBusy?: boolean | undefined;
+  /**
+   * Книгу збережених не вдалося прочитати: кажемо про це, а не «порожньо»
+   * і не мовчки ховаємо групу «Мої рецепти».
+   */
+  savedError?: boolean | undefined;
   selectedKeys: ReadonlySet<string>;
   onToggle: (key: string) => void;
   onSelectAll: () => void;
@@ -127,6 +132,7 @@ export function ShoppingRecipePicker({
   saved,
   generated,
   savedBusy = false,
+  savedError = false,
   selectedKeys,
   onToggle,
   onSelectAll,
@@ -143,6 +149,16 @@ export function ShoppingRecipePicker({
   const allSelected = selectedCount >= Math.min(total, SHOPPING_RECIPES_MAX);
 
   if (total === 0) {
+    if (savedError && !savedBusy) {
+      return (
+        <p
+          className="text-style-caption text-danger-strong text-center"
+          role="alert"
+        >
+          {pk.savedError}
+        </p>
+      );
+    }
     return (
       <div className="text-style-caption text-muted text-center">
         {savedBusy ? pk.savedLoading : pk.emptyHint}

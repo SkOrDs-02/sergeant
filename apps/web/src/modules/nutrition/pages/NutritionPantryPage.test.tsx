@@ -229,12 +229,13 @@ describe("NutritionPantryPage", () => {
     useSavedRecipesMock.mockReturnValue({
       saved: savedRecipes,
       busy: true,
-      error: false,
+      error: true,
     });
     renderPantryPage({ pantrySubTab: "shopping" });
     expect(shoppingCardProps.current).toMatchObject({
       savedRecipes,
       savedRecipesBusy: true,
+      savedRecipesError: true,
     });
   });
 

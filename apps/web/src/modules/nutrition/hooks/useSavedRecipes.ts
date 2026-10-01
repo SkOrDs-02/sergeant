@@ -4,13 +4,14 @@
  *
  * Збережені рецепти («Мої рецепти») для читання поза `RecipesCard` - зараз
  * для вибору рецептів у списку покупок. Те саме джерело й та сама послідовність,
- * що в `RecipesCard`: IndexedDB-книга (`listSavedRecipes`) плюс оверлей із
+ * що в `RecipesCard`: IndexedDB-книга (`listSavedRecipesOrThrow`, щоб збій
+ * читання не виглядав порожньою книгою) плюс оверлей із
  * SQLite warm-cache, коли той прогрівся (`useSqliteTickOverlay`). Лише читання:
  * збереження й видалення лишаються в `RecipesCard`.
  */
 import { useEffect, useState } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
-import { listSavedRecipes, type SavedRecipe } from "../lib/recipeBook";
+import { listSavedRecipesOrThrow, type SavedRecipe } from "../lib/recipeBook";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -44,7 +45,7 @@ export function useSavedRecipes(enabled: boolean): UseSavedRecipesResult {
     if (!enabled) return;
     let cancelled = false;
     void (async () => {
-      const list = await listSavedRecipes(200);
+      const list = await listSavedRecipesOrThrow(200);
       if (!cancelled) {
         setSaved(list);
         setError(false);

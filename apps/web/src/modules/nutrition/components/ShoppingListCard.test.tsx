@@ -519,6 +519,16 @@ describe("ShoppingListCard — вибір рецептів (збережені +
     ).not.toBeInTheDocument();
   });
 
+  it("збій читання книги — каже про помилку, а не «порожньо»", () => {
+    render(<ShoppingListCard {...baseProps({ savedRecipesError: true })} />);
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Не вдалося прочитати збережені рецепти",
+    );
+    expect(
+      screen.queryByText(/Збережи рецепти або згенеруй/),
+    ).not.toBeInTheDocument();
+  });
+
   it("рядок вибору - нативний чекбокс у label з touch-target (≥44px)", () => {
     render(
       <ShoppingListCard

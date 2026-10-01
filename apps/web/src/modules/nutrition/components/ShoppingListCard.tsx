@@ -247,6 +247,8 @@ interface ShoppingListCardProps {
   savedRecipes?: SavedRecipe[];
   /** Збережені ще читаються з книги. */
   savedRecipesBusy?: boolean;
+  /** Книгу збережених не вдалося прочитати. */
+  savedRecipesError?: boolean;
   weekPlan?: NutritionWeekPlan | null;
   pantryItems?: PantryItem[];
   shoppingList: ShoppingList | null;
@@ -268,6 +270,7 @@ export function ShoppingListCard({
   recipes,
   savedRecipes,
   savedRecipesBusy,
+  savedRecipesError,
   weekPlan,
   pantryItems,
   shoppingList,
@@ -436,6 +439,7 @@ export function ShoppingListCard({
                 saved={recipeOptions.saved}
                 generated={recipeOptions.generated}
                 savedBusy={savedRecipesBusy}
+                savedError={savedRecipesError}
                 selectedKeys={selectedKeys}
                 onToggle={toggleRecipe}
                 onSelectAll={() =>
