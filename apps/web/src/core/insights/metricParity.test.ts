@@ -18,7 +18,8 @@
  *   2. тижневий дайджест — `useWeeklyDigest.ts` (`aggregate*`);
  *   3. Hub-Reports / hub-картки — `core/hub/hubReports.aggregation.ts`;
  *   4. HubChat-контекст — `core/lib/hubChatContext/readAllData.ts`;
- *   5. чат-тулза `aggregate_spending` — `core/lib/chatActions/queryFinykActions.ts`.
+ *   5. чат-тулза `aggregate_spending` — `core/lib/chatActions/queryFinykActions.ts`;
+ *   6. Звʼязки (`/insights`), «₴ за день» — `crossActions/dailySeries.ts`.
  * Mobile-конвеєри (`apps/mobile/**`) сюди не резолвляться (RN-граф) — вони
  * описані в реєстрі й отримають симетричний тест на стадії 3.
  *
@@ -64,6 +65,7 @@ import {
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { readAllData } from "../lib/hubChatContext/readAllData";
 import { aggregateSpending as chatAggregateSpending } from "../lib/chatActions/queryFinykActions";
+import { buildDailySeries } from "../lib/chatActions/crossActions/dailySeries";
 import { calcFinykSpendingTotal } from "@sergeant/finyk-domain";
 
 // ── Спільний фікстур ─────────────────────────────────────────────────────────
@@ -362,6 +364,62 @@ describe("парність метрики «витрати за період»",
     expect(String(out).replace(/[\u00a0\u202f]/g, " ")).toMatchInlineSnapshot(
       `"Витрати за 4–10 тра 2026: 1 150 грн усього (3 операц.). Розбивка за категоріями: Продукти: 1 150 грн (3)"`,
     );
+  });
+});
+
+// ── Метрика 1б: «₴ за день» у Звʼязках ───────────────────────────────────────
+
+describe("парність метрики «₴ за день» у Звʼязках (get_daily_series)", () => {
+  const series = () =>
+    buildDailySeries(["spending", "income"], {
+      from: WEEK_DAYS[0]!,
+      to: WEEK_DAYS[6]!,
+    });
+  const byDay = (col: (number | undefined)[] | undefined) =>
+    Object.fromEntries(WEEK_DAYS.map((day, i) => [day, col?.[i]]));
+
+  it("ЗБІГ: витрати за тиждень = 1150 грн, як у каноні (2026-10-01)", () => {
+    // Було 2100: ряд виключав лише приховані операції, тож внутрішній
+    // переказ (500), погашення боргу (250) і «не в статистиці» (200) рахувались
+    // витратою — «₴ за день» у Звʼязках розходився з Фініком на тих самих
+    // даних. 300 (t-food) + 600 (спліт-частка t-split) + 250 (готівка).
+    const spending = byDay(series().raw["spending"]);
+    const total = Object.values(spending).reduce<number>(
+      (sum, v) => sum + (v ?? 0),
+      0,
+    );
+    expect(total).toBe(1150);
+  });
+
+  it("дні з переказом, боргом і прихованою операцією не мають витрат", () => {
+    const spending = byDay(series().raw["spending"]);
+    expect(spending["2026-05-05"]).toBe(300); // t-food
+    // t-split: лише спліт-частка 600 (400 «внутрішній переказ» не рахується)
+    // + готівка 250; t-excl-stat (200) у суму не входить.
+    expect(spending["2026-05-06"]).toBe(850);
+    // 05-07: t-transfer (500) + t-hidden (150); 05-08: t-recv (250).
+    expect(spending["2026-05-07"] ?? 0).toBe(0);
+    expect(spending["2026-05-08"] ?? 0).toBe(0);
+  });
+
+  it("ЗБІГ: доходи = 2000 грн, переказ не рахується доходом", () => {
+    const income = byDay(series().raw["income"]);
+    expect(income["2026-05-04"]).toBe(2000);
+    const total = Object.values(income).reduce<number>(
+      (sum, v) => sum + (v ?? 0),
+      0,
+    );
+    expect(total).toBe(2000);
+  });
+
+  // `finyk_tx_splits` — tombstoned: чиститься на буті, пише лише SQLite.
+  // Ряд, що брав спліти звідти, на справжньому пристрої бачив порожню мапу.
+  it("спліти і виключення беруться з SQLite-кешу, а не з tombstoned LS-ключів", () => {
+    localStorage.clear();
+
+    const spending = byDay(series().raw["spending"]);
+    expect(spending["2026-05-06"]).toBe(850);
+    expect(spending["2026-05-07"] ?? 0).toBe(0);
   });
 });
 

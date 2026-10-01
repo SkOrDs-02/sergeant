@@ -1,6 +1,6 @@
 # Реєстр метрик — одна метрика, одна агрегація
 
-> **Last touched:** 2026-08-09 by Claude (§ Фікс 2026-08-09: адаптер excluded-set перейшов із дренованих LS-ключів на канонічний SQLite-кеш). **Next review:** 2026-12-02.
+> **Last touched:** 2026-10-01 by @claude (рядок 6b: «₴ за день» у Звʼязках зійшовся з каноном); 2026-08-09 by Claude (§ Фікс 2026-08-09: адаптер excluded-set перейшов із дренованих LS-ключів на канонічний SQLite-кеш). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > Канон, який цей файл обслуговує: [`hub-coach.md §6.1`](../../product/modules/hub-coach.md) —
@@ -99,6 +99,7 @@ mobile обмінюються даними тільки через `/api/sync`, 
 | 4   | Hub-Reports / `ExpensesCard`                                                      | канон ✅ стадія 2d                                                        | 1150 грн        | 0           |
 | 5   | HubChat-контекст (`hubChatContext/readAllData.ts`)                                | канон ✅ стадії 2а (excluded-set) + 2d (готівка)                          | 1150 грн        | 0           |
 | 6   | Чат-тулза `aggregate_spending` (`queryFinykActions.ts`)                           | канон ✅ стадія 2b (було: лише `hidden`, без сплітів)                     | 1150 грн        | 0           |
+| 6b  | Звʼязки, «₴ за день» (`chatActions/crossActions/dailySeries.ts`)                  | канон ✅ 2026-10-01 (було: лише `hidden`, спліти з tombstoned LS)         | 1150 грн ³      | 0           |
 | 6a  | Щотижневе нагадування (`core/lib/recommendationEngine.ts`)                        | канон ✅ 2026-08-04 (було: лише `hidden` + перекази, банк-only)           | не в фікстурі ² | 0 ²         |
 | 7   | Mobile Hub-Reports (`apps/mobile/src/core/hub/reports/hubReports.aggregation.ts`) | банк із MMKV; excluded = hidden + transfers; **спліти не застосовуються** | не в тесті ¹    | —           |
 | 8   | Mobile дайджест (`weeklyDigestAggregates.ts`), `coachSnapshot.ts`                 | inline-копії без сплітів / `excluded_stat` / receivables                  | не в тесті ¹    | —           |
@@ -114,6 +115,14 @@ mobile обмінюються даними тільки через `/api/sync`, 
 > («витрати минулого тижня поважають `finyk_excluded_stat_txs`»), який ловить
 > саме регресію до банк-only арифметики. Δ = 0 означає «викликає той самий
 > канон, що й рядки 1-6», а не «виміряно на 1150-фікстурі» — не плутати.
+>
+> ³ Рядок 6b — навпаки, виміряний на цій самій фікстурі
+> (`metricParity.test.ts`, блок «₴ за день» у Звʼязках): сума витрат за тиждень
+> по днях ряду `get_daily_series`. До 2026-10-01 тут було **2100 грн**: читач
+> виключав лише приховані операції, тож внутрішній переказ, погашення боргу й
+> «не в статистиці» рахувались витратою, а спліти він брав із tombstoned
+> `finyk_tx_splits` (порожньо на справжньому пристрої). Тепер ряд іде через
+> `readFinykStatsContext` — той самий вхід, що в рядків 2-4.
 
 **Канонічний excluded-set** (`buildFinykExcludedTxIds`): `hidden` + внутрішні
 перекази (з мапи оверрайдів **і** з мітки на самій транзакції —
