@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import {
   ALL_FOOD_CATEGORIES,
   CORPUS_CATEGORY_TO_ID,
+  CORPUS_SLUG_TO_ID,
   FOOD_CATEGORIES,
   categorizeFood,
   groupItemsByCategory,
@@ -455,6 +456,7 @@ describe("гейт 1 — корпус GENERIC_FOODS покритий цілко�
         food.alcohol_g != null
           ? "alcohol"
           : (FROZEN_CORPUS_EXPECTED[food.name] ??
+            CORPUS_SLUG_TO_ID[food.slug] ??
             CORPUS_CATEGORY_TO_ID[food.category]);
       const actual = categorizeFood(food.name).id;
       return actual === expected
@@ -462,6 +464,119 @@ describe("гейт 1 — корпус GENERIC_FOODS покритий цілко�
         : `${food.name} (${food.category}): очікували ${expected}, отримали ${actual}`;
     }).filter(Boolean);
     expect(wrong).toEqual([]);
+  });
+});
+
+describe("фаза А′ — межі категорій, означені власником 2026-09-01", () => {
+  it("перекидання корпусних записів по slug не осиротіло й веде в наявні категорії", () => {
+    const known = new Set(FOOD_CATEGORIES.map((c) => c.id));
+    const slugs = new Set(GENERIC_FOODS.map((f) => f.slug));
+    const stale = Object.keys(CORPUS_SLUG_TO_ID).filter((s) => !slugs.has(s));
+    const dangling = Object.entries(CORPUS_SLUG_TO_ID)
+      .filter(([, id]) => !known.has(id))
+      .map(([slug, id]) => `${slug} → ${id}`);
+    expect(stale).toEqual([]);
+    expect(dangling).toEqual([]);
+  });
+
+  // Солодка випічка — смаколик, а не хліб. Корпусні записи й брендові назви
+  // з чека мусять лягати однаково.
+  it.each([
+    ["Круасан", "sweets_snacks"],
+    ["Пончик", "sweets_snacks"],
+    ["Еклер", "sweets_snacks"],
+    ["Маффін", "sweets_snacks"],
+    ["Круасан з шоколадом", "sweets_snacks"],
+    ["Кекс лимонний", "sweets_snacks"],
+    ["Пончики з глазур'ю 4 шт", "sweets_snacks"],
+    ["Маффіни шоколадні", "sweets_snacks"],
+  ])("'%s' → %s (солодка випічка)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Зворотний бік: «Хліб і крупи» лишається базою.
+  it.each([
+    ["Хліб пшеничний", "grains"],
+    ["Батон нарізний", "grains"],
+    ["Багет", "grains"],
+    ["Булочка для бургера", "grains"],
+    ["Макарони", "grains"],
+    ["Тортилья пшенична", "grains"],
+    ["Гречка", "grains"],
+  ])("'%s' → %s (база хліба й круп не поїхала)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Цукор, мед, згущене молоко — інгредієнти кухні, не смаколики.
+  it.each([
+    ["Цукор", "pantry"],
+    ["Цукор тростинний 1 кг", "pantry"],
+    ["Мед", "pantry"],
+    ["Мед липовий 400 г", "pantry"],
+    ["Молоко згущене", "pantry"],
+    ["Молоко згущене 8.5%", "pantry"],
+    ["Згущене молоко «Молокія» 8% 380г", "pantry"],
+    ["Згущ. молоко 12%", "pantry"],
+  ])("'%s' → %s (інгредієнт, бакалія)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // ...а смаколики з тим самим коренем лишились смаколиками.
+  it.each([
+    ["Торт Медовик Київхліб", "sweets_snacks"],
+    ["Цукерки Ferrero", "sweets_snacks"],
+    ["Варення полуничне", "sweets_snacks"],
+    ["Мармелад", "sweets_snacks"],
+    ["Молоко Яготинське 2.6% 900г", "dairy_eggs"],
+    ["Сухе молоко", "dairy_eggs"],
+  ])("'%s' → %s (корінь той самий, категорія своя)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Жири: маргарин, топлене масло, гі — бакалія; вершкове лишається молочним.
+  it.each([
+    ["Маргарин", "pantry"],
+    ["Маргарин Рама 400 г", "pantry"],
+    ["Топлене масло", "pantry"],
+    ["Масло топлене 500 г", "pantry"],
+    ["Топлене масло (гі)", "pantry"],
+    ["Гі", "pantry"],
+    ["Гхі натуральне", "pantry"],
+  ])("'%s' → %s (жири)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  it.each([
+    ["Масло вершкове", "dairy_eggs"],
+    ["Масло солодковершкове Яготинське 82%", "dairy_eggs"],
+    ["Масло Selianske 73%", "dairy_eggs"],
+    ["Гірчиця", "sauces"],
+    ["Олія соняшникова", "pantry"],
+    ["Паста арахісова", "spreads"],
+    ["Арахісове масло Skippy", "spreads"],
+  ])("'%s' → %s (масло й жири поруч не сплутались)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Категорії про те, як це їдять, а не про ботаніку.
+  it.each([
+    ["Авокадо", "vegetables"],
+    ["Авокадо Хаас", "vegetables"],
+    ["Помідор", "vegetables"],
+    ["Гарбуз", "vegetables"],
+  ])("'%s' → %s (овоч за вживанням)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  it("корінь авокадо живе лише в овочах, фрукти його не дублюють", () => {
+    const holders = FOOD_CATEGORIES.filter((c) =>
+      c.keywords.includes("авокадо"),
+    ).map((c) => c.id);
+    expect(holders).toEqual(["vegetables"]);
+  });
+
+  it("категорії «Заморожене» немає (знято місцями зберігання)", () => {
+    expect(ALL_FOOD_CATEGORIES.map((c) => c.id)).not.toContain("frozen");
   });
 });
 
@@ -671,5 +786,79 @@ describe("groupItemsByCategory", () => {
     const items = [null, { name: "Огірок" }, undefined];
     const groups = groupItemsByCategory(items as never);
     expect(groups.map((g) => g.cat.id).sort()).toEqual(["other", "vegetables"]);
+  });
+});
+
+// Баги перезаміру А′ (2026-10-01): знайдені, коли звіряли категоризацію з
+// відповіддю моделі. Кожен тест тут писався до фіксу й падав.
+describe("перезамір А′ — виправлені баги категоризації", () => {
+  describe("1. корпус не перебиває явну голову назви", () => {
+    it.each([
+      ["Чипси Lays Сметана і цибуля", "sweets_snacks"],
+      ["Чипси Pringles Сир і цибуля", "sweets_snacks"],
+      ["Сухарики Три корочки Сметана і зелень", "sweets_snacks"],
+      ["Снеки Сметана цибуля", "sweets_snacks"],
+    ])("%s → %s", (name, id) => {
+      expect(categorizeFood(name).id).toBe(id);
+    });
+
+    it("корпус і далі виграє, коли голови-ключового слова раніше немає", () => {
+      expect(categorizeFood("Сметана Гірська 20%").id).toBe("dairy_eggs");
+      expect(categorizeFood("Томатний сік").id).toBe("drinks");
+      expect(categorizeFood("Салат з тунцем").id).toBe("ready_meals");
+    });
+  });
+
+  describe("2. мелена й сушена приправа це бакалія, не овоч", () => {
+    it.each([
+      ["Паприка мелена", "pantry"],
+      ["Мелена паприка Kamis", "pantry"],
+      ["Імбир сушений", "pantry"],
+      ["Куркума мелена", "pantry"],
+    ])("%s → %s", (name, id) => {
+      expect(categorizeFood(name).id).toBe(id);
+    });
+
+    it("свіжа паприка лишається овочем, мелена кава напоєм", () => {
+      expect(categorizeFood("Паприка").id).toBe("vegetables");
+      expect(categorizeFood("Кава мелена Lavazza").id).toBe("drinks");
+    });
+  });
+
+  describe("3. скорочення «конс.» читається як «консервовані»", () => {
+    it.each([
+      ["Сурімі конс.", "canned"],
+      ["Конс. кукурудза", "canned"],
+      ["Лечо конс", "canned"],
+    ])("%s → %s", (name, id) => {
+      expect(categorizeFood(name).id).toBe(id);
+    });
+
+    it("слова, що лише починаються на «конс», не чіпає", () => {
+      expect(categorizeFood("Консистенція").id).not.toBe("canned");
+    });
+  });
+
+  describe("4. апострофи нормалізуються на вході порівняння", () => {
+    it.each(["Кешʼю", "Кеш'ю", "Кеш’ю смажені", "Кеш`ю солоні", "КЕШ‘Ю"])(
+      "%s → горіхи",
+      (name) => {
+        expect(categorizeFood(name).id).toBe("nuts_seeds");
+      },
+    );
+
+    it("інші слова з апострофом не зламались", () => {
+      expect(categorizeFood("М'ясо курки").id).toBe("meat");
+      expect(categorizeFood("Мʼясо курки").id).toBe("meat");
+    });
+
+    it("у каталозі коренів лише канонічний апостроф ʼ", () => {
+      const bad = FOOD_CATEGORIES.flatMap((c) =>
+        [...c.keywords, ...(c.genericKeywords ?? [])].filter((k) =>
+          /['’`ʻ‘]/u.test(k),
+        ),
+      );
+      expect(bad).toEqual([]);
+    });
   });
 });

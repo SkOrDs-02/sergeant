@@ -4,7 +4,10 @@ import {
   getIncomeCategory,
 } from "@sergeant/finyk-domain/lib/categories";
 import { MANUAL_INCOME_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
-import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import {
+  INTERNAL_TRANSFER_ID,
+  P2P_TRANSFER_MCCS,
+} from "@sergeant/finyk-domain/constants";
 import type { ImportDirection } from "@sergeant/shared";
 
 /**
@@ -70,6 +73,15 @@ const MCC_CATEGORY_TO_PICKER_SLUG: Readonly<Record<string, string>> = {
   education: "education",
   travel: "travel",
   debt: "debt",
+  // П'ять категорій 2026-10-01: усі вони є чипами ручного пікера під тим
+  // самим id, тож міст прямий. `p2p_transfer` тут лише на випадок, якщо
+  // каталог колись почне його повертати з MCC (зараз ні: код 4829 читає
+  // клієнтський резолвер, див. `P2P_TRANSFER_MCCS`).
+  telecom: "telecom",
+  home: "home",
+  pets: "pets",
+  gifts: "gifts",
+  p2p_transfer: "p2p_transfer",
 };
 
 interface BankCategoryRule {
@@ -107,27 +119,24 @@ const BANK_CATEGORY_RULES: readonly BankCategoryRule[] = [
     fragments: ["одяг", "взуття", "покупк", "магазин", "маркетплейс"],
     slug: "shopping",
   },
-  {
-    fragments: ["дім та ремонт", "ремонт", "меблі", "побутов", "госпо"],
-    slug: "shopping",
-  },
+  // «Дім та ремонт» — реальна назва категорії з живого Privat24-XLSX; з
+  // 2026-10-01 їй є куди лягти (`home`), доти — у «Покупки». «Побутов»
+  // (побутова техніка) лишається покупками і стоїть РАНІШЕ: це не ремонт і
+  // не меблі, а перший збіг у списку вирішує все.
+  { fragments: ["побутов"], slug: "shopping" },
+  { fragments: ["дім та ремонт", "ремонт", "меблі", "госпо"], slug: "home" },
   { fragments: ["краса", "салон", "перукар", "косметик"], slug: "shopping" },
-  { fragments: ["зоо", "тварин"], slug: "shopping" },
+  { fragments: ["зоо", "тварин"], slug: "pets" },
+  // Множина: «подарунок» (однина) — це НАДХОДЖЕННЯ (`gift`, правило
+  // нижче), і перший збіг у списку вирішує все, тож однина тут повернула б
+  // null замість доходу.
+  { fragments: ["подарунки", "квіти"], slug: "gifts" },
   // «Цифрові товари» у Privat24 — це App Store / Google Play / стрімінг і
   // разові покупки в них. Домінує підписна модель, тому «Підписки»; якщо
   // живі дані покажуть інше, міняти тут ОДИН рядок.
   { fragments: ["цифров", "підписк", "стрімінг"], slug: "subscriptions" },
-  {
-    fragments: [
-      "звʼязок",
-      "звязок",
-      "мобільн",
-      "інтернет",
-      "комуналь",
-      "комунальн",
-    ],
-    slug: "utilities",
-  },
+  { fragments: ["звʼязок", "звязок", "мобільн", "інтернет"], slug: "telecom" },
+  { fragments: ["комуналь", "комунальн"], slug: "utilities" },
   { fragments: ["техн", "електрон", "гаджет"], slug: "tech" },
   { fragments: ["розваг", "кіно", "театр", "ігри"], slug: "entertainment" },
   { fragments: ["навчанн", "освіт", "курс", "книг"], slug: "education" },
@@ -220,10 +229,19 @@ const CASH_WITHDRAWAL_FRAGMENTS: readonly string[] = [
   "cash withdrawal",
 ];
 
-/** Опис операції (назва мерчанта) → слаг за ключовими словами домену. */
+/**
+ * Опис операції (назва мерчанта) → слаг за ключовими словами домену.
+ *
+ * `p2pMcc` — код переказу (4829) з MCC-колонки, якщо він там був. Каталог
+ * `categorizeMcc` його не знає навмисно (див. `P2P_TRANSFER_MCCS`), тож
+ * передаємо сюди й питаємо канонічний `getCategory`, який уміє ВІДРІЗНИТИ
+ * переказ людині від поповнення банки: той самий резолвер, що в стрічці, а
+ * не друга копія правила.
+ */
 export function mapDescription(
   description: string,
   direction: ImportDirection,
+  p2pMcc = 0,
 ): string | null {
   const desc = description.trim();
   if (!desc) return null;
@@ -238,8 +256,14 @@ export function mapDescription(
   if (CASH_WITHDRAWAL_FRAGMENTS.some((f) => normalized.includes(f))) {
     return INTERNAL_TRANSFER_ID;
   }
-  const id = getCategory(desc, 0).id;
+  const id = getCategory(desc, p2pMcc).id;
   return MCC_CATEGORY_TO_PICKER_SLUG[id] ?? null;
+}
+
+/** MCC-клітинка → код, ЛИШЕ якщо це код переказу людям; інакше 0. */
+function p2pMccOf(raw: string | undefined): number {
+  const mcc = Number.parseInt((raw ?? "").trim(), 10);
+  return P2P_TRANSFER_MCCS.includes(mcc) ? mcc : 0;
 }
 
 export interface CategoryHintInput {
@@ -266,7 +290,11 @@ export function resolveCategoryHint(input: CategoryHintInput): string | null {
     if (fromMcc) return fromMcc;
   }
   if (input.description) {
-    const fromDesc = mapDescription(input.description, direction);
+    const fromDesc = mapDescription(
+      input.description,
+      direction,
+      direction === "expense" ? p2pMccOf(input.mcc) : 0,
+    );
     if (fromDesc) return fromDesc;
   }
   return null;

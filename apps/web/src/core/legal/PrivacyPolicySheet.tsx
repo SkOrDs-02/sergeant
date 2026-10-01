@@ -2,7 +2,6 @@
 
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
-import { LAST_UPDATED } from "./legalShared";
 import { privacyDocument } from "./privacyDocument";
 
 interface PrivacyPolicySheetProps {
@@ -30,7 +29,7 @@ export function PrivacyPolicySheet({ open, onClose }: PrivacyPolicySheetProps) {
       <div className="space-y-4 pb-2">
         <p className="text-style-body text-muted">{privacyDocument.intro}</p>
         <p className="text-style-caption text-subtle">
-          {messages.legal.lastUpdatedPrefix} {LAST_UPDATED}
+          {messages.legal.lastUpdatedPrefix} {privacyDocument.lastUpdated}
         </p>
         {privacyDocument.sections.map((section) => (
           <section

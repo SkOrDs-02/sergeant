@@ -3,6 +3,7 @@ import { Recommendations } from "@sergeant/insights";
 import type { Rec } from "../../lib/recommendationEngine";
 import type { Insight } from "@shared/lib/insights/types";
 import {
+  HUB_REPORTS_PATH,
   INSIGHT_PRIORITY,
   REC_INSIGHT_TWINS,
   UNKNOWN_INSIGHT_PRIORITY,
@@ -259,5 +260,31 @@ describe("mergeNowItems — ціль «Звіт тижня»", () => {
       [],
     );
     expect(withoutWeekReportTarget(item!)).toBe(item);
+  });
+
+  // Понеділкова картка «Підсумок минулого тижня» крос-модульна: `module:
+  // "hub"`. «Повернути в модуль» для неї означало б `openModule("hub")`, який
+  // проковтує клік, — тобто той самий дефект, що й був з `action: "reports"`.
+  describe("крос-модульна картка (понеділковий підсумок)", () => {
+    const digestRec = rec({
+      id: "weekly_digest_2026-04-20",
+      module: "hub",
+      priority: 92,
+      action: Recommendations.WEEK_REPORT_ACTION,
+    });
+
+    it("зі звітом тижня на екрані дає open_week_report, а не відкриття модуля", () => {
+      const [item] = mergeNowItems([digestRec], []);
+      expect(item?.action).toEqual({ kind: "open_week_report" });
+    });
+
+    it("коли блоку «Порада й звіт тижня» немає, веде у вкладку «Звіти», а не в неіснуючий модуль", () => {
+      const [item] = mergeNowItems([digestRec], []);
+      expect(withoutWeekReportTarget(item!).action).toEqual({
+        kind: "navigate",
+        path: HUB_REPORTS_PATH,
+      });
+      expect(HUB_REPORTS_PATH).toBe("/?tab=reports");
+    });
   });
 });

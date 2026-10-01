@@ -1,6 +1,6 @@
 # Governance
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2027-01-11.
 > **Status:** Active
 
 Governance у Sergeant навмисно розділено на людино-читану політику і машинно-читане enforcement: текст пояснює «чому», JSON-реєстри й генератори дають CI те, що можна перевірити.
@@ -16,7 +16,7 @@ Governance у Sergeant навмисно розділено на людино-ч�
 - [incident-severity-policy.md](./incident-severity-policy.md) — модель severity і поріг для постмортему.
 - [security-incident-policy.md](./security-incident-policy.md) — класифікація компрометації доступу і first-response.
 - [policy-review.md](./policy-review.md) і [doc-freshness.md](./doc-freshness.md) — каденс і процес перегляду.
-- [freshness-dashboard.html](./freshness-dashboard.html) — згенерований дашборд `Last validated` / `Next review` (`pnpm docs:freshness-dashboard`).
+- Дашборд свіжості (`Last touched` / `Next review` по всьому tracked-set) — **не комітиться**: згенеруй локально `pnpm docs:freshness-dashboard` (gitignored `freshness-dashboard.html` у цій теці) або візьми артефакт `docs-freshness-dashboard` з `docs-freshness.yml`. Чому — [doc-freshness.md § «Чому дашборд не комітиться»](./doc-freshness.md#чому-дашборд-не-комітиться-2026-10-01).
 - [pnpm-overrides-policy.md](./pnpm-overrides-policy.md) — правила для `pnpm.overrides`; гейт `pnpm lint:overrides`. Самі записи — у [`pnpm-overrides.md`](../../../pnpm-overrides.md).
 - [harness-versioning.md](./harness-versioning.md) — bump-правила для `.agents/harness-versions.json`.
 - [snapshot.md](./snapshot.md) — динамічний снапшот для агентів (`pnpm snapshot`).
@@ -37,7 +37,7 @@ Governance у Sergeant навмисно розділено на людино-ч�
 - `pnpm lint:hard-rules-registry`
 - `pnpm hard-rules:check`
 - `pnpm docs:check-freshness-coverage`
-- `pnpm docs:check-freshness-dashboard`
+- `pnpm docs:check-freshness-cadence`
 - `pnpm docs:check-adr-graph` — статуси, двобічний Supersedes і README-індекс ADR
 - `pnpm docs:check-pr-ledger` — Rule #26
 

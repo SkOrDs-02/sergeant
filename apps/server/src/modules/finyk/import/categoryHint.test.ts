@@ -15,7 +15,8 @@ describe("mapBankCategory — назви з живого Privat24-XLSX", () => {
     ["Аптеки", "health"],
     ["Таксі", "transport"],
     ["Одяг та взуття", "shopping"],
-    ["Дім та ремонт", "shopping"],
+    // З 2026-10-01 є власна категорія «Дім і ремонт» — доти це були «Покупки».
+    ["Дім та ремонт", "home"],
     ["Цифрові товари", "subscriptions"],
     // «Платежі за реквізитами» і «Інше» осмисленого чипа не мають —
     // краще лишити дефолт, ніж вгадати навмання.
@@ -65,6 +66,114 @@ describe("mapMccCell — колонка МСС виписки mono", () => {
 
   it("6012 (погашення кредиту) → Борги та кредити (фікс 2026-09-11)", () => {
     expect(mapMccCell("6012")).toBe("debt");
+  });
+
+  // П'ять категорій 2026-10-01: усі є чипами пікера під тим самим id.
+  it.each([
+    ["4814", "telecom"],
+    ["4812", "telecom"],
+    ["4816", "telecom"],
+    ["5200", "home"],
+    ["5712", "home"],
+    ["742", "pets"],
+    ["5995", "pets"],
+    ["5947", "gifts"],
+    ["5992", "gifts"],
+  ])("MCC %s → чип «%s»", (mcc, slug) => {
+    expect(mapMccCell(mcc)).toBe(slug);
+  });
+
+  it("4829 (переказ) каталог мовчить навмисно: його читає резолвер із описом", () => {
+    expect(mapMccCell("4829")).toBeNull();
+  });
+});
+
+describe("нові категорії — назви з кабінету банку", () => {
+  it.each([
+    ["Звʼязок", "telecom"],
+    ["Мобільний звʼязок та інтернет", "telecom"],
+    ["Інтернет", "telecom"],
+    ["Дім та ремонт", "home"],
+    ["Меблі", "home"],
+    ["Зоотовари", "pets"],
+    ["Тварини", "pets"],
+    ["Подарунки", "gifts"],
+    ["Квіти", "gifts"],
+    // Комуналка лишилась окремою.
+    ["Комунальні послуги", "utilities"],
+    // Побутова техніка — не ремонт і не меблі.
+    ["Побутова техніка та ремонт", "shopping"],
+  ])("«%s» → %s", (label, slug) => {
+    expect(mapBankCategory(label, "expense")).toBe(slug);
+  });
+
+  it("«Подарунок» у доході лишається подарунком-надходженням, а не null", () => {
+    expect(mapBankCategory("Подарунок", "income")).toBe("gift");
+  });
+});
+
+describe("p2p-перекази: код 4829 + опис", () => {
+  it("переказ людині (4829) → «Перекази людям»", () => {
+    expect(
+      resolveCategoryHint({
+        direction: "expense",
+        mcc: "4829",
+        description: "Іван Петренко",
+      }),
+    ).toBe("p2p_transfer");
+  });
+
+  it("поповнення чужої банки (4829) — рішення 4Б, перекази людям", () => {
+    expect(
+      resolveCategoryHint({
+        direction: "expense",
+        mcc: "4829",
+        description: "Поповнення «Відпустка»",
+      }),
+    ).toBe("p2p_transfer");
+  });
+
+  it("власний доказ в описі сильніший за код переказу", () => {
+    expect(
+      resolveCategoryHint({
+        direction: "expense",
+        mcc: "4829",
+        description: "Погашення кредиту",
+      }),
+    ).toBe("debt");
+    expect(
+      resolveCategoryHint({
+        direction: "expense",
+        mcc: "4829",
+        description: "lifecell",
+      }),
+    ).toBe("telecom");
+  });
+
+  it("без MCC-колонки лишається за описом: «Переказ на картку» → p2p", () => {
+    expect(mapDescription("Переказ на картку", "expense")).toBe("p2p_transfer");
+  });
+
+  it("код 4829 у доході підказки не дає (перекази людям — категорія витрат)", () => {
+    expect(
+      resolveCategoryHint({
+        direction: "income",
+        mcc: "4829",
+        description: "Іван Петренко",
+      }),
+    ).toBeNull();
+  });
+});
+
+describe("нові категорії — опис мерчанта", () => {
+  it.each([
+    ["lifecell", "telecom"],
+    ["Київстар", "telecom"],
+    ["Епіцентр К", "home"],
+    ["MasterZoo", "pets"],
+    ["Квіти", "gifts"],
+  ])("«%s» → %s", (desc, slug) => {
+    expect(mapDescription(desc, "expense")).toBe(slug);
   });
 });
 

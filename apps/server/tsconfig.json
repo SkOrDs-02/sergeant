@@ -11,6 +11,10 @@
       "@sergeant/design-tokens/*": ["../../packages/design-tokens/*"]
     }
   },
-  "include": ["src/**/*", "migrate.mjs"],
+  "include": [
+    "src/**/*",
+    "migrate.mjs",
+    "scripts/token-reencrypt-rollover*.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }

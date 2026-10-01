@@ -1,0 +1,778 @@
+[
+  {
+    "name": "Айран Премія 1,8% пл",
+    "set": "receipt",
+    "now": "dairy_eggs",
+    "ai": "drinks",
+    "keywordCats": [],
+    "bucket": "modelwrong"
+  },
+  {
+    "name": "Креветка у соусі Тартар",
+    "set": "receipt",
+    "now": "fish",
+    "ai": "ready_meals",
+    "keywordCats": ["sauces", "fish"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Мюслі AXA медові з шоколадом і бананом",
+    "set": "receipt",
+    "now": "grains",
+    "ai": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "fruits", "grains", "pantry"],
+    "bucket": "dispute"
+  },
+  {
+    "name": "Огірки Krava малосольні",
+    "set": "receipt",
+    "now": "vegetables",
+    "ai": "canned",
+    "keywordCats": ["vegetables"],
+    "bucket": "state"
+  },
+  {
+    "name": "Паляничка сирна",
+    "set": "receipt",
+    "now": "grains",
+    "ai": "ready_meals",
+    "keywordCats": ["dairy_eggs"],
+    "bucket": "modelwrong"
+  },
+  {
+    "name": "Пельмені Геркулес Фірмові",
+    "set": "receipt",
+    "now": "ready_meals",
+    "ai": "frozen",
+    "keywordCats": ["ready_meals"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Продукт Премія з ікрою риби і лососем пастер",
+    "set": "receipt",
+    "now": "fish",
+    "ai": "canned",
+    "keywordCats": ["fish"],
+    "bucket": "state"
+  },
+  {
+    "name": "Разом смачніше «Франческо»",
+    "set": "receipt",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Салат «Кальмар королівський» в унагі соусі",
+    "set": "receipt",
+    "now": "fish",
+    "ai": "ready_meals",
+    "keywordCats": ["ready_meals", "sauces", "fish", "meat"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Сирок глазурований «Чудо» зі смаком шоколаду 15%",
+    "set": "receipt",
+    "now": "dairy_eggs",
+    "ai": "sweets_snacks",
+    "keywordCats": ["dairy_eggs"],
+    "bucket": "decided"
+  },
+  {
+    "name": "Слойка з індичкою та сиром фета ГП",
+    "set": "receipt",
+    "now": "dairy_eggs",
+    "ai": "ready_meals",
+    "keywordCats": ["meat", "dairy_eggs"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Сніданок Good morning, Granola To Go з журавлиною",
+    "set": "receipt",
+    "now": "grains",
+    "ai": "sweets_snacks",
+    "keywordCats": ["fruits"],
+    "bucket": "dispute"
+  },
+  {
+    "name": "Суміш овочева Рудь Мексиканка для жарки",
+    "set": "receipt",
+    "now": "vegetables",
+    "ai": "frozen",
+    "keywordCats": ["vegetables"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Куряче стегно запечене",
+    "set": "synthetic",
+    "now": "meat",
+    "ai": "ready_meals",
+    "keywordCats": ["meat"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Гречка з грибами",
+    "set": "synthetic",
+    "now": "grains",
+    "ai": "ready_meals",
+    "keywordCats": ["grains"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Запіканка сирна",
+    "set": "synthetic",
+    "now": "dairy_eggs",
+    "ai": "ready_meals",
+    "keywordCats": ["dairy_eggs"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Рогалики з маком",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "sweets_snacks",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Рулет сливовий",
+    "set": "synthetic",
+    "now": "fruits",
+    "ai": "sweets_snacks",
+    "keywordCats": ["fruits"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Балик свинячий",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "meat",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Язик яловичий",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "meat",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Корейка свиняча",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "meat",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Голова свиняча",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "meat",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Сардини в томаті",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "canned",
+    "keywordCats": ["vegetables", "fish"],
+    "bucket": "state"
+  },
+  {
+    "name": "Тунець консервований",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "canned",
+    "keywordCats": ["canned", "fish"],
+    "bucket": "state"
+  },
+  {
+    "name": "Хек заморожений",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "frozen",
+    "keywordCats": ["fish"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Минтай заморожений",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "frozen",
+    "keywordCats": ["fish"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Набір для юшки",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "fish",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Огірки мариновані",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "canned",
+    "keywordCats": ["canned", "vegetables"],
+    "bucket": "state"
+  },
+  {
+    "name": "Гриби печериці",
+    "set": "synthetic",
+    "now": "canned",
+    "ai": "vegetables",
+    "keywordCats": ["vegetables"],
+    "bucket": "state"
+  },
+  {
+    "name": "Грибний мікс",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "canned",
+    "keywordCats": [],
+    "bucket": "state"
+  },
+  {
+    "name": "Огірки солоні",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "canned",
+    "keywordCats": ["vegetables", "pantry"],
+    "bucket": "state"
+  },
+  {
+    "name": "Крупа гречана",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "grains",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Борошно картопляне",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "grains",
+    "keywordCats": ["vegetables", "grains"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Пампушка часникова",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Чипси Lays Сметана і цибуля",
+    "set": "synthetic",
+    "now": "dairy_eggs",
+    "ai": "sweets_snacks",
+    "keywordCats": ["sweets_snacks", "vegetables", "dairy_eggs"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Наливка Журавлина 0.5",
+    "set": "synthetic",
+    "now": "fruits",
+    "ai": "alcohol",
+    "keywordCats": ["fruits", "alcohol"],
+    "bucket": "dispute"
+  },
+  {
+    "name": "Пиво \"Квас Тарас\"",
+    "set": "synthetic",
+    "now": "drinks",
+    "ai": "alcohol",
+    "keywordCats": ["alcohol"],
+    "bucket": "modelwrong"
+  },
+  {
+    "name": "Паприка мелена",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "pantry",
+    "keywordCats": [],
+    "bucket": "dish"
+  },
+  {
+    "name": "Огірки конс. \"Ніжин\" 450г",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "canned",
+    "keywordCats": ["vegetables"],
+    "bucket": "state"
+  },
+  {
+    "name": "Згущене молоко \"Молокія\" 8% 380г",
+    "set": "synthetic",
+    "now": "pantry",
+    "ai": "dairy_eggs",
+    "keywordCats": ["dairy_eggs", "pantry"],
+    "bucket": "decided"
+  },
+  {
+    "name": "Горошок конс. \"Злато\" 400г",
+    "set": "synthetic",
+    "now": "legumes",
+    "ai": "canned",
+    "keywordCats": ["legumes"],
+    "bucket": "state"
+  },
+  {
+    "name": "Згущ. молоко \"Простоквашино\"",
+    "set": "synthetic",
+    "now": "pantry",
+    "ai": "dairy_eggs",
+    "keywordCats": ["dairy_eggs", "pantry"],
+    "bucket": "decided"
+  },
+  {
+    "name": "Кукурудза конс. \"Солодка\"",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "canned",
+    "keywordCats": ["vegetables", "grains", "pantry"],
+    "bucket": "state"
+  },
+  {
+    "name": "Молоко згущене 8.5%",
+    "set": "synthetic",
+    "now": "pantry",
+    "ai": "dairy_eggs",
+    "keywordCats": ["dairy_eggs", "pantry"],
+    "bucket": "decided"
+  },
+  {
+    "name": "Квасоля конс. томат.",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "canned",
+    "keywordCats": ["vegetables", "legumes"],
+    "bucket": "state"
+  },
+  {
+    "name": "Згущ. молоко 12%",
+    "set": "synthetic",
+    "now": "pantry",
+    "ai": "dairy_eggs",
+    "keywordCats": ["dairy_eggs", "pantry"],
+    "bucket": "decided"
+  },
+  {
+    "name": "Згущ. молоко 11%",
+    "set": "synthetic",
+    "now": "pantry",
+    "ai": "dairy_eggs",
+    "keywordCats": ["dairy_eggs", "pantry"],
+    "bucket": "decided"
+  },
+  {
+    "name": "Пельмені \"Свинячі\"",
+    "set": "synthetic",
+    "now": "ready_meals",
+    "ai": "frozen",
+    "keywordCats": ["ready_meals"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Котлети курячі заморожені",
+    "set": "synthetic",
+    "now": "ready_meals",
+    "ai": "frozen",
+    "keywordCats": ["ready_meals", "meat"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Нагетси курячі 1кг",
+    "set": "synthetic",
+    "now": "meat",
+    "ai": "frozen",
+    "keywordCats": ["meat"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Брокколі мікс заморожений",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "frozen",
+    "keywordCats": [],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Шпинат заморожений 500г",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "frozen",
+    "keywordCats": ["vegetables"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Морозиво пломбір 1л",
+    "set": "synthetic",
+    "now": "sweets_snacks",
+    "ai": "frozen",
+    "keywordCats": ["sweets_snacks"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Ескімо шоколадне",
+    "set": "synthetic",
+    "now": "sweets_snacks",
+    "ai": "frozen",
+    "keywordCats": ["sweets_snacks"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Тісто листкове заморожене",
+    "set": "synthetic",
+    "now": "grains",
+    "ai": "frozen",
+    "keywordCats": ["grains"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Риба палтус заморожений",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "frozen",
+    "keywordCats": ["fish"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Сирники заморожені 400г",
+    "set": "synthetic",
+    "now": "ready_meals",
+    "ai": "frozen",
+    "keywordCats": ["ready_meals", "dairy_eggs"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Кракет картопляний",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "frozen",
+    "keywordCats": ["vegetables"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Овочева суміш \"Весняна\"",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "frozen",
+    "keywordCats": ["vegetables"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Фрикадельки яловичі",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "frozen",
+    "keywordCats": [],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Морозиво ванільне рожок",
+    "set": "synthetic",
+    "now": "sweets_snacks",
+    "ai": "frozen",
+    "keywordCats": ["sweets_snacks"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Заморожений горошок",
+    "set": "synthetic",
+    "now": "legumes",
+    "ai": "frozen",
+    "keywordCats": ["legumes"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Смажена картопля шокова",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "frozen",
+    "keywordCats": ["vegetables"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Морозиво фісташкове",
+    "set": "synthetic",
+    "now": "sweets_snacks",
+    "ai": "frozen",
+    "keywordCats": ["sweets_snacks", "nuts_seeds"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Лазанья заморожена",
+    "set": "synthetic",
+    "now": "ready_meals",
+    "ai": "frozen",
+    "keywordCats": ["ready_meals"],
+    "bucket": "frozen-removed"
+  },
+  {
+    "name": "Нут Власна Фасовка 300г",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "legumes",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Горох Поляна 0.8кг",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "legumes",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Горох Жовтий Цілий 1.2кг",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "legumes",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Кеш'ю Цілий 220г",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "nuts_seeds",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Горох Відбірний 0.9кг",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "legumes",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Комплекс вітамінів SportVita",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "sports",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Енергетичний гель",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "sports",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "CLA (кон'югована лінолева кислота)",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "sports",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Омега-3 риб'ячий жир",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "sports",
+    "keywordCats": ["fish"],
+    "bucket": "dispute"
+  },
+  {
+    "name": "Комплекс мінералів",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "sports",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Спортивний напій",
+    "set": "synthetic",
+    "now": "drinks",
+    "ai": "sports",
+    "keywordCats": ["drinks"],
+    "bucket": "dispute"
+  },
+  {
+    "name": "Пампушки з часником",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Крученики по-київськи",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Запіканка картопляна",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Гарбузова каша",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Гречаники",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Капусняк",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Пиріжки з капустою",
+    "set": "synthetic",
+    "now": "vegetables",
+    "ai": "ready_meals",
+    "keywordCats": ["vegetables"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Риба смажена",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "ready_meals",
+    "keywordCats": ["fish"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Куліш",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Боул з куркою теріякі",
+    "set": "synthetic",
+    "now": "meat",
+    "ai": "ready_meals",
+    "keywordCats": ["sauces", "meat"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Бурріто Санта Фе",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Спагетті Болоньєзе 350г",
+    "set": "synthetic",
+    "now": "grains",
+    "ai": "ready_meals",
+    "keywordCats": ["grains"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Веганський боул",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Бурріто Чилі кон Карне",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Філадельфія лайт",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Рис з овочами та креветками",
+    "set": "synthetic",
+    "now": "grains",
+    "ai": "ready_meals",
+    "keywordCats": ["vegetables", "fish", "grains"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Паста Альфредо",
+    "set": "synthetic",
+    "now": "sauces",
+    "ai": "ready_meals",
+    "keywordCats": ["sauces"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Боул з лососем",
+    "set": "synthetic",
+    "now": "fish",
+    "ai": "ready_meals",
+    "keywordCats": ["fish"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Бурріто Вегетаріанський",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  },
+  {
+    "name": "Гречана паста з грибами",
+    "set": "synthetic",
+    "now": "sauces",
+    "ai": "ready_meals",
+    "keywordCats": ["sauces"],
+    "bucket": "dish"
+  },
+  {
+    "name": "Боул BBQ",
+    "set": "synthetic",
+    "now": "other",
+    "ai": "ready_meals",
+    "keywordCats": [],
+    "bucket": "gap"
+  }
+]

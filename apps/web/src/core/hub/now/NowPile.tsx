@@ -53,8 +53,11 @@ export function promoteDanger(
 
 /**
  * Куди веде рядок. `open_module` іде через проп із головної (той самий
- * `openInsightTarget`, що обслуговував акордеон): він знає і про hash, і
- * про «reports» — вид хабу, не модуль. Імперативна дія — через шину з
+ * `openInsightTarget`, що обслуговував акордеон): він знає про hash, але
+ * лише для id МОДУЛЯ — `openModule` мовчки ігнорує все інше (колись тут
+ * значилось «і про `reports`», і саме тому понеділкова картка мала мертву
+ * кнопку). Вид хабу, не модуль, — це окремі види дії: `open_week_report`
+ * (подія шини) і `navigate` (`/?tab=reports`). Імперативна дія — через шину з
  * джерелом `now_pile`, як і hero з `today_focus_cta`.
  */
 function useRunAction(onOpenTarget: (module: string, hash?: string) => void) {
@@ -210,7 +213,7 @@ function NowRow({
 }
 
 export interface NowPileProps {
-  /** `openInsightTarget` з `useHubDashboardState` — модуль, hash або «reports». */
+  /** `openInsightTarget` з `useHubDashboardState` — id модуля й, за потреби, hash усередині нього. */
   onOpenTarget: (module: string, hash?: string) => void;
 }
 
