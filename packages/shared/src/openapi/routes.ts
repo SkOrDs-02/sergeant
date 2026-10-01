@@ -1675,17 +1675,36 @@ export const paths: ZodOpenApiPathsObject = {
       description:
         "Скасовує активну підписку через provider.cancelSubscription " +
         "(LiqPay unsubscribe / Plata subscription/edit action=cancel). Доступ лишається до " +
-        "кінця оплаченого періоду (cancel_at_period_end).",
+        "кінця оплаченого періоду (cancel_at_period_end; у `/api/billing/status` це " +
+        "`subscription.cancelAtPeriodEnd`). Повторний виклик на вже скасованій підписці " +
+        "ідемпотентний і провайдера не смикає.",
       tags: ["monetization"],
       security: cookieOrBearer,
       responses: {
         "200": {
-          description: "Скасування прийнято.",
+          description:
+            "Скасування підтверджено провайдером або вже було заплановане.",
           content: {
             "application/json": { schema: namedSchemas.BillingCancelResponse },
           },
         },
         "401": unauthorized,
+        "409": {
+          description:
+            "`NO_ACTIVE_SUBSCRIPTION`: жоден провайдер не має що скасовувати " +
+            "(немає підписки, founder-байпас або `provider='manual'`).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description:
+            "`PROVIDER_CANCEL_FAILED`: провайдер відмовив або не відповів; " +
+            "підписка лишається активною, можна повторити.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
         "503": {
           description: "Billing env is not configured.",
           content: {

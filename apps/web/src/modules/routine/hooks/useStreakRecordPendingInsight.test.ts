@@ -54,6 +54,16 @@ describe("useStreakRecordPendingInsight", () => {
     expect(result.current).toBeNull();
   });
 
+  it("returns null when there is no live streak (current=0, record=1): «Серія: 0 днів» is never shown", () => {
+    // Регресія: `currentStreak === longestStreak - 1` виконується для 0/1, і
+    // картка казала «Серія: 0 днів / Ще один, і рекорд 1».
+    mockActive.mockReturnValue(0);
+    mockAllTime.mockReturnValue(1);
+    const state = makeState([makeHabit()]);
+    const { result } = renderHook(() => useStreakRecordPendingInsight(state));
+    expect(result.current).toBeNull();
+  });
+
   it("returns null when current streak is not exactly one below the record", () => {
     mockActive.mockReturnValue(3);
     mockAllTime.mockReturnValue(10);
@@ -71,12 +81,41 @@ describe("useStreakRecordPendingInsight", () => {
       id: "routine-streak-record-pending",
       module: "routine",
       title: "Серія: 6 днів",
-      subtitle: "Ще один, і рекорд 7",
+      // Ще один день рекорд лише повторює (6 + 1 = 7), а не б'є.
+      subtitle: "Ще день, і повториш рекорд 7 днів",
       askAiPrompt:
-        "Сьогодні можу побити особистий рекорд стріку (6 днів). Дай коротку мотивацію і підкажи, як не зірватись завтра.",
+        "Моя серія зараз 6 днів, а особистий рекорд 7 днів. Ще день, і я його повторю. Дай коротку мотивацію і підкажи, як не зірватись завтра.",
       action: { type: "navigate", path: "/routine/today" },
       showOn: "both",
     });
+  });
+
+  it("fires for the smallest live case 1/2 with correct plural forms", () => {
+    mockActive.mockReturnValue(1);
+    mockAllTime.mockReturnValue(2);
+    const state = makeState([makeHabit()]);
+    const { result } = renderHook(() => useStreakRecordPendingInsight(state));
+    expect(result.current?.title).toBe("Серія: 1 день");
+    expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 2 дні");
+  });
+
+  it("fires for 2/3 and the copy never claims to beat the record or prints the current value as the record", () => {
+    mockActive.mockReturnValue(2);
+    mockAllTime.mockReturnValue(3);
+    const state = makeState([makeHabit()]);
+    const { result } = renderHook(() => useStreakRecordPendingInsight(state));
+    expect(result.current?.title).toBe("Серія: 2 дні");
+    expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 3 дні");
+    expect(result.current?.askAiPrompt).toContain("рекорд 3 дні");
+    expect(result.current?.askAiPrompt).not.toMatch(/побит/i);
+  });
+
+  it("returns null when the streak already equals the record (nothing left to repeat)", () => {
+    mockActive.mockReturnValue(7);
+    mockAllTime.mockReturnValue(7);
+    const state = makeState([makeHabit()]);
+    const { result } = renderHook(() => useStreakRecordPendingInsight(state));
+    expect(result.current).toBeNull();
   });
 
   it("skips archived habits when computing the all-time record", () => {
@@ -92,6 +131,6 @@ describe("useStreakRecordPendingInsight", () => {
     const { result } = renderHook(() => useStreakRecordPendingInsight(state));
     // longestStreak should be 3 (from active-habit), not 99 — so
     // currentStreak=2 === longestStreak-1=2 fires the insight.
-    expect(result.current?.subtitle).toBe("Ще один, і рекорд 3");
+    expect(result.current?.subtitle).toBe("Ще день, і повториш рекорд 3 дні");
   });
 });

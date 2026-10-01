@@ -627,6 +627,98 @@ describe("useNutritionRemoteActions", () => {
       );
     });
 
+    describe("вибір рецептів (збережені + згенеровані)", () => {
+      const OK = {
+        categories: [
+          {
+            name: "Овочі",
+            items: [{ name: "Помідори", quantity: "2 шт", note: "" }],
+          },
+        ],
+      };
+
+      it("шле на сервер лише позначені рецепти, а не все, що в памʼяті", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const { result, spies } = makeHarness({
+          // Згенеровані в памʼяті - їх у запиті бути не має.
+          recipes: [{ id: "g-all", title: "Лишній", ingredients: ["сіль"] }],
+        });
+        act(() => {
+          result.current.generateShoppingList("recipes", [
+            // Збережений рецепт із кроками й макросами: серверу для списку
+            // покупок потрібні лише назва та інгредієнти.
+            {
+              id: "s1",
+              title: "Борщ",
+              ingredients: ["буряк"],
+              steps: ["Зварити"],
+              macros: { kcal: 300 },
+            },
+            { id: "g1", title: "Омлет", ingredients: ["яйця"] },
+          ]);
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        const body = apiFetchShoppingList.mock.calls[0]![0] as {
+          recipes: unknown[];
+          weekPlan?: unknown;
+        };
+        expect(body.recipes).toEqual([
+          { title: "Борщ", ingredients: ["буряк"] },
+          { title: "Омлет", ingredients: ["яйця"] },
+        ]);
+        expect(body.weekPlan).toBeUndefined();
+      });
+
+      it("вкладає запит у стелі схеми: ≤20 рецептів, ≤50 інгредієнтів по ≤200", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const { result, spies } = makeHarness();
+        const many = Array.from({ length: 25 }, (_, i) => ({
+          id: `s${i}`,
+          title: `Рецепт ${i}`,
+          ingredients: Array.from({ length: 70 }, () => "і".repeat(250)),
+        }));
+        act(() => {
+          result.current.generateShoppingList("recipes", many);
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        const body = apiFetchShoppingList.mock.calls[0]![0] as {
+          recipes: Array<{ ingredients: string[] }>;
+        };
+        expect(body.recipes).toHaveLength(20);
+        expect(body.recipes[0]!.ingredients).toHaveLength(50);
+        expect(body.recipes[0]!.ingredients[0]).toHaveLength(200);
+      });
+
+      it("порожній вибір - помилка, а не мовчазний запит із усіма рецептами", async () => {
+        const { result, spies } = makeHarness({
+          recipes: [{ id: "g-all", title: "Лишній" }],
+        });
+        act(() => {
+          result.current.generateShoppingList("recipes", []);
+        });
+        await waitFor(() =>
+          expect(spies.setErr).toHaveBeenCalledWith(
+            "Немає рецептів чи тижневого плану для генерації.",
+          ),
+        );
+        expect(apiFetchShoppingList).not.toHaveBeenCalled();
+      });
+
+      it("без вибору (старі виклики) бере всі рецепти з памʼяті, як і раніше", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const recipes = [{ id: "g1", title: "Омлет", ingredients: ["яйця"] }];
+        const { result, spies } = makeHarness({ recipes });
+        act(() => {
+          result.current.generateShoppingList("recipes");
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        expect(
+          (apiFetchShoppingList.mock.calls[0]![0] as { recipes: unknown[] })
+            .recipes,
+        ).toEqual(recipes);
+      });
+    });
+
     it("shows an actionable error instead of silently accepting an empty list", async () => {
       apiFetchShoppingList.mockResolvedValueOnce({ categories: [] });
       const { result, spies } = makeHarness({

@@ -2,11 +2,13 @@
  * Last validated: 2026-09-11
  * Status: Active
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { pluralUa } from "@sergeant/shared";
+import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
+import { useRecurringHistory } from "../../hooks/useRecurringHistory";
 import { SectionBar } from "../AssetsBars";
 import { AssetsSubscriptionsSection } from "../AssetsSubscriptionsSection";
 import { AssetsTxPickerView } from "../AssetsTxPickerView";
@@ -81,6 +83,18 @@ export function PlanningSubscriptions({
     receivables,
   } = state;
 
+  // Підказки «схоже на підписку» читають дзеркало з фіксованим вікном, а не
+  // `transactions` (див. `useRecurringHistory`: воно міняло зміст разом зі
+  // станом завантаження, і кандидати зʼявлялись хвилями). Ручні витрати
+  // домішуються так само, як в Огляді (`useOverviewData`), інакше
+  // регулярна готівкова чи імпортована витрата зникала б з «Можливих
+  // підписок», а інсайт Огляду на неї вказував би далі.
+  const recurringBank = useRecurringHistory(mono.fetchRange);
+  const recurringTx = useMemo(
+    () => withManualExpenses(recurringBank, storage.manualExpenses),
+    [recurringBank, storage.manualExpenses],
+  );
+
   const prevSubscriptionSignal = useRef(openSubscriptionSignal);
   useEffect(() => {
     if (
@@ -133,7 +147,7 @@ export function PlanningSubscriptions({
       <PlannedFlowsCard plannedFlows={plannedFlows} showBalance={showBalance} />
 
       <RecurringSuggestions
-        transactions={transactions}
+        transactions={recurringTx}
         subscriptions={subscriptions}
         dismissedRecurring={dismissedRecurring}
         excludedTxIds={excludedTxIds}

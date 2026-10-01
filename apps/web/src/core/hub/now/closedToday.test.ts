@@ -22,6 +22,7 @@ import type { Rec } from "../../lib/recommendationEngine";
 // лише суми за сьогодні, а не всього всесвіту `bank + manual`.
 const finykMock = vi.hoisted(() => ({
   txs: [] as Array<{ id: string; amount: number; time: number }>,
+  budgets: [] as Array<Record<string, unknown>>,
 }));
 vi.mock("@finyk/lib/lsStats", () => ({
   readFinykStatsContext: () => ({
@@ -30,6 +31,7 @@ vi.mock("@finyk/lib/lsStats", () => ({
     txSplits: {},
     txCategories: {},
     customCategories: [],
+    budgets: finykMock.budgets,
   }),
 }));
 
@@ -98,6 +100,7 @@ describe("computeClosedToday", () => {
     vi.useFakeTimers();
     vi.setSystemTime(NOW);
     finykMock.txs = [];
+    finykMock.budgets = [];
   });
   afterEach(() => {
     clearSqliteRoutineStateCache();
@@ -202,18 +205,39 @@ describe("computeClosedToday", () => {
   });
 
   describe("Фінік — витрата сьогодні без перевищення ліміту", () => {
-    it("є витрата сьогодні, перевищень немає → рядок із сумою", () => {
+    it("є ліміт і перевищень немає → «записано · у межах лімітів» із сумою", () => {
       finykMock.txs = [
         // Суми — у копійках (minor units): 250 ₴.
         { id: "t1", amount: -25000, time: NOW.getTime() - 3600_000 },
+      ];
+      finykMock.budgets = [
+        { id: "b1", type: "limit", categoryId: "food", limit: 5000 },
       ];
       const [row] = compute();
       expect(row).toMatchObject({
         module: "finyk",
         label: "Витрати",
-        statement: "записано, перевищень немає",
+        statement: "записано · у межах лімітів",
       });
       expect(row?.value).toContain("250");
+    });
+
+    it("без жодного ліміту → просто «записано»: про ліміти нема що казати", () => {
+      finykMock.txs = [
+        { id: "t1", amount: -25000, time: NOW.getTime() - 3600_000 },
+      ];
+      finykMock.budgets = [];
+      expect(compute()[0]?.statement).toBe("записано");
+    });
+
+    it("ціль накопичення — не ліміт: «у межах лімітів» не кажемо", () => {
+      finykMock.txs = [
+        { id: "t1", amount: -25000, time: NOW.getTime() - 3600_000 },
+      ];
+      finykMock.budgets = [
+        { id: "g1", type: "goal", name: "Відпустка", targetAmount: 100000 },
+      ];
+      expect(compute()[0]?.statement).toBe("записано");
     });
 
     it("активне `budget_over_*` знімає рядок: витрати ще в «Зараз»", () => {

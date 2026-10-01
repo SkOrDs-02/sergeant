@@ -59,6 +59,7 @@ interface BillingRow {
   plan: BillingPlan;
   status: string;
   current_period_end: Date | string | null;
+  cancel_at_period_end: boolean;
 }
 
 /**
@@ -120,6 +121,7 @@ function serializeBillingRow(
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
+          cancelAtPeriodEnd: row.cancel_at_period_end === true,
         }
       : {
           id: null,
@@ -128,6 +130,7 @@ function serializeBillingRow(
           status: null,
           active: false,
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
         },
   };
 }
@@ -280,7 +283,7 @@ export async function getSubscriptionStatus(
   userId: string,
 ): Promise<BillingSubscriptionStatus> {
   const { rows } = await pool.query<BillingRow>(
-    `SELECT id, provider, plan, status, current_period_end
+    `SELECT id, provider, plan, status, current_period_end, cancel_at_period_end
        FROM subscriptions
       WHERE user_id = $1
       ORDER BY

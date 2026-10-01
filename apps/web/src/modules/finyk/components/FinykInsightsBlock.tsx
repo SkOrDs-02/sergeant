@@ -37,6 +37,13 @@ const MAX_VISIBLE = 2;
 
 interface FinykInsightsBlockProps {
   transactions: readonly Transaction[];
+  /**
+   * Історія для інсайту «Знайшов повторення». Окремо від `transactions`, бо
+   * решті інсайтів (перевищення ліміту, кава) потрібен поточний місяць, а
+   * детектору регулярних платежів — фіксоване вікно в кілька місяців.
+   * Без пропа береться `transactions`.
+   */
+  recurringTransactions?: readonly Transaction[] | undefined;
   budgets: readonly Budget[];
   subscriptions?:
     | readonly {
@@ -56,6 +63,7 @@ interface FinykInsightsBlockProps {
 
 export function FinykInsightsBlock({
   transactions,
+  recurringTransactions,
   budgets,
   subscriptions = [],
   dismissedRecurring = [],
@@ -83,7 +91,7 @@ export function FinykInsightsBlock({
   });
 
   const recurringInsight = useRecurringDetectedInsight({
-    transactions,
+    transactions: recurringTransactions ?? transactions,
     subscriptions,
     dismissedRecurring,
     excludedTxIds,

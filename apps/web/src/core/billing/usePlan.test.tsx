@@ -57,6 +57,7 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
         status: null,
         active: false,
         currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("free"),
     });
@@ -76,6 +77,7 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
         status: "active",
         active: true,
         currentPeriodEnd: "2026-06-01T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("pro"),
     });
@@ -107,6 +109,7 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
         status: "trialing",
         active: true,
         currentPeriodEnd: "2026-07-15T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
       access: accessFixture("trial"),
     });

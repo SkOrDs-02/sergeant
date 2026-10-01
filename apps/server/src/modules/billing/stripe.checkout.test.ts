@@ -282,6 +282,7 @@ describe("getSubscriptionStatus", () => {
           plan: "pro",
           status: "active",
           current_period_end: new Date("2026-08-01T00:00:00.000Z"),
+          cancel_at_period_end: true,
         },
       ],
     });
@@ -296,9 +297,11 @@ describe("getSubscriptionStatus", () => {
         status: "active",
         active: true,
         currentPeriodEnd: "2026-08-01T00:00:00.000Z",
+        cancelAtPeriodEnd: true,
       },
     });
     expect(typeof result.subscription.id).toBe("number");
+    expect(String(query.mock.calls[0]?.[0])).toContain("cancel_at_period_end");
   });
 
   it("marks trialing as active and canceled as inactive", async () => {
@@ -353,6 +356,7 @@ describe("getSubscriptionStatus", () => {
         status: null,
         active: false,
         currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       },
     });
   });

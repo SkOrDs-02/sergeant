@@ -2,6 +2,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -256,6 +257,123 @@ describe("Transactions page shell", () => {
     ).toBeInTheDocument();
   });
 
+  describe("CSV-експорт: коли казати «Вивантажено»", () => {
+    // Справжній ланцюжок `exportTransactionsCsv` → `saveStringAsFile`;
+    // підмінена лише межа браузера: blob-URL, клік по `<a download>`,
+    // `navigator.share` і ознаки iOS standalone-PWA. Деталі віддачі файла
+    // пінує `shared/lib/ui/export.test.ts`.
+    const NAV_PROPS = ["share", "canShare", "standalone"] as const;
+    let createObjectURL: ReturnType<typeof vi.fn>;
+    let downloadName: string | null;
+
+    beforeEach(() => {
+      createObjectURL = vi.fn(() => "blob:mock-url");
+      Object.defineProperty(URL, "createObjectURL", {
+        value: createObjectURL,
+        configurable: true,
+      });
+      Object.defineProperty(URL, "revokeObjectURL", {
+        value: vi.fn(),
+        configurable: true,
+      });
+      downloadName = null;
+      vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(
+        function (this: HTMLAnchorElement) {
+          downloadName = this.download;
+        },
+      );
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+      for (const key of NAV_PROPS) {
+        Reflect.deleteProperty(navigator, key);
+      }
+    });
+
+    /** iOS standalone-PWA з `navigator.share`, що відповідає `share`. */
+    function asIosPwa(share: () => Promise<void>) {
+      vi.spyOn(navigator, "userAgent", "get").mockReturnValue(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+      );
+      const shareFn = vi.fn(share);
+      Object.defineProperty(navigator, "standalone", {
+        value: true,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "canShare", {
+        value: () => true,
+        configurable: true,
+      });
+      Object.defineProperty(navigator, "share", {
+        value: shareFn,
+        configurable: true,
+      });
+      return shareFn;
+    }
+
+    const clickExport = async () => {
+      renderTransactions({ mono: { realTx: [SAMPLE_TX] } });
+      await act(async () => {
+        fireEvent.click(
+          screen.getByRole("button", { name: /Вивантажити операції у CSV/ }),
+        );
+      });
+    };
+
+    it("звичайне завантаження → тост із кількістю рядків і файл видимого місяця", async () => {
+      await clickExport();
+      expect(downloadName).toBe("finyk-2026-06.csv");
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
+    it("iOS PWA: файл іде в «Поділитись», тост після шерингу", async () => {
+      const share = asIosPwa(() => Promise.resolve());
+      await clickExport();
+      expect(share).toHaveBeenCalledTimes(1);
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+    });
+
+    it("скасування аркуша «Поділитись» — без тосту: вивантаження не було", async () => {
+      asIosPwa(() =>
+        Promise.reject(
+          Object.assign(new Error("closed"), { name: "AbortError" }),
+        ),
+      );
+      await clickExport();
+      expect(createObjectURL).not.toHaveBeenCalled();
+      expect(mockToast.success).not.toHaveBeenCalled();
+      expect(mockToast.error).not.toHaveBeenCalled();
+    });
+
+    it("збій віддачі — тост «Не вдалося вивантажити операції» з «Повторити»", async () => {
+      createObjectURL.mockImplementationOnce(() => {
+        throw new Error("boom");
+      });
+      await clickExport();
+      expect(mockToast.success).not.toHaveBeenCalled();
+      expect(mockToast.error).toHaveBeenCalledTimes(1);
+      expect(String(mockToast.error.mock.calls[0]![0])).toMatch(
+        /вивантажити операції/,
+      );
+
+      // «Повторити» збирає файл заново і, коли віддача вдалась, каже
+      // «Вивантажено…».
+      const action = mockToast.error.mock.calls[0]![2] as {
+        label: string;
+        onClick: () => void;
+      };
+      expect(action.label).toBe("Повторити");
+      await act(async () => {
+        action.onClick();
+      });
+      expect(createObjectURL).toHaveBeenCalledTimes(2);
+      expect(mockToast.success).toHaveBeenCalledWith("Вивантажено операцій: 1");
+    });
+  });
+
   it("renders the header month label for the current Kyiv month", () => {
     renderTransactions();
     expect(screen.getByText(/червень 2026/i)).toBeInTheDocument();
@@ -336,6 +454,57 @@ describe("Transactions page shell", () => {
       "transfer-in",
       "internal_transfer",
     );
+  });
+
+  describe("card ↔ jar transfers", () => {
+    // Реальні описи виписки Monobank (звіт власника): жоден не містить
+    // слова «переказ», а в `accounts` банок немає — вони лише в `jars`.
+    const jarLeg = {
+      ...SAMPLE_TX,
+      id: "jar-leg",
+      amount: -40_000,
+      description: "На білу картку",
+      accountId: "jar-1",
+      _accountId: "jar-1",
+    };
+    const cardLeg = {
+      ...SAMPLE_TX,
+      id: "card-leg",
+      amount: 40_000,
+      description: "Часткове зняття банки «просто»",
+      accountId: "white",
+      _accountId: "white",
+      type: "income" as const,
+    };
+    const accounts = [{ id: "white", type: "white", maskedPan: ["****2222"] }];
+
+    it("suggests the pair from the real Monobank phrasing alone", () => {
+      renderTransactions({ mono: { realTx: [jarLeg, cardLeg], accounts } });
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+    });
+
+    it("a leg on a known jar is a marker even when no description is", () => {
+      const neutral = [
+        { ...jarLeg, description: "Витрата" },
+        { ...cardLeg, description: "Надходження" },
+      ];
+      const { unmount } = renderTransactions({
+        mono: { realTx: neutral, accounts },
+      });
+      expect(
+        screen.queryByText("Схоже на внутрішній переказ"),
+      ).not.toBeInTheDocument();
+      unmount();
+
+      renderTransactions({
+        mono: { realTx: neutral, accounts, jars: [{ monoJarId: "jar-1" }] },
+      });
+      expect(
+        screen.getByText("Схоже на внутрішній переказ"),
+      ).toBeInTheDocument();
+    });
   });
 
   function buildTransferPair() {
