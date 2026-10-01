@@ -1,6 +1,6 @@
 # Playbook: Звірка дрифту документації та cleanup завершених snapshot-ів
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-10.
+> **Last touched:** 2026-10-01 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -93,7 +93,7 @@ flowchart TD
 ```bash
 pnpm docs:gen-open-work          # docs/open-work.md — single-pane всієї НЕ-завершеної роботи по 7 трекерах
 pnpm docs:gen-initiative-followups  # follow-ups.md — невиконані follow-up-и ініціатив
-pnpm docs:freshness-dashboard    # docs/governance/governance/freshness-dashboard.html — overdue Next review
+pnpm docs:freshness-dashboard    # локальний HTML-огляд overdue Next review (gitignored, не комітити)
 pnpm docs:gen-today              # сьогоднішній зріз пріоритетів (опційно)
 ```
 

@@ -152,7 +152,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 - Phase 0 cleanup audit з якого виросла ця ініціатива: commits `92e5ffda`, `46d73386`, `921fd992` на `chore/repo-cleanup`
 - [`docs/open-work.md`](../../../open-work.md) — source-of-truth для daily brief генератора
 - [`scripts/docs/generate-open-work.mjs`](../../../../scripts/docs/generate-open-work.mjs) — pattern reference для нових generators
-- [`docs/governance/governance/freshness-dashboard.html`](../../../governance/governance/freshness-dashboard.html) — джерело для trust badge stale-count
+- `pnpm docs:freshness-dashboard` — HTML-огляд свіжості; з 2026-10-01 не комітиться ([doc-freshness.md](../../../governance/governance/doc-freshness.md#чому-дашборд-не-комітиться-2026-10-01)). Trust badge рахує stale-count прямо з шапок доків, не з дашборда
 - Rule #10 [`lifecycle-markers.md`](../../../governance/governance/rules/10-lifecycle-markers.md) — Status header semantics
 - Rule #25 [`auto-generated-marker.md`](../../../governance/governance/rules/25-auto-generated-marker.md) — обовʼязковий marker на нових generated файлах
 

@@ -188,6 +188,11 @@ export const chartPaletteList = Object.values(chartPalette);
  * навмисно ОДНОТИРНИЙ: вільного hue на 5 окремих кольорів уже немає,
  * а розрізняти види доходу має підпис, не відтінок. Відділений від
  * `entertainment` (160) хромою, не кутом — див. `categoryColors.gen.js`.
+ *
+ * Ще пʼять (2026-10-01, рішення власника «c1»): `home`, `pets`, `telecom`,
+ * `p2p_transfer`, `gifts`. Вільного hue для них немає, тож кожна сіла на
+ * середину наявного проміжку з приглушеною хромою (C×0.3–0.65) — мотивація
+ * й заміри відстаней у `categoryColors.gen.js`.
  */
 export const categoryColors = {
   restaurant: {
@@ -206,6 +211,14 @@ export const categoryColors = {
     tintDark: "#392112",
     inkDark: "#fbbf9a",
   }, // H 53
+  home: {
+    tint: "#f8eadf",
+    border: "#e7d5c8",
+    ink: "#6e513a",
+    solid: "#a67c5b",
+    tintDark: "#30251d",
+    inkDark: "#e4c8b3",
+  }, // H 59.5, C×0.5 — приглушена глина між travel і utilities
   utilities: {
     tint: "#fee9d4",
     border: "#f3d3b3",
@@ -246,6 +259,14 @@ export const categoryColors = {
     tintDark: "#192d1a",
     inkDark: "#abddac",
   }, // H 145
+  pets: {
+    tint: "#e1f2e5",
+    border: "#cae0cf",
+    ink: "#3c6247",
+    solid: "#5e956d",
+    tintDark: "#1e2c21",
+    inkDark: "#b6d8be",
+  }, // H 152.5, C×0.6 — шавлія між food і entertainment
   entertainment: {
     tint: "#d6f6e3",
     border: "#bbe5cd",
@@ -262,6 +283,14 @@ export const categoryColors = {
     tintDark: "#102a3b",
     inkDark: "#9cd6ff",
   }, // H 240
+  telecom: {
+    tint: "#e4eef8",
+    border: "#cedbe7",
+    ink: "#465a6f",
+    solid: "#6c89a7",
+    tintDark: "#212930",
+    inkDark: "#bdd0e4",
+  }, // H 248.5, C×0.4 — сталева синь між transport і education
   education: {
     tint: "#e2eeff",
     border: "#c3dbfe",
@@ -278,6 +307,14 @@ export const categoryColors = {
     tintDark: "#21263e",
     inkDark: "#becbfe",
   }, // H 274
+  p2p_transfer: {
+    tint: "#ebecf5",
+    border: "#d7d8e4",
+    ink: "#55566a",
+    solid: "#82839f",
+    tintDark: "#26272e",
+    inkDark: "#cbccdf",
+  }, // H 282.5, C×0.3 — холодна нейтраль між subscriptions і shopping
   shopping: {
     tint: "#eceaff",
     border: "#d9d3fc",
@@ -294,6 +331,14 @@ export const categoryColors = {
     tintDark: "#2e2139",
     inkDark: "#ddbff9",
   }, // H 308
+  gifts: {
+    tint: "#f4e8f9",
+    border: "#e3d2e9",
+    ink: "#674c72",
+    solid: "#9c75ab",
+    tintDark: "#2d2331",
+    inkDark: "#ddc3e6",
+  }, // H 316.5, C×0.65 — орхідея між beauty і health
   health: {
     tint: "#fce4fd",
     border: "#eccdee",

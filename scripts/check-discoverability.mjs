@@ -103,13 +103,15 @@ export const ROUTES = [
   },
   {
     role: "new-agent",
-    reason: "docs freshness dashboard",
+    // Ціль — процес свіжості, а не сам дашборд: з 2026-10-01 HTML не
+    // комітиться (gitignored), тож у чистому чекауті його немає.
+    reason: "docs freshness (dashboard: pnpm docs:freshness-dashboard)",
     entrypoints: [
       "AGENTS.md",
       "docs/README.md",
       "docs/governance/governance/README.md",
     ],
-    target: "docs/governance/governance/freshness-dashboard.html",
+    target: "docs/governance/governance/doc-freshness.md",
   },
   {
     role: "new-agent",
