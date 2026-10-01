@@ -1,5 +1,5 @@
 /**
- * i18n entry-point — locale resolver + canonical exports.
+ * i18n entry-point: locale resolver + canonical exports.
  *
  * Initiative 0010 EN-locale foundation. `uk.ts` стає baseline (всі 76
  * existing consumers продовжують `import { messages } from "@shared/i18n/uk"`
@@ -7,20 +7,20 @@
  * `getMessages(lang)` звідси.
  *
  * Merge contract: shallow per top-level group. Якщо `en.ts` має
- * `paywall: {...}` — він повністю замінює `uk.paywall`. Якщо `en.ts` не
- * має, скажімо, `auth: {...}` — EN-resolver повертає UK `auth` без змін.
+ * `paywall: {...}`, він повністю замінює `uk.paywall`. Якщо `en.ts` не
+ * має, скажімо, `auth: {...}`, EN-resolver повертає UK `auth` без змін.
  * Це навмисно: змушує "translate the whole group or don't touch it"
  * дисципліну, не залишаючи half-translated keys у виходному JSX-і.
  *
  * Чому НЕ deep merge: deep-merge може створити Frankenstein-object
  * (`paywall.title` EN + `paywall.description` UK), що буде гірше за чисту
- * UA-mode для всього group. Shallow merge — explicit choice між languages
+ * UA-mode для всього group. Shallow merge це explicit choice між languages
  * на рівні surface-area.
  *
  * Type-safety: `getMessages()` повертає тип `typeof uk` (precise literal
  * shape з `as const`), той самий що direct `import { messages } from "./uk"`.
- * Consumers платять нуль type cost за multi-locale — autocompletion і
- * `.paywall["foo"].title` narrowing працюють як зараз. EN values — runtime
+ * Consumers платять нуль type cost за multi-locale: autocompletion і
+ * `.paywall["foo"].title` narrowing працюють як зараз. EN values це runtime
  * overrides of same structural shape; cast у `getMessages` is safe бо
  * `en.ts` typed as `Partial<MessageCatalog>` що гарантує shape compatibility.
  */
@@ -28,7 +28,7 @@
 import { messages as uk } from "./uk";
 import { messagesEn } from "./en";
 
-/** Canonical narrow type — the precise literal shape of the uk catalog. */
+/** Canonical narrow type: the precise literal shape of the uk catalog. */
 export type LocalizedMessages = typeof uk;
 
 export type Locale = "uk" | "en";
@@ -63,7 +63,7 @@ export function getMessages(lang: Locale): LocalizedMessages {
   // Shallow merge: each top-level key in `messagesEn` fully replaces UK;
   // absent groups inherit from UK. Cast is safe: `messagesEn` типізовано
   // структурним дзеркалом `typeof uk` (Partial лише на верхньому рівні),
-  // тож оголошена EN-група ГАРАНТОВАНО має повний набір листових ключів —
+  // тож оголошена EN-група ГАРАНТОВАНО має повний набір листових ключів,
   // компілятор не пропустить stub. Double-cast лише повертає literal-тип
   // після Object.freeze (widened string vs literal values).
   // eslint-disable-next-line sergeant-design/no-strict-bypass
@@ -76,7 +76,7 @@ export function getMessages(lang: Locale): LocalizedMessages {
 /**
  * Parse a free-form locale string to a supported `Locale`. Used by query-
  * param / localStorage reading. Returns `DEFAULT_LOCALE` for invalid input
- * — never throws.
+ * and never throws.
  *
  * Recognizes:
  * - exact `"uk"` / `"en"` (case-insensitive)

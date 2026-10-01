@@ -7,7 +7,7 @@ import { pricingEn } from "./en.pricing";
  * fall through to `uk.ts`. See `index.ts → getMessages()` for merge semantics.
  *
  * Type contract: структурне дзеркало `typeof uk`, Partial лише на верхньому
- * рівні. Оголосив групу — зобовʼязаний перекласти КОЖЕН її ключ, інакше
+ * рівні. Оголосив групу, отже зобовʼязаний перекласти КОЖЕН її ключ, інакше
  * compile error. Це механічне втілення shallow-merge правила «translate the
  * whole group or don't touch it»: раніше тип був `Partial<MessageCatalog>`
  * (гола index-signature), і 3-ключовий stub групи `fizruk` мовчки затирав
@@ -17,7 +17,7 @@ export const messagesEn: Partial<{
   [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
 }> = {
   auth: {
-    // Generic fallback — used when the specific cause cannot be determined.
+    // Generic fallback: used when the specific cause cannot be determined.
     genericFailure: "Sign-in failed. Please try again.",
 
     // Better Auth canonical error-codes:
@@ -37,7 +37,7 @@ export const messagesEn: Partial<{
     rateLimited: "Too many attempts. Wait a minute and try again.",
     serverDown: "The server is temporarily unavailable. Try again later.",
 
-    // Round 16 — soft-auth prompt
+    // Round 16: soft-auth prompt
     createAccount: "Create account",
   },
 
@@ -369,7 +369,7 @@ export const messagesEn: Partial<{
   // Групи fizruk / finyk / nutrition / routine НЕ оголошені навмисно:
   // за shallow-merge контрактом оголошена група повністю замінює UA-групу,
   // а перекладати 280+ ключів модуля частково заборонено (див. тип вище).
-  // Історичні 3–7-ключові stub-и цих груп видалено 2026-08-28 — вони
+  // Історичні 3–7-ключові stub-и цих груп видалено 2026-08-28, бо вони
   // затирали 560 UA-ключів і давали TypeError під `?lang=en`.
 
   profileSessions: {
@@ -391,7 +391,7 @@ export const messagesEn: Partial<{
   },
 
   experimentalSection: {
-    // V-7 (2026-08-08): mirrors the uk.ts rename — see that file's comment.
+    // V-7 (2026-08-08): mirrors the uk.ts rename; see that file's comment.
     title: "Experimental features",
     intro:
       "These features are still being tested. Enable at your own risk, behavior may change in future versions.",
@@ -439,7 +439,7 @@ export const messagesEn: Partial<{
 
     aiMemory: {
       sectionTitle: "What the AI remembers about you",
-      // V-11 (2026-08-09): mirrors the uk.privacy.ts addition — see the
+      // V-11 (2026-08-09): mirrors the uk.privacy.ts addition; see the
       // comment there for why this scope line exists.
       sectionScope:
         "Everything the assistant has remembered: from chat, modules and your profile.",
@@ -464,7 +464,7 @@ export const messagesEn: Partial<{
         product:
           "App service markers: registration, onboarding, first action in a module, subscription. The assistant reads them as an action history, not as a fact about you.",
         digest:
-          "Weekly reports the assistant compiled itself from your modules. This is not a fact you told it — it is its own summary.",
+          "Weekly reports the assistant compiled itself from your modules. This is not a fact you told it – it is its own summary.",
       },
     },
   },
@@ -559,7 +559,7 @@ export const messagesEn: Partial<{
     dismiss: "Got it",
   },
 
-  // Phase 7 D2 — paywall feature gates. EN copy must keep `name` ≤ 35 chars
+  // Phase 7 D2: paywall feature gates. EN copy must keep `name` ≤ 35 chars
   // for the "Unlock {name}" CTA composition; titles/descriptions can flow
   // longer since the modal owns its own viewport space.
   paywall: {

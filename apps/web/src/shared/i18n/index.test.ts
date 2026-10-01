@@ -23,13 +23,13 @@ describe("i18n resolver", () => {
   describe("getMessages", () => {
     it("returns canonical uk catalog without copy for lang='uk'", () => {
       const result = getMessages("uk");
-      // Identity check — uk path must not allocate. Catches accidental
+      // Identity check: uk path must not allocate. Catches accidental
       // {...uk} spread that would break Object.is and bust referential-
       // equality optimizations downstream.
       expect(result).toBe(uk);
     });
 
-    it("shallow-merges en over uk for lang='en' — translated group fully replaces", () => {
+    it("shallow-merges en over uk for lang='en': translated group fully replaces", () => {
       const result = getMessages("en");
       // paywall is fully translated in en.ts → en wins
       const paywall = result.paywall as Record<string, Record<string, string>>;
@@ -55,7 +55,7 @@ describe("i18n resolver", () => {
     it("does not mutate the uk catalog when resolving en", () => {
       const ukPaywallBefore = uk.paywall;
       getMessages("en");
-      // Same object ref AFTER an en resolution — proves we don't write back
+      // Same object ref AFTER an en resolution, proves we don't write back
       expect(uk.paywall).toBe(ukPaywallBefore);
     });
 
@@ -117,7 +117,7 @@ describe("i18n resolver", () => {
         Record<string, Record<string, string>> | undefined;
       expect(enPaywall).toBeDefined();
       // These IDs are locked by useFeatureGate's PremiumFeatureId union.
-      // If a new gate is added, en.ts MUST add the matching key — this test
+      // If a new gate is added, en.ts MUST add the matching key; this test
       // is the trip-wire.
       expect(enPaywall?.["ai-photo-analysis"]).toBeDefined();
       expect(enPaywall?.["multi-currency"]).toBeDefined();

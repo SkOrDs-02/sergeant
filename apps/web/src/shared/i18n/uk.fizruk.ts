@@ -5,7 +5,7 @@
  * Fizruk per-page UA message-каталог, винесений з `uk.ts` заради
  * module-size discipline (Hard Rule #18, `max-lines: 600`). Spread у
  * `messages.fizruk` всередині `uk.ts`, тож call-site-и й далі звертаються
- * через `messages.fizruk.<page>.<key>`. Конвенції додавання ключів —
+ * через `messages.fizruk.<page>.<key>`. Конвенції додавання ключів:
  * див. шапку `uk.ts` та `docs/05-design/i18n/readiness.md`.
  */
 
@@ -15,11 +15,11 @@ export const fizrukPageMessages = {
   resumeWorkoutFab: "Продовжити тренування",
   // Only one unfinished workout may exist, so every start path funnels
   // through this prompt. Shared by the Workouts dialogs and the program
-  // start flow in the module shell — same wording in both, one source.
+  // start flow in the module shell: same wording in both, one source.
   /**
-   * «Внести проведене заняття» — тренування заднім числом.
+   * «Внести проведене заняття»: тренування заднім числом.
    * Копія свідомо не каже «почати»: заняття вже відбулось, тут його
-   * лише записують. Обґрунтування — докблок `LogPastWorkoutSheet`.
+   * лише записують. Обґрунтування: докблок `LogPastWorkoutSheet`.
    */
   logPast: {
     cta: "Внести проведене заняття",
@@ -31,7 +31,7 @@ export const fizrukPageMessages = {
     crossesMidnight: "Завершення: наступного дня.",
     /**
      * Кінець ще не настав. Найчастіше це не помилка дати, а сесія через
-     * північ на сьогоднішній даті — тому підпис пояснює, що саме не так,
+     * північ на сьогоднішній даті, тому підпис пояснює, що саме не так,
      * а не просто «недійсний час».
      */
     inFuture: "Завершення ще не настало, постав час, який уже минув.",
@@ -52,7 +52,7 @@ export const fizrukPageMessages = {
   },
   // Header band of the active/finished-workout panel
   // (`ActiveWorkoutHeader.tsx`). V-8 audit fix: "Видалити" moved off the
-  // primary action row into an overflow menu — these are the trigger +
+  // primary action row into an overflow menu: these are the trigger +
   // menu-item labels for that menu (the "Завершити"/"Згорнути" primary
   // action itself stays a raw literal like the rest of this
   // already-allowlisted component; see `eslint.i18n-allowlist.json`).
@@ -65,7 +65,7 @@ export const fizrukPageMessages = {
     subtract: "Відняти",
     secondsSuffix: "секунд",
     skip: "Пропустити",
-    // Static — does NOT interpolate `remaining`. A changing aria-label on
+    // Static: does NOT interpolate `remaining`. A changing aria-label on
     // a `role="timer"` element re-triggers screen-reader announcement on
     // every 1 Hz tick; see `RestTimerOverlay.tsx` for the milestone-only
     // announcement that replaces it.
@@ -89,7 +89,7 @@ export const fizrukPageMessages = {
   },
   // "Минулого разу …" hint above a workout item
   // (`WorkoutItemLastTimeHint.tsx`). Strength items no longer render
-  // this — see the per-row ghost keys below.
+  // this; see the per-row ghost keys below.
   lastTimeHint: {
     label: "Минулого разу",
   },
@@ -143,18 +143,18 @@ export const fizrukPageMessages = {
     chooseTemplate: "Обрати шаблон",
     noTemplates: "Шаблонів поки немає. Створи їх у Фізруку → Тренування.",
   },
-  // Dashboard status strip (`components/dashboard/StatusStrip.tsx`) — the
+  // Dashboard status strip (`components/dashboard/StatusStrip.tsx`): the
   // readiness chip's compact face value when 2+ muscle groups are
   // fatigued (fizruk audit V-4: the full "N груп(и) втомлені" sentence
   // doesn't fit the chip on a 390px viewport and got silently clipped by
   // `truncate`). The full sentence still reaches the user via the chip's
-  // aria-label/title — this prefix only composes the short on-screen form
+  // aria-label/title, and this prefix only composes the short on-screen form
   // ("Втомлені: 4").
   dashboard: {
     fatiguedCompactPrefix: "Втомлені",
   },
 
-  // Progress page (`pages/Progress.tsx`) — analytics dashboard, PR board.
+  // Progress page (`pages/Progress.tsx`): analytics dashboard, PR board.
   progress: {
     title: "Прогрес",
     measurementsCount: "Заміри",
@@ -177,20 +177,20 @@ export const fizrukPageMessages = {
     bodyFatMetricLabel: "відсоток жиру",
     wellbeing: "Самопочуття",
     muscleVolume: "Обʼєм по мʼязах",
-    // The bars plot `loadPoints`, an internal score — without this line a
+    // The bars plot `loadPoints`, an internal score, so without this line a
     // raw "0.6" reads as a broken weight value.
     muscleVolumeUnitsHint:
       "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість сетів × 0.15.",
     muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
     // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
-    // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`
+    // виклику, та сама конвенція, що в гребені Фініка: `MessageCatalog`
     // типізований як `string | MessageCatalog`, тож функції в каталозі
     // неможливі.
     muscleVolumeAria: "Обʼєм по мʼязах за чотири тижні",
     muscleVolumeWindowHint: "Чотири тижні, зліва направо, останній справа",
     muscleVolumeRowSpoken:
       "{label}, по тижнях: {values}. Цього тижня: {latest}.",
-    // Тиждень без жодного запису — справжній нуль, а не пропуск: людина
+    // Тиждень без жодного запису це справжній нуль, а не пропуск: людина
     // не тренувалась, і це відповідь, а не брак даних.
     muscleVolumeRestWeek: "нуль",
     recordsHeading: "Рекорди (PR)",
@@ -203,12 +203,12 @@ export const fizrukPageMessages = {
     noPrGroupDescription: "Спробуй іншу групу або скинь фільтр.",
   },
 
-  // Programs page (`pages/Programs.tsx`) — built-in training programmes.
+  // Programs page (`pages/Programs.tsx`): built-in training programmes.
   programs: {
     title: "Програми",
     stop: "Зупинити",
     active: "Активна",
-    // Ти-форма (style-guide.uk.md) — префікс перед назвою активної
+    // Ти-форма (style-guide.uk.md): префікс перед назвою активної
     // програми, наприклад "Активна: Push Pull Legs".
     activeProgramPrefix: "Активна:",
     // Ти-форма плейсхолдера, коли жодна програма ще не активна.
@@ -226,24 +226,24 @@ export const fizrukPageMessages = {
     // Details toggle (`aria-expanded` button in the program card footer).
     details: "Деталі",
     collapseDetails: "Згорнути",
-    // Day-strip screen-reader summary — see `role="img"` aria-label in
+    // Day-strip screen-reader summary; see `role="img"` aria-label in
     // Programs.tsx. Split into prefix/suffix around the interpolated
     // program name + day-label list (catalog strings stay plain, no
-    // template functions — see `MessageCatalog` comment on
+    // template functions; see `MessageCatalog` comment on
     // `measurementGuideRows` below).
     scheduleAriaPrefix: "Розклад програми",
     scheduleAriaSuffix: "(тренувальні дні), решта днів відпочинок",
   },
 
-  // Measurements page (`pages/Measurements.tsx`) — body-measurements log.
+  // Measurements page (`pages/Measurements.tsx`): body-measurements log.
   measurements: {
     manual: "Мануал",
-    // Без гліфа «→» — стрілку малює `Icon name="chevron-right"` на call-site
+    // Без гліфа «→»: стрілку малює `Icon name="chevron-right"` на call-site
     // (`Measurements.tsx`), як і «←» у `guideBack` нижче.
     manualLink: "Як правильно робити заміри",
     manualLinkNewTab: "(відкриється в новій вкладці)",
     // Стрілку малює `Icon name="chevron-left"` на call-site
-    // (`Measurements.tsx`), а не гліф «←» усередині рядка — див. коментар
+    // (`Measurements.tsx`), а не гліф «←» усередині рядка; див. коментар
     // біля `finyk.debtTxLink.back`.
     guideBack: "Назад до замірів",
     guideTitle: "Як правильно робити заміри",
@@ -274,20 +274,20 @@ export const fizrukPageMessages = {
     deleteAria: "Видалити замір",
     emptyTitle: "Поки замірів немає",
     emptyDescription: "Додай перший запис, щоб бачити динаміку показників.",
-    // Історія показує лише перші 4 з 14 можливих полів на рядок — суфікс
+    // Історія показує лише перші 4 з 14 можливих полів на рядок, тож суфікс
     // під кнопкою розкриття решти (`+3 ще`) і підпис для згортання назад.
     moreFieldsSuffix: "ще",
     collapseFieldsLabel: "Згорнути",
     showAllFieldsAriaSuffix: "показники запису від",
     // V-9: форма «Додати замір» показує одразу лише 3 найчастіші поля
-    // (вага, % жиру, талія); решта 11 — за цим тоглом. Окремі ключі від
-    // `moreFieldsSuffix`/`collapseFieldsLabel` вище навмисно — та пара
-    // ховає ЗБЕРЕЖЕНІ поля рядка історії, ця — порожні поля форми ДОДАВАННЯ.
+    // (вага, % жиру, талія); решта 11 ховається за цим тоглом. Окремі ключі
+    // від `moreFieldsSuffix`/`collapseFieldsLabel` вище навмисно: та пара
+    // ховає ЗБЕРЕЖЕНІ поля рядка історії, а ця порожні поля форми ДОДАВАННЯ.
     addFormMoreFields: "Більше полів",
     addFormFewerFields: "Менше полів",
   },
 
-  // Body page (`pages/Body.tsx`) — daily weight / sleep / wellbeing log.
+  // Body page (`pages/Body.tsx`): daily weight / sleep / wellbeing log.
   body: {
     title: "Тіло",
     subtitle: "Вага · сон · самопочуття",
@@ -310,7 +310,7 @@ export const fizrukPageMessages = {
       "Додай ще один запис ваги, сну чи енергії, графіки зʼявляться після двох точок.",
   },
 
-  // Body atlas (`components/BodyAtlas.tsx`) — interactive muscle silhouette.
+  // Body atlas (`components/BodyAtlas.tsx`): interactive muscle silhouette.
   atlas: {
     imageLabel: "Атлас мʼязів, вигляд {view}",
     viewFront: "спереду",
@@ -318,7 +318,7 @@ export const fizrukPageMessages = {
     emptyTitle: "Обери мʼяз",
     // Fixed 2026-08-08 (fizruk audit wave 2, defect #4): the old copy also
     // invited touching the leader-line *name* text, but that text sits in
-    // an `aria-hidden` decorative group and was never a real click target —
+    // an `aria-hidden` decorative group and was never a real click target;
     // only the muscle group on the silhouette itself is.
     emptyDescription:
       "Торкнись потрібної групи мʼязів на силуеті, вона підсвітиться, і зʼявляться стан і вправи.",
@@ -327,7 +327,7 @@ export const fizrukPageMessages = {
     // announcement, so this carries it to screen readers explicitly).
     selectedPrefix: "Обрано:",
     // Мініатюра на «Моє тіло»: клікабельний лише силует. Перемикач боку
-    // лишається поза цією кнопкою — інакше гортання мініатюри на місці
+    // лишається поза цією кнопкою, інакше гортання мініатюри на місці
     // неможливе (див. AI-DANGER біля `onOpenFull` у `BodyAtlas.tsx`).
     openFullLabel: "Відкрити атлас мʼязів за силуетом",
   },
@@ -341,21 +341,21 @@ export const fizrukPageMessages = {
     sleepLabel: "Сон:",
     energyLabel: "Енергія:",
     moodLabel: "Настрій:",
-    // «Показати ще» affordance (defect #1 — the header badge used to claim
+    // «Показати ще» affordance (defect #1: the header badge used to claim
     // the full count while the list silently truncated to a fixed page).
-    // Rendered as `${shownPrefix} ${visibleCount} ${shownOfWord} ${totalCount}`
-    // — plain-string catalogue, same convention as `exercise.historyShownPrefix`.
+    // Rendered as `${shownPrefix} ${visibleCount} ${shownOfWord} ${totalCount}`,
+    // plain-string catalogue, same convention as `exercise.historyShownPrefix`.
     shownPrefix: "Показано",
     shownOfWord: "з",
     showMore: "Показати ще",
   },
 
   /**
-   * «Що болить» — модель «не можна» (ADR-0083).
+   * «Що болить»: модель «не можна» (ADR-0083).
    *
    * Копірайт навмисно не обіцяє безпеки: продукт не діагностує й не лікує
    * (канон fizruk §5), він лише перестає радити те, що перетинається з
-   * позначкою. Формулювання «вбережу від травми» тут — продуктовий баг.
+   * позначкою. Формулювання «вбережу від травми» тут це продуктовий баг.
    */
   injuries: {
     title: "Що болить",
@@ -365,7 +365,7 @@ export const fizrukPageMessages = {
       "Нічого не позначено. Познач зону, і я перестану радити вправи, які її навантажують.",
     activeListLabel: "Активні позначки болю",
     markCta: "Позначити зону",
-    // Атлас лише показує позначки; ставлять їх на «Моє тіло» — єдиному
+    // Атлас лише показує позначки; ставлять їх на «Моє тіло», єдиному
     // домі цієї дії після зняття дубль-пікера 2026-08-08.
     markOnBodyCta: "Позначити на «Моє тіло»",
     collapseCta: "Згорнути",
@@ -395,7 +395,7 @@ export const fizrukPageMessages = {
    * Три різні зізнання, які легко переплутати в одне «щось не так»:
    * репліка може не бачити всієї історії, журнал самопочуття міг
    * застаріти, а самі пороги калібровані на одному тілі. Кожне має свій
-   * рядок — і жодне не звучить як вибачення: це межі обіцянки, а не збій.
+   * рядок, і жодне не звучить як вибачення: це межі обіцянки, а не збій.
    */
   recoveryHonesty: {
     staleReplicaTitle: "Порада з неповних даних",
@@ -416,7 +416,7 @@ export const fizrukPageMessages = {
   /**
    * Старіння 1RM і протокол повернення (канон `fizruk.md` §6).
    *
-   * Тон — за `docs/01-product/copy/style-guide.uk.md`: констатація без
+   * Тон за `docs/01-product/copy/style-guide.uk.md`: констатація без
    * докору. Перерва не провал, а регрес не привід соромитись, тож копія
    * пояснює ЧОМУ число інше, а не оцінює людину.
    */
@@ -438,7 +438,7 @@ export const fizrukPageMessages = {
   },
 
   /**
-   * 02-A — read-only summary of a finished workout, rendered on the same
+   * 02-A: read-only summary of a finished workout, rendered on the same
    * route (`/fizruk/workout/<id>`) that used to dead-end into "Активне
    * тренування не знайдено" once the session was ended. Owned by
    * `WorkoutSummaryView`.
@@ -462,8 +462,8 @@ export const fizrukPageMessages = {
   },
 
   /**
-   * 03-A — dedicated history route (`/fizruk/history`). Pure read list:
-   * no "+ Нове" / "Шаблони" start-CTAs here — starting a session lives
+   * 03-A: dedicated history route (`/fizruk/history`). Pure read list:
+   * no "+ Нове" / "Шаблони" start-CTAs here, starting a session lives
    * only on the Workouts home (`WorkoutsHome`). Owned by
    * `WorkoutHistoryList` + `pages/WorkoutHistory.tsx`.
    */
@@ -479,7 +479,7 @@ export const fizrukPageMessages = {
   },
 
   /**
-   * 04-A — permanent "Програми" row in the Workouts-home "Довідники" block
+   * 04-A: permanent "Програми" row in the Workouts-home "Довідники" block
    * (`WorkoutsHome.tsx`). Previously Programs was reachable only from the
    * empty-plan hero card on Огляд, which disappears once a workout starts.
    */

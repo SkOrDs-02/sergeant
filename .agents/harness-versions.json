@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "5.0.2",
+  "current": "5.1.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -380,6 +380,15 @@
       "releasedAt": "2026-08-28",
       "changes": [
         "bump from 5.0.1 -> 5.0.2: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.1.0": {
+      "releasedAt": "2026-08-29",
+      "changes": [
+        "sergeant-design/ukrainian-copy: emDash тепер ловить будь-яке «—» у кириличному рядку, а не лише між двома непробільними; самотнє «—» як плейсхолдер лишається винятком",
+        "новий гейт pnpm lint:em-dash (scripts/ci/check-em-dash-i18n.mjs): нуль довгих тире в сирому тексті apps/web/src/shared/i18n/**, включно з коментарями та англійською копією"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
