@@ -102,6 +102,42 @@ describe("NowPile", () => {
     expect(screen.queryByRole("button", { name: /^ще / })).toBeNull();
   });
 
+  it("розгорнутий хвіст згортається назад: «Згорнути» ↔ «ще N», aria-expanded відстежує стан", () => {
+    mocks.items = [1, 2, 3, 4, 5].map((n) =>
+      item({ id: `i${n}`, priority: 100 - n }),
+    );
+    renderPile();
+
+    const toggle = screen.getByRole("button", { name: "ще 2" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(screen.getAllByTestId("now-row")).toHaveLength(4);
+    // Той самий вузол: фокус клавіатури не втрачається при перемиканні.
+    const collapse = screen.getByRole("button", { name: "Згорнути" });
+    expect(collapse).toBe(toggle);
+    expect(collapse).toHaveAttribute("aria-expanded", "true");
+    expect(collapse.className).toContain("touch-target");
+
+    fireEvent.click(collapse);
+    expect(screen.getAllByTestId("now-row")).toHaveLength(2);
+    const more = screen.getByRole("button", { name: "ще 2" });
+    expect(more).toHaveAttribute("aria-expanded", "false");
+
+    // І знову розгортається: це перемикач, а не одноразова кнопка.
+    fireEvent.click(more);
+    expect(screen.getAllByTestId("now-row")).toHaveLength(4);
+  });
+
+  it("без хвоста перемикача немає", () => {
+    mocks.items = [1, 2, 3].map((n) =>
+      item({ id: `i${n}`, priority: 100 - n }),
+    );
+    renderPile();
+    expect(screen.queryByRole("button", { name: /^ще / })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Згорнути" })).toBeNull();
+  });
+
   it("hero з імперативною дією виконує її через шину з джерелом today_focus_cta", () => {
     mocks.items = [
       item({
