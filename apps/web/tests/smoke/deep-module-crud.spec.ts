@@ -414,6 +414,13 @@ test.describe("@critical deep module CRUD browser loop", () => {
       routineDetailButton(page, "DCRUD вода оновлено"),
     ).toBeVisible();
 
+    // Ті самі два барʼєри, що й у finyk-нозі перед повторним `goto`. Без
+    // flush черги рестарт підтягує серверний знімок без перейменування, а
+    // без активованого воркера навігація потрапляє в гонку
+    // `installing → activated` (`apps/web/AGENTS.md` § E2E smoke, п. 7).
+    // На швидкому CI-раннері обидва встигають самі, на повільнішій машині ні.
+    await waitForSyncQueueIdle(page);
+    await waitForServiceWorkerActivated(page);
     await page.goto("/routine", { waitUntil: "domcontentloaded" });
     await expect(
       routineDetailButton(page, "DCRUD вода оновлено"),
