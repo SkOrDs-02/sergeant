@@ -3770,6 +3770,55 @@
       "canonical_owner": "docs/work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md"
     },
     {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/data-integrity.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/data-integrity.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/data-integrity.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/domain-logic.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/domain-logic.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/domain-logic.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/privacy.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/privacy.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/privacy.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/README.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/README.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/README.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/reliability.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/reliability.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/reliability.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/security.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/security.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/security.md"
+    },
+    {
+      "old_path": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md",
+      "new_path": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md",
+      "action": "keep",
+      "genre": "active-work",
+      "canonical_owner": "docs/work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md"
+    },
+    {
       "old_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "new_path": "docs/work/specs/audits/ai-abuse-2026-08-05.md",
       "action": "keep",
