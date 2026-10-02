@@ -9,7 +9,8 @@ const {
   updateRoutinePrefMock,
   monthlyPlanState,
   loadNutritionPrefsMock,
-  persistNutritionPrefsMock,
+  patchNutritionPrefsMock,
+  nutritionHydration,
   pushState,
   meApiMock,
 } = vi.hoisted(() => ({
@@ -30,7 +31,9 @@ const {
       reminderEnabled: false,
     }),
   ),
-  persistNutritionPrefsMock: vi.fn(),
+  patchNutritionPrefsMock: vi.fn(),
+  // data-04: гідратацію prefs керує тест (за замовчуванням гідратовано).
+  nutritionHydration: { value: true },
   pushState: { subscribed: false },
   meApiMock: {
     getPreferences: vi.fn(async () => ({
@@ -59,10 +62,12 @@ vi.mock("../../modules/routine/hooks/useRoutineState", () => ({
 vi.mock("../../modules/fizruk/hooks/useMonthlyPlan", () => ({
   useMonthlyPlan: () => monthlyPlanState,
 }));
+// Справжній `useNutritionPrefsSnapshot` читає саме ці два експорти; гідратацію
+// prefs (data-04) керує тест.
 vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
-  loadNutritionPrefs: loadNutritionPrefsMock,
-  persistNutritionPrefs: persistNutritionPrefsMock,
-  NUTRITION_PREFS_KEY: "nutrition_prefs_v1", // gitleaks:allow — test mock of a storage-key constant, not a secret
+  loadNutritionPrefs: () => loadNutritionPrefsMock(),
+  isNutritionPrefsHydrated: () => nutritionHydration.value,
+  patchNutritionPrefs: patchNutritionPrefsMock,
 }));
 vi.mock("../components/PushNotificationToggle", () => ({
   PushNotificationToggle: () => <div data-testid="push-toggle" />,
@@ -121,6 +126,7 @@ describe("NotificationsSection", () => {
     routineState.routine = { prefs: { routineRemindersEnabled: false } };
     monthlyPlanState.reminderEnabled = false;
     loadNutritionPrefsMock.mockReturnValue({ reminderEnabled: false });
+    nutritionHydration.value = true;
     pushState.subscribed = false;
   });
   afterEach(() => {
@@ -219,11 +225,36 @@ describe("NotificationsSection", () => {
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("nutrition");
     await waitFor(() =>
-      expect(persistNutritionPrefsMock).toHaveBeenCalledWith(
-        expect.objectContaining({ reminderEnabled: true }),
-        "nutrition_prefs_v1",
-      ),
+      // Лише змінене поле: решту prefs бере з кешу `patchNutritionPrefs`.
+      expect(patchNutritionPrefsMock).toHaveBeenCalledWith({
+        reminderEnabled: true,
+      }),
     );
+  });
+
+  it("data-04: до гідратації тумблер нагадування заблокований і нічого не пише", async () => {
+    stubNotification("granted");
+    nutritionHydration.value = false;
+    renderSettingsSection(<NotificationsSection />);
+    const toggle = screen.getByRole("switch", { name: SWITCH_LABEL.nutrition });
+    expect(toggle).toBeDisabled();
+    fireEvent.click(toggle);
+    await Promise.resolve();
+    expect(patchNutritionPrefsMock).not.toHaveBeenCalled();
+  });
+
+  it("data-04: година нагадування до гідратації заблокована", () => {
+    stubNotification("granted");
+    nutritionHydration.value = false;
+    loadNutritionPrefsMock.mockReturnValue({
+      reminderEnabled: true,
+      reminderHour: 12,
+    });
+    renderSettingsSection(<NotificationsSection />);
+    const hourInput = document.querySelector(
+      'input[type="number"]',
+    ) as HTMLInputElement;
+    expect(hourInput).toBeDisabled();
   });
 
   it("does not enable the fizruk reminder when permission is refused", async () => {
@@ -242,7 +273,7 @@ describe("NotificationsSection", () => {
     renderSettingsSection(<NotificationsSection />);
     clickSwitch("nutrition");
     await waitFor(() => expect(reqFn).toHaveBeenCalled());
-    expect(persistNutritionPrefsMock).not.toHaveBeenCalled();
+    expect(patchNutritionPrefsMock).not.toHaveBeenCalled();
     expect(toastWarningMock).toHaveBeenCalled();
   });
 
@@ -258,10 +289,7 @@ describe("NotificationsSection", () => {
     ) as HTMLInputElement;
     expect(hourInput).not.toBeNull();
     fireEvent.change(hourInput, { target: { value: "20" } });
-    expect(persistNutritionPrefsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ reminderHour: 20 }),
-      "nutrition_prefs_v1",
-    );
+    expect(patchNutritionPrefsMock).toHaveBeenCalledWith({ reminderHour: 20 });
   });
 
   it("clamps the nutrition reminder hour into the 0-23 range", () => {
@@ -275,10 +303,7 @@ describe("NotificationsSection", () => {
       'input[type="number"]',
     ) as HTMLInputElement;
     fireEvent.change(hourInput, { target: { value: "99" } });
-    expect(persistNutritionPrefsMock).toHaveBeenCalledWith(
-      expect.objectContaining({ reminderHour: 23 }),
-      "nutrition_prefs_v1",
-    );
+    expect(patchNutritionPrefsMock).toHaveBeenCalledWith({ reminderHour: 23 });
   });
 
   it("renders 'unsupported' when Notification is missing", () => {

@@ -592,7 +592,7 @@ Same class in the module UI itself (out of this lane): `useShoppingList` runs `u
 
 ### `data-04` [high] nutrition_prefs (шаблони страв, ціль ккал, вода, нагадування) перезаписуються дефолтами при першому відкритті Їжі на новому пристрої або з Settings
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-04-nutrition-prefs-hydration (клієнтська частина; поле-рівневий merge `prefs_json` на сервері, п. 5 «Мінімального фіксу», не робився: зміна контракту за Hard Rule #3, окремий PR)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (prefs) + Settings
 - **Де:** apps/web/src/modules/nutrition/hooks/useAdaptiveNutritionGoal.ts:247-271; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:109-157,320-372; apps/web/src/core/settings/NotificationsSection.tsx:82-93,138-155; apps/web/src/core/settings/NutritionSection.tsx:89-91; apps/server/src/modules/sync/nutrition/applySync.ts:449-483
 - **Першопричина:** persistNutritionPrefs шле весь об'єкт prefs, побудований з холодного кешу (defaultNutritionPrefs) або з застарілого стану компонента. useAdaptiveNutritionGoal пише ціль, щойно біометрія прийшла з /api/me/profile, ще до pull, а NutritionSection і NotificationsSection читають prefs один раз у useState і не підписані на тік кешу. Сервер повністю замінює prefs_json за LWW без поле-рівневого merge.

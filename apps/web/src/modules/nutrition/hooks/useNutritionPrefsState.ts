@@ -3,13 +3,20 @@
  * Status: Active
  */
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import {
   loadNutritionPrefs,
   persistNutritionPrefs,
 } from "../lib/nutritionStorage";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { useNutritionPrefsHydrated } from "./useNutritionPrefsHydration";
 
 interface UseNutritionPrefsStateResult {
   prefs: NutritionPrefs;
@@ -39,12 +46,24 @@ export function useNutritionPrefsState(
   );
   const [prefsStorageErr, setPrefsStorageErr] = useState("");
 
+  // data-04: до гідратації стан — це дефолти, а не prefs користувача, і
+  // цілий blob із них стер би шаблони страв, ціль і нагадування на сервері.
+  // Тому поки не гідратовано, нічого не пишемо й банер помилки не показуємо.
+  const hydrated = useNutritionPrefsHydrated();
+  const wasHydratedRef = useRef(hydrated);
+
   useEffect(() => {
+    const justHydrated = hydrated && !wasHydratedRef.current;
+    wasHydratedRef.current = hydrated;
+    if (!hydrated) return;
+    // Щойно завершений pull приніс рядок prefs: оверлей підставить його в
+    // стан, а перепис ЗАСТАРІЛОГО стану тут би його затер.
+    if (justHydrated && getCachedNutritionSqliteState().prefs != null) return;
     const err = persistNutritionPrefs(prefs)
       ? ""
       : "Не вдалося зберегти налаштування.";
     void Promise.resolve().then(() => setPrefsStorageErr(err));
-  }, [prefs]);
+  }, [prefs, hydrated]);
 
   return { prefs, setPrefs, prefsStorageErr };
 }

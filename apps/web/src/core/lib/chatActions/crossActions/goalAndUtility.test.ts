@@ -6,19 +6,19 @@ vi.mock("../../hubChatUtils", () => ({
 }));
 vi.mock("@nutrition/lib/nutritionStorage", () => ({
   loadNutritionPrefs: vi.fn(() => ({})),
-  persistNutritionPrefs: vi.fn(),
+  patchNutritionPrefs: vi.fn(() => true),
 }));
 
 import { ls, lsSet } from "../../hubChatUtils";
 import {
   loadNutritionPrefs,
-  persistNutritionPrefs,
+  patchNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { convertUnits, setGoal } from "./goalAndUtility";
 
 const mockLs = vi.mocked(ls) as ReturnType<typeof vi.fn>;
 const mockLsSet = vi.mocked(lsSet);
-const mockPersistNutrition = vi.mocked(persistNutritionPrefs);
+const mockPersistNutrition = vi.mocked(patchNutritionPrefs);
 const mockLoadNutrition = vi.mocked(loadNutritionPrefs);
 
 beforeEach(() => {
@@ -81,9 +81,20 @@ describe("setGoal", () => {
       name: "set_goal",
       input: { description: "Дієта", daily_kcal: 1800 },
     });
-    expect(mockPersistNutrition).toHaveBeenCalledWith(
-      expect.objectContaining({ dailyTargetKcal: 1800 }),
-    );
+    // data-04: лише поле цілі — решту prefs бере з кешу `patchNutritionPrefs`.
+    expect(mockPersistNutrition).toHaveBeenCalledWith({
+      dailyTargetKcal: 1800,
+    });
+  });
+
+  it("data-04: Їжа ще не гідратована — не мовчить про незбережену ціль ккал", () => {
+    mockPersistNutrition.mockReturnValueOnce(false);
+    const result = setGoal({
+      name: "set_goal",
+      input: { description: "Дієта", daily_kcal: 1800 },
+    });
+    expect(result).toContain("не збережено");
+    expect(result).toContain("ще завантажуються");
   });
 
   it("includes workouts per week", () => {

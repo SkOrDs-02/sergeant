@@ -137,6 +137,19 @@ export function isNutritionDualWriteRegistered(): boolean {
 }
 
 /**
+ * Id користувача зареєстрованого dual-write контексту (`null`, поки контексту
+ * нема або auth ще резолвиться). Читає `nutritionStorage`, щоб звірити
+ * прапор «початковий pull завершено» саме з поточним користувачем (data-04).
+ */
+export function getNutritionDualWriteUserId(): string | null {
+  try {
+    return registeredContext?.getUserId() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Run the dual-write pipeline for a `prev → next` LS-state transition.
  *
  * The function is `async` but the LS-write call site fires it

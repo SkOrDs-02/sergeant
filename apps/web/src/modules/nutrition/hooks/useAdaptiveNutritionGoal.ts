@@ -15,11 +15,13 @@ import { computeAgeYears } from "../../../core/profile/biometrics";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { getCachedFizrukSqliteState } from "../../fizruk/lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../../fizruk/lib/sqliteReadGate";
-import { getDaySummary } from "../lib/nutritionStorage";
 import {
-  persistAdaptiveNutritionPrefs,
-  persistProfileNutritionPrefs,
+  getDaySummary,
+  loadNutritionPrefs,
+  patchAdaptiveNutritionPrefs,
+  patchProfileNutritionPrefs,
 } from "../lib/nutritionStorage";
+import { useNutritionPrefsHydrated } from "./useNutritionPrefsHydration";
 import {
   GOAL_KCAL_DELTA,
   computeMacrosForKcal,
@@ -243,7 +245,15 @@ export function useAdaptiveNutritionGoal(
     ],
   );
 
+  // data-04: біометрія приходить із /api/me/profile за секунди, а prefs — з
+  // повільного pull. Без цього гейта холодний кеш (`dailyTargetKcal == null`,
+  // `adaptiveGoalEnabled` за замовчуванням true) уже писав ціль і стирав на
+  // всіх пристроях шаблони страв, ручну ціль і нагадування. Прапор у залежностях
+  // ефекту: на новому акаунті pull не міняє prefs, і лише він запускає розрахунок.
+  const prefsHydrated = useNutritionPrefsHydrated();
+
   useEffect(() => {
+    if (!prefsHydrated) return;
     if (!prefs.adaptiveGoalEnabled || !profileTargets) return;
     // Усі входи розрахунку, а не лише виміряний TDEE: інакше зміна ваги
     // чи витрат на тренуваннях лишала б підпис тим самим, і планувальник
@@ -259,9 +269,13 @@ export function useAdaptiveNutritionGoal(
     if (lastScheduledSignature === signature) return;
 
     if (prefs.dailyTargetKcal == null) {
+      // Стан компонента міг відстати від кешу (тік ще не дійшов): пишемо лише
+      // якщо актуальний кеш теж каже «ціли немає, автокалібрування ввімкнене».
+      const live = loadNutritionPrefs();
+      if (!live.adaptiveGoalEnabled || live.dailyTargetKcal != null) return;
       lastScheduledSignature = signature;
-      persistProfileNutritionPrefs({
-        ...prefs,
+      // Лише поля цілі: решта prefs береться з кешу в `patchNutritionPrefs`.
+      patchProfileNutritionPrefs({
         dailyTargetKcal: profileTargets.kcal,
         dailyTargetProtein_g: profileTargets.protein_g,
         dailyTargetFat_g: profileTargets.fat_g,
@@ -296,8 +310,7 @@ export function useAdaptiveNutritionGoal(
       prefs.adaptiveGoalIntent,
     );
     lastScheduledSignature = signature;
-    persistAdaptiveNutritionPrefs({
-      ...prefs,
+    patchAdaptiveNutritionPrefs({
       dailyTargetKcal: targets.kcal,
       dailyTargetProtein_g: targets.protein_g,
       dailyTargetFat_g: targets.fat_g,
@@ -314,7 +327,7 @@ export function useAdaptiveNutritionGoal(
         goalKcal: targets.kcal,
       },
     });
-  }, [analysis, biometrics, prefs, profileTargets]);
+  }, [analysis, biometrics, prefs, prefsHydrated, profileTargets]);
 
   if (!prefs.adaptiveGoalEnabled) {
     return {

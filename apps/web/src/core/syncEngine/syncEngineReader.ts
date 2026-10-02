@@ -5,6 +5,19 @@ import { applyPullOp } from "./applyPullOp.js";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor.js";
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
+import {
+  markInitialPullComplete,
+  reconcileInitialPull,
+  resetInitialPull,
+} from "./initialPullState.js";
+
+// data-04: стан «початковий pull завершено» живе в окремому модулі без
+// імпортів (його читає lazy-чанк Їжі), а звідси лише реекспортується.
+export {
+  getInitialPullVersion,
+  hasCompletedInitialPull,
+  subscribeInitialPull,
+} from "./initialPullState.js";
 
 export interface SyncEnginePullResult {
   readonly pulled: number;
@@ -171,6 +184,8 @@ export function createSyncEngineReaderRuntime(
     inflight = (async () => {
       const userId = await deps.resolveUserId();
       if (!userId) {
+        // Немає сесії (logout): прапор попереднього користувача не чинний.
+        reconcileInitialPull(null, null);
         return {
           pulled: 0,
           applied: 0,
@@ -181,6 +196,9 @@ export function createSyncEngineReaderRuntime(
       }
 
       const client = await deps.resolveClient();
+      // Інший користувач або нова партиція бази = початковий pull знову
+      // «не завершено» (див. `initialPullState.ts`).
+      reconcileInitialPull(userId, client);
       let since = await readPullSinceCursor(client, userId);
       let pulled = 0;
       let applied = 0;
@@ -240,6 +258,11 @@ export function createSyncEngineReaderRuntime(
         await refreshCachesAfterPull(client, userId, affectedTables);
       }
 
+      // Сюди доходимо лише через `break` на `next_cursor === null` (будь-яка
+      // помилка вилітає вище). Ставимо ПІСЛЯ оновлення кешів, щоб споживач,
+      // який побачив прапор, уже читав прогрітий кеш.
+      markInitialPullComplete(userId, client);
+
       return {
         pulled,
         applied,
@@ -295,6 +318,7 @@ export function createSyncEngineReaderRuntime(
     stop() {
       if (!started) return;
       started = false;
+      resetInitialPull();
       if (intervalHandle !== null) {
         deps.clearInterval(intervalHandle);
         intervalHandle = null;

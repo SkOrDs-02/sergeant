@@ -78,7 +78,8 @@ vi.mock("../../modules/fizruk/hooks/useMonthlyPlan", () => ({
 }));
 vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
   loadNutritionPrefs: () => ({ reminderEnabled: false }),
-  persistNutritionPrefs: vi.fn(),
+  isNutritionPrefsHydrated: () => true,
+  patchNutritionPrefs: vi.fn(),
   NUTRITION_PREFS_KEY: "nutrition_prefs_v1", // gitleaks:allow — test mock of a storage-key constant, not a secret
 }));
 vi.mock("../components/PushNotificationToggle", () => ({

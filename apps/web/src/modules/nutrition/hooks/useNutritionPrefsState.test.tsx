@@ -19,6 +19,11 @@ vi.mock("../lib/nutritionStorage", () => ({
 vi.mock("../lib/sqliteReader", () => ({
   getCachedNutritionSqliteState: () => getCachedNutritionSqliteState(),
 }));
+// data-04: гідратацію prefs керує тест (за замовчуванням гідратовано).
+const hydration = vi.hoisted(() => ({ value: true }));
+vi.mock("./useNutritionPrefsHydration", () => ({
+  useNutritionPrefsHydrated: () => hydration.value,
+}));
 
 import { useNutritionPrefsState } from "./useNutritionPrefsState";
 
@@ -27,6 +32,7 @@ const OVERLAY = { goal: "cut", kcalTarget: 1700 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  hydration.value = true;
   loadNutritionPrefs.mockReturnValue(INITIAL);
   persistNutritionPrefs.mockReturnValue(true);
   getCachedNutritionSqliteState.mockReturnValue({ refreshedAt: null });
@@ -85,5 +91,37 @@ describe("useNutritionPrefsState", () => {
     expect(result.current.prefs).toEqual(OVERLAY);
     rerender({ tick: 1 });
     expect(result.current.prefs).toEqual(OVERLAY);
+  });
+
+  it("data-04: до гідратації стан (дефолти) не пишеться, а банер помилки мовчить", () => {
+    hydration.value = false;
+    persistNutritionPrefs.mockReturnValue(false);
+    const { result } = renderHook(() => useNutritionPrefsState(0));
+    expect(persistNutritionPrefs).not.toHaveBeenCalled();
+    expect(result.current.prefsStorageErr).toBe("");
+  });
+
+  it("data-04: після гідратації стан пишеться", () => {
+    hydration.value = false;
+    const { rerender } = renderHook(() => useNutritionPrefsState(0));
+    expect(persistNutritionPrefs).not.toHaveBeenCalled();
+    hydration.value = true;
+    rerender();
+    expect(persistNutritionPrefs).toHaveBeenCalledWith(INITIAL);
+  });
+
+  it("data-04: гідратація рядком prefs із кешу не перезаписує його застарілим станом", () => {
+    // Стан — дефолти (кеш був холодний), pull приніс справжній рядок і тік:
+    // оверлей підставить його в стан, а запис застарілого стану тут би його
+    // затер на всіх пристроях.
+    hydration.value = false;
+    const { rerender } = renderHook(() => useNutritionPrefsState(0));
+    getCachedNutritionSqliteState.mockReturnValue({
+      refreshedAt: "2026-10-02T00:00:00Z",
+      prefs: OVERLAY,
+    });
+    hydration.value = true;
+    rerender();
+    expect(persistNutritionPrefs).not.toHaveBeenCalledWith(INITIAL);
   });
 });
