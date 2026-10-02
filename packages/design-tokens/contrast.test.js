@@ -65,6 +65,26 @@ const THEME_CSS = readFileSync(
   "utf8",
 );
 
+/**
+ * Джерело осередків `MealStrip` — з нього гейт читає класи перехідних
+ * станів (`hover:bg-hero-ink/N`, `active:bg-hero-ink/N`), а не копію чисел.
+ */
+const MEAL_STRIP_SRC = readFileSync(
+  path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "..",
+    "..",
+    "apps",
+    "web",
+    "src",
+    "modules",
+    "nutrition",
+    "components",
+    "MealStrip.tsx",
+  ),
+  "utf8",
+);
+
 function heroGradientStops(module) {
   const decl = new RegExp(
     `--hero-grad-${module}:\\s*linear-gradient\\(([^)]*)\\)`,
@@ -645,6 +665,75 @@ describe("«Чорнило» на геро-градієнті — кожна з�
         mixHex(HERO_INK, brandColors.lime[700], WASH_ALPHA),
       ),
     ).toBeLessThan(4.5);
+  });
+
+  /**
+   * Перехідні стани осередків `MealStrip` (follow-up 2026-10-01, рішення
+   * власника: «слабша підсвітка»). Заливка на hover/active лежить під тим
+   * самим чорнилом, що й спокій, тож її теж міряємо проти найсвітлішої
+   * зупинки Їжі. Читається з джерела компонента: повернення `/15` і `/20`
+   * (4.06 і 3.67) валить тест.
+   */
+  describe("MealStrip: hover/active заливка осередка тримає ≥ 4.5:1", () => {
+    // Зареєстрована шкала непрозорості (`sergeant-web-ui`: «0, 5, 8, 10,
+    // 15, … 100»; `8` додано в `tailwind-preset.js`).
+    const REGISTERED_SCALE = [
+      0, 5, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85,
+      90, 95, 100,
+    ];
+    const lightest = lightestStop(heroGradientStops("nutrition"));
+    const washContrast = (alphaPct) =>
+      contrastRatio(HERO_INK, mixHex(HERO_INK, lightest, alphaPct / 100));
+    const fillAlpha = (variant) => {
+      const hits = [
+        ...MEAL_STRIP_SRC.matchAll(
+          new RegExp(`(?<![\\w:-])${variant}:bg-hero-ink/(\\d+)`, "g"),
+        ),
+      ];
+      return hits.map((m) => Number(m[1]));
+    };
+    // Спокій осередка — окремий рядок-літерал у `cn(...)`; смуга частки
+    // (`bg-hero-ink/15`, `/60`) і макро-треки мають власні `bg-hero-ink/NN`,
+    // тож шукаємо літерал, що займає рядок сам.
+    const restAlpha = Number(
+      /^\s*"bg-hero-ink\/(\d+)",$/m.exec(MEAL_STRIP_SRC)?.[1],
+    );
+
+    it("спокій осередка — `bg-hero-ink/5` (база порівняння)", () => {
+      expect(restAlpha).toBe(5);
+    });
+
+    for (const variant of ["hover", "active"]) {
+      it(`${variant}: заливка знайдена, на зареєстрованій шкалі, не слабша за спокій`, () => {
+        const alphas = fillAlpha(variant);
+        expect(alphas.length).toBeGreaterThan(0);
+        for (const a of alphas) {
+          expect(REGISTERED_SCALE).toContain(a);
+          expect(a).toBeGreaterThanOrEqual(restAlpha);
+        }
+      });
+
+      it(`${variant}: чорнило проти найсвітлішої зупинки під заливкою ≥ 4.5:1`, () => {
+        for (const a of fillAlpha(variant)) {
+          expect(
+            washContrast(a),
+            `${variant}:bg-hero-ink/${a} → ${washContrast(a).toFixed(2)}:1`,
+          ).toBeGreaterThanOrEqual(4.5);
+        }
+      });
+    }
+
+    it("hover і active мають видимий відгук поза заливкою (контур), бо між `/5` і `/10` лишається лише `/8`", () => {
+      expect(MEAL_STRIP_SRC).toMatch(/(?<![\w:-])hover:border-hero-ink\/\d+/);
+      expect(MEAL_STRIP_SRC).toMatch(/(?<![\w:-])active:border-hero-ink\/\d+/);
+    });
+
+    it("шкала: `/8` проходить, `/10` і вище — ні (чому стеля hover — `/8`)", () => {
+      expect(washContrast(8)).toBeGreaterThanOrEqual(4.5);
+      expect(washContrast(10)).toBeLessThan(4.5);
+      expect(washContrast(15)).toBeLessThan(4.5);
+      expect(washContrast(20)).toBeLessThan(4.5);
+    });
   });
 });
 
