@@ -814,6 +814,18 @@ describe("@sergeant/design-tokens — `{module}-edge`: контур вибран
  * (світле значення), тобто рівно старий дефект, і тест червоніє.
  */
 describe("@sergeant/design-tokens — `fizruk-surface`: темна пара заливки", () => {
+  const HERE = path.dirname(fileURLToPath(import.meta.url));
+  const FIZRUK_COMPONENTS = path.join(
+    HERE,
+    "..",
+    "..",
+    "apps",
+    "web",
+    "src",
+    "modules",
+    "fizruk",
+    "components",
+  );
   const CSS = THEME_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 
   /**
@@ -841,6 +853,11 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
     }
     return found;
   }
+  /** Перший однорядковий рядок-літерал у джерелі, що містить `token` (клас-стрічка). */
+  const classLiteralWith = (src, token) =>
+    [...src.matchAll(/"([^"\n]*)"/g)]
+      .map((m) => m[1])
+      .find((lit) => lit.includes(token)) ?? "";
   const hexOf = (triple) => rgbTripleToHex(triple);
   const tripleOf = (hex) =>
     [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
@@ -969,5 +986,26 @@ describe("@sergeant/design-tokens — `fizruk-surface`: темна пара за
       contrastRatio(need(".dark", "--c-fizruk-soft-fg"), old),
     ).toBeLessThan(1.5);
     expect(contrastRatio(need(".dark", "--c-text"), old)).toBeLessThan(1.5);
+  });
+
+  it("чип «Розминка/Нотатка/Час»: вибраний = заливка `fizruk-surface` + контур `fizruk-edge` (не `-ring`)", () => {
+    const src = readFileSync(
+      path.join(FIZRUK_COMPONENTS, "session", "SessionExtrasRow.tsx"),
+      "utf8",
+    );
+    const active = classLiteralWith(src, "bg-fizruk-surface");
+    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
+    expect(active).toMatch(/(?<![\w:-])text-fizruk-soft-fg(?![\w-])/);
+    // `border-fizruk-ring` (cyan-200) давав 1.01:1 проти столу у світлій.
+    expect(active).not.toMatch(/border-fizruk-ring/);
+  });
+
+  it("вибране заняття в пікері: контур `fizruk-edge` (заливки 1.04 / 1.13 для стану мало)", () => {
+    const src = readFileSync(
+      path.join(FIZRUK_COMPONENTS, "workouts", "LogPastActivityPicker.tsx"),
+      "utf8",
+    );
+    const active = classLiteralWith(src, "bg-fizruk-surface");
+    expect(active).toMatch(/(?<![\w:-])border-fizruk-edge(?![\w-])/);
   });
 });
