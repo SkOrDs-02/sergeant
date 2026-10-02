@@ -117,7 +117,7 @@ export function FizrukDayPlanSheet({
                     {exerciseList.map((ex) => (
                       <li
                         key={ex.id}
-                        className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60"
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel"
                       >
                         <span className="w-1.5 h-1.5 rounded-full bg-info shrink-0" />
                         <span className="text-style-label text-text truncate">
@@ -169,7 +169,7 @@ export function FizrukDayPlanSheet({
                         "w-full text-left rounded-xl px-3 py-2.5 border transition-colors min-h-[44px]",
                         isActive
                           ? "border-info/50 bg-info/10"
-                          : "border-line bg-panel/60 hover:bg-panelHi",
+                          : "border-line bg-panel hover:bg-panelHi",
                       )}
                     >
                       <p

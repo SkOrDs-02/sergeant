@@ -265,7 +265,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
   return (
     <div
       id={id}
-      className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50"
+      className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-panel"
     >
       <SectionHeading as="div" size="xs" variant="fizruk">
         {messages.fizruk.programs.scheduleHeading}
@@ -281,7 +281,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
         return (
           <div
             key={`${schedEntry.day}_${schedEntry.sessionKey}`}
-            className="rounded-xl bg-panel border border-line/40 p-3"
+            className="rounded-xl bg-panel border border-line p-3"
           >
             <div className="flex items-center gap-2 mb-2">
               {/* Fizruk module accent throughout — was mixing the cyan

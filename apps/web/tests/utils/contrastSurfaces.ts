@@ -853,39 +853,107 @@ export function measureFocusInPage(): FocusFinding | null {
     return bg.a > 0 ? over(bg, base) : base;
   }
   /**
-   * Фон «під» елементом, коли найближчий предок із заливкою — ГРАДІЄНТ
-   * (hero-картка). Плаский `parentBg` там бреше: кільце кольору градієнта
-   * (`#115e59` на `#115e59 → #0f766e`) виглядало як 6:1 проти столу, хоча
-   * на екрані зливалось із фоном (follow-up аудиту 2026-10-01). Повертає
-   * зупинки градієнта, складені на плаский фон; `null` — градієнта немає.
+   * Один можливий фон під елементом. `bg(fill)` — те, що видно поруч із
+   * кільцем (власна заливка `fill`, якщо кільце впритул до неї). `paint(c,
+   * under)` — колір `c`, намальований поверх `under` (власної заливки для
+   * `ring-inset`, нічого для зовнішнього кільця/outline), уже складений з
+   * усім стеком, тобто так, як його бачить око.
    */
-  function gradientBackdrops(node: Element, base: RGBA): RGBA[] | null {
-    let n: Element | null = node.parentElement;
-    while (n) {
+  interface Backdrop {
+    bg(fill?: RGBA): RGBA;
+    paint(c: RGBA, under?: RGBA): RGBA;
+  }
+  const CLEAR: RGBA = { r: 0, g: 0, b: 0, a: 0 };
+  const WHITE: RGBA = { r: 255, g: 255, b: 255, a: 1 };
+  function opacityOf(x: Element): number {
+    const op = parseFloat(getComputedStyle(x).opacity);
+    return Number.isNaN(op) ? 1 : op;
+  }
+  function fillOf(x: Element): RGBA {
+    return parse(getComputedStyle(x).backgroundColor);
+  }
+  const fade = (c: RGBA, o: number): RGBA => (o < 1 ? { ...c, a: c.a * o } : c);
+  /**
+   * Фони «під» елементом: по одному на кожну зупинку градієнта-предка
+   * (hero-картка) або один плаский, якщо градієнта немає.
+   *
+   * Зупинки, а не плаский `parentBg`: кільце кольору градієнта (`#115e59` на
+   * `#115e59 → #0f766e`) виглядало як 6:1 проти столу, хоча на екрані
+   * зливалось із фоном (follow-up аудиту 2026-10-01).
+   *
+   * Проміжні заливки між градієнтом і елементом обовʼязкові: кнопка
+   * «Зрозуміло» підказки `MonthStrip` стоїть у блоці `bg-hero-ink/5`, і голі
+   * зупинки завищували контраст її кільця (5.22 проти реальних ≈4.7).
+   *
+   * Групи непрозорості складаються так, як їх малює браузер (CSS
+   * Compositing: група рендериться окремо й лише потім лягає на тло з
+   * власною `opacity`). Піднімаємось від елемента до градієнта (або кореня):
+   * на кожному кроці вміст нащадків лягає на заливку предка, і тільки
+   * результат множиться на `opacity` цього предка. Тож заливка предка
+   * притушується лише його власною непрозорістю, а кільце елемента —
+   * непрозорістю кожної групи над ним по черзі. Обидві попередні моделі
+   * помилялись (знахідки CodeRabbit на #1320): спершу кільце бралось
+   * непрозорим проти притушеного фону, потім вкладені групи злипались в один
+   * добуток і притушували заливку батька й власною, і дитячою `opacity`.
+   * `opacity` самого hero чи вище не враховується: вона притушила б і
+   * зупинки проти сторінки, а в hero-картках її немає.
+   */
+  function backdropsFor(node: Element): Backdrop[] {
+    // [елемент, батько, …] до градієнтного предка (не включно) або до кореня.
+    const segment: Element[] = [node];
+    let belows: RGBA[] = [WHITE];
+    for (let n = node.parentElement; n; n = n.parentElement) {
       const bi = getComputedStyle(n).backgroundImage;
-      if (/gradient\(/.test(bi)) {
-        const stops =
-          bi.match(
+      const stops = /gradient\(/.test(bi)
+        ? (bi.match(
             /(?:rgba?|oklab|oklch|lab|lch|color)\([^)]*\)|#[0-9a-f]{3,8}/gi,
-          ) ?? [];
-        return stops.length > 0 ? stops.map((s) => over(parse(s), base)) : null;
+          ) ?? [])
+        : [];
+      if (stops.length > 0) {
+        // Фон під градієнтом: заливки від кореня до самого градієнтного
+        // елемента включно (його `background-color` лежить під зображенням).
+        const above: Element[] = [];
+        for (let a: Element | null = n; a; a = a.parentElement) above.push(a);
+        let base = WHITE;
+        let cum = 1;
+        for (const x of above.reverse()) {
+          cum *= opacityOf(x);
+          const bg = fillOf(x);
+          if (bg.a > 0) base = over({ ...bg, a: bg.a * cum }, base);
+        }
+        belows = stops.map((st) => over(parse(st), base));
+        break;
       }
-      n = n.parentElement;
+      segment.push(n);
     }
-    return null;
+    const fills = segment.map(fillOf);
+    const ops = segment.map(opacityOf);
+    // `top` — те, що малює сам елемент у цій точці (кільце, власна заливка
+    // або нічого), проведене через усі групи сегмента від внутрішньої.
+    const lift = (top: RGBA): RGBA => {
+      let acc = fade(top, ops[0] ?? 1);
+      for (let i = 1; i < segment.length; i++) {
+        acc = fade(over(acc, fills[i] ?? CLEAR), ops[i] ?? 1);
+      }
+      return acc;
+    };
+    return belows.map((below) => {
+      const land = (c: RGBA) => (c.a > 0 ? over(c, below) : below);
+      return {
+        bg: (fill) => land(lift(fill && fill.a > 0 ? fill : CLEAR)),
+        paint: (col, under) =>
+          land(lift(under && under.a > 0 ? over(col, under) : col)),
+      };
+    });
   }
   /**
-   * Найгірший коефіцієнт `fg` проти кожного можливого фону під елементом:
-   * кожна зупинка градієнта-предка або (якщо градієнта нема) плаский фон.
-   * `fill` — власна (можливо напівпрозора) заливка елемента, що лежить
-   * поверх цього фону; без неї фон і є сусідом кільця.
+   * Найгірший коефіцієнт кільця кольору `c` проти кожного можливого фону під
+   * елементом: кожна зупинка градієнта-предка або (якщо градієнта нема)
+   * плаский фон. `fill` — власна (можливо напівпрозора) заливка елемента,
+   * що сусідить із кільцем; без неї сусід — сам фон.
    */
-  function worstOver(fg: RGBA, backdrops: RGBA[], fill?: RGBA): number {
-    return Math.min(
-      ...backdrops.map((b) =>
-        ratio(fg, fill && fill.a > 0 ? over(fill, b) : b),
-      ),
-    );
+  function worstOver(c: RGBA, backdrops: Backdrop[], fill?: RGBA): number {
+    return Math.min(...backdrops.map((b) => ratio(b.paint(c), b.bg(fill))));
   }
 
   const cs = getComputedStyle(el);
@@ -919,9 +987,7 @@ export function measureFocusInPage(): FocusFinding | null {
 
   const pb = parentBgOf(el);
   // Фони під елементом: зупинки градієнта-предка (hero-картка) або плаский.
-  const backdrops: RGBA[] = (pb.u ? gradientBackdrops(el, pb.c) : null) ?? [
-    pb.c,
-  ];
+  const backdrops: Backdrop[] = backdropsFor(el);
 
   // box-shadow ring: шари без розмиття зі spread>0, не inset.
   const raw = cs.boxShadow;
@@ -980,15 +1046,16 @@ export function measureFocusInPage(): FocusFinding | null {
     ringPx = outer.spread - (inner ? inner.spread : 0);
     ringColor = over(outer.color, pb.c);
     // Ефективне кільце проти фону, на якому воно малюється (градієнт —
-    // найгірша зупинка, а не плаский стіл).
-    ratioV = worstOver(ringColor, backdrops);
+    // найгірша зупинка, а не плаский стіл; група непрозорості — разом із
+    // кільцем).
+    ratioV = worstOver(outer.color, backdrops);
     if (!inner) {
       // Кільце впритул до контролу: ще й проти власної заливки (яка лежить
       // на тому самому фоні; без власної заливки сусід — сам фон, уже
       // враховано вище).
       const own = parse(cs.backgroundColor);
       if (own.a > 0)
-        ratioV = Math.min(ratioV, worstOver(ringColor, backdrops, own));
+        ratioV = Math.min(ratioV, worstOver(outer.color, backdrops, own));
     }
   } else if (insetRings.length > 0) {
     // Внутрішнє кільце (`ring-inset`): малюється ПОВЕРХ власної заливки.
@@ -1000,17 +1067,14 @@ export function measureFocusInPage(): FocusFinding | null {
     // Градієнт-предок: кільце й заливка складаються на кожну зупинку.
     const own = parse(cs.backgroundColor);
     ratioV = Math.min(
-      ...backdrops.map((b) => {
-        const f = own.a > 0 ? over(own, b) : b;
-        return ratio(over(outer.color, f), f);
-      }),
+      ...backdrops.map((b) => ratio(b.paint(outer.color, own), b.bg(own))),
     );
   } else if (hasOutline) {
     mechanism = cs.outlineStyle === "auto" ? "ua-auto" : "outline";
     ringPx = outlineW;
     const oc = parse(cs.outlineColor);
     ringColor = over(oc, pb.c);
-    ratioV = worstOver(ringColor, backdrops);
+    ratioV = worstOver(oc, backdrops);
   }
   return {
     kind: "focus",
