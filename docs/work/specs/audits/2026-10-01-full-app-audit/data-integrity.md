@@ -396,7 +396,7 @@ Code path, end to end:
 
 ### `data-03` [high] Холодне завантаження «Їжі» (reload, deep-link, PWA-шорткат, новий пристрій) або чат-запис до прогріву кешу стирає список покупок і денну воду на всіх пристроях
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-03-nutrition-cold-cache (гейт `refreshedAt` у `persistNutritionShoppingList`/`persistNutritionWaterLog` + `diffShoppingListOps` null→порожній = 0 опів; чат-екзекутори покриті тим самим гейтом мовчки, явне повідомлення «спробуй за кілька секунд» лишається за `core/lib/chatActions`)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (nutritionStorage, useShoppingList, chatActions)
 - **Де:** apps/web/src/modules/nutrition/hooks/useShoppingList.ts:36-49; apps/web/src/modules/nutrition/lib/shoppingListStorage.ts:47-61; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:304-316,346-372; apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts:388-396,623-630; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:272-308; apps/web/src/core/lib/chatActions/nutritionActions.ts:101-111,188-232
 - **Першопричина:** useShoppingList на маунті безумовно викликає persistShoppingList з порожнім дефолтом, а peekNutritionDualWriteState при холодному кеші дає prev.shoppingList = null, тож диф null→{categories:[]} емітить shopping-list-set із найсвіжішим client_ts (буфер до реєстрації реплеїть його з новою міткою). Чат-екзекутори так само будують цілий blob списку й води з порожнього кешу, а сервер застосовує whole-row LWW, де порожнє значення перемагає.

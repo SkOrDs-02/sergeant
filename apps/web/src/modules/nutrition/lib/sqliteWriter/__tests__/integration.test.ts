@@ -167,7 +167,7 @@ describe("nutrition dualWrite orchestrator", () => {
         },
       ],
       waterLog: { "2026-05-01": 500 },
-      shoppingList: { dataJson: '{"categories":[]}' },
+      shoppingList: { dataJson: '{"categories":[{"name":"Інше","items":[]}]}' },
     };
 
     const result = await dualWriteNutritionState(EMPTY, next);
@@ -223,7 +223,9 @@ describe("nutrition dualWrite orchestrator", () => {
       [UID],
     );
     expect(shoppingRows).toHaveLength(1);
-    expect(shoppingRows[0]!["data_json"]).toBe('{"categories":[]}');
+    expect(shoppingRows[0]!["data_json"]).toBe(
+      '{"categories":[{"name":"Інше","items":[]}]}',
+    );
   });
 
   it("triggerNutritionDualWrite is fire-and-forget (resolves immediately)", async () => {
