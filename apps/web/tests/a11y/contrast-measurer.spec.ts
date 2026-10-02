@@ -6,7 +6,9 @@
  * Status: Active. Знахідка CodeRabbit на #1317: кнопка «Зрозуміло» підказки
  * `MonthStrip` лежить у блоці `bg-hero-ink/5` усередині hero-градієнта, а
  * вимірювач брав голі зупинки градієнта й завищував контраст кільця
- * (5.22 проти ≈4.7). Тест статичний: власна розмітка через `setContent`, без
+ * (5.22 проти ≈4.7). Знахідка CodeRabbit на #1320: `opacity` обгортки
+ * притушує не лише фон, а й саме кільце, тож кільце мусить лягати на зупинку
+ * з груповою альфою (кейс `faded`). Тест статичний: власна розмітка через `setContent`, без
  * бекенду й світів, тож не залежить від стану додатка.
  */
 import { expect, test } from "@playwright/test";
@@ -26,6 +28,11 @@ const hexToRgb = (hex: string): Rgb => [
   parseInt(hex.slice(3, 5), 16),
   parseInt(hex.slice(5, 7), 16),
 ];
+
+const rgbOf = (hex: string) => {
+  const [r, g, b] = hexToRgb(hex);
+  return { r, g, b };
+};
 
 function luminance([r, g, b]: Rgb): number {
   const f = (v: number) => {
@@ -82,13 +89,18 @@ test.describe("вимірювач: градієнт-предок із промі
     return f!.ratio!;
   }
 
-  /** Найгірший коефіцієнт кільця проти зупинок з опційною обгорткою. */
-  function expected(wash: { a: number } | null): number {
+  /**
+   * Найгірший коефіцієнт кільця проти зупинок з опційною обгорткою.
+   * `outlineAlpha` — непрозорість групи, у якій лежить кільце: група
+   * притушує й саме кільце, тож воно лягає на зупинку з цією альфою.
+   */
+  function expected(wash: { a: number } | null, outlineAlpha = 1): number {
     return Math.min(
       ...STOPS.map((stop) => {
         const base = hexToRgb(stop);
         const bg = wash ? over({ ...WASH, a: wash.a }, base) : base;
-        return contrast(hexToRgb(RING), bg);
+        const fg = over({ ...rgbOf(RING), a: outlineAlpha }, base);
+        return contrast(fg, bg);
       }),
     );
   }
@@ -115,7 +127,11 @@ test.describe("вимірювач: градієнт-предок із промі
     page,
   }) => {
     const faded = await measure(page, "faded");
-    // 0.5 (альфа заливки) × 0.5 (opacity обгортки) = 0.25.
-    expect(faded).toBeCloseTo(expected({ a: WASH.a * 0.5 }), 1);
+    // Фон: 0.5 (альфа заливки) × 0.5 (opacity обгортки) = 0.25. Кільце
+    // лежить у тій самій групі, тож теж притушене до 0.5 — на екрані ≈1.6:1,
+    // а не ≈4 (знахідка CodeRabbit на #1320: раніше кільце бралось
+    // непрозорим проти притушеного фону).
+    expect(faded).toBeLessThan(3);
+    expect(faded).toBeCloseTo(expected({ a: WASH.a * 0.5 }, 0.5), 1);
   });
 });
