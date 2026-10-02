@@ -399,6 +399,10 @@ export const coreMessages = {
     // Серверні errors (rate-limiter, error handler):
     rateLimited: "Забагато спроб. Зачекай хвилину і спробуй ще раз.",
     serverDown: "Сервер тимчасово недоступний. Спробуй пізніше.",
+    // Банер на хабі, поки `me` не відповідає, а пристрій належить залогіненому
+    // користувачеві (rel-02): повтор іде сам, тож текст про дію «що роблю».
+    serverUnavailable: "Сервер недоступний. Повторюю спробу.",
+    serverUnavailableRetry: "Повторити зараз",
 
     // Round 16 — soft-auth prompt
     createAccount: "Створити акаунт",

@@ -41,6 +41,8 @@ export const messagesEn: Partial<{
     // Server errors (rate-limiter, error handler):
     rateLimited: "Too many attempts. Wait a minute and try again.",
     serverDown: "The server is temporarily unavailable. Try again later.",
+    serverUnavailable: "The server is unavailable. Retrying.",
+    serverUnavailableRetry: "Retry now",
 
     // Round 16 — soft-auth prompt
     createAccount: "Create account",

@@ -24,7 +24,10 @@ import { logger } from "@shared/lib";
 import { buildIdentifyTraits } from "../observability/identifyTraits";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { billingKeys } from "@shared/lib/api/queryKeys";
-import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
+import {
+  deviceOwnerIsUser,
+  reconcileChatOwnerOnAuthChange,
+} from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { SIGN_IN_PATH } from "../app/appPaths";
@@ -128,7 +131,107 @@ function consumePendingOAuthSignup(createdAt: string | null): void {
  * рендер побачив свіжий профіль.
  */
 
-export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+/**
+ * Стани ідентичності.
+ *
+ *  - `loading` — особистість ще невідома: `me` у польоті АБО `me` тимчасово
+ *    недоступний на пристрої, що має власника-користувача (див.
+ *    `serverUnavailable`). Нічого не стираємо і не перемикаємо на анонімну
+ *    партицію.
+ *  - `authenticated` — `me` віддав користувача.
+ *  - `unauthenticated` — сервер сказав, що сесії немає (401), або анонімний
+ *    пристрій, якому нічого утримувати.
+ *  - `pending_deletion` — сесія жива, але акаунт у 30-денному вікні видалення
+ *    (403 `account_pending_deletion`). Користувача ми не знаємо, тож це НЕ
+ *    `authenticated`, але й НЕ вихід: див. `pendingDeletion`.
+ */
+export type AuthStatus =
+  "loading" | "authenticated" | "unauthenticated" | "pending_deletion";
+
+/** Дані з тіла 403 `account_pending_deletion`. */
+export interface PendingDeletionInfo {
+  /** ISO-дата остаточного видалення; `null`, якщо тіло її не віддало. */
+  scheduledPurgeAt: string | null;
+}
+
+/**
+ * Серверний код 403 для акаунта у вікні видалення.
+ *
+ * Літерал, а не `ACCOUNT_PENDING_DELETION_CODE` із `@sergeant/shared`: runtime-
+ * імпорт звідси перекроює eager-чанки (білий екран на буті, див. AI-DANGER
+ * нагорі файлу). Синхрон із реєстром тримає
+ * `AuthContext.pendingDeletionCode.test.ts`.
+ */
+const ACCOUNT_PENDING_DELETION_CODE = "account_pending_deletion";
+
+type MeFailure =
+  | { kind: "signed-out" }
+  | { kind: "pending-deletion"; scheduledPurgeAt: string | null }
+  | { kind: "unavailable" };
+
+/**
+ * Що означає помилка `GET /api/v1/me`.
+ *
+ * Виходом із акаунта вважається лише ВИРІШАЛЬНА відповідь сервера: 401 (сесії
+ * немає) і 403 (не пускають). 5xx, 429, мережа, обірваний запит і битий JSON —
+ * це «не знаю», а не «вийшов»: до цього всі вони схлопувались у
+ * `unauthenticated`, і identity-wipe нижче стирав кеш та перезавантажував
+ * застосунок у анонімну партицію (аудит 2026-10-01, rel-02).
+ *
+ * Duck-typing замість `isApiError`: тут не можна додавати runtime-імпорти
+ * (AI-DANGER нагорі). `kind` є лише в `ApiError`; помилка без нього з числовим
+ * `status` — легасі-форма, читаємо її як HTTP.
+ */
+function classifyMeFailure(err: unknown): MeFailure {
+  const e = (typeof err === "object" && err !== null ? err : {}) as {
+    kind?: unknown;
+    status?: unknown;
+    body?: unknown;
+  };
+  const isHttp = e.kind === undefined || e.kind === "http";
+  const status = typeof e.status === "number" ? e.status : 0;
+  if (isHttp && status === 401) return { kind: "signed-out" };
+  if (isHttp && status === 403) {
+    const body =
+      typeof e.body === "object" && e.body !== null
+        ? (e.body as { code?: unknown; scheduledPurgeAt?: unknown })
+        : {};
+    if (body.code === ACCOUNT_PENDING_DELETION_CODE) {
+      return {
+        kind: "pending-deletion",
+        scheduledPurgeAt:
+          typeof body.scheduledPurgeAt === "string"
+            ? body.scheduledPurgeAt
+            : null,
+      };
+    }
+    return { kind: "signed-out" };
+  }
+  return { kind: "unavailable" };
+}
+
+/**
+ * Повтор `me` усередині одного циклу запиту: лише для «недоступно», до двох
+ * разів, з дефолтним експоненційним відступом RQ (1 с, 2 с). 401/403 не
+ * ретраїмо — анонімному візитеру спінер не потрібен. `aborted` теж не
+ * ретраїмо: це не збій сервера.
+ */
+function retryMe(failureCount: number, err: unknown): boolean {
+  if (failureCount >= 2) return false;
+  if ((err as { kind?: unknown } | null)?.kind === "aborted") return false;
+  return classifyMeFailure(err).kind === "unavailable";
+}
+
+/** Пауза між циклами перезапиту `me` під час збою: 5 с, 10 с, … до 30 с. */
+const ME_OUTAGE_POLL_BASE_MS = 5_000;
+const ME_OUTAGE_POLL_MAX_MS = 30_000;
+
+function meOutagePollMs(failures: number): number {
+  return Math.min(
+    ME_OUTAGE_POLL_MAX_MS,
+    ME_OUTAGE_POLL_BASE_MS * 2 ** Math.max(0, failures - 1),
+  );
+}
 
 /**
  * Translate auth errors to Ukrainian. Приймає або рядок (для catch-гілок,
@@ -251,8 +354,26 @@ function asAuthErrorLike(err: unknown): AuthErrorLike | null {
 
 interface AuthContextValue {
   user: User | null;
+  /**
+   * `true`, поки особистість невідома: `me` у польоті або (див.
+   * `serverUnavailable`) сервер не відповів на пристрої з власником-
+   * користувачем. НЕ дорівнює «сервер недоступний» — для цього є прапорець.
+   */
   isLoading: boolean;
   status: AuthStatus;
+  /**
+   * `me` не відповів (5xx, 429, мережа, битий JSON), а пристрій належить
+   * залогіненому користувачу: `status` лишається `loading`, нічого не
+   * стирається, `me` перезапитується з відступом. Анонімному пристрою тримати
+   * нічого, тож там прапорець `false`, а `status` — `unauthenticated`.
+   */
+  serverUnavailable: boolean;
+  /**
+   * Акаунт у вікні видалення (403 `account_pending_deletion` на `me`);
+   * `null` в усіх інших станах. Живить `usePendingDeletion` і екран
+   * відновлення.
+   */
+  pendingDeletion: PendingDeletionInfo | null;
   authError: string | null;
   setAuthError: (msg: string | null) => void;
   login: (email: string, password: string) => Promise<boolean>;
@@ -315,11 +436,29 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const queryClient = useQueryClient();
+
+  // Остання помилка `me` + скільки їх було підряд. Окремий стан, бо RQ
+  // скидає `error` у `null`, щойно стартує повторний fetch запиту без даних
+  // (`status` знову `pending`), і без цього «недоступно» та «акаунт у вікні
+  // видалення» блимали б «loading» на кожному циклі перезапиту. Оновлюється
+  // прямо в рендері (шаблон «adjusting state on render» з доків React).
+  const [meFailure, setMeFailure] = useState<{
+    error: unknown;
+    count: number;
+  } | null>(null);
+  const failure = meFailure ? classifyMeFailure(meFailure.error) : null;
+
   const meQuery = useUser({
-    // 401 від `/api/v1/me` для анонімного візитера — нормальний стан,
-    // а не «справжня» помилка: ми лишаємо `user = null` і рендеримо
-    // sign-in surface. Тому не ретраїмо і не завалюємо UI спінером.
-    retry: false,
+    // 401 від `/api/v1/me` для анонімного візитера — нормальний стан, а не
+    // «справжня» помилка: ми лишаємо `user = null` і рендеримо sign-in
+    // surface. Тому 401/403 не ретраїмо і не завалюємо UI спінером. Інші
+    // збої (5xx, 429, мережа, битий JSON) ретраїмо й далі перезапитуємо,
+    // поки сервер не відповість: див. `classifyMeFailure`.
+    retry: retryMe,
+    refetchInterval:
+      failure?.kind === "unavailable" && meFailure
+        ? meOutagePollMs(meFailure.count)
+        : false,
   });
 
   // `signedOut` — явний маркер «сесію завершено цим табом», який має
@@ -335,7 +474,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // signed-out незалежним від внутрішньої механіки React Query.
   const [signedOut, setSignedOut] = useState(false);
 
+  // Під `signedOut` помилку `me` не запамʼятовуємо, а запамʼятовану скидаємо:
+  // вона належить попередній сесії, і наступний вхід (іншим акаунтом) не має
+  // на мить бачити її блокер «акаунт видаляється».
+  if (signedOut) {
+    if (meFailure) setMeFailure(null);
+  } else if (meQuery.error && meQuery.error !== meFailure?.error) {
+    setMeFailure({
+      error: meQuery.error,
+      count: (meFailure?.count ?? 0) + 1,
+    });
+  } else if (meQuery.data && !meQuery.error && meFailure) {
+    // `!error`: після успіху refetch, що впав, має і `data`, і `error`;
+    // скидання тут і запис вище ганяли б рендер по колу.
+    setMeFailure(null);
+  }
+
   const user = signedOut ? null : (meQuery.data?.user ?? null);
+
+  // 403 `account_pending_deletion`: сесія є, акаунт у черзі на видалення.
+  // Примітив-залежності, щоб обʼєкт не міняв посилання на кожному рендері.
+  const isPendingDeletion =
+    !signedOut && !meQuery.data && failure?.kind === "pending-deletion";
+  const pendingPurgeAt =
+    failure?.kind === "pending-deletion" ? failure.scheduledPurgeAt : null;
+  const pendingDeletion = useMemo<PendingDeletionInfo | null>(
+    () => (isPendingDeletion ? { scheduledPurgeAt: pendingPurgeAt } : null),
+    [isPendingDeletion, pendingPurgeAt],
+  );
+
+  // Збій `me` (не 401/403): особистість невідома, а не «вийшов». На пристрої з
+  // власником-користувачем тримаємо її відкритою (див. `serverUnavailable`).
+  const outage = !signedOut && !user && failure?.kind === "unavailable";
+  const serverUnavailable = outage && deviceOwnerIsUser();
+
   // AI-DANGER: саме `isPending`, а не `isLoading`. У React Query v5
   // `isLoading === isPending && isFetching`, тож існує вікно, де запит уже
   // не «loading» (fetch ще не стартував), але `data` ще немає. У ньому
@@ -349,15 +521,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // частину вікна.
   //
   // `isPending` = «даних ще немає» — рівно та умова, за якої не можна
-  // стверджувати «не залогінений». Запит не має `enabled`-гейта, а
-  // `retry: false` дає осідання одразу на 401, тож застрягнути в loading
-  // це не може.
-  const isLoading = !signedOut && meQuery.isPending;
+  // стверджувати «не залогінений». Збій `me` (не 401/403) НЕ осідає в
+  // `unauthenticated` на пристрої з власником-користувачем:
+  // `serverUnavailable` тримає `loading`, поки сервер не відповість. На
+  // анонімному пристрої «недоступно» лишається `unauthenticated` БЕЗ
+  // миготіння на кожному перезапиті (`outage` липкий, на відміну від
+  // `isPending`).
+  const isLoading =
+    !signedOut &&
+    !user &&
+    !pendingDeletion &&
+    (serverUnavailable || (meQuery.isPending && !outage));
   const status: AuthStatus = isLoading
     ? "loading"
     : user
       ? "authenticated"
-      : "unauthenticated";
+      : pendingDeletion
+        ? "pending_deletion"
+        : "unauthenticated";
 
   // F12 privacy: історія HubChat лежить у плоских LS-ключах — при зміні
   // identity на цьому пристрої (logout, інший акаунт, протухла сесія)
@@ -379,8 +560,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // anonymous-data migration не встигла б перенести локальні чернетки
   // в акаунт. UI-logout сюди теж не потрапляє: `logout()` стампить
   // owner ще до `setSignedOut`, і ефект бачить identity незмінною.
+  //
+  // `pending_deletion` теж не рішення про identity: сесія жива, але хто це,
+  // `me` не каже (403 без профілю). Звести власника до `null` тут означало б
+  // стерти кеш і перезавантажити людину, яка зараз натисне «Відновити акаунт».
   useEffect(() => {
-    if (status === "loading") return;
+    if (status === "loading" || status === "pending_deletion") return;
     const { changed, prevOwnerWasUser } = reconcileChatOwnerOnAuthChange(
       user?.id ?? null,
     );
@@ -782,6 +967,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user,
       isLoading,
       status,
+      serverUnavailable,
+      pendingDeletion,
       authError,
       setAuthError,
       login,
@@ -796,6 +983,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user,
       isLoading,
       status,
+      serverUnavailable,
+      pendingDeletion,
       authError,
       login,
       loginWithGoogle,

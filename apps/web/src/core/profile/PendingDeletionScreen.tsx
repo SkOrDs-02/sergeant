@@ -50,9 +50,18 @@ export function PendingDeletionScreen({
       await meApi.restoreAccount();
       // Інвалідація, а не локальний стан: після скасування застосунок має
       // перемалюватись із сервера, і ключ вікна мусить перепитатись.
-      await queryClient.invalidateQueries({
-        queryKey: apiQueryKeys.me.deletionStatus(),
-      });
+      //
+      // `me.current` теж: для акаунта у вікні `GET /api/me` віддавав 403, тож
+      // користувача в AuthContext немає, і без перепиту людина лишилась би
+      // «не залогіненою» після успішного відновлення (logic-01).
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: apiQueryKeys.me.deletionStatus(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: apiQueryKeys.me.current(),
+        }),
+      ]);
       toast.success(m.restored);
     } catch {
       toast.error(m.restoreFailed, undefined, {

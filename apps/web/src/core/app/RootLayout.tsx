@@ -147,6 +147,16 @@ const PendingDeletionScreen = lazy(() =>
   })),
 );
 
+/**
+ * Ліниво з тієї ж причини: банер потрібен лише під час збою `me`, а в
+ * eager-бюджеті кожен кілобайт на рахунку.
+ */
+const AuthUnavailableBanner = lazy(() =>
+  import("./AuthUnavailableBanner").then((mod) => ({
+    default: mod.AuthUnavailableBanner,
+  })),
+);
+
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
   // Вікно на скасування видалення (рішення 3 спеки
@@ -155,7 +165,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // локально, ані синхронізуватись, бо сервер для нього однаково закритий
   // гейтом `requireSession` (403 `account_pending_deletion`).
   const pendingDeletion = usePendingDeletion();
-  const { logout } = useAuth();
+  const { logout, serverUnavailable, refresh } = useAuth();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
   // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
   // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
@@ -175,6 +185,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // write-through каналом, що й вибір модулів рядком вище.
   useHubPrefsSync();
 
+  // Вікно відкрите (403 на `me` вже сказав), а дати в тілі 403 не було:
+  // чекаємо `deletion-status`, а не віддаємо застосунок позначеному акаунту.
+  // Сервер дату віддає завжди, це лише запобіжник від ривка в застосунок.
+  if (
+    pendingDeletion.isPending &&
+    !pendingDeletion.scheduledPurgeAt &&
+    pendingDeletion.isLoading
+  ) {
+    return null;
+  }
   if (pendingDeletion.isPending && pendingDeletion.scheduledPurgeAt) {
     return (
       <Suspense fallback={null}>
@@ -193,6 +213,11 @@ function AppShell({ children }: { children: React.ReactNode }) {
           keyboard/SR users jump straight to the page's <main id="main">.
           Module/Hub shells no longer render their own (would duplicate). */}
       <SkipLink />
+      {serverUnavailable && (
+        <Suspense fallback={null}>
+          <AuthUnavailableBanner onRetry={() => void refresh()} />
+        </Suspense>
+      )}
       <AppLock
         state={appLock.state}
         onUnlock={appLock.unlock}
