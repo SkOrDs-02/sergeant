@@ -388,7 +388,7 @@ export function Measurements() {
           скруглення взагалі — та сама правка, що в `WeeklyDigestCard`.
         */}
         <Card edge="stub" padding="none">
-          <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
+          <div className="px-4 py-3 bg-panelHi border-b border-line">
             <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.history}
             </SectionHeading>

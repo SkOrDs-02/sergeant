@@ -297,7 +297,7 @@ function Stat({
   readonly value: number;
 }) {
   return (
-    <div className="rounded-xl border border-line bg-panelHi/40 p-3">
+    <div className="rounded-xl border border-line bg-panelHi p-3">
       <div className="text-style-caption text-subtle">{label}</div>
       <div className="mt-1 text-style-title font-extrabold text-text tabular-nums">
         {value}

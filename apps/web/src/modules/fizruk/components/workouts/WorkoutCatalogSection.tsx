@@ -309,7 +309,7 @@ export function WorkoutCatalogSection({
                 <button
                   type="button"
                   onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-panelHi/60 hover:bg-panelHi transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-panelHi hover:bg-line/40 transition-colors"
                   aria-expanded={isOpen}
                   aria-controls={panelId}
                 >

@@ -137,7 +137,7 @@ export function WorkoutHistoryList({
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
-      <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
+      <div className="px-4 py-3 bg-panelHi border-b border-line">
         <SectionHeading as="div" size="xs" variant="fizruk">
           {copy.title}
         </SectionHeading>
