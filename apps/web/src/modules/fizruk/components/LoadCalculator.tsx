@@ -98,7 +98,12 @@ export function LoadCalculator({
               {zone.entries.map((entry) => (
                 <div
                   key={entry.percent}
-                  className="text-center bg-panel/60 rounded-xl py-1.5 px-1"
+                  // Білий осередок на тонованій зоні: сама заливка дає
+                  // S 1.10-1.14 (flat/weak), тож відмінність несе контур
+                  // `border-line` (як картки в плані дня). Межа додає 1px з
+                  // кожного боку, тому `py-[5px]` замість `py-1.5` тримає
+                  // висоту осередка (і зон) тією самою.
+                  className="text-center bg-panel border border-line rounded-xl py-[5px] px-1"
                 >
                   <div className="text-style-caption text-subtle leading-none mb-0.5">
                     {entry.percent}%

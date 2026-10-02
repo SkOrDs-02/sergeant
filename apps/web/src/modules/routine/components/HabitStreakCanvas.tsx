@@ -110,7 +110,7 @@ function DayCell({
           aria-label={`${dateLabel}: ${T.cellPause}`}
           className={cn(
             CELL_BASE,
-            "relative overflow-hidden border border-line/40 bg-panelHi/30",
+            "relative overflow-hidden border border-line bg-panelHi",
           )}
         >
           <span
@@ -196,7 +196,7 @@ function LegendSwatch({ kind }: { kind: StreakDayKind }) {
           aria-hidden="true"
           className={cn(
             fixed,
-            "relative overflow-hidden border border-line/40 bg-panelHi/30",
+            "relative overflow-hidden border border-line bg-panelHi",
           )}
         >
           <span

@@ -212,7 +212,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         {manualAssets.slice(0, allAssetsVisible ? undefined : 3).map((a, i) => (
           <div
             key={i}
-            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3 hover:bg-panelHi transition-colors"
+            className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel p-3 hover:bg-panelHi transition-colors"
           >
             <div className="flex items-center gap-3 min-w-0">
               <span

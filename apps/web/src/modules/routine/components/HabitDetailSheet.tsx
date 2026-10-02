@@ -326,7 +326,7 @@ export function HabitDetailSheet({
               {notes.map((n) => (
                 <li
                   key={n.date}
-                  className="text-style-caption bg-panelHi/50 border border-line/40 rounded-xl px-3 py-2"
+                  className="text-style-caption bg-panelHi border border-line rounded-xl px-3 py-2"
                 >
                   <span className="text-subtle">{n.date}:</span>{" "}
                   <span className="text-text">{n.text}</span>
