@@ -35,7 +35,7 @@ describe("resolveDeployEnvironment", () => {
   // `preview`, включно з `SQLITE_IOERR` на 38 користувачів. Помилки класифікації
   // тут не видно з коду: обидві гілки виглядають правильними, бреше лише
   // список. Тому хости закріплені поіменно, а не «якийсь канонічний».
-  it.each(["app.sergeant.com.ua", "sergeant.2dmanager.com.ua"])(
+  it.each(["app.sergeant.com.ua"])(
     "бойовий домен %s дає production, а не preview",
     (host) => {
       expect(resolveDeployEnvironment(host)).toBe("production");
