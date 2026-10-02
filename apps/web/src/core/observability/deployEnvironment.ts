@@ -49,7 +49,6 @@
  */
 const DEFAULT_CANONICAL_HOSTS = [
   "app.sergeant.com.ua",
-  "sergeant.2dmanager.com.ua",
   "sergeant.vercel.app",
   "beta-tau-gilt.vercel.app",
   "sergeant-landing.vercel.app",
