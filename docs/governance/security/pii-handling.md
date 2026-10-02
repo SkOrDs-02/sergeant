@@ -61,6 +61,13 @@ lint:pii-handling-drift`): if a key is added/removed in shared but not
 - `x-openclaw-webhook-secret`
 - `x-api-secret`
 - `x-internal-token`
+- `x-telegram-bot-api-secret-token`
+- `access_token`
+- `refresh_token`
+- `id_token`
+- `client_secret`
+- `api_key`
+- `code_verifier`
 - `x-signature`
 - `x-webhook-signature`
 - `x-hmac-signature`
