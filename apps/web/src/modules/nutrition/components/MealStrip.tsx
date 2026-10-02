@@ -264,8 +264,20 @@ export function MealStrip({
                   "bg-hero-ink/5",
                   // 44×44 під coarse pointer — сегмент тепер найдрібніший
                   // тапабельний контрол hero-картки.
-                  "pointer-coarse:min-h-[44px] motion-safe:transition-colors",
-                  "hover:bg-hero-ink/15 active:bg-hero-ink/20",
+                  "pointer-coarse:min-h-[44px]",
+                  "motion-safe:transition-[background-color,border-color,transform]",
+                  // Перехідні стани: тиха заливка `/8` (не `/15` і `/20`),
+                  // бо чорнило `Сніданок/Обід/Вечеря/Перекус` лежить на ній.
+                  // Проти найсвітлішої зупинки градієнта (`#4e6f10`) `/5` дає
+                  // 4.99, `/8` — 4.70, `/10` — 4.49 (нижче AA), `/15` і `/20`
+                  // — 4.06 і 3.67. Між `/5` і `/10` на зареєстрованій шкалі
+                  // лишається лише `/8`, тож hover і active ділять її, а
+                  // відгук несе контур: `/20` → `/40` на hover → `/60` на
+                  // active, плюс звичне «вдавлювання» `active:scale-[0.98]`
+                  // (лише під `motion-safe`). Гейт:
+                  // `packages/design-tokens/contrast.test.js`.
+                  "hover:bg-hero-ink/8 hover:border-hero-ink/40",
+                  "active:bg-hero-ink/8 active:border-hero-ink/60 motion-safe:active:scale-[0.98]",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-hero",
                 )}
               >
