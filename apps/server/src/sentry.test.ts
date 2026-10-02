@@ -451,6 +451,113 @@ describe("applyBeforeSendTransaction", () => {
   });
 });
 
+// priv-01 / priv-07 (аудит 2026-10-01): transaction-події несли сире тіло
+// запиту, розпарсені cookies, query_string і URL скидання пароля.
+describe("applyBeforeSendTransaction (priv-01, priv-07)", () => {
+  const resetToken = "RESETTOKEN0123456789abcdef";
+  const resetUrl = `https://api.example.com/api/auth/reset-password/${resetToken}?callbackURL=%2F&token=${resetToken}`;
+
+  function makeEvent(): Event {
+    return {
+      type: "transaction",
+      transaction: "POST /api/auth/sign-in/email",
+      request: {
+        url: resetUrl,
+        data: '{"email":"victim@example.com","password":"Hunter2-SuperSecret"}',
+        cookies: {
+          "__Secure-better-auth.session_token": "SESSIONTOKEN123.sig",
+        },
+        query_string: `token=${resetToken}`,
+        headers: {
+          cookie: "__Secure-better-auth.session_token=SESSIONTOKEN123.sig",
+          authorization: "Bearer abc",
+          "x-telegram-bot-api-secret-token": "TGSECRET",
+        },
+      },
+      contexts: {
+        trace: {
+          trace_id: "t",
+          span_id: "s",
+          data: {
+            "http.url": resetUrl,
+            "http.target": `/api/auth/reset-password/${resetToken}?token=${resetToken}`,
+            "url.full": resetUrl,
+            "http.query": `?token=${resetToken}`,
+            "url.query": `token=${resetToken}`,
+            "url.path": `/api/auth/reset-password/${resetToken}`,
+          },
+        },
+      },
+      spans: [
+        {
+          span_id: "s2",
+          trace_id: "t",
+          start_timestamp: 0,
+          data: {
+            "http.query": `?token=${resetToken}`,
+            "url.query": `token=${resetToken}`,
+          },
+        },
+      ],
+    } as unknown as Event;
+  }
+
+  it("прибирає тіло, cookies і query_string та маскує секрети в заголовках", () => {
+    const out = applyBeforeSendTransaction(makeEvent());
+    const json = JSON.stringify(out);
+    expect(out.request?.data).toBeUndefined();
+    expect(out.request?.cookies).toBeUndefined();
+    expect(out.request?.query_string).toBeUndefined();
+    expect(json).not.toContain("Hunter2-SuperSecret");
+    expect(json).not.toContain("SESSIONTOKEN123");
+    expect(json).not.toContain("TGSECRET");
+  });
+
+  it("маскує токен скидання пароля в url, contexts.trace.data і span-атрибутах", () => {
+    const out = applyBeforeSendTransaction(makeEvent());
+    expect(JSON.stringify(out)).not.toContain(resetToken);
+  });
+});
+
+describe("applyBeforeSend (priv-01, priv-07)", () => {
+  it("прибирає query_string, маскує trace.data і Telegram-секрет", () => {
+    const ev = {
+      request: {
+        url: "https://x/api/auth/reset-password/RESETTOKEN0123?token=RESETTOKEN0123",
+        query_string: "token=RESETTOKEN0123",
+        headers: { "x-telegram-bot-api-secret-token": "TGSECRET" },
+      },
+      contexts: {
+        trace: {
+          data: {
+            "http.target":
+              "/api/auth/reset-password/RESETTOKEN0123?token=RESETTOKEN0123",
+          },
+        },
+      },
+    } as unknown as ErrorEvent;
+    const json = JSON.stringify(applyBeforeSend(ev));
+    expect(json).not.toContain("RESETTOKEN0123");
+    expect(json).not.toContain("TGSECRET");
+    expect(ev.request?.query_string).toBeUndefined();
+  });
+});
+
+describe("applyBeforeBreadcrumb (priv-07)", () => {
+  it("маскує http.query / url.query", () => {
+    const bc = {
+      category: "http",
+      data: {
+        url: "https://x/y",
+        "http.query": "?token=ABC123SECRET",
+        "url.query": "token=ABC123SECRET",
+      },
+    } as unknown as Breadcrumb;
+    const out = applyBeforeBreadcrumb(bc);
+    expect(JSON.stringify(out)).not.toContain("ABC123SECRET");
+  });
+});
+
 describe("SENTRY_DENY_URLS", () => {
   it("блокує health-probe URL-и (uptime monitor 502 noise)", () => {
     // String match is substring per Sentry SDK contract.
