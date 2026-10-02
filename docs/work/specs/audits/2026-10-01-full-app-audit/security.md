@@ -23,7 +23,7 @@
 
 ### `sec-01` [critical] Прод-API дає credentialed CORS мертвому домену sergeant.2dmanager.com.ua, який вільний для реєстрації
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-01-dead-cors-origin
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: CORS / auth
 - **Де:** apps/server/src/http/cors.ts:23-27,62-66,129-133; apps/server/src/auth.ts:69-84; apps/web/src/core/observability/deployEnvironment.ts:52-54; apps/mobile-shell/src/index.ts:172; apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66; apps/mobile/app.config.ts:69; apps/mobile/src/lib/deepLinks.ts:34; apps/web/public/.well-known/security.txt:5
 - **Першопричина:** Колишній кастомний домен лишився захардкодженим у PROD_ORIGINS (cors.ts:25). Цей список діє і в production, а ALLOWED_ORIGINS/ALLOWED_ORIGIN_REGEX можуть лише додавати origin-и. Домен 2dmanager.com.ua нікому не належить (NXDOMAIN, WHOIS hostmaster.ua: «доступне для реєстрації»), а сесійна кука в проді SameSite=None; Secure. Той самий хост досі в deep link/App Links, deployEnvironment і Canonical у security.txt.
