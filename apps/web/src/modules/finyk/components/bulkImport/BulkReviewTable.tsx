@@ -146,7 +146,7 @@ export function BulkReviewTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panelHi/40 p-2.5">
+      <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-line bg-panelHi p-2.5">
         <button
           type="button"
           onClick={() => onToggleAll(!allSelected)}

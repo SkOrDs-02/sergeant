@@ -122,7 +122,7 @@ export function RoutineFeedControls({
         />
       </div>
 
-      <Card variant="default" radius="lg" padding="sm" className="bg-panel/80">
+      <Card variant="default" radius="lg" padding="sm">
         {/* Шеврони тут, а не в ряду днів: там вони забирали 100px і не давали
     сімці клітинок влізти без скролера (див. `WeekDayStrip`). */}
         <div className="mb-2 flex items-center justify-between gap-2">

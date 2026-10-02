@@ -202,7 +202,7 @@ export function ReceiptReviewForm({
           </Button>
         </div>
         {draft.items.length > 0 ? (
-          <ul className="mt-1 rounded-2xl border border-line bg-panelHi/40 px-3">
+          <ul className="mt-1 rounded-2xl border border-line bg-panelHi px-3">
             {draft.items.map((item, index) => (
               <ReceiptReviewItemRow
                 key={`${item.position}-${index}`}

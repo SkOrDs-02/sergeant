@@ -101,7 +101,7 @@ export function WorkoutTimeEditor({
       : "";
 
   return (
-    <details className="group mt-3 rounded-xl border border-line bg-panelHi/50 px-3 py-2">
+    <details className="group mt-3 rounded-xl border border-line bg-panelHi px-3 py-2">
       <summary className="flex items-center justify-between gap-2 min-h-[44px] -mx-1 px-1 rounded-lg cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg">
         <span className="min-w-0">
           <span className="block text-style-caption text-subtle">

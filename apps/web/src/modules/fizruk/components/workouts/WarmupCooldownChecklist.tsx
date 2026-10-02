@@ -37,7 +37,7 @@ export function WarmupCooldownChecklist({
 }: WarmupCooldownChecklistProps) {
   if (!items) {
     return (
-      <div className="rounded-xl border border-line bg-panelHi/50 px-3 py-2 flex items-center justify-between gap-2 min-h-[44px]">
+      <div className="rounded-xl border border-line bg-panelHi px-3 py-2 flex items-center justify-between gap-2 min-h-[44px]">
         <span className="text-style-caption text-subtle">{title}</span>
         <button
           type="button"
@@ -55,7 +55,7 @@ export function WarmupCooldownChecklist({
 
   return (
     <details
-      className="rounded-xl border border-line bg-panelHi/50 px-3 py-2"
+      className="rounded-xl border border-line bg-panelHi px-3 py-2"
       open={doneCount < total}
     >
       <summary className="text-style-caption text-subtle cursor-pointer select-none flex items-center justify-between min-h-[28px]">
