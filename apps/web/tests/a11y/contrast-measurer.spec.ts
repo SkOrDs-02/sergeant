@@ -20,6 +20,11 @@ const STOPS = ["#115e59", "#0f766e"] as const;
 // 50% замість реальних 5%: різниця має бути помітною на кроці 0.05, а не
 // ховатись у допуску порівняння.
 const WASH = { r: 253, g: 249, b: 243, a: 0.5 } as const;
+// Вкладені групи: темне кільце на білій заливці батька. Колір кільця тут
+// навмисно інший, ніж заливка: з однаковими кольорами злипла й правильна
+// моделі дають майже одне число (1.32 проти 1.33) і тест їх не розрізнив би.
+const DARK_RING = "#000000";
+const VEIL_A = 0.9;
 
 type Rgb = readonly [number, number, number];
 
@@ -68,11 +73,14 @@ const HTML = `
   .hero { width: 300px; padding: 24px; background-image: linear-gradient(135deg, ${STOPS[0]}, ${STOPS[1]}); }
   .wash { padding: 8px; border-radius: 8px; background-color: rgba(${WASH.r}, ${WASH.g}, ${WASH.b}, ${WASH.a}); }
   .fade { opacity: 0.5; }
+  .veil { padding: 8px; border-radius: 8px; background-color: rgba(255, 255, 255, ${VEIL_A}); }
   button { width: 44px; height: 44px; border: 0; background: none; outline: 3px solid ${RING}; outline-offset: 0; }
+  #nested { outline-color: ${DARK_RING}; }
 </style>
 <div class="hero"><button id="bare" aria-label="без обгортки"></button></div>
 <div class="hero"><div class="wash"><button id="washed" aria-label="в напівпрозорій обгортці"></button></div></div>
 <div class="hero"><div class="wash fade"><button id="faded" aria-label="обгортка з opacity предка"></button></div></div>
+<div class="hero"><div class="veil fade"><button id="nested" class="fade" aria-label="вкладені групи opacity"></button></div></div>
 `;
 
 test.describe("вимірювач: градієнт-предок із проміжною напівпрозорою заливкою", () => {
@@ -133,5 +141,39 @@ test.describe("вимірювач: градієнт-предок із промі
     // непрозорим проти притушеного фону).
     expect(faded).toBeLessThan(3);
     expect(faded).toBeCloseTo(expected({ a: WASH.a * 0.5 }, 0.5), 1);
+  });
+
+  test("вкладені групи opacity складаються кожна окремо", async ({ page }) => {
+    // Батько: біла заливка 0.9 і opacity 0.5; кнопка всередині теж 0.5.
+    // Браузер спершу кладе кільце (0.5) на заливку батька, і лише ЦЕЙ вміст
+    // множить на 0.5 батька; сама заливка батька притушена тільки до 0.45.
+    // Злиплий добуток 0.25 притушував заливку двічі і давав ≈2.33 замість
+    // ≈2.17 (друга знахідка CodeRabbit на #1320). Еталон рахується тут
+    // напряму за моделлю CSS Compositing, незалежно від вимірювача.
+    const nested = await measure(page, "nested");
+    const ring = { ...rgbOf(DARK_RING), a: 1 };
+    const veil = { r: 255, g: 255, b: 255, a: VEIL_A };
+    const want = Math.min(
+      ...STOPS.map((stop) => {
+        const base = hexToRgb(stop);
+        // Група батька: кільце × 0.5 поверх заливки, у прозорому буфері.
+        const ringA = ring.a * 0.5;
+        const groupA = ringA + veil.a * (1 - ringA);
+        const groupRgb = (k: "r" | "g" | "b") =>
+          (ring[k] * ringA + veil[k] * veil.a * (1 - ringA)) / groupA;
+        const fg = over(
+          {
+            r: groupRgb("r"),
+            g: groupRgb("g"),
+            b: groupRgb("b"),
+            a: groupA * 0.5,
+          },
+          base,
+        );
+        const bg = over({ ...veil, a: veil.a * 0.5 }, base);
+        return contrast(fg, bg);
+      }),
+    );
+    expect(nested).toBeCloseTo(want, 1);
   });
 });

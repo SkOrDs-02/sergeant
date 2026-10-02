@@ -853,23 +853,6 @@ export function measureFocusInPage(): FocusFinding | null {
     return bg.a > 0 ? over(bg, base) : base;
   }
   /**
-   * Фон «під» елементом, коли найближчий предок із заливкою — ГРАДІЄНТ
-   * (hero-картка). Плаский `parentBg` там бреше: кільце кольору градієнта
-   * (`#115e59` на `#115e59 → #0f766e`) виглядало як 6:1 проти столу, хоча
-   * на екрані зливалось із фоном (follow-up аудиту 2026-10-01). Повертає
-   * зупинки градієнта з усіма заливками, що лежать МІЖ градієнтом і
-   * елементом; `null` — градієнта немає.
-   *
-   * Проміжні заливки обовʼязкові: кнопка «Зрозуміло» підказки `MonthStrip`
-   * стоїть у блоці `bg-hero-ink/5` усередині hero-градієнта, і голі зупинки
-   * завищували контраст її кільця (5.22 проти реальних ≈4.7). Тому ланцюжок
-   * предків від `node.parentElement` до градієнтного предка (не включно)
-   * збирається, і кожна його заливка (з урахуванням накопиченої `opacity`
-   * від кореня) кладеться на зупинку — від зовнішньої до внутрішньої. Фон
-   * ПІД градієнтом (`base`) береться без проміжних заливок, щоб не
-   * порахувати їх двічі, коли самі зупинки напівпрозорі.
-   */
-  /**
    * Один можливий фон під елементом. `bg(fill)` — те, що видно поруч із
    * кільцем (власна заливка `fill`, якщо кільце впритул до неї). `paint(c,
    * under)` — колір `c`, намальований поверх `under` (власної заливки для
@@ -881,103 +864,87 @@ export function measureFocusInPage(): FocusFinding | null {
     paint(c: RGBA, under?: RGBA): RGBA;
   }
   const CLEAR: RGBA = { r: 0, g: 0, b: 0, a: 0 };
+  const WHITE: RGBA = { r: 255, g: 255, b: 255, a: 1 };
   function opacityOf(x: Element): number {
     const op = parseFloat(getComputedStyle(x).opacity);
     return Number.isNaN(op) ? 1 : op;
   }
-  function flatBackdrop(c: RGBA): Backdrop {
-    const bg = (fill?: RGBA) => (fill && fill.a > 0 ? over(fill, c) : c);
-    return { bg, paint: (col, under) => over(col, bg(under)) };
+  function fillOf(x: Element): RGBA {
+    return parse(getComputedStyle(x).backgroundColor);
   }
+  const fade = (c: RGBA, o: number): RGBA => (o < 1 ? { ...c, a: c.a * o } : c);
   /**
-   * Фони «під» елементом, коли найближчий предок із заливкою — ГРАДІЄНТ
-   * (hero-картка): по одному на кожну зупинку. `null` — градієнта немає.
+   * Фони «під» елементом: по одному на кожну зупинку градієнта-предка
+   * (hero-картка) або один плаский, якщо градієнта немає.
    *
-   * Проміжні заливки обовʼязкові: кнопка «Зрозуміло» підказки `MonthStrip`
-   * стоїть у блоці `bg-hero-ink/5` усередині hero-градієнта, і голі зупинки
-   * завищували контраст її кільця (5.22 проти реальних ≈4.7). Фон ПІД
-   * градієнтом (`base`) береться без проміжних заливок, щоб не порахувати їх
-   * двічі, коли самі зупинки напівпрозорі.
+   * Зупинки, а не плаский `parentBg`: кільце кольору градієнта (`#115e59` на
+   * `#115e59 → #0f766e`) виглядало як 6:1 проти столу, хоча на екрані
+   * зливалось із фоном (follow-up аудиту 2026-10-01).
    *
-   * Група непрозорості теж обовʼязкова (знахідка CodeRabbit на #1320):
-   * `opacity` предка між градієнтом і елементом (або самого елемента)
-   * притушує ВСЮ групу, кільце теж. Кільце 1:1 проти фону 0.25 давало звіту
-   * ≈4.0, хоча на екрані кільце 0.5 над тією ж зупинкою — ≈1.7. Тому
-   * найзовнішній такий елемент `G` ділить стек: заливки над `G` кладуться на
-   * зупинку як є, а вміст групи (заливки від `G` до елемента, власна заливка
-   * й саме кільце) спершу складається на прозорому, а потім лягає на зупинку
-   * з добутком непрозоростей сегмента. Вкладені групи наближено одним
-   * добутком; `opacity` самого hero чи вище не враховується (притушила б і
-   * зупинки проти сторінки — інша модель, у hero-картках її немає).
+   * Проміжні заливки між градієнтом і елементом обовʼязкові: кнопка
+   * «Зрозуміло» підказки `MonthStrip` стоїть у блоці `bg-hero-ink/5`, і голі
+   * зупинки завищували контраст її кільця (5.22 проти реальних ≈4.7).
+   *
+   * Групи непрозорості складаються так, як їх малює браузер (CSS
+   * Compositing: група рендериться окремо й лише потім лягає на тло з
+   * власною `opacity`). Піднімаємось від елемента до градієнта (або кореня):
+   * на кожному кроці вміст нащадків лягає на заливку предка, і тільки
+   * результат множиться на `opacity` цього предка. Тож заливка предка
+   * притушується лише його власною непрозорістю, а кільце елемента —
+   * непрозорістю кожної групи над ним по черзі. Обидві попередні моделі
+   * помилялись (знахідки CodeRabbit на #1320): спершу кільце бралось
+   * непрозорим проти притушеного фону, потім вкладені групи злипались в один
+   * добуток і притушували заливку батька й власною, і дитячою `opacity`.
+   * `opacity` самого hero чи вище не враховується: вона притушила б і
+   * зупинки проти сторінки, а в hero-картках її немає.
    */
-  function gradientBackdrops(node: Element): Backdrop[] | null {
-    // Сегмент від елемента (включно) до дитини градієнтного предка.
+  function backdropsFor(node: Element): Backdrop[] {
+    // [елемент, батько, …] до градієнтного предка (не включно) або до кореня.
     const segment: Element[] = [node];
-    let n: Element | null = node.parentElement;
-    while (n) {
+    let belows: RGBA[] = [WHITE];
+    for (let n = node.parentElement; n; n = n.parentElement) {
       const bi = getComputedStyle(n).backgroundImage;
-      if (/gradient\(/.test(bi)) {
-        const stops =
-          bi.match(
+      const stops = /gradient\(/.test(bi)
+        ? (bi.match(
             /(?:rgba?|oklab|oklch|lab|lch|color)\([^)]*\)|#[0-9a-f]{3,8}/gi,
-          ) ?? [];
-        if (stops.length === 0) return null;
+          ) ?? [])
+        : [];
+      if (stops.length > 0) {
         // Фон під градієнтом: заливки від кореня до самого градієнтного
-        // елемента включно (його власний `background-color` лежить під
-        // зображенням), без проміжних.
+        // елемента включно (його `background-color` лежить під зображенням).
         const above: Element[] = [];
         for (let a: Element | null = n; a; a = a.parentElement) above.push(a);
-        above.reverse();
-        let base: RGBA = { r: 255, g: 255, b: 255, a: 1 };
+        let base = WHITE;
         let cum = 1;
-        for (const x of above) {
+        for (const x of above.reverse()) {
           cum *= opacityOf(x);
-          const bg = parse(getComputedStyle(x).backgroundColor);
+          const bg = fillOf(x);
           if (bg.a > 0) base = over({ ...bg, a: bg.a * cum }, base);
         }
-        // `segment`: [елемент, батько, …, дитина градієнта]. `g` — індекс
-        // найзовнішнього елемента з opacity < 1 (−1: групи немає).
-        let g = -1;
-        let groupOpacity = 1;
-        segment.forEach((x, i) => {
-          const op = opacityOf(x);
-          groupOpacity *= op;
-          if (op < 1) g = i;
-        });
-        const fillOf = (x: Element) =>
-          parse(getComputedStyle(x).backgroundColor);
-        // Над групою: від зовнішнього до внутрішнього, без власного елемента.
-        const outside = segment
-          .slice(Math.max(g + 1, 1))
-          .reverse()
-          .map(fillOf)
-          .filter((c) => c.a > 0);
-        // Усередині групи: від `G` до батька елемента (власну заливку
-        // елемента додає виклик через `fill`/`under`).
-        const inside = g >= 1 ? segment.slice(1, g + 1).reverse() : [];
-        const group = inside
-          .map(fillOf)
-          .filter((c) => c.a > 0)
-          .reduce((acc, l) => over(l, acc), CLEAR);
-        const content = (top?: RGBA) =>
-          top && top.a > 0 ? over(top, group) : group;
-        return stops.map((st) => {
-          const below = outside.reduce(
-            (acc, l) => over(l, acc),
-            over(parse(st), base),
-          );
-          const flatten = (c: RGBA) =>
-            c.a > 0 ? over({ ...c, a: c.a * groupOpacity }, below) : below;
-          return {
-            bg: (fill) => flatten(content(fill)),
-            paint: (col, under) => flatten(over(col, content(under))),
-          };
-        });
+        belows = stops.map((st) => over(parse(st), base));
+        break;
       }
       segment.push(n);
-      n = n.parentElement;
     }
-    return null;
+    const fills = segment.map(fillOf);
+    const ops = segment.map(opacityOf);
+    // `top` — те, що малює сам елемент у цій точці (кільце, власна заливка
+    // або нічого), проведене через усі групи сегмента від внутрішньої.
+    const lift = (top: RGBA): RGBA => {
+      let acc = fade(top, ops[0] ?? 1);
+      for (let i = 1; i < segment.length; i++) {
+        acc = fade(over(acc, fills[i] ?? CLEAR), ops[i] ?? 1);
+      }
+      return acc;
+    };
+    return belows.map((below) => {
+      const land = (c: RGBA) => (c.a > 0 ? over(c, below) : below);
+      return {
+        bg: (fill) => land(lift(fill && fill.a > 0 ? fill : CLEAR)),
+        paint: (col, under) =>
+          land(lift(under && under.a > 0 ? over(col, under) : col)),
+      };
+    });
   }
   /**
    * Найгірший коефіцієнт кільця кольору `c` проти кожного можливого фону під
@@ -1020,9 +987,7 @@ export function measureFocusInPage(): FocusFinding | null {
 
   const pb = parentBgOf(el);
   // Фони під елементом: зупинки градієнта-предка (hero-картка) або плаский.
-  const backdrops: Backdrop[] = (pb.u ? gradientBackdrops(el) : null) ?? [
-    flatBackdrop(pb.c),
-  ];
+  const backdrops: Backdrop[] = backdropsFor(el);
 
   // box-shadow ring: шари без розмиття зі spread>0, не inset.
   const raw = cs.boxShadow;
