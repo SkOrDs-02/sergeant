@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-10-01 by docs:gen-status. **Next review:** 2026-10-08.
+> **Last touched:** 2026-10-02 by docs:gen-status. **Next review:** 2026-10-09.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 
-## 🔵 В роботі — 81 відкритий документ
+## 🔵 В роботі — 87 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 81       |
+| Активні спеки | 87       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -53,8 +53,8 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md`](./work/specs/audits/2026-10-01-contrast-and-surfaces-audit.md) — Аудит контрасту й плоских поверхонь (WCAG AA, світла і темна тема) — Active. Реєстр знахідок із виміряними числами; виправлення на рівні токенів зроблені гілкою `claude/design-contrast-toke _(Активні спеки)_
-- [`work/specs/audits/2026-09-23-docs-governance-audit.md`](./work/specs/audits/2026-09-23-docs-governance-audit.md) — Аудит документації та governance: правила, ієрархія, рішення, enforcement — Active - більшість знахідок закрито (розділ 11); розділ 9 чекає рішень власника (DG-32 закрито 2026-09-29). _(Активні спеки)_
-- [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md`](./work/specs/audits/2026-10-01-full-app-audit/ux-a11y.md) — Аудит 2026-10-01 · UX і доступність — Active. 86 кластерів (121 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits _(Активні спеки)_
+- [`work/specs/audits/2026-10-01-full-app-audit/domain-logic.md`](./work/specs/audits/2026-10-01-full-app-audit/domain-logic.md) — Аудит 2026-10-01 · Логіка доменів — Active. 66 кластерів (89 знахідок) за першопричиною. Загальний план, метод і обмеження — у [README](./work/specs/audits/ _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
