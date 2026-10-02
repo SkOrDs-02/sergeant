@@ -324,9 +324,12 @@ async function applyGenericRegistryRow(
     //
     // Захист від stale-правки дає `isStaleLocal` вище — той самий аргумент,
     // що й на сервері: запис, старіший за видалення, відсіюється ним, а
-    // новіший за LWW має вигравати. Воскресіння окремої гілки не потребує:
-    // upsert нижче переносить `deleted_at` зі вхідного рядка, а відновлений
-    // рядок несе `null`.
+    // новіший за LWW має вигравати. Воскресіння окремої гілки не потребує,
+    // але upsert нижче МУСИТЬ явно скидати `deleted_at`: writer-и кладуть в
+    // outbox insert-рядок БЕЗ ключа `deleted_at`, сервер віддає його як є, а
+    // upsert, зібраний лише з присутніх колонок, лишав локальний tombstone
+    // (data-02: «Повернути» губило запис на інших і нових пристроях). Тому
+    // для не-delete опа `deleted_at = row.deleted_at ?? NULL` пишеться завжди.
     if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
   }
 
@@ -342,6 +345,10 @@ async function applyGenericRegistryRow(
   }
 
   const payload: Record<string, unknown> = { ...row, updated_at: op.client_ts };
+  // Не-delete оп = «рядок живий», якщо рядок сам не несе tombstone. Без
+  // явного `deleted_at` у payload колонка випадала з `ON CONFLICT DO UPDATE`
+  // і локальний tombstone не скидався (див. AI-DANGER вище).
+  if (hasDeletedAt) payload["deleted_at"] = row["deleted_at"] ?? null;
   const insertCols = columns.filter((col) => payload[col] !== undefined);
   if (!insertCols.includes("updated_at") && hasUpdatedAt) {
     insertCols.push("updated_at");

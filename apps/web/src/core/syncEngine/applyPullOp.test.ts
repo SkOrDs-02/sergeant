@@ -908,6 +908,70 @@ describe("applyPullOp", () => {
     expect(renamed[0]?.name).toBe("Бюджет на їжу");
   });
 
+  it("воскрешає tombstone insert-ом БЕЗ ключа deleted_at (data-02, реальна форма writer-ів)", async () => {
+    // Writer-и кладуть в outbox insert-рядок без `deleted_at`
+    // (`{id, user_id, data_json}` тощо), сервер віддає `op.row` як є. Раніше
+    // upsert будувався лише з колонок, присутніх у рядку, тож локальний
+    // tombstone не скидався: запис «Повернути» лишався видаленим на інших і
+    // нових пристроях. Тест з явним `deleted_at: null` цього не ловив.
+    const userId = "u-resurrect-nokey";
+    const rowId = "habit-resurrect-nokey";
+    const base = { id: rowId, user_id: userId, name: "Бюджет" };
+
+    await applyPullOp(
+      client,
+      {
+        id: 60,
+        table: "routine_habits",
+        op: "insert",
+        row: base,
+        client_ts: "2026-07-10T08:00:00.000Z",
+        server_ts: "2026-07-10T08:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+    await applyPullOp(
+      client,
+      {
+        id: 61,
+        table: "routine_habits",
+        op: "delete",
+        row: { id: rowId, user_id: userId },
+        client_ts: "2026-07-10T09:00:00.000Z",
+        server_ts: "2026-07-10T09:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+
+    // Insert-оп БЕЗ ключа `deleted_at` (undo після видалення).
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 62,
+          table: "routine_habits",
+          op: "insert",
+          row: base,
+          client_ts: "2026-07-10T10:00:00.000Z",
+          server_ts: "2026-07-10T10:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      ),
+    ).toBe("applied");
+
+    const revived = await client.all<{ deleted_at: string | null }>(
+      `SELECT deleted_at FROM routine_habits WHERE id = ? AND user_id = ?`,
+      [rowId, userId],
+    );
+    expect(revived[0]?.deleted_at ?? null).toBeNull();
+  });
+
   it("контр-кейс: правка СТАРІША за локальний tombstone і далі скіпається", async () => {
     // Захист від stale-правки лишається на `isStaleLocal` — той самий
     // аргумент, що й у серверному `guardUuidPkApply`.
