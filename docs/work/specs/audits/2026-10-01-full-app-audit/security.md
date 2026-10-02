@@ -217,7 +217,7 @@ NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt node <scratch>
 
 ### `sec-02` [high] Відкликана сесія живе до 7 днів: /api/auth/update-user перевипускає cookie-кеш без перевірки сесії в БД
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-02-05-session
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:424-431,597-605,714-726; node_modules/better-auth/dist/api/routes/update-user.mjs:16,54-69; node_modules/better-auth/dist/cookies/index.mjs:93; apps/server/src/http/requireSession.ts:83-91
 - **Першопричина:** session.cookieCache (maxAge 300 с) довіряє підписаній куці session_data без звернення до БД. Better Auth /update-user стоїть на sessionMiddleware, бере сесію з цього кешу і викликає setSessionCookie, який ставить новий строк кешу від поточного моменту. Кожен виклик раз на &lt;5 хв продовжує кеш, хоча рядка сесії в БД уже немає.
@@ -443,7 +443,7 @@ Code path, traced end to end at HEAD c7c09607:
 
 ### `sec-05` [medium] Сирий session token віддається в JSON get-session і list-sessions (з токенами всіх пристроїв) і приймається як Bearer
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-02-05-session
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:607-617; node_modules/better-auth/dist/plugins/bearer/index.mjs:32-37; node_modules/better-auth/dist/api/routes/session.mjs:17-260,371-397; apps/server/src/routes/auth.ts:33
 - **Першопричина:** Плагін bearer() увімкнений для всіх клієнтів без requireSignature, тож сирий токен без HMAC є повноцінним креденшелом. Better Auth віддає поле token у /get-session і в кожному елементі /list-sessions, і застосунок його не вирізає, хоча веб працює на httpOnly-куці, а мобільний контур на паузі (ADR-0094).
