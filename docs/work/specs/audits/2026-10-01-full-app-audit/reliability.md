@@ -204,7 +204,7 @@ middleware.ts: `matcher: "/api/:path*"`; копіює `new Headers(request.heade
 
 ### `rel-04` [medium] Тіла запитів розпаковуються й парсяться до автентифікації: анонімна ампліфікація через gzip до 10 МБ
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-11-rel-04-auth-body-parsing (inflate:false на default і всіх правилах понад 128 КБ; парсинг до requireSession лишається — довгострокове перенесення парсерів у роутери)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: http body parsing
 - **Де:** apps/server/src/app.ts:147-169; apps/server/src/http/bodySizePolicy.ts:92-258
 - **Першопричина:** applyBodySizePolicy монтується в app.ts раніше за CORS, CSRF, rate-limit і requireSession. Фікс B28 вимкнув inflate лише на AI-правилах. Правила sync v1/v2 (6 МБ), statement/preview (10 МБ), import/commit (2 МБ), backup-upload (4 МБ) і default досі розпаковують gzip, хоча клієнти тіла не стискають.
