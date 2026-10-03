@@ -979,6 +979,12 @@ export const paths: ZodOpenApiPathsObject = {
   // (`/personal/webhook` приймає лише `webHookUrl`). Header-based маршрут —
   // defense-in-depth для майбутнього edge-proxy; Monobank його не шле.
   "/api/mono/webhook": {
+    get: {
+      summary:
+        "Mono webhook URL validation (GET/HEAD) — Monobank чекає строго 200; без секрету, без побічних ефектів",
+      tags: ["mono"],
+      responses: { "200": okEmpty },
+    },
     post: {
       summary: "Mono webhook (X-Mono-Webhook-Secret header — edge-proxy only)",
       tags: ["mono"],
@@ -995,6 +1001,15 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
   "/api/mono/webhook/{secret}": {
+    get: {
+      summary:
+        "Mono webhook URL validation (GET/HEAD): завжди 200, секрет НЕ перевіряється й не читається (він ще не збережений на момент реєстрації)",
+      tags: ["mono"],
+      requestParams: {
+        path: z.object({ secret: z.string() }),
+      },
+      responses: { "200": okEmpty },
+    },
     post: {
       summary:
         "Mono webhook (per-user secret у URL — транспорт Monobank; secret редагується в логах + ротується 90d, C1)",

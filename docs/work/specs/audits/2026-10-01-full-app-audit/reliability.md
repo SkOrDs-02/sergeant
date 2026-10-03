@@ -1240,7 +1240,7 @@ verify-server-static-ai-layer/coachmem-v2.mjs (юзер audit_pool152): POST /ap
 
 ### `rel-20` [medium] Імпорт виписки чи скріна падає з 500 на весь файл через один рядок поза межами схеми відповіді
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-20-24-import-mono-webhook
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Фінік import
 - **Де:** apps/server/src/modules/finyk/import/statementPreview.ts:101-125,239-248; apps/server/src/modules/finyk/import/screenshotAnalyze.ts:35-39,87-89,119-140,315-319; packages/shared/src/schemas/import.ts:242-250; packages/shared/src/schemas/bounds.ts:15
 - **Першопричина:** classifyRows і normalizeImportScreenshotResult не обрізають description і bank та не відсіюють рядки, де сума чи дата поза межами. Хендлери валідують усю відповідь через Schema.parse, тож ZodError одного рядка стає 500 INTERNAL. receipts/analyze.ts для порівняння обрізає поля й клампить суми.
@@ -1483,7 +1483,7 @@ performRefresh (tokenStore.ts:382-422) ловить будь-який винят
 
 ### `rel-24` [medium] Вебхук Monobank не відповідає 200 на GET-валідацію URL
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-20-24-import-mono-webhook
 - **Перевірка:** спірне · **Зусилля:** S · **Швидкий виграш** · **Область:** server: Monobank webhook
 - **Де:** apps/server/src/routes/mono-webhook.ts:61-62; apps/server/src/modules/mono/connection.ts:152-190,204-215
 - **Першопричина:** routes/mono-webhook.ts реєструє лише POST. Прод працює в режимі API-only (servesFrontend=false), тож GET і HEAD на /api/mono/webhook/&lt;secret&gt; дають Express-404. Документація Monobank для POST /personal/webhook вимагає, щоб валідаційний GET отримав строго 200.

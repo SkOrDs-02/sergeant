@@ -2429,6 +2429,24 @@
       }
     },
     "/api/mono/webhook": {
+      "get": {
+        "summary": "Mono webhook URL validation (GET/HEAD) — Monobank чекає строго 200; без секрету, без побічних ефектів",
+        "tags": ["mono"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Mono webhook (X-Mono-Webhook-Secret header — edge-proxy only)",
         "tags": ["mono"],
@@ -2461,6 +2479,34 @@
       }
     },
     "/api/mono/webhook/{secret}": {
+      "get": {
+        "summary": "Mono webhook URL validation (GET/HEAD): завжди 200, секрет НЕ перевіряється й не читається (він ще не збережений на момент реєстрації)",
+        "tags": ["mono"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "secret",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {},
+                  "additionalProperties": {}
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Mono webhook (per-user secret у URL — транспорт Monobank; secret редагується в логах + ротується 90d, C1)",
         "tags": ["mono"],
