@@ -4,19 +4,6 @@ import { renderHook } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import type { ReactNode } from "react";
 
-const navigateMock = vi.fn();
-
-vi.mock("react-router-dom", async () => {
-  const actual =
-    await vi.importActual<typeof import("react-router-dom")>(
-      "react-router-dom",
-    );
-  return {
-    ...actual,
-    useNavigate: () => navigateMock,
-  };
-});
-
 vi.mock("../hubRoutineSync", () => ({
   notifyFinykRoutineCalendarSync: vi.fn(),
 }));
@@ -179,39 +166,29 @@ describe("importData", () => {
   });
 });
 
-describe("generateSyncLink / loadFromUrl", () => {
-  it("round-trips a sync link", () => {
-    const exporter = makeSlots({
-      budgets: [{ id: "b" }],
-      txCategories: { tx: "c" },
-    });
-    const { result: exportRes } = render(exporter.slots);
-    const link = exportRes.current.generateSyncLink();
-    expect(link).toContain("?sync=");
+describe("?sync= у URL (data-26)", () => {
+  // Регресія аудиту 2026-10-01 (data-26): посилання `/finyk?sync=…` без
+  // підтвердження підмінювало бюджети, план, категорії й приховані рахунки.
+  // Приймач прибрано повністю: хук не має ні `loadFromUrl`, ні генератора
+  // посилань, а сам параметр у URL нічого не змінює.
+  it("не віддає loadFromUrl / generateSyncLink", () => {
+    const { slots } = makeSlots();
+    const { result } = render(slots);
+    expect(result.current).not.toHaveProperty("loadFromUrl");
+    expect(result.current).not.toHaveProperty("generateSyncLink");
+  });
 
-    const encoded = new URL(link).searchParams.get("sync")!;
-    const importer = makeSlots();
-    const { result: importRes } = render(importer.slots, [
-      `/finyk/assets?sync=${encodeURIComponent(encoded)}`,
-    ]);
-    const loaded = importRes.current.loadFromUrl();
-    expect(loaded).toBe(true);
-    expect(importer.state["budgets"]).toEqual([{ id: "b" }]);
-    expect(navigateMock).toHaveBeenCalledWith(
-      expect.objectContaining({ search: "" }),
-      { replace: true },
+  it("не змінює жоден слот і не чіпає URL, коли в адресі є ?sync=", () => {
+    const payload = btoa(
+      encodeURIComponent(JSON.stringify({ v: 3, b: [], cc: [], a: [] })),
     );
-  });
-
-  it("returns false when no sync param is present", () => {
-    const { slots } = makeSlots();
-    const { result } = render(slots, ["/finyk/assets"]);
-    expect(result.current.loadFromUrl()).toBe(false);
-  });
-
-  it("returns false on corrupt sync payload", () => {
-    const { slots } = makeSlots();
-    const { result } = render(slots, ["/finyk/assets?sync=%%%bad"]);
-    expect(result.current.loadFromUrl()).toBe(false);
+    const { slots, state } = makeSlots({
+      budgets: [{ id: "keep" }],
+      customCategories: [{ id: "cc-keep" }],
+    });
+    render(slots, [`/finyk/budgets?sync=${encodeURIComponent(payload)}`]);
+    expect(state["budgets"]).toEqual([{ id: "keep" }]);
+    expect(state["customCategories"]).toEqual([{ id: "cc-keep" }]);
+    expect(state["manualAssets"]).toEqual([]);
   });
 });
