@@ -9,8 +9,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * (там і причина поділу — кожна половина лишається під `vi.mock` cap,
  * `scripts/ci/check-vi-mock-cap.mjs`). Сама арифметика відер (21-ша дія,
  * 4-те фото, 6-й скан) живе в `modules/chat/aiQuota.test.ts`; тут лише те,
- * що правильний `requireAiQuota(meter)` стоїть у правильному ланцюжку (і
- * analyze-photo, і refine-photo списують відро фото: sec-14).
+ * що правильний `requireAiQuota(meter)` стоїть у правильному ланцюжку, а
+ * там, де списання бути не повинно (refine-photo), його немає.
  */
 
 const { handler, poolQuery } = vi.hoisted(() => ({
@@ -114,22 +114,19 @@ describe("access-tiers: яке тижневе відро списує nutrition-
     expect(await meterOf("/api/nutrition/analyze-photo")).toBe("photo");
   });
 
-  // sec-14: refine-photo раніше не списував нічого, і Free після 429 на
-  // analyze-photo отримував безлімітний vision-аналіз через refine.
-  it("refine-photo списує те саме відро фото, що й analyze-photo", async () => {
-    expect(await meterOf("/api/nutrition/refine-photo")).toBe("photo");
+  it("refine-photo того самого знімка нічого не списує", async () => {
+    expect(await meterOf("/api/nutrition/refine-photo")).toBeUndefined();
   });
 
-  it.each([
-    "/api/nutrition/analyze-photo",
-    "/api/nutrition/refine-photo",
-    "/api/nutrition/day-plan",
-  ])("%s не приймає round-trip-квиток чату (sec-03)", async (path) => {
-    const res = await request(app()).post(path).send({});
-    expect(res.status).toBe(200);
-    expect(res.headers["x-quota-meter"]).toBeDefined();
-    expect(res.headers["x-quota-ticket"]).toBeUndefined();
-  });
+  it.each(["/api/nutrition/analyze-photo", "/api/nutrition/day-plan"])(
+    "%s не приймає round-trip-квиток чату (sec-03)",
+    async (path) => {
+      const res = await request(app()).post(path).send({});
+      expect(res.status).toBe(200);
+      expect(res.headers["x-quota-meter"]).toBeDefined();
+      expect(res.headers["x-quota-ticket"]).toBeUndefined();
+    },
+  );
 
   it("day-plan списує 1 дію зі спільних", async () => {
     expect(await meterOf("/api/nutrition/day-plan")).toBe("ai");
