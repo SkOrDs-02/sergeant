@@ -85,7 +85,7 @@ I couldn't refute it. My strongest angle failed, and the code path holds end to 
 
 ### `priv-02` [high] Сесія, що закінчилась без «Вийти», не запускає очищення: наступний акаунт бачить медичні факти попереднього, і вони потрапляють у його серверний профіль
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-02-expired-session-teardown (лишилось: BroadcastChannel для інших вкладок; стирання SQLite-партиції попередника — priv-05)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth / локальне сховище
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:382-401 (identity-wipe), :548-697 (teardown у logout); apps/web/src/core/profile/memoryBank.ts:245-251; apps/web/src/core/profile/profileWriteThrough.ts:165-170, 459-498; apps/web/src/shared/lib/storage/storage.ts:299-321
 - **Першопричина:** Сесія може закінчитися без кнопки «Вийти»: протухла, відкликана або зник cookie. Ефект зміни ідентичності в AuthContext (user→anon) у такому разі чистить лише RQ-кеш, чат і quick-stats. purgeAppOwnedLocalData, wipeSqliteDb і swClearCaches викликає тільки logout(). readMemoryEntries() читає hub_user_profile_v1 без перевірки ownerId. Перший же запис наступного користувача перештамповує ownerId і пушить увесь банк пам'яті на сервер.
