@@ -1714,7 +1714,7 @@ lag=0 create 201 f665ff3a-...; op-log rows right after create: 0; write-through 
 
 ### `data-17` [medium] oplog_write_failed: доменний запис комітиться, а клієнт отримує «rejected» і журнал порожній (фантомний серверний стан)
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-17-48-sync-oplog
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync (syncV2 push)
 - **Де:** apps/server/src/modules/sync/syncV2.ts:399-500
 - **Першопричина:** Коли INSERT у sync_op_log падає (U+0000 чи одинокий сурогат у row, яких не приймає jsonb), savepoint op_apply відкочується лише при racedRow; в інших випадках apply лишається закоміченим без запису в журнал.
@@ -3722,7 +3722,7 @@ syncScheduler.ts: DEFAULT_MIN_AGE_HOURS = 8, DEFAULT_TICK_MS = 1 год. syncAll
 
 ### `data-48` [medium] Відхилені sync-оп-и зберігаються в sync_op_log з повним payload і без ретеншену: журнал необмежено роздувається
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-17-48-sync-oplog (відхилення невідомих таблиць 4xx до запису - зміна контракту, рішення власника; ретеншен `applied`-рядків і партиційний індекс під rejected лишаються за ADR-0065; поллер працює лише з `LOG_ARCHIVE_ENABLED=true` і GCS-бакетом)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync (syncV2 push) + logRetention
 - **Та сама першопричина, що й** [`rel-06`](./reliability.md#rel-06): Той самий корінь: rejected-оп пишуться в sync_op_log з повним row, а retention журналу немає. rel-06 ширший (байтова межа сторінки pull, text bound); перший S-крок data-48 (не писати row для rejected і відхиляти невідомі таблиці до запису) робиться цього тижня, retention за ADR-0065 далі.
 - **Де:** apps/server/src/modules/sync/syncV2.ts:389-456; apps/server/src/modules/logRetention/archivePoller.ts:73-76

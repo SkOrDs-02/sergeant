@@ -54,6 +54,8 @@ describe("syncV2 wire reason/type registries", () => {
       // Запис у `sync_op_log` живе під savepoint-ом `op_log_write`; його
       // помилка відхиляє один оп, а не валить батч 500-кою.
       "oplog_write_failed",
+      // `U+0000` / одинокий сурогат у `row` відсікається ДО apply (data-17).
+      "invalid_text_encoding",
     ]);
     expect(new Set(ENGINE_REJECT_REASONS).size).toBe(
       ENGINE_REJECT_REASONS.length,
