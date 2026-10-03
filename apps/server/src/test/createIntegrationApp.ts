@@ -14,6 +14,7 @@ import pg from "pg";
 import type { Express } from "express";
 import { GenericContainer, Wait } from "testcontainers";
 import type { StartedTestContainer } from "testcontainers";
+import { enableAppRole } from "./appRole.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MIGRATIONS_DIR = path.resolve(__dirname, "..", "migrations");
@@ -103,6 +104,9 @@ export async function bootIntegrationHarness(
 
   const pool = new pg.Pool({ connectionString: connectionUri, max: 8 });
   await runMigrations(pool);
+  // SERGEANT_TEST_APP_ROLE=1: застосунок ходить під `sergeant_app`, а `pool`
+  // (сід, truncate) лишається суперюзером - як міграції в проді.
+  await enableAppRole(pool, connectionUri);
 
   activeContainer = container;
   activePool = pool;
