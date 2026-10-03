@@ -23,7 +23,7 @@
 
 ### `data-01` [high] Глобальний PK на клієнтських id: чужий рядок із тим самим id назавжди блокує синк, а id можна наперед «зайняти»
 
-- **Стан:** частково виправлено в гілці claude/fix-data-01-unpredictable-client-ids (крок 1: клієнтські генератори id без `Date.now()`/slug/32-бітного хешу — ручні витрати, вправи, чат-екзекутори бюджетів/боргів/страв, Strong-імпорт 64 біти; лишилось: перевірка власника батька в applyFizrukItems/Sets (паралельний server-PR), складений PK `(user_id, id)` і rekey застряглих рядків — крок 2, детерміновані `pe::initial`/`rcp_ai_*`/`gp::` лишаються до кроку 2)
+- **Стан:** частково виправлено. Серверний guard власника батька для `fizruk_workout_items` і `fizruk_workout_sets` (`guardParentOwned`, відповідь `fk_violation`) — у #1345 (змерджено 2026-10-03); решта дочірніх sync-таблиць перевірена: finyk `tx_*` і routine `habit_id` мають складений ключ або не мають FK, тож діри «чужий батько» там немає. Клієнтські генератори id без `Date.now()`/slug/32-бітного хешу (ручні витрати, вправи, чат-екзекутори бюджетів/боргів/страв, Strong-імпорт 64 біти) — у гілці claude/fix-data-01-unpredictable-client-ids (крок 1). Лишилось (крок 2): складений PK `(user_id, id)` двофазною міграцією, звуження SELECT/ON CONFLICT по `user_id`, rekey застряглих рядків; детерміновані `pe::initial`/`rcp_ai_*`/`gp::` лишаються до кроку 2
 - **Перевірка:** підтверджено · **Зусилля:** L · **Область:** server: sync (applySync) + db-schema + web: генератори id
 - **Де:** apps/server/src/modules/sync/applySync-helpers.ts:61-74; apps/server/src/modules/sync/finyk/applySync.ts:140-153; apps/server/src/modules/sync/fizruk/applyMisc.ts:22-35,66-80; apps/server/src/modules/sync/fizruk/applySync.ts:40-46,196-250; apps/server/src/modules/sync/nutrition/applyPantryEvents.ts:223-238; apps/web/src/modules/finyk/hooks/useFinykStorageMutations.ts:73; apps/web/src/modules/fizruk/components/workouts/AddExerciseSheet.tsx:49-57,285; apps/web/src/modules/fizruk/lib/strongImport.ts:523-546; packages/nutrition-domain/src/pantryLedger.ts:227-231
 - **Першопричина:** Більшість per-row sync-таблиць (finyk_manual_expenses, fizruk_custom_exercises, fizruk_workouts, nutrition_pantry_events, nutrition_recipes, nutrition_goal_periods та ще кілька десятків) мають PRIMARY KEY (id) без user_id, а клієнт генерує передбачувані id: Date.now() для ручних витрат, custom_&lt;slug&gt; для вправ, pe::initial::home::&lt;продукт&gt;, rcp_ai_&lt;fnv32&gt;, 32-бітний FNV у Strong-імпорті. Apply шукає рядок за id без user_id і для чужого рядка повертає термінальний fk_violation; applyFizrukItems ще й не перевіряє власника батьківського тренування.
@@ -592,7 +592,7 @@ Same class in the module UI itself (out of this lane): `useShoppingList` runs `u
 
 ### `data-04` [high] nutrition_prefs (шаблони страв, ціль ккал, вода, нагадування) перезаписуються дефолтами при першому відкритті Їжі на новому пристрої або з Settings
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-04-nutrition-prefs-hydration (клієнтська частина; поле-рівневий merge `prefs_json` на сервері, п. 5 «Мінімального фіксу», не робився: зміна контракту за Hard Rule #3, окремий PR)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: Їжа (prefs) + Settings
 - **Де:** apps/web/src/modules/nutrition/hooks/useAdaptiveNutritionGoal.ts:247-271; apps/web/src/modules/nutrition/lib/nutritionStorage.ts:109-157,320-372; apps/web/src/core/settings/NotificationsSection.tsx:82-93,138-155; apps/web/src/core/settings/NutritionSection.tsx:89-91; apps/server/src/modules/sync/nutrition/applySync.ts:449-483
 - **Першопричина:** persistNutritionPrefs шле весь об'єкт prefs, побудований з холодного кешу (defaultNutritionPrefs) або з застарілого стану компонента. useAdaptiveNutritionGoal пише ціль, щойно біометрія прийшла з /api/me/profile, ще до pull, а NutritionSection і NotificationsSection читають prefs один раз у useState і не підписані на тік кешу. Сервер повністю замінює prefs_json за LWW без поле-рівневого merge.
@@ -702,7 +702,7 @@ I could not refute the core claim. The code path is as described and I reproduce
 
 ### `data-05` [high] Журнал dual-write знімається, навіть коли SQL-запис упав: при SQLITE_IOERR/BUSY запис зникає назавжди, а користувач бачить тост «додано»
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-data-05-dualwrite-ack-on-error (журнал не знімається при errored > 0, лічильник спроб і карантин після 5 невдач, «durable»-підтвердження Рутини не бреше, банер помилки сховища для Рутини; лишилось: загальний банер деградації сховища для Фініка/Харчування/Фізрука без тосту успіху і e2e з Storage.overrideQuotaForOrigin)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** packages/dualwrite-core + web: sqliteWriter усіх модулів
 - **Де:** packages/dualwrite-core/src/createApplyOps.ts:84-108; apps/web/src/modules/finyk/lib/sqliteWriter/index.ts:264-300,375-383; apps/web/src/modules/routine/lib/sqliteWriter/index.ts:224,243,341; apps/web/src/modules/fizruk/lib/sqliteWriter/index.ts:221,234,316; apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts:229,242,367; apps/web/src/core/durability/dualWriteJournal.ts:90-99
 - **Першопричина:** createApplyOps.applyBestEffort ловить виняток кожного опа і лише рахує errored; runFinykOps, runRoutineOps, runFizrukOps і runNutritionOps безумовно повертають status 'applied', і оркестратор робить ackDualWrite. outboxCheckpoint збою не бачить, бо enqueue стоїть після client.run і взагалі не викликається.
@@ -1849,7 +1849,7 @@ node <scratch>/agents/verify-api-live-sync-live/c3/w3_insert_race.mjs → {'rout
 
 ### `data-19` [medium] Вихід з акаунта стирає незасинхронізовані записи без питання: палітра команд і екран видалення акаунта обходять підтвердження, а dead_letter і rejected не рахуються
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-05-data-19-logout-wipe
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth (logout) + syncEngine (flushBeforeLogout)
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:279-289,551-564,646-649; apps/web/src/core/app/useDemoCommands.ts:58-75,152-162; apps/web/src/core/app/RootLayout.tsx:183,449; apps/web/src/core/syncEngine/flushBeforeLogout.ts:86-106; packages/db-schema/src/sqlite/syncOpOutboxStatus.ts:425-432
 - **Першопричина:** logout() питає про втрату лише якщо викликач передав confirmUnsyncedLoss, а signOutFromPalette і PendingDeletionScreen його не передають. flushPendingSyncOpsBeforeLogout рахує лише status 'pending', при runtime === null вважає стан безпечним, а flushNow штовхає один батч без рядків у бекофі; далі wipeSqliteDb видаляє outbox.

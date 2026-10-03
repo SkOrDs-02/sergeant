@@ -3,11 +3,13 @@
  *
  * Ключове, що фіксуємо:
  *  - жоден запис користувача не зникає (union, не заміна джерела);
- *  - дедуп рахує день у Europe/Kyiv, а не в UTC;
+ *  - дедуп рахує день за годинником пристрою (ADR-0078), а не в UTC і не в Kyiv;
  *  - при колізії дня виграє новіший `at`;
  *  - tombstone-записи (`deleted_at`) не враховуються.
  */
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import { deviceDayKey } from "@sergeant/shared";
 
 import {
   buildBodyWeightSeries,
@@ -21,6 +23,18 @@ import {
   buildBodySummariesWithWeightUnion,
   buildBodyWeightSummary,
 } from "./summary.js";
+
+// Пояс пристрою емулюємо через `process.env["TZ"]` (той самий прийом, що в
+// dashboardKpis/weeklyStreak тестах). За замовчуванням закріплюємо Київ, щоб
+// файл не залежав від поясу раннера; тести про інші пояси перевстановлюють TZ.
+const originalTz = process.env["TZ"];
+beforeEach(() => {
+  process.env["TZ"] = "Europe/Kyiv";
+});
+afterEach(() => {
+  if (originalTz === undefined) delete process.env["TZ"];
+  else process.env["TZ"] = originalTz;
+});
 
 describe("selectBodyWeightSamples", () => {
   it("обʼєднує обидва сховища — жоден день не губиться", () => {
@@ -59,7 +73,7 @@ describe("selectBodyWeightSamples", () => {
     expect(measured[0]?.source).toBe("measurements");
   });
 
-  it("день рахується в Europe/Kyiv, а не в UTC", () => {
+  it("день рахується за пристроєм (тут Kyiv), а не в UTC", () => {
     // 21:30 UTC 21 червня = 00:30 Kyiv 22 червня (літо, UTC+3).
     const samples = selectBodyWeightSamples(
       [{ id: "dl1", at: "2026-06-21T21:30:00Z", weightKg: 80 }],
@@ -68,7 +82,7 @@ describe("selectBodyWeightSamples", () => {
     expect(samples[0]?.dayKey).toBe("2026-06-22");
   });
 
-  it("два записи, що в UTC один день, а в Kyiv різні — лишаються обидва", () => {
+  it("два записи, що в UTC один день, а на пристрої різні — лишаються обидва", () => {
     const samples = selectBodyWeightSamples(
       [
         { id: "dl1", at: "2026-06-21T10:00:00Z", weightKg: 80 },
@@ -78,6 +92,75 @@ describe("selectBodyWeightSamples", () => {
     );
     expect(samples).toHaveLength(2);
     expect(samples.map((s) => s.dayKey)).toEqual(["2026-06-22", "2026-06-21"]);
+  });
+
+  // Регресія ADR-0078: ключ дедупу був `toKyivISODate(at)`, тож для пристрою
+  // поза Києвом доба зважування розходилась з добою, яку бачить користувач.
+  describe("доба пристрою поза Києвом (ADR-0078)", () => {
+    it("Tokyo (UTC+9): два зважування різних локальних днів не склеюються в один київський", () => {
+      process.env["TZ"] = "Asia/Tokyo";
+      // 10:00Z = 19:00 Tokyo 21 черв.; 18:00Z = 03:00 Tokyo 22 черв.
+      // Обидва — 21 черв. за Києвом (13:00 і 21:00), тож старий ключ склеював їх.
+      const samples = selectBodyWeightSamples(
+        [
+          { id: "dl1", at: "2026-06-21T10:00:00Z", weightKg: 80 },
+          { id: "dl2", at: "2026-06-21T18:00:00Z", weightKg: 81 },
+        ],
+        null,
+      );
+      expect(samples.map((s) => s.dayKey)).toEqual([
+        "2026-06-22",
+        "2026-06-21",
+      ]);
+      expect(samples.map((s) => s.weightKg)).toEqual([81, 80]);
+    });
+
+    it("Tokyo: союз двох сховищ теж лишає обидва дні на графіку", () => {
+      process.env["TZ"] = "Asia/Tokyo";
+      const series = buildBodyWeightSeries(
+        [{ id: "dl1", at: "2026-06-21T10:00:00Z", weightKg: 80 }],
+        [{ id: "m1", at: "2026-06-21T18:00:00Z", weightKg: 81 }],
+      );
+      expect(series.map((p) => p.value)).toEqual([80, 81]);
+    });
+
+    it("Mexico City (UTC-6): зважування одного локального дня дедуплікуються, хоч за Києвом це різні дні", () => {
+      process.env["TZ"] = "America/Mexico_City";
+      // 15:00Z = 09:00 Mexico 21 черв. (18:00 Kyiv 21 черв.);
+      // 03:00Z 22 черв. = 21:00 Mexico 21 черв. (06:00 Kyiv 22 черв.).
+      const samples = selectBodyWeightSamples(
+        [{ id: "dl1", at: "2026-06-21T15:00:00Z", weightKg: 80 }],
+        [{ id: "m1", at: "2026-06-22T03:00:00Z", weightKg: 79 }],
+      );
+      expect(samples).toHaveLength(1);
+      expect(samples[0]?.dayKey).toBe("2026-06-21");
+      // Виграє новіший `at`.
+      expect(samples[0]?.weightKg).toBe(79);
+      expect(samples[0]?.source).toBe("measurements");
+    });
+
+    it.each([
+      "Europe/Kyiv",
+      "America/Mexico_City",
+      "Asia/Tokyo",
+      "Pacific/Auckland",
+      "UTC",
+    ])("%s: dayKey збігається зі спільним deviceDayKey", (tz) => {
+      process.env["TZ"] = tz;
+      const instants = [
+        "2026-06-21T10:00:00Z",
+        "2026-06-21T21:30:00Z",
+        "2026-06-22T03:00:00Z",
+        "2026-06-22T18:00:00Z",
+      ];
+      for (const at of instants) {
+        const [sample] = selectBodyWeightSamples(
+          [{ id: at, at, weightKg: 80 }],
+          null,
+        );
+        expect(sample?.dayKey).toBe(deviceDayKey(new Date(at)));
+      }
+    });
   });
 
   it("ігнорує tombstone-записи в обох варіантах написання", () => {

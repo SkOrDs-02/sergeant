@@ -1,22 +1,22 @@
 # C2 — Frontend SPA не має Content-Security-Policy
 
-> **Last touched:** 2026-09-17 by @claude (два Status зведено в один; зафіксовано, що Report-Only досі віддається). **Next review:** 2026-12-16.
-> **Status:** In progress — Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; Phase 2 side-by-side enforce-mode rolled out (Report-Only retained for regression tracking); awaiting 24h soak then 7-day clean window before removing Report-Only. **Update 2026-06-01:** the 7-day clean window has elapsed by calendar (enforce rolled out 2026-05-24); the only remaining step is to confirm zero `/api/csp-report` violations over that window, then drop the Report-Only header in a follow-up — operational, not code. **Звірка 2026-09-17:** крок не виконано — `apps/web/vercel.json` досі віддає `Content-Security-Policy-Report-Only` поруч з enforce-заголовком `Content-Security-Policy`; зняття лишається операційним follow-up-ом (не в цьому PR).
+> **Last touched:** 2026-10-03 by @claude (знято `Content-Security-Policy-Report-Only` з `apps/web/vercel.json`; віддається лише enforced-політика). **Next review:** 2027-01-01.
+> **Status:** In progress — Phase 2 завершено 2026-10-03: Report-Only знято, `apps/web/vercel.json` віддає лише enforced `Content-Security-Policy` (з тими самими `report-uri` / `report-to` на `/api/csp-report`). Phase 1 (Report-Only canary + sink + meta fallback) shipped 2026-05-04; side-by-side enforce rolled out 2026-05-24. **Чому зняття безпечне без нової вибірки метрик:** Report-Only була строго м'якшою за enforced (додатково `'unsafe-inline'` у `script-src` і `http://localhost:3000 http://127.0.0.1:3000 wss: ws:` у `connect-src`, решта директив ідентична), тож усе, що порушує Report-Only, порушує й enforced, а enforced звітує в той самий sink. Лишається опційний Phase 3 (nonce/hash-based CSP, `style-src 'unsafe-inline'`); закриття картки (Closed + переїзд в Git-архів) - рішення власника.
 
-| Field              | Value                                                                                                                                                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                                                                                                                                      |
-| **Sprint**         | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md)                                                        |
-| **Owner**          | frontend                                                                                                                                                                                                         |
-| **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                                                                                                                                              |
-| **Status**         | In progress — те саме, що в шапці: Phase 1 closed (Report-Only canary, 2026-05-04), Phase 2 enforce rolled out 2026-05-24; лишилось зняти Report-Only (досі віддається, звірка 2026-09-17). Nonce-flow — опційно |
-| **Discovered**     | 2026-05-03                                                                                                                                                                                                       |
-| **Threat model**   | XSS Exfiltration → Account Compromise                                                                                                                                                                            |
-| **Affected files** | `apps/web/vercel.json`, `apps/web/index.html`, `apps/server/src/http/security.ts`                                                                                                                                |
+| Field              | Value                                                                                                                                                     |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Severity**       | **Critical** (CVSS 8.8 — Universal-XSS exfiltration vector)                                                                                               |
+| **Sprint**         | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md) |
+| **Owner**          | frontend                                                                                                                                                  |
+| **Effort**         | 0.5 person-day (Report-Only) + 1d опційно для Strict-CSP nonce-flow                                                                                       |
+| **Status**         | In progress - Phase 2 завершено 2026-10-03: Report-Only знято, лишається лише enforced `Content-Security-Policy`. Nonce-flow (Phase 3) - опційно          |
+| **Discovered**     | 2026-05-03                                                                                                                                                |
+| **Threat model**   | XSS Exfiltration → Account Compromise                                                                                                                     |
+| **Affected files** | `apps/web/vercel.json`, `apps/web/index.html`, `apps/server/src/http/security.ts`                                                                         |
 
 ## Summary
 
-`helmet.contentSecurityPolicy` додає `Content-Security-Policy` header **тільки до response-ів API**. Це коректно для JSON-API. SPA-фронтенд (`apps/web`) тепер має Phase-1 `Content-Security-Policy-Report-Only` у `apps/web/vercel.json`, report sink `/api/csp-report`, і meta fallback у `apps/web/index.html`; ця картка лишається відкритою лише для strict/enforce CSP + nonce flow.
+`helmet.contentSecurityPolicy` додає `Content-Security-Policy` header **тільки до response-ів API**. Це коректно для JSON-API. SPA-фронтенд (`apps/web`) тепер віддає enforced `Content-Security-Policy` у `apps/web/vercel.json` (Phase-1 `Content-Security-Policy-Report-Only` знято 2026-10-03), має report sink `/api/csp-report` і meta fallback у `apps/web/index.html`; картка лишається відкритою лише заради опційного strict CSP + nonce/hash flow (Phase 3).
 
 Це означає: будь-який майбутній XSS у SPA (через залежність, через user-content рендер у `claude-tracker` chat-message-і, через misconfigured library) → повний exfiltration без жодного браузерного guard-у.
 
@@ -227,7 +227,7 @@ Diff vs Phase-1 Report-Only header:
    is a `git revert` if anything fires).
 3. Monitor for 24h: `csp_violation_total{disposition="enforce"}` must
    stay flat. If it spikes, revert the PR.
-4. After 7 days clean, remove the Report-Only header in a follow-up PR.
+4. After 7 days clean, remove the Report-Only header in a follow-up PR. _(Виконано 2026-10-03, див. нижче.)_
 
 **Status:** research complete, no code changed in this pass. The
 side-by-side PR is unblocked and can land whenever the founder
@@ -261,7 +261,44 @@ Diff vs Phase-1 Report-Only header in the new enforce header:
    Must stay flat. If it spikes — revert this PR immediately.
 2. **7-day clean window:** if no novel directive fires for 7 days, open
    follow-up PR to remove the Report-Only header (the enforce header
-   handles both blocking and reporting via the same `report-uri`).
+   handles both blocking and reporting via the same `report-uri`). _(Виконано 2026-10-03, див. нижче.)_
+
+#### Phase 2 - Report-Only знято (2026-10-03)
+
+Крок 4 rollout plan виконано: з `apps/web/vercel.json` прибрано header
+`Content-Security-Policy-Report-Only`. Лишився enforced `Content-Security-Policy`
+(`report-uri https://api.sergeant.com.ua/api/csp-report; report-to csp-endpoint`)
+і `Reporting-Endpoints` (`csp-endpoint`), тож порушення enforced-політики
+й далі потрапляють у `csp_violation_total{disposition="enforce"}`.
+
+**Чому не чекали ще одну вибірку метрик.** Перевірка «7 днів нуль порушень»
+потрібна, щоб не зламати користувачів новою, суворішою політикою. Тут
+суворішої політики немає: Report-Only була **строго м'якшою** за enforced.
+Різниця між двома значеннями в `vercel.json` (звірено скриптом по директивах,
+порядок директив збігається):
+
+- `script-src` у Report-Only мав додатково `'unsafe-inline'`;
+- `connect-src` у Report-Only мав додатково `http://localhost:3000`,
+  `http://127.0.0.1:3000`, `wss:`, `ws:`;
+- усі інші директиви (включно з `report-uri` / `report-to`) ідентичні.
+
+Отже, будь-яке порушення Report-Only є порушенням і enforced-політики, а
+enforced уже блокує й звітує в той самий sink. Header давав лише дубльований
+шум у метриці (`disposition="report"`) і другу, слабшу політику, що могла
+розійтися з основною.
+
+**Захист від повернення.** `apps/web/src/test/cspMonitoringAllowlist.test.ts`
+перевіряє, що жоден блок `vercel.json` не містить `Content-Security-Policy-Report-Only`,
+а enforced-політика досі несе `report-uri` / `report-to` на `/api/csp-report`
+разом із `Reporting-Endpoints`. Якщо колись знадобиться canary для суворішої
+політики - див. [`docs/operations/deploy/vercel.md`](../../../operations/deploy/vercel.md):
+додай тимчасовий Report-Only header поруч, послаб цей guard у тому ж PR і
+прибери canary після soak.
+
+**Не змінено (поза скоупом).** Серверний `CSP_REPORT_ONLY` у
+`apps/server/src/http/security.ts` - це CSP самого API (`helmet`), не
+фронтенду. Клієнтський `VITE_CSP_REPORT_ONLY` лише ставить тег `cspMode` у
+Sentry (див. [`feature-flags.md`](../../../engineering/architecture/feature-flags.md)).
 
 ## Cross-references
 

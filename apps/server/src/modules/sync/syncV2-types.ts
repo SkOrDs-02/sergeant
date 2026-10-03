@@ -153,6 +153,14 @@ export const APPLY_REJECT_REASONS = [
   // rather than silently accepted or nulled (CodeRabbit PR #627,
   // `parseOptionalTzOffsetMin()` in `syncV2-core.ts`).
   "invalid_tz_offset_min",
+  // Аудит 2026-10-01 (rel-01): `routine_habits.recurrence/start_date/end_date`
+  // — TEXT без CHECK, а sweep нагадувань кидав на `parseDateKey` для рядка
+  // `start_date = "2000"` і глушив нагадування ВСІМ. Невалідне (не enum /
+  // не реальна дата `YYYY-MM-DD`) відхиляється до запису; окремі причини,
+  // бо це три різні колонки (`applyRoutineHabits`).
+  "invalid_recurrence",
+  "invalid_start_date",
+  "invalid_end_date",
 ] as const;
 
 export type ApplyRejectReason = (typeof APPLY_REJECT_REASONS)[number];

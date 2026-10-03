@@ -339,7 +339,15 @@ test.describe("@critical deep module CRUD browser loop", () => {
 
   test("routine: creates, edits, deletes, and restores a habit", async ({
     page,
-  }) => {
+  }, testInfo) => {
+    // Назва унікальна на КОЖНУ спробу — той самий фікс, що й у нозі Фініка
+    // (001bddf0f). Акаунт smoke-lane-у спільний (`apps/web/AGENTS.md`
+    // § E2E smoke, п. 8), тож retry бачить звичку попередньої спроби, і
+    // `routineDetailButton` з підрядковим regex резолвиться у два рядки.
+    // Так було на #1355 (2026-10-03): спроба 1 впала після reload, retry
+    // уже не відкрив власний аркуш деталей.
+    const name = `DCRUD вода ${testInfo.retry}${Date.now().toString(36)}`;
+    const renamed = `${name} оновлено`;
     await seedCrudState(page);
     const errors = await collectPageErrors(page);
 
@@ -350,16 +358,17 @@ test.describe("@critical deep module CRUD browser loop", () => {
       .click();
     const createDialog = page.getByRole("dialog", { name: "Нова звичка" });
     await expect(createDialog).toBeVisible();
-    await createDialog.getByLabel("Назва звички").fill("DCRUD вода");
+    await createDialog.getByLabel("Назва звички").fill(name);
     await createDialog
       .getByRole("button", { name: "Додати звичку", exact: true })
       .click();
 
-    await expect(routineDetailButton(page, "DCRUD вода")).toBeVisible();
+    await expect(routineDetailButton(page, name)).toBeVisible();
 
-    await routineDetailButton(page, "DCRUD вода").click();
+    await routineDetailButton(page, name).click();
     await expect(
-      page.getByRole("dialog", { name: /DCRUD вода/ }),
+      // Без `exact`: заголовок аркуша несе ще й гліф звички.
+      page.getByRole("dialog", { name }),
     ).toBeVisible();
     // Harness correction (E1, CI critical-lane audit 2026-08-04): right
     // after habit creation the sync engine can still be flushing a pull
@@ -380,7 +389,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
       });
       await expect(editDialog).toBeVisible({ timeout: 5000 });
     }).toPass({ timeout: 45_000 });
-    await editDialog.getByLabel("Назва звички").fill("DCRUD вода оновлено");
+    await editDialog.getByLabel("Назва звички").fill(renamed);
     // Harness correction (E2, CI critical-lane audit 2026-08-04): CI once
     // logged `press("Enter")` on this button as "waiting for navigation to
     // finish… navigated to /routine" — read as a native <form> submit
@@ -409,15 +418,11 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // This used to pass by accident: until `e6a01ce` the save was a
     // `press("Enter")`, which CI logged as "navigated to /routine" — the
     // reload tore the sheet down before the list assertion ran.
-    const detailSheet = page.getByRole("dialog", {
-      name: "DCRUD вода оновлено",
-    });
+    const detailSheet = page.getByRole("dialog", { name: renamed });
     await expect(detailSheet).toBeVisible();
     await detailSheet.getByRole("button", { name: "Закрити" }).first().click();
     await expect(detailSheet).toBeHidden();
-    await expect(
-      routineDetailButton(page, "DCRUD вода оновлено"),
-    ).toBeVisible();
+    await expect(routineDetailButton(page, renamed)).toBeVisible();
 
     // Ті самі два барʼєри, що й у finyk-нозі перед повторним `goto`. Без
     // flush черги рестарт підтягує серверний знімок без перейменування, а
@@ -427,31 +432,32 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await waitForSyncQueueIdle(page);
     await waitForServiceWorkerActivated(page);
     await page.goto("/routine", { waitUntil: "domcontentloaded" });
-    await expect(
-      routineDetailButton(page, "DCRUD вода оновлено"),
-    ).toBeVisible();
+    // Після повного reload список збирається наново: SQLite-reader і
+    // pull синку, а не вже змонтований стан. Дефолтних 5 с на завантаженому
+    // CI-раннері замало (#1355, 2026-10-03: перейменована звичка не
+    // з'явилась за 5 с), тож бюджет той самий, що в нозі Фініка після
+    // reload (`expandTodayAndExpect`, 30 с).
+    await expect(routineDetailButton(page, renamed)).toBeVisible({
+      timeout: 30_000,
+    });
 
-    await routineDetailButton(page, "DCRUD вода оновлено").click();
+    await routineDetailButton(page, renamed).click();
     await page.getByRole("button", { name: "Видалити" }).click();
     await expect(
       page.getByRole("alertdialog", {
-        name: "Видалити звичку «DCRUD вода оновлено»?",
+        name: `Видалити звичку «${renamed}»?`,
       }),
     ).toBeVisible();
     await page
       .getByRole("alertdialog", {
-        name: "Видалити звичку «DCRUD вода оновлено»?",
+        name: `Видалити звичку «${renamed}»?`,
       })
       .getByRole("button", { name: "Видалити" })
       .click();
-    await expect(routineDetailButton(page, "DCRUD вода оновлено")).toHaveCount(
-      0,
-    );
+    await expect(routineDetailButton(page, renamed)).toHaveCount(0);
 
     await page.getByRole("button", { name: "Повернути" }).click();
-    await expect(
-      routineDetailButton(page, "DCRUD вода оновлено"),
-    ).toBeVisible();
+    await expect(routineDetailButton(page, renamed)).toBeVisible();
 
     expect(errors, "Uncaught page errors during Routine habit CRUD").toEqual(
       [],

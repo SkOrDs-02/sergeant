@@ -84,6 +84,15 @@ vi.mock("../../modules/nutrition/lib/nutritionStorage", async (orig) => {
       mem.prefs = p;
       return true;
     }),
+    // data-04: чат-екзекутори пишуть патчем лише змінених полів.
+    patchNutritionPrefs: vi.fn((patch: Record<string, unknown>) => {
+      mem.prefs = {
+        ...actual.defaultNutritionPrefs(),
+        ...(mem.prefs as Record<string, unknown>),
+        ...patch,
+      };
+      return true;
+    }),
   };
 });
 

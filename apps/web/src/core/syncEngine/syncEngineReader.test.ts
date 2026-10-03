@@ -12,7 +12,14 @@ vi.mock("./refreshCachesAfterPull.js", () => ({
     refreshCachesAfterPullMock(...args),
 }));
 
-import { createSyncEngineReaderRuntime } from "./syncEngineReader.js";
+import {
+  createSyncEngineReaderRuntime,
+  hasCompletedInitialPull,
+} from "./syncEngineReader.js";
+import {
+  __resetInitialPullStateForTests,
+  getInitialPullVersion,
+} from "./initialPullState.js";
 import { writePullSinceCursor } from "./syncOpCursor.js";
 
 function makeDeps(
@@ -40,6 +47,7 @@ function makeDeps(
 }
 
 beforeEach(() => {
+  __resetInitialPullStateForTests();
   applyPullOpMock.mockReset();
   applyPullOpMock.mockResolvedValue("applied");
   refreshCachesAfterPullMock.mockClear();
@@ -519,5 +527,239 @@ describe("createSyncEngineReaderRuntime", () => {
       "visibilitychange",
       onVisibility,
     );
+  });
+});
+
+// data-04: «початковий pull завершено» — єдиний чесний сигнал, що локальна
+// база вже має дані акаунта і whole-blob записи не затруть їх дефолтами.
+describe("createSyncEngineReaderRuntime — початковий pull завершено", () => {
+  const sharedClient = {
+    all: vi.fn(async () => []),
+    run: vi.fn(),
+    exec: vi.fn(),
+  };
+
+  it("до першого pull прапор не виставлено", () => {
+    expect(hasCompletedInitialPull()).toBe(false);
+  });
+
+  it("не виставляється, поки лишаються сторінки (next_cursor !== null)", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({ ops: [], next_cursor: 10 })
+      .mockImplementationOnce(async () => {
+        await gate;
+        return { ops: [], next_cursor: null };
+      });
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+
+    const running = runtime.pullOnce();
+    await vi.waitFor(() => expect(pull).toHaveBeenCalledTimes(2));
+    // Перша сторінка вже в базі, остання ще в дорозі.
+    expect(hasCompletedInitialPull()).toBe(false);
+
+    release();
+    await running;
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+  });
+
+  it("виставляється ПІСЛЯ оновлення кешів, а не до", async () => {
+    let seenAtRefresh: boolean | null = null;
+    refreshCachesAfterPullMock.mockImplementationOnce(async () => {
+      seenAtRefresh = hasCompletedInitialPull();
+    });
+    const pull = vi.fn().mockResolvedValue({
+      ops: [{ id: 1, table: "nutrition_prefs", op: "insert", row: {} }],
+      next_cursor: null,
+    });
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+    await runtime.pullOnce();
+    expect(seenAtRefresh).toBe(false);
+    expect(hasCompletedInitialPull()).toBe(true);
+  });
+
+  it("помилка pull не виставляє прапор", async () => {
+    const pull = vi.fn().mockRejectedValue(new Error("network down"));
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+    await expect(runtime.pullOnce()).rejects.toThrow();
+    expect(hasCompletedInitialPull()).toBe(false);
+  });
+
+  it("невдалий тік, потім тік без своїх опів: refresh охоплює застосоване раніше, лише тоді прапор", async () => {
+    // Тік 1: сторінка 1 з nutrition_prefs застосована, сторінка 2 падає.
+    // Тік 2 продовжує і не має жодного nutrition-опа, але кеш Їжі досі не
+    // бачив prefs — прапор не можна ставити, поки refresh їх не охопить.
+    const refreshedTables: string[][] = [];
+    const flagAtRefresh: boolean[] = [];
+    refreshCachesAfterPullMock.mockImplementation(
+      async (_c: unknown, _u: unknown, tables: Set<string>) => {
+        refreshedTables.push([...tables]);
+        flagAtRefresh.push(hasCompletedInitialPull());
+      },
+    );
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ops: [{ id: 1, table: "nutrition_prefs", op: "insert", row: {} }],
+        next_cursor: 1,
+      })
+      .mockRejectedValueOnce(new Error("502"))
+      .mockResolvedValueOnce({
+        ops: [{ id: 2, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: null,
+      });
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+
+    await expect(runtime.pullOnce()).rejects.toThrow("502");
+    expect(hasCompletedInitialPull()).toBe(false);
+    expect(refreshedTables).toEqual([]);
+
+    await runtime.pullOnce();
+    expect(refreshedTables).toHaveLength(1);
+    expect(refreshedTables[0]).toEqual(
+      expect.arrayContaining(["nutrition_prefs", "routine_entries"]),
+    );
+    expect(flagAtRefresh).toEqual([false]);
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+    refreshCachesAfterPullMock.mockReset();
+    refreshCachesAfterPullMock.mockResolvedValue(undefined);
+  });
+
+  it("невдалий refresh не губить таблиці: наступний тік без опів повторює його", async () => {
+    refreshCachesAfterPullMock
+      .mockRejectedValueOnce(new Error("refresh failed"))
+      .mockResolvedValue(undefined);
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ops: [{ id: 1, table: "nutrition_prefs", op: "insert", row: {} }],
+        next_cursor: null,
+      })
+      .mockResolvedValueOnce({ ops: [], next_cursor: null });
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => sharedClient }),
+    );
+
+    await expect(runtime.pullOnce()).rejects.toThrow("refresh failed");
+    expect(hasCompletedInitialPull()).toBe(false);
+
+    await runtime.pullOnce();
+    expect(refreshCachesAfterPullMock).toHaveBeenCalledTimes(2);
+    expect(refreshCachesAfterPullMock.mock.calls[1]?.[2]).toEqual(
+      new Set(["nutrition_prefs"]),
+    );
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+  });
+
+  it("прив'язаний до користувача: чужий id не рахується", async () => {
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ resolveClient: async () => sharedClient }),
+    );
+    await runtime.pullOnce();
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+    expect(hasCompletedInitialPull("u2")).toBe(false);
+  });
+
+  it("зміна користувача скидає прапор на початку тіка", async () => {
+    let userId: string | null = "u1";
+    const gateHolder: { release: () => void } = { release: () => {} };
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({ ops: [], next_cursor: null })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            gateHolder.release = () => resolve({ ops: [], next_cursor: null });
+          }),
+      );
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({
+        pull,
+        resolveClient: async () => sharedClient,
+        resolveUserId: async () => userId,
+      }),
+    );
+    await runtime.pullOnce();
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+
+    userId = "u2";
+    const second = runtime.pullOnce();
+    await vi.waitFor(() => expect(pull).toHaveBeenCalledTimes(2));
+    // u2 ще не дотягнув: прапор u1 не чинний ні для кого.
+    expect(hasCompletedInitialPull()).toBe(false);
+    gateHolder.release();
+    await second;
+    expect(hasCompletedInitialPull("u2")).toBe(true);
+    expect(hasCompletedInitialPull("u1")).toBe(false);
+  });
+
+  it("нова партиція бази (інший client) скидає прапор", async () => {
+    const otherClient = {
+      all: vi.fn(async () => []),
+      run: vi.fn(),
+      exec: vi.fn(),
+    };
+    let client = sharedClient;
+    let hold!: () => void;
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({ ops: [], next_cursor: null })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            hold = () => resolve({ ops: [], next_cursor: null });
+          }),
+      );
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, resolveClient: async () => client }),
+    );
+    await runtime.pullOnce();
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+
+    client = otherClient; // logout → wipe → той самий користувач, нова база
+    const second = runtime.pullOnce();
+    await vi.waitFor(() => expect(pull).toHaveBeenCalledTimes(2));
+    expect(hasCompletedInitialPull("u1")).toBe(false);
+    hold();
+    await second;
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+  });
+
+  it("logout (немає сесії) скидає прапор", async () => {
+    let userId: string | null = "u1";
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({
+        resolveClient: async () => sharedClient,
+        resolveUserId: async () => userId,
+      }),
+    );
+    await runtime.pullOnce();
+    expect(hasCompletedInitialPull("u1")).toBe(true);
+
+    userId = null;
+    await runtime.pullOnce();
+    expect(hasCompletedInitialPull()).toBe(false);
+  });
+
+  it("stop() скидає прапор і повідомляє підписників (версія росте)", async () => {
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ resolveClient: async () => sharedClient }),
+    );
+    runtime.start();
+    await vi.waitFor(() => expect(hasCompletedInitialPull("u1")).toBe(true));
+    const before = getInitialPullVersion();
+    runtime.stop();
+    expect(hasCompletedInitialPull()).toBe(false);
+    expect(getInitialPullVersion()).toBeGreaterThan(before);
   });
 });

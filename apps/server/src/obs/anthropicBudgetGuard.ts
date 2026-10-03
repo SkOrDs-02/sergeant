@@ -30,7 +30,7 @@
  *
  *     Тут стояла помітка «UTC intentional — vendor billing day boundary».
  *     Вона поступається практиці: `ai_usage_daily.usage_day` агрегує по
- *     київській добі (`toLocalISODate`), окремих таймстемпів у таблиці
+ *     київській добі (`toKyivISODate`), окремих таймстемпів у таблиці
  *     немає, тож із неї UTC-добу не відновити. Для стелі безпеки це
  *     обмін неістотний — вона захищає від «спалили забагато за день», а
  *     не звіряє рахунок вендора; зсув межі на 3 години цього не міняє.
@@ -60,7 +60,7 @@
  * — використовуємо існуючий transport.
  */
 
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import { env } from "../env.js";
 import { logger } from "./logger.js";
@@ -173,7 +173,7 @@ interface AnthropicBudgetState {
  * рядок і мовчав. Обґрунтування переходу з UTC — у шапці модуля.
  */
 function spendDay(now: () => number): string {
-  return toLocalISODate(new Date(now()));
+  return toKyivISODate(new Date(now()));
 }
 
 function makeFlagKey(day: string, threshold: AnthropicBudgetThreshold): string {

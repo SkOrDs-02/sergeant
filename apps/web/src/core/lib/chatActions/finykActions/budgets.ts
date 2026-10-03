@@ -12,7 +12,7 @@ import { validatePositiveAmount } from "./amountValidation";
 import {
   formatNumberUk,
   generatePrefixedId,
-  toLocalISODate,
+  toKyivISODate,
 } from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
@@ -38,7 +38,7 @@ function buildAiContribution(saved: number): GoalContribution[] {
       id: generatePrefixedId("contrib"),
       amountUah: saved,
 
-      date: toLocalISODate(new Date()),
+      date: toKyivISODate(new Date()),
       note: "Через Сержанта",
     },
   ];

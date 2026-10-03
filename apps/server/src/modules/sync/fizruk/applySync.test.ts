@@ -122,6 +122,8 @@ describe("applyFizrukItems — рядки з чат-екзекуторів (data
 describe("applyFizrukSets", () => {
   it("inserts a set with numeric defaults", async () => {
     const fake = new FakeClient();
+    fake.queueRows([]); // ownership lookup за id підходу
+    fake.queueRows([{ "?column?": 1 }]); // батьківська позиція — власна
     const clientTs = new Date("2026-07-21T08:00:00.000Z");
 
     await expect(
@@ -258,6 +260,8 @@ describe("applyFizrukSets", () => {
 
     it("accepts boundary values (weight_kg=1000, reps=1000) and inserts them as-is", async () => {
       const fake = new FakeClient();
+      fake.queueRows([]); // ownership lookup за id підходу
+      fake.queueRows([{ "?column?": 1 }]); // батьківська позиція — власна
       const clientTs = new Date("2026-07-21T08:00:00.000Z");
 
       await expect(

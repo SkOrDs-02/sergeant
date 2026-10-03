@@ -22,6 +22,11 @@ import { createApiClient } from "@sergeant/api-client";
 import { ToastProvider } from "@/components/ui/Toast";
 import { _getMMKVInstance } from "@/lib/storage";
 
+import {
+  EAST_OF_KYIV,
+  installFakeDeviceZone,
+  WEST_OF_KYIV,
+} from "../../__tests__/fakeDeviceZone";
 import { RecipeRecommender } from "../RecipeRecommender";
 
 jest.mock("../../hooks/useNutritionPrefs", () => ({
@@ -269,6 +274,43 @@ describe("RecipeRecommender", () => {
     expect(meal.macros.kcal).toBe(320);
     expect(meal.macroSource).toBe("recipeAI");
   });
+
+  describe.each([
+    ["на захід від Києва (UTC-5)", WEST_OF_KYIV],
+    ["на схід від Києва (UTC+10)", EAST_OF_KYIV],
+  ] as const)(
+    "день-ключ запису за годинником пристрою (ADR-0078): %s",
+    (_name, zone) => {
+      let restore: (() => void) | undefined;
+
+      afterEach(() => {
+        restore?.();
+        restore = undefined;
+      });
+
+      it("«+ У журнал» пише на день пристрою, а не Києва", async () => {
+        restore = installFakeDeviceZone(zone);
+        const { client } = createTestApiClient(() => ({
+          ok: true,
+          status: 200,
+          body: SAMPLE_RESPONSE,
+        }));
+        const { getByTestId, getByText, findByText } = renderPage(client);
+
+        await act(async () => {
+          fireEvent.press(getByTestId("recipe-recommend"));
+        });
+        await findByText("Омлет з овочами");
+
+        await act(async () => {
+          fireEvent.press(getByText("+ У журнал"));
+        });
+        expect(mockAddMeal).toHaveBeenCalledTimes(1);
+        const [day] = mockAddMeal.mock.calls[0]!;
+        expect(day).toBe(zone.deviceDay);
+      });
+    },
+  );
 
   it("shows an inline quota error on 429", async () => {
     const { client } = createTestApiClient(() => ({

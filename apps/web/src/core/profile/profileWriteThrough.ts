@@ -55,6 +55,7 @@ import { logger } from "@shared/lib";
 import {
   BIOMETRICS_DEFAULT,
   BiometricsSchema,
+  isBiometricsForeign,
   readBiometrics,
   readBiometricsOwnerId,
   setBiometricsOwner,
@@ -63,6 +64,7 @@ import {
 } from "./biometrics";
 import {
   MEMORY_BANK_META_EPOCH,
+  isMemoryBankForeign,
   normalizeMemoryEntry,
   readMemoryBankMeta,
   readMemoryEntries,
@@ -163,10 +165,22 @@ function fitMemoryBankPayload(
   return { payload, trimmedCount };
 }
 
+/**
+ * Мітка часу локального банку для wire-пейлоаду. Чужий банк (priv-02) віддає
+ * порожній список (див. `readMemoryEntries`) і EPOCH-сентинел: так
+ * {@link resolveHalvesAgainstServer} добере половину з сервера, а не
+ * надішле чужі факти під сесією поточної людини.
+ */
+function readMemoryBankUpdatedAtForWire(): string {
+  return isMemoryBankForeign()
+    ? MEMORY_BANK_META_EPOCH
+    : readMemoryBankMeta().updatedAt;
+}
+
 function readMemoryBankForWire(): MemoryBankWirePayload {
   return {
     entries: readMemoryEntries(),
-    updatedAt: readMemoryBankMeta().updatedAt,
+    updatedAt: readMemoryBankUpdatedAtForWire(),
   };
 }
 
@@ -320,9 +334,11 @@ export async function pushMemoryBankToServer(
   entries: MemoryEntry[],
   serverProfile?: UserProfileResponse,
 ): Promise<void> {
+  // priv-02: записи з чужим ownerId на сервер не їдуть ні за яких умов.
+  if (isMemoryBankForeign()) return;
   await pushCombinedProfile(
     readBiometrics(),
-    { entries, updatedAt: readMemoryBankMeta().updatedAt },
+    { entries, updatedAt: readMemoryBankUpdatedAtForWire() },
     serverProfile,
   );
 }
@@ -350,6 +366,14 @@ export async function reconcileBiometricsWithServerProfile(
   // correct in isolation — e.g. called directly from a test, or from any
   // future caller that forgets the boot-hook wiring.
   setBiometricsOwner(currentUserId);
+
+  // priv-02: локальна біометрика іншого акаунта (сесія попередника
+  // закінчилась без «Вийти») — скинути до порожнього сентинела ДО звірки,
+  // щоб вона не лишилась на пристрої, коли в сервера для цього акаунта ще
+  // немає рядка. Якщо рядок є, нижче `isLocalBiometricsEmpty` її гідратує.
+  if (isBiometricsForeign()) {
+    writeBiometrics(BIOMETRICS_DEFAULT);
+  }
 
   const local = readBiometrics();
   const parsedServer = BiometricsSchema.safeParse(serverProfile.profile);
@@ -463,6 +487,20 @@ export async function reconcileMemoryBankWithServerProfile(
   // Defensive, same rationale as `reconcileBiometricsWithServerProfile`'s
   // own stamp: keeps this function correct in isolation.
   setMemoryBankOwner(currentUserId);
+
+  // priv-02: банк іншого акаунта (сесія попередника закінчилась без «Вийти»)
+  // — спершу скинути локальну копію до серверної (або порожньої), і лише
+  // потім звіряти. Без цього, коли серверного банку ще немає, чужі факти
+  // лишались би на пристрої і першою ж правкою осідали в профілі цього
+  // користувача. `ownerId: null` (легасі/анонім) не чіпаємо — міграція.
+  if (isMemoryBankForeign()) {
+    const serverBank = extractServerMemoryBank(serverProfile);
+    writeMemoryEntriesFromServer(
+      serverBank?.entries ?? [],
+      serverBank?.updatedAt ?? MEMORY_BANK_META_EPOCH,
+    );
+    return;
+  }
 
   const localEntries = readMemoryEntries();
   const localMeta = readMemoryBankMeta();

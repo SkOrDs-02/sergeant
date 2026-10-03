@@ -6,6 +6,7 @@ import {
   AUTH_SENSITIVE_RATE_LIMIT,
 } from "../config/rateLimit.js";
 import { env } from "../env.js";
+import { AppError, ValidationError } from "../obs/errors.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
 import { ipPrefix } from "../auth/sessionFingerprint.js";
@@ -50,6 +51,28 @@ export function authSensitiveRateLimit(
 }
 
 /**
+ * Типи тіла, які `bodySizePolicy` для `/api/auth` гарантовано парсить у
+ * `req.body` (`express.json` + `express.urlencoded`). Усе інше на
+ * credential-роутах `authAccountRateLimit` відсікає 415.
+ */
+const PARSED_AUTH_CONTENT_TYPES: ReadonlySet<string> = new Set([
+  "application/json",
+  "application/x-www-form-urlencoded",
+]);
+
+function baseType(req: Request): string {
+  const raw = req.headers["content-type"] ?? "";
+  return (raw.split(";")[0] ?? "").trim().toLowerCase();
+}
+
+/** Той самий критерій, що в `type-is`/body-parser: є тіло чи ні. */
+function hasRequestBody(req: Request): boolean {
+  if (req.headers["transfer-encoding"] !== undefined) return true;
+  const len = Number(req.headers["content-length"]);
+  return Number.isFinite(len) && len > 0;
+}
+
+/**
  * Другий, per-account бакет поверх `authSensitiveRateLimit` (F2).
  *
  * `authSensitiveRateLimit` ключується на IP (сесії до автентифікації ще
@@ -67,25 +90,56 @@ export function authSensitiveRateLimit(
  *     в один бакет.
  *   - Вікно, а не постійний lockout — інакше будь-хто замикав би чужий
  *     акаунт кількома невдалими спробами.
+ *   - Fail-closed (sec-11): тіло з типом, окремим від JSON/urlencoded, — 415;
+ *     `email`, що не є одним рядком (повтор ключа у формі), — 400. Інакше
+ *     handler Better Auth бачить інший email, ніж бакет.
  */
 export function authAccountRateLimit(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void {
-  const url = req.originalUrl || "";
+  // Шлях без query: `?next=/sign-in` на іншому маршруті не робить його
+  // «targeted», а handler Better Auth маршрутизує саме по шляху.
+  const path = (req.originalUrl || "").split("?")[0] ?? "";
   const targeted =
     req.method === "POST" &&
-    (url.includes("/sign-in") ||
-      url.includes("forget-password") ||
-      url.includes("request-password-reset") ||
-      url.includes("reset-password"));
+    (path.includes("/sign-in") ||
+      path.includes("forget-password") ||
+      path.includes("request-password-reset") ||
+      path.includes("reset-password"));
   if (!targeted) {
     next();
     return;
   }
 
+  // Fail-closed по Content-Type (sec-11). Better Auth матчить тип за
+  // `includes("application/json")` і парсить JSON за регексом без якоря
+  // кінця, тож `application/jsonx` / `application/json-patch+json` він
+  // приймає, а наші `express.json` / `express.urlencoded` — ні: `req.body`
+  // лишається `undefined`, email не видно, бакет пропущено. Замість того
+  // щоб доганяти кожен варіант парсером, пускаємо в credential-флоу лише
+  // два типи, які ми гарантовано розбираємо (точний збіг бази типу).
+  if (hasRequestBody(req) && !PARSED_AUTH_CONTENT_TYPES.has(baseType(req))) {
+    next(
+      new AppError(
+        "Content-Type має бути application/json або application/x-www-form-urlencoded",
+        { status: 415, code: "UNSUPPORTED_MEDIA_TYPE" },
+      ),
+    );
+    return;
+  }
+
+  // Fail-closed по формі поля. Повторений ключ у form-тілі
+  // (`email=junk&email=victim`) body-parser віддає масивом, а Better Auth
+  // (better-call `getBody`) лишає ОСТАННЄ значення: бакет за рядковою
+  // перевіркою пропускав запит, пароль перевірявся для victim. Будь-що, крім
+  // рядка, відхиляємо, а не вгадуємо, яке значення вибере handler.
   const body = (req.body ?? {}) as { email?: unknown };
+  if (body.email !== undefined && typeof body.email !== "string") {
+    next(new ValidationError("Поле email має бути одним рядком"));
+    return;
+  }
   const email = typeof body.email === "string" ? body.email.trim() : "";
   if (!email) {
     next();

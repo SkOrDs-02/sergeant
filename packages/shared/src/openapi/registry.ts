@@ -9,7 +9,7 @@ import * as finykSchemas from "../schemas/finyk";
 /**
  * Builds OpenAPI 3.1 document from zod-схем у `@sergeant/shared/schemas/api`.
  *
- * Використовує `zod-openapi@5` (нативний `.meta()` API zod v4) — без
+ * Використовує `zod-openapi@6` (нативний `.meta()` API zod v4) — без
  * prototype-патчів і без runtime-augmentation. Кожна named-схема дістає
  * stable component ID через `.meta({ id })`, після чого в OpenAPI
  * `#/components/schemas/<id>` формується автоматично з `$ref`-ом.

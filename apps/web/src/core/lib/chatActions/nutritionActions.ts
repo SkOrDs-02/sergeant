@@ -28,12 +28,14 @@ import {
   loadNutritionLog,
   loadNutritionPrefs,
   loadPantries,
+  patchNutritionPrefs,
   persistNutritionLog,
-  persistNutritionPrefs,
   persistPantries,
   removeLogEntry,
   type Meal,
+  type NutritionPrefs,
 } from "../../../modules/nutrition/lib/nutritionStorage";
+import { NUTRITION_STILL_LOADING } from "../../../modules/nutrition/lib/nutritionStillLoading";
 import {
   loadWaterLog,
   saveWaterLog,
@@ -115,7 +117,10 @@ export function handleNutritionAction(
       const log = loadWaterLog();
       const prev = Number(log[dateKey]) || 0;
       const total = prev + ml;
-      saveWaterLog({ ...log, [dateKey]: total });
+      // data-04: до гідратації запис відхиляється — не рапортуємо успіх.
+      if (!saveWaterLog({ ...log, [dateKey]: total })) {
+        return NUTRITION_STILL_LOADING;
+      }
       return {
         result: `Додано ${formatNumberUk(ml)} мл води (разом за ${dateKey}: ${formatNumberUk(total)} мл)`,
         // Undo віднімає рівно свої ml від поточного значення, а не
@@ -235,7 +240,9 @@ export function handleNutritionAction(
         });
       }
       cat.items = items;
-      persistShoppingList({ ...list, categories });
+      if (!persistShoppingList({ ...list, categories })) {
+        return NUTRITION_STILL_LOADING;
+      }
       const result = `Продукт "${itemName}" ${action_msg} у список покупок${qty ? ` (${qty})` : ""} [${catName}]`;
       if (!createdId) {
         // "оновлено" гілка — undo-флоу недоступний без снапшота,
@@ -384,7 +391,9 @@ export function handleNutritionAction(
       const { kcal, protein_g, fat_g, carbs_g, water_ml } = (
         action as SetDailyPlanAction
       ).input;
-      const next = { ...loadNutritionPrefs() };
+      // Лише змінені поля: решту prefs (шаблони страв, нагадування…)
+      // `patchNutritionPrefs` бере з актуального кешу (data-04).
+      const next: Partial<NutritionPrefs> = {};
       const parts: string[] = [];
       const num = (val: unknown): number | null => {
         const n = Number(val);
@@ -418,7 +427,7 @@ export function handleNutritionAction(
         parts.push(`вода ${formatNumberUk(waterN)} мл`);
       }
       if (parts.length === 0) return "Немає полів для оновлення плану.";
-      persistNutritionPrefs(next);
+      if (!patchNutritionPrefs(next)) return NUTRITION_STILL_LOADING;
       return `Щоденний план оновлено: ${parts.join(", ")}`;
     }
     case "log_weight": {
