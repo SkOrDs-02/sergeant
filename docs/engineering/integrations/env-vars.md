@@ -397,6 +397,10 @@ Graceful shutdown.
 
 Інтервал comment-frame у `/api/chat` SSE-стрімі. **Default**: `15000` ms — щоб проксі/браузер не різав з'єднання за idle timeout.
 
+### `SYNC_V2_STREAM_ENABLED` _(optional, default `false`)_
+
+Рубильник `GET /api/v2/sync/stream` (SSE живих sync-ops). **Default `false`** → маршрут відповідає `404` (навіть без сесії), доки немає клієнта-споживача (Фаза 3, `sync-client-wiring.md`). Приймає `true/false/1/0`. Читається з `process.env` на кожному запиті (`modules/sync/syncV2StreamGuard.ts`), тож зміна у Coolify діє після рестарту контейнера, а тест перемикає її без ре-імпорту. Коли ввімкнено: сесія перевіряється в БД на кожному heartbeat (`SYNC_V2_STREAM_HEARTBEAT_MS` = 25 с), зʼєднання живе до 15 хв (`SYNC_V2_STREAM_MAX_AGE_MS`), не більше 3 одночасних стрімів на юзера (`SYNC_V2_STREAM_MAX_PER_USER`, новий витісняє найстаріший). Аудит 2026-10-01, sec-09. Реєстр прапорців: [`feature-flags.md`](../architecture/feature-flags.md#32-фічі-та-інтеграції).
+
 ### `ALLOWED_ORIGIN_REGEX` _(optional)_
 
 Одинокий regex (без прапорців), який повинен матчити допустимі origin-и. Використовується **на доповнення** до `ALLOWED_ORIGINS` (не замість). Приклад: `^https://pr-\d+\.preview\.example\.com$`.
