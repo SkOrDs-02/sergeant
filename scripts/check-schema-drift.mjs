@@ -730,6 +730,9 @@ const SQL_ONLY_TABLES = [
   "ai_memories",
   "ai_memory_backfill_state",
   "ai_memory_ingest_failed",
+  // Гранти refine-photo (міграція 153): SHA-256 кадру, який analyze-photo
+  // проаналізував для користувача. Лише серверна звірка квоти, клієнт не читає.
+  "ai_photo_refine_grants",
   "ai_usage_daily",
   // Billing / subscriptions / revenue — керуються серверними billing-воркерами
   // та webhook-хендлерами (Stripe / Apple IAP / LiqPay), клієнт читає через API.

@@ -28,7 +28,7 @@ vi.mock("@shared/lib/media/compressImage", () => ({
 }));
 
 import { PHOTO_NOTE_QUESTION, usePhotoAnalysis } from "./usePhotoAnalysis";
-import { nutritionApi } from "@shared/api";
+import { ApiError, nutritionApi } from "@shared/api";
 import { fileToBase64 } from "../lib/fileToBase64.js";
 const apiAnalyzePhoto = nutritionApi.analyzePhoto as unknown as ReturnType<
   typeof vi.fn
@@ -362,6 +362,66 @@ describe("usePhotoAnalysis", () => {
   });
 
   describe("refinePhoto", () => {
+    // sec-14: refine кадру без гранту списує тижневе відро фото (ADR-0100),
+    // тож 429 `AI_PHOTO_QUOTA` приходить і з refine. Без обробки людина бачила б
+    // лише текст помилки замість пейволу, як на analyze.
+    function renderWithQuotaSpy() {
+      const onQuotaExceeded = vi.fn();
+      const setErr = vi.fn();
+      const { result } = renderHook(
+        () =>
+          usePhotoAnalysis({
+            setBusy: vi.fn(),
+            setErr,
+            setStatusText: vi.fn(),
+            onQuotaExceeded,
+          }),
+        { wrapper: makeWrapper() },
+      );
+      return { result, onQuotaExceeded, setErr };
+    }
+
+    async function analyzeThenRefineRejectedWith(
+      result: ReturnType<typeof renderWithQuotaSpy>["result"],
+      refineError: unknown,
+    ) {
+      apiAnalyzePhoto.mockResolvedValueOnce({ result: { name: "v1" } });
+      apiRefinePhoto.mockRejectedValueOnce(refineError);
+      attachFile(result, fakeImageFile());
+      act(() => {
+        result.current.analyzePhoto();
+      });
+      await waitFor(() => expect(result.current.photoResult).not.toBeNull());
+      act(() => {
+        result.current.refinePhoto();
+      });
+      await waitFor(() => expect(apiRefinePhoto).toHaveBeenCalledTimes(1));
+    }
+
+    it("429 AI_PHOTO_QUOTA від refine відкриває пейвол", async () => {
+      const { result, onQuotaExceeded } = renderWithQuotaSpy();
+      await analyzeThenRefineRejectedWith(
+        result,
+        new ApiError({
+          kind: "http",
+          status: 429,
+          message: "HTTP 429",
+          url: "https://api.test/api/nutrition/refine-photo",
+          body: { code: "AI_PHOTO_QUOTA", error: "Тижневий ліміт" },
+        }),
+      );
+      await waitFor(() => expect(onQuotaExceeded).toHaveBeenCalledTimes(1));
+    });
+
+    it("інша помилка refine пейвол не відкриває", async () => {
+      const { result, onQuotaExceeded, setErr } = renderWithQuotaSpy();
+      await analyzeThenRefineRejectedWith(result, new Error("Сервер AI впав"));
+      await waitFor(() =>
+        expect(setErr).toHaveBeenCalledWith("Сервер AI впав"),
+      );
+      expect(onQuotaExceeded).not.toHaveBeenCalled();
+    });
+
     it("throws before any analyze has run (no lastPhotoPayload)", async () => {
       const { result, setErr } = renderUsePhotoAnalysis();
       act(() => {

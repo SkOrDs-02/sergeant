@@ -13,6 +13,7 @@ import {
 import { normalizePhotoResult } from "../../lib/nutritionResponse.js";
 import { validateImageBase64 } from "../../lib/imageMagic.js";
 import { nutritionPhotoRejectedTotal } from "../../obs/metrics.js";
+import { recordPhotoRefineGrant } from "./photoRefineGrant.js";
 
 type AnthropicErrorPayload = { error?: { message?: string } };
 type WithAnthropicKey = Request & {
@@ -201,6 +202,11 @@ export default async function handler(
 
   const jsonParsed = extractJsonFromText(text);
   const result = normalizePhotoResult(jsonParsed);
+
+  // sec-14: після УСПІШНОГО аналізу refine цього ж кадру протягом 24 год —
+  // продовження тієї самої дії, і квоту не списує (ADR-0100). Не кидає: збій
+  // запису гранту відповідь не ламає, лише refine спише week:photo.
+  await recordPhotoRefineGrant(userId, b64);
 
   res.status(200).json({ result, rawText: text || null });
 }
