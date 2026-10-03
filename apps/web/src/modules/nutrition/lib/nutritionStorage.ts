@@ -253,6 +253,19 @@ export function persistNutritionLog(
 // ─────────────────────────────────────────────
 
 /**
+ * data-03: чи SQLite warm-кеш Їжі вже прогрівся хоч раз
+ * (`refreshedAt !== null`). Whole-blob singleton-и (список покупок, вода)
+ * без цього пишуться з порожніх дефолтів.
+ */
+function isNutritionCacheWarm(): boolean {
+  try {
+    return getCachedNutritionSqliteState().refreshedAt !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Persist the entire water-log map. Mirrors `persistNutritionLog` — the
  * caller passes the full `Record<dateKey, volumeMl>` and the diff
  * layer emits one `water-log-set` op per changed date. Pre-boot or
@@ -262,6 +275,8 @@ export function persistNutritionLog(
 export function persistNutritionWaterLog(
   waterLog: Record<string, number> | null | undefined,
 ): boolean {
+  // data-03: whole-blob запис з непрогрітого кешу затирає воду на сервері.
+  if (!isNutritionCacheWarm()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const safe: Record<string, number> = {};
@@ -304,6 +319,11 @@ export function persistNutritionRecipes(
 export function persistNutritionShoppingList(
   shoppingList: ShoppingList | null | undefined,
 ): boolean {
+  // data-03: до першого прогріву кешу `loadShoppingList()` дає порожній
+  // дефолт; запис такого blob-а = whole-row LWW, що затирає справжній список
+  // на всіх пристроях. Тому тут (на відміну від решти persist*) запис ДО
+  // прогріву свідомо відкидається, а не буферизується.
+  if (!isNutritionCacheWarm()) return false;
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
   const normalized = normalizeShoppingList(shoppingList ?? null);

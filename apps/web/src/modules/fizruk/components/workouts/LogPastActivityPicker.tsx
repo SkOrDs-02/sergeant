@@ -70,10 +70,16 @@ export function ActivityPickerSheet({
     ),
   })).filter((g) => g.items.length > 0);
 
+  // Вибране заняття — тонований фон + контур `fizruk-edge` (мова вибору з
+  // аудиту контрасту, A4): самої заливки (1.04:1 у світлій, 1.13:1 у темній
+  // після того, як `bg-fizruk-surface` став тема-залежним) для стану мало.
+  // `border-transparent` + `px-[7px]` у решти рядків: межа не зсуває текст.
   const optionClass = (active: boolean) =>
     cn(
-      "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl px-2 text-left text-style-body",
-      active ? "bg-fizruk-surface text-fizruk-soft-fg" : "text-text",
+      "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl border px-[7px] text-left text-style-body",
+      active
+        ? "border-fizruk-edge bg-fizruk-surface text-fizruk-soft-fg"
+        : "border-transparent text-text",
     );
 
   return (

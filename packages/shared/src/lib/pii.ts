@@ -75,6 +75,16 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "x-openclaw-webhook-secret",
   "x-api-secret",
   "x-internal-token",
+  // Telegram webhook secret (`setWebhook(secret_token)`) — приходить у
+  // заголовку, який Sentry кладе в `request.headers`.
+  "x-telegram-bot-api-secret-token",
+  // OAuth / snake_case форми (тіла форм, query-атрибути span-ів).
+  "access_token",
+  "refresh_token",
+  "id_token",
+  "client_secret",
+  "api_key",
+  "code_verifier",
   // PR-48 follow-up (HMAC #2733): `signature` (key) already covers
   // `X-Signature`-named fields only at root; header keys arrive lowercased
   // and prefixed, so we need an explicit entry.
