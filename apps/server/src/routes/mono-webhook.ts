@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import {
   requireFreshSession,
   requireSession,
@@ -41,6 +41,30 @@ import { webhookHandler } from "../modules/mono/webhook.js";
  * cookie-кешу): підʼєднати чужий банк або відʼєднати свій зі вкраденої
  * сесії має перестати працювати в момент її відкликання, а не за 5 хв.
  */
+/**
+ * Валідаційний пінг Monobank для `webHookUrl`.
+ *
+ * Документація `POST /personal/webhook`: на вказану адресу Monobank спершу
+ * надсилає GET, і сервер має відповісти СТРОГО HTTP 200 — інакше реєстрація
+ * вебхука не активується. Без цього обробника GET давав Express-404
+ * (прод `servesFrontend=false`, SPA-fallback не рятує) — аудит rel-24.
+ *
+ * Свідомо БЕЗ перевірки секрету й БЕЗ побічних ефектів (жодного звернення
+ * до БД, метрик чи логування): у момент реєстрації (`connection.ts`) хеш
+ * секрету ще не збережено — `INSERT mono_connection` іде вже після
+ * успішної реєстрації, тож lookup тут завжди давав би «секрет невідомий».
+ * Секрет із шляху не читається взагалі (`req.params` не торкаємось), тому
+ * в лог він потрапити не може; access-лог (`requestLog.ts`) пише
+ * `route.path` (`/api/mono/webhook/:secret`), а не сирий URL (Hard Rule #21).
+ * Нічого не розкриваємо: однакове `200` для будь-якого значення.
+ *
+ * HEAD Express віддає цьому ж обробнику сам (немає окремого `r.head`).
+ */
+function webhookUrlValidationHandler(_req: Request, res: Response): void {
+  res.set("Cache-Control", "no-store");
+  res.status(200).type("text/plain").send("ok");
+}
+
 export function createMonoWebhookRouter(): Router {
   const r = Router();
 
@@ -60,6 +84,10 @@ export function createMonoWebhookRouter(): Router {
   // реально бʼє у path-варіант нижче.
   r.post("/api/mono/webhook", webhookHandler);
   r.post("/api/mono/webhook/:secret", webhookHandler);
+
+  // GET (і HEAD) — валідація URL самим Monobank, див. обробник вище.
+  r.get("/api/mono/webhook", webhookUrlValidationHandler);
+  r.get("/api/mono/webhook/:secret", webhookUrlValidationHandler);
 
   // Session-protected endpoints.
   //
