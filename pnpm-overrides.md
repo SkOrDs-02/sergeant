@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-09-30 by @claude. **Next review:** 2027-01-03.
+> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-01-03.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -215,11 +215,30 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | `fast-uri`                       | `^3.1.6`          | ✅ так                |
 | `ip-address@<10.3.1`             | `>=10.3.1`        | — (борг)              |
 | `browserslist@<4.28.7`           | `>=4.28.7`        | ✅ так                |
+| `basic-ftp@<6.2.1`               | `6.2.1`           | ✅ так                |
 
-Всього: **34** override-ів. Борг на дописування обґрунтувань трекається політикою
+Всього: **35** override-ів. Борг на дописування обґрунтувань трекається політикою
 [`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md) § Правила п.1.
 
 ---
+
+## `basic-ftp@<6.2.1` → `6.2.1`
+
+**Why:** [GHSA-c475-qrg2-pj4r](https://github.com/advisories/GHSA-c475-qrg2-pj4r) (high) —
+квадратичний за часом розбір лістингу каталогу в `Client.list()` дає CPU DoS; вразливі
+`<=6.2.0`, фікс у `6.2.1`. Пакет — dev-транзитив Lighthouse CI у `apps/web` і `apps/landing`:
+`@lhci/cli > lighthouse > puppeteer-core > @puppeteer/browsers > proxy-agent >
+pac-proxy-agent > get-uri@6.0.5 > basic-ftp@5.3.1`. Навіть найсвіжіший `get-uri` (8.0.1)
+досі оголошує `basic-ftp@^5.3.1`, тож без override фікс до дерева не доходить, а тижневий
+`Dependency audit (ledger-gated)` червоніє. Override перетинає мажор (5 → 6), тому звірено
+API: `get-uri` викликає лише `access`, `lastMod`, `list`, `downloadTo` і `close`, і їхні
+сигнатури в `dist/Client.d.ts` 5.3.1 і 6.2.1 збігаються; `engines` у 6.2.1 — `node >=10`.
+Точний пін, а не `>=`: гейт `lint:pnpm-overrides` вимагає, щоб діапазон тримав один мажор.
+
+**Drop when:** `get-uri` (через `pac-proxy-agent`) оголосить `basic-ftp@>=6.2.1` сам, і
+`pnpm why basic-ftp -r` не покаже жодної копії `<6.2.1`.
+
+**Last reviewed:** 2026-10-03
 
 ## `browserslist@<4.28.7` → `>=4.28.7`
 
