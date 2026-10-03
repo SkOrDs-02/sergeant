@@ -81,7 +81,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setDayPlanBusy = vi.fn();
   const setShoppingBusy = vi.fn();
   const setGeneratedList = vi.fn();
-  const handleAddMeal = vi.fn();
+  const handleAddMeal = vi.fn(() => "2025-01-01");
 
   const base: UseNutritionRemoteActionsParams = {
     setBusy,
@@ -115,7 +115,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setDayPlanBusy,
     log: {
       nutritionLog: {},
-      selectedDate: "2025-01-01",
+      getActiveDate: () => "2025-01-01",
       handleAddMeal,
     },
     shopping: { setGeneratedList },
@@ -198,12 +198,16 @@ describe("useNutritionRemoteActions — day plan error branch", () => {
 });
 
 describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
-  it("stamps current time only when selectedDate is today", () => {
-    // ADR-0078: `selectedDate` is the device-local day key.
+  it("stamps current time only when the active date is today", () => {
+    // ADR-0078: активний день — device-local day key.
     const today = deviceDayKey(new Date());
     const handleAddMeal = vi.fn();
     const todayHarness = makeHarness({
-      log: { nutritionLog: {}, selectedDate: today, handleAddMeal },
+      log: {
+        nutritionLog: {},
+        getActiveDate: () => today,
+        handleAddMeal,
+      },
     });
 
     act(() =>
@@ -225,7 +229,7 @@ describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
     const pastHarness = makeHarness({
       log: {
         nutritionLog: {},
-        selectedDate: "2020-01-01",
+        getActiveDate: () => "2020-01-01",
         handleAddMeal,
       },
     });
@@ -245,11 +249,13 @@ describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
     // хук, тож без повернення `{id, dateKey}` сторінка не мала б чим
     // скасувати запис — і цей шлях лишався б єдиним із трьох, що пише в
     // журнал мовчки.
-    const handleAddMeal = vi.fn();
+    // `handleAddMeal` віддає день, під яким запис ЛЯГ, — саме його бере
+    // «Скасувати», а не `selectedDate` рендеру, що міг відстати.
+    const handleAddMeal = vi.fn(() => "2026-03-07");
     const { result } = makeHarness({
       log: {
         nutritionLog: {},
-        selectedDate: "2026-03-07",
+        getActiveDate: () => "2026-03-07",
         handleAddMeal,
       },
     });
@@ -273,7 +279,7 @@ describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
     const { result } = makeHarness({
       log: {
         nutritionLog: {},
-        selectedDate: "2020-01-01",
+        getActiveDate: () => "2020-01-01",
         handleAddMeal,
       },
     });

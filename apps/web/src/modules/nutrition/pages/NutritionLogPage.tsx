@@ -44,8 +44,10 @@ export function NutritionLogPage({
         onAddMeal={onOpenAddMeal}
         onAddMealFromSearch={(meal) => {
           const id = newMealId();
-          const dateForLog = log.selectedDate;
-          log.handleAddMeal({ ...meal, id });
+          // День запису віддає сам `handleAddMeal`: `log.selectedDate` цього
+          // рендеру міг відстати від годинника, і «Скасувати» не знайшло б
+          // запис.
+          const dateForLog = log.handleAddMeal({ ...meal, id });
           // Додавання миттєве і без підтвердження, тож тост мусить нести
           // «Скасувати» — як аркуш прийому (`NutritionApp`) і як видалення
           // нижче. Без цього помилковий тап по рядку пошуку коштував

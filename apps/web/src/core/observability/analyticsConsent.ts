@@ -56,8 +56,19 @@
  */
 
 import { logger } from "@shared/lib";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  safeReadLSDurable,
+  safeWriteLSDurable,
+} from "@shared/lib/storage/storage";
 
+// AI-CONTEXT: рішення читається ОДИН раз при імпорті модуля, ще до
+// `bootstrapKvStore()` (`main.tsx` монтує React першим), тобто з
+// localStorage-фолбека. Звичайний `safeWriteLS` після бута пише лише в
+// SQLite warm-cache, де ключа в localStorage немає, тож наступне
+// завантаження бачило `null` і знову питало згоду (аудит 2026-10-01, data-49).
+// Тому і запис, і читання — durable: синхронне LS-дзеркало (як
+// `ONBOARDING_DONE_KEY`). Згода fail-closed: доки рішення не прочитане,
+// `cachedAnalyticsConsent` лишається `false`.
 const DECISION_KEY = "sergeant.analytics_consent_decision.v1";
 
 export type AnalyticsDecision = "granted" | "denied";
@@ -65,9 +76,9 @@ export type AnalyticsDecision = "granted" | "denied";
 type StoredDecision = { v?: unknown; p?: unknown };
 
 function readStored(): StoredDecision | null {
-  // Обʼєкт, а не голий рядок: `safeWriteLS` пише рядки як є (без JSON), а
-  // `safeReadLS` їх парсить як JSON — голе `granted` не прочиталось би.
-  const raw = safeReadLS<StoredDecision>(DECISION_KEY);
+  // Обʼєкт, а не голий рядок: `safeWriteLSDurable` пише рядки як є (без JSON),
+  // а `safeReadLSDurable` їх парсить як JSON — голе `granted` не прочиталось би.
+  const raw = safeReadLSDurable<StoredDecision>(DECISION_KEY);
   return raw && typeof raw === "object" ? raw : null;
 }
 
@@ -115,7 +126,7 @@ function persistDecision(
   // лишається в памʼяті на цю сесію, підписники все одно отримують notify().
   try {
     const stored = pendingServerSync ? { v: next, p: true } : { v: next };
-    if (!safeWriteLS(DECISION_KEY, stored)) {
+    if (!safeWriteLSDurable(DECISION_KEY, stored)) {
       logger.warn("[analyticsConsent] не вдалося зберегти рішення на пристрої");
     }
   } catch (err) {

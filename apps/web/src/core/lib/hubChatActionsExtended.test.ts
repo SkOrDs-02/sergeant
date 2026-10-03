@@ -115,6 +115,11 @@ vi.mock("../../modules/nutrition/lib/shoppingListStorage", async (orig) => {
   };
 });
 
+/** Сід кешу SQLite без повної типізації рядків — тестам досить мінімуму полів. */
+function seedFinykCache(partial: Record<string, unknown>): void {
+  __setFinykSqliteStateCacheForTests(partial as never);
+}
+
 beforeEach(() => {
   // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
   // lives in the SQLite warm caches, not localStorage. Reset all so each
@@ -128,6 +133,9 @@ beforeEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  // data-08: фінансові екзекутори пишуть лише на прогрітому кеші SQLite
+  // (kv UI не пише); спеки, що хочуть власний стан, перезасівають його.
+  seedFinykCache({});
   clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
@@ -155,7 +163,7 @@ function readLS<T>(key: string, fallback: T): T {
 
 describe("find_transaction", () => {
   it("шукає ручну операцію за описом і сумою", () => {
-    __setFinykSqliteStateCacheForTests({
+    seedFinykCache({
       manualExpenses: [
         {
           id: "m_atb",
@@ -201,7 +209,7 @@ describe("find_transaction", () => {
         },
       ] as never[],
     });
-    __setFinykSqliteStateCacheForTests({ hiddenTransactions: ["mono_hidden"] });
+    seedFinykCache({ hiddenTransactions: ["mono_hidden"] });
     const msg = executeAction({
       name: "find_transaction",
       input: { query: "сільпо", amount: 125 },
@@ -213,7 +221,7 @@ describe("find_transaction", () => {
 
 describe("batch_categorize", () => {
   it("у dry-run показує preview і не пише категорії", () => {
-    __setFinykSqliteStateCacheForTests({
+    seedFinykCache({
       manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
         { id: "m_silpo_2", amount: 200, description: "Сільпо доставка" },
@@ -229,7 +237,7 @@ describe("batch_categorize", () => {
   });
 
   it("з dry_run=false записує категорію для matched операцій", () => {
-    __setFinykSqliteStateCacheForTests({
+    seedFinykCache({
       manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
         { id: "m_taxi", amount: 150, description: "Uklon" },
@@ -263,13 +271,12 @@ describe("batch_categorize", () => {
 
 describe("delete_transaction", () => {
   it("видаляє ручну операцію за id", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    seedFinykCache({
+      manualExpenses: [
         { id: "m_keep", amount: 100, type: "expense", date: "2024-06-14" },
         { id: "m_drop", amount: 50, type: "expense", date: "2024-06-14" },
-      ]),
-    );
+      ],
+    });
     const msg = executeAction({
       name: "delete_transaction",
       input: { tx_id: "m_drop" },
@@ -373,9 +380,8 @@ describe("update_budget", () => {
 
 describe("mark_debt_paid", () => {
   it("створює repayment-операцію і закриває борг при повній сумі", () => {
-    localStorage.setItem(
-      "finyk_debts",
-      JSON.stringify([
+    seedFinykCache({
+      manualDebts: [
         {
           id: "d_rent",
           name: "Оренда",
@@ -384,8 +390,8 @@ describe("mark_debt_paid", () => {
           emoji: "🏠",
           linkedTxIds: [],
         },
-      ]),
-    );
+      ],
+    });
     const msg = executeAction({
       name: "mark_debt_paid",
       input: { debt_id: "d_rent" },
@@ -403,9 +409,8 @@ describe("mark_debt_paid", () => {
   });
 
   it("частково гасить борг зі збереженням", () => {
-    localStorage.setItem(
-      "finyk_debts",
-      JSON.stringify([
+    seedFinykCache({
+      manualDebts: [
         {
           id: "d_rent",
           name: "Оренда",
@@ -414,8 +419,8 @@ describe("mark_debt_paid", () => {
           emoji: "🏠",
           linkedTxIds: [],
         },
-      ]),
-    );
+      ],
+    });
     const msg = executeAction({
       name: "mark_debt_paid",
       input: { debt_id: "d_rent", amount: 2000 },

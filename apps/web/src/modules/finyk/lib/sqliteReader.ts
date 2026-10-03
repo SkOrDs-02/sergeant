@@ -468,6 +468,24 @@ function safeStringArray(raw: string | null | undefined): string[] {
   return out;
 }
 
+/**
+ * Оптимістично накладає `partial` на ВЖЕ прогрітий кеш (холодний кеш не
+ * чіпає). Для chat-екшенів, що пишуть синхронно, а канонічний refresh іде
+ * асинхронно після apply: без патча два екшени одного ходу (наприклад,
+ * `set_monthly_plan{income}` і `set_monthly_plan{expense}`) читали б один
+ * і той самий застарілий кеш, і другий стирав би поле першого.
+ *
+ * Не бампає `refreshedAt` і не сповіщає UI: наступний канонічний refresh
+ * (він стартує пізніше й публікується останнім) перепише кеш істинним станом
+ * із SQLite, тож розбіжність, якщо запис не дійшов до бази, самовиліковується.
+ */
+export function patchFinykSqliteStateCache(
+  partial: Partial<SqliteFinykCache>,
+): void {
+  if (cache.refreshedAt === null) return;
+  cache = { ...cache, ...partial, refreshedAt: cache.refreshedAt };
+}
+
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearFinykSqliteCache(): void {
   cache = { ...EMPTY_CACHE };

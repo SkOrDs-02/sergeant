@@ -824,7 +824,7 @@ reset-redirect.mjs і reset-follow.mjs у <scratch>/agents/verify-client-static-
 
 ### `sec-09` [medium] SSE /api/v2/sync/stream переживає sign-out і відкликання сесії та далі стрімить живі дані без обмеження часу
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-09-sync-stream-session
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync
 - **Де:** apps/server/src/modules/sync/syncV2Stream.ts:207-412 (216,331-348,366-411); apps/server/src/routes/sync.ts:80-98; apps/server/src/http/timeout.ts:54-60
 - **Першопричина:** requireSession перевіряє сесію лише на handshake; syncV2Stream запам'ятовує req.user і слухає канал user:&lt;id&gt; до закриття сокета. Немає повторної перевірки сесії, max-age, ліміту одночасних стрімів на користувача і реакції на logout/revoke; heartbeat кожні 25 с тримає з'єднання, таймаут для SSE вимкнено.
@@ -1436,7 +1436,7 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: update-user
 
 ### `sec-17` [medium] Канали для звітів про вразливості й запитів приватності не працюють: security.txt веде на мертвий репозиторій, а email-и на запаркований sergeant.app
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-17-security-contacts (лишилось: робоча скринька з MX на домені проєкту для legal@/privacy@/support@/security@, зараз sergeant.app з Null MX; увімкнення private vulnerability reporting у налаштуваннях SkOrDs-02/sergeant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: security.txt / юридичні сторінки
 - **Де:** apps/web/public/.well-known/security.txt:1-6; apps/web/src/core/legal/legalShared.ts:15-18; scripts/check-security-txt-expiry.sh; .github/workflows/ci.yml:217-218; docs/governance/security/beta-tester-brief.md:8; apps/landing/public/.well-known/
 - **Першопричина:** Після переїздів репозиторію й доменів контакти не оновили. Contact у security.txt веде на Skords-01/Sergeant (не існує), Canonical на 2dmanager.com.ua; legal@, privacy@, security@ і support@sergeant.app живуть на домені з Null MX, запаркованому на продаж (NS afternic). SECURITY.md немає, на лендингу security.txt немає, private vulnerability reporting на SkOrDs-02/sergeant вимкнено.

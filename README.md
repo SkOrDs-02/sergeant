@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-09.
+> **Last touched:** 2026-10-03 by @claude. **Next review:** 2027-01-23.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -335,7 +335,7 @@ Monitoring is described in `docs/operations/observability/README.md`. Key compon
 | `docs/operations/deploy/`        | Deployment instructions                                    |
 | `docs/design/design/`            | Design system: brandbook, colors, module accents           |
 | `docs/governance/governance/`    | Hard rules, review checklist, release policy               |
-| `docs/engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage                |
+| `docs/engineering/integrations/` | Monobank, Railway, Vercel, Dependabot, Voyage              |
 | `docs/work/specs/launch/`        | Monetization, GTM, launch readiness                        |
 | `docs/engineering/mobile/`       | Capacitor, deep links, React Native migration              |
 | `docs/operations/observability/` | SLO, dashboards, metrics, runbook                          |

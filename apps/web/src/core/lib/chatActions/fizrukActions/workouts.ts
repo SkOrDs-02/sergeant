@@ -7,7 +7,15 @@ import {
 } from "@shared/lib/time/kyivTime";
 import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
 import { formatNumberUk } from "@sergeant/shared";
-import { readFizrukWorkouts, persistFizrukWorkouts } from "./shared";
+import {
+  readFizrukWorkouts,
+  persistFizrukWorkouts,
+  persistFizrukCustomExercises,
+} from "./shared";
+import {
+  buildWorkoutItemFromExercise,
+  createChatExerciseResolver,
+} from "./exerciseResolve";
 import type { Workout, WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
 import type {
   PlanWorkoutAction,
@@ -64,6 +72,9 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
   }
   const startedAt = new Date(startedAtTs).toISOString();
   const wid = `w_${Date.now().toString(36)}_${crypto.randomUUID()}`;
+  // data-11: кожна вправа плану отримує справжній `exerciseId` (каталог або
+  // нова custom-вправа) — порожній id сервер відхиляє як missing_exercise_id.
+  const resolver = createChatExerciseResolver();
   const items: WorkoutItem[] = Array.isArray(exercises)
     ? exercises
         .filter((ex) => ex && ex.name)
@@ -81,18 +92,11 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
             weightKg,
             reps,
           }));
-          return {
-            id: `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
-            exerciseId: "",
-            nameUk: String(ex.name).trim(),
-            primaryGroup: "",
-            type: "strength",
-            musclesPrimary: [],
-            musclesSecondary: [],
+          return buildWorkoutItemFromExercise(
+            resolver.resolve(String(ex.name).trim()),
+            `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
             sets,
-            durationSec: 0,
-            distanceM: 0,
-          };
+          );
         })
     : [];
   const newW: Workout = {
@@ -106,6 +110,8 @@ export function planWorkout(action: PlanWorkoutAction): ChatActionResult {
     note: note ? String(note).trim() : "",
     planned: true,
   };
+  // Custom-вправи — ДО тренування: outbox отримає їх раніше за items.
+  persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...readFizrukWorkouts()]);
   const exCount = items.length;
   return `Тренування заплановано на ${targetDate} о ${timeStr}${note ? ` ("${note}")` : ""}: ${exCount} вправ${exCount === 1 ? "а" : exCount >= 2 && exCount <= 4 ? "и" : ""} (id:${wid})`;
@@ -165,28 +171,36 @@ export function logSet(action: LogSetAction): ChatActionResult {
     };
   }
 
-  const itemIdx = workout.items.findIndex(
+  // data-11: item мусить нести справжній `exerciseId` (каталог або custom).
+  const resolver = createChatExerciseResolver();
+  let resolved: ReturnType<typeof resolver.resolve> | null = null;
+  let itemIdx = workout.items.findIndex(
     (it) => it.nameUk.trim().toLowerCase() === exerciseNameLower,
   );
+  if (itemIdx < 0) {
+    // Назву в тренуванні не знайшли — шукаємо ту саму вправу за id: людина
+    // могла сказати «присідання», а в тренуванні вона «Присідання зі штангою».
+    resolved = resolver.resolve(exName);
+    const resolvedId = resolved.id;
+    itemIdx = workout.items.findIndex((it) => it.exerciseId === resolvedId);
+  }
   const existingItem = itemIdx >= 0 ? workout.items[itemIdx] : undefined;
   if (existingItem) {
     workout.items[itemIdx] = {
       ...existingItem,
+      // Item зі старого чат-запису міг мати порожній id — лагодимо тут.
+      exerciseId:
+        existingItem.exerciseId || (resolved ?? resolver.resolve(exName)).id,
       sets: [...(existingItem.sets ?? []), ...newSets],
     };
   } else {
-    workout.items.push({
-      id: `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
-      exerciseId: "",
-      nameUk: exName,
-      primaryGroup: "",
-      type: "strength",
-      musclesPrimary: [],
-      musclesSecondary: [],
-      sets: newSets,
-      durationSec: 0,
-      distanceM: 0,
-    });
+    workout.items.push(
+      buildWorkoutItemFromExercise(
+        resolved ?? resolver.resolve(exName),
+        `i_${Date.now().toString(36)}_${crypto.randomUUID()}`,
+        newSets,
+      ),
+    );
   }
 
   let nextWorkouts: Workout[];
@@ -197,6 +211,8 @@ export function logSet(action: LogSetAction): ChatActionResult {
     nextWorkouts = workouts.slice();
     nextWorkouts[targetIdx] = workout;
   }
+  // Custom-вправа — ДО тренування: outbox отримає її раніше за item.
+  persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts(nextWorkouts);
 
   const weightLabel = weightKg > 0 ? `${formatNumberUk(weightKg)} кг × ` : "";
@@ -299,8 +315,12 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
     return "Некоректна дата.";
   }
   const wid = `w_${Date.now().toString(36)}_${crypto.randomUUID()}`;
+  // Item зі старого чат-запису міг лишитись із порожнім `exerciseId` —
+  // не переносимо його далі, а резолвимо за назвою (data-11).
+  const resolver = createChatExerciseResolver();
   const copiedItems: WorkoutItem[] = source.items.map((item, i) => ({
     ...item,
+    exerciseId: item.exerciseId || resolver.resolve(item.nameUk).id,
     id: `i_${Date.now().toString(36)}_${i}_${crypto.randomUUID()}`,
     sets: (item.sets ?? []).map((s) => ({ ...s })),
   }));
@@ -315,6 +335,7 @@ export function copyWorkout(action: CopyWorkoutAction): ChatActionResult {
     note: source.note ? `Копія: ${source.note}` : "",
     planned: true,
   };
+  persistFizrukCustomExercises(resolver.created);
   persistFizrukWorkouts([newW, ...workouts]);
   return `Тренування скопійовано (${source.items.length} вправ) на ${targetDate} (id:${wid})`;
 }

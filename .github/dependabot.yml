@@ -1,26 +1,22 @@
 # Dependabot configuration for the Sergeant monorepo.
 #
-# **Per ADR-0044** (`docs/governance/adr/0044-renovate-vs-dependabot.md`) — Dependabot's
-# scope is **security-only fallback**. Regular weekly bumps are owned by
-# Renovate (`renovate.json`); Dependabot lifts security-updates daily so a
-# CVE disclosed Tuesday lands in a PR Wednesday morning, not next Monday.
+# **Per ADR-0103** (`docs/governance/adr/0103-dependabot-only-dependency-updates.md`)
+# Dependabot — єдиний інструмент оновлення залежностей. Renovate на репо не
+# встановлено, `renovate.json` видалено (ADR-0044 superseded). Гід для роботи
+# з PR: `docs/engineering/integrations/dependabot-usage.md`.
 #
-# Scopes kept here:
-# - **npm** : security updates only, daily.
-# - **github-actions** : SHA-pin rotation (overlap з Renovate `pinDigests:
-#   true` навмисний — supply-chain integrity критична).
-# - **docker** : same logic as github-actions.
+# Scopes:
+# - **npm** : щодня; security-оновлення однією групою `security-updates`,
+#   звичайні оновлення версій — окремий PR на пакет.
+# - **github-actions** : щотижня; оновлює дії, вже закріплені на SHA. Нову дію
+#   пінуй на SHA вручну — Dependabot тег на SHA не переводить.
+# - **docker** : щотижня; лише Dockerfile (`Dockerfile.api`, `ops/grafana-alloy`).
+#   Digest `pgvector/pgvector` у `docker-compose.yml` і `services:` воркфлоу
+#   сюди не входить — його піднімають вручну
+#   (`docs/engineering/development/local-postgres-setup.md` § Bumping the SHA).
 #
-# Scopes that used to live here (production-deps / dev-deps groups) belong
-# to Renovate now; видалено щоб уникнути duplicate-PR-noise.
-#
-# Воркфлоу авто-мерджу (`dependabot-automerge.yml`) у репо більше немає.
-#
-# Увага (2026-10-03): Renovate на GitHub-репо зараз не працює (немає ні його
-# PR, ні Dependency Dashboard), тож звичайні оновлення версій npm фактично
-# приходять від Dependabot, попри ADR-0044. Вимикати їх тут
-# (`open-pull-requests-limit: 0`) без працюючого Renovate не можна, бо тоді
-# оновлень версій не буде зовсім. Це рішення власника.
+# Автомерджу немає: воркфлоу `dependabot-automerge.yml` у репо більше немає,
+# кожен PR мерджить людина після зеленого CI.
 
 version: 2
 updates:
@@ -42,10 +38,9 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
-    # Без `production-deps` / `dev-deps` groups — їх власник Renovate
-    # (див. ADR-0044). Якщо Dependabot створить non-security PR з npm
-    # ecosystem, це bug у налаштуванні і має бути закритий вручну з
-    # коментарем «duplicate of Renovate group: <name>».
+    # Груп для звичайних оновлень версій не налаштовано (ADR-0103): кожен
+    # пакет приходить окремим PR. Пакети, що мусять іти разом (`@sentry/*`,
+    # `@opentelemetry/*`), рев'юер підтягує вручну в тому ж PR.
     ignore:
       # Manual pins via pnpm.overrides in package.json — Dependabot must
       # not propose updates that fight the override pin. Keep this list in

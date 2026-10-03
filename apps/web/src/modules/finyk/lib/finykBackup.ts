@@ -54,15 +54,10 @@ import {
   FINYK_BACKUP_VERSION,
   FINYK_FIELD_TO_STORAGE_KEY,
   normalizeFinykBackup,
-  normalizeFinykSyncPayload,
   type FinykBackup,
 } from "@sergeant/finyk-domain/backup";
 
-export {
-  FINYK_BACKUP_VERSION,
-  normalizeFinykBackup,
-  normalizeFinykSyncPayload,
-};
+export { FINYK_BACKUP_VERSION, normalizeFinykBackup };
 export type { FinykBackup };
 
 /**

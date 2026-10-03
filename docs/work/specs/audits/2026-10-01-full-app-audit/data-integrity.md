@@ -971,7 +971,7 @@ Scripts: <scratch>/agents/verify-client-static-gap-backup-restore-file-imports/i
 
 ### `data-08` [high] Фінансові чат-дії читають застарілі kv-ключі замість SQLite: план місяця затирається, ліміти дублюються, борги «не знайдено», undo стирає план
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-08-11-chat-executors
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (finykActions, chatBridge)
 - **Де:** apps/web/src/core/lib/chatActions/finykActions/budgets.ts:53-208; apps/web/src/core/lib/chatActions/finykActions/debts.ts:76-121; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:120-122; apps/web/src/core/lib/chatActions/finykActions/search.ts:205-226; apps/web/src/core/lib/chatActions/finykActions/dualWriteBridge.ts:99-110,260-285; apps/web/src/modules/finyk/lib/sqliteWriter/chatBridge.ts:145-181
 - **Першопричина:** Екзекутори budgets, debts, transactions і search читають ls('finyk_budgets' | 'finyk_monthly_plan' | 'finyk_debts' | ...), але UI ці ключі більше не пише: слоти на useReadonlyPersist, канон у SQLite, а дренаж LS→SQLite прибрано у 2026-08. mirrorFinykChatMonthlyPlan записує kv-похідний monthlyPlanJson поверх канонічних prefs цілком, а undo бере prev із порожнього kv.
@@ -1207,7 +1207,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-11` [high] Підходи й вправи, записані через чат (log_set, plan_workout), ніколи не доходять на сервер: порожній exerciseId відхиляється
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-08-11-chat-executors
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (fizrukActions) + server: sync fizruk
 - **Де:** apps/web/src/core/lib/chatActions/fizrukActions/workouts.ts:86,180; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:362; apps/server/src/modules/sync/fizruk/applySync.ts:202-206
 - **Першопричина:** Чат-екзекутори створюють WorkoutItem з порожнім рядком exerciseId, адаптер шле exercise_id = '', і сервер повертає rejected missing_exercise_id; підходи потім падають на FK workout_item_id. Відмова термінальна, ретраю немає.
@@ -1443,7 +1443,7 @@ node <scratch>/agents/verify-api-live-sync-live/c3/w1_watermark.mjs 3 → trial0
 
 ### `data-13` [medium] Фінік до прогріву кешу мовчки відкидає нові записи: витрата чи актив, додані в перші секунди холодного старту, зникають попри тост «Витрату додано.»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-13-26-finyk-cold-start (dual-write до прогріву пише рядки й відкидає лише prefs-зріз; сабміт ручної витрати заблоковано спінером до `storageReady` з таймаутом 15 с; тост лишається синхронним, без «підтвердженого запису» — окремої API для цього немає; e2e «холодний старт» не додано, покрито інтеграційним Vitest на справжньому SQLite)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (useFinykDualWriteSync, useFinykStorageSlots)
 - **Де:** apps/web/src/modules/finyk/hooks/useFinykDualWriteSync.ts:104-115; apps/web/src/modules/finyk/hooks/useFinykStorageSlots.ts:198-241; apps/web/src/modules/finyk/FinykApp.tsx:404-419
 - **Першопричина:** Гард, доданий у 0170278e (2026-10-01) для захисту merchantRules, поки storageReady === false лише переносить prevRef = next і нічого не пише: ні в SQLite, ні в журнал, ні в outbox. Після прогріву overlay перезаписує всі слоти з кешу, а FinykApp показує тост успіху без перевірки.
@@ -2319,7 +2319,7 @@ DB (read-only). Deleted by ops 22624/22625: 9424f65a… categoryIds [cus_muqjsgs
 
 ### `data-26` [medium] Посилання /finyk?sync=… без підтвердження підміняє або стирає бюджети, план, категорії й приховані рахунки, а на холодному старті хибно звітує «синхронізовано»
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-13-26-finyk-cold-start (приймач `?sync=`, `loadFromUrl`, `generateSyncLink` і `normalizeFinykSyncPayload` видалено; JSON-бекап із файлу не чіпали)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Фінік (useFinykBackupSync.loadFromUrl)
 - **Де:** apps/web/src/modules/finyk/FinykApp.tsx:171-190; apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts:79-108,192-213; packages/finyk-domain/src/backup.ts:95-260; apps/web/src/core/app/ShellDeepLinkBridge.tsx:51-66; apps/mobile-shell/src/index.ts:123-150
 - **Першопричина:** FinykApp на маунті викликає loadFromUrl, якщо в URL є sync=, і applyData замінює колекції цілком (порожній масив означає стирання) без прев'ю й підтвердження; нормалізатор не валідує форму елементів. Генератора посилань в UI вже немає, живий лише приймач, а на холодному старті запис ще й відкидає гард storageReady з data-13.
@@ -3389,7 +3389,7 @@ pantryConsume.ts:131-137 у гілці без варіантів записує 
 
 ### `data-42` [medium] Їжа: обраний день журналу «замерзає» на момент відкриття, тож після півночі страви пишуться у вчорашній день
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-42-43-nutrition-day-usda
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (useNutritionLog, NutritionApp)
 - **Де:** apps/web/src/modules/nutrition/hooks/useNutritionLog.ts:75-77,143; apps/web/src/modules/nutrition/NutritionApp.tsx:322-372,459; apps/web/src/modules/nutrition/components/NutritionDashboard.tsx:69
 - **Першопричина:** selectedDate обчислюється один раз у useState-ініціалізаторі, і FAB, hero та wrappedSaveMeal пишуть саме в нього; обробки зміни доби (як useDayRollover у Рутині) в модулі немає, а дашборд рахує today на кожному рендері.
@@ -3433,7 +3433,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-43` [medium] USDA-результати пошуку без енергії показуються й записуються як 0 ккал при ненульових БЖВ
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-42-43-nutrition-day-usda
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition (normalizers/usda)
 - **Де:** apps/server/src/lib/normalizers/usda.ts:165-190
 - **Першопричина:** normalizeUSDASearch читає енергію лише з nutrient 1008 і підставляє 0, коли її немає, а Foundation-продукти USDA віддають енергію як 2047/2048; hasSomeMacro такий продукт пропускає, клієнт не фільтрує.
@@ -3769,7 +3769,7 @@ Read-only psql: zz_audit_junk містить 3 рядки rejected/table_not_all
 
 ### `data-49` [medium] Рішення про згоду на аналітику не зберігається: банер повертається після кожного перезавантаження, а «Дозволити» гостя не доходить на сервер
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-18-data-49-analytics-consent
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: observability (analyticsConsent)
 - **Де:** apps/web/src/core/observability/analyticsConsent.ts:79,118; apps/web/src/shared/lib/storage/storage.ts:242-318
 - **Першопричина:** analyticsConsent читає рішення один раз при імпорті модуля, ще до bootstrapKvStore(), тобто з LS-фолбека, а persistDecision пише через safeWriteLS у SQLite warm-cache. Ключ у localStorage так і не з'являється, тож після reload рішення не видно.
