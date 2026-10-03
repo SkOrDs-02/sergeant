@@ -9,7 +9,12 @@ import {
   openSergeantDb,
 } from "../../../shared/lib/idb/sergeantDb";
 import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
-import { persistNutritionRecipes } from "./nutritionStorage.js";
+import {
+  removeNutritionRecipe,
+  upsertNutritionRecipe,
+} from "./nutritionStorage.js";
+import { getNutritionDualWriteUserId } from "./sqliteWriter/index.js";
+import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
 /**
  * Pre-PR-#010 saved recipes lived in a dedicated `hub_nutrition_recipe_book`
@@ -36,6 +41,38 @@ export interface SavedRecipe {
   updatedAt: number;
 }
 
+/**
+ * data-09: запис книги в IndexedDB. Стор `nutrition_recipes` лежить у спільній
+ * для пристрою `sergeant-db` (не user-scoped), тож кожен запис несе `ownerId` -
+ * id користувача, що його зберіг, а читання віддає лише його власні записи.
+ * Джерело істини книги поточного користувача - його SQLite-кеш
+ * (`cache.recipes`, свій для кожного акаунта): читання зливає його з власними
+ * записами IDB за id. Записи без `ownerId` (до партиціювання, анонімна міграція)
+ * належать користувачу, лише якщо їхній id є в його кеші; записи інших акаунтів
+ * не показуємо й не видаляємо локально.
+ */
+interface StoredRecipe extends SavedRecipe {
+  ownerId?: string;
+}
+
+/**
+ * Рецепти, видалені в цій сесії, але ще присутні в SQLite-кеші (op ще не
+ * застосований): без цього читання одразу після видалення воскресило б рядок із
+ * кешу. Ключ `owner:id`; повторне збереження id знімає позначку.
+ */
+const recentlyDeleted = new Set<string>();
+const tombstoneKey = (owner: string, id: string) => `${owner}:${id}`;
+
+function cachedRecipesOfCurrentUser(): SavedRecipe[] {
+  const cache = getCachedNutritionSqliteState();
+  return cache.refreshedAt === null ? [] : cache.recipes;
+}
+
+function stripOwner(r: StoredRecipe): SavedRecipe {
+  const { ownerId: _ownerId, ...recipe } = r;
+  return recipe;
+}
+
 export type SaveRecipeResult =
   { ok: true; recipe: SavedRecipe } | { ok: false; error: string };
 
@@ -54,7 +91,10 @@ const ensureMigrated = (): Promise<void> =>
       });
       const writeTx = sergeantDb.transaction(STORE, "readwrite");
       const writeStore = writeTx.objectStore(STORE);
-      for (const recipe of all) writeStore.put(recipe);
+      const ownerId = getNutritionDualWriteUserId();
+      for (const recipe of all) {
+        writeStore.put(ownerId ? { ...recipe, ownerId } : recipe);
+      }
       await txDone(writeTx);
     },
   });
@@ -129,14 +169,32 @@ export async function listSavedRecipesOrThrow(
   if (!db) throw new Error("Saved recipe storage unavailable");
   const tx = db.transaction(STORE, "readonly");
   const store = tx.objectStore(STORE);
-  const all = await new Promise<SavedRecipe[]>((resolve, reject) => {
+  const all = await new Promise<StoredRecipe[]>((resolve, reject) => {
     const r = store.getAll();
     r.onsuccess = () =>
-      resolve(Array.isArray(r.result) ? (r.result as SavedRecipe[]) : []);
+      resolve(Array.isArray(r.result) ? (r.result as StoredRecipe[]) : []);
     r.onerror = () => reject(r.error);
   });
   await txDone(tx);
-  return all
+  // Власник невідомий (auth ще резолвиться) - не показуємо нічого: спільна IDB
+  // могла б віддати чужі рецепти.
+  const owner = getNutritionDualWriteUserId();
+  if (!owner) return [];
+  const byId = new Map<string, SavedRecipe>();
+  // Спершу кеш (рядки без ownerId з IDB, що є в кеші, так само потрапляють
+  // сюди), далі власні записи IDB: свіжіший за updatedAt перемагає.
+  for (const r of cachedRecipesOfCurrentUser()) {
+    if (!recentlyDeleted.has(tombstoneKey(owner, r.id))) byId.set(r.id, r);
+  }
+  for (const stored of all) {
+    if (stored.ownerId !== owner) continue;
+    const r = stripOwner(stored);
+    const cached = byId.get(r.id);
+    if (!cached || (r.updatedAt || 0) >= (cached.updatedAt || 0)) {
+      byId.set(r.id, r);
+    }
+  }
+  return [...byId.values()]
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
     .slice(0, Math.max(1, Number(limit) || 200));
 }
@@ -150,14 +208,29 @@ export async function saveRecipeToBook(
     await ensureMigrated();
     const db = await openSergeantDb();
     if (!db) return { ok: false, error: "Не вдалося зберегти рецепт" };
+    const owner = getNutritionDualWriteUserId();
+    if (owner) recentlyDeleted.delete(tombstoneKey(owner, r.id));
     const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).put(r);
+    tx.objectStore(STORE).put(owner ? { ...r, ownerId: owner } : r);
     await txDone(tx);
-    persistNutritionRecipes(await listSavedRecipes(200));
+    // data-09: лише дельта цієї дії, а не весь вміст спільної IDB.
+    upsertNutritionRecipe(r);
     return { ok: true, recipe: r };
   } catch {
     return { ok: false, error: "Не вдалося зберегти рецепт" };
   }
+}
+
+function readStoredRecipe(
+  db: IDBDatabase,
+  key: string,
+): Promise<StoredRecipe | undefined> {
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, "readonly");
+    const r = tx.objectStore(STORE).get(key);
+    r.onsuccess = () => resolve(r.result as StoredRecipe | undefined);
+    r.onerror = () => reject(r.error);
+  });
 }
 
 export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
@@ -167,10 +240,27 @@ export async function deleteSavedRecipe(id: unknown): Promise<boolean> {
     await ensureMigrated();
     const db = await openSergeantDb();
     if (!db) return false;
-    const tx = db.transaction(STORE, "readwrite");
-    tx.objectStore(STORE).delete(key);
-    await txDone(tx);
-    persistNutritionRecipes(await listSavedRecipes(200));
+    // Невідомий власник: не знаємо, чий це запис, - нічого не чіпаємо.
+    const owner = getNutritionDualWriteUserId();
+    if (!owner) return false;
+    const existing = await readStoredRecipe(db, key);
+    // Власний кеш має пріоритет: id у ньому означає, що рецепт цього
+    // користувача (кеш свій для кожного акаунта).
+    const inOwnCache = cachedRecipesOfCurrentUser().some((r) => r.id === key);
+    // Запис чужого акаунта у спільній IDB, якого немає в нашому кеші, або
+    // безвласний запис невідомого походження: ні локально, ні на сервер.
+    if (existing && !inOwnCache && existing.ownerId !== owner) return false;
+    // Рецепт цього користувача: власний запис IDB або безвласний (до
+    // партиціювання, анонімна міграція), що є в його кеші.
+    if (existing && (existing.ownerId === owner || !existing.ownerId)) {
+      const tx = db.transaction(STORE, "readwrite");
+      tx.objectStore(STORE).delete(key);
+      await txDone(tx);
+    }
+    recentlyDeleted.add(tombstoneKey(owner, key));
+    // data-09: один `recipe-delete`, а не диф усього списку з IDB. Диф іде
+    // проти кешу ПОТОЧНОГО користувача, тож id, якого в ньому немає, op не дає.
+    removeNutritionRecipe(key);
     return true;
   } catch {
     return false;

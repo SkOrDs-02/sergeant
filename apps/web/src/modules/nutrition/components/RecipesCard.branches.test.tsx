@@ -186,6 +186,27 @@ describe("RecipesCard — delete confirm branches", () => {
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
+  it("не каже «Видалено», коли deleteSavedRecipe відмовив", async () => {
+    mockDeleteSavedRecipe.mockResolvedValue(false);
+    mockListSavedRecipes.mockResolvedValue([SAVED_RECIPE]);
+    renderCard(makeProps());
+    await expandSavedSection();
+    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+    await waitFor(() =>
+      expect(screen.getByRole("alertdialog")).toBeInTheDocument(),
+    );
+    const dialog = screen.getByRole("alertdialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
+    await waitFor(() =>
+      expect(toastSpies.error).toHaveBeenCalledWith(
+        expect.stringContaining("Не вдалося видалити рецепт"),
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      ),
+    );
+    expect(toastSpies.success).not.toHaveBeenCalled();
+  });
+
   it("closes delete dialog without deleting when cancelled", async () => {
     mockListSavedRecipes.mockResolvedValue([SAVED_RECIPE]);
     renderCard(makeProps());
