@@ -93,7 +93,7 @@ export function WorkoutSetRpeMenu({
             "flex h-11 w-9 shrink-0 cursor-pointer select-none items-center justify-center rounded-xl border text-style-caption font-semibold tabular-nums transition-colors",
             "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
             rpe != null
-              ? "border-fizruk-strong bg-fizruk-surface text-fizruk-strong dark:text-fizruk"
+              ? "border-fizruk-edge bg-fizruk-surface text-fizruk-strong dark:text-fizruk"
               : "border-line bg-panelHi text-subtle hover:text-text",
           )}
         >

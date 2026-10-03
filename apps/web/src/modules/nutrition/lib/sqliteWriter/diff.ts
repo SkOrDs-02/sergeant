@@ -385,6 +385,19 @@ function diffWaterLogOps(
 // Stage 11 — shopping list diff
 // -----------------------------------------------------------------------
 
+function isEmptyShoppingListJson(sl: { dataJson: string }): boolean {
+  try {
+    const parsed = JSON.parse(sl.dataJson) as { categories?: unknown };
+    return (
+      !parsed ||
+      !Array.isArray(parsed.categories) ||
+      parsed.categories.length === 0
+    );
+  } catch {
+    return false;
+  }
+}
+
 function diffShoppingListOps(
   prev: NutritionDualWriteState,
   next: NutritionDualWriteState,
@@ -392,6 +405,11 @@ function diffShoppingListOps(
 ): void {
   if (!shoppingListChanged(prev.shoppingList, next.shoppingList)) return;
   if (!next.shoppingList) return;
+  // data-03: «рядка немає → порожній дефолт» не є зміною. Інакше холодний
+  // маунт (новий пристрій) емітить shopping-list-set зі свіжим client_ts,
+  // і whole-row LWW затирає реальний список на сервері.
+  if (prev.shoppingList === null && isEmptyShoppingListJson(next.shoppingList))
+    return;
   ops.push({ kind: "shopping-list-set", shoppingList: next.shoppingList });
 }
 

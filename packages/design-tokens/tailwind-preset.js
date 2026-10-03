@@ -382,7 +382,19 @@ const preset = {
         fizruk: {
           DEFAULT: moduleColors.fizruk.primary,
           secondary: moduleColors.fizruk.secondary,
-          surface: moduleColors.fizruk.surface,
+          // `surface` — тема-залежна тонована заливка (2026-10-02). Була
+          // статичним hex `moduleColors.fizruk.surface` (cyan-50), тож у темній
+          // темі світла заливка лишалась під світлішим текстом: вибраний чип
+          // сесії 1.39:1, лічильник 1.05:1. Тепер `--c-fizruk-surface`
+          // (світла cyan-50, темна — cyan-700 @15% над панеллю, дзеркало пари
+          // `dark:bg-fizruk-surface-dark/15`). Fallback — той самий cyan-50,
+          // щоб платформа без змінної (мобільний `global.css`) рендерила
+          // рівно те, що й раніше. ЛИШЕ fizruk: `finyk`/`routine`/`nutrition`
+          // `.surface` лишаються статичними, бо там усі живі вживання, крім hover у
+          // `DayReportSheet`, несуть ручну `dark:`-пару; у Фізруку її бракувало в 13
+          // з 15 місць, а саме такий дефект ручні пари й плодять (див.
+          // коментар до `textColor` нижче).
+          surface: `rgb(var(--c-fizruk-surface, ${hexToRgbTriple(moduleColors.fizruk.surface)}) / <alpha-value>)`,
           accent: moduleColors.fizruk.accent,
           hover: brandColors.cyan[600],
           strong: brandColors.cyan[800],
