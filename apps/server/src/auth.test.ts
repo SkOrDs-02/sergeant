@@ -848,6 +848,35 @@ describe("auth config — sec-08: нативний контур вимкнени
     }
   });
 
+  it("production: disabledPaths містить і /verify-password (sec-10), і проксі (sec-08)", async () => {
+    // Два PR задавали `disabledPaths` окремо; spread одного тихо перезаписував
+    // список іншого саме в production, а test-env (expo увімкнено) цього не
+    // бачив. Пін продового складу і 404 на обох маршрутах.
+    try {
+      const prodAuth = (await loadAuth({
+        NODE_ENV: "production",
+      })) as AuthLike & {
+        options: { disabledPaths?: string[] };
+      };
+      expect(prodAuth.options.disabledPaths).toEqual(
+        expect.arrayContaining([
+          "/verify-password",
+          "/expo-authorization-proxy",
+        ]),
+      );
+      const res = await prodAuth.handler(
+        new Request("http://localhost:3000/api/auth/verify-password", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ password: "x" }),
+        }),
+      );
+      expect(res.status).toBe(404);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("production: явне AUTH_EXPO_PLUGIN_ENABLED=false теж дає 404", async () => {
     try {
       const prodAuth = await loadAuth({

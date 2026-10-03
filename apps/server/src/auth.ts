@@ -17,6 +17,7 @@ import { db } from "./drizzle.js";
 import pool from "./db.js";
 import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
+import { guardUserName } from "./auth/sanitizeUserName.js";
 import {
   hardenSessionBefore,
   stripSessionTokenAfter,
@@ -288,15 +289,27 @@ export const auth = betterAuth({
   baseURL: getBaseURL(),
   basePath: "/api/auth",
   /**
-   * sec-08: беззастережний 404 на проксі, навіть якщо плагін колись підключать
-   * повторно, а прапорець вимкнено. Без `expo()` ендпоінта й так немає.
+   * Вимкнені шляхи Better Auth (віддають 404):
+   *  - sec-10: `POST /verify-password`. Клієнти його не викликають (web
+   *    користується лише `change-password`; mobile/mobile-shell цього
+   *    ендпоінта не знають), а як окремий оракул поточного пароля він давав
+   *    підбір без app-ліміту (вбудований Better Auth — 100/10 с на IP,
+   *    in-memory) плюс scrypt на кожну спробу. `change-password` і
+   *    `DELETE /api/me` лишаються і лімітуються в
+   *    `http/passwordCheckRateLimit.ts`.
+   *  - sec-08: `GET /expo-authorization-proxy`, коли `expo()` вимкнено:
+   *    беззастережний 404, навіть якщо плагін колись підключать повторно, а
+   *    прапорець вимкнено. Без `expo()` ендпоінта й так немає.
    *
    * AI-DANGER: усі вимкнені шляхи тримай ОДНИМ ключем `disabledPaths` тут.
    * Другий такий ключ чи spread `{ disabledPaths }` деінде в цьому об'єкті
-   * тихо перезапише цей список (тест `auth.test.ts` цього не побачить, бо в
-   * test-env плагін увімкнено).
+   * тихо перезапише цей список. Продовий склад пінить `auth.test.ts`
+   * («production: disabledPaths …»).
    */
-  disabledPaths: isExpoPluginEnabled() ? [] : ["/expo-authorization-proxy"],
+  disabledPaths: [
+    "/verify-password",
+    ...(isExpoPluginEnabled() ? [] : ["/expo-authorization-proxy"]),
+  ],
   user: {
     deleteUser: {
       /**
@@ -463,7 +476,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (data) => {
+        before: async (data, context) => {
           // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу;
           // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
           // Стоїть саме тут, а не на формі реєстрації: `user.create`
@@ -475,7 +488,11 @@ export const auth = betterAuth({
               message: "Реєстрація зараз закрита.",
             });
           }
-          const result = sanitizeUserImage(data);
+          // sec-16: `name` без межі роздуває session_data-куку до 431 на
+          // кожному запиті; режими reject/truncate — в `sanitizeUserName.ts`.
+          const result = sanitizeUserImage(
+            guardUserName(data, context, "create"),
+          );
           if (result.imageStripped) {
             logger.warn(
               {
@@ -537,8 +554,11 @@ export const auth = betterAuth({
         },
       },
       update: {
-        before: async (data) => {
-          const result = sanitizeUserImage(data);
+        before: async (data, context) => {
+          // sec-16: див. коментар в `create.before`.
+          const result = sanitizeUserImage(
+            guardUserName(data, context, "update"),
+          );
           if (result.imageStripped) {
             logger.warn(
               {
