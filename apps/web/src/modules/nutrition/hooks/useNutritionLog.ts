@@ -3,11 +3,19 @@
  * Status: Active
  */
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
 import { digestKeys } from "@shared/lib/api/queryKeys";
 import { todayISODate } from "@sergeant/nutrition-domain";
+import { useDeviceDayKey } from "@shared/hooks/useDeviceDayKey";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
@@ -72,8 +80,28 @@ export function useNutritionLog() {
   // ADR-0078: активний день журналу — день ПРИСТРОЮ, не Kyiv. Це і є ключ,
   // під яким запис лягає в лог, тож усе, що читає "сьогодні" з того самого
   // логу (LogCard, Dashboard, quick-chips), мусить рахувати той самий день.
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    todayISODate(),
+  //
+  // AI-CONTEXT: день не заморожується на момент монтування. PWA лишають
+  // відкритою через північ, і заморожений `selectedDate` клав ранковий
+  // сніданок у вчорашній день, а дашборд (він рахує "сьогодні" щоренду)
+  // показував "0 прийомів". Тому стан — це ЯВНИЙ вибір користувача
+  // (`pickedDate`), а коли вибору нема (`null`), активний день іде за
+  // `useDeviceDayKey()`, який сам перевертається на межі доби (таймер +
+  // `visibilitychange`). Явно обраний день (стрілки, пошук, deep-link) не
+  // чіпаємо. Вибір "сьогодні" теж зберігається як `null` — це "стежити за
+  // сьогодні", а не прибити вчорашню дату після півночі.
+  const deviceDay = useDeviceDayKey();
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
+  const selectedDate = pickedDate ?? deviceDay;
+  const setSelectedDate: Dispatch<SetStateAction<string>> = useCallback(
+    (next) => {
+      setPickedDate((prev) => {
+        const today = todayISODate();
+        const value = typeof next === "function" ? next(prev ?? today) : next;
+        return value === today ? null : value;
+      });
+    },
+    [],
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
   const [storageErr, setStorageErr] = useState("");
@@ -140,15 +168,18 @@ export function useNutritionLog() {
    * Add a meal to the currently selected date and close the add-meal sheet.
    */
   const handleAddMeal = (meal: Partial<Meal>) => {
-    setNutritionLog((log) => addLogEntry(log, selectedDate, meal));
+    // День береться в момент збереження: вкладка могла перетнути північ,
+    // а таймер `useDeviceDayKey` ще не встиг перерендерити хук.
+    const targetDate = pickedDate ?? todayISODate();
+    setNutritionLog((log) => addLogEntry(log, targetDate, meal));
     setAddMealSheetOpen(false);
     // Момент рахується з поточного стану хука, а не всередині оновлювача:
     // оновлювач React кличе пізніше і може кликати двічі. `addLogEntry`
     // тут чистий, тож «після» для моменту збігається з тим, що ляже в лог.
     recordMealMoment(
       nutritionLog,
-      addLogEntry(nutritionLog, selectedDate, meal),
-      selectedDate,
+      addLogEntry(nutritionLog, targetDate, meal),
+      targetDate,
     );
     // Телеметрія (Хвиля 2, `nutrition_meal_logged`). Fire-and-forget поза
     // state-updater-ом: `setNutritionLog` — оновлювач, і сайд-ефект у ньому
@@ -227,8 +258,9 @@ export function useNutritionLog() {
    * Copy all meals from the previous day into the currently selected date.
    */
   const duplicateYesterday = useCallback(() => {
-    setNutritionLog((log) => duplicatePreviousDayMeals(log, selectedDate));
-  }, [selectedDate, setNutritionLog]);
+    const date = pickedDate ?? todayISODate();
+    setNutritionLog((log) => duplicatePreviousDayMeals(log, date));
+  }, [pickedDate, setNutritionLog]);
 
   /**
    * Replace the entire log with data parsed from a JSON string.
