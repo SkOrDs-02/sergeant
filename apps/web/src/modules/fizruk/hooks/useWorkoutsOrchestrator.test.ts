@@ -23,6 +23,9 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeReadLS: vi.fn(() => null),
   safeReadLSValidated: vi.fn(() => null),
   safeListLSKeys: vi.fn(() => []),
+  // `analyticsConsent` (транзитивно через posthog) читає/пише рішення durable-парою.
+  safeReadLSDurable: vi.fn(() => null),
+  safeWriteLSDurable: vi.fn(() => true),
   webKVStore: { get: vi.fn(() => null), set: vi.fn(), remove: vi.fn() },
 }));
 

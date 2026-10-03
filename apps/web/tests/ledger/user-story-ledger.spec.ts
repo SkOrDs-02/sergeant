@@ -90,11 +90,6 @@ const STORY_ROUTES: StoryRoute[] = [
     auth: "user",
     storage: { ...WARM_STORAGE, pwa_pending_action: "add-expense" },
   },
-  {
-    id: "WEB-FINYK-011",
-    path: "/finyk?sync=https%3A%2F%2Fexample.test%2Fbackup",
-    auth: "user",
-  },
   { id: "WEB-NUTRITION-007", path: "/nutrition", auth: "user" },
   { id: "WEB-NUTRITION-008", path: "/nutrition", auth: "user" },
   { id: "WEB-NUTRITION-009", path: "/nutrition", auth: "user" },

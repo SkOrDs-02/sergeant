@@ -20,6 +20,7 @@
  */
 
 import { anchoredCompletionBounds } from "./dayAnchor";
+import { isDualWriteOutcomeClean } from "../../../core/durability/dualWriteJournal.js";
 import {
   ROUTINE_STORAGE_KEY,
   ROUTINE_EVENT,
@@ -190,7 +191,15 @@ export async function saveRoutineStateDurable(
     const prev = writeThroughRoutineCaches(next);
     const outcome = await dualWriteRoutineState(prev, next);
     emitRoutineStorage();
-    return outcome.status === "applied";
+    // `applied` без `errored`: адаптер ловить виняток кожного опа і все одно
+    // повертає `applied` (data-05), тож «довговічно» = жоден оп не впав.
+    const durable = isDualWriteOutcomeClean(outcome);
+    // Тихий збій SQL (IOERR/FULL/BUSY) не має виглядати успіхом: той самий
+    // банер, що й для синхронного збою (`StorageErrorBanner`).
+    if (outcome.status === "applied" && !durable) {
+      emitRoutineStorageError(new Error("sqlite write errored"));
+    }
+    return durable;
   } catch (err) {
     emitRoutineStorageError(err);
     return false;

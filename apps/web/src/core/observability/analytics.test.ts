@@ -27,6 +27,9 @@ vi.mock("./posthog", () => ({
 vi.mock("@shared/lib/storage/storage", () => ({
   safeReadLS: safeReadLSFn,
   safeWriteLS: safeWriteLSFn,
+  // `analyticsConsent` зберігає рішення через durable-пару (ті самі моки).
+  safeReadLSDurable: safeReadLSFn,
+  safeWriteLSDurable: safeWriteLSFn,
   safeListLSKeys: vi.fn(() => []),
 }));
 
