@@ -66,10 +66,43 @@ export interface NormalizedUSDASearch {
 
 export const FDC_NUTRIENT = {
   kcal: 1008,
+  /**
+   * Foundation / SR Legacy продукти віддають енергію не як 1008 (Energy), а як
+   * Atwater General Factors (2047) чи Atwater Specific Factors (2048). Без
+   * цих id гречка з Foundation мала "0 ккал" при 71 г вуглеводів (data-43
+   * аудиту 2026-10-01).
+   */
+  kcalAtwaterGeneral: 2047,
+  kcalAtwaterSpecific: 2048,
   protein: 1003,
   fat: 1004,
   carbs: 1005,
 } as const;
+
+/**
+ * Atwater, ккал/г: білок 4, вуглеводи 4, жири 9 — фізичні константи, ті самі,
+ * що `ATWATER_KCAL_PER_G` у `@sergeant/nutrition-domain`. Продубльовано
+ * свідомо: `apps/server` не залежить від цього пакета, а тягти залежність
+ * (і lockfile) заради трьох чисел не варто.
+ */
+const ATWATER_KCAL_PER_G = { protein: 4, fat: 9, carbs: 4 } as const;
+
+function round1(v: number): number {
+  return Math.round(v * 10) / 10;
+}
+
+/**
+ * Енергія з БЖВ за Atwater, коли USDA не віддав жодного id енергії.
+ * `null`, якщо макро немає взагалі (нема з чого рахувати).
+ */
+function kcalFromAtwater(m: ExtractedMacros): number | null {
+  if (m.protein == null && m.fat == null && m.carbs == null) return null;
+  return round1(
+    (m.protein ?? 0) * ATWATER_KCAL_PER_G.protein +
+      (m.fat ?? 0) * ATWATER_KCAL_PER_G.fat +
+      (m.carbs ?? 0) * ATWATER_KCAL_PER_G.carbs,
+  );
+}
 
 // ── Shared helpers ───────────────────────────────────────────────────────────
 
@@ -98,7 +131,11 @@ function extractBarcodeNutrients(
     }
   }
   return {
-    kcal: nutrientMap[FDC_NUTRIENT.kcal] ?? null,
+    kcal:
+      nutrientMap[FDC_NUTRIENT.kcal] ??
+      nutrientMap[FDC_NUTRIENT.kcalAtwaterGeneral] ??
+      nutrientMap[FDC_NUTRIENT.kcalAtwaterSpecific] ??
+      null,
     protein: nutrientMap[FDC_NUTRIENT.protein] ?? null,
     fat: nutrientMap[FDC_NUTRIENT.fat] ?? null,
     carbs: nutrientMap[FDC_NUTRIENT.carbs] ?? null,
@@ -109,16 +146,15 @@ function extractSearchNutrients(
   nutrients: Array<{ nutrientId?: number; value?: number }> | undefined | null,
 ): ExtractedMacros {
   const arr = Array.isArray(nutrients) ? nutrients : [];
-  const round1 = (v: unknown): number | null =>
-    v != null && Number.isFinite(Number(v))
-      ? Math.round(Number(v) * 10) / 10
-      : null;
   const get = (id: number): number | null => {
-    const n = arr.find((x) => x.nutrientId === id);
-    return n?.value != null ? round1(n.value) : null;
+    const v = arr.find((x) => x.nutrientId === id)?.value;
+    return v != null && Number.isFinite(Number(v)) ? round1(Number(v)) : null;
   };
   return {
-    kcal: get(FDC_NUTRIENT.kcal),
+    kcal:
+      get(FDC_NUTRIENT.kcal) ??
+      get(FDC_NUTRIENT.kcalAtwaterGeneral) ??
+      get(FDC_NUTRIENT.kcalAtwaterSpecific),
     protein: get(FDC_NUTRIENT.protein),
     fat: get(FDC_NUTRIENT.fat),
     carbs: get(FDC_NUTRIENT.carbs),
@@ -171,6 +207,10 @@ export function normalizeUSDASearch(
 
   const macros = extractSearchNutrients(food?.foodNutrients);
   if (!hasSomeMacro(macros)) return null;
+  // Контракт відповіді (`kcal: number`) не міняємо: коли USDA не дав енергії
+  // ні як 1008, ні як 2047/2048, рахуємо її з БЖВ. Підстановка 0 мовчки
+  // занижувала денні підсумки (data-43).
+  const kcal = macros.kcal ?? kcalFromAtwater(macros) ?? 0;
 
   return {
     id:
@@ -181,7 +221,7 @@ export function normalizeUSDASearch(
     brand: null,
     source: "usda",
     per100: {
-      kcal: macros.kcal ?? 0,
+      kcal,
       protein_g: macros.protein ?? 0,
       fat_g: macros.fat ?? 0,
       carbs_g: macros.carbs ?? 0,

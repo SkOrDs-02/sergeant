@@ -6,7 +6,6 @@ import {
   kyivHour,
   kyivMondayStartMs,
   toKyivISODate,
-  toLocalISODate,
 } from "./date";
 
 // Входи — ЯВНІ UTC-моменти опівдні, а не `new Date(рік, місяць, день)`.
@@ -54,16 +53,6 @@ describe("shared/lib/date – toKyivISODate", () => {
   it("handles year boundaries correctly", () => {
     expect(toKyivISODate(new Date("2024-12-31T12:00:00Z"))).toBe("2024-12-31");
     expect(toKyivISODate(new Date("2025-01-01T12:00:00Z"))).toBe("2025-01-01");
-  });
-});
-
-// AI-LEGACY: expires 2026-11-07 — цей describe-блок покриває сам
-// deprecated-аліас (Hard Rule: перейменування без зміни поведінки); видалити
-// разом з `toLocalISODate` у date.ts — трекер
-// docs/work/specs/audits/unification-modules.md.
-describe("shared/lib/date – toLocalISODate (deprecated alias)", () => {
-  it("is the same function reference as toKyivISODate", () => {
-    expect(toLocalISODate).toBe(toKyivISODate);
   });
 });
 

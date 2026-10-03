@@ -216,7 +216,11 @@ export function applyNutritionBackupPayload(payload: unknown): void {
     pantries,
     activePantryId,
   );
-  persistNutritionPrefs(prefs, NUTRITION_PREFS_KEY);
+  // Відновлення з бекапу — явна заміна цілого стану: користувач свідомо
+  // хоче, щоб бекап переміг, тож гейт гідратації (data-04) тут не діє.
+  persistNutritionPrefs(prefs, NUTRITION_PREFS_KEY, undefined, {
+    allowUnhydrated: true,
+  });
   if (
     data["log"] &&
     typeof data["log"] === "object" &&

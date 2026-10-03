@@ -735,3 +735,34 @@ describe("ManualExpenseSheet — власні категорії", () => {
     await waitFor(() => expect(picker()).toHaveTextContent("Інше"));
   });
 });
+
+describe("ManualExpenseSheet — холодний старт сховища (data-13)", () => {
+  it("поки сховище прогрівається, збереження заблоковане спінером, а скасування доступне", () => {
+    const onSave = vi.fn();
+    render(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        storageLoading
+      />,
+    );
+    const loading = screen.getByRole("button", { name: "Завантаження…" });
+    expect(loading).toBeDisabled();
+    expect(loading).toHaveAttribute("aria-busy", "true");
+    expect(
+      screen.getByRole("button", { name: "Зберегти й додати ще" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Скасувати" })).toBeEnabled();
+    fireEvent.click(loading);
+    expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it("без прапора зберігання працює як раніше", () => {
+    render(<ManualExpenseSheet open onClose={vi.fn()} />);
+    expect(
+      screen.getByRole("button", { name: "Додати витрату" }),
+    ).toBeEnabled();
+    expect(screen.queryByText("Завантаження…")).toBeNull();
+  });
+});

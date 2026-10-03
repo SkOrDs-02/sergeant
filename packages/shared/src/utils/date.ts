@@ -16,17 +16,6 @@ export function toKyivISODate(d: Date | number | string = new Date()): string {
   );
 }
 
-/**
- * @deprecated Імʼя бреше: читається як «доба пристрою», хоча форсує
- * Europe/Kyiv. Використовуй {@link toKyivISODate}. Аліас лишено заради 150+
- * викликів по монорепо — прибрати після міграції call-сайтів.
- *
- * AI-LEGACY: expires 2026-11-07 — прибрати цей аліас і перевести залишкові
- * виклики на `toKyivISODate` напряму; перелік call-сайтів і розбір розходжень
- * — docs/work/specs/audits/unification-modules.md.
- */
-export const toLocalISODate = toKyivISODate;
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 

@@ -133,4 +133,36 @@ describe("Nutrition dual-write journal (аудит 2026-09-28, D1)", () => {
     }
     expect(await eventRows()).toEqual([{ id: eventId }]);
   });
+
+  it("keeps the journal entry when the SQL write throws, and applies it on the next boot (data-05)", async () => {
+    registerNutritionDualWriteContext(
+      ctx({
+        getMigrationClient: async () => ({
+          ...handle.client,
+          run: () => {
+            throw new Error("SQLITE_BUSY: database is locked");
+          },
+        }),
+      }),
+    );
+    triggerNutritionDualWrite(
+      state([]),
+      state([{ id: "p-journal", name: "Дім", text: "", items: [] }]),
+    );
+    await new Promise((r) => setTimeout(r, 100));
+    expect(await pantryRows()).toEqual([]);
+    const pending = pendingDualWrites("nutrition", USER_ID);
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.attempts).toBe(1);
+
+    __clearNutritionDualWriteContextForTests();
+    registerNutritionDualWriteContext(ctx());
+    await vi.waitFor(async () => expect(await pantryRows()).toHaveLength(1), {
+      timeout: 10_000,
+    });
+    await vi.waitFor(
+      () => expect(pendingDualWrites("nutrition", USER_ID)).toEqual([]),
+      { timeout: 10_000 },
+    );
+  });
 });

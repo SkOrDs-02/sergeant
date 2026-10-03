@@ -42,6 +42,7 @@ import {
   setCachedChatResponse,
 } from "./chatResponseCache.js";
 import { prepareToolResults } from "./prepareToolResults.js";
+import { shadowVerifyNumbers } from "./numberVerify/shadow.js";
 import { validateToolCallsRawProvenance } from "./validateToolCallsRaw.js";
 import { als } from "../../obs/requestContext.js";
 import { makeAiProviderError, ValidationError } from "../../obs/errors.js";
@@ -640,17 +641,21 @@ export default async function handler(
     // після 20 викликів доби падає на standard). founder/flag-off і fail-open
     // шляхи лишаються на premium. The first-turn router below is untiered.
     const proTier = await resolveProTier(req, res, "chat");
+    const synthesisContext = maskMachineText(clientContext, knownValues);
+    // Верифікація чисел (ADR-0097, `numberVerify/`): подане цього туру - те, що
+    // модель справді бачила. Функція, щоб у режимі `off` нічого не збирати.
+    const synthesisGiven = () => ({
+      contexts: [synthesisContext],
+      toolResults: toolResultMessages.map((m) => m.content),
+      userMessages: lastUserMsg ? [lastUserMsg.content] : [],
+    });
     const payload = {
       model: proTier.model,
       max_tokens: 2500,
       // Preset іде і в tool-result тур: інструкція інтервʼю має діяти й на
       // синтезі після `remember`, інакше модель «забуває» ліміт у 4
       // повідомлення рівно там, де підбиває підсумок.
-      system: buildSystem(
-        maskMachineText(clientContext, knownValues),
-        preset,
-        healthConsent,
-      ),
+      system: buildSystem(synthesisContext, preset, healthConsent),
       // Tools для ЦІЄЇ моделі: Pro-деградація може підмінити Sonnet на
       // Haiku, а ops — на будь-що через `AI_PRO_*_CHAT_MODEL`. Tool search
       // підтримують не всі моделі, тож payload будується під фактичну.
@@ -678,6 +683,7 @@ export default async function handler(
         SYSTEM_PROMPT_VERSION,
         ledgerUserId,
         toolTraceId,
+        synthesisGiven,
       );
       return;
     }
@@ -712,6 +718,12 @@ export default async function handler(
     }
 
     const text = replaceLongDash(extractAnthropicText(data));
+    shadowVerifyNumbers({
+      turn: "synthesis",
+      model: proTier.model,
+      answer: text,
+      given: synthesisGiven,
+    });
     res.status(200).json({ text: text || "Готово." });
     return;
   }
@@ -914,6 +926,22 @@ export default async function handler(
     return;
   }
 
+  // Верифікація чисел (ADR-0097): ДО запису в кеш, бо PR3 може переписати текст,
+  // а кеш не має зберігати нескориговане. У shadow відповідь лишається як є.
+  shadowVerifyNumbers({
+    turn: "first",
+    model: env.CHAT_MODEL_FIRST_TURN,
+    answer: textParts,
+    given: () => ({
+      contexts: [augmentedContext],
+      userMessages: cleaned
+        .filter((m) => m.role === "user")
+        .map((m) => m.content),
+      assistantMessages: cleaned
+        .filter((m) => m.role === "assistant")
+        .map((m) => m.content),
+    }),
+  });
   const textBody = { text: textParts || "Немає відповіді від AI." };
   setCachedChatResponse(cacheKey, { status: 200, body: textBody });
   res.status(200).json(textBody);

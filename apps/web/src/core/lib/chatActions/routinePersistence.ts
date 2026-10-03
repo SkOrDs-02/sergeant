@@ -17,6 +17,7 @@
  * різницю «передано ≠ збережено» вже описує `saveRoutineStateDurable()` для
  * FTUX-плитки — тут той самий контракт для tool-шляху.
  */
+import { isDualWriteOutcomeClean } from "../../durability/dualWriteJournal.js";
 import {
   loadRoutineState,
   saveRoutineStateDurable,
@@ -58,7 +59,7 @@ export function persistRoutineState(next: RoutineState): Promise<boolean> {
     // чекати довше — означало б тримати відповідь моделі на паузі.
     if (!isRoutineDualWriteRegistered()) return false;
     const outcome = await dualWriteRoutineState(prev, next);
-    return outcome.status === "applied";
+    return isDualWriteOutcomeClean(outcome);
   });
   if (sink) sink.push(settled);
   return settled;

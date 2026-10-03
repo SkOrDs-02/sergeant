@@ -19,16 +19,30 @@ vi.mock("@shared/lib/time/kyivTime", async (importOriginal) => ({
 vi.mock("./shared", () => ({
   readFizrukWorkouts: vi.fn(),
   persistFizrukWorkouts: vi.fn(),
+  persistFizrukCustomExercises: vi.fn(),
 }));
 
 import { safeReadStringLS, safeRemoveLS } from "@shared/lib/storage/storage";
 import { lsSet } from "../../hubChatUtils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { persistFizrukWorkouts, readFizrukWorkouts } from "./shared";
-import { finishWorkout, logSet, planWorkout, startWorkout } from "./workouts";
+import {
+  persistFizrukCustomExercises,
+  persistFizrukWorkouts,
+  readFizrukWorkouts,
+} from "./shared";
+import {
+  copyWorkout,
+  finishWorkout,
+  logSet,
+  planWorkout,
+  startWorkout,
+} from "./workouts";
 
 const mockReadWorkouts = readFizrukWorkouts as ReturnType<typeof vi.fn>;
 const mockPersist = persistFizrukWorkouts as ReturnType<typeof vi.fn>;
+const mockPersistCustom = persistFizrukCustomExercises as ReturnType<
+  typeof vi.fn
+>;
 const mockReadLS = safeReadStringLS as ReturnType<typeof vi.fn>;
 const mockLsSet = lsSet as ReturnType<typeof vi.fn>;
 const mockRemoveLS = safeRemoveLS as ReturnType<typeof vi.fn>;
@@ -418,5 +432,164 @@ describe("planWorkout", () => {
     planWorkout({ name: "plan_workout", input: { exercises: [] } });
     const persisted = mockPersist.mock.calls[0]![0] as Workout[];
     expect(persisted[0]?.startedAt).toContain("2026-04-20");
+  });
+});
+
+// ─── data-11: справжній exerciseId, ніколи порожній ──────────────────────────
+
+describe("exerciseId резолвиться з назви (data-11)", () => {
+  const persistedItems = () =>
+    (mockPersist.mock.calls[0]![0] as Workout[]).flatMap((w) => w.items);
+
+  it("log_set: каталожна вправа отримує каталожний id і канонічну назву", () => {
+    logSet({
+      name: "log_set",
+      input: {
+        exercise_name: "станова тяга",
+        reps: 5,
+        weight_kg: 100,
+        sets: 2,
+      },
+    });
+    const [item] = persistedItems();
+    expect(item?.exerciseId).toBe("deadlift");
+    expect(item?.nameUk).toBe("Станова тяга");
+    expect(mockPersistCustom).toHaveBeenCalledWith([]); // нічого створювати
+  });
+
+  it("log_set: невідома вправа → custom-вправа з тим самим id, що й item", () => {
+    logSet({
+      name: "log_set",
+      input: { exercise_name: "Мій рух", reps: 10, weight_kg: 0, sets: 1 },
+    });
+    const [item] = persistedItems();
+    expect(item?.exerciseId).toMatch(/^custom_/);
+    expect(mockPersistCustom).toHaveBeenCalledTimes(1);
+    const created = mockPersistCustom.mock.calls[0]![0] as Array<{
+      id: string;
+      name: { uk: string };
+    }>;
+    expect(created).toHaveLength(1);
+    expect(created[0]?.id).toBe(item?.exerciseId);
+    expect(created[0]?.name.uk).toBe("Мій рух");
+  });
+
+  it("log_set: custom-вправа записується РАНІШЕ за тренування", () => {
+    logSet({
+      name: "log_set",
+      input: { exercise_name: "Мій рух", reps: 10, weight_kg: 0, sets: 1 },
+    });
+    expect(mockPersistCustom.mock.invocationCallOrder[0]).toBeLessThan(
+      mockPersist.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("log_set: додає підходи до наявного item-а тієї ж вправи за id", () => {
+    mockReadWorkouts.mockReturnValue([
+      makeWorkout({
+        id: "w_active",
+        items: [
+          {
+            id: "i1",
+            exerciseId: "squat_barbell",
+            nameUk: "Присідання зі штангою",
+            primaryGroup: "quadriceps",
+            type: "strength",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            sets: [{ weightKg: 60, reps: 8 }],
+          },
+        ],
+      }),
+    ]);
+    mockReadLS.mockReturnValue("w_active");
+    logSet({
+      name: "log_set",
+      input: { exercise_name: "присідання", reps: 8, weight_kg: 60, sets: 2 },
+    });
+    const items = persistedItems();
+    expect(items).toHaveLength(1);
+    expect(items[0]?.sets).toHaveLength(3);
+    expect(mockPersistCustom).toHaveBeenCalledWith([]); // нічого створювати
+  });
+
+  it("log_set: лагодить порожній exerciseId у наявному item-і зі старого запису", () => {
+    mockReadWorkouts.mockReturnValue([
+      makeWorkout({
+        id: "w_active",
+        items: [
+          {
+            id: "i_legacy",
+            exerciseId: "",
+            nameUk: "Станова тяга",
+            primaryGroup: "",
+            type: "strength",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      }),
+    ]);
+    mockReadLS.mockReturnValue("w_active");
+    logSet({
+      name: "log_set",
+      input: {
+        exercise_name: "Станова тяга",
+        reps: 5,
+        weight_kg: 100,
+        sets: 1,
+      },
+    });
+    const items = persistedItems();
+    expect(items[0]?.exerciseId).toBe("deadlift");
+    expect(items[0]?.sets).toHaveLength(2);
+  });
+
+  it("plan_workout: усі items мають непорожній id, невідомі отримують різні custom-id", () => {
+    planWorkout({
+      name: "plan_workout",
+      input: {
+        exercises: [
+          { name: "Присідання", sets: 3, reps: 10 },
+          { name: "Дивна А", sets: 2, reps: 8 },
+          { name: "Дивна Б", sets: 2, reps: 8 },
+        ],
+      },
+    });
+    const items = persistedItems();
+    expect(items).toHaveLength(3);
+    for (const it of items) expect(it.exerciseId).not.toBe("");
+    expect(items[0]?.exerciseId).toBe("squat_barbell");
+    expect(new Set(items.map((i) => i.exerciseId)).size).toBe(3);
+    const created = mockPersistCustom.mock.calls[0]![0] as unknown[];
+    expect(created).toHaveLength(2);
+  });
+
+  it("copy_workout: порожній exerciseId зі старого запису не переноситься далі", () => {
+    mockReadWorkouts.mockReturnValue([
+      makeWorkout({
+        id: "w_src",
+        endedAt: "2026-04-20T10:00:00.000Z",
+        items: [
+          {
+            id: "i_legacy",
+            exerciseId: "",
+            nameUk: "Станова тяга",
+            primaryGroup: "",
+            type: "strength",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            sets: [{ weightKg: 100, reps: 5 }],
+          },
+        ],
+      }),
+    ]);
+    copyWorkout({
+      name: "copy_workout",
+      input: { source_workout_id: "w_src" },
+    });
+    const copied = (mockPersist.mock.calls[0]![0] as Workout[])[0]!;
+    expect(copied.items[0]?.exerciseId).toBe("deadlift");
   });
 });

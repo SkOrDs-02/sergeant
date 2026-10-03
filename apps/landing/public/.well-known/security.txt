@@ -1,0 +1,5 @@
+Contact: https://github.com/SkOrDs-02/sergeant/security/advisories/new
+Expires: 2027-09-30T23:59:59Z
+Preferred-Languages: uk, en
+Policy: https://github.com/SkOrDs-02/sergeant/blob/main/SECURITY.md
+Canonical: https://sergeant.com.ua/.well-known/security.txt

@@ -46,6 +46,12 @@ function assertUndoable(
   expect(typeof (out as ChatActionUndoableResult).undo).toBe("function");
 }
 
+// data-08: екзекутори читають стан лише з кешу SQLite (kv UI не пише), тож
+// сід для «дані з UI» кладемо туди; localStorage лишається порожнім.
+function seedCache(partial: Record<string, unknown>): void {
+  __setFinykSqliteStateCacheForTests(partial as never);
+}
+
 beforeEach(() => {
   localStorage.clear();
   writes.clear();
@@ -85,12 +91,9 @@ describe("setBudgetLimit", () => {
   });
 
   it("updates an existing limit in place rather than duplicating", () => {
-    localStorage.setItem(
-      "finyk_budgets",
-      JSON.stringify([
-        { id: "b1", type: "limit", categoryId: "food", limit: 1000 },
-      ]),
-    );
+    seedCache({
+      budgets: [{ id: "b1", type: "limit", categoryId: "food", limit: 1000 }],
+    });
     const out = setBudgetLimit({
       name: "set_budget_limit",
       input: { category_id: "food", limit: 2000 },
@@ -102,9 +105,8 @@ describe("setBudgetLimit", () => {
   });
 
   it("B39: undo restores the previous limit on an existing budget", () => {
-    localStorage.setItem(
-      "finyk_budgets",
-      JSON.stringify([
+    seedCache({
+      budgets: [
         {
           id: "b1",
           type: "limit",
@@ -112,8 +114,8 @@ describe("setBudgetLimit", () => {
           limit: 1000,
           period: "month",
         },
-      ]),
-    );
+      ],
+    });
     const out = setBudgetLimit({
       name: "set_budget_limit",
       input: { category_id: "food", limit: 9000 },
@@ -193,10 +195,7 @@ describe("setMonthlyPlan", () => {
   });
 
   it("merges into a previous plan, leaving unset fields untouched", () => {
-    localStorage.setItem(
-      "finyk_monthly_plan",
-      JSON.stringify({ income: "40000", expense: "20000" }),
-    );
+    seedCache({ monthlyPlan: { income: "40000", expense: "20000" } });
     const out = setMonthlyPlan({
       name: "set_monthly_plan",
       input: { savings: 5000 },
@@ -220,10 +219,7 @@ describe("setMonthlyPlan", () => {
   });
 
   it("B39: undo restores the previous plan verbatim", () => {
-    localStorage.setItem(
-      "finyk_monthly_plan",
-      JSON.stringify({ income: "40000", expense: "20000" }),
-    );
+    seedCache({ monthlyPlan: { income: "40000", expense: "20000" } });
     const out = setMonthlyPlan({
       name: "set_monthly_plan",
       input: { income: 999999, expense: 999999, savings: 999999 },
@@ -369,9 +365,8 @@ describe("updateBudget", () => {
   });
 
   it("updates an existing goal case-insensitively by name, writing a single AI contribution", () => {
-    localStorage.setItem(
-      "finyk_budgets",
-      JSON.stringify([
+    seedCache({
+      budgets: [
         {
           id: "g1",
           type: "goal",
@@ -379,8 +374,8 @@ describe("updateBudget", () => {
           targetAmount: 50000,
           savedAmount: 10000,
         },
-      ]),
-    );
+      ],
+    });
     const out = updateBudget(
       ub({
         scope: "goal",
@@ -411,12 +406,9 @@ describe("updateBudget", () => {
   });
 
   it("B39: undo (scope='limit') restores the previous limit", () => {
-    localStorage.setItem(
-      "finyk_budgets",
-      JSON.stringify([
-        { id: "b1", type: "limit", categoryId: "food", limit: 3000 },
-      ]),
-    );
+    seedCache({
+      budgets: [{ id: "b1", type: "limit", categoryId: "food", limit: 3000 }],
+    });
     const out = updateBudget(
       ub({ scope: "limit", category_id: "food", limit: 8000 }),
     );
@@ -435,9 +427,8 @@ describe("updateBudget", () => {
   });
 
   it("B39: undo (scope='goal') restores the previous target and contributions", () => {
-    localStorage.setItem(
-      "finyk_budgets",
-      JSON.stringify([
+    seedCache({
+      budgets: [
         {
           id: "g1",
           type: "goal",
@@ -446,8 +437,8 @@ describe("updateBudget", () => {
           savedAmount: 10000,
           contributions: [],
         },
-      ]),
-    );
+      ],
+    });
     const out = updateBudget(
       ub({
         scope: "goal",

@@ -217,7 +217,22 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
   updatedAt: EPOCH,
 };
 
+/**
+ * priv-02: `true`, коли локальна біометрика записана ІНШИМ залогіненим
+ * користувачем, ніж власник поточної сесії пристрою (плоский ключ на
+ * пристрій + сесія, що закінчилась без «Вийти»). `ownerId: null` (легасі,
+ * анонім) і невідомий власник сесії не вважаються чужими — міграція
+ * легасі-даних і стартовий рендер до спрацювання boot-ефекту лишаються як були.
+ */
+export function isBiometricsForeign(): boolean {
+  if (currentBiometricsOwner === null) return false;
+  const storedOwner = readBiometricsOwnerId();
+  return storedOwner !== null && storedOwner !== currentBiometricsOwner;
+}
+
 export function readBiometrics(): Biometrics {
+  // priv-02: чужу біометрику поточна сесія не бачить і не пушить на сервер.
+  if (isBiometricsForeign()) return BIOMETRICS_DEFAULT;
   return safeReadLSValidatedDurable(
     BIOMETRICS_KEY,
     BiometricsSchema,
