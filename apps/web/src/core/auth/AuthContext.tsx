@@ -30,6 +30,7 @@ import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { SIGN_IN_PATH } from "../app/appPaths";
+import { releasePushSubscriptionOnLogout } from "./releasePushOnLogout";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
 // тягне з собою десять модульних файлів плюс en-копію: до цієї правки
 // саме ВІН лишався останнім eager-ребром до `uk.ts`, уже після того, як
@@ -617,6 +618,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // нижче — teardown, який не має права гейтити цей перехід (і історично
       // саме тому клали `clear()` першим — див. коментар нижче).
       setSignedOut(true);
+      // `priv-04`: зняти web-push підписку ДО `signOut()` — серверний
+      // `unregister` потребує живої сесії. Best-effort під таймаутом, не
+      // кидає; інакше банківські пуші A далі приходили б наступній людині
+      // на цьому пристрої.
+      await releasePushSubscriptionOnLogout();
       try {
         await signOut();
       } catch {
