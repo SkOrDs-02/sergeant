@@ -71,6 +71,28 @@ describe("maskPii: email, еквівалентність старій формі
     expect(maskPii("a@x.com;b@y.org")).toBe("[email];[email]");
   });
 
+  it.each([
+    "a@x.com.b@y.org",
+    "a@x.com-b@y.org",
+    "a@x.com+b@y.org",
+    "a@x.com%b@y.org",
+    "ivan@gmail.com-olya@gmail.com",
+    "ivan@example.com.ua+promo@x.com",
+    "a@x.com.b@y.org.c@z.net",
+    "a@x.com--b@y.org",
+  ])("ланцюжок адрес без пробілу не лишає жодної в клірі: %s", (input) => {
+    // Регрес look-behind-форми: друга адреса після `.`/`-`/`+`/`%` не мала
+    // дозволеного старту й ішла до LLM відкритим текстом.
+    expect(maskPii(input)).not.toContain("@");
+    expect(maskPii(input)).toContain("[email]");
+  });
+
+  it("ланцюжок: кількість масок збігається з кількістю адрес", () => {
+    expect(maskPii("a@x.com.b@y.org")).toBe("[email][email]");
+    expect(maskPii("ivan@gmail.com-olya@gmail.com")).toBe("[email][email]");
+    expect(maskPii("a@x.com.b@y.org.c@z.net")).toBe("[email][email][email]");
+  });
+
   it("не губить маскування там, де стара форма його губила або була вузькою", () => {
     // Дефіс у домені: стара форма не маскувала зовсім.
     expect(maskPii("user@my-host.com")).toBe("[email]");
