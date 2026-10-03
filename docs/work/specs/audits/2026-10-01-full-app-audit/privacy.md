@@ -300,7 +300,7 @@ Each step I checked:
 
 ### `priv-05` [high] Вихід і видалення акаунта не стирають локальну SQLite-базу: close() вбиває воркер раніше, ніж до нього доходить wipe()
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-05-data-19-logout-wipe (wipe до close для воркерного бекенду + тест на справжньому sqliteWorkerClient; лишилось: повтор стирання на наступному старті, прибирання осиротілих `sergeant-*.db` на пристроях, де вже виходили, e2e «після виходу файлу немає»)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: локальна БД (OPFS-воркер)
 - **Де:** apps/web/src/core/db/sqlite.ts:235-249, 515-522; apps/web/src/core/db/sqliteWorkerClient.ts:150-151, 223-226, 255-264; apps/web/src/core/db/sqliteWorker.ts:152-160; apps/web/src/core/auth/AuthContext.tsx:646-652; apps/web/src/core/profile/DangerZoneSection.tsx:41-48
 - **Першопричина:** wipeSqliteDb() для воркерного бекенду (opfs-sahpool, безумовний основний шлях) спершу викликає stale.close(). Клієнт воркера у finally робить terminate() і ставить dead. Тому наступний conn.wipe() одразу відхиляється, помилку ковтає logger.warn, і pool.unlink так і не виконується. Тести мокають wipe і цю регресію не ловлять.

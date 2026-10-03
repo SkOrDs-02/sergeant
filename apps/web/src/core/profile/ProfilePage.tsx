@@ -8,7 +8,6 @@ import { Icon } from "@shared/components/ui/Icon";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
-import { pluralUa, type UaPluralForms } from "@sergeant/shared";
 import { SIGN_IN_PATH } from "../app/appPaths";
 import { useAuth } from "../auth/AuthContext";
 import { AppLockSettings } from "../security/AppLockSettings";
@@ -33,13 +32,6 @@ import { SessionsSection } from "./SessionsSection";
 // сесії, PIN-блокування, яке переїхало з Налаштувань → Конфіденційність),
 // «Про тебе» (банк фактів РАЗОМ із серверною памʼяттю Сержанта, які доти
 // були двома входами в одне, і біометрія) та «Акаунт» (видалення).
-
-/** «1 запис» / «2 записи» / «5 записів» — не бінарна форма. */
-const UNSYNCED_RECORD_FORMS: UaPluralForms = {
-  one: "запис",
-  few: "записи",
-  many: "записів",
-};
 
 /**
  * Група секцій Профілю з кікером. `<h2>` тримає дерево заголовків
@@ -66,14 +58,6 @@ export function ProfilePage() {
   const toast = useToast();
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
-  // Діалог «є незбережене» — відкривається лише тоді, коли `logout()` уже
-  // спробував доставити чергу й щось лишилось. `resolve` тримає обіцянку,
-  // яку чекає `confirmUnsyncedLoss`: поки людина не відповіла, вихід
-  // стоїть і НІЧОГО не стерто.
-  const [unsyncedPrompt, setUnsyncedPrompt] = useState<{
-    pending: number;
-    resolve: (proceed: boolean) => void;
-  } | null>(null);
   /**
    * Підтвердження самого виходу. Це НЕ те саме, що діалог «є незбережені
    * записи» нижче: той спрацьовує лише тоді, коли черга синку не доїхала, і
@@ -97,23 +81,12 @@ export function ProfilePage() {
     if (loggingOut) return;
     setLoggingOut(true);
     try {
-      let cancelled = false;
-      await logout({
-        confirmUnsyncedLoss: (pending) =>
-          new Promise<boolean>((resolve) => {
-            setUnsyncedPrompt({
-              pending,
-              resolve: (proceed) => {
-                cancelled = !proceed;
-                setUnsyncedPrompt(null);
-                resolve(proceed);
-              },
-            });
-          }),
-      });
-      // Людина обрала «Залишитись» — сесія жива, нічого не стерто, тож ні
-      // тосту про вихід, ні редіректу на екран входу бути не має.
-      if (cancelled) return;
+      // `logout()` сам доставляє чергу й питає про незбережене (діалог
+      // провайдера). `false` — людина обрала «Залишитись»: сесія жива,
+      // нічого не стерто.
+      const done = await logout();
+      // Тож ні тосту про вихід, ні редіректу на екран входу бути не має.
+      if (!done) return;
       toast.success("Ти вийшов з акаунта");
       // Send the signed-out user to the auth surface, not the hub root —
       // `logout()` has already cleared the query cache so `user` is `null`,
@@ -247,7 +220,15 @@ export function ProfilePage() {
           collapsedIcon="alert-triangle"
           collapsedSubtitle="Незворотні дії"
         >
-          <DangerZoneSection online={online} onLogout={logout} />
+          <DangerZoneSection
+            online={online}
+            // Акаунт уже видалено, а сесію вбито (`signOut()` у секції), тож
+            // доставити чергу однаково нікуди, а питання «втратити записи?»
+            // після свідомого видалення акаунта було б шумом.
+            onLogout={async () => {
+              await logout({ skipUnsyncedLossPrompt: true });
+            }}
+          />
         </CollapsibleSection>
       </ProfileGroup>
 
@@ -271,30 +252,6 @@ export function ProfilePage() {
           void handleLogout();
         }}
         onCancel={() => setConfirmingLogout(false)}
-      />
-
-      {/* Вихід стирає локальну базу разом із чергою синхронізації, а поки
-          запис не доїхав на сервер — локальна копія єдина. Показуємо це
-          лише тоді, коли `logout()` уже спробував доставити чергу й не
-          зміг: на живій мережі людина цього діалогу не бачить ніколи. */}
-      <ConfirmDialog
-        open={unsyncedPrompt !== null}
-        danger
-        title="Є незбережені записи"
-        description={
-          <>
-            {(() => {
-              const pending = unsyncedPrompt?.pending ?? 0;
-              return `${pending} ${pluralUa(pending, UNSYNCED_RECORD_FORMS)} ще не збережено на сервері.`;
-            })()}{" "}
-            Якщо вийти зараз, вони зникнуть назавжди. Підключися до мережі й
-            зачекай кілька секунд, або виходь, якщо ці записи не потрібні.
-          </>
-        }
-        confirmLabel="Все одно вийти"
-        cancelLabel="Залишитись"
-        onConfirm={() => unsyncedPrompt?.resolve(true)}
-        onCancel={() => unsyncedPrompt?.resolve(false)}
       />
     </div>
   );

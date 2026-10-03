@@ -1849,7 +1849,7 @@ node <scratch>/agents/verify-api-live-sync-live/c3/w3_insert_race.mjs → {'rout
 
 ### `data-19` [medium] Вихід з акаунта стирає незасинхронізовані записи без питання: палітра команд і екран видалення акаунта обходять підтвердження, а dead_letter і rejected не рахуються
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-05-data-19-logout-wipe
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: auth (logout) + syncEngine (flushBeforeLogout)
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:279-289,551-564,646-649; apps/web/src/core/app/useDemoCommands.ts:58-75,152-162; apps/web/src/core/app/RootLayout.tsx:183,449; apps/web/src/core/syncEngine/flushBeforeLogout.ts:86-106; packages/db-schema/src/sqlite/syncOpOutboxStatus.ts:425-432
 - **Першопричина:** logout() питає про втрату лише якщо викликач передав confirmUnsyncedLoss, а signOutFromPalette і PendingDeletionScreen його не передають. flushPendingSyncOpsBeforeLogout рахує лише status 'pending', при runtime === null вважає стан безпечним, а flushNow штовхає один батч без рядків у бекофі; далі wipeSqliteDb видаляє outbox.

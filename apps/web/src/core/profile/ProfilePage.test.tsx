@@ -73,7 +73,7 @@ const mockUser = {
   createdAt: "2026-01-15T08:30:00.000Z" as string | null,
 };
 const refreshMock = vi.fn(async () => undefined);
-const logoutMock = vi.fn(async () => undefined);
+const logoutMock = vi.fn(async (_options?: unknown) => true);
 
 const mockAuthValue = {
   user: mockUser,
@@ -481,104 +481,33 @@ describe("ProfilePage", () => {
     });
   });
 
-  // §6 аудиту 2026-08-08 («найнебезпечніші дії без тестів»): гейт «є
-  // незбережені записи» на виході — `logout()` бере `confirmUnsyncedLoss`
-  // і чекає на відповідь, перш ніж стерти локальну БД. Мок `logout` тут
-  // імітує РЕАЛЬНУ поведінку `AuthContext.logout()` (`flushPendingSyncOpsBeforeLogout`
-  // → якщо лишилось недоставлене — питає callback і чекає на його Promise),
-  // а не просто резолвиться миттєво — інакше діалог ніколи б не встиг
-  // змонтуватись і тест перевіряв би повітря.
-  describe("unsynced records gate on logout", () => {
-    function mockLogoutAsksForConfirmation(pending = 3) {
-      logoutMock.mockImplementationOnce(
-        async (options?: {
-          confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
-        }) => {
-          await options?.confirmUnsyncedLoss?.(pending);
-        },
-      );
-    }
-
-    it('"Все одно вийти": proceeds with logout — toast + redirect fire, exactly like a clean exit', async () => {
-      mockLogoutAsksForConfirmation(3);
+  // data-19: гейт «є незбережені записи» переїхав із Профілю в сам
+  // `AuthContext.logout()` (діалог провайдера), тож Профіль лише реагує на
+  // результат: `false` — людина обрала «Залишитись», сесія жива. Сам гейт
+  // (діалог, лічильник, дренаж) покриває `AuthContext.test.tsx`.
+  describe("logout cancelled from the unsynced-loss prompt", () => {
+    it("shows neither the signed-out toast nor a redirect when logout() resolves false", async () => {
+      logoutMock.mockResolvedValueOnce(false);
       renderPage();
       await tapLogoutAndConfirm();
-
-      const dialog = await screen.findByRole("alertdialog", {
-        name: "Є незбережені записи",
-      });
-      // `^`-анкор — щоб `pending=3` не міг випадково збігтися з рядком, де
-      // "3" є суфіксом іншого числа (напр. "13 записів"). pending=3 бере
-      // форму "few" ("записи"), не бінарну англійську "записів".
-      expect(
-        within(dialog).getByText(/^3 записи ще не збережено на сервері\./),
-      ).toBeInTheDocument();
-
-      fireEvent.click(
-        within(dialog).getByRole("button", { name: "Все одно вийти" }),
-      );
-
-      await screen.findByText("Ти вийшов з акаунта");
-      await expectRedirectedToSignIn();
-      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    });
-
-    it('"Залишитись": cancels logout — session stays alive, so no toast and no redirect', async () => {
-      mockLogoutAsksForConfirmation(1);
-      renderPage();
-      await tapLogoutAndConfirm();
-
-      const dialog = await screen.findByRole("alertdialog", {
-        name: "Є незбережені записи",
-      });
-      // Однина: pending === 1 бере окрему гілку копірайту. Regex (не
-      // exact-рядок) — опис рендериться трьома сусідніми текстовими
-      // вузлами всередині одного `<div>` (речення + пробіл + друге
-      // речення), тож `getByText` з точним рядком не матчить жоден
-      // окремий вузол — лише конкатенований текст контейнера.
-      expect(
-        within(dialog).getByText(/^1 запис ще не збережено на сервері\./),
-      ).toBeInTheDocument();
-
-      fireEvent.click(
-        within(dialog).getByRole("button", { name: "Залишитись" }),
-      );
+      await waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
 
       await waitFor(() =>
-        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+        expect(
+          screen.getByRole("button", { name: "Вийти" }),
+        ).not.toBeDisabled(),
       );
-      // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
-      // редиректу на екран входу. Це саме те, що мало б зламатись, якби
-      // `cancelled` ігнорувався після `await logout(...)`.
       expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
       expect(screen.getByTestId("probe")).toHaveAttribute("data-path", "/");
-      // Кнопка "Вийти" повертається в звичайний стан — не залипає у
-      // loading, ніби вихід досі триває.
-      expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();
     });
 
-    // Українська плюралізація — три форми (one/few/many), не бінарна
-    // «1 vs N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("записів"),
-    // 21 повертається до "one" ("запис").
-    it.each([
-      [1, "запис"],
-      [2, "записи"],
-      [5, "записів"],
-      [11, "записів"],
-      [21, "запис"],
-    ])("uses the correct plural form for N=%i (%s)", async (n, form) => {
-      mockLogoutAsksForConfirmation(n);
+    it("does not render its own unsynced-loss dialog any more", async () => {
       renderPage();
       await tapLogoutAndConfirm();
-
-      const dialog = await screen.findByRole("alertdialog", {
-        name: "Є незбережені записи",
-      });
+      await waitFor(() => expect(logoutMock).toHaveBeenCalled());
       expect(
-        within(dialog).getByText(
-          new RegExp(`^${n} ${form} ще не збережено на сервері\\.`),
-        ),
-      ).toBeInTheDocument();
+        screen.queryByRole("alertdialog", { name: "Є незбережені записи" }),
+      ).not.toBeInTheDocument();
     });
   });
 
