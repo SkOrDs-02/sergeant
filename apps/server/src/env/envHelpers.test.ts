@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   founderIdsFromEnv,
+  enumBoolFromEnv,
   optionalStrictBoolFromEnv,
   strictBoolFromEnv,
 } from "./envHelpers.js";
@@ -106,5 +107,27 @@ describe("optionalStrictBoolFromEnv (sec-08)", () => {
   it("будь-яке інше значення валить парсинг, а не вмикає прапорець", () => {
     expect(() => schema.parse({ FLAG: "yes" })).toThrow();
     expect(() => schema.parse({ FLAG: "TRUE" })).toThrow();
+  });
+});
+
+describe("enumBoolFromEnv", () => {
+  const schema = z.object({ FLAG: enumBoolFromEnv() });
+
+  it.each([
+    ["true", true],
+    ["1", true],
+    ["false", false],
+    ["0", false],
+    ["", false],
+  ])("приймає %j", (raw, expected) => {
+    expect(schema.parse({ FLAG: raw }).FLAG).toBe(expected);
+  });
+
+  it("не задано → false", () => {
+    expect(schema.parse({}).FLAG).toBe(false);
+  });
+
+  it.each(["yes", "TRUE", " true"])("відкидає %j", (raw) => {
+    expect(schema.safeParse({ FLAG: raw }).success).toBe(false);
   });
 });
