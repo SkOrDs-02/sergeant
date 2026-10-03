@@ -8,6 +8,10 @@ import {
   WORKOUTS_STORAGE_KEY,
   CUSTOM_EXERCISES_KEY,
 } from "./fizrukStorage";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+} from "./sqliteReader";
 
 describe("fizrukStorage – defensive parsing/import", () => {
   beforeEach(() => {
@@ -62,50 +66,90 @@ describe("fizrukStorage – defensive parsing/import", () => {
     // з реальним SQLite живе в
     // `apps/web/src/core/hub/hubBackup.fizruk.roundtrip.test.ts`.
     it("rejects on null / undefined / non-object", async () => {
-      await expect(applyFizrukFullBackupPayload(null)).rejects.toThrow();
-      await expect(applyFizrukFullBackupPayload(undefined)).rejects.toThrow();
-      await expect(applyFizrukFullBackupPayload(123)).rejects.toThrow();
-      await expect(applyFizrukFullBackupPayload("string")).rejects.toThrow();
+      await expect(
+        applyFizrukFullBackupPayload(null, "merge"),
+      ).rejects.toThrow();
+      await expect(
+        applyFizrukFullBackupPayload(undefined, "merge"),
+      ).rejects.toThrow();
+      await expect(
+        applyFizrukFullBackupPayload(123, "merge"),
+      ).rejects.toThrow();
+      await expect(
+        applyFizrukFullBackupPayload("string", "merge"),
+      ).rejects.toThrow();
     });
 
     it("rejects when `data` is missing or not an object", async () => {
-      await expect(applyFizrukFullBackupPayload({})).rejects.toThrow();
+      await expect(applyFizrukFullBackupPayload({}, "merge")).rejects.toThrow();
       await expect(
-        applyFizrukFullBackupPayload({ data: null }),
+        applyFizrukFullBackupPayload({ data: null }, "merge"),
       ).rejects.toThrow();
       await expect(
-        applyFizrukFullBackupPayload({ data: 42 }),
+        applyFizrukFullBackupPayload({ data: 42 }, "merge"),
       ).rejects.toThrow();
       await expect(
-        applyFizrukFullBackupPayload({ data: [] }),
+        applyFizrukFullBackupPayload({ data: [] }, "merge"),
       ).rejects.toThrow();
     });
 
-    it("не пише в localStorage навіть на валідному payload-і", async () => {
-      await applyFizrukFullBackupPayload({
-        data: {
-          [WORKOUTS_STORAGE_KEY]: JSON.stringify({
-            schemaVersion: 1,
-            workouts: [{ id: "w1", startedAt: "2026-01-01T00:00:00.000Z" }],
-          }),
-          [CUSTOM_EXERCISES_KEY]: JSON.stringify({
-            schemaVersion: 1,
-            exercises: [{ id: "e1" }],
-          }),
-        },
-      });
-      // Без зареєстрованого dual-write-контексту запис — no-op, і це
-      // головне: у мертві LS-ключі більше не летить нічого.
+    it("на холодному кеші відмовляє, а не мовчки зливає, і не пише в localStorage", async () => {
+      // Холодний кеш не бачить рядків акаунта: «заміна» вироджується в
+      // «злиття», а `merge` перезаписав би наявне (аудит 2026-10-01, data-07).
+      clearFizrukSqliteCache();
+      await expect(
+        applyFizrukFullBackupPayload(
+          {
+            data: {
+              [WORKOUTS_STORAGE_KEY]: JSON.stringify({
+                schemaVersion: 1,
+                workouts: [{ id: "w1", startedAt: "2026-01-01T00:00:00.000Z" }],
+              }),
+              [CUSTOM_EXERCISES_KEY]: JSON.stringify({
+                schemaVersion: 1,
+                exercises: [{ id: "e1" }],
+              }),
+            },
+          },
+          "merge",
+        ),
+      ).rejects.toThrow(/ще завантажуються/);
       expect(localStorage.getItem(WORKOUTS_STORAGE_KEY)).toBeNull();
       expect(localStorage.getItem(CUSTOM_EXERCISES_KEY)).toBeNull();
     });
 
+    it("без зареєстрованого контексту повертає skipped (не успіх) і не пише в localStorage", async () => {
+      __setFizrukSqliteCacheForTests({});
+      const outcome = await applyFizrukFullBackupPayload(
+        {
+          data: {
+            [WORKOUTS_STORAGE_KEY]: JSON.stringify({
+              schemaVersion: 1,
+              workouts: [{ id: "w1", startedAt: "2026-01-01T00:00:00.000Z" }],
+            }),
+          },
+        },
+        "merge",
+      );
+      expect(outcome).toEqual({ status: "skipped", reason: "context-unset" });
+      expect(localStorage.getItem(WORKOUTS_STORAGE_KEY)).toBeNull();
+      clearFizrukSqliteCache();
+    });
+
     it("не падає на не-рядкових значеннях усередині data", async () => {
+      __setFizrukSqliteCacheForTests({});
       await expect(
-        applyFizrukFullBackupPayload({
-          data: { [WORKOUTS_STORAGE_KEY]: 123, [CUSTOM_EXERCISES_KEY]: null },
-        }),
-      ).resolves.toBeUndefined();
+        applyFizrukFullBackupPayload(
+          {
+            data: {
+              [WORKOUTS_STORAGE_KEY]: 123,
+              [CUSTOM_EXERCISES_KEY]: null,
+            },
+          },
+          "merge",
+        ),
+      ).resolves.toEqual({ status: "skipped", reason: "context-unset" });
+      clearFizrukSqliteCache();
     });
   });
 
