@@ -140,6 +140,25 @@ const envSchema = z.object({
    */
   CHAT_INJECTION_JEV_SHADOW: boolFromEnv(true),
 
+  /**
+   * Верифікація чисел у відповідях чату (ADR-0097, `chat/numberVerify/`).
+   *
+   *   `off`     - нічого не рахується, жодних метрик;
+   *   `shadow`  - дефолт: число звіряється з поданим, результат іде лише в
+   *               метрики й лог без чисел і тексту, відповідь не змінюється;
+   *   `enforce` - парсер приймає значення, але ДО PR3 серії воно поводиться
+   *               як `shadow`: повторної генерації й вирізання цифр ще немає.
+   *
+   * Незадане або порожнє значення дає `shadow`; регістр і крайні пробіли не
+   * важливі; будь-що інше валить старт (на прапорці, що колись переписуватиме
+   * текст людині, гадати не можна).
+   * Умова зняття - `docs/engineering/architecture/feature-flags.md` § 3.1.
+   */
+  CHAT_NUMBER_VERIFY: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim().toLowerCase() || undefined : v),
+    z.enum(["off", "shadow", "enforce"]).default("shadow"),
+  ),
+
   CHAT_CACHE_TTL_1H: boolFromEnv(true),
 
   CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),
@@ -557,6 +576,16 @@ const envSchema = z.object({
   MCC_BATCH_INTERVAL_MS: intFromEnv(3_600_000),
 
   AI_MEMORY_ENABLED: boolFromEnv(false),
+
+  /**
+   * Рубильник `GET /api/v2/sync/stream` (SSE). Дефолт `false` → маршрут
+   * відповідає 404, поки немає клієнта-споживача (Фаза 3,
+   * `sync-client-wiring.md`); аудит 2026-10-01, sec-09. Ран-тайм читає
+   * `process.env` напряму (`modules/sync/syncV2StreamGuard.ts`,
+   * `boolFromProcessEnv`) з тією ж семантикою - це поле лише валідує й
+   * документує значення.
+   */
+  SYNC_V2_STREAM_ENABLED: boolFromEnv(false),
 
   VOYAGE_API_KEY: stringWithDefault(""),
 

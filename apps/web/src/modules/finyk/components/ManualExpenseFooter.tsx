@@ -22,6 +22,11 @@ const copy = messages.finyk.manualExpenseSheet;
 export interface ManualExpenseFooterProps {
   isEditing: boolean;
   isSubmitting: boolean;
+  /**
+   * Сховище ще прогрівається (холодний старт): кнопки збереження неактивні, а
+   * головна показує спінер. «Скасувати» лишається доступною.
+   */
+  storageLoading?: boolean;
   /** Підпис кнопки збереження в режимі створення (заголовок аркуша). */
   createLabel: string;
   onCancel: () => void;
@@ -33,6 +38,7 @@ export interface ManualExpenseFooterProps {
 export function ManualExpenseFooter({
   isEditing,
   isSubmitting,
+  storageLoading = false,
   createLabel,
   onCancel,
   onSubmit,
@@ -50,7 +56,12 @@ export function ManualExpenseFooter({
         >
           {copy.cancel}
         </Button>
-        <Button className="flex-1" onClick={onSubmit} disabled={isSubmitting}>
+        <Button
+          className="flex-1"
+          onClick={onSubmit}
+          disabled={isSubmitting}
+          loading={storageLoading}
+        >
           {isEditing ? copy.save : createLabel}
         </Button>
       </div>
@@ -61,7 +72,7 @@ export function ManualExpenseFooter({
           variant="ghost"
           className="w-full"
           onClick={onSubmitKeepOpen}
-          disabled={isSubmitting}
+          disabled={isSubmitting || storageLoading}
         >
           {copy.saveAndAddMore}
         </Button>

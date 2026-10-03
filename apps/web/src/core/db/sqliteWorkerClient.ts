@@ -253,6 +253,9 @@ export async function openSqliteInWorker(
       }
     },
     async close() {
+      // Після `wipe()` (воркер уже вбито) або повторного `close()` робити
+      // нічого: без цього `close()` після `wipe()` кидав «connection closed».
+      if (dead) return;
       try {
         await call({ kind: "close" });
       } finally {
@@ -260,7 +263,16 @@ export async function openSqliteInWorker(
       }
     },
     async wipe() {
-      await call({ kind: "wipe" });
+      // Обробник `wipe` у воркері сам закриває БД і лише тоді робить
+      // `unlink`, тож кликати його треба ДО `close()` (priv-05): `close()`
+      // вбиває воркер, і наступний `wipe` відхилявся б як `dead`. Воркер
+      // після стирання більше не потрібен — гасимо його (навіть якщо
+      // стирання впало, щоб не лишати тримача OPFS-хендлів).
+      try {
+        await call({ kind: "wipe" });
+      } finally {
+        terminate();
+      }
     },
   };
 }

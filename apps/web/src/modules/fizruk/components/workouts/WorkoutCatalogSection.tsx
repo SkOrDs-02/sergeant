@@ -305,11 +305,17 @@ export function WorkoutCatalogSection({
             const isOpen = open[g.id] ?? false;
             const panelId = `catalog-panel-${g.id}`;
             return (
-              <div key={g.id} className="border-b border-line last:border-0">
+              <div key={g.id} className="group/cg">
+                {/* Роздільник групи тримає сама смуга (`border-b`), а не
+                    обгортка: смуга без власної межі у світлій темі `flat`
+                    (1.09 проти картки), а лінія обгортки лежала поза її
+                    боксом. Згорнута остання група лінії не має (нижній край
+                    — межа `Card`), розгорнута зберігає її як роздільник
+                    «смуга / перша вправа». */}
                 <button
                   type="button"
                   onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-panelHi hover:bg-line/40 transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-panelHi hover:bg-line/40 transition-colors border-b border-line group-last/cg:aria-[expanded=false]:border-b-0"
                   aria-expanded={isOpen}
                   aria-controls={panelId}
                 >
@@ -321,7 +327,10 @@ export function WorkoutCatalogSection({
                 </button>
 
                 {isOpen && (
-                  <div id={panelId}>
+                  <div
+                    id={panelId}
+                    className="border-b border-line group-last/cg:border-b-0"
+                  >
                     {g.items.map((ex) => {
                       const catCf = recoveryConflictsForExercise(ex, rec.by);
                       const addedCount =
@@ -329,7 +338,10 @@ export function WorkoutCatalogSection({
                           ? (addedCountByExerciseId?.[ex.id] ?? 0)
                           : 0;
                       return (
-                        <div key={ex.id} className="flex border-t border-line">
+                        <div
+                          key={ex.id}
+                          className="flex border-t border-line first:border-t-0"
+                        >
                           <button
                             type="button"
                             onClick={() => handleExerciseInListClick(ex)}

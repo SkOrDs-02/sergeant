@@ -16,9 +16,9 @@ import {
 import { diffRoutineDualWriteOps, type RoutineDualWriteOp } from "./diff.js";
 import { probeRoutineParity } from "./parity.js";
 import {
-  ackDualWrite,
   journalDualWrite,
   pendingDualWrites,
+  settleDualWriteEntry,
 } from "../../../../core/durability/dualWriteJournal.js";
 import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 import {
@@ -338,9 +338,7 @@ function startRoutineRun(
       // «sqlite недоступна» лишає запис у журналі для наступного буту.
       // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
       // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
-      if (journalId && outcome.status === "applied") {
-        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
-      }
+      settleDualWriteEntry("routine", journalId, outcome, outboxSettled);
     })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {

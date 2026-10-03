@@ -17,6 +17,8 @@ const mem = vi.hoisted(() => ({
   active: "home",
   water: {} as Record<string, number>,
   shopping: null as unknown,
+  /** data-04: Їжа ще не гідратована — усі гейтовані записи повертають false. */
+  blocked: false,
 }));
 
 // W1-PANTRY-APPEND стадія 2 — `consume_from_pantry` тепер емітує ledger-подію
@@ -42,8 +44,9 @@ vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
       ...domain.defaultNutritionPrefs(),
       ...mem.prefs,
     })),
-    persistNutritionPrefs: vi.fn((p: Record<string, unknown>) => {
-      mem.prefs = p;
+    patchNutritionPrefs: vi.fn((patch: Record<string, unknown>) => {
+      if (mem.blocked) return false;
+      mem.prefs = { ...mem.prefs, ...patch };
       return true;
     }),
     loadPantries: vi.fn(() => mem.pantries ?? [domain.makeDefaultPantry()]),
@@ -65,6 +68,7 @@ vi.mock("../../../modules/nutrition/lib/waterStorage", async () => {
   return {
     loadWaterLog: vi.fn(() => ({ ...mem.water })),
     saveWaterLog: vi.fn((log: unknown) => {
+      if (mem.blocked) return false;
       mem.water = domain.normalizeWaterLog(log) as Record<string, number>;
       return true;
     }),
@@ -76,6 +80,7 @@ vi.mock("../../../modules/nutrition/lib/shoppingListStorage", async () => {
   return {
     loadShoppingList: vi.fn(() => domain.normalizeShoppingList(mem.shopping)),
     persistShoppingList: vi.fn((list: unknown) => {
+      if (mem.blocked) return false;
       mem.shopping = domain.normalizeShoppingList(list);
       return true;
     }),
@@ -95,6 +100,7 @@ beforeEach(() => {
   mem.active = "home";
   mem.water = {};
   mem.shopping = null;
+  mem.blocked = false;
   localStorage.clear();
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -548,7 +554,7 @@ describe("set_daily_plan", () => {
     expect(out).toContain("Немає");
   });
 
-  it("canonical: plan persists via persistNutritionPrefs", () => {
+  it("canonical: plan persists via patchNutritionPrefs", () => {
     const out = call({
       name: "set_daily_plan",
       input: { kcal: 2000 },
@@ -556,6 +562,50 @@ describe("set_daily_plan", () => {
     expect(typeof out).toBe("string");
     expect(out).toContain("оновлено");
     expect(mem.prefs["dailyTargetKcal"]).toBe(2000);
+  });
+});
+
+describe("data-04: Їжа ще не гідратована", () => {
+  const LOADING = "Дані Їжі ще завантажуються, спробуй за кілька секунд.";
+
+  it("set_daily_plan: persist відхилено — відповідає «ще завантажуються», а не успіхом", () => {
+    mem.blocked = true;
+    const out = call({
+      name: "set_daily_plan",
+      input: { kcal: 2000 },
+    });
+    expect(out).toBe(LOADING);
+    expect(mem.prefs["dailyTargetKcal"]).toBeUndefined();
+  });
+
+  it("set_daily_plan: пише лише змінені поля, решту prefs не чіпає", () => {
+    mem.prefs = { waterGoalMl: 2750, reminderEnabled: true };
+    call({ name: "set_daily_plan", input: { kcal: 2000 } });
+    expect(mem.prefs).toMatchObject({
+      dailyTargetKcal: 2000,
+      waterGoalMl: 2750,
+      reminderEnabled: true,
+    });
+  });
+
+  it("log_water: запис відхилено — відповідає «ще завантажуються»", () => {
+    mem.blocked = true;
+    const out = handleNutritionAction({
+      name: "log_water",
+      input: { amount_ml: 300 },
+    });
+    expect(out).toBe(LOADING);
+    expect(mem.water).toEqual({});
+  });
+
+  it("add_to_shopping_list: запис відхилено — відповідає «ще завантажуються»", () => {
+    mem.blocked = true;
+    const out = handleNutritionAction({
+      name: "add_to_shopping_list",
+      input: { name: "Молоко" },
+    });
+    expect(out).toBe(LOADING);
+    expect(mem.shopping).toBeNull();
   });
 });
 

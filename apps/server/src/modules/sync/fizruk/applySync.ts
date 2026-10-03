@@ -13,7 +13,7 @@ import {
   WORKOUT_SET_WEIGHT_KG_BOUNDS,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
-import { applyIfNewer } from "../applySync-helpers.js";
+import { applyIfNewer, guardParentOwned } from "../applySync-helpers.js";
 
 export async function applyFizrukWorkouts(
   client: PoolClient,
@@ -244,6 +244,16 @@ export async function applyFizrukItems(
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
 
+  // Батько — тренування САМЕ цього користувача (insert і update: UPDATE теж
+  // перепризначає `workout_id`). Див. `guardParentOwned`.
+  const parentReject = await guardParentOwned(
+    client,
+    "fizruk_workouts",
+    workoutId,
+    userId,
+  );
+  if (parentReject) return parentReject;
+
   if (existing.rows.length === 0) {
     await client.query(
       `INSERT INTO fizruk_workout_items
@@ -392,6 +402,16 @@ export async function applyFizrukSets(
   if (deletedAt === "invalid") {
     return { status: "rejected", reason: "invalid_deleted_at" };
   }
+
+  // Батько — позиція САМЕ цього користувача (insert і update). Див.
+  // `guardParentOwned`.
+  const parentReject = await guardParentOwned(
+    client,
+    "fizruk_workout_items",
+    workoutItemId,
+    userId,
+  );
+  if (parentReject) return parentReject;
 
   if (existing.rows.length === 0) {
     await client.query(

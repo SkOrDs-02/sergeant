@@ -38,6 +38,13 @@ import { decryptOpRowForPull } from "../../lib/healthTextCrypto.js";
  *   * Heartbeat — `: heartbeat\n\n` (SSE-comment, ігнорується клієнтом)
  *     кожні `SYNC_V2_STREAM_HEARTBEAT_MS`. Тримає alive проти 30-секундних
  *     proxy-idle-таймаутів (Vercel/Cloudflare/nginx default).
+ *   * sec-09: маршрут закритий прапорцем `SYNC_V2_STREAM_ENABLED` (дефолт
+ *     off → 404, `syncV2StreamGuard.ts`). Для ввімкненого стану: кожен
+ *     heartbeat перевіряє сесію в БД (`getFreshSessionUser`, без cookie-кешу)
+ *     і закриває стрім, якщо її немає; зʼєднання живе не довше
+ *     `SYNC_V2_STREAM_MAX_AGE_MS`; не більше `SYNC_V2_STREAM_MAX_PER_USER`
+ *     одночасних стрімів на юзера (новий витісняє найстаріший). Перед
+ *     серверним закриттям летить кадр `event: closed` із `reason`.
  *
  * Single-process замітка: емітер in-memory; multi-instance деплоймент
  * у майбутньому потребуватиме cross-process fan-out. Рішення зафіксовано
@@ -52,8 +59,93 @@ import { decryptOpRowForPull } from "../../lib/healthTextCrypto.js";
 
 export const SYNC_V2_STREAM_HEARTBEAT_MS = 25_000;
 export const SYNC_V2_STREAM_REPLAY_LIMIT = 500;
+/**
+ * sec-09: максимальний вік одного зʼєднання. Після нього сервер закриває
+ * стрім сам; клієнт перепідключається з `Last-Event-ID` і проходить
+ * handshake (`requireSession`) заново.
+ */
+export const SYNC_V2_STREAM_MAX_AGE_MS = 15 * 60_000;
+/**
+ * sec-09: ліміт одночасних стрімів на користувача (кілька вкладок/пристроїв
+ * законні, безмежна кількість - ні). Новий стрім витісняє НАЙСТАРІШИЙ.
+ */
+export const SYNC_V2_STREAM_MAX_PER_USER = 3;
+
+/** Чому сервер закрив стрім; іде клієнту в `event: closed` (best-effort). */
+export type SyncV2StreamCloseReason =
+  "max_age" | "session_revoked" | "session_check_failed" | "evicted";
 
 type WithSessionUser = Request & { user?: { id: string } };
+
+interface StreamHandle {
+  close(reason: SyncV2StreamCloseReason): void;
+}
+
+/**
+ * Реєстр відкритих стрімів по користувачу (in-process, як і `opLogEmitter`).
+ * `Set` зберігає порядок вставки, тож перший елемент - найстаріший стрім.
+ */
+const streamsByUser = new Map<string, Set<StreamHandle>>();
+
+function registerStream(userId: string, handle: StreamHandle): void {
+  const set = streamsByUser.get(userId) ?? new Set<StreamHandle>();
+  while (set.size >= SYNC_V2_STREAM_MAX_PER_USER) {
+    const oldest = set.values().next().value;
+    if (!oldest) break;
+    // Видаляємо ДО close(): стрім, що ще в replay, не встиг підписатись і
+    // сам себе з реєстру не прибере - цикл інакше крутився б вічно.
+    set.delete(oldest);
+    oldest.close("evicted");
+  }
+  set.add(handle);
+  // Після циклу: cleanup витісненого міг прибрати порожній запис з мапи.
+  streamsByUser.set(userId, set);
+}
+
+/** Лише для тестів: стріми, що не закрились між кейсами, не мають текти в наступні. */
+export const __testingResetSyncV2StreamRegistry = (): void => {
+  streamsByUser.clear();
+};
+
+function unregisterStream(userId: string, handle: StreamHandle): void {
+  const set = streamsByUser.get(userId);
+  if (!set) return;
+  set.delete(handle);
+  if (set.size === 0) streamsByUser.delete(userId);
+}
+
+/**
+ * sec-09: перевірка сесії НАЖИВО, в обхід 5-хвилинного `cookieCache`
+ * (`getFreshSessionUser` - один SELECT). `requireSession()` резолвить сесію
+ * лише на handshake, тож без цього logout / revoke-sessions / зміна пароля
+ * не закривали вже відкритий стрім.
+ *
+ * `auth.js` імпортується ліниво, на першому heartbeat: статичний імпорт
+ * тягнув би весь Better Auth (і пул БД) у кожен модуль, що імпортує
+ * `notifySyncV2OpsApplied` (push-хендлер, його тести).
+ */
+async function checkStreamSession(
+  req: Request,
+  userId: string,
+): Promise<"ok" | SyncV2StreamCloseReason> {
+  try {
+    const { getFreshSessionUser } = await import("../../auth.js");
+    const current = await getFreshSessionUser(req);
+    return current && current.id === userId ? "ok" : "session_revoked";
+  } catch (err: unknown) {
+    // Fail-closed: стрім несе чутливі дані, а клієнт перепідключається сам.
+    try {
+      logger.warn({
+        msg: "sync_v2_stream_session_check_failed",
+        userId,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    } catch {
+      /* logging must never break a request */
+    }
+    return "session_check_failed";
+  }
+}
 
 /**
  * Public shape SSE-події `op`. Дзеркалить response.ops[] із `/pull`,
@@ -259,6 +351,24 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
     /* metrics must never break a request */
   }
 
+  // 0. Реєстр одночасних стрімів (sec-09). Реєструємось ДО replay: інакше
+  //    паралельні конекти проскочили б ліміт, поки чекають SELECT. Якщо нас
+  //    витіснили, поки `liveClose` ще не заданий (йде replay), лише
+  //    запамʼятовуємо причину - replay перевірить її після `await`.
+  //    (Обʼєкт, а не `let`: TS не бачить присвоєнь із замикань і звузив би
+  //    `let x = null` до `null`.)
+  const closing: {
+    reason: SyncV2StreamCloseReason | null;
+    live: ((reason: SyncV2StreamCloseReason) => void) | null;
+  } = { reason: null, live: null };
+  const handle: StreamHandle = {
+    close(reason) {
+      if (closing.live) closing.live(reason);
+      else closing.reason ??= reason;
+    },
+  };
+  registerStream(user.id, handle);
+
   // 1. Replay backlog. Один SELECT (як у `/pull`), без auto-pagination —
   //    якщо backlog > limit, клієнт reconnect-иться з оновленим since.
   let lastReplayedId = since;
@@ -275,24 +385,28 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
         LIMIT $4`,
       [user.id, since, originDeviceId, SYNC_V2_STREAM_REPLAY_LIMIT],
     );
-    res.write(
-      formatSseFrame("hello", {
-        since,
-        replay_limit: SYNC_V2_STREAM_REPLAY_LIMIT,
-      }),
-    );
-    for (const row of result.rows) {
-      const op = rowToStreamOp(row);
-      lastReplayedId = op.id;
-      res.write(formatSseFrame("op", op, op.id));
+    // Витіснено під час replay: даних не пишемо, закриваємо нижче.
+    if (closing.reason === null) {
+      res.write(
+        formatSseFrame("hello", {
+          since,
+          replay_limit: SYNC_V2_STREAM_REPLAY_LIMIT,
+        }),
+      );
+      for (const row of result.rows) {
+        const op = rowToStreamOp(row);
+        lastReplayedId = op.id;
+        res.write(formatSseFrame("op", op, op.id));
+      }
+      res.write(
+        formatSseFrame("caught_up", {
+          last_id: lastReplayedId,
+          truncated: result.rows.length === SYNC_V2_STREAM_REPLAY_LIMIT,
+        }),
+      );
     }
-    res.write(
-      formatSseFrame("caught_up", {
-        last_id: lastReplayedId,
-        truncated: result.rows.length === SYNC_V2_STREAM_REPLAY_LIMIT,
-      }),
-    );
   } catch (err: unknown) {
+    unregisterStream(user.id, handle);
     try {
       syncOperationsTotal.inc({
         op: "v2_stream",
@@ -352,21 +466,44 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
   //    якщо клієнт відвалився між ticks (старий interval-handle ще виконається
   //    раз перед clearInterval; для нашого short cadence це ОК, але прикриваємо
   //    через `unref`, щоб не блокувати graceful shutdown).
+  //
+  //    sec-09: той самий тік перевіряє сесію в БД. Стрім без живої сесії
+  //    закривається на наступному heartbeat (до 25 с після sign-out/revoke).
+  let cleanedUp = false;
+  let sessionCheckInFlight = false;
   const heartbeatTimer = setInterval(() => {
-    if (res.writableEnded) return;
+    if (res.writableEnded || cleanedUp) return;
     try {
       res.write(formatSseHeartbeat());
     } catch {
       /* socket може бути в half-closed; cleanup нижче */
     }
+    // Не накопичуємо перевірки, якщо БД відповідає повільніше за тік.
+    if (sessionCheckInFlight) return;
+    sessionCheckInFlight = true;
+    void checkStreamSession(req, user.id)
+      .then((verdict) => {
+        if (verdict !== "ok") closeStream(verdict);
+      })
+      .finally(() => {
+        sessionCheckInFlight = false;
+      });
   }, SYNC_V2_STREAM_HEARTBEAT_MS);
   if (typeof heartbeatTimer.unref === "function") heartbeatTimer.unref();
 
-  let cleanedUp = false;
+  // sec-09: жорстка стеля віку зʼєднання, незалежно від сесії.
+  const maxAgeTimer = setTimeout(
+    () => closeStream("max_age"),
+    SYNC_V2_STREAM_MAX_AGE_MS,
+  );
+  if (typeof maxAgeTimer.unref === "function") maxAgeTimer.unref();
+
   const cleanup = (): void => {
     if (cleanedUp) return;
     cleanedUp = true;
     clearInterval(heartbeatTimer);
+    clearTimeout(maxAgeTimer);
+    unregisterStream(user.id, handle);
     opLogEmitter.off(channel, onOps);
     if (activeCounted) {
       try {
@@ -406,7 +543,34 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
       /* logging must never break a request */
     }
   };
+  // Серверне закриття: best-effort кадр `closed` (клієнт може не
+  // перепідключатись на `session_revoked`), далі той самий cleanup.
+  const closeStream = (reason: SyncV2StreamCloseReason): void => {
+    if (cleanedUp) return;
+    try {
+      if (!res.writableEnded) res.write(formatSseFrame("closed", { reason }));
+    } catch {
+      /* socket вже мертвий - cleanup однаково закриє res */
+    }
+    try {
+      logger.info({
+        msg: "sync_v2_stream_server_closed",
+        userId: user.id,
+        reason,
+      });
+    } catch {
+      /* logging must never break a request */
+    }
+    cleanup();
+  };
+  closing.live = closeStream;
+
   req.on("close", cleanup);
   req.on("aborted", cleanup);
   res.on("close", cleanup);
+
+  // Клієнт міг відвалитись, поки йшов replay (події `close` ми ще не
+  // слухали), або нас витіснили в тому ж вікні.
+  if (closing.reason !== null) closeStream(closing.reason);
+  else if (res.destroyed) cleanup();
 }

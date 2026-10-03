@@ -14,8 +14,13 @@
 # Scopes that used to live here (production-deps / dev-deps groups) belong
 # to Renovate now; видалено щоб уникнути duplicate-PR-noise.
 #
-# Auto-merge for patch-only security updates lives in
-# `.github/workflows/dependabot-automerge.yml`.
+# Воркфлоу авто-мерджу (`dependabot-automerge.yml`) у репо більше немає.
+#
+# Увага (2026-10-03): Renovate на GitHub-репо зараз не працює (немає ні його
+# PR, ні Dependency Dashboard), тож звичайні оновлення версій npm фактично
+# приходять від Dependabot, попри ADR-0044. Вимикати їх тут
+# (`open-pull-requests-limit: 0`) без працюючого Renovate не можна, бо тоді
+# оновлень версій не буде зовсім. Це рішення власника.
 
 version: 2
 updates:
@@ -52,10 +57,30 @@ updates:
       - dependency-name: "postcss"
       - dependency-name: "uuid"
       - dependency-name: "@tootallnate/once"
-    labels:
-      - "dependencies"
-      - "security"
-      - "automerge-eligible"
+      # Мажори, привʼязані до мобільного стеку (Expo SDK, React Native,
+      # Capacitor). Їх ставлять разом із SDK (`expo install`), а не поодинці,
+      # і мобільний контур на паузі (ADR-0094). Security-оновлення в межах
+      # мажору ці правила не блокують. PR #878, #882, #1085 закрито з цієї
+      # причини 2026-10-03.
+      - dependency-name: "expo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "expo-*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@expo/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-native"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-test-renderer"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@capacitor/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@capacitor-mlkit/*"
+        update-types: ["version-update:semver-major"]
+    # Без власного `labels:` Dependabot ставить свої дефолтні мітки й сам їх
+    # створює. Колишній список посилався на мітки, яких у репо немає
+    # (`dependencies`, `automerge-eligible` — Dependabot скаржився в кожному
+    # PR), а `security` чіплявся до ВСІХ npm-PR, зокрема звичайних оновлень
+    # версій, і вводив в оману (розбір 2026-10-03).
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -69,9 +94,6 @@ updates:
       # `ci(deps)` lands the bump under the `ci` type (workflow change)
       # with the `deps` scope so commitlint scope-enum accepts it.
       prefix: "ci(deps)"
-    labels:
-      - "dependencies"
-      - "ci"
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -83,9 +105,12 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "docker"
+    ignore:
+      # Проєкт закріплений на Node 22 LTS (Volta 22.19.0, рантайм
+      # distroless nodejs22). Перехід на інший мажор — окреме рішення, а не
+      # автооновлення (PR #1177 закрито 2026-10-03).
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "docker"
     directory: "/ops/grafana-alloy"
@@ -97,7 +122,3 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "chore(deps)"
-    labels:
-      - "dependencies"
-      - "docker"
-      - "observability"

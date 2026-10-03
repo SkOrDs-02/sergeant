@@ -1,15 +1,12 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   All remaining keys in this file (finyk_hidden, finyk_budgets, finyk_debts,
-   finyk_recv, finyk_hidden_txs, finyk_tx_cats, finyk_tx_splits,
-   finyk_custom_cats_v1, finyk_monthly_plan, finyk_subs, finyk_mono_debt_linked)
-   have no SQLite canon yet and are on the 2026-Q3 burn-down list. The two
-   tombstoned keys (finyk_tx_cache / finyk_info_cache) were removed in
-   Dual-write teardown Phase 3 and replaced by the mirror reader below. */
+// AI-CONTEXT: УСІ фінансові слайси беруться з канонічного кешу SQLite
+// (`getCachedFinykSqliteState`), а не з kv-ключів `finyk_*`: UI їх не пише
+// (data-08), і [План]/[Борги] у контексті асистента будувались із порожнього
+// kv. Два tombstoned-ключі (finyk_tx_cache / finyk_info_cache) прибрано в
+// Dual-write teardown Phase 3 і замінено mirror-читачем нижче.
 import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
 import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
-import { ls } from "../hubChatUtils";
 import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import type {
@@ -31,20 +28,19 @@ export function readAllData(): AllData {
     ? new Date(mirror.refreshedAt).getTime()
     : null;
 
-  const hiddenAccounts = ls<string[]>("finyk_hidden", []);
-  const budgets = ls<Budget[]>("finyk_budgets", []);
-  const manualDebts = ls<Debt[]>("finyk_debts", []);
-  const receivables = ls<Receivable[]>("finyk_recv", []);
-  const hiddenTxIds = ls<string[]>("finyk_hidden_txs", []);
-  const txCategories = ls<Record<string, string>>("finyk_tx_cats", {});
-  const txSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  const customCategories = ls<unknown[]>("finyk_custom_cats_v1", []);
-  const monthlyPlan = ls<MonthlyPlan>("finyk_monthly_plan", {});
-  const subscriptions = ls<Subscription[]>("finyk_subs", []);
-  const monoDebtLinked = ls<Record<string, unknown>>(
-    "finyk_mono_debt_linked",
-    {},
-  );
+  // Холодний кеш віддає порожні слайси (EMPTY_CACHE) — як і раніше порожній kv.
+  const sqlite = getCachedFinykSqliteState();
+  const hiddenAccounts: string[] = sqlite.hiddenAccounts;
+  const budgets = sqlite.budgets as Budget[];
+  const manualDebts = sqlite.manualDebts as Debt[];
+  const receivables = sqlite.receivables as Receivable[];
+  const hiddenTxIds: string[] = sqlite.hiddenTransactions;
+  const txCategories = sqlite.txCategories as Record<string, string>;
+  const txSplits = sqlite.txSplits as Record<string, unknown>;
+  const customCategories: unknown[] = sqlite.customCategories;
+  const monthlyPlan = (sqlite.monthlyPlan ?? {}) as MonthlyPlan;
+  const subscriptions = sqlite.subscriptions as Subscription[];
+  const monoDebtLinked = sqlite.monoDebtLinkedTxIds as Record<string, unknown>;
 
   // AI-CONTEXT: канонічний всесвіт витрат (Хвиля 1, W1-CANON-AGG).
   // Стадія 2а: excluded-set більше не збирається вручну з ТРЬОХ частин —
@@ -61,11 +57,11 @@ export function readAllData(): AllData {
   // домішування туди ручних записів перекроїло б зовсім іншу метрику.
   const universe = buildFinykSpendingUniverse({
     bankTxs: transactions,
-    manualExpenses: getCachedFinykSqliteState().manualExpenses,
+    manualExpenses: sqlite.manualExpenses,
     hiddenTxIds,
     txCategories,
     receivables,
-    excludedStatTxIds: ls<string[]>("finyk_excluded_stat_txs", []),
+    excludedStatTxIds: sqlite.excludedStatTxIds ?? [],
   });
   const excludedIds = universe.excludedTxIds;
 
@@ -80,7 +76,7 @@ export function readAllData(): AllData {
   const effectiveTxCategories = withMerchantRuleOverrides(
     universe.transactions,
     txCategories,
-    buildMerchantRuleIndex(getCachedFinykSqliteState().merchantRules),
+    buildMerchantRuleIndex(sqlite.merchantRules),
     customCategories,
   ) as Record<string, string>;
 

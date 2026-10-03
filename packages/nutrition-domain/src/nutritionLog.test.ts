@@ -5,26 +5,7 @@
 // (`getDayMacros`, `getDaySummary`, `searchMealsByName`,
 // `getMacrosForDateRange`), і допоміжні (`addDaysISODate`,
 // `estimateLogBytes`, `trimLogOldestDays`).
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@sergeant/shared", async () => {
-  const actual =
-    await vi.importActual<typeof import("@sergeant/shared")>(
-      "@sergeant/shared",
-    );
-  return {
-    ...actual,
-    // toLocalISODate працює з системним часом → стабілізуємо.
-    // Реалізація з shared використовує Europe/Kyiv; ми мокаємо лише на
-    // фіксований формат UTC (`YYYY-MM-DD` від `Date`-args).
-    toLocalISODate: vi.fn((d: Date) => {
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, "0");
-      const day = String(d.getDate()).padStart(2, "0");
-      return `${y}-${m}-${day}`;
-    }),
-  };
-});
+import { describe, expect, it } from "vitest";
 
 import {
   addDaysISODate,
