@@ -23,7 +23,7 @@
 
 ### `sec-01` [critical] Прод-API дає credentialed CORS мертвому домену sergeant.2dmanager.com.ua, який вільний для реєстрації
 
-- **Стан:** виправлено в гілці claude/fix-sec-01-dead-cors-origin
+- **Стан:** виправлено в #1327 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: CORS / auth
 - **Де:** apps/server/src/http/cors.ts:23-27,62-66,129-133; apps/server/src/auth.ts:69-84; apps/web/src/core/observability/deployEnvironment.ts:52-54; apps/mobile-shell/src/index.ts:172; apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66; apps/mobile/app.config.ts:69; apps/mobile/src/lib/deepLinks.ts:34; apps/web/public/.well-known/security.txt:5
 - **Першопричина:** Колишній кастомний домен лишився захардкодженим у PROD_ORIGINS (cors.ts:25). Цей список діє і в production, а ALLOWED_ORIGINS/ALLOWED_ORIGIN_REGEX можуть лише додавати origin-и. Домен 2dmanager.com.ua нікому не належить (NXDOMAIN, WHOIS hostmaster.ua: «доступне для реєстрації»), а сесійна кука в проді SameSite=None; Secure. Той самий хост досі в deep link/App Links, deployEnvironment і Canonical у security.txt.
@@ -217,7 +217,7 @@ NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt node <scratch>
 
 ### `sec-02` [high] Відкликана сесія живе до 7 днів: /api/auth/update-user перевипускає cookie-кеш без перевірки сесії в БД
 
-- **Стан:** виправлено в гілці claude/fix-sec-02-05-session
+- **Стан:** виправлено в #1329 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:424-431,597-605,714-726; node_modules/better-auth/dist/api/routes/update-user.mjs:16,54-69; node_modules/better-auth/dist/cookies/index.mjs:93; apps/server/src/http/requireSession.ts:83-91
 - **Першопричина:** session.cookieCache (maxAge 300 с) довіряє підписаній куці session_data без звернення до БД. Better Auth /update-user стоїть на sessionMiddleware, бере сесію з цього кешу і викликає setSessionCookie, який ставить новий строк кешу від поточного моменту. Кожен виклик раз на &lt;5 хв продовжує кеш, хоча рядка сесії в БД уже немає.
@@ -384,7 +384,7 @@ I tried to refute this and couldn't. I traced the code end to end and also repro
 
 ### `sec-04` [high] PIN-блокування вимикається після перезавантаження: прапорець app-lock-enabled не читається на холодному старті
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-03-app-lock-reload разом із [`priv-03`](./privacy.md#priv-03), PR #1340 (ще не змерджено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Та сама першопричина, що й** [`priv-03`](./privacy.md#priv-03): Обидва описують вимкнення PIN-блокування після reload: прапорці читаються з localStorage до bootstrapKvStore() і typedStore кешує хибне значення. priv-03 ширший (зачіпає всі прапорці FLAG_REGISTRY) і має розмір S.
 - **Де:** apps/web/src/core/lib/featureFlags.ts:93-98,115-123,153-159; apps/web/src/shared/lib/storage/typedStore.ts:193-200,255-257; apps/web/src/shared/lib/storage/storage.ts:151-173; apps/web/src/main.tsx:198-215; apps/web/src/core/security/useAppLock.ts:51,64-103; apps/web/src/core/app/Providers.tsx:69
@@ -443,7 +443,7 @@ Code path, traced end to end at HEAD c7c09607:
 
 ### `sec-05` [medium] Сирий session token віддається в JSON get-session і list-sessions (з токенами всіх пристроїв) і приймається як Bearer
 
-- **Стан:** виправлено в гілці claude/fix-sec-02-05-session
+- **Стан:** виправлено в #1329 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:607-617; node_modules/better-auth/dist/plugins/bearer/index.mjs:32-37; node_modules/better-auth/dist/api/routes/session.mjs:17-260,371-397; apps/server/src/routes/auth.ts:33
 - **Першопричина:** Плагін bearer() увімкнений для всіх клієнтів без requireSignature, тож сирий токен без HMAC є повноцінним креденшелом. Better Auth віддає поле token у /get-session і в кожному елементі /list-sessions, і застосунок його не вирізає, хоча веб працює на httpOnly-куці, а мобільний контур на паузі (ADR-0094).
@@ -824,7 +824,7 @@ reset-redirect.mjs і reset-follow.mjs у <scratch>/agents/verify-client-static-
 
 ### `sec-09` [medium] SSE /api/v2/sync/stream переживає sign-out і відкликання сесії та далі стрімить живі дані без обмеження часу
 
-- **Стан:** виправлено в гілці claude/fix-sec-09-sync-stream-session
+- **Стан:** виправлено в #1346 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: sync
 - **Де:** apps/server/src/modules/sync/syncV2Stream.ts:207-412 (216,331-348,366-411); apps/server/src/routes/sync.ts:80-98; apps/server/src/http/timeout.ts:54-60
 - **Першопричина:** requireSession перевіряє сесію лише на handshake; syncV2Stream запам'ятовує req.user і слухає канал user:&lt;id&gt; до закриття сокета. Немає повторної перевірки сесії, max-age, ліміту одночасних стрімів на користувача і реакції на logout/revoke; heartbeat кожні 25 с тримає з'єднання, таймаут для SSE вимкнено.
@@ -977,7 +977,7 @@ node …/agents/api-live-sync-live/t09_stream.mjs (миттєво) і t10_stream
 
 ### `sec-10` [medium] DELETE /api/me і /api/auth/verify-password перевіряють пароль без app-ліміту: оракул пароля і навантаження scrypt
 
-- **Стан:** частково виправлено в гілці claude/fix-sec-10-16-auth-limits (DELETE /api/me і change-password під лімітом per-IP 5 і per-user 20 за 15 хв, verify-password вимкнено через disabledPaths; лишилось: алерт на серію INVALID_PASSWORD і повторна автентифікація OAuth-only акаунтів)
+- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (DELETE /api/me і change-password під лімітом per-IP 5 і per-user 20 за 15 хв, verify-password вимкнено через disabledPaths; лишилось: алерт на серію INVALID_PASSWORD і повторна автентифікація OAuth-only акаунтів)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/routes/me.ts:272-297; apps/server/src/modules/me/verifyAccountPassword.ts:38-54; apps/server/src/http/authMiddleware.ts:31-37; node_modules/better-auth/dist/api/routes/password.mjs:166-192
 - **Першопричина:** DELETE /api/me викликає verifyAccountPassword (scrypt ~130 мс) без rateLimitExpress, а authSensitiveRateLimit не покриває /verify-password і /change-password. Better Auth реєструє /verify-password у HTTP-роутері (scope 'server', а не SERVER_ONLY), і на ньому діє лише вбудований in-memory ліміт 100 за 10 с на IP.
@@ -1058,7 +1058,7 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: verify-pass
 
 ### `sec-11` [medium] Per-account ліміт входу обходиться тілом application/x-www-form-urlencoded
 
-- **Стан:** виправлено в гілці claude/fix-sec-11-rel-04-auth-body-parsing
+- **Стан:** виправлено в #1347 (змерджено 2026-10-03)
 - **Фікс:** `express.urlencoded` (16 КБ) для `/api/auth` + fail-closed у `authAccountRateLimit`: на sign-in/forget/request-password-reset/reset-password тіло з типом, відмінним від точного `application/json` / `application/x-www-form-urlencoded` (Better Auth приймає `application/jsonx`, `+json` через `includes`), отримує 415, а `email`, що не є одним рядком (повтор ключа у формі, Better Auth бере останнє значення), — 400. OAuth-колбеки не зачеплено.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/rate limit
 - **Де:** apps/server/src/http/authMiddleware.ts:71-104; apps/server/src/http/bodySizePolicy.ts; node_modules/better-auth/dist/api/routes/sign-in.mjs:155
@@ -1355,7 +1355,7 @@ silpo.ts:165-197: `const pending = await consumeAuthorizationState(state); ... c
 
 ### `sec-16` [medium] Необмежене name роздуває cookie-кеш сесії до 28-33 КБ: усі запити отримують 431, акаунт блокується без самовідновлення
 
-- **Стан:** частково виправлено в гілці claude/fix-sec-10-16-auth-limits (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache)
+- **Стан:** частково виправлено в #1366 (змерджено 2026-10-03) (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/профіль
 - **Де:** apps/server/src/auth.ts:427-431,449-540; apps/server/src/auth/sanitizeUserImage.ts; node_modules/better-auth/dist/api/routes/update-user.mjs:12-73; apps/web/src/core/profile/PersonalInfoSection.tsx:27
 - **Першопричина:** Better Auth update-user і sign-up приймають name без maxLength (ще й з коерцією не-рядків у JSON), а databaseHooks чистить лише image (sanitizeUserImage). Увесь user потрапляє в session_data, тож довге ім'я дає Cookie-заголовок понад ліміт Node у 16 КБ.
@@ -1436,7 +1436,7 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: update-user
 
 ### `sec-17` [medium] Канали для звітів про вразливості й запитів приватності не працюють: security.txt веде на мертвий репозиторій, а email-и на запаркований sergeant.app
 
-- **Стан:** частково виправлено в гілці claude/fix-sec-17-security-contacts (лишилось: робоча скринька з MX на домені проєкту для legal@/privacy@/support@/security@, зараз sergeant.app з Null MX; увімкнення private vulnerability reporting у налаштуваннях SkOrDs-02/sergeant)
+- **Стан:** частково виправлено в #1365 (змерджено 2026-10-03) (лишилось: робоча скринька з MX на домені проєкту для legal@/privacy@/support@/security@, зараз sergeant.app з Null MX; увімкнення private vulnerability reporting у налаштуваннях SkOrDs-02/sergeant)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: security.txt / юридичні сторінки
 - **Де:** apps/web/public/.well-known/security.txt:1-6; apps/web/src/core/legal/legalShared.ts:15-18; scripts/check-security-txt-expiry.sh; .github/workflows/ci.yml:217-218; docs/governance/security/beta-tester-brief.md:8; apps/landing/public/.well-known/
 - **Першопричина:** Після переїздів репозиторію й доменів контакти не оновили. Contact у security.txt веде на Skords-01/Sergeant (не існує), Canonical на 2dmanager.com.ua; legal@, privacy@, security@ і support@sergeant.app живуть на домені з Null MX, запаркованому на продаж (NS afternic). SECURITY.md немає, на лендингу security.txt немає, private vulnerability reporting на SkOrDs-02/sergeant вимкнено.
