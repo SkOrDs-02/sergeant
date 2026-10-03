@@ -26,6 +26,7 @@ import screenshotAnalyzeHandler, {
   normalizeImportScreenshotResult,
   salvageRowsFromTruncatedJson,
 } from "./screenshotAnalyze.js";
+import { ImportScreenshotAnalyzeResponseSchema } from "@sergeant/shared";
 import {
   IMPORT_SCREENSHOT_VISION_SYSTEM_PROMPT,
   buildImportScreenshotUserPrompt,
@@ -592,5 +593,160 @@ describe("draft-діагностика порожнього результату
     expect(body.draft.docType).toBe("bank_screenshot");
     expect(body.draft.rows).toHaveLength(1);
     expect(body.draft.truncated).toBe(true);
+  });
+});
+
+// ───────── rel-20: один рядок поза схемою не валить увесь скрін ────────────
+// Хендлер валідує відповідь через `ImportScreenshotAnalyzeResponseSchema.parse`,
+// тож раніше опис на 301 символ, сума понад 10 млн грн, рік-галюцинація чи
+// банк на 121 символ давали 500 на весь розпізнаний драфт.
+
+describe("rel-20: межі схеми відповіді", () => {
+  it("обрізає description до 300 і bank до 120, не гублячи рядок", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      bank: "Б".repeat(121),
+      rows: [
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 1000,
+          direction: "expense",
+          description: "а".repeat(301),
+          confidence: 0.9,
+        },
+      ],
+    });
+    expect(draft.bank).toHaveLength(120);
+    expect(draft.rows).toHaveLength(1);
+    expect(draft.rows[0]?.description).toHaveLength(300);
+    expect(
+      ImportScreenshotAnalyzeResponseSchema.safeParse({ draft }).success,
+    ).toBe(true);
+  });
+
+  it("не розриває сурогатну пару на межі обрізання", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: [
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 1000,
+          // 299 символів + емодзі (2 UTF-16 одиниці) → межа 300 різала б пару.
+          description: "а".repeat(299) + "😀",
+        },
+      ],
+    });
+    expect(draft.rows[0]?.description).toBe("а".repeat(299));
+  });
+
+  it.each([
+    ["рік-галюцинація", { date: "2206-08-16", amount_kopiykas: 1000 }],
+    ["дата до 1970", { date: "1969-12-31", amount_kopiykas: 1000 }],
+    ["сума понад 10 млн грн", { date: "2026-08-16", amount_kopiykas: 2e9 }],
+    [
+      "дробові копійки (модель прочитала гривні)",
+      { date: "2026-08-16", amount_kopiykas: 95.5 },
+    ],
+    ["нескінченна сума", { date: "2026-08-16", amount_kopiykas: "Infinity" }],
+  ])("%s → dropped.unreadable, решта рядків лишається", (_name, bad) => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: [
+        { ...bad, direction: "expense", description: "Брак" },
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 51240,
+          direction: "expense",
+          description: "Сільпо",
+        },
+      ],
+    });
+    expect(draft.rows.map((r) => r.description)).toEqual(["Сільпо"]);
+    expect(draft.dropped.unreadable).toBe(1);
+    expect(
+      ImportScreenshotAnalyzeResponseSchema.safeParse({ draft }).success,
+    ).toBe(true);
+  });
+
+  it("сума рівно 10 млн грн (AMOUNT_MINOR_MAX) ще придатна", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: [
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 1_000_000_000,
+          direction: "income",
+          description: "Межа",
+        },
+      ],
+    });
+    expect(draft.rows).toHaveLength(1);
+  });
+
+  it("валюта «грн» / «980» — це гривня, а не nonUah (як у CSV-шляху)", () => {
+    const draft = normalizeImportScreenshotResult({
+      doc_type: "bank_screenshot",
+      rows: ["грн", "грн.", "980", "uah"].map((currency) => ({
+        date: "2026-08-16",
+        amount_kopiykas: 100,
+        direction: "expense",
+        description: `c-${currency}`,
+        currency,
+      })),
+    });
+    expect(draft.rows).toHaveLength(4);
+    expect(draft.dropped.nonUah).toBe(0);
+  });
+
+  it("хендлер: скрін з одним рядком-порушником → 200, решта рядків у драфті", async () => {
+    envMock.LLM_RECEIPT_PROVIDER = "openrouter";
+    envMock.OPENROUTER_API_KEY = "or-key";
+    const modelJson = {
+      doc_type: "bank_screenshot",
+      bank: "monobank",
+      rows: [
+        {
+          date: "2026-08-16",
+          amount_kopiykas: 12345,
+          direction: "expense",
+          description: "АТБ",
+          confidence: 0.9,
+        },
+        {
+          date: "2206-08-16",
+          amount_kopiykas: 500,
+          direction: "expense",
+          description: "Галюцинація року",
+          confidence: 0.9,
+        },
+        {
+          date: "2026-08-17",
+          amount_kopiykas: 700,
+          direction: "expense",
+          description: "д".repeat(400),
+          confidence: 0.9,
+        },
+      ],
+    };
+    anthropicMessages.mockResolvedValueOnce(
+      anthropicResponses.text(JSON.stringify(modelJson)),
+    );
+
+    const res = makeRes();
+    await screenshotAnalyzeHandler(
+      makeReq({ image_base64: PNG_BASE64, mime_type: "image/png" }),
+      res,
+    );
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as {
+      draft: {
+        rows: Array<{ description: string }>;
+        dropped: { unreadable: number };
+      };
+    };
+    expect(body.draft.rows).toHaveLength(2);
+    expect(body.draft.rows[1]?.description).toHaveLength(300);
+    expect(body.draft.dropped.unreadable).toBe(1);
   });
 });

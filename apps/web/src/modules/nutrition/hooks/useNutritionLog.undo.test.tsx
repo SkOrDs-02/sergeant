@@ -56,7 +56,9 @@ describe("useNutritionLog — delete + undo meal flow", () => {
     const m = meal("m1");
 
     act(() => result.current.setSelectedDate(date));
-    act(() => result.current.handleAddMeal(m));
+    act(() => {
+      result.current.handleAddMeal(m);
+    });
     expect(result.current.nutritionLog[date]?.meals?.[0]?.id).toBe("m1");
 
     act(() => result.current.handleRemoveMeal(date, "m1"));
@@ -80,7 +82,9 @@ describe("useNutritionLog — delete + undo meal flow", () => {
     const m = meal("m2");
 
     act(() => result.current.setSelectedDate(date));
-    act(() => result.current.handleAddMeal(m));
+    act(() => {
+      result.current.handleAddMeal(m);
+    });
     act(() => result.current.handleRemoveMeal(date, "m2"));
     act(() => result.current.handleRestoreMeal(date, m));
 
@@ -107,7 +111,9 @@ describe("useNutritionLog — delete + undo meal flow", () => {
     const m = meal("m3");
 
     act(() => result.current.setSelectedDate(date));
-    act(() => result.current.handleAddMeal(m));
+    act(() => {
+      result.current.handleAddMeal(m);
+    });
     act(() => result.current.handleRemoveMeal(date, "m3"));
     act(() => result.current.handleRestoreMeal(date, m));
     act(() => result.current.handleRestoreMeal(date, m));

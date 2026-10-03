@@ -4,6 +4,7 @@ import { auth } from "../auth.js";
 import {
   authAccountRateLimit,
   authMetricsMiddleware,
+  authPasswordCheckRateLimit,
   authSensitiveRateLimit,
 } from "../http/index.js";
 
@@ -26,6 +27,9 @@ export function createAuthRouter(): Router {
   // потік першим, а account-бакет ловить те, що IP-шар пропускає за
   // побудовою — розподілену атаку на один акаунт з багатьох адрес.
   r.use("/api/auth", authAccountRateLimit);
+  // sec-10: `change-password` звіряє поточний пароль (scrypt) без власного
+  // app-ліміту; per-IP + per-user, бюджет спільний із `DELETE /api/me`.
+  r.use("/api/auth", authPasswordCheckRateLimit);
   // Express 5 / path-to-regexp v8: wildcards must be named. `{*splat}` is the
   // root-inclusive named wildcard — it matches `/api/auth` and every sub-path
   // (`/api/auth/sign-in`, `/api/auth/callback/*`, …), preserving the Express 4

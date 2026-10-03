@@ -13,7 +13,7 @@ name: Detox (Android)
 #     takes ≥10 min on `ubuntu-latest` with KVM enabled, so we only run
 #     it on `main` / mobile-scoped PRs and once nightly to catch silent
 #     drift on dependencies that don't trigger a mobile-touching PR
-#     (Android SDK image refresh, AGP upgrade via Renovate, etc.).
+#     (Android SDK image refresh, AGP upgrade, etc.).
 #   - A failing Detox run should not block an unrelated web-only PR.
 #
 # iOS CI is configured in the sibling `.github/workflows/detox-ios.yml` —

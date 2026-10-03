@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-09-17 by @claude (env-и `PG_POOL_SIZE`; зняті `RATE_LIMIT_BAN_IPS`/`SERVER_MODE`; SBOM → attestation образу; feature-flags → канонічний реєстр). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (секція Renovate PR → PR Dependabot, ADR-0103). **Next review:** 2026-12-02.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -316,7 +316,7 @@ session-check чекає слот.
 
 # Platform hardening — operational FAQ
 
-> Ці секції додані разом з [Initiative 0008](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md). Це не алерт-runbook-и (вони вище), а оперативні how-to для повторюваних situations які виникли разом з новою інфраструктурою (probes, rate-limit headers, Renovate, SBOM).
+> Ці секції додані разом з [Initiative 0008](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md). Це не алерт-runbook-и (вони вище), а оперативні how-to для повторюваних situations які виникли разом з новою інфраструктурою (probes, rate-limit headers, оновлення залежностей, SBOM).
 
 ## Як інтерпретувати 429-алерт у Grafana
 
@@ -530,24 +530,22 @@ WF-30 — щоденний 09:05 Kyiv n8n workflow, що SELECT-ить агре�
 2. **Permanent disable:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=false` у n8n Railway env (для документації operator-intent-у) + manifest status `prod-ready → experimental` у новому PR (signals deprecation).
 3. **Code-side:** видалити `MONO_AI_MEMORY_DIGEST_ENABLED` з `env.ts` тільки після успішних 30 днів без digest-у і прийнятого decision-point на kill всього AI memory модуля ([`§ AI memory activation & Day-30 decision-point`](#ai-memory-activation--day-30-decision-point)).
 
-## Як обробити Renovate PR із breaking change
+## Як обробити PR Dependabot із breaking change
 
-Per [ADR-0044](../../governance/adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:
+Per [ADR-0103](../../governance/adr/0103-dependabot-only-dependency-updates.md), Dependabot — єдиний інструмент оновлення залежностей (Renovate на репо не встановлено, ADR-0044 superseded). Автомерджу немає, груп для звичайних оновлень теж: кожен PR приходить на один пакет і мерджиться людиною. Повний гід: [`dependabot-usage.md`](../../engineering/integrations/dependabot-usage.md).
 
-| Тип PR                                                       | Дія                                                                                                                                              |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `chore(deps): update <dev-dep> to v<patch>`                  | **Auto-merge** після зеленої CI. Не торкатися.                                                                                                   |
-| `chore(deps): update <dev-dep> to v<minor>`                  | Прочитай PR title, swipe through diff, merge якщо CI ✅.                                                                                         |
-| `chore(deps): update <prod-dep> to v<minor>`                 | Read changelog у PR body. Run `pnpm --filter @sergeant/server test` локально якщо це `apps/server` dep. Merge при ✅.                            |
-| `chore(deps): update <prod-dep> to v<major>`                 | **Hands-on review.** Read changelog. Локальний run + manual smoke. Merge тільки після підтвердження що breaking-change уважно перевірений.       |
-| `chore(deps): update group "anthropic/sentry/opentelemetry"` | Завжди manual review — ці групи pinned (initiative 0008 spec). Часто requires API-changes у consumers (`apps/server/src/lib/anthropic.ts` тощо). |
-| **Duplicate PR** від `dependabot[bot]`                       | Закрий Dependabot-PR з коментарем `duplicate of Renovate group: <name>` (per ADR-0044).                                                          |
-| **Security-PR від `dependabot[bot]`**                        | **High priority** — daily schedule навмисно. Auto-merge label `automerge-eligible` чи review за SLA.                                             |
+| Тип PR                                                                         | Дія                                                                                                                                                                     |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chore(deps): bump <dev-dep> from <a> to <patch/minor>`                        | Переглянь diff і release notes, merge після зеленого CI.                                                                                                                |
+| `chore(deps): bump <prod-dep> from <a> to <minor>`                             | Read changelog у PR body. Run `pnpm --filter @sergeant/server test` локально, якщо це `apps/server` dep. Merge при ✅.                                                  |
+| `chore(deps): bump <prod-dep> from <a> to <major>`                             | **Hands-on review** за [`bump-dep-safely.md`](../../start/instructions/bump-dep-safely.md). Локальний run + manual smoke. Merge тільки після перевірки breaking change. |
+| Пакет із пов'язаної сім'ї (`@sentry/*`, `@opentelemetry/*`, `@anthropic-ai/*`) | Dependabot піднімає пакети по одному; розбіжність версій ламає trace-correlation / plugin-сумісність. Підтягни решту сім'ї в тому ж PR або зроби один бамп власним PR.  |
+| **Security-PR** (група `security-updates`)                                     | **High priority** — npm-розклад щоденний навмисно. Review і merge у строки з [`vulnerability-sla.md`](../../governance/security/vulnerability-sla.md).                  |
 
 Якщо breaking change ламає CI:
 
-1. **Не push-ай force з patch-ем у Renovate-branch.** Renovate перепише, твої commit-и зникнуть.
-2. Замість того, **закрий PR не merge-ивши**, склонуй branch локально, патчі в окремий branch на твою feature, відкриваєш свій PR. Renovate створить новий PR через тиждень — на той момент твій fix вже у main.
+1. **Не дописуй патч у гілку Dependabot.** Бот може перестворити гілку, і твої коміти зникнуть.
+2. Замість того **закрий PR не мерджачи** і зроби власний PR із бампом і фіксом за [`bump-dep-safely.md`](../../start/instructions/bump-dep-safely.md). Dependabot не відкриватиме PR на ту саму версію знову.
 
 ## Що таке SBOM і де його шукати на release
 
