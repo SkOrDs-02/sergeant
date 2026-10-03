@@ -15,6 +15,7 @@ import {
 } from "@sergeant/shared";
 import {
   parseBody,
+  passwordCheckRateLimit,
   rateLimitExpress,
   requireFreshSession,
   requireSession,
@@ -276,6 +277,9 @@ export function createMeRouter(): Router {
   r.delete(
     "/api/me",
     requireFreshSession(),
+    // sec-10: ліміт СТОЇТЬ перед звіркою пароля (scrypt). Per-IP + per-user,
+    // ділить бюджет із `change-password`; деталі — config/rateLimit.ts.
+    passwordCheckRateLimit,
     async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
 

@@ -977,7 +977,7 @@ node …/agents/api-live-sync-live/t09_stream.mjs (миттєво) і t10_stream
 
 ### `sec-10` [medium] DELETE /api/me і /api/auth/verify-password перевіряють пароль без app-ліміту: оракул пароля і навантаження scrypt
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-10-16-auth-limits (DELETE /api/me і change-password під лімітом per-IP 5 і per-user 20 за 15 хв, verify-password вимкнено через disabledPaths; лишилось: алерт на серію INVALID_PASSWORD і повторна автентифікація OAuth-only акаунтів)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/акаунт
 - **Де:** apps/server/src/routes/me.ts:272-297; apps/server/src/modules/me/verifyAccountPassword.ts:38-54; apps/server/src/http/authMiddleware.ts:31-37; node_modules/better-auth/dist/api/routes/password.mjs:166-192
 - **Першопричина:** DELETE /api/me викликає verifyAccountPassword (scrypt ~130 мс) без rateLimitExpress, а authSensitiveRateLimit не покриває /verify-password і /change-password. Better Auth реєструє /verify-password у HTTP-роутері (scope 'server', а не SERVER_ONLY), і на ньому діє лише вбудований in-memory ліміт 100 за 10 с на IP.
@@ -1355,7 +1355,7 @@ silpo.ts:165-197: `const pending = await consumeAuthorizationState(state); ... c
 
 ### `sec-16` [medium] Необмежене name роздуває cookie-кеш сесії до 28-33 КБ: усі запити отримують 431, акаунт блокується без самовідновлення
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-sec-10-16-auth-limits (name ≤ 100 символів і лише рядок у databaseHooks; лишилось: очищення наявних довгих імен у БД і виключення user-полів із cookieCache)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/профіль
 - **Де:** apps/server/src/auth.ts:427-431,449-540; apps/server/src/auth/sanitizeUserImage.ts; node_modules/better-auth/dist/api/routes/update-user.mjs:12-73; apps/web/src/core/profile/PersonalInfoSection.tsx:27
 - **Першопричина:** Better Auth update-user і sign-up приймають name без maxLength (ще й з коерцією не-рядків у JSON), а databaseHooks чистить лише image (sanitizeUserImage). Увесь user потрапляє в session_data, тож довге ім'я дає Cookie-заголовок понад ліміт Node у 16 КБ.

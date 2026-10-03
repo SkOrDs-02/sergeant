@@ -1,6 +1,6 @@
 # 02 · Engineering — архітектура й платформи
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-27.
+> **Last touched:** 2026-10-03 by @claude (Renovate → Dependabot у таблиці розділів, ADR-0103). **Next review:** 2027-04-01.
 > **Status:** Active
 
 Інженерна довідка: як влаштований моноре́по, API-контракти, платформні
@@ -11,7 +11,7 @@ deep-dive-и й тестова стратегія. Жанр — **informational*
 | [`api/`](./api/README.md)                   | OpenAPI-спека, API-контракти, згенеровані артефакти.                   |
 | [`architecture/`](./architecture/README.md) | Repo-map, runtime-поверхні, C4-діаграми, доменні інваріанти, RAG.      |
 | [`development/`](./development/README.md)   | Local dev-loop how-to (ESLint config, локальний Postgres, pre-commit). |
-| [`integrations/`](./integrations/README.md) | Сторонні інтеграції (Monobank, Voyage, Renovate, env-vars).            |
+| [`integrations/`](./integrations/README.md) | Сторонні інтеграції (Monobank, Voyage, Dependabot, env-vars).          |
 | [`mobile/`](./mobile/README.md)             | Expo/mobile-стратегія і migration-доки.                                |
 | [`notes/`](./notes/README.md)               | Design-spike-и й exploratory інженерні нотатки.                        |
 | [`testing/`](./testing/README.md)           | Testing-strategy meta (mutation testing, layer matrix, thresholds).    |

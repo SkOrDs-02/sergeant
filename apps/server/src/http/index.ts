@@ -21,6 +21,11 @@ export {
 } from "./authMiddleware.js";
 
 export {
+  authPasswordCheckRateLimit,
+  passwordCheckRateLimit,
+} from "./passwordCheckRateLimit.js";
+
+export {
   livezHandler,
   startupzHandler,
   createReadyzHandler,
