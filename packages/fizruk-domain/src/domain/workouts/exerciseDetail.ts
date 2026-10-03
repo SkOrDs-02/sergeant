@@ -10,13 +10,17 @@
  *   - load-calculator zones (strength / hypertrophy / endurance).
  *
  * Kept DOM-free: no `window` / `localStorage` consumers here. Date labels
- * are formatted via `Date#toLocaleDateString` (with an explicit
- * `Europe/Kyiv` timeZone — domain invariant) which is safe in Node and
- * React Native runtimes; week buckets come from the shared Kyiv-anchored
- * helpers in `@sergeant/shared`.
+ * are formatted via `Date#toLocaleDateString` in the DEVICE timezone, which
+ * is safe in Node and React Native runtimes. Week buckets and their keys
+ * come from the device-clock helpers in `@sergeant/shared`
+ * (`deviceMondayStart` / `deviceDayKey`): a workout is a personal record, so
+ * its day and week follow the device, not Europe/Kyiv
+ * ([ADR-0078](../../../../../docs/governance/adr/0078-day-boundary-device-local.md)).
+ * The web chart (`apps/web/src/modules/fizruk/lib/exerciseProgress.ts`) uses
+ * the same clock, so web and mobile put one workout in one week.
  */
 
-import { kyivMondayStartMs, toKyivISODate } from "@sergeant/shared";
+import { deviceDayKey, deviceMondayStart } from "@sergeant/shared";
 import { compareIsoDesc } from "../../lib/workoutStats.js";
 
 import {
@@ -66,13 +70,12 @@ function toNum(v: unknown): number {
 
 function formatUkDateShort(d: Date): string {
   try {
-    // Explicit Kyiv timezone: week starts are Kyiv Monday 00:00, which is
-    // still Sunday evening in UTC and westwards — rendering in the runtime
-    // timezone would shift the label a day back for those users.
+    // Без `timeZone`: підпис іде в поясі пристрою, бо тиждень і день тренування
+    // теж рахуються за годинником пристрою (ADR-0078). Примусовий Europe/Kyiv
+    // зсунув би підпис понеділка на день для пристроїв західніше Києва.
     return d.toLocaleDateString("uk-UA", {
       day: "numeric",
       month: "short",
-      timeZone: "Europe/Kyiv",
     });
   } catch {
     // Fallback for minimal ICU runtimes — host-local DD.MM (best effort).
@@ -136,7 +139,7 @@ export interface ExerciseTrendPoint {
   value: number;
   /** Short uk-UA date label (e.g. `"15 кві"`) for the X axis. */
   dateLabel: string;
-  /** ISO `YYYY-MM-DD` key of the bucket's Monday. Stable for tests. */
+  /** `YYYY-MM-DD` key of the bucket's Monday on the device clock (ADR-0078). */
   weekKey: string;
 }
 
@@ -294,8 +297,9 @@ export function computeExerciseBest(
 }
 
 /**
- * Group the strength history into Monday-starting (Europe/Kyiv) weekly buckets and
- * return up to the **last 12** buckets as two aligned series:
+ * Group the strength history into Monday-starting weekly buckets (DEVICE
+ * clock, ADR-0078) and return up to the **last 12** buckets as two aligned
+ * series:
  *  - `rmPoints.value` = round(max Epley-1RM in the week, kg);
  *  - `volPoints.value` = round(sum of `weightKg × reps`, kg).
  * Non-strength items and items without a parseable `startedAt` are skipped.
@@ -314,8 +318,8 @@ export function computeExerciseWeeklyTrend(
     if (!iso) continue;
     const t = Date.parse(iso);
     if (!Number.isFinite(t)) continue;
-    const weekStart = kyivMondayStartMs(t);
-    const key = toKyivISODate(weekStart);
+    const weekStart = deviceMondayStart(t);
+    const key = deviceDayKey(weekStart);
     const sets = Array.isArray(item.sets) ? item.sets : [];
     let maxRm = 0;
     let vol = 0;
