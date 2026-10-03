@@ -23,7 +23,7 @@ import {
   type Meal,
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import { Card } from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
@@ -38,7 +38,7 @@ import { NutritionIcon } from "../components/NutritionIcon";
 import { useNutritionLog } from "../hooks/useNutritionLog";
 
 function formatIsoDate(iso: string): string {
-  const today = toLocalISODate(new Date());
+  const today = toKyivISODate(new Date());
   const yesterday = addDaysISODate(today, -1);
   const tomorrow = addDaysISODate(today, 1);
   if (iso === today) return "Сьогодні";
@@ -160,9 +160,9 @@ export function Log({ testID, onMealAdded }: LogProps) {
 
   const goPrev = () => setSelectedDate(addDaysISODate(selectedDate, -1));
   const goNext = () => setSelectedDate(addDaysISODate(selectedDate, 1));
-  const goToday = () => setSelectedDate(toLocalISODate(new Date()));
+  const goToday = () => setSelectedDate(toKyivISODate(new Date()));
 
-  const isToday = selectedDate === toLocalISODate(new Date());
+  const isToday = selectedDate === toKyivISODate(new Date());
 
   return (
     <View testID={testID} className="flex-1 bg-cream-50">

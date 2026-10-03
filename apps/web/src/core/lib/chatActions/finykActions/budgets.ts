@@ -11,7 +11,7 @@ import {
   unknownCategoryMessage,
 } from "./entityLookup";
 import { validatePositiveAmount } from "./amountValidation";
-import { formatNumberUk, toLocalISODate } from "@sergeant/shared";
+import { formatNumberUk, toKyivISODate } from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
   SetMonthlyPlanAction,
@@ -36,7 +36,7 @@ function buildAiContribution(saved: number): GoalContribution[] {
       id: `contrib_${Date.now()}`,
       amountUah: saved,
 
-      date: toLocalISODate(new Date()),
+      date: toKyivISODate(new Date()),
       note: "Через Сержанта",
     },
   ];

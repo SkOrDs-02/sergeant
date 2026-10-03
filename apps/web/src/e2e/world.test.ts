@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import {
   dateKeyDaysAgo,
@@ -38,7 +38,7 @@ describe("parseScenarioLocalWorld", () => {
 
 describe("дати світу", () => {
   it("daysAgo 0 це сьогоднішній device-local ключ", () => {
-    expect(dateKeyDaysAgo(0)).toBe(toLocalISODate(new Date()));
+    expect(dateKeyDaysAgo(0)).toBe(toKyivISODate(new Date()));
   });
 
   it("стрік N дає N відміток, що закінчуються сьогодні", () => {

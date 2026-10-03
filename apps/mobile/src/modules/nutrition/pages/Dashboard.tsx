@@ -28,7 +28,7 @@ import {
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
-import { hapticTap, toLocalISODate, type Macros } from "@sergeant/shared";
+import { hapticTap, toKyivISODate, type Macros } from "@sergeant/shared";
 
 import { Card } from "@/components/ui/Card";
 
@@ -173,14 +173,14 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
 
   const handleSave = useCallback(
     (payload: MealSavePayload) => {
-      addMeal(toLocalISODate(new Date()), payload);
+      addMeal(toKyivISODate(new Date()), payload);
       setSheetOpen(false);
       onMealAdded?.();
     },
     [addMeal, onMealAdded],
   );
 
-  const today = toLocalISODate(new Date());
+  const today = toKyivISODate(new Date());
 
   // AI-генерація денного плану. Дзеркало web
   // `useNutritionRemoteActions.dayPlanMutation`: pantry (≤50) + цілі КБЖВ
