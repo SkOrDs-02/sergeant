@@ -971,7 +971,7 @@ Scripts: <scratch>/agents/verify-client-static-gap-backup-restore-file-imports/i
 
 ### `data-08` [high] Фінансові чат-дії читають застарілі kv-ключі замість SQLite: план місяця затирається, ліміти дублюються, борги «не знайдено», undo стирає план
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-08-11-chat-executors
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (finykActions, chatBridge)
 - **Де:** apps/web/src/core/lib/chatActions/finykActions/budgets.ts:53-208; apps/web/src/core/lib/chatActions/finykActions/debts.ts:76-121; apps/web/src/core/lib/chatActions/finykActions/transactions.ts:120-122; apps/web/src/core/lib/chatActions/finykActions/search.ts:205-226; apps/web/src/core/lib/chatActions/finykActions/dualWriteBridge.ts:99-110,260-285; apps/web/src/modules/finyk/lib/sqliteWriter/chatBridge.ts:145-181
 - **Першопричина:** Екзекутори budgets, debts, transactions і search читають ls('finyk_budgets' | 'finyk_monthly_plan' | 'finyk_debts' | ...), але UI ці ключі більше не пише: слоти на useReadonlyPersist, канон у SQLite, а дренаж LS→SQLite прибрано у 2026-08. mirrorFinykChatMonthlyPlan записує kv-похідний monthlyPlanJson поверх канонічних prefs цілком, а undo бере prev із порожнього kv.
@@ -1207,7 +1207,7 @@ v2-run.log (v2-recipes.mjs): X=audit_pool99 зберіг 'VRX-k6ib борщ' (с
 
 ### `data-11` [high] Підходи й вправи, записані через чат (log_set, plan_workout), ніколи не доходять на сервер: порожній exerciseId відхиляється
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-08-11-chat-executors
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: AI-чат (fizrukActions) + server: sync fizruk
 - **Де:** apps/web/src/core/lib/chatActions/fizrukActions/workouts.ts:86,180; apps/web/src/modules/fizruk/lib/sqliteWriter/adapter.ts:362; apps/server/src/modules/sync/fizruk/applySync.ts:202-206
 - **Першопричина:** Чат-екзекутори створюють WorkoutItem з порожнім рядком exerciseId, адаптер шле exercise_id = '', і сервер повертає rejected missing_exercise_id; підходи потім падають на FK workout_item_id. Відмова термінальна, ретраю немає.

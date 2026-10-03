@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last touched:** 2026-08-18 by @claude (анти-патерн #7: читання tombstone-нутого LS-ключа після міграції у SQLite). **Next review:** 2026-12-03.
+> **Last touched:** 2026-10-03 by @claude (§ AI-tool execution path: чат-екзекутори читають канонічний кеш SQLite, не kv; чат-item мусить мати справжній `exerciseId`); 2026-08-18 by @claude (анти-патерн #7: читання tombstone-нутого LS-ключа після міграції у SQLite). **Next review:** 2026-12-03.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.
@@ -80,6 +80,7 @@ The HubChat assistant uses Anthropic tool-calling. Tools are **defined on the se
 - A new tool needs three coordinated edits: `apps/server/src/modules/chat/toolDefs/<domain>.ts` (definition), `apps/web/src/core/lib/hubChatActions.ts` (executor), and (if user-visible) `hubChatActionCards.ts` + optionally `apps/web/src/shared/lib/modules/moduleQuickActions.ts`.
 - The server **does not** run tool side effects — never put DB writes in `chat.ts`. They go through the regular `apps/server/src/modules/<domain>/*` HTTP endpoints, called by the client executor.
 - "Risky" tools (delete/forget/import) live in `RISKY_TOOLS` in `hubChatActionCards.ts` and get a "Критична дія" badge in the UI.
+- Client executors build `next` from the **canonical SQLite warm cache** (`getCachedFinykSqliteState()`, `getCachedFizrukSqliteState()`), never from tombstoned kv keys (`finyk_budgets`, `finyk_monthly_plan`, `finyk_debts`, …) that the UI no longer writes (аудит data-08: часткова зміна плану стирала решту полів, undo стирав увесь план). Cold cache → the executor does not write and answers honestly («Дані Фініка ще завантажуються, спробуй за кілька секунд»). Chat-created workout items must carry a real `exerciseId` (catalog id or a `custom_*` exercise queued BEFORE the item): the server rejects an empty `exercise_id` terminally (`missing_exercise_id`, аудит data-11).
 
 ### `max_tokens` budget per request
 
