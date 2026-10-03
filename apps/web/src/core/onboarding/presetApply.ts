@@ -1,5 +1,5 @@
-import { toKyivISODate } from "@sergeant/shared";
 import { resolveHabitGlyph } from "@sergeant/routine-domain";
+import { anchoredTodayKey } from "@routine/lib/dayAnchor";
 import { routineStorage } from "@routine/lib/routineStorageInstance";
 import {
   loadRoutineState,
@@ -88,7 +88,11 @@ async function applyRoutinePreset(preset: RoutinePreset): Promise<boolean> {
     state = routineStorage.readJSON<RoutineState>(ROUTINE_STATE_KEY, null);
   }
 
-  const today = toKyivISODate();
+  // ADR-0078: startDate — день ПРИСТРОЮ (єдиний анкер routine), не київський.
+  // `dateKeyWithinHabitBounds` відхиляє `dateKey < startDate`: київський
+  // «завтра» ввечері поза Києвом зробив би звичку з пресету не відмічуваною
+  // сьогодні.
+  const today = anchoredTodayKey();
   const habit: RoutineHabit = {
     id: uid("hab"),
     // Explicit false — `hasNonDemoItem` flags anything without `demo:true`
