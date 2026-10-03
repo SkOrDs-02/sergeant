@@ -57,6 +57,18 @@ const posthogMock = vi.hoisted(() => {
 
 vi.mock("posthog-node", () => ({ PostHog: posthogMock.PostHog }));
 
+// Згода на аналітику (priv-09). За замовчуванням — «згода є й закеширована»,
+// тож наявні кейси лишаються про ідентифіковану подію; анонімні гілки
+// перевіряються окремим describe нижче.
+const consentMock = vi.hoisted(() => ({
+  peek: vi.fn<(userId: string) => boolean | undefined>(() => true),
+  resolve: vi.fn<(userId: string) => Promise<boolean>>(async () => true),
+}));
+vi.mock("./analyticsConsent.js", () => ({
+  peekAnalyticsConsent: consentMock.peek,
+  resolveAnalyticsConsent: consentMock.resolve,
+}));
+
 import {
   AI_GENERATION_EVENT,
   AI_SPAN_EVENT,
@@ -101,6 +113,10 @@ beforeEach(() => {
   posthogMock.setThrowOnCapture(false);
   posthogMock.setThrowOnConstruct(false);
   loggerMock.warn.mockClear();
+  consentMock.peek.mockReset();
+  consentMock.peek.mockReturnValue(true);
+  consentMock.resolve.mockReset();
+  consentMock.resolve.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -322,6 +338,87 @@ describe("buildAiSpanProperties — allowlist за конструкцією", ()
     expect(props.$ai_is_error).toBe(false);
     expect(props).not.toHaveProperty("$ai_latency");
     expect(props).not.toHaveProperty("$ai_parent_id");
+  });
+});
+
+// priv-09: без згоди на аналітику userId не потрапляє в подію ні в якому
+// вигляді, а person-профіль не створюється.
+describe.each([
+  [
+    "$ai_generation",
+    (userId: string) => captureAiGeneration({ ...baseEvent(), userId }),
+  ],
+  [
+    "$ai_span",
+    (userId: string) => captureAiSpan({ ...baseSpanEvent(), userId }),
+  ],
+])("згода на аналітику — %s", (_name, capture) => {
+  const USER = "user_secret_id_42";
+
+  beforeEach(() => {
+    envMock.POSTHOG_AI_OBSERVABILITY_KEY = "phc_test";
+  });
+
+  const lastCapture = () => {
+    const calls = posthogMock.instances[0]!.capture.mock.calls;
+    return calls[calls.length - 1]![0] as {
+      distinctId: string;
+      properties: Record<string, unknown>;
+    };
+  };
+
+  it("згода дана (кеш) — distinctId = userId, person-профіль як було", () => {
+    consentMock.peek.mockReturnValue(true);
+    expect(capture(USER)).toBe(true);
+    expect(lastCapture().distinctId).toBe(USER);
+    expect(lastCapture().properties).not.toHaveProperty(
+      "$process_person_profile",
+    );
+    expect(consentMock.resolve).not.toHaveBeenCalled();
+  });
+
+  it("згоди немає (кеш) — анонімний distinctId і $process_person_profile:false, userId ніде в події", () => {
+    consentMock.peek.mockReturnValue(false);
+    expect(capture(USER)).toBe(true);
+    const arg = lastCapture();
+    expect(arg.distinctId).toBe(AI_SYSTEM_DISTINCT_ID);
+    expect(arg.properties["$process_person_profile"]).toBe(false);
+    expect(JSON.stringify(arg)).not.toContain(USER);
+    expect(consentMock.resolve).not.toHaveBeenCalled();
+  });
+
+  it("кеш порожній: подія чекає на ОДИН запит і йде за його результатом (є згода)", async () => {
+    consentMock.peek.mockReturnValue(undefined);
+    consentMock.resolve.mockResolvedValue(true);
+    expect(capture(USER)).toBe(true);
+    expect(posthogMock.instances[0]!.capture).not.toHaveBeenCalled();
+    await vi.waitFor(() =>
+      expect(posthogMock.instances[0]!.capture).toHaveBeenCalledTimes(1),
+    );
+    expect(lastCapture().distinctId).toBe(USER);
+    expect(consentMock.resolve).toHaveBeenCalledWith(USER);
+  });
+
+  it("кеш порожній і згоди немає — анонімно", async () => {
+    consentMock.peek.mockReturnValue(undefined);
+    consentMock.resolve.mockResolvedValue(false);
+    capture(USER);
+    await vi.waitFor(() =>
+      expect(posthogMock.instances[0]!.capture).toHaveBeenCalledTimes(1),
+    );
+    expect(lastCapture().distinctId).toBe(AI_SYSTEM_DISTINCT_ID);
+    expect(JSON.stringify(lastCapture())).not.toContain(USER);
+  });
+
+  it("fail-closed: збій перевірки згоди → анонімно, не кидається", async () => {
+    consentMock.peek.mockReturnValue(undefined);
+    consentMock.resolve.mockRejectedValue(new Error("db down"));
+    expect(() => capture(USER)).not.toThrow();
+    await vi.waitFor(() =>
+      expect(posthogMock.instances[0]!.capture).toHaveBeenCalledTimes(1),
+    );
+    expect(lastCapture().distinctId).toBe(AI_SYSTEM_DISTINCT_ID);
+    expect(lastCapture().properties["$process_person_profile"]).toBe(false);
   });
 });
 
