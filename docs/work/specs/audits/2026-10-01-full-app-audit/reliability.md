@@ -542,7 +542,7 @@ w6_size.mjs: 'push 2x250KB junk: 200 ["rejected:table_not_allowed","rejected:tab
 
 ### `rel-07` [medium] PII-маскування в чаті має квадратичний email-регекс: один /api/chat блокує event loop на ~9 с
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-rel-07-pii-mask-redos
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: AI chat (pii-mask)
 - **Де:** apps/server/src/lib/pii-mask.ts:14-37; apps/server/src/lib/llmRedaction.ts:118-137; apps/server/src/modules/chat/chat.ts:515-518,650,748; apps/server/src/lib/llm/provider.ts:825-829
 - **Першопричина:** Email-патерн у pii-mask.ts на довгих рядках із дефісів і крапок дає поліноміальний backtracking. maskUserText проганяє всі повідомлення (до 50 по 8000 символів), maskMachineText — context до 40000 символів. Обидва працюють синхронно в main thread, до виклику LLM і до обліку квоти.
