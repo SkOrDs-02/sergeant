@@ -85,6 +85,7 @@ vi.mock("../../db.js", () => {
     default: pool,
     pool,
     withUserContext: passthrough,
+    withBypassContext: (fn: (db: unknown) => unknown) => fn(pool),
     withSubjectContext: passthrough,
   };
 });

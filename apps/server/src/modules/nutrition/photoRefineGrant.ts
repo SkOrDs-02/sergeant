@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Request, RequestHandler } from "express";
-import { withUserContext } from "../../db.js";
+import { withBypassContext, withUserContext } from "../../db.js";
 import { requireAiQuota } from "../../http/index.js";
 import { logger } from "../../obs/logger.js";
 
@@ -81,20 +81,29 @@ export async function recordPhotoRefineGrant(
           WHERE user_id = $1 AND created_at < $2`,
         [userId, expiredBefore],
       );
-      if (sweepGlobal) {
-        await db.query(
-          `DELETE FROM ai_photo_refine_grants
-            WHERE ctid IN (
-              SELECT ctid FROM ai_photo_refine_grants
-               WHERE created_at < $1 LIMIT $2
-            )`,
-          [expiredBefore, GLOBAL_SWEEP_BATCH],
-        );
-      }
     });
+    if (sweepGlobal) await sweepExpiredGrants(expiredBefore);
   } catch (e: unknown) {
     warnGrantFailure("photo_refine_grant_record_failed", e);
   }
+}
+
+/**
+ * Глобальне підчищення чужих прострочених грантів. Йде у bypass-контексті, бо
+ * зачіпає рядки багатьох користувачів: з `withUserContext` майбутня RLS-політика
+ * лишила б йому видимим лише власний рядок.
+ */
+async function sweepExpiredGrants(expiredBefore: Date): Promise<void> {
+  await withBypassContext((db) =>
+    db.query(
+      `DELETE FROM ai_photo_refine_grants
+        WHERE ctid IN (
+          SELECT ctid FROM ai_photo_refine_grants
+           WHERE created_at < $1 LIMIT $2
+        )`,
+      [expiredBefore, GLOBAL_SWEEP_BATCH],
+    ),
+  );
 }
 
 /** Чи має користувач свіжий грант на цей кадр. Помилка БД = «гранту немає». */
