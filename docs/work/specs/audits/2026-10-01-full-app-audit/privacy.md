@@ -240,7 +240,7 @@ node <scratch>/agents/browser-surfaces-hub-shell/v01-lock-reload.mjs (корис
 
 ### `priv-04` [high] Вихід з акаунта не знімає web-push підписку: банківські пуші попереднього користувача далі приходять на спільний пристрій
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-priv-04-push-unsubscribe-logout (клієнт: `logout()` знімає web-push підписку до `signOut()`, best-effort з таймаутом, скидає мітку тумблера; лишилось: прив'язка підписки до сесії і soft-delete при завершенні сесії на сервері (M), native-токен FCM/APNs при виході, відсікання пушів у service worker без активного користувача)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: auth + server: push
 - **Де:** apps/web/src/core/auth/AuthContext.tsx:548-697; apps/web/src/shared/hooks/usePushNotifications.ts:224-256; apps/web/src/shared/hooks/usePushNotifications.webpush.ts:71-77; apps/server/src/modules/push/push.ts:33-56, 134-142; apps/server/src/modules/push/send.ts:103-110; apps/server/src/modules/mono/webhook.ts:130-154, 467-471
 - **Першопричина:** logout() не викликає pushManager.getSubscription().unsubscribe() і api.push.unregister: відписка є лише в тумблері. На сервері push_subscriptions прив'язана тільки до user_id, хука на завершення сесії немає. SW показує кожен пуш без перевірки активного користувача.
