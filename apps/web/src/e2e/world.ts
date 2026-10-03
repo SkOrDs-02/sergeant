@@ -1,4 +1,4 @@
-import { toKyivISODate } from "@sergeant/shared";
+import { deviceDayKey } from "@sergeant/shared";
 
 export type ScenarioId =
   | "empty"
@@ -267,7 +267,7 @@ export function dateKeyDaysAgo(daysAgo: number, now = new Date()): string {
   const d = new Date(now);
   // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: день-ключ звички та тренування належить пристрою
   d.setDate(d.getDate() - daysAgo);
-  return toKyivISODate(d);
+  return deviceDayKey(d);
 }
 
 /**

@@ -13,6 +13,7 @@ vi.mock("@routine/lib/routineStorage", () => ({
   },
 }));
 
+import { anchoredTodayKey } from "@routine/lib/dayAnchor";
 import { applyPreset } from "./presetApply";
 
 describe("applyPreset", () => {
@@ -78,6 +79,22 @@ describe("applyPreset", () => {
     });
     expect(state.habitOrder).toHaveLength(1);
     expect(state.schemaVersion).toBe(3);
+  });
+
+  it("startDate звички з пресету — день ПРИСТРОЮ, а не київський (ADR-0078)", async () => {
+    // 22:30 UTC: на пристрої (TZ=UTC у vitest.config.js) ще 2026-06-23, а в
+    // Києві (UTC+3 влітку) уже 01:30 наступної доби — 2026-06-24. Звичка зі
+    // startDate «завтра» відхиляється `dateKeyWithinHabitBounds` для сьогодні
+    // і не відмічається до наступної доби пристрою.
+    vi.setSystemTime(new Date("2026-06-23T22:30:00Z"));
+    await expect(
+      applyPreset("routine", { name: "Stretch", emoji: "run" }),
+    ).resolves.toBe(true);
+    const state = routineState.current as {
+      habits: Array<{ startDate: string }>;
+    };
+    expect(state.habits[0]!.startDate).toBe("2026-06-23");
+    expect(state.habits[0]!.startDate).toBe(anchoredTodayKey());
   });
 
   it("falls back to the default glyph and appends to existing routine habits", async () => {
