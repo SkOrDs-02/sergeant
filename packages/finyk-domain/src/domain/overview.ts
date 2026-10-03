@@ -12,7 +12,7 @@
  * clock and so the same selector can power server-rendered digests later.
  */
 
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import type { Transaction } from "./types.js";
 import {
@@ -90,7 +90,7 @@ export function formatDaysLeft(days: number): string {
  * 2026-09-15 § 3).
  */
 function kyivCalendarDate(now: Date): Date {
-  return parseLocalDate(toLocalISODate(now));
+  return parseLocalDate(toKyivISODate(now));
 }
 
 /**

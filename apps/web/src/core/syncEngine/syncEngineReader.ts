@@ -5,6 +5,19 @@ import { applyPullOp } from "./applyPullOp.js";
 import { readPullSinceCursor, writePullSinceCursor } from "./syncOpCursor.js";
 import { refreshCachesAfterPull } from "./refreshCachesAfterPull.js";
 import { classifyTickError, readOnlineStatus } from "./tickErrorReport.js";
+import {
+  markInitialPullComplete,
+  reconcileInitialPull,
+  resetInitialPull,
+} from "./initialPullState.js";
+
+// data-04: стан «початковий pull завершено» живе в окремому модулі без
+// імпортів (його читає lazy-чанк Їжі), а звідси лише реекспортується.
+export {
+  getInitialPullVersion,
+  hasCompletedInitialPull,
+  subscribeInitialPull,
+} from "./initialPullState.js";
 
 export interface SyncEnginePullResult {
   readonly pulled: number;
@@ -165,12 +178,31 @@ export function createSyncEngineReaderRuntime(
   let inflight: Promise<SyncEnginePullResult> | null = null;
   let started = false;
 
+  /**
+   * Таблиці, опи яких уже застосовано в SQLite, але кеші ще їх не бачили.
+   *
+   * AI-CONTEXT (data-04): множина живе МІЖ тіками. Тік, що впав на 3-й
+   * сторінці, уже записав сторінки 1-2 у SQLite і зберіг курсор, але до
+   * `refreshCachesAfterPull` не дійшов. Наступний тік продовжує з курсора і
+   * бачить лише власні опи; будь-яка локальна множина тіка «забула б» ті
+   * таблиці, кеш Їжі лишився б холодним, а `markInitialPullComplete` усе
+   * одно спрацював би, і prefs-гейт відкрився б на дефолтах. Чиститься лише
+   * ПІСЛЯ успішного refresh; прив'язана до (userId, client) як і сам прапор.
+   */
+  let pendingRefresh: {
+    userId: string;
+    client: SqliteMigrationClient;
+    tables: Set<string>;
+  } | null = null;
+
   const pullOnce = async (): Promise<SyncEnginePullResult> => {
     if (inflight) return inflight;
 
     inflight = (async () => {
       const userId = await deps.resolveUserId();
       if (!userId) {
+        // Немає сесії (logout): прапор попереднього користувача не чинний.
+        reconcileInitialPull(null, null);
         return {
           pulled: 0,
           applied: 0,
@@ -181,13 +213,23 @@ export function createSyncEngineReaderRuntime(
       }
 
       const client = await deps.resolveClient();
+      // Інший користувач або нова партиція бази = початковий pull знову
+      // «не завершено» (див. `initialPullState.ts`).
+      reconcileInitialPull(userId, client);
       let since = await readPullSinceCursor(client, userId);
       let pulled = 0;
       let applied = 0;
       let skipped = 0;
       let rejected = 0;
       let maxOpId = since;
-      const affectedTables = new Set<string>();
+      if (
+        pendingRefresh === null ||
+        pendingRefresh.userId !== userId ||
+        pendingRefresh.client !== client
+      ) {
+        pendingRefresh = { userId, client, tables: new Set<string>() };
+      }
+      const affectedTables = pendingRefresh.tables;
 
       let rateLimitWaits = 0;
 
@@ -236,9 +278,17 @@ export function createSyncEngineReaderRuntime(
         since = page.next_cursor;
       }
 
-      if (applied > 0) {
-        await refreshCachesAfterPull(client, userId, affectedTables);
+      // Не `applied > 0`: у множині можуть лежати таблиці з попереднього
+      // невдалого тіка (див. `pendingRefresh`).
+      if (affectedTables.size > 0) {
+        await refreshCachesAfterPull(client, userId, new Set(affectedTables));
+        affectedTables.clear();
       }
+
+      // Сюди доходимо лише через `break` на `next_cursor === null` (будь-яка
+      // помилка вилітає вище). Ставимо ПІСЛЯ оновлення кешів, щоб споживач,
+      // який побачив прапор, уже читав прогрітий кеш.
+      markInitialPullComplete(userId, client);
 
       return {
         pulled,
@@ -295,6 +345,8 @@ export function createSyncEngineReaderRuntime(
     stop() {
       if (!started) return;
       started = false;
+      pendingRefresh = null;
+      resetInitialPull();
       if (intervalHandle !== null) {
         deps.clearInterval(intervalHandle);
         intervalHandle = null;

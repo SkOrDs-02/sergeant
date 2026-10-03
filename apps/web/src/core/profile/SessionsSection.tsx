@@ -193,12 +193,11 @@ export function SessionsSection({ online }: { online: boolean }) {
       // user to sign-in, mirroring `ProfilePage.handleLogout`.
       //
       // The unsynced-loss gate already ran above, BEFORE the revoke, so
-      // `logout()` here doesn't need `confirmUnsyncedLoss` again — its
-      // own internal flush re-check runs against an already-revoked
-      // session (fails open, per its documented contract for callers
-      // that omit the hook) and proceeds straight to the local teardown.
+      // `logout()` must not ask again: its own flush would hit an
+      // already-revoked session (every push 401s) and re-show the same
+      // dialog with a misleading "connect to the network" hint.
       if (isCurrent) {
-        await logout();
+        await logout({ skipUnsyncedLossPrompt: true });
         navigate(SIGN_IN_PATH, { replace: true });
         return;
       }

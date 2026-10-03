@@ -44,7 +44,7 @@ export const FINYK_BANK_BANNER_DISMISSED_AT_KEY =
   "finyk_bank_banner_dismissed_at_v1";
 
 /**
- * Keys covered by the JSON backup + `?sync=` payload. Anything that
+ * Keys covered by the JSON backup. Anything that
  * `readFinykBackupFromStorage` writes must appear here so the mobile
  * backup/restore adapters stay in lock-step with the web ones.
  */

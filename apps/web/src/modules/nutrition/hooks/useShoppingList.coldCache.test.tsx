@@ -26,16 +26,22 @@ import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
 } from "../lib/sqliteReader";
+import {
+  __resetInitialPullStateForTests,
+  markInitialPullComplete,
+} from "../../../core/syncEngine/initialPullState";
 import { useShoppingList } from "./useShoppingList";
 
 beforeEach(() => {
   localStorage.clear();
   clearNutritionSqliteCache();
+  __resetInitialPullStateForTests();
   triggerSpy.mockReset();
 });
 
 afterEach(() => {
   clearNutritionSqliteCache();
+  __resetInitialPullStateForTests();
 });
 
 function emittedOps(): unknown[] {
@@ -62,8 +68,18 @@ describe("useShoppingList — холодний кеш (data-03)", () => {
     expect(emittedOps()).toEqual([]);
   });
 
-  it("після прогріву звичайна правка пишеться", () => {
+  it("data-04: кеш прогрітий, але початковий pull ще не завершено — правка не пишеться", () => {
+    // `refreshedAt !== null` лише означає, що ЛОКАЛЬНИЙ бут завершився (на
+    // новому пристрої — з порожньою базою). Справжній список ще в дорозі.
     __setNutritionSqliteCacheForTests({ shoppingList: null });
+    const { result } = renderHook(() => useShoppingList());
+    act(() => result.current.addItem({ name: "Молоко" }));
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("після прогріву і початкового pull звичайна правка пишеться", () => {
+    __setNutritionSqliteCacheForTests({ shoppingList: null });
+    markInitialPullComplete("user-1", {});
     const { result } = renderHook(() => useShoppingList());
     act(() => result.current.addItem({ name: "Молоко" }));
     const ops = emittedOps() as { kind: string }[];
