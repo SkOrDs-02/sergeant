@@ -287,6 +287,16 @@ export const auth = betterAuth({
   database: databaseConfig,
   baseURL: getBaseURL(),
   basePath: "/api/auth",
+  /**
+   * sec-08: беззастережний 404 на проксі, навіть якщо плагін колись підключать
+   * повторно, а прапорець вимкнено. Без `expo()` ендпоінта й так немає.
+   *
+   * AI-DANGER: усі вимкнені шляхи тримай ОДНИМ ключем `disabledPaths` тут.
+   * Другий такий ключ чи spread `{ disabledPaths }` деінде в цьому об'єкті
+   * тихо перезапише цей список (тест `auth.test.ts` цього не побачить, бо в
+   * test-env плагін увімкнено).
+   */
+  disabledPaths: isExpoPluginEnabled() ? [] : ["/expo-authorization-proxy"],
   user: {
     deleteUser: {
       /**
@@ -629,11 +639,6 @@ export const auth = betterAuth({
    *     `bearer()` лишається завжди: його використовує Capacitor-shell.
    */
   plugins: [bearer(), ...(isExpoPluginEnabled() ? [expo()] : [])],
-  // sec-08: беззастережний 404 на проксі навіть якщо плагін колись підключать
-  // повторно, але прапорець вимкнено. Без `expo()` ендпоінта й так немає.
-  ...(isExpoPluginEnabled()
-    ? {}
-    : { disabledPaths: ["/expo-authorization-proxy"] }),
   ...(advancedCookies ? { advanced: advancedCookies } : {}),
 });
 
