@@ -101,14 +101,16 @@ export function useFinykDualWriteSync(slots: FinykStorageSlots): void {
       prevRef.current = next;
       return;
     }
-    // Поки SQLite-кеш не прогрітий, слоти, яких немає в LS (правила
-    // мерчантів у `prefs_json`), тримають порожнє значення за
-    // замовчуванням. Зміна будь-якого pref у цей момент (напр. тумблер
-    // `showBalance`) дала б `prefs-upsert` з `merchantRules: []` і стерла
-    // збережені правила — локально й на сервері (LWW цілим рядком). Тому до
-    // прогріву відкидаємо ЛИШЕ prefs-зріз: база для prefs лишається тією, що
-    // була, а перший overlay після прогріву змінює read-tick і стає новою
-    // базою (гілка вище).
+    // Поки слоти не перекриті знімком SQLite-кешу (`storageReady`), ті з них,
+    // яких немає в LS (правила мерчантів у `prefs_json`), тримають порожнє
+    // значення за замовчуванням. Зміна будь-якого pref у цей момент (напр.
+    // тумблер `showBalance`) дала б `prefs-upsert` з `merchantRules: []` і
+    // стерла збережені правила — локально й на сервері (LWW цілим рядком).
+    // Тому до overlay відкидаємо ЛИШЕ prefs-зріз, причому база prefs
+    // синхронізується зі слотом (`next.prefs`), а не лишається «в боргу»:
+    // борг дожив би до кадру, де `storageReady` уже true, а тіку ще немає, і
+    // дав би ту саму шкідливу різницю. Тумблер, натиснутий до overlay, губиться
+    // (overlay однаково перезапише слот значенням із кешу).
     //
     // Решту діфу НЕ відкидаємо (аудит 2026-10-01, data-13). Раніше тут стояв
     // `prevRef.current = next; return;` для всього стану, і витрата чи актив,
@@ -128,7 +130,7 @@ export function useFinykDualWriteSync(slots: FinykStorageSlots): void {
       if (diffFinykDualWriteOps(prevRef.current, rowsOnly).length > 0) {
         triggerFinykDualWrite(prevRef.current, rowsOnly);
       }
-      prevRef.current = rowsOnly;
+      prevRef.current = next;
       return;
     }
     // `useFinykStorageSlots` returns a fresh object literal on every

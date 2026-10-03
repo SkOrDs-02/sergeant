@@ -6,7 +6,7 @@
 // ще не бачили, не мусять бути перетерті дефолтами.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 
 vi.mock("../../../core/syncEngine/enqueueOutboxUpsert.js", () => ({
   enqueueOutboxUpsert: vi.fn().mockResolvedValue({ id: 1, inserted: true }),
@@ -20,7 +20,12 @@ import {
   getCachedFinykSqliteState,
   refreshFinykSqliteState,
 } from "../lib/sqliteReader.js";
-import { __resetFinykSqliteReadGateForTests } from "../lib/sqliteReadGate.js";
+import {
+  __closeFinykSqliteMutationWindow,
+  __openFinykSqliteMutationWindow,
+  __resetFinykSqliteReadGateForTests,
+  notifyFinykSqliteCacheRefresh,
+} from "../lib/sqliteReadGate.js";
 import {
   __clearFinykDualWriteContextForTests,
   applyFinykDualWriteOps,
@@ -31,7 +36,10 @@ import {
   type TestSqliteHandle,
 } from "../lib/sqliteWriter/__tests__/testSqlite.js";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
-import type { FinykStorageSlots } from "./useFinykStorageSlots";
+import {
+  useFinykStorageSlots,
+  type FinykStorageSlots,
+} from "./useFinykStorageSlots";
 
 const USER_ID = "u-cold";
 const T0 = "2026-10-01T10:00:00.000Z";
@@ -161,5 +169,55 @@ describe("useFinykDualWriteSync: запис до прогріву кешу", () 
     expect(after.manualExpenses.map((e) => e["id"])).toEqual(
       expect.arrayContaining(["new-1", "old-1"]),
     );
+  });
+
+  // Знахідка рев'ю: `refreshedAt` ставиться всередині запису ще до закриття
+  // mutation-вікна, а overlay слотів іде лише з наступним тіком гейта. У цьому
+  // проміжку кеш уже теплий, а слоти ще дефолтні (`merchantRules: []`). Тумблер
+  // у ньому не мусить стерти правила мерчантів. Справжні слоти й гейт, без
+  // ручного збирання слотів.
+  it("pref-тумблер у проміжку «кеш теплий, overlay ще не було» не стирає правила мерчантів", async () => {
+    const { result } = renderHook(() => {
+      const slots = useFinykStorageSlots();
+      useFinykDualWriteSync(slots);
+      return slots;
+    });
+    expect(result.current.storageReady).toBe(false);
+
+    // Реплей/запис на старті тримає вікно відкритим, а кеш уже прогрітий.
+    __openFinykSqliteMutationWindow();
+    await refreshFinykSqliteState(handle.client, USER_ID);
+    notifyFinykSqliteCacheRefresh(); // подавлено: тіка немає
+    expect(getCachedFinykSqliteState().refreshedAt).not.toBeNull();
+
+    act(() => {
+      result.current.setShowBalance(false);
+    });
+    // Overlay ще не було, тож слоти не готові, хоч кеш теплий.
+    expect(result.current.storageReady).toBe(false);
+
+    // Дати черзі dual-write шанс (якщо баг є, prefs-upsert піде сюди).
+    await new Promise((r) => setTimeout(r, 50));
+    const outboxTables = vi
+      .mocked(enqueueOutboxUpsert)
+      .mock.calls.map((c) => c[1]?.table);
+    expect(outboxTables).not.toContain("finyk_prefs");
+    const onDisk = await refreshFinykSqliteState(handle.client, USER_ID);
+    expect(onDisk.merchantRules).toEqual([RULE]);
+    expect(onDisk.showBalance).toBe(true);
+
+    // Вікно закрилось, тік пішов: overlay застосовано, слоти готові й несуть
+    // стан користувача, а не дефолти.
+    __closeFinykSqliteMutationWindow();
+    act(() => {
+      notifyFinykSqliteCacheRefresh();
+    });
+    expect(result.current.storageReady).toBe(true);
+    expect(result.current.merchantRules).toEqual([RULE]);
+    expect(result.current.showBalance).toBe(true);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(
+      vi.mocked(enqueueOutboxUpsert).mock.calls.map((c) => c[1]?.table),
+    ).not.toContain("finyk_prefs");
   });
 });
