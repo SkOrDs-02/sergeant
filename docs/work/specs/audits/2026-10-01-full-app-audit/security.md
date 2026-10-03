@@ -23,7 +23,7 @@
 
 ### `sec-01` [critical] Прод-API дає credentialed CORS мертвому домену sergeant.2dmanager.com.ua, який вільний для реєстрації
 
-- **Стан:** виправлено в гілці claude/fix-sec-01-dead-cors-origin
+- **Стан:** виправлено в #1327 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: CORS / auth
 - **Де:** apps/server/src/http/cors.ts:23-27,62-66,129-133; apps/server/src/auth.ts:69-84; apps/web/src/core/observability/deployEnvironment.ts:52-54; apps/mobile-shell/src/index.ts:172; apps/mobile-shell/android/app/src/main/AndroidManifest.xml:66; apps/mobile/app.config.ts:69; apps/mobile/src/lib/deepLinks.ts:34; apps/web/public/.well-known/security.txt:5
 - **Першопричина:** Колишній кастомний домен лишився захардкодженим у PROD_ORIGINS (cors.ts:25). Цей список діє і в production, а ALLOWED_ORIGINS/ALLOWED_ORIGIN_REGEX можуть лише додавати origin-и. Домен 2dmanager.com.ua нікому не належить (NXDOMAIN, WHOIS hostmaster.ua: «доступне для реєстрації»), а сесійна кука в проді SameSite=None; Secure. Той самий хост досі в deep link/App Links, deployEnvironment і Canonical у security.txt.
@@ -217,7 +217,7 @@ NODE_USE_ENV_PROXY=1 NODE_EXTRA_CA_CERTS=/root/.ccr/ca-bundle.crt node <scratch>
 
 ### `sec-02` [high] Відкликана сесія живе до 7 днів: /api/auth/update-user перевипускає cookie-кеш без перевірки сесії в БД
 
-- **Стан:** виправлено в гілці claude/fix-sec-02-05-session
+- **Стан:** виправлено в #1329 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:424-431,597-605,714-726; node_modules/better-auth/dist/api/routes/update-user.mjs:16,54-69; node_modules/better-auth/dist/cookies/index.mjs:93; apps/server/src/http/requireSession.ts:83-91
 - **Першопричина:** session.cookieCache (maxAge 300 с) довіряє підписаній куці session_data без звернення до БД. Better Auth /update-user стоїть на sessionMiddleware, бере сесію з цього кешу і викликає setSessionCookie, який ставить новий строк кешу від поточного моменту. Кожен виклик раз на &lt;5 хв продовжує кеш, хоча рядка сесії в БД уже немає.
@@ -384,7 +384,7 @@ I tried to refute this and couldn't. I traced the code end to end and also repro
 
 ### `sec-04` [high] PIN-блокування вимикається після перезавантаження: прапорець app-lock-enabled не читається на холодному старті
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-03-app-lock-reload разом із [`priv-03`](./privacy.md#priv-03), PR #1340 (ще не змерджено)
 - **Перевірка:** підтверджено · **Зусилля:** M · **Область:** web: блокування застосунку
 - **Та сама першопричина, що й** [`priv-03`](./privacy.md#priv-03): Обидва описують вимкнення PIN-блокування після reload: прапорці читаються з localStorage до bootstrapKvStore() і typedStore кешує хибне значення. priv-03 ширший (зачіпає всі прапорці FLAG_REGISTRY) і має розмір S.
 - **Де:** apps/web/src/core/lib/featureFlags.ts:93-98,115-123,153-159; apps/web/src/shared/lib/storage/typedStore.ts:193-200,255-257; apps/web/src/shared/lib/storage/storage.ts:151-173; apps/web/src/main.tsx:198-215; apps/web/src/core/security/useAppLock.ts:51,64-103; apps/web/src/core/app/Providers.tsx:69
@@ -443,7 +443,7 @@ Code path, traced end to end at HEAD c7c09607:
 
 ### `sec-05` [medium] Сирий session token віддається в JSON get-session і list-sessions (з токенами всіх пристроїв) і приймається як Bearer
 
-- **Стан:** виправлено в гілці claude/fix-sec-02-05-session
+- **Стан:** виправлено в #1329 (змерджено 2026-10-03)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/сесії
 - **Де:** apps/server/src/auth.ts:607-617; node_modules/better-auth/dist/plugins/bearer/index.mjs:32-37; node_modules/better-auth/dist/api/routes/session.mjs:17-260,371-397; apps/server/src/routes/auth.ts:33
 - **Першопричина:** Плагін bearer() увімкнений для всіх клієнтів без requireSignature, тож сирий токен без HMAC є повноцінним креденшелом. Better Auth віддає поле token у /get-session і в кожному елементі /list-sessions, і застосунок його не вирізає, хоча веб працює на httpOnly-куці, а мобільний контур на паузі (ADR-0094).
