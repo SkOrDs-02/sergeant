@@ -45,7 +45,9 @@ export function AppLockSettings() {
     // кожній зміні користувача (finding #5), доки прапор ще ввімкнений.
     const prev = prevLockStateRef.current;
     const isMount = prev === null;
-    const cameFromLocked = prev === "locked";
+    // `checking` — холодний старт: перевірка креденшела завершилась, це
+    // рівнозначно «щойно змонтувались» для реконсиляції нижче.
+    const cameFromLocked = prev === "locked" || prev === "checking";
     const userChanged =
       prevHasPinRef.current !== null &&
       prevHasPinRef.current !== appLock.hasPin;

@@ -43,6 +43,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import { logger } from "../log";
 import { SERGEANT_STORE, dbDel } from "../idb/sergeantDb";
 import { resolveLsStore } from "./storage";
+import { reloadAllTypedStores } from "./typedStore";
 import { resetKvStoreBoot } from "../../../core/db/kvStoreBoot";
 
 /**
@@ -130,6 +131,9 @@ export async function purgeAppOwnedLocalData(): Promise<void> {
   }
   try {
     resetKvStoreBoot();
+    // Активне сховище знову LS (SQLite-стор скинуто): typed-стори тримали б
+    // кеш попереднього користувача і підписку на вже відчеплений SQLite-стор.
+    reloadAllTypedStores();
   } catch (err) {
     logger.warn("[purgeLocalData] kv warm-cache reset failed", err);
   }
