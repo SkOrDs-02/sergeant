@@ -32,7 +32,7 @@ export async function upsertCustomActivity(
     clientTs,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_custom_activities",
     op: "insert",
@@ -60,7 +60,7 @@ export async function softDeleteCustomActivity(
     userId,
     clientTs,
   ]);
-  void enqueueOutboxUpsert(client, {
+  await enqueueOutboxUpsert(client, {
     userId,
     table: "fizruk_custom_activities",
     op: "delete",

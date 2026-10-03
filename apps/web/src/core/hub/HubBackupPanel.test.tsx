@@ -14,7 +14,9 @@ const buildPayloadMock = vi.fn((_opts?: unknown) => ({
   kind: "hub-backup",
   schemaVersion: 1,
 }));
-const applyPayloadMock = vi.fn((_data?: unknown) => undefined);
+const applyPayloadMock = vi.fn(
+  (_data?: unknown, _options?: unknown): Promise<void> | undefined => undefined,
+);
 const downloadJsonMock = vi.fn((_filename?: unknown, _payload?: unknown) =>
   Promise.resolve(),
 );
@@ -37,8 +39,22 @@ const isHubBackupPayloadMock = vi.fn(
 
 vi.mock("./hubBackup", () => ({
   buildHubBackupPayload: (opts: unknown) => buildPayloadMock(opts),
-  applyHubBackupPayload: (data: unknown) => applyPayloadMock(data),
+  applyHubBackupPayload: (data: unknown, options: unknown) =>
+    applyPayloadMock(data, options),
   isHubBackupPayload: (data: unknown) => isHubBackupPayloadMock(data),
+}));
+
+// Готовність і акаунт керуються тестом. Реальний хук тягнув би storage-модулі
+// чотирьох доменів, яких решта моків цього файлу свідомо уникає.
+const readyState = { value: true };
+vi.mock("./useHubRestoreReady", () => ({
+  useHubRestoreReady: () => readyState.value,
+}));
+const authState: { value: { user: { id: string } | null } | null } = {
+  value: null,
+};
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => authState.value,
 }));
 
 vi.mock("@sergeant/shared", async () => {
@@ -64,6 +80,7 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
+import { trackOutboxWrite } from "../syncEngine/outboxCheckpoint";
 import { HubBackupPanel } from "./HubBackupPanel";
 
 // Реалістичний повний експорт — один не-`version` ключ під `finyk` і truthy
@@ -87,6 +104,8 @@ describe("HubBackupPanel", () => {
     // передану в `vi.fn(...)` на рівні модуля, тож `isHubBackupPayloadMock`
     // і далі коректно працює між тестами без повторного озброєння тут.
     vi.clearAllMocks();
+    readyState.value = true;
+    authState.value = null;
   });
 
   afterEach(() => {
@@ -277,10 +296,12 @@ describe("HubBackupPanel", () => {
     render(<HubBackupPanel />);
     await selectValidBackupFile();
 
-    fireEvent.click(screen.getByRole("button", { name: "Перезаписати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
 
     await waitFor(() => expect(applyPayloadMock).toHaveBeenCalledTimes(1));
-    expect(applyPayloadMock).toHaveBeenCalledWith(FULL_BACKUP_PAYLOAD);
+    expect(applyPayloadMock).toHaveBeenCalledWith(FULL_BACKUP_PAYLOAD, {
+      mode: "merge",
+    });
     expect(reloadMock).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
@@ -406,7 +427,7 @@ describe("HubBackupPanel", () => {
 
     render(<HubBackupPanel />);
     await selectValidBackupFile();
-    fireEvent.click(screen.getByRole("button", { name: "Перезаписати" }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
 
     await waitFor(() =>
       expect(toastErrorMock).toHaveBeenCalledWith(
@@ -417,6 +438,231 @@ describe("HubBackupPanel", () => {
     );
     expect(reloadMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  });
+
+  // ─── Режими відновлення і чесний діалог (аудит 2026-10-01, data-06) ─────────
+
+  it("дефолт діалогу — «додати відсутнє»: нічого не видаляє, знімка не робить", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog.textContent).toContain("Додати дані з файлу?");
+    expect(dialog.textContent).toContain("Нічого не видаляю");
+    expect(dialog.textContent).not.toContain("видалиться");
+    expect(
+      (
+        screen.getByRole("radio", {
+          name: /Додати відсутнє/,
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
+    await waitFor(() => expect(applyPayloadMock).toHaveBeenCalledTimes(1));
+    expect(applyPayloadMock).toHaveBeenCalledWith(FULL_BACKUP_PAYLOAD, {
+      mode: "merge",
+    });
+    // Знімок потрібен лише перед заміною.
+    expect(downloadJsonMock).not.toHaveBeenCalled();
+  });
+
+  it("режим «замінити»: чесний текст про акаунт і всі пристрої для залогіненого", async () => {
+    authState.value = { user: { id: "u1" } };
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+
+    fireEvent.click(screen.getByRole("radio", { name: /Замінити даними/ }));
+
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog.textContent).toContain("Замінити дані з файлу?");
+    expect(dialog.textContent).toContain("видалиться на сервері");
+    expect(dialog.textContent).toContain("на всіх твоїх пристроях");
+    expect(dialog.textContent).toContain("збережу файл із поточними даними");
+    expect(screen.getByRole("button", { name: "Замінити дані" })).toBeTruthy();
+  });
+
+  it("режим «замінити» для анонімного: без згадки сервера", async () => {
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("radio", { name: /Замінити даними/ }));
+
+    const dialog = screen.getByRole("alertdialog");
+    expect(dialog.textContent).toContain("видалиться на цьому пристрої");
+    expect(dialog.textContent).not.toContain("на сервері");
+  });
+
+  it("заміна спершу зберігає знімок, і лише потім викликає apply з mode: replace", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("radio", { name: /Замінити даними/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Замінити дані" }));
+
+    await waitFor(() => expect(applyPayloadMock).toHaveBeenCalledTimes(1));
+    expect(downloadJsonMock).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /^hub-backup-before-replace-\d{4}-\d{2}-\d{2}\.json$/,
+      ),
+      { kind: "hub-backup", schemaVersion: 1 },
+    );
+    const downloadOrder = downloadJsonMock.mock.invocationCallOrder[0] ?? 0;
+    const applyOrder = applyPayloadMock.mock.invocationCallOrder[0] ?? 0;
+    expect(downloadOrder).toBeLessThan(applyOrder);
+    expect(applyPayloadMock).toHaveBeenCalledWith(FULL_BACKUP_PAYLOAD, {
+      mode: "replace",
+    });
+  });
+
+  it("заміна не починається, якщо знімок не збережено", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+    downloadJsonMock.mockRejectedValueOnce(
+      new Error("Не вдалось зберегти файл"),
+    );
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("radio", { name: /Замінити даними/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Замінити дані" }));
+
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Не вдалось зберегти файл",
+        undefined,
+        expect.anything(),
+      ),
+    );
+    expect(applyPayloadMock).not.toHaveBeenCalled();
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("новий вибір файлу скидає режим на «додати»", async () => {
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("radio", { name: /Замінити даними/ }));
+    const cancelButtons = screen.getAllByRole("button", { name: "Скасувати" });
+    fireEvent.click(cancelButtons[cancelButtons.length - 1] as HTMLElement);
+
+    await selectValidBackupFile();
+    expect(
+      (
+        screen.getByRole("radio", {
+          name: /Додати відсутнє/,
+        }) as HTMLInputElement
+      ).checked,
+    ).toBe(true);
+  });
+
+  // ─── data-07: reload не має обривати чергу outbox ───────────────────────────
+
+  it("reload чекає чекпоінт outbox: доки рядок не ліг, сторінка не перезавантажується", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+    // Імітуємо хвіст fire-and-forget черги адаптера, поставлений під час apply.
+    let releaseOutbox!: () => void;
+    applyPayloadMock.mockImplementationOnce(async () => {
+      trackOutboxWrite(
+        new Promise<void>((resolve) => {
+          releaseOutbox = resolve;
+        }),
+      );
+    });
+
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
+
+    await waitFor(() => expect(applyPayloadMock).toHaveBeenCalledTimes(1));
+    // apply уже завершився, а outbox ще ні: reload заборонений.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(reloadMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      releaseOutbox();
+    });
+    await waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("збій запису в outbox: без reload, людина бачить помилку", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+    applyPayloadMock.mockImplementationOnce(async () => {
+      trackOutboxWrite(Promise.reject(new Error("SQLITE_BUSY")));
+    });
+
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
+
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        expect.stringContaining("не всі стали в чергу синхронізації"),
+        undefined,
+        expect.anything(),
+      ),
+    );
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("apply кинув (skipped / не записалось): помилка людині, без reload", async () => {
+    const reloadMock = vi.fn();
+    vi.stubGlobal("location", { reload: reloadMock });
+    applyPayloadMock.mockRejectedValueOnce(
+      new Error(
+        "Не вдалось записати дані Фініка: сховище поки недоступне. Спробуй ще раз.",
+      ),
+    );
+
+    render(<HubBackupPanel />);
+    await selectValidBackupFile();
+    fireEvent.click(screen.getByRole("button", { name: "Додати відсутнє" }));
+
+    await waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        expect.stringContaining("Не вдалось записати дані Фініка"),
+        undefined,
+        expect.anything(),
+      ),
+    );
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("кнопка імпорту заблокована, доки dual-write не готовий, і пояснює чому", () => {
+    readyState.value = false;
+    render(<HubBackupPanel />);
+
+    const importButton = screen.getByRole("button", { name: "Імпорт…" });
+    expect((importButton as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("status").textContent).toContain(
+      "Дані ще завантажуються",
+    );
+  });
+
+  it("кнопка імпорту активна, коли все готове", () => {
+    render(<HubBackupPanel />);
+    const importButton = screen.getByRole("button", { name: "Імпорт…" });
+    expect((importButton as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("банер: залогінений бачить, що дані синхронізуються з акаунтом, а не «лише на цьому пристрої»", () => {
+    authState.value = { user: { id: "u1" } };
+    render(<HubBackupPanel />);
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("синхронізуються з твоїм акаунтом");
+    expect(text).not.toContain("живуть лише на цьому пристрої");
+  });
+
+  it("банер: без входу дані живуть лише на цьому пристрої", () => {
+    render(<HubBackupPanel />);
+    expect(document.body.textContent).toContain(
+      "живуть лише на цьому пристрої",
+    );
   });
 
   it("accepts an optional className prop", () => {

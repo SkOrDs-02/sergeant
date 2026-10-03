@@ -7,35 +7,60 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const normalizeFinykBackup = vi.fn((v: unknown) => v);
 const readFinykBackupFromStorage = vi.fn(() => ({}));
 const persistFinykNormalizedToStorage = vi.fn();
-const persistFinykNormalizedToSqlite = vi.fn(async (_v: unknown) => {});
+const APPLIED = {
+  status: "applied" as const,
+  result: { applied: 1, errored: 0, skipped: 0 },
+};
+type TestOutcome =
+  | typeof APPLIED
+  | { status: "skipped"; reason: string }
+  | {
+      status: "applied";
+      result: { applied: number; errored: number; skipped: number };
+    };
+const persistFinykNormalizedToSqlite = vi.fn(
+  async (_v: unknown, _mode?: unknown): Promise<TestOutcome> => APPLIED,
+);
 vi.mock("../../modules/finyk/lib/finykBackup", () => ({
   normalizeFinykBackup: (v: unknown) => normalizeFinykBackup(v),
   readFinykBackupFromStorage: () => readFinykBackupFromStorage(),
   persistFinykNormalizedToStorage: (v: unknown) =>
     persistFinykNormalizedToStorage(v),
-  persistFinykNormalizedToSqlite: (v: unknown) =>
-    persistFinykNormalizedToSqlite(v),
+  persistFinykNormalizedToSqlite: (v: unknown, mode: unknown) =>
+    persistFinykNormalizedToSqlite(v, mode),
 }));
 
 const buildFizrukFullBackupPayload = vi.fn(() => ({ fizruk: true }));
-const applyFizrukFullBackupPayload = vi.fn();
+const applyFizrukFullBackupPayload = vi.fn(
+  async (_v: unknown, _mode?: unknown): Promise<TestOutcome> => APPLIED,
+);
 vi.mock("../../modules/fizruk/lib/fizrukStorage", () => ({
   buildFizrukFullBackupPayload: () => buildFizrukFullBackupPayload(),
-  applyFizrukFullBackupPayload: (v: unknown) => applyFizrukFullBackupPayload(v),
+  applyFizrukFullBackupPayload: (v: unknown, mode: unknown) =>
+    applyFizrukFullBackupPayload(v, mode),
 }));
 
 const buildRoutineBackupPayload = vi.fn(() => ({ routine: true }));
 const applyRoutineBackupPayload = vi.fn();
 vi.mock("../../modules/routine/lib/routineStorage", () => ({
   buildRoutineBackupPayload: () => buildRoutineBackupPayload(),
-  applyRoutineBackupPayload: (v: unknown) => applyRoutineBackupPayload(v),
+  applyRoutineBackupPayload: (v: unknown, mode: unknown) =>
+    applyRoutineBackupPayload(v, mode),
 }));
 
 const buildNutritionBackupPayload = vi.fn(() => ({ nutrition: true }));
 const applyNutritionBackupPayload = vi.fn();
 vi.mock("../../modules/nutrition/domain/nutritionBackup", () => ({
   buildNutritionBackupPayload: () => buildNutritionBackupPayload(),
-  applyNutritionBackupPayload: (v: unknown) => applyNutritionBackupPayload(v),
+  applyNutritionBackupPayload: (v: unknown, mode: unknown) =>
+    applyNutritionBackupPayload(v, mode),
+}));
+
+// Готовність керується тестом: за замовчуванням усе готове.
+const isHubRestoreModuleReady = vi.fn((_m: string) => true);
+vi.mock("./hubBackupReadiness", () => ({
+  isHubRestoreModuleReady: (m: string) => isHubRestoreModuleReady(m),
+  isHubRestoreReady: () => true,
 }));
 
 import {
@@ -63,6 +88,9 @@ function validPayload(over: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   localStorage.clear();
+  persistFinykNormalizedToSqlite.mockImplementation(async () => APPLIED);
+  applyFizrukFullBackupPayload.mockImplementation(async () => APPLIED);
+  isHubRestoreModuleReady.mockImplementation(() => true);
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -106,22 +134,29 @@ describe("applyHubBackupPayload", () => {
     await applyHubBackupPayload(
       validPayload({ finyk: { accounts: [], version: 1 } }),
     );
-    expect(persistFinykNormalizedToStorage).toHaveBeenCalledTimes(1);
     // Канонічний запис імпорту — SQLite, не LS: без нього відновлене
     // не видно жодному читанню Фініка (див. hubBackup.roundtrip.test.ts).
     expect(persistFinykNormalizedToSqlite).toHaveBeenCalledTimes(1);
-    expect(applyRoutineBackupPayload).toHaveBeenCalledWith({ routine: true });
-    expect(applyFizrukFullBackupPayload).toHaveBeenCalledWith({ fizruk: true });
-    expect(applyNutritionBackupPayload).toHaveBeenCalledWith({
-      nutrition: true,
-    });
+    expect(persistFinykNormalizedToSqlite.mock.calls[0]?.[1]).toBe("merge");
+    expect(applyRoutineBackupPayload).toHaveBeenCalledWith(
+      { routine: true },
+      "merge",
+    );
+    expect(applyFizrukFullBackupPayload).toHaveBeenCalledWith(
+      { fizruk: true },
+      "merge",
+    );
+    expect(applyNutritionBackupPayload).toHaveBeenCalledWith(
+      { nutrition: true },
+      "merge",
+    );
   });
 
   it("injects version:1 into finyk when missing before persisting", async () => {
     await applyHubBackupPayload(
       validPayload({ finyk: { accounts: [{ id: "a" }] } }),
     );
-    expect(persistFinykNormalizedToStorage).toHaveBeenCalledTimes(1);
+    expect(persistFinykNormalizedToSqlite).toHaveBeenCalledTimes(1);
     const normalizeArg = normalizeFinykBackup.mock.calls.at(-1)?.[0] as Record<
       string,
       unknown
@@ -131,12 +166,12 @@ describe("applyHubBackupPayload", () => {
 
   it("skips finyk persist when only a version key is present (no real data)", async () => {
     await applyHubBackupPayload(validPayload({ finyk: { version: 1 } }));
-    expect(persistFinykNormalizedToStorage).not.toHaveBeenCalled();
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
   });
 
   it("skips finyk persist when finyk is empty object", async () => {
     await applyHubBackupPayload(validPayload({ finyk: {} }));
-    expect(persistFinykNormalizedToStorage).not.toHaveBeenCalled();
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
   });
 
   it("restores a valid hub.lastModule but ignores an unknown module", async () => {
@@ -157,6 +192,20 @@ describe("applyHubBackupPayload", () => {
     expect(localStorage.getItem(HUB_CHAT_KEY)).toBe('[{"role":"user"}]');
   });
 
+  it("hub: у режимі merge не перебиває наявний останній розділ і чат, у replace перебиває", async () => {
+    localStorage.setItem(HUB_MODULE_KEY, "routine");
+    localStorage.setItem(HUB_CHAT_KEY, "[1]");
+    const hub = { lastModule: "finyk", chatHistory: "[2]" };
+
+    await applyHubBackupPayload(validPayload({ hub }));
+    expect(localStorage.getItem(HUB_MODULE_KEY)).toBe("routine");
+    expect(localStorage.getItem(HUB_CHAT_KEY)).toBe("[1]");
+
+    await applyHubBackupPayload(validPayload({ hub }), { mode: "replace" });
+    expect(localStorage.getItem(HUB_MODULE_KEY)).toBe("finyk");
+    expect(localStorage.getItem(HUB_CHAT_KEY)).toBe("[2]");
+  });
+
   it("does not call module apply fns for absent sections", async () => {
     await applyHubBackupPayload({
       kind: HUB_BACKUP_KIND,
@@ -166,9 +215,105 @@ describe("applyHubBackupPayload", () => {
       fizruk: null,
       nutrition: null,
     });
-    expect(persistFinykNormalizedToStorage).not.toHaveBeenCalled();
+    expect(persistFinykNormalizedToSqlite).not.toHaveBeenCalled();
     expect(applyRoutineBackupPayload).not.toHaveBeenCalled();
     expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
     expect(applyNutritionBackupPayload).not.toHaveBeenCalled();
+  });
+});
+
+// Аудит 2026-10-01, data-06 / data-07.
+describe("applyHubBackupPayload — режими і чесний результат", () => {
+  const finykPayload = (over: Record<string, unknown> = {}) =>
+    validPayload({
+      finyk: { accounts: [], version: 1 },
+      fizruk: null,
+      routine: null,
+      nutrition: null,
+      ...over,
+    });
+
+  it("дефолт — merge: LS Фініка не чіпається, режим доходить до модулів", async () => {
+    await applyHubBackupPayload(
+      validPayload({ finyk: { version: 1, budgets: [] } }),
+    );
+    expect(persistFinykNormalizedToStorage).not.toHaveBeenCalled();
+    expect(persistFinykNormalizedToSqlite.mock.calls[0]?.[1]).toBe("merge");
+  });
+
+  it("replace: пише і в LS, і в SQLite, режим доходить до всіх модулів", async () => {
+    await applyHubBackupPayload(
+      validPayload({ finyk: { accounts: [], version: 1 } }),
+      { mode: "replace" },
+    );
+    expect(persistFinykNormalizedToStorage).toHaveBeenCalledTimes(1);
+    expect(persistFinykNormalizedToSqlite.mock.calls[0]?.[1]).toBe("replace");
+    expect(applyRoutineBackupPayload).toHaveBeenCalledWith(
+      { routine: true },
+      "replace",
+    );
+    expect(applyFizrukFullBackupPayload).toHaveBeenCalledWith(
+      { fizruk: true },
+      "replace",
+    );
+    expect(applyNutritionBackupPayload).toHaveBeenCalledWith(
+      { nutrition: true },
+      "replace",
+    );
+  });
+
+  it("skipped (контекст не зареєстровано) Фініка — помилка, а не тихий успіх", async () => {
+    persistFinykNormalizedToSqlite.mockResolvedValueOnce({
+      status: "skipped",
+      reason: "context-unset",
+    });
+    await expect(applyHubBackupPayload(finykPayload())).rejects.toThrow(
+      /Не вдалось записати дані Фініка/,
+    );
+  });
+
+  it("skipped (контекст не зареєстровано) Фізрука — помилка, а не тихий успіх", async () => {
+    applyFizrukFullBackupPayload.mockResolvedValueOnce({
+      status: "skipped",
+      reason: "context-unset",
+    });
+    await expect(
+      applyHubBackupPayload(validPayload({ finyk: {} })),
+    ).rejects.toThrow(/Не вдалось записати дані Фізрука/);
+  });
+
+  it("applied з errored > 0 — теж помилка (частину записів SQL не прийняв)", async () => {
+    persistFinykNormalizedToSqlite.mockResolvedValueOnce({
+      status: "applied",
+      result: { applied: 3, errored: 1, skipped: 0 },
+    });
+    await expect(applyHubBackupPayload(finykPayload())).rejects.toThrow(
+      /Частина даних Фініка не записалась/,
+    );
+  });
+
+  it("skipped no-ops (файл нічого не додає) — не помилка", async () => {
+    persistFinykNormalizedToSqlite.mockResolvedValueOnce({
+      status: "skipped",
+      reason: "no-ops",
+    });
+    await expect(
+      applyHubBackupPayload(finykPayload()),
+    ).resolves.toBeUndefined();
+  });
+
+  it("модуль не готовий: кидає ДО будь-якого запису", async () => {
+    isHubRestoreModuleReady.mockImplementation((m) => m !== "fizruk");
+    await expect(
+      applyHubBackupPayload(validPayload({ finyk: {} })),
+    ).rejects.toThrow(/ще завантажуються/);
+    expect(applyFizrukFullBackupPayload).not.toHaveBeenCalled();
+  });
+
+  it("готовність перевіряється лише для секцій, які є у файлі", async () => {
+    isHubRestoreModuleReady.mockImplementation((m) => m === "finyk");
+    await expect(
+      applyHubBackupPayload(finykPayload()),
+    ).resolves.toBeUndefined();
   });
 });
