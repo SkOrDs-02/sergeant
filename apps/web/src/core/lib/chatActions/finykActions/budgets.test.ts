@@ -65,6 +65,33 @@ afterEach(() => {
   clearFinykSqliteCache();
 });
 
+describe("id бюджету (data-01)", () => {
+  it("два бюджети в ту саму мілісекунду мають різні id без Date.now()", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      setBudgetLimit({
+        name: "set_budget_limit",
+        input: { category_id: "food", limit: 100 },
+      });
+      const first = (writes.get("finyk_budgets") as Array<{ id: string }>)[0]!;
+      seedCache({ budgets: [first] });
+      setBudgetLimit({
+        name: "set_budget_limit",
+        input: { category_id: "transport", limit: 200 },
+      });
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+    const saved = writes.get("finyk_budgets") as Array<{ id: string }>;
+    expect(saved).toHaveLength(2);
+    expect(new Set(saved.map((b) => b.id)).size).toBe(2);
+    for (const b of saved) {
+      expect(b.id).toMatch(/^b_[0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(b.id).not.toContain("1777000000000");
+    }
+  });
+});
+
 describe("setBudgetLimit", () => {
   it("creates a new limit budget and persists it", () => {
     const out = setBudgetLimit({

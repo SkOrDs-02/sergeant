@@ -25,6 +25,43 @@ beforeEach(() => {
   seedFinykCache({});
 });
 
+// Аудит data-01: id був `d_<Date.now()>` / `r_<Date.now()>` — передбачуваний,
+// однаковий у межах мілісекунди, а PK таблиць на сервері глобальний.
+describe("id боргу і дебіторки (data-01)", () => {
+  it("два борги в ту саму мілісекунду мають різні id без Date.now()", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      createDebt({ name: "create_debt", input: { name: "А", amount: 10 } });
+      createDebt({ name: "create_debt", input: { name: "Б", amount: 20 } });
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+    const ids = mockWrite.mock.calls.map(
+      (c) => (c[1] as Array<{ id: string }>).at(-1)!.id,
+    );
+    expect(ids).toHaveLength(2);
+    expect(new Set(ids).size).toBe(2);
+    for (const id of ids) {
+      expect(id).toMatch(/^d_[0-9a-f]{8}-[0-9a-f]{4}-/);
+      expect(id).not.toContain("1777000000000");
+    }
+  });
+
+  it("дебіторка отримує r_<uuid>", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_777_000_000_000);
+    try {
+      createReceivable({
+        name: "create_receivable",
+        input: { name: "В", amount: 10 },
+      });
+    } finally {
+      vi.mocked(Date.now).mockRestore();
+    }
+    const written = mockWrite.mock.calls[0]![1] as Array<{ id: string }>;
+    expect(written.at(-1)!.id).toMatch(/^r_[0-9a-f]{8}-[0-9a-f]{4}-/);
+  });
+});
+
 // ─── createDebt ───────────────────────────────────────────────────────────────
 
 describe("createDebt", () => {

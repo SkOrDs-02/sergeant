@@ -6,24 +6,34 @@
  * чат-екзекутори (`log_set` / `plan_workout`, data-11): обидва шляхи мусять
  * давати вправі той самий вигляд id, а не розходитись у двох копіях.
  *
- * AI-CONTEXT: slug бере лише `[a-z0-9]`, тож кирилична назва дає порожній
- * slug, і id стає `custom_<Date.now()>`. Латинські назви дають детермінований
- * `custom_<slug>`, який може збігтись у двох акаунтів (глобальний PK
- * `fizruk_custom_exercises`, див. аудит data-01) — це відома межа генератора,
- * не нова.
+ * AI-CONTEXT: id — `custom_<uuid>` (`crypto.randomUUID()`), а не slug назви чи
+ * `Date.now()`. `fizruk_custom_exercises` має ГЛОБАЛЬНИЙ PK `(id)` без
+ * `user_id`, тож передбачуваний id (`custom_hip_thrust`, `custom_5`,
+ * мілісекунда) збігається з чужим рядком, і сервер термінально відхиляє запис
+ * `fk_violation` (аудит data-01, крок 1). Префікс `custom_` лишається:
+ * `ExerciseDetailSheet` відрізняє свою вправу за ним.
+ *
+ * Дедуплікація «та сама назва = та сама вправа» раніше трималась на slug-id
+ * (повторне додавання «Hip Thrust» перезаписувало запис). Тепер id випадковий,
+ * тож порівняння йде за нормалізованою назвою: `isSameExerciseName` +
+ * `useExerciseCatalog.addExercise`.
  */
+import { generatePrefixedId } from "@sergeant/shared";
 
-export function slugifyExerciseName(s: string | null | undefined): string {
-  return (s || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
+/** `custom_<uuid>` — непередбачуваний, унікальний між користувачами. */
+export function newCustomExerciseId(): string {
+  return generatePrefixedId("custom");
 }
 
-/** `custom_<slug>` або `custom_<Date.now()>`, коли slug порожній. */
-export function customExerciseIdFromName(nameUk: string): string {
-  return `custom_${slugifyExerciseName(nameUk) || Date.now()}`;
+function normalizeName(s: string | null | undefined): string {
+  return (s ?? "").toString().trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Назви збігаються без урахування регістру й зайвих пробілів. */
+export function isSameExerciseName(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const na = normalizeName(a);
+  return na.length > 0 && na === normalizeName(b);
 }
