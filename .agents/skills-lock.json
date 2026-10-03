@@ -149,7 +149,7 @@
     "sergeant-security-audit": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "5f3c8bdf84198261fbba625a5bdb85d328189d494a8ebbdd4cd697de6f7b2dba"
+      "computedHash": "0ddba20abb672178c0b4a0f088150bbe7ad0f5b21155c5cbd36a9a17747daf65"
     },
     "sergeant-server-api": {
       "source": "local",

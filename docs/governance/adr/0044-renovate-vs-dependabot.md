@@ -1,6 +1,8 @@
 # ADR-0044: Renovate as the primary dep-update tool, Dependabot as security-only fallback
 
-- **Status:** Accepted
+> **Superseded by [ADR-0103](./0103-dependabot-only-dependency-updates.md) (2026-10-03)** — Renovate на GitHub-репо не встановлено, єдиний інструмент оновлення залежностей тепер Dependabot; `renovate.json` і `renovate-usage.md` видалено (посилання нижче ведуть на їхній останній стан). Тіло нижче — історичний запис на момент ухвалення.
+
+- **Status:** Superseded by [ADR-0103](./0103-dependabot-only-dependency-updates.md)
 - **Last validated:** 2026-05-15 by Claude Sonnet 4.6 (external session — bulk freshness backfill, D4 audit). **Next review:** 2026-08-13.
 - **Date:** 2026-05-04
 - **Deciders:** @Skords-01
@@ -8,8 +10,8 @@
 - **Related:**
   - [`docs/work/specs/initiatives/archive/_0008-platform-hardening.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) §Phase 3
   - [`docs/work/specs/security-hardening/H2-dependabot.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H2-dependabot.md) (Dependabot setup card)
-  - [`docs/engineering/integrations/renovate-usage.md`](../../engineering/integrations/renovate-usage.md)
-  - [`renovate.json`](../../../renovate.json), [`.github/dependabot.yml`](../../../.github/dependabot.yml)
+  - [`docs/engineering/integrations/renovate-usage.md`](https://github.com/SkOrDs-02/sergeant/blob/b47c5ac146b0b0a3e9285fe5e58985a7eaa81ca2/docs/engineering/integrations/renovate-usage.md)
+  - [`renovate.json`](https://github.com/SkOrDs-02/sergeant/blob/b47c5ac146b0b0a3e9285fe5e58985a7eaa81ca2/renovate.json), [`.github/dependabot.yml`](../../../.github/dependabot.yml)
 
 ---
 

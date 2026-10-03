@@ -1,6 +1,6 @@
 # 03 · Operations — деплой, спостережуваність, runbook-и
 
-> **Last touched:** 2026-09-17 by @claude (прибрано неіснуючий каталог `runbooks/`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (ops/: Renovate-runbook прибрано, ADR-0103). **Next review:** 2027-01-01.
 > **Status:** Active
 
 Експлуатаційний шар: як деплоїти, як стежити, як діяти в інцидент. Жанр —
@@ -10,13 +10,13 @@
 [`docs/start/instructions/`](../start/instructions/README.md) — окремого
 каталогу `runbooks/` тут немає (див. таблицю жанрів нижче).
 
-| Розділ                                             | Що тут                                                                      |
-| -------------------------------------------------- | --------------------------------------------------------------------------- |
-| [`deploy/`](./deploy/README.md)                    | Deploy-walkthrough-и (Hetzner/Coolify, Vercel, monorepo-фільтрація).        |
-| [`observability/`](./observability/README.md)      | Алерти, SLO, логи, інженерні метрики, дашборди.                             |
-| [`ops/`](./ops/README.md)                          | Recurring ops-runbook-и (Renovate maintainer workflow, dependency hygiene). |
-| [`postmortems/`](./postmortems/README.md)          | Розбори інцидентів і follow-up-памʼять.                                     |
-| [`instructions/`](../start/instructions/README.md) | DR-grade процедури (DB backup/restore, ротація ключів шифрування, …).       |
+| Розділ                                             | Що тут                                                                |
+| -------------------------------------------------- | --------------------------------------------------------------------- |
+| [`deploy/`](./deploy/README.md)                    | Deploy-walkthrough-и (Hetzner/Coolify, Vercel, monorepo-фільтрація).  |
+| [`observability/`](./observability/README.md)      | Алерти, SLO, логи, інженерні метрики, дашборди.                       |
+| [`ops/`](./ops/README.md)                          | Recurring ops-runbook-и (політика Docker-образу Hub API).             |
+| [`postmortems/`](./postmortems/README.md)          | Розбори інцидентів і follow-up-памʼять.                               |
+| [`instructions/`](../start/instructions/README.md) | DR-grade процедури (DB backup/restore, ротація ключів шифрування, …). |
 
 ## Контракт жанрів
 
