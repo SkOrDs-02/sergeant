@@ -47,7 +47,7 @@
         },
         {
           "name": "vitest",
-          "version": "^3.2.4"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -126,7 +126,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -178,7 +178,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         },
         {
           "name": "zod",
@@ -242,7 +242,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         },
         {
           "name": "zod",
@@ -274,7 +274,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -313,7 +313,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -329,7 +329,7 @@
       "frameworkDeps": [
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -349,7 +349,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -369,7 +369,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -389,7 +389,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -409,7 +409,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -429,7 +429,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -449,7 +449,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
@@ -469,7 +469,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         },
         {
           "name": "zod",
@@ -493,7 +493,7 @@
         },
         {
           "name": "vitest",
-          "version": "^4.1.10"
+          "version": "^4.1.11"
         }
       ],
       "testRunner": "vitest",
