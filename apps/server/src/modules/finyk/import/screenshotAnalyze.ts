@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import { parseBody } from "../../../http/validate.js";
 import {
+  IMPORT_BANK_MAX_LEN,
+  IMPORT_DESCRIPTION_MAX_LEN,
   ImportScreenshotAnalyzeRequestSchema,
   ImportScreenshotAnalyzeResponseSchema,
   IMPORT_SCREENSHOT_DOC_TYPES,
@@ -20,6 +22,12 @@ import { isLikelyOwnTransfer } from "./transferDetect.js";
 import { markDuplicateLikely } from "./duplicateDetect.js";
 import { receiptVisionViaOpenRouter } from "../receipts/visionTransport.js";
 import { resolveCategoryHint } from "./categoryHint.js";
+import { isUahCurrencyValue } from "./csvProfiles.js";
+import {
+  isAmountKopiykasInBounds,
+  isDayKeyInBounds,
+  truncateImportText,
+} from "./rowLimits.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 
@@ -31,11 +39,17 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 /** Читає копійкове поле з довільного LLM-JSON — ніколи не довіряє типу
- * (той самий патерн, що `receipts/analyze.ts#toSafeIntKopiykas`). */
+ * (той самий патерн, що `receipts/analyze.ts#toSafeIntKopiykas`).
+ *
+ * Повертає `0` («непридатно»), якщо значення не ЦІЛЕ число в межах
+ * `importAmountKopiykasSchema`. Дробове значення НЕ округлюється: модель
+ * найчастіше віддає дріб, коли прочитала гривні (`95.5` замість `9550`), і
+ * тихе округлення зменшувало б суму в 100 разів. Понад `AMOUNT_MINOR_MAX` —
+ * теж непридатно, а не клемп до стелі: вигадана сума гірша за відсутню. Обидва
+ * випадки рахуються у `dropped.unreadable` замість 500 на весь скрін (rel-20). */
 function toSafePositiveIntKopiykas(v: unknown): number {
   const n = typeof v === "number" ? v : Number(v);
-  if (!Number.isFinite(n) || n <= 0) return 0;
-  return Math.round(n);
+  return isAmountKopiykasInBounds(n) ? n : 0;
 }
 
 function isValidDayKey(v: unknown): v is string {
@@ -86,7 +100,9 @@ export function normalizeImportScreenshotResult(
 
   const bankRaw = obj["bank"];
   const bank =
-    typeof bankRaw === "string" && bankRaw.trim() ? bankRaw.trim() : null;
+    typeof bankRaw === "string" && bankRaw.trim()
+      ? truncateImportText(bankRaw.trim(), IMPORT_BANK_MAX_LEN)
+      : null;
 
   const rawRows = Array.isArray(obj["rows"]) ? (obj["rows"] as unknown[]) : [];
   // Один прохід (не map+filter+re-index) навмисно: `time` читається з ТОГО
@@ -120,12 +136,18 @@ export function normalizeImportScreenshotResult(
     if (
       typeof currencyRaw === "string" &&
       currencyRaw.trim() &&
-      currencyRaw.trim().toUpperCase() !== "UAH"
+      !isUahCurrencyValue(currencyRaw)
     ) {
       dropped.nonUah += 1;
       continue;
     }
-    const date = isValidDayKey(row["date"]) ? (row["date"] as string) : null;
+    // Дата поза вікном схеми (модель галюцинує рік: `2206-08-16`) — така сама
+    // нечитабельна, як відсутня: інакше `ImportScreenshotRowSchema` валив би
+    // увесь драфт (rel-20).
+    const date =
+      isValidDayKey(row["date"]) && isDayKeyInBounds(row["date"])
+        ? row["date"]
+        : null;
     const amountKopiykas = toSafePositiveIntKopiykas(row["amount_kopiykas"]);
     // Рядок без розпізнаваної дати чи додатної суми — непридатний для
     // bulk-review (не можна показати картку транзакції без цих двох
@@ -136,8 +158,15 @@ export function normalizeImportScreenshotResult(
     }
 
     const direction = row["direction"] === "income" ? "income" : "expense";
+    // Опис довший за схему обрізаємо (див. `receipts/analyze.ts`): детектори
+    // нижче бачать уже обрізаний текст, що для скріна неістотно.
     const description =
-      typeof row["description"] === "string" ? row["description"].trim() : "";
+      typeof row["description"] === "string"
+        ? truncateImportText(
+            row["description"].trim(),
+            IMPORT_DESCRIPTION_MAX_LEN,
+          )
+        : "";
     const confidenceRaw = row["confidence"];
     const confidence =
       typeof confidenceRaw === "number" && Number.isFinite(confidenceRaw)
