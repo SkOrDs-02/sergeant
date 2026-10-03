@@ -123,6 +123,19 @@ describe("normalizeUSDABarcode", () => {
   });
 });
 
+describe("normalizeUSDABarcode: енергія 2047/2048", () => {
+  it("читає 2047, коли немає 1008", () => {
+    const result = normalizeUSDABarcode({
+      description: "Foundation",
+      foodNutrients: [
+        { nutrientId: 2047, value: 120 },
+        { nutrientId: 1003, value: 5 },
+      ],
+    });
+    expect(result!.kcal_100g).toBe(120);
+  });
+});
+
 // ─── normalizeUSDASearch ─────────────────────────────────────────────────────
 
 describe("normalizeUSDASearch", () => {
@@ -199,6 +212,80 @@ describe("normalizeUSDASearch", () => {
       protein_g: 3.4,
       fat_g: 3.6,
       carbs_g: 4.8,
+    });
+  });
+  // data-43: Foundation-продукти віддають енергію як 2047/2048, а не 1008.
+  describe("енергія без nutrient 1008 (data-43)", () => {
+    const macrosOnly = [
+      { nutrientId: 1003, value: 11.1 },
+      { nutrientId: 1004, value: 3 },
+      { nutrientId: 1005, value: 71.1 },
+    ];
+
+    it("бере Atwater General Factors (2047), коли 1008 немає", () => {
+      const result = normalizeUSDASearch(
+        {
+          fdcId: 2512378,
+          description: "Buckwheat, whole grain",
+          foodNutrients: [{ nutrientId: 2047, value: 355.4 }, ...macrosOnly],
+        },
+        stableId,
+      );
+      expect(result!.per100.kcal).toBe(355.4);
+    });
+
+    it("бере Atwater Specific Factors (2048), коли немає ні 1008, ні 2047", () => {
+      const result = normalizeUSDASearch(
+        {
+          fdcId: 2,
+          description: "Foundation food",
+          foodNutrients: [{ nutrientId: 2048, value: 340 }, ...macrosOnly],
+        },
+        stableId,
+      );
+      expect(result!.per100.kcal).toBe(340);
+    });
+
+    it("1008 має пріоритет над 2047/2048", () => {
+      const result = normalizeUSDASearch(
+        {
+          fdcId: 3,
+          description: "X",
+          foodNutrients: [
+            { nutrientId: 2047, value: 999 },
+            { nutrientId: 1008, value: 350 },
+            ...macrosOnly,
+          ],
+        },
+        stableId,
+      );
+      expect(result!.per100.kcal).toBe(350);
+    });
+
+    it("без жодної енергії рахує kcal за Atwater з БЖВ (4/4/9), а не 0", () => {
+      const result = normalizeUSDASearch(
+        {
+          fdcId: 2512374,
+          description: "Flour, buckwheat",
+          foodNutrients: macrosOnly,
+        },
+        stableId,
+      );
+      // 11.1*4 + 3*9 + 71.1*4 = 355.8
+      expect(result!.per100.kcal).toBe(355.8);
+      expect(result!.per100.carbs_g).toBe(71.1);
+    });
+
+    it("Atwater працює і при частковому наборі макро", () => {
+      const result = normalizeUSDASearch(
+        {
+          fdcId: 4,
+          description: "Oil-like",
+          foodNutrients: [{ nutrientId: 1004, value: 100 }],
+        },
+        stableId,
+      );
+      expect(result!.per100.kcal).toBe(900);
     });
   });
 });
