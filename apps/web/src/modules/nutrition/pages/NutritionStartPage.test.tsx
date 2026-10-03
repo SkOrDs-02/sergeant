@@ -85,7 +85,7 @@ function makeLog(
     setSelectedDate: vi.fn(),
     addMealSheetOpen: false,
     setAddMealSheetOpen: vi.fn(),
-    handleAddMeal: vi.fn(),
+    handleAddMeal: vi.fn(() => "2025-01-01"),
     handleEditMeal: vi.fn(),
     handleRemoveMeal: vi.fn(),
     handleRestoreMeal: vi.fn(),

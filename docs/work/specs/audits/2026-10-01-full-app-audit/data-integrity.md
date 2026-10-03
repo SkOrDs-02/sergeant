@@ -3389,7 +3389,7 @@ pantryConsume.ts:131-137 у гілці без варіантів записує 
 
 ### `data-42` [medium] Їжа: обраний день журналу «замерзає» на момент відкриття, тож після півночі страви пишуться у вчорашній день
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-42-43-nutrition-day-usda
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: Їжа (useNutritionLog, NutritionApp)
 - **Де:** apps/web/src/modules/nutrition/hooks/useNutritionLog.ts:75-77,143; apps/web/src/modules/nutrition/NutritionApp.tsx:322-372,459; apps/web/src/modules/nutrition/components/NutritionDashboard.tsx:69
 - **Першопричина:** selectedDate обчислюється один раз у useState-ініціалізаторі, і FAB, hero та wrappedSaveMeal пишуть саме в нього; обробки зміни доби (як useDayRollover у Рутині) в модулі немає, а дашборд рахує today на кожному рендері.
@@ -3433,7 +3433,7 @@ Reproduced live with <scratch>/agents/verify-client-static-react-correctness/v2-
 
 ### `data-43` [medium] USDA-результати пошуку без енергії показуються й записуються як 0 ккал при ненульових БЖВ
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-42-43-nutrition-day-usda
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: nutrition (normalizers/usda)
 - **Де:** apps/server/src/lib/normalizers/usda.ts:165-190
 - **Першопричина:** normalizeUSDASearch читає енергію лише з nutrient 1008 і підставляє 0, коли її немає, а Foundation-продукти USDA віддають енергію як 2047/2048; hasSomeMacro такий продукт пропускає, клієнт не фільтрує.
