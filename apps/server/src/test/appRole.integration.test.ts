@@ -23,6 +23,18 @@ let admin: pg.Pool | null = null;
 let app: pg.Pool | null = null;
 const prevFlag = process.env["SERGEANT_TEST_APP_ROLE"];
 
+/** Ті самі сигнатури, що й у `nutrition-backup.integration.test.ts`. */
+function isDockerUnavailableError(e: unknown): boolean {
+  const message = e instanceof Error ? e.message : String(e);
+  return (
+    /could not find a working container runtime strategy/i.test(message) ||
+    /cannot connect to the docker daemon/i.test(message) ||
+    /is the docker daemon running/i.test(message) ||
+    /docker\.sock/i.test(message) ||
+    (/ENOENT/.test(message) && /docker/i.test(message))
+  );
+}
+
 beforeAll(async () => {
   try {
     process.env["SERGEANT_TEST_APP_ROLE"] = "1";
@@ -33,6 +45,9 @@ beforeAll(async () => {
       max: 2,
     });
   } catch (e) {
+    // Скіпаємо лише «немає Docker локально». Збій міграції чи видачі ролі —
+    // справжня регресія, і тест мусить упасти, а не тихо позеленіти.
+    if (process.env["CI"] || !isDockerUnavailableError(e)) throw e;
     console.warn(
       `[appRole] Skipping live lane: ${e instanceof Error ? e.message : String(e)}`,
     );
