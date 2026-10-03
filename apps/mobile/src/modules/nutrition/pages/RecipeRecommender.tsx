@@ -27,11 +27,12 @@ import {
 
 import { useApiClient } from "@sergeant/api-client/react";
 import {
+  deviceDayKey,
   labelForMealType,
   mealTypeByNow,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
-import { hapticTap, toKyivISODate } from "@sergeant/shared";
+import { hapticTap } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -139,7 +140,7 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
       const time = `${String(now.getHours()).padStart(2, "0")}:${String(
         now.getMinutes(),
       ).padStart(2, "0")}`;
-      addMeal(toKyivISODate(now), {
+      addMeal(deviceDayKey(now), {
         time,
         mealType,
         label: labelForMealType(mealType),

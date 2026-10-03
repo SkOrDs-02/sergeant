@@ -8,6 +8,11 @@ import {
 } from "@sergeant/nutrition-domain";
 import { router } from "expo-router";
 
+import {
+  EAST_OF_KYIV,
+  installFakeDeviceZone,
+  WEST_OF_KYIV,
+} from "../../__tests__/fakeDeviceZone";
 import { Dashboard } from "../Dashboard";
 
 jest.mock("../../hooks/useNutritionLog", () => ({
@@ -283,4 +288,114 @@ describe("Dashboard", () => {
       (await findByTestId("nutrition-daily-plan-error")).props.children,
     ).toMatch(/AI-квоту/i);
   });
+});
+
+describe("Dashboard — «сьогодні» за годинником пристрою (ADR-0078)", () => {
+  const zones = [
+    ["на захід від Києва (UTC-5)", WEST_OF_KYIV],
+    ["на схід від Києва (UTC+10)", EAST_OF_KYIV],
+  ] as const;
+  let restore: (() => void) | undefined;
+
+  afterEach(() => {
+    restore?.();
+    restore = undefined;
+  });
+
+  it.each(zones)(
+    "картка «Сьогодні» читає прийоми за днем пристрою, а не Києва: %s",
+    (_name, zone) => {
+      restore = installFakeDeviceZone(zone);
+      const meal = {
+        id: "m-device",
+        name: "Вечеря",
+        mealType: "dinner" as const,
+        label: "Вечеря",
+        time: "22:00",
+        macros: { kcal: 640, protein_g: 30, fat_g: 20, carbs_g: 80 },
+        source: "manual" as const,
+        macroSource: "manual" as const,
+        amount_g: null,
+        foodId: null,
+      };
+      mockedLog.mockReturnValue({
+        nutritionLog: {
+          [zone.deviceDay]: { meals: [meal] },
+          [zone.kyivDay]: { meals: [] },
+        },
+        selectedDate: zone.deviceDay,
+        setSelectedDate: jest.fn(),
+        addMeal,
+        removeMeal: jest.fn(),
+        updateMeal: jest.fn(),
+        refresh: jest.fn(),
+      });
+
+      const { getByText } = renderDashboard();
+
+      expect(getByText("1 прийом їжі")).toBeTruthy();
+    },
+  );
+
+  it.each(zones)(
+    "новий прийом із листа додавання лягає на день пристрою: %s",
+    async (_name, zone) => {
+      restore = installFakeDeviceZone(zone);
+      const { getByTestId, getByLabelText } = renderDashboard();
+
+      fireEvent.press(getByTestId("nutrition-add-meal-btn"));
+      fireEvent.press(getByTestId("add-meal-source-manual"));
+      fireEvent.changeText(getByTestId("add-meal-name"), "Салат");
+      fireEvent.changeText(getByLabelText("Ккал"), "210");
+      await act(async () => {
+        fireEvent.press(getByTestId("add-meal-save"));
+      });
+
+      expect(addMeal).toHaveBeenCalledTimes(1);
+      expect(addMeal).toHaveBeenCalledWith(
+        zone.deviceDay,
+        expect.objectContaining({ name: "Салат" }),
+      );
+    },
+  );
+
+  it.each(zones)(
+    "прийом із AI-плану дня лягає на день пристрою: %s",
+    async (_name, zone) => {
+      restore = installFakeDeviceZone(zone);
+      const { client } = createTestApiClient(() => ({
+        ok: true,
+        status: 200,
+        body: {
+          plan: {
+            totalKcal: 450,
+            note: "",
+            meals: [
+              {
+                type: "dinner",
+                label: "Вечеря",
+                name: "Боул з куркою",
+                kcal: 450,
+                protein_g: 35,
+                fat_g: 12,
+                carbs_g: 50,
+              },
+            ],
+          },
+        },
+      }));
+      const { getByTestId, findByText } = renderDashboard(client);
+
+      await act(async () => {
+        fireEvent.press(getByTestId("daily-plan-fetch-button"));
+      });
+      await findByText("Боул з куркою");
+      fireEvent.press(getByTestId("daily-plan-meal-0-add"));
+
+      expect(addMeal).toHaveBeenCalledWith(
+        zone.deviceDay,
+        expect.objectContaining({ name: "Боул з куркою" }),
+      );
+    },
+  );
 });
