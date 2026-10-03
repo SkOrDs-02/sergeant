@@ -23,7 +23,7 @@
 
 ### `priv-01` [high] Sentry-транзакції везуть сире тіло запиту (паролі входу, текст чату) і розпарсені session-cookie
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-01-07-sentry
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: observability (Sentry)
 - **Де:** apps/server/src/sentry.ts:266-268 (applyBeforeSend), :379-403 (applyBeforeSendTransaction), :51-55 і :76-81 (семплінг /api/auth/ = 1.0, /api/chat = 0.5), :476 (sendDefaultPii)
 - **Першопричина:** applyBeforeSendTransaction редагує лише url, headers, transaction, extra, contexts і spans. На відміну від applyBeforeSend, він не видаляє event.request.data і event.request.cookies. @sentry/node 8.55 збирає тіло кожного вхідного запиту (до 1 МБ), requestDataIntegration за замовчуванням включає data і cookies, а sendDefaultPii:false цього не вимикає.
@@ -443,7 +443,7 @@ verify-server-static-ai-layer/healthgate-v2.mts: STRIPPED CONTEXT лишає «�
 
 ### `priv-07` [medium] Прогалини редакції URL і заголовків у Sentry: токен скидання пароля в path, query_string, атрибути root-span, http.query і секрет Telegram-вебхука
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-01-07-sentry
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: observability (Sentry)
 - **Де:** apps/server/src/sentry.ts:258 (SPAN_URL_ATTRIBUTES), 266-282, 349-369, 379-403; apps/server/src/obs/sensitiveUrl.ts:144-147, 177; packages/shared/src/lib/pii.ts:49-120; apps/server/src/routes/mono-webhook.ts:62; apps/server/src/modules/nutrition/food-search.ts:127
 - **Першопричина:** Хуки редагують request.url, url.full і span-атрибути зі списку. Поза редакцією лишаються event.request.query_string, contexts.trace.data (туди OTel кладе http.url і http.target root-span), а також http.query/url.query у breadcrumbs і spans. sensitiveUrl знає лише шлях /api/mono/webhook/, а в REDACT_KEY_NAMES немає x-telegram-bot-api-secret-token та OAuth-ключів.

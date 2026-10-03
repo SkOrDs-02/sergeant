@@ -63,7 +63,7 @@ chooser-діалогу.
 | `https://sergeant.vercel.app/settings`                         | `sergeant://settings`                                |
 | `https://sergeant.vercel.app/auth/callback?token=…`            | `sergeant://auth/callback?token=…`                   |
 
-Те саме працює на `https://sergeant.2dmanager.com.ua/…` — обидва hosts
+Те саме працює на `https://app.sergeant.com.ua/…` — обидва hosts
 перераховані в єдиному allow-list-і `UNIVERSAL_LINK_HOSTS` (lock-step
 у п'ятьох файлах):
 
@@ -235,7 +235,7 @@ Production сервер читає `ALLOWED_ORIGINS` (comma-separated) і
 `ALLOWED_ORIGIN_REGEX` з env. Hardcoded defaults:
 
 - `http://localhost:5173/4173/5000/8081` — dev
-- `https://sergeant.vercel.app`, `https://sergeant.2dmanager.com.ua` — prod
+- `https://sergeant.vercel.app`, `https://app.sergeant.com.ua` — prod
 
 Нативні клієнти (Expo native build) Origin не шлють, тому CORS на них не
 спрацьовує — але Expo web (`http://localhost:8081`) вже в allow-list.

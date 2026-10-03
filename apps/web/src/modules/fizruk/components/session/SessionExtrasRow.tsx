@@ -80,8 +80,12 @@ export function SessionExtrasRow({
               onClick={() => toggle(c.key)}
               className={cn(
                 "focus-ring flex h-11 items-center gap-1.5 rounded-xl border px-3 text-style-caption transition-colors",
+                // Вибраний чип — тонований фон + контур `fizruk-edge` (мова
+                // вибору з аудиту контрасту, A4): ≥3:1 проти столу в обох
+                // темах. Раніше `border-fizruk-ring` (cyan-200) давав 1.01:1
+                // у світлій. Заливка `bg-fizruk-surface` тема-залежна.
                 active
-                  ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold"
+                  ? "border-fizruk-edge bg-fizruk-surface text-fizruk-soft-fg font-semibold"
                   : "border-line bg-panelHi text-muted hover:text-text",
               )}
             >

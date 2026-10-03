@@ -38,6 +38,26 @@ describe("getAllowedOrigins", () => {
     expect(origins).not.toContain("http://localhost:8081");
   });
 
+  // sec-01 (аудит 2026-10-01): апекс 2dmanager.com.ua не резолвиться і вільний
+  // для реєстрації; credentialed CORS на ньому = перехоплення сесій.
+  it("не довіряє мертвому домену sergeant.2dmanager.com.ua у production", () => {
+    delete process.env["ALLOWED_ORIGINS"];
+    process.env["NODE_ENV"] = "production";
+    const dead = "https://sergeant.2dmanager.com.ua";
+    expect(getAllowedOrigins()).not.toContain(dead);
+    expect(isOriginAllowed(dead)).toBe(false);
+
+    const headers: Record<string, string> = {};
+    const res = {
+      setHeader(name: string, value: string) {
+        headers[name] = value;
+      },
+    };
+    setCorsHeaders(res as never, { headers: { origin: dead } } as never);
+    expect(headers["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(headers["Access-Control-Allow-Credentials"]).toBeUndefined();
+  });
+
   it("дозволяє localhost у production лише через ALLOWED_ORIGINS", () => {
     process.env["NODE_ENV"] = "production";
     process.env["ALLOWED_ORIGINS"] = "http://localhost:5173";
