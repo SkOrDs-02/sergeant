@@ -1,5 +1,5 @@
 import { getExpenseCategoryForTransaction } from "../utils";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import { getCurrentMonthContext, projectMonthEndSpend } from "../domain/budget";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
@@ -58,7 +58,7 @@ function buildDailySpending(
     const txDate = new Date(tx.time * 1000);
     if (txDate < monthStart || txDate > today) continue;
 
-    const dayKey = toLocalISODate(txDate);
+    const dayKey = toKyivISODate(txDate);
     if (!dayMap[dayKey]) dayMap[dayKey] = {};
 
     const splits = txSplits[tx.id];
@@ -107,7 +107,7 @@ export function calcForecast(
     daysLeft: daysRemaining,
   } = getCurrentMonthContext(now);
   const daysElapsed = Math.max(1, dayOfMonth);
-  const monthPrefix = toLocalISODate(monthStart).slice(0, 7);
+  const monthPrefix = toKyivISODate(monthStart).slice(0, 7);
 
   const dailySpending = buildDailySpending(
     transactions,

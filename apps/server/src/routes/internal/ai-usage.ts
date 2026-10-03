@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { runWithBypassContext } from "../../dbContext.js";
 import { ANTHROPIC_PROVIDER_SUBJECT } from "../../lib/anthropicUsageStore.js";
 interface AiUsageBody {
@@ -30,9 +30,9 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
 
     const totalTokens = inputTokens + outputTokens;
     // Europe/Kyiv day boundary (домен-інваріант) — той самий стовпець
-    // `ai_usage_daily.usage_day` пишеться через `toLocalISODate` в
+    // `ai_usage_daily.usage_day` пишеться через `toKyivISODate` в
     // anthropicUsageStore і читається як Kyiv-день у aiCostSummary.
-    const usageDay = toLocalISODate();
+    const usageDay = toKyivISODate();
 
     // `/api/internal/*` не має сесії користувача: рядок `n8n:<source>` не
     // належить жодному юзеру -> bypass (A4).
@@ -90,14 +90,14 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
 
     // Вікно рахуємо ВІД київського сьогодні, переданого параметром, а не від
     // `CURRENT_DATE`. Два різні дні: `usage_day` пишеться через
-    // `toLocalISODate` (Europe/Kyiv), а `CURRENT_DATE` бере таймзону сесії
+    // `toKyivISODate` (Europe/Kyiv), а `CURRENT_DATE` бере таймзону сесії
     // Postgres — у контейнері це UTC. Між 00:00 і 03:00 за Києвом вони
     // розходяться на добу, і край вікна їхав.
     //
     // `- (days - 1)` замість `- days`: «останні 30 днів» — це 30 днів разом
     // із сьогоднішнім. Було на день більше, і `середнє за добу` ділило
     // 31 день витрат на 30.
-    const today = toLocalISODate();
+    const today = toKyivISODate();
     const { rows } = await runWithBypassContext(pool, (client) =>
       client.query(
         `SELECT
@@ -142,7 +142,7 @@ export function createAiUsageInternalRouter({ pool }: { pool: Pool }): Router {
 
     // Межі вікна у відповіді — щоб споживач не здогадувався, від чого саме
     // відлічені «останні N днів», і не перевідкривав київську межу в себе.
-    const from = toLocalISODate(
+    const from = toKyivISODate(
       new Date(Date.parse(`${today}T12:00:00Z`) - (days - 1) * 86_400_000),
     );
 
