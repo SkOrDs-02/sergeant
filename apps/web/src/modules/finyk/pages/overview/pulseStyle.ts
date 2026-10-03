@@ -3,18 +3,25 @@
  * Status: Active
  */
 /**
- * Обчислення «пульсу» місяця — акцент-кольору, статусного текста і фону
- * для MonthPulseCard. Винесено з Overview як чиста функція, щоб:
+ * Обчислення «пульсу» місяця — акцент-кольору, статусного текста і фону.
+ * Споживач — `HeroCard` (`statusText` у підписі головного числа); картку
+ * `MonthPulseCard`, для якої це писалось, прибрано спекою
+ * `finyk-hero-month-strip.md`. Винесено з Overview як чиста функція, щоб:
  *  - легко тестувалось без React-контексту;
  *  - Overview не ніс розгалуженого if/else у тілі компоненту.
  *
- * Повертає об'єкт зі стабільними Tailwind-класами. Змінювати лейбли/класи —
+ * Повертає обʼєкт зі стабільними Tailwind-класами. Змінювати лейбли/класи —
  * тільки тут.
  */
 interface ComputePulseStyleArgs {
   hasExpensePlan: boolean;
   spendPlanRatio: number;
-  dayBudget: number;
+  /**
+   * Денний бюджет, або `null` коли місячний план не заданий (див. AI-CONTEXT
+   * у `useOverviewData` — без плану чесного числа не існує). При `null`
+   * повертаємо нейтральний тон і статус-текст «План не заданий».
+   */
+  dayBudget: number | null;
 }
 
 export function computePulseStyle({
@@ -47,6 +54,18 @@ export function computePulseStyle({
     };
   }
 
+  if (dayBudget == null) {
+    // Жодного кольорового wash-у: усі три `bg-pulse-*` — це вердикт
+    // (зелений / бурштиновий / червоний), а без плану вердикту не існує.
+    // `bg: ""` означає «без підкладки» і безпечно згортається в `cn()`.
+    return {
+      accentLeft: "border-l-line",
+      bg: "",
+      color: "text-muted",
+      statusText: "План не заданий",
+    };
+  }
+
   const pulseGood = dayBudget >= 200;
   const pulseWarn = dayBudget >= 0 && dayBudget < 200;
   const pulseBad = dayBudget < 0;
@@ -65,7 +84,7 @@ export function computePulseStyle({
     statusText: pulseBad
       ? "Перевитрата"
       : pulseWarn
-        ? "Обережно — майже вичерпано"
+        ? "Обережно: майже вичерпано"
         : "В нормі",
   };
 }

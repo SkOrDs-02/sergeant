@@ -1,0 +1,421 @@
+// @vitest-environment jsdom
+/**
+ * Tests for WorkoutFinishSheets — the post-workout finish overlay.
+ * Covers null guard (renders nothing), wellbeing step UI, energy/mood
+ * selection, skip → summary transition, save → summary transition,
+ * summary step collapsed/expanded states, close, and the cross-module
+ * nutrition nudge.
+ */
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  within,
+} from "@testing-library/react";
+import {
+  WorkoutFinishSheets,
+  type FinishFlashState,
+} from "./WorkoutFinishSheets";
+
+// Cross-module prompt helpers — default to not suppressed so the nudge shows.
+vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
+  isCrossModulePromptSuppressed: vi.fn(() => false),
+  recordCrossModulePromptAccepted: vi.fn(),
+}));
+
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModule: vi.fn(),
+}));
+
+const markInjuries = vi.fn(async () => []);
+vi.mock("../../hooks/useInjuries", () => ({
+  useInjuries: () => ({ mark: markInjuries }),
+}));
+
+const addDailyLogEntry = vi.fn();
+let dailyLogEntries: Array<Record<string, unknown>> = [];
+vi.mock("../../hooks/useDailyLog", () => ({
+  useDailyLog: () => ({
+    entries: dailyLogEntries,
+    addEntry: addDailyLogEntry,
+  }),
+}));
+
+// useDialogFocusTrap — no-op in jsdom.
+vi.mock("@shared/hooks/useDialogFocusTrap", () => ({
+  useDialogFocusTrap: vi.fn(),
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  dailyLogEntries = [];
+});
+
+function makeFlash(over: Partial<FinishFlashState> = {}): FinishFlashState {
+  return {
+    step: "wellbeing",
+    collapsed: false,
+    workoutId: "w-1",
+    energy: null,
+    mood: null,
+    injurySites: [],
+    durationSec: 3600,
+    items: 5,
+    tonnageKg: 1000,
+    ...over,
+  } as FinishFlashState;
+}
+
+function renderSheets(
+  flash: FinishFlashState | null,
+  setFinishFlash = vi.fn(),
+  updateWorkout = vi.fn(),
+) {
+  return render(
+    <WorkoutFinishSheets
+      finishFlash={flash}
+      setFinishFlash={setFinishFlash}
+      updateWorkout={updateWorkout}
+    />,
+  );
+}
+
+describe("WorkoutFinishSheets — null guard", () => {
+  it("renders nothing when finishFlash is null", () => {
+    const { container } = renderSheets(null);
+    expect(container.firstChild).toBeNull();
+  });
+});
+
+describe("WorkoutFinishSheets — wellbeing step", () => {
+  it("renders Самопочуття heading and rating buttons", () => {
+    renderSheets(makeFlash({ step: "wellbeing" }));
+    expect(screen.getByText("Самопочуття")).toBeInTheDocument();
+    // 5 energy + 5 mood = 10 numbered buttons
+    const numbered = screen
+      .getAllByRole("button")
+      .filter((b) => ["1", "2", "3", "4", "5"].includes(b.textContent ?? ""));
+    expect(numbered.length).toBe(10);
+  });
+
+  it("closes from the dialog focus-trap escape handler", async () => {
+    const { useDialogFocusTrap } =
+      await import("@shared/hooks/useDialogFocusTrap");
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
+
+    const options = vi.mocked(useDialogFocusTrap).mock.calls.at(-1)?.[2] as
+      { onEscape?: () => void } | undefined;
+    options?.onEscape?.();
+
+    expect(setFinishFlash).toHaveBeenCalledWith(null);
+  });
+
+  it("clicking 'Пропустити' advances step to injury capture", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
+    fireEvent.click(screen.getByRole("button", { name: "Пропустити" }));
+    expect(setFinishFlash).toHaveBeenCalled();
+    // Verify the updater moves to summary step.
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    const result = updater(makeFlash({ step: "wellbeing" }));
+    expect(result.step).toBe("injury");
+  });
+
+  it("clicking an energy button calls setFinishFlash with energy value", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
+    // The first `3` button is the energy row.
+    const threes = screen.getAllByRole("button", { name: "3" });
+    fireEvent.click(threes[0]!);
+    expect(setFinishFlash).toHaveBeenCalled();
+  });
+
+  it("clicking a mood button updates mood value through the state updater", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "wellbeing" }), setFinishFlash);
+
+    const twos = screen.getAllByRole("button", { name: "2" });
+    fireEvent.click(twos[1]!);
+
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    expect(updater(makeFlash({ step: "wellbeing" })).mood).toBe(2);
+  });
+
+  it("clicking 'Зберегти' without any rating advances step without calling updateWorkout", () => {
+    const setFinishFlash = vi.fn();
+    const updateWorkout = vi.fn();
+    renderSheets(
+      makeFlash({ step: "wellbeing", energy: null, mood: null }),
+      setFinishFlash,
+      updateWorkout,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(updateWorkout).not.toHaveBeenCalled();
+    expect(setFinishFlash).toHaveBeenCalled();
+  });
+
+  it("clicking 'Зберегти' with energy set calls updateWorkout and advances", () => {
+    const setFinishFlash = vi.fn();
+    const updateWorkout = vi.fn();
+    renderSheets(
+      makeFlash({ step: "wellbeing", energy: 4, mood: null }),
+      setFinishFlash,
+      updateWorkout,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(updateWorkout).toHaveBeenCalledWith("w-1", {
+      wellbeing: { energy: 4 },
+    });
+    expect(setFinishFlash).toHaveBeenCalled();
+  });
+
+  it("saving both wellbeing ratings stores both values in the summary state", () => {
+    const setFinishFlash = vi.fn();
+    const updateWorkout = vi.fn();
+    const flash = makeFlash({ step: "wellbeing", energy: 4, mood: 5 });
+    renderSheets(flash, setFinishFlash, updateWorkout);
+
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+
+    expect(updateWorkout).toHaveBeenCalledWith("w-1", {
+      wellbeing: { energy: 4, mood: 5 },
+    });
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    expect(updater(flash)).toMatchObject({
+      step: "injury",
+      savedWellbeing: { energy: 4, mood: 5 },
+    });
+  });
+});
+
+describe("WorkoutFinishSheets — самопочуття доїжджає в журнал Body", () => {
+  // До 2026-08 це були два незалежні входи одного факту: після
+  // «енергія 4 / настрій 5» тут форма самопочуття в Body лишалась
+  // порожня (аудит L-10.3).
+  it("«Зберегти» кладе оцінку і в денний журнал", () => {
+    renderSheets(makeFlash({ energy: 4, mood: 5 }), vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(addDailyLogEntry).toHaveBeenCalledWith({
+      energyLevel: 4,
+      moodScore: 5,
+    });
+  });
+
+  it("не чіпає журнал, коли нічого не оцінено", () => {
+    renderSheets(makeFlash({ energy: null, mood: null }), vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(addDailyLogEntry).not.toHaveBeenCalled();
+  });
+
+  it("не переписує сьогоднішню оцінку, зроблену вручну в Body", () => {
+    dailyLogEntries = [
+      { at: new Date().toISOString(), energyLevel: 2, moodScore: null },
+    ];
+    renderSheets(makeFlash({ energy: 4, mood: 5 }), vi.fn());
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    expect(addDailyLogEntry).not.toHaveBeenCalled();
+  });
+});
+
+describe("WorkoutFinishSheets — injury step", () => {
+  // Порядок груп — не косметика. `InjurySection.tsx` ставить суглоби
+  // першими за AI-CONTEXT у своїй шапці (типові травми на силовій —
+  // суглобові; мʼязова модель — провал аудиту E-4, ADR-0083). Цей аркуш
+  // до 2026-08-08 робив навпаки: 27 зон плоскою стрічкою з 18 мʼязами
+  // попереду, тож при `max-h 520px` під згином лишались усі девʼять
+  // суглобів і обидві кнопки дій.
+  it("показує суглоби без розкриття, а мʼязи — за ним", () => {
+    renderSheets(makeFlash({ step: "injury" }));
+    expect(screen.getByText("Щось болить?")).toBeInTheDocument();
+
+    expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Поперек" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Груди" })).toBeNull();
+  });
+
+  it("розкриття «Мʼязи» відкриває мʼязову половину клавіатури зон", () => {
+    renderSheets(makeFlash({ step: "injury" }));
+    const toggle = screen.getByRole("button", { name: /Мʼязи/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Квадрицепс" }),
+    ).toBeInTheDocument();
+    // Суглоби нікуди не діваються — розкриття додає, а не перемикає.
+    expect(screen.getByRole("button", { name: "Коліно" })).toBeInTheDocument();
+  });
+
+  it("рахує обрані позначки в кнопці збереження", () => {
+    renderSheets(makeFlash({ step: "injury", injurySites: ["knee", "chest"] }));
+    expect(
+      screen.getByRole("button", { name: "Зберегти позначки (2)" }),
+    ).toBeInTheDocument();
+  });
+
+  // Позначений мʼяз може лежати у згорнутій групі — тоді єдиний слід про
+  // нього це лічильник на самому розкритті. Без нього людина бачить
+  // «Зберегти позначки (1)» і жодного підсвіченого чипа на екрані.
+  it("показує кількість обраних мʼязів на згорнутому розкритті", () => {
+    renderSheets(makeFlash({ step: "injury", injurySites: ["chest"] }));
+    const toggle = screen.getByRole("button", { name: /Мʼязи/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    // Саме окремий вузол лічильника, не `textContent.toContain("1")`:
+    // у кнопці поруч живе «18 зон», тож підрядкова перевірка проходила б
+    // і без лічильника взагалі.
+    expect(within(toggle).getByText("1")).toBeInTheDocument();
+  });
+
+  // Скарга власника 2026-08-08: «екран погано скролиться вниз, щоб
+  // показати верх». Дві причини були різні. Перша — `overscroll-behavior:
+  // auto`: жест, доведений до межі, перекидався на сторінку ПІД аркушем,
+  // тож журнал їхав, а аркуш стояв. Друга — заголовок їхав під верхню
+  // межу разом із контентом, і повертатись до нього треба було вручну.
+  // jsdom не рахує layout, тож це пін на структурний намір: обидві смуги
+  // мусять лишатись `sticky`, а контейнер — `overscroll-contain`.
+  it("тримає шапку і рядок дій липкими, а скрол — у межах аркуша", () => {
+    renderSheets(makeFlash({ step: "injury" }));
+
+    const dialog = screen.getByRole("dialog", { name: "Щось болить?" });
+    expect(dialog.className).toContain("overscroll-contain");
+
+    const header = screen.getByText("Щось болить?").parentElement;
+    expect(header?.className).toContain("sticky");
+
+    const actionsRow = screen.getByRole("button", {
+      name: "Нічого не позначати",
+    }).parentElement;
+    expect(actionsRow?.className).toContain("sticky");
+  });
+
+  it("«Нічого не позначати» веде до саммарі", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(makeFlash({ step: "injury" }), setFinishFlash);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Нічого не позначати" }),
+    );
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    expect(updater(makeFlash({ step: "injury" })).step).toBe("summary");
+  });
+});
+
+describe("WorkoutFinishSheets — summary step collapsed", () => {
+  it("renders a collapsed result button showing duration", () => {
+    renderSheets(makeFlash({ step: "summary", collapsed: true }));
+    expect(screen.getByText("Результати")).toBeInTheDocument();
+    // 3600 seconds → formatted as "1:00:00" or "60 хв" depending on formatDurShort
+    expect(screen.getByRole("button")).toBeInTheDocument();
+  });
+
+  it("clicking the collapsed button calls setFinishFlash to expand", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(
+      makeFlash({ step: "summary", collapsed: true }),
+      setFinishFlash,
+    );
+    fireEvent.click(screen.getByRole("button"));
+    expect(setFinishFlash).toHaveBeenCalled();
+  });
+});
+
+describe("WorkoutFinishSheets — summary step expanded", () => {
+  it("renders 'Завершено' heading and stat tiles", () => {
+    renderSheets(makeFlash({ step: "summary", collapsed: false }));
+    expect(screen.getByText("Завершено")).toBeInTheDocument();
+    expect(screen.getByText("Час")).toBeInTheDocument();
+    expect(screen.getByText("Вправ")).toBeInTheDocument();
+    expect(screen.getByText("Обʼєм")).toBeInTheDocument();
+    expect(screen.getByText("5")).toBeInTheDocument();
+    // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як маса тіла, хоча
+    // це `вага_кг × повторення` — канонічний підпис "кг×повт" (уніфіковано
+    // з `WorkoutSummaryView` / `RecentWorkoutsSection`).
+    expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
+  });
+
+  it("clicking 'Закрити' calls setFinishFlash(null)", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(
+      makeFlash({ step: "summary", collapsed: false }),
+      setFinishFlash,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Закрити" }));
+    expect(setFinishFlash).toHaveBeenCalledWith(null);
+  });
+
+  it("clicking 'Готово' calls setFinishFlash(null)", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(
+      makeFlash({ step: "summary", collapsed: false }),
+      setFinishFlash,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Готово" }));
+    expect(setFinishFlash).toHaveBeenCalledWith(null);
+  });
+
+  it("clicking 'Згорнути' calls setFinishFlash with collapsed true", () => {
+    const setFinishFlash = vi.fn();
+    renderSheets(
+      makeFlash({ step: "summary", collapsed: false }),
+      setFinishFlash,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Згорнути" }));
+    expect(setFinishFlash).toHaveBeenCalled();
+    const updater = setFinishFlash.mock.calls[0]![0] as (
+      f: FinishFlashState,
+    ) => FinishFlashState;
+    const result = updater(makeFlash({ step: "summary", collapsed: false }));
+    expect(result.collapsed).toBe(true);
+  });
+
+  it("shows the nutrition nudge and calls openHubModule on click", async () => {
+    const { openHubModule } = await import("@shared/lib/modules/hubNav");
+    renderSheets(makeFlash({ step: "summary", collapsed: false }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати білок після тренування/ }),
+    );
+    expect(openHubModule).toHaveBeenCalledWith("nutrition", "log");
+  });
+
+  it("shows savedWellbeing section when energy and mood were saved", () => {
+    renderSheets(
+      makeFlash({
+        step: "summary",
+        collapsed: false,
+        savedWellbeing: { energy: 3, mood: 4 },
+      }),
+    );
+    expect(screen.getByText(/Самопочуття:/)).toBeInTheDocument();
+    expect(screen.getByText(/енергія 3\/5/)).toBeInTheDocument();
+    expect(screen.getByText(/настрій 4\/5/)).toBeInTheDocument();
+  });
+
+  it("hides savedWellbeing section when not set", () => {
+    renderSheets(
+      makeFlash({ step: "summary", collapsed: false, savedWellbeing: null }),
+    );
+    expect(screen.queryByText(/Самопочуття:/)).not.toBeInTheDocument();
+  });
+
+  it("shows '—' for tonnage when tonnageKg is 0", () => {
+    renderSheets(
+      makeFlash({ step: "summary", collapsed: false, tonnageKg: 0 }),
+    );
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+});

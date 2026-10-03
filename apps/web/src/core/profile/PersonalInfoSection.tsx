@@ -9,7 +9,8 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useResetPinchZoomAfterCameraCapture } from "@shared/hooks/useResetPinchZoomOnResume";
+import { useApiForm } from "@shared/forms";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { cn } from "@shared/lib/ui/cn";
 import {
@@ -23,11 +24,7 @@ import type { ProfileUser } from "./types";
 // ── Zod schemas ────────────────────────────────────────────────────────────
 
 const nameSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(1, "Введіть ім'я")
-    .max(80, "Максимум 80 символів"),
+  name: z.string().trim().min(1, "Введи імʼя").max(80, "Максимум 80 символів"),
 });
 type NameValues = z.infer<typeof nameSchema>;
 
@@ -35,7 +32,7 @@ const emailSchema = z.object({
   email: z
     .string()
     .trim()
-    .min(1, "Введіть email")
+    .min(1, "Введи email")
     .email("Некоректний email")
     .max(254, "Email задовгий"),
 });
@@ -53,6 +50,7 @@ export function PersonalInfoSection({
   onRefresh,
 }: PersonalInfoSectionProps) {
   const toast = useToast();
+  const armPinchZoomReset = useResetPinchZoomAfterCameraCapture();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false);
@@ -64,29 +62,31 @@ export function PersonalInfoSection({
     schema: nameSchema,
     defaultValues: { name: user.name ?? "" },
     onSubmit: async (values) => {
+      // Помилка форми лишається у формі: `useApiForm` кладе кинуте
+      // повідомлення у `serverError`, який рендериться під полем нижче.
+      // Паралельний toast.error давав те саме речення двічі — у полі й у
+      // куті екрана; сусідня email-форма ніколи так не робила.
       const res = await updateUser({ name: values.name }).catch(() => {
-        toast.error("Не вдалося оновити ім'я");
-        throw new Error("Не вдалося оновити ім'я");
+        throw new Error("Не вдалося оновити імʼя");
       });
       if (res.error) {
         throw new Error(
-          mapApiErrorToUserCopy(res.error, "Не вдалося оновити ім'я"),
+          mapApiErrorToUserCopy(res.error, "Не вдалося оновити імʼя"),
         );
       }
     },
     onSuccess: async () => {
-      toast.success("Ім'я оновлено");
+      toast.success("Імʼя оновлено");
       await onRefresh();
     },
   });
 
+  const resetName = nameForm.reset;
+
   // Keep the form in sync if the server value changes (e.g. after onRefresh).
   useEffect(() => {
-    nameForm.reset({ name: user.name ?? "" });
-    // nameForm.reset is stable (RHF guarantee); intentionally omit nameForm
-    // from deps to avoid an infinite loop.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.name]);
+    resetName({ name: user.name ?? "" });
+  }, [user.name, resetName]);
 
   // ── Email form ────────────────────────────────────────────────────────────
   const emailForm = useApiForm<EmailValues>({
@@ -101,7 +101,19 @@ export function PersonalInfoSection({
       }
     },
     onSuccess: async () => {
-      toast.success("Лист підтвердження нового email надіслано");
+      // Better Auth має дві гілки зміни email, і користувачу треба сказати
+      // рівно те, що станеться далі:
+      //   - поточна адреса НЕ підтверджена → сервер міняє її одразу
+      //     (`updateEmailWithoutVerification`) і шле верифікацію на нову;
+      //   - поточна підтверджена → спершу лист-підтвердження на СТАРУ адресу,
+      //     і лише після кліку в ньому адреса зміниться.
+      // Обидві гілки віддають `{ status: true }`, тож розрізняємо їх за тим
+      // самим прапорцем, який бачив сервер.
+      toast.success(
+        user.emailVerified
+          ? "Лист підтвердження надіслано на поточну адресу"
+          : "Адресу змінено, перевір нову скриньку",
+      );
       setEditingEmail(false);
       await onRefresh();
     },
@@ -109,18 +121,26 @@ export function PersonalInfoSection({
 
   // ── Non-form actions (avatar, verification) ───────────────────────────────
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (fileRef.current) fileRef.current.value = "";
+  /**
+   * Завантаження аватара. `file` тримаємо в замиканні, тому «Повторити» у
+   * тості жене той самий файл ще раз — користувачу не треба знову лізти в
+   * файловий діалог (тим паче що `fileRef.value` ми вже очистили).
+   *
+   * Валідаційні відмови (`assertAvatarFile` — не зображення, >5 MB) НЕ
+   * отримують «Повторити»: другий такий самий запит впаде так само, а
+   * реальний вихід — обрати інший файл. Тому для них окрема гілка з
+   * «Обрати інший», яка відкриває діалог вибору.
+   */
+  const uploadAvatar = async (file: File) => {
     setUploadingAvatar(true);
     try {
-      assertAvatarFile(file);
       const dataUrl = await compressAvatar(file);
       const res = await updateUser({ image: dataUrl });
       if (res.error) {
         toast.error(
           mapApiErrorToUserCopy(res.error, "Не вдалося оновити аватар"),
+          undefined,
+          { label: "Повторити", onClick: () => void uploadAvatar(file) },
         );
         return;
       }
@@ -131,10 +151,32 @@ export function PersonalInfoSection({
         error instanceof Error
           ? error.message
           : "Не вдалося обробити зображення",
+        undefined,
+        { label: "Повторити", onClick: () => void uploadAvatar(file) },
       );
     } finally {
       setUploadingAvatar(false);
     }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (fileRef.current) fileRef.current.value = "";
+    try {
+      assertAvatarFile(file);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Непідтримуваний файл",
+        undefined,
+        {
+          label: "Обрати інший",
+          onClick: () => fileRef.current?.click(),
+        },
+      );
+      return;
+    }
+    await uploadAvatar(file);
   };
 
   const handleRemoveAvatar = async () => {
@@ -145,13 +187,18 @@ export function PersonalInfoSection({
       if (res.error) {
         toast.error(
           mapApiErrorToUserCopy(res.error, "Не вдалося видалити аватар"),
+          undefined,
+          { label: "Повторити", onClick: () => void handleRemoveAvatar() },
         );
         return;
       }
       toast.success("Аватар видалено");
       await onRefresh();
     } catch {
-      toast.error("Не вдалося видалити аватар");
+      toast.error("Не вдалося видалити аватар", undefined, {
+        label: "Повторити",
+        onClick: () => void handleRemoveAvatar(),
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -168,12 +215,17 @@ export function PersonalInfoSection({
             res.error,
             "Не вдалося надіслати лист підтвердження",
           ),
+          undefined,
+          { label: "Повторити", onClick: () => void handleSendVerification() },
         );
         return;
       }
       toast.success("Лист підтвердження надіслано");
     } catch {
-      toast.error("Не вдалося надіслати лист підтвердження");
+      toast.error("Не вдалося надіслати лист підтвердження", undefined, {
+        label: "Повторити",
+        onClick: () => void handleSendVerification(),
+      });
     } finally {
       setSendingVerification(false);
     }
@@ -193,8 +245,8 @@ export function PersonalInfoSection({
             onClick={() => fileRef.current?.click()}
             aria-label="Змінити аватар"
             className={cn(
-              "relative w-20 h-20 rounded-[22px] overflow-hidden",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              "relative w-20 h-20 rounded-3xl overflow-hidden",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >
             {user.image ? (
@@ -204,7 +256,7 @@ export function PersonalInfoSection({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="text-style-hero w-full h-full flex items-center justify-center bg-brand-500/15 text-brand-strong dark:text-brand">
+              <div className="text-style-headline w-full h-full flex items-center justify-center bg-brand-500/15 text-brand-strong">
                 {initial}
               </div>
             )}
@@ -212,13 +264,13 @@ export function PersonalInfoSection({
             <div
               className={cn(
                 "absolute inset-0 flex items-center justify-center bg-black/40",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-150",
+                "opacity-0 group-hover:opacity-100 transition-opacity duration-fast",
                 uploadingAvatar && "opacity-100",
               )}
             >
               {uploadingAvatar ? (
                 <span className="motion-safe:animate-spin">
-                  <Icon name="refresh-cw" size={20} className="text-white" />
+                  <Icon name="refresh-cw" size="lg" className="text-white" />
                 </span>
               ) : (
                 <Icon name="upload" size={18} className="text-white" />
@@ -230,19 +282,22 @@ export function PersonalInfoSection({
             type="file"
             accept="image/*"
             className="hidden"
+            // Другий вхід у нативну камеру в застосунку — той самий
+            // застряглий pinch-zoom на iOS, що й у фото страви.
+            onClick={armPinchZoomReset}
             onChange={handleAvatarChange}
           />
         </div>
 
         {/* Name + email + badges */}
         <div className="text-center min-w-0 w-full">
-          <p className="text-h2 text-text truncate">
+          <p className="text-style-title text-text truncate">
             {user.name || "Без імені"}
           </p>
           <div className="flex items-center justify-center gap-1.5 mt-0.5 flex-wrap">
-            <p className="text-body-sm text-muted truncate">{user.email}</p>
+            <p className="text-style-label text-muted truncate">{user.email}</p>
             {user.emailVerified ? (
-              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand text-style-caption font-medium">
+              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl bg-brand-500/10 text-brand-strong text-style-caption font-medium">
                 <Icon name="check" size={10} strokeWidth={3} />
                 Підтверджено
               </span>
@@ -260,7 +315,7 @@ export function PersonalInfoSection({
               {!confirmRemoveAvatar ? (
                 <button
                   type="button"
-                  className="text-xs text-muted hover:text-danger transition-colors"
+                  className="text-style-label text-muted hover:text-danger transition-colors"
                   disabled={!online || uploadingAvatar}
                   onClick={() => setConfirmRemoveAvatar(true)}
                 >
@@ -273,14 +328,14 @@ export function PersonalInfoSection({
                   </span>
                   <button
                     type="button"
-                    className="text-xs font-semibold text-danger-strong dark:text-danger hover:text-danger/80 transition-colors"
+                    className="text-style-label font-semibold text-danger-strong dark:text-danger hover:text-danger/80 transition-colors"
                     onClick={handleRemoveAvatar}
                   >
                     Так
                   </button>
                   <button
                     type="button"
-                    className="text-xs text-muted hover:text-text transition-colors"
+                    className="text-style-label text-muted hover:text-text transition-colors"
                     onClick={() => setConfirmRemoveAvatar(false)}
                   >
                     Ні
@@ -299,7 +354,7 @@ export function PersonalInfoSection({
           <div className="px-4 py-3 flex items-center gap-3 bg-warning/5">
             <Icon name="alert" size={15} className="text-warning shrink-0" />
             <p className="text-style-caption text-warning-strong dark:text-warning flex-1">
-              Email не підтверджено — перевірте вашу поштову скриньку
+              Email не підтверджено, перевір свою поштову скриньку
             </p>
             <Button
               variant="ghost"
@@ -319,13 +374,13 @@ export function PersonalInfoSection({
             htmlFor="profile-name"
             className="text-style-caption block text-muted"
           >
-            Ім&apos;я
+            Імʼя
           </label>
           <div className="flex gap-2">
             <Input
               id="profile-name"
               type="text"
-              placeholder="Твоє ім'я"
+              placeholder="Твоє імʼя"
               autoComplete="name"
               className="flex-1"
               disabled={nameForm.isSubmitting || !online}
@@ -333,7 +388,7 @@ export function PersonalInfoSection({
               {...nameForm.register("name")}
             />
             <Button
-              variant="primary"
+              variant="solid"
               size="sm"
               type="button"
               disabled={
@@ -346,12 +401,12 @@ export function PersonalInfoSection({
             </Button>
           </div>
           {nameForm.formState.errors.name && (
-            <p className="text-xs text-danger-strong" role="alert">
+            <p className="text-style-caption text-danger-strong" role="alert">
               {nameForm.formState.errors.name.message}
             </p>
           )}
           {nameForm.serverError && (
-            <p className="text-xs text-danger-strong" role="alert">
+            <p className="text-style-caption text-danger-strong" role="alert">
               {nameForm.serverError}
             </p>
           )}
@@ -367,7 +422,9 @@ export function PersonalInfoSection({
           </label>
           {!editingEmail ? (
             <div className="flex items-center gap-2">
-              <p className="text-sm text-text flex-1 truncate">{user.email}</p>
+              <p className="text-style-body text-text flex-1 truncate">
+                {user.email}
+              </p>
               <Button
                 variant="ghost"
                 size="xs"
@@ -394,7 +451,7 @@ export function PersonalInfoSection({
                   {...emailForm.register("email")}
                 />
                 <Button
-                  variant="primary"
+                  variant="solid"
                   size="sm"
                   type="button"
                   disabled={
@@ -420,16 +477,22 @@ export function PersonalInfoSection({
                 </Button>
               </div>
               {emailForm.formState.errors.email && (
-                <p className="text-xs text-danger-strong" role="alert">
+                <p
+                  className="text-style-caption text-danger-strong"
+                  role="alert"
+                >
                   {emailForm.formState.errors.email.message}
                 </p>
               )}
               {emailForm.serverError && (
-                <p className="text-xs text-danger-strong" role="alert">
+                <p
+                  className="text-style-caption text-danger-strong"
+                  role="alert"
+                >
                   {emailForm.serverError}
                 </p>
               )}
-              <p className="text-xs text-muted">
+              <p className="text-style-caption text-muted">
                 На новий email надійде лист для підтвердження.
               </p>
             </div>

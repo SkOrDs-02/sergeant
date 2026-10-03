@@ -25,6 +25,12 @@ vi.mock("@shared/components/ui/Tooltip", () => ({
 vi.mock("./BrandLogo", () => ({
   BrandLogo: () => <div data-testid="brand-logo" />,
 }));
+vi.mock("@shared/lib/modules/hubBus", () => ({
+  emitHubBus: vi.fn(),
+}));
+vi.mock("@shared/lib/adapters/haptic", () => ({
+  hapticTap: vi.fn(),
+}));
 vi.mock("./NotificationBell", () => ({
   NotificationBell: ({ notifications }: { notifications: unknown[] }) => (
     <div data-testid="bell" data-count={notifications.length} />
@@ -32,6 +38,7 @@ vi.mock("./NotificationBell", () => ({
 }));
 
 import { HubHeader } from "./HubHeader";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 
 function baseProps() {
   return {
@@ -77,23 +84,20 @@ describe("HubHeader", () => {
     expect(screen.getByText(/Доброї ночі/)).toBeInTheDocument();
   });
 
+  it("opens the assistant chat via the hub bus", () => {
+    render(<HubHeader {...baseProps()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Відкрити Сержанта" }));
+    expect(emitHubBus).toHaveBeenCalledWith("openChat", {
+      message: null,
+      autoSend: false,
+    });
+  });
+
   it("fires onOpenSearch when the search button is clicked", () => {
     const props = baseProps();
     render(<HubHeader {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Пошук" }));
     expect(props.onOpenSearch).toHaveBeenCalledTimes(1);
-  });
-
-  it("toggles calm mode and persists via the hub pref", () => {
-    render(<HubHeader {...baseProps()} />);
-    const calmBtn = screen.getByRole("button", {
-      name: "Чистий режим: вимкнено",
-    });
-    expect(calmBtn).toHaveAttribute("aria-pressed", "false");
-    fireEvent.click(calmBtn);
-    expect(
-      screen.getByRole("button", { name: "Чистий режим: увімкнено" }),
-    ).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows the sign-in button for guests and calls onShowAuth", () => {
@@ -119,16 +123,40 @@ describe("HubHeader", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders the privacy chip only when onOpenPrivacy is provided", () => {
-    const onOpenPrivacy = vi.fn();
-    const { rerender } = render(<HubHeader {...baseProps()} />);
-    const privacyName = /Тільки ти/i;
-    expect(screen.queryByLabelText(privacyName)).not.toBeInTheDocument();
+  it("не рендерить меню «⋯»: тема й приватність живуть у Налаштуваннях (огляд 2026-09-04)", () => {
+    render(<HubHeader {...baseProps()} />);
+    expect(
+      screen.queryByRole("button", { name: "Більше" }),
+    ).not.toBeInTheDocument();
+  });
 
-    rerender(<HubHeader {...baseProps()} onOpenPrivacy={onOpenPrivacy} />);
-    const chip = screen.getByLabelText(privacyName);
-    fireEvent.click(chip);
-    expect(onOpenPrivacy).toHaveBeenCalledTimes(1);
+  // PR-H2 (аудит 2026-09-13 хвиля 5): привітання — єдиний видимий текст на
+  // всіх чотирьох вкладках, назва вкладки жила лише в sr-only `<h1>`.
+  it("renders no visible subtitle on the dashboard tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="dashboard" />);
+    expect(screen.queryByText("Налаштування")).not.toBeInTheDocument();
+    expect(screen.queryByText("Профіль")).not.toBeInTheDocument();
+    expect(screen.queryByText("Звʼязки")).not.toBeInTheDocument();
+  });
+
+  it("renders no visible subtitle when activeTab is omitted", () => {
+    render(<HubHeader {...baseProps()} />);
+    expect(screen.queryByText("Налаштування")).not.toBeInTheDocument();
+  });
+
+  it("shows a visible «Налаштування» subtitle under the greeting on the settings tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="settings" />);
+    expect(screen.getByText("Налаштування")).toBeVisible();
+  });
+
+  it("shows a visible «Профіль» subtitle on the profile tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="profile" />);
+    expect(screen.getByText("Профіль")).toBeVisible();
+  });
+
+  it("shows a visible «Звʼязки» subtitle on the reports tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="reports" />);
+    expect(screen.getByText("Звʼязки")).toBeVisible();
   });
 
   it("forwards notifications to the bell", () => {

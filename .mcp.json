@@ -1,13 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-mcp.json",
   "mcpServers": {
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
-    },
     "postgres": {
       "command": "npx",
       "args": [
@@ -16,9 +9,8 @@
         "${SERGEANT_PG_READONLY_URL}"
       ]
     },
-    "sergeant-agent-find": {
-      "command": "node",
-      "args": ["scripts/agent/mcp-server.mjs"]
+    "codebase-memory": {
+      "command": "${CODEBASE_MEMORY_MCP_BIN:-codebase-memory-mcp}"
     }
   }
 }

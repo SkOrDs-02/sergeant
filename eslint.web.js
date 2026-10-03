@@ -3,7 +3,7 @@
 // `eslint --print-config` stays byte-identical
 // (`pnpm lint:eslint-config-diff`). Scope: `apps/web/**`.
 //
-// The three JSON burndown allowlists live here (not in the root) because
+// The i18n JSON burndown allowlist lives here (not in the root) because
 // only web blocks consume them. `import.meta.url` resolves relative to this
 // file, which sits at the repo root next to `eslint.config.js`, so the
 // `./apps/web/...` paths are unchanged.
@@ -14,9 +14,26 @@ import { readFileSync } from "node:fs";
 // relative path to a file that still has inline cyrillic JSX literals.
 // Migrate strings → `apps/web/src/shared/i18n/uk.ts` and remove the
 // path from the JSON. When the array is empty, promote the rule from
-// "warn" to "error". See `docs/i18n/readiness.md` § Burndown.
-// TARGET DEADLINE: 2026-Q3 (до 2026-09-30). Поточний розмір: ~30 файлів.
-// Відповідальний: @Skords-01. Прогрес: docs/i18n/readiness.md § Burndown.
+// "warn" to "error". See `docs/design/i18n/readiness.md` § Burndown.
+//
+// Розмір: 300 файлів (2026-09-16; 283 на 2026-08-08). З 2026-09-16 список
+// гейтиться храповиком `scripts/check-ui-canon-ratchet.mjs` (метрика
+// `cyrillicJsxAllowlist`, стеля 300 без запасу) — рішення власника по аудиту
+// дизайн-доків: EN-локаль заморожена як фундамент, але рядки лишаються в
+// каталозі, а не в компонентах. Дописати файл сюди можна лише прибравши
+// інший. Тут стояло «~30 файлів» — заниження на
+// порядок, і саме воно робило дедлайн правдоподібним. При темпі burndown-а
+// 5–10 файлів на PR («pack»-и, `scripts/codemods/i18n-burndown/`) 283 файли
+// — це десятки PR-ів, тож попередній «TARGET DEADLINE: до 2026-09-30» тут
+// прибрано як недосяжний: дата без плану, що її досягає, гасить сигнал так
+// само, як вічно червоний гейт. Нову дату ставить власник разом із рішенням
+// про темп.
+//
+// Ще одна причина, чому число розʼїхалось: allowlist ріс не лише міграцією
+// назад, а й перейменуваннями — аудит Профілю/Налаштувань (2026-08-08, §6)
+// знайшов у ньому 9 шляхів до файлів, яких у репо вже немає. Вони прибрані;
+// мертвий запис нічого не ламає, але роздуває число, за яким міряють борг.
+// Відповідальний: @Skords-01. Прогрес: docs/design/i18n/readiness.md § Burndown.
 const i18nAllowlist = JSON.parse(
   readFileSync(
     new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
@@ -24,39 +41,23 @@ const i18nAllowlist = JSON.parse(
   ),
 );
 
-// Toast-policy burndown gate (audit 2026-05-13 § 1 P0). Files exempt
-// from `sergeant-design/require-toast-error-action` — i.e. legacy
-// `toast.error(...)` call-sites without an `action: { label, onClick }`.
-// New error-toasts MUST include an action; existing ones are tracked
-// here and removed as they are refactored. When the array becomes
-// `[]`, promote the rule from "warn" to "error". See
-// `docs/ui/toast-policy.md` and audit
-// `docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F1.
-const toastErrorActionAllowlist = JSON.parse(
+// Burndown-список атрактора 8 (сирі розміри шрифта замість семантичних
+// ролей, анти-слоп §3.2). Той самий патерн, що в i18n вище, і з тієї ж
+// причини: `lint-staged` ганяє eslint із `--max-warnings=0`, тож
+// репо-широкий `warn` блокував би КОЖЕН коміт, що торкається одного зі
+// 118 файлів. Це «червоний завжди» в іншому одязі.
+//
+// Список закритий і може лише коротшати. Мігруй файл — прибирай рядок.
+// Коли масив спорожніє, підвищ правило до `error` і видали цей блок.
+//
+// Чому міграція не одним проходом: 15 місць захищені `AI-DANGER` /
+// `AI-NOTE` явно («це ГЕОМЕТРІЯ контрола, не роль тексту») і ще 15
+// мають `!` — навмисне перебиття власного розміру компонента, чого
+// роль не вміє. Сліпий sed один раз уже переписав текст усередині тих
+// самих коментарів і був відкочений (див. §3.6 канону).
+const rawTypeSizeAllowlist = JSON.parse(
   readFileSync(
-    new URL(
-      "./apps/web/eslint.toast-error-action-allowlist.json",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-);
-
-// Bare-fixed-inset-modal burndown gate (audit 2026-05-13 § F2 P1).
-// File-path inventory of `fixed inset-0` overlays that are intentional
-// dialog surfaces — the 6 canonical primitives (Modal, Sheet,
-// ConfirmDialog, InputDialog, KeyboardShortcutsModal, OnboardingWizard)
-// plus the other ad-hoc dialogs that already declare `role`/`aria-modal`.
-// True offenders (e.g. HubChat, BarcodeScanner) are intentionally left
-// OUT so the rule keeps warning on them until partII (file fixes + axe
-// prop-tests). Remove entries as they migrate to a canonical primitive.
-// See `docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2.
-const bareFixedInsetModalAllowlist = JSON.parse(
-  readFileSync(
-    new URL(
-      "./apps/web/eslint.bare-fixed-inset-modal-allowlist.json",
-      import.meta.url,
-    ),
+    new URL("./apps/web/eslint.raw-type-size-allowlist.json", import.meta.url),
     "utf8",
   ),
 );
@@ -130,116 +131,135 @@ export const webBlocks = [
   {
     files: ["apps/web/**/*.{ts,tsx,js,jsx}"],
     rules: {
-      "sergeant-design/no-raw-dark-palette": "error",
-      // `prefer-focus-visible` (Wave 2e of the dark-mode audit's
-      // accessibility companion track — see `docs/design/design-system.md`
-      // → "Focus — focus-visible:ring-…, а не focus:, аби pointer-клік
-      // не блимав кільцем"). The rule bans `focus:` colour/border/ring/
-      // shadow utilities; only `focus:outline-none` (the canonical reset
-      // that pairs with `focus-visible:ring-*`) is allowed. Web-only —
-      // React Native (NativeWind) doesn't expose a `:focus-visible`
-      // pseudo-class equivalent.
-      "sergeant-design/prefer-focus-visible": "error",
-      // `no-rounded-lg` — prevent border-radius drift back to the 8 px tier.
-      // Severity promoted to `error` 2026-05-21. Audit showed zero un-disabled
-      // call-sites in `apps/web/src/{core,modules,shared}/**` (one explicit
-      // `eslint-disable-next-line` with tech-debt ref in `SearchResults.tsx:104`).
-      // `rounded-lg` sits between Marker (6 px) and Control (12 px) without a
-      // semantic role; use `rounded-md` or `rounded-xl` instead.
-      // See docs/design/radius-rhythm.md.
-      "sergeant-design/no-rounded-lg": "error",
-      // `no-v1-gradient` — Sergeant v2 redesign (2026-05) replaced v1 module
-      // gradient vars (`--gradient-{module}`, `--gradient-card-{module}-dark`)
-      // and their `bg-card-{module}-dark` Tailwind utilities with the
-      // brighter `--hero-grad-{module}` set + `bg-hero-grad-{module}`. The
-      // v1 vars are JSDoc-@deprecated in theme.css but kept for migration
-      // back-compat. Severity `error` — recon shows zero current consumers,
-      // so this is a tripwire for accidental v1 re-introduction.
-      // See docs/design/redesign-v2-migration.md.
-      "sergeant-design/no-v1-gradient": "error",
-      // `no-bare-empty-text` — enforce empty-state tier discipline.
-      // Bare JSX text with Ukrainian "Поки немає" / "ще немає" phrases must
-      // use <EmptyState> / <ModuleEmptyState> — see docs/design/empty-states.md.
-      //
-      // Promoted to `error` 2026-05-22 (audit-2026-05-15 closure): baseline
-      // cleanup complete. Remaining call-sites either live inside an
-      // <EmptyState>/<ModuleEmptyState> ancestor (rule auto-exempts) or
-      // carry a targeted `eslint-disable-next-line` with a WHY for the
-      // narrow tier-3/hero-shell exceptions documented per call-site.
-      "sergeant-design/no-bare-empty-text": "error",
-      // `no-cyrillic-jsx-literal` — i18n burndown gate (item #18 Phase 3).
-      // New cyrillic JSX text or attribute string literals must reference
-      // `messages.<group>.<key>` from `apps/web/src/shared/i18n/uk.ts`.
-      // Existing call-sites live in `apps/web/eslint.i18n-allowlist.json`
-      // (loaded at config-import time above). Migrate strings → catalog
-      // → remove path from JSON. When the file becomes `[]`, promote to
-      // "error". See docs/i18n/readiness.md § Burndown.
       "sergeant-design/no-cyrillic-jsx-literal": [
         "warn",
         { allowlist: i18nAllowlist },
       ],
-      // `prefer-text-style` — semantic typography over hand-rolled combos.
-      // Replace (text-sm font-medium) with text-style-label etc.
-      // See docs/design/design-system.md § Typography.
-      //
-      // Severity flow: global `warn` here (covers `apps/web/src/{core,shared}/**`,
-      // packages, tools) → scoped `error` for `apps/web/src/modules/**` below
-      // (ramped 2026-05-21 in #3070 after T5 baseline cleanup landed).
-      "sergeant-design/prefer-text-style": "warn",
-      // `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` /
-      // `text-[Nrem]` literals; route every call-site through a named
-      // utility from index.css (`text-display`, `text-h1..h3`,
-      // `text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`,
-      // `text-meta`, `text-micro`, `text-display-stat`,
-      // `text-display-hero`, `text-style-*`) or a Tailwind preset
-      // (`text-xs..text-5xl`). Closes the vertical-rhythm drift +
-      // sub-WCAG 8 px regression family.
-      // See docs/design/design-system.md § Typography.
-      "sergeant-design/no-arbitrary-text-size": "error",
-      // `no-flat-shared-lib` — guard the 2026-05-03 reorg
-      // (PR #1479): `apps/web/src/shared/lib/` is now organized into
-      // five thematic subdirs (`api/`, `storage/`, `modules/`,
-      // `adapters/`, `ui/`). New top-level flat files would re-flatten
-      // the namespace and erase the grouping. The rule resolves both
-      // `@shared/lib/<x>` (alias) and relative imports, so it survives
-      // future import-style refactors. Place new utils in the right
-      // subdir, or import via the `@shared/lib` barrel.
+      // Tone-of-voice канону `docs/product/copy/style-guide.uk.md`:
+      // без довгого тире (§1.9), звертання на «ти» (§1.1), без 1-ї особи
+      // множини (§2). Апостроф правило НЕ гейтить: §1.10 фіксує символ,
+      // але міграцію відкладено, бо ті самі слова подекуди є ключами
+      // зіставлення (див. §1.10). `error`, а не `warn`, бо аудит
+      // 2026-08-26 показав: правила існували роками тільки як документ,
+      // і саме тому дрейф зібрався в НАЙНОВІШОМУ коді (чек-скан,
+      // bulk-імпорт, Сільпо). Попередження тут нічого не змінило б.
+      "sergeant-design/ukrainian-copy": [
+        "error",
+        {
+          // `DesignShowcase` — внутрішня демо-сторінка дизайн-системи, куди
+          // продакшн-користувач не заходить. Її рядки містять кодові семпли
+          // (англійські коментарі всередині template-літералів разом із
+          // кириличним описом поруч), тож правило спрацьовує на пунктуації
+          // коду, а не копії. Той самий виняток, що для stories.
+          allowlist: ["src/core/DesignShowcase"],
+          // Юридичні документи, розкриття даних у налаштуваннях і звернення
+          // в підтримку говорять від «ми» (канон §2): «ми» там — це
+          // ЮРОСОБА, сторона договору («Ми не продаємо твій контент») або
+          // команда («напиши нам, ми полагодимо»), і 1-а однини звучала б як
+          // обіцянка застосунку. Вимкнена лише ця перевірка: довге тире,
+          // «Ви», імператив множини й апостроф діють і в legal (рішення
+          // власника 2026-09-24, аудит копі §6.6 і §6.7).
+          allowFirstPersonPlural: [
+            "src/core/legal",
+            "src/shared/i18n/uk.dataDisclosure.ts",
+            "src/core/errors/NotFoundPage.tsx",
+            "src/core/errors/ServerErrorPage.tsx",
+          ],
+        },
+      ],
       "sergeant-design/no-flat-shared-lib": "error",
-      // `prefer-kyiv-time` — Theme 1 (consolidated audit 2026-05-13).
-      // Bans `Date.prototype.get{FullYear,Month,Date,Day,Hours,Minutes,Seconds}`
-      // in web client code; use helpers in `@shared/lib/time/kyivTime.ts`
-      // so day boundaries stay anchored to Europe/Kyiv per the domain-
-      // invariants spec. Allowlisted: `kyivTime.ts` itself, `apps/server/**`,
-      // and `*.test.{ts,tsx,js}` (mock-clock tests). Severity `warn`
-      // initially; ramps to `error` after the burndown sweep closes.
-      // See docs/04-governance/governance/rules/kyiv-time-helpers.md.
       "sergeant-design/prefer-kyiv-time": "warn",
-      // `require-toast-error-action` — audit 2026-05-13 § F1 (P0):
-      // every error-toast must include an `action: { label, onClick }`
-      // so the user has a recovery path. Bare `toast.error("...")`
-      // calls are tracked in `apps/web/eslint.toast-error-action-allowlist.json`
-      // and removed as they are refactored. When the file becomes `[]`,
-      // promote this rule from "warn" to "error".
-      // See `docs/ui/toast-policy.md`.
-      "sergeant-design/require-toast-error-action": [
-        "warn",
-        { allowlist: toastErrorActionAllowlist },
-      ],
-      // `no-bare-fixed-inset-modal` — audit 2026-05-13 § F2 (P1):
-      // JSX elements that wear `fixed inset-0` overlay classNames but
-      // forget to announce themselves as dialog/presentation for
-      // assistive tech are flagged as warnings. Canonical modal
-      // primitives (Modal, Sheet, ConfirmDialog, InputDialog,
-      // KeyboardShortcutsModal, OnboardingWizard) own focus-trap +
-      // scroll-lock + a11y plumbing — they're opted out via the
-      // inline `allow` list. Existing offenders (QuickActionsMenu,
-      // StreakCelebration, FeatureSpotlight, …) stay as warnings
-      // until partII (file fixes + axe prop-tests). See
-      // docs/90-work/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.
-      "sergeant-design/no-bare-fixed-inset-modal": [
-        "warn",
-        { allow: bareFixedInsetModalAllowlist },
-      ],
+      // Рух через токени, не через сирі числа (анти-слоп §4/П5,
+      // рішення власника 2026-08-06). Без цього гейта прохід
+      // розпадеться: `duration-200` лишається валідним класом
+      // Tailwind, тож наступний автор напише його не зі зла, а тому,
+      // що воно працює. Тести — виняток: там класи ЦИТУЮТЬ в асертах.
+      "sergeant-design/no-raw-motion-value": "error",
+      // Прозорість на кольоровому токені тексту (анти-слоп §3.2,
+      // атрактор 9, аудит 2026-08-08). `error`, бо наслідок не
+      // естетичний: значення `--c-subtle` / `--c-muted` підібрані рівно
+      // на порозі AA, тож `/70` дає 2.76 на фоні сторінки. Наявні місця
+      // винесені в override нижче — фікс змінює вигляд і чекає рішення
+      // власника, але НОВІ місця блокуються вже зараз.
+      "sergeant-design/no-opacity-on-text-token": "error",
+      // Сирі розміри шрифта замість семантичних ролей (атрактор 8).
+      // `warn`, а не `error`: заміна не механічна — `text-style-label`
+      // це clamp(13→14px) + вага 500 проти рівних 14px з успадкованою
+      // вагою, тож кожне місце потребує ока. Зараз їх 226 за рахунком
+      // eslint (226 вузлів, 231 збіг регексом — у частині className
+      // сирих розмірів по два). `error` зробив би
+      // гейт червоним від народження, а «червоний завжди» = вимкнений.
+      // Прецедент рівня — `prefer-kyiv-time` вище.
+      "sergeant-design/no-raw-type-size": "warn",
+      // Речення в найдрібнішій ролі шкали (SLOP-3, замір
+      // `pnpm design:scan-captions`). Розбір по типах тексту й межі
+      // застосовності — `docs/design/design/density-hierarchy-spec.md`.
+      //
+      // `warn`, а не `error`, з тієї самої причини, що й `no-raw-type-size`
+      // вище, і це не обережність, а вимірювання: на дату підключення
+      // правило дає 32 спрацювання, і ЖОДНЕ з них не є боргом. Це рівно ті
+      // місця, які прохід §4 спеки лишив дрібними свідомо — підказки під
+      // контролами, дисклеймери, компактні пари в картках. `error` зробив
+      // би гейт червоним від народження, а «червоний завжди» = вимкнений.
+      //
+      // Робота гейта тут — НОВИЙ код: він спрацьовує в момент написання,
+      // коли автор дивиться на свій екран. Наявні 32 лишаються видимими
+      // навмисно: кожне з них варте коментаря `AI-NOTE` з причиною, і
+      // попередження — саме те, що змусить його врешті поставити.
+      "sergeant-design/no-sentence-in-caption": "warn",
+    },
+  },
+  {
+    files: [
+      "apps/web/**/*.test.{ts,tsx}",
+      "apps/web/**/*.stories.{ts,tsx}",
+      "apps/web/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-raw-motion-value": "off",
+      "sergeant-design/no-opacity-on-text-token": "off",
+      "sergeant-design/no-raw-type-size": "off",
+      "sergeant-design/no-sentence-in-caption": "off",
+    },
+  },
+  {
+    files: rawTypeSizeAllowlist,
+    rules: {
+      "sergeant-design/no-raw-type-size": "off",
+    },
+  },
+  // Залишок атрактора 9 після міграції 2026-08-08 (рішення власника):
+  // 33 місця виправлено, 7 файлів лишились навмисно. Правило до них не
+  // застосовне, а не «ще не дійшли руки»:
+  //
+  //   • hover-стан над правильною базою — спокійний стан і є те, що
+  //     мусить проходити поріг (PersonalInfoSection, PantryManagerSheet,
+  //     ModuleBottomNav);
+  //   • вимкнений / неактивний контрол — WCAG 1.4.3 їх не покриває
+  //     (Programs, HabitDetailSheet, WorkoutSetRow:137);
+  //   • неозначальна іконка з `aria-label` на кнопці — поріг 3:1, і
+  //     subtle/70 дає 3.05, тобто проходить (WorkoutSetRow:146).
+  //
+  // `MonthPulseCard` виведено зі списку разом із самим файлом (спека
+  // finyk-hero-month-strip.md — картку прибрано, JSDoc-приклад, що збігався
+  // з правилом, прибрано разом із нею).
+  //
+  // Список закритий і може лише коротшати.
+  {
+    files: [
+      "apps/web/src/core/profile/PersonalInfoSection.tsx",
+      "apps/web/src/modules/fizruk/components/workouts/WorkoutSetRow.tsx",
+      "apps/web/src/modules/fizruk/pages/Programs.tsx",
+      "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",
+      "apps/web/src/modules/routine/components/HabitDetailSheet.tsx",
+      "apps/web/src/shared/components/ui/ModuleBottomNav.tsx",
+      // EmptyState — чотири `icon:` тони `-soft-fg/80` на власному
+      // `-soft` тлі. Це декоративна іконка поряд із текстом, тобто
+      // поріг 3:1, а пара soft-fg↔soft підібрана саме під нього.
+      "apps/web/src/shared/components/ui/EmptyState.tsx",
+    ],
+    rules: {
+      "sergeant-design/no-opacity-on-text-token": "off",
     },
   },
   // Hash-router migration gate — initiative 0006 (frontend routing &
@@ -259,66 +279,11 @@ export const webBlocks = [
   // `useRoutineRoute` або через injected `onNavigate` prop із module
   // shell-а. Rule піднята з `warn` (canary) до `error` — нові hash-
   // assignments у модулях ламають lint і CI, як заплановано в
-  // `docs/90-work/initiatives/0006-frontend-routing-and-code-split.md` §Phase 2.
+  // `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md` §Phase 2.
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
       "sergeant-design/no-hash-router-in-modules": "error",
-    },
-  },
-  // Storybook coverage enforcement — initiative 0007 (Design-system
-  // tooling: Storybook + visual regression). Кожен top-level
-  // UI-компонент у `apps/web/src/shared/components/ui/` має сусідній
-  // `<Name>.stories.tsx`, інакше Storybook playground і visual
-  // regression baseline не покривають компонент.
-  //
-  // Round-10 (2026-05-05) закрив Phase 2: shared/ui coverage піднято
-  // з 35% до 100% non-allowlisted (37 stories на 37 компонентів-
-  // кандидатів — див. § Outcome у
-  // `docs/90-work/initiatives/archive/_0007-design-system-tooling.md`). Решта 23
-  // файли — barrel / Icon.paths sub-modules / utility / gesture /
-  // transient overlay-компоненти — навмисно allowlisted у самому
-  // правилі (`packages/eslint-plugin-sergeant-design/index.js` §
-  // require-stories-for-ui-components, секція `DEFAULT_REQUIRE_STORIES_
-  // ALLOWLIST`) із per-file rationale.
-  //
-  // Severity: **error**. Коли додаєш новий публічний компонент у
-  // `apps/web/src/shared/components/ui/`, додай поряд `<Name>.stories.tsx`
-  // (мінімум — Default story). Якщо файл навмисно НЕ компонент
-  // (helper / illustration / sub-module / gesture-обгортка / transient
-  // overlay), додай шлях у `DEFAULT_REQUIRE_STORIES_ALLOWLIST` із
-  // коментарем-обґрунтуванням у тому ж commit-і.
-  {
-    files: ["apps/web/src/shared/components/ui/**/*.tsx"],
-    rules: {
-      "sergeant-design/require-stories-for-ui-components": "error",
-    },
-  },
-  // DataState adoption canary — initiative 0011 Phase 2.9 (foundation
-  // adoption — DataState rollout). Phases 2.4–2.8 мігрували існуючі
-  // manual-ladder callsite-и у `apps/web/src/modules/**` на
-  // `<DataState>` (finyk Mono / fizruk Workouts / nutrition Menu /
-  // routine Timeline / digest). Canary був warn-only від merge PR-#1823
-  // (2026-05-05) — за baseline-вікно 0 hits across 174 модульних
-  // файлів (success-criterion з
-  // `docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`
-  // § 6 — `<DataState>` adopted; carry-over `2026-06-30` Phase 2.9 finalize
-  // закрита 2026-05-10). Severity promoted до `error` — нові manual-ladder
-  // callsite-и блокуються у CI. Default allowlist (DataState.tsx сама +
-  // `apps/web/src/core/auth/**` для auth-form patterns) живе у самому
-  // правилі (`packages/eslint-plugin-sergeant-design/index.js`
-  // § prefer-data-state).
-  {
-    files: ["apps/web/src/modules/**/*.{ts,tsx}"],
-    rules: {
-      "sergeant-design/prefer-data-state": "error",
-      // T5 ramp completed 2026-05-21 in #3070 (101 violations migrated across
-      // 65 files; 1 eslint-disable escape with TODO(T5) for responsive
-      // sm:text-sm in PushupsWidget.tsx). Severity promoted to `error` here
-      // so any new module call-site that hand-rolls `text-{size} font-{weight}`
-      // fails CI. Other surfaces (`apps/web/src/{core,shared}/**`, packages,
-      // tools) still inherit the global `warn` from above.
-      "sergeant-design/prefer-text-style": "error",
     },
   },
   // Web localStorage guardrail — direct `localStorage.*` access is a
@@ -365,7 +330,7 @@ export const webBlocks = [
   // Same block also bans the `@sergeant/db-schema/migrate` umbrella entry —
   // that re-exports `loadMigrationFiles` from `./files.js`, which top-level
   // imports `node:fs` / `node:path` and breaks Vite's browser bundle (white
-  // screen on boot — see audit `docs/90-work/audits/2026-05-07-app-audit.md` §1).
+  // screen on boot — see audit `docs/work/specs/audits/2026-05-07-app-audit.md` §1).
   // Browser-side callers must use one of the saner sub-segments:
   // `@sergeant/db-schema/migrate/runner` (dialect-free runner),
   // `@sergeant/db-schema/migrate/sqlite` (sqlite adapter),
@@ -387,7 +352,7 @@ export const webBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle.",
             },
           ],
         },
@@ -410,12 +375,34 @@ export const webBlocks = [
       "sergeant-design/rq-keys-only-from-factory": "error",
     },
   },
+  // Реєстр метрик, стадія 5 — заборона ad-hoc агрегації витрат поза
+  // доменними пакетами. Аудит показав 4-6 незалежних реалізацій однієї
+  // метрики й доведені розбіжності в числах на різних екранах в одну
+  // хвилину; cutover звів їх на канонічні функції `@sergeant/*-domain`,
+  // а це правило не дає наступному інлайн-редьюсу знову розійтися.
+  // Вмикається одразу як `error` без baseline — на момент додавання в
+  // `apps/web/src` нуль порушень (три знайдені call-site-и переведені на
+  // `getTxStatAmount` / `calcCategorySpent` у тому ж PR, усі zero-delta).
+  // Тести звільнені: фікстури навмисно рахують очікування вручну, щоб
+  // parity-тест мав із чим порівнювати канон.
+  // Реєстр: docs/engineering/architecture/metric-registry.md.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/no-adhoc-metric-aggregation": "error",
+    },
+  },
   // Module-size guardrail (initiative 0001) — `max-lines: [error, 600]`
   // for `apps/web/src/**/*.{ts,tsx}`. Enforces decomposition discipline:
   // a single TS/TSX file in the web bundle must not exceed 600 LOC
-  // (skipBlankLines + skipComments). New violations fail CI; existing
-  // monoliths are explicitly allowlisted with a deadline TODO so the
-  // queue stays visible. See `docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
+  // (skipBlankLines + skipComments). Violations fail CI; the initiative-0001
+  // allowlist of grandfathered monoliths was burned down and removed, so
+  // there are no exemptions beyond tests and generated files.
+  // See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
   //
   // Scope rationale:
   // - Limited to `apps/web/src/**` — the audit's red-flag table flagged
@@ -450,7 +437,7 @@ export const webBlocks = [
   // ExerciseProgressChart.tsx:57, WeeklyVolumeChart.tsx:79, WorkoutTemplatesSection.tsx:491).
   // Severity `warn` because ~96 existing production assertions remain; the
   // ones in fizruk are fixed below. Promoted to `error` when count reaches zero.
-  // Burn-down: 2026-Q3. See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
+  // Burn-down: 2026-Q3. See docs/work/specs/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -460,6 +447,79 @@ export const webBlocks = [
     ],
     rules: {
       "@typescript-eslint/no-non-null-assertion": "warn",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `immutability` cleared
+  // apps/web: the 3 remaining call-sites (ManualExpenseSheet reset-effect
+  // referencing later-declared setters; CategoryPieChart accumulator
+  // mutation during render) were fixed. Promoted from the baseline `off`
+  // to web-scoped `error` so the next regression fails lint loudly. Stays
+  // `off` in the shared baseline because apps/mobile still carries
+  // legacy violations (separate future bite). See
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/immutability": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `preserve-manual-memoization`
+  // cleared apps/web: a 2026-07-04 sweep found 9 call-sites; 6 were fixed by
+  // narrowing memo dependencies to the exact scalar/property the body reads
+  // (useMonobankWebhook `lastUpdated`, useNutritionPantries `pantryItems`) and
+  // by making the current instant a primitive `Date.now()` epoch instead of a
+  // component-scope `new Date()` object (finyk Overview subscription/debt
+  // flows, which the Compiler had flagged as depending on a locally-created
+  // mutable). The remaining 3 carry a scoped `eslint-disable-next-line` with a
+  // WHY: two thin fizruk derivation hooks (usePrLatest / usePrPendingInsight)
+  // the Compiler inlines and declines to re-memoize, and one finyk Overview
+  // memo over the `manualExpenses` storage-slots array the Compiler
+  // conservatively treats as reassignable. All three keep a correct,
+  // behaviour-preserving manual memo that does real work at runtime (React
+  // Compiler is not wired into the Vite build yet). Promoted from the baseline
+  // `off` to web-scoped `error` so the next regression fails lint loudly. Stays
+  // `off` in the shared baseline because apps/mobile still carries legacy
+  // violations (separate future bite). See
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/preserve-manual-memoization": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `purity` cleared apps/web
+  // (0 violations measured 2026-07-10 via `npx eslint apps/web/src --rule
+  // '{"react-hooks/purity":"error"}' --no-inline-config`). Promoted from
+  // baseline `off` to web-scoped `error`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/purity": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `refs` cleared apps/web
+  // across 26 files: useEffect callback-ref sync, HubSearch destructure,
+  // AddMealSheet skippedSource state, useSwipeNavigation isDragging state,
+  // DropdownMenu/Tooltip cloneElement ref taint fixes. Promoted from baseline
+  // `off` to web-scoped `error`. See initiative 0021.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/refs": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `set-state-in-effect` cleared
+  // apps/web in two waves (2026-07-10): wave 1 (81→48) fixed
+  // `useSqliteTickOverlay`, render-time SQLite overlay, `useSyncExternalStore`
+  // patterns; wave 2 (48→0) fixed core hub/onboarding, finyk/nutrition/routine
+  // modules, and shared UI (Toast/Tooltip/PageTransition/voice). Promoted from
+  // baseline `off` to web-scoped `error` so the next regression fails lint
+  // loudly. Mobile cleared in the same initiative (2026-07-10). See
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/web/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/set-state-in-effect": "error",
     },
   },
 ];

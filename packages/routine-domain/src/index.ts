@@ -18,14 +18,31 @@
 
 export * from "./types.js";
 export * from "./constants.js";
+export * from "./glyphs.js";
 export * from "./dateKeys.js";
 export * from "./completionNoteKey.js";
 export * from "./habitOrder.js";
 export * from "./schedule.js";
+export * from "./weeklyTarget.js";
 export * from "./streaks.js";
+// Per-habit рядки для коротких зрізів статистики — доповнення до
+// агрегованого хітмапа (`domain/heatmap`), не заміна.
+export * from "./habitRangeRows.js";
+// Хвиля 4 — гнучкий стрік: датовані паузи, пропуск із причиною,
+// grace-бюджет. Старий `streakForHabit` лишається поруч, доки всі
+// споживачі не перемкнені.
+export * from "./flexStreak.js";
+export * from "./weeklyGoalStreak.js";
+export * from "./quickStats.js";
+export * from "./dayProgress.js";
+export * from "./periodCompletion.js";
 export * from "./drafts.js";
 export * from "./storage.js";
 export * from "./reducers.js";
+// W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток. Пишеться
+// паралельно зі старим станом; читачів (fold) у цій стадії немає.
+export * from "./completionEvents.js";
+export * from "./foldCompletionEvents.js";
 export * from "./calendarEvents.js";
 export * from "./calendarGrid.js";
 export * from "./reminders.js";

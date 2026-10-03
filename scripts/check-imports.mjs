@@ -29,6 +29,8 @@ const forbidden = [
   },
 ];
 
+const e2eImportFailures = [];
+
 function walk(dir) {
   const out = [];
   if (!fs.existsSync(dir)) return out;
@@ -60,6 +62,26 @@ for (const moduleRoot of MODULE_ROOTS) {
     }
   }
 }
+
+const webSrcRoot = path.join(repoRoot, "apps", "web", "src");
+const e2eRoot = path.join(webSrcRoot, "e2e");
+const e2eAllowed = new Set([
+  path.join(webSrcRoot, "main.tsx"),
+  path.join(e2eRoot, "installScenarioBridge.ts"),
+  path.join(e2eRoot, "world.ts"),
+]);
+for (const file of walk(webSrcRoot)) {
+  if (!isTextFile(file) || e2eAllowed.has(file)) continue;
+  const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
+  const src = fs.readFileSync(file, "utf8");
+  if (/from\s+["'][^"']*\/e2e\/|import\(["'][^"']*\/e2e\//.test(src)) {
+    e2eImportFailures.push(
+      `- ${rel}: apps/web/src/e2e можна імпортувати лише з main.tsx`,
+    );
+  }
+}
+
+failures.push(...e2eImportFailures);
 
 if (failures.length) {
   console.error(

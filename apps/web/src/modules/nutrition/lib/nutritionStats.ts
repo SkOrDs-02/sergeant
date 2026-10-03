@@ -2,30 +2,25 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { clampNonNegative } from "@sergeant/shared";
 import {
   addDaysISODate,
   getDaySummary,
+  lastNDayKeysOldestFirst,
   type DaySummary,
   type NutritionLog,
 } from "./nutritionStorage";
-import { mealTypeFromLabel } from "./mealTypes";
-
-function clamp0(n: unknown): number {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.max(0, v) : 0;
-}
+import { isMealTypeId, mealTypeFromLabel, type MealTypeId } from "./mealTypes";
+import type { Meal } from "@sergeant/nutrition-domain";
 
 export function getRowsForRange(
   log: NutritionLog,
   endIso: string,
   dayCount: number,
 ): DaySummary[] {
-  const rows: DaySummary[] = [];
-  for (let i = dayCount - 1; i >= 0; i--) {
-    const d = addDaysISODate(endIso, -i);
-    rows.push(getDaySummary(log, d));
-  }
-  return rows;
+  return lastNDayKeysOldestFirst(endIso, dayCount).map((d) =>
+    getDaySummary(log, d),
+  );
 }
 
 export interface RowsSummary {
@@ -65,27 +60,6 @@ export function summarizeRows(rows: DaySummary[]): RowsSummary {
   return out;
 }
 
-export interface AvgMacros {
-  kcal: number;
-  protein_g: number;
-  fat_g: number;
-  carbs_g: number;
-  denom: number;
-}
-
-export function avgFromSummary(sum: RowsSummary): AvgMacros {
-  // Prefer averaging only over days where some macros exist to avoid dragging
-  // averages down to 0 when meals were logged without macros.
-  const denom = Math.max(1, Number(sum?.daysWithAnyMacros) || 0);
-  return {
-    kcal: sum.kcal / denom,
-    protein_g: sum.protein_g / denom,
-    fat_g: sum.fat_g / denom,
-    carbs_g: sum.carbs_g / denom,
-    denom,
-  };
-}
-
 export interface TopMeal {
   name: string;
   count: number;
@@ -109,7 +83,7 @@ export function topMeals(
       if (!name) continue;
       const cur = map.get(name) || { name, count: 0, kcal: 0 };
       cur.count += 1;
-      cur.kcal += clamp0(m?.macros?.kcal);
+      cur.kcal += clampNonNegative(m?.macros?.kcal);
       map.set(name, cur);
     }
   }
@@ -135,8 +109,71 @@ export function mealTypeBreakdown(
       const type = String(m?.mealType || "") || mealTypeFromLabel(m?.label);
       if (!out[type]) out[type] = { count: 0, kcal: 0 };
       out[type].count += 1;
-      out[type].kcal += clamp0(m?.macros?.kcal);
+      out[type].kcal += clampNonNegative(m?.macros?.kcal);
     }
+  }
+  return out;
+}
+
+/**
+ * Калорії за типами прийомів для ОДНОГО дня — на відміну від
+ * `mealTypeBreakdown`, який агрегує count+kcal по діапазону днів. Потрібно
+ * для hero-стрічки дня дашборду (`MealStrip`, спека
+ * `docs/work/specs/nutrition-hero-day-strip.md`).
+ *
+ * Тип прийому береться з `m.mealType`, той самий фолбек `mealTypeFromLabel`
+ * (за `m.label`), що й у `mealTypeBreakdown` — легасі-записи без валідного
+ * `mealType` розпізнаються за текстом підпису.
+ */
+/**
+ * Записи одного дня, розкладені за типом прийому — той самий розклад, що й
+ * `mealTypeKcalForDay`, але з самими рядками, а не сумою їхніх калорій.
+ *
+ * Потрібно двом місцям hero-стрічки: сегмент має знати, чи є що ПОКАЗАТИ
+ * (кількість записів — не сума ккал: запис без макросів дає нуль калорій,
+ * але існує), а аркуш прийому — самі рядки.
+ *
+ * Фолбек типу той самий, що й усюди в цьому файлі: `m.mealType`, а для
+ * легасі-записів без валідного значення — розпізнавання за `m.label`.
+ */
+export function mealsByTypeForDay(
+  log: NutritionLog | null | undefined,
+  dayIso: string,
+): Record<MealTypeId, Meal[]> {
+  const out: Record<MealTypeId, Meal[]> = {
+    breakfast: [],
+    lunch: [],
+    dinner: [],
+    snack: [],
+  };
+  const day = log?.[dayIso];
+  const meals = Array.isArray(day?.meals) ? day.meals : [];
+  for (const m of meals) {
+    const type = isMealTypeId(m?.mealType)
+      ? m.mealType
+      : mealTypeFromLabel(m?.label);
+    out[type].push(m);
+  }
+  return out;
+}
+
+export function mealTypeKcalForDay(
+  log: NutritionLog | null | undefined,
+  dayIso: string,
+): Record<MealTypeId, number> {
+  const out: Record<MealTypeId, number> = {
+    breakfast: 0,
+    lunch: 0,
+    dinner: 0,
+    snack: 0,
+  };
+  const day = log?.[dayIso];
+  const meals = Array.isArray(day?.meals) ? day.meals : [];
+  for (const m of meals) {
+    const type = isMealTypeId(m?.mealType)
+      ? m.mealType
+      : mealTypeFromLabel(m?.label);
+    out[type] += clampNonNegative(m?.macros?.kcal);
   }
   return out;
 }

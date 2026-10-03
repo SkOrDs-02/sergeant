@@ -31,11 +31,11 @@ export const useMobileVisualKeyboardInset: VisualKeyboardInsetAdapter = (
 ): number => {
   const [insetPx, setInsetPx] = useState<number>(0);
 
+  // When `active` is false, skip listener wiring and return 0 directly
+  // (render-time derivation avoids `react-hooks/set-state-in-effect`,
+  // initiative 0021).
   useEffect(() => {
-    if (!active) {
-      setInsetPx(0);
-      return;
-    }
+    if (!active) return;
     const showSub = Keyboard.addListener(
       "keyboardDidShow",
       (event: KeyboardEvent) => {
@@ -51,7 +51,7 @@ export const useMobileVisualKeyboardInset: VisualKeyboardInsetAdapter = (
     };
   }, [active]);
 
-  return insetPx;
+  return active ? insetPx : 0;
 };
 
 setVisualKeyboardInsetAdapter(useMobileVisualKeyboardInset);

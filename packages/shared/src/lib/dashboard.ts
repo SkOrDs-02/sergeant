@@ -105,11 +105,25 @@ export const DEFAULT_DASHBOARD_ORDER: readonly DashboardModuleId[] = [
   ...DASHBOARD_MODULE_IDS,
 ];
 
+/**
+ * Відображувані імена модулів — ЄДИНИЙ реєстр на всі поверхні.
+ *
+ * AI-DANGER: `apps/web/src/shared/lib/modules/moduleLabels.ts` реекспортує
+ * саме цю мапу, а не оголошує свою. Два реєстри тут уже були, і вони
+ * розійшлись: web показував «Їжа» в шапці модуля, боттом-наві й на сплеші,
+ * а ця мапа віддавала «Харчування» — зокрема в оголошення для читача
+ * екрана при перетягуванні карток дашборда («Підняли Харчування» над
+ * карткою з написом «Їжа», browser-QA 2026-09-02). Саме проти цього
+ * розходження `moduleLabels.ts` і створювався; його докстрінг описує ту
+ * саму проблему, але однієї з двох мап тоді не помітили.
+ *
+ * Додаєш модуль — додаєш ім'я СЮДИ.
+ */
 export const DASHBOARD_MODULE_LABELS: Record<DashboardModuleId, string> = {
   finyk: "Фінік",
   fizruk: "Фізрук",
   routine: "Рутина",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
 };
 
 export function isDashboardModuleId(

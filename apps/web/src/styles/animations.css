@@ -19,7 +19,7 @@
 
    All timing values come from `--motion-duration-*` / `--motion-ease-*`
    in `theme.css`. Raw values in `className` (e.g. `duration-[230ms]`)
-   are forbidden — see `docs/governance/rules/17-animation-budget.md`.
+   are forbidden — see `docs/governance/governance/rules/17-animation-budget.md`.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ── Page & module entry (RESPONSE) ──────────────────────────────────── */
@@ -70,13 +70,31 @@
   }
 }
 
+/* AI-DANGER: fill-mode тут САМЕ `backwards`, не `both`. Фінальний кадр обох
+   keyframes (`opacity: 1; transform: translateX(0)`) дорівнює природному
+   стану елемента, тож `forwards` не давав нічого візуально — але залишав на
+   корені модуля/хаба вічну identity-трансформу (`matrix(1,0,0,1,0,0)`), а з
+   нею й промоутнутий композиторний шар на весь час сесії.
+
+   На iOS перемальовка всередині такого шару не інвалідується: при зміні
+   виділення заливка попередньої пігулки лишалась на екрані рожевою смугою
+   впоперек сусідніх — у чипах діапазону і в стрічці тижня «Рутини». Репорт
+   власника, ніч проти 17 серпня 2026 за Києвом.
+
+   Діагноз зійшовся на трьох незалежних спостереженнях: після прямого
+   перезавантаження чисто (шар є, але ще нічого не перемальовувалось);
+   смуги зʼявляються від кліків по чипах/датах (перемальовка в шарі); під
+   `prefers-reduced-motion` їх немає взагалі — там keyframes підміняється на
+   `rm-opacity-fade`, який трансформи не має (див. § reduced motion нижче).
+
+   `backwards` лишаємо: він тримає `from`-стан до старту й гасить спалах. */
 .module-enter {
   animation: module-slide-in var(--motion-duration-base)
-    var(--motion-ease-standard) both;
+    var(--motion-ease-standard) backwards;
 }
 .hub-enter {
   animation: hub-slide-in var(--motion-duration-base)
-    var(--motion-ease-standard) both;
+    var(--motion-ease-standard) backwards;
 }
 .animate-onboarding-enter {
   animation: onboarding-enter var(--motion-duration-slow)
@@ -606,7 +624,9 @@
 @keyframes toast-enter {
   0% {
     opacity: 0;
-    transform: translateY(-12px) scale(0.95);
+    /* Знизу вгору: трей прикріплений до низу, і новий аркуш додається
+       останнім. Зсув угору заводив його поверх сусіда вище. */
+    transform: translateY(12px) scale(0.95);
   }
   100% {
     opacity: 1;
@@ -633,8 +653,8 @@
 }
 
 /*
- * Linear countdown bar for toasts that carry a recoverable action (undo
- * pattern). `animation-duration` is supplied inline by `<ToastRow>` so a
+ * Linear auto-dismiss countdown bar for every toast. `animation-duration`
+ * is supplied inline by `<ToastRow>` so a
  * single keyframe set works for any toast lifetime (3.5 s auto-dismiss,
  * 5 s undo). RESPONSE tier — one-shot, linear easing for accurate time
  * mapping; `animation-play-state` lets us pause on hover/focus without
@@ -791,22 +811,22 @@
     var(--motion-ease-overshoot) forwards;
 }
 
-/* ── Confetti fall / particle burst (CELEBRATE) ──────────────────────── */
-
-@keyframes confetti-fall {
-  0% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(100vh) rotate(720deg);
-    opacity: 0;
-  }
-}
-.animate-confetti-fall {
-  animation: confetti-fall var(--motion-duration-confetti-fall)
-    var(--motion-ease-accelerate) forwards;
-}
+/* ── Confetti particle burst (CELEBRATE) ─────────────────────────────── */
+/*
+ * AI-NOTE: `confetti-fall` / `.animate-confetti-fall` (a straight
+ * top-to-bottom fall variant) lived here with zero JSX consumers —
+ * removed 2026-09-12 (audit O1). Разом із ним прибрано й токен, який
+ * він єдиний читав: `--motion-duration-confetti-fall` у `theme.css`.
+ * Лишити токен означало б замінити одну мертвечину на іншу, а саме
+ * проти цього пункт O1 аудиту й спрямований.
+ *
+ * Не плутати з двома живими, і тут легко помилитись, бо імена
+ * перехрещені: keyframes `confetti-burst` (рядок ~453) живлять клас
+ * `.animate-confetti`, який читає `CelebrationModal`, а keyframes
+ * `confetti-particle-burst` нижче живлять клас `.animate-confetti-burst`,
+ * який читає `AnimatedCheckbox`. Тобто «burst» у назві keyframes і в
+ * назві класу вказують на РІЗНІ пари.
+ */
 
 @keyframes confetti-particle-burst {
   0% {
@@ -978,6 +998,64 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   КАСКАД ТИРІВ — підпис руху для чисел (анти-слоп П5, рішення власника
+   2026-08-06 на `mockups/product/motion.html`, варіант C).
+
+   Число зʼявляється ВІДРАЗУ, а тири вступають за вагою: гривні →
+   копійки → символ, крок 60 ms.
+
+   AI-CONTEXT: обрано саме це, а не лічильник, бо рух ЧИТАЄ ієрархію,
+   яку вже збудував П4 (гривні повним кеглем, копійки 0.64em, символ
+   0.72em) — типографіка й рух кажуть одне й те саме. Лічильник виглядає
+   однаково в будь-якому дашборді; каскад можливий лише там, де в числа
+   є тири.
+
+   AI-DANGER: крок 60 ms — НЕ токен, і це навмисно. Токени тривалості
+   міряють, скільки триває рух; тут же вимірюється ПАУЗА між трьома
+   рухами, і вона мусить лишатись помітно коротшою за сам рух (220 ms),
+   інакше каскад читається як три окремі появи, а не одна.
+   ═══════════════════════════════════════════════════════════════════ */
+@keyframes money-tier-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.money-tier {
+  animation: money-tier-in var(--motion-duration-base)
+    var(--motion-ease-decelerate) both;
+}
+.money-tier-2 {
+  animation-delay: 60ms;
+}
+.money-tier-3 {
+  animation-delay: 120ms;
+}
+
+/* Під `prefers-reduced-motion` глобальне правило нижче стискає САМУ
+   анімацію до 100 ms, але затримки не чіпає — каскад лишався б на 220 ms
+   сходинками. Гасимо їх тут: із вимкненим рухом тири мають зʼявитись
+   разом, а не по черзі. */
+@media (prefers-reduced-motion: reduce) {
+  /* Глобальне правило нижче підміняє keyframes лише класам `animate-*`,
+     а `.money-tier` під цей селектор не підпадає — зсув на 2px лишався б.
+     Тут гасимо і рух, і сходинки: із вимкненою анімацією тири мають
+     просто зʼявитись разом. */
+  .money-tier {
+    animation-name: rm-opacity-fade !important;
+  }
+  .money-tier-2,
+  .money-tier-3 {
+    animation-delay: 0ms !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Default — collapse every animated class to an opacity-only fade. */
   *,
@@ -1087,4 +1165,46 @@
 
 .animate-progress-indeterminate {
   animation: progress-indeterminate 1.4s linear infinite;
+}
+
+/* ── R2-V-1 / V-2 · Hub ↔ module view transitions ───────────────────── */
+/*
+ * The hub↔module swap runs inside `document.startViewTransition` (see
+ * `shared/lib/ui/viewTransition.ts`, invoked from `useHubNavigation`).
+ *
+ * V-1 — the root snapshots crossfade (browser default), tuned here to a
+ *        calm 260ms ease so the surface change reads as one motion rather
+ *        than a hard cut.
+ * V-2 — the tapped bento tile and the destination module header share a
+ *        `sgt-module-<id>` name, so the browser morphs the tile's bounds
+ *        into the header (container-transform) and back on exit.
+ *
+ * The JS util already bails out of `startViewTransition` under
+ * `prefers-reduced-motion`, but we defensively neutralise the animations
+ * in CSS too — both for the OS setting and the in-app
+ * `.simulate-reduced-motion` toggle — so a snapshot can never animate.
+ */
+::view-transition-group(root) {
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Shared-element morph: match the tile↔header container transform speed. */
+::view-transition-group(*) {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+.simulate-reduced-motion ::view-transition-group(*),
+.simulate-reduced-motion ::view-transition-old(*),
+.simulate-reduced-motion ::view-transition-new(*) {
+  animation: none !important;
 }

@@ -10,7 +10,7 @@ import { Button } from "./Button";
  * + example-preview. Респектує `prefers-reduced-motion: reduce` (анімації
  * вмикаються тільки під `motion-safe:`).
  *
- * **Tier-и (див. `docs/design/empty-states.md`):**
+ * **Tier-и (див. `docs/design/design/empty-states.md`):**
  *
  * - **Tier 1** — full-screen / hero, з action-CTA, частіше через
  *   `<ModuleEmptyState>`-обгортку (curated per-module копія).
@@ -23,13 +23,13 @@ import { Button } from "./Button";
  *
  * - Зовнішній контейнер має `role="status"` + `aria-live="polite"` +
  *   `aria-atomic="true"`, тому SR озвучує `title` + `description`
- *   одним повідомленням, коли empty-state з'являється динамічно
+ *   одним повідомленням, коли empty-state зʼявляється динамічно
  *   (наприклад, після фільтра).
  * - Іконки та ілюстрації стоять у `aria-hidden`-обгортках — SR не
  *   дублює декоративну графіку у live-region-озвучці.
  * - `action`-кнопка фокус НЕ перехоплює на mount; коли користувач
  *   до неї tab-неться, `<Button>` показує власний `focus-visible:ring`
- *   (Hard Rule #14). Для icon-only action-у обов'язково передай
+ *   (Hard Rule #14). Для icon-only action-у обовʼязково передай
  *   `aria-label`.
  *
  * **API-нюанс:** якщо передати і `icon`, і `illustration` —
@@ -117,7 +117,7 @@ export const WithIconOnlyAction: Story = {
 export const Compact: Story = {
   args: {
     icon: <Icon name="search" />,
-    title: "Нічого не знайдено",
+    title: "Нічого не знайшов",
     description: "Спробуй інший запит.",
     compact: true,
     action: (
@@ -129,15 +129,40 @@ export const Compact: Story = {
 };
 
 /**
+ * **Empty-state як ціла сторінка** — коли `EmptyState` є єдиним вмістом
+ * маршруту (404, повноекранна помилка), він мусить нести заголовок
+ * сторінки: інакше маршрут їде взагалі без `h1`. Для цього — `titleAs`.
+ *
+ * За замовчуванням `title` рендериться як `<p>`, бо у вкладеному випадку
+ * заголовок уже належить сторінці, і зайвий `h1`/`h2` зламав би аутлайн.
+ */
+export const AsPageHeading: Story = {
+  args: {
+    size: "lg",
+    variant: "info",
+    eyebrow: "404",
+    title: "Сторінку не знайдено",
+    titleAs: "h1",
+    description:
+      "Здається, ця адреса вже не існує. Перевір посилання або повернись на головну.",
+    primaryAction: (
+      <Button variant="primary" size="lg">
+        На головну
+      </Button>
+    ),
+  },
+};
+
+/**
  * **Tier 2 / compact, без action** — empty-state суто описовий, бо
  * primary-CTA уже видно на тому самому екрані (див. anti-pattern у
- * `docs/design/empty-states.md` — не дублюємо кнопку).
+ * `docs/design/design/empty-states.md` — не дублюємо кнопку).
  */
 export const CompactNoAction: Story = {
   args: {
     icon: <Icon name="dumbbell" />,
     title: "Поки немає шаблонів",
-    description: "Створи свій перший — кнопка вище.",
+    description: "Створи свій перший, кнопка вище.",
     compact: true,
     module: "fizruk",
   },
@@ -150,7 +175,7 @@ export const CompactNoAction: Story = {
 export const ModuleFinyk: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="finyk" size={120} />,
-    title: "Жодної транзакції",
+    title: "Жодної операції",
     description: "Підключи Mono або додай витрату вручну, щоб почати облік.",
     action: (
       <Button variant="finyk" size="md">
@@ -168,7 +193,7 @@ export const ModuleFizruk: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="fizruk" size={120} />,
     title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
+    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
     action: (
       <Button variant="fizruk" size="md">
         Почати тренування
@@ -185,7 +210,7 @@ export const ModuleRoutine: Story = {
   args: {
     illustration: <ModuleEmptyIllustration module="routine" size={120} />,
     title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії — серія днів покаже правду.",
+    description: "Відстежуй щоденні дії, серія днів покаже правду.",
     action: (
       <Button variant="routine" size="md">
         Створити звичку
@@ -217,7 +242,7 @@ export const ModuleNutrition: Story = {
  * **З hint + example-preview** — onboarding-сценарій, коли користувач
  * ще не знає, що саме вводити. Hint живе під CTA, example-preview —
  * у dashed-рамці імітує справжній рядок даних. Hint навмисно НЕ
- * дублює description (див. `docs/design/empty-states.md`) — це
+ * дублює description (див. `docs/design/design/empty-states.md`) — це
  * корисна побіжна нотатка, а не повтор «тут зараз порожньо».
  */
 export const WithHintAndExample: Story = {
@@ -225,7 +250,7 @@ export const WithHintAndExample: Story = {
     icon: <Icon name="lightbulb" />,
     title: "Готовий до першої цілі?",
     description:
-      "Додай ціль — і Sergeant порахує крок-за-кроком, як її досягти.",
+      "Додай ціль: і Sergeant порахує крок-за-кроком, як її досягти.",
     hint: "Ціль = сума + дата. Наприклад, «зекономити 50 000 грн до 31.12».",
     examplePreview: (
       <div className="text-sm text-text">

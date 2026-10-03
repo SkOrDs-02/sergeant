@@ -6,10 +6,35 @@
 // Hard Rule #10: every file/doc declares its status via a `@status` JSDoc tag
 // or a `> **Last validated:**` / `> **Status:**` markdown header.
 //
-// This script scans `apps/web/src/**/*.{ts,tsx}` for files that lack a
-// lifecycle marker and reports the gap count. It is intentionally NON-BLOCKING
-// (exits 0) while the marker count is high — the `--fail-on-violations`
-// flag promotes it to a blocking gate once the burn-down reaches zero.
+// Що цей скрипт МІРЯЄ і чого він НЕ вимагає (звірка 2026-09-19).
+//
+// Скрипт рахує, скільки файлів `apps/web/src/**/*.{ts,tsx}` несуть ЯВНИЙ
+// lifecycle-маркер. Це інформаційний показник, не список порушень — і ось
+// чому. Канонічне тіло правила
+// (`docs/governance/governance/rules/10-lifecycle-markers.md`) каже прямо:
+//
+//   «Якщо файл/док не має маркера, вважай його `Active` (дефолт)»,
+//
+// а таблиця тегів має окремий рядок «_(no tag)_ → Active. Default for
+// everything else». Тобто відсутність маркера — це ДОЗВОЛЕНИЙ стан, а не
+// порушення: маркер обов'язковий лише для НЕ-Active статусів
+// (`@scaffolded`, `@experimental`, `@deprecated`), бо саме вони змінюють
+// поведінку knip і dead-code-прибирання.
+//
+// Доти цей файл друкував «Missing markers: 805», «Coverage: 40.9%» і
+// «Burn-down target: 2026-Q3». Жоден канонічний документ тієї дати не ніс:
+// ні правило, ні `hard-rules.json` — вона жила лише в коментарях тут і в
+// кроці CI. Тобто гейт звітував про недосягнення дедлайну, якого правило не
+// ставило, за вимогою, якої правило не висуває. Розбір — PR-3 спеки
+// `docs/work/specs/docs-code-drift-2026-09-19.md`.
+//
+// Чому скрипт лишається. Число все одно корисне як сигнал: різке падіння
+// покриття означає, що велика партія файлів приїхала без жодних роздумів
+// про статус. Але це спостереження, не борг.
+//
+// `--fail-on-violations` лишається ВИМКНЕНИМ. Вмикати його можна лише ПІСЛЯ
+// того, як правило #10 змінять так, щоб явний маркер став обов'язковим для
+// всіх файлів — інакше гейт валитиме код, який правилу відповідає.
 //
 // Marker formats accepted:
 //   TS/TSX (JSDoc):
@@ -26,8 +51,7 @@
 //   node scripts/docs/check-lifecycle-markers.mjs --fail-on-violations  # CI gate
 //   node scripts/docs/check-lifecycle-markers.mjs --json       # machine-readable
 //
-// See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 4.
-// Burn-down target: 2026-Q3. See docs/04-governance/governance/rules/10-lifecycle-markers.md.
+// Канон правила: docs/governance/governance/rules/10-lifecycle-markers.md.
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, extname } from "node:path";
@@ -129,38 +153,29 @@ if (JSON_OUTPUT) {
   );
   process.stdout.write(`  Total files scanned : ${total}\n`);
   process.stdout.write(`  Files with markers  : ${total - violationCount}\n`);
-  process.stdout.write(`  Missing markers     : ${violationCount}\n`);
-  process.stdout.write(`  Coverage            : ${coveragePercent}%\n`);
+  process.stdout.write(`  Без явного маркера  : ${violationCount}\n`);
+  process.stdout.write(`  Покриття маркерами  : ${coveragePercent}%\n`);
   if (violationCount > 0) {
     process.stdout.write(
-      `\n  Burn-down target: 2026-Q3. Add /** @status Active */ (or Scaffolded / Deprecated)\n`,
+      `\n  Це СПОСТЕРЕЖЕННЯ, не список порушень. Правило #10 каже: файл без\n` +
+        `  маркера вважається Active — тобто це дозволений стан. Маркер\n` +
+        `  обов'язковий лише для НЕ-Active статусів (@scaffolded /\n` +
+        `  @experimental / @deprecated), бо саме вони міняють поведінку knip.\n` +
+        `  Канон: docs/governance/governance/rules/10-lifecycle-markers.md.\n\n`,
     );
-    process.stdout.write(
-      `  to each file's top-level JSDoc. See docs/04-governance/governance/rules/10-lifecycle-markers.md.\n\n`,
-    );
-    if (!JSON_OUTPUT) {
-      // Show first 20 as a sample.
-      const sample = violations.slice(0, 20);
-      for (const f of sample) {
-        process.stdout.write(`  MISSING: ${f}\n`);
-      }
-      if (violations.length > 20) {
-        process.stdout.write(`  … and ${violations.length - 20} more.\n`);
-      }
-      process.stdout.write("\n");
-    }
   } else {
-    process.stdout.write(`  All files have lifecycle markers.\n\n`);
+    process.stdout.write(`  Усі файли мають явний маркер.\n\n`);
   }
 }
 
 if (FAIL_ON_VIOLATIONS && violationCount > 0) {
   process.stderr.write(
-    `\ncheck-lifecycle-markers: ${violationCount} file(s) missing lifecycle markers. ` +
-      `Run without --fail-on-violations to see the full list.\n`,
+    `\ncheck-lifecycle-markers: ${violationCount} файл(ів) без явного маркера.\n` +
+      `УВАГА: правило #10 такого не вимагає (без маркера = Active). Вмикати\n` +
+      `--fail-on-violations можна лише після того, як правило змінять.\n`,
   );
   process.exit(1);
 }
 
-// Non-blocking exit — violations are advisory during burn-down.
+// Вихід 0 завжди: число інформаційне, порушенням правила воно не є.
 process.exit(0);

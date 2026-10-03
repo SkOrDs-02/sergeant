@@ -1,11 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
   summarizeRows,
-  avgFromSummary,
   topMeals,
   mealTypeBreakdown,
+  mealTypeKcalForDay,
+  mealsByTypeForDay,
   getRowsForRange,
-  type RowsSummary,
 } from "./nutritionStats";
 import type { DaySummary, NutritionLog } from "./nutritionStorage";
 
@@ -19,8 +19,10 @@ function makeDay(overrides: Partial<DaySummary> = {}): DaySummary {
     fat_g: 0,
     carbs_g: 0,
     mealCount: 0,
+    loggedMealTypesCount: 0,
     hasMeals: false,
     hasAnyMacros: false,
+    estimatedKcalShare: 0,
     ...overrides,
   };
 }
@@ -107,64 +109,15 @@ describe("nutrition/summarizeRows", () => {
   });
 });
 
-// ─── avgFromSummary ───────────────────────────────────────────────────────────
-
-describe("nutrition/avgFromSummary", () => {
-  it("divides totals by daysWithAnyMacros", () => {
-    const sum: RowsSummary = {
-      days: 3,
-      kcal: 6000,
-      protein_g: 300,
-      fat_g: 210,
-      carbs_g: 600,
-      daysWithMeals: 3,
-      daysWithAnyMacros: 3,
-      nonEmptyDays: 3,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.kcal).toBeCloseTo(2000);
-    expect(avg.protein_g).toBeCloseTo(100);
-    expect(avg.denom).toBe(3);
-  });
-
-  it("uses denom=1 when daysWithAnyMacros is 0 to avoid division by zero", () => {
-    const sum: RowsSummary = {
-      days: 5,
-      kcal: 0,
-      protein_g: 0,
-      fat_g: 0,
-      carbs_g: 0,
-      daysWithMeals: 0,
-      daysWithAnyMacros: 0,
-      nonEmptyDays: 0,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.denom).toBe(1);
-    expect(avg.kcal).toBe(0);
-  });
-
-  it("ignores empty days without macros in the average", () => {
-    // 2 days with macros, 3 empty days → average must not be diluted by the 3 empty
-    const sum: RowsSummary = {
-      days: 5,
-      kcal: 4000,
-      protein_g: 200,
-      fat_g: 140,
-      carbs_g: 400,
-      daysWithMeals: 2,
-      daysWithAnyMacros: 2,
-      nonEmptyDays: 2,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.kcal).toBeCloseTo(2000);
-    expect(avg.denom).toBe(2);
-  });
-});
+// avgFromSummary removed (unification-modules.md #1.12): averages now come
+// from the canon `calcNutritionPeriodAverages` (packages/nutrition-domain),
+// whose denominator is `daysLogged` (days with ≥1 meal), not
+// `daysWithAnyMacros`. See its own test suite in nutrition-domain.
 
 // ─── topMeals ─────────────────────────────────────────────────────────────────
 
 describe("nutrition/topMeals", () => {
-  // Намірено неповні `Meal` — у цих тестах ми дивимось лише на ім'я/kcal,
+  // Намірено неповні `Meal` — у цих тестах ми дивимось лише на імʼя/kcal,
   // решта полів `Meal` (id, time, mealType, label, …) функції `topMeals`
   // нерелевантні. Каст через `unknown` тримає вхід як `NutritionLog`, не
   // переписуючи фікстури під повний тип.
@@ -270,6 +223,71 @@ describe("nutrition/mealTypeBreakdown", () => {
   });
 });
 
+// ─── mealTypeKcalForDay ───────────────────────────────────────────────────────
+
+describe("nutrition/mealTypeKcalForDay", () => {
+  const log = {
+    "2026-01-10": {
+      meals: [
+        { mealType: "breakfast", macros: { kcal: 400 } },
+        { mealType: "lunch", macros: { kcal: 600 } },
+        { mealType: "lunch", macros: { kcal: 150 } },
+      ],
+    },
+    "2026-01-09": {
+      meals: [{ mealType: "dinner", macros: { kcal: 900 } }],
+    },
+  } as unknown as NutritionLog;
+
+  it("sums kcal per meal type for exactly one day", () => {
+    const result = mealTypeKcalForDay(log, "2026-01-10");
+    expect(result).toEqual({
+      breakfast: 400,
+      lunch: 750,
+      dinner: 0,
+      snack: 0,
+    });
+  });
+
+  it("ignores other days", () => {
+    const result = mealTypeKcalForDay(log, "2026-01-10");
+    expect(result.dinner).toBe(0); // dinner kcal lives on 2026-01-09
+  });
+
+  it("falls back to mealTypeFromLabel when mealType is missing/invalid", () => {
+    const logWithLabelOnly = {
+      "2026-01-10": {
+        meals: [
+          { label: "Вечеря", macros: { kcal: 500 } },
+          { label: "Невідомий тип", macros: { kcal: 80 } },
+        ],
+      },
+    } as unknown as NutritionLog;
+    const result = mealTypeKcalForDay(logWithLabelOnly, "2026-01-10");
+    expect(result.dinner).toBe(500);
+    // mealTypeFromLabel defaults unrecognized labels to "snack"
+    expect(result.snack).toBe(80);
+  });
+
+  it("returns all-zero record for a day with no meals", () => {
+    expect(mealTypeKcalForDay(log, "2026-03-01")).toEqual({
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      snack: 0,
+    });
+  });
+
+  it("returns all-zero record for a null log", () => {
+    expect(mealTypeKcalForDay(null, "2026-01-10")).toEqual({
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      snack: 0,
+    });
+  });
+});
+
 // ─── getRowsForRange ──────────────────────────────────────────────────────────
 
 describe("nutrition/getRowsForRange", () => {
@@ -289,5 +307,45 @@ describe("nutrition/getRowsForRange", () => {
     const rows = getRowsForRange({} as never, "2026-01-10", 2);
     expect(rows.length).toBe(2);
     expect(rows.every((r) => r.kcal === 0)).toBe(true);
+  });
+});
+
+// ─── mealsByTypeForDay ────────────────────────────────────────────────────────
+
+describe("nutrition/mealsByTypeForDay", () => {
+  const log = {
+    "2026-01-10": {
+      meals: [
+        { id: "a", mealType: "breakfast", macros: { kcal: 400 } },
+        { id: "b", mealType: "lunch", macros: { kcal: 600 } },
+        { id: "c", mealType: "lunch", macros: { kcal: 150 } },
+        // Легасі-запис без валідного `mealType` — тип читається з `label`.
+        { id: "d", label: "Вечеря", macros: { kcal: 500 } },
+        // Запис без макросів узагалі: нуль ккал, але він ІСНУЄ.
+        { id: "e", mealType: "snack" },
+      ],
+    },
+  } as unknown as NutritionLog;
+
+  it("розкладає записи дня за типом прийому", () => {
+    const result = mealsByTypeForDay(log, "2026-01-10");
+    expect(result.breakfast.map((m) => m.id)).toEqual(["a"]);
+    expect(result.lunch.map((m) => m.id)).toEqual(["b", "c"]);
+    expect(result.dinner.map((m) => m.id)).toEqual(["d"]);
+  });
+
+  it("лічить запис без макросів — саме цим він відрізняється від ккал", () => {
+    // Сегмент hero вирішує «порожній чи ні» за цією кількістю, а не за
+    // сумою калорій: інакше нерозпізнане фото читалось би як «не записано»,
+    // а тап однаково відкривав би аркуш із рядком.
+    const result = mealsByTypeForDay(log, "2026-01-10");
+    expect(result.snack.length).toBe(1);
+    expect(mealTypeKcalForDay(log, "2026-01-10").snack).toBe(0);
+  });
+
+  it("повертає чотири порожні списки для відсутнього дня і для null", () => {
+    const empty = { breakfast: [], lunch: [], dinner: [], snack: [] };
+    expect(mealsByTypeForDay(log, "2026-01-09")).toEqual(empty);
+    expect(mealsByTypeForDay(null, "2026-01-10")).toEqual(empty);
   });
 });

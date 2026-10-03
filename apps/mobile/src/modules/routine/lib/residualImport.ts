@@ -1,7 +1,7 @@
 /**
  * Boot-time residual-import helper for the mobile Routine MMKV key.
  *
- * Stage 8 PR #057r-tombstone-mobile of `docs/planning/storage-roadmap.md`
+ * Stage 8 PR #057r-tombstone-mobile of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * (mobile parity for `apps/web/src/modules/routine/lib/residualImport.ts`).
  * Reads any leftover routine state from the now-deprecated MMKV
  * `ROUTINE_STORAGE_KEY` (`hub_routine_v1`) blob, imports it into the
@@ -28,8 +28,8 @@ import {
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyRoutineDualWriteOps } from "./dualWrite/adapter";
-import { diffRoutineDualWriteOps } from "./dualWrite/diff";
+import { applyRoutineDualWriteOps } from "./sqliteWriter/adapter";
+import { diffRoutineDualWriteOps } from "./sqliteWriter/diff";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 

@@ -44,12 +44,9 @@ export interface ChatMessage {
   [key: string]: unknown;
 }
 
-const INTRO_TEXT =
-  "Привіт! Я твій особистий асистент. Запитуй про фінанси (Фінік), тренування (Фізрук), звички (Рутина) або харчування. На мобільному поки що працює текстовий чат — голос і tool-actions в роботі.";
-
 export function newMsgId(): string {
   const rnd = globalThis.crypto?.randomUUID?.();
-  return rnd ?? `m_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  return rnd ?? `m_${Date.now()}_${crypto.randomUUID()}`;
 }
 
 export function makeAssistantMsg(text: string): ChatMessage {
@@ -60,10 +57,20 @@ export function makeUserMsg(text: string): ChatMessage {
   return { id: newMsgId(), role: "user", text };
 }
 
+/**
+ * AI-DANGER: НЕ підставляй сюди дефолтне повідомлення для порожнього
+ * масиву. Саме це й робило `ChatEmpty` (чотири suggestion-чіпи по модулях)
+ * недосяжним НАЗАВЖДИ: усі чотири шляхи до `messages` ідуть через цю
+ * функцію, тож `messages.length === 0` у `HubChatBody` не наставало
+ * ніколи. Той самий дефект виправлено у вебі знахідкою PR-A7; тут він
+ * дожив довше, бо копія логіки не отримує виправлень оригіналу (PR-X5).
+ *
+ * Непорожні масиви мапляться як раніше — збережені сесії з давнім
+ * привітанням лишаються недоторканими, воно просто стає звичайним
+ * повідомленням. Регресію стережуть тести поруч.
+ */
 export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return [makeAssistantMsg(INTRO_TEXT)];
-  }
+  if (!Array.isArray(raw)) return [];
   return raw.map(
     (m: Partial<ChatMessage> & Record<string, unknown>, i): ChatMessage => ({
       role: "assistant" as ChatRole,
@@ -71,7 +78,7 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
       ...m,
       id:
         (typeof m.id === "string" && m.id) ||
-        `legacy_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        `legacy_${i}_${Date.now()}_${crypto.randomUUID()}`,
     }),
   );
 }
@@ -118,7 +125,7 @@ export function friendlyApiError(status: number, message?: string): string {
 export function friendlyChatError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/failed to fetch|network|load failed/i.test(msg)) {
-    return "Немає з'єднання з мережею або сервер недоступний.";
+    return "Немає зʼєднання з мережею або сервер недоступний.";
   }
   return `Помилка: ${msg}`;
 }

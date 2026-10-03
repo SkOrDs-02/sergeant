@@ -17,7 +17,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createElement, type ReactNode } from "react";
 import type { Habit } from "@sergeant/routine-domain";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
-import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
+import type {
+  GoalPeriod,
+  NutritionLog,
+  NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import {
   __setRoutineSqliteStateCacheForTests,
   __setRoutineSqliteCompletionsCacheForTests,
@@ -229,10 +233,33 @@ function seedFizruk(
 }
 
 /** Seed the canonical nutrition SQLite cache (log + optional prefs). */
-function seedNutrition(log: unknown, prefs?: unknown): void {
+function seedNutrition(
+  log: unknown,
+  prefs?: unknown,
+  periods?: GoalPeriod[],
+): void {
+  const target = (prefs as NutritionPrefs | undefined)?.dailyTargetKcal ?? null;
   __setNutritionSqliteCacheForTests({
     log: log as NutritionLog,
     ...(prefs !== undefined ? { prefs: prefs as NutritionPrefs } : {}),
+    goalPeriods:
+      periods ??
+      (target && target > 0
+        ? [
+            {
+              id: "test-goal",
+              effectiveFrom: "2000-01-01",
+              kcal: target,
+              proteinG: null,
+              fatG: null,
+              carbsG: null,
+              waterMl: null,
+              origin: "manual",
+              createdAt: "2000-01-01T00:00:00.000Z",
+              deletedAt: null,
+            },
+          ]
+        : []),
   });
 }
 
@@ -327,6 +354,40 @@ describe("aggregateNutrition", () => {
     expect(result!.daysLogged).toBe(2);
     expect(result!.avgKcal).toBe(Math.round((1000 + 1500) / 2)); // 1250
     expect(result!.targetKcal).toBe(2000);
+  });
+
+  it("does not repaint a past week after a later goal is appended", async () => {
+    const log = {
+      "2025-04-07": { meals: [{ macros: { kcal: 2000 } }] },
+    };
+    const oldGoal: GoalPeriod = {
+      id: "old",
+      effectiveFrom: "2025-04-01",
+      kcal: 2400,
+      proteinG: null,
+      fatG: null,
+      carbsG: null,
+      waterMl: null,
+      origin: "manual",
+      createdAt: "2025-04-01T00:00:00.000Z",
+      deletedAt: null,
+    };
+    const laterGoal: GoalPeriod = {
+      ...oldGoal,
+      id: "later",
+      effectiveFrom: "2025-05-01",
+      kcal: 1800,
+      createdAt: "2025-05-01T00:00:00.000Z",
+    };
+    const { aggregateNutrition } = await import("./useWeeklyDigest");
+
+    seedNutrition(log, undefined, [oldGoal]);
+    const before = aggregateNutrition("2025-04-07");
+    seedNutrition(log, undefined, [oldGoal, laterGoal]);
+    const after = aggregateNutrition("2025-04-07");
+
+    expect(after).toEqual(before);
+    expect(after?.targetKcal).toBe(2400);
   });
 });
 
@@ -483,6 +544,31 @@ describe("useWeeklyDigest hook", () => {
       "hub_weekly_digest_v1_2025-04-07",
       expect.anything(),
     );
+  });
+
+  it("insufficientData: сервер відповів code=INSUFFICIENT_DATA → чесний прапорець, а НЕ generic error", async () => {
+    // Дзеркалить форму ApiError, яку реально кидає httpClient (`kind`,
+    // `body`) — мокнутий `isApiError` вище перевіряє лише наявність `kind`.
+    mockGenerateDigest.mockRejectedValue({
+      kind: "http",
+      status: 400,
+      body: { error: "Замало даних", code: "INSUFFICIENT_DATA" },
+    });
+
+    const { useWeeklyDigest } = await import("./useWeeklyDigest");
+
+    const { result } = renderHook(() => useWeeklyDigest("2025-04-07"), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await result.current.generate();
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    expect(result.current.insufficientData).toBe(true);
+    // §6.2: недостатність даних — чесна відповідь, не помилка. UI не має
+    // рендерити error-банер поряд із мережевими/5xx збоями.
+    expect(result.current.error).toBeNull();
   });
 
   it("isCurrentWeek is true when weekKey matches getWeekKey()", async () => {

@@ -60,7 +60,7 @@ export function HeatmapPage({
         <Text className="text-[22px] font-bold text-fg flex-1">Хітмеп</Text>
       </View>
       <Text className="px-4 text-sm text-fg-muted leading-snug mb-2">
-        Активність виконання звичок за останній рік. Тап по клітинці — деталі
+        Активність виконання звичок за останній рік. Тап по клітинці: деталі
         дня.
       </Text>
 
@@ -91,7 +91,7 @@ export function HeatmapPage({
                 Ще немає виконаних днів
               </Text>
               <Text className="text-xs text-fg-muted mt-1 text-center">
-                Відмічай виконання звичок на вкладці «Календар» — тут зʼявиться
+                Відмічай виконання звичок на вкладці «Календар», тут зʼявиться
                 карта активності.
               </Text>
             </View>

@@ -46,7 +46,7 @@ describe("ValueProgressBar (S3.3a)", () => {
     expect(bar).toHaveAttribute("aria-valuenow", "0");
     expect(bar).toHaveAttribute(
       "aria-label",
-      "«Пити воду» — через 30 днів автоматично — Зараз: 0/30",
+      "«Пити воду» через 30 днів автоматично · Зараз: 0/30",
     );
   });
 
@@ -75,7 +75,7 @@ describe("ValueProgressBar (S3.3a)", () => {
     );
     expect(screen.getByTestId("value-progress-bar-routine")).toHaveAttribute(
       "aria-label",
-      "«Своя звичка» — через 30 днів автоматично — Зараз: 0/30",
+      "«Своя звичка» через 30 днів автоматично · Зараз: 0/30",
     );
   });
 
@@ -110,7 +110,7 @@ describe("ValueProgressBar (S3.3a)", () => {
     expect(bar).toBeInTheDocument();
     expect(bar).toHaveAttribute(
       "aria-label",
-      "Підтримка ваги — 0 страв сьогодні",
+      "Підтримка ваги · 0 страв сьогодні",
     );
   });
 
@@ -123,7 +123,7 @@ describe("ValueProgressBar (S3.3a)", () => {
     );
     const bar = screen.getByTestId("value-progress-bar-fizruk");
     expect(bar).toBeInTheDocument();
-    expect(bar).toHaveAttribute("aria-label", "3×/тиждень — 0 з 3");
+    expect(bar).toHaveAttribute("aria-label", "3×/тиждень · 0 з 3");
   });
 
   it("orders bars routine → finyk → nutrition → fizruk (S3.3b)", () => {
@@ -224,7 +224,7 @@ describe("ValueProgressBar — outcome-first copy (S6.6 audit-guard)", () => {
     /\bstreak\b/i,
     // The exact pre-S6.6 routine label / current — should never reappear
     // verbatim, even if a refactor accidentally restores them.
-    /Звичка «[^»]+» — \d+\/\d+ днів/,
+    /Звичка «[^»]+» · \d+\/\d+ днів/,
   ];
 
   it("routine bar leads with outcome («автоматично») — not «Серія днів»", () => {

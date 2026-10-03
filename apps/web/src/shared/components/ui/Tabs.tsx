@@ -101,13 +101,19 @@ const VARIANT_UNDERLINE: Record<TabsVariant, string> = {
 // settings group switcher measured 4.28:1 in HC). Module variants keep
 // their dark surface-tint override; only the text token changes.
 const VARIANT_PILL: Record<TabsVariant, string> = {
-  brand: "bg-brand-soft text-brand-soft-fg",
-  finyk: "bg-finyk-soft text-finyk-soft-fg dark:bg-finyk-surface-dark/15",
-  fizruk: "bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk-surface-dark/15",
+  // `border-control`: вибраний піл (`brand-soft` на `panelHi`) відрізнявся від
+  // сусідів лише 1.09-1.44:1, а стан мусить читатись ≥3:1 (аудит 2026-10-01, A4).
+  brand: "border-control bg-brand-soft text-brand-soft-fg",
+  // Модульні піли: тонований фон + контур `{m}-edge` (A4, рішення власника
+  // 2026-10-01) — той самий вибір, що в `Segmented`.
+  finyk:
+    "border-finyk-edge bg-finyk-soft text-finyk-soft-fg dark:bg-finyk-surface-dark/15",
+  fizruk:
+    "border-fizruk-edge bg-fizruk-soft text-fizruk-soft-fg dark:bg-fizruk-surface-dark/15",
   routine:
-    "bg-routine-surface text-routine-soft-fg dark:bg-routine-surface-dark/15",
+    "border-routine-edge bg-routine-surface text-routine-soft-fg dark:bg-routine-surface-dark/15",
   nutrition:
-    "bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition-surface-dark/15",
+    "border-nutrition-edge bg-nutrition-soft text-nutrition-soft-fg dark:bg-nutrition-surface-dark/15",
 };
 
 // `brand` tabs use the semantic `ring-focus` token so the keyboard focus
@@ -123,8 +129,8 @@ const VARIANT_RING: Record<TabsVariant, string> = {
 };
 
 const SIZE: Record<TabsSize, string> = {
-  sm: "h-9 px-3 text-xs",
-  md: "h-11 px-4 text-sm",
+  sm: "h-9 px-3 text-style-label",
+  md: "h-11 px-4 text-style-label",
 };
 
 export function Tabs<V extends string = string>({
@@ -215,7 +221,12 @@ export function Tabs<V extends string = string>({
           "focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
           VARIANT_RING[variant],
           SIZE[size],
-          fill && "flex-1 min-w-0",
+          // `flex-1` без `min-w-0`: таби розтягуються рівно, поки є місце, але
+          // НЕ стискаються вужче за власний підпис. `min-w-0` знімав нижню
+          // межу, тож на 320px «Додатково» різалось (66→57px), хоча контейнер
+          // у HubSettingsPage має `overflow-x-auto` і задуманий скролитись.
+          // Браузерний аудит 2026-08-26.
+          fill && "flex-1",
           item.disabled && "opacity-50 cursor-not-allowed",
         );
 
@@ -255,7 +266,12 @@ export function Tabs<V extends string = string>({
             className={cn(commonClasses, styleClasses, tabsClassName)}
           >
             {item.icon}
-            <span className="truncate">{item.label}</span>
+            {/* Без `truncate`: `overflow:hidden` обнуляє automatic minimum size
+                flex-елемента, тож таб стискався ВУЖЧЕ за власний підпис навіть
+                після зняття `min-w-0` («Додатково» 66→57px на 320px). Підписи
+                табів короткі; якщо ряд не влазить — його скролить
+                `overflow-x-auto` контейнера, як і задумано. */}
+            <span className="whitespace-nowrap">{item.label}</span>
             {item.badge}
           </button>
         );

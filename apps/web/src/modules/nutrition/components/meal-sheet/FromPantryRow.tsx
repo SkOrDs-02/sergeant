@@ -1,12 +1,14 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-11
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import type { PantryItem } from "@sergeant/nutrition-domain";
+import { formatPantryQty } from "../../lib/formatPantryQty";
+import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { latestPackGrams, type PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
+import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { messages } from "@shared/i18n/uk";
 
 interface FromPantryRowProps {
@@ -15,6 +17,31 @@ interface FromPantryRowProps {
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   setForm: Dispatch<SetStateAction<MealFormState>>;
   setFoodQuery: Dispatch<SetStateAction<string>>;
+  /**
+   * Прификсовує вагу порції фасуванням з найсвіжішого чека Сільпо
+   * (`latestPackGrams`), коли позицію обрано. 2026-09-11: замінило окремий
+   * рядок «З чека» — вага фасування переїхала на джерело комори
+   * (`PantryItemSource.packGrams`, `useSilpoPantryReplenish.ts`).
+   */
+  setPickedGrams?: Dispatch<SetStateAction<string>> | undefined;
+  /**
+   * «Позицію комори обрано» — запускає автопідбір продукту за назвою
+   * (`useSourceAutoPick`). Без нього прийом із комори зберігався без КБЖУ:
+   * `pickedFood` лишався `null`, картка продукту не монтувалась, а
+   * редактор макросів відкривався порожнім (N1).
+   *
+   * `packGrams` іде другим аргументом навмисно: коли фасування відоме,
+   * автопідбір НЕ має підставляти типову порцію каталогу. Вага з чека
+   * точніша за довідникову здогадку, а автопідбір відповідає асинхронно
+   * і затер би її.
+   */
+  onPicked: (query: string, packGrams: number | null) => void;
+  /**
+   * Позицію зняли — відкладений автопідбір більше не потрібен. Без цього
+   * пошук, запущений тапом, відповів би вже після відмови й повернув би
+   * продукт, від якого людина відмовилась.
+   */
+  onCleared: () => void;
 }
 
 export function FromPantryRow({
@@ -23,56 +50,81 @@ export function FromPantryRow({
   setFromPantryItem,
   setForm,
   setFoodQuery,
+  setPickedGrams,
+  onPicked,
+  onCleared,
 }: FromPantryRowProps) {
   if (!pantryItems || pantryItems.length === 0) return null;
   return (
-    <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
-      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
-        {messages.nutrition.fromPantry}
-        {fromPantryItem && (
-          <span className="ml-2 text-nutrition-strong dark:text-nutrition font-semibold normal-case tracking-normal">
-            · {fromPantryItem}
-          </span>
-        )}
-      </SectionHeading>
-      <div className="flex flex-wrap gap-1.5">
-        {pantryItems.slice(0, 20).map((item) => {
-          const isActive = fromPantryItem === item.name;
-          return (
-            <button
-              key={item.name}
-              type="button"
-              onClick={() => {
-                if (isActive) {
-                  setFromPantryItem(null);
-                  setForm((s) => ({
-                    ...s,
-                    name: s.name === item.name ? "" : s.name,
-                  }));
-                } else {
-                  setFromPantryItem(item.name);
-                  setForm((s) => ({ ...s, name: item.name, err: "" }));
-                  setFoodQuery(item.name);
-                }
-              }}
-              className={cn(
-                "px-2.5 py-1.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
-                isActive
-                  ? "bg-nutrition-strong text-white border-nutrition"
-                  : "bg-panelHi text-text border-line hover:border-nutrition/50",
-              )}
-            >
-              {item.name}
-              {item.qty != null && (
-                <span className="ml-1 text-style-caption opacity-70">
-                  {item.qty}
-                  {item.unit || "г"}
-                </span>
-              )}
-            </button>
-          );
-        })}
+    <CollapsibleSection
+      storageKey={ADD_MEAL_SECTION_KEYS.pantry}
+      title={messages.nutrition.fromPantry}
+      defaultOpen
+      // Обране з комори мусить бути видно і згорнутим: інакше людина не
+      // побачить, що прийом уже прив'язаний до позиції, і списання
+      // виглядатиме як таке, що взялось нізвідки.
+      collapsedSubtitle={fromPantryItem ?? `${pantryItems.length} позицій`}
+      className="mb-4"
+    >
+      <div className="rounded-2xl border border-line bg-panel px-3 py-3">
+        <div className="flex flex-wrap gap-1.5">
+          {pantryItems.slice(0, 20).map((item) => {
+            const isActive = fromPantryItem === item.name;
+            // `unit` у коморі несе два різні сенси, бо приходить сирим із
+            // чека: одиницю виміру («кг») або фасування («0,25л»). Голе
+            // `{qty}{unit}` давало «20,25л» замість «2 × 0,25 л».
+            const qtyLabel = formatPantryQty(item.qty, item.unit || "г");
+            // Найсвіжіше джерело з відомою вагою фасування (чек Сільпо) —
+            // показуємо і підставляємо саме її, вона точніша здогадки за
+            // замовчуванням (100 г).
+            const packGrams = latestPackGrams(item.sources);
+            const secondaryLabel =
+              packGrams != null ? `${packGrams} г` : qtyLabel;
+            return (
+              <button
+                key={item.name}
+                type="button"
+                // Якір для e2e: у цьому ж кроці аркуша живуть швидкі чіпи з
+                // тими самими назвами продуктів, і пошук за текстом ловить
+                // їх замість комори — а вони йдуть іншим шляхом збереження,
+                // без списання.
+                data-testid="from-pantry-chip"
+                onClick={() => {
+                  if (isActive) {
+                    setFromPantryItem(null);
+                    setForm((s) => ({
+                      ...s,
+                      name: s.name === item.name ? "" : s.name,
+                    }));
+                    onCleared();
+                  } else {
+                    setFromPantryItem(item.name);
+                    setForm((s) => ({ ...s, name: item.name, err: "" }));
+                    setFoodQuery(item.name);
+                    if (packGrams != null) {
+                      setPickedGrams?.(String(packGrams));
+                    }
+                    onPicked(item.name, packGrams);
+                  }
+                }}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
+                  isActive
+                    ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
+                    : "bg-panelHi text-text border-line hover:border-nutrition/50",
+                )}
+              >
+                {item.name}
+                {secondaryLabel && (
+                  <span className="ml-1 text-style-caption opacity-70">
+                    {secondaryLabel}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </CollapsibleSection>
   );
 }

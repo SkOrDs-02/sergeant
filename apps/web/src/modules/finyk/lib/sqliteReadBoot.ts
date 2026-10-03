@@ -7,25 +7,50 @@
  * available. Steps:
  *
  *  1. Runs the finyk SQLite migrations so the tables exist.
- *  2. Stage 8 PR #057k-tombstone: imports any residual LS values
- *     (14 `finyk_*` domain keys + `finyk_show_balance_v1`) into the
- *     SQLite tables and deletes the LS keys. Idempotent; subsequent
- *     boots no-op once the LS keys are gone.
- *  3. Performs the initial `refreshFinykSqliteState()` so the cache
+ *  2. Performs the initial `refreshFinykSqliteState()` so the cache
  *     is warm before the first overlay read.
  *
  * Stage 8 PR #057k-flag — `feature.finyk.sqlite_v2.read_sqlite` was
  * graduated out of the registry; the boot now fires unconditionally
  * once a `userId` is available. Idempotent — calling it twice is a
  * no-op on the second call.
+ *
+ * Stage 8 PR #057k-tombstone originally also drained any residual LS
+ * values (14 `finyk_*` domain keys + `finyk_show_balance_v1`) into
+ * SQLite here via `importFinykResidualFromLs` (`./residualImport.ts`).
+ * That one-time pre-beta drain was removed 2026-08 once no testers were
+ * left with pre-SQLite LS data to migrate — see git history for the
+ * prior implementation.
+ *
+ * Між 2026-08 і 2026-09 тут стояв ще один крок — місток демо-сіду
+ * (`importFinykDemoSeed`) для ручних витрат, кастомних категорій і
+ * плану. Демо-режим знято 2026-09-17 разом із ним.
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
 import { migrateFinyk } from "./clientMigrate.js";
-import { importFinykResidualFromLs } from "./residualImport.js";
-import { refreshFinykSqliteState } from "./sqliteReader.js";
+import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
+import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader.js";
+import {
+  getCachedFinykSqliteState,
+  refreshFinykSqliteState,
+} from "./sqliteReader.js";
+
+// AI-CONTEXT: FTUX-детекція «чи є справжні записи» читає канонічний
+// warm-cache через реєстр (`core/onboarding/realEntryProbe`), а не
+// tombstone-нуті LS-ключі `finyk_manual_expenses_v1` / `finyk_tx_cache`.
+// Реєструємось на module-scope: цей файл вантажиться лише у складі
+// лінивого boot-кластера модуля, тож хабовий eager-чанк нових ребер не
+// отримує. Рахуємо обидва джерела — ручні витрати і дзеркало Mono:
+// підключений банк без жодної ручної витрати — це так само «не новий».
+registerRealEntryCounter(
+  "finyk",
+  () =>
+    getCachedFinykSqliteState().manualExpenses.length +
+    getVisibleFinykMonoMirrorState().transactions.length,
+);
 
 let booted = false;
 
@@ -46,13 +71,6 @@ export async function bootFinykSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateFinyk(client);
-
-    // Stage 8 PR #057k-tombstone: drain LS into SQLite before the
-    // first cache refresh so warm-up sees any leftover values that
-    // older builds wrote. Failures here are non-fatal -- the residual
-    // helper logs and falls back to a no-op so the boot can keep
-    // going on a fresh-install / clean-LS device.
-    await importFinykResidualFromLs(client, userId);
 
     await refreshFinykSqliteState(client, userId);
 

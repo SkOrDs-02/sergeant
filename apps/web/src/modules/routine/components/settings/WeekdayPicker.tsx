@@ -16,7 +16,7 @@ export const WeekdayPicker = memo(function WeekdayPicker({
   const labelId = useId();
   return (
     <div>
-      <p id={labelId} className="text-xs text-subtle mb-2">
+      <p id={labelId} className="text-style-caption text-subtle mb-2">
         {messages.routine.weekdays}
       </p>
       <div

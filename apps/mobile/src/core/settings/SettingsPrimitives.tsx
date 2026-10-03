@@ -20,8 +20,7 @@
  *    + button strip) the way the web version does. Mobile omits the
  *    web surround-border so a single group stays visually compact, and
  *    the section-label uses plain sentence-case typography (no
- *    uppercase eyebrow) so it does not trip the design-system
- *    `sergeant-design/no-eyebrow-drift` lint rule.
+ *    uppercase eyebrow) to match the shared settings typography contract.
  *
  * The web file also ships `ConfirmModal`; that is deliberately out of
  * scope here and will land with `NotificationsSection` / `FinykSection`

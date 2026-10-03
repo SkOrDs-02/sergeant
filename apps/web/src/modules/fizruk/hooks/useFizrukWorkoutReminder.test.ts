@@ -99,14 +99,13 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: true,
-        days: { [KYIV_DAY]: {} },
       }),
     );
     await flushMicrotasks();
 
     expect(showNotificationMock).toHaveBeenCalledTimes(1);
     const [title] = showNotificationMock.mock.calls[0]!;
-    expect(title).toBe("Фізрук — тренування");
+    expect(title).toBe("Фізрук: тренування");
   });
 
   it("does NOT fire when Kyiv HH:MM does not match the configured time", async () => {
@@ -118,7 +117,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 8,
         reminderMinute: 0,
         reminderEnabled: true,
-        days: { [KYIV_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -137,7 +135,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: true,
-        days: { [KYIV_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -160,7 +157,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 0,
         reminderMinute: 5,
         reminderEnabled: true,
-        days: { [KYIV_MIDNIGHT_DAY]: {} },
       }),
     );
     await flushMicrotasks();
@@ -178,7 +174,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: false,
-        days: {},
       }),
     );
     await flushMicrotasks();
@@ -194,7 +189,6 @@ describe("useFizrukWorkoutReminder — Kyiv-time bug fix", () => {
         reminderHour: 22,
         reminderMinute: 30,
         reminderEnabled: true,
-        days: {},
       }),
     );
     await flushMicrotasks();

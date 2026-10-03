@@ -4,13 +4,19 @@
 
 import type { Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
+import { budgetCategoryIds } from "../financeContext.js";
+import { formatNumberUk } from "@sergeant/shared";
+import { MCC_CATEGORIES } from "@sergeant/finyk-domain/constants";
 
+// Короткі підписи, які історично стояли тут. Усе, чого тут немає, береться з
+// канонічного каталогу (`MCC_CATEGORIES`) — доти «Благодійність», «Подорожі» чи
+// нова «Перекази людям» дали б у заголовку сирий id (`p2p_transfer`).
 const BUILTIN: Record<string, string> = {
   food: "Продукти",
   restaurant: "Кафе та ресторани",
   transport: "Транспорт",
   entertainment: "Розваги",
-  health: "Здоров'я",
+  health: "Здоровʼя",
   shopping: "Покупки",
   utilities: "Комунальні",
   subscriptions: "Підписки",
@@ -21,9 +27,9 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
   id: "finyk.frequent_no_budget",
   module: "finyk",
   evaluate(ctx) {
-    const limitIds = new Set(
-      ctx.limits.map((l) => l.categoryId).filter(Boolean) as string[],
-    );
+    // Категорія «покрита лімітом», якщо входить у БУДЬ-ЯКИЙ ліміт — зокрема
+    // як частина мульти-категорійного комбо.
+    const limitIds = new Set(ctx.limits.flatMap((l) => budgetCategoryIds(l)));
     let best: { id: string; count: number } | null = null;
     for (const [id, count] of ctx.canonicalTotalCount) {
       if (limitIds.has(id)) continue;
@@ -33,22 +39,26 @@ export const frequentNoBudgetRule: Rule<FinanceContext> = {
     if (!best) return [];
 
     const fromCustom = ctx.customCategories.find((c) => c.id === best!.id);
-    const label = fromCustom?.label || BUILTIN[best.id] || best.id;
+    const label =
+      fromCustom?.label ||
+      BUILTIN[best.id] ||
+      MCC_CATEGORIES.find((c) => c.id === best!.id)?.label ||
+      best.id;
     const thisMonthSpend = Math.round(
       ctx.canonicalMonthSpend.get(best.id) || 0,
     );
     const spendHint =
       thisMonthSpend > 0
-        ? `Цього місяця вже ${thisMonthSpend.toLocaleString("uk-UA")} ₴ — постав ліміт, щоб тримати руку на пульсі.`
-        : `Використано ${best.count} разів — встанови ліміт, щоб тримати все під контролем.`;
+        ? `Цього місяця вже ${formatNumberUk(thisMonthSpend)} ₴, постав ліміт, щоб тримати руку на пульсі.`
+        : `Використано ${best.count} разів, встанови ліміт, щоб тримати все під контролем.`;
 
     return [
       {
         id: `finyk_frequent_no_budget_${best.id}`,
         module: "finyk" as const,
         priority: 55,
-        icon: "📌",
-        title: `"${label}" — твоя найчастіша категорія без ліміту`,
+        icon: "bookmark",
+        title: `«${label}» – твоя найчастіша категорія без ліміту`,
         body: spendHint,
         action: "finyk",
       },

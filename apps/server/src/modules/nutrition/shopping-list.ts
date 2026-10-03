@@ -1,17 +1,24 @@
 import type { Request, Response } from "express";
+import type { z } from "zod";
+import { env } from "../../env/env.js";
 import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
+import { PANTRY_CATEGORY_LABELS } from "@sergeant/shared/data/pantryCategories";
 import { ShoppingListSchema } from "../../http/schemas.js";
 import { ValidationError, makeAiProviderError } from "../../obs/errors.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
-import { pantryPromptSection } from "../../lib/prompt-builders.js";
+  JSON_TEXT_STYLE_RULE,
+  pantryPromptSection,
+} from "../../lib/prompt-builders.js";
 import { NUTRITION_AI_TIMEOUTS_MS } from "./timeouts.js";
 
-type AnthropicErrorPayload = { error?: { message?: string } };
-type WithAnthropicKey = Request & { anthropicKey?: string };
+export type ShoppingListInput = z.infer<typeof ShoppingListSchema>;
+
+type WithAnthropicKey = Request & {
+  anthropicKey?: string;
+  user?: { id: string };
+};
 
 interface ShoppingItem {
   id: string;
@@ -26,8 +33,22 @@ interface ShoppingCategory {
   items: ShoppingItem[];
 }
 
-const SYSTEM = `Ти помічник з планування покупок і харчування. Відповідай ТІЛЬКИ українською.
+const L = PANTRY_CATEGORY_LABELS;
+
+/**
+ * Перелік категорій для промпту - ті самі мітки, що й у коморі (одна
+ * таксономія Харчування, рішення власника 2026-10-01). До цієї дати промпт
+ * просив у моделі власні 11 назв («Мʼясо та риба», «Хлібобулочні вироби»),
+ * яких комора не знала; клієнт зводить стару й нову відповідь до категорій
+ * комори (`@sergeant/nutrition-domain`, `migrateShoppingListCategories`).
+ */
+const CATEGORY_LIST = Object.values(L)
+  .map((label) => `"${label}"`)
+  .join(", ");
+
+export const SYSTEM = `Ти помічник з планування покупок і харчування. Відповідай ТІЛЬКИ українською.
 Поверни ТІЛЬКИ валідний JSON без markdown і без додаткового тексту.
+${JSON_TEXT_STYLE_RULE}
 
 Формат JSON:
 {
@@ -41,37 +62,48 @@ const SYSTEM = `Ти помічник з планування покупок і 
   ]
 }
 
-Категорії (використовуй лише доречні):
-"М'ясо та риба", "Молочні продукти", "Овочі та гриби", "Фрукти", "Крупи та злаки",
-"Хлібобулочні вироби", "Яйця", "Олії та жири", "Приправи та соуси", "Напої", "Інше"
+Категорії (поле "name" категорії бери ЛИШЕ з цього переліку, дослівно; нових назв не вигадуй, використовуй лише доречні):
+${CATEGORY_LIST}
 
-Правила класифікації:
-- Гриби (печериці, шампіньйони, лисички, гливи тощо) → "Овочі та гриби"
-- Молоко, сир, йогурт, вершки, масло, кефір → "Молочні продукти"
-- М'ясо, птиця, риба, морепродукти → "М'ясо та риба"
-- Яйця → "Яйця"
+Правила класифікації (категорія залежить від того, що це за товар у магазині, а не з чого його зроблено):
+- Гриби (печериці, шампіньйони, лисички, гливи тощо) → "${L.vegetables}"
+- Молоко, сир, йогурт, вершки, вершкове масло, кефір, яйця → "${L.dairy_eggs}"
+- Мʼясо, птиця, ковбаси, сосиски → "${L.meat}"; риба, морепродукти → "${L.fish}"
+- Крупи, макарони, борошно, хліб → "${L.grains}"
+- Олія, сіль, цукор, мед, спеції, оцет → "${L.pantry}"
+- Соуси, кетчуп, майонез, томатна паста → "${L.sauces}"; арахісова чи шоколадна паста → "${L.spreads}"
+- Товар, якому не підходить жодна категорія вище → "${L.other}"
 
-Правила:
-- КОЖЕН продукт має з'явитися в списку ЛИШЕ ОДИН РАЗ — якщо той самий продукт є в кількох рецептах, об'єднай у один пункт і підсумуй кількість
-- ВИКЛЮЧАЙ продукти, що вже є в коморі (pantry)
+ГОЛОВНЕ ПРАВИЛО – що НЕ потрапляє в список:
+1. Продукт уже є в коморі (блок нижче). Пройдись по коморі ПЕРЕД тим, як
+   писати список, і викресли кожен збіг. Купити вдруге те, що лежить удома, –
+   найдорожча помилка цього екрана.
+2. Продукту немає в жодному рецепті. Ні солі, ні спецій, ні олії, ні «базових»
+   про запас – нічого, чого ти не бачив у списку інгредієнтів вище.
+3. Продукт уже є в списку. Той самий продукт із кількох рецептів – ОДИН пункт
+   із підсумованою кількістю.
+
+Усе потрібне вже вдома – поверни {"categories": []}. Порожній список це
+правильна відповідь, а не помилка: вигаданий пункт відправить людину в магазин
+по те, що їй не потрібно.
+
+Оформлення:
 - quantity: вказуй кількість (напр. "500 г", "1 шт", "2 пачки")
-- note: якщо потрібна порада або уточнення — додай стисло, інакше ""
-- Якщо список покупок порожній (все є в коморі) — поверни порожній масив categories`;
+- note: якщо потрібна порада або уточнення – додай стисло, інакше ""`;
 
 /**
- * POST /api/nutrition/shopping-list — скласти список покупок з рецептів.
- * CORS / token / quota / rate-limit виставляє роутер.
+ * Промпт списку покупок – рівно той, що йде в прод (винесено заради стенду
+ * `scripts/eval/pipelines.nutrition.ts`).
+ *
+ * Кидає `ValidationError`, коли нема ні рецептів, ні тижневого плану –
+ * інваріант лишається на місці, лише переїхав разом зі своїм єдиним
+ * користувачем.
  */
-export default async function handler(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-
-  const { recipes, weekPlan, pantryItems, locale } = parseBody(
-    ShoppingListSchema,
-    req,
-  );
+export function buildShoppingListPrompt(input: ShoppingListInput): {
+  system: string;
+  user: string;
+} {
+  const { recipes, weekPlan, pantryItems, locale } = input;
   const loc = String(locale || "uk-UA");
 
   const pantrySec = pantryPromptSection({
@@ -119,26 +151,45 @@ ${ingredientsList}
 
 Склади список покупок, виключи все що вже є в коморі, згрупуй за категоріями.`;
 
-  const payload = {
-    model: "claude-sonnet-4-6",
-    max_tokens: 1200,
-    temperature: 0.15,
-    system: SYSTEM,
-    messages: [{ role: "user", content: prompt }],
-  };
+  return { system: SYSTEM, user: prompt };
+}
 
-  const { response, data } = await anthropicMessages(apiKey, payload, {
+/**
+ * POST /api/nutrition/shopping-list – скласти список покупок з рецептів.
+ * CORS / token / quota / rate-limit виставляє роутер.
+ */
+export default async function handler(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const userId = (req as WithAnthropicKey).user?.id;
+
+  const prompt = buildShoppingListPrompt(parseBody(ShoppingListSchema, req));
+
+  const provider = getLLMProvider({
+    provider: env.LLM_NUTRITION_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_NUTRITION_MODEL,
+  });
+  const result = await invokeLLM(provider, {
+    model: env.NUTRITION_MODEL,
+    maxTokens: 1200,
+    temperature: 0.15,
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
     timeoutMs: NUTRITION_AI_TIMEOUTS_MS.shoppingList,
     endpoint: "shopping-list",
+    ...(userId ? { userId } : {}),
   });
-  if (!response || !response.ok) {
+  if (!result.ok) {
     throw makeAiProviderError({
-      rawProviderMessage: (data as AnthropicErrorPayload)?.error?.message,
-      status: response?.status,
+      rawProviderMessage: result.error,
+      status: result.status,
     });
   }
 
-  const out = extractAnthropicText(data);
+  const out = result.text;
   const jsonParsed = extractJsonFromText(out);
 
   const obj: Record<string, unknown> =
@@ -158,7 +209,10 @@ ${ingredientsList}
     .map((cat): ShoppingCategory | null => {
       if (!cat || typeof cat !== "object") return null;
       const catRec = cat as Record<string, unknown>;
-      const name = String(catRec["name"] || "Інше").trim();
+      // Назву категорії віддаємо як є (форма відповіді не змінилась): моделі
+      // ставлять мітку з переліку, а старі чи вигадані назви клієнт зводить
+      // до категорій комори за назвою позиції. Порожня назва - «Інше».
+      const name = String(catRec["name"] || "").trim() || L.other;
       const rawItems = Array.isArray(catRec["items"])
         ? (catRec["items"] as unknown[])
         : [];
@@ -172,7 +226,7 @@ ${ingredientsList}
           if (seenNames.has(key)) return null;
           seenNames.add(key);
           return {
-            id: `si_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: `si_${Date.now()}_${crypto.randomUUID()}`,
             name: itemName,
             quantity: String(itemRec["quantity"] || "").trim(),
             note: String(itemRec["note"] || "").trim(),

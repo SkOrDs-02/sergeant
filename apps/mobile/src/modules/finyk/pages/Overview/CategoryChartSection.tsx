@@ -19,6 +19,7 @@ import { Pressable, Text, View } from "react-native";
 import { chartPaletteList } from "@sergeant/design-tokens/tokens";
 
 import { Card } from "../../../../components/ui/Card";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface CategorySpend {
   id: string;
@@ -35,7 +36,7 @@ export interface CategoryChartSectionProps {
 const COLORS: readonly string[] = chartPaletteList;
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA");
+  return formatNumberUk(n);
 }
 
 const CategoryChartSectionImpl = function CategoryChartSection({
@@ -56,7 +57,7 @@ const CategoryChartSectionImpl = function CategoryChartSection({
           onPress={() => onNavigate?.("transactions")}
           className="mt-3 px-3 py-2 active:opacity-60"
         >
-          <Text className="text-sm font-medium text-emerald-700">
+          <Text className="text-sm font-medium text-teal-700">
             Переглянути операції
           </Text>
         </Pressable>
@@ -75,7 +76,7 @@ const CategoryChartSectionImpl = function CategoryChartSection({
       <View className="gap-3">
         {top.map((cat, i) => {
           const widthPct = Math.round((cat.spent / maxVal) * 100);
-          const color = COLORS[i % COLORS.length] ?? "#10b981";
+          const color = COLORS[i % COLORS.length] ?? "#0f766e"; // teal-700 fallback
           const Row = (
             <>
               <View className="flex-row justify-between mb-1.5">

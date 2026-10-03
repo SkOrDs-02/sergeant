@@ -28,7 +28,7 @@
  */
 
 import { router, type Href } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Pressable,
@@ -39,12 +39,14 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Search, Settings, Sparkles } from "lucide-react-native";
+import { MessageCircle, Search, Settings } from "lucide-react-native";
 
 import { colors } from "@/theme";
 
 import { useUser } from "@sergeant/api-client/react";
 import {
+  detectFirstActionCompletedPerModule,
+  detectFirstRealEntry,
   getActiveModules,
   getFirstRealEntryModule,
   getHideInactiveModules,
@@ -53,7 +55,6 @@ import {
   hasSeenCrossModulePreview,
   isActiveModule,
   isFirstActionPending,
-  isFirstRealEntryDone,
   isSoftAuthDismissed,
   setHideInactiveModules,
   type DashboardModuleId,
@@ -67,6 +68,8 @@ import {
 } from "./dashboardModuleConfig";
 import { FirstActionHeroCard } from "./FirstActionHeroCard";
 import type { PresetAction } from "@/core/onboarding/PresetStep";
+import { FirstEntryCelebrationModal } from "@/core/onboarding/FirstEntryCelebrationModal";
+import { useFirstEntryCelebration } from "@/core/onboarding/useFirstEntryCelebration";
 import { HubInsightsPanel, type InsightItem } from "./HubInsightsPanel";
 import { SoftAuthPromptCard } from "./SoftAuthPromptCard";
 import { TodayFocusCard } from "./TodayFocusCard";
@@ -81,70 +84,34 @@ import { WeeklyDigestFooter } from "./WeeklyDigestFooter";
 import { useHints } from "../hints/useHints";
 import { mobileKVStore as mmkvStore } from "@/lib/storage";
 import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
+import { HubModuleStorageBoot } from "@/core/settings/HubModuleStorageBoot";
 
 /**
- * AssistantFab — floating action button with pulse glow animation.
+ * AssistantFab — floating action button.
+ *
+ * Animation: one-shot entrance ring that expands and fades on mount,
+ * then stops. No persistent loops — they drain battery and read as
+ * "AI generated" (design audit P1).
  */
 function AssistantFab({ onPress }: { onPress: () => void }) {
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.4)).current;
-  const shadowOpacity = useRef(new Animated.Value(0.3)).current;
+  // Entrance ring: expands from 1→1.4 and fades 0.35→0 once on mount.
+  const [ringScale] = useState(() => new Animated.Value(1));
+  const [ringOpacity] = useState(() => new Animated.Value(0.35));
 
   useEffect(() => {
-    // Subtle pulse animation for the glow ring
-    const pulseAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1.15,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0,
-            duration: 1500,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseScale, {
-            toValue: 1,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.4,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-
-    // Shadow breathing animation
-    const shadowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shadowOpacity, {
-          toValue: 0.6,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(shadowOpacity, {
-          toValue: 0.3,
-          duration: 1200,
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-
-    pulseAnimation.start();
-    shadowAnimation.start();
-
-    return () => {
-      pulseAnimation.stop();
-      shadowAnimation.stop();
-    };
-  }, [pulseScale, pulseOpacity, shadowOpacity]);
+    Animated.parallel([
+      Animated.timing(ringScale, {
+        toValue: 1.4,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(ringOpacity, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [ringScale, ringOpacity]);
 
   return (
     <View
@@ -155,7 +122,7 @@ function AssistantFab({ onPress }: { onPress: () => void }) {
         pointerEvents: "box-none",
       }}
     >
-      {/* Pulse glow ring */}
+      {/* One-shot entrance ring — expands and disappears on mount */}
       <Animated.View
         style={{
           position: "absolute",
@@ -165,22 +132,8 @@ function AssistantFab({ onPress }: { onPress: () => void }) {
           bottom: -4,
           borderRadius: 32,
           backgroundColor: colors.accent,
-          opacity: pulseOpacity,
-          transform: [{ scale: pulseScale }],
-        }}
-        pointerEvents="none"
-      />
-      {/* Shadow layer */}
-      <Animated.View
-        style={{
-          position: "absolute",
-          top: 2,
-          left: 2,
-          right: -2,
-          bottom: -2,
-          borderRadius: 28,
-          backgroundColor: colors.accent,
-          opacity: shadowOpacity,
+          opacity: ringOpacity,
+          transform: [{ scale: ringScale }],
         }}
         pointerEvents="none"
       />
@@ -188,10 +141,10 @@ function AssistantFab({ onPress }: { onPress: () => void }) {
         accessibilityRole="button"
         accessibilityLabel="Відкрити AI-асистента"
         onPress={onPress}
-        className="h-14 flex-row items-center gap-2 rounded-full bg-brand-700 pl-4 pr-5 shadow-xl active:scale-95 active:opacity-90"
+        className="h-14 flex-row items-center gap-2 rounded-full bg-brand-700 pl-4 pr-5 shadow-md active:scale-95 active:opacity-90"
         testID="dashboard-assistant-fab"
       >
-        <Sparkles size={20} color="#fff" strokeWidth={2.2} />
+        <MessageCircle size={20} color="#fff" strokeWidth={2} />
         <Text className="text-sm font-semibold text-white">Асистент</Text>
       </Pressable>
     </View>
@@ -226,9 +179,6 @@ export function HubDashboard() {
   const todayLabel = useMemo(() => formatToday(new Date()), []);
 
   const { generate } = useWeeklyDigest();
-  const { insight: coachInsightText } = useCoachInsight({
-    enabled: signedIn,
-  });
   const [refreshing, setRefreshing] = useState(false);
 
   // Active vs. inactive modules — driven by the user's onboarding
@@ -294,7 +244,49 @@ export function HubDashboard() {
   void heroTick;
   const firstActionPending = isFirstActionPending(mmkvStore);
   const softAuthDismissed = isSoftAuthDismissed(mmkvStore);
-  const hasFirstRealEntry = isFirstRealEntryDone(mmkvStore);
+  // `detectFirstRealEntry` is idempotent: it flips the persisted flag and
+  // fires the `first_real_entry` analytics event exactly once, then
+  // degenerates to a cheap read on every later render — must run on the
+  // render path (not in an effect) so the flag and the celebration below
+  // see the same frame's value, mirroring web's `useHubDashboardState.ts`.
+  const hasFirstRealEntry = detectFirstRealEntry(mmkvStore, { trackEvent });
+
+  // One-hero rule: exactly one hero renders per frame, in priority
+  // order. `firstActionVisible` tracks the FTUX flag; `showSoftAuth`
+  // gates on the post-FTUX window (real entry exists, not dismissed,
+  // user not signed in); everything else falls back to the focus
+  // card (which itself renders an empty state when no rec is live).
+  //
+  // Порядок тут навмисний: обидва прапорці рахуються ДО `useCoachInsight`
+  // нижче, бо саме вони вирішують, чи порада взагалі потрапить на екран.
+  const firstActionVisible = firstActionPending;
+  const showSoftAuth =
+    !firstActionVisible && hasFirstRealEntry && !softAuthDismissed && !signedIn;
+
+  /**
+   * Умова запиту ДЗЕРКАЛИТЬ умову рендеру `TodayFocusCard` (третя гілка
+   * hero нижче), і це не стиль, а гроші: `useCoachInsight` б'є в
+   * `api.coach.postInsight`, тобто палить денну AI-квоту Free-плану
+   * (ADR-0085). Доти тут стояло `enabled: signedIn`, тож запит ішов для
+   * БУДЬ-ЯКОГО залогіненого — і в гілках `firstActionVisible` та
+   * `showSoftAuth` людина платила квотою за текст, якого не бачила
+   * (знахідка PR-A1 огляду 2026-09-13).
+   *
+   * AI-DANGER: змінюєш умову рендеру третьої гілки — зміни й цю. На вебі
+   * той самий інваріант винесено в іменований `shouldFetchCoachInsight`
+   * (`apps/web/.../useHubDashboardState.ts:143-149`) з таким самим
+   * застереженням; тут він лишається інлайновим, бо мобільні прапорці
+   * рахуються синхронно з MMKV просто вище.
+   */
+  const coachInsightVisible = signedIn && !firstActionVisible && !showSoftAuth;
+  const { insight: coachInsightText } = useCoachInsight({
+    enabled: coachInsightVisible,
+  });
+  // Fire `first_action_completed { module }` once per module that just got its
+  // first non-demo entry — must run alongside detectFirstRealEntry on the render
+  // path, else the event never emits and the activation funnel stays at 0%.
+  detectFirstActionCompletedPerModule(mmkvStore, { trackEvent });
+  const celebration = useFirstEntryCelebration(hasFirstRealEntry);
   useHints({
     store: mmkvStore,
     inFtuxSession: firstActionPending && !hasFirstRealEntry,
@@ -405,17 +397,14 @@ export function HubDashboard() {
     [dismissFocus],
   );
 
-  // One-hero rule: exactly one hero renders per frame, in priority
-  // order. `firstActionVisible` tracks the FTUX flag; `showSoftAuth`
-  // gates on the post-FTUX window (real entry exists, not dismissed,
-  // user not signed in); everything else falls back to the focus
-  // card (which itself renders an empty state when no rec is live).
-  const firstActionVisible = firstActionPending;
-  const showSoftAuth =
-    !firstActionVisible && hasFirstRealEntry && !softAuthDismissed && !signedIn;
-
   return (
     <SafeAreaView className="flex-1 bg-bg dark:bg-bg" edges={["top", "bottom"]}>
+      {/* Boot all module SQLite read-caches and dual-write registrations so
+          Hub aggregators (coachSnapshot, weeklyDigestAggregates, searchSources)
+          and settings mutations see fresh data even before the user visits any
+          module tab. No-ops when the module-level boot hooks have already run. */}
+      <HubModuleStorageBoot />
+
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 16 }}
@@ -588,6 +577,13 @@ export function HubDashboard() {
       {/* Assistant FAB — thumb-reach entry to AI chat with pulse glow.
           Always visible so user can reach assistant from anywhere. */}
       <AssistantFab onPress={openAssistant} />
+
+      <FirstEntryCelebrationModal
+        open={celebration.open}
+        onClose={celebration.close}
+        ttvMs={celebration.ttvMs}
+        moduleId={celebration.moduleId}
+      />
     </SafeAreaView>
   );
 }

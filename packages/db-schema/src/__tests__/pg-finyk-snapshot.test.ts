@@ -23,7 +23,7 @@ import {
  * locking down the column ordering, types, nullability, indexes, and
  * defaults that mirror migration 039_finyk_tables.sql.
  *
- * Stage 4 / PR #035 of `docs/planning/storage-roadmap.md`. Pattern
+ * Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Pattern
  * mirrors `pg-nutrition-snapshot.test.ts` — same structure, but the
  * 15 tables here split into five groups (see migration header for
  * rationale). The five-group structure is the test's organising
@@ -136,9 +136,9 @@ describe.each(PER_ROW_JSONB_TABLES)(
       ]);
     });
 
-    it("uses uuid() PK with default", () => {
+    it("uses text() PK with default (097: was uuid until finyk's client-side ids — b_/sub_/a_/cus_/bare Date.now() — started 22P02-ing every push)", () => {
       const cols = Object.fromEntries(table.columns.map((c) => [c.name, c]));
-      expect(cols["id"]!.columnType).toBe("PgUUID");
+      expect(cols["id"]!.columnType).toBe("PgText");
       expect(cols["id"]!.primary).toBe(true);
       expect(cols["id"]!.hasDefault).toBe(true);
       expect(cols["data_json"]!.columnType).toBe("PgJsonb");
@@ -273,9 +273,9 @@ describe("pg/finykNetworthHistory schema snapshot", () => {
     expect(cols["month"]!.notNull).toBe(true);
   });
 
-  it("networth is REAL with default 0", () => {
+  it("networth is DOUBLE PRECISION with default 0 (migration 108, pre-beta schema-debt audit)", () => {
     const cols = Object.fromEntries(config.columns.map((c) => [c.name, c]));
-    expect(cols["networth"]!.columnType).toBe("PgReal");
+    expect(cols["networth"]!.columnType).toBe("PgDoublePrecision");
     expect(cols["networth"]!.notNull).toBe(true);
     expect(cols["networth"]!.hasDefault).toBe(true);
   });

@@ -58,6 +58,27 @@ describe("useUnifiedFinanceData", () => {
     expect(merged.realTx[0]!.id).toBe("c");
   });
 
+  it("drops transactions of accounts excluded via hiddenAccountIds", () => {
+    const kept = { ...tx("a", 200), _accountId: "acc-visible" } as Transaction;
+    const dropped = {
+      ...tx("b", 100),
+      _accountId: "acc-hidden",
+    } as Transaction;
+    const manual = { ...tx("c", 50), _accountId: null } as Transaction;
+    const mono = makeMono({ realTx: [kept, dropped, manual] });
+    const privat = makePrivat();
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({
+        mono,
+        privat,
+        hiddenAccountIds: ["acc-hidden"],
+      }),
+    );
+    const ids = result.current.mergedMono.transactions.map((t) => t.id);
+    // Manual transactions carry no account — exclusion must not swallow them.
+    expect(ids).toEqual(["a", "c"]);
+  });
+
   it("sums privat UAH balances into privatTotal/totalBalance", () => {
     const mono = makeMono({ accounts: [{ id: "m1" }] });
     const privat = makePrivat({
@@ -73,6 +94,37 @@ describe("useUnifiedFinanceData", () => {
     expect(result.current.mergedMono.privatTotal).toBe(1500);
     // 1 mono account + 2 privat accounts are all surfaced.
     expect(result.current.mergedMono.accounts).toHaveLength(3);
+  });
+
+  it("excludes hidden privat accounts from privatTotal, mirroring the mono hidden-filter", () => {
+    const mono = makeMono();
+    const privat = makePrivat({
+      accounts: [
+        { id: "p1", currency: "UAH", balance: 150000 },
+        { id: "p-hidden", currency: "UAH", balance: 300000 },
+      ],
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({
+        mono,
+        privat,
+        hiddenAccountIds: ["p-hidden"],
+      }),
+    );
+    // The hidden account's 3000 grn must not leak into privatTotal (§1.3).
+    expect(result.current.mergedMono.privatTotal).toBe(1500);
+  });
+
+  it("surfaces an overdrawn privat account as privatDebt, not a negative privatTotal", () => {
+    const mono = makeMono();
+    const privat = makePrivat({
+      accounts: [{ id: "p1", currency: "UAH", balance: -300000 }],
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.privatTotal).toBe(0);
+    expect(result.current.mergedMono.privatDebt).toBe(3000);
   });
 
   it("combines error strings from both sources", () => {
@@ -108,5 +160,29 @@ describe("useUnifiedFinanceData", () => {
     expect(result.current.mergedMono.lastUpdated!.getTime()).toBe(
       newer.getTime(),
     );
+  });
+
+  // Regression PR-F7 (аудит 2026-09-13): гілки error/partial/loading читали
+  // обидва провайдери, а успіх — лише Monobank, тож у людини з самим Приватом
+  // об'єднаний статус лишався моновським `idle`.
+  it("lifts a privat-only success into the combined status", () => {
+    const mono = makeMono({ syncState: { status: "idle" } });
+    const privat = makePrivat({
+      connected: true,
+      syncState: { status: "success" },
+    });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.syncState.status).toBe("success");
+  });
+
+  it("keeps idle when neither provider has synced", () => {
+    const mono = makeMono({ syncState: { status: "idle" } });
+    const privat = makePrivat({ connected: true });
+    const { result } = renderHook(() =>
+      useUnifiedFinanceData({ mono, privat }),
+    );
+    expect(result.current.mergedMono.syncState.status).toBe("idle");
   });
 });

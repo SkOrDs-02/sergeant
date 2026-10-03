@@ -13,7 +13,7 @@
 // index.ts`, `tools/openclaw/src/index.ts`, etc. (run `pnpm
 // lint:eslint-config-diff` to regenerate; CI guards in PR-31 phase-2).
 //
-// Phase 2 (deferred — see `docs/90-work/initiatives/stack-pulse-2026-05/
+// Phase 2 (deferred — see `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/
 // pr-31-eslint-config-split.md` § Acceptance criteria) extracts each
 // surface-specific block (apps/web, apps/server, apps/mobile, apps/
 // mobile-shell, tools/openclaw, packages/**) into per-app `eslint.
@@ -69,12 +69,6 @@ export const baselineIgnores = {
     "**/.turbo/**",
     "storybook-static/**",
     "**/storybook-static/**",
-    // `ops/n8n-workflows/_lib/*` ships paste-into-n8n Function-node
-    // templates. They use top-level `return` (legal inside an n8n
-    // sandbox, not legal in a regular ES module) and run inside n8n's
-    // own bundled lint/sandbox — eslint here would only produce false
-    // positives. Prettier still formats them via lint-staged.
-    "ops/n8n-workflows/_lib/**",
     // `.claude/workflows/*` are scripts for the Claude Code Workflow
     // tool. They run inside an async sandbox where `args`, `log`,
     // `agent`, `phase`, `pipeline`, `parallel`, `budget`, and top-level
@@ -93,7 +87,7 @@ export const baselineIgnores = {
  * Shared baseline — flat-config slice consumed by every Sergeant
  * surface. Keeps the design-system guardrails (`sergeant-design/*`),
  * the legacy-palette `no-restricted-syntax` guard, the react-hooks v7
- * suppressions, and the `@typescript-eslint/no-unused-vars` rule in
+ * rules (initiative 0021 closed — all at `error`), and the `@typescript-eslint/no-unused-vars` rule in
  * exactly one place. Surface-specific extensions live in per-app
  * `eslint.config.js` files (phase 2) or in the root `eslint.config.js`
  * after this spread (current state).
@@ -142,35 +136,16 @@ export const baseline = [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      // `eslint-plugin-react-hooks` v7 promoted a batch of new rules
-      // (`set-state-in-effect`, `preserve-manual-memoization`,
-      // `static-components`, `use-memo`, `immutability`, `purity`,
-      // `refs-during-render`) to "error" in its `recommended` config
-      // (see #1572 dev-deps bump). The pre-v7 codebase has dozens of
-      // legacy `setState`-inside-effect, manual-memo, and ref-read
-      // patterns that pre-date the rules — they're queued for a
-      // dedicated cleanup initiative (see roadmap). Until that
-      // cleanup lands, disable the rules so:
-      //   1. lint-staged on touched files doesn't fail with errors
-      //      authored by other contributors before the rule existed,
-      //   2. `pnpm lint` keeps a clean signal for genuine regressions.
-      // Promote back to "error" after the cleanup PR has migrated the
-      // last call-site (mirrors the WCAG-`-strong` policy below).
-      //
-      // Current scoreboard (2026-05-16 sweep across apps/web, apps/mobile,
-      // apps/mobile-shell, apps/server, tools/openclaw):
-      //   static-components            — 0 ✅ promoted to "error" below
-      //   use-memo                     — 0 ✅ promoted to "error" below
-      //   immutability                 — 7 (web 3 + mobile 4)
-      //   preserve-manual-memoization  — 9 (web 7 + mobile 2)
-      //   purity                       — 17 (apps/web)
-      //   refs                         — 37 (apps/web)
-      //   set-state-in-effect          — 78 (apps/web)
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/preserve-manual-memoization": "off",
-      "react-hooks/purity": "off",
-      "react-hooks/refs": "off",
-      "react-hooks/immutability": "off",
+      "import/no-cycle": ["error", { ignoreExternal: true }],
+      // Initiative 0021 closed (2026-07-10, PR #177): all react-hooks v7
+      // rules cleared monorepo-wide — web/mobile in eslint.web.js /
+      // eslint.mobile.js; baseline holds `error` for server, mobile-shell,
+      // openclaw. See docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md.
+      "react-hooks/set-state-in-effect": "error",
+      "react-hooks/preserve-manual-memoization": "error",
+      "react-hooks/purity": "error",
+      "react-hooks/refs": "error",
+      "react-hooks/immutability": "error",
       // `static-components` cleared the monorepo — no component is defined
       // inside the body of another component. Promoted from "off" to
       // "error" so the baseline holds; next regression fails lint loudly.
@@ -181,62 +156,8 @@ export const baseline = [
       // arrays. Promoted from "off" to "error" so the next regression fails
       // lint loudly.
       "react-hooks/use-memo": "error",
-      // Design-system guardrail — the canonical eyebrow label must go
-      // through <SectionHeading> (or <Label>) so tone/size changes stay
-      // in one place. Add the file-scoped override below for the DS
-      // primitives themselves.
-      "sergeant-design/no-eyebrow-drift": "error",
-      // Typography guardrail — user-facing strings must use the single
-      // ellipsis glyph `…` (U+2026), not three ASCII dots `...`. The
-      // typographic glyph kerns correctly and is what Web Interface
-      // Guidelines recommend for truncation cues. Auto-fixable.
-      "sergeant-design/no-ellipsis-dots": "error",
-      // AI code-marker syntax guardrail — catches malformed AI markers
-      // like `AI-NOTES`, `AINOTE`, `AI_NOTE`, or missing colons. Promoted to
-      // "error" 2026-06-08 — the codebase is clean (0 violations confirmed via
-      // `eslint . --rule '{"sergeant-design/ai-marker-syntax":"error"}'`).
+      // Agent marker syntax is repository governance, not visual taste.
       "sergeant-design/ai-marker-syntax": "error",
-      // Tailwind opacity guardrail — `<color>/<N>` only renders when N
-      // is in `theme.opacity`. Sergeant's preset registers 0/5/8/10/…/100
-      // (see `packages/design-tokens/tailwind-preset.js`); any other
-      // step (e.g. `/7`, `/12`, `/18`) is silently dropped and the
-      // surrounding `dark:` / `hover:` override falls through to the
-      // light-mode background — this is what bug #814 was.
-      "sergeant-design/valid-tailwind-opacity": "error",
-      // Design-system token guardrail — arbitrary hex in className
-      // (`bg-[#10b981]`, `text-[#fff]/50`) bypasses the token layer:
-      // dark-mode adaptation, WCAG-AA `-strong` promotion and future
-      // palette migration all stop working for those literals. Every
-      // color must come from the preset (`bg-surface`, `text-muted`,
-      // `bg-finyk-surface`, `text-brand-strong`, `bg-success-soft`, …)
-      // — if a genuinely new shade is needed, add it to
-      // `packages/design-tokens/tailwind-preset.js` first.
-      "sergeant-design/no-hex-in-classname": "error",
-      // Module-accent containment — inside `apps/<app>/src/modules/<X>/`
-      // subtrees only `<X>`'s accent utilities may appear. A fizruk
-      // component rendering a coral `ring-routine` reads to the user
-      // as "Рутина" — it's a design bug, not stylistic preference.
-      // Cross-module shells (`core/`, `shared/`, `stories/`) remain
-      // free to reference all four module accents.
-      "sergeant-design/no-foreign-module-accent": "error",
-      // WCAG-AA `-strong` tier guardrail — every saturated brand `bg-*`
-      // utility paired with `text-white` regresses to ~2.4–2.8 : 1
-      // contrast (the bug class fixed in PRs #854 / #855). The fix is
-      // `bg-{family}-strong text-white`. See docs/design/brandbook.md →
-      // "WCAG-AA `-strong` Tier" for the full mapping. Promoted from
-      // "warn" to "error" once the cleanup PR migrated the last 28
-      // call-sites — the codebase is now clean against this rule, and
-      // any new violation must be intentional.
-      "sergeant-design/no-low-contrast-text-on-fill": "error",
-      // `sergeant-design/no-raw-dark-palette` is intentionally NOT
-      // registered in this top-level rule block — the rule depends on
-      // the `--c-{family}-soft*` / `--c-{family}-strong*` CSS variable
-      // theme system that lives in `apps/web/src/index.css`. NativeWind
-      // (`apps/mobile`) does not consume those CSS variables, and the
-      // server / scripts have no Tailwind classNames. The rule is
-      // registered scoped to `apps/web/**/*.{ts,tsx}` further down so
-      // it only fires where the semantic-token replacement actually
-      // resolves to the intended colour.
       "no-empty": ["error", { allowEmptyCatch: true }],
       "no-unused-vars": [
         "error",

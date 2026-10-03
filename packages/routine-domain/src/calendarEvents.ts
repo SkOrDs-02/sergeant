@@ -13,9 +13,53 @@
 
 import { enumerateDateKeys, parseDateKey } from "./dateKeys.js";
 import { habitScheduledOnDate } from "./schedule.js";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 import { sortHabitsByOrder } from "./habitOrder.js";
 import { completionNoteKey } from "./completionNoteKey.js";
-import type { CalendarRange, HubCalendarEvent, RoutineState } from "./types.js";
+import type {
+  CalendarRange,
+  Habit,
+  HubCalendarEvent,
+  RoutineState,
+} from "./types.js";
+
+/**
+ * Підпис події звички. Для гнучкої звички несе прогрес тижня: без нього
+ * «Звичка» в списку не відповідає на єдине питання, яке в цьому режимі має
+ * сенс — скільки ще лишилось.
+ *
+ * Показане число ВКЛЮЧАЄ цей день, якщо його відмічено: людина читає «2 з 3»
+ * як «вже двічі». Гейт видимості натомість рахує без нього, і це навмисна
+ * різниця — див. докстрінг `weekDoneCountExcludingDate`.
+ */
+function habitSubtitle(
+  habit: Habit,
+  dateKey: string,
+  completed: boolean,
+  timePart: string,
+  weekDoneCount: number | undefined,
+): string {
+  const base = completed ? `Зроблено${timePart}` : `Звичка${timePart}`;
+  if (weekDoneCount === undefined) return base;
+  const done = weekDoneCount + (completed ? 1 : 0);
+  return `${base} · ${done} з ${weeklyTargetForDate(habit, dateKey)}`;
+}
+
+/**
+ * Число з розрядами під uk-UA. Дублює `formatNumberUk` із `@sergeant/shared`
+ * (U+00A0 замість вузького U+202F, який Intl дає для цієї локалі й який майже
+ * не видно). Саме дублює, а не імпортує: цей пакет навмисно тримається без
+ * рантайм-залежностей, і одне форматування суми того не варте.
+ */
+function formatGroupedUk(value: number): string {
+  return value
+    .toLocaleString("uk-UA", { maximumFractionDigits: 2 })
+    .replace(/\u202f/g, "\u00a0");
+}
 
 export const FIZRUK_GROUP_LABEL = "Фізрук";
 export const FINYK_SUB_GROUP_LABEL = "Фінік · підписки";
@@ -122,8 +166,14 @@ export function buildHubCalendarEvents(
   );
   for (const date of days) {
     for (const h of activeHabits) {
-      if (!habitScheduledOnDate(h, date)) continue;
       const completions = state.completions[h.id] || [];
+      // Гнучка звичка зникає зі списку, щойно тиждень добрано. Лічильник
+      // виключає сам цей день — інакше закритий тиждень 3/3 стер би з
+      // календаря всі три відмітки (див. докстрінг у `weeklyTarget.ts`).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(completions, date)
+        : undefined;
+      if (!habitScheduledOnDate(h, date, { weekDoneCount })) continue;
       const completed = completions.includes(date);
       const tagLabels = tagLabelsForHabit(state, h);
       const t = h.timeOfDay ? String(h.timeOfDay).trim() : "";
@@ -134,8 +184,14 @@ export function buildHubCalendarEvents(
         id: `habit_${h.id}_${date}`,
         source: "routine_habit",
         date,
-        title: `${h.emoji} ${h.name}`,
-        subtitle: completed ? `Зроблено${timePart}` : `Звичка${timePart}`,
+        // Гліф звички НЕ префіксує заголовок — той самий фікс, що вже
+        // застосований до нагадувань (`reminders.ts`, 2026-08-03): у полі
+        // `emoji` з того дня лежить icon-slug із `glyphs.ts`, а не емодзі,
+        // тож склейка давала видимий «check Ранкова зарядка» у стрічці й у
+        // `aria-label` кнопки «Деталі» (аудит 2026-08-04, знахідка 12).
+        // Іконку малює UI (`HabitGlyph`), подія несе саму назву.
+        title: h.name,
+        subtitle: habitSubtitle(h, date, completed, timePart, weekDoneCount),
         tagLabels,
         sortKey: `${date} 1 ${h.name}`,
         habitId: h.id,
@@ -205,13 +261,16 @@ export function buildFinykSubscriptionEvents(
     const bd = Number(sub.billingDay);
     if (!Number.isFinite(bd) || bd < 1 || bd > 31) continue;
     const { amount, currency } = getAmount(sub);
-    const subTitle = `${sub.emoji || "📱"} ${sub.name || "Підписка"}`;
+    // До 2026-08-21 сюди клеївся `sub.emoji` (з дефолтом «📱»). Поле не
+    // редагується користувачем — форма підписки не має для нього вводу, —
+    // тож це був хардкод емодзі в даних. Назви достатньо.
+    const subTitle = sub.name || "Підписка";
     for (const date of days) {
       if (!isBillingDateKey(date, bd)) continue;
       const amtStr =
         amount != null
-          ? `~${amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${currency ?? ""}`.trim()
-          : "сума з транзакції або вручну у Фініку";
+          ? `~${formatGroupedUk(amount)} ${currency ?? ""}`.trim()
+          : "сума з операції або вручну у Фініку";
       out.push({
         id: `finyk_sub_${sub.id}_${date}`,
         source: "finyk_subscription",

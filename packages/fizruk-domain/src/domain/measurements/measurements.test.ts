@@ -16,6 +16,7 @@ import {
   summariseMeasurementEntry,
   upsertMeasurement,
   validateMeasurementDraft,
+  type MeasurementFieldDef,
   type MeasurementDraft,
   type MobileMeasurementEntry,
 } from "./index.js";
@@ -187,6 +188,10 @@ describe("validateMeasurementDraft / isMeasurementDraftValid", () => {
     expect(errs).toEqual({});
     expect(isMeasurementDraftValid(errs)).toBe(true);
   });
+
+  it("treats an empty values error map as valid", () => {
+    expect(isMeasurementDraftValid({ values: {} })).toBe(true);
+  });
 });
 
 describe("sortMeasurementsDesc", () => {
@@ -213,6 +218,18 @@ describe("sortMeasurementsDesc", () => {
       "b",
       "a",
       "junk",
+    ]);
+  });
+
+  it("keeps invalid-date entries stable when both sides are unparseable", () => {
+    const entries: MobileMeasurementEntry[] = [
+      { id: "junk-a", at: "not-a-date" },
+      { id: "junk-b", at: "also-not-a-date" },
+    ];
+
+    expect(sortMeasurementsDesc(entries).map((e) => e.id)).toEqual([
+      "junk-a",
+      "junk-b",
     ]);
   });
 
@@ -286,6 +303,20 @@ describe("summariseMeasurementEntry / formatMeasurementDate", () => {
     expect(
       summariseMeasurementEntry({ id: "x", at: "2026-04-20T00:00:00Z" }),
     ).toBe("—");
+  });
+
+  it("omits the unit suffix when a field definition has no unit", () => {
+    const fields: readonly MeasurementFieldDef[] = [
+      { id: "mood", label: "Настрій", unit: "", min: 1, max: 5, integer: true },
+    ];
+
+    expect(
+      summariseMeasurementEntry(
+        { id: "x", at: "2026-04-20T00:00:00Z", mood: 4 },
+        1,
+        fields,
+      ),
+    ).toBe("Настрій: 4");
   });
 
   it("formatMeasurementDate returns a short locale string", () => {

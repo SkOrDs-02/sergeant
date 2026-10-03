@@ -30,9 +30,10 @@ vi.mock("../lib/nutritionStorage", async () => {
 
 import { estimateLogBytes } from "../lib/nutritionStorage";
 import { LogCard } from "./LogCard";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { addDaysISODate, todayISODate } from "@sergeant/nutrition-domain";
 
-const today = getKyivDayKey();
+// ADR-0078: LogCard's "Сьогодні" is the device-local day key.
+const today = todayISODate();
 
 function renderLog(overrides: Record<string, unknown> = {}) {
   const setSelectedDate = vi.fn();
@@ -73,6 +74,59 @@ describe("LogCard", () => {
     expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
   });
 
+  it("ставить записи дня перед пошуком, тижнем і трендами", () => {
+    renderLog({
+      log: {
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    const meals = screen.getByTestId("virtual-meals");
+    for (const id of ["log-search", "log-weekly", "log-analytics"]) {
+      expect(
+        meals.compareDocumentPosition(screen.getByTestId(id)) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it("ховає «Скопіювати з попереднього дня», коли в дні вже є записи", () => {
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday: vi.fn(),
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    expect(
+      screen.queryByText(/Скопіювати з попереднього дня/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("formats yesterday, tomorrow, and custom dates", () => {
+    renderLog({ selectedDate: addDaysISODate(today, -1) });
+    expect(screen.getByText("Вчора")).toBeInTheDocument();
+
+    renderLog({ selectedDate: addDaysISODate(today, 1) });
+    expect(screen.getByText("Завтра")).toBeInTheDocument();
+
+    renderLog({ selectedDate: "2026-01-02" });
+    expect(screen.getByText("02.01.2026")).toBeInTheDocument();
+  });
+
+  it("falls back to the label-derived meal type for legacy meals", () => {
+    renderLog({
+      log: {
+        [today]: {
+          meals: [{ id: "m1", name: "Сирники", label: "Сніданок" }],
+        },
+      } as never,
+    });
+    expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
+  });
+
   it("invokes onAddMeal", () => {
     const onAddMeal = vi.fn();
     renderLog({ onAddMeal });
@@ -82,11 +136,9 @@ describe("LogCard", () => {
 
   it("shows and confirms the duplicate-yesterday flow", () => {
     const onDuplicateYesterday = vi.fn();
-    const yesterday = (() => {
-      const d = new Date(today + "T00:00:00");
-      d.setDate(d.getDate() - 1);
-      return d.toISOString().slice(0, 10);
-    })();
+    // Use the same date helper the component uses (addDaysISODate) so the key
+    // matches its `previousDayIso` regardless of host timezone.
+    const yesterday = addDaysISODate(today, -1);
     renderLog({
       onDuplicateYesterday,
       log: {
@@ -100,6 +152,43 @@ describe("LogCard", () => {
     expect(onDuplicateYesterday).toHaveBeenCalled();
   });
 
+  // Regression PR-N6 (аудит 2026-09-13): у підписі кнопки стояла сира
+  // ISO-дата (`2026-09-11`), хоча заголовок за 60 рядків вище вже показував
+  // той самий день по-людськи через `formatDate`. Пін дивиться саме на
+  // «Вчора»: коли відкрито сьогодні, попередній день — це вчора, і
+  // `formatDate` має його так і назвати.
+  it("називає попередній день по-людськи, а не сирою ISO-датою", () => {
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday: vi.fn(),
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+      } as never,
+    });
+    const btn = screen.getByText(/Скопіювати з попереднього дня/);
+    expect(btn.textContent).toContain("(Вчора)");
+    expect(btn.textContent).not.toContain(yesterday);
+  });
+
+  it("cancels the duplicate-yesterday flow", () => {
+    const onDuplicateYesterday = vi.fn();
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday,
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+      } as never,
+    });
+    fireEvent.click(screen.getByText(/Скопіювати з попереднього дня/));
+    fireEvent.click(screen.getByText("Скасувати"));
+    expect(onDuplicateYesterday).not.toHaveBeenCalled();
+    expect(screen.queryByText("Скопіювати прийоми?")).not.toBeInTheDocument();
+  });
+
   it("shows the big-log warning and confirms trim", () => {
     (estimateLogBytes as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
       400_000,
@@ -109,5 +198,19 @@ describe("LogCard", () => {
     fireEvent.click(screen.getByText(/Залишити лише останні 365 днів/));
     fireEvent.click(screen.getByText("Видалити"));
     expect(onTrimLog).toHaveBeenCalledWith(365);
+  });
+
+  it("cancels the big-log trim flow", () => {
+    (estimateLogBytes as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      400_000,
+    );
+    const onTrimLog = vi.fn();
+    renderLog({ onTrimLog });
+    fireEvent.click(screen.getByText(/Залишити лише останні 365 днів/));
+    fireEvent.click(screen.getByText("Скасувати"));
+    expect(onTrimLog).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText("Видалити стару історію?"),
+    ).not.toBeInTheDocument();
   });
 });

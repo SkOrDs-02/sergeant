@@ -150,14 +150,19 @@ beforeEach(() => {
   mockedPantries.mockReset();
   mockedPantries.mockReturnValue({
     pantries: [],
-    activePantryId: "default",
-    activePantry: {
-      id: "default",
-      name: "Комора",
-      items: [{ name: "Сіль", qty: 1, unit: "пачка", notes: null }],
-      text: "",
-    },
-    setActivePantryId: jest.fn(),
+    placeFilter: null,
+    setPlaceFilter: jest.fn(),
+    moveItemTo: jest.fn(),
+    pantryItems: [
+      {
+        name: "Сіль",
+        qty: 1,
+        unit: "пачка",
+        notes: null,
+        pantryId: "home",
+        localIdx: 0,
+      },
+    ],
     addLine: jest.fn(),
     applyParsedItems: jest.fn(),
     removeItemAt: jest.fn(),
@@ -276,5 +281,38 @@ describe("Shopping AI generation", () => {
 
     const errNode = await findByTestId("shopping-generate-error");
     expect(errNode.props.children).toMatch(/AI-квоту/i);
+  });
+
+  it("supports manual add, checkbox toggle, clear checked, and clear all", () => {
+    mockedRecipes.mockReturnValue({ recipes: [] });
+    const { client } = createTestApiClient(() => ({
+      ok: true,
+      status: 200,
+      body: { categories: [], rawText: null },
+    }));
+
+    const { getByPlaceholderText, getByText, getByTestId, queryByText } =
+      renderShopping(client);
+
+    fireEvent.changeText(getByPlaceholderText("Назва продукту"), "Молоко");
+    fireEvent.press(getByText("Додати"));
+    expect(getByText("Молоко")).toBeTruthy();
+    expect(getByTestId("shopping-count").props.children).toEqual(
+      expect.arrayContaining([1, " поз. · відмічено ", 0]),
+    );
+
+    fireEvent.press(getByText("Молоко"));
+    expect(getByTestId("shopping-count").props.children).toEqual(
+      expect.arrayContaining([1, " поз. · відмічено ", 1]),
+    );
+
+    fireEvent.press(getByText("Прибрати відмічені"));
+    expect(queryByText("Молоко")).toBeNull();
+
+    fireEvent.changeText(getByPlaceholderText("Назва продукту"), "Рис");
+    fireEvent.press(getByText("Додати"));
+    expect(getByText("Рис")).toBeTruthy();
+    fireEvent.press(getByText("Очистити все"));
+    expect(queryByText("Рис")).toBeNull();
   });
 });

@@ -8,6 +8,17 @@ import {
   resetTodayWater,
   saveWaterLog,
 } from "./waterStorage";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "./sqliteReader";
+
+// saveWaterLog delegates to the dual-write pipeline; intercept it so tests
+// can assert the normalized payload without a real SQLite connection.
+const mockPersistWaterLog = vi.fn().mockReturnValue(true);
+vi.mock("./nutritionStorage.js", () => ({
+  persistNutritionWaterLog: (...a: unknown[]) => mockPersistWaterLog(...a),
+}));
 
 function createLocalStorageMock() {
   const store = new Map<string, string>();
@@ -24,6 +35,8 @@ function createLocalStorageMock() {
 
 beforeEach(() => {
   globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
+  clearNutritionSqliteCache();
+  mockPersistWaterLog.mockClear();
 });
 
 afterEach(() => {
@@ -80,14 +93,11 @@ describe("loadWaterLog", () => {
   });
 
   it("normalizes stored log on read", () => {
-    globalThis.localStorage.setItem(
-      WATER_LOG_KEY,
-      JSON.stringify({
-        "2026-04-18": 500,
-        "2026-04-19": "bad",
-        random: 999,
-      }),
-    );
+    // SQLite cache is the source of truth; seed it directly. The domain
+    // normalizer (called by loadWaterLog) strips invalid entries.
+    __setNutritionSqliteCacheForTests({
+      waterLog: { "2026-04-18": 500 },
+    });
     expect(loadWaterLog()).toEqual({ "2026-04-18": 500 });
   });
 
@@ -98,16 +108,18 @@ describe("loadWaterLog", () => {
 });
 
 describe("saveWaterLog", () => {
+  // saveWaterLog normalizes its input before delegating to the dual-write
+  // pipeline (persistNutritionWaterLog). We verify the normalized payload
+  // rather than localStorage, which is no longer the write destination.
+
   it("persists normalized log and strips bad entries", () => {
     saveWaterLog({ "2026-04-18": 500, bogus: "x" });
-    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY)!);
-    expect(stored).toEqual({ "2026-04-18": 500 });
+    expect(mockPersistWaterLog).toHaveBeenCalledWith({ "2026-04-18": 500 });
   });
 
   it("persists empty object for nullish input", () => {
     saveWaterLog(null);
-    const stored = JSON.parse(globalThis.localStorage.getItem(WATER_LOG_KEY)!);
-    expect(stored).toEqual({});
+    expect(mockPersistWaterLog).toHaveBeenCalledWith({});
   });
 });
 
@@ -151,23 +163,35 @@ describe("addWaterMl — day change", () => {
     expect(b).toEqual({ "2026-04-18": 550 });
   });
 
-  it("starts fresh at 0 when the day changes", () => {
+  it("starts fresh at 0 when the DEVICE day changes", () => {
     vi.useFakeTimers();
-    // AI-CONTEXT: Day keys are Europe/Kyiv (Hard Rule), so bracket a KYIV
-    // midnight using absolute UTC instants — TZ-runner-independent. April → DST
-    // (UTC+3), so Kyiv 00:00 == 21:00Z: 20:55Z is Kyiv 23:55 (04-18), 21:05Z is
-    // Kyiv 00:05 (04-19).
-    vi.setSystemTime(new Date("2026-04-18T20:55:00Z"));
+    // ADR-0078: day keys for the water log are DEVICE-local, not Kyiv. This
+    // test runs with TZ=UTC (repo convention — see useNutritionReminders
+    // tests), so "device" here == UTC: bracket a UTC midnight, not Kyiv's.
+    vi.setSystemTime(new Date("2026-04-18T23:55:00Z"));
     const prev = addWaterMl({}, 500);
     expect(getTodayWaterMl(prev)).toBe(500);
 
-    vi.setSystemTime(new Date("2026-04-18T21:05:00Z"));
+    vi.setSystemTime(new Date("2026-04-19T00:05:00Z"));
     expect(getTodayWaterMl(prev)).toBe(0);
 
     const next = addWaterMl(prev, 200);
     expect(next["2026-04-18"]).toBe(500);
     expect(next["2026-04-19"]).toBe(200);
     expect(getTodayWaterMl(next)).toBe(200);
+  });
+
+  // ADR-0078 — the actual "device, not Kyiv" proof: pick an instant where the
+  // two regimes disagree on the calendar day and assert the DEVICE (UTC in
+  // this test env) key wins. 2026-04-18T22:00:00Z is still 04-18 on the
+  // device (UTC), but already 04-19 01:00 in Kyiv (UTC+3, DST) — a
+  // Kyiv-keyed implementation would file this entry under "2026-04-19".
+  it("keys water by the device day even when Kyiv has already rolled over", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-18T22:00:00Z"));
+    const log = addWaterMl({}, 250);
+    expect(log).toEqual({ "2026-04-18": 250 });
+    expect(getTodayWaterMl(log)).toBe(250);
   });
 
   it("drops corrupted entries from the log while adding", () => {

@@ -9,7 +9,9 @@
  *
  * Conventions:
  *  - Locale is `uk-UA` so thousand separators match the rest of the
- *    Ukrainian-language UI (NBSP between groups, comma decimal).
+ *    Ukrainian-language UI (NBSP between groups, comma decimal). The
+ *    separator is normalised to U+00A0 by `formatNumberUk` — Intl's own
+ *    U+202F is too narrow to read at our type sizes.
  *  - The currency symbol is appended with a regular space (`"1 250 ₴"`)
  *    — this matches the TxRow/HubSearch convention and is the format
  *    `Intl.NumberFormat("uk-UA", { style: "currency" })` produces too.
@@ -27,6 +29,8 @@
  * alone here so existing transaction visuals don't shift; new sites
  * should prefer `formatMoney` for non-transaction sums.
  */
+
+import { formatNumberUk } from "./formatNumber";
 
 export interface FormatMoneyOptions {
   /**
@@ -55,16 +59,12 @@ export interface FormatMoneyOptions {
 }
 
 function formatNumberUkUA(value: number, min: number, max: number): string {
-  try {
-    return value.toLocaleString("uk-UA", {
-      minimumFractionDigits: min,
-      maximumFractionDigits: max,
-    });
-  } catch {
-    // Older runtimes without full Intl support — fall back to a plain
-    // `toFixed`, accepting the loss of thousand separators.
-    return value.toFixed(max);
-  }
+  // Роздільник розрядів приходить із `formatNumberUk` — один на весь
+  // продукт (U+00A0, не вузький U+202F від Intl). Деталі — у `formatNumber.ts`.
+  return formatNumberUk(value, {
+    minimumFractionDigits: min,
+    maximumFractionDigits: max,
+  });
 }
 
 /**
@@ -104,4 +104,74 @@ export function formatMoneyFromKopecks(
   // 1.99 (not 1.99000000…2) regardless of upstream arithmetic noise.
   const hryvnia = Math.round(safe) / 100;
   return formatMoney(hryvnia, opts);
+}
+
+// ─── Типографічний розклад суми (анти-слоп П4) ───────────────────────────────
+
+/** Справжній мінус U+2212, а не дефіс: він однакової ширини з цифрами. */
+export const MINUS_SIGN = "−";
+
+/**
+ * Вузький нерозривний пробіл U+202F — між сумою і символом валюти.
+ * Escape-послідовністю, а не літералом: невидимий символ у коді ловить
+ * `no-irregular-whitespace` і читається як випадковість.
+ */
+export const NARROW_NBSP = "\u202F";
+
+/**
+ * Сума, розкладена на частини, які можна набрати РІЗНИМ кеглем.
+ *
+ * Гривні домінують; знак, копійки й символ валюти — окремі тири.
+ */
+export interface MoneyParts {
+  /** `""`, `"+"` або `MINUS_SIGN`. */
+  sign: string;
+  /** Цілі гривні з розрядами: `"1 250"`. */
+  integer: string;
+  /** Копійки БЕЗ роздільника: `"50"`. Порожньо, якщо їх не показуємо. */
+  fraction: string;
+  /** Роздільник дробової частини локалі (`","` для uk-UA). */
+  decimalSeparator: string;
+  /** Символ валюти. */
+  symbol: string;
+}
+
+/**
+ * Розкласти суму на типографічні частини.
+ *
+ * AI-CONTEXT: розбирається САМЕ рядок із `formatMoney`, а не число
+ * незалежним кодом. Інакше компонент і текстовий формат розійшлись би в
+ * групуванні розрядів чи в округленні, і та сама сума виглядала б по-різному
+ * в картці та в тексті поруч. Один формат — одне джерело.
+ *
+ * Знак нормалізується до U+2212: дефіс у більшості шрифтів вужчий за цифру,
+ * тож у стовпчику сум рядки з мінусом «зʼїжджають» відносно рядків без нього.
+ * Це рівно та дрібниця, з якої складається типографіка чисел (анти-слоп П4).
+ */
+export function splitMoneyParts(
+  amount: number,
+  opts: FormatMoneyOptions = {},
+): MoneyParts {
+  const { symbol = "₴", signed = false } = opts;
+  const minFractionDigits = opts.minFractionDigits ?? 0;
+  const maxFractionDigits = opts.maxFractionDigits ?? minFractionDigits;
+
+  const safe = Number.isFinite(amount) ? amount : 0;
+  const body = formatNumberUkUA(
+    Math.abs(safe),
+    minFractionDigits,
+    maxFractionDigits,
+  );
+
+  // Роздільник — перший не-цифровий і не-пробільний символ праворуч наліво.
+  // Беремо з форматованого рядка, а не з константи: локаль може змінитись,
+  // і хардкод «,» тихо перетворив би копійки на частину цілого.
+  const sep = /\d([.,])\d+$/.exec(body)?.[1] ?? "";
+  const cut = sep === "" ? -1 : body.lastIndexOf(sep);
+  const integer = cut === -1 ? body : body.slice(0, cut);
+  const fraction = cut === -1 ? "" : body.slice(cut + 1);
+
+  const sign = safe < 0 ? MINUS_SIGN : signed && safe > 0 ? "+" : "";
+
+  return { sign, integer, fraction, decimalSeparator: sep, symbol };
 }

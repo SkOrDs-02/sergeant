@@ -5,7 +5,7 @@
  * API change for every consumer (apps/web, apps/mobile, storybook,
  * insights package). If a snapshot diff is intentional (e.g. retuned
  * primary brand colour), update the snapshot and the matching
- * `docs/design/brandbook.md` + `docs/design/design-system.md` in the same PR.
+ * `docs/design/design/brandbook.md` + `docs/design/design/design-system.md` in the same PR.
  */
 
 import { describe, expect, it } from "vitest";
@@ -28,7 +28,7 @@ import {
 } from "./mobile.js";
 
 describe("@sergeant/design-tokens — tokens.js", () => {
-  it("brandColors matrix is stable (emerald/coral/teal/lime/amber/cream scales)", () => {
+  it("brandColors matrix is stable (emerald/teal/cyan/cream/rose/lime/stone scales)", () => {
     expect(brandColors).toMatchSnapshot();
   });
 

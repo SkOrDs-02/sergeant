@@ -3,8 +3,14 @@
  * Status: Active
  */
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
+import { useReducedMotion } from "@shared/hooks/useReducedMotion";
+import {
+  BOTTOM_NAV_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import type { HubView } from "../hooks/useHubUIState";
 import { getPagePrefetchProps, type PageKey } from "../lib/useRoutePrefetch";
@@ -19,26 +25,35 @@ import { messages } from "@shared/i18n/uk";
  * `ModuleBottomNav` so the whole app reads under one navigation pattern.
  *
  * Canonical shape:
- * - 60 px height (64 px on coarse-pointer devices).
- * - Browser: floating pill via `bottom-nav-shell` utility — `mx-3`,
- *   `mb-[calc(env(safe-area-inset-bottom)+0.5rem)]`, `rounded-3xl`.
- *   Inset + rounded so it reads as a distinct panel "lying on" the
- *   page background.
- * - PWA standalone: `bottom-nav-shell` docks the nav edge-to-edge
- *   against the screen bottom — no horizontal margins, flat bottom,
- *   rounded only at the top. The panel background fills the safe-area
- *   strip so there's no page-coloured dead space below the labels
- *   (user report 2026-06-05 / bottom-nav-gap).
- * - Active indicator: a rounded outline (`rounded-2xl border
- *   border-ink-strong/25`) framing the active tab — outline only, no
- *   fill. Module-agnostic by design.
- * - Active label + icon: `text-ink-strong`; inactive: `text-muted`.
+ * - Мінімальна висота треку 60 px (64 px on coarse-pointer devices); при
+ *   збільшеному тексті (low-vision, 200% root) трек росте разом із підписом.
+ * - Docked edge-to-edge against the screen bottom in both browser and PWA
+ *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
+ *   rounded only at the top. The panel background fills the safe-area strip
+ *   (padding-bottom) so there's no page-coloured dead space below the labels
+ *   and the nav never floats above the home indicator
+ *   (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
+ * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
+ *   outline):
+ *   - Light: a solid emerald (`brand-strong`) square with an ink-on-cream
+ *     foreground (`text-bg`). Module-agnostic — the hub carries emerald,
+ *     not a per-module accent.
+ *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
+ *     accent) square with the same ink foreground (`text-bg` resolves to
+ *     `#14100e` under `.dark`, so one bare class covers both themes).
  * - `role="tablist"` + `aria-selected` for AT.
  *
  * Layout contract:
  * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
  *   `ActiveWorkoutBanner` and other floating chrome must offset
- *   their `bottom:` by 60 px + safe-area-inset-bottom to sit above it.
+ *   their `bottom:` by the nav's real height to sit above it: at least
+ *   60 px + safe-area-inset-bottom, more when the text is scaled — read the
+ *   measured `--sgt-bottom-nav-inset` instead of hardcoding the 60 px.
+ * - Tab strip is a CSS grid with `repeat(N, minmax(0, 1fr))` columns and a
+ *   fixed-width pill (`h-full w-full`) per tab, identical to
+ *   `ModuleBottomNav` — до фіксу R1 (founder-аудит 2026-09-11) тут стояв
+ *   `flex` із `flex-initial`/`flex-1`, тобто інший алгоритм при однаковій
+ *   візуальній оболонці; тепер обидва наві рахують ширину табу однаково.
  *
  * The reports-tab reveal behavior (a single bounce-in animation when
  * the tab first appears) is preserved from the old `HubTabs` — see
@@ -55,6 +70,8 @@ interface HubBottomNavTabProps {
   active: boolean;
   onClick: () => void;
   label: string;
+  /** Optional compact label for the narrow visual pill; full label remains in SR text. */
+  visibleLabel?: string | undefined;
   iconName: string;
   className?: string | undefined;
   panelId: string;
@@ -64,7 +81,7 @@ interface HubBottomNavTabProps {
    * Слот рендериться у DOM, але приховується від користувача й AT.
    * Використовується для збереження геометрії tab-strip-у в момент,
    * коли «Звіти» ще не розблоковані (FTUX без жодного запису). Без цього
-   * перехід `showReports: false → true` спричиняє reflow усього `flex`-grid-а
+   * перехід `showReports: false → true` спричиняє reflow усього grid-а
    * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
    */
   hiddenSlot?: boolean | undefined;
@@ -77,6 +94,21 @@ interface HubBottomNavTabProps {
    */
   action?: boolean | undefined;
   onKeyDown?: ((event: KeyboardEvent<HTMLButtonElement>) => void) | undefined;
+  /**
+   * On-screen keyboard is open (keyboard-and-scroll.md § design
+   * decision 2) — the whole nav is sliding out of view, so every tab
+   * drops to `tabIndex={-1}` and loses its handlers the same way a
+   * `hiddenSlot` tab does. Kept distinct from `hiddenSlot` (FTUX
+   * geometry placeholder, `visibility: hidden`, no animation) because
+   * this one participates in the nav's slide-down transform instead.
+   */
+  kbHidden?: boolean | undefined;
+  /**
+   * #20 — Variant C. When true the active tab shows icon + label inside a
+   * pill; inactive tabs show only their icon. Animated with CSS transitions
+   * (width/opacity) unless reduced-motion is on.
+   */
+  reduceMotion?: boolean | undefined;
 }
 
 interface HubBottomNavItem extends HubBottomNavTabProps {
@@ -87,6 +119,7 @@ function HubBottomNavTab({
   active,
   onClick,
   label,
+  visibleLabel,
   iconName,
   className,
   panelId,
@@ -95,6 +128,8 @@ function HubBottomNavTab({
   hiddenSlot = false,
   action = false,
   onKeyDown,
+  kbHidden = false,
+  reduceMotion = false,
 }: HubBottomNavTabProps) {
   const prefetchProps =
     !hiddenSlot && prefetchPage ? getPagePrefetchProps(prefetchPage) : {};
@@ -106,41 +141,99 @@ function HubBottomNavTab({
         "aria-controls": panelId,
       } as const);
 
+  // #20 Variant C — pill wraps icon+label for the active tab; inactive tabs
+  // show only their icon. The pill itself carries the brand background so the
+  // button background stays transparent: this way the active "slot" doesn't
+  // change size and there is no layout shift as tabs switch. Width/opacity of
+  // the label span is animated with CSS transitions (collapsed to opacity-only
+  // under prefers-reduced-motion via the `reduceMotion` prop).
+  const transition = reduceMotion
+    ? "transition-opacity"
+    : "transition-[max-width,opacity]";
+
   return (
     <button
       type="button"
       id={`hub-tab-${id}`}
       {...tabAria}
-      tabIndex={hiddenSlot ? -1 : active || action ? 0 : -1}
-      onClick={hiddenSlot ? undefined : onClick}
-      onKeyDown={hiddenSlot || action ? undefined : onKeyDown}
+      tabIndex={hiddenSlot || kbHidden ? -1 : active || action ? 0 : -1}
+      onClick={hiddenSlot || kbHidden ? undefined : onClick}
+      onKeyDown={hiddenSlot || action || kbHidden ? undefined : onKeyDown}
       {...prefetchProps}
-      // `visibility: hidden` (а не `aria-hidden`) — щоб accessibility-tree
-      // ховала слот за computed-стилем, але RTL міг знайти його через
-      // `getByRole(..., { hidden: true })`. `aria-hidden` стер би
-      // accessible name (`label`), і тести з `name: /Звіти/` падали б.
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        "relative flex-1 flex flex-col items-center justify-end gap-1 pb-1.5",
-        "my-1.5 rounded-2xl border transition-all duration-200 min-h-[48px] pointer-coarse:min-h-[52px]",
-        "active:scale-95",
+        // Контейнер розкладає таби через CSS grid із рівними колонками
+        // (`repeat(N, minmax(0,1fr))` — той самий алгоритм, що в
+        // `ModuleBottomNav`), тож таб більше не рахує собі ширину сам —
+        // ні `flex-initial`, ні `flex-1` тут більше не потрібні (founder-
+        // аудит R1, 2026-09-11: два нижні наві виглядали однаково, але
+        // розкладались різними алгоритмами, і саме звідси бралась
+        // нерівність між центрами іконок).
+        "relative flex items-center justify-center min-w-0",
+        "min-h-[48px] pointer-coarse:min-h-[52px]",
+        "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-        active
-          ? "text-ink-strong border-ink-strong/25"
-          : "text-text border-transparent hover:text-text/80",
+        "text-text",
         hiddenSlot && "invisible pointer-events-none",
         className,
       )}
     >
+      {/*
+        Inner pill — ОДНАКОВИЙ горизонтальний бокс (`h-full w-full`) в
+        активному й неактивному стані, по центру grid-колонки. Раніше
+        активний піл ріс за вмістом (`flex-initial`) і потребував власного
+        `max-w-full`-запобіжника, щоб не вилізти за межі слота — а підпис
+        при цьому різало до нечитабельних 42px («Налаштування» 87→42px,
+        браузерний аудит 2026-08-26). Тепер підпис лежить ПІД іконкою
+        (`flex-col`), а не поруч із нею: колонка вже рівна для всіх табів,
+        і підпису дістається вся її ширина, а не залишок після іконки —
+        той самий прийом, що в `ModuleBottomNav`.
+      */}
       <span
-        className="relative transition-all duration-200 w-10 h-7 flex items-center justify-center"
         aria-hidden
+        className={cn(
+          // AI-DANGER: підпис активного табу мусить лишатись ПІД іконкою
+          // (`flex-col`). Не повертай його в один рядок з іконкою — ні
+          // `flex-row`, ні `gap` між ними по горизонталі. Рівні grid-колонки
+          // вище тримаються саме на цьому: у рядку іконка й підпис ділять
+          // ширину колонки, і підпису лишається залишок (~42px на 4-табовому
+          // наві при 390px — «Налаштування» різало 87→42px, браузерний аудит
+          // 2026-08-26, через що рівні колонки тоді й відкотили). У стовпчику
+          // підпис отримує ВСЮ ширину колонки (~84.5px), і саме тому рівні
+          // колонки тут знову припустимі. Тобто це не дві незалежні правки, а
+          // одна: `grid` рівних колонок діє лише в парі з `flex-col`. Зміниш
+          // одне — перевір ширини 320-390px, інакше повернеш дефект 2026-08-26.
+          "flex h-full w-full min-w-0 items-center justify-center rounded-2xl px-1 py-1",
+          "duration-base ease-standard",
+          active
+            ? "flex-col gap-0.5 bg-brand-strong dark:bg-brand-400 text-bg"
+            : "bg-transparent text-text",
+          !reduceMotion && "transition-[background-color,color]",
+        )}
       >
-        <Icon name={iconName} size={20} strokeWidth={2} />
+        <Icon
+          name={iconName}
+          size="lg"
+          strokeWidth={active ? 2.5 : 2}
+          className="shrink-0"
+        />
+        {/* Label: visible only for active tab, slides in/out */}
+        <span
+          data-nav-label
+          className={cn(
+            "text-style-caption font-semibold leading-tight overflow-hidden whitespace-nowrap text-ellipsis",
+            transition,
+            "duration-base ease-standard",
+            active
+              ? "max-w-full opacity-100"
+              : "max-w-0 opacity-0 pointer-events-none",
+          )}
+        >
+          {visibleLabel ?? label}
+        </span>
       </span>
-      <span className="text-style-caption font-semibold leading-none">
-        {label}
-      </span>
+      {/* Screen-reader-only label so every tab has an accessible name */}
+      <span className="sr-only">{label}</span>
     </button>
   );
 }
@@ -151,7 +244,7 @@ export interface HubBottomNavProps {
   /**
    * «Звіти» прибрана з tab-strip-а, поки у користувача немає жодного
    * реального запису. Порожній звіт — найгірший FTUX-стан: юзер тапне,
-   * побачить «— ₴» і втратить довіру до модуля. Тому tab з'являється
+   * побачить «— ₴» і втратить довіру до модуля. Тому tab зʼявляється
    * лише коли `hasAnyRealEntry()` повертає `true` (див. `firstRealEntry.ts`).
    */
   showReports?: boolean | undefined;
@@ -188,6 +281,18 @@ export function HubBottomNav({
   const prevShowReportsRef = useRef(showReports);
   const [animateReveal, setAnimateReveal] = useState(false);
   const tablistRef = useRef<HTMLDivElement>(null);
+  // On-screen keyboard open → slide the nav away (spec
+  // keyboard-and-scroll.md § design decision 2; same treatment as
+  // ModuleBottomNav / RoutineBottomNav's FAB).
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const kbHidden = kbInsetPx > 0;
+  const reduceMotion = useReducedMotion();
+  // Публікуємо зайняту знизу смугу для fixed-шарів з інших гілок дерева
+  // (`<ToastContainer>` живе у `Providers`, поза `children`, тож локальний
+  // `--bottom-nav-height` до нього не доходить). Під відкритою клавіатурою
+  // навігація зʼїжджає вниз — тоді змінна знімається і тост опускається.
+  const navRef = useRef<HTMLElement>(null);
+  useBottomInsetVar(navRef, BOTTOM_NAV_INSET_VAR, !kbHidden);
 
   // Roving tabindex (інактивні таби tabIndex=-1) без стрілок робив
   // «Звіти»/«Налаштування» недосяжними з клавіатури — WAI-ARIA tabs
@@ -269,7 +374,7 @@ export function HubBottomNav({
     onClick: () => onChange("reports"),
     iconName: "bar-chart",
     prefetchPage: "reports",
-    label: "Звіти",
+    label: messages.nav.reports,
     hiddenSlot: !showReports,
     className: animateReveal ? "animate-bounce-in" : undefined,
   });
@@ -311,17 +416,56 @@ export function HubBottomNav({
     iconName: "settings",
     prefetchPage: "settings",
     label: "Налаштування",
+    // Рішення власника 2026-09-12 (founder-ux-review round 2, R1). «Налаштування»
+    // — 12 символів проти 5-7 у сусідів («Головна», «Звіти», «Профіль»), і на
+    // ≤375px воно не влазило в свою колонку: text-ellipsis давав
+    // «Налаштува…». Розглядались два інші варіанти й обидва відкинуті: два
+    // рядки лишали 2px запасу у 60px-наві (тобто ламались би від будь-якої
+    // зміни шрифта, і ламались би тихо), а прийняте обрізання лишало
+    // видимий дефект на найпоширенішій ширині.
+    //
+    // AI-DANGER: коротшає лише ВИДИМИЙ підпис. Доступна назва мусить
+    // лишатись повною — її дає `<span className="sr-only">{label}</span>`,
+    // і всі тести навбара шукають таб саме по `name: /Налаштування/`.
+    // Не зводь ці два поля в одне: «Опції» як accessible name зробить таб
+    // невідрізненним від будь-якого меню опцій у скрінрідері.
+    visibleLabel: "Опції",
   });
+
+  // Grid-колонки, не flex: усі таби (включно з action-табом «Увійти», який
+  // рендериться поза `tabs`-масивом) мають бути РІВНОЇ ширини (тим самим
+  // алгоритмом, що в `ModuleBottomNav`), інакше центр іконки в кожному
+  // табі сидить у своїй унікальній точці замість центру колонки.
+  const columnCount = tabs.length + (authAction ? 1 : 0);
 
   return (
     <nav
+      ref={navRef}
       aria-label={messages.nav.hubSections}
+      aria-hidden={kbHidden || undefined}
       className={cn(
         "shrink-0 relative z-30",
         "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "transition-transform duration-base motion-reduce:transition-none",
+        kbHidden && "translate-y-full pointer-events-none",
       )}
     >
-      <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">
+      {/*
+        AI-DANGER: висота треку — МІНІМУМ (`min-h-*`), не фіксована. Фіксована
+        `h-[60px]` зрізала підпис активного таба до 0-20px при 200% кореневого
+        тексту (low-vision, `tests/a11y/low-vision.spec.ts`): текст росте з
+        rem, а трек — ні. На 100% тексту вміст нижчий за мінімум, тож нав
+        виглядає як раніше (60px, 64px на coarse pointer). Усе, що рахує
+        «скільки зайнято знизу», бере ВИМІРЯНЕ `--sgt-bottom-nav-inset`
+        (`useBottomInsetVar`), а не цифри 60/64 — інакше нав росте, а контент
+        заїжджає під нього.
+      */}
+      <div
+        className="relative grid min-h-[60px] pointer-coarse:min-h-[64px] gap-1 px-1"
+        style={{
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        }}
+      >
         <div role="tablist" ref={tablistRef} className="contents">
           {tabs.map((tab) => (
             <HubBottomNavTab
@@ -332,11 +476,14 @@ export function HubBottomNav({
               onClick={tab.onClick}
               iconName={tab.iconName}
               label={tab.label}
+              visibleLabel={tab.visibleLabel}
               className={tab.className}
               prefetchPage={tab.prefetchPage}
               hiddenSlot={tab.hiddenSlot}
               action={tab.action}
               onKeyDown={handleTablistKeyDown}
+              kbHidden={kbHidden}
+              reduceMotion={reduceMotion}
             />
           ))}
         </div>
@@ -349,10 +496,13 @@ export function HubBottomNav({
             onClick={authAction.onClick}
             iconName={authAction.iconName}
             label={authAction.label}
+            visibleLabel={authAction.visibleLabel}
             className={authAction.className}
             prefetchPage={authAction.prefetchPage}
             hiddenSlot={authAction.hiddenSlot}
             action={authAction.action}
+            kbHidden={kbHidden}
+            reduceMotion={reduceMotion}
           />
         )}
       </div>

@@ -16,7 +16,10 @@ import {
   issueTitle,
   issueBody,
   evaluateFreshnessCadence,
+  markerPath,
+  selectResolvedIssues,
 } from "../check-freshness.mjs";
+import { nextReviewFor } from "../freshness-config.mjs";
 
 // ── parseHeader ──────────────────────────────────────────────────────────────
 
@@ -192,8 +195,8 @@ describe("daysBetween", () => {
 describe("freshnessMarker", () => {
   it("produces the correct HTML comment", () => {
     assert.equal(
-      freshnessMarker("docs/03-operations/observability/runbook.md"),
-      "<!-- doc-freshness:docs/03-operations/observability/runbook.md -->",
+      freshnessMarker("docs/operations/observability/runbook.md"),
+      "<!-- doc-freshness:docs/operations/observability/runbook.md -->",
     );
   });
 });
@@ -202,10 +205,10 @@ describe("freshnessMarker", () => {
 
 describe("issueTitle", () => {
   it("includes the file path", () => {
-    const title = issueTitle("docs/05-design/design/brandbook.md");
+    const title = issueTitle("docs/design/design/brandbook.md");
     assert.equal(
       title,
-      "docs: freshness overdue — docs/05-design/design/brandbook.md",
+      "docs: freshness overdue — docs/design/design/brandbook.md",
     );
   });
 });
@@ -218,9 +221,9 @@ describe("issueBody", () => {
     assert.ok(body.includes("<!-- doc-freshness:README.md -->"));
   });
 
-  it("includes last validated date", () => {
+  it("includes last touched date", () => {
     const body = issueBody("README.md", "2026-04-27", "2026-07-26", 5);
-    assert.ok(body.includes("**Last validated:** 2026-04-27"));
+    assert.ok(body.includes("**Last touched:** 2026-04-27"));
   });
 
   it("includes days overdue", () => {
@@ -230,7 +233,7 @@ describe("issueBody", () => {
 
   it("handles unknown lastValidated gracefully", () => {
     const body = issueBody("README.md", null, "2026-07-26", 10);
-    assert.ok(body.includes("**Last validated:** unknown"));
+    assert.ok(body.includes("**Last touched:** unknown"));
   });
 });
 
@@ -255,12 +258,85 @@ describe("evaluateFreshnessCadence", () => {
       today: "2026-05-14",
     });
 
+    // `docs/legacy.md` не має явної дати перегляду, тож вона рахується
+    // так само, як її записав би бампер: каденція + детермінований
+    // розкид від шляху. Рахуємо тією ж функцією, а не хардкодимо число.
+    const legacyDue = nextReviewFor("docs/legacy.md", "2026-01-01", {
+      defaultCadenceDays: 30,
+      cadenceOverrides: {},
+    });
     assert.deepEqual(
       failures.map((f) => [f.path, f.status, f.nextReview]),
       [
         ["docs/overdue.md", "overdue", "2026-02-01"],
-        ["docs/legacy.md", "overdue", "2026-01-31"],
+        ["docs/legacy.md", "overdue", legacyDue],
       ],
+    );
+  });
+});
+
+describe("markerPath", () => {
+  it("витягує шлях із marker-коментаря", () => {
+    assert.equal(
+      markerPath("<!-- doc-freshness:docs/today.md -->\n\n**File:** …"),
+      "docs/today.md",
+    );
+  });
+
+  it("толерантний до пробілів усередині коментаря", () => {
+    assert.equal(
+      markerPath("<!--   doc-freshness:docs/a/b.md   -->"),
+      "docs/a/b.md",
+    );
+  });
+
+  it("повертає null для тіла без marker-а", () => {
+    assert.equal(markerPath("написано людиною, без marker-а"), null);
+    assert.equal(markerPath(null), null);
+    assert.equal(markerPath(undefined), null);
+  });
+});
+
+describe("selectResolvedIssues", () => {
+  const issues = [
+    { number: 1, body: freshnessMarker("docs/still-overdue.md") },
+    { number: 2, body: freshnessMarker("docs/now-fresh.md") },
+    { number: 3, body: freshnessMarker("docs/deleted.md") },
+    { number: 4, body: "заведено руками, marker-а нема" },
+  ];
+
+  it("закриває доки, які більше не прострочені або зникли", () => {
+    const resolved = selectResolvedIssues({
+      issues,
+      overduePaths: new Set(["docs/still-overdue.md"]),
+    });
+    assert.deepEqual(
+      resolved.map((r) => r.number),
+      [2, 3],
+    );
+  });
+
+  it("не чіпає issue без marker-а — його міг завести живий автор", () => {
+    const resolved = selectResolvedIssues({ issues, overduePaths: new Set() });
+    assert.ok(!resolved.some((r) => r.number === 4));
+  });
+
+  it("лишає відкритим issue доку, який усе ще прострочений", () => {
+    const resolved = selectResolvedIssues({
+      issues,
+      overduePaths: new Set([
+        "docs/still-overdue.md",
+        "docs/now-fresh.md",
+        "docs/deleted.md",
+      ]),
+    });
+    assert.deepEqual(resolved, []);
+  });
+
+  it("порожній вхід не падає", () => {
+    assert.deepEqual(
+      selectResolvedIssues({ issues: [], overduePaths: new Set() }),
+      [],
     );
   });
 });

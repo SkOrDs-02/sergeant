@@ -81,6 +81,31 @@ describe("buildMeasurementSeries", () => {
     expect(weight.map((p) => p.value)).toEqual([80, 79]);
     expect(fat.map((p) => p.value)).toEqual([18, 17.5]);
   });
+
+  it("buildWeightTrend без dailyLog поводиться байт-у-байт як раніше", () => {
+    // Два записи в один Kyiv-день: без union-джерела дедупу НЕ відбувається.
+    const entries = [
+      { at: "2026-01-02T06:00:00Z", weightKg: 80 },
+      { at: "2026-01-02T19:00:00Z", weightKg: 79 },
+    ];
+    expect(buildWeightTrend(entries).map((p) => p.value)).toEqual([80, 79]);
+  });
+
+  it("buildWeightTrend з dailyLog будує union обох сховищ", () => {
+    const measurements = [{ at: "2026-01-02T06:00:00Z", weightKg: 80 }];
+    const dailyLog = [{ at: "2026-01-01T06:00:00Z", weightKg: 82 }];
+    const trend = buildWeightTrend(measurements, 8, dailyLog);
+    expect(trend.map((p) => p.value)).toEqual([82, 80]);
+  });
+
+  it("buildWeightTrend з dailyLog дедуплікує колізію дня за новішим `at`", () => {
+    const trend = buildWeightTrend(
+      [{ at: "2026-01-02T06:00:00Z", weightKg: 80 }],
+      8,
+      [{ at: "2026-01-02T19:00:00Z", weightKg: 79 }],
+    );
+    expect(trend.map((p) => p.value)).toEqual([79]);
+  });
 });
 
 describe("countValidPoints", () => {

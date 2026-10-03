@@ -17,7 +17,7 @@ describe("buildActionCard", () => {
     expect(card?.toolName).toBe("create_transaction");
     expect(card?.status).toBe("completed");
     expect(card?.module).toBe("finyk");
-    expect(card?.title).toContain("Транзакцію");
+    expect(card?.title).toContain("Операцію");
     expect(card?.summary).toContain("120");
     expect(card?.summary).toContain("кава");
   });
@@ -122,7 +122,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "find_transaction",
       input: { query: "АТБ", amount: 450 },
-      result: "Знайдено 1 транзакц.",
+      result: "Знайдено 1 операц.",
     });
     expect(card?.module).toBe("finyk");
     expect(card?.title).toContain("знайдено");
@@ -135,7 +135,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "batch_categorize",
       input: { pattern: "Сільпо", category_id: "food" },
-      result: "Категорію 2 транзакц. змінено на food",
+      result: "Категорію 2 операц. змінено на food",
     });
     expect(card?.module).toBe("finyk");
     expect(card?.title).toContain("Категорії");
@@ -201,7 +201,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "set_habit_schedule",
       input: { habit_id: "h1", days: ["mon", "wed", "fri"] },
-      result: 'Розклад звички "Тренування" — Пн, Ср, Пт',
+      result: 'Розклад звички "Тренування": Пн, Ср, Пт',
     });
     expect(card?.module).toBe("routine");
     expect(card?.icon).toBe("calendar");
@@ -230,17 +230,28 @@ describe("buildActionCard", () => {
     expect(card?.icon).toBe("pause-circle");
     expect(card?.title).toBe("Стан паузи звички оновлено");
     expect(card?.summary).toContain("h1");
-    expect(card?.summary).toContain("на паузі");
+    // Хвиля 4: картка показує ДІАПАЗОН, а не просто стан — без нього
+    // підтвердження не відповідає на єдине питання «на скільки?».
+    expect(card?.summary).toContain("пауза");
     expect(card?.risky).toBeUndefined();
   });
 
-  it("pause_habit з paused=false показує «знято з паузи» у summary", () => {
+  it("pause_habit з paused=false показує повернення з паузи у summary", () => {
     const card = buildActionCard({
       name: "pause_habit",
       input: { habit_id: "h1", paused: false },
-      result: 'Звичку "Біг" знято з паузи.',
+      result: 'Звичку "Біг" повернуто з паузи від сьогодні.',
     });
-    expect(card?.summary).toContain("знято з паузи");
+    expect(card?.summary).toContain("повернення з паузи");
+  });
+
+  it("pause_habit із діапазоном показує обидві межі", () => {
+    const card = buildActionCard({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+      result: "ok",
+    });
+    expect(card?.summary).toContain("2026-08-10 – 2026-08-17");
   });
 
   it("pause_habit failed — статус failed і суфікс у title", () => {
@@ -301,7 +312,7 @@ describe("buildActionCard", () => {
         result: "Помилка виконання: timeout",
       });
       expect(failed?.status).toBe("failed");
-      expect(failed?.title).toBe("Порівняння тижнів — не вийшло");
+      expect(failed?.title).toBe("Порівняння тижнів, не вийшло");
     });
   });
 });
@@ -365,7 +376,7 @@ describe("query / analytics tools (talk-to-your-data PR4)", () => {
   });
 
   it("query-картка не truncate-иться навіть для довгого результату", () => {
-    const long = "Знайдено 50 транзакц. ".repeat(20).trim();
+    const long = "Знайдено 50 операц. ".repeat(20).trim();
     const card = buildActionCard({
       name: "query_transactions",
       input: {},
@@ -398,8 +409,39 @@ describe("isRiskyTool", () => {
   });
 
   it("звичайні tools — не risky", () => {
-    expect(isRiskyTool("create_transaction")).toBe(false);
+    expect(isRiskyTool("log_water")).toBe(false);
     expect(isRiskyTool("log_meal")).toBe(false);
     expect(isRiskyTool("morning_briefing")).toBe(false);
+  });
+});
+
+describe("покриття карток (PR-A5)", () => {
+  it.each(["add_program_day", "get_daily_series", "import_monobank_range"])(
+    "будує картку для %s",
+    (name) => {
+      const card = buildActionCard({ name, input: {}, result: "ok" });
+      expect(card).not.toBeNull();
+      expect(card?.title).not.toBe(name);
+    },
+  );
+
+  it("гейт: кожен tool зі схеми має картку або є в явному allowlist", async () => {
+    const { ALL_HUBCHAT_TOOL_NAMES } = await import("@sergeant/shared");
+    // Свідомо без картки (порожньо: нові винятки — лише з обґрунтуванням).
+    const NO_CARD_ALLOWLIST = new Set<string>();
+    const missing = ALL_HUBCHAT_TOOL_NAMES.filter(
+      (name) =>
+        !NO_CARD_ALLOWLIST.has(name) &&
+        buildActionCard({ name, input: {}, result: "ok" }) === null,
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it("isFailureResult розпізнає помилкові результати", async () => {
+    const { isFailureResult } = await import("./hubChatActionCards");
+    expect(isFailureResult("Помилка виконання")).toBe(true);
+    expect(isFailureResult("Не вдалося зберегти")).toBe(true);
+    expect(isFailureResult("Невідома дія: x")).toBe(true);
+    expect(isFailureResult("Нотатку збережено")).toBe(false);
   });
 });

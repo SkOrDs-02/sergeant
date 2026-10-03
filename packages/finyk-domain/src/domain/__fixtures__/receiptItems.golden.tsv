@@ -1,0 +1,96 @@
+# Golden-set мапера позицій чека Сільпо. Три колонки через TAB:
+#   назва позиції <TAB> category_slug (може бути порожнім) <TAB> правильна категорія
+#
+# Третя колонка — розмітка людиною. Порожня = «ще не розмічено»: такий
+# рядок іде у звіт, а не валить тест.
+#
+# Дозволені категорії: food, groceries, cafe, transport, entertainment,
+# health, shopping, smoking, alcohol, utilities, tech, subscriptions,
+# education, travel, other.
+#
+# Як наповнити і чому саме так — докстрінг у
+# `receiptSplitSuggestion.golden.test.ts`. Частоти сюди НЕ клади: репо
+# публічне, і вони перетворюють словник товарів на журнал покупок.
+Напій енергетичний Red Bull		groceries
+Сигарети Parliament Aqua Blue з фільтром		smoking
+Вода мінеральна Миргородська ІДС		groceries
+Огірки Krava малосольні		groceries
+Пакет Сільпо 3в1 12кг		shopping
+Йогурт Галичина Карпатський вишня 2,2% пл		groceries
+Сигарети Parliament Carat Purple з фільтром		smoking
+Холодець по-домашньому в упаковці		groceries
+Айран Премія 1,8% пл		groceries
+Банан		groceries
+Батарейка Премія AA LR06		shopping
+Бекон Лавка традицій Димні Традиції Угорський свиний с/к, нарізка		groceries
+Вареники Премія з картоплею		groceries
+Виноград чорний без кісточок		groceries
+Виріб тютюновий д/елек нагр Terea Sun Pearl		smoking
+Вироби макаронні Garofalo Пазіель		groceries
+Горбуша слабосолена		groceries
+Гумка жувальна Dirol кавунно-динний коктейль		groceries
+Йогурт Галичина Карпатський Лісова ягода 2,2% пет		groceries
+Йогурт Галичина Карпатський малина 2,2%		groceries
+Йогурт Галичина Карпатський чорниця-злаки 2,2%		groceries
+Кетчуп Щедро Барбекю д/п		groceries
+Кефір Простонаше 1% пет		groceries
+Ковбаски ЛТ Світ м'яса Салямі Стік яловичі с/к фас		groceries
+Креветка у соусі Тартар		groceries
+Куряча четвертина гриль		groceries
+Молоко ультрапастериз Селянське високобілкове 0,5%		groceries
+Мюслі AXA медові з шоколадом і бананом		groceries
+Напій Coca-Cola		groceries
+Напій енергетичний Burn Apple Kivi б/алк з/б		groceries
+Напій енергетичний Red Bull смак кавуна з/б		groceries
+Напій з какао Nesquik Opti-Start швидкорозчинний		groceries
+Напій соковм Schweppes Лохиновий мохіто б/а с/г зб		groceries
+Насіння Roni гарбуза		groceries
+Оселедець під шубою в упаковці		groceries
+Пакет біорозкладний 3кг 958358		shopping
+Пакет Сільпо 3в1 18кг		shopping
+Пакет Сільпо Пакет з Пакетів 12кг		shopping
+Пакет Сільпо Пакет з Пакетів 18 кг		shopping
+Пакет Сільпо Пакет з Пакетів 18кг		shopping
+Паляничка сирна		groceries
+Папір туалетний Премія вологий дитячий		shopping
+Паста арахісова Лавка традицій Aumi кранч		groceries
+Пельмені Геркулес Фірмові		groceries
+Печиво Milka Choco Moo вкрите молочним шоколадом		groceries
+Піца Франческо		groceries
+Пластівці вівсяні Сквирянка ніжні п/п		groceries
+Пластівці гречані Сквирянка п/п		groceries
+Плов зі свининою		groceries
+Продукт Премія з ікрою риби і лососем пастер		groceries
+Разом смачніше «Франческо»		groceries
+Салат «Кальмар королівський» в унагі соусі		groceries
+Свинина обJerky корейське барбекю в'ялена		groceries
+Сигарети Sobranie Golds з фільтром		smoking
+Сир Canzona «Данаблу» 50%		groceries
+Сир «Блю Д'Овернь» Laqueuille 52% з коров'ячого молока		groceries
+Сирок глазурований «Чудо» зі смаком шоколаду 15%		groceries
+Сир Пирятин Голандський твердий 45%		groceries
+Снеки Natural Garden норі з кунжутовою олією смажені		groceries
+Снек пікантний Pringles зі смаком барбекю		groceries
+Сніданок Good morning, Granola To Go з журавлиною		groceries
+Соус Furore з грушею		groceries
+Соус Торчин Мехікано д/п		groceries
+Соус Щедро Батумський гострий д/п		groceries
+Соус Щедро Сацебелі д/п		groceries
+Суміш насіння Winway Салатний мікс		groceries
+Суміш овочева Рудь Мексиканка для жарки		groceries
+Суміш «Премія»® горіхова		groceries
+Тим'ян Зелена Країна		groceries
+Удон з куркою та печерицями в соусі терияки		groceries
+Форель, стейк охолоджений		groceries
+Хамон Serrano Casademont, нарізка		groceries
+Хліб Кулиничи Європейський тостовий висівковий		groceries
+Хліб подовий житньо-пшеничний мультизернов		groceries
+Хліб Сумська Паляниця Grains тостовий нарізний		groceries
+Хліб Сумська паляниця Фінський нарізанний		groceries
+Холодник зі свининою та вареною ковбасою		groceries
+Цукерки Fruittella асорті жувальні		groceries
+Цукерки Raffaello		groceries
+Чипси Люкс зі смаком сиру		groceries
+Шоколад молочний Millennium Gold мигдаль		groceries
+Шоколад чорний Millennium Golden Nut з мигдалем		groceries
+Яйця курячі Квочка XL відбірні СВ		groceries

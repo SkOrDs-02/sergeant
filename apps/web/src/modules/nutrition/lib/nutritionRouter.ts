@@ -9,6 +9,17 @@
 export type NutritionPage = "start" | "pantry" | "log" | "menu";
 
 /**
+ * Порядок вкладок для нижньої навігації та горизонтального свайпу
+ * (`SwipePages`) — один список, щоб жест і смужка табів рухались в один бік.
+ */
+export const NUTRITION_PAGE_IDS: readonly NutritionPage[] = [
+  "start",
+  "pantry",
+  "log",
+  "menu",
+];
+
+/**
  * Audit 08 F14: type-guard predicate replaces the `as NutritionPage` casts
  * downstream. If a future variant lands in `NutritionPage`, TypeScript will
  * fail this set-literal narrowing and force the consumer to either add the

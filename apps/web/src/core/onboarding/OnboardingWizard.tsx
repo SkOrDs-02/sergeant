@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { shouldShowOnboarding as sharedShouldShowOnboarding } from "./onboardingGate";
 import { WelcomeOneScreen } from "./WelcomeOneScreen";
 import { GoalFirstScreen } from "./GoalFirstScreen";
@@ -35,7 +36,6 @@ export function shouldShowOnboarding() {
 export function OnboardingWizard({
   onDone,
   variant = "modal",
-  mode = "real",
   onSecondaryAction,
 }: {
   onDone: (
@@ -44,40 +44,20 @@ export function OnboardingWizard({
   ) => void;
   variant?: "modal" | "fullPage";
   /**
-   * "real" (default) — first-run wizard: persists picks, fires the FTUX
-   * funnel events, and marks onboarding done on finish.
-   *
-   * "tour" — read-only replay launched from Settings → "Подивитись tour".
-   * Skips all storage writes and FTUX-funnel events, fires
-   * `onboarding_replay_*` instead, and `finish` simply closes the
-   * wizard without touching the user's onboarding / first-action state.
-   */
-  mode?: "real" | "tour";
-  /**
    * Host-owned secondary handler. Serves two purposes:
    *
    *   1. PR-05 demo-mode CTA. The «Подивитись приклад» button
    *      rendered inside the splash card invokes this when the
    *      `/welcome` host (`fullPage` variant) wires demo seeding.
-   *      Tour replay leaves this hidden so the read-only replay can
-   *      never accidentally trigger the seeder against the host's
-   *      store.
-   *   2. Soft-pause Escape handler for the modal variant. Real-mode
-   *      modals call this when Escape is pressed inside the dialog,
-   *      so the host can hide the wizard without firing onboarding
-   *      analytics or touching the `hub_onboarding_done_v1` gate.
-   *      Picks are already persisted on every state change, so
-   *      reopening the wizard restores the in-progress selection
-   *      exactly.
-   *
-   * Tour-mode Escape ignores this prop — it short-circuits to the
-   * same `onDone(null, { intent: "tour_replay" })` payload as the
-   * «Закрити» CTA so the dismissal path stays single-source.
+   *   2. Soft-pause Escape handler for the modal variant. Modals call
+   *      this when Escape is pressed inside the dialog, so the host can
+   *      hide the wizard without firing onboarding analytics or touching
+   *      the `hub_onboarding_done_v1` gate. Picks are already persisted
+   *      on every state change, so reopening the wizard restores the
+   *      in-progress selection exactly.
    */
   onSecondaryAction?: () => void;
 }) {
-  const isTour = mode === "tour";
-
   const {
     picks,
     togglePick,
@@ -85,16 +65,14 @@ export function OnboardingWizard({
     toggleExpanded,
     heroCopy,
     ctaDisabled,
-    ctaLabelOverride,
     emptyPicksHint,
     finish,
     submitting,
-    secondaryAction,
     goalFirstVariant,
     pickGoal,
     skipGoalFirst,
     goalFirstSkipped,
-  } = useOnboardingWizardState({ mode, onDone, onSecondaryAction });
+  } = useOnboardingWizardState({ onDone });
 
   // PR-13: render the outcome-first screen for users assigned to the
   // `goal_first` arm until they either pick an outcome (the hook
@@ -135,22 +113,14 @@ export function OnboardingWizard({
   // exactly. No `<ConfirmDialog>` step because nothing destructive
   // happens — we just hide the overlay.
   //
-  // Real-mode Escape forwards to `onSecondaryAction` so the host
-  // owns the «where did the user end up» decision (close modal,
-  // route to `/welcome`, seed demo, etc.) without the wizard
-  // having to model the dismissal lifecycle itself.
-  //
-  // Tour replay short-circuits to `finish()` so Escape mirrors the
-  // «Закрити» CTA exactly (single dismissal contract, single
-  // `onDone` payload). The hook also gives us a Tab cycle inside the
-  // panel and restores focus to whatever triggered the wizard.
+  // Escape forwards to `onSecondaryAction` so the host owns the «where
+  // did the user end up» decision (close modal, route to `/welcome`,
+  // seed demo, etc.) without the wizard having to model the dismissal
+  // lifecycle itself. The focus-trap hook also gives us a Tab cycle
+  // inside the panel and restores focus to whatever triggered the wizard.
   const handleEscape = useCallback(() => {
-    if (isTour) {
-      finish();
-      return;
-    }
     onSecondaryAction?.();
-  }, [isTour, finish, onSecondaryAction]);
+  }, [onSecondaryAction]);
   useDialogFocusTrap(variant === "modal", panelRef, {
     onEscape: handleEscape,
     inertBackground: true,
@@ -173,10 +143,8 @@ export function OnboardingWizard({
           expanded={expanded}
           onToggleExpanded={toggleExpanded}
           copy={heroCopy}
-          ctaLabelOverride={ctaLabelOverride}
           ctaDisabled={ctaDisabled}
           emptyPicksHint={emptyPicksHint}
-          onSecondaryAction={secondaryAction}
           headingRef={headingRef}
           ctaBusy={submitting}
         />
@@ -191,10 +159,8 @@ export function OnboardingWizard({
       expanded,
       toggleExpanded,
       heroCopy,
-      ctaLabelOverride,
       ctaDisabled,
       emptyPicksHint,
-      secondaryAction,
       submitting,
     ],
   );
@@ -232,7 +198,18 @@ export function OnboardingWizard({
   //   - коли overflow — зовнішній шар прокручується, відкриваючи і
   //     верх (логотип), і низ (CTA + «Згорнути»). `overscroll-contain`
   //     гасить body-bounce на iOS.
-  return (
+  //
+  // 2026-06-30 — modal-варіант порталиться у `document.body`. Tour-replay
+  // (Settings → «Екскурсія») рендериться всередині `SettingsGroup`, а та —
+  // `Card prominence="glass"` із `backdrop-blur-md` + `overflow-hidden`.
+  // `backdrop-filter` робить картку containing-block-ом для `position:fixed`
+  // нащадків (CSS spec), тож `fixed inset-0` бекдроп замикався в межах
+  // glass-картки і обрізався `overflow-hidden` — модалка відкривалась
+  // маленьким заблюреним віконцем усередині налаштувань (user report
+  // 2026-06-30). Портал у body виводить overlay з-під трансформованого/
+  // backdrop-filter предка — той самий патерн, що `Modal`/`ConfirmDialog`/
+  // `CommandPalette` уже використовують.
+  const overlay = (
     <div
       className="fixed inset-0 z-500 overflow-y-auto overscroll-contain"
       role="dialog"
@@ -253,4 +230,8 @@ export function OnboardingWizard({
       </div>
     </div>
   );
+
+  return typeof document === "undefined"
+    ? overlay
+    : createPortal(overlay, document.body);
 }

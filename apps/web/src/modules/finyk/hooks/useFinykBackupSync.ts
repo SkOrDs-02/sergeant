@@ -7,6 +7,7 @@ import {
   type FinykBackup,
 } from "../lib/finykBackup";
 import { downloadJson, toLocalISODate } from "@sergeant/shared";
+import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
 import { reportSilentError } from "./useStorage.persist";
 import type {
   Subscription,
@@ -55,6 +56,8 @@ export function useFinykBackupSync(
     setHiddenAccounts,
     hiddenTxIds,
     setHiddenTxIds,
+    excludedStatTxIds,
+    setExcludedStatTxIds,
     monthlyPlan,
     setMonthlyPlan,
     txCategories,
@@ -69,6 +72,8 @@ export function useFinykBackupSync(
     setCustomCategories,
     dismissedRecurring,
     setDismissedRecurring,
+    merchantRules,
+    setMerchantRules,
   } = slots;
 
   const applyData = (data: FinykBackup) => {
@@ -80,6 +85,8 @@ export function useFinykBackupSync(
     if (data.receivables) setReceivables(data.receivables as Receivable[]);
     if (data.hiddenAccounts) setHiddenAccounts(data.hiddenAccounts as string[]);
     if (data.hiddenTxIds) setHiddenTxIds(data.hiddenTxIds as string[]);
+    if (data.excludedStatTxIds)
+      setExcludedStatTxIds(data.excludedStatTxIds as string[]);
     if (data.monthlyPlan) setMonthlyPlan(data.monthlyPlan as MonthlyPlan);
     if (data.txCategories)
       setTxCategories(data.txCategories as TxCategoriesMap);
@@ -92,6 +99,8 @@ export function useFinykBackupSync(
       setCustomCategories(data.customCategories as CustomCategory[]);
     if (data.dismissedRecurring)
       setDismissedRecurring(data.dismissedRecurring as string[]);
+    if (data.merchantRules)
+      setMerchantRules(sanitizeMerchantRules(data.merchantRules));
     notifyFinykRoutineCalendarSync();
   };
 
@@ -105,6 +114,7 @@ export function useFinykBackupSync(
       receivables,
       hiddenAccounts,
       hiddenTxIds,
+      excludedStatTxIds,
       monthlyPlan,
       txCategories,
       txSplits,
@@ -112,6 +122,7 @@ export function useFinykBackupSync(
       networthHistory,
       customCategories,
       dismissedRecurring,
+      merchantRules,
     };
     await downloadJson(`finyk-backup-${toLocalISODate()}.json`, data);
   };
@@ -124,7 +135,7 @@ export function useFinykBackupSync(
         try {
           const result = e.target?.result;
           if (typeof result !== "string") {
-            throw new Error("невірний формат файлу");
+            throw new Error("неправильний формат файлу");
           }
           const parsed = JSON.parse(result);
           const normalized = normalizeFinykBackup(parsed);
@@ -132,16 +143,25 @@ export function useFinykBackupSync(
           toast?.success("Дані імпортовано.");
           resolve(true);
         } catch (err) {
+          // Технічна деталь іде у звіт, а не на екран. У цей catch доходять
+          // рівно два джерела — виняток `JSON.parse` (англомовний, з
+          // позицією в буфері) і локальний `new Error("неправильний формат
+          // файлу")`; `normalizeFinykBackup` не кидає нічого. Обидва
+          // показувались людині з префіксом «Помилка: », тобто §7 (заборонена
+          // standalone-конструкція) і §3 («без stack-trace-у») порушувались
+          // одним рядком. PR-X3, аудит 2026-09-13.
           reportSilentError("import data", err);
-          const raw =
-            err instanceof Error ? err.message : "невірний формат файлу";
-          const msg = raw.startsWith("Помилка:") ? raw : `Помилка: ${raw}`;
-          toast?.error(msg);
+          // Дія у ТЕКСТІ, а не кнопкою, і це навмисно: цей файл у allowlist
+          // `require-toast-error-action`, бо хук приймає готовий `Blob` і не
+          // володіє файловим input-ом, тож «Обери інший» звідси не підняти.
+          toast?.error(
+            "Не вдалось прочитати резервну копію: файл пошкоджений або не той. Обери інший.",
+          );
           resolve(false);
         }
       };
       reader.onerror = () => {
-        toast?.error("Помилка: не вдалось прочитати файл");
+        toast?.error("Не вдалось прочитати файл. Обери інший.");
         resolve(false);
       };
       reader.readAsText(file);
@@ -156,6 +176,7 @@ export function useFinykBackupSync(
       a: manualAssets,
       d: manualDebts,
       r: receivables,
+      es: excludedStatTxIds,
       mp: monthlyPlan,
       tc: txCategories,
       ts: txSplits,
@@ -179,7 +200,7 @@ export function useFinykBackupSync(
       // Clear `?sync=…` із URL через `navigate({ replace: true })`, а не
       // `history.replaceState` — інакше data-router `createBrowserRouter`
       // не дізнається про зміну search-string-у і `useLocation()`
-      // консьюмери лишаться зі застарілим URL у пам'яті.
+      // консьюмери лишаться зі застарілим URL у памʼяті.
       navigate(
         { pathname: location.pathname, search: "", hash: "" },
         { replace: true },

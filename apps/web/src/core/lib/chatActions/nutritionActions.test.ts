@@ -12,12 +12,17 @@ const mem = vi.hoisted(() => ({
   pantries: null as Array<{
     id: string;
     name: string;
-    items: Array<{ name: string }>;
+    items: Array<{ name: string; qty?: number | null; unit?: string | null }>;
   }> | null,
   active: "home",
   water: {} as Record<string, number>,
   shopping: null as unknown,
 }));
+
+// W1-PANTRY-APPEND стадія 2 — `consume_from_pantry` тепер емітує ledger-подію
+// поряд зі старим `persistPantries`. Мок ловить payload без реального
+// SQLite/dual-write шляху — той шлях покритий adapter/hook-тестами.
+const appendPantryEventSpy = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
   const domain = await import("@sergeant/nutrition-domain");
@@ -51,6 +56,7 @@ vi.mock("../../../modules/nutrition/lib/nutritionStorage", async () => {
         return true;
       },
     ),
+    appendNutritionPantryEvent: appendPantryEventSpy,
   };
 });
 
@@ -151,6 +157,20 @@ describe("log_meal", () => {
     expect(persistNutritionLog).toHaveBeenCalled();
     expect(dayMeals("2026-04-22")).toHaveLength(1);
     expect((dayMeals("2026-04-22")[0] as { name: string }).name).toBe("Яблуко");
+  });
+});
+
+// ADR-0078: «сьогодні» журналу — доба ПРИСТРОЮ. О 22:00 UTC київська доба
+// вже наступна, а запис має лягти на день, який показує телефон.
+describe("log_meal / log_water · неявна дата біля межі доби", () => {
+  it("кладе їжу і воду на день пристрою, не на київський", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    call({ name: "log_meal", input: { name: "Кефір", kcal: 100 } });
+    call({ name: "log_water", input: { amount_ml: 300 } });
+    expect(dayMeals("2026-04-22")).toHaveLength(1);
+    expect(dayMeals("2026-04-23")).toHaveLength(0);
+    expect(mem.water["2026-04-22"]).toBe(300);
+    expect(mem.water["2026-04-23"]).toBeUndefined();
   });
 });
 
@@ -271,6 +291,74 @@ describe("add_to_shopping_list", () => {
 });
 
 // ---------------------------------------------------------------------------
+// clear_pantry
+// ---------------------------------------------------------------------------
+describe("clear_pantry", () => {
+  it("happy: прибирає всі позиції", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Комора",
+        items: [{ name: "Молоко" }, { name: "Хліб" }, { name: "Сіль" }],
+      },
+    ];
+    const out = call({ name: "clear_pantry", input: {} });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("3 позиції");
+    expect(mem.pantries[0]!.items).toHaveLength(0);
+  });
+
+  it("ідемпотентно: порожня комора не помилка", () => {
+    mem.pantries = [{ id: "home", name: "Домашня", items: [] }];
+    const out = call({ name: "clear_pantry", input: {} });
+    expect(out).toContain("і так порожня");
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Чекпойнт `adjust` з `absQty: 0`, а не `consume` з дельтою: у коморі
+   * бувають позиції без кількості («сіль»), для яких дельти не існує, а
+   * журнал усе одно має зійтися (ADR-0077).
+   */
+  it("пише в журнал чекпойнт на кожну прибрану позицію", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 2, unit: "л" }, { name: "Сіль" }],
+      },
+    ];
+    call({ name: "clear_pantry", input: {} });
+
+    expect(appendPantryEventSpy).toHaveBeenCalledTimes(2);
+    for (const [event] of appendPantryEventSpy.mock.calls) {
+      expect(event).toMatchObject({
+        pantryId: "home",
+        kind: "adjust",
+        absQty: 0,
+        deltaQty: null,
+        source: "chat_tool",
+      });
+    }
+  });
+
+  // Комора одна, місця це її полиці: лишити холодильник повним після
+  // «очистити комору» означало б збрехати про виконану дію.
+  it("очищає всі місця, а не одну полицю", () => {
+    mem.active = "dacha";
+    mem.pantries = [
+      { id: "home", name: "Комора", items: [{ name: "Молоко" }] },
+      { id: "freezer", name: "Морозилка", items: [{ name: "Пельмені" }] },
+    ];
+    const out = call({ name: "clear_pantry", input: {} });
+
+    expect(out).toContain("2 позиції");
+    expect(mem.pantries[0]!.items).toHaveLength(0);
+    expect(mem.pantries[1]!.items).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // consume_from_pantry
 // ---------------------------------------------------------------------------
 describe("consume_from_pantry", () => {
@@ -286,6 +374,23 @@ describe("consume_from_pantry", () => {
     expect(out).toContain("Молоко");
     expect(out).toContain("прибрано");
     expect(mem.pantries[0]!.items).toHaveLength(0);
+  });
+
+  // Активної комори більше немає: пошук в одній полиці означав би «не
+  // знайдено» для всього, що лежить у холодильнику чи морозилці.
+  it("finds the item in any storage place", () => {
+    mem.active = "home";
+    mem.pantries = [
+      { id: "home", name: "Комора", items: [{ name: "Гречка" }] },
+      { id: "freezer", name: "Морозилка", items: [{ name: "Пельмені" }] },
+    ];
+    const out = call({
+      name: "consume_from_pantry",
+      input: { name: "Пельмені" },
+    });
+    expect(out).toContain("прибрано");
+    expect(mem.pantries[1]!.items).toHaveLength(0);
+    expect(mem.pantries[0]!.items).toHaveLength(1);
   });
 
   it("error: item not found in pantry returns error", () => {
@@ -316,6 +421,108 @@ describe("consume_from_pantry", () => {
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
   });
+
+  // W1-PANTRY-APPEND стадія 2, ADR-0077 §6 (E-2) — раніше видаляло позицію
+  // ВСЛІПУ, ігноруючи qty; тепер записує ЧЕСНУ дельту (= та qty, що щойно
+  // зникла), а не вигадану частку.
+  it("з відомою qty → 'consume' з deltaQty = -(qty позиції)", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 500, unit: "мл" }],
+      },
+    ];
+    call({ name: "consume_from_pantry", input: { name: "Молоко" } });
+    expect(appendPantryEventSpy).toHaveBeenCalledTimes(1);
+    const event = appendPantryEventSpy.mock.calls[0]![0];
+    expect(event).toMatchObject({
+      kind: "consume",
+      deltaQty: -500,
+      unit: "мл",
+      source: "chat_tool",
+    });
+  });
+
+  it("без відомої qty (напр. «сіль») — НЕ емітить подію", () => {
+    mem.pantries = [
+      { id: "home", name: "Домашня", items: [{ name: "Сіль", qty: null }] },
+    ];
+    call({ name: "consume_from_pantry", input: { name: "Сіль" } });
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
+  });
+
+  it("продукт не знайдено → подія не емітується", () => {
+    mem.pantries = [{ id: "home", name: "Домашня", items: [{ name: "Хліб" }] }];
+    call({ name: "consume_from_pantry", input: { name: "nonexistent" } });
+    expect(appendPantryEventSpy).not.toHaveBeenCalled();
+  });
+
+  // Часткове списання: схема тула отримала опційне `qty` (SYSTEM_PROMPT_VERSION
+  // v14). До цього модель фізично не могла сказати «спиши 200» — і позиція
+  // зникала цілком навіть тоді, коли людина спожила частину.
+  it("з qty менше залишку → зменшує позицію і пише дельту рівно на спожите", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 500, unit: "мл" }],
+      },
+    ];
+    const out = call({
+      name: "consume_from_pantry",
+      input: { name: "Молоко", qty: 200 },
+    });
+    expect(mem.pantries[0]!.items).toHaveLength(1);
+    expect(mem.pantries[0]!.items[0]).toMatchObject({ qty: 300 });
+    expect(out).toContain("200");
+    expect(out).toContain("300");
+    expect(appendPantryEventSpy).toHaveBeenCalledTimes(1);
+    expect(appendPantryEventSpy.mock.calls[0]![0]).toMatchObject({
+      kind: "consume",
+      deltaQty: -200,
+      unit: "мл",
+    });
+  });
+
+  it("qty рядком (модель шле і так) — теж часткове списання", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Рис", qty: 1000, unit: "г" }],
+      },
+    ];
+    call({
+      name: "consume_from_pantry",
+      input: { name: "Рис", qty: "250" },
+    });
+    expect(mem.pantries[0]!.items[0]).toMatchObject({ qty: 750 });
+    expect(appendPantryEventSpy.mock.calls[0]![0]).toMatchObject({
+      deltaQty: -250,
+    });
+  });
+
+  // Прохання на більше, ніж є, НЕ створює відʼємного залишку і НЕ пише
+  // дельту більшу за наявне: журнал фіксує те, що фактично зникло.
+  it("з qty ≥ залишку → прибирає позицію, дельта = наявний залишок", () => {
+    mem.pantries = [
+      {
+        id: "home",
+        name: "Домашня",
+        items: [{ name: "Молоко", qty: 500, unit: "мл" }],
+      },
+    ];
+    const out = call({
+      name: "consume_from_pantry",
+      input: { name: "Молоко", qty: 900 },
+    });
+    expect(mem.pantries[0]!.items).toHaveLength(0);
+    expect(out).toContain("прибрано");
+    expect(appendPantryEventSpy.mock.calls[0]![0]).toMatchObject({
+      deltaQty: -500,
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -328,7 +535,7 @@ describe("set_daily_plan", () => {
       input: { kcal: 2500, protein_g: 150 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2500");
+    expect(out).toContain("2 500");
     expect(out).toContain("150");
   });
 
@@ -492,7 +699,7 @@ describe("plan_meals_for_day", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("4");
-    expect(out).toContain("2000");
+    expect(out).toContain("2 000");
     expect(out).toContain("500");
   });
 
@@ -531,7 +738,7 @@ describe("log_meal · undo", () => {
     expect(out.result).toContain("Сніданок");
     expect(dayMeals("2026-04-22")).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
 
     // Day is removed entirely коли meals = 0 (cleanup empty days).
     expect(mem.log["2026-04-22"]).toBeUndefined();
@@ -566,7 +773,7 @@ describe("log_meal · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     expect(() => out.undo!()).not.toThrow();
   });
 });
@@ -585,7 +792,7 @@ describe("log_water · undo", () => {
 
     expect(mem.water["2025-04-29"]).toBe(250);
 
-    out.undo();
+    out.undo?.();
     expect(mem.water["2025-04-29"]).toBeUndefined();
   });
 
@@ -599,7 +806,7 @@ describe("log_water · undo", () => {
       throw new Error("expected object");
     expect(mem.water["2025-04-29"]).toBe(700);
 
-    out.undo();
+    out.undo?.();
     expect(mem.water["2025-04-29"]).toBe(500);
   });
 });
@@ -616,7 +823,7 @@ describe("add_to_shopping_list · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const cur = mem.shopping as { categories?: unknown[] } | null;
     expect(cur?.categories ?? []).toHaveLength(0);
   });

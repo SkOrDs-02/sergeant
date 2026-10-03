@@ -6,10 +6,15 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { z } from "zod";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
+import { useApiForm } from "@shared/forms";
 import { Button } from "./Button";
 
 export interface InputDialogProps {
@@ -19,7 +24,17 @@ export interface InputDialogProps {
   placeholder?: string;
   defaultValue?: string;
   type?: HTMLInputTypeAttribute;
-  confirmLabel?: string;
+  /**
+   * Підпис кнопки підтвердження. ОБОВʼЯЗКОВИЙ навмисно (знахідка PR-C10,
+   * рішення власника 2026-09-15) — симетрично з `ConfirmDialog`.
+   *
+   * Тут дефолтом стояло «ОК», і воно не брехало, як деструктивне «Видалити»
+   * у `ConfirmDialog`, — воно просто нічого не казало. Ціна виявилась
+   * конкретною: єдиний продуктовий call-site обслуговує ДВІ різні дії
+   * (зашифрувати бекап і розшифрувати його), і під спільним «ОК» вони
+   * виглядали однаково. Обовʼязковий проп змусив їх назвати.
+   */
+  confirmLabel: string;
   cancelLabel?: string;
   onConfirm?: (value: string) => void;
   onCancel?: () => void;
@@ -36,6 +51,17 @@ const inputDialogSchema = z.object({
 
 type InputDialogValues = z.infer<typeof inputDialogSchema>;
 
+/**
+ * Prompt-style dialog with a single text field.
+ *
+ * Shell aligned with Sheet / Modal (P4 Phase 2):
+ * - portaled to `document.body` (escapes `.page-enter` transform traps)
+ * - `bg-black/40` scrim
+ * - `useBodyScrollLock` (iOS-safe)
+ *
+ * Keeps `role="dialog"` + form/`useApiForm` semantics — this is a
+ * value prompt, not an interrupting alertdialog.
+ */
 export function InputDialog({
   open,
   title = "Введи значення",
@@ -43,18 +69,20 @@ export function InputDialog({
   placeholder = "",
   defaultValue = "",
   type = "text",
-  confirmLabel = "ОК",
+  confirmLabel,
   cancelLabel = "Скасувати",
   onConfirm,
   onCancel,
 }: InputDialogProps) {
   const ref = useRef<HTMLFormElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   // Mutable cell so we can merge our local ref with RHF's `register().ref`
   // callback ref (which writes into our ref via the callback below). React's
   // overload for `useRef<T>(null)` returns the read-only `RefObject<T>`,
   // hence the `| null` to opt into the mutable variant.
   const inputRef = useRef<HTMLInputElement | null>(null);
   const titleId = useId();
+  const descId = useId();
 
   const { register, submit, reset, isSubmitting } = useApiForm<
     InputDialogValues,
@@ -68,27 +96,26 @@ export function InputDialog({
   });
 
   useDialogFocusTrap(open, ref, { onEscape: onCancel, inertBackground: true });
+  useBodyScrollLock(open);
 
-  useEffect(() => {
-    if (open) {
-      reset({ value: defaultValue });
-      const timer = setTimeout(() => inputRef.current?.focus(), 60);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, defaultValue]);
+  // Діалог із єдиним полем вводу — клавіатура тут відкривається завжди
+  // (див. автофокус нижче), тож обидві половини keyboard-геометрії
+  // обовʼязкові. `kbInset` звужує бокс до видимої смуги, а хук гасить
+  // пан visual viewport, яким iOS інакше зсуває весь `fixed` оверлей
+  // угору — деталі у шапці `keyboardOverlay.ts`.
+  const kbInsetPx = useVisualKeyboardInset(open);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open, overlayRef);
 
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+    reset({ value: defaultValue });
+    const timer = setTimeout(() => inputRef.current?.focus(), 60);
+    return () => clearTimeout(timer);
+  }, [open, defaultValue, reset]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null;
 
   const handleScrimKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -99,9 +126,11 @@ export function InputDialog({
 
   const valueRegister = register("value");
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
+      ref={overlayRef}
+      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center motion-safe:animate-fade-in"
+      style={kbStyles.container}
       role="presentation"
     >
       <button
@@ -109,7 +138,7 @@ export function InputDialog({
         aria-label={cancelLabel}
         onClick={onCancel}
         onKeyDown={handleScrimKey}
-        className="absolute inset-0 bg-text/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
       />
 
       <form
@@ -117,13 +146,18 @@ export function InputDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={description ? descId : undefined}
         onSubmit={submit}
         onPointerDown={(e) => e.stopPropagation()}
         noValidate
+        style={kbStyles.panel}
         className={cn(
-          "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain",
+          // `overflow-y-auto` — пара до `kbStyles.panel`: під клавіатурою
+          // висота обрізається, і без власного скролу низ форми (кнопки)
+          // став би недосяжним на низьких екранах.
+          "relative z-10 w-full max-w-sm mx-4 mb-4 sm:mb-0 overscroll-contain overflow-y-auto",
           "bg-panel rounded-3xl shadow-float border border-line p-6",
-          "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200",
+          "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-base",
         )}
       >
         <h2
@@ -133,7 +167,10 @@ export function InputDialog({
           {title}
         </h2>
         {description && (
-          <p className="text-sm text-muted leading-relaxed mb-4">
+          <p
+            id={descId}
+            className="text-style-body text-muted leading-relaxed mb-4"
+          >
             {description}
           </p>
         )}
@@ -147,10 +184,10 @@ export function InputDialog({
           placeholder={placeholder}
           disabled={isSubmitting}
           className={cn(
-            "w-full h-12 rounded-xl bg-bg border border-line px-4 text-sm text-text placeholder:text-subtle mb-4",
+            "w-full h-12 rounded-xl bg-bg border border-line px-4 text-style-body text-text placeholder:text-subtle mb-4",
             "transition-colors",
             "focus:outline-none",
-            "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
+            "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
           autoComplete="off"
         />
@@ -173,6 +210,7 @@ export function InputDialog({
           </Button>
         </div>
       </form>
-    </div>
+    </div>,
+    document.body,
   );
 }

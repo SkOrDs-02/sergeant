@@ -62,12 +62,16 @@ export function useNutritionLog(): UseNutritionLogResult {
   // listener was dropped because `nutrition_log_v1` no longer exists —
   // cache-tick is now the only "value changed" signal, and the
   // dual-write orchestrator bumps it after every successful apply.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setNutritionLog(cache.log);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setNutritionLog(cache.log);
+    }
+  }
 
   const commit = useCallback((next: NutritionLog) => {
     const normalized = normalizeNutritionLog(next);

@@ -23,11 +23,11 @@ import { SettingsGroup } from "./SettingsPrimitives";
 
 export function AssistantCatalogueSection() {
   return (
-    <SettingsGroup title="Можливості асистента" emoji="✨">
+    <SettingsGroup title="Що вміє Сержант" emoji="✨">
       <Text className="text-xs text-fg-muted leading-snug">
-        ~60+ інструментів, які може запустити AI-асистент: фінанси, тренування,
-        звички, харчування, аналітика, утиліти, пам&apos;ять. Тапни — побачиш
-        приклади команд.
+        ~60+ інструментів, які може запустити Сержант: фінанси, тренування,
+        звички, харчування, аналітика, утиліти, памʼять. Тапни, побачиш приклади
+        команд.
       </Text>
       <Button
         variant="secondary"

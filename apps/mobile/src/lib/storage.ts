@@ -5,7 +5,7 @@
  * `apps/web/src/shared/lib/storage/createModuleStorage.ts` so that hooks and modules
  * ported from the web can consume the same named exports on native.
  *
- * Stage 9 / PR #065 of `docs/planning/storage-roadmap.md` introduced a
+ * Stage 9 / PR #065 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` introduced a
  * two-rung priority ladder in {@link resolveStore}:
  *
  *   1. **SQLite warm-cache + MMKV mirror** — once
@@ -270,7 +270,7 @@ export function safeRemoveLS(key: string): boolean {
 // ---------------
 // With the v1 cloudSync engine sunset (PR #052c) and the mobile sync
 // shim dropped (PR #053c), per-module SQLite dual-write adapters
-// (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/lib/dualWrite`)
+// (`apps/mobile/src/modules/{routine,fizruk,nutrition,finyk}/lib/sqliteWriter`)
 // intercept mutations directly and feed the op-log v2 writer.
 // Modules that need cloud-sync visibility wire writes through their
 // own dual-write adapter on top of `safeWriteLS` rather than relying
@@ -302,7 +302,9 @@ export function useLocalStorage<T>(
   fallback: T,
 ): UseLocalStorageReturn<T> {
   const fallbackRef = useRef(fallback);
-  fallbackRef.current = fallback;
+  useEffect(() => {
+    fallbackRef.current = fallback;
+  }, [fallback]);
 
   // Guard against our own writes re-entering the value-changed listener.
   // On web, `StorageEvent` only fires for cross-tab writes, so the

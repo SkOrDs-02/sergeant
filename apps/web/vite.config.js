@@ -14,6 +14,50 @@ import { fileURLToPath } from "url";
 // portable across both worlds.
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Викидає з бандла воркер `sqlite3-worker1`, якого Sergeant не викликає.
+ *
+ * `@sqlite.org/sqlite-wasm/dist/index.mjs` містить `sqlite3Worker1Promiser`
+ * — альтернативний API, де база живе у воркері бібліотеки. Ми ним не
+ * користуємось (свій воркер — `apps/web/src/core/db/sqliteWorker.ts`), але
+ * всередині промайзера стоїть `new Worker(new URL("sqlite3-worker1.mjs", …))`,
+ * а плагін воркерів Vite перетворює такий вираз НА ЕТАПІ ТРАНСФОРМУ, до
+ * будь-якого tree-shaking. Тобто чанк емітився завжди й ніколи не
+ * завантажувався: 209 kB сирих, **54.5 kB brotli**, які `size-limit` чесно
+ * рахував (замір 2026-09-14).
+ *
+ * AI-DANGER: якщо після оновлення пакета цей трансформ не знайде свій
+ * шаблон — білд ПАДАЄ, і це навмисно. Мовчазний пропуск повернув би
+ * 54.5 kB у бандл рівно так само тихо, як вони там опинились.
+ *
+ * Заміна тієї самої довжини, що й оригінал, щоб не зсувати сорсмапу.
+ */
+function dropUnusedSqliteWorker1() {
+  const needle =
+    'new Worker(new URL("sqlite3-worker1.mjs", import.meta.url), { type: "module" })';
+  const stub = '(()=>{throw new Error("sqlite3-worker1 is not bundled")})()';
+  return {
+    name: "sergeant:drop-unused-sqlite-worker1",
+    enforce: "pre",
+    apply: "build",
+    transform(code, id) {
+      if (!id.includes("@sqlite.org/sqlite-wasm")) return null;
+      if (!id.endsWith("index.mjs")) return null;
+      if (!code.includes(needle)) {
+        throw new Error(
+          "[sergeant] sqlite3Worker1Promiser worker-spawn pattern not found in " +
+            "@sqlite.org/sqlite-wasm. Перевір, чи пакет не змінив форму, і " +
+            "онови шаблон у vite.config.js (див. коментар над цим плагіном).",
+        );
+      }
+      return {
+        code: code.replace(needle, stub.padEnd(needle.length, " ")),
+        map: null,
+      };
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiProxyTarget = (
@@ -58,7 +102,6 @@ export default defineConfig(({ mode }) => {
     process.env.SENTRY_RELEASE ||
     process.env.VERCEL_GIT_COMMIT_SHA ||
     process.env.GITHUB_SHA ||
-    process.env.RAILWAY_GIT_COMMIT_SHA ||
     "";
   if (sentryReleaseSha && !process.env.VITE_SENTRY_RELEASE) {
     process.env.VITE_SENTRY_RELEASE = sentryReleaseSha;
@@ -68,6 +111,20 @@ export default defineConfig(({ mode }) => {
     (process.env.VERCEL === "1" ? "dist" : "../server/dist");
 
   return {
+    // Прод (Vercel) шле COOP/COEP (apps/web/vercel.json), що вмикає
+    // SharedArrayBuffer → sqlite-wasm працює на OPFS VFS. `vite preview`
+    // (smoke E2E lane + локальний Lighthouse) без цих заголовків падав на
+    // memory-only VFS: SQLite-читання відставали від оптимістичного
+    // state, і routine/nutrition CRUD-стан осцилював (CI critical-lane
+    // аудит 2026-08-04 — постійні detach-и в deep-module-crud). Паритет
+    // заголовків прибирає розбіжність smoke ↔ prod. API-фетчі на :3000
+    // під COEP легальні — вони йдуть через CORS (ALLOWED_ORIGINS).
+    preview: {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+      },
+    },
     define: {
       // Пробрасуємо значення у клієнтський бандл як статичний літерал,
       // щоб `main.tsx` міг DCE-вирізати SW-гілку у capacitor-білді.
@@ -86,6 +143,7 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_BUILD_ID": JSON.stringify(buildId),
     },
     plugins: [
+      dropUnusedSqliteWorker1(),
       tailwindcss(),
       react(),
       !isCapacitorBuild &&
@@ -96,21 +154,37 @@ export default defineConfig(({ mode }) => {
           registerType: "prompt",
           includeAssets: [
             "icon.svg",
+            "icon-monochrome.svg",
             "icon-192.png",
             "icon-512.png",
             "apple-touch-icon.png",
           ],
           manifest: {
-            name: "Sergeant — Твій персональний хаб життя",
+            // Stable identity so the OS treats every launch surface (icon,
+            // shortcut, share target) as the same installed app rather than
+            // minting separate instances.
+            id: "/",
+            name: "Sergeant · Твій персональний хаб життя",
             short_name: "Sergeant",
             description:
               "Персональний хаб: фінанси, спорт, звички та харчування",
             start_url: "/",
             display: "standalone",
             orientation: "portrait",
-            background_color: "#fdf9f3",
-            theme_color: "#fdf9f3",
+            // Static manifest colors can't follow the in-app theme choice
+            // (that's `useTheme.ts` applyResolvedTheme's job at runtime) —
+            // these are the splash/OS-chrome default and must track the
+            // light `--c-bg` in `src/styles/theme.css` (`:root`), #ecebe7.
+            background_color: "#ecebe7",
+            theme_color: "#ecebe7",
             lang: "uk",
+            // UX-7: tapping an icon/shortcut while the PWA is already open
+            // focuses the running window instead of spawning a duplicate
+            // instance. Deep-link params (`?module=…&action=…`) are read by
+            // the in-app router, so navigate-existing keeps a single window.
+            launch_handler: {
+              client_mode: ["focus-existing", "navigate-existing", "auto"],
+            },
             shortcuts: [
               {
                 name: "Додати витрату",
@@ -159,6 +233,15 @@ export default defineConfig(({ mode }) => {
                 type: "image/svg+xml",
                 purpose: "any",
               },
+              // V-5: Android 13+ themed icon. Single-tone, transparent
+              // background — the launcher tints it with the system palette so
+              // the home-screen icon matches the user's wallpaper/theme.
+              {
+                src: "/icon-monochrome.svg",
+                sizes: "any",
+                type: "image/svg+xml",
+                purpose: "monochrome",
+              },
             ],
           },
           injectManifest: {
@@ -169,7 +252,31 @@ export default defineConfig(({ mode }) => {
             // L11) which fails CI if any non-1st-party URL still ends
             // up in the manifest (e.g. a Vite plugin inlines a CDN
             // asset into `dist/`).
-            globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+            //
+            // AI-DANGER: `wasm` мусить лишатися в цьому списку разом із
+            // `js`. Прибереш його — повернеш SERGEANT-API-M /
+            // SERGEANT-WEB-R (~25 користувачів за бету).
+            //
+            // Чому пара нероздільна. `js` затягує в прекеш glue-чанк
+            // sqlite-wasm, а той обчислює адресу свого бінарника як
+            // `new URL("sqlite3.wasm", import.meta.url)` — тобто
+            // `/assets/sqlite3-<hash>.wasm` того ж білда. Поки `wasm` був
+            // поза прекешем, виходила асиметрія: glue віддавався з кешу
+            // старого деплою, а його бінарник щоразу йшов у мережу. На
+            // проді там уже новий деплой, старого хеша немає — і замість
+            // файлу приїжджав HTML (див. `assets/` у виключеннях rewrite
+            // у `vercel.json`). Emscripten валив обидва шляхи —
+            // streaming і ArrayBuffer — і кидав
+            // «both async and sync fetching of the wasm failed».
+            //
+            // Реліз-цикл тут `registerType: "prompt"` без
+            // `skipWaiting` (свідомо — див. AI-DANGER у `src/sw.ts`), тож
+            // клієнт може сидіти на старому воркері днями, і кожен його
+            // старт мовчки з'їжджав на LocalStorage без синку. Прекеш
+            // атомарний на білд: glue і бінарник тепер завжди з однієї
+            // збірки. Ціна — ~350 kB brotli на install SW поверх ~265 kB
+            // glue, який туди й так входив.
+            globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,wasm}"],
             globIgnores: [
               "**/node_modules/**",
               "**/*.map",
@@ -213,6 +320,16 @@ export default defineConfig(({ mode }) => {
         telemetry: false,
       }),
     ].filter(Boolean),
+    // AI-DANGER: воркери збираються ОКРЕМИМ Rollup-білдом із власним
+    // конвеєром плагінів — плагіни з `plugins` вище туди НЕ потрапляють.
+    // Без цього блоку `sqliteWorker.ts` тягнув за собою ту саму мертву
+    // копію `sqlite3-worker1` (54.5 kB brotli), яку плагін щойно вирізав
+    // із головного графа: замір 2026-09-14 показав стуб у `vendor-sqlite`
+    // і незайманий виклик у воркерному чанку.
+    worker: {
+      format: "es",
+      plugins: () => [dropUnusedSqliteWorker1()],
+    },
     build: {
       outDir,
       emptyOutDir: true,
@@ -237,7 +354,6 @@ export default defineConfig(({ mode }) => {
               if (id.includes("/node_modules/use-sync-external-store/"))
                 return "vendor-react";
               if (id.includes("react-router")) return "vendor-router";
-              if (id.includes("react-virtuoso")) return "vendor-virtuoso";
               if (id.includes("@zxing")) return "vendor-zxing";
               // `react-markdown` (та весь стек remark/mdast/hast/micromark)
               // прибрано у T4-B: `AssistantMessageBody.tsx` тепер містить
@@ -304,6 +420,20 @@ export default defineConfig(({ mode }) => {
               // імпортами main bundle. Див. правило 2.3 у
               // `.agents/skills/sergeant-web-ui/SKILL.md`.
               if (id.includes("@sentry")) return "vendor-sentry";
+              // Те саме для PostHog. `core/observability/posthog.ts` тягне
+              // SDK через `await import("posthog-js")` і лише за наявності
+              // `VITE_POSTHOG_KEY` — тобто код УЖЕ лінивий. Але catch-all
+              // нижче зводив це нанівець: пакет падав у загальний
+              // `vendor`, який жадібно преложиться, і 224 kB сирої
+              // аналітики чекала людина до першого екрана.
+              //
+              // AI-CONTEXT: динамічний `import()` сам собою НЕ гарантує
+              // лінивості, коли є catch-all manual chunk — Rollup спершу
+              // слухає manualChunks, і аж потім розкладає по графу
+              // імпортів. Той самий трюк уже застосовано вище до
+              // Capacitor і sqlite; PostHog просто ніхто не перевірив.
+              if (id.includes("/node_modules/posthog-js/"))
+                return "vendor-posthog";
               // Те саме міркування для `web-vitals` — пакет малий (~1 KB
               // gzip), але імпортується через dynamic `import()` після
               // `requestIdleCallback`, тож не повинен тягнутись у main.
@@ -329,7 +459,17 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       host: true,
+      port: 3000,
+      strictPort: true,
       allowedHosts: true,
+      // Паритет із `preview.headers` (браузерна верифікація 2026-08-06):
+      // без COOP/COEP dev-сервер щодня працює на kvvfs-fallback замість
+      // OPFS — інша персистентність, ніж прод/preview, і клас «фантомних»
+      // dev-багів навколо SQLite-стану.
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "require-corp",
+      },
       proxy: {
         "/api": {
           target: apiProxyTarget,
@@ -338,7 +478,35 @@ export default defineConfig(({ mode }) => {
       },
     },
     resolve: {
+      // `apps/mobile` тягне react-native 0.76 → react@19, і pnpm вкладає
+      // цю 19-ту копію під `react-router`/`react-router-dom` (їх peer —
+      // `react >=18`), тоді як `apps/web` пінить react@18.3.1. Без dedupe
+      // `RouterProvider` створює елементи React-ом 19, а решта дерева —
+      // React-ом 18 → рантайм-краш «Objects are not valid as a React
+      // child» на корені. Форсуємо єдину копію react/react-dom з цього
+      // workspace, щоб і роутер, і застосунок ділили один runtime.
+      dedupe: ["react", "react-dom", "react/jsx-runtime"],
       alias: {
+        // ПЕРЕД загальним аліасом `@sergeant/shared`: Vite резолвить
+        // аліаси за порядком і префіксним збігом, а не через exports-мапу
+        // пакета. Без цього рядка підпаточний імпорт перетворюється на
+        // `…/src/index.ts/data/genericFoods` і білд падає з
+        // «Not a directory».
+        //
+        // Підпаточний імпорт тут не примха: корпус базової їжі (~390
+        // позицій) свідомо не реекспортується з барелю `@sergeant/shared`,
+        // бо той тягнеться на критичному шляху і затягнув би дані в
+        // eager-чанк повз гейт ≤ 280 kB.
+        "@sergeant/shared/data/genericFoods": resolve(
+          __dirname,
+          "../../packages/shared/src/data/genericFoods.ts",
+        ),
+        // Те саме для реєстру міток категорій комори (одна таксономія
+        // Харчування): його імпортує `nutrition-domain/foodCategories.ts`.
+        "@sergeant/shared/data/pantryCategories": resolve(
+          __dirname,
+          "../../packages/shared/src/data/pantryCategories.ts",
+        ),
         "@sergeant/shared": resolve(
           __dirname,
           "../../packages/shared/src/index.ts",

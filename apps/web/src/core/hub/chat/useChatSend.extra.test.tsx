@@ -1,0 +1,551 @@
+/** @vitest-environment jsdom */
+/**
+ * @status Active
+ * Additional branch coverage for useChatSend.ts — complements the happy-path
+ * and branch tests in useChatSend.test.tsx / useChatSend.branches.test.tsx.
+ *
+ * Targeted paths:
+ * - Tool handler results with an `undo` function → `showUndoToast` called
+ * - Follow-up stream returns a non-200 HTTP response → friendly error appended
+ * - Follow-up stream returns non-SSE JSON with a malformed body → error appended
+ * - `shouldSpeak` in the tool-call path with an empty followUpText falls back
+ *   to `actionsText`
+ * - `setInput` and `loading` state transitions around the send lifecycle
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from "react";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// ─── Hoisted mocks ────────────────────────────────────────────────────────────
+
+const {
+  sendMock,
+  streamMock,
+  executeActionsMock,
+  consumeSseMock,
+  speakMock,
+  showUndoToastMock,
+} = vi.hoisted(() => ({
+  sendMock: vi.fn(),
+  streamMock: vi.fn(),
+  executeActionsMock: vi.fn(),
+  consumeSseMock: vi.fn(),
+  speakMock: vi.fn(),
+  showUndoToastMock: vi.fn(),
+}));
+
+const flags = { isPro: true, online: true };
+
+vi.mock("../../lib/hubChatUtils", async () => {
+  const actual = await vi.importActual<typeof import("../../lib/hubChatUtils")>(
+    "../../lib/hubChatUtils",
+  );
+  return { ...actual, consumeHubChatSse: consumeSseMock };
+});
+
+vi.mock("@shared/api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@shared/api")>("@shared/api");
+  return { ...actual, chatApi: { send: sendMock, stream: streamMock } };
+});
+
+vi.mock("../useFinykHubPreview", () => ({
+  useFinykHubPreview: () => ({
+    data: { hasMonoData: false },
+    dataUpdatedAt: 0,
+  }),
+}));
+
+vi.mock("../../billing/usePlan", () => ({
+  usePlan: () => ({
+    isPro: flags.isPro,
+    plan: flags.isPro ? "pro" : "free",
+    isLoading: false,
+  }),
+}));
+
+vi.mock("../../lib/hubChatContext", () => ({
+  buildContextMeasured: () => "ctx",
+}));
+
+vi.mock("../../lib/hubChatActions", () => ({
+  executeActions: executeActionsMock,
+}));
+
+// Керований «tool без картки»: після PR-A5 кожен виконуваний tool має картку,
+// тож фолбек «✓ …» перевіряємо, примусово віддаючи `null` з білдера.
+const forceNoCard = vi.hoisted(() => ({ on: false }));
+vi.mock("../../lib/hubChatActionCards", async (orig) => {
+  const actual = await orig<typeof import("../../lib/hubChatActionCards")>();
+  return {
+    ...actual,
+    buildActionCard: (i: Parameters<typeof actual.buildActionCard>[0]) =>
+      forceNoCard.on ? null : actual.buildActionCard(i),
+  };
+});
+
+vi.mock("../../lib/hubChatSpeech", () => ({
+  VOICE_KEYWORDS: /голосом|вголос|скажи|озвуч|прочитай/i,
+  speak: speakMock,
+  stopSpeaking: vi.fn(),
+}));
+
+vi.mock("@shared/hooks/useOnlineStatus", () => ({
+  useOnlineStatus: () => flags.online,
+}));
+
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    show: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    dismiss: vi.fn(),
+  }),
+}));
+
+vi.mock("@shared/lib/ui/undoToast", () => ({
+  showUndoToast: showUndoToastMock,
+}));
+
+import { useChatSend } from "./useChatSend";
+import type { ChatMessage } from "../../lib/hubChatUtils";
+
+// ─── Test utilities ──────────────────────────────────────────────────────────
+
+function makeWrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+  };
+}
+
+function renderWithCapture() {
+  const captured: ChatMessage[][] = [];
+  const setMessages = vi.fn((updater: unknown) => {
+    if (typeof updater === "function") {
+      const prev = captured.at(-1) ?? [];
+      captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+    } else {
+      captured.push(updater as ChatMessage[]);
+    }
+  });
+  const hook = renderHook(() => useChatSend({ messages: [], setMessages }), {
+    wrapper: makeWrapper(),
+  });
+  return { ...hook, captured, setMessages };
+}
+
+// ─── Setup / teardown ────────────────────────────────────────────────────────
+
+beforeEach(() => {
+  sendMock.mockReset();
+  streamMock.mockReset();
+  executeActionsMock.mockReset();
+  consumeSseMock.mockReset();
+  speakMock.mockReset();
+  showUndoToastMock.mockReset();
+  flags.isPro = true;
+  flags.online = true;
+  localStorage.clear();
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+// ─── Undo toast ──────────────────────────────────────────────────────────────
+
+describe("useChatSend — undo toast for tool actions", () => {
+  it("calls showUndoToast for each handler result that exposes an undo function", async () => {
+    const undoFn = vi.fn();
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        {
+          id: "tc1",
+          name: "set_budget_limit",
+          input: { category_id: "food", limit: 100 },
+        },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "set_budget_limit", result: "Ліміт змінено", undo: undoFn },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Готово!" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("додай операцію 100 грн");
+    });
+
+    expect(showUndoToastMock).toHaveBeenCalledTimes(1);
+    // Verify the undo callback is wired correctly.
+    const callArgs = showUndoToastMock.mock.calls[0]!;
+    expect(typeof callArgs[1].onUndo).toBe("function");
+  });
+
+  it("does NOT call showUndoToast for read-only handlers that have no undo", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "find_transaction", input: { query: "кава" } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "find_transaction", result: "Знайдено 3 операції" },
+      // no `undo` field
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "Ось результати." }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("знайди операцію кава");
+    });
+
+    expect(showUndoToastMock).not.toHaveBeenCalled();
+  });
+});
+
+// ─── Follow-up stream error paths ────────────────────────────────────────────
+
+describe("useChatSend — follow-up stream error paths", () => {
+  it("appends a friendly error when the follow-up stream returns HTTP 500", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 250 мл" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ error: "internal server error" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("випив воду");
+    });
+
+    const flat = captured.flat();
+    // Останній знімок, а не перший: повідомлення тур-у створюється порожнім
+    // (у `log_water` є картка, тож текстового «✓ …» немає) і наповнюється
+    // вже в catch-гілці.
+    const assistantMsg = flat.filter((m) => m.role === "assistant").at(-1);
+    expect(assistantMsg).toBeDefined();
+    expect(assistantMsg!.text.length).toBeGreaterThan(0);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("handles a non-JSON follow-up stream body gracefully", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 100 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 100 мл" },
+    ]);
+    // Non-JSON body with 200 status — parse failure must not throw unhandled.
+    streamMock.mockResolvedValue(
+      new Response("not-json", {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("випив воду");
+    });
+
+    // Should render some assistant message — no unhandled exception.
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "assistant")).toBe(true);
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+// ─── TTS in tool-call path ────────────────────────────────────────────────────
+
+describe("useChatSend — TTS in tool-call path", () => {
+  /**
+   * Фолбек TTS, коли модель нічого не сказала. Раніше диктувався сирий
+   * результат виконавця — для `remember` це означало UUID запису памʼяті
+   * вголос. Тепер: рядок без картки, а якщо всі інструменти дали картки —
+   * їхні короткі підписи.
+   */
+  it("озвучує підпис картки, коли модель промовчала", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 200 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 200 мл" },
+    ]);
+    // Non-SSE response with empty text → followUpText stays "".
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("голосом запиши воду", true /* fromVoice */);
+    });
+
+    // `log_water` — відомий інструмент, тож у нього є картка й текстового
+    // «✓ …» немає. Озвучується підпис картки.
+    expect(speakMock).toHaveBeenCalledTimes(1);
+    const spokenText = speakMock.mock.calls[0]![0] as string;
+    expect(spokenText).toContain("200 мл");
+  });
+
+  /**
+   * Для інструментів, чия картка не збудувалась, текстовий рядок «✓ …»
+   * лишається єдиним підтвердженням (білдер тут примусово віддає `null`).
+   */
+  afterEach(() => {
+    forceNoCard.on = false;
+  });
+
+  it("для інструмента без картки озвучує текстовий рядок", async () => {
+    forceNoCard.on = true;
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "add_program_day", result: "День програми додано" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("додай день програми", true /* fromVoice */);
+    });
+
+    expect(speakMock).toHaveBeenCalledTimes(1);
+    expect(speakMock.mock.calls[0]![0] as string).toContain(
+      "День програми додано",
+    );
+  });
+
+  it("помилковий результат без картки не отримує «✓»", async () => {
+    forceNoCard.on = true;
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "add_program_day", input: {} }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "add_program_day", result: "Помилка: програму не знайдено" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response(JSON.stringify({ text: "" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages: vi.fn() }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("додай день програми", true /* fromVoice */);
+    });
+
+    const spoken = speakMock.mock.calls[0]?.[0] as string | undefined;
+    expect(spoken ?? "").not.toContain("✓");
+  });
+});
+
+// ─── Loading state transitions ────────────────────────────────────────────────
+
+describe("useChatSend — loading state", () => {
+  it("loading is false after a successful send completes", async () => {
+    sendMock.mockResolvedValue({ text: "Привіт!" });
+
+    const { result } = renderWithCapture();
+
+    await act(async () => {
+      await result.current.send("привіт");
+    });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+  });
+
+  it("loading is false after a send error", async () => {
+    sendMock.mockRejectedValue(new Error("network error"));
+
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("що-небудь");
+    });
+
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+// ─── Tool-calls schema mismatch → toast + fallback render ────────────────────
+
+describe("useChatSend — tool_calls schema mismatch", () => {
+  it("shows toast and falls back to data.text when tool_calls envelope is invalid", async () => {
+    sendMock.mockResolvedValue({
+      // Missing required `id` field → fails ToolCallEnvelopeSchema.
+      tool_calls: [{ name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [],
+      text: "Fallback text from model",
+    });
+
+    const { result, captured } = renderWithCapture();
+
+    await act(async () => {
+      await result.current.send("запиши воду");
+    });
+
+    // Fallback message is rendered from data.text.
+    const flat = captured.flat();
+    const assistantMsgs = flat.filter((m) => m.role === "assistant");
+    expect(assistantMsgs.length).toBeGreaterThan(0);
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("falls back to 'Немає відповіді.' when tool_calls schema fails and data.text is absent", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ name: "unknown_injected_tool", input: {} }],
+      tool_calls_raw: [],
+      text: "",
+    });
+
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("щось");
+    });
+
+    const flat = captured.flat();
+    const assistantMsg = flat.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+// ─── SSE MAX_STREAM_CHARS exceeded → abort and friendly error ─────────────────
+
+describe("useChatSend — SSE MAX_STREAM_CHARS overflow", () => {
+  it("aborts stream and appends friendly error when stream exceeds char limit", async () => {
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 200 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 200 мл" },
+    ]);
+    streamMock.mockResolvedValue(
+      new Response("stream-data", {
+        status: 200,
+        headers: { "content-type": "text/event-stream" },
+      }),
+    );
+
+    // Simulate the SSE consumer throwing the "too long" error.
+    consumeSseMock.mockImplementation(
+      async (_res: Response, _onDelta: (d: string) => void) => {
+        throw new Error("Відповідь занадто довга");
+      },
+    );
+
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("дуже довге питання");
+    });
+
+    const flat = captured.flat();
+    const assistantMsg = flat.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    // The error text is appended to the message that was already in DOM.
+    expect(result.current.loading).toBe(false);
+  });
+});
+
+// ─── send guard: empty string and loading ────────────────────────────────────
+
+describe("useChatSend — send early-exit guards", () => {
+  it("does nothing when text is empty string", async () => {
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("   ");
+    });
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when loading is true (guard prevents double-send)", async () => {
+    // The loading guard (if (!msg || loading) return) prevents a second
+    // concurrent send. We can indirectly verify by making sendMock hang.
+    let resolveSend: () => void = () => {};
+    sendMock.mockImplementation(
+      () =>
+        new Promise<{ text: string }>((r) => {
+          resolveSend = () => r({ text: "ok" });
+        }),
+    );
+
+    const { result } = renderWithCapture();
+
+    // Start first send (will block).
+    act(() => {
+      void result.current.send("перший");
+    });
+    // Try to send again while loading.
+    await act(async () => {
+      await result.current.send("другий");
+    });
+
+    // Only one API call should be in flight.
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    // Cleanup: resolve the pending send.
+    resolveSend();
+  });
+});

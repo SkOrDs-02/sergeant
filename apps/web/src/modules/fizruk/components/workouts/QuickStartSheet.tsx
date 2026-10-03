@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { Icon } from "@shared/components/ui/Icon";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
-import { useVisualKeyboardInset } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -23,6 +25,14 @@ interface QuickStartSheetProps {
   primaryGroupsUk?: Record<string, string>;
   onPickTemplate: () => void;
   onConfirmExercises: (picks: RawExerciseDef[]) => void;
+  /**
+   * Сьогоднішня сесія активної програми (§9 канону). Плитка показується
+   * лише коли програма активна і на сьогодні є сесія — інакше вибір лишається
+   * двоплитковим. Старт іде через той самий обробник, що й на Огляді
+   * (`FizrukApp.handleStartProgramWorkout`): прогресія ваги та конфлікт
+   * «одне активне» — там.
+   */
+  programTile?: { label: string; onStart: () => void } | undefined;
 }
 
 type Step = "choose" | "pick";
@@ -77,22 +87,23 @@ export function QuickStartSheet({
   primaryGroupsUk,
   onPickTemplate,
   onConfirmExercises,
+  programTile,
 }: QuickStartSheetProps) {
   const [step, setStep] = useState<Step>("choose");
   const [q, setQ] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set<string>(),
   );
-  const kbInsetPx = useVisualKeyboardInset(open && step === "pick");
 
-  // Reset to the chooser whenever the sheet is reopened.
-  useEffect(() => {
-    if (!open) {
-      setStep("choose");
-      setQ("");
-      setSelectedIds(new Set());
-    }
-  }, [open]);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setStep("choose");
+    setQ("");
+    setSelectedIds(new Set());
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   const groups: QuickStartGroup[] = useMemo(() => {
     if (step !== "pick") return [];
@@ -161,12 +172,39 @@ export function QuickStartSheet({
         open={open}
         onClose={onClose}
         title="Почати тренування"
-        description="Обери шаблон або підбери вправи разово — таймер запуститься після вибору."
+        description="Обери, з чого почати: таймер запуститься після вибору."
         closeLabel="Закрити вибір"
         panelClassName="fizruk-sheet"
         zIndex={90}
       >
         <div className="grid grid-cols-1 gap-2 pb-2">
+          {programTile ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                programTile.onStart();
+              }}
+              className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+            >
+              <div className="flex items-center gap-3">
+                <Icon name="list-checks" size={22} className="text-muted" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-style-label text-text">За програмою</div>
+                  <div className="text-style-caption text-subtle mt-0.5 truncate">
+                    Сьогодні: {programTile.label}
+                  </div>
+                </div>
+                <Icon
+                  name="chevron-right"
+                  size="sm"
+                  className="text-subtle"
+                  aria-hidden
+                />
+              </div>
+            </button>
+          ) : null}
+
           <button
             type="button"
             onClick={() => {
@@ -176,18 +214,19 @@ export function QuickStartSheet({
             className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                📋
-              </span>
+              <Icon name="clipboard" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">За шаблоном</div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Готовий набір вправ — старт із заповненим списком.
+                <div className="text-style-caption text-subtle mt-0.5">
+                  Готовий набір вправ, старт із заповненим списком.
                 </div>
               </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
             </div>
           </button>
 
@@ -197,20 +236,21 @@ export function QuickStartSheet({
             className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
           >
             <div className="flex items-center gap-3">
-              <span className="text-2xl" aria-hidden>
-                💪
-              </span>
+              <Icon name="dumbbell" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
                   Підібрати вправи
                 </div>
-                <div className="text-xs text-subtle mt-0.5">
-                  Обери вправи зараз і почни — без збереження шаблону.
+                <div className="text-style-caption text-subtle mt-0.5">
+                  Обери вправи зараз і почни, без збереження шаблону.
                 </div>
               </div>
-              <span className="text-subtle" aria-hidden>
-                ›
-              </span>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
             </div>
           </button>
         </div>
@@ -226,39 +266,41 @@ export function QuickStartSheet({
       description={
         selectedCount > 0
           ? `Обрано: ${selectedCount} · натисни «Почати», щоб запустити таймер.`
-          : "Познач хоча б одну вправу — таймер запуститься після старту."
+          : "Познач хоча б одну вправу, таймер запуститься після старту."
       }
       closeLabel="Закрити підбір"
-      kbInsetPx={kbInsetPx}
       panelClassName="fizruk-sheet"
       zIndex={90}
       headerRight={
         <Button
-          variant="secondary"
+          variant="outline"
           size="sm"
           className="h-9 min-h-[44px]"
           onClick={() => setStep("choose")}
           aria-label="Повернутись до вибору способу"
         >
-          ← Назад
+          <Icon name="chevron-left" size="sm" />
+          Назад
         </Button>
       }
       footer={
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
-            variant="secondary"
+            variant="outline"
             className="h-12 min-h-[44px] sm:flex-1"
             onClick={onClose}
           >
             Скасувати
           </Button>
           <Button
-            module="fizruk"
+            variant="solid"
+            tone="fizruk"
+
             className="h-12 min-h-[44px] sm:flex-1"
             onClick={handleConfirm}
             disabled={selectedCount === 0}
           >
-            ▶︎ Почати
+            <Icon name="play" size="md" aria-hidden /> Почати
             {selectedCount > 0 ? ` · ${selectedCount}` : ""}
           </Button>
         </div>
@@ -275,7 +317,8 @@ export function QuickStartSheet({
          */}
         <div className="sticky top-0 z-10 -mx-5 px-5 pt-1 pb-2 bg-panel">
           <Input
-            placeholder="Пошук вправи…"
+            {...searchFieldProps("quick-start-exercise-search")}
+            placeholder="Пошук вправи"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             aria-label="Пошук вправи в каталозі"
@@ -283,11 +326,17 @@ export function QuickStartSheet({
         </div>
 
         {totalCount === 0 ? (
-          <div className="rounded-xl border border-line bg-panelHi p-4 text-center text-xs text-subtle">
-            {q.trim()
-              ? "Нічого не знайдено за цим запитом."
-              : "Каталог поки що порожній."}
-          </div>
+          <EmptyState
+            compact
+            module="fizruk"
+            icon={<Icon name="dumbbell" size="lg" />}
+            title={q.trim() ? "Нічого не знайшов" : "Каталог поки що порожній"}
+            description={
+              q.trim()
+                ? "Спробуй іншу назву або очисти пошук."
+                : "Додай першу вправу кнопкою вище."
+            }
+          />
         ) : (
           <div className="space-y-4">
             {groups.map((g) => (
@@ -297,7 +346,7 @@ export function QuickStartSheet({
                   variant="subtle"
                   className="px-1 mb-1.5"
                   action={
-                    <span className="text-meta text-muted normal-case tracking-normal font-normal">
+                    <span className="text-style-caption text-muted normal-case tracking-normal font-normal">
                       {g.items.length}
                     </span>
                   }
@@ -324,16 +373,18 @@ export function QuickStartSheet({
                         >
                           <span
                             className={cn(
-                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-meta font-bold",
+                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-style-caption font-bold",
                               active
                                 ? "bg-brand-strong border-brand-strong text-white"
                                 : "border-line text-subtle",
                             )}
                             aria-hidden
                           >
-                            {active ? "✓" : ""}
+                            {active ? (
+                              <Icon name="check" size="sm" aria-hidden />
+                            ) : null}
                           </span>
-                          <span className="text-sm text-text truncate flex-1">
+                          <span className="text-style-label text-text truncate flex-1">
                             {name}
                           </span>
                         </button>

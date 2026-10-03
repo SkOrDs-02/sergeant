@@ -57,15 +57,12 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
 import { ModuleEmptyIllustration } from "./EmptyStateIllustrations";
+import { formatNumberUk } from "@sergeant/shared";
 
 export type EmptyStateSize = "sm" | "md" | "lg";
 
 export type EmptyStateVariant =
-  | "neutral"
-  | "info"
-  | "success"
-  | "warning"
-  | "danger";
+  "neutral" | "info" | "success" | "warning" | "danger";
 
 export interface EmptyStateProps {
   icon?: ReactNode | undefined;
@@ -73,6 +70,14 @@ export interface EmptyStateProps {
   /** Short caps tag above the title (e.g. "404", "ERROR"). */
   eyebrow?: ReactNode | undefined;
   title?: ReactNode | undefined;
+  /**
+   * Element used for `title`. Defaults to `p`, because an empty state is
+   * normally nested inside a page that already owns the heading — emitting
+   * a heading there would inject an arbitrary level into the outline.
+   * Pass a heading level when the empty state *is* the whole page (the 404
+   * surface), otherwise that page ships with no heading at all.
+   */
+  titleAs?: "p" | "h1" | "h2" | "h3" | undefined;
   description?: ReactNode | undefined;
   /**
    * Primary CTA. `action` is the original (pre-Track-8) name and stays
@@ -112,6 +117,16 @@ export interface EmptyStateProps {
    */
   ariaLive?: "polite" | "off" | undefined;
 }
+
+/**
+ * П3 «край і зріз»: порожній стан НЕ отримує матеріал краю. Межа рішення
+ * власника 2026-08-07 — край для матеріалу ЗАПИСІВ І ЗВІТІВ (тест: чи існує
+ * ця річ у житті як аркуш), а порожній стан навпаки повідомляє про
+ * ВІДСУТНІСТЬ запису — паперового аналога в нього немає. До цього рішення
+ * тут жив проп `surface: "none" | "document"`; `document` прибрано разом із
+ * чотирма продуктовими виклик-сайтами (`NotFoundPage`, `ServerErrorPage`,
+ * `OfflinePage`, `ActiveHabitsSection`), які його використовували.
+ */
 
 interface TonePalette {
   container: string;
@@ -192,7 +207,7 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
     outer: "py-8 px-4 gap-2",
     iconBox: "w-10 h-10",
     title: "text-style-label",
-    description: "text-xs",
+    description: "text-style-caption",
     descriptionMax: "max-w-xs",
     eyebrow: "text-style-caption",
     actionGap: "mt-1 gap-2",
@@ -200,8 +215,8 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
   md: {
     outer: "py-14 px-6 gap-3",
     iconBox: "w-14 h-14",
-    title: "text-base font-semibold",
-    description: "text-sm",
+    title: "text-style-title font-semibold",
+    description: "text-style-body",
     descriptionMax: "max-w-sm",
     eyebrow: "text-style-caption",
     actionGap: "mt-2 gap-3",
@@ -209,10 +224,10 @@ const SIZE_TOKENS: Record<EmptyStateSize, SizeTokens> = {
   lg: {
     outer: "py-20 px-8 gap-4",
     iconBox: "w-20 h-20",
-    title: "text-xl font-extrabold",
-    description: "text-base",
+    title: "text-style-title font-extrabold",
+    description: "text-style-body",
     descriptionMax: "max-w-md",
-    eyebrow: "text-xs",
+    eyebrow: "text-style-overline",
     actionGap: "mt-3 gap-3",
   },
 };
@@ -238,6 +253,7 @@ export function EmptyState({
   illustration,
   eyebrow,
   title,
+  titleAs: TitleTag = "p",
   description,
   action,
   primaryAction,
@@ -270,7 +286,7 @@ export function EmptyState({
         "flex flex-col items-center justify-center text-center",
         tokens.outer,
         !disableAnimation &&
-          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-300",
+          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-slow",
         className,
       )}
     >
@@ -280,7 +296,7 @@ export function EmptyState({
           className={cn(
             "flex items-center justify-center",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
           )}
         >
           {illustration}
@@ -294,7 +310,7 @@ export function EmptyState({
               tone.container,
               tokens.iconBox,
               !disableAnimation &&
-                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-300 motion-safe:delay-75",
+                "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-90 motion-safe:duration-slow motion-safe:delay-75",
             )}
           >
             {icon}
@@ -304,7 +320,7 @@ export function EmptyState({
       {eyebrow && (
         <span
           className={cn(
-            "inline-flex items-center rounded-full px-2.5 py-0.5 font-bold uppercase tracking-widest",
+            "inline-flex items-center rounded-full px-2.5 py-0.5 font-semibold",
             tokens.eyebrow,
             tone.eyebrow,
           )}
@@ -312,7 +328,9 @@ export function EmptyState({
           {eyebrow}
         </span>
       )}
-      <p className={cn("text-text text-balance", tokens.title)}>{title}</p>
+      <TitleTag className={cn("text-text text-balance", tokens.title)}>
+        {title}
+      </TitleTag>
       {description && (
         <p
           className={cn(
@@ -330,11 +348,10 @@ export function EmptyState({
             "w-full mt-2 p-3 rounded-xl bg-panel/50 border border-dashed border-line/60",
             tokens.descriptionMax,
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-100",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-100",
           )}
         >
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional example label */}
-          <p className="text-style-caption text-muted mb-2 uppercase tracking-wide font-medium">
+          <p className="text-style-caption text-muted mb-2 font-medium">
             Приклад
           </p>
           {examplePreview}
@@ -346,7 +363,7 @@ export function EmptyState({
             "flex flex-wrap items-center justify-center",
             tokens.actionGap,
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300 motion-safe:delay-150",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow motion-safe:delay-150",
           )}
         >
           {primary}
@@ -358,7 +375,7 @@ export function EmptyState({
           className={cn(
             "mt-1",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
           )}
         >
           {tertiaryLink}
@@ -367,9 +384,15 @@ export function EmptyState({
       {hint && (
         <p
           className={cn(
-            "flex items-center gap-1.5 text-style-caption text-subtle mt-2",
+            // text-muted, НЕ text-subtle: hint — 12px normal-weight (не "large
+            // text"), тож потрібен контраст 4.5:1. Обрано тоді, коли темний
+            // `--c-subtle` був #5f6b64 і давав 3.33:1 на panel (axe
+            // color-contrast). 2026-08-21 тир піднято до #8a968e (5.84), тож
+            // формально `text-subtle` тут уже пройшов би — лишаємо `muted`
+            // навмисно: підказка з іконкою читається як дія, не як зноска.
+            "flex items-center gap-1.5 text-style-caption text-muted mt-2",
             !disableAnimation &&
-              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:delay-200",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow motion-safe:delay-200",
           )}
         >
           <Icon
@@ -415,7 +438,15 @@ interface ModuleConfig {
   title: string;
   description: string;
   hint: string;
-  actionLabel: string;
+  /**
+   * Optional — only meaningful when a call-site actually passes `onAction`.
+   * Founder-UX audit round 2 (F1) flagged `finyk`'s `actionLabel` as dead:
+   * both `Overview.tsx` and `TransactionList.tsx` render `ModuleEmptyState
+   * module="finyk"` without `onAction` on purpose (the global "+ Додати
+   * витрату" FAB already owns that CTA), so the label sat in the config
+   * with nothing ever reading it.
+   */
+  actionLabel?: string;
   accent: string;
   exampleLine1: string;
   exampleLine2: string;
@@ -430,7 +461,7 @@ const MODULE_EMPTY_CONFIG: Record<
     title: "Куди йдуть твої гроші?",
     description: "Додай першу витрату і побач реальну картину бюджету.",
     hint: "Порада: Підключи Monobank для автоматичного імпорту",
-    actionLabel: "Додати витрату",
+    // `actionLabel` навмисно відсутній — див. коментар над `ModuleConfig`.
     accent: "text-finyk bg-finyk-soft dark:bg-finyk/10",
     exampleLine1: "Кава",
     exampleLine2: "-85 ₴ · Сьогодні",
@@ -438,7 +469,7 @@ const MODULE_EMPTY_CONFIG: Record<
   fizruk: {
     icon: "dumbbell",
     title: "Як прогресують мої тренування?",
-    description: "Запиши перше тренування — і побачиш ріст у цифрах.",
+    description: "Запиши перше тренування, і побачиш ріст у цифрах.",
     hint: "Порада: Почни з 10-хвилинної розминки",
     actionLabel: "Почати тренування",
     accent: "text-fizruk bg-fizruk-soft dark:bg-fizruk/10",
@@ -448,7 +479,7 @@ const MODULE_EMPTY_CONFIG: Record<
   routine: {
     icon: "check-circle",
     title: "Що насправді стало звичкою?",
-    description: "Відстежуй щоденні дії — серія днів покаже правду.",
+    description: "Відстежуй щоденні дії, серія днів покаже правду.",
     hint: "Порада: Почни з однієї звички, яку точно виконаєш",
     actionLabel: "Створити звичку",
     accent: "text-routine bg-routine-surface dark:bg-routine/10",
@@ -459,7 +490,7 @@ const MODULE_EMPTY_CONFIG: Record<
     icon: "utensils",
     title: "Що ти їси насправді?",
     description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву — AI порахує калорії",
+    hint: "Порада: Сфоткай страву, Сержант порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     exampleLine1: "Сніданок",
@@ -480,10 +511,10 @@ function resolveGoalAwareDesc(
   goals: OnboardingGoals,
 ): string {
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴ — додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
-    return `${goals.fizrukWeeklyGoal}× на тиждень — починай із першого тренування.`;
+    return `${goals.fizrukWeeklyGoal}× на тиждень, починай із першого тренування.`;
   }
   if (moduleId === "routine" && goals.routineFirstHabit) {
     const habitLabels: Record<string, string> = {
@@ -492,7 +523,7 @@ function resolveGoalAwareDesc(
       reading: "«Читання»",
     };
     const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Відстеж ${label} — серія днів покаже правду.`;
+    return `Відстеж ${label}, серія днів покаже правду.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
     const goalLabels: Record<string, string> = {
@@ -501,7 +532,7 @@ function resolveGoalAwareDesc(
       maintain: "підтримувати вагу",
     };
     const goalLabel = goalLabels[goals.nutritionGoal] ?? goals.nutritionGoal;
-    return `Ціль «${goalLabel}» — залогай перший прийом їжі.`;
+    return `Ціль «${goalLabel}», залогай перший прийом їжі.`;
   }
   return fallback;
 }
@@ -542,7 +573,7 @@ export function ModuleEmptyState({
         <p className="text-style-label text-text truncate">
           {config.exampleLine1}
         </p>
-        <p className="text-xs text-muted">{config.exampleLine2}</p>
+        <p className="text-style-caption text-muted">{config.exampleLine2}</p>
       </div>
     </div>
   );
@@ -560,7 +591,7 @@ export function ModuleEmptyState({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
-          <Icon name="x" size={16} aria-hidden="true" />
+          <Icon name="close" size="md" aria-hidden="true" />
         </button>
       )}
       <EmptyState
@@ -596,11 +627,15 @@ export function ModuleEmptyState({
         action={
           onAction && (
             <Button
-              variant="primary"
+              variant="solid"
               size={compact ? "sm" : "md"}
               onClick={onAction}
             >
-              {actionLabel || config.actionLabel}
+              {/* Fallback for modules (currently only `finyk`) whose config
+                  has no `actionLabel` — the button only renders when the
+                  caller passes `onAction`, so a caller that does so without
+                  an explicit `actionLabel` still gets a labelled button. */}
+              {actionLabel ?? config.actionLabel ?? "Додати"}
             </Button>
           )
         }

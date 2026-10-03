@@ -75,8 +75,8 @@ describe("AssetsPage", () => {
     render(<AssetsPage testID="assets" seed={SEED} />);
 
     // Rows render with their labels.
-    expect(screen.getByText("⬜ Біла картка")).toBeTruthy();
-    expect(screen.getByText("🖤 Кредитна картка")).toBeTruthy();
+    expect(screen.getByText("Біла картка")).toBeTruthy();
+    expect(screen.getByText("Кредитна картка")).toBeTruthy();
     expect(screen.getByText("Готівка")).toBeTruthy();
     expect(screen.getByText("Батя")).toBeTruthy();
     expect(screen.getByText("Оля")).toBeTruthy();
@@ -140,5 +140,42 @@ describe("AssetsPage", () => {
 
     expect(screen.getByText("Редагувати борг")).toBeTruthy();
     expect(screen.getByDisplayValue("Батя")).toBeTruthy();
+  });
+
+  // F-MULTICUR — non-UAH manual assets stay out of networth and must
+  // surface a count banner so the exclusion isn't silent (mobile parity
+  // with the web Overview banner).
+  it("shows the non-UAH banner and excludes a USD manual asset from networth", () => {
+    const seed: FinykAssetsSeed = {
+      ...SEED,
+      manualAssets: [
+        ...(SEED.manualAssets ?? []),
+        {
+          id: "ma-2",
+          name: "Ощадний",
+          emoji: "💵",
+          amount: 1000,
+          currency: "USD",
+        },
+      ],
+    };
+    render(<AssetsPage testID="assets" seed={seed} />);
+
+    expect(screen.getByTestId("assets-non-uah-banner")).toBeTruthy();
+    expect(
+      screen.getByText(/1 актив в іноземній валюті не враховую в нетворсі/),
+    ).toBeTruthy();
+
+    // networth unchanged by the USD asset — same math as the base seed:
+    // (500 + 200 + 50) − (700 + 100) = −50.
+    expect(
+      screen.getByTestId("assets-networth-value").props.children.join(""),
+    ).toContain("-50");
+  });
+
+  it("does not show the non-UAH banner when every manual asset is UAH", () => {
+    render(<AssetsPage testID="assets" seed={SEED} />);
+
+    expect(screen.queryByTestId("assets-non-uah-banner")).toBeNull();
   });
 });

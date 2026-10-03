@@ -1,7 +1,7 @@
 /**
  * `useMeasurements` — mobile hook for the Fizruk Measurements screen.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Reads from the SQLite warm cache and persists exclusively through
  * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
  * slot `STORAGE_KEYS.FIZRUK_MEASUREMENTS` is drained on first boot
@@ -12,7 +12,7 @@
  * wrapper so the selectors stay unit-testable in isolation and we can
  * share them with the web port later.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import {
   normaliseMeasurementDraft,
@@ -23,7 +23,7 @@ import {
   type MobileMeasurementEntry,
 } from "@sergeant/fizruk-domain/domain";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractMeasurementSnapshots,
@@ -36,7 +36,7 @@ import {
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 function makeId(): string {
-  return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `m_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 function numericOrUndef(
@@ -132,13 +132,17 @@ export function useMeasurements(): UseMeasurementsResult {
     useState<MobileMeasurementEntry[]>(readInitialFromCache);
 
   // Stage 8 PR #057f-tombstone: overlay measurements from the local
-  // SQLite cache once it's warm.
+  // SQLite cache once it's warm. Render-time update avoids the
+  // `react-hooks/set-state-in-effect` violation (initiative 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setRaw(cache.measurements.map(projectMeasurementForMobile));
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setRaw(cache.measurements.map(projectMeasurementForMobile));
+    }
+  }
 
   const entries = useMemo(
     () => sortMeasurementsDesc(Array.isArray(raw) ? raw : []),

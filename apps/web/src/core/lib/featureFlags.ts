@@ -38,35 +38,44 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
   {
     id: "app-lock-enabled",
     label: "Блокування додатку (PIN)",
+    // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+    // «Конфіденційність» у Профіль → «Безпека» → «Блокування застосунку»
+    // 2026-09-04 (`ProfilePage.tsx`); опис досі називав старе місце.
     description:
-      "Захищає дані PIN-кодом. При увімкненні — встановлюй PIN у Конфіденційність → Блокування. PR-1a UX-roast 2026-Q2.",
+      "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у Профілі → «Безпека» → «Блокування застосунку».",
     defaultValue: false,
-    experimental: true,
   },
-  {
-    id: "finyk_subscriptions_category",
-    label: "Категорія «Підписки» у швидкому додаванні",
-    description:
-      "Додає окрему кнопку для підписок у ManualExpenseSheet (раніше вони потрапляли у «інше»).",
-    defaultValue: false,
-    experimental: true,
-  },
+  // `finyk_subscriptions_category` прибрано: флаг рендерився тумблером у
+  // Settings → Експериментальні, зберігався у сховище — і не мав жодного
+  // читача в коді. Юзер вмикав опцію, яка нічого не робить.
   {
     id: "hub_command_palette",
-    label: "Command Palette (Ctrl/⌘+K)",
+    label: "Швидкі команди (Ctrl / ⌘ + K)",
     description:
-      "Глобальний пошук і дії через клавіатуру. Ранній preview — може не працювати у деяких PWA-кейсах.",
+      "Глобальний пошук і швидкі дії прямо з клавіатури. Рання функція, подекуди може працювати нестабільно.",
     defaultValue: false,
     experimental: true,
   },
   {
     id: "ftux_outcome_card_v1",
-    label: "FTUX outcome-card",
+    label: "Картка результату для новачків",
     description:
-      "Показує outcome-card замість прогресу для cold-start cohort без першого запису.",
+      "Новим користувачам без жодного запису показує картку очікуваного результату замість смуги прогресу.",
     defaultValue: false,
     experimental: true,
   },
+  {
+    id: "finyk_import_reminder",
+    label: "Нагадування залити документи",
+    description:
+      "Плашка в Огляді Фініка, коли ти давно не додавав виписку чи скрін банкінгу. Показується лише за твоїм звичним ритмом: якщо імпортів не було, вона мовчить.",
+    defaultValue: false,
+    experimental: true,
+  },
+  // `hub_action_axis_v1` retired 2026-09-29 (спека `hub-action-axis.md`
+  // PR 3): вісь дії стала єдиною головною, стару сітку прибрано. Збережене
+  // у `hub_flags_v1` значення не читається — `getFlag` для невідомого id
+  // віддає `false`, а `getAllFlags`/UI перебирають лише `FLAG_REGISTRY`.
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.
@@ -87,6 +96,11 @@ const flagsStore = createTypedStore<FlagValues>({
   schema: FlagValuesSchema,
   defaultValue: {},
 });
+
+// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
+// результат від `getSnapshot` між оновленнями store'а — інакше React
+// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
+let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
 
 function defaults(): FlagValues {
   const out: FlagValues = {};
@@ -120,10 +134,6 @@ export function resetFlags(): void {
   flagsStore.reset();
 }
 
-// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
-// результат від `getSnapshot` між оновленнями store'а — інакше React
-// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
-let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
 flagsStore.subscribe(() => {
   cachedAllFlagsSnapshot = null;
 });

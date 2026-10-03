@@ -42,27 +42,52 @@ export function ScoreButton({
       type="button"
       role="radio"
       aria-checked={selected}
+      aria-label={label}
       onClick={() => onClick(value)}
       // In a roving tabIndex pattern the selected item (or first if none)
       // is in the tab sequence; all others are skipped.
       tabIndex={tabbable ? 0 : -1}
+      // Round-3 UI audit T2: tile shows only the digit — the word label
+      // moved to `aria-label` + the selected-level caption rendered once
+      // under the whole row (`Body.tsx`), not repeated inside each tile.
       className={cn(
-        "focus-ring flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl border text-style-caption transition-[background-color,border-color,color,opacity]",
+        "focus-ring flex-1 aspect-square min-h-11 flex items-center justify-center rounded-xl border text-style-title transition-[background-color,border-color,color]",
         selected
           ? "bg-success-strong text-white border-success-strong"
           : "border-line text-subtle hover:border-success/50 hover:text-text",
       )}
       title={label}
     >
-      <span className="text-base leading-none">{value}</span>
-      <span
-        className={cn(
-          "text-xs leading-none truncate max-w-full px-1",
-          selected ? "text-white/80" : "text-muted",
-        )}
-      >
-        {label}
-      </span>
+      {value}
     </button>
+  );
+}
+
+/** Renders the chosen level's name once under a `ScoreButton` row, since
+ * the tiles themselves now show only the digit (round-3 UI audit T2). */
+export function SelectedLevelLabel({
+  shortLabel,
+  value,
+  labels,
+}: {
+  shortLabel: string;
+  value: number | null;
+  labels: readonly string[];
+}) {
+  // Defect #4: the region used to mount ONLY once a value existed, so the
+  // very first selection appeared together with its own live region —
+  // nothing was there yet for AT to watch, so the first announcement was
+  // lost. `aria-live` only fires on a MUTATION of an already-present node,
+  // not on a node that mounts pre-filled. Keep the `<p>` mounted always;
+  // render a non-breaking-space placeholder (escape sequence, not a literal
+  // char — see `NARROW_NBSP` in `formatMoney.ts` for why) so the row keeps
+  // its reserved height instead of collapsing to zero before any pick.
+  return (
+    <p
+      className="mt-1.5 text-style-caption text-subtle text-center"
+      aria-live="polite"
+    >
+      {value == null ? "\u00A0" : `${shortLabel}: ${labels[value]}`}
+    </p>
   );
 }

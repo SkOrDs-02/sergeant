@@ -16,10 +16,7 @@
  * likely to drift, so it sits in its own file with its own tests.
  */
 export type OutboxBootOutcome =
-  | "fresh"
-  | "already_present"
-  | "repaired"
-  | "failed";
+  "fresh" | "already_present" | "repaired" | "failed";
 
 export interface ClassifyOutboxBootArgs {
   /** `sync_op_outbox` was visible in `sqlite_master` *before* repair. */

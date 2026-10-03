@@ -120,30 +120,29 @@ async function startZxingScanner(
   const { BrowserMultiFormatOneDReader } =
     await import("@zxing/browser/esm/readers/BrowserMultiFormatOneDReader.js");
   if (cancelRef.current) return;
+  if (!stream || !videoEl) {
+    throw new Error("zxing fallback needs an active stream and video element");
+  }
 
   const reader = new BrowserMultiFormatOneDReader();
 
-  const controls = await reader.decodeFromStream(
-    stream!,
-    videoEl!,
-    (result) => {
-      if (cancelRef.current) return;
-      if (result) {
-        const raw = result.getText();
-        if (raw) {
-          const format = (() => {
-            try {
-              const f = result.getBarcodeFormat?.();
-              return f != null ? String(f) : "";
-            } catch {
-              return "";
-            }
-          })();
-          onDetected({ code: raw, format });
-        }
+  const controls = await reader.decodeFromStream(stream, videoEl, (result) => {
+    if (cancelRef.current) return;
+    if (result) {
+      const raw = result.getText();
+      if (raw) {
+        const format = (() => {
+          try {
+            const f = result.getBarcodeFormat?.();
+            return f != null ? String(f) : "";
+          } catch {
+            return "";
+          }
+        })();
+        onDetected({ code: raw, format });
       }
-    },
-  );
+    }
+  });
 
   zxingStopRef.current = () => {
     try {

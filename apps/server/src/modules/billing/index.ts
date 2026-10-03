@@ -1,32 +1,36 @@
 /**
  * Public barrel for the server billing module.
  *
- * @scaffolded
- * @nextStep Migrate `apps/server/src/routes/{ai-memory,billing}.ts` and
- *   future routes from `../modules/billing/{getUserPlan,requirePlan,stripe}.js`
- *   deep-import to barrel `../modules/billing`. Tracked in dead-code roast
- *   2026-05-13.
+ * Caller-и (`apps/server/src/routes/{ai-memory,billing,nutrition}.ts`)
+ * імпортують лише звідси — не з `./{getUserPlan,requirePlan,stripe,plata}.js`.
  */
-export { getUserPlan } from "./getUserPlan.js";
-export type { Plan, UserPlanResult } from "./getUserPlan.js";
-export { requirePlan } from "./requirePlan.js";
-export { effectiveLimits } from "./effectiveLimits.js";
-export type { EffectiveLimits } from "./effectiveLimits.js";
+export { accessStateOf, getUserPlan, isFounderUser } from "./getUserPlan.js";
+export type { AccessState, Plan, UserPlanResult } from "./getUserPlan.js";
+export { requireFeature, requirePlan } from "./requirePlan.js";
 export {
   createCheckoutSession,
   getSubscriptionStatus,
   processStripeWebhook,
   verifyStripeSignature,
   BillingConfigurationError,
+  NoBillingCustomerError,
 } from "./stripe.js";
-// Multi-provider scaffold (0010 PR-8). LiqPay live — Phase 7.
-export { getProviderForCountry } from "./provider.js";
+// Multi-provider billing (Phase 7 UA billing — LiqPay + Plata live).
+export {
+  getEnabledProviders,
+  resolveProvider,
+  ProviderNotAvailableError,
+} from "./provider.js";
 export type {
   BillingProvider,
+  CancelSubscriptionOutcome,
   ProviderId,
   ProviderCheckoutInput,
   ProviderPortalInput,
   ProviderSessionUser,
-  ResolveProviderOptions,
+  EnabledProvidersOptions,
 } from "./provider.js";
-export { liqpayProvider, NotImplementedError } from "./liqpay.js";
+export { liqpayProvider } from "./liqpay.js";
+export { plataProvider, ensurePlataPubkey } from "./plata.js";
+export { stripeProvider } from "./stripeProvider.js";
+export { providerRegistry } from "./registry.js";

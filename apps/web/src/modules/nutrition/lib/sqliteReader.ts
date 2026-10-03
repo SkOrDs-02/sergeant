@@ -4,7 +4,7 @@
  * SQLite-backed read path for Nutrition (meals, pantries, pantry items,
  * prefs, recipes).
  *
- * Stage 4 PR #033 of `docs/planning/storage-roadmap.md`. When the
+ * Stage 4 PR #033 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. When the
  * `feature.nutrition.sqlite_v2.read_sqlite` flag is on, the public hooks
  * (`useNutritionLog`, `useNutritionPantries`, etc.) overlay their state
  * from this cache instead of from the LS blob. LS writes still happen
@@ -20,7 +20,9 @@ import type {
   NutritionDay,
   NutritionLog,
   NutritionPrefs,
+  GoalPeriod,
   Pantry,
+  PantryItemSource,
   ShoppingList,
 } from "@sergeant/nutrition-domain";
 import { normalizeShoppingList } from "@sergeant/nutrition-domain";
@@ -49,6 +51,8 @@ export interface SqliteNutritionCache {
    * Stage 11 / PR #070n-dualwrite.
    */
   shoppingList: ShoppingList | null;
+  /** Append-only goal history; consumers resolve the effective day goal. */
+  goalPeriods: GoalPeriod[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -61,10 +65,19 @@ const EMPTY_CACHE: SqliteNutritionCache = {
   recipes: [],
   waterLog: {},
   shoppingList: null,
+  goalPeriods: [],
   refreshedAt: null,
 };
 
 let cache: SqliteNutritionCache = { ...EMPTY_CACHE };
+
+// DCRUD-007b (mirror of finyk/sqliteReader.ts): concurrent refreshes
+// resolve last-writer-wins on `cache`; a refresh that started before a
+// local mutation but finished after the writer-queue's refresh used to
+// clobber the newer snapshot and escalate into a spurious diff-delete.
+// A refresh publishes only while no later-started refresh has published.
+let refreshSeq = 0;
+let publishedSeq = 0;
 
 /** Returns the current cached nutrition state (sync, zero-cost). */
 export function getCachedNutritionSqliteState(): SqliteNutritionCache {
@@ -107,6 +120,8 @@ interface PantryItemRow {
   qty: number | null;
   unit: string | null;
   notes: string | null;
+  /** Серіалізовані варіанти покупок (міграція 130). */
+  sources: string | null;
   sort_order: number | null;
   [key: string]: unknown;
 }
@@ -134,6 +149,20 @@ interface WaterLogRow {
 interface ShoppingListRow {
   user_id: string;
   data_json: string | null;
+  [key: string]: unknown;
+}
+
+interface GoalPeriodRow {
+  id: string;
+  effective_from: string;
+  kcal: number | null;
+  protein_g: number | null;
+  fat_g: number | null;
+  carbs_g: number | null;
+  water_ml: number | null;
+  origin: GoalPeriod["origin"];
+  created_at: string;
+  deleted_at: string | null;
   [key: string]: unknown;
 }
 
@@ -255,6 +284,7 @@ export async function refreshNutritionSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteNutritionCache> {
+  const seq = ++refreshSeq;
   const [
     mealRows,
     pantryRows,
@@ -263,6 +293,7 @@ export async function refreshNutritionSqliteState(
     recipeRows,
     waterRows,
     shoppingRows,
+    goalPeriodRows,
   ] = await Promise.all([
     client.all<MealRow>(
       `SELECT id, eaten_at, meal_type, name, label,
@@ -281,7 +312,7 @@ export async function refreshNutritionSqliteState(
       [userId],
     ),
     client.all<PantryItemRow>(
-      `SELECT id, pantry_id, name, qty, unit, notes, sort_order
+      `SELECT id, pantry_id, name, qty, unit, notes, sources, sort_order
            FROM nutrition_pantry_items
           WHERE user_id = ? AND deleted_at IS NULL
           ORDER BY pantry_id ASC, sort_order ASC, id ASC`,
@@ -312,6 +343,14 @@ export async function refreshNutritionSqliteState(
           WHERE user_id = ?`,
       [userId],
     ),
+    client.all<GoalPeriodRow>(
+      `SELECT id, effective_from, kcal, protein_g, fat_g, carbs_g, water_ml,
+              origin, created_at, deleted_at
+         FROM nutrition_goal_periods
+        WHERE user_id = ?
+        ORDER BY effective_from ASC, created_at ASC`,
+      [userId],
+    ),
   ]);
 
   // Build NutritionLog from meal rows.
@@ -333,6 +372,9 @@ export async function refreshNutritionSqliteState(
       qty: row.qty ?? null,
       unit: row.unit ?? null,
       notes: row.notes ?? null,
+      // Форму варіантів чистить `normalizePantries` нижче по потоку —
+      // тут лише розбір JSON, який на битому рядку дає `null`, а не кидає.
+      sources: safeParseJson<PantryItemSource[] | null>(row.sources, null),
     });
     itemsByPantry.set(row.pantry_id, arr);
   }
@@ -364,6 +406,21 @@ export async function refreshNutritionSqliteState(
     ? normalizeShoppingList(safeParseJson<unknown>(shoppingRow.data_json, null))
     : null;
 
+  const goalPeriods: GoalPeriod[] = goalPeriodRows.map((row) => ({
+    id: row.id,
+    effectiveFrom: row.effective_from,
+    kcal: row.kcal,
+    proteinG: row.protein_g,
+    fatG: row.fat_g,
+    carbsG: row.carbs_g,
+    waterMl: row.water_ml,
+    origin: row.origin,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  }));
+
+  if (seq <= publishedSeq) return cache;
+  publishedSeq = seq;
   cache = {
     log,
     pantries,
@@ -372,6 +429,7 @@ export async function refreshNutritionSqliteState(
     recipes,
     waterLog,
     shoppingList,
+    goalPeriods,
     refreshedAt: new Date().toISOString(),
   };
   return cache;
@@ -380,6 +438,8 @@ export async function refreshNutritionSqliteState(
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearNutritionSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
+  refreshSeq = 0;
+  publishedSeq = 0;
 }
 
 /**

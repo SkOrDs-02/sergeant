@@ -23,7 +23,7 @@ import {
  * mirroring the structural lock-down that `pg-fizruk-snapshot.test.ts`
  * applies to the Postgres source-of-truth.
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`. Same rationale
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Same rationale
  * as the routine snapshot tests — PG↔SQLite schemas must stay aligned so
  * push/pull round-trips are symmetric.
  */
@@ -47,6 +47,7 @@ describe("sqlite/fizrukWorkouts schema snapshot", () => {
       "warmup_json",
       "cooldown_json",
       "wellbeing_json",
+      "kcal_burned",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -128,6 +129,8 @@ describe("sqlite/fizrukWorkoutItems schema snapshot", () => {
       "type",
       "duration_sec",
       "distance_m",
+      // Міграція 134 (pg) / 006 (клієнт): обраний варіант підказки.
+      "chosen_variant",
       "sort_order",
       "created_at",
       "updated_at",
@@ -283,6 +286,16 @@ describe("sqlite/fizrukMeasurements schema snapshot", () => {
       "chest_cm",
       "hips_cm",
       "bicep_cm",
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
       "sleep_hours",
       "energy_level",
       "mood",
@@ -575,8 +588,8 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(2);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(8);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -613,6 +626,92 @@ describe("sqlite/fizruk migrations exports", () => {
     expect(FIZRUK_CLIENT_MIGRATIONS[1]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workout_templates/,
     );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.name).toBe("003_fizruk_injuries.sql");
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_injuries/,
+    );
+    // `id TEXT`, never uuid — the client mints `inj_<uuid>`, and a uuid
+    // column is what made every routine/nutrition push fail with 22P02
+    // before migrations 094/095.
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(/id\s+TEXT PRIMARY KEY/);
+    // `cleared_at IS NULL` is what "active mark" means — the partial index
+    // encodes it, so a rename would silently change the hot query.
+    expect(FIZRUK_CLIENT_MIGRATIONS[2]!.sql).toMatch(
+      /fizruk_injuries_user_active_idx_lite[\s\S]*cleared_at IS NULL/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[3]!.name).toBe("004_fizruk_pushups.sql");
+    expect(FIZRUK_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_pushups/,
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[3]!.sql).toMatch(
+      /PRIMARY KEY \(user_id, date_key\)/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[4]!.name).toBe(
+      "005_fizruk_kcal_and_custom_activities.sql",
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /ALTER TABLE fizruk_workouts ADD COLUMN kcal_burned INTEGER/,
+    );
+    expect(FIZRUK_CLIENT_MIGRATIONS[4]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS fizruk_custom_activities/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[5]!.name).toBe(
+      "006_fizruk_item_chosen_variant.sql",
+    );
+    // Дзеркалить серверну 134. Без цієї колонки на клієнті вибір варіанта
+    // не переживає перезавантаження, а лічильник полегшень завжди нуль.
+    expect(FIZRUK_CLIENT_MIGRATIONS[5]!.sql).toMatch(
+      /ALTER TABLE fizruk_workout_items ADD COLUMN chosen_variant TEXT/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[6]!.name).toBe(
+      "007_fizruk_pushups_to_workouts.sql",
+    );
+    // Конверсія йде ПЕРЕД DROP і в порядку сети → позиції → тренування:
+    // predicate «уже перенесено» дивиться на fizruk_workouts, тож
+    // тренування мусять вставлятись останніми.
+    const sql007 = FIZRUK_CLIENT_MIGRATIONS[6]!.sql;
+    expect(sql007.indexOf("INTO fizruk_workout_sets")).toBeLessThan(
+      sql007.indexOf("INTO fizruk_workout_items"),
+    );
+    expect(sql007.indexOf("INTO fizruk_workout_items")).toBeLessThan(
+      sql007.indexOf("INTO fizruk_workouts"),
+    );
+    expect(sql007.indexOf("INTO fizruk_workouts")).toBeLessThan(
+      sql007.indexOf("DROP TABLE IF EXISTS fizruk_pushups"),
+    );
+    // User-scoped id — той самий, що ставить серверна 140.
+    expect(sql007).toMatch(
+      /'pushups:' \|\| p\.user_id \|\| ':' \|\| p\.date_key/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[7]!.name).toBe(
+      "008_fizruk_measurement_fields.sql",
+    );
+    // Дзеркалить серверну 146. Тільки ADD COLUMN: `bicep_cm` лишається
+    // (поле доменного/мобільного реєстру), тож двофазний DROP не потрібен.
+    const sql008 = FIZRUK_CLIENT_MIGRATIONS[7]!.sql;
+    for (const column of [
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
+    ]) {
+      expect(sql008).toContain(
+        `ALTER TABLE fizruk_measurements ADD COLUMN ${column} REAL;`,
+      );
+    }
+    expect(sql008).not.toMatch(/DROP/);
   });
 
   it("uses a separate `__fizruk_migrations` ledger table", () => {

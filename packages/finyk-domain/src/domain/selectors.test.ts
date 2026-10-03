@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import {
+  compareAmounts,
   computeCategorySpendIndex,
   formatComparisonSummary,
   getCategoryDistribution,
@@ -63,6 +64,8 @@ describe("finyk selectors", () => {
       txCount: 0,
       totalExpense: 0,
       totalIncome: 0,
+      spentMinor: 0,
+      incomeMinor: 0,
     });
 
     expect(
@@ -136,6 +139,16 @@ describe("finyk selectors", () => {
     ]);
   });
 
+  it("рахує ручну витрату за її categoryId, а не повторно вгадує «Інше»", () => {
+    const manual = tx("manual", -10_000, jan, "", 0);
+    manual.categoryId = "entertainment";
+
+    expect(computeCategorySpendIndex([manual])).toEqual({
+      catSpend: { entertainment: 100 },
+      totalSpent: 100,
+    });
+  });
+
   it("compares trends and formats summary copy directions", () => {
     const current = [tx("current", -20_000, feb), tx("income", 30_000, feb)];
     const previous = [tx("prev", -10_000, jan), tx("prev-income", 20_000, jan)];
@@ -174,7 +187,56 @@ describe("finyk selectors", () => {
       }).direction,
     ).toBe("no_prev");
     expect(formatComparisonSummary(null).direction).toBe("no_prev");
-    expect(getTrendComparison(current, [])).toMatchObject({ diffPct: null });
+    expect(getTrendComparison(current, [])).toMatchObject({
+      diffPct: null,
+      prevTxCount: 0,
+    });
+  });
+
+  // Р4 спеки аналітики v2: відсоток лише з точних копійок і лише коли
+  // попередній місяць є базою, а не шумом.
+  describe("compareAmounts (чесна дельта)", () => {
+    it("рахує відсоток з точних копійок: 247,50 → 807,50 дає 226,26 %", () => {
+      // З округлених гривень (248 → 808) вийшло б 225,8 %.
+      const { diffMinor, pct } = compareAmounts(80_750, 24_750);
+      expect(diffMinor).toBe(56_000);
+      expect(pct).toBeCloseTo(226.26, 1);
+    });
+
+    it("попередній < 10 % поточного: лише абсолютна дельта, без відсотка", () => {
+      // Сліпий замір: 247,50 ₴ у серпні проти 2 593,40 ₴ у вересні давало
+      // «+946 %»; база 9,5 % від поточного, тож відсотка тут не буває.
+      expect(compareAmounts(259_340, 24_750)).toEqual({
+        diffMinor: 234_590,
+        pct: null,
+      });
+      // Рівно 10 % — ще база.
+      expect(compareAmounts(1_000, 100)?.pct).toBe(900);
+    });
+
+    it("попередній 0: відсотка немає", () => {
+      expect(compareAmounts(1_000, 0).pct).toBeNull();
+      expect(compareAmounts(0, 0)).toEqual({ diffMinor: 0, pct: null });
+    });
+
+    it("поточний неповний місяць не впливає на «повність» попереднього", () => {
+      // Перший день місяця: витрат ще 0, минулий місяць повний.
+      expect(compareAmounts(0, 50_000).pct).toBe(-100);
+    });
+
+    it("getTrendComparison бере відсоток з копійок, а не з округлених гривень", () => {
+      const prev = [tx("p", -24_750, jan)];
+      const curr = [tx("c1", -24_750, feb), tx("c2", -56_000, feb)];
+      const comparison = getTrendComparison(curr, prev);
+      expect(comparison.prevSpent).toBe(248);
+      expect(comparison.currentSpent).toBe(808);
+      // З округлених 248 → 808 вийшло б 225,8 %; з точних 247,50 → 807,50
+      // рівно 226,26 %.
+      expect(comparison.diffPct).toBeCloseTo(226.26, 1);
+      expect(comparison.diff).toBe(560);
+      expect(comparison.prevTxCount).toBe(1);
+      expect(formatComparisonSummary(comparison).text).toContain("(226%)");
+    });
   });
 
   it("compares current and previous months from one transaction list", () => {
@@ -234,8 +296,14 @@ describe("finyk selectors", () => {
         },
       }),
     ).toEqual([
-      { name: "АТБ", count: 2, total: 250 },
-      { name: "Landlord", count: 1, total: 120 },
+      { key: "атб", name: "АТБ", count: 2, total: 250, totalMinor: 25_000 },
+      {
+        key: "landlord",
+        name: "Landlord",
+        count: 1,
+        total: 120,
+        totalMinor: 12_000,
+      },
     ]);
     expect(getTopMerchants(transactions, 1)).toHaveLength(1);
     expect(

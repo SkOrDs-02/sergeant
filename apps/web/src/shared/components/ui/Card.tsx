@@ -77,7 +77,12 @@ export type CardProminence =
  * @deprecated Prefer the orthogonal `module` + `prominence` props.
  * The string union is kept for back-compat with existing call-sites
  * and is internally mapped to the new API.
- * @removeBy 2026-09-01
+ *
+ * Термін перенесено 2026-09-03 з 2026-09-01: на дату замір дав ~68
+ * call-site-ів `<Card variant="…">` у `apps/web/src` — це окремий
+ * механічний codemod-PR, не хвіст. Реєстр: `docs/work/specs/tech-debt/frontend.md`
+ * § «Прострочені `@removeBy` 2026-09-01».
+ * @removeBy 2026-12-01
  */
 export type CardVariant =
   | "default"
@@ -90,17 +95,63 @@ export type CardVariant =
 
 export type CardPadding = "none" | "sm" | "md" | "lg" | "xl";
 
-export type CardRadius = "md" | "lg" | "xl" | "r-lg" | "r-xl" | "r-2xl";
+// Canonical 3-tier radius rhythm — see docs/design/design/radius-rhythm.md.
+// 2026-07 design-audit: the parallel v2 namespace (`r-lg`/`r-xl`/`r-2xl`,
+// 14/18/24 px) was collapsed into this single scale. Its keys mapped onto
+// `md`/`lg`/`xl` (r-lg,r-xl → CARD; r-2xl → HERO) so all call sites now use
+// the one contract.
+export type CardRadius = "md" | "lg" | "xl";
+
+/**
+ * Обробка краю — власний матеріал Sergeant (П3, рішення власника
+ * 2026-08-06 на `mockups/product/own-material-variants.html`).
+ *
+ * AI-CONTEXT: це НЕ радіус і не його четверте значення. Радіус описує,
+ * наскільки скруглений прямокутник; край описує, чим поверхня взагалі
+ * є. `stub` каже «це відривний талон», `rule` — «це аркуш під
+ * друкарською лінійкою». Обидва скасовують радіус, і саме тому проп
+ * окремий: інакше `radius="stub"` читалося б як «скруглення розміру
+ * stub», чого не буває.
+ *
+ * Навіщо: §3.2 анти-слоп-стратегії міряє 723 входження
+ * `rounded-2xl|3xl|full` — це найбільший атрактор у нас, і єдиний, у
+ * якого є число. Матеріал бʼє саме по ньому.
+ */
+export type CardEdge = "stub" | "rule" | "perf";
+
+const edges: Record<CardEdge, string> = {
+  /** Окремий документ поза стосом: лінійка зверху + відривний низ. */
+  stub: "edge-stub",
+  /** Перша поверхня в стосі — лише друкарська лінійка. */
+  rule: "edge-rule",
+  /** Остання поверхня в стосі — лише відривний низ. */
+  perf: "edge-perf",
+};
+
+/**
+ * Краї, що вирізають перфорацію МАСКОЮ.
+ *
+ * AI-DANGER: маска зрізає будь-яку тінь на своєму вузлі — і `box-shadow`,
+ * і `filter: drop-shadow()` однаково. Заміряно в headless Chromium
+ * 2026-08-06 (яскравість під нижнім краєм, 0 = чорне, 255 = біле):
+ * фільтр і маска на одному вузлі дають 255/255, тобто рівно те саме, що
+ * контрольний `box-shadow`; і лише фільтр на БАТЬКУ дає 125 під зубцем
+ * проти 225 під проміжком — тобто рвану тінь по зубцях.
+ *
+ * Тому `Card` сам загортає масковий край у `.edge-lift`. Це не зручність:
+ * помилка тут мовчазна — поверхня не ламається, вона просто втрачає
+ * глибину, і побачити це можна лише поруч зі звичайною карткою. Автоматика
+ * знімає питання з викликача назавжди.
+ *
+ * `rule` у цей набір НЕ входить: у нього маски немає — тільки квадратний
+ * верх і 2px лінійка, — тож обгортка йому не потрібна.
+ */
+const MASKED_EDGES: ReadonlySet<CardEdge> = new Set(["stub", "perf"]);
 
 const radii: Record<CardRadius, string> = {
-  md: "rounded-xl", // 12px — CONTROL tier (legacy)
-  lg: "rounded-2xl", // 16px — CARD tier (legacy)
-  xl: "rounded-3xl", // 24px — HERO tier (legacy)
-  // Sergeant v2 redesign radii (parallel namespace introduced in PR-1).
-  // Use these on v2 glass surfaces — see docs/design/redesign-v2/governance.md.
-  "r-lg": "rounded-r-lg", // 14px — primary v2 card
-  "r-xl": "rounded-r-xl", // 18px — metric / sub-hero card
-  "r-2xl": "rounded-r-2xl", // 24px — hero / sheet
+  md: "rounded-xl", // 12px — CONTROL tier
+  lg: "rounded-2xl", // 16px — CARD tier
+  xl: "rounded-3xl", // 24px — HERO tier
 };
 
 const paddings: Record<CardPadding, string> = {
@@ -132,54 +183,75 @@ const NON_MODULE_PROMINENCE: Record<
   elevated: "bg-panel border border-line shadow-e3",
   ghost: "bg-transparent border border-transparent",
   // Sergeant v2 glass — translucent floating surface. `bg-surface-glass`
-  // is alpha-baked (0.82 light / 0.06 dark / 1.0 HC); `surface-line` is
-  // the inset hairline. `shadow-card-v2` includes an inset top-highlight
-  // recipe tuned for the glass look. Auto-degrades when `html.hc` strips
-  // mesh + alpha (see theme.css § High-Contrast v2 overrides).
+  // is alpha-baked (0.82 light / 1.0 dark under «Чорнило» / 1.0 HC);
+  // `surface-line` is the inset hairline. `shadow-card-v2` keeps the
+  // inset top-highlight. Under «Чорнило» the dark surface is fully
+  // opaque, so `backdrop-blur` is a pure no-op — `dark:backdrop-blur-none`
+  // drops the wasted compositing layer (mobile perf) while leaving the
+  // light default frost untouched.
   glass:
-    "bg-surface-glass backdrop-blur-md border border-surface-line shadow-card-v2",
+    "bg-surface-glass backdrop-blur-md dark:backdrop-blur-none border border-surface-line shadow-card-v2",
 };
 
 // ─── Module-branded surfaces ───────────────────────────────────────────
 // Each module owns 3 prominence treatments. Light + dark are encoded
 // together so call-sites never need to re-implement the dark variant.
 //
-//   hero    — full saturated identity (light: bg-hero-{module} gradient;
-//             dark: bg-{module}-soft, the deep -900 family token).
+//   hero    — full saturated identity (light: bg-hero-{module} gradient +
+//             down-shadow; dark «Чорнило»: bg-{module}-soft tint + a
+//             luminescent tier-400 accent border /25 + inset-glow instead
+//             of a drop shadow — depth reads as glow, not elevation).
 //   soft    — branded surface on a panel (single token, no /50 wash).
 //             Replaces the legacy `bg-{module}-soft/50` pattern that
 //             washed out in light and dropped to ~6% in dark.
-//   tinted  — neutral panel with a module-tinted hairline. Quietest
-//             form of identity — module belongs to this card but its
-//             content is the focus.
+//   tinted  — "selected" surface. Light: neutral panel + module hairline.
+//             Dark «Чорнило»: accent/10 wash + accent/35 border, flat (no
+//             shadow) — the quiet accent-tinted state of a picked row/card.
+//
+// The «Чорнило» treatment is `dark:`-scoped so the light theme (the
+// product default) is byte-for-byte unchanged until the § 5 inversion
+// (step 6). Accent tier-400 = the module's own luminescent tone, so
+// module-accent containment (Hard Rule #12) holds. The accent only ever
+// appears as a translucent border/wash/glow — never a saturated solid
+// behind text — so no `text-white`/`-strong` companion is needed here.
 const MODULE_PROMINENCE: Record<
   CardModule,
   Record<"hero" | "soft" | "tinted", string>
 > = {
   finyk: {
-    // `dark:bg-none` resets the light `bg-hero-emerald` linear-gradient
-    // (a background-image set in tailwind-preset.js:548) which otherwise
-    // renders ON TOP of `dark:bg-finyk-soft` (background-color) and
-    // washes the card bright in dark mode. Same fix applies to all 4
-    // modules below — see screenshot bug report 2026-05-18.
-    hero: "border shadow-card bg-hero-emerald dark:bg-none border-finyk-soft-border/50 dark:bg-finyk-soft dark:border-finyk-soft-border/40",
-    soft: "border bg-finyk-soft border-finyk-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-finyk-soft-border shadow-card",
+    // Light bg/shadow: `bg-hero-grad-finyk` + `shadow-hero-finyk` are the
+    // «Чорнило» v3.1 § 3 brand anchor — the same saturated gradient in
+    // both themes, a soft down-shadow instead of elevation. Dark:
+    // `dark:bg-hero-ink-finyk` sets `background-image`, which overrides
+    // the light gradient by itself — no separate `dark:bg-none` reset
+    // needed (§ 2). Same fix applies to all 4 modules below — see
+    // screenshot bug report 2026-05-18.
+    // `soft` до 2026-09-01 ніс `backdrop-blur-sm` поверх непрозорого
+    // `bg-*-soft` — візуальний no-op і зайвий GPU-шар на кожну модульну
+    // картку (анти-слоп аудит 2026-09-01, F8). Blur лишається лише в
+    // `glass` і в overlay-ах, де під ним справді є що розмивати.
+    hero: "border shadow-hero-finyk bg-hero-grad-finyk border-white/20 dark:bg-hero-ink-finyk dark:border-brand-400/25 dark:shadow-e1",
+    soft: "border bg-finyk-soft border-finyk-soft-border",
+    tinted:
+      "bg-panel border border-finyk-soft-border shadow-card dark:bg-brand-400/10 dark:border-brand-400/35 dark:shadow-none",
   },
   fizruk: {
-    hero: "border shadow-card bg-hero-teal dark:bg-none border-fizruk-soft-border/50 dark:bg-fizruk-soft dark:border-fizruk-soft-border/40",
-    soft: "border bg-fizruk-soft border-fizruk-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-fizruk-soft-border shadow-card",
+    hero: "border shadow-hero-fizruk bg-hero-grad-fizruk border-white/20 dark:bg-hero-ink-fizruk dark:border-cyan-400/25 dark:shadow-e1",
+    soft: "border bg-fizruk-soft border-fizruk-soft-border",
+    tinted:
+      "bg-panel border border-fizruk-soft-border shadow-card dark:bg-cyan-400/10 dark:border-cyan-400/35 dark:shadow-none",
   },
   routine: {
-    hero: "border shadow-card bg-hero-coral dark:bg-none border-coral-200/50 dark:bg-routine-soft dark:border-routine-soft-border/40",
-    soft: "border bg-routine-soft border-routine-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-routine-soft-border shadow-card",
+    hero: "border shadow-hero-routine bg-hero-grad-routine border-white/20 dark:bg-hero-ink-routine dark:border-rose-400/25 dark:shadow-e1",
+    soft: "border bg-routine-soft border-routine-soft-border",
+    tinted:
+      "bg-panel border border-routine-soft-border shadow-card dark:bg-rose-400/10 dark:border-rose-400/35 dark:shadow-none",
   },
   nutrition: {
-    hero: "border shadow-card bg-hero-lime dark:bg-none border-lime-200/50 dark:bg-nutrition-soft dark:border-nutrition-soft-border/40",
-    soft: "border bg-nutrition-soft border-nutrition-soft-border backdrop-blur-sm",
-    tinted: "bg-panel border border-nutrition-soft-border shadow-card",
+    hero: "border shadow-hero-nutrition bg-hero-grad-nutrition border-white/20 dark:bg-hero-ink-nutrition dark:border-lime-400/25 dark:shadow-e1",
+    soft: "border bg-nutrition-soft border-nutrition-soft-border",
+    tinted:
+      "bg-panel border border-nutrition-soft-border shadow-card dark:bg-lime-400/10 dark:border-lime-400/35 dark:shadow-none",
   },
 };
 
@@ -264,14 +336,19 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
   /**
    * @deprecated Prefer `module` + `prominence`. Kept for back-compat
    * with existing call-sites; module-style variants are mapped to the
-   * new API internally.
-   * @removeBy 2026-09-01
+   * new API internally. Термін перенесено разом із `CardVariant` вище.
+   * @removeBy 2026-12-01
    */
   variant?: CardVariant | undefined;
   module?: CardModule | undefined;
   prominence?: CardProminence | undefined;
   padding?: CardPadding | undefined;
   radius?: CardRadius | undefined;
+  /**
+   * Документна обробка краю. Коли задана — `radius` ігнорується, бо
+   * обидва описують ту саму межу поверхні й не складаються.
+   */
+  edge?: CardEdge | undefined;
   as?: ElementType | undefined;
   children?: ReactNode | undefined;
 }
@@ -287,9 +364,9 @@ function defaultRadius(
   variant: CardVariant | undefined,
   prominence: CardProminence | undefined,
 ): CardRadius {
-  // v2 glass surfaces default to the v2 `r-lg` (14px) radius — matches
-  // the handoff spec for primary cards.
-  if (prominence === "glass") return "r-lg";
+  // Glass surfaces default to CARD tier (`lg` → rounded-2xl, 16px). This
+  // was the v2 `r-lg` (14px) before the 2026-07 radius consolidation.
+  if (prominence === "glass") return "lg";
   if (variant && SOFT_VARIANT_RE.test(variant)) return "lg";
   return "xl";
 }
@@ -302,6 +379,7 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
     prominence,
     padding = "md",
     radius,
+    edge,
     as: Component = "div",
     children,
     ...props
@@ -310,18 +388,54 @@ export const Card = forwardRef<HTMLElement, CardProps>(function Card(
 ) {
   const resolved = resolveVariant(variant, module, prominence);
   const effectiveRadius = radius ?? defaultRadius(variant, resolved.prominence);
+  // Край скасовує радіус, а не додається до нього: це дві назви однієї
+  // межі. Порядок важливий — `edge-*` мусить іти після `surfaceClass`,
+  // бо обнуляє його рамку й тінь.
+  const surfaceClasses = cn(
+    surfaceClass(resolved),
+    edge ? edges[edge] : radii[effectiveRadius],
+    paddings[padding],
+    className,
+  );
+
+  if (!edge || !MASKED_EDGES.has(edge)) {
+    return (
+      <Component ref={ref} className={surfaceClasses} {...props}>
+        {children}
+      </Component>
+    );
+  }
+
+  /*
+    Масковий край: підйом іде на ЗОВНІШНІЙ вузол, маска — на внутрішній.
+
+    AI-DANGER: зовнішній вузол — це `Component`, тобто те, що просив
+    викликач, а НЕ доданий `div`. Спершу я зробив навпаки, і `Card
+    as="li"` усередині `ul` давав `<ul><div><li>` — невалідну розмітку
+    списку; заразом ламались селектори прямих нащадків і поведінка
+    елемента у flex/grid, бо в розкладці батька опинявся чужий вузол.
+    Тепер семантичний корінь лишається зовні, а всередину йде рівно
+    поверхня.
+
+    Обгортка несе ЛИШЕ фільтр — ні фону, ні рамки, ні відступів. Фон на
+    ній був би прямокутником ПОЗА маскою, тобто видимим клаптем під
+    зубцями.
+
+    `className` викликача лишається з поверхнею, а не з обгорткою: у
+    маскованого краю візуальні класи мусять потрапити під маску,
+    інакше вони малюють поза нею.
+  */
   return (
     <Component
       ref={ref}
-      className={cn(
-        surfaceClass(resolved),
-        radii[effectiveRadius],
-        paddings[padding],
-        className,
-      )}
+      className={
+        resolved.prominence === "interactive"
+          ? "edge-lift-interactive"
+          : "edge-lift"
+      }
       {...props}
     >
-      {children}
+      <div className={surfaceClasses}>{children}</div>
     </Component>
   );
 });
@@ -358,7 +472,7 @@ export function CardTitle({
 }: CardTitleProps) {
   return (
     <Component
-      className={cn("text-lg font-semibold text-text", className)}
+      className={cn("text-style-title font-semibold text-text", className)}
       {...props}
     />
   );
@@ -371,7 +485,12 @@ export function CardDescription({
   className,
   ...props
 }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn("text-sm text-muted mt-1", className)} {...props} />;
+  return (
+    <p
+      className={cn("text-style-body text-muted mt-1", className)}
+      {...props}
+    />
+  );
 }
 
 /**

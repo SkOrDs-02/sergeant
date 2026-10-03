@@ -3,50 +3,67 @@ import {
   kyivCalendarDaysBetween,
   kyivDayEndMs,
   kyivDayStartMs,
+  kyivHour,
   kyivMondayStartMs,
+  toKyivISODate,
   toLocalISODate,
 } from "./date";
 
-describe("shared/lib/date – toLocalISODate", () => {
+// Входи — ЯВНІ UTC-моменти опівдні, а не `new Date(рік, місяць, день)`.
+// Останнє дає локальну північ хоста, і на машині східніше за Київ (UTC+5 і
+// далі) той самий момент у київському поясі падає на ПОПЕРЕДНЮ добу — тобто
+// тест ловив би не форматування, а таймзону раннера. Полудень лишає запас у
+// півдоби в обидва боки, тож жоден реальний офсет межу не перетинає.
+describe("shared/lib/date – toKyivISODate", () => {
   it("formats a Date object with zero-padded month and day", () => {
-    expect(toLocalISODate(new Date(2026, 0, 5))).toBe("2026-01-05");
-    expect(toLocalISODate(new Date(2026, 8, 9))).toBe("2026-09-09");
-    expect(toLocalISODate(new Date(2026, 11, 31))).toBe("2026-12-31");
+    expect(toKyivISODate(new Date("2026-01-05T12:00:00Z"))).toBe("2026-01-05");
+    expect(toKyivISODate(new Date("2026-09-09T12:00:00Z"))).toBe("2026-09-09");
+    expect(toKyivISODate(new Date("2026-12-31T12:00:00Z"))).toBe("2026-12-31");
   });
 
   it("formats a numeric timestamp (milliseconds)", () => {
-    const ms = new Date(2026, 3, 19).getTime();
-    expect(toLocalISODate(ms)).toBe("2026-04-19");
+    const ms = Date.parse("2026-04-19T12:00:00Z");
+    expect(toKyivISODate(ms)).toBe("2026-04-19");
   });
 
   it("formats an ISO date string (local timezone interpretation)", () => {
     // Construct from known local Date to avoid timezone divergence
     const d = new Date(2025, 6, 4); // 4 Jul 2025 local
-    const iso = toLocalISODate(d.toISOString());
+    const iso = toKyivISODate(d.toISOString());
     // Result depends on UTC offset but must be a valid ISO date
     expect(iso).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
   it("returns 1970-01-01 for an invalid date string", () => {
-    expect(toLocalISODate("not-a-date")).toBe("1970-01-01");
-    expect(toLocalISODate("")).toBe("1970-01-01");
+    expect(toKyivISODate("not-a-date")).toBe("1970-01-01");
+    expect(toKyivISODate("")).toBe("1970-01-01");
   });
 
   it("returns 1970-01-01 for NaN timestamp", () => {
-    expect(toLocalISODate(NaN)).toBe("1970-01-01");
+    expect(toKyivISODate(NaN)).toBe("1970-01-01");
   });
 
   it("uses current date when called with no argument", () => {
-    const before = toLocalISODate(new Date());
-    const result = toLocalISODate();
-    const after = toLocalISODate(new Date());
+    const before = toKyivISODate(new Date());
+    const result = toKyivISODate();
+    const after = toKyivISODate(new Date());
     // result must be within the same day as before/after
     expect(result >= before && result <= after).toBe(true);
   });
 
   it("handles year boundaries correctly", () => {
-    expect(toLocalISODate(new Date(2024, 11, 31))).toBe("2024-12-31");
-    expect(toLocalISODate(new Date(2025, 0, 1))).toBe("2025-01-01");
+    expect(toKyivISODate(new Date("2024-12-31T12:00:00Z"))).toBe("2024-12-31");
+    expect(toKyivISODate(new Date("2025-01-01T12:00:00Z"))).toBe("2025-01-01");
+  });
+});
+
+// AI-LEGACY: expires 2026-11-07 — цей describe-блок покриває сам
+// deprecated-аліас (Hard Rule: перейменування без зміни поведінки); видалити
+// разом з `toLocalISODate` у date.ts — трекер
+// docs/work/specs/audits/unification-modules.md.
+describe("shared/lib/date – toLocalISODate (deprecated alias)", () => {
+  it("is the same function reference as toKyivISODate", () => {
+    expect(toLocalISODate).toBe(toKyivISODate);
   });
 });
 
@@ -111,14 +128,14 @@ describe("shared/lib/date – kyivDayStartMs", () => {
     expect(kyivDayStartMs("2026-03-30")).toBe(Date.UTC(2026, 2, 29, 21));
   });
 
-  it("round-trips through toLocalISODate", () => {
+  it("round-trips through toKyivISODate", () => {
     for (const key of [
       "2026-01-01",
       "2026-03-29",
       "2026-10-25",
       "2026-12-31",
     ]) {
-      expect(toLocalISODate(kyivDayStartMs(key))).toBe(key);
+      expect(toKyivISODate(kyivDayStartMs(key))).toBe(key);
     }
   });
 });
@@ -131,7 +148,7 @@ describe("shared/lib/date – kyivDayEndMs", () => {
       ["2026-10-25", "2026-10-26"], // 25-hour day
     ] as const) {
       expect(kyivDayEndMs(key)).toBe(kyivDayStartMs(next) - 1);
-      expect(toLocalISODate(kyivDayEndMs(key))).toBe(key);
+      expect(toKyivISODate(kyivDayEndMs(key))).toBe(key);
     }
   });
 });
@@ -163,5 +180,31 @@ describe("shared/lib/date – kyivCalendarDaysBetween", () => {
     const b = kyivDayStartMs("2026-03-27") + 12 * 3600_000;
     const a = kyivDayStartMs("2026-04-03") + 12 * 3600_000;
     expect(kyivCalendarDaysBetween(a, b)).toBe(7);
+  });
+});
+
+describe("shared/lib/date – kyivHour", () => {
+  it("віддає київську годину незалежно від пояса хоста (літо UTC+3)", () => {
+    // 11:00 UTC = 14:00 за Києвом; 10:59 UTC = 13:59.
+    expect(kyivHour(Date.parse("2026-07-15T11:00:00Z"))).toBe(14);
+    expect(kyivHour(Date.parse("2026-07-15T10:59:00Z"))).toBe(13);
+  });
+
+  it("взимку UTC+2: той самий UTC-момент дає годиною менше", () => {
+    expect(kyivHour(Date.parse("2026-01-15T12:00:00Z"))).toBe(14);
+    expect(kyivHour(Date.parse("2026-01-15T11:59:00Z"))).toBe(13);
+  });
+
+  it("північ — це 0, а не 24", () => {
+    expect(kyivHour(kyivDayStartMs("2026-07-15"))).toBe(0);
+    expect(kyivHour(kyivDayStartMs("2026-01-15"))).toBe(0);
+    expect(kyivHour(kyivDayEndMs("2026-07-15"))).toBe(23);
+  });
+
+  it("приймає Date і ISO-рядок, а на сміттєвий вхід віддає NaN", () => {
+    const iso = "2026-07-15T21:30:00Z"; // 00:30 наступної доби за Києвом
+    expect(kyivHour(new Date(iso))).toBe(0);
+    expect(kyivHour(iso)).toBe(0);
+    expect(kyivHour("not-a-date")).toBeNaN();
   });
 });

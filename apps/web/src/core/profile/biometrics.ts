@@ -5,29 +5,65 @@
  * still has the inputs needed for BMR / TDEE — the user's own
  * requirement when shaping the storage layer (see
  * `biometrics-storage-plan.md`). Persisted under
- * `STORAGE_KEYS.HUB_BIOMETRICS` (`hub_biometrics_v1`); cross-device
- * sync rides the existing `SYNC_MODULES.profile` LWW path next to the
- * memory bank.
+ * `STORAGE_KEYS.HUB_BIOMETRICS` (`hub_biometrics_v1`).
  *
- * Weight is treated as the canonical "current weight" snapshot for
- * Nutrition (Mifflin-St Jeor uses one number, not a time-series).
- * Fizruk Body keeps the historical journal (`fizruk_daily_log_v1`
- * entries). The two stay in lockstep:
+ * AI-DANGER: **це device-local кеш, а не джерело істини.** Рішення власника
+ * 2026-08-04 (W1-WEIGHT-SOT, стадії 3-4; ADR-0080): **fizruk-журнал
+ * (`fizruk_measurements`) — канонічне сховище ваги; профіль лишається
+ * головним ВХОДОМ** (місце, де людина керує вагою — зокрема без модуля
+ * fizruk, де вона все одно потрібна для КБЖВ), а `weightKg` тут — похідний
+ * кеш останнього відомого значення, не незалежний запис.
+ *
+ * Чому кеш, а не SoT: тут немає ІСТОРІЇ (одне число, не часовий ряд), і
+ * немає op-log-синхронізації:
+ *
+ *   - немає в `OP_LOG_TABLE_REGISTRY` (`apps/server/src/modules/sync/syncV2.ts`);
+ *   - `SYNC_MODULES.profile` (`packages/shared/src/sync/modules.ts`) —
+ *     tombstone: жоден рантайм його не споживає;
+ *   - серверної таблиці `kv_store` теж немає.
+ *
+ * Серверна нога В НАЯВНОСТІ, і це не op-log: міграція 115 дала один
+ * JSONB-рядок на юзера за `GET/PUT /api/me/profile`, а write-through і
+ * boot-звірку тримає `./profileWriteThrough.ts`. Тобто зміну пристрою й
+ * очистку браузера біометрика ПЕРЕЖИВАЄ (до 2026-08 не переживала, і цей
+ * абзац лишався від тих часів). Рядок переписується ЦІЛКОМ, тож читай
+ * застереження над `resolveHalvesAgainstServer` перед будь-якою правкою
+ * пушів: половина, у яку локально ще не писали, там означає «не знаємо»,
+ * а не «порожньо».
+ *
+ * Історія ваги, яка переживає окремо від цього рядка, живе у fizruk-таблицях
+ * (`fizruk_daily_log` + `fizruk_measurements`) — читай її через
+ * `selectLatestBodyWeight` з `@sergeant/fizruk-domain`. Для юзера, чия вага
+ * лишилась тільки тут (записана до cutover-у), клієнтський bootstrap
+ * (`bodyWeightBootstrap.ts`, стадія 4) одноразово й ідемпотентно сідить
+ * fizruk-журнал цим значенням при boot-і.
+ *
+ * Weight is treated as the "current weight" snapshot for Nutrition
+ * (Mifflin-St Jeor uses one number, not a time-series) і як фолбек для
+ * юзера без модуля fizruk, коли fizruk-журнал ще порожній (офлайн / до
+ * першого boot-bootstrap-у). Fizruk keeps the canonical journal. The two
+ * stay in lockstep:
  *
  *   - Profile → Fizruk: `BiometricsSection` calls
  *     `useDailyLog.addEntry({ weightKg })` on save when weight
  *     changes — going through the canonical fizruk hook keeps the
- *     SQLite overlay (PR #030, storage-roadmap) transparent.
- *   - Fizruk → Profile: `useDailyLog.addEntry` calls
- *     `mirrorWeightToBiometrics` whenever an entry includes
- *     `weightKg`, updating the hub-level snapshot in place.
+ *     SQLite overlay (PR #030, storage-roadmap) transparent, and
+ *     `useDailyLog.addEntry` itself funnels through `recordBodyWeight()`
+ *     (stage 2), so this is the SAME writer as every other Fizruk-side
+ *     weigh-in — there is no separate bypass path.
+ *   - Fizruk → Profile: усі писачі ваги (обидва хуки + три AI-тули)
+ *     ходять через `recordBodyWeight()` (`./recordBodyWeight.ts`), який
+ *     інкапсулює `mirrorWeightToBiometrics`.
  *
- * Both directions converge on Last-Write-Wins via `weightUpdatedAt`,
- * matching CloudSync's per-module LWW for the merged Profile blob.
+ * Both directions converge on Last-Write-Wins via `weightUpdatedAt`.
  */
 import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage/storage";
+// Durable-пара з тієї ж причини, що й у `memoryBank.ts` (аудит 2026-09-28, D2).
+import {
+  safeReadLSValidatedDurable,
+  safeWriteLSDurable,
+} from "@shared/lib/storage/storage";
 
 export const BIOMETRICS_KEY = STORAGE_KEYS.HUB_BIOMETRICS;
 
@@ -49,6 +85,24 @@ export const ACTIVITY_LEVELS = [
 ] as const;
 export type ActivityLevel = (typeof ACTIVITY_LEVELS)[number];
 
+/**
+ * Valid input ranges for height/weight — single source of truth shared by
+ * BOTH the `BiometricsSchema` bounds below AND `BiometricsSection.tsx`'s
+ * `<Input min max>` attributes (imported from here, not redeclared).
+ *
+ * Audit finding D5 (profile-settings-deep-audit, 2026-08-08): before this,
+ * the same two numbers lived in THREE places — the UI's local constants,
+ * the i18n error copy, and inline numbers in this schema — and only the
+ * first two were kept in lockstep by a pin test. A schema left behind on
+ * an old range is the worst kind of drift: `readBiometrics()` parses every
+ * read through `safeReadLSValidatedDurable`, which falls back to
+ * `BIOMETRICS_DEFAULT` — silently dropping the ENTIRE record (birth date,
+ * sex, activity level, weight, not just the one out-of-sync field) — the
+ * moment a value inside the new-but-not-yet-validated range gets written.
+ */
+export const HEIGHT_CM_RANGE = { min: 80, max: 260 } as const;
+export const WEIGHT_KG_RANGE = { min: 20, max: 400 } as const;
+
 const SexSchema = z.enum(SEX_VALUES).nullable();
 const ActivityLevelSchema = z.enum(ACTIVITY_LEVELS).nullable();
 const IsoDateSchema = z
@@ -58,22 +112,97 @@ const IsoDateSchema = z
 const IsoTimestampSchema = z.string().min(1);
 
 export const BiometricsSchema = z.object({
-  heightCm: z.number().min(80).max(260).nullable(),
+  heightCm: z
+    .number()
+    .min(HEIGHT_CM_RANGE.min)
+    .max(HEIGHT_CM_RANGE.max)
+    .nullable(),
   birthDate: IsoDateSchema,
   sex: SexSchema,
   activityLevel: ActivityLevelSchema,
-  weightKg: z.number().min(20).max(400).nullable(),
+  weightKg: z
+    .number()
+    .min(WEIGHT_KG_RANGE.min)
+    .max(WEIGHT_KG_RANGE.max)
+    .nullable(),
   /**
    * ISO timestamp when `weightKg` was last set. Used as the LWW marker
    * for Profile ↔ Fizruk weight sync — the latest write wins,
    * regardless of which surface initiated it.
    */
   weightUpdatedAt: IsoTimestampSchema.nullable(),
+  /**
+   * Чи враховувати спалене на тренуваннях у денній нормі КБЖВ.
+   *
+   * AI-DANGER: дефолт `false` навмисний і принциповий. Множник рівня
+   * активності в TDEE ВЖЕ враховує тренування оптом наперед, тож додавання
+   * спаленого зверху рахує їх удруге і дозволяє зʼїсти зайве - класична
+   * пастка MyFitnessPal. Увімкнений тумблер перемикає розрахунок на
+   * `sedentary` плюс фактичні витрати дня, а не додає до чинної норми.
+   *
+   * `.catch(false)` - зворотна сумісність: записи, зроблені до появи поля,
+   * не мають провалювати парс і зносити ВЕСЬ профіль у дефолт
+   * (`safeReadLSValidated` при помилці схеми відкидає рядок цілком).
+   */
+  countWorkoutsInGoal: z.boolean().catch(false),
   /** ISO timestamp of the last write to ANY field in this record. */
   updatedAt: IsoTimestampSchema,
 });
 
 export type Biometrics = z.infer<typeof BiometricsSchema>;
+
+/**
+ * Extends the persisted `hub_biometrics_v1` blob with the Better Auth user
+ * id that wrote it, WITHOUT extending the public {@link Biometrics} type
+ * consumed everywhere else in the app (BMR calc, dual-write mirrors, and
+ * critically `pushBiometricsToServer`'s wire payload — `ownerId` must
+ * never reach the server). `readBiometrics()` still parses through
+ * {@link BiometricsSchema}, which silently drops unknown keys, so every
+ * existing caller keeps getting exactly the shape it always has.
+ *
+ * A missing `ownerId` (a value written before this field existed) parses
+ * to `null` — "unknown owner". See `profileWriteThrough.ts`'s
+ * cross-account upload guard (CodeRabbit PR #627) for why that must never
+ * be treated as "belongs to the current user".
+ */
+const StoredBiometricsSchema = BiometricsSchema.extend({
+  ownerId: z.string().nullable().default(null),
+});
+
+/**
+ * The Better Auth user id of the CURRENT device session, or `null` when
+ * signed out / anonymous. Set once per session change (mirrors
+ * `setSqliteUser`'s pattern in `core/db/sqlite.ts`) — see
+ * {@link setBiometricsOwner}.
+ */
+let currentBiometricsOwner: string | null = null;
+
+/**
+ * Records which user the CURRENT device session belongs to. Every
+ * subsequent {@link writeBiometrics} call — whether triggered by
+ * `BiometricsSection`, a Fizruk weigh-in mirror, or `profileWriteThrough`'s
+ * own server-hydrate — stamps its `ownerId` with this value, so a later
+ * reconcile on a SHARED device can tell whose data is actually sitting in
+ * this single global localStorage key. Called by `useProfileWriteThroughBoot`
+ * on every `userId` change, and defensively by `reconcileBiometricsWithServerProfile`
+ * itself (CodeRabbit PR #627).
+ */
+export function setBiometricsOwner(userId: string | null): void {
+  currentBiometricsOwner = userId;
+}
+
+/**
+ * The Better Auth user id last stamped onto the CURRENTLY persisted
+ * `hub_biometrics_v1` blob, or `null` when unknown — either a legacy value
+ * written before this field existed, or one written while signed
+ * out/anonymous.
+ */
+export function readBiometricsOwnerId(): string | null {
+  return safeReadLSValidatedDurable(BIOMETRICS_KEY, StoredBiometricsSchema, {
+    ...BIOMETRICS_DEFAULT,
+    ownerId: null,
+  }).ownerId;
+}
 
 const EPOCH = new Date(0).toISOString();
 
@@ -84,11 +213,12 @@ export const BIOMETRICS_DEFAULT: Biometrics = {
   activityLevel: null,
   weightKg: null,
   weightUpdatedAt: null,
+  countWorkoutsInGoal: false,
   updatedAt: EPOCH,
 };
 
 export function readBiometrics(): Biometrics {
-  return safeReadLSValidated(
+  return safeReadLSValidatedDurable(
     BIOMETRICS_KEY,
     BiometricsSchema,
     BIOMETRICS_DEFAULT,
@@ -113,8 +243,15 @@ export function subscribeBiometrics(listener: BiometricsListener): () => void {
   };
 }
 
+/**
+ * Persists `b`, stamping the CURRENT session's `ownerId` (see
+ * {@link setBiometricsOwner}) onto the raw stored blob — invisible to
+ * every caller here (they keep getting exactly `Biometrics`, no
+ * `ownerId`), but readable back via {@link readBiometricsOwnerId} for
+ * `profileWriteThrough.ts`'s cross-account upload guard.
+ */
 export function writeBiometrics(b: Biometrics): void {
-  safeWriteLS(BIOMETRICS_KEY, b);
+  safeWriteLSDurable(BIOMETRICS_KEY, { ...b, ownerId: currentBiometricsOwner });
   for (const listener of Array.from(biometricsListeners)) {
     try {
       listener(b);
@@ -125,11 +262,13 @@ export function writeBiometrics(b: Biometrics): void {
 }
 
 /**
- * Update biometrics from a Fizruk-side weight write — `useDailyLog.addEntry`
- * calls this whenever a daily-log entry includes `weightKg`. Last-Write-Wins:
+ * Update biometrics from a Fizruk-side weight write. Last-Write-Wins:
  * the caller's `at` becomes the new `weightUpdatedAt`, regardless of any
- * older value already in biometrics. CloudSync's LWW will then resolve
- * cross-device conflicts on the merged Profile blob.
+ * older value already in biometrics.
+ *
+ * AI-NOTE: не клич це напряму з нового коду — заходь через
+ * `recordBodyWeight()` (`./recordBodyWeight.ts`), щоб funnel лишався
+ * одним. Публічний експорт збережено для наявних тестів (additive).
  */
 export function mirrorWeightToBiometrics(
   weightKg: number,
@@ -194,17 +333,54 @@ export function computeAgeYears(
   return age >= 0 ? age : null;
 }
 
+/** Order matches the Profile form's own field order top-to-bottom. */
+export const MISSING_BIOMETRICS_FIELDS = [
+  "heightCm",
+  "birthDate",
+  "sex",
+  "activityLevel",
+  "weightKg",
+] as const;
+export type MissingBiometricsField = (typeof MISSING_BIOMETRICS_FIELDS)[number];
+
+/**
+ * Which fields still block the Mifflin-St Jeor formula, in form order.
+ *
+ * `effectiveWeightKg` lets a caller that already resolved the fizruk-vs-
+ * profile weight fallback (`resolveEffectiveWeightKg` in
+ * `modules/nutrition/lib/tdee.ts`) pass THAT number instead of the raw
+ * `b.weightKg` — otherwise a user with a real fizruk weigh-in but an empty
+ * Profile weight field would see "вага" listed as missing even though
+ * `computeNutritionTargetsFromBiometrics` already has a number to work
+ * with. Defaults to `b.weightKg` for callers that only care about the
+ * Profile record itself (the "Готово до розрахунку" status badge).
+ *
+ * Browser-QA 2026-09-03: the Nutrition preset menu's "заповни профіль"
+ * hint was a static sentence that repeated verbatim no matter how many of
+ * the five fields the user had already filled in Profile — a user who
+ * filled four out of five (most plausibly forgetting `weightKg`, having
+ * assumed their fizruk weigh-in already covered it) saw the exact same
+ * wall of text on return and read it as "nothing saved". Listing the
+ * fields that are STILL missing turns that dead-end into a checklist.
+ */
+export function missingBiometricsFieldsForTdee(
+  b: Biometrics,
+  effectiveWeightKg: number | null = b.weightKg,
+): MissingBiometricsField[] {
+  const missing: MissingBiometricsField[] = [];
+  if (b.heightCm == null) missing.push("heightCm");
+  if (computeAgeYears(b.birthDate) == null) missing.push("birthDate");
+  if (b.sex == null) missing.push("sex");
+  if (b.activityLevel == null) missing.push("activityLevel");
+  if (effectiveWeightKg == null) missing.push("weightKg");
+  return missing;
+}
+
 /**
  * `true` when biometrics has every field needed to run the Mifflin-St
  * Jeor formula (used by Nutrition in PR #2 to enable the
  * "Розрахувати з профілю" CTA).
  */
 export function isBiometricsCompleteForTdee(b: Biometrics): boolean {
-  return (
-    b.heightCm != null &&
-    b.weightKg != null &&
-    b.sex != null &&
-    b.activityLevel != null &&
-    computeAgeYears(b.birthDate) != null
-  );
+  return missingBiometricsFieldsForTdee(b).length === 0;
 }

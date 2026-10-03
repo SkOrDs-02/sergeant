@@ -1,10 +1,9 @@
 import type { Request, Response } from "express";
-import pool from "../../db.js";
-import {
-  anthropicMessages,
-  extractAnthropicText,
-} from "../../lib/anthropic.js";
-import { sendToUserQuietly } from "../../push/send.js";
+import { CORRELATION_MIN_N, CORRELATION_NOTABLE_R } from "@sergeant/shared";
+import { withUserContext } from "../../db.js";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
+import { env } from "../../env/env.js";
+import { resolveProTier } from "./aiQuota.js";
 import { parseBody } from "../../http/validate.js";
 import {
   CoachInsightSchema,
@@ -12,13 +11,22 @@ import {
 } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
+import { refundQuotaOnUpstreamFailure } from "./chatShared.js";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
+import { stripHealthFromCoachInput } from "./healthGate.js";
+
+import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
+import {
+  DATA_FENCE_RULE,
+  PERSONA_RULE,
+  VOICE_RULE_PLAIN,
+} from "./toolDefs/systemPrompt.js";
+import { wrapAndScanUserContext } from "./toolOutputWrapping.js";
+import type { ProTier } from "./aiQuotaTierModels.js";
+import { replaceLongDash } from "../../lib/modelText.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
 type WithAnthropicKey = Request & { anthropicKey?: string };
-
-interface AnthropicErrorPayload {
-  error?: { message?: string };
-}
 
 interface WeeklyDigestEntry {
   weekKey: string;
@@ -29,12 +37,42 @@ interface WeeklyDigestEntry {
   nutrition?: { summary?: string } | null | undefined;
   routine?: { summary?: string } | null | undefined;
   overallRecommendations?: string[] | undefined;
+  correlations?: string[] | undefined;
 }
 
-interface CoachMemory {
+export interface CoachMemory {
   weeklyDigests: WeeklyDigestEntry[];
   lastInsightDate: string | null;
   lastInsightText: string | null;
+}
+
+/** Знімок тижня, з якого коуч будує повідомлення дня. */
+export interface CoachSnapshot {
+  dateContext?: {
+    todayKey?: string;
+    weekDayUk?: string;
+    dayOfWeekIso?: number;
+    daysIntoWeek?: number;
+    weekRange?: string;
+  };
+  finyk?: {
+    totalSpent?: number;
+    totalIncome?: number;
+    txCount?: number;
+    topCategories?: Array<{ name: string; amount: number }>;
+  };
+  fizruk?: {
+    workoutsCount?: number;
+    totalVolume?: number;
+    recoveryLabel?: string;
+  };
+  nutrition?: {
+    avgKcal?: number;
+    targetKcal?: number;
+    avgProtein?: number;
+    daysLogged?: number;
+  };
+  routine?: { overallRate?: number; habitCount?: number };
 }
 
 interface IncomingMemory {
@@ -47,6 +85,7 @@ interface IncomingMemory {
     nutrition?: { summary?: string } | null;
     routine?: { summary?: string } | null;
     overallRecommendations?: string[];
+    correlations?: string[];
   };
 }
 
@@ -56,9 +95,11 @@ async function getMemory(userId: string): Promise<CoachMemory | null> {
   // До 2026-05-06 row жив у `module_data WHERE module='coach'`; перенесено
   // у власну таблицю міграцією 045 як precondition для Stage 7 drop-у
   // module_data column-у.
-  const result = await pool.query<{ data: unknown }>(
-    `SELECT data FROM coach_memory WHERE user_id = $1`,
-    [userId],
+  const result = await withUserContext(userId, (db) =>
+    db.query<{ data: unknown }>(
+      `SELECT data FROM coach_memory WHERE user_id = $1`,
+      [userId],
+    ),
   );
   if (result.rows.length === 0) return null;
   const raw = result!.rows[0]!.data;
@@ -104,12 +145,14 @@ async function saveMemory(userId: string, memory: CoachMemory): Promise<void> {
   if (blob.length > MAX_BLOB_SIZE) {
     throw new CoachMemoryTooLargeError(blob.length);
   }
-  await pool.query(
-    `INSERT INTO coach_memory (user_id, data, client_updated_at, version)
-     VALUES ($1, $2, NOW(), 1)
-     ON CONFLICT (user_id) DO UPDATE
-       SET data = $2, server_updated_at = NOW(), version = coach_memory.version + 1`,
-    [userId, blob],
+  await withUserContext(userId, (db) =>
+    db.query(
+      `INSERT INTO coach_memory (user_id, data, client_updated_at, version)
+       VALUES ($1, $2, NOW(), 1)
+       ON CONFLICT (user_id) DO UPDATE
+         SET data = $2, server_updated_at = NOW(), version = coach_memory.version + 1`,
+      [userId, blob],
+    ),
   );
 }
 
@@ -139,6 +182,7 @@ function mergeMemory(
       routine: incoming.weeklyDigest.routine ?? null,
       overallRecommendations:
         incoming.weeklyDigest.overallRecommendations ?? [],
+      correlations: incoming.weeklyDigest.correlations ?? [],
     };
     const existingIdx = digests.findIndex((d) => d.weekKey === entry.weekKey);
     if (existingIdx >= 0) {
@@ -157,13 +201,37 @@ function mergeMemory(
   };
 }
 
+/**
+ * Найсвіжіші дедупльовані кореляції з тижневих дайджестів (найновіші тижні
+ * першими). Спільна вибірка для weekly-insight prompt-у (`buildMemorySummary`)
+ * і `/api/chat` surfacing-у (`getCoachCorrelationsBlock`) — обидва хочуть той
+ * самий порядок і дедуп, різниться лише формат навколо.
+ */
+function pickRecentCorrelations(
+  digests: readonly WeeklyDigestEntry[],
+  max: number,
+): string[] {
+  const seen = new Set<string>();
+  const picked: string[] = [];
+  for (const d of digests) {
+    for (const c of d.correlations || []) {
+      if (seen.has(c)) continue;
+      seen.add(c);
+      picked.push(c);
+      if (picked.length >= max) break;
+    }
+    if (picked.length >= max) break;
+  }
+  return picked;
+}
+
 function buildMemorySummary(memory: CoachMemory | null): string {
   if (
     !memory ||
     !Array.isArray(memory.weeklyDigests) ||
     memory.weeklyDigests.length === 0
   ) {
-    return "Пам'яті ще немає — це перший сеанс.";
+    return "Памʼяті ще немає: це перший сеанс.";
   }
 
   const lines: string[] = [];
@@ -202,6 +270,15 @@ function buildMemorySummary(memory: CoachMemory | null): string {
     lines.push(...routineSummaries.slice(0, 4));
   }
 
+  // Помічені звʼязки — крос-модульні кореляції, пораховані КОДОМ на клієнті
+  // (не LLM) під час weekly-digest. Даємо коучу «у дні тренувань ти витрачаєш
+  // менше» без окремого виклику моделі. Найсвіжіші тижні першими, дедуп.
+  const correlations = pickRecentCorrelations(digests, 4);
+  if (correlations.length) {
+    lines.push("Помічені звʼязки:");
+    correlations.forEach((c) => lines.push(`  • ${c}`));
+  }
+
   const allRecs = digests
     .flatMap((d) => d.overallRecommendations || [])
     .slice(0, 6);
@@ -213,8 +290,85 @@ function buildMemorySummary(memory: CoachMemory | null): string {
   return lines.join("\n");
 }
 
+/** Максимум кореляцій у /api/chat system-блоці — коротко, щоб не роздувати prompt на кожному турі. */
+const CHAT_CORRELATIONS_MAX = 3;
+
 /**
- * GET /api/coach/memory — віддати поточну coach-пам'ять користувача.
+ * Готовий system-prompt блок із найсвіжішими крос-модульними кореляціями для
+ * `/api/chat` (перший тур, дзеркалить `buildRagContext`). Дані вже пораховані
+ * КОДОМ на клієнті під час weekly-digest (WP3) і персистовані в
+ * `coach_memory` — тут лише читаємо й форматуємо, нової математики немає.
+ * Fail-safe: будь-яка помилка (в т.ч. відсутній userId) → "", чат лишається
+ * працездатним без блоку.
+ */
+export async function getCoachCorrelationsBlock(
+  userId: string,
+): Promise<string> {
+  try {
+    const memory = await getMemory(userId);
+    const digests = memory?.weeklyDigests;
+    if (!Array.isArray(digests) || digests.length === 0) return "";
+    const latest = digests[0];
+    if (!latest) return "";
+    const picked = pickRecentCorrelations(digests, CHAT_CORRELATIONS_MAX);
+    if (picked.length === 0) return "";
+    const asOf = latest.weekRange || latest.weekKey;
+    return [
+      "",
+      // Джерело й стандарт стоять у самому тексті блоку (спека
+      // `link-evidence-standard.md`): поруч у промпті може лежати живий
+      // розрахунок тула `get_daily_series` у такому ж форматі, і без
+      // підпису обидва читались би як однаково свіжі й однаково доведені.
+      // Тут дані НЕ свіжі - це зріз останнього дайджесту.
+      `ПОМІЧЕНІ ЗАКОНОМІРНОСТІ (джерело: тижневий дайджест, зріз станом на ${asOf}; поріг той самий, що й у тула: n ≥ ${CORRELATION_MIN_N} спільних днів, |r| ≥ ${CORRELATION_NOTABLE_R}; рахував код, не модель):`,
+      ...picked.map((c) => `- ${c}`),
+    ].join("\n");
+  } catch (err) {
+    logger.warn({
+      msg: "coach_correlations_chat_block_error",
+      userId,
+      err: err instanceof Error ? err.message : String(err),
+    });
+    return "";
+  }
+}
+
+/**
+ * Максимальна довжина тіла пуша, яку приймає SW (`sanitize(payload.body, 200)`
+ * у `apps/web/src/sw/pushPayload.ts`). Ріжемо на запису, а не на відправці:
+ * інакше в БД лежав би текст, довший за все, що взагалі може долетіти до юзера.
+ */
+const NUDGE_BODY_MAX = 200;
+
+/**
+ * Кладе останній згенерований текст поради у `sergeant_nudge_cache` для
+ * серверного проходу підштовхувань (міграція 100).
+ *
+ * Fire-and-forget за задумом: юзер уже отримав пораду у відповіді, і збій
+ * запису кешу не має перетворюватись на помилку запиту. Один рядок на юзера —
+ * прохід читає лише найсвіжіший, історія не потрібна.
+ */
+async function saveNudgeCache(userId: string, body: string): Promise<void> {
+  try {
+    await withUserContext(userId, (db) =>
+      db.query(
+        `INSERT INTO sergeant_nudge_cache (user_id, body, generated_at)
+           VALUES ($1, $2, NOW())
+           ON CONFLICT (user_id) DO UPDATE
+             SET body = EXCLUDED.body, generated_at = NOW()`,
+        [userId, body.slice(0, NUDGE_BODY_MAX)],
+      ),
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "sergeant_nudge_cache_write_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
+ * GET /api/coach/memory — віддати поточну coach-памʼять користувача.
  * `req.user` гарантовано заповнений middleware-ом `requireSession`.
  */
 export async function coachMemoryGet(
@@ -227,7 +381,7 @@ export async function coachMemoryGet(
 }
 
 /**
- * POST /api/coach/memory — merge incoming digest у збережену пам'ять.
+ * POST /api/coach/memory — merge incoming digest у збережену памʼять.
  * `req.user` гарантовано заповнений middleware-ом `requireSession`.
  */
 export async function coachMemoryPost(
@@ -251,42 +405,22 @@ export async function coachMemoryPost(
 }
 
 /**
- * POST /api/coach/insight — згенерувати AI-повідомлення дня.
- * `req.user`, `req.anthropicKey` і квота гарантуються middleware-ами роутера.
+ * Промпт повідомлення дня — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з `coachInsight`, щоб стенд
+ * (`scripts/eval/pipelines.finance.ts`) міряв прод-промпт, а не однорядкову
+ * заглушку. Промпт динамічний (памʼять + знімок тижня), тож експортується
+ * білдер; стенд подає йому фіксований зразок.
+ *
+ * Прод шле весь текст ОДНИМ user-повідомленням без `system` — це не помилка
+ * винесення, а поточна поведінка. Стенд має її дзеркалити, інакше міряє
+ * інший режим моделі.
  */
-export async function coachInsight(req: Request, res: Response): Promise<void> {
-  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
-  const { snapshot, memory } = parseBody(CoachInsightSchema, req) as {
-    snapshot: {
-      dateContext?: {
-        todayKey?: string;
-        weekDayUk?: string;
-        dayOfWeekIso?: number;
-        daysIntoWeek?: number;
-        weekRange?: string;
-      };
-      finyk?: {
-        totalSpent?: number;
-        totalIncome?: number;
-        txCount?: number;
-        topCategories?: Array<{ name: string; amount: number }>;
-      };
-      fizruk?: {
-        workoutsCount?: number;
-        totalVolume?: number;
-        recoveryLabel?: string;
-      };
-      nutrition?: {
-        avgKcal?: number;
-        targetKcal?: number;
-        avgProtein?: number;
-        daysLogged?: number;
-      };
-      routine?: { overallRate?: number; habitCount?: number };
-    };
-    memory: CoachMemory | null;
-  };
-
+export function buildCoachInsightPrompt(input: {
+  snapshot: CoachSnapshot;
+  memory: CoachMemory | null;
+}): { user: string } {
+  const { snapshot, memory } = input;
   const memorySummary = buildMemorySummary(memory);
 
   const dateContext = snapshot?.dateContext;
@@ -315,7 +449,7 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
   }
   const dateContextText = dateLines.length
     ? dateLines.join("\n")
-    : 'Поточну дату не передано — НЕ використовуй темпоральні маркери ("сьогодні", "середина тижня", "кінець тижня").';
+    : 'Поточну дату не передано, тож НЕ використовуй темпоральні маркери ("сьогодні", "середина тижня", "кінець тижня").';
 
   const snapshotLines: string[] = [];
   if (snapshot?.finyk) {
@@ -333,12 +467,14 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
   }
   if (snapshot?.fizruk) {
     snapshotLines.push(
-      `[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ] Тренувань: ${snapshot.fizruk.workoutsCount ?? 0}, Об'єм: ${snapshot.fizruk.totalVolume ?? 0} кг, Відновлення: ${snapshot.fizruk.recoveryLabel ?? "?"}`,
+      `[ТРЕНУВАННЯ ЦЬОГО ТИЖНЯ] Тренувань: ${snapshot.fizruk.workoutsCount ?? 0}, Обʼєм: ${snapshot.fizruk.totalVolume ?? 0} кг, Відновлення: ${snapshot.fizruk.recoveryLabel ?? "?"}`,
     );
   }
   if (snapshot?.nutrition) {
+    const target = snapshot.nutrition.targetKcal ?? 0;
+    const targetLabel = target > 0 ? String(target) : "невідома";
     snapshotLines.push(
-      `[ХАРЧУВАННЯ ЦЬОГО ТИЖНЯ] Середньо: ${snapshot.nutrition.avgKcal ?? 0} ккал/день (ціль ${snapshot.nutrition.targetKcal ?? 2000}), Білок: ${snapshot.nutrition.avgProtein ?? 0}г/день, Днів: ${snapshot.nutrition.daysLogged ?? 0}/7`,
+      `[ХАРЧУВАННЯ ЦЬОГО ТИЖНЯ] Середньо: ${snapshot.nutrition.avgKcal ?? 0} ккал/день (історична ціль ${targetLabel}; не роби висновок про дефіцит або профіцит, якщо вона невідома), Білок: ${snapshot.nutrition.avgProtein ?? 0}г/день, Днів: ${snapshot.nutrition.daysLogged ?? 0}/7`,
     );
   }
   if (snapshot?.routine) {
@@ -351,57 +487,155 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
     ? snapshotLines.join("\n")
     : "Даних за поточний тиждень ще немає.";
 
-  const systemPrompt = `Ти персональний AI-коуч у додатку "Мій простір". Ти знаєш цю людину по місяцях даних і говориш з нею як довірений коуч — тепло, але конкретно.
+  const systemPrompt = `${PERSONA_RULE}
+Ти знаєш цю людину по місяцях даних і пишеш їй коротке повідомлення дня.
+
+${ADVICE_BOUNDARY_RULE}
 
 КОНТЕКСТ ДАТИ (Київ):
 ${dateContextText}
 
-ПАМ'ЯТЬ (попередні тижні):
-${memorySummary}
+${DATA_FENCE_RULE}
+
+ПАМʼЯТЬ (попередні тижні):
+${wrapAndScanUserContext(memorySummary)}
 
 ПОТОЧНИЙ ТИЖДЕНЬ:
-${snapshotText}
+${wrapAndScanUserContext(snapshotText)}
+
+ЯКЩО ДАНИХ БРАКУЄ, СКАЖИ ЦЕ, А НЕ ЗАПОВНЮЙ ПОРОЖНЕЧУ.
+Рядок «Даних за поточний тиждень ще немає» означає не дані, а їх відсутність.
+Коли патерну не видно, чесна відповідь: назвати це прямо й наступним кроком
+сказати людині, що записати сьогодні, як пряму пораду про її дію, наприклад
+«Запиши сьогодні витрати або тренування, і я почну бачити патерни». Не
+пропонуй це умовно й не став у центр себе: без «якщо хочеш, щоб я…». Вигаданий висновок гірший за визнану відсутність висновку:
+порожній тиждень є нормальним виходом, а не слот, який треба заповнити.
+
+ЩО МОЖНА ПРОСИТИ В ЛЮДИНИ.
+Ти бачиш лише підсумки й назви категорій: нотаток, описів операцій і
+мерчантів не бачиш. Тому проси тільки дію, наслідок якої зʼявиться в даних,
+що ти отримуєш: віднести операції до категорій, записати їжу, тренування чи
+витрату, відмітити звичку. Не проси «запиши причину», «поясни» чи «додай
+нотатку»: такого тексту ти не прочитаєш і ефекту не побачиш. Велике «Інше» в
+топі витрат означає операції без категорії, і дія тут одна: «Перенеси
+операції з «Іншого» у потрібні категорії».
 
 Сформулюй ОДНЕ коротке проактивне повідомлення дня (2-3 речення). Воно має:
-- Відзначити конкретний патерн або прогрес (з даних)
+- Відзначити конкретний патерн або прогрес (з даних) або чесно сказати, що даних для висновку замало
 - Запропонувати одну конкретну дію на сьогодні
-- Бути особистим і мотивуючим, але без загальних фраз
-- Якщо згадуєш "сьогодні" чи прогрес тижня — спирайся ТІЛЬКИ на КОНТЕКСТ ДАТИ; не вигадуй "середина тижня" / "кінець тижня" самостійно. Тиждень = понеділок→неділя.
+- Бути особистим і конкретним, без загальних фраз
+- Якщо згадуєш "сьогодні" чи прогрес тижня, спирайся ТІЛЬКИ на КОНТЕКСТ ДАТИ; не вигадуй "середина тижня" / "кінець тижня" самостійно. Тиждень = понеділок→неділя.
+- Порівнюючи з ПАМʼЯТТЮ, називай напрям прямо. Цифри впали, отже це спад, і сказати треба про спад, а не привітати з прогресом.
+${VOICE_RULE_PLAIN}
 
 Відповідай ТІЛЬКИ текстом повідомлення, без вітань, без підписів, без лапок.`;
 
-  const { response: aiRes, data: aiData } = await anthropicMessages(
-    apiKey,
-    {
-      model: "claude-sonnet-4-6",
-      max_tokens: 300,
-      messages: [{ role: "user", content: systemPrompt }],
-    },
-    { timeoutMs: 20000, endpoint: "coach-insight" },
-  );
+  return { user: systemPrompt };
+}
 
-  if (!aiRes?.ok) {
-    const errData = aiData as AnthropicErrorPayload | null | undefined;
+/**
+ * Anthropic-модель для fallback-гілки коуча (B4). `tier.model` — OpenRouter-id
+ * (`google/…`), на який прямий Anthropic віддає 404, тож його не можна класти в
+ * `opts.model`; натомість мапимо тир на Claude-id. Без цього деградація на
+ * floor при hard-breach бюджету мовчки поверталась на Sonnet, щойно шлюз
+ * падав, а при `LLM_COACH_PROVIDER=anthropic` тиринг був no-op.
+ */
+export const COACH_ANTHROPIC_DEGRADED_MODEL = "claude-haiku-4-5-20251001";
+export function coachAnthropicModel(tier: ProTier): string {
+  return tier === "premium"
+    ? env.COACH_MODEL_ANTHROPIC
+    : COACH_ANTHROPIC_DEGRADED_MODEL;
+}
+
+/**
+ * POST /api/coach/insight — згенерувати AI-повідомлення дня.
+ * `req.user`, `req.anthropicKey` і квота гарантуються middleware-ами роутера.
+ */
+export async function coachInsight(req: Request, res: Response): Promise<void> {
+  const apiKey = (req as WithAnthropicKey).anthropicKey as string;
+  const parsedInput = parseBody(CoachInsightSchema, req) as {
+    snapshot: CoachSnapshot;
+    memory: CoachMemory | null;
+  };
+
+  // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
+  // без збереженої згоди тренування, харчування й крос-модульні кореляції
+  // до моделі не йдуть. Пораду не блокуємо: вона вужчає до фінансів і звичок.
+  const healthConsent = await resolveHealthConsent(
+    (req as WithSessionUser).user?.id,
+  );
+  const { snapshot, memory } = healthConsent
+    ? parsedInput
+    : stripHealthFromCoachInput(parsedInput);
+
+  const prompt = buildCoachInsightPrompt({ snapshot, memory });
+
+  // Pro tiered degradation: resolveProTier picks the OpenRouter model for this
+  // Pro user's daily tier (premium gpt-5.1 → standard gemini-lite → floor free).
+  // Free/anon тут лишаються на premium — на відміну від чату, який 2026-08-06
+  // перевели на standard. Причина в співвідношенні: у чаті це −$0.014 на
+  // повідомлення, а тут розрив gpt-5.1 → gemini-lite найбільший за якістю і
+  // дає лише ~$0.0035 на виклик. Обґрунтування — в `aiQuota.ts::unpaid`.
+  const tier = await resolveProTier(req, res, "coach");
+
+  // Routed through the LLMProvider factory so coach can be re-targeted off
+  // Sonnet via env (LLM_COACH_PROVIDER / OPENROUTER_COACH_MODEL) without a
+  // redeploy; Anthropic stays the fallback. `env.COACH_MODEL_ANTHROPIC`
+  // (default `claude-sonnet-4-6`) is the model the Anthropic provider uses —
+  // окрема від `CHAT_MODEL_SYNTHESIS`, бо той під `CHAT_VIA_OPENROUTER`
+  // несе OpenRouter-only id, на який Anthropic віддає 404.
+  const provider = getLLMProvider({
+    provider: env.LLM_COACH_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: tier.model,
+  });
+  // Дзеркалить патерн `chat.ts` (`refundQuotaOnUpstreamFailure` навколо
+  // upstream-виклику): `requireAiQuota()` уже списав квиток ДО цього
+  // handler-а, тож і виняток з `invokeLLM`, і провал провайдера
+  // (`!aiResult.ok`) мають повертати квоту — інакше 5xx OpenRouter/Anthropic
+  // зʼїдає денний ліміт користувача (аудит PR-A2, канон hub-coach §6.2).
+  let aiResult;
+  try {
+    aiResult = await invokeLLM(provider, {
+      model: coachAnthropicModel(tier.tier),
+      maxTokens: 300,
+      messages: [{ role: "user", content: prompt.user }],
+      timeoutMs: 20_000,
+      endpoint: "coach-insight",
+      userId: (req as WithSessionUser).user?.id,
+    });
+  } catch (e) {
+    await refundQuotaOnUpstreamFailure(req);
+    throw e;
+  }
+
+  if (!aiResult.ok) {
+    await refundQuotaOnUpstreamFailure(req);
     throw makeAiProviderError({
-      rawProviderMessage: errData?.error?.message,
-      status: aiRes?.status,
+      rawProviderMessage: aiResult.error,
+      status: aiResult.status,
     });
   }
 
-  const text = extractAnthropicText(aiData);
+  // AI-CONTEXT (аудит анти-слопу P2-3): правило в промпті знижує частоту
+  // довгого тире, але не гарантує; текст коуча іде прямо в картку і в пуш.
+  const text = replaceLongDash(aiResult.text);
 
-  // Fire-and-forget push з AI-«нудж»-повідомленням дня. Якщо `text` порожній
-  // (Anthropic повернула структуру без текстових блоків) — нічого не шлемо,
-  // щоб не спамити юзеру порожній пуш. Side-effect non-fatal: `sendToUserQuietly`
-  // ковтає будь-яку помилку всередині і лише логує, тож response юзеру ми
-  // вже відправили і чекати на нього не треба.
-  const userId = (req as WithSessionUser).user?.id;
-  if (userId && text && text.trim()) {
-    void sendToUserQuietly(
-      userId,
-      { title: "Коуч", body: text.trim().slice(0, 200) },
-      { module: "coach" },
-    );
+  // AI-CONTEXT: тут раніше стояв fire-and-forget push з тим самим текстом,
+  // який ми віддаємо у відповіді. Цей endpoint викликає ТІЛЬКИ клієнт на
+  // передньому плані (`useCoachInsight`), тож юзер отримував сповіщення про
+  // текст, який у цю ж секунду читає на екрані — і по одному з кожної
+  // поверхні (веб + мобілка), без `tag`, без дедупу.
+  //
+  // Рішення власника (2026-08-01): пуш іде лише тоді, коли апка ЗАКРИТА.
+  // Оскільки цей шлях за визначенням foreground, надсилати звідси нічого не
+  // можна — але саме тут народжується єдиний текст, який прохід потім зможе
+  // переслати. Сервер не вміє згенерувати пораду сам: снапшот приходить із
+  // клієнтського SQLite. Тому кладемо «консерву» — прохід її переюзає, якщо
+  // юзер завтра не зайде.
+  const insightUserId = (req as WithSessionUser).user?.id;
+  if (insightUserId && text && text.trim()) {
+    void saveNudgeCache(insightUserId, text.trim());
   }
 
   res.json({ ok: true, insight: text });

@@ -88,4 +88,29 @@ describe("shared file-download contract", () => {
 
     await expect(downloadJson("x.json", {})).rejects.toBe(boom);
   });
+
+  it("keeps the no-op adapter silent if process env detection throws", async () => {
+    const originalProcess = Object.getOwnPropertyDescriptor(
+      globalThis,
+      "process",
+    );
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    Object.defineProperty(globalThis, "process", {
+      configurable: true,
+      get() {
+        throw new Error("blocked process access");
+      },
+    });
+    try {
+      await expect(downloadJson("x.json", {})).resolves.toBeUndefined();
+      expect(warnSpy).not.toHaveBeenCalled();
+    } finally {
+      warnSpy.mockRestore();
+      if (originalProcess) {
+        Object.defineProperty(globalThis, "process", originalProcess);
+      } else {
+        Reflect.deleteProperty(globalThis, "process");
+      }
+    }
+  });
 });

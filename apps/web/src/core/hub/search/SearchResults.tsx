@@ -92,22 +92,21 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
         {query.trim().length >= 2 && results.length === 0 && (
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
-            title="Нічого не знайдено"
-            description={`За запитом «${query}» нічого не знайшлося. Спробуй іншу фразу.`}
+            title="Нічого не знайшов"
+            description={`За запитом «${query}» нічого не знайшов. Спробуй іншу фразу.`}
           />
         )}
 
         {showRecents && (
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <SectionHeading as="p" size="sm" variant="muted">
+              <SectionHeading as="p" size="xs" variant="muted">
                 Недавні запити
               </SectionHeading>
               <button
                 type="button"
                 onClick={onClearRecents}
-                // eslint-disable-next-line sergeant-design/no-rounded-lg -- pre-existing tech debt; semantic fix tracked in docs/tech-debt/frontend.md
-                className="text-xs text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg px-1.5 py-0.5"
+                className="text-style-caption text-muted hover:text-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg px-1.5 py-0.5"
               >
                 Очистити
               </button>
@@ -118,7 +117,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                   key={r}
                   type="button"
                   onClick={() => onPickRecent(r)}
-                  className="inline-flex items-center gap-1.5 px-3 h-8 pointer-coarse:min-h-[44px] rounded-full bg-panelHi border border-line text-sm text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  className="inline-flex items-center gap-1.5 px-3 h-8 pointer-coarse:min-h-[44px] rounded-full bg-panelHi border border-line text-style-label text-text hover:bg-line/40 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <svg
                     width="12"
@@ -146,13 +145,13 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Глобальний пошук"
-            description={`Транзакції, тренування, звички, їжа — все в одному місці. ${modK}, щоб відкрити звідусіль.`}
+            description={`Операції, тренування, звички, їжа. Все в одному місці. ${modK}, щоб відкрити звідусіль.`}
           />
         )}
 
         {Object.entries(grouped).map(([moduleId, group]) => (
           <div key={moduleId}>
-            <SectionHeading as="p" size="sm" variant="muted" className="mb-1.5">
+            <SectionHeading as="p" size="xs" variant="muted" className="mb-1.5">
               {group.label}
             </SectionHeading>
             <div className="space-y-1">
@@ -192,7 +191,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
                   className="text-style-caption mt-1.5 w-full flex items-center justify-between px-3 py-2 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                 >
                   <span>
-                    Показано {group.items.length} — відкрити {group.label}
+                    Показано {group.items.length} · відкрити {group.label}
                   </span>
                   <svg
                     width="12"

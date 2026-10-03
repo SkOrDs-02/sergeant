@@ -12,7 +12,7 @@ import { setCorsHeaders } from "./cors.js";
  *     через better-auth/bearer плагін. Браузери з cookie-сесіями цей хедер не
  *     використовують, але додати його у allow-list безпечно: сервер все одно
  *     валідує токен через better-auth.
- *   - `X-Requested-With` — обов'язковий для M10 CSRF guard (`requireCsrfHeader`).
+ *   - `X-Requested-With` — обовʼязковий для M10 CSRF guard (`requireCsrfHeader`).
  *     Browser-side fetch виставляє його через `apps/web/src/shared/lib/api/httpClient.ts`
  *     і Better Auth `fetchOptions.headers`. Без нього у allow-list cross-origin
  *     preflight (web :4173 → API :3000 у smoke / dev) валиться, і `/sign-in`
@@ -28,7 +28,7 @@ import { setCorsHeaders } from "./cors.js";
  * allowed origin (defense-in-depth проти XSS / протечки секрета в logs).
  */
 const ALLOW_HEADERS =
-  "Content-Type, Authorization, X-Requested-With, traceparent, tracestate, X-Token, X-Privat-Id, X-Privat-Token";
+  "Content-Type, Authorization, X-Requested-With, X-Origin-Device-Id, traceparent, tracestate, X-Token, X-Privat-Id, X-Privat-Token";
 
 // `Retry-After` — Monobank-proxy повертає його на 429, щоб клієнт (Monobank
 // pagination loop, `api-client/endpoints/mono.ts`) міг зробити targeted

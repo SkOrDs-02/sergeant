@@ -2,7 +2,7 @@
  * Finyk — manual-expense happy path.
  *
  * First Detox E2E suite for the mobile app (see
- * `docs/mobile/react-native-migration.md` §8 and §13 Q8). Covers the shortest
+ * `docs/engineering/mobile/react-native-migration.md` §8 and §13 Q8). Covers the shortest
  * vertical slice that touches all core Фінік surfaces:
  *
  *   1. App launches with `EXPO_PUBLIC_E2E=1` so the tabs layout skips

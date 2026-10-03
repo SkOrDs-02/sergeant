@@ -4,19 +4,15 @@ import type { Mock } from "vitest";
 const harness = vi.hoisted(() => ({
   pool: { connect: vi.fn(), query: vi.fn() },
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-  enqueueMemoryIngest: vi.fn(),
   categorizeMcc: vi.fn(() => null),
   decryptAndLazyReencrypt: vi.fn(),
 }));
 
-// historyFetch.ts pulls the pg pool + queue + logger at module load; stub them
-// so the pure helpers can be imported without a database or env.
+// historyFetch.ts pulls the pg pool + logger at module load; stub them so
+// the pure helpers can be imported without a database or env.
 vi.mock("../../db.js", () => ({ pool: harness.pool }));
 vi.mock("../../obs/logger.js", () => ({
   logger: harness.logger,
-}));
-vi.mock("../ai-memory/ingestQueue.js", () => ({
-  enqueueMemoryIngest: harness.enqueueMemoryIngest,
 }));
 vi.mock("./mccCategories.js", () => ({
   categorizeMcc: harness.categorizeMcc,
@@ -35,7 +31,16 @@ import {
 
 // 2023-11-14T22:13:20Z — fixed epoch so the date slice is deterministic.
 const TS = 1_700_000_000;
-const DATE = "2023-11-14";
+/**
+ * Київська дата моменту `TS`, а не UTC-нарізка.
+ *
+ * `TS` — це `2023-11-14T22:13:20Z`, тобто вже `2023-11-15` за Києвом (EET,
+ * UTC+2 у листопаді). Доки `buildMemoryContent` різав `toISOString()`,
+ * рядок підписувався `2023-11-14` — і саме цей фікстур мовчки фіксував
+ * зсув на добу назад як «правильну» поведінку. Число змінилось разом із
+ * фіксом, і воно ж тепер стереже його.
+ */
+const DATE = "2023-11-15";
 
 function item(overrides: Record<string, unknown> = {}) {
   return BackfillItemSchema.parse({
@@ -133,6 +138,34 @@ describe("buildMemoryContent", () => {
     const out = buildMemoryContent(item({ currencyCode: 9_999 }), null);
     expect(out).not.toContain("₴");
     expect(out).not.toContain("$");
+  });
+
+  it("підписує дату київською добою на межі доби, не UTC", () => {
+    // 2026-01-09T23:30:00Z — за Києвом це вже 01:30 десятого січня.
+    // Рядок читає модель і переказує його людині, тож помилка тут звучить
+    // як «вчора» про те, що сталось сьогодні.
+    const nightPurchase = buildMemoryContent(
+      item({ time: Date.UTC(2026, 0, 9, 23, 30, 0) / 1000 }),
+      null,
+    );
+    expect(nightPurchase.endsWith("2026-01-10")).toBe(true);
+
+    // Дзеркальний бік межі: 00:30 UTC того ж дня — у Києві ще 02:30 того
+    // САМОГО дня, тобто зсуву бути не має.
+    const morningPurchase = buildMemoryContent(
+      item({ time: Date.UTC(2026, 0, 10, 0, 30, 0) / 1000 }),
+      null,
+    );
+    expect(morningPurchase.endsWith("2026-01-10")).toBe(true);
+  });
+
+  it("літній зсув (EEST, UTC+3) теж враховано", () => {
+    // У липні Київ — UTC+3, тож 21:30Z це вже 00:30 наступної доби.
+    const out = buildMemoryContent(
+      item({ time: Date.UTC(2026, 6, 15, 21, 30, 0) / 1000 }),
+      null,
+    );
+    expect(out.endsWith("2026-07-16")).toBe(true);
   });
 });
 
@@ -243,18 +276,6 @@ describe("runMonoHistoryBackfill", () => {
     expect(client.query).toHaveBeenCalledWith("BEGIN");
     expect(client.query).toHaveBeenCalledWith("COMMIT");
     expect(client.release).toHaveBeenCalledTimes(1);
-    expect(harness.enqueueMemoryIngest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "user_1",
-        source: "finyk",
-        sourceRef: "tx1",
-        content: expect.stringContaining("Coffee"),
-        metadata: expect.objectContaining({
-          monoAccountId: "acc1",
-          categorySlug: "food",
-        }),
-      }),
-    );
     expect(harness.pool.query).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE mono_connection"),
       ["user_1"],
@@ -310,10 +331,79 @@ describe("runMonoHistoryBackfill", () => {
       }),
     );
   });
+
+  it("waits between multiple accounts to respect Monobank statement pacing", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-01T00:00:00.000Z"));
+    harness.pool.query.mockResolvedValue({ rows: [] });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => [] }),
+    );
+
+    const promise = runMonoHistoryBackfill(
+      "user_1",
+      [{ id: "acc1" }, { id: "acc2" }],
+      {
+        token_ciphertext: "cipher",
+        token_iv: "iv",
+        token_tag: "tag",
+        token_key_version: "v1",
+      } as never,
+      {} as never,
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(61_999);
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await promise;
+
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    const urls = vi
+      .mocked(global.fetch)
+      .mock.calls.map((call) => String(call[0]));
+    expect(urls[0]).toContain("/personal/statement/acc1/");
+    expect(urls[1]).toContain("/personal/statement/acc2/");
+  });
+
+  it("logs and completes when the final last_backfill_at update fails", async () => {
+    harness.pool.query.mockRejectedValueOnce(new Error("update failed"));
+
+    await runMonoHistoryBackfill(
+      "user_1",
+      [],
+      {
+        token_ciphertext: "cipher",
+        token_iv: "iv",
+        token_tag: "tag",
+        token_key_version: "v1",
+      } as never,
+      {} as never,
+    );
+
+    expect(harness.logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_update_at_error",
+      }),
+    );
+    expect(harness.logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "mono_backfill_complete",
+        accounts: 0,
+        totalInserted: 0,
+      }),
+    );
+  });
 });
 
 describe("scheduleHistoryBackfill", () => {
   beforeEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
     vi.clearAllMocks();
     harness.pool.query.mockResolvedValue({
       rows: [],
@@ -332,6 +422,38 @@ describe("scheduleHistoryBackfill", () => {
 
     expect(harness.pool.query).toHaveBeenCalledWith(
       expect.stringContaining("SELECT token_ciphertext"),
+      ["user_1"],
+    );
+  });
+
+  it("runs the scheduled backfill when the encrypted token row exists", async () => {
+    harness.pool.query
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            token_ciphertext: "cipher",
+            token_iv: "iv",
+            token_tag: "tag",
+            token_key_version: "v1",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => [] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    scheduleHistoryBackfill("user_1", ["acc1"], {} as never);
+    await new Promise((resolve) => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]![0])).toContain(
+      "/personal/statement/acc1/",
+    );
+    expect(harness.pool.query).toHaveBeenLastCalledWith(
+      expect.stringContaining("UPDATE mono_connection"),
       ["user_1"],
     );
   });

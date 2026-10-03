@@ -1,7 +1,7 @@
 /**
  * Boot wiring for the Finyk dual-write context.
  *
- * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`. Mirror of
+ * Stage 4 PR #036 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirror of
  * `apps/web/src/modules/nutrition/lib/dualWriteBoot.ts`.
  *
  * Stage 8 PR #056k dropped the `feature.finyk.sqlite_v2.dual_write`
@@ -13,7 +13,7 @@ import { getSqliteDb } from "../../../core/db/sqlite.js";
 import {
   registerFinykDualWriteContext,
   type FinykDualWriteContext,
-} from "./dualWrite/index.js";
+} from "./sqliteWriter/index.js";
 import { migrateFinyk } from "./clientMigrate.js";
 
 export interface BootFinykDualWriteInput {
@@ -37,7 +37,9 @@ export function bootFinykDualWrite(input: BootFinykDualWriteInput): () => void {
       }
       return client;
     },
-    getNow: () => new Date().toISOString(),
+    getNow: () =>
+      // eslint-disable-next-line no-restricted-syntax -- LWW clientTs wall-clock, not a Kyiv day key
+      new Date().toISOString(),
   };
   return registerFinykDualWriteContext(ctx);
 }

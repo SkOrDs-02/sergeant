@@ -28,6 +28,7 @@ const validPlaybook = `# Playbook: Example
 
 > **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
 > **Status:** Active
+> **Runtime-specific:** no
 
 **Trigger:** "do the example thing" / triggers when something interesting happens.
 
@@ -343,6 +344,33 @@ test("validatePlaybook accepts `- [x]` checked checkbox in Verification", () => 
   assert.deepEqual(errors, [], errors.join("; "));
 });
 
+test("validatePlaybook exempts `Status: Deprecated` redirect stubs from Trigger/Owner surface/Verification", () => {
+  const deprecatedStub = `# Playbook: Example (retired)
+
+> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
+> **Status:** Deprecated
+
+**Redirect:** see \`canonical.md\`.
+`;
+  const errors = validatePlaybook(deprecatedStub, { today: TODAY });
+  assert.deepEqual(errors, [], errors.join("; "));
+});
+
+test("validatePlaybook still requires H1/freshness/Status on a Deprecated stub", () => {
+  const brokenStub = `> **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
+> **Status:** Deprecated
+`;
+  const errors = validatePlaybook(brokenStub, { today: TODAY });
+  assert.ok(
+    errors.some((e) => /missing H1 title/.test(e)),
+    errors.join("; "),
+  );
+  assert.ok(
+    !errors.some((e) => /Trigger|Owner surface|Verification/.test(e)),
+    errors.join("; "),
+  );
+});
+
 test("sliceH2Section returns null when heading is absent", () => {
   assert.equal(
     sliceH2Section(["# H1", "## Other", "body"], /^##\s+Verification/),
@@ -384,12 +412,12 @@ test("validatePlaybook treats first H2 as the cutoff (Trigger after H2 is invisi
   );
 });
 
-// End-to-end CLI test: assemble a fake docs/00-start/playbooks/ tree and run the script.
+// End-to-end CLI test: assemble a fake docs/start/instructions/ tree and run the script.
 test("CLI exits 1 with --json output when a playbook is malformed", () => {
   const dir = mkdtempSync(join(tmpdir(), "playbook-schema-"));
   try {
     const root = join(dir, "repo");
-    mkdirSync(join(root, "docs", "00-start", "playbooks"), { recursive: true });
+    mkdirSync(join(root, "docs", "start", "instructions"), { recursive: true });
     mkdirSync(join(root, "scripts", "docs"), { recursive: true });
     cpSync(
       SCRIPT_PATH,
@@ -397,20 +425,20 @@ test("CLI exits 1 with --json output when a playbook is malformed", () => {
     );
     // One good, one bad
     writeFileSync(
-      join(root, "docs", "00-start", "playbooks", "good.md"),
+      join(root, "docs", "start", "instructions", "good.md"),
       validPlaybook,
     );
     writeFileSync(
-      join(root, "docs", "00-start", "playbooks", "bad.md"),
-      "# Playbook: Bad\n\nNo metadata at all.\n",
+      join(root, "docs", "start", "instructions", "bad.md"),
+      "# Playbook: Bad\n\n> **Runtime-specific:** no\n\nNo metadata at all.\n",
     );
     // Skipped files (must not contribute violations)
     writeFileSync(
-      join(root, "docs", "00-start", "playbooks", "INDEX.md"),
+      join(root, "docs", "start", "instructions", "INDEX.md"),
       "# anything\n",
     );
     writeFileSync(
-      join(root, "docs", "00-start", "playbooks", "_TEMPLATE-decision-tree.md"),
+      join(root, "docs", "start", "instructions", "_TEMPLATE-decision-tree.md"),
       "# template\n",
     );
     const r = spawnSync(
@@ -441,14 +469,14 @@ test("CLI exits 0 with happy fixture", () => {
   const dir = mkdtempSync(join(tmpdir(), "playbook-schema-"));
   try {
     const root = join(dir, "repo");
-    mkdirSync(join(root, "docs", "00-start", "playbooks"), { recursive: true });
+    mkdirSync(join(root, "docs", "start", "instructions"), { recursive: true });
     mkdirSync(join(root, "scripts", "docs"), { recursive: true });
     cpSync(
       SCRIPT_PATH,
       join(root, "scripts", "docs", "check-playbook-schema.mjs"),
     );
     writeFileSync(
-      join(root, "docs", "00-start", "playbooks", "good.md"),
+      join(root, "docs", "start", "instructions", "good.md"),
       validPlaybook,
     );
     const r = spawnSync(

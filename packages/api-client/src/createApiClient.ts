@@ -36,6 +36,10 @@ import {
   type WaitlistEndpoints,
 } from "./endpoints/waitlist";
 import {
+  createFeedbackEndpoints,
+  type FeedbackEndpoints,
+} from "./endpoints/feedback";
+import {
   createBillingEndpoints,
   type BillingEndpoints,
 } from "./endpoints/billing";
@@ -48,18 +52,15 @@ import {
   createTranscribeEndpoints,
   type TranscribeEndpoints,
 } from "./endpoints/transcribe";
-import {
-  createWebVitalsEndpoints,
-  type WebVitalsEndpoints,
-} from "./endpoints/webVitals";
+import { createSilpoEndpoints, type SilpoEndpoints } from "./endpoints/silpo";
 
 export type ApiClientConfig = HttpClientConfig;
 
 /**
  * Типізований API-клієнт для всіх публічних ендпоінтів Sergeant. Повертає
- * об'єкт з `http` (низькорівневі методи) та набором модульних ендпоінтів
+ * обʼєкт з `http` (низькорівневі методи) та набором модульних ендпоінтів
  * (`sync`, `coach`, `chat`, `push`, `nutrition`, `barcode`, `foodSearch`,
- * `monoWebhook`, `privat`, `weeklyDigest`, `transcribe`, `webVitals`).
+ * `monoWebhook`, `privat`, `weeklyDigest`, `transcribe`, `silpo`).
  *
  * Веб-додаток створює один інстанс на старті (див.
  * `apps/web/src/shared/api/client.ts`). RN-додаток зможе створити свій
@@ -78,11 +79,12 @@ export interface ApiClient {
   monoWebhook: MonoWebhookEndpoints;
   privat: PrivatEndpoints;
   waitlist: WaitlistEndpoints;
+  feedback: FeedbackEndpoints;
   billing: BillingEndpoints;
   finyk: FinykEndpoints;
   weeklyDigest: WeeklyDigestEndpoints;
   transcribe: TranscribeEndpoints;
-  webVitals: WebVitalsEndpoints;
+  silpo: SilpoEndpoints;
 }
 
 export function createApiClient(config: ApiClientConfig = {}): ApiClient {
@@ -100,10 +102,11 @@ export function createApiClient(config: ApiClientConfig = {}): ApiClient {
     monoWebhook: createMonoWebhookEndpoints(http),
     privat: createPrivatEndpoints(http),
     waitlist: createWaitlistEndpoints(http),
+    feedback: createFeedbackEndpoints(http),
     billing: createBillingEndpoints(http),
     finyk: createFinykEndpoints(http),
     weeklyDigest: createWeeklyDigestEndpoints(http),
     transcribe: createTranscribeEndpoints(http),
-    webVitals: createWebVitalsEndpoints(http),
+    silpo: createSilpoEndpoints(http),
   };
 }

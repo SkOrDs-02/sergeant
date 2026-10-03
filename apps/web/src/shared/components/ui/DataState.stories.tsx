@@ -72,7 +72,7 @@ export const Loaded: Story = {
   render: () => (
     <DataState<Tx[]>
       query={{ data: SAMPLE, isLoading: false }}
-      empty={<div className="text-muted text-sm">Немає транзакцій.</div>}
+      empty={<div className="text-muted text-sm">Немає операцій.</div>}
     >
       {(data) => <TxList items={data} />}
     </DataState>
@@ -84,7 +84,7 @@ export const LoadingDefault: Story = {
   render: () => (
     <DataState<Tx[]>
       query={{ data: undefined, isLoading: true }}
-      empty={<div className="text-muted text-sm">Немає транзакцій.</div>}
+      empty={<div className="text-muted text-sm">Немає операцій.</div>}
     >
       {(data) => <TxList items={data} />}
     </DataState>
@@ -109,7 +109,7 @@ export const LoadingShapeAware: Story = {
           ))}
         </div>
       }
-      empty={<div className="text-muted text-sm">Немає транзакцій.</div>}
+      empty={<div className="text-muted text-sm">Немає операцій.</div>}
     >
       {(data) => <TxList items={data} />}
     </DataState>
@@ -123,7 +123,7 @@ export const Empty: Story = {
       query={{ data: [], isLoading: false }}
       empty={
         <div className="rounded-2xl border border-line bg-panel/40 px-4 py-6 text-center text-sm text-muted">
-          Немає транзакцій за вибраний період.
+          Немає операцій за вибраний період.
         </div>
       }
     >
@@ -142,7 +142,7 @@ export const ErrorDefault: Story = {
         error: new Error("Mono API: 503 Service Unavailable"),
         refetch: () => undefined,
       }}
-      empty={<div className="text-muted text-sm">Немає транзакцій.</div>}
+      empty={<div className="text-muted text-sm">Немає операцій.</div>}
     >
       {(data) => <TxList items={data} />}
     </DataState>
@@ -174,7 +174,7 @@ export const ErrorCustom: Story = {
           </button>
         </div>
       )}
-      empty={<div className="text-muted text-sm">Немає транзакцій.</div>}
+      empty={<div className="text-muted text-sm">Немає операцій.</div>}
     >
       {(data) => <TxList items={data} />}
     </DataState>
@@ -195,7 +195,7 @@ export const Stale: Story = {
           <div className="text-2xs text-muted mb-1.5 italic">оновлюється…</div>
         ) : null
       }
-      empty={<div className="text-muted text-sm">Немає транзакцій.</div>}
+      empty={<div className="text-muted text-sm">Немає операцій.</div>}
     >
       {(data) => <TxList items={data} />}
     </DataState>

@@ -19,7 +19,6 @@ import {
   toggleHabitCompletion,
   markAllScheduledHabitsComplete,
   setHabitArchived,
-  addPushupReps,
   moveHabitInOrder,
   setHabitOrder,
   setCompletionNote,
@@ -222,21 +221,6 @@ describe("markAllScheduledHabitsComplete", () => {
   });
 });
 
-describe("addPushupReps", () => {
-  it("додає до лічильника за сьогодні", () => {
-    let s = addPushupReps(fresh(), 10);
-    expect(s.pushupsByDate["2024-06-15"]).toBe(10);
-    s = addPushupReps(s, 5);
-    expect(s.pushupsByDate["2024-06-15"]).toBe(15);
-  });
-  it("ігнорує невалідні reps", () => {
-    const s1 = fresh();
-    expect(addPushupReps(s1, 0)).toBe(s1);
-    expect(addPushupReps(s1, -3)).toBe(s1);
-    expect(addPushupReps(s1, "abc")).toBe(s1);
-  });
-});
-
 describe("moveHabitInOrder", () => {
   it("міняє місцями сусідні елементи", () => {
     let s = fresh();
@@ -308,10 +292,11 @@ describe("tags and categories", () => {
     expect(s.tags).toHaveLength(0);
     expect(s.habits[0]!.tagIds).not.toContain(tid);
   });
-  it("створення й оновлення категорії з емодзі", () => {
+  it("створення й оновлення категорії з іконкою", () => {
+    // Легасі-emoji на вході апгрейдиться до icon-slug (`glyphs.ts`).
     let s = createCategory(fresh(), "Health", "💪");
     const c = s.categories[0];
-    expect(c!.emoji!).toBe("💪");
+    expect(c!.emoji!).toBe("dumbbell");
     s = updateCategory(s, c!.id!, { name: "Wellness" });
     expect(s.categories[0]!.name).toBe("Wellness");
   });
@@ -345,8 +330,11 @@ describe("edge cases: double completion in one day", () => {
     expect(count).toBe(1);
   });
   // The LS → normalize sanitization path moved out of `loadRoutineState`
-  // in PR #057r-tombstone — it is now exercised by `residualImport.ts`
-  // and `@sergeant/routine-domain`'s own `normalizeRoutineState` tests.
+  // in PR #057r-tombstone — it is now exercised by
+  // `@sergeant/routine-domain`'s own `normalizeRoutineState` tests (the
+  // web-only boot-time `residualImport.ts` drain that also exercised this
+  // path was removed 2026-08, once no pre-beta testers were left to
+  // migrate — see git history).
   it("markAllScheduledHabitsComplete стає no-op після дедуплікації", () => {
     let s = createHabit(fresh(), { name: "A" });
     const id = s.habits[0]!.id;
@@ -355,7 +343,7 @@ describe("edge cases: double completion in one day", () => {
     expect(s2).toBe(s);
   });
   it("toggleHabitCompletion дедуплікує передувало-дубльований масив", () => {
-    // Симулюємо пошкоджений state з дублем прямо в пам'яті
+    // Симулюємо пошкоджений state з дублем прямо в памʼяті
     let s = createHabit(fresh(), { name: "A" });
     const id = s.habits[0]!.id;
     s = {

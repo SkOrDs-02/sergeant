@@ -7,7 +7,7 @@
  * secrets). No user-PII capture, no HTTP breadcrumbs, no performance
  * tracing — those land in follow-up phases.
  *
- * @see docs/mobile/react-native-migration.md §4 (Phase 12)
+ * @see docs/engineering/mobile/react-native-migration.md §4 (Phase 12)
  * @see apps/web/src/core/observability/sentry.ts — web-side analogue
  */
 
@@ -142,7 +142,7 @@ export function initObservability(): void {
     tracesSampleRate: __DEV__ ? 0 : 0.05,
     debug: __DEV__,
     // PII handling (parity with server / web — audit
-    // `docs/security/pii-handling.md`): never let the SDK ship raw
+    // `docs/governance/security/pii-handling.md`): never let the SDK ship raw
     // request bodies / headers / breadcrumb data to ingest. The hook is
     // exported so unit tests run it against synthetic events.
     sendDefaultPii: false,

@@ -233,4 +233,37 @@ describe("AddMealSheet photo analyze error handling", () => {
     expect(body.mime_type).toBe("image/jpeg");
     expect(body.locale).toBe("uk-UA");
   });
+
+  it("stays on the photo step and explains the refusal when isFood is false", async () => {
+    // Web-parity з `PhotoAnalyzeCard` → `NotFoodNotice`: перехід на «fill»
+    // означав би форму прийому їжі з назвою «Кіт» і порожніми КБЖВ.
+    const { client } = createTestApiClient(() => ({
+      ok: true,
+      status: 200,
+      body: {
+        result: {
+          isFood: false,
+          dishName: "Кіт",
+          confidence: 1,
+          portion: null,
+          ingredients: [],
+          macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+          questions: [],
+        },
+        rawText: null,
+      },
+    }));
+
+    const { getByTestId, findByTestId, queryByDisplayValue } =
+      renderSheet(client);
+
+    await act(async () => {
+      fireEvent.press(getByTestId("add-meal-open-photo-library"));
+    });
+
+    const err = await findByTestId("add-meal-source-err");
+    expect(err.props.children).toMatch(/Не бачу тут страви/);
+    expect(err.props.children).toMatch(/Кіт/);
+    expect(queryByDisplayValue("Кіт")).toBeNull();
+  });
 });

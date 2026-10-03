@@ -33,7 +33,7 @@ const ExerciseHeaderImpl = function ExerciseHeader({
         <View
           className="flex-row flex-wrap gap-1.5"
           testID={`${testID}-muscles`}
-          accessibilityLabel={`Цільові м'язи: ${muscleLabels.join(", ")}`}
+          accessibilityLabel={`Цільові мʼязи: ${muscleLabels.join(", ")}`}
         >
           {muscleLabels.map((m) => (
             <View

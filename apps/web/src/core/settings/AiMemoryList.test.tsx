@@ -1,0 +1,444 @@
+/** @vitest-environment jsdom */
+/**
+ * Last validated: 2026-07-25
+ * Status: Active
+ *
+ * AI-CONTEXT: асерти цілять у дефекти, які легко відтворити й важко
+ * помітити оком:
+ *   * видалення без підтвердження (дія незворотна — сервер робить
+ *     `DELETE`, не soft-delete);
+ *   * видалення не того факту, коли в списку кілька схожих рядків;
+ *   * відсутність інвалідації кешу — UI показує стертий факт, поки
+ *     вкладку не перезавантажать.
+ * «Компонент відрендерився» тут нічого не доводить, тому такого асерта
+ * немає.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "@sergeant/api-client";
+import type { ReactNode } from "react";
+
+const { listAiMemory, deleteAiMemory } = vi.hoisted(() => ({
+  listAiMemory: vi.fn(),
+  deleteAiMemory: vi.fn(),
+}));
+
+vi.mock("@shared/api", () => ({
+  meApi: { listAiMemory, deleteAiMemory },
+}));
+
+import { AiMemoryList } from "./AiMemoryList";
+
+function page(
+  items: Array<{ id: number; content: string; source?: string }>,
+  nextCursor: number | null = null,
+) {
+  return {
+    items: items.map((i) => ({
+      id: i.id,
+      content: i.content,
+      source: i.source ?? "chat",
+      topic: null,
+      createdAt: "2026-07-20T10:00:00.000Z",
+    })),
+    nextCursor,
+  };
+}
+
+function renderList() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  );
+  return render(<AiMemoryList />, { wrapper });
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  deleteAiMemory.mockResolvedValue({ ok: true, deleted: true });
+});
+
+afterEach(() => cleanup());
+
+describe("AiMemoryList", () => {
+  it("показує факти з їх джерелом", async () => {
+    // `nutrition` — джерело без продюсера з ініціативи 0024 (PR-1,
+    // 2026-09-03), CHECK-constraint у БД поки не звужений (PR-3), тож
+    // старі рядки такого source ще можуть бути в базі: UI має fallback
+    // `?? item.source` замість зниклої мітки "Їжа".
+    listAiMemory.mockResolvedValue(
+      page([{ id: 1, content: "Алергія на горіхи", source: "nutrition" }]),
+    );
+    renderList();
+    expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
+    expect(screen.getByText(/nutrition/)).toBeTruthy();
+  });
+
+  it("порожня памʼять → пояснення, а не порожнеча", async () => {
+    listAiMemory.mockResolvedValue(page([]));
+    renderList();
+    expect(await screen.findByText(/Поки що AI нічого/)).toBeTruthy();
+  });
+
+  it("порожня памʼять малює спільний <EmptyState> (role=status), не голий <p> (V-14, аудит 2026-08-08)", async () => {
+    // `findByRole("status")` тут не годиться напряму — стан завантаження
+    // теж має `role="status"`, і `findByRole` підхопив би саме його.
+    listAiMemory.mockResolvedValue(page([]));
+    renderList();
+    const text = await screen.findByText(/Поки що AI нічого/);
+    expect(text.closest('[role="status"]')).toBeTruthy();
+  });
+
+  it("НЕ видаляє без підтвердження", async () => {
+    // Дія незворотна на сервері. Клік по ✕ мусить лише відкрити діалог;
+    // якщо колись «спростять» до прямого виклику, юзер втрачатиме факти
+    // одним промахом пальця по 44-піксельній кнопці.
+    listAiMemory.mockResolvedValue(page([{ id: 7, content: "Факт" }]));
+    renderList();
+    fireEvent.click(await screen.findByLabelText("Видалити факт: Факт"));
+    expect(deleteAiMemory).not.toHaveBeenCalled();
+    expect(screen.getByText("Видалити цей факт?")).toBeTruthy();
+  });
+
+  it("видаляє САМЕ той факт, на якому клікнули", async () => {
+    // Найправдоподібніший баг списку: кнопка замикається на індекс або на
+    // перший елемент. З однаковими на вигляд рядками це помітно лише тоді,
+    // коли зникає не той факт — тобто вже після втрати даних.
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 11, content: "Перший" },
+        { id: 22, content: "Другий" },
+        { id: 33, content: "Третій" },
+      ]),
+    );
+    renderList();
+    fireEvent.click(await screen.findByLabelText("Видалити факт: Другий"));
+    fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
+    await waitFor(() => expect(deleteAiMemory).toHaveBeenCalledTimes(1));
+    expect(deleteAiMemory).toHaveBeenCalledWith(22);
+  });
+
+  it("після видалення перечитує список — інакше стертий факт лишається на екрані", async () => {
+    listAiMemory.mockResolvedValue(page([{ id: 7, content: "Факт" }]));
+    renderList();
+    fireEvent.click(await screen.findByLabelText("Видалити факт: Факт"));
+    const before = listAiMemory.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
+    await waitFor(() =>
+      expect(listAiMemory.mock.calls.length).toBeGreaterThan(before),
+    );
+  });
+
+  it("скасування діалогу не видаляє нічого", async () => {
+    listAiMemory.mockResolvedValue(page([{ id: 7, content: "Факт" }]));
+    renderList();
+    fireEvent.click(await screen.findByLabelText("Видалити факт: Факт"));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Скасувати|Відмінити/ }),
+    );
+    expect(deleteAiMemory).not.toHaveBeenCalled();
+  });
+
+  it("«Показати більше» тягне наступну сторінку по курсору", async () => {
+    // Курсор має приїхати з `nextCursor` попередньої сторінки. Якщо
+    // передати щось інше (offset, довжину масиву), друга сторінка
+    // мовчки продублює або пропустить рядки.
+    listAiMemory
+      .mockResolvedValueOnce(page([{ id: 30, content: "Перший" }], 30))
+      .mockResolvedValueOnce(page([{ id: 20, content: "Другий" }], null));
+    renderList();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Показати більше/ }),
+    );
+    expect(await screen.findByText("Другий")).toBeTruthy();
+    expect(listAiMemory).toHaveBeenLastCalledWith(
+      expect.objectContaining({ cursor: 30 }),
+      expect.anything(),
+    );
+    // Перша сторінка лишається на екрані — сторінки склеюються, не заміщуються.
+    expect(screen.getByText("Перший")).toBeTruthy();
+  });
+
+  it("остання сторінка ховає кнопку «Показати більше»", async () => {
+    listAiMemory.mockResolvedValue(page([{ id: 1, content: "Єдиний" }], null));
+    renderList();
+    await screen.findByText("Єдиний");
+    expect(
+      screen.queryByRole("button", { name: /Показати більше/ }),
+    ).toBeNull();
+  });
+
+  it("великий список приходить згорнутим у групи за джерелом", async () => {
+    // Скарга власника 2026-08-18: список читався як суцільне полотно на
+    // кілька екранів. Понад `AUTO_OPEN_MAX_ITEMS` фактів → видно тільки
+    // джерела з лічильниками, самі факти — за кліком. `chat`/`nutrition` —
+    // джерела без продюсера з ініціативи 0024 (PR-1) — використані тут як
+    // приклад legacy-рядків без мітки (fallback `?? item.source`); механіка
+    // групування від наявності мітки не залежить.
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 1, content: "Факт чату 1", source: "chat" },
+        { id: 2, content: "Факт чату 2", source: "chat" },
+        { id: 3, content: "Факт чату 3", source: "chat" },
+        { id: 4, content: "Факт чату 4", source: "chat" },
+        { id: 5, content: "Тижневий підсумок", source: "digest" },
+        { id: 6, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    const chatGroup = await screen.findByRole("button", {
+      name: /Показати факти джерела: chat/,
+    });
+    expect(chatGroup.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText("Факт чату 1")).toBeNull();
+    expect(screen.queryByText("Алергія на горіхи")).toBeNull();
+    // Джерела лишаються видимими — це і є згорнутий зміст памʼяті.
+    expect(
+      screen.getByRole("button", {
+        name: /Показати факти джерела: nutrition/,
+      }),
+    ).toBeTruthy();
+
+    fireEvent.click(chatGroup);
+    expect(screen.getByText("Факт чату 1")).toBeTruthy();
+    // Розгортання однієї групи не розгортає сусідні.
+    expect(screen.queryByText("Алергія на горіхи")).toBeNull();
+  });
+
+  it("маленька памʼять лишається розгорнутою — ховати нічого", async () => {
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 1, content: "Перший", source: "chat" },
+        { id: 2, content: "Другий", source: "chat" },
+      ]),
+    );
+    renderList();
+    expect(await screen.findByText("Перший")).toBeTruthy();
+    expect(screen.getByText("Другий")).toBeTruthy();
+  });
+
+  it("довгий факт обрізається, поки його не розгорнути", async () => {
+    // Довгим буває й справжній факт із чату — не лише службовий звіт
+    // (`digest` тепер згорнутий за замовчуванням, тож важіль розгортання
+    // перевіряємо на джерелі, яке видно одразу). Кнопка зʼявляється лише
+    // для довгого тексту.
+    const long = "Розповідав у чаті: ".padEnd(400, "довга передісторія ");
+    listAiMemory.mockResolvedValue(
+      page([
+        { id: 1, content: long, source: "chat" },
+        { id: 2, content: "Короткий факт", source: "chat" },
+      ]),
+    );
+    renderList();
+
+    const toggle = await screen.findByRole("button", {
+      name: "Показати повністю",
+    });
+    expect(screen.getByText(long).className).toContain("line-clamp-3");
+    fireEvent.click(toggle);
+    expect(screen.getByText(long).className).not.toContain("line-clamp-3");
+    expect(screen.getByRole("button", { name: "Згорнути" })).toBeTruthy();
+    // Короткий факт не отримує зайвого важеля.
+    expect(
+      screen.queryAllByRole("button", { name: "Показати повністю" }),
+    ).toHaveLength(0);
+  });
+
+  it("службові події застосунку — окремою групою, завжди згорнутою і в кінці", async () => {
+    // Рішення власника 2026-08-18. `source='product'` — це 4 мілстоуни
+    // телеметрії напів-англійським текстом (див. `eventSync.ts`), а не
+    // факт про людину: не розкриваємо їх навіть у крихітній памʼяті і не
+    // пускаємо вперед справжніх фактів.
+    listAiMemory.mockResolvedValue(
+      page([
+        {
+          id: 1,
+          content: "2026-05-13: first action completed у модулі finyk.",
+          source: "product",
+        },
+        { id: 2, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    // Справжній факт видно одразу (памʼять маленька), службовий — ні.
+    expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
+    expect(screen.queryByText(/first action completed/)).toBeNull();
+
+    const groups = screen.getAllByRole("button", {
+      name: /Показати факти джерела/,
+    });
+    // Службова група — остання, попри свіжіший id.
+    expect(groups.at(-1)?.textContent).toContain("Події застосунку");
+    expect(groups.at(-1)?.getAttribute("aria-expanded")).toBe("false");
+    // Сире `product` в UI не світиться.
+    expect(screen.queryByText(/\bПродукт\b/)).toBeNull();
+
+    fireEvent.click(groups.at(-1)!);
+    expect(screen.getByText(/first action completed/)).toBeTruthy();
+    expect(screen.getByText(/Службові позначки застосунку/)).toBeTruthy();
+  });
+
+  it("тижневі звіти — теж службові: згорнуті, в кінці, зі своїм поясненням", async () => {
+    // Рішення власника 2026-08-18. Дайджест — не факт, який людина
+    // розповіла, а згенерований звіт абзацом; саме він роздував список.
+    listAiMemory.mockResolvedValue(
+      page([
+        {
+          id: 1,
+          content: "Тижневий звіт 3 серп. — 9 серп. Витрати склали 75769 грн…",
+          source: "digest",
+        },
+        { id: 2, content: "Алергія на горіхи", source: "nutrition" },
+      ]),
+    );
+    renderList();
+
+    expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
+    expect(screen.queryByText(/Тижневий звіт/)).toBeNull();
+
+    const groups = screen.getAllByRole("button", {
+      name: /Показати факти джерела/,
+    });
+    expect(groups.at(-1)?.textContent).toContain("Підсумок тижня");
+    expect(groups.at(-1)?.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(groups.at(-1)!);
+    // Пояснення своє, не спільне з телеметрією.
+    expect(screen.getByText(/склав сам із твоїх модулів/)).toBeTruthy();
+    expect(screen.queryByText(/Службові позначки застосунку/)).toBeNull();
+  });
+
+  it("помилка видалення → повідомлення, факт лишається у списку", async () => {
+    deleteAiMemory.mockRejectedValue(new Error("500"));
+    listAiMemory.mockResolvedValue(page([{ id: 7, content: "Факт" }]));
+    renderList();
+    fireEvent.click(await screen.findByLabelText("Видалити факт: Факт"));
+    fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
+    expect(await screen.findByText(/Не вдалося видалити/)).toBeTruthy();
+    expect(screen.getByText("Факт")).toBeTruthy();
+  });
+
+  // Аудит `web-qa-pre-beta.md` § 9 (2026-09-03): список за
+  // `requireSession()`, тож анонім отримує 401 — і до фіксу бачив «Не
+  // вдалося завантажити памʼять ШІ.», ніби сервер зламався. Це стан гостя,
+  // не збій: він має малюватись порожнім станом із виходом (увійти), а
+  // справжні 5xx — далі помилкою.
+  describe("анонім (401/403) — стан гостя, не технічний збій", () => {
+    function authError(status: 401 | 403) {
+      return new ApiError({
+        kind: "http",
+        status,
+        message: `Помилка ${status}`,
+        url: "/api/v1/ai-memory/list",
+        body: { error: "Unauthorized" },
+      });
+    }
+
+    it("401 → пояснення про акаунт як порожній стан (role=status), без тексту помилки", async () => {
+      listAiMemory.mockRejectedValue(authError(401));
+      renderList();
+      // Не `findByRole("status")`: під час завантаження той самий role
+      // носить «Завантажую памʼять…», і запит зловив би його першим.
+      const text = await screen.findByText(/Памʼять AI живе в акаунті/);
+      expect(text.textContent).toMatch(/Увійди/);
+      expect(text.closest('[role="status"]')).not.toBeNull();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.queryByText(/Не вдалося завантажити/)).toBeNull();
+    });
+
+    it("403 читається так само — обидва статуси означають «без сесії»", async () => {
+      listAiMemory.mockRejectedValue(authError(403));
+      renderList();
+      expect(await screen.findByText(/Увійди/)).toBeTruthy();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("5xx лишається помилкою — текст про акаунт тут був би неправдою", async () => {
+      listAiMemory.mockRejectedValue(
+        new ApiError({
+          kind: "http",
+          status: 500,
+          message: "Помилка 500",
+          url: "/api/v1/ai-memory/list",
+        }),
+      );
+      renderList();
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/Не вдалося завантажити/);
+      expect(screen.queryByText(/Увійди/)).toBeNull();
+    });
+  });
+
+  // Спека `memory-bank-consolidation.md`: єдиний редактор фактів профілю -
+  // Профіль → «Банк памʼяті». Тести цілять у те, що ламається при
+  // копіюванні гілки групування, а не в «картка відрендерилась».
+  describe("група profile — вітрина, не редактор", () => {
+    it("не дає видалити факт профілю звідси: ні хрестика, ні шляху до DELETE", async () => {
+      listAiMemory.mockResolvedValue(
+        page([{ id: 7, content: "Алергія на горіхи", source: "profile" }]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факти профілю")).toBeTruthy();
+      // Головне: рядок факту сюди взагалі не рендериться, тож і кнопки
+      // видалення бути не може. Асертимо обидва боки - і відсутність
+      // хрестика, і те, що видалення не викликалось.
+      expect(screen.queryByLabelText(/Видалити факт/)).toBeNull();
+      expect(deleteAiMemory).not.toHaveBeenCalled();
+    });
+
+    it("лічильник показує, скільки фактів профілю бачить асистент", async () => {
+      listAiMemory.mockResolvedValue(
+        page([
+          { id: 1, content: "Алергія на горіхи", source: "profile" },
+          { id: 2, content: "Ціль - 80 кг", source: "profile" },
+          { id: 3, content: "Тренуюсь зранку", source: "profile" },
+        ]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факти профілю")).toBeTruthy();
+      expect(screen.getByText("3")).toBeTruthy();
+    });
+
+    it("поза hub-шеллом картка лишається читабельною, зникає лише кнопка переходу", async () => {
+      // Рендер без `HubShellProvider` - саме те, що робить цей файл. Якби
+      // компонент брав `useHubShell`, тест упав би на кинутій помилці.
+      listAiMemory.mockResolvedValue(
+        page([{ id: 9, content: "Ціль - 80 кг", source: "profile" }]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факти профілю")).toBeTruthy();
+      expect(screen.queryByText("Відкрити профіль")).toBeNull();
+    });
+
+    it("решта груп не зачеплені: розкриваються і видаляються як раніше", async () => {
+      listAiMemory.mockResolvedValue(
+        page([
+          { id: 1, content: "Факт профілю", source: "profile" },
+          { id: 2, content: "Факт із чату", source: "chat" },
+        ]),
+      );
+      renderList();
+
+      expect(await screen.findByText("Факт із чату")).toBeTruthy();
+      // Хрестик рівно один - у чатового факту, не в профільного.
+      const deletes = screen.getAllByLabelText(/Видалити факт/);
+      expect(deletes).toHaveLength(1);
+      fireEvent.click(deletes[0]!);
+      expect(await screen.findByText(/Видалити цей факт/)).toBeTruthy();
+    });
+  });
+});

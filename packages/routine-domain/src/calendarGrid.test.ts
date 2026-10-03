@@ -143,6 +143,32 @@ describe("groupEventsForList", () => {
     expect(heads).toEqual(["Ранок", FIZRUK_GROUP_LABEL, FINYK_SUB_GROUP_LABEL]);
   });
 
+  it("групує зовнішні події за першим тегом або fallback 'Інше'", () => {
+    const events: HubCalendarEvent[] = [
+      habitEvent("untagged", null, {
+        source: "external",
+        sourceKind: "note",
+        tagLabels: [],
+      }),
+      habitEvent("tagged", null, {
+        source: "external",
+        sourceKind: "note",
+        tagLabels: ["Лікар"],
+      }),
+      habitEvent("alpha", null, {
+        source: "external",
+        sourceKind: "note",
+        tagLabels: ["Адмін"],
+      }),
+    ];
+
+    const groups = groupEventsForList(events);
+    expect(groups.map(([head]) => head)).toEqual(["Адмін", "Інше", "Лікар"]);
+    expect(groups.find(([head]) => head === "Інше")?.[1][0]?.id).toBe(
+      "untagged",
+    );
+  });
+
   it("повертає пустий масив для пустого вводу", () => {
     expect(groupEventsForList([])).toEqual([]);
   });

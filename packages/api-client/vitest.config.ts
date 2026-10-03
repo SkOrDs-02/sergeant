@@ -14,6 +14,11 @@ const thresholds = JSON.parse(
 
 export default defineConfig({
   test: {
+    // Contract-файли (billing/finyk/privat/...) пишуть interactions в ОДИН
+    // pacts/*.json; паралельні worker-и можуть загубити чужі записи при
+    // merge. Пакет швидкий (~10s), серіалізація файлів — найдешевший фікс;
+    // CI так само серіалізує provider-replay (--no-file-parallelism).
+    fileParallelism: false,
     environment: "node",
     include: ["src/**/*.test.ts"],
     passWithNoTests: true,

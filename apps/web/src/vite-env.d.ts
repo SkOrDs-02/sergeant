@@ -36,6 +36,61 @@ interface ImportMetaEnv {
    * literal by `vite.config.js#define`.
    */
   readonly VITE_TARGET?: "web" | "capacitor";
+
+  /**
+   * Вимикає кнопки соцвходу (Google / Apple) на `AuthPage`. Єдине
+   * значення, що вимикає, — рядок `"false"`; будь-що інше, включно з
+   * незаданою змінною, лишає кнопки на місці.
+   *
+   * Потрібна деплоям на власному домені (бета-проєкт на окремому
+   * Vercel): OAuth `redirect_uri` будується з єдиного `BETTER_AUTH_URL`,
+   * тож Google повертає користувача не туди, звідки він пішов.
+   */
+  readonly VITE_SOCIAL_LOGIN_ENABLED?: string;
+
+  /**
+   * Показує кнопку входу через Apple на `AuthPage` (`:42-43`). Вмикає
+   * рівно рядок `"true"`; незадана змінна ховає — полярність протилежна
+   * до `VITE_SOCIAL_LOGIN_ENABLED` вище, і це навмисно: відсутній
+   * production-креденшл ніколи не має виглядати робочим входом.
+   *
+   * **Гейт подвійний і ніде не звірений.** Серверний бік вмикає
+   * провайдера лише коли всі чотири env непорожні (`APPLE_CLIENT_ID`,
+   * `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` —
+   * `apps/server/src/auth.ts:164-169`). Виставити цей прапорець без
+   * серверних ключів означає живу кнопку, що впаде в
+   * `providerNotFound`. Стан провайдерів видно в boot-лозі
+   * `auth_social_providers_status`.
+   *
+   * Оголошено тут 2026-09-11: доти одруківка в назві мовчки вимикала
+   * кнопку назавжди, і типи цього не ловили.
+   */
+  readonly VITE_APPLE_LOGIN_ENABLED?: string;
+
+  /**
+   * Показує кнопку голосового вводу (`VoiceMicButton` — 5 call-сайтів у
+   * Finyk / Fizruk / Nutrition / Routine). Вмикає рівно рядок `"1"`;
+   * незадана змінна ховає, тобто полярність протилежна до
+   * `VITE_SOCIAL_LOGIN_ENABLED` вище.
+   *
+   * Знято з продукту 2026-08-10 на прохання власника. Дві причини —
+   * повністю розписані у
+   * `shared/components/ui/voice/resolveVoiceProvider.ts#isVoiceInputEnabled`:
+   * непередбачувана поведінка на iOS standalone-PWA (гейт WebKit-бага
+   * стоїть лише на Web-Speech-шляху, не на Groq) і вартість
+   * `/api/transcribe` — $1.00/добу/юзер без plan-gate.
+   */
+  readonly VITE_ENABLE_VOICE_INPUT?: string;
+
+  /**
+   * Вмикає тестовий міст `window.__sergeantScenario` для Playwright-лейнів,
+   * які ганяються на prod-білді через `vite preview`.
+   *
+   * Незадана змінна означає "міста немає". Прапорець несе лише тестовий
+   * код; prod-бандл додатково перевіряється сканером
+   * `scripts/ci/check-e2e-seed-boundary.mjs`.
+   */
+  readonly VITE_E2E_SEED?: string;
 }
 
 interface ImportMeta {

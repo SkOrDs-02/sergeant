@@ -102,11 +102,11 @@ export default class ModuleErrorBoundary extends Component<
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <p className="text-sm text-muted mb-2 text-center">
+          <p className="text-style-body text-muted mb-2 text-center">
             {messages.errors.generic.moduleFailed}
           </p>
           {import.meta.env.DEV && (
-            <pre className="text-xs text-danger-strong dark:text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
+            <pre className="text-style-code text-danger-strong dark:text-danger mb-6 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word">
               {this.state.error.message}
             </pre>
           )}
@@ -115,15 +115,17 @@ export default class ModuleErrorBoundary extends Component<
               className="mb-6 max-w-xs w-full bg-panel rounded-xl p-3 border border-line flex items-center gap-2"
               data-testid="module-error-request-id"
             >
-              <span className="text-xs text-muted shrink-0">requestId:</span>
-              <code className="text-xs text-text font-mono truncate flex-1">
+              <span className="text-style-caption text-muted shrink-0">
+                requestId:
+              </span>
+              <code className="text-style-code text-text font-mono truncate flex-1">
                 {requestId}
               </code>
               <button
                 type="button"
                 onClick={this.handleCopyRequestId}
                 aria-label={messages.errors.generic.copyRequestIdAria}
-                className="text-xs px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/40"
+                className="text-style-label px-2 py-1 rounded-md bg-bg border border-line text-text hover:bg-panel/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               >
                 {this.state.copied
                   ? messages.toast.copied
@@ -135,7 +137,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleRetry}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-primary text-bg text-style-label shadow-card hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               aria-label={messages.actions.tryAgain}
             >
               {messages.sync.retryCta}
@@ -143,7 +145,7 @@ export default class ModuleErrorBoundary extends Component<
             <button
               type="button"
               onClick={this.handleBack}
-              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/30"
+              className="flex-1 px-5 py-2.5 rounded-2xl bg-panel border border-line text-text text-style-label shadow-card hover:shadow-float transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             >
               {messages.errors.generic.backToModulePicker}
             </button>

@@ -5,7 +5,7 @@
 //
 // STATUS.md is the one human-facing page that answers, at a glance:
 //   - 🎯 що в фокусі зараз          (manual FOCUS block, preserved across regen)
-//   - 🟢 що вже зроблено            (from docs/04-governance/pr-ledger/index.json — shipped PRs)
+//   - 🟢 що вже зроблено            (from docs/governance/pr-ledger/index.json — shipped PRs)
 //   - 🔵 що в роботі                (open-work rollup: per-tracker counts + freshest)
 //   - ⏭️ що далі / заблоковано      (priority markers — reuse generate-today logic)
 //   - 🧱 який стек                   (links into the architecture deep-dives)
@@ -37,22 +37,46 @@ import { fileURLToPath } from "node:url";
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { pickPriorityItems } from "./generate-today.mjs";
 import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
+import { prBaseForEntry } from "./repo-identity.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
 const OUTPUT_PATH = resolve(REPO_ROOT, "docs/STATUS.md");
+const REPO_MAP_PATH = resolve(
+  REPO_ROOT,
+  "docs/governance/governance/repo-map.auto.json",
+);
 const PR_LEDGER_PATH = resolve(
   REPO_ROOT,
-  "docs/04-governance/pr-ledger/index.json",
+  "docs/governance/pr-ledger/index.json",
 );
 
-const REPO_SLUG = "Skords-01/Sergeant";
+// Слуг репо НЕ зашивається тут. Леджер тримає записи кількох репозиторіїв
+// (репо переїжджало чотири рази), тож база береться з поля `repo` запису, а
+// фолбек для записів без поля — `legacyPrSlug` з реєстру
+// `docs/governance/governance/repo-identity.json`.
+//
+// Історія, заради якої це винесено. Спершу тут стояв ОДИН зашитий слуг
+// старого репо, тож кожне посилання на PR поточного репо в `STATUS.md` вело
+// на неіснуючу сторінку — сімнадцять мертвих лінків; знайдено рев'ю на
+// PR #1137 (полагодив базу в `update-pr-backlinks.mjs` і не помітив, що
+// генераторів два). 2026-09-17 третій переїзд показав, що зашитий
+// «поточний» слуг застаріває разом із репо. 2026-09-19 четвертий переїзд
+// показав головне: копій величини було ТРИ, вони розійшлись, і 93 посилання
+// стали мертвими — `--strict-external` падав на кожному PR. Тепер копія
+// одна, і `pnpm lint:repo-slug` звіряє її з фактичним `origin`.
 
 const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
 
 const TODAY = new Date().toISOString().slice(0, 10);
+// `STATUS.md` is regenerated on demand, but set Next review a week out so the
+// freshness dashboard does not flag it as "Overdue (1d)" the morning after
+// each run (Next review === Last touched would expire same-day).
+const NEXT_REVIEW = new Date(Date.now() + 7 * 86_400_000)
+  .toISOString()
+  .slice(0, 10);
 
 // How many shipped PRs / in-flight items to surface. Past ~10 the page stops
 // being a glance and becomes a report — that is what open-work.md is for.
@@ -77,17 +101,29 @@ const DEFAULT_FOCUS = [
  */
 export function extractFocus(existing) {
   if (!existing) return DEFAULT_FOCUS;
-  const i = existing.indexOf(FOCUS_START);
-  const j = existing.indexOf(FOCUS_END);
-  if (i === -1 || j === -1 || j < i) return DEFAULT_FOCUS;
-  const inner = existing.slice(i + FOCUS_START.length, j).trim();
+  // Маркери шукаються як ОКРЕМІ рядки. Простий `indexOf` знаходив перший
+  // збіг у службовому коментарі під шапкою («Редагуй лише між
+  // `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`»), брав текст між ними —
+  // «` / `» — і кожна регенерація тихо затирала ручний блок на «`/`».
+  // Так FOCUS стояв порожнім з першого коміту цієї історії (знайдено
+  // аудитом 2026-09-17).
+  const startRe = new RegExp(`^[ \\t]*${FOCUS_START}[ \\t]*$`, "m");
+  const endRe = new RegExp(`^[ \\t]*${FOCUS_END}[ \\t]*$`, "m");
+  const startMatch = startRe.exec(existing);
+  if (!startMatch) return DEFAULT_FOCUS;
+  const from = startMatch.index + startMatch[0].length;
+  endRe.lastIndex = 0;
+  const rest = existing.slice(from);
+  const endMatch = endRe.exec(rest);
+  if (!endMatch) return DEFAULT_FOCUS;
+  const inner = rest.slice(0, endMatch.index).trim();
   return inner.length > 0 ? inner : DEFAULT_FOCUS;
 }
 
 // ── Shipped ledger (🟢 done) ─────────────────────────────────────────────────
 
 /**
- * Read docs/04-governance/pr-ledger/index.json and return the most-recently-merged PRs,
+ * Read docs/governance/pr-ledger/index.json and return the most-recently-merged PRs,
  * newest first. Tolerates a missing/empty ledger (returns []).
  */
 export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
@@ -112,7 +148,9 @@ export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
 
 function fmtShipped(pr) {
   const date = String(pr.merged_at ?? "").slice(0, 10);
-  const url = `https://github.com/${REPO_SLUG}/pull/${pr.number}`;
+  // Слуг береться з поля `repo` запису — тим самим хелпером, що й у
+  // `update-pr-backlinks.mjs`. Немає поля — легасі-репо з реєстру.
+  const url = `${prBaseForEntry(pr)}/${pr.number}`;
   const title = pr.title ?? `PR #${pr.number}`;
   return `- [#${pr.number}](${url}) — ${title}${date ? ` _(${date})_` : ""}`;
 }
@@ -152,6 +190,47 @@ export function summariseInFlight(report) {
   return { perTracker, total, recent: all.slice(0, INFLIGHT_N) };
 }
 
+/**
+ * Українське узгодження для «N відкритий/відкритих документ(и/ів)».
+ * Форма «71 відкритих» неграматична: 71 вимагає однини, 72-74 —
+ * «відкриті документи», решта — родового множини.
+ */
+/**
+ * Скільки застосунків і пакетів у монорепо — рахуємо з тієї самої похідної
+ * карти, яку стереже `docs:check-repo-map`. Раніше число було вписане в
+ * рядок і розходилося з фактом при кожному новому воркспейсі
+ * (`@sergeant/tabular-import` зробив «12 пакетів» неправдою).
+ *
+ * `categoryFor` у `generate-repo-map.mjs` знає ТРИ категорії: `app`,
+ * `package` і `tool` (для `tools/*`). Сьогодні воркспейсів у `tools/` немає,
+ * тож «усе, що не app» і «саме package» дають однакове число — але щойно
+ * такий воркспейс зʼявиться, перший варіант тихо назве його пакетом.
+ * Рахуємо кожну категорію окремо; `tool` дописується в рядок лише коли він
+ * ненульовий, щоб у звичайному стані фраза не змінилась.
+ */
+function workspaceCounts() {
+  try {
+    const map = JSON.parse(readFileSync(REPO_MAP_PATH, "utf8"));
+    const list = Array.isArray(map.workspaces) ? map.workspaces : [];
+    return {
+      apps: list.filter((w) => w.category === "app").length,
+      packages: list.filter((w) => w.category === "package").length,
+      tools: list.filter((w) => w.category === "tool").length,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function pluralOpen(n) {
+  const abs = Math.abs(n) % 100;
+  const last = abs % 10;
+  if (abs > 10 && abs < 20) return "відкритих документів";
+  if (last === 1) return "відкритий документ";
+  if (last >= 2 && last <= 4) return "відкриті документи";
+  return "відкритих документів";
+}
+
 function fmtInFlight(item) {
   // First sentence of the status, trimmed — enough to know what's happening
   // without the full open-work prose.
@@ -162,6 +241,14 @@ function fmtInFlight(item) {
   return `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} — ${status} _(${item.tracker.title})_`;
 }
 
+export function formatPriorityTag(item) {
+  if (item.priorityKind === "agent-ready") return "agent-ready";
+  if (item.priorityKind === "blocked") {
+    return `Phase ${item.priorityPhase} blocked 🚧`;
+  }
+  return `Phase ${item.priorityPhase} — ${item.priorityKind}`;
+}
+
 // ── Markdown rendering ───────────────────────────────────────────────────────
 
 function render({ focus, shipped, inflight, priority }) {
@@ -169,7 +256,7 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("# Sergeant — Панель керування");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${TODAY} by docs:gen-status. **Next review:** ${TODAY}.`,
+    `> **Last touched:** ${TODAY} by docs:gen-status. **Next review:** ${NEXT_REVIEW}.`,
   );
   lines.push(`> **Status:** Reference`);
   lines.push("");
@@ -197,11 +284,11 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
   if (shipped.length === 0) {
     lines.push(
-      "_pr-ledger порожній. Записи з'являються автоматично, коли merged-PR торкається canonical-доку (ADR / ініціатива / playbook / hard-rule) — див. [`pr-ledger/`](./04-governance/pr-ledger/README.md)._",
+      "_pr-ledger порожній. Записи з'являються автоматично, коли merged-PR торкається canonical-доку (ADR / ініціатива / playbook / hard-rule) — див. [`pr-ledger/`](./governance/pr-ledger/README.md)._",
     );
   } else {
     lines.push(
-      `Останні ${shipped.length} PR, що торкнулися canonical-доків. Повна історія → [\`pr-ledger/index.json\`](./04-governance/pr-ledger/index.json).`,
+      `Останні ${shipped.length} PR, що торкнулися canonical-доків. Повна історія → [\`pr-ledger/index.json\`](./governance/pr-ledger/index.json).`,
     );
     lines.push("");
     for (const pr of shipped) lines.push(fmtShipped(pr));
@@ -209,7 +296,9 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
 
   // ── 🔵 Doing ──────────────────────────────────────────────────────────────
-  lines.push(`## 🔵 В роботі — ${inflight.total} відкритих`);
+  lines.push(
+    `## 🔵 В роботі — ${inflight.total} ${pluralOpen(inflight.total)}`,
+  );
   lines.push("");
   lines.push("| Трекер | Відкрито |");
   lines.push("| --- | --- |");
@@ -231,18 +320,15 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
   if (priority.length === 0) {
     lines.push(
-      "_Жодного `Phase X next` / `Stage X blocked` маркера. Деталі по фазах — у самих трекерах._",
+      "_Жодного `Agent-ready: yes` або `Phase X next` / `Stage X blocked` маркера. Деталі — у самих трекерах._",
     );
   } else {
     lines.push(
-      "Items із явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.",
+      "Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.",
     );
     lines.push("");
     for (const item of priority) {
-      const tag =
-        item.priorityKind === "blocked"
-          ? `Phase ${item.priorityPhase} blocked 🚧`
-          : `Phase ${item.priorityPhase} — ${item.priorityKind}`;
+      const tag = formatPriorityTag(item);
       lines.push(
         `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} → **${tag}** _(${item.tracker.title})_`,
       );
@@ -253,18 +339,23 @@ function render({ focus, shipped, inflight, priority }) {
   // ── 🧱 Stack ──────────────────────────────────────────────────────────────
   lines.push("## 🧱 Стек");
   lines.push("");
-  lines.push(
-    "pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 4 застосунки + `tools/openclaw` + 12 пакетів. Канонічні джерела:",
-  );
+  const counts = workspaceCounts();
+  const workspacesPart = counts
+    ? `${counts.apps} застосунків + ${counts.packages} пакетів${
+        counts.tools > 0 ? ` + ${counts.tools} інструментів` : ""
+      }. `
+    : "";
+  const stackLine = `pnpm 9 + Turborepo monorepo, Node 22, TypeScript. ${workspacesPart}Канонічні джерела:`;
+  lines.push(stackLine);
   lines.push("");
   lines.push(
-    "- [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
+    "- [`architecture/repo-map.md`](./engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).",
   );
   lines.push(
-    "- [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.",
+    "- [`architecture/service-catalog.md`](./engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.",
   );
   lines.push(
-    "- [`architecture/README.md`](./02-engineering/architecture/README.md) — repo map, C4-діаграми, domain invariants.",
+    "- [`architecture/README.md`](./engineering/architecture/README.md) — repo map, C4-діаграми, domain invariants.",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo overview, hard rules, performance budgets, scope enum.",
@@ -281,25 +372,25 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("| Домен | Що там | Коли читати |");
   lines.push("| --- | --- | --- |");
   lines.push(
-    "| **Старт** | [`agents/`](./00-start/agents/README.md), [`playbooks/`](./00-start/playbooks/README.md) | онбординг, routing, рецепти |",
+    "| **Старт** | [`agents/`](./start/agents/README.md), [`instructions/`](./start/instructions/README.md) | онбординг, routing, рецепти |",
   );
   lines.push(
-    "| **Продукт** | [`launch/`](./01-product/launch/README.md), [`marketing/`](./01-product/marketing/README.md), [`copy/`](./01-product/copy/README.md) | GTM, монетизація, FTUX |",
+    "| **Продукт** | [`modules/`](./product/modules/), [`marketing/`](./product/marketing/README.md), [`copy/`](./product/copy/README.md) | модульний канон, позиціонування, тексти |",
   );
   lines.push(
-    "| **Інженерія** | [`architecture/`](./02-engineering/architecture/README.md), [`api/`](./02-engineering/api/README.md), [`web/`](./02-engineering/web/README.md), [`mobile/`](./02-engineering/mobile/README.md), [`testing/`](./02-engineering/testing/README.md), [`integrations/`](./02-engineering/integrations/README.md) | як влаштовано і як білдити |",
+    "| **Інженерія** | [`architecture/`](./engineering/architecture/README.md), [`api/`](./engineering/api/README.md), [`web/`](./engineering/web/README.md), [`mobile/`](./engineering/mobile/README.md), [`testing/`](./engineering/testing/README.md), [`integrations/`](./engineering/integrations/README.md) | як влаштовано і як білдити |",
   );
   lines.push(
-    "| **Операції** | [`deploy/`](./03-operations/deploy/README.md), [`observability/`](./03-operations/observability/README.md), [`runbooks/`](./03-operations/runbooks/README.md), [`postmortems/`](./03-operations/postmortems/README.md), [`ops/`](./03-operations/ops/README.md) | деплой, алерти, інциденти |",
+    "| **Операції** | [`deploy/`](./operations/deploy/README.md), [`observability/`](./operations/observability/README.md), [`instructions/`](./start/instructions/README.md), [`postmortems/`](./operations/postmortems/README.md), [`ops/`](./operations/ops/README.md) | деплой, алерти, інциденти |",
   );
   lines.push(
-    "| **Governance** | [`governance/`](./04-governance/governance/README.md), [`security/`](./04-governance/security/README.md), [`adr/`](./04-governance/adr/README.md) | hard rules, рішення, безпека |",
+    "| **Governance** | [`governance/`](./governance/governance/README.md), [`security/`](./governance/security/README.md), [`adr/`](./governance/adr/README.md) | hard rules, рішення, безпека |",
   );
   lines.push(
-    "| **Дизайн** | [`design/`](./05-design/design/README.md), [`ui/`](./05-design/ui/README.md), [`i18n/`](./05-design/i18n/README.md) | дизайн-система, патерни |",
+    "| **Дизайн** | [`design/`](./design/design/README.md), [`ui/`](./design/ui/README.md), [`i18n/`](./design/i18n/README.md) | дизайн-система, патерни |",
   );
   lines.push(
-    "| **Робота** | [`initiatives/`](./90-work/initiatives/README.md), [`planning/`](./90-work/planning/README.md), [`audits/`](./90-work/audits/README.md), [`tech-debt/`](./90-work/tech-debt/README.md) | трекери: що оновлювати, коли шипиш |",
+    "| **Робота** | [`specs/`](./work/specs/README.md) | єдиний каталог активної роботи з жанровими підкаталогами |",
   );
   lines.push("");
 
@@ -311,7 +402,7 @@ function render({ focus, shipped, inflight, priority }) {
   );
   lines.push("- [`today.md`](./today.md) — денний бриф (топ-7 на сьогодні)");
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — freshness огляд",
+    "- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; огляд: `pnpm docs:freshness-dashboard`",
   );
   lines.push(
     "- [`../AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",

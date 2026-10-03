@@ -1,13 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractWorkoutTemplateSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractWorkoutTemplateSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 const KEY = STORAGE_KEYS.FIZRUK_TEMPLATES;
 
@@ -22,51 +25,62 @@ export interface WorkoutTemplate {
 }
 
 type TemplatesUpdater =
-  | WorkoutTemplate[]
-  | ((prev: WorkoutTemplate[]) => WorkoutTemplate[]);
+  WorkoutTemplate[] | ((prev: WorkoutTemplate[]) => WorkoutTemplate[]);
 
 function uid() {
-  return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `tpl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
+}
+
+function readInitialTemplates(): WorkoutTemplate[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt !== null) {
+    return cache.workoutTemplates as WorkoutTemplate[];
+  }
+  const parsed = safeReadLS(KEY, []);
+  return Array.isArray(parsed) ? (parsed as WorkoutTemplate[]) : [];
 }
 
 export function useWorkoutTemplates() {
-  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
-  // `loaded` lets consumers distinguish "first paint before the LS read"
-  // from "read complete, genuinely empty" — without it the Dashboard
-  // computes its hero/KPI state from an empty array and flashes the
-  // empty/zero UI for returning users before hydration.
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    const parsed = safeReadLS(KEY, []);
-    if (Array.isArray(parsed)) setTemplates(parsed as WorkoutTemplate[]);
-    setLoaded(true);
-  }, []);
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [templates, setTemplates] = useSqliteTickOverlay<WorkoutTemplate[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : (cache.workoutTemplates as WorkoutTemplate[]);
+    },
+    readInitialTemplates,
+  );
+  const loaded = true;
 
   // Функціональний updater через setTemplates, щоб уникнути stale closure:
   // колбеки в undo-toast можуть викликатись після того, як state оновився
   // (див. AGENTS.md §5.11).
-  const persist = useCallback((updater: TemplatesUpdater) => {
-    setTemplates((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      safeWriteLS(KEY, next);
-      // Stage 12 / PR #070f-dualwrite — mirror template writes into
-      // SQLite via the dual-write pipeline. Fire-and-forget; the
-      // trigger is a no-op when no dual-write context is registered.
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        workoutTemplates: extractWorkoutTemplateSnapshots(next),
-      };
-      try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-      } catch {
-        /* trigger is fire-and-forget — never propagate */
-      }
-      return next;
-    });
-  }, []);
+  const intended = useFizrukIntendedSlice<"workoutTemplates">(sqliteCacheTick);
+
+  const persist = useCallback(
+    (updater: TemplatesUpdater) => {
+      setTemplates((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        // Teardown Phase 3 — SQLite-only write via the dual-write pipeline;
+        // the LS mirror was removed. Fire-and-forget; the trigger is a no-op
+        // when no dual-write context is registered.
+        const transition = fizrukDualWriteTransition(
+          "workoutTemplates",
+          intended,
+          extractWorkoutTemplateSnapshots(next),
+        );
+        try {
+          triggerFizrukDualWrite(transition.prev, transition.next);
+        } catch {
+          /* trigger is fire-and-forget — never propagate */
+        }
+        return next;
+      });
+    },
+    [intended, setTemplates],
+  );
 
   const addTemplate = useCallback(
     (
@@ -82,6 +96,7 @@ export function useWorkoutTemplates() {
         name: n,
         exerciseIds: ids,
         groups: Array.isArray(groups) ? groups : [],
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored updatedAt timestamp, not a Kyiv day-boundary calc
         updatedAt: new Date().toISOString(),
       };
       persist((prev) => [t, ...prev]);
@@ -95,7 +110,8 @@ export function useWorkoutTemplates() {
       persist((prev) =>
         prev.map((t) =>
           t.id === id
-            ? { ...t, ...patch, updatedAt: new Date().toISOString() }
+            ? // eslint-disable-next-line no-restricted-syntax -- UTC-anchored updatedAt timestamp
+              { ...t, ...patch, updatedAt: new Date().toISOString() }
             : t,
         ),
       );
@@ -131,7 +147,10 @@ export function useWorkoutTemplates() {
     (id: string) => {
       persist((prev) =>
         prev.map((t) =>
-          t.id === id ? { ...t, lastUsedAt: new Date().toISOString() } : t,
+          t.id === id
+            ? // eslint-disable-next-line no-restricted-syntax -- UTC-anchored lastUsedAt timestamp
+              { ...t, lastUsedAt: new Date().toISOString() }
+            : t,
         ),
       );
     },

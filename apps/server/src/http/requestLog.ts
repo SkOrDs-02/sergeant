@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { logger } from "../obs/logger.js";
 import { als } from "../obs/requestContext.js";
@@ -17,6 +18,18 @@ import { elapsedMs } from "../lib/timing.js";
  * `path` = route pattern (`/api/nutrition/food/:id`), не сирий URL — інакше
  * cardinality метрик вибухне.
  */
+/**
+ * IP — PII class C, а access-log осідає в Loki/stdout із ширшим доступом, ніж
+ * Sentry. Пишемо ту саму форму, що й `userIdHash` (`lib/userIdHash.ts`):
+ * 16-hex префікс `sha256` — вистачає, щоб згрупувати запити з однієї адреси,
+ * але не для re-identification без сирого IP. Сирий IP лишається тільки на
+ * security-event-шляху, де він і потрібен для блок-рішень.
+ */
+function hashIp(ip: string | undefined): string | undefined {
+  if (!ip) return undefined;
+  return createHash("sha256").update(ip).digest("hex").slice(0, 16);
+}
+
 export function requestLogMiddleware(
   req: Request,
   res: Response,
@@ -57,7 +70,7 @@ export function requestLogMiddleware(
       status,
       ms: Math.round(ms),
       bytesOut,
-      ip: req.ip,
+      ipHash: hashIp(req.ip),
       ua: req.get("user-agent") || undefined,
     });
 

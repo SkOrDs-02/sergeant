@@ -5,6 +5,14 @@ import {
 } from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
 import type { RequestOptions } from "../types";
+import {
+  createFinykReceiptsEndpoints,
+  type FinykReceiptsEndpoints,
+} from "./finykReceipts";
+import {
+  createFinykImportEndpoints,
+  type FinykImportEndpoints,
+} from "./finykImport";
 
 export const ManualExpenseCreateBodySchema = ManualExpenseCreateSchema;
 export const ManualExpenseCreateResponseBodySchema =
@@ -17,7 +25,19 @@ export type ManualExpenseCreateResponse = z.infer<
   typeof ManualExpenseCreateResponseBodySchema
 >;
 
-export interface FinykEndpoints {
+/**
+ * All `/api/finyk/*` operations under one flat namespace
+ * (`apiClient.finyk.*`) — matches the `mono`/`push` convention of one
+ * endpoints-object per URL-prefix domain, even though the underlying
+ * request bodies span several sub-resources. The receipt-scan (`Finyk
+ * Receipts*`) and bulk-import (`FinykImport*`) methods are implemented in
+ * `./finykReceipts` / `./finykImport` (mirroring the `@sergeant/shared`
+ * schema-file split into `receipts.ts` / `import.ts`) and merged in below
+ * — splitting purely for file-size/readability, not for a nested
+ * `finyk.receipts.xxx()` consumer API.
+ */
+export interface FinykEndpoints
+  extends FinykReceiptsEndpoints, FinykImportEndpoints {
   /**
    * `POST /api/v1/finyk/manual-expenses` — записати ручну (не-Mono) витрату.
    * `amount` — копійки (Hard Rule #1); сервер скоупить запис по сесії
@@ -39,5 +59,7 @@ export function createFinykEndpoints(http: HttpClient): FinykEndpoints {
       });
       return ManualExpenseCreateResponseBodySchema.parse(raw);
     },
+    ...createFinykReceiptsEndpoints(http),
+    ...createFinykImportEndpoints(http),
   };
 }

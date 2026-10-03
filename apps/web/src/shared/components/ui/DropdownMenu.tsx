@@ -26,6 +26,7 @@ import {
   useEffect,
   useId,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -38,16 +39,17 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import {
   DropdownMenuEntryView,
   type DropdownMenuEntryViewProps,
 } from "./DropdownMenu.entry";
+import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
+
+const DROPDOWN_PANEL_OFFSET = 6;
 
 export type DropdownMenuPlacement =
-  | "bottom-start"
-  | "bottom-end"
-  | "top-start"
-  | "top-end";
+  "bottom-start" | "bottom-end" | "top-start" | "top-end";
 
 /** A clickable row inside the menu. */
 export interface DropdownMenuItem {
@@ -107,6 +109,7 @@ interface TriggerInjectedProps {
   "aria-haspopup"?: "menu" | true | undefined;
   "aria-expanded"?: boolean | undefined;
   "aria-controls"?: string | undefined;
+  "data-dropdown-menu-trigger"?: string | undefined;
 }
 
 export interface DropdownMenuProps {
@@ -186,7 +189,8 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
     const isControlled = controlledOpen !== undefined;
     const open = isControlled ? controlledOpen : internalOpen;
 
-    const triggerRef = useRef<HTMLElement>(null);
+    const triggerRef = useRef<HTMLElement | null>(null);
+    const externalRefBox = useRef<Ref<HTMLElement> | undefined>(undefined);
     const menuId = useId();
 
     const setOpen = useCallback(
@@ -215,6 +219,33 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
       [setOpen],
     );
 
+    useEffect(() => {
+      if (!isValidElement(trigger)) return;
+      externalRefBox.current = (trigger.props as TriggerInjectedProps).ref;
+    }, [trigger]);
+
+    useLayoutEffect(() => {
+      if (!isValidElement(trigger)) return;
+      const el = document.querySelector(
+        `[data-dropdown-menu-trigger="${CSS.escape(menuId)}"]`,
+      ) as HTMLElement | null;
+      triggerRef.current = el;
+      const externalRef = externalRefBox.current;
+      if (typeof externalRef === "function") {
+        externalRef(el);
+      } else if (externalRef != null && typeof externalRef === "object") {
+        const mutableRef = externalRef as { current: HTMLElement | null };
+        mutableRef.current = el;
+      }
+      return () => {
+        if (typeof externalRef === "function") {
+          externalRef(null);
+        } else if (externalRef != null && typeof externalRef === "object") {
+          (externalRef as { current: HTMLElement | null }).current = null;
+        }
+      };
+    }, [menuId, trigger]);
+
     if (!isValidElement(trigger)) {
       // Surface the mistake at runtime rather than silently swallowing
       // it — DropdownMenu's a11y contract depends on cloning the trigger.
@@ -225,7 +256,7 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
 
     const existing = trigger.props as TriggerInjectedProps;
     const triggerEl = cloneElement(trigger, {
-      ref: composeRefs(existing.ref, triggerRef),
+      "data-dropdown-menu-trigger": menuId,
       onClick: (event: ReactMouseEvent<HTMLElement>) => {
         existing.onClick?.(event);
         setOpen(!open);
@@ -264,21 +295,6 @@ export const DropdownMenu = forwardRef<DropdownMenuHandle, DropdownMenuProps>(
   },
 );
 
-/** Compose an external (possibly-callback or null) ref with our internal one.
- *  Mirrors the pattern in react-aria — keeps cloneElement transparent. */
-function composeRefs<T>(
-  external: Ref<T> | undefined,
-  internal: { current: T | null },
-): (node: T | null) => void {
-  return (node) => {
-    internal.current = node;
-    if (typeof external === "function") external(node);
-    else if (external && typeof external === "object") {
-      (external as { current: T | null }).current = node;
-    }
-  };
-}
-
 interface PanelProps {
   anchorRef: React.RefObject<HTMLElement | null>;
   id: string;
@@ -314,47 +330,27 @@ function DropdownMenuPanel({
     lastAt: 0,
   });
 
-  // Position relative to the trigger; recompute on resize / scroll.
-  const [position, setPosition] = useState<CSSProperties>({
-    top: 0,
-    left: 0,
-    visibility: "hidden",
+  // Position via shared floating helper (same geometry as Popover /
+  // Tooltip). Panel only mounts while the menu is open → `open: true`.
+  const coords = useFloatingPanelPosition({
+    open: true,
+    triggerRef: anchorRef,
+    panelRef,
+    placement,
+    offset: DROPDOWN_PANEL_OFFSET,
+    contentKey: width,
   });
 
-  useEffect(() => {
-    const update = () => {
-      const a = anchorRef.current;
-      const p = panelRef.current;
-      if (!a || !p) return;
-      const rect = a.getBoundingClientRect();
-      const panelW = p.offsetWidth || 220;
-      const panelH = p.offsetHeight || 0;
-      let top = placement.startsWith("bottom")
-        ? rect.bottom + 6
-        : rect.top - panelH - 6;
-      let left = placement.endsWith("start") ? rect.left : rect.right - panelW;
-      const margin = 8;
-      if (left < margin) left = margin;
-      if (left + panelW > window.innerWidth - margin) {
-        left = Math.max(margin, window.innerWidth - panelW - margin);
-      }
-      if (top < margin) top = margin;
-      if (top + panelH > window.innerHeight - margin && panelH > 0) {
-        top = Math.max(margin, window.innerHeight - panelH - margin);
-      }
-      const styles: CSSProperties = { top, left, visibility: "visible" };
-      if (width === "trigger") styles.width = rect.width;
-      else if (typeof width === "number") styles.width = width;
-      setPosition(styles);
-    };
-    update();
-    window.addEventListener("resize", update);
-    window.addEventListener("scroll", update, true);
-    return () => {
-      window.removeEventListener("resize", update);
-      window.removeEventListener("scroll", update, true);
-    };
-  }, [anchorRef, placement, width]);
+  const position: CSSProperties = {
+    top: coords?.top ?? 0,
+    left: coords?.left ?? 0,
+    visibility: coords ? "visible" : "hidden",
+    ...(width === "trigger" && coords
+      ? { width: coords.triggerWidth }
+      : typeof width === "number"
+        ? { width }
+        : null),
+  };
 
   // Focus the currently active menu item.
   useEffect(() => {
@@ -366,18 +362,9 @@ function DropdownMenuPanel({
     target?.focus({ preventScroll: false });
   }, [focusedIndex, openSubmenuId]);
 
-  // Outside click closes.
-  useEffect(() => {
-    const handler = (event: MouseEvent) => {
-      const t = event.target as Node | null;
-      if (!t) return;
-      if (panelRef.current?.contains(t)) return;
-      if (anchorRef.current?.contains(t)) return;
-      onClose(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [anchorRef, onClose]);
+  // Outside click closes. `enabled` не потрібен: панель монтується лише
+  // коли меню відкрите. onClose(false) — без повернення фокуса на тригер.
+  useOutsideClick([panelRef, anchorRef], () => onClose(false));
 
   const activateItem = useCallback(
     (item: DropdownMenuItem) => {

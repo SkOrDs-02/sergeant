@@ -32,7 +32,14 @@
  * layout.
  */
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { AccessibilityInfo, View, type LayoutChangeEvent } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -154,7 +161,7 @@ interface DraggableHabitRowProps {
   onDragStart: (index: number) => void;
   onDragEnd: (index: number, translationY: number) => void;
   onLayoutHeight: (index: number, height: number) => void;
-  reduceMotionRef: React.MutableRefObject<boolean>;
+  reduceMotion: boolean;
   testID?: string;
 }
 
@@ -171,11 +178,16 @@ const DraggableHabitRow = memo(function DraggableHabitRow({
   onDragStart,
   onDragEnd,
   onLayoutHeight,
-  reduceMotionRef,
+  reduceMotion,
   testID,
 }: DraggableHabitRowProps) {
   const translationY = useSharedValue(0);
   const lifted = useSharedValue(0);
+  const reduceMotionSV = useSharedValue(reduceMotion ? 1 : 0);
+
+  useEffect(() => {
+    reduceMotionSV.value = reduceMotion ? 1 : 0;
+  }, [reduceMotion, reduceMotionSV]);
 
   const pan = Gesture.Pan()
     .activateAfterLongPress(LONG_PRESS_MS)
@@ -196,7 +208,7 @@ const DraggableHabitRow = memo(function DraggableHabitRow({
       // ever delivers an END with no translation payload.
       const finalTranslation =
         event.translationY !== 0 ? event.translationY : translationY.value;
-      const duration = reduceMotionRef.current ? 0 : SNAP_DURATION_MS;
+      const duration = reduceMotionSV.value ? 0 : SNAP_DURATION_MS;
       translationY.value = withTiming(0, { duration });
       lifted.value = withTiming(0, { duration });
       runOnJS(onDragEnd)(index, finalTranslation);
@@ -206,7 +218,7 @@ const DraggableHabitRow = memo(function DraggableHabitRow({
       // Safety net for cancellations (e.g. parent ScrollView stealing
       // the gesture) — ensure the visual state is always reset.
       if (translationY.value !== 0) {
-        const duration = reduceMotionRef.current ? 0 : SNAP_DURATION_MS;
+        const duration = reduceMotionSV.value ? 0 : SNAP_DURATION_MS;
         translationY.value = withTiming(0, { duration });
         lifted.value = withTiming(0, { duration });
       }
@@ -276,31 +288,33 @@ export function DraggableHabitList({
   // JS-thread mirror of the current order, kept in a ref so the pan
   // callbacks below don't close over a stale snapshot between renders.
   const orderRef = useRef<string[]>(habits.map((h) => h.id));
-  orderRef.current = habits.map((h) => h.id);
+  useEffect(() => {
+    orderRef.current = habits.map((h) => h.id);
+  }, [habits]);
 
   const heightsRef = useRef<number[]>([]);
-  if (heightsRef.current.length !== habits.length) {
-    heightsRef.current = habits.map(
-      (_, i) => heightsRef.current[i] ?? FALLBACK_ROW_HEIGHT,
+  const habitCount = habits.length;
+  useLayoutEffect(() => {
+    const prev = heightsRef.current;
+    if (prev.length === habitCount) return;
+    heightsRef.current = Array.from(
+      { length: habitCount },
+      (_, i) => prev[i] ?? FALLBACK_ROW_HEIGHT,
     );
-  }
+  }, [habitCount]);
 
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
-  const reduceMotionRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      if (!mounted) return;
-      reduceMotionRef.current = enabled;
-      setReduceMotion(enabled);
+      if (mounted) setReduceMotion(enabled);
     });
     const sub = AccessibilityInfo.addEventListener(
       "reduceMotionChanged",
       (enabled) => {
-        reduceMotionRef.current = enabled;
-        setReduceMotion(enabled);
+        if (mounted) setReduceMotion(enabled);
       },
     );
     return () => {
@@ -343,10 +357,7 @@ export function DraggableHabitList({
     heightsRef.current[index] = height;
   }, []);
 
-  // `reduceMotion` is read once on mount to feed `reduceMotionRef`;
-  // subscribing to it in state keeps the component re-rendering when
-  // the setting flips so the `LinearTransition` layout animation can
-  // be disabled (see `layoutTransition` below).
+  // `reduceMotion` drives both layout transitions and per-row worklet durations.
   const layoutTransition = reduceMotion
     ? LinearTransition.duration(0)
     : LinearTransition.duration(SNAP_DURATION_MS);
@@ -374,7 +385,7 @@ export function DraggableHabitList({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onLayoutHeight={handleLayoutHeight}
-            reduceMotionRef={reduceMotionRef}
+            reduceMotion={reduceMotion}
             testID={rowTestID}
           />
         );

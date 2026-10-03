@@ -38,6 +38,7 @@ import {
   getMonthlySummary,
   isBudgetAlert,
   filterStatTransactions,
+  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain";
 
 import { FinykNavGrid } from "../../components/FinykNavGrid";
@@ -53,11 +54,7 @@ import { useFinykOverviewData } from "./useFinykOverviewData";
 import type { FinykOverviewData } from "./types";
 
 export type OverviewNavRoute =
-  | "transactions"
-  | "budgets"
-  | "subscriptions"
-  | "analytics"
-  | "assets";
+  "transactions" | "budgets" | "subscriptions" | "analytics" | "assets";
 
 export interface OverviewProps {
   /**
@@ -169,14 +166,21 @@ export function Overview({
 
   const budgetAlerts = useMemo(
     () =>
+      // Комбо-ліміт: факт — сума по всіх категоріях набору (транзакція
+      // резолвиться в одну категорію, подвійного рахунку немає).
       limitBudgets.filter((b) =>
         isBudgetAlert(
-          calcCategorySpent(
-            statTx,
-            b.categoryId,
-            txCategories,
-            txSplits,
-            customCategories,
+          limitBudgetCategoryIds(b).reduce(
+            (sum, id) =>
+              sum +
+              calcCategorySpent(
+                statTx,
+                id,
+                txCategories,
+                txSplits,
+                customCategories,
+              ),
+            0,
           ),
           b.limit,
         ),
@@ -248,7 +252,7 @@ export function Overview({
       ? "bg-rose-500"
       : spendPct > 50
         ? "bg-amber-500"
-        : "bg-emerald-500";
+        : "bg-teal-700";
   const showMonthForecast = showBalance && daysPassed > 0 && projectedSpend > 0;
   const forecastTrendPct = showMonthForecast
     ? Math.min(100, Math.round((spent / projectedSpend) * 100))
@@ -258,7 +262,7 @@ export function Overview({
       ? "bg-rose-500"
       : forecastTrendPct > 50
         ? "bg-amber-500"
-        : "bg-emerald-500";
+        : "bg-teal-700";
 
   const spendPlanRatio = expenseTarget > 0 ? spent / expenseTarget : 0;
   const hasExpensePlan = expenseTarget > 0;
@@ -313,7 +317,7 @@ export function Overview({
       />
 
       <Text className="text-xs text-fg-muted px-1 -mt-1">
-        Огляд, категорії та бюджети на цій сторінці — у гривні (UAH). Інші
+        Огляд, категорії та бюджети на цій сторінці – у гривні (UAH). Інші
         валюти рахунків у загальному балансі не конвертуються автоматично.
       </Text>
 

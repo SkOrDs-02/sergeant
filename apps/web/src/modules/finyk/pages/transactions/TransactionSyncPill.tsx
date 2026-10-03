@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
+import { useRelativeTime } from "@shared/hooks/useRelativeTime";
 
 export interface TransactionSyncPillProps {
   syncState:
@@ -28,6 +29,10 @@ export function TransactionSyncPill({
   syncState,
   lastUpdated,
 }: TransactionSyncPillProps) {
+  // Live relative label — re-renders on a ~30s tick so it never freezes at
+  // an absolute "21:57" (mobile-audit A6). Called before the early return to
+  // keep the hook order stable.
+  const lastUpdatedLabel = useRelativeTime(lastUpdated ?? null);
   const showSyncRow = syncState?.status !== "idle" || lastUpdated;
   if (!showSyncRow) return null;
 
@@ -38,9 +43,10 @@ export function TransactionSyncPill({
       ? "text-danger-strong dark:text-danger border-danger/30 bg-danger/10"
       : syncState?.status === "partial"
         ? "text-warning-strong dark:text-warning border-warning/30 bg-warning/10"
-        : syncState?.status === "loading"
-          ? "text-subtle border-line/60 bg-panelHi/60"
-          : "text-subtle border-line/60 bg-panelHi/60";
+        : // `loading` і решта станів мали однаковий тон (різнилась лише крапка
+          // нижче), тому гілка одна. Суцільна заливка й межа: напівпрозора
+          // `/60` змішувалась із тлом під пілюлею (хвиля 5 аудиту контрасту).
+          "text-subtle border-line bg-panelHi";
   const dot =
     syncState?.status === "error"
       ? "bg-danger"
@@ -57,7 +63,7 @@ export function TransactionSyncPill({
         : syncState?.status === "partial"
           ? "частково"
           : syncState?.status === "error"
-            ? "помилка"
+            ? "не синхронізовано"
             : "";
   const sourceLabel =
     syncState?.source === "network"
@@ -65,13 +71,6 @@ export function TransactionSyncPill({
       : syncState?.source === "cache"
         ? "кеш"
         : "нема";
-  const lastUpdatedLabel = lastUpdated
-    ? lastUpdated.toLocaleTimeString("uk-UA", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : null;
-
   return (
     <div className="flex items-center gap-2 flex-wrap text-style-caption">
       {syncState?.status !== "idle" && statusLabel && (

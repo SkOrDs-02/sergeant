@@ -26,10 +26,11 @@
  *      bleeds off-screen on narrow viewports / orientation flips.
  *
  * This is intentionally tiny — heavy floating-ui or radix would add
- * ~12 kB gzip (per `@sergeant/web`'s `size-limit` 820 kB JS budget,
- * that's a 1.5 % chunk for two primitives). The collision-detection
- * we get for free from `clampToViewport` is enough for the in-app
- * use-cases (form-in-popover, info-card, menu, hover-tooltip).
+ * ~12 kB gzip (per `@sergeant/web`'s `size-limit` budget). The
+ * collision-detection we get for free from `clampToViewport` is enough
+ * for the in-app use-cases (form-in-popover, info-card, menu,
+ * hover-tooltip). React lifecycle (measure on open + scroll/resize)
+ * lives in `useFloatingPanelPosition.ts` — keep geometry pure here.
  */
 
 export type FloatingPlacement =
@@ -101,9 +102,20 @@ export function computeFloatingPosition(
     height: typeof window !== "undefined" ? window.innerHeight : 0,
   },
 ): FloatingPositionResult {
-  const p = normalizePlacement(placement);
+  let p = normalizePlacement(placement);
   const { top: tT, left: tL, width: tW, height: tH } = trigger;
   const { width: pW, height: pH } = panel;
+
+  // Flip vertically when the requested side has no room but the other one
+  // does. Clamping alone pulled a bottom menu up over its own trigger and
+  // under the bottom nav (habit «⋯» menu near the end of the list).
+  const fitsBelow = tT + tH + offset + pH <= viewport.height - VIEWPORT_INSET;
+  const fitsAbove = tT - pH - offset >= VIEWPORT_INSET;
+  if (p.startsWith("bottom") && !fitsBelow && fitsAbove) {
+    p = p.replace("bottom", "top") as FloatingPlacement;
+  } else if (p.startsWith("top") && !fitsAbove && fitsBelow) {
+    p = p.replace("top", "bottom") as FloatingPlacement;
+  }
 
   let top = 0;
   let left = 0;

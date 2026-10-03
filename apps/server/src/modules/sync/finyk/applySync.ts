@@ -12,6 +12,7 @@ import {
   toJsonbParam,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+import { applyIfNewer, deleteIfNewer } from "../applySync-helpers.js";
 
 export async function applyFinykTombstone(
   client: PoolClient,
@@ -43,22 +44,19 @@ export async function applyFinykTombstone(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE ${table}
          SET deleted_at = $1, updated_at = $1
-       WHERE user_id = $2 AND ${extColumn} = $3`,
+       WHERE user_id = $2 AND ${extColumn} = $3 AND updated_at < $1`,
       [clientTs, userId, extId],
     );
-    return { status: "applied" };
   }
 
   const createdAt = parseOptionalDate(row["created_at"]);
@@ -78,10 +76,11 @@ export async function applyFinykTombstone(
       [userId, extId, createdAt ?? clientTs, clientTs, deletedAt ?? null],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE ${table}
          SET updated_at = $1, deleted_at = $2
-       WHERE user_id = $3 AND ${extColumn} = $4`,
+       WHERE user_id = $3 AND ${extColumn} = $4 AND updated_at < $1`,
       [clientTs, deletedAt ?? null, userId, extId],
     );
   }
@@ -152,22 +151,19 @@ export async function applyFinykPerRowBlob(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE ${table}
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const dataJson = toJsonbParam(row["data_json"]);
@@ -198,112 +194,17 @@ export async function applyFinykPerRowBlob(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE ${table}
          SET data_json  = $1::jsonb,
              updated_at = $2,
              deleted_at = $3
-       WHERE id = $4 AND user_id = $5`,
+       WHERE id = $4 AND user_id = $5 AND updated_at < $2`,
       [dataJson, clientTs, deletedAt ?? null, id, userId],
     );
   }
   return { status: "applied" };
-}
-
-export async function applyFinykBudgets(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_budgets");
-}
-
-export async function applyFinykSubscriptions(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(
-    client,
-    op,
-    userId,
-    clientTs,
-    "finyk_subscriptions",
-  );
-}
-
-export async function applyFinykAssets(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_assets");
-}
-
-export async function applyFinykDebts(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_debts");
-}
-
-export async function applyFinykReceivables(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(
-    client,
-    op,
-    userId,
-    clientTs,
-    "finyk_receivables",
-  );
-}
-
-export async function applyFinykCustomCategories(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(
-    client,
-    op,
-    userId,
-    clientTs,
-    "finyk_custom_categories",
-  );
-}
-
-export async function applyFinykManualExpenses(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(
-    client,
-    op,
-    userId,
-    clientTs,
-    "finyk_manual_expenses",
-  );
-}
-
-export async function applyFinykTxFilters(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerRowBlob(client, op, userId, clientTs, "finyk_tx_filters");
 }
 
 export async function applyFinykTxCategories(
@@ -336,12 +237,13 @@ export async function applyFinykTxCategories(
   }
 
   if (op.op === "delete") {
-    await client.query(
+    return deleteIfNewer(
+      client,
       `DELETE FROM finyk_tx_categories
-         WHERE user_id = $1 AND transaction_id = $2`,
-      [userId, transactionId],
+         WHERE user_id = $1 AND transaction_id = $2 AND updated_at < $3`,
+      [userId, transactionId, clientTs],
+      existing.rows.length > 0,
     );
-    return { status: "applied" };
   }
 
   const categoryId =
@@ -350,16 +252,17 @@ export async function applyFinykTxCategories(
     return { status: "rejected", reason: "missing_category_id" };
   }
 
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO finyk_tx_categories
        (user_id, transaction_id, category_id, created_at, updated_at)
      VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT (user_id, transaction_id) DO UPDATE
        SET category_id = EXCLUDED.category_id,
-           updated_at  = EXCLUDED.updated_at`,
+           updated_at  = EXCLUDED.updated_at
+       WHERE finyk_tx_categories.updated_at < EXCLUDED.updated_at`,
     [userId, transactionId, categoryId, clientTs, clientTs],
   );
-  return { status: "applied" };
 }
 
 export async function applyFinykPerTxJsonbArray(
@@ -394,57 +297,27 @@ export async function applyFinykPerTxJsonbArray(
   }
 
   if (op.op === "delete") {
-    await client.query(
+    return deleteIfNewer(
+      client,
       `DELETE FROM ${table}
-         WHERE user_id = $1 AND transaction_id = $2`,
-      [userId, transactionId],
+         WHERE user_id = $1 AND transaction_id = $2 AND updated_at < $3`,
+      [userId, transactionId, clientTs],
+      existing.rows.length > 0,
     );
-    return { status: "applied" };
   }
 
   const jsonValue = toJsonbParam(row[jsonColumn]) ?? "[]";
 
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO ${table}
        (user_id, transaction_id, ${jsonColumn}, created_at, updated_at)
      VALUES ($1, $2, $3::jsonb, $4, $5)
      ON CONFLICT (user_id, transaction_id) DO UPDATE
        SET ${jsonColumn} = EXCLUDED.${jsonColumn},
-           updated_at    = EXCLUDED.updated_at`,
+           updated_at    = EXCLUDED.updated_at
+       WHERE ${table}.updated_at < EXCLUDED.updated_at`,
     [userId, transactionId, jsonValue, clientTs, clientTs],
-  );
-  return { status: "applied" };
-}
-
-export async function applyFinykTxSplits(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerTxJsonbArray(
-    client,
-    op,
-    userId,
-    clientTs,
-    "finyk_tx_splits",
-    "splits_json",
-  );
-}
-
-export async function applyFinykMonoDebtLinks(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  return applyFinykPerTxJsonbArray(
-    client,
-    op,
-    userId,
-    clientTs,
-    "finyk_mono_debt_links",
-    "debt_ids_json",
   );
 }
 
@@ -479,12 +352,13 @@ export async function applyFinykNetworthHistory(
   }
 
   if (op.op === "delete") {
-    await client.query(
+    return deleteIfNewer(
+      client,
       `DELETE FROM finyk_networth_history
-         WHERE user_id = $1 AND month = $2`,
-      [userId, month],
+         WHERE user_id = $1 AND month = $2 AND updated_at < $3`,
+      [userId, month, clientTs],
+      existing.rows.length > 0,
     );
-    return { status: "applied" };
   }
 
   const networth = parseOptionalNumber(row["networth"]);
@@ -493,17 +367,18 @@ export async function applyFinykNetworthHistory(
   }
   const snapshotJson = toJsonbParam(row["snapshot_json"]) ?? "{}";
 
-  await client.query(
+  return applyIfNewer(
+    client,
     `INSERT INTO finyk_networth_history
        (user_id, month, networth, snapshot_json, created_at, updated_at)
      VALUES ($1, $2, $3, $4::jsonb, $5, $6)
      ON CONFLICT (user_id, month) DO UPDATE
        SET networth      = EXCLUDED.networth,
            snapshot_json = EXCLUDED.snapshot_json,
-           updated_at    = EXCLUDED.updated_at`,
+           updated_at    = EXCLUDED.updated_at
+       WHERE finyk_networth_history.updated_at < EXCLUDED.updated_at`,
     [userId, month, networth ?? 0, snapshotJson, clientTs, clientTs],
   );
-  return { status: "applied" };
 }
 
 export async function applyFinykPrefs(
@@ -560,7 +435,8 @@ export async function applyFinykPrefs(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE finyk_prefs
          SET prefs_json           = $1::jsonb,
              monthly_plan_json    = $2::jsonb,
@@ -568,7 +444,7 @@ export async function applyFinykPrefs(
              excluded_stat_tx_ids = $4::jsonb,
              dismissed_recurring  = $5::jsonb,
              updated_at           = $6
-       WHERE user_id = $7`,
+       WHERE user_id = $7 AND updated_at < $6`,
       [
         prefsJson,
         monthlyPlanJson,

@@ -4,6 +4,72 @@
   },
   "interactions": [
     {
+      "description": "a DELETE /api/v1/finyk/import/batches/88 request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 owns import batch 88 (completed, 2 created rows)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "DELETE",
+        "path": "/api/v1/finyk/import/batches/88"
+      },
+      "response": {
+        "body": {
+          "batch": {
+            "createdAt": "2026-01-16T10:00:00.000Z",
+            "createdRowIds": [
+              "imp88:abc",
+              "imp88:def"
+            ],
+            "id": 88,
+            "rowsCreated": 2,
+            "rowsLinked": 0,
+            "rowsSkipped": 1,
+            "rowsTotal": 3,
+            "source": "bank_statement",
+            "status": "undone",
+            "updatedAt": "2026-01-16T10:05:00.000Z"
+          },
+          "tombstoned": 2
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a DELETE /api/v1/silpo/receipts/link/mono-tx-1 request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a silpo_tx_receipt_links row for mono-tx-1"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "DELETE",
+        "path": "/api/v1/silpo/receipts/link/mono-tx-1"
+      },
+      "response": {
+        "body": {
+          "ok": true,
+          "receiptId": "silpo-r-1"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/food-search?q=broccoli request (upstream timeout)",
       "providerStates": [
         {
@@ -132,13 +198,289 @@
             "brand": "Yagotynske",
             "carbs_100g": 4.8,
             "fat_100g": 2,
+            "imageUrl": "https://images.openfoodfacts.org/images/products/482/001/084/0443/front_uk.200.jpg",
             "kcal_100g": 52,
             "name": "Milk 2%",
+            "nutrients": {
+              "alcohol_100g": null,
+              "fiber_100g": 0,
+              "salt_100g": 0.1,
+              "saturatedFat_100g": 1.2,
+              "sugars_100g": 4.8
+            },
             "protein_100g": 3.4,
             "servingGrams": 250,
             "servingSize": "250 ml",
             "source": "off"
           }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/providers request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 resolves to country=UA"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/providers"
+      },
+      "response": {
+        "body": {
+          "providers": [
+            "liqpay",
+            "plata"
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (active pro)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active pro subscription via liqpay"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
+          "subscription": {
+            "active": true,
+            "cancelAtPeriodEnd": false,
+            "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
+            "id": 42,
+            "plan": "pro",
+            "provider": "liqpay",
+            "status": "active"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (cancel scheduled)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription with cancel_at_period_end"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": true,
+              "nutrition.weekPlan": true
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": null,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "pro",
+            "trialEndsAt": null
+          },
+          "subscription": {
+            "active": true,
+            "cancelAtPeriodEnd": true,
+            "currentPeriodEnd": "2026-06-20T00:00:00.000Z",
+            "id": 42,
+            "plan": "pro",
+            "provider": "liqpay",
+            "status": "active"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/billing/status request (no subscription)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 has never subscribed"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/billing/status"
+      },
+      "response": {
+        "body": {
+          "access": {
+            "features": {
+              "ai.actions": true,
+              "ai.photo": true,
+              "bank.monoSync": true,
+              "export.pdf": false,
+              "nutrition.weekPlan": false
+            },
+            "graceEndsAt": null,
+            "meters": {
+              "aiActions": {
+                "limit": 20,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 3
+              },
+              "aiPhoto": {
+                "limit": 3,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 1
+              },
+              "finykVision": {
+                "limit": 5,
+                "resetsAt": "2026-06-14T21:00:00.000Z",
+                "used": 0
+              }
+            },
+            "state": "free",
+            "trialEndsAt": null
+          },
+          "subscription": {
+            "active": false,
+            "cancelAtPeriodEnd": false,
+            "currentPeriodEnd": null,
+            "id": null,
+            "plan": null,
+            "provider": null,
+            "status": null
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/chat/usage request",
+      "providerStates": [
+        {
+          "name": "authenticated Free-plan user-pact-001 has sent 3 of 5 daily AI messages"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/chat/usage"
+      },
+      "response": {
+        "body": {
+          "limit": 5,
+          "plan": "free",
+          "remaining": 2
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/chat/usage request (Pro plan)",
+      "providerStates": [
+        {
+          "name": "authenticated Pro-plan user-pact-002 exists"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/chat/usage"
+      },
+      "response": {
+        "body": {
+          "limit": null,
+          "plan": "pro",
+          "remaining": null
         },
         "headers": {
           "Content-Type": "application/json",
@@ -199,6 +541,134 @@
       }
     },
     {
+      "description": "a GET /api/v1/finyk/import/batches/88 request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 owns import batch 88"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/finyk/import/batches/88"
+      },
+      "response": {
+        "body": {
+          "batch": {
+            "createdAt": "2026-01-16T10:00:00.000Z",
+            "createdRowIds": [
+              "imp88:abc",
+              "imp88:def"
+            ],
+            "id": 88,
+            "rowsCreated": 2,
+            "rowsLinked": 0,
+            "rowsSkipped": 1,
+            "rowsTotal": 3,
+            "source": "bank_statement",
+            "status": "completed",
+            "updatedAt": "2026-01-16T10:00:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/finyk/import/recent request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 has completed statement and screenshot imports"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/finyk/import/recent"
+      },
+      "response": {
+        "body": {
+          "sources": [
+            {
+              "recentAt": [
+                "2026-01-10T09:00:00.000Z"
+              ],
+              "source": "bank_screenshot"
+            },
+            {
+              "recentAt": [
+                "2026-01-16T10:00:00.000Z",
+                "2025-12-17T10:00:00.000Z"
+              ],
+              "source": "bank_statement"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/finyk/receipts/501 request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 owns receipt 501"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/finyk/receipts/501"
+      },
+      "response": {
+        "body": {
+          "receipt": {
+            "createdAt": "2026-01-15T12:35:00.000Z",
+            "fiscalNum": "4000123456",
+            "id": 501,
+            "items": [
+              {
+                "id": 9001,
+                "name": "Молоко",
+                "position": 1,
+                "priceKopiykas": 3200,
+                "qty": 1,
+                "receiptId": 501,
+                "sumKopiykas": 3200
+              }
+            ],
+            "link": {
+              "txKind": "mono",
+              "txRef": "mono-tx-777"
+            },
+            "purchasedAt": "2026-01-15T12:32:10.000Z",
+            "source": "dps",
+            "store": "Сільпо",
+            "storeTaxId": "30363252",
+            "totalKopiykas": 15000,
+            "updatedAt": "2026-01-15T12:35:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/me request",
       "providerStates": [
         {
@@ -222,6 +692,289 @@
             "image": null,
             "name": "Pact Consumer"
           }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (activeModules empty)",
+      "providerStates": [
+        {
+          "name": "user-pact-004 deliberately turned every module off"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": [],
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": null,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-08-05T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (activeModules set)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 keeps only nutrition and finyk on the hub"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": [
+            "nutrition",
+            "finyk"
+          ],
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": null,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-08-05T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (consented)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has opted into health-adjacent data processing (GDPR Art. 9)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": true,
+          "hubPrefs": null,
+          "pushDailyCap": 3,
+          "pushNotifications": true,
+          "sergeantNudges": false,
+          "updatedAt": "2026-08-01T12:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (hubPrefs empty)",
+      "providerStates": [
+        {
+          "name": "user-pact-011 has hub prefs on the account, all at defaults"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": {},
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (hubPrefs set)",
+      "providerStates": [
+        {
+          "name": "user-pact-010 turned calm mode on and hid the motivational line"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": {
+            "calmMode": true,
+            "showMotivational": false
+          },
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (legacy server, no activeModules field)",
+      "providerStates": [
+        {
+          "name": "user-pact-005 predates the active_modules column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "aiMemory": false,
+          "analytics": true,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (legacy server, no healthDataConsent field)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 predates the healthDataConsent column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "aiMemory": false,
+          "analytics": true,
+          "pushNotifications": false,
+          "sergeantNudges": true,
+          "updatedAt": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (pre-137 server, no hubPrefs)",
+      "providerStates": [
+        {
+          "name": "user-pact-012 predates the hub_prefs column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/profile request (new user, no row)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has no user_profile row yet"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/profile"
+      },
+      "response": {
+        "body": {
+          "profile": {},
+          "updatedAt": null
         },
         "headers": {
           "Content-Type": "application/json",
@@ -259,6 +1012,41 @@
             "monoAccountId": "acct-pact-001",
             "sendId": "abc123",
             "type": "black",
+            "userId": "user-pact-001"
+          }
+        ],
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/mono/jars request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 1 connected mono jar with balance 50000 and goal 200000 (in minor units)"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/mono/jars"
+      },
+      "response": {
+        "body": [
+          {
+            "balance": 50000,
+            "currencyCode": 980,
+            "description": "Мрія",
+            "goal": 200000,
+            "lastSeenAt": "2026-05-13T08:30:00.000Z",
+            "monoJarId": "jar-pact-001",
+            "sendId": "abc123",
+            "title": "На відпустку",
             "userId": "user-pact-001"
           }
         ],
@@ -380,6 +1168,462 @@
             }
           ],
           "nextCursor": "2026-05-11T09:14:00.000Z:tx-pact-0002"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/privat/status request (connected)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with an active PrivatBank connection"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/privat/status"
+      },
+      "response": {
+        "body": {
+          "connected": true,
+          "merchantId": "pact-merchant-001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/privat/status request (not connected)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-002 with no PrivatBank connection"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/privat/status"
+      },
+      "response": {
+        "body": {
+          "connected": false,
+          "merchantId": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/privat?path=/statements/balance/final request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with a valid PrivatBank connection; upstream balance/final returns 1 account"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/privat",
+        "query": {
+          "country": [
+            "UA"
+          ],
+          "path": [
+            "/statements/balance/final"
+          ],
+          "showRest": [
+            "true"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "balances": [
+            {
+              "acc": "UA213996220000026007233566001",
+              "balanceOut": "12345.67",
+              "balanceOutEq": "12345.67",
+              "currency": "980",
+              "nameACC": "Пласт. картка"
+            }
+          ],
+          "exist_next_page": false,
+          "status": "SUCCESS"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/cart request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 1 item in the Silpo cart"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/cart"
+      },
+      "response": {
+        "body": {
+          "cartUrl": "https://silpo.ua/cart/checkout/def456",
+          "items": [
+            {
+              "name": "Хліб житній",
+              "priceKop": 3500,
+              "quantity": 1,
+              "subtotalKop": 3500
+            }
+          ],
+          "totalKop": 3500
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/cart request (empty cart)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 has no Silpo cart yet"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/cart"
+      },
+      "response": {
+        "body": {
+          "cartUrl": null,
+          "items": [],
+          "totalKop": 0
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/cart request (totalKop null degrade)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a Silpo cart with a calculation schema drift"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/cart"
+      },
+      "response": {
+        "body": {
+          "cartUrl": null,
+          "items": [
+            {
+              "name": "Яйця С1 10шт",
+              "priceKop": 6900,
+              "quantity": 1,
+              "subtotalKop": 6900
+            }
+          ],
+          "totalKop": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/receipts request filtered by transactionId",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a receipt linked to tx-pact-0099"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/receipts",
+        "query": {
+          "limit": [
+            "1"
+          ],
+          "transactionId": [
+            "tx-pact-0099"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "data": [
+            {
+              "channel": "offline",
+              "paymentHint": "card",
+              "purchasedAt": "2026-08-16T18:20:00.000Z",
+              "receiptId": "rcpt-pact-0002",
+              "storeId": "store-042",
+              "totalKop": 45690,
+              "transactionId": "tx-pact-0099"
+            }
+          ],
+          "nextCursor": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/receipts request with limit=2",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 2 silpo_receipts rows"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/receipts",
+        "query": {
+          "limit": [
+            "2"
+          ]
+        }
+      },
+      "response": {
+        "body": {
+          "data": [
+            {
+              "channel": "offline",
+              "paymentHint": "card",
+              "purchasedAt": "2026-08-16T18:20:00.000Z",
+              "receiptId": "rcpt-pact-0002",
+              "storeId": "store-042",
+              "totalKop": 45690,
+              "transactionId": "tx-pact-0099"
+            },
+            {
+              "channel": "online",
+              "paymentHint": null,
+              "purchasedAt": "2026-08-15T09:05:00.000Z",
+              "receiptId": "rcpt-pact-0001",
+              "storeId": null,
+              "totalKop": 12000,
+              "transactionId": null
+            }
+          ],
+          "nextCursor": "2026-08-15T09:05:00.000Z:rcpt-pact-0001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/receipts/rcpt-pact-0001 request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with 2 items"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001"
+      },
+      "response": {
+        "body": {
+          "channel": "online",
+          "items": [
+            {
+              "barcode": "4820000000017",
+              "categorySlug": "dairy",
+              "id": 501,
+              "name": "Молоко 2.5%",
+              "priceKop": 4500,
+              "qty": 1,
+              "unit": "шт"
+            },
+            {
+              "barcode": null,
+              "categorySlug": null,
+              "id": 502,
+              "name": "Хліб житній",
+              "priceKop": 7500,
+              "qty": null,
+              "unit": null
+            }
+          ],
+          "paymentHint": null,
+          "purchasedAt": "2026-08-15T09:05:00.000Z",
+          "receiptId": "rcpt-pact-0001",
+          "storeId": null,
+          "totalKop": 12000,
+          "transactionId": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account with 5 receipts synced"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": "2026-08-24T10:00:00.000Z",
+          "lastErrorCode": null,
+          "lastFailedAt": null,
+          "lastSyncAt": "2026-08-17T09:15:00.000Z",
+          "receiptsCount": 5,
+          "status": "connected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (legacy body)",
+      "providerStates": [
+        {
+          "name": "user-pact-004 is served by a server without migration 138"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": null,
+          "lastSyncAt": "2026-08-31T09:15:00.000Z",
+          "receiptsCount": 3,
+          "status": "connected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (no connection)",
+      "providerStates": [
+        {
+          "name": "user-pact-002 has never connected Silpo"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": null,
+          "lastErrorCode": null,
+          "lastFailedAt": null,
+          "lastSyncAt": null,
+          "receiptsCount": 0,
+          "status": "disconnected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (sync broken)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a connected Silpo account whose sync fails"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": "2026-09-20T10:00:00.000Z",
+          "lastErrorCode": "SILPO_TOOL_ERROR",
+          "lastFailedAt": "2026-09-14T08:00:00.000Z",
+          "lastSyncAt": "2026-08-31T09:15:00.000Z",
+          "receiptsCount": 12,
+          "status": "connected"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -653,6 +1897,117 @@
       }
     },
     {
+      "description": "a POST /api/v1/billing/cancel request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/cancel"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/cancel request (nothing to cancel)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a manual grant and no provider subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/cancel"
+      },
+      "response": {
+        "body": {
+          "code": "NO_ACTIVE_SUBSCRIPTION",
+          "error": "No active subscription to cancel"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 409
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/checkout request (plan=pro, provider=liqpay)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 in UA with liqpay enabled; no existing subscription"
+        }
+      ],
+      "request": {
+        "body": {
+          "plan": "pro",
+          "provider": "liqpay"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/checkout"
+      },
+      "response": {
+        "body": {
+          "mode": "live",
+          "ok": true,
+          "sessionId": "cs_pact_liqpay_001",
+          "url": "https://www.liqpay.ua/checkout/cs_pact_liqpay_001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/billing/portal request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has an active liqpay subscription"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/billing/portal"
+      },
+      "response": {
+        "body": {
+          "ok": true,
+          "url": "https://sergeant.app/settings?billing=manage"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/chat request without tool-calls (non-streaming)",
       "providerStates": [
         {
@@ -687,6 +2042,748 @@
           "content-type": "application/json"
         },
         "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/commit request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; 3 rows submitted, 1 matches an existing mono transaction"
+        }
+      ],
+      "request": {
+        "body": {
+          "rows": [
+            {
+              "amountKopiykas": 84750,
+              "category": "food",
+              "date": "2026-01-15",
+              "description": "Сільпо",
+              "direction": "expense"
+            },
+            {
+              "amountKopiykas": 1500000,
+              "category": "salary",
+              "date": "2026-01-16",
+              "description": "Зарплата",
+              "direction": "income"
+            },
+            {
+              "amountKopiykas": 20000,
+              "category": "transport",
+              "date": "2026-01-16",
+              "description": "АЗС",
+              "direction": "expense"
+            }
+          ],
+          "source": "bank_statement"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/commit"
+      },
+      "response": {
+        "body": {
+          "batchId": 88,
+          "created": 2,
+          "linked": 0,
+          "rows": [
+            {
+              "id": "imp1:aaa",
+              "status": "mono_matched"
+            },
+            {
+              "id": "imp1:bbb",
+              "status": "created"
+            },
+            {
+              "id": "imp1:ccc",
+              "status": "created"
+            }
+          ],
+          "skipped": {
+            "duplicate": 0,
+            "monoMatched": 1
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/screenshot/analyze request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; vision provider recognises a monobank screenshot"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/screenshot/analyze"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "bank": "monobank",
+            "docType": "bank_screenshot",
+            "rows": [
+              {
+                "amountKopiykas": 15000,
+                "categoryHint": "food",
+                "confidence": 0.9,
+                "date": "2026-01-15",
+                "description": "Сільпо",
+                "direction": "expense",
+                "time": "14:32"
+              },
+              {
+                "amountKopiykas": 500000,
+                "confidence": 0.75,
+                "date": "2026-01-16",
+                "description": "Зарплата",
+                "direction": "income",
+                "time": null
+              },
+              {
+                "amountKopiykas": 35000,
+                "confidence": 0.85,
+                "date": "2026-01-16",
+                "description": "Часткове зняття банки «просто»",
+                "direction": "income",
+                "time": "18:05",
+                "transferLikely": true
+              },
+              {
+                "amountKopiykas": 8500,
+                "confidence": 0.8,
+                "date": "2026-01-17",
+                "description": "Кава",
+                "direction": "expense",
+                "duplicateLikely": true,
+                "time": "09:10"
+              }
+            ]
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/screenshot/analyze request (payload too large)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; uploaded image decodes to more than 5MB"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/screenshot/analyze"
+      },
+      "response": {
+        "body": {
+          "code": "TOO_LARGE",
+          "detail": "Decoded image is 6000000 bytes; max allowed 5242880"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 413
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/screenshot/analyze request (truncated model answer)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; vision answer hit the model token cap"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/screenshot/analyze"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "bank": "monobank",
+            "docType": "bank_screenshot",
+            "dropped": {
+              "failed": 0,
+              "nonUah": 2,
+              "unreadable": 1
+            },
+            "rows": [],
+            "truncated": true
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (mono autoprofile)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; CSV header matches the mono export format"
+        }
+      ],
+      "request": {
+        "body": {
+          "csv_text": "Дата i час операції,Деталі операції,МСС,Сума в валюті картки (UAH),Сума в валюті операції,Валюта операції,Курс обміну,Сума комісій (UAH),Сума кешбеку (UAH),Залишок після операції\n15.01.2026 14:32:10,Сільпо,5411,-847.50,-847.50,UAH,1,0.00,8.47,5000.00\n16.01.2026 10:00:00,Поповнення «просто»,4829,-5000.00,-5000.00,UAH,1,0.00,0.00,0.00\n17.01.2026 12:00:00,АТБ,5411,-120.00,-120.00,UAH,1,0.00,0.00,4880.00"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "needsMapping": false,
+          "profile": "mono",
+          "rows": [
+            {
+              "amountKopiykas": 84750,
+              "categoryHint": "food",
+              "date": "2026-01-15",
+              "description": "Сільпо",
+              "direction": "expense"
+            },
+            {
+              "amountKopiykas": 500000,
+              "date": "2026-01-16",
+              "description": "Поповнення «просто»",
+              "direction": "expense",
+              "transferLikely": true
+            },
+            {
+              "amountKopiykas": 12000,
+              "date": "2026-01-17",
+              "description": "АТБ",
+              "direction": "expense",
+              "duplicateLikely": true
+            }
+          ],
+          "skipped": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (raw XLSX file)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; uploaded XLSX matches the privat24 profile"
+        }
+      ],
+      "request": {
+        "body": {
+          "file_base64": "UEsDBBQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "file_name": "vypyska.xlsx"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "needsMapping": false,
+          "profile": "privat24",
+          "rows": [
+            {
+              "amountKopiykas": 12345,
+              "categoryHint": "food",
+              "date": "2026-08-16",
+              "description": "АТБ-Маркет",
+              "direction": "expense"
+            }
+          ],
+          "skipped": [
+            {
+              "line": 6,
+              "reason": "not_uah"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/import/statement/preview request (unrecognised format)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; CSV header matches no known bank profile"
+        }
+      ],
+      "request": {
+        "body": {
+          "csv_text": "Custom Date,Custom Amount,Custom Note\n2026-01-15,-100.00,Test"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/import/statement/preview"
+      },
+      "response": {
+        "body": {
+          "headers": [
+            "Custom Date",
+            "Custom Amount",
+            "Custom Note"
+          ],
+          "needsMapping": true,
+          "profile": null,
+          "rows": [],
+          "sampleRows": [
+            [
+              "2026-01-15",
+              "-100.00",
+              "Test"
+            ]
+          ],
+          "skipped": []
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/manual-expenses request (12000 kopiykas, food)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 within finyk write quota"
+        }
+      ],
+      "request": {
+        "body": {
+          "amount": 12000,
+          "category": "food",
+          "date": "2026-06-11",
+          "note": "кава"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/manual-expenses"
+      },
+      "response": {
+        "body": {
+          "expense": {
+            "amountKopiykas": 12000,
+            "category": "food",
+            "createdAt": "2026-06-11T10:00:00.000Z",
+            "date": "2026-06-11",
+            "id": "0b7e6c3a-7e0f-4b59-9b39-2f4f7f6f9d11",
+            "note": "кава",
+            "updatedAt": "2026-06-11T10:00:00.000Z"
+          },
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts request (new DPS receipt, matches mono)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; no receipt yet for fiscalNum 4000123456; a matching mono transaction exists"
+        }
+      ],
+      "request": {
+        "body": {
+          "category": "food",
+          "confidence": null,
+          "fiscalNum": "4000123456",
+          "items": [
+            {
+              "name": "Молоко",
+              "position": 1,
+              "priceKopiykas": 3200,
+              "qty": 1,
+              "sumKopiykas": 3200
+            }
+          ],
+          "purchasedAt": "2026-01-15T12:32:10.000Z",
+          "rawPayload": {
+            "xml": "<CHECK><NAME>Сільпо</NAME></CHECK>"
+          },
+          "source": "dps",
+          "store": "Сільпо",
+          "storeTaxId": "30363252",
+          "totalKopiykas": 15000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts"
+      },
+      "response": {
+        "body": {
+          "alreadyExists": false,
+          "receipt": {
+            "createdAt": "2026-01-15T12:35:00.000Z",
+            "fiscalNum": "4000123456",
+            "id": 501,
+            "items": [
+              {
+                "id": 9001,
+                "name": "Молоко",
+                "position": 1,
+                "priceKopiykas": 3200,
+                "qty": 1,
+                "receiptId": 501,
+                "sumKopiykas": 3200
+              }
+            ],
+            "link": {
+              "txKind": "mono",
+              "txRef": "mono-tx-777"
+            },
+            "purchasedAt": "2026-01-15T12:32:10.000Z",
+            "source": "dps",
+            "store": "Сільпо",
+            "storeTaxId": "30363252",
+            "totalKopiykas": 15000,
+            "updatedAt": "2026-01-15T12:35:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 201
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts request (retry of a vision save via clientScanId)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; a vision receipt with this clientScanId already exists (unmatched, manual expense link)"
+        }
+      ],
+      "request": {
+        "body": {
+          "category": "food",
+          "clientScanId": "9f2b6b9e-6c0a-4e6a-8f0e-1a2b3c4d5e6f",
+          "confidence": 0.82,
+          "fiscalNum": null,
+          "items": [
+            {
+              "name": "Хліб",
+              "position": 1,
+              "priceKopiykas": 2500,
+              "qty": 1,
+              "sumKopiykas": 2500
+            }
+          ],
+          "purchasedAt": "2026-01-15T09:10:00.000Z",
+          "rawPayload": {
+            "store": "АТБ",
+            "total_kopiykas": 8900
+          },
+          "source": "vision",
+          "store": "АТБ",
+          "storeTaxId": null,
+          "totalKopiykas": 8900
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts"
+      },
+      "response": {
+        "body": {
+          "alreadyExists": true,
+          "receipt": {
+            "createdAt": "2026-01-15T09:12:00.000Z",
+            "fiscalNum": null,
+            "id": 502,
+            "items": [
+              {
+                "id": 9002,
+                "name": "Хліб",
+                "position": 1,
+                "priceKopiykas": 2500,
+                "qty": 1,
+                "receiptId": 502,
+                "sumKopiykas": 2500
+              }
+            ],
+            "link": {
+              "txKind": "manual",
+              "txRef": "6f5e4d3c-2b1a-4444-8888-abcdefabcdef"
+            },
+            "purchasedAt": "2026-01-15T09:10:00.000Z",
+            "source": "vision",
+            "store": "АТБ",
+            "storeTaxId": null,
+            "totalKopiykas": 8900,
+            "updatedAt": "2026-01-15T09:12:00.000Z"
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/analyze request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; vision provider recognises the photo"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "mime_type": "image/png"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/analyze"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "confidence": 0.82,
+            "fiscalNum": null,
+            "items": [
+              {
+                "name": "Хліб",
+                "position": 1,
+                "priceKopiykas": 2500,
+                "qty": 1,
+                "sumKopiykas": 2500
+              },
+              {
+                "name": "Молоко",
+                "position": 2,
+                "priceKopiykas": 3200,
+                "qty": 2,
+                "sumKopiykas": 6400
+              }
+            ],
+            "purchasedAt": "2026-01-15T09:10:00.000Z",
+            "rawPayload": {
+              "store": "АТБ",
+              "total_kopiykas": 8900
+            },
+            "source": "vision",
+            "store": "АТБ",
+            "storeTaxId": null,
+            "totalKopiykas": 8900
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/analyze request (magic-byte mismatch)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; uploaded bytes are a GIF, not an allowed image type"
+        }
+      ],
+      "request": {
+        "body": {
+          "image_base64": "R0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlhR0lGODlh",
+          "mime_type": "image/gif"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/analyze"
+      },
+      "response": {
+        "body": {
+          "code": "MAGIC_MISMATCH",
+          "declared_mime": "image/gif",
+          "detail": "Detected image/gif, but only image/jpeg, image/png, image/webp, image/heic are allowed",
+          "detected_mime": "image/gif"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 415
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/lookup request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; DPS chkAll has the fiscal receipt for {fn,id,date,time,sm}"
+        }
+      ],
+      "request": {
+        "body": {
+          "date": "15012026",
+          "fn": "4000123456",
+          "id": "abc123XYZ",
+          "sm": "150.00",
+          "time": "123210"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/lookup"
+      },
+      "response": {
+        "body": {
+          "draft": {
+            "confidence": null,
+            "fiscalNum": "4000123456",
+            "items": [
+              {
+                "name": "Молоко",
+                "position": 1,
+                "priceKopiykas": 3200,
+                "qty": 1,
+                "sumKopiykas": 3200
+              }
+            ],
+            "purchasedAt": "2026-01-15T12:32:10.000Z",
+            "rawPayload": {
+              "xml": "<CHECK><NAME>Сільпо</NAME></CHECK>"
+            },
+            "source": "dps",
+            "store": "Сільпо",
+            "storeTaxId": "30363252",
+            "totalKopiykas": 15000
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/finyk/receipts/lookup request (not yet indexed)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001; DPS chkAll has no record yet for {fn,id,date,time,sm} (appearance lag)"
+        }
+      ],
+      "request": {
+        "body": {
+          "date": "15012026",
+          "fn": "4000999999",
+          "id": "notyet001",
+          "sm": "50.00",
+          "time": "090000"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/finyk/receipts/lookup"
+      },
+      "response": {
+        "body": {
+          "code": "DPS_RECEIPT_NOT_FOUND",
+          "error": "Чек ще не зʼявився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
+          "message": "Чек ще не зʼявився в реєстрі ДПС, спробуй за кілька хвилин або сфотографуй чек.",
+          "requestId": "req-pact-receipts-lookup-404"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 404
       }
     },
     {
@@ -726,8 +2823,33 @@
                 "notes": null
               },
               {
-                "name": "м'ясо",
+                "name": "мʼясо",
                 "notes": "телятина"
+              }
+            ],
+            "isFood": true,
+            "items": [
+              {
+                "confidence": 0.88,
+                "gramsApprox": 300,
+                "macros": {
+                  "carbs_g": 20,
+                  "fat_g": 8,
+                  "kcal": 220,
+                  "protein_g": 14
+                },
+                "name": "Борщ"
+              },
+              {
+                "confidence": 0.72,
+                "gramsApprox": 50,
+                "macros": {
+                  "carbs_g": 2,
+                  "fat_g": 4,
+                  "kcal": 60,
+                  "protein_g": 4
+                },
+                "name": "Сметана"
               }
             ],
             "macros": {
@@ -736,6 +2858,7 @@
               "kcal": 280,
               "protein_g": 18
             },
+            "notFoodKind": null,
             "portion": {
               "gramsApprox": 350,
               "label": "тарілка"
@@ -846,6 +2969,63 @@
       }
     },
     {
+      "description": "a POST /api/v1/privat/connect request",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with no prior PrivatBank connection; upstream credential probe succeeds"
+        }
+      ],
+      "request": {
+        "body": {
+          "merchantId": "pact-merchant-001",
+          "token": "pact-fake-token-not-a-real-cred"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/privat/connect"
+      },
+      "response": {
+        "body": {
+          "connected": true,
+          "merchantId": "pact-merchant-001"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/privat/disconnect request (no body)",
+      "providerStates": [
+        {
+          "name": "authenticated user-pact-001 with an active PrivatBank connection"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/privat/disconnect"
+      },
+      "response": {
+        "body": {
+          "connected": false
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a POST /api/v1/push/register request (platform=web)",
       "providerStates": [
         {
@@ -873,6 +3053,299 @@
         "body": {
           "ok": true,
           "platform": "web"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/cart/apply request with 1 selection",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "selections": [
+            {
+              "lagerId": "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
+              "quantity": 2
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/cart/apply"
+      },
+      "response": {
+        "body": {
+          "cartUrl": "https://silpo.ua/cart/checkout/abc123",
+          "items": [
+            {
+              "name": "Молоко Селянське 2.5% 900г",
+              "priceKop": 4500,
+              "quantity": 2,
+              "subtotalKop": 9000
+            }
+          ],
+          "totalKop": 9000
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/cart/preview request with 2 shopping-list lines",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "items": [
+            {
+              "name": "Молоко 2.5%",
+              "quantity": 2
+            },
+            {
+              "name": "асдфasdf000"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/cart/preview"
+      },
+      "response": {
+        "body": {
+          "results": [
+            {
+              "matches": [
+                {
+                  "available": true,
+                  "displayRatio": null,
+                  "lagerId": "eyJwcm9kdWN0SWQiOiJwLTEifQ==",
+                  "name": "Молоко Селянське 2.5% 900г",
+                  "oldPriceKop": 5290,
+                  "priceKop": 4500,
+                  "unit": "шт"
+                },
+                {
+                  "available": false,
+                  "displayRatio": "0.9 кг",
+                  "lagerId": "eyJwcm9kdWN0SWQiOiJwLTIifQ==",
+                  "name": "Молоко Яготинське 2.5% 1л",
+                  "oldPriceKop": null,
+                  "priceKop": 5200,
+                  "unit": "кг"
+                }
+              ],
+              "query": "Молоко 2.5%",
+              "unmatched": false
+            },
+            {
+              "matches": [],
+              "query": "асдфasdf000",
+              "unmatched": true
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/disconnect request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/disconnect"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/link/mono-tx-1 request with a receiptId",
+      "providerStates": [
+        {
+          "name": "user-pact-001 rejected silpo-r-1 for mono-tx-1"
+        }
+      ],
+      "request": {
+        "body": {
+          "receiptId": "silpo-r-1"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/link/mono-tx-1"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim request",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with unclaimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "itemIds": [
+            501,
+            502
+          ],
+          "mode": "auto"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim"
+      },
+      "response": {
+        "body": {
+          "claimedItemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release request (decline)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 owns receipt rcpt-pact-0001 with claimed item 501"
+        }
+      ],
+      "request": {
+        "body": {
+          "decline": true,
+          "itemIds": [
+            501
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/receipts/rcpt-pact-0001/pantry-release"
+      },
+      "response": {
+        "body": {
+          "ok": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/sync request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account, 2 new receipts"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/sync"
+      },
+      "response": {
+        "body": {
+          "ambiguous": 0,
+          "itemsInserted": 7,
+          "matched": 1,
+          "offlinePulled": 1,
+          "onlinePulled": 1,
+          "receiptsInserted": 2,
+          "status": "connected",
+          "unmatched": 1
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a POST /api/v1/silpo/wipe request (no body)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has 3 silpo_receipts rows"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "POST",
+        "path": "/api/v1/silpo/wipe"
+      },
+      "response": {
+        "body": {
+          "deletedReceipts": 3,
+          "ok": true
         },
         "headers": {
           "Content-Type": "application/json",
@@ -1053,7 +3526,77 @@
               "idempotency_key": "01HZ000000000000000000000B",
               "status": "applied"
             }
-          ]
+          ],
+          "server_now": "2026-05-12T09:30:01.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a PUT /api/v1/me/profile request with a small biometrics payload",
+      "providerStates": [
+        {
+          "name": "user-pact-003 authenticated session"
+        }
+      ],
+      "request": {
+        "body": {
+          "profile": {
+            "heightCm": 170,
+            "sex": "f",
+            "weightKg": 62
+          }
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "PUT",
+        "path": "/api/v1/me/profile"
+      },
+      "response": {
+        "body": {
+          "profile": {
+            "heightCm": 170,
+            "sex": "f",
+            "weightKg": 62
+          },
+          "updatedAt": "2026-08-01T12:05:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a PUT /api/v1/silpo/settings request (enable)",
+      "providerStates": [
+        {
+          "name": "user-pact-001 has a connected Silpo account"
+        }
+      ],
+      "request": {
+        "body": {
+          "pantryAutoImport": true
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "accept": "application/json",
+          "content-type": "application/json"
+        },
+        "method": "PUT",
+        "path": "/api/v1/silpo/settings"
+      },
+      "response": {
+        "body": {
+          "pantryAutoImportSince": "2026-09-25T10:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",

@@ -1,7 +1,7 @@
 /**
  * Single point of entry for every web-side IndexedDB store.
  *
- * Stage 1 PR #010 in `docs/planning/storage-roadmap.md` — folds the
+ * Stage 1 PR #010 in `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — folds the
  * historical fleet of per-feature IDB databases into one shared
  * `sergeant-db` so the browser only has to open and warm up a single
  * connection, the storage estimate quota is pooled, and DevTools

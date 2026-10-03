@@ -33,8 +33,8 @@ export interface PullToRefreshProps {
   style?: CSSProperties;
   /**
    * Notified when the inner scroll element mounts/unmounts. Useful for
-   * libraries like `react-virtuoso` that need a `customScrollParent`
-   * element rather than a ref-object.
+   * virtualised list libraries that need an external scroll element
+   * rather than a ref-object.
    */
   onScrollElement?: (el: HTMLDivElement | null) => void;
   children: ReactNode;
@@ -58,12 +58,12 @@ export interface PullToRefreshProps {
  * </PullToRefresh>
  * ```
  *
- * For consumers using `react-virtuoso` (which needs a
- * `customScrollParent` element), pair with `onScrollElement`:
+ * For virtualised list consumers that need an external scroll element,
+ * pair with `onScrollElement`:
  * ```tsx
  * const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
  * <PullToRefresh onScrollElement={setScrollParent} …>
- *   <Virtuoso customScrollParent={scrollParent ?? undefined} … />
+ *   <VirtualList scrollElement={scrollParent} … />
  * </PullToRefresh>
  * ```
  */
@@ -123,7 +123,14 @@ export function PullToRefresh({
       <PullToRefreshIndicator state={state} variant={variant} />
       <div
         ref={setScrollEl}
-        className={cn("flex-1 overflow-y-auto min-h-0", contentClassName)}
+        // `overscroll-y-contain` stops the browser's own overscroll gesture
+        // (iOS rubber-band, Chrome/PWA native pull-to-refresh) from kicking
+        // in at scrollTop 0 and hijacking the pull — which fires a
+        // `touchcancel` and used to leave the custom indicator stuck.
+        className={cn(
+          "flex-1 overflow-y-auto min-h-0 overscroll-y-contain",
+          contentClassName,
+        )}
       >
         {children}
       </div>

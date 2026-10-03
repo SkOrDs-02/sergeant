@@ -1,10 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 type CachePolicy =
-  | "no-store"
-  | "no-cache"
-  | "stale-while-revalidate"
-  | "public";
+  "no-store" | "no-cache" | "stale-while-revalidate" | "public";
 
 interface CacheOptions {
   policy?: CachePolicy;

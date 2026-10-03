@@ -138,7 +138,7 @@ describe("AddExerciseSheet", () => {
     expect(screen.queryAllByRole("button", { name: "Найширші" })).toHaveLength(
       0,
     );
-    fireEvent.change(screen.getByLabelText("Основна група м'язів"), {
+    fireEvent.change(screen.getByLabelText("Основна група мʼязів"), {
       target: { value: "back" },
     });
     // back → "Найширші" appears (primary + secondary chip).
@@ -151,7 +151,7 @@ describe("AddExerciseSheet", () => {
     fireEvent.change(screen.getByLabelText("Назва вправи українською"), {
       target: { value: "  Bench Press 2  " },
     });
-    fireEvent.change(screen.getByPlaceholderText("Опис"), {
+    fireEvent.change(screen.getByLabelText(/^Опис/), {
       target: { value: " розведення " },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));

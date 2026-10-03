@@ -1,427 +1,46 @@
-import type { Request, Response } from "express";
 import client from "prom-client";
-import type { Pool } from "pg";
 
-import { env } from "../env/env.js";
-import { safeStringEqual } from "../http/safeCompare.js";
+// Registry, DB-pool gauges, build-info, and helpers live in `./metrics/registry.js`.
+// HTTP/DB-query/domain metric families live in `./metrics/{http,db-query,domain}.js`;
+// sync + BullMQ-job metrics in `./metrics/{sync,jobs}.js`.
+// The public import path `../obs/metrics.js` is preserved via the re-exports below.
+import { register } from "./metrics/registry.js";
 
-/**
- * Prometheus-реєстр з default-метриками (event loop lag, RSS, heap, GC)
- * плюс HTTP-RED, Postgres-USE і domain-лічильники. Експортується через
- * `GET /metrics` (захищено bearer-токеном `METRICS_TOKEN`).
- */
-export const register = new client.Registry();
-client.collectDefaultMetrics({ register });
-
-// ───────────────────────── HTTP (RED) ─────────────────────────
-export const httpRequestsTotal = new client.Counter({
-  name: "http_requests_total",
-  help: "Total HTTP requests",
-  labelNames: ["method", "path", "status", "module"],
-  registers: [register],
-});
-
-export const httpRequestDurationMs = new client.Histogram({
-  name: "http_request_duration_ms",
-  help: "HTTP request duration in ms",
-  labelNames: ["method", "path", "status_class"],
-  buckets: [5, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
-  registers: [register],
-});
-
-// Дедикований лічильник 4xx/5xx по route: інкрементуємо тільки коли
-// `status >= 400`, тож error-rate формулою стає
-//   sum by (path) (rate(http_errors_total[5m]))
-//   / sum by (path) (rate(http_request_duration_ms_count[5m]))
-// без фільтра регексом по `status`. `module` лейбл із ALS потрібен, щоб
-// алерти могли бути per-domain.
-export const httpErrorsTotal = new client.Counter({
-  name: "http_errors_total",
-  help: "HTTP responses with status >= 400 by route",
-  labelNames: ["method", "path", "status_class", "module"],
-  registers: [register],
-});
-
-export const httpInFlight = new client.Gauge({
-  name: "http_in_flight",
-  help: "In-flight HTTP requests",
-  labelNames: ["method"],
-  registers: [register],
-});
-
-// ───────────────────────── Postgres (USE) ─────────────────────
-export const dbQueryDurationMs = new client.Histogram({
-  name: "db_query_duration_ms",
-  help: "PG query duration in ms",
-  labelNames: ["op"],
-  buckets: [1, 5, 25, 100, 250, 1000, 5000],
-  registers: [register],
-});
-
-export const dbErrorsTotal = new client.Counter({
-  name: "db_errors_total",
-  help: "PG errors grouped by error code",
-  labelNames: ["code"],
-  registers: [register],
-});
-
-export const dbSlowQueriesTotal = new client.Counter({
-  name: "db_slow_queries_total",
-  help: "PG queries over DB_SLOW_MS",
-  labelNames: ["op"],
-  registers: [register],
-});
-
-export const dbPoolTotal = new client.Gauge({
-  name: "db_pool_total",
-  help: "PG pool total connections",
-  registers: [register],
-});
-
-export const dbPoolIdle = new client.Gauge({
-  name: "db_pool_idle",
-  help: "PG pool idle connections",
-  registers: [register],
-});
-
-export const dbPoolWaiting = new client.Gauge({
-  name: "db_pool_waiting",
-  help: "PG pool waiting clients",
-  registers: [register],
-});
-
-export const dbSlowPoolConnectsTotal = new client.Counter({
-  name: "db_slow_pool_connects_total",
-  help: "PG `pool.connect()` checkouts slower than PG_SLOW_CONNECT_MS — leading indicator of pool saturation before `db_pool_waiting > 0` sustains.",
-  registers: [register],
-});
-
-/**
- * I7 — Security events Telegram push channel reachability counter.
- *
- * Bumped on:
- *   - Boot heartbeat (`pingSecurityRoom()` in `securityEventsRoom.ts`) when
- *     env-vars missing or Telegram `getMe` fails.
- *   - Runtime `sendToTelegram()` HTTP failures or fetch errors.
- *
- * Use case: detect rotated/expired bot token, unset env vars, or Telegram
- * outages — without this counter the alert channel can go dark silently
- * because the room itself is fail-open (warn-only logs).
- *
- * `reason` label categorizes the failure for Grafana panels:
- *   - `bot_token_missing` / `chat_id_missing` — config gap
- *   - `http_4xx` / `http_5xx` — token rotated, chat deleted, Telegram down
- *   - `fetch_error` — DNS/TLS/network issue
- */
-export const securityRoomUnreachableTotal = new client.Counter({
-  name: "security_room_unreachable_total",
-  help: "I7 security events Telegram push channel unreachable count by failure reason.",
-  labelNames: ["reason"],
-  registers: [register],
-});
-
-// Single labeled gauge that mirrors `db_pool_total` / `db_pool_idle` /
-// `db_pool_waiting` (above) with the `state` label model preferred for
-// new dashboards. We keep both shapes so existing alerts + panels keep
-// working unmodified.
-//
-// `state="active"`  = pool.totalCount - pool.idleCount (checked-out clients)
-// `state="idle"`    = pool.idleCount                    (free connections)
-// `state="waiting"` = pool.waitingCount                 (queued acquires)
-export const dbPoolSizeCurrent = new client.Gauge({
-  name: "db_pool_size_current",
-  help: "PG pool connection count by state (active|idle|waiting)",
-  labelNames: ["state"],
-  registers: [register],
-});
-
-// Histogram of `pool.connect()` acquire latency in seconds. Pairs with
-// `dbSlowPoolConnectsTotal` — the counter catches outliers above
-// `PG_SLOW_CONNECT_MS`, this histogram gives the full p50/p95/p99
-// distribution for dashboards and SLO computation.
-// Buckets chosen for typical Railway / pgBouncer round-trip latencies:
-// sub-ms (warm hit) → second-scale (saturation).
-export const dbPoolAcquireDurationSeconds = new client.Histogram({
-  name: "db_pool_acquire_duration_seconds",
-  help: "Latency of pg pool.connect() acquires in seconds",
-  buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
-  registers: [register],
-});
-
-// ───────────────────────── Domain ─────────────────────────────
-export const aiTokensTotal = new client.Counter({
-  name: "ai_tokens_total",
-  help: "AI tokens consumed",
-  // endpoint=analyze-photo|refine-photo|chat|coach|day-plan|...
-  // kind=prompt|completion|cache_write|cache_read
-  labelNames: ["provider", "model", "endpoint", "kind"],
-  registers: [register],
-});
-
-// Cost-attribution gauge для AI-викликів. Counter (а не Gauge), бо ми
-// акумулюємо $-витрати по кожному endpoint × model. Per-endpoint breakdown
-// потрібен щоб у Grafana (і в weekly cost-аудиті) видно було, котрий endpoint
-// "з'їдає" бюджет — `chat` vs `coach` vs `analyze-photo`. Pricing-таблиця
-// у `lib/anthropic.ts::ANTHROPIC_PRICING_USD_PER_MTOK`. На unknown-моделі
-// counter не інкрементується (щоб не давати fake-нулі), тому сума `rate(...)`
-// у Prometheus = «впевнена нижня межа» витрат.
-export const aiCostEstimateUsd = new client.Counter({
-  name: "ai_cost_estimate_usd_total",
-  help: "Estimated AI provider cost in USD, accumulated per endpoint × model",
-  labelNames: ["provider", "model", "endpoint"],
-  registers: [register],
-});
-
-/**
- * PR-33 — fixed monthly subscription cost для зовнішніх не-AI-провайдерів,
- * чий `usage` runtime-instance не бачить (Railway, Vercel, PostHog, Sentry).
- * Також тримає envelop-budget-и для AI-провайдерів (Anthropic / Voyage),
- * щоб у Grafana run-rate можна було накласти на target.
- *
- * Лейбли:
- *   - `provider`: railway | vercel | posthog | sentry | anthropic | voyage
- *   - `plan`: free | hobby | pro | team | business | enterprise | usage |
- *      budget — рівень підписки (для PostHog/Sentry — tier; для Anthropic/
- *      Voyage — `budget` коли значення = monthly cap, `usage` коли pay-as-you-go).
- *
- * Cardinality: 6 providers × ~7 plans = ~42 series (стабільно). Set один
- * раз на старті процесу (`obs/cost.ts::applyInfraMonthlyCosts()`) з env-
- * vars; невиставлене значення → не з'являється у `/metrics` зовсім (gauge
- * не пре-allocate-имо нулі, бо це б змусило в PromQL фільтрувати).
- */
-export const infraMonthlyCostUsd = new client.Gauge({
-  name: "infra_monthly_cost_usd",
-  help: "Monthly fixed/budget cost in USD for external providers (PR-33)",
-  labelNames: ["provider", "plan"],
-  registers: [register],
-});
-
-/**
- * PR-38 (48-plan) — soft daily-burn threshold for Voyage embeddings (USD).
- *
- * Виставляється з env `VOYAGE_DAILY_BUDGET_USD` через
- * `applyVoyageDailyBudget()` у bootstrap-у (`apps/server/src/index.ts`).
- * Зчитується Prometheus-rule-ом `voyage-cost.yml`:
- *
- *   - `VoyageDailyBudgetSoftBreach`: 24h-burn > 80% × threshold (warn)
- *   - `VoyageDailyBudgetHardBreach`: 24h-burn ≥ 100% × threshold (page)
- *
- * Окрема gauge (а не `infra_monthly_cost_usd{plan="daily-budget"}`), бо
- * семантика різна (daily soft cap vs monthly subscription) і alert-rule
- * `voyage_daily_budget_usd > 0` як guard простіший, ніж filter по plan.
- *
- * Unlabeled Gauge → prom-client завжди публікує серію зі значенням `0`
- * за замовчанням (на відміну від labeled gauge-ів, де лейбли-комбінації
- * без `.set()` відсутні). Тому alert-expr має guard `voyage_daily_budget_usd > 0`
- * — на dev/staging без env-конфігу значення `0` не тригерить.
- */
-export const voyageDailyBudgetUsd = new client.Gauge({
-  name: "voyage_daily_budget_usd",
-  help: 'Soft daily-burn threshold for Voyage embeddings in USD (PR-38). When >0, Prometheus rule voyage-cost.yml compares against increase(ai_cost_estimate_usd_total{provider="voyage"}[24h]).',
-  registers: [register],
-});
-
-export const anthropicPromptCacheHitTotal = new client.Counter({
-  name: "anthropic_prompt_cache_hit_total",
-  help: "Anthropic prompt cache hit/miss per request",
-  labelNames: ["version", "outcome"], // outcome=hit|miss
-  registers: [register],
-});
-
-/**
- * Per-tool інвокейшнів-метрика (PR-12.C аудиту 2026-04-26).
- *
- * `tool` — ім'я Anthropic-tool-у (`delete_transaction`, `start_workout` тощо).
- * `outcome` — стадія life-cycle:
- *   - `proposed` — модель повернула `tool_use`-блок у першому кроці (клієнт
- *     ще не виконав; може й не виконати, якщо юзер скасує).
- *   - `executed` — клієнт надіслав `tool_result` у другому кроці, і його
- *     корелювали з відповідним `tool_use_id` із `tool_calls_raw`.
- *   - `unknown_tool` — `tool_use_id` із `tool_results` не змапився на
- *     жодне ім'я в `tool_calls_raw` (порушення контракту клієнт↔сервер).
- *
- * SLO/dashboards: `proposed - executed` дає кількість запропонованих, але
- * не виконаних tool-call-ів (юзер скасував / клієнт впав посеред виконання).
- */
-export const chatToolInvocationsTotal = new client.Counter({
-  name: "chat_tool_invocations_total",
-  help: "Anthropic tool invocations per tool name and lifecycle outcome",
-  labelNames: ["tool", "outcome"], // outcome=proposed|executed|unknown_tool
-  registers: [register],
-});
-
-export const chatToolResultTruncatedTotal = new client.Counter({
-  name: "chat_tool_result_truncated_total",
-  help: "tool_result content truncated server-side before Anthropic call",
-  labelNames: ["reason"], // reason=size_threshold
-  registers: [register],
-});
-
-/**
- * M7 — `MAX_TOOL_ITERATIONS` cap hit: модель або клієнт перевищили жорсткий
- * ліміт `tool_use`-блоків в одному round-trip-і. `boundary` лейбл:
- *   - `anthropic_response` — Anthropic повернув >MAX_TOOL_ITERATIONS блоків
- *     `tool_use` в одній відповіді (runaway model loop).
- *   - `client_request` — клієнт надіслав >MAX_TOOL_ITERATIONS блоків у
- *     `tool_calls_raw` (manipulated payload або зіпсований state).
- *
- * Cardinality фіксована (2 значення) — безпечно для Prometheus.
- *
- * See `docs/security/hardening/M7-chat-tool-iteration-cap.md`.
- */
-export const chatToolIterationCapHitTotal = new client.Counter({
-  name: "chat_tool_iteration_cap_hit_total",
-  help: "M7 — tool-iteration cap (MAX_TOOL_ITERATIONS) breached, request rejected with 422",
-  labelNames: ["boundary"], // anthropic_response | client_request
-  registers: [register],
-});
-
-/**
- * M6 — server-side magic-byte rejection at `/api/nutrition/{analyze,refine}-photo`.
- * `endpoint` лейбл фіксований (`analyze-photo` | `refine-photo`); `reason` — це
- * `code` з `validateImageBase64` (`INVALID_BASE64` | `TRUNCATED` | `TOO_LARGE`
- * | `MAGIC_MISMATCH`). Cardinality 2 × 4 = 8, безпечно для Prometheus.
- *
- * See `docs/security/hardening/M6-image-magic-byte-check.md`.
- */
-export const nutritionPhotoRejectedTotal = new client.Counter({
-  name: "nutrition_photo_rejected_total",
-  help: "M6 — nutrition photo rejected before Anthropic call by magic-byte / size validator",
-  labelNames: ["endpoint", "reason"],
-  registers: [register],
-});
-
-/**
- * M8 — chat tool_result content matched a prompt-injection marker (`ignore
- * previous instructions`, `<system>`, `act as ...`). Лічильник інкрементиться
- * один раз на tool_result; `tool` — whitelisted tool name (з `TOOLS`-реєстру)
- * або `unknown` для orphan-блоків. Cardinality dominated by кількістю tools
- * (~25), безпечно для Prometheus.
- *
- * See `docs/security/hardening/M8-prompt-injection-tool-output.md`.
- */
-export const chatPromptInjectionAttemptTotal = new client.Counter({
-  name: "chat_prompt_injection_attempt_total",
-  help: "M8 — tool_result content matched a prompt-injection marker; metric only, model still receives the (wrapped) data.",
-  labelNames: ["tool"],
-  registers: [register],
-});
-
-export const aiQuotaBlocksTotal = new client.Counter({
-  name: "ai_quota_blocks_total",
-  help: "AI quota refusals",
-  // reason: limit|disabled|tool_disabled|tool_limit|circuit_open
-  // cost:   numeric cost that was attempted (stringified for label cardinality;
-  //         values are bounded by the small set of configured tool costs —
-  //         typically "1" for default-bucket, "3" for tool-use).
-  labelNames: ["reason", "cost"],
-  registers: [register],
-});
-
-/**
- * Accumulates the total AI-quota cost units consumed by accepted requests,
- * split by subject_type (user|anon) and bucket_type (default|tool).
- *
- * Counterpart to `aiQuotaBlocksTotal` for the accept-path: together they give
- * a full picture of quota pressure.
- *
- *   rate(ai_cost_consumed_total{subject_type="user"}[5m]) → user burn-rate
- *   rate(ai_cost_consumed_total{bucket_type="tool"}[5m])  → tool-use cost rate
- *
- * `subject_type`:
- *   - `user` — authenticated session (subject key starts with `u:`)
- *   - `anon` — anonymous/IP-keyed caller (subject key starts with `ip:`)
- * `bucket_type`:
- *   - `default` — plain chat / coach / nutrition requests (cost = 1)
- *   - `tool`    — per-tool-use bucket (cost = toolCost(), typically 3)
- */
-export const aiCostConsumedTotal = new client.Counter({
-  name: "ai_cost_consumed_total",
-  help: "Total AI quota cost units consumed by accepted requests, by subject type and bucket type",
-  labelNames: ["subject_type", "bucket_type"], // subject_type=user|anon; bucket_type=default|tool
-  registers: [register],
-});
-
-export const aiQuotaFailOpenTotal = new client.Counter({
-  name: "ai_quota_fail_open_total",
-  help: "AI quota store unavailable → fail-open",
-  labelNames: ["reason"],
-  registers: [register],
-});
-
-/**
- * PR-05 — Counter that ticks every time the AI-quota DB circuit-breaker
- * transitions INTO the OPEN state (either from CLOSED after `threshold`
- * DB-errors in the sliding window, or from HALF-OPEN when the probe
- * request itself fails). One sample per OPEN-trip — re-arm during HALF-OPEN
- * does not double-count.
- *
- * Labels:
- *   - `from`: closed | half-open — which state we tripped from. Useful to
- *     distinguish a real DB outage burst (`from=closed`) from a flap during
- *     recovery (`from=half-open`).
- *
- * Pairs with the generic `circuit_breaker_state{name="ai_quota"}` gauge —
- * this counter is the trip-rate signal feeding the Sentry alert
- * `ai_quota_circuit_opened` and the Alertmanager rule
- * `AIQuotaCircuitOpenedRecently` (see `docs/observability/alerts/`).
- */
-export const aiQuotaCircuitOpenTotal = new client.Counter({
-  name: "ai_quota_circuit_open_total",
-  help: "AI-quota DB circuit-breaker transitions into OPEN (fail-closed start)",
-  labelNames: ["from"], // closed | half-open
-  registers: [register],
-});
-
-/**
- * H9 — `/api/transcribe` USD-cap circuit breaker. `outcome` лейбл:
- *   - `cap_hit` — pre-charge відсіяв виклик до Groq (402 у клієнта).
- *   - `store_unavailable` — DB недоступна, fail-open (логуємо для
- *     алерту, але виклик пройшов далі).
- * Cardinality фіксована (2 значення) — безпечно для Prometheus.
- */
-export const transcribeUsdCapEventsTotal = new client.Counter({
-  name: "transcribe_usd_cap_events_total",
-  help: "H9 — transcribe per-user USD cap circuit-breaker events",
-  labelNames: ["outcome"], // cap_hit | store_unavailable
-  registers: [register],
-});
-
-export const syncConflictsTotal = new client.Counter({
-  name: "sync_conflicts_total",
-  help: "Sync conflicts per module",
-  labelNames: ["module"],
-  registers: [register],
-});
-
-export const pushSendsTotal = new client.Counter({
-  name: "push_sends_total",
-  help: "Web-push send outcomes",
-  labelNames: ["outcome"], // ok|invalid_endpoint|rate_limited|error
-  registers: [register],
-});
-
-export const barcodeLookupsTotal = new client.Counter({
-  name: "barcode_lookups_total",
-  help: "Barcode lookups by upstream and outcome",
-  labelNames: ["source", "outcome"], // source=off|usda|upcitemdb; outcome=hit|miss|error
-  registers: [register],
-});
-
-export const externalHttpRequestsTotal = new client.Counter({
-  name: "external_http_requests_total",
-  help: "Outbound HTTP calls to 3rd-party APIs",
-  labelNames: ["upstream", "outcome"], // upstream=monobank|privat|anthropic|off|usda|upcitemdb...
-  registers: [register],
-});
-
-export const externalHttpDurationMs = new client.Histogram({
-  name: "external_http_duration_ms",
-  help: "Outbound HTTP call duration by upstream",
-  labelNames: ["upstream", "outcome"], // outcome=ok|rate_limited|error|timeout|miss|hit
-  buckets: [25, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
-  registers: [register],
-});
+export {
+  httpRequestsTotal,
+  httpRequestDurationMs,
+  httpErrorsTotal,
+  httpInFlight,
+} from "./metrics/http.js";
+export {
+  dbQueryDurationMs,
+  dbErrorsTotal,
+  dbSlowQueriesTotal,
+  securityRoomUnreachableTotal,
+} from "./metrics/db-query.js";
+export {
+  aiTokensTotal,
+  aiCostEstimateUsd,
+  infraMonthlyCostUsd,
+  voyageDailyBudgetUsd,
+  anthropicPromptCacheHitTotal,
+  chatToolInvocationsTotal,
+  chatToolResultTruncatedTotal,
+  chatToolIterationCapHitTotal,
+  nutritionPhotoRejectedTotal,
+  chatPromptInjectionAttemptTotal,
+  chatPromptInjectionShadowTotal,
+  aiQuotaBlocksTotal,
+  aiCostConsumedTotal,
+  aiQuotaFailOpenTotal,
+  aiQuotaCircuitOpenTotal,
+  transcribeUsdCapEventsTotal,
+  syncConflictsTotal,
+  pushSendsTotal,
+  barcodeLookupsTotal,
+  externalHttpRequestsTotal,
+  externalHttpDurationMs,
+} from "./metrics/domain.js";
 
 // ───────────────────────── Auth ───────────────────────────────
 export const authAttemptsTotal = new client.Counter({
@@ -551,166 +170,6 @@ export const circuitBreakerTripsTotal = new client.Counter({
   registers: [register],
 });
 
-// ───────────────────────── Sync ───────────────────────────────
-export const syncOperationsTotal = new client.Counter({
-  name: "sync_operations_total",
-  help: "Sync push/pull operations by module and outcome",
-  // op=push|pull|push_all|pull_all; outcome=ok|conflict|unauthorized|invalid|too_large|error|empty
-  labelNames: ["op", "module", "outcome"],
-  registers: [register],
-});
-
-export const syncDurationMs = new client.Histogram({
-  name: "sync_duration_ms",
-  help: "Sync operation duration in ms",
-  labelNames: ["op", "module"],
-  buckets: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
-  registers: [register],
-});
-
-export const syncPayloadBytes = new client.Histogram({
-  name: "sync_payload_bytes",
-  help: "Sync blob size in bytes",
-  labelNames: ["op", "module"],
-  // 1KB..5MB — MAX_BLOB_SIZE = 5MB
-  buckets: [1024, 8192, 65536, 262144, 1048576, 3145728, 5242880],
-  registers: [register],
-});
-
-/**
- * Stage 5 / PR #041: live SSE стрім real-time op-log (`syncV2Stream`).
- * Окремий gauge — long-lived connection-и не вписуються в існуючий
- * `sync_duration_ms` histogram (їх duration — це час до disconnect-у,
- * не час обробки op-у), а кардинальність `module=v2` фіксована.
- */
-export const syncStreamConnectionsActive = new client.Gauge({
-  name: "sync_stream_connections_active",
-  help: "Active /api/v2/sync/stream SSE connections",
-  labelNames: ["module"],
-  registers: [register],
-});
-
-/**
- * Pre-sunset measurement для CloudSync v1 (Initiative 0003 Phase 1).
- *
- * Окремий counter (а не label-extension на `sync_operations_total`), бо:
- *   - інкрементиться **тільки на v1**-routes (`/api/sync/*`);
- *   - дозволяє pull-ити топ user-agent-classes / app-versions, що ще ходять
- *     у v1 → адресно push-ити update-нагадування перед T₀ (sunset date).
- *
- * Кардинальність: 5 (`user_agent_class`) × ≤20 (`app_version`) × 4 (`op`) =
- * ≤400 series. Logic у `apps/server/src/modules/sync/clientSurvey.ts` накладає
- * hard cap.
- */
-export const syncV1LegacyClientsTotal = new client.Counter({
-  name: "sync_v1_legacy_clients_total",
-  help: "CloudSync v1 (LWW-blob) clients by UA-class and app-version (sunset survey)",
-  labelNames: ["user_agent_class", "app_version", "op"],
-  registers: [register],
-});
-
-/**
- * Per-op apply outcome для v2 op-log (PR #048, Stage 5 DoD #10).
- *
- * `syncOperationsTotal{op="v2_push"}` рахує **запит** (`ok|partial|conflict`),
- * але апдейтити дашборд RED-метрик per-table треба бачити **per-op**
- * розклад: applied/rejected/duplicate × table × reject_reason. Цей лічильник
- * інкрементиться один раз на `op` всередині `syncV2Push`, на тому ж місці,
- * де ми вже пишемо row у `sync_op_log` (тож кардинальність обмежена записами).
- *
- * Лейбли:
- *   - `table` ∈ whitelist `OP_LOG_TABLE_REGISTRY` (≤ ~15)
- *     + `__unknown__` для table_not_allowed-rejected ops.
- *   - `status` ∈ `applied|rejected|duplicate`.
- *   - `reason` — машинно-читабельний reject-reason (`lww_conflict`,
- *     `tombstoned`, `fk_violation`, `clock_skew`, `apply_failed`,
- *     `table_not_allowed`, `missing_*`, `invalid_*`, …) для `rejected`;
- *     `"none"` для `applied`; `"duplicate"` для `duplicate`. Reasons
- *     походять із зафіксованого набору в коді (`syncV2.ts`) — нові варіанти
- *     додаються свідомо разом із кодовою зміною, тож кардинальність не
- *     розповзається.
- *
- * Cardinality cap: ~15 tables × 3 statuses × ~25 reasons ≈ 1100 series
- * worst-case (типовий runtime ~50–100 active series, бо більшість reject-
- * reason-ів не репродукуються в production).
- *
- * Grafana queries (`docs/observability/dashboards/sync.json`):
- *   sum by (table, status) (rate(sync_op_log_apply_total[5m]))
- *   topk(10, sum by (table, reason)
- *     (rate(sync_op_log_apply_total{status="rejected"}[5m])))
- */
-export const syncOpLogApplyTotal = new client.Counter({
-  name: "sync_op_log_apply_total",
-  help: "v2 sync op-log per-op apply outcomes (PR #048): applied / rejected / duplicate, broken down by table and reject_reason",
-  labelNames: ["table", "status", "reason"],
-  registers: [register],
-});
-
-/**
- * Counter for `sync_op_log` inserts where `origin_device_id` came in as
- * NULL on the client side (i.e. the client did not forward
- * `X-Origin-Device-Id`). The pull/SSE filter rejects every NULL-origin
- * row when called with a NULL header (`NULL IS DISTINCT FROM NULL`
- * evaluates to `FALSE` in PG), so a sustained non-zero rate here is a
- * data-integrity regression: multi-device convergence is silently
- * broken for the affected user(s).
- *
- * Labels:
- *   - `module` is always `"v2"` for label-uniformity with the other
- *     sync_* metrics — the dimension exists so a future op-log dialect
- *     can be tagged without breaking dashboards.
- *
- * Alert: `rate(sync_op_log_null_origin_device_id_total[15m]) > 0` for
- * 30m. Expected resting value post-fix: 0. Spikes during canary rollout
- * are expected for clients that have not yet picked up the new bundle.
- */
-export const syncOpLogNullOriginDeviceIdTotal = new client.Counter({
-  name: "sync_op_log_null_origin_device_id_total",
-  help: "Inserts into sync_op_log where origin_device_id arrived as NULL (client did not forward X-Origin-Device-Id). Sustained non-zero = multi-device convergence broken.",
-  labelNames: ["module"],
-  registers: [register],
-});
-
-/**
- * Pull-lag (queue-staleness) гістограма для v2 sync (PR #048, RED-stack
- * "Latency"). На кожному `GET /v2/sync/pull` із непорожньою відповіддю
- * спостерігаємо `now - server_ts(newest_op_returned)` — це проксі
- * *user-perceived staleness*: скільки часу ops чекали в op-log, перш
- * ніж клієнт їх забрав. SSE stream-у (PR #041) має тримати це <100ms у
- * happy path; cursor-based polling — кілька секунд.
- *
- * Spike = клієнт довго був offline (ОК) **або** SSE-стрім впав і клієнт
- * fallback-нувся на polling (warning). Persistent-spike → аларм.
- *
- * Bucket-сітка покриває під 100ms (SSE happy path) до 1h (offline-replay
- * після довгої відсутності).
- */
-export const syncOpLogPullLagMs = new client.Histogram({
-  name: "sync_op_log_pull_lag_ms",
-  help: "v2 sync pull staleness in ms: now - server_ts of newest op returned in this pull (PR #048)",
-  buckets: [
-    50, 100, 250, 500, 1000, 2500, 5000, 10_000, 30_000, 60_000, 300_000,
-    900_000, 3_600_000,
-  ],
-  registers: [register],
-});
-
-/**
- * Queue-depth histogram для pull-у: скільки ops повернули за один
- * `GET /v2/sync/pull` (PR #048). Це проксі *behind-cursor depth*:
- * якщо p95 = LIMIT (зазвичай 200), значить є ще ops за курсором — клієнт
- * має зробити наступний pull. Sustained p95 = LIMIT → backpressure.
- *
- * Окрема метрика від `sync_payload_bytes`, бо кількість ops не корелює
- * лінійно з байтами (один meal ≪ один workout зі 50 set-ами).
- */
-export const syncOpLogPullQueueDepth = new client.Histogram({
-  name: "sync_op_log_pull_queue_depth",
-  help: "v2 sync pull op-count returned per request (PR #048) — proxy for behind-cursor queue depth",
-  buckets: [0, 1, 5, 10, 25, 50, 100, 200, 500, 1000],
-  registers: [register],
-});
-
 // ───────────────────────── Application errors ─────────────────
 export const appErrorsTotal = new client.Counter({
   name: "app_errors_total",
@@ -750,6 +209,77 @@ export const aiRequestDurationMs = new client.Histogram({
   // для error-шляхів (раніше latency error-шляху "розбавляла" ok-латенцію).
   labelNames: ["provider", "model", "endpoint", "outcome"],
   buckets: [100, 250, 500, 1000, 2500, 5000, 10000, 20000, 30000, 60000],
+  registers: [register],
+});
+
+/**
+ * Час до ПЕРШОГО токена стріму (TTFT), мс.
+ *
+ * `ai_request_duration_ms` вище міряє стрім ЦІЛКОМ — від запиту до
+ * останньої події. Для чату це не те число, яке відчуває людина: вона
+ * дивиться на порожній екран рівно доти, доки не приїде перший фрагмент.
+ *
+ * До цієї метрики TTFT не міряли ніде в ран-таймі — єдиний замір жив в
+ * офлайн-скрипті `scripts/stream-check.ts` (знахідка з
+ * `docs/work/specs/audits/ai-testing-2026-08-25.md`, § Телеметрія).
+ *
+ * ЧОГО ВОНА НЕ НАКРИВАЄ. Лише тур синтезу після tool-результатів — єдиний,
+ * що стрімиться. Перший хід чату не стрімиться взагалі, тож у цих серіях
+ * його немає, і порожнеча тут не означає «швидко». SLO `apps/server/AGENTS.md`
+ * з 2026-09-02 розділено на два саме через це: перший токен — тут, повна
+ * відповідь першого ходу — у `chat_first_turn_phase_ms{phase="total"}`
+ * нижче.
+ *
+ * Бакети щільніші за `ai_request_duration_ms` у зоні до 2 с: саме там
+ * проходить межа SLO, і саме там різниця між моделями вирішальна
+ * (заміряно: flash-lite 365 мс, haiku-4.5 954 мс, sonnet-5 5586 мс).
+ */
+export const aiFirstTokenMs = new client.Histogram({
+  name: "ai_first_token_ms",
+  help: "Time to first streamed token in ms",
+  labelNames: ["provider", "model", "endpoint"],
+  buckets: [100, 250, 500, 750, 1000, 1500, 2000, 3000, 5000, 10000, 30000],
+  registers: [register],
+});
+
+/**
+ * Фази ПЕРШОГО ходу чату, мс. Одна серія на фазу.
+ *
+ * Чому окрема метрика, хоча `ai_first_token_ms` вище нібито про те саме.
+ * Перший хід `/api/chat` **не стрімиться взагалі**: клієнт не просить
+ * (`useChatSend.ts` шле `send()` без прапорця), а сервер і не підтримав би —
+ * єдиний `if (stream)` у `chat.ts` живе всередині гілки tool-результатів.
+ * Отже `ai_first_token_ms` цього шляху не бачить у принципі, бо живе в
+ * `streamAnthropicToSse`. До того ж її відлік починається з
+ * `streamStartedAtMs` — моменту, коли upstream УЖЕ відповів заголовками, —
+ * тобто вона міряє латентність токенів моделі, а не очікування людини.
+ * Розбір: AI-2 у `docs/work/specs/audits/2026-09-01-product-audit/findings.md`.
+ *
+ * Питання, на яке метрика відповідає: із 6,7 с медіани очікування скільки
+ * наше, а скільки провайдера. `pre_upstream` міряє все від входу в handler
+ * до виклику моделі — включно з парсингом і валідацією, не лише з
+ * переліченими кроками. Тому `pre_upstream` мінус сума решти фаз — це
+ * НЕврахована робота, і саме ця різниця ловить кроки, які ми забули
+ * назвати. Без неї «все інше швидко» лишалось би припущенням.
+ *
+ * Фази: `session` · `counterparties` · `correlations` · `rag` ·
+ * `preferences` · `pre_upstream` · `upstream` · `total`.
+ *
+ * `total` — окрема серія, а не сума решти, бо p95 суми не дорівнює сумі p95.
+ * Саме вона несе SLO першого ходу (`apps/server/AGENTS.md`): обіцянка, яку
+ * нічим не поміряти, і є та сама вада, через яку SLO про перший токен
+ * протримався так довго.
+ *
+ * Бакети навмисно рідкі (9 замість 11–15 у сусідів): 8 фаз × 12 серій уже
+ * дають ~96 семплів на скрейп при поточних ~250 усього, і густіша сітка
+ * коштувала б більше, ніж додала б точності — межі тут вирішують порядки
+ * (десятки мс на point-lookup проти секунд на upstream), не десятки мс.
+ */
+export const chatFirstTurnPhaseMs = new client.Histogram({
+  name: "chat_first_turn_phase_ms",
+  help: "Duration of each serial phase of the non-streaming first chat turn, ms",
+  labelNames: ["phase"],
+  buckets: [5, 25, 100, 250, 500, 1000, 2000, 5000, 15000],
   registers: [register],
 });
 
@@ -800,7 +330,7 @@ export const webVitalsCls = new client.Histogram({
 // allowlist + an `other`/`unknown` bucket) × `disposition` (`report` |
 // `enforce` | `unknown`) — so the time-series count tops out around
 // 75 series. Driving the Phase-1 rollout dashboard for hardening card C2
-// (`docs/security/hardening/C2-frontend-csp.md`): a sustained spike on a
+// (`docs/work/specs/security-hardening/C2-frontend-csp.md`): a sustained spike on a
 // directive that we've explicitly allowed in the policy means the
 // allowlist is too narrow; a sustained spike on a directive we never
 // expected to fire means an exfiltration attempt or a third-party script
@@ -811,47 +341,6 @@ export const cspViolationTotal = new client.Counter({
   labelNames: ["directive", "disposition"],
   registers: [register],
 });
-
-// ───────────────────────── Build info ─────────────────────────
-// Const-`1` gauge with version/commit/release/env labels — the standard
-// Prometheus pattern for shipping immutable build metadata. Two reasons we
-// want it as a label-rich gauge instead of a plain log line at boot:
-//
-//   1. Dashboards can join `app_build_info` against any other series via
-//      `* on (instance) group_left(version, commit) <metric>` to attribute
-//      latency/error spikes to a specific deploy without re-tagging every
-//      counter.
-//   2. Alertmanager can include `{{ $labels.commit }}` in pages without
-//      having to hit Sentry / Railway. Cardinality stays at 1 series per
-//      pod (labels are constant for the process lifetime).
-//
-// Sources are read at module load (process.env is frozen for our purposes
-// after dotenv-flow). `RAILWAY_GIT_COMMIT_SHA` is injected by Railway on
-// every build; `SENTRY_RELEASE` is the canonical release tag if both
-// Sentry-cli and Railway are present (Sentry-cli takes precedence). Empty
-// strings collapse to `"unknown"` so PromQL queries never see an empty
-// label value (which Prometheus treats as label absence — breaks joins).
-export const appBuildInfo = new client.Gauge({
-  name: "app_build_info",
-  help: "Static gauge=1 with build/release metadata for join-on-labels in dashboards",
-  labelNames: ["version", "commit", "release", "env", "node_version"],
-  registers: [register],
-});
-
-appBuildInfo
-  .labels({
-    version: env.npm_package_version || "unknown",
-    commit: (
-      env.RAILWAY_GIT_COMMIT_SHA ||
-      env.GIT_COMMIT ||
-      env.VERCEL_GIT_COMMIT_SHA ||
-      "unknown"
-    ).slice(0, 12),
-    release: env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA || "unknown",
-    env: env.NODE_ENV || "development",
-    node_version: process.version,
-  })
-  .set(1);
 
 // ───────────────────────── Log retention archive ───────────────
 // Лічильник рядків, оброблених background-архіватором `openclaw_invocations`
@@ -1021,162 +510,11 @@ export const monoMccBufferDepth = new client.Gauge({
   registers: [register],
 });
 
-// ───────────────────────── Auth-mail jobs (BullMQ) ────────────
-export const authMailJobsEnqueuedTotal = new client.Counter({
-  name: "auth_mail_jobs_enqueued_total",
-  help: "Auth transactional mail enqueue attempts by mode",
-  labelNames: ["mode"], // queued|fallback|enqueue_error
-  registers: [register],
-});
-
-export const authMailJobsProcessedTotal = new client.Counter({
-  name: "auth_mail_jobs_processed_total",
-  help: "Auth transactional mail processor outcomes",
-  labelNames: ["outcome"], // ok|retry|permanent_fail
-  registers: [register],
-});
-
-export const authMailJobDurationMs = new client.Histogram({
-  name: "auth_mail_job_duration_ms",
-  help: "Auth transactional mail per-job duration (ms)",
-  labelNames: ["outcome"], // ok|retry|permanent_fail
-  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
-  registers: [register],
-});
-
-export const authMailQueueDepth = new client.Gauge({
-  name: "auth_mail_queue_depth",
-  help: "BullMQ auth-mail queue depth by status",
-  labelNames: ["status"], // waiting|active|delayed|failed
-  registers: [register],
-});
-
-// ───────────────────── FTUX drip jobs (BullMQ) ────────────────
-// Metric set дзеркалить auth-mail-набір. Лейбл `day` (`day_0|day_1|day_3`)
-// дозволяє відрізняти Day-0 (immediate) від delayed-job-ів і дивитись на
-// drop-off між днями (Day 0 надсилається 100%, Day 1/3 — після opt-out
-// фільтрації + idempotency-перевірок). Лейбл `outcome` для processedTotal:
-//   - `ok` — лист пішов через Resend
-//   - `skipped_optout` — opt-out зафіксований у `email_unsubscribes`
-//   - `skipped_already_sent` — `email_campaigns_log` уже має row
-//   - `skipped_user_deleted` — юзера вже немає (3-day-ге очікування)
-//   - `retry` / `permanent_fail` — як і в auth-mail.
-export const ftuxDripJobsEnqueuedTotal = new client.Counter({
-  name: "ftux_drip_jobs_enqueued_total",
-  help: "FTUX drip mail enqueue attempts by mode and day",
-  labelNames: ["mode", "day"], // mode: queued|fallback|skipped_no_redis|enqueue_error
-  registers: [register],
-});
-
-export const ftuxDripJobsProcessedTotal = new client.Counter({
-  name: "ftux_drip_jobs_processed_total",
-  help: "FTUX drip mail processor outcomes",
-  labelNames: ["outcome", "day"],
-  // outcome: ok|retry|permanent_fail|skipped_optout|skipped_already_sent|skipped_user_deleted
-  registers: [register],
-});
-
-export const ftuxDripJobDurationMs = new client.Histogram({
-  name: "ftux_drip_job_duration_ms",
-  help: "FTUX drip mail per-job duration (ms)",
-  labelNames: ["outcome", "day"],
-  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
-  registers: [register],
-});
-
-export const ftuxDripQueueDepth = new client.Gauge({
-  name: "ftux_drip_queue_depth",
-  help: "BullMQ ftux-drip queue depth by status",
-  labelNames: ["status"], // waiting|active|delayed|failed
-  registers: [register],
-});
-
-export const ftuxDripUnsubscribesTotal = new client.Counter({
-  name: "ftux_drip_unsubscribes_total",
-  help: "FTUX drip opt-out clicks by outcome",
-  labelNames: ["outcome"], // ok|already_unsubscribed|invalid_token|missing_secret
-  registers: [register],
-});
-
-// ───────────────── AI memory ingestion (BullMQ) ───────────────
-// Лічильники для PR2-черги `ai-memory-ingest` (Redis-keys під префіксом
-// `sergeant:`). Дзеркалять
-// auth-mail-набір (enqueue / process / depth + duration), але з
-// додатковим лейблом `source`, щоб алерти могли біти по конкретному
-// домену (наприклад, finyk-spike при back-fill-і Monobank).
-export const aiMemoryIngestEnqueuedTotal = new client.Counter({
-  name: "ai_memory_ingest_enqueued_total",
-  help: "AI memory ingest enqueue attempts by mode and source",
-  // mode: queued|fallback|enqueue_error|disabled|source_disabled
-  //   queued          — job pushed to BullMQ successfully
-  //   fallback        — Redis unavailable; in-process direct dispatch
-  //   enqueue_error   — Redis push failed (network / serialization / invalid source)
-  //   disabled        — master AI_MEMORY_ENABLED=false (kills all sources)
-  //   source_disabled — per-source flag off (e.g. MONO_AI_MEMORY_INGEST_ENABLED=false)
-  labelNames: ["mode", "source"],
-  registers: [register],
-});
-
-export const aiMemoryIngestProcessedTotal = new client.Counter({
-  name: "ai_memory_ingest_processed_total",
-  help: "AI memory ingest job outcomes",
-  // outcome:
-  //   ok             — job succeeded.
-  //   retry          — retryable error; BullMQ scheduled next attempt.
-  //   permanent_fail — non-retryable error (e.g. Voyage 4xx, invalid payload).
-  //   dlq            — written to ai_memory_ingest_failed (DLQ); either
-  //                    non-retryable error OR retries-exhausted final attempt.
-  //                    Counted IN ADDITION to permanent_fail / retry outcome
-  //                    so dashboards can distinguish "wrote to DLQ" from
-  //                    "final fail outcome".
-  //   skipped        — pre-flight skip (legacy; kept for back-compat).
-  labelNames: ["outcome", "source"],
-  registers: [register],
-});
-
-export const aiMemoryIngestDurationMs = new client.Histogram({
-  name: "ai_memory_ingest_duration_ms",
-  help: "AI memory ingest per-job duration (ms)",
-  labelNames: ["outcome", "source"],
-  // Voyage embed-and-upsert ~300–500мс типово; bucket-и розтягнуті, бо
-  // у retry-сценарії duration може охопити timeout (`VOYAGE_TIMEOUT_MS`).
-  buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000],
-  registers: [register],
-});
-
-export const aiMemoryIngestQueueDepth = new client.Gauge({
-  name: "ai_memory_ingest_queue_depth",
-  help: "BullMQ AI memory ingest queue depth by status",
-  labelNames: ["status"], // waiting|active|delayed|failed
-  registers: [register],
-});
-
-// ───────────────────────── Helpers ────────────────────────────
-export type StatusClass = "5xx" | "4xx" | "3xx" | "2xx" | "other";
-
-/** Класифікує HTTP-статус у одне з 4 відер для SLO / latency-дашбордів. */
-export function statusClass(status: number | string | undefined): StatusClass {
-  const s = Number(status) || 0;
-  if (s >= 500) return "5xx";
-  if (s >= 400) return "4xx";
-  if (s >= 300) return "3xx";
-  if (s >= 200) return "2xx";
-  return "other";
-}
-
-export interface PoolSamplerOptions {
-  intervalMs?: number;
-}
-
-/**
- * Sample pg pool gauges periodically. Call once at boot.
- * Returns an unref-ed interval handle so the process can still exit cleanly.
- */
-// ───────────────── RAG eval weekly (post-PR-20 automation) ────
-// Telemetry для weekly RAG-quality cron (`scripts/rag-eval-weekly.mjs`
-// + `POST /api/internal/eval/rag-weekly`). Сетяться один раз за
-// тиждень (Mon 06:00 Kyiv), затихають між run-ами — Prom-серверу
-// це безболісно бо staleness обчислюється по
+// ───────────────── RAG eval (manual-only з 2026-08-06) ────
+// Telemetry для `POST /api/internal/eval/rag-weekly`. Weekly-cron і
+// обгортку `rag-eval-weekly.mjs` прибрано (ADR-0082 зняв workflow-
+// тригер), тож gauges сетяться лише за ручного POST і затихають між
+// run-ами — Prom-серверу це безболісно бо staleness обчислюється по
 // `rag_eval_last_run_timestamp_seconds`.
 export const ragEvalRecallAt4 = new client.Gauge({
   name: "rag_eval_recall_at_4",
@@ -1226,7 +564,7 @@ export const ragEvalRecordsTotal = new client.Counter({
 export const runtimeKillSwitchActive = new client.Gauge({
   name: "runtime_kill_switch_active",
   help: "1 if runtime kill-switch is currently active, 0 otherwise",
-  labelNames: ["switch"], // mono_ai_memory_ingest|rag_retrieval|rag_eval_weekly
+  labelNames: ["switch"], // KillSwitchName ("digest_ai_memory_ingest")
   registers: [register],
 });
 
@@ -1237,65 +575,73 @@ export const runtimeKillSwitchActivationsTotal = new client.Counter({
   registers: [register],
 });
 
-export function startPoolSampler(
-  pool: Pool,
-  { intervalMs = 10_000 }: PoolSamplerOptions = {},
-): NodeJS.Timeout {
-  const sample = () => {
-    try {
-      const total = pool.totalCount ?? 0;
-      const idle = pool.idleCount ?? 0;
-      const waiting = pool.waitingCount ?? 0;
-      dbPoolTotal.set(total);
-      dbPoolIdle.set(idle);
-      dbPoolWaiting.set(waiting);
-      // Same numbers re-emitted under the labeled gauge for newer
-      // dashboards. `active` = currently checked-out connections.
-      const active = Math.max(0, total - idle);
-      dbPoolSizeCurrent.set({ state: "active" }, active);
-      dbPoolSizeCurrent.set({ state: "idle" }, idle);
-      dbPoolSizeCurrent.set({ state: "waiting" }, waiting);
-    } catch {
-      /* ignore */
-    }
-  };
-  sample();
-  const h = setInterval(sample, intervalMs);
-  if (typeof h.unref === "function") h.unref();
-  return h;
-}
+// ───────────────────────── GDPR cleanup queue ─────────────────
+// `gdpr_cleanup_queue` (ADR-0016 § ADR-6.3) дренується in-process полером
+// `modules/gdpr/cleanupPoller.ts`, який семплить цей gauge на кожному tick-у:
+//   * `pending` — completed_at IS NULL (весь недороблений backlog);
+//   * `stuck`   — completed_at IS NULL AND attempts > 5 — audit-предикат
+//     ADR-0016. > 0 тривалий час = vendor-cleanup фейлить підряд або рядок
+//     exhausted (attempts=10, next_attempt_at='infinity') і чекає оператора.
+//     Алерт: `GdprCleanupQueueStuckRows` в ops/prometheus/rules/gdpr.yml.
+// Cardinality: 2 серії — безпечно.
+export const gdprCleanupQueueDepth = new client.Gauge({
+  name: "gdpr_cleanup_queue_depth",
+  help: "gdpr_cleanup_queue rows by state (pending = not completed; stuck = ADR-0016 audit predicate: not completed AND attempts > 5)",
+  labelNames: ["status"], // pending|stuck
+  registers: [register],
+});
 
-/**
- * Express handler для `GET /metrics`. Якщо задано `METRICS_TOKEN` — вимагає
- * `Authorization: Bearer <token>`. У dev/локально можна не ставити токен
- * (production хард-фейлить у `assertStartupEnv` — див. T2 audit #4).
- *
- * Токен-compare використовує `safeStringEqual` (поверх
- * `crypto.timingSafeEqual`) замість наївного `!==`, щоб не лікати
- * позицію першої розбіжності через CPU branch-timing — мережевий
- * атакуючий міг би статистично відновити токен побайтово.
- */
-export function metricsHandler(req: Request, res: Response): void {
-  const expected = env.METRICS_TOKEN;
-  if (expected) {
-    const auth = req.get("authorization") || "";
-    const got = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (!safeStringEqual(got, expected)) {
-      res.status(401).type("text/plain").send("unauthorized");
-      return;
-    }
-  }
-  register
-    .metrics()
-    .then((body) => {
-      res.setHeader("Content-Type", register.contentType);
-      res.send(body);
-    })
-    .catch((err: unknown) => {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message?: unknown }).message)
-          : String(err);
-      res.status(500).type("text/plain").send(`metrics_error: ${msg}`);
-    });
-}
+// ───────────────────────── Re-exports (barrel) ────────────────
+// Registry, DB-pool gauges, build-info, helpers, and the sync / BullMQ-job
+// metric families were extracted into `./metrics/*` for Hard Rule #18
+// module-size discipline. Re-exported here so `../obs/metrics.js` stays the
+// single public import path for every consumer.
+export {
+  register,
+  dbPoolTotal,
+  dbPoolIdle,
+  dbPoolWaiting,
+  dbSlowPoolConnectsTotal,
+  dbPoolSizeCurrent,
+  dbPoolAcquireDurationSeconds,
+  appBuildInfo,
+  statusClass,
+  startPoolSampler,
+  metricsHandler,
+} from "./metrics/registry.js";
+export type { StatusClass, PoolSamplerOptions } from "./metrics/registry.js";
+
+export {
+  syncOperationsTotal,
+  syncDurationMs,
+  syncPayloadBytes,
+  syncStreamConnectionsActive,
+  syncOpLogApplyTotal,
+  syncOpLogNullOriginDeviceIdTotal,
+  syncOpLogPullLagMs,
+  syncOpLogPullQueueDepth,
+} from "./metrics/sync.js";
+
+export {
+  authMailJobsEnqueuedTotal,
+  authMailJobsProcessedTotal,
+  authMailJobDurationMs,
+  authMailQueueDepth,
+  ftuxDripJobsEnqueuedTotal,
+  ftuxDripJobsProcessedTotal,
+  ftuxDripJobDurationMs,
+  ftuxDripQueueDepth,
+  ftuxDripUnsubscribesTotal,
+  aiMemoryIngestEnqueuedTotal,
+  aiMemoryIngestProcessedTotal,
+  aiMemoryIngestDurationMs,
+  aiMemoryIngestQueueDepth,
+  aiMemoryRecallTopScore,
+  aiMemoryRecallResultsTotal,
+} from "./metrics/jobs.js";
+
+export {
+  billingCheckoutTotal,
+  billingWebhookTotal,
+  billingRecurringChargeTotal,
+} from "./metrics/billing.js";

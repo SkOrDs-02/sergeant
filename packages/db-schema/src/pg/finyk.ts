@@ -1,13 +1,12 @@
 import {
   boolean,
+  doublePrecision,
   index,
   jsonb,
   pgTable,
   primaryKey,
-  real,
   text,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -15,7 +14,7 @@ import { sql } from "drizzle-orm";
  * Postgres Drizzle schemas for the Finyk module's normalized cloud-sync
  * target tables.
  *
- * Stage 4 / PR #035 of `docs/planning/storage-roadmap.md` — mirrors
+ * Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — mirrors
  * `apps/server/src/migrations/039_finyk_tables.sql` byte-for-byte
  * (column ordering, types, defaults, indexes). Snapshot tests under
  * `packages/db-schema/src/__tests__/pg-finyk-snapshot.test.ts` lock
@@ -97,7 +96,9 @@ export const finykHiddenTransactions = pgTable(
 export const finykBudgets = pgTable(
   "finyk_budgets",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -119,7 +120,9 @@ export const finykBudgets = pgTable(
 export const finykSubscriptions = pgTable(
   "finyk_subscriptions",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -141,7 +144,9 @@ export const finykSubscriptions = pgTable(
 export const finykAssets = pgTable(
   "finyk_assets",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -163,7 +168,9 @@ export const finykAssets = pgTable(
 export const finykDebts = pgTable(
   "finyk_debts",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -185,7 +192,9 @@ export const finykDebts = pgTable(
 export const finykReceivables = pgTable(
   "finyk_receivables",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -207,7 +216,9 @@ export const finykReceivables = pgTable(
 export const finykCustomCategories = pgTable(
   "finyk_custom_categories",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -229,7 +240,9 @@ export const finykCustomCategories = pgTable(
 export const finykManualExpenses = pgTable(
   "finyk_manual_expenses",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -251,7 +264,9 @@ export const finykManualExpenses = pgTable(
 export const finykTxFilters = pgTable(
   "finyk_tx_filters",
   {
-    id: uuid().primaryKey().defaultRandom(),
+    id: text()
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
     userId: text("user_id").notNull(),
     dataJson: jsonb("data_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -355,13 +370,18 @@ export const finykMonoDebtLinks = pgTable(
  * byte-for-byte. `snapshot_json` reserves space for richer per-month
  * payloads (per-asset breakdowns, FX rate at snapshot time) without a
  * follow-up migration.
+ *
+ * `networth` is `DOUBLE PRECISION` (migration 108, pre-beta schema-debt
+ * audit 2026-08-04) — `REAL` (float4, ~6-7 significant digits) silently
+ * rounded net-worth sums past 7 digits, breaking the byte-for-byte LWW
+ * invariant above. `float8` matches the client's JS `number` precision.
  */
 export const finykNetworthHistory = pgTable(
   "finyk_networth_history",
   {
     userId: text("user_id").notNull(),
     month: text().notNull(),
-    networth: real().notNull().default(0),
+    networth: doublePrecision().notNull().default(0),
     snapshotJson: jsonb("snapshot_json").notNull().default({}),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

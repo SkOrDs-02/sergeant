@@ -13,12 +13,15 @@
  */
 
 import { useMemo } from "react";
-import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
 import type { Insight } from "@shared/lib/insights/types";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type {
   Transaction,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
+import { formatNumberUk } from "@sergeant/shared";
+import { filterToKyivMonth } from "../lib/monthWindow";
 
 // Tunable thresholds — export so tests can override.
 /** MoM growth ratio that triggers the insight (0.25 = 25%). */
@@ -35,14 +38,15 @@ export const COFFEE_CATEGORY_SLUG = "restaurant";
 function previousMonth(month: string): string {
   const [y, m] = month.split("-").map(Number);
   if (!y || !m) return "";
-  const date = new Date(y, (m ?? 1) - 2, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  const prevY = m === 1 ? y - 1 : y;
+  const prevM = m === 1 ? 12 : m - 1;
+  return `${prevY}-${String(prevM).padStart(2, "0")}`;
 }
 
-/** "YYYY-MM" for today (Europe/Kyiv boundary — uses local clock, same as the rest of Finyk). */
+/** "YYYY-MM" for today, anchored to the Europe/Kyiv civil date (domain invariant). */
 function currentMonth(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const { year, month } = getKyivDateParts();
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
 /** Sum category spend for a given "YYYY-MM" month slice. */
@@ -54,24 +58,12 @@ function monthlyCategorySpend(
   txSplits: TxSplitsMap,
   customCategories: readonly { id: string; label?: string | undefined }[],
 ): number {
-  const [y, m] = month.split("-").map(Number);
-  if (!y || !m) return 0;
-  const monthStart = new Date(y, m - 1, 1).getTime();
-  const monthEnd = new Date(y, m, 1).getTime();
+  // Kyiv-anchored clamp (§1.8: a host-local `new Date(y, m-1, 1)` bound
+  // put late-month transactions outside their month on devices west of
+  // Kyiv), same helper the bank-tx month clamp uses elsewhere in Finyk.
+  const filtered = filterToKyivMonth(transactions, month);
 
-  const filtered = transactions.filter((tx) => {
-    // `tx.time` is unix seconds for mono txs; `tx.date` is "YYYY-MM-DD" for manual.
-    // Prefer `tx.time` (epoch) when available, fall back to `tx.date` string parse.
-    const tsMs =
-      tx.time > 0
-        ? tx.time > 1e10
-          ? tx.time
-          : tx.time * 1000
-        : new Date(tx.date).getTime();
-    return tsMs >= monthStart && tsMs < monthEnd;
-  });
-
-  return calcCategorySpent(
+  return calcLimitCategorySpent(
     filtered,
     categoryId,
     txCategories,
@@ -85,8 +77,7 @@ interface UseCoffeeLimitInsightArgs {
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
   customCategories?:
-    | readonly { id: string; label?: string | undefined }[]
-    | undefined;
+    readonly { id: string; label?: string | undefined }[] | undefined;
 }
 
 export function useCoffeeLimitInsight({
@@ -133,7 +124,8 @@ export function useCoffeeLimitInsight({
       id: `finyk-coffee-limit-${month}`,
       module: "finyk",
       title: `Витрати на каву ↑ ${pct}%`,
-      subtitle: `Це ${amount.toLocaleString("uk-UA")} грн. Встановити ліміт?`,
+      subtitle: `Це ${formatNumberUk(amount)}\u202F₴. Встановити ліміт?`,
+      askAiPrompt: `Витрати на каву цього місяця ${formatNumberUk(amount)}\u202F₴, на ${pct}% більше за минулий. Варто ставити ліміт чи це норм?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}`,

@@ -8,7 +8,7 @@ interface StatsSet {
   [key: string]: unknown;
 }
 
-interface StatsItem {
+export interface StatsItem {
   exerciseId?: string | null | undefined;
   type?: string | null | undefined;
   sets?: StatsSet[] | null | undefined;
@@ -26,13 +26,15 @@ interface StatsWorkout {
  * Формула Еплі для оцінки 1ПМ (1 повторний максимум).
  * Виноситься як публічна функція, щоб не дублюватись в Exercise.jsx і Progress.jsx.
  */
+export const E1RM_REP_CAP = 10;
+
 export function epley1rm(
   weightKg: number | null | undefined,
   reps: number | null | undefined,
 ): number {
   const wg = Number(weightKg) || 0;
   const r = Number(reps) || 0;
-  if (wg <= 0 || r <= 0) return 0;
+  if (wg <= 0 || r <= 0 || r > E1RM_REP_CAP) return 0;
   return wg * (1 + r / 30);
 }
 
@@ -77,59 +79,392 @@ export function getExercisePR(
   return { best1rm, bestSet, date: bestDate };
 }
 
+export interface TargetRepRange {
+  min: number;
+  max: number;
+}
+
+/**
+ * Цільові діапазони повторів. ⚠️ Інженерний дефолт, не рішення власника:
+ * числа взяті як загальновживані орієнтири і живуть в одному місці саме
+ * для того, щоб їх можна було змінити однією правкою.
+ */
+export const TARGET_REP_RANGES = {
+  compound: { min: 5, max: 8 },
+  accessory: { min: 8, max: 12 },
+  isolation: { min: 10, max: 15 },
+} as const satisfies Record<string, TargetRepRange>;
+
+/** Групи, де рух односуглобовий і вага росте дрібними кроками. */
+const ISOLATION_GROUPS = new Set([
+  "biceps",
+  "triceps",
+  "forearms",
+  "calves",
+  "core",
+]);
+
+/** Групи, де крок 2.5 кг на штанзі надто дрібний, щоб щось означати. */
+const LOWER_BODY_GROUPS = new Set([
+  "quadriceps",
+  "hamstrings",
+  "glutes",
+  "full_body",
+]);
+
+/** Мінімум із каталогу, потрібний для вибору діапазону й кроку. */
+export interface ExerciseProgressionHint {
+  equipment?: string[] | readonly string[] | null | undefined;
+  primaryGroup?: string | null | undefined;
+}
+
+/** М'який режим повернення — форма зрізу `computeOneRmAging`. */
+export interface ReturnModeHint {
+  returnMode?: boolean | undefined;
+  returnReason?: string | null | undefined;
+  reductionPct?: number | undefined;
+}
+
+/**
+ * Відповідь про готовність перед тренуванням. Обидві шкали 1-5, де **1 =
+ * погано, 5 = добре** (`soreness` читається як «як почуваються мʼязи», а не
+ * «наскільки болить», щоб напрямок збігався зі `sleep`).
+ *
+ * Мітки часу тут навмисно немає: відповідь лежить у `Workout.wellbeing` того
+ * тренування, тож протухає формою даних, а не таймером. Через це
+ * `suggestNextSet` лишається чистою і не потребує ані `new Date()`, ані
+ * переданого ззовні `now`.
+ */
+export interface ReadinessAnswer {
+  sleep?: number | null | undefined;
+  soreness?: number | null | undefined;
+}
+
+export type ReadinessLevel = "low" | "neutral" | "high";
+
+/** Межі, затверджені founder-ом 2026-09-02. */
+export const READINESS_LOW_AT = 2;
+export const READINESS_HIGH_AT = 4;
+
+function readinessScore(value: number | null | undefined): number | null {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 1 || n > 5) return null;
+  return n;
+}
+
+/**
+ * Правило найслабшої ланки: БУДЬ-ЯКА шкала ≤2 робить готовність низькою,
+ * а високою вона стає лише коли ОБИДВІ ≥4.
+ *
+ * AI-CONTEXT: асиметрія навмисна і успадкована з `AI-DANGER` у
+ * `suggestNextSet` — помилка «занизька вага» коштує одного легкого підходу,
+ * «завищена» коштує травми. Тому один поганий сигнал уже дає підставу
+ * ЗАПРОПОНУВАТИ легше, а пропозиція взяти більше вимагає згоди обох.
+ * Наслідок для неповної відповіді: `{ sleep: 1 }` це `low`, а `{ sleep: 5 }`
+ * (без `soreness`) лишається `neutral` — недомовка не підвищує навантаження.
+ */
+export function classifyReadiness(
+  answer: ReadinessAnswer | null | undefined,
+): ReadinessLevel {
+  const sleep = readinessScore(answer?.sleep);
+  const soreness = readinessScore(answer?.soreness);
+  if (
+    (sleep !== null && sleep <= READINESS_LOW_AT) ||
+    (soreness !== null && soreness <= READINESS_LOW_AT)
+  ) {
+    return "low";
+  }
+  if (
+    sleep !== null &&
+    soreness !== null &&
+    sleep >= READINESS_HIGH_AT &&
+    soreness >= READINESS_HIGH_AT
+  ) {
+    return "high";
+  }
+  return "neutral";
+}
+
+export interface SuggestNextSetOptions {
+  exercise?: ExerciseProgressionHint | null | undefined;
+  aging?: ReturnModeHint | null | undefined;
+  /** Відсутня чи нейтральна готовність лишає результат таким, як був. */
+  readiness?: ReadinessAnswer | null | undefined;
+}
+
+/**
+ * Діапазон повторів виводиться з каталогу, а не задається в програмі: одна
+ * таблиця на весь домен замість ручного проходу по всіх сесіях усіх програм.
+ */
+export function targetRepRange(
+  exercise: ExerciseProgressionHint | null | undefined,
+): TargetRepRange {
+  const group = String(exercise?.primaryGroup ?? "");
+  if (ISOLATION_GROUPS.has(group)) return TARGET_REP_RANGES.isolation;
+  const equipment = exercise?.equipment ?? [];
+  const isBarbell = Array.from(equipment).includes("barbell");
+  return isBarbell ? TARGET_REP_RANGES.compound : TARGET_REP_RANGES.accessory;
+}
+
+/** Крок ваги: 5 кг там, де працюють великі групи зі штангою, інакше 2.5. */
+export function weightStepKg(
+  exercise: ExerciseProgressionHint | null | undefined,
+): number {
+  const equipment = Array.from(exercise?.equipment ?? []);
+  const heavy =
+    equipment.includes("barbell") &&
+    LOWER_BODY_GROUPS.has(String(exercise?.primaryGroup ?? ""));
+  return heavy ? 5 : 2.5;
+}
+
 export interface SuggestedNextSetResult {
   weightKg: number;
   reps: number;
   altWeightKg?: number;
   altReps?: number;
+  /** Діапазон, у межах якого росли повтори. */
+  targetReps: TargetRepRange;
+  /** Вага навмисно не піднімається — режим повернення. */
+  softMode: boolean;
+  /** `layoff` | `injury` — причина м'якого режиму, `null` коли його немає. */
+  returnReason: string | null;
+  /**
+   * Полегшений варіант — рівно на крок ваги нижче за плановий, з повторами на
+   * низу діапазону. Присутній ЛИШЕ при низькій готовності.
+   */
+  easedWeightKg?: number;
+  easedReps?: number;
+  /**
+   * Що саме показує друга кнопка. Поля немає взагалі, коли готовність нічого
+   * не сказала — так картка лишається однокнопковою, як була.
+   */
+  secondOption?: "easier" | "harder";
 }
 
 /**
- * Рекомендує наступний сет на основі останнього кращого сету (за 3 зонами):
- *   reps ≤ 5  → +2.5 кг, ті самі повт.
- *   reps 6-10 → primary: +2.5 кг / ті самі повт.
- *               alt: та сама вага / +1 повт.
- *   reps > 10 → +5% ваги (округл. до 2.5 кг), ті самі повт.
- * Повертає { weightKg, reps, altWeightKg?, altReps? } або null.
+ * Подвійна прогресія: спершу ростуть повтори в межах цільового діапазону,
+ * після досягнення стелі додається вага і повтори повертаються на низ.
+ *
+ * AI-DANGER: у режимі повернення (пауза понад поріг або свіже зняття позначки
+ * травми) підказка НЕ підвищує вагу — вона пропонує від зниженого орієнтира.
+ * Це той самий контракт довіри тіла, що й `computeOneRmAging`: помилка
+ * «занизька вага» коштує одного легкого підходу, «завищена» коштує травми.
+ *
+ * Це підказка, а не автомат: значення підставляється в поле і його можна
+ * перебити. Повертає `null`, коли історії ще немає.
+ *
+ * Готовність (`options.readiness`) НЕ змінює плановий варіант — вона лише
+ * додає другий. Нейтральна чи відсутня відповідь віддає рівно той самий
+ * обʼєкт, що й до появи цієї опції.
  */
 export function suggestNextSet(
   lastBestSet: StatsSet | null | undefined,
+  options: SuggestNextSetOptions = {},
 ): SuggestedNextSetResult | null {
   const w = Number(lastBestSet?.weightKg) || 0;
   const r = Number(lastBestSet?.reps) || 0;
   if (w <= 0 || r <= 0) return null;
 
-  if (r <= 5) {
-    return { weightKg: roundToStep(w + 2.5, 2.5), reps: r };
-  }
-  if (r <= 10) {
+  const targetReps = targetRepRange(options.exercise);
+  const step = weightStepKg(options.exercise);
+  const aging = options.aging;
+  const readiness = classifyReadiness(options.readiness);
+
+  /**
+   * Полегшення — рівно один крок ваги вниз, з підлогою в один крок, щоб
+   * легка вправа не пішла в нуль чи мінус. Крок, а не відсоток: він уже
+   * означає «наскільки ця вправа рухається за раз» (`weightStepKg`) і завжди
+   * лягає на легальний набір млинців. `Math.min` тримає інваріант, заради
+   * якого все й робиться: полегшений варіант НІКОЛИ не важчий за плановий.
+   */
+  const ease = (
+    plannedWeight: number,
+  ): Pick<
+    SuggestedNextSetResult,
+    "easedWeightKg" | "easedReps" | "secondOption"
+  > => ({
+    easedWeightKg: Math.min(
+      plannedWeight,
+      Math.max(step, roundToStep(plannedWeight - step, step)),
+    ),
+    easedReps: targetReps.min,
+    secondOption: "easier",
+  });
+
+  if (aging?.returnMode) {
+    const reduction = Math.max(0, Number(aging.reductionPct) || 0) / 100;
+    const softWeight = roundToStep(w * (1 - reduction), step);
+    // Округлення вгору до кроку не має права дати вагу БІЛЬШУ за минулу:
+    // це рівно те підвищення, якого режим повернення уникає.
+    const planned = Math.min(w, softWeight);
     return {
-      weightKg: roundToStep(w + 2.5, 2.5),
-      reps: r,
-      altWeightKg: w,
-      altReps: r + 1,
+      weightKg: planned,
+      reps: targetReps.min,
+      targetReps,
+      softMode: true,
+      returnReason: aging.returnReason ?? null,
+      // AI-DANGER: у режимі повернення «можна більше» не пропонується
+      // НІКОЛИ, хай яка добра сьогодні готовність. Сенс режиму саме в тому,
+      // щоб не піднімати вагу, і добре самопочуття після паузи чи травми —
+      // не доказ, що тканина відновилась.
+      ...(readiness === "low" ? ease(planned) : {}),
     };
   }
-  return { weightKg: roundToStep(w * 1.05, 2.5), reps: r };
+
+  if (r >= targetReps.max) {
+    const planned = roundToStep(w + step, step);
+    return {
+      weightKg: planned,
+      reps: targetReps.min,
+      targetReps,
+      softMode: false,
+      returnReason: null,
+      // «Важче» тут не пропонується: план і так піднімає вагу, а другий крок
+      // угору за одну сесію — це вже не підказка, а стрибок.
+      ...(readiness === "low" ? ease(planned) : {}),
+    };
+  }
+
+  return {
+    weightKg: w,
+    reps: r + 1,
+    altWeightKg: roundToStep(w + step, step),
+    altReps: targetReps.min,
+    targetReps,
+    softMode: false,
+    returnReason: null,
+    ...(readiness === "low" ? ease(w) : {}),
+    ...(readiness === "high" ? { secondOption: "harder" as const } : {}),
+  };
+}
+
+/** Скільки полегшень поспіль означає «схоже, план завищений». */
+export const EASING_STREAK_THRESHOLD = 3;
+
+/**
+ * Скільки разів ПОСПІЛЬ людина обрала полегшений варіант на цій вправі,
+ * рахуючи від найсвіжішого заняття назад.
+ *
+ * Одиниця лічби — ПОЯВА ВПРАВИ у ЗАВЕРШЕНОМУ тренуванні, не підхід: три
+ * полегшені підходи в одному занятті це один випадок, а не три.
+ *
+ * Що НЕ скидає лічильник: тренування, де цієї вправи не було (пропуск), і
+ * незавершене тренування. Рахується послідовність появ вправи, а не
+ * календар, тож перерва в тиждень стрічку не обнуляє — «погано спав» тричі
+ * поспіль лишається сигналом і з паузами між заняттями.
+ *
+ * Що скидає: будь-який `planned` чи `harder` на цій вправі. Відсутнє
+ * `chosenVariant` читається як `planned`, тож історія до появи готовності
+ * стрічку обриває, а не продовжує.
+ *
+ * Значення ПОХІДНЕ і навмисно не зберігається: правка завершеного тренування
+ * має одразу відбитись на лічильнику, а збережене число розійшлося б із тим,
+ * що людина бачить в історії.
+ */
+export function countConsecutiveEasings(
+  workouts: readonly StatsWorkout[] | null | undefined,
+  exerciseId: string,
+): number {
+  if (!Array.isArray(workouts) || !exerciseId) return 0;
+  const ordered = [...workouts]
+    .filter((wk) => Boolean(wk?.endedAt))
+    .sort((a, b) => compareIsoDesc(a?.startedAt, b?.startedAt));
+
+  let streak = 0;
+  for (const workout of ordered) {
+    const items: StatsItem[] = Array.isArray(workout?.items)
+      ? workout.items
+      : [];
+    const item = items.find((it) => it?.exerciseId === exerciseId);
+    if (!item) continue; // вправи не було — ні плюс, ні скидання
+    if (item["chosenVariant"] !== "easier") break;
+    streak += 1;
+  }
+  return streak;
+}
+
+/**
+ * Newest-first ISO-timestamp comparator. Unparseable/missing timestamps
+ * sink to the bottom so one malformed entry never hides valid rows.
+ * Shared by every "sort by startedAt/at desc" call-site across workouts,
+ * measurements, and exercise history.
+ */
+export function compareIsoDesc(
+  aIso: string | null | undefined,
+  bIso: string | null | undefined,
+): number {
+  const at = aIso ? Date.parse(aIso) : NaN;
+  const bt = bIso ? Date.parse(bIso) : NaN;
+  const aOk = Number.isFinite(at);
+  const bOk = Number.isFinite(bt);
+  if (!aOk && !bOk) return 0;
+  if (!aOk) return 1;
+  if (!bOk) return -1;
+  return bt - at;
+}
+
+/**
+ * Тоннаж ОДНІЄЇ вправи, кг.
+ *
+ * Винесено з `workoutTonnageKg` (аудит `unification-modules.md` §1.4,
+ * перезамір 2026-09-15). Канон рахував тоннаж лише по тренуванню цілком,
+ * тож усі, кому був потрібен розріз ПО ВПРАВІ — чат, тижневий дайджест,
+ * мобільний дашборд — писали внутрішній цикл своєю рукою. Пʼять копій, і
+ * три з них загубили `type === "strength"`:
+ * `chatActions/fizrukActions/analytics.ts` (там фільтр був по назві й
+ * мʼязу, тип не перевірявся зовсім) і обидві мобільні
+ * (`coachSnapshot.ts`, `weeklyDigestAggregates.ts`).
+ *
+ * Чому фільтр обовʼязковий: `WorkoutItem.sets` — поле необовʼязкове, але
+ * НЕ звужене за `type`, тож вправа типу `distance` чи `time` може нести
+ * підходи так само, як силова. Копія без фільтра додасть їх до тоннажу, і
+ * розбіжність буде тиха — число просто більше за те, що показує екран
+ * Вправи.
+ *
+ * AI-DANGER: фільтр СТРОГИЙ — вправа без `type` дає 0, а не тоннаж. На
+ * вебі це безпечно, бо `WorkoutItem.type` там обовʼязковий. На МОБІЛЬНОМУ
+ * це не так: `apps/mobile/src/modules/fizruk/hooks/useFizrukWorkouts.ts:42`
+ * оголошує `type?:` необовʼязковим, і дві мобільні копії тоннажу
+ * (`coachSnapshot.ts`, `weeklyDigestAggregates.ts`) навмисно НЕ переведені
+ * сюди: спроба 2026-09-15 повалила два їхні тести, бо фікстури не несуть
+ * `type` зовсім, і обʼєм тижня став нулем. Перш ніж зводити мобілку на цей
+ * канон, треба переконатись на РЕАЛЬНИХ даних, що `type` там заповнений —
+ * інакше фікс уніфікації обнулить людям тижневий обʼєм. Розбір — у
+ * `docs/work/specs/audits/unification-modules.md` §1.4.
+ *
+ * Коерція `Number(x) || 0` лишається тут, а не на call-site-ах: дані
+ * приходять із SQLite і з сервера, де числове поле може приїхати рядком.
+ */
+export function itemTonnageKg(item: StatsItem | null | undefined): number {
+  if (!item || item.type !== "strength") return 0;
+  let t = 0;
+  for (const s of item.sets || []) {
+    t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
+  }
+  return t;
 }
 
 export function workoutTonnageKg(w: StatsWorkout | null | undefined): number {
   let t = 0;
   for (const it of w?.items || []) {
-    if (it.type === "strength") {
-      for (const s of it.sets || []) {
-        t += (Number(s.weightKg) || 0) * (Number(s.reps) || 0);
-      }
-    }
+    t += itemTonnageKg(it);
   }
   return t;
 }
 
-export function workoutDurationSec(w: StatsWorkout | null | undefined): number {
+/**
+ * @param nowMs Тестовий шов для незавершеного тренування (`endedAt` ще
+ * немає), дефолт `Date.now()`. Канон для двох байт-майже-ідентичних копій
+ * (`docs/work/specs/audits/unification-modules.md` §2.20).
+ */
+export function workoutDurationSec(
+  w: StatsWorkout | null | undefined,
+  nowMs: number = Date.now(),
+): number {
   if (!w?.startedAt) return 0;
   const start = Date.parse(w.startedAt);
-  const end = w.endedAt ? Date.parse(w.endedAt) : Date.now();
-  if (!Number.isFinite(start)) return 0;
+  const end = w.endedAt ? Date.parse(w.endedAt) : nowMs;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
   return Math.max(0, Math.floor((end - start) / 1000));
 }
 

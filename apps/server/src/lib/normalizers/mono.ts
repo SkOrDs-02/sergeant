@@ -65,6 +65,44 @@ export function normalizeMonoAccount(
   };
 }
 
+// ── Jar row normalizer ───────────────────────────────────────────────────────
+
+export interface MonoJarRow {
+  userId: string;
+  monoJarId: string;
+  sendId: string | null;
+  title: string | null;
+  description: string | null;
+  currencyCode: number;
+  balance: unknown;
+  goal: unknown;
+  lastSeenAt: Date | string | null;
+}
+
+export interface NormalizedMonoJar {
+  userId: string;
+  monoJarId: string;
+  sendId: string | null;
+  title: string | null;
+  description: string | null;
+  currencyCode: number;
+  balance: number | null;
+  goal: number | null;
+  lastSeenAt: string | null;
+}
+
+export function normalizeMonoJar(row: MonoJarRow): NormalizedMonoJar {
+  return {
+    ...row,
+    balance: toNumberOrNull(row.balance),
+    goal: toNumberOrNull(row.goal),
+    lastSeenAt:
+      row.lastSeenAt instanceof Date
+        ? row.lastSeenAt.toISOString()
+        : row.lastSeenAt,
+  };
+}
+
 // ── Transaction row normalizer ───────────────────────────────────────────────
 
 export interface MonoTransactionRow {

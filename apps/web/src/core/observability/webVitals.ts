@@ -163,7 +163,7 @@ export function enqueue(metric: MetricInput | null | undefined) {
     !metric.rating ||
     !isSupportedRating(metric.rating)
   ) {
-    // SSOT `WebVitalsPayloadSchema` робить `rating` обов'язковим. Якщо
+    // SSOT `WebVitalsPayloadSchema` робить `rating` обовʼязковим. Якщо
     // буферити запис без рейтингу, server safeParse відкине ВЕСЬ батч —
     // і кілька валідних метрик мовчки втрачаються разом з невалідним.
     // Тому метрики без розпізнаного рейтингу drop'аємо тут, до буфера.

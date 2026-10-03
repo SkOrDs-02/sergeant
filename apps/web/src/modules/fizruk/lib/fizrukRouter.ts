@@ -10,7 +10,14 @@ export type FizrukPage =
   | "measurements"
   | "programs"
   | "body"
-  | "exercise";
+  | "exercise"
+  | "workout"
+  // 03-A — dedicated history route (`/fizruk/history`).
+  | "history"
+  // Каталог вправ і шаблони: власні адреси замість `view`-стану всередині
+  // `/fizruk/workouts` (див. `shell/fizrukRoute.ts`).
+  | "catalog"
+  | "templates";
 
 const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "dashboard",
@@ -21,12 +28,26 @@ const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
   "programs",
   "body",
   "exercise",
+  "workout",
+  "history",
+  "catalog",
+  "templates",
 ];
 
 export interface ParsedFizrukRoute {
   page: FizrukPage;
-  /** Tail segment after `<page>/` — used by `exercise/<id>`. */
+  /**
+   * Tail segment after `<page>/` — used by `exercise/<id>`, `workout/<id>`
+   * and `atlas/<muscleId>` (спека `fizruk-hero-recovery-bars.md` рішення 4:
+   * the id a hero-row tap wants the atlas to focus).
+   */
   segment?: string;
+  /**
+   * Другий хвостовий сегмент — лише для `workout/<id>/<itemId>`: вправа,
+   * відкрита на весь екран усередині сесії (спека
+   * `fizruk-active-session.md`). Для решти сторінок завжди `undefined`.
+   */
+  subSegment?: string;
   redirectFrom?: string;
 }
 
@@ -50,8 +71,14 @@ export function parseFizrukSegments(
     return { page: "dashboard" };
   }
   const tail = segments[1];
-  if (page === "exercise" && tail) {
-    return { page: "exercise", segment: tail };
+  if (page === "workout" && tail) {
+    const sub = segments[2];
+    return sub
+      ? { page: "workout", segment: tail, subSegment: sub }
+      : { page: "workout", segment: tail };
+  }
+  if ((page === "exercise" || page === "atlas") && tail) {
+    return { page: page as "exercise" | "atlas", segment: tail };
   }
   return { page: page as FizrukPage };
 }
@@ -68,9 +95,11 @@ export function parseFizrukSegments(
 export function buildFizrukPath(
   next: FizrukPage | null | undefined,
   segment?: string,
+  subSegment?: string,
 ): string {
   const page = next || "dashboard";
   if (page === "dashboard") return "";
+  if (segment && subSegment) return `${page}/${segment}/${subSegment}`;
   if (segment) return `${page}/${segment}`;
   return page;
 }
@@ -79,8 +108,9 @@ export function buildFizrukPath(
 export function fizrukRoutePath(
   next: FizrukPage | null | undefined,
   segment?: string,
+  subSegment?: string,
 ): string {
-  const suffix = buildFizrukPath(next, segment);
+  const suffix = buildFizrukPath(next, segment, subSegment);
   return suffix ? `/fizruk/${suffix}` : "/fizruk";
 }
 

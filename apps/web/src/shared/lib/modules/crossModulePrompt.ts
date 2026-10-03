@@ -5,7 +5,7 @@ import { safeReadLS, safeRemoveLS, safeWriteLS } from "../storage/storage";
 /**
  * Cross-module nudges — small, dismissible toast prompts that suggest a
  * follow-up action in another module after the user does something in
- * the current module. See `docs/design/cross-module-prompts.md` for the
+ * the current module. See `docs/design/design/cross-module-prompts.md` for the
  * full pattern + decision table.
  *
  * Examples:
@@ -44,9 +44,7 @@ export const DEFAULT_PROMPT_DURATION_MS = 6000;
  * system catches typos at every call-site.
  */
 export type CrossModulePromptId =
-  | "finyk-restaurant-to-meal"
-  | "finyk-food-to-meal"
-  | "fizruk-finish-to-meal";
+  "finyk-restaurant-to-meal" | "finyk-food-to-meal" | "fizruk-finish-to-meal";
 
 interface PromptRecord {
   /** Timestamps (ms) of the last few dismiss events, oldest → newest. */
@@ -158,21 +156,20 @@ export function tryShowCrossModulePrompt(
   if (isCrossModulePromptSuppressed(opts.id)) return false;
 
   let accepted = false;
-  const id = toast.show(
-    opts.msg,
-    "info",
-    opts.duration ?? DEFAULT_PROMPT_DURATION_MS,
-    {
-      label: opts.acceptLabel,
-      onClick: () => {
-        accepted = true;
-        hapticTap();
-        recordCrossModulePromptAccepted(opts.id);
-        toast.dismiss(id);
-        opts.onAccept();
-      },
+  toast.show(opts.msg, "info", opts.duration ?? DEFAULT_PROMPT_DURATION_MS, {
+    label: opts.acceptLabel,
+    onClick: () => {
+      accepted = true;
+      hapticTap();
+      recordCrossModulePromptAccepted(opts.id);
+      // Явний `dismiss` тут НЕ потрібен: `<ToastRow>` закриває аркуш у
+      // `finally` після `onClick` (docs/design/ui/toast-policy.md
+      // § Action shape). Другий виклик перезаписував exit-таймер тим
+      // самим ключем — перший лишався осиротілим і через 200 мс смикав
+      // `setToasts` уже поза життям тоста.
+      opts.onAccept();
     },
-  );
+  });
 
   // Schedule a "did the user act?" check just after the toast's
   // natural dismissal. If they neither tapped accept nor were still

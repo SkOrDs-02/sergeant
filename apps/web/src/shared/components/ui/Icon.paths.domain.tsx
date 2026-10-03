@@ -197,6 +197,102 @@ export const DOMAIN_PATHS: Record<string, ReactNode> = {
   ),
   // `egg` — nutrition: dairy/protein category.
   egg: <path d="M12 3c-4 0-7 6-7 11a7 7 0 0 0 14 0c0-5-3-11-7-11z" />,
+  // Гліф нижче додано 2026-08-29 разом із розширенням каталогу комори
+  // (спека `pantry-generic-names.md`): соуси під `droplet` не відрізнялись
+  // від бакалії. Парний йому `snowflake` знято 2026-09-01 разом із
+  // категорією «Заморожене»: заморожене стало МІСЦЕМ, а не смаком
+  // (спека `pantry-storage-places.md` §6), і категорії під нього немає.
+  // `bottle` — nutrition: sauces category.
+  bottle: (
+    <>
+      <path d="M10 2h4v3.5c0 .9.3 1.4.9 2.1l.7.9c.9 1 1.4 2.3 1.4 3.6V19a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3v-6.9c0-1.3.5-2.6 1.4-3.6l.7-.9c.6-.7.9-1.2.9-2.1V2z" />
+      <path d="M7 13h10" />
+    </>
+  ),
+  // `jar` — nutrition: spreads category (додано 2026-10-01, коли горіхові й
+  // шоколадні пасти виїхали зі «Соусів та паст» у власну категорію; `bottle`
+  // лишився соусам). Банка з кришкою й етикеткою.
+  jar: (
+    <>
+      <rect x="6" y="3" width="12" height="3.5" rx="1" />
+      <path d="M7 6.5V19a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6.5" />
+      <path d="M7 11h10M7 16h10" />
+    </>
+  ),
+  // Чотири гліфи нижче додано 2026-08-21 разом зі зняттям емодзі з
+  // `@sergeant/nutrition-domain`: категорії комори й типи прийомів їжі
+  // мали 🥕/🍎/🍗/🌾, і без цих іконок їх довелося б звести до
+  // однакового generic-гліфа, тобто втратити розрізнення.
+  // `apple` — nutrition: fruits & berries category, snack meal type.
+  apple: (
+    <>
+      <path d="M12 8c-1.5-1.5-3-2-4.5-1.5C5.5 7.2 4 9.4 4 12.5 4 16.6 7 21 9.5 21c1 0 1.7-.5 2.5-.5s1.5.5 2.5.5c2.5 0 5.5-4.4 5.5-8.5 0-3.1-1.5-5.3-3.5-6-1.5-.5-3 0-4.5 1.5z" />
+      <path d="M12 8V5a3 3 0 0 1 3-3" />
+    </>
+  ),
+  // `carrot` — nutrition: vegetables category.
+  carrot: (
+    <>
+      <path d="M3 21c4.5-.8 9-4 12-8L11 9C7 12 3.8 16.5 3 21z" />
+      <path d="M15 13a4 4 0 0 0 5-5 4 4 0 0 0-5 5z" />
+      <path d="M13 7a3 3 0 0 1 3-4" />
+    </>
+  ),
+  // Три гліфи нижче додано 2026-08-31 разом із розширенням каталогу комори
+  // з 13 до 17 категорій (спека `pantry-categorization.md`): риба виїхала
+  // з мʼясної категорії й забрала з собою `fish`, а Бобові й Алкоголь
+  // прийшли новими. `dumbbell` для Спортивного харчування вже був в
+  // атласі, тож четвертого гліфа не знадобилось.
+  // `drumstick` — nutrition: meat & poultry category.
+  drumstick: (
+    <>
+      <circle cx="15.3" cy="8.7" r="5.4" />
+      <path d="M11.5 12.5 8 16" />
+      <circle cx="6.2" cy="16.6" r="1.9" />
+      <circle cx="8.1" cy="18.5" r="1.9" />
+    </>
+  ),
+  // `bean` — nutrition: legumes category.
+  bean: (
+    <>
+      <path d="M18.5 5.5c2 2 2 5.6-.5 8.1-2.6 2.6-6.6 4.4-9.6 4.4a4.4 4.4 0 0 1-4.4-4.4c0-3 1.8-7 4.4-9.6 2.5-2.5 6.1-2.5 8.1-.5z" />
+      <path d="M9 16c-1.5-1.5-1.5-4 0-6s4-3.5 5.5-3" />
+    </>
+  ),
+  // `wine` — nutrition: alcohol category.
+  wine: (
+    <>
+      <path d="M6 3h12l-.6 6a5.4 5.4 0 0 1-10.8 0z" />
+      <path d="M6.3 8h11.4" />
+      <path d="M12 14.4V21" />
+      <path d="M8.5 21h7" />
+    </>
+  ),
+  // `fish` — nutrition: fish & seafood category.
+  fish: (
+    <>
+      <path d="M2 12c3-4 7-6 11-6s7 2 9 6c-2 4-5 6-9 6s-8-2-11-6z" />
+      <path d="M18 12h.01" />
+      <path d="M22 8l-4 4 4 4" />
+    </>
+  ),
+  // `wheat` — nutrition: grains & bread category.
+  wheat: (
+    <>
+      <path d="M12 22V9" />
+      <path d="M12 9c0-2.5 1.5-4 3.5-4.5C15 7 13.8 8.6 12 9z" />
+      <path d="M12 9c0-2.5-1.5-4-3.5-4.5C9 7 10.2 8.6 12 9z" />
+      <path d="M12 15c0-2.5 1.5-4 3.5-4.5C15 13 13.8 14.6 12 15z" />
+      <path d="M12 15c0-2.5-1.5-4-3.5-4.5C9 13 10.2 14.6 12 15z" />
+    </>
+  ),
+  // `barcode` — product barcode scan action (Nutrition module).
+  barcode: (
+    <>
+      <path d="M3 5v14M6 5v14M10 5v14M14 5v14M18 5v14M21 5v14" />
+      <path d="M8 5v14M16 5v14" strokeWidth="1" />
+    </>
+  ),
   // `scanner` — barcode / photo scanner trigger (Nutrition module).
   scanner: (
     <>

@@ -16,32 +16,28 @@ describe("nutrition endpoints", () => {
     }));
     const endpoints = createNutritionEndpoints(httpClient(post));
 
-    await endpoints.postJson("/api/nutrition/custom", null);
     await endpoints.analyzePhoto({ image: "x" });
     await endpoints.refinePhoto({ image: "x" });
     await endpoints.recommendRecipes({ pantry: [] });
     await endpoints.weekPlan({ pantry: [] });
     await endpoints.dayPlan({ pantry: [] });
-    await endpoints.dayHint({ pantry: [] });
     await endpoints.shoppingList({ pantry: [] });
     await endpoints.parsePantry({ text: "milk" });
     await endpoints.backupUpload({ blob: { log: {} } });
     await endpoints.backupDownload();
 
     expect(post.mock.calls.map((call) => call[0])).toEqual([
-      "/api/nutrition/custom",
       "/api/nutrition/analyze-photo",
       "/api/nutrition/refine-photo",
       "/api/nutrition/recommend-recipes",
       "/api/nutrition/week-plan",
       "/api/nutrition/day-plan",
-      "/api/nutrition/day-hint",
       "/api/nutrition/shopping-list",
       "/api/nutrition/parse-pantry",
       "/api/nutrition/backup-upload",
       "/api/nutrition/backup-download",
     ]);
-    expect(post.mock.calls[0]?.[1]).toEqual({});
+    expect(post.mock.calls[0]?.[1]).toEqual({ image: "x" });
     expect(post.mock.calls.at(-1)?.[1]).toEqual({});
   });
 });
@@ -128,5 +124,19 @@ describe("transcribe endpoints", () => {
         mimeType: "audio/webm",
       }),
     ).rejects.toThrow("offline");
+
+    const parseFailurePost = vi.fn(async () => {
+      throw new ApiError({
+        kind: "parse",
+        message: "bad json",
+        url: "/api/transcribe",
+      });
+    });
+    await expect(
+      createTranscribeEndpoints(httpClient(parseFailurePost)).send({
+        audio: new ArrayBuffer(1),
+        mimeType: "audio/webm",
+      }),
+    ).rejects.toMatchObject({ kind: "parse" });
   });
 });

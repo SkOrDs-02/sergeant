@@ -47,10 +47,7 @@ import { Button } from "./Button";
 const ALERT_DIALOG_ROLE = "alertdialog" as AccessibilityRole;
 
 export type ConfirmDialogVariant =
-  | "default"
-  | "destructive"
-  | "warning"
-  | "info";
+  "default" | "destructive" | "warning" | "info";
 
 export interface ConfirmDialogProps {
   open: boolean;
@@ -58,11 +55,6 @@ export interface ConfirmDialogProps {
   description?: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
-  /**
-   * @deprecated Use variant="destructive" instead
-   * @removeBy 2026-09-01
-   */
-  danger?: boolean;
   /** Visual variant of the dialog */
   variant?: ConfirmDialogVariant;
   /** Custom icon component */
@@ -117,8 +109,7 @@ export function ConfirmDialog({
   description,
   confirmLabel = "Підтвердити",
   cancelLabel = "Скасувати",
-  danger = false,
-  variant: variantProp,
+  variant = "default",
   icon: iconProp,
   hideCancel = false,
   loading = false,
@@ -128,8 +119,6 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const reduceMotion = useReducedMotion();
 
-  // Support legacy `danger` prop
-  const variant = variantProp ?? (danger ? "destructive" : "default");
   const config = VARIANT_CONFIG[variant];
   const IconComponent = iconProp ?? config.icon;
 

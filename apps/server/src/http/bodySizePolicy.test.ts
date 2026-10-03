@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import express from "express";
+import { gzipSync } from "node:zlib";
 import request from "supertest";
 
 import {
@@ -28,7 +29,7 @@ import {
 function makeApp() {
   const app = express();
   applyBodySizePolicy(app);
-  app.all("*", (req, res) => {
+  app.all(/.*/, (req, res) => {
     res.status(200).json({
       receivedKeys: Object.keys((req.body as Record<string, unknown>) ?? {})
         .length,
@@ -127,6 +128,33 @@ describe("applyBodySizePolicy — payload acceptance", () => {
     expect(res.status).toBe(413);
   });
 
+  /**
+   * Регресія: два тести вище ганяють `/api/sync/push` — шлях, на якому вже
+   * НЕМАЄ живого роуту (v1-push знято, під `/api/sync` лишився тільки
+   * `/api/sync/audit`). Тобто ліміт перевірявся на мертвому префіксі, а
+   * єдиний живий push — `/api/v2/sync/push` — не перевіряв ніхто і жив під
+   * дефолтними 128kb. Ці два тести закривають саме живий шлях.
+   */
+  it("/api/v2/sync (ЖИВИЙ push) приймає 300KB — понад дефолтні 128KB", async () => {
+    const app = makeApp();
+    const big = buildJsonPayload(300 * 1024);
+    const res = await request(app)
+      .post("/api/v2/sync/push")
+      .set("Content-Type", "application/json")
+      .send(big);
+    expect(res.status).toBe(200);
+  });
+
+  it("/api/v2/sync приймає 5.5MB (під лімітом 6MB)", async () => {
+    const app = makeApp();
+    const big = buildJsonPayload(5.5 * 1024 * 1024);
+    const res = await request(app)
+      .post("/api/v2/sync/push")
+      .set("Content-Type", "application/json")
+      .send(big);
+    expect(res.status).toBe(200);
+  });
+
   it("/api/chat приймає до ~900KB (під лімітом 1MB)", async () => {
     const app = makeApp();
     const big = buildJsonPayload(900 * 1024);
@@ -190,5 +218,69 @@ describe("applyBodySizePolicy — payload acceptance", () => {
       .send('{"type":"checkout.session.completed"}');
     expect(res.status).toBe(200);
     expect(res.body.isBuffer).toBe(true);
+  });
+});
+
+describe("B28 — inflate:false на AI-роутах (gzip-тіло не розпаковується до auth)", () => {
+  const gz = gzipSync(JSON.stringify({ hello: "world" }));
+
+  it("JSON AI-роут (/api/chat): gzip-тіло → 415, handler не викликається", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("Content-Type", "application/json")
+      .set("Content-Encoding", "gzip")
+      .serialize((b: unknown) => b as unknown as string)
+      .send(gz);
+    expect(res.status).toBe(415);
+  });
+
+  it("JSON AI-роут: тіло без Content-Encoding проходить як раніше", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("Content-Type", "application/json")
+      .send({ hello: "world" });
+    expect(res.status).toBe(200);
+    expect(res.body.receivedKeys).toBe(1);
+  });
+
+  it("raw AI-роут (/api/transcribe): gzip-тіло → 415", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/transcribe")
+      .set("Content-Type", "audio/webm")
+      .set("Content-Encoding", "gzip")
+      .serialize((b: unknown) => b as unknown as string)
+      .send(gz);
+    expect(res.status).toBe(415);
+  });
+
+  it("не-AI роут (default) поведінку не змінює: gzip і надалі розпаковується", async () => {
+    const app = makeApp();
+    const res = await request(app)
+      .post("/api/something-default")
+      .set("Content-Type", "application/json")
+      .set("Content-Encoding", "gzip")
+      .serialize((b: unknown) => b as unknown as string)
+      .send(gz);
+    expect(res.status).toBe(200);
+    expect(res.body.receivedKeys).toBe(1);
+  });
+
+  it("усі AI-правила з таблиці мають inflate:false", () => {
+    const ai = [
+      "/api/nutrition/analyze-photo",
+      "/api/nutrition/refine-photo",
+      "/api/finyk/receipts/analyze",
+      "/api/finyk/import/screenshot/analyze",
+      "/api/chat",
+      "/api/transcribe",
+      "/api/coach/memory",
+    ];
+    for (const prefix of ai) {
+      const rule = BODY_SIZE_POLICY.find((r) => r.pathPrefix === prefix);
+      expect(rule?.inflate, prefix).toBe(false);
+    }
   });
 });

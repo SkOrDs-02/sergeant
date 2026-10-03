@@ -1,4 +1,0 @@
-# Деплой API на Railway через Dockerfile.api (без зайвого vite build).
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile.api"

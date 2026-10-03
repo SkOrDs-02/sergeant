@@ -3,7 +3,7 @@ import { WorkoutStatTile } from "./WorkoutStatTile";
 
 /**
  * `WorkoutStatTile` — stat-tile для fizruk workout-summary sheet. Wash
- * адаптується через `--c-fizruk-tile` CSS variables (light = teal-800
+ * адаптується через `--c-fizruk-tile` CSS variables (light = cyan-800
  * wash, dark = white wash). Stories покривають `sm` / `lg` розміри плюс
  * варіант із тривалим текстом — initiative 0007 Phase 3, module-level
  * story для модуля Fizruk.

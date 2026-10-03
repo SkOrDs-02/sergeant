@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { getRecipeById, type SavedRecipe } from "../lib/recipeBookStore";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
@@ -12,14 +12,20 @@ export function useSavedRecipeById(id: string | string[] | undefined): {
     recipeId ? getRecipeById(String(recipeId)) : undefined,
   );
 
-  // Stage 13 PR #073 of `docs/planning/storage-roadmap.md` — recipes
+  // Stage 13 PR #073 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — recipes
   // live exclusively in the SQLite warm cache after the MMKV-write
   // tombstone. The cache tick is the only re-render signal.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  useEffect(() => {
-    const key = String(recipeId || "").trim();
-    setRecipe(key ? getRecipeById(key) : undefined);
-  }, [recipeId, sqliteCacheTick]);
+  const [prevKey, setPrevKey] = useState<string>(String(recipeId || "").trim());
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+
+  const currentKey = String(recipeId || "").trim();
+  if (sqliteCacheTick !== prevTick || currentKey !== prevKey) {
+    setPrevTick(sqliteCacheTick);
+    setPrevKey(currentKey);
+    setRecipe(currentKey ? getRecipeById(currentKey) : undefined);
+  }
 
   return { recipe, recipeId: String(recipeId) };
 }

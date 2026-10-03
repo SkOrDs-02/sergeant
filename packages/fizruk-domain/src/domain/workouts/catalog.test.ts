@@ -119,6 +119,29 @@ describe("groupExercisesByPrimary", () => {
     expect(last.id).toBe("mystery_group");
   });
 
+  it("sorts multiple unknown primary groups alphabetically by id", () => {
+    const pool: WorkoutExerciseCatalogEntry[] = [
+      { id: "z1", name: { uk: "Z" }, primaryGroup: "zzz_unknown" },
+      { id: "a1", name: { uk: "A" }, primaryGroup: "aaa_unknown" },
+    ];
+    const groups = groupExercisesByPrimary(pool);
+    expect(groups.map((g) => g.id)).toEqual(["aaa_unknown", "zzz_unknown"]);
+  });
+
+  it("uses explicit totalsBy counts over the filtered bucket size", () => {
+    const filtered = [POOL[0]!]; // just "bench"
+    const groups = groupExercisesByPrimary(filtered, { totalsBy: POOL });
+    const chest = groups.find((g) => g.id === "chest")!;
+    expect(chest.items).toHaveLength(1);
+    expect(chest.total).toBe(2); // bench + pushup in the unfiltered pool
+  });
+
+  it("falls back to bucket size when totalsBy is omitted", () => {
+    const groups = groupExercisesByPrimary(POOL);
+    const chest = groups.find((g) => g.id === "chest")!;
+    expect(chest.total).toBe(chest.items.length);
+  });
+
   it("uses the uk label when provided and falls back to the id", () => {
     const groups = groupExercisesByPrimary(POOL, {
       primaryGroupsUk: { chest: "Груди" },

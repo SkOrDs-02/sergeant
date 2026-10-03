@@ -2,7 +2,7 @@
 // scripts/check-env-single-source.mjs
 //
 // CI guard for the env-modules unification (stack-pulse-2026-05 PR-01,
-// `docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md`).
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-01-unify-env-modules.md`).
 //
 // **Phase 1 — burn-down budget.**
 //
@@ -70,6 +70,10 @@ const ALLOWLIST = new Set(
     "apps/server/src/env.ts",
     "apps/server/src/index.ts",
     "apps/server/src/sentry.ts",
+    // CLI-суддя tool-eval: мусить виставити LOG_LEVEL ДО того, як
+    // динамічний import підтягне env/logger, інакше 81 рядок
+    // `anthropic_usage_ledger_failed` топить звіт (CI-6, аудит 2026-09).
+    "apps/server/src/scripts/toolEvalJudge.ts",
   ].map((p) => p.split("/").join(sep)),
 );
 
@@ -126,6 +130,9 @@ function findOffenders(source) {
 function isAllowlisted(relativePath) {
   if (TEST_SUFFIX.test(relativePath)) return true;
   if (relativePath.split(sep).includes("__tests__")) return true;
+  // Integration harness sets process.env before dynamic app imports (same
+  // rationale as *.test.ts stubs — not production runtime reads).
+  if (relativePath.split(sep).includes("test")) return true;
   return ALLOWLIST.has(relativePath);
 }
 
@@ -228,7 +235,7 @@ if (isCli) {
       `so values pass through Zod validation + defaults. Phase-2 plan:`,
     );
     console.error(
-      `docs/90-work/initiatives/stack-pulse-2026-05/pr-01-unify-env-modules.md`,
+      `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-01-unify-env-modules.md`,
     );
     process.exit(1);
   }

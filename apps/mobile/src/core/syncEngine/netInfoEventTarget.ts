@@ -55,6 +55,19 @@ interface NetInfoBackedEventTarget extends SyncEngineEventTarget {
    * `runtime.stop()` even when no listeners ever registered.
    */
   dispose(): void;
+  /**
+   * Остання відома звʼязність за даними NetInfo — джерело для
+   * `isOnline` у `SyncEnginePushDeps` (мобільний відповідник
+   * `navigator.onLine`).
+   *
+   * AI-DANGER: значення оновлюється лише поки живий NetInfo-підписник, а
+   * його вмикає перший `addEventListener("online")`. Без підписників
+   * повертається `initialOnline` (дефолт `true`) — тобто гард стає
+   * no-op-ом і поведінка збігається з тією, що була до нього. Це
+   * навмисний fail-open: помилково вважати себе офлайн означало б
+   * тихо зупинити синхронізацію, що гірше за зайву спробу.
+   */
+  isOnline(): boolean;
 }
 
 export function createNetInfoEventTarget(
@@ -121,6 +134,9 @@ export function createNetInfoEventTarget(
         unsubscribe();
         unsubscribe = null;
       }
+    },
+    isOnline(): boolean {
+      return lastOnline;
     },
   };
 }

@@ -1,0 +1,82 @@
+# Alertmanager configuration for Sergeant.
+#
+# Status: Deprecated (2026-07-26). Not deployed, not referenced by any runtime.
+#
+# Production alert delivery goes through Grafana Cloud managed alerting:
+# contact point `telegram-ops`, routed by `severity=page` / `severity=ticket`
+# (notification policy lives in Grafana, not here). Verified 2026-07-26 —
+# self-hosted Alertmanager is not part of the topology and there is no plan
+# to introduce it.
+#
+# Kept only as a reference sample. Do not treat it as the source of truth for
+# routing — see ../SLO.md § Статус wiring.
+#
+# Secrets:
+#   $SLACK_WEBHOOK_URL — Slack incoming-webhook URL.
+#   Substituted from the environment at deploy time (e.g. via
+#   `envsubst < alertmanager.yml > alertmanager.rendered.yml` or via your
+#   secret store / k8s ConfigMap). Do NOT commit a real webhook URL.
+#
+# Reload after editing:
+#   curl -X POST http://<alertmanager>/-/reload
+#
+# Routing source-of-truth: ../SLO.md (severity → channel mapping).
+# On-call doc: ./on-call.md.
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: slack-tickets
+  group_by: [alertname, slo, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  routes:
+    - matchers:
+        - severity = "page"
+      receiver: slack-page
+      group_wait: 10s
+      group_interval: 2m
+      repeat_interval: 1h
+    - matchers:
+        - severity = "ticket"
+      receiver: slack-tickets
+
+receivers:
+  - name: slack-page
+    slack_configs:
+      - api_url: $SLACK_WEBHOOK_URL
+        channel: "#alerts-page"
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.alertname }} ({{ .GroupLabels.slo }})'
+        text: |
+          {{ range .Alerts -}}
+          *Alert:* {{ .Labels.alertname }} — *severity:* {{ .Labels.severity }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook }}*Runbook:* {{ .Annotations.runbook }}{{ end }}
+          {{ end }}
+
+  - name: slack-tickets
+    slack_configs:
+      - api_url: $SLACK_WEBHOOK_URL
+        channel: "#alerts-tickets"
+        send_resolved: true
+        title: "[{{ .Status | toUpper }}] {{ .GroupLabels.alertname }} ({{ .GroupLabels.slo }})"
+        text: |
+          {{ range .Alerts -}}
+          *Alert:* {{ .Labels.alertname }} — *severity:* {{ .Labels.severity }}
+          *Summary:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          {{ if .Annotations.runbook }}*Runbook:* {{ .Annotations.runbook }}{{ end }}
+          {{ end }}
+
+# Suppress `ticket` notifications when a `page` for the same alertname+slo is
+# already firing — the on-call already saw it via the page channel.
+inhibit_rules:
+  - source_matchers:
+      - severity = "page"
+    target_matchers:
+      - severity = "ticket"
+    equal: [alertname, slo]

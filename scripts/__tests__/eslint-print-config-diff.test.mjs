@@ -13,6 +13,7 @@ import { sep } from "node:path";
 import {
   normaliseConfig,
   snapshotPathFor,
+  isFailingResult,
   FIXTURES,
 } from "../eslint-print-config-diff.mjs";
 
@@ -107,14 +108,34 @@ describe("snapshotPathFor — slug generation", () => {
 });
 
 describe("FIXTURES — coverage invariants", () => {
-  it("covers every independently-linted monorepo surface (one fixture per package that owns an eslint.config.js)", () => {
+  it("lists exactly the surfaces the gate is meant to sample", () => {
     // `tools/openclaw` is intentionally absent: it has no `lint` script (turbo
     // never lints it) and no standalone `eslint.config.js`, so there is no
     // per-package config to resolve. Its security rules live in the shared
     // cross-surface block and are exercised via the server fixture.
+    //
+    // `server-copy` — ДРУГА точка на поверхні `server`, а не окремий пакет:
+    // фікстура на `apps/server/src/index.ts` не бачить правил, заскоупованих
+    // на підтеку (`ukrainian-copy` на копійних теках, 2026-09-14). Тобто
+    // інваріант «один фікстур на пакет» від цього дня не єдиний — до нього
+    // додається «плюс точка на кожен скоупований блок правил».
+    //
+    // ЩО ЦЕЙ ТЕСТ РОБИТЬ І ЧОГО НЕ РОБИТЬ. Він звіряє FIXTURES із
+    // переліком нижче, тобто ловить ТИХЕ зникнення точки — але не
+    // доводить, що покрито кожен пакет із власним `eslint.config.js`.
+    // Заміром 2026-09-14: таких пакетів 15, а точок тут 8. Попередній
+    // заголовок тесту обіцяв саме повне покриття, і через це `landing`
+    // (власний `eslint.config.js` є з народження) роками був поза
+    // гейтом, а тест лишався зеленим. Вивести перелік із файлової
+    // системи можна, але це відкриє ще сім непокритих пакетів — окрема
+    // робота, не цей PR.
     const expected = [
       "server",
+      "server-copy",
+      "server-modules-copy",
+      "server-routes-copy",
       "web",
+      "landing",
       "mobile",
       "mobile-shell",
       "shared",
@@ -149,5 +170,30 @@ describe("FIXTURES — coverage invariants", () => {
         `${f.surface}: path ${f.path} is not under cwd ${f.cwd}`,
       );
     }
+  });
+});
+
+describe("isFailingResult — що валить гейт", () => {
+  it("`match` не валить", () => {
+    assert.equal(isFailingResult({ status: "match" }), false);
+  });
+
+  it("`updated` і `created` (режим --update) не валять", () => {
+    assert.equal(isFailingResult({ status: "updated" }), false);
+    assert.equal(isFailingResult({ status: "created" }), false);
+  });
+
+  it("`diff`, `missing` і `error` валять", () => {
+    assert.equal(isFailingResult({ status: "diff" }), true);
+    assert.equal(isFailingResult({ status: "missing" }), true);
+    assert.equal(isFailingResult({ status: "error" }), true);
+  });
+
+  // Регресія: зниклий fixture-файл раніше давав `skipped`, який не потрапляв
+  // у список провалів, тож видалення чи перейменування одного з фікстурних
+  // файлів мовчки знімало покриття з поверхні, а гейт лишався зеленим і
+  // друкував «All 7 fixture(s) matched», перевіривши шість.
+  it("`skipped` (зниклий fixture-файл) валить — покриття зникло", () => {
+    assert.equal(isFailingResult({ status: "skipped" }), true);
   });
 });

@@ -2,6 +2,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_vibe_picks_v1: JSON.stringify({
     picks: ["finyk", "fizruk", "nutrition", "routine"],
@@ -88,7 +90,7 @@ test("@extended sw: debug roundtrip works (best-effort)", async ({ page }) => {
         navigator.serviceWorker.controller || reg.active;
       if (!ctl) return { ok: false, reason: "no_controller" as const };
 
-      const requestId = `pw_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const requestId = `pw_${crypto.randomUUID()}`;
       const snapshot = await new Promise<unknown>((resolve, reject) => {
         const timer = setTimeout(() => {
           navigator.serviceWorker.removeEventListener("message", onMessage);

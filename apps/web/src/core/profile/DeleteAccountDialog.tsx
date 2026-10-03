@@ -1,7 +1,17 @@
-import { useEffect, useId, useRef } from "react";
+import { useId, useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import {
+  ACCOUNT_DELETION_GRACE_DAYS,
+  accountDeletionDeadline,
+  useVisualKeyboardInset,
+} from "@sergeant/shared";
+import { formatDateFull } from "@shared/lib/time/formatDate";
+import { messages } from "@shared/i18n/uk";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 
 interface DeleteAccountDialogProps {
   open: boolean;
@@ -21,6 +31,7 @@ export function DeleteAccountDialog({
   onConfirm,
 }: DeleteAccountDialogProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
   const passwordId = useId();
@@ -30,19 +41,37 @@ export function DeleteAccountDialog({
     inertBackground: true,
   });
 
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Був hand-rolled `document.body.style.overflow = "hidden"`. Самого
+  // `overflow: hidden` не досить на iOS Safari (visual viewport усе одно
+  // rubber-band-ить сторінку під фіксованим оверлеєм), і він не має
+  // refcount-у, тож вкладений оверлей затирав відновлення. Спільний хук
+  // пінить body у `position: fixed` на поточному офсеті й рахує вкладеність.
+  useBodyScrollLock(open);
+
+  // Центрований діалог із полем пароля. Без keyboard-геометрії поле
+  // опиняється під клавіатурою, і видимим його робив лише пан visual
+  // viewport від iOS — а `useKeyboardAwareOverlay` цей пан гасить, тож
+  // геометрія тут не «покращення», а умова коректності компенсації
+  // (розбір — у шапці `keyboardOverlay.ts`).
+  const kbInsetPx = useVisualKeyboardInset(open);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open, overlayRef);
 
   if (!open) return null;
 
+  // Дата рахується тією самою константою, що й дедлайн на сервері
+  // (`ACCOUNT_DELETION_GRACE_DAYS` у `@sergeant/shared`): якби кожен бік
+  // рахував своє, екран показав би одне число, а видалення сталося б
+  // іншого дня. Момент прохання це «зараз», бо діалог відкритий саме
+  // перед натисканням.
+  const purgeDate = formatDateFull(accountDeletionDeadline(new Date()));
+
   return (
-    <div className="fixed inset-0 z-120 flex items-center justify-center p-4">
+    <div
+      ref={overlayRef}
+      className="fixed inset-0 z-120 flex items-center justify-center p-4"
+      style={kbStyles.container}
+    >
       <button
         type="button"
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -51,24 +80,37 @@ export function DeleteAccountDialog({
       />
       <div
         ref={panelRef}
-        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10"
+        // `overflow-y-auto` — пара до `kbStyles.panel`: під клавіатурою
+        // висота обрізається, і без власного скролу кнопки внизу стали б
+        // недосяжними.
+        className="relative w-full max-w-sm bg-panel border border-line rounded-2xl shadow-soft p-5 z-10 overflow-y-auto overscroll-contain"
+        style={kbStyles.panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
       >
-        <h2 id={titleId} className="text-base font-bold text-text">
-          Видалити акаунт назавжди?
+        <h2 id={titleId} className="text-style-title text-text">
+          {messages.accountDeletion.dialogTitle}
         </h2>
-        <p id={descriptionId} className="text-sm text-muted mt-2">
-          Введи пароль для підтвердження. Цю дію неможливо скасувати.
+        <p id={descriptionId} className="text-style-body text-muted mt-2">
+          Дані зникнуть {purgeDate}, через {ACCOUNT_DELETION_GRACE_DAYS} днів.
+          До того дня можна передумати: увійди і натисни «Відновити акаунт».
+          Підписка скасовується одразу, і відновлення її не поверне.
         </p>
+        {/*
+          Поле не обовʼязкове, і кнопка ним НЕ гейтиться: акаунт, заведений
+          через Google, пароля не має взагалі, і з обовʼязковим полем його
+          не можна було б видалити з інтерфейсу зовсім. Сервер робить ту саму
+          розвилку (`modules/me/verifyAccountPassword.ts`): є credential-вхід —
+          пароль звіряється, немає — пропускає.
+        */}
         <div className="mt-4 space-y-2">
           <label
             htmlFor={passwordId}
             className="block text-style-caption text-muted"
           >
-            Пароль
+            {messages.accountDeletion.passwordLabel}
           </label>
           <Input
             id={passwordId}
@@ -82,7 +124,7 @@ export function DeleteAccountDialog({
         <div className="flex gap-2 mt-5">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="md"
             className="flex-1"
             onClick={onCancel}
@@ -91,10 +133,11 @@ export function DeleteAccountDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant="solid"
+            tone="danger"
             size="md"
             className="flex-1"
-            disabled={deleting || !password}
+            disabled={deleting}
             loading={deleting}
             onClick={onConfirm}
           >

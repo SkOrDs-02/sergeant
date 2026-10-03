@@ -29,14 +29,13 @@ import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
 
-import { asyncHandler } from "../../http/index.js";
 import { parseBody } from "../../http/validate.js";
 import {
   listDlqRows,
-  markDlqRowReplayed,
+  markDlqRowReplayedStrict,
   type DlqRow,
 } from "../../modules/ai-memory/dlq.js";
-import { enqueueMemoryIngest } from "../../modules/ai-memory/ingestQueue.js";
+import { enqueueMemoryIngestStrict } from "../../modules/ai-memory/ingestQueue.js";
 import { logger, serializeError } from "../../obs/logger.js";
 
 const ReplayBody = z
@@ -101,104 +100,106 @@ export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
    * Body: { source?, since?, limit?, includeReplayed? }
    * Returns: { ok, rows: DlqRowSerialized[] }
    */
-  r.post(
-    "/api/internal/ai-memory-dlq/list",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(ListBody, req);
+  r.post("/api/internal/ai-memory-dlq/list", async (req, res) => {
+    const parsed = parseBody(ListBody, req);
 
-      const rows = await listDlqRows({
-        ...(parsed.source !== undefined ? { source: parsed.source } : {}),
-        ...(parsed.since !== undefined
-          ? { since: new Date(parsed.since) }
-          : {}),
-        limit: parsed.limit ?? 100,
-        includeReplayed: parsed.includeReplayed,
-      });
+    const rows = await listDlqRows({
+      ...(parsed.source !== undefined ? { source: parsed.source } : {}),
+      ...(parsed.since !== undefined ? { since: new Date(parsed.since) } : {}),
+      limit: parsed.limit ?? 100,
+      includeReplayed: parsed.includeReplayed,
+    });
 
-      res.json({
-        ok: true,
-        rows: rows.map(serializeDlqRow),
-      });
-    }),
-  );
+    res.json({
+      ok: true,
+      rows: rows.map(serializeDlqRow),
+    });
+  });
 
   /**
    * POST /api/internal/ai-memory-dlq/replay
    * Body: { eventIds? | source? + since?, limit?, dryRun? }
    * Returns: { ok, dryRun, attempted, replayed, skipped, errors[] }
    */
-  r.post(
-    "/api/internal/ai-memory-dlq/replay",
-    asyncHandler(async (req, res) => {
-      const parsed = parseBody(ReplayBody, req);
+  r.post("/api/internal/ai-memory-dlq/replay", async (req, res) => {
+    const parsed = parseBody(ReplayBody, req);
 
-      const data = parsed;
-      const dryRun = data.dryRun;
+    const data = parsed;
+    const dryRun = data.dryRun;
 
-      const rows = await listDlqRows({
-        ...(data.eventIds && data.eventIds.length > 0
-          ? { ids: data.eventIds }
-          : {}),
-        ...(data.source !== undefined ? { source: data.source } : {}),
-        ...(data.since !== undefined ? { since: new Date(data.since) } : {}),
-        limit: data.limit ?? 100,
-        includeReplayed: false,
-      });
+    const rows = await listDlqRows({
+      ...(data.eventIds && data.eventIds.length > 0
+        ? { ids: data.eventIds }
+        : {}),
+      ...(data.source !== undefined ? { source: data.source } : {}),
+      ...(data.since !== undefined ? { since: new Date(data.since) } : {}),
+      limit: data.limit ?? 100,
+      includeReplayed: false,
+    });
 
-      if (dryRun) {
-        res.json({
-          ok: true,
-          dryRun: true,
-          attempted: rows.length,
-          replayed: 0,
-          skipped: 0,
-          rows: rows.map(serializeDlqRow),
-          errors: [],
-        });
-        return;
-      }
-
-      let replayed = 0;
-      const errors: { id: number; error: string }[] = [];
-      for (const row of rows) {
-        try {
-          await enqueueMemoryIngest({
-            userId: row.payloadJson.userId,
-            source: row.payloadJson.source,
-            sourceRef: row.payloadJson.sourceRef,
-            content: row.payloadJson.content,
-            ...(row.payloadJson.metadata !== undefined
-              ? { metadata: row.payloadJson.metadata }
-              : {}),
-          });
-          await markDlqRowReplayed(row.id);
-          replayed++;
-        } catch (err) {
-          // enqueueMemoryIngest не throw-ить (внутрішньо ловить), але про
-          // markDlqRowReplayed-fail хочемо знати на per-row рівні.
-          logger.warn({
-            msg: "ai_memory_dlq_replay_row_failed",
-            id: row.id,
-            source: row.source,
-            err: serializeError(err, { includeStack: false }),
-          });
-          errors.push({
-            id: row.id,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      }
-
+    if (dryRun) {
       res.json({
-        ok: errors.length === 0,
-        dryRun: false,
+        ok: true,
+        dryRun: true,
         attempted: rows.length,
-        replayed,
-        skipped: rows.length - replayed - errors.length,
-        errors,
+        replayed: 0,
+        skipped: 0,
+        rows: rows.map(serializeDlqRow),
+        errors: [],
       });
-    }),
-  );
+      return;
+    }
+
+    let replayed = 0;
+    const errors: { id: number; error: string }[] = [];
+    for (const row of rows) {
+      try {
+        await enqueueMemoryIngestStrict({
+          userId: row.payloadJson.userId,
+          source: row.payloadJson.source,
+          sourceRef: row.payloadJson.sourceRef,
+          content: row.payloadJson.content,
+          ...(row.payloadJson.metadata !== undefined
+            ? { metadata: row.payloadJson.metadata }
+            : {}),
+          // PR-S3: прапорець health-даних мусить пережити DLQ-раунд. Тут
+          // payload перебирається ПОІМЕННО, тож пропущене поле відкрило б
+          // обхід гейта згоди через звичайний ретрай — запис, який гейт
+          // відхилив би на першому проході, ліг би на другому.
+          ...(row.payloadJson.healthData !== undefined
+            ? { healthData: row.payloadJson.healthData }
+            : {}),
+        });
+        await markDlqRowReplayedStrict(row.id);
+        replayed++;
+      } catch (err) {
+        // Strict-варіанти rethrow-ять реальні failure-и (Redis-enqueue та
+        // DB-mark-replayed). Row, який НЕ був фактично re-enqueue-нутий або
+        // НЕ позначений replayed, потрапляє у `errors[]` і НЕ інкрементує
+        // `replayed` — при цьому `replayed_at IS NULL` зберігається, тож
+        // наступний replay його підхопить (без свідомо-хибного ok:true).
+        logger.warn({
+          msg: "ai_memory_dlq_replay_row_failed",
+          id: row.id,
+          source: row.source,
+          err: serializeError(err, { includeStack: false }),
+        });
+        errors.push({
+          id: row.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    res.json({
+      ok: errors.length === 0,
+      dryRun: false,
+      attempted: rows.length,
+      replayed,
+      skipped: rows.length - replayed - errors.length,
+      errors,
+    });
+  });
 
   return r;
 }

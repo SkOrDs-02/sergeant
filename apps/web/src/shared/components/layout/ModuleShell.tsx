@@ -58,22 +58,32 @@ export function ModuleShell({
   // Expose the bottom-nav height as a CSS variable so descendants
   // (e.g. bottom sheets rendered inside this shell) can lift themselves
   // above it without having to know whether the current page renders a
-  // nav. Defaults to 0px when no nav is slotted.
-  const shellStyle: CSSProperties = {
-    "--bottom-nav-height": nav ? "60px" : "0px",
-  } as CSSProperties;
+  // nav. Defaults to 0px when no nav is slotted. When a nav IS slotted the
+  // value comes from the shared `bottom-nav-height-var` utility rather
+  // than an inline literal: the utility also carries the coarse-pointer
+  // track height, which an inline style cannot express. Consumers that add
+  // `env(safe-area-inset-bottom)` again on top of this variable
+  // (Sheet.tsx, Toast.tsx) are accounting for the nav's *own* bottom
+  // padding, which is separate from the shell's top one.
+  const shellStyle: CSSProperties = nav
+    ? {}
+    : ({ "--bottom-nav-height": "0px" } as CSSProperties);
 
   // Sergeant v2 redesign (2026-05, PR-6) — module shell wraps content in
   // <MeshBackground> so the mesh-gradient surface renders behind every
-  // module screen. MeshBackground bakes `h-dvh flex flex-col overflow-hidden`
-  // + the `.bg-mesh` utility; remaining shell-level classes (`text-text`,
-  // `module-bg`) slot through via className. Inline `shellStyle` (the
-  // `--bottom-nav-height` CSS var) passes through MeshBackground's `style`
-  // prop so descendants still see it.
+  // module screen, identical to the hub («Чорнило» v3.1 § 1). MeshBackground
+  // bakes `h-dvh flex flex-col overflow-hidden` + the `.bg-mesh` utility;
+  // remaining shell-level classes (`text-text`) slot through via className.
+  // Inline `shellStyle` (the `--bottom-nav-height` CSS var) passes through
+  // MeshBackground's `style` prop so descendants still see it.
   const inner = (
     <MeshBackground
       style={shellStyle}
-      className={cn("text-text module-bg", className)}
+      className={cn(
+        "text-text",
+        nav ? "bottom-nav-height-var" : undefined,
+        className,
+      )}
     >
       {header}
       {overlays}

@@ -3,11 +3,20 @@
    directly here. Same pattern as queryFinykActions.ts. */
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import {
+  finykCategoryExists,
+  finykTransactionExists,
+  normalizeFinykId,
+  unknownCategoryMessage,
+  unknownTransactionMessage,
+} from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
 import {
   triggerHiddenTransactionSqliteMirror,
   triggerManualExpenseDeleteSqliteMirror,
-} from "../../../../modules/finyk/lib/dualWrite";
+} from "../../../../modules/finyk/lib/sqliteWriter";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
+import { formatNumberUk } from "@sergeant/shared";
 import type {
   CreateTransactionAction,
   DeleteTransactionAction,
@@ -22,13 +31,13 @@ export function createTransaction(
   const { type, amount, category, description, date } = action.input;
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума транзакції.";
+    return "Некоректна сума операції.";
   }
   const txType = type === "income" ? "income" : "expense";
   const nowIso = new Date().toISOString();
   const isoDate =
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
-      ? new Date(`${date}T12:00:00`).toISOString()
+      ? (parseKyivDate(date)?.toISOString() ?? nowIso)
       : nowIso;
   const customC = ls<Array<{ id: string; label?: string }>>(
     "finyk_custom_cats_v1",
@@ -39,9 +48,7 @@ export function createTransaction(
     const meta = resolveExpenseCategoryMeta(category.trim(), customC);
     categoryLabel = meta?.label || category.trim();
   }
-  const manualId = `m_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const manualId = `m_${crypto.randomUUID()}`;
   const manualExpenses = ls<
     Array<{
       id: string;
@@ -64,7 +71,7 @@ export function createTransaction(
   finykChatWrite("finyk_manual_expenses_v1", manualExpenses);
   const label = categoryLabel ? ` (${categoryLabel})` : "";
   const human = txType === "income" ? "Дохід" : "Витрату";
-  const result = `${human} ${amt} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
+  const result = `${human} ${formatNumberUk(amt)} грн${description ? ` "${description.trim()}"` : ""}${label} записано (id:${manualId})`;
   // Undo видаляє щойно додану транзакцію за `manualId`. Якщо юзер
   // паралельно встиг видалити її іншим шляхом — ідемпотентно
   // нічого не робимо (а не throw): двічі натиснений undo не має
@@ -88,16 +95,17 @@ export function createTransaction(
 export function hideTransaction(
   action: HideTransactionAction,
 ): ChatActionResult {
-  const { tx_id } = action.input;
+  const txId = normalizeFinykId(action.input.tx_id);
+  if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
   const hidden = ls<string[]>("finyk_hidden_txs", []);
-  if (!hidden.includes(tx_id)) {
-    hidden.push(tx_id);
+  if (!hidden.includes(txId)) {
+    hidden.push(txId);
     finykChatWrite("finyk_hidden_txs", hidden);
   }
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
-  triggerHiddenTransactionSqliteMirror(tx_id);
-  return `Транзакцію ${tx_id} приховано зі статистики`;
+  triggerHiddenTransactionSqliteMirror(txId);
+  return `Операцію ${txId} приховано зі статистики`;
 }
 
 export function deleteTransaction(
@@ -107,24 +115,25 @@ export function deleteTransaction(
   const id = String(tx_id || "").trim();
   if (!id) return "Потрібен tx_id для видалення.";
   if (!id.startsWith("m_")) {
-    return `Транзакцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-транзакцій використайте hide_transaction.`;
+    return `Операцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-операцій використай hide_transaction.`;
   }
   const list = ls<Array<{ id: string }>>("finyk_manual_expenses_v1", []);
   const idx = list.findIndex((t) => t.id === id);
-  if (idx < 0) return `Транзакцію ${id} не знайдено (вже видалена).`;
+  if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
   const next = list.slice();
   next.splice(idx, 1);
   finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
-  return `Транзакцію ${id} видалено`;
+  return `Операцію ${id} видалено`;
 }
 
 export function splitTransaction(
   action: SplitTransactionAction,
 ): ChatActionResult {
   const { tx_id, parts: splitParts } = action.input;
-  const id = String(tx_id || "").trim();
+  const id = normalizeFinykId(tx_id);
   if (!id) return "Потрібен tx_id.";
+  if (!finykTransactionExists(id)) return unknownTransactionMessage(id);
   if (!Array.isArray(splitParts) || splitParts.length < 2)
     return "Потрібно мінімум 2 частини для розділення.";
   const splits = ls<
@@ -132,16 +141,18 @@ export function splitTransaction(
   >("finyk_tx_splits", {});
   const customC = ls<unknown[]>("finyk_custom_cats_v1", []);
   const newSplits = splitParts.map((p) => ({
-    categoryId: String(p.category_id || "").trim(),
+    categoryId: normalizeFinykId(p.category_id),
     amount: Math.abs(Number(p.amount) || 0),
   }));
+  const unknownPart = newSplits.find((s) => !finykCategoryExists(s.categoryId));
+  if (unknownPart) return unknownCategoryMessage(unknownPart.categoryId);
   splits[id] = newSplits;
   finykChatWrite("finyk_tx_splits", splits);
   const desc = newSplits
     .map((s) => {
       const cat = resolveExpenseCategoryMeta(s.categoryId, customC);
-      return `${cat?.label || s.categoryId}: ${s.amount} грн`;
+      return `${cat?.label || s.categoryId}: ${formatNumberUk(s.amount)} грн`;
     })
     .join(", ");
-  return `Транзакцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
+  return `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
 }

@@ -26,18 +26,25 @@ import {
   saveTimeToValueMs as sharedSaveTimeToValueMs,
   saveVibePicks as sharedSaveVibePicks,
 } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage/storage";
+import { resolveLsStore, webKVStore } from "@shared/lib/storage/storage";
 
 export type HubModuleId = DashboardModuleId;
 
 export const ALL_MODULES: HubModuleId[] = [...SHARED_ALL_MODULES];
 
 export function getVibePicks(): HubModuleId[] {
+  const durableMirror = resolveLsStore();
+  if (durableMirror) {
+    const mirroredPicks = sharedGetVibePicks(durableMirror);
+    if (mirroredPicks.length > 0) return mirroredPicks;
+  }
   return sharedGetVibePicks(webKVStore);
 }
 
 export function saveVibePicks(picks: HubModuleId[]): void {
   sharedSaveVibePicks(webKVStore, picks);
+  const durableMirror = resolveLsStore();
+  if (durableMirror) sharedSaveVibePicks(durableMirror, picks);
 }
 
 export function markFirstActionPending(): void {

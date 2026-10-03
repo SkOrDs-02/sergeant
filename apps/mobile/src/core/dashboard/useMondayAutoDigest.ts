@@ -52,10 +52,12 @@ export function useMondayAutoDigest({
     if (current.getDay() !== 1) return;
 
     // Rule 2: user has the preference opted in.
-    const autoEnabled = safeReadLS<boolean>(
-      STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO,
-      false,
-    );
+    // Читаємо саме як рядок: `AIDigestSection` (web і mobile) персистить
+    // `"1"` / `"0"`, а не boolean. Прочитане як `boolean`, вимкнене `"0"`
+    // виявлялось truthy — автогенерація спрацьовувала при вимкненому
+    // тумблері й палила AI-квоту. Web-хук уже звіряється з `=== "1"`.
+    const autoEnabled =
+      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") === "1";
     if (!autoEnabled) return;
 
     // Rule 3: no digest already present for this week.

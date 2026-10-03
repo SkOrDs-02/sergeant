@@ -6,7 +6,7 @@
  * ported `useExerciseCatalog` and `useDailyLog`.
  * Pure recovery computation lives in `@sergeant/fizruk-domain`.
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import {
   computeRecoveryBy,
@@ -24,6 +24,8 @@ export function useRecovery() {
   const { workouts } = useFizrukWorkouts();
   const { entries: dailyLogEntries } = useDailyLog();
 
+  const [nowMs] = useState(() => Date.now());
+
   const stats = useMemo(() => {
     const wellbeingMult = computeWellbeingMultiplier(
       dailyLogEntries as Partial<DailyLogEntry>[],
@@ -31,7 +33,7 @@ export function useRecovery() {
     const by = computeRecoveryBy(
       toDomainWorkouts(workouts).slice(),
       musclesUk,
-      Date.now(),
+      nowMs,
       dailyLogEntries as Partial<DailyLogEntry>[],
     );
 
@@ -48,7 +50,7 @@ export function useRecovery() {
     const avoid = list.filter((x) => x.status === "red").slice(0, 4);
 
     return { by, list, ready, avoid, wellbeingMult };
-  }, [workouts, musclesUk, dailyLogEntries]);
+  }, [workouts, musclesUk, dailyLogEntries, nowMs]);
 
   return stats;
 }

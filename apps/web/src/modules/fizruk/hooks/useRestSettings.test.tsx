@@ -74,4 +74,23 @@ describe("useRestSettings", () => {
       REST_DEFAULTS.compound,
     );
   });
+
+  it("persists and resolves a per-exercise default before the category default", () => {
+    const first = renderHook(() => useRestSettings());
+    act(() => {
+      first.result.current.setDefaultForExercise("bench", 120);
+    });
+    expect(first.result.current.getDefaultForExercise("bench", "chest")).toBe(
+      120,
+    );
+    first.unmount();
+
+    const second = renderHook(() => useRestSettings());
+    expect(second.result.current.getDefaultForExercise("bench", "chest")).toBe(
+      120,
+    );
+    expect(second.result.current.getDefaultForExercise("squat", "legs")).toBe(
+      REST_DEFAULTS.compound,
+    );
+  });
 });

@@ -1,14 +1,13 @@
 /**
- * Unit tests for `sergeant-design/require-toast-error-action`.
+ * Unit tests for the `sergeant-design/require-toast-error-action` rule.
  *
- * The rule reports `toast.error(...)` and `toast.show(msg, "error", ...)`
- * calls that lack an `action: { label, onClick }` parameter. Bare error
- * toasts trap users in a dead-end because they disappear without
- * surfacing a recovery path — see docs/ui/toast-policy.md.
- *
- * Companion to `useToast.tsx` signatures:
- *   - `error: (msg, duration?, action?) => number` → action at index 2
- *   - `show: (msg, type?, duration?, action?) => number` → action at index 3
+ * Правило вимагає recovery-дію `{ label, onClick }` на кожному
+ * `toast.error(...)`. Однойменне правило існувало до ADR-0081 і було
+ * retired із тезою «коректність дії залежить від сценарію й не має
+ * надійного синтаксичного сигналу». Теза правильна — тому нова версія
+ * НЕ намагається судити про якість дії: вона ловить лише факт її
+ * відсутності, а винятки живуть у явному `allowlist` із причиною.
+ * За пів року без гейта дію мали 3 з 37 error-тостів у `apps/web`.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -25,195 +24,124 @@ function abs(p) {
 
 function lint(
   code,
-  filename = abs("apps/web/src/modules/finyk/Foo.tsx"),
-  options = {},
+  filename = abs("apps/web/src/core/profile/Foo.tsx"),
+  options,
 ) {
   return linter.verify(
     code,
     {
       files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
       plugins: { "sergeant-design": plugin },
-      rules: { [RULE_ID]: ["warn", options] },
-      languageOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
-        parserOptions: { ecmaFeatures: { jsx: true } },
-      },
+      rules: { [RULE_ID]: options ? ["error", options] : "error" },
+      languageOptions: { ecmaVersion: "latest", sourceType: "module" },
     },
     { filename },
   );
 }
 
 describe("require-toast-error-action", () => {
-  it("flags bare `toast.error('message')` without action", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.error("Не вдалося синхронізувати");
-      }
-    `);
-    assert.equal(msgs.length, 1);
-    assert.equal(msgs[0].ruleId, RULE_ID);
+  it("прапорить `toast.error` без третього аргументу", () => {
+    const messages = lint(`toast.error("Не вдалося оновити аватар");`);
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0].ruleId, RULE_ID);
   });
 
-  it("flags `toast.error(msg, duration)` with two args and no action", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.error("Не вдалося синхронізувати", 5000);
-      }
-    `);
-    assert.equal(msgs.length, 1);
+  it("прапорить, коли передана лише тривалість", () => {
+    assert.equal(lint(`toast.error("Впало", 5000);`).length, 1);
   });
 
-  it("flags `toast.error(msg, duration, null)` (explicit null action)", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.error("Не вдалося синхронізувати", 5000, null);
-      }
-    `);
-    assert.equal(msgs.length, 1);
+  it("пропускає повний `{ label, onClick }`", () => {
+    const code = `toast.error("Впало", undefined, { label: "Повторити", onClick: retry });`;
+    assert.equal(lint(code).length, 0);
   });
 
-  it("flags `toast.error(msg, duration, undefined)` (explicit undefined action)", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.error("Не вдалося синхронізувати", 5000, undefined);
-      }
-    `);
-    assert.equal(msgs.length, 1);
-  });
-
-  it("does NOT flag `toast.error(msg, duration, { label, onClick })`", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.error("Не вдалося синхронізувати", 5000, {
-          label: "Спробувати ще",
-          onClick: () => retry(),
-        });
-      }
-    `);
-    assert.equal(msgs.length, 0);
-  });
-
-  it("does NOT flag `toast.error(msg, duration, actionVar)` (identifier — assumed truthy)", () => {
-    const msgs = lint(`
-      function submit() {
-        const retryAction = { label: "Спробувати ще", onClick: () => retry() };
-        toast.error("Не вдалося", 5000, retryAction);
-      }
-    `);
-    assert.equal(msgs.length, 0);
-  });
-
-  it("flags `toast.show(msg, 'error')` without action", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.show("Не вдалося", "error");
-      }
-    `);
-    assert.equal(msgs.length, 1);
-  });
-
-  it("flags `toast.show(msg, 'error', 5000)` without action", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.show("Не вдалося", "error", 5000);
-      }
-    `);
-    assert.equal(msgs.length, 1);
-  });
-
-  it("does NOT flag `toast.show(msg, 'error', 5000, { label, onClick })`", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.show("Не вдалося", "error", 5000, {
-          label: "Спробувати ще",
-          onClick: () => retry(),
-        });
-      }
-    `);
-    assert.equal(msgs.length, 0);
-  });
-
-  it("does NOT flag `toast.show(msg, 'success')` (only error tone is gated)", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.show("Збережено", "success");
-      }
-    `);
-    assert.equal(msgs.length, 0);
-  });
-
-  it("does NOT flag `toast.success(msg)` / `toast.warning(msg)` / `toast.info(msg)`", () => {
-    const msgs = lint(`
-      function submit() {
-        toast.success("Збережено");
-        toast.warning("Слабкий зв'язок");
-        toast.info("Версія 2.4 доступна");
-      }
-    `);
-    assert.equal(msgs.length, 0);
-  });
-
-  it("does NOT flag unrelated `.error()` methods (logger.error, sentry.error)", () => {
-    const msgs = lint(`
-      function submit() {
-        logger.error("server-side log");
-        Sentry.error("breadcrumb");
-        console.error("dev log");
-      }
-    `);
-    assert.equal(msgs.length, 0);
-  });
-
-  it("does NOT flag calls in allowlisted files", () => {
-    const msgs = lint(
-      `
-      function submit() {
-        toast.error("Не вдалося");
-      }
-    `,
-      abs("apps/web/src/core/settings/PWASection.tsx"),
-      { allowlist: ["apps/web/src/core/settings/PWASection.tsx"] },
+  it("прапорить неповну дію — сам `label` без обробника", () => {
+    assert.equal(
+      lint(`toast.error("Впало", undefined, { label: "Повторити" });`).length,
+      1,
     );
-    assert.equal(msgs.length, 0);
   });
 
-  it("flags calls outside the allowlist even when other files ARE allowlisted", () => {
-    const msgs = lint(
-      `
-      function submit() {
-        toast.error("Не вдалося");
-      }
-    `,
-      abs("apps/web/src/modules/finyk/Foo.tsx"),
-      { allowlist: ["apps/web/src/core/settings/PWASection.tsx"] },
+  it("прапорить `onClick` без підпису на кнопці", () => {
+    assert.equal(
+      lint(`toast.error("Впало", undefined, { onClick: retry });`).length,
+      1,
     );
-    assert.equal(msgs.length, 1);
   });
 
-  it("supports prefix-style allowlist entries", () => {
-    const msgs = lint(
-      `
-      function submit() {
-        toast.error("Не вдалося");
-      }
-    `,
-      abs("apps/web/src/core/profile/Nested/Deep.tsx"),
-      { allowlist: ["apps/web/src/core/profile/"] },
+  it("довіряє змінній та spread — форму статично не прочитати", () => {
+    assert.equal(lint(`toast.error("Впало", undefined, action);`).length, 0);
+    assert.equal(
+      lint(`toast.error("Впало", undefined, { ...base });`).length,
+      0,
     );
-    assert.equal(msgs.length, 0);
   });
 
-  it("handles `toast.error(msg, duration, ({ label, onClick }))` (parenthesized expr)", () => {
-    // Acorn / ESLint parser normalizes `({...})` to just the ObjectExpression.
-    const msgs = lint(`
-      function submit() {
-        toast.error("Не вдалося", 5000, ({
-          label: "Retry",
-          onClick: () => retry(),
-        }));
-      }
-    `);
-    assert.equal(msgs.length, 0);
+  it("ловить приймачів із будь-якою назвою, що містить `toast`", () => {
+    assert.equal(lint(`currentToast.error("Впало");`).length, 1);
+    assert.equal(lint(`this.toast.error("Впало");`).length, 1);
+    // Optional chaining — саме через нього два виклики у
+    // `useFinykBackupSync` пережили ручний grep-аудит.
+    assert.equal(lint(`toast?.error("Впало");`).length, 1);
+  });
+
+  it("не чіпає `error` на сторонньому обʼєкті", () => {
+    assert.equal(lint(`logger.error("Впало");`).length, 0);
+    assert.equal(lint(`console.error("Впало");`).length, 0);
+  });
+
+  it("ловить голий `error()`, деструктурований з `useToast()`", () => {
+    const code = `const { error } = useToast(); error("Впало");`;
+    assert.equal(lint(code).length, 1);
+  });
+
+  it("поважає перейменування при деструктуризації", () => {
+    const code = `const { error: showError } = useToast(); showError("Впало");`;
+    assert.equal(lint(code).length, 1);
+  });
+
+  it("не чіпає голий `error()`, що прийшов не з `useToast()`", () => {
+    const code = `const { error } = useQuery(); error("Впало");`;
+    assert.equal(lint(code).length, 0);
+  });
+
+  it("звільняє файли з allowlist (suffix-match)", () => {
+    const file = abs("apps/web/src/core/pricing/WaitlistForm.tsx");
+    const opts = { allowlist: ["apps/web/src/core/pricing/WaitlistForm.tsx"] };
+    assert.equal(lint(`toast.error("429");`, file, opts).length, 0);
+    // Сусідній файл із того ж каталогу — не звільнений.
+    const other = abs("apps/web/src/core/pricing/Other.tsx");
+    assert.equal(lint(`toast.error("429");`, other, opts).length, 1);
+  });
+
+  it("звільняє тести і stories за конвенцією", () => {
+    for (const p of [
+      "apps/web/src/core/profile/Foo.test.tsx",
+      "apps/web/src/core/profile/__tests__/Foo.tsx",
+      "apps/web/src/shared/components/ui/Toast.stories.tsx",
+    ]) {
+      assert.equal(lint(`toast.error("Впало");`, abs(p)).length, 0, p);
+    }
+  });
+
+  // PR-X3: мобільна форма дії. Обробник там `onPress` (React Native), а не
+  // `onClick` (DOM) — без цього правило на мобілці валило б навіть
+  // правильний код, і розширення глоба було б непридатним.
+  it("приймає мобільну форму дії з onPress", () => {
+    const code = `toast.error("Не вдалось експортувати", undefined, { label: "Повторити", onPress: retry });`;
+    assert.equal(
+      lint(code, abs("apps/mobile/src/core/settings/GeneralSection.tsx"))
+        .length,
+      0,
+    );
+  });
+
+  it("усе одно вимагає label поруч із onPress", () => {
+    const code = `toast.error("Не вдалось", undefined, { onPress: retry });`;
+    assert.equal(
+      lint(code, abs("apps/mobile/src/core/settings/GeneralSection.tsx"))
+        .length,
+      1,
+    );
   });
 });

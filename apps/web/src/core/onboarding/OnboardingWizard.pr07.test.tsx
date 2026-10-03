@@ -118,17 +118,4 @@ describe("OnboardingWizard — onboarding_completed event (PR-07)", () => {
     ).toBe(true);
     expect(onDone).toHaveBeenCalledTimes(1);
   });
-
-  it("tour replay never fires `onboarding_completed` regardless of the flag", () => {
-    // Tour mode is the read-only replay (Settings → «Подивитись tour»)
-    // and ships its own analytics taxonomy (`onboarding_replay_*`).
-    // It must not contaminate the FTUX funnel even on a fresh store.
-    const onDone = vi.fn();
-    render(<OnboardingWizard mode="tour" onDone={onDone} />);
-    fireEvent.click(screen.getByRole("button", { name: /Закрити/i }));
-
-    expect(getCompletedCalls()).toHaveLength(0);
-    expect(localStorage.getItem(ONBOARDING_COMPLETED_FIRED_KEY)).toBeNull();
-    expect(onDone).toHaveBeenCalledTimes(1);
-  });
 });

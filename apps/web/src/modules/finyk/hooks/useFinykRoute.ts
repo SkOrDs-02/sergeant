@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useBrowserLocation } from "../../../core/hooks/useBrowserLocation";
 import {
   finykRoutePath,
   parseFinykSegments,
@@ -29,7 +28,11 @@ export function useFinykRoute(
   defaultPage: FinykPage = "overview",
 ): [FinykPage, (p: FinykPage | string) => void] {
   const routerLocation = useLocation();
-  const location = useBrowserLocation(routerLocation);
+  // Finyk is fully path-based. React Router must be the single source of
+  // truth here; mixing it with a native popstate/hash snapshot can leave a
+  // stale pathname between quick tab taps and make a legitimate click look
+  // like navigation to the already-active page.
+  const location = routerLocation;
   const navigate = useNavigate();
 
   const page = useMemo(() => {
@@ -64,12 +67,20 @@ export function useFinykRoute(
       // string branch lets `NAV_IDS[idx]` swipe-navigation in `FinykApp`
       // pass values through without an extra cast — `parseFinykSegments`
       // validates and falls back to `overview` for unknown ids.
-      const parsed = parseFinykSegments([p]);
-      const target = finykRoutePath(parsed.page);
-      if (location.pathname === target) return;
+      const [rawPage = "", rawSearch = ""] = String(p).split("?", 2);
+      const parsed = parseFinykSegments([rawPage]);
+      const targetPath = finykRoutePath(parsed.page);
+      const targetSearch = rawSearch ? `?${rawSearch}` : "";
+      const target = `${targetPath}${targetSearch}`;
+      if (
+        location.pathname === targetPath &&
+        location.search === targetSearch
+      ) {
+        return;
+      }
       navigate(target, { replace: false });
     },
-    [location.pathname, navigate],
+    [location.pathname, location.search, navigate],
   );
 
   return [page, navigateToPage];
@@ -86,8 +97,7 @@ export function useFinykRoute(
  * time this hook reads the value the param lives in the canonical place.
  */
 export function useFinykQueryParam(name: string): string | null {
-  const routerLocation = useLocation();
-  const location = useBrowserLocation(routerLocation);
+  const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   return searchParams.get(name);
 }

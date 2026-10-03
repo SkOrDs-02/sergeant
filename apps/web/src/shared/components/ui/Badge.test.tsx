@@ -42,8 +42,8 @@ describe("Badge", () => {
     );
     const el = container.querySelector("span")!;
     expect(el.className).toContain("bg-transparent");
-    // `text-finyk-strong` (= emerald-700) clears WCAG AA on cream `bg-bg`;
-    // the previous `text-finyk` (=emerald-500) only cleared ~2.4:1.
+    // `text-finyk-strong` (= teal-800) clears WCAG AA on cream `bg-bg`;
+    // the plain `text-finyk` (= teal-700) is reserved for larger text.
     expect(el.className).toContain("text-finyk-strong");
     expect(el.className).toContain("border-finyk/60");
   });
@@ -67,6 +67,17 @@ describe("Badge", () => {
     }
   });
 
+  it("soft module variants use the theme-aware -soft-fg ink", () => {
+    const cases = ["finyk", "fizruk", "routine", "nutrition"] as const;
+    for (const variant of cases) {
+      const { container } = render(<Badge variant={variant}>x</Badge>);
+      const el = container.querySelector("span")!;
+      expect(el.className).toContain(`text-${variant}-soft-fg`);
+      expect(el.className).not.toContain(`text-${variant}-strong`);
+      cleanup();
+    }
+  });
+
   it("renders an aria-hidden dot when dot=true", () => {
     const { container } = render(<Badge dot>Live</Badge>);
     const dot = container.querySelector("span > span[aria-hidden]");
@@ -80,12 +91,14 @@ describe("Badge", () => {
     expect(dot).toBeNull();
   });
 
-  it("maps size='xs' to text-style-caption and size='md' to text-xs", () => {
+  it("maps size='xs' and size='md' to text-style-caption", () => {
     const { container, rerender } = render(<Badge size="xs">x</Badge>);
     expect(container.querySelector("span")!.className).toContain(
       "text-style-caption",
     );
     rerender(<Badge size="md">x</Badge>);
-    expect(container.querySelector("span")!.className).toContain("text-xs");
+    expect(container.querySelector("span")!.className).toContain(
+      "text-style-caption",
+    );
   });
 });

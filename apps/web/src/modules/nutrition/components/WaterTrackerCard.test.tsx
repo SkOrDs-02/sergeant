@@ -11,14 +11,16 @@ const add = vi.fn();
 const subtract = vi.fn();
 const reset = vi.fn();
 let todayMl = 0;
+let log: Record<string, number> = {};
 vi.mock("../hooks/useWaterTracker", () => ({
-  useWaterTracker: () => ({ todayMl, add, subtract, reset }),
+  useWaterTracker: () => ({ todayMl, log, add, subtract, reset }),
 }));
 
 import { WaterTrackerCard } from "./WaterTrackerCard";
 
 beforeEach(() => {
   todayMl = 0;
+  log = {};
   add.mockReset();
   subtract.mockReset();
   reset.mockReset();
@@ -35,7 +37,13 @@ describe("WaterTrackerCard", () => {
     todayMl = 500;
     render(<WaterTrackerCard goalMl={2000} />);
     expect(screen.getByText(/500 мл/)).toBeInTheDocument();
-    expect(screen.getByText(/2\.0 л/)).toBeInTheDocument();
+    expect(screen.getByText(/2 л/)).toBeInTheDocument();
+  });
+
+  it("keeps millilitre precision when the goal is not a round litre", () => {
+    todayMl = 1250;
+    render(<WaterTrackerCard goalMl={2350} />);
+    expect(screen.getByText(/1,25 л \/ 2,35 л/)).toBeInTheDocument();
   });
 
   it("adds water on a quick-add tap", () => {
@@ -46,7 +54,7 @@ describe("WaterTrackerCard", () => {
 
   it("adds a custom amount and shows undo", () => {
     render(<WaterTrackerCard goalMl={2000} />);
-    const input = screen.getByLabelText("Свій об'єм у мл");
+    const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "350" } });
     fireEvent.click(screen.getByText("+ Додати"));
     expect(add).toHaveBeenCalledWith(350);
@@ -58,7 +66,7 @@ describe("WaterTrackerCard", () => {
 
   it("adds a custom amount on Enter", () => {
     render(<WaterTrackerCard goalMl={2000} />);
-    const input = screen.getByLabelText("Свій об'єм у мл");
+    const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "250" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(add).toHaveBeenCalledWith(250);
@@ -73,11 +81,21 @@ describe("WaterTrackerCard", () => {
 
   it("ignores a non-positive custom amount", () => {
     render(<WaterTrackerCard goalMl={2000} />);
-    const input = screen.getByLabelText("Свій об'єм у мл");
+    const input = screen.getByLabelText("Свій обʼєм у мл");
     fireEvent.change(input, { target: { value: "0" } });
     // Button disabled → click does nothing.
     fireEvent.click(screen.getByText("+ Додати"));
     expect(add).not.toHaveBeenCalled();
+  });
+
+  it("keeps only digits in the custom amount", () => {
+    render(<WaterTrackerCard goalMl={2000} />);
+    const input = screen.getByLabelText<HTMLInputElement>("Свій обʼєм у мл");
+    fireEvent.change(input, { target: { value: "2,5л" } });
+    expect(input.value).toBe("25");
+    fireEvent.change(input, { target: { value: "абв" } });
+    expect(input.value).toBe("");
+    expect(screen.getByText("+ Додати")).toBeDisabled();
   });
 
   it("requires a two-tap confirm to reset", () => {
@@ -93,6 +111,18 @@ describe("WaterTrackerCard", () => {
     expect(reset).toHaveBeenCalledTimes(1);
   });
 
+  it("full reset clears the previous-step undo action", () => {
+    todayMl = 800;
+    render(<WaterTrackerCard goalMl={2000} />);
+    fireEvent.click(screen.getByLabelText("Скинути воду за сьогодні"));
+    fireEvent.click(
+      screen.getByLabelText("Підтвердити скидання води за сьогодні"),
+    );
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(screen.queryByLabelText(/Відмінити/)).not.toBeInTheDocument();
+    expect(add).not.toHaveBeenCalled();
+  });
+
   it("clears the pending confirm after the timeout", () => {
     todayMl = 800;
     render(<WaterTrackerCard goalMl={2000} />);
@@ -101,7 +131,7 @@ describe("WaterTrackerCard", () => {
       screen.getByLabelText("Підтвердити скидання води за сьогодні"),
     ).toBeInTheDocument();
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(5000);
     });
     expect(
       screen.getByLabelText("Скинути воду за сьогодні"),
@@ -115,5 +145,13 @@ describe("WaterTrackerCard", () => {
     expect(
       screen.queryByLabelText("Скинути воду за сьогодні"),
     ).not.toBeInTheDocument();
+  });
+
+  it("opens the history sheet from the named history button", () => {
+    todayMl = 500;
+    render(<WaterTrackerCard goalMl={2000} />);
+    expect(screen.queryByText("Історія води")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Історія води/ }));
+    expect(screen.getByText("Історія води")).toBeInTheDocument();
   });
 });

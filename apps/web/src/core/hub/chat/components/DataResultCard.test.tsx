@@ -6,7 +6,7 @@ import { DataResultCard } from "./DataResultCard";
 describe("DataResultCard (talk-to-your-data PR4)", () => {
   it("рендерить headline + breakdown-бари для aggregate_spending", () => {
     const result =
-      "Витрати за 2026-05-01 — 2026-05-31: 3540 грн усього (59 транзакц.). " +
+      "Витрати за 2026-05-01 – 2026-05-31: 3540 грн усього (59 операц.). " +
       "Розбивка за категоріями: Кафе: 2340 грн (47); Транспорт: 1200 грн (12)";
     render(
       <DataResultCard
@@ -32,8 +32,8 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     const result = [
       'Прогрес "жим лежачи" за 90 днів (6 сесій):',
       "Макс. вага: 60 → 75 кг (+15)",
-      "Об'єм: 2400 → 3600 кг×повт (+50%)",
-      "Найкраще: 75 кг, об'єм 3600 кг×повт",
+      "Обʼєм: 2400 → 3600 кг×повт (+50%)",
+      "Найкраще: 75 кг, обʼєм 3600 кг×повт",
     ].join("\n");
     render(
       <DataResultCard
@@ -49,13 +49,13 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     // subsequent lines become metric label/value pairs.
     expect(within(card).getByText("Макс. вага")).toBeInTheDocument();
     expect(within(card).getByText("60 → 75 кг (+15)")).toBeInTheDocument();
-    expect(within(card).getByText("Об'єм")).toBeInTheDocument();
+    expect(within(card).getByText("Обʼєм")).toBeInTheDocument();
   });
 
   it("рендерить compare_periods як headline без breakdown", () => {
     const result =
-      "Витрати: A (2026-04-01 — 2026-04-30) = 5000 грн; " +
-      "B (2026-03-01 — 2026-03-31) = 4200 грн. Різниця (A − B): +800 грн (+19.0%).";
+      "Витрати: A (2026-04-01 – 2026-04-30) = 5000 грн; " +
+      "B (2026-03-01 – 2026-03-31) = 4200 грн. Різниця (A − B): +800 грн (+19.0%).";
     render(
       <DataResultCard
         toolName="compare_periods"
@@ -72,19 +72,19 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
 
   it("парсить listing-хвіст query_transactions у breakdown-рядки", () => {
     const result =
-      "Знайдено 2 транзакц. на суму 320 грн: " +
+      "Знайдено 2 операц. на суму 320 грн: " +
       "m_1: 2026-05-01 · 120 грн · кава · Кафе; " +
       "m_2: 2026-05-02 · 200 грн · обід · Кафе";
     render(
       <DataResultCard
         toolName="query_transactions"
         result={result}
-        title="Транзакції за запитом"
+        title="Операції за запитом"
       />,
     );
 
     const card = screen.getByTestId("chat-data-card-query_transactions");
-    expect(card).toHaveTextContent("Знайдено 2 транзакц. на суму 320 грн");
+    expect(card).toHaveTextContent("Знайдено 2 операц. на суму 320 грн");
     const items = within(card).getAllByRole("listitem");
     expect(items.length).toBe(2);
     expect(items[0]).toHaveTextContent("m_1");
@@ -95,7 +95,7 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
       <DataResultCard
         toolName="query_habits"
         result="Помилка: немає звичок"
-        title="Статистика звичок — не вийшло"
+        title="Статистика звичок, не вийшло"
         failed
       />,
     );
@@ -103,6 +103,44 @@ describe("DataResultCard (talk-to-your-data PR4)", () => {
     const card = screen.getByTestId("chat-data-card-query_habits");
     expect(card.className).toContain("border-warning/30");
     expect(card).toHaveTextContent("Помилка: немає звичок");
+  });
+
+  /**
+   * Регресія зі скріна користувача 2026-08-06: рядок «Дні без жодного
+   * виконання: 6 серп, 5 серп, …» вилазив за межі картки й за край
+   * екрана.
+   *
+   * Причина — `shrink-0` на `<dd>`. Він доречний для «0/7 (0%)», але
+   * `parseMultiline` кладе у значення ВЕСЬ хвіст після першої двокрапки, а це
+   * буває список. Нестисливий елемент зберігає повну внутрішню ширину.
+   *
+   * jsdom не рахує layout, тож переповнення як таке тут не побачити —
+   * перевіряємо саме той клас, чия відсутність його спричиняла.
+   */
+  it("довге значення метрики стає стисливим і переноситься", () => {
+    render(
+      <DataResultCard
+        toolName="query_habits"
+        result={[
+          'Статистика "Зарядка" за 7 днів:',
+          "Виконано: 0/7 (0%)",
+          "Дні без жодного виконання: 6 серп, 5 серп, 4 серп, 3 серп, 2 серп",
+        ].join("\n")}
+        title="Статистика звичок"
+      />,
+    );
+
+    const card = screen.getByTestId("chat-data-card-query_habits");
+    const values = within(card).getAllByRole("definition");
+
+    const short = values.find((el) => el.textContent === "0/7 (0%)");
+    expect(short?.className).toContain("shrink-0");
+
+    const long = values.find((el) => el.textContent?.includes("6 серп"));
+    expect(long).toBeDefined();
+    expect(long?.className).not.toContain("shrink-0");
+    expect(long?.className).toContain("min-w-0");
+    expect(long?.className).toContain("wrap-break-word");
   });
 
   it("має доступний aria-label з title + headline", () => {

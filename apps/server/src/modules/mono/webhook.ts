@@ -9,11 +9,11 @@ import {
 } from "../../obs/metrics.js";
 import { sendToUserQuietly } from "../../push/send.js";
 import type { PushPayload } from "../../push/types.js";
-import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { categorizeMcc } from "./mccCategories.js";
 import { webhookSecretHash } from "./crypto.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { elapsedMs } from "../../lib/timing.js";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * POST /api/mono/webhook/:secret? — public Monobank delivery endpoint.
@@ -113,7 +113,7 @@ function formatMonoMoney(amountMinor: number, currencyCode: number): string {
   const symbol = CURRENCY_SYMBOL_BY_CODE[currencyCode] ?? "";
   const major = amountMinor / 100;
   const sign = major < 0 ? "−" : "+";
-  const abs = Math.abs(major).toLocaleString("uk-UA", {
+  const abs = formatNumberUk(Math.abs(major), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -132,7 +132,7 @@ function buildMonoPushPayload(
   monoAccountId: string,
 ): PushPayload {
   const amountStr = formatMonoMoney(item.amount, item.currencyCode);
-  const description = (item.description || "Транзакція").trim().slice(0, 80);
+  const description = (item.description || "Операція").trim().slice(0, 80);
   const balanceStr =
     typeof item.balance === "number"
       ? formatMonoMoney(item.balance, item.currencyCode).replace(/^[+−]/, "")
@@ -151,29 +151,6 @@ function buildMonoPushPayload(
     },
     url: "/?module=finyk",
   };
-}
-
-/**
- * Будує human-readable content-string для AI-memory-ingestion. Використовуємо
- * **уже-локалізований** money-format (₴, +/−), бо Voyage embedding-модель
- * краще працює з consistent text-формою, не з raw integer minor-units.
- * Категорія включається у content тільки якщо MCC зміг резолвитись —
- * embed-модель сама вивезе "продукти/cafe/таксі" з description-у, не
- * палимо токени на "(none)" placeholder-ах.
- *
- * Приклад: "Витрата −150,00 ₴ Сільпо · продукти · 2026-01-15"
- */
-function buildMonoMemoryContent(
-  item: StatementItem,
-  categorySlug: string | null,
-): string {
-  const amountStr = formatMonoMoney(item.amount, item.currencyCode);
-  const isExpense = item.amount < 0;
-  const verb = isExpense ? "Витрата" : "Надходження";
-  const description = (item.description || "Без опису").trim().slice(0, 200);
-  const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
-  const categoryPart = categorySlug ? ` · ${categorySlug}` : "";
-  return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
 }
 
 /**
@@ -376,6 +353,16 @@ export async function webhookHandler(
       // + balance) і ретраїмо upsert один раз. Решта полів (type, masked_pan,
       // iban, ...) лишаються NULL — наступний `/connect` reconcile або
       // окремий backfill підтягне їх з `client-info`.
+      //
+      // `is_jar` (міграція 119) — НЕ косметика. Банка теж має рахунковий
+      // id і теж шле statement-items, тож без цієї позначки заглушка під
+      // банку осідала в таблиці КАРТОК: `/api/mono/accounts` віддавав її
+      // безіменною карткою, а її баланс потрапляв у капітал двічі — раз
+      // як картка, раз через `mono_jar`. `EXISTS` рахується всередині
+      // того самого INSERT, тож зайвого round-trip немає. Якщо банка ще
+      // не доїхала в `mono_jar` (створена й поповнена між двома
+      // читаннями client-info) — прапорець лишиться FALSE, і рядок
+      // добере реконсиляція в `upsertJars` на наступному синку.
       const code =
         err && typeof err === "object" && "code" in err
           ? (err as { code?: unknown }).code
@@ -391,8 +378,12 @@ export async function webhookHandler(
       });
       await client.query(
         `INSERT INTO mono_account
-           (user_id, mono_account_id, currency_code, balance, last_seen_at)
-         VALUES ($1, $2, $3, $4, NOW())
+           (user_id, mono_account_id, currency_code, balance, is_jar,
+            last_seen_at)
+         SELECT $1, $2, $3, $4,
+                EXISTS (SELECT 1 FROM mono_jar j
+                         WHERE j.user_id = $1 AND j.mono_jar_id = $2),
+                NOW()
          ON CONFLICT (user_id, mono_account_id) DO NOTHING`,
         [userId, monoAccountId, item.currencyCode, item.balance ?? null],
       );
@@ -476,28 +467,6 @@ export async function webhookHandler(
   if (inserted) {
     void sendToUserQuietly(userId, buildMonoPushPayload(item, monoAccountId), {
       module: "mono",
-    });
-
-    // AI-memory-ingestion hook (PR2 з ADR-0028). `enqueueMemoryIngest`
-    // ніколи не throw-ить — на enqueue-помилку метрика
-    // `ai_memory_ingest_enqueued_total{mode="enqueue_error"}` плюс лог.
-    // BullMQ-jobId-dedup за `mono_tx_id` означає, що Monobank-retry на
-    // TCP-rest не створить дублів навіть якщо ми ще раз ввійшли б у цю
-    // гілку (`inserted=true` після race-condition unlikely-але-possible).
-    // SQL-UNIQUE на `(user_id, source, source_ref)` — другий шар захисту.
-    void enqueueMemoryIngest({
-      userId,
-      source: "finyk",
-      sourceRef: item.id,
-      content: buildMonoMemoryContent(item, categorySlug),
-      metadata: {
-        monoAccountId,
-        amount: item.amount,
-        currencyCode: item.currencyCode,
-        mcc: item.mcc ?? null,
-        categorySlug,
-        time: new Date(item.time * 1000).toISOString(),
-      },
     });
   }
 }

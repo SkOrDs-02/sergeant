@@ -4,11 +4,12 @@
  * Why this lives in `@sergeant/shared` instead of `apps/server/src/obs/logger.ts`:
  * the same key list must drive **three** enforcers across packages that do not
  * share a runtime — pino redaction (server logs), `Sentry.beforeSend` PII
- * scrubbing (server **and** web SDK), and OTel attribute denylist
- * (`apps/server/src/obs/tracing.ts`). Keeping it here closes the historical
+ * scrubbing (server **and** web SDK). Historical OTel attribute denylist was
+ * removed with ADR-0035; parity is now enforced by `apps/server/src/obs/tracing.test.ts`
+ * against `redactKeysRecursively`. Keeping the list here closes the historical
  * gap where `apps/web/src/core/observability/sentry.ts:beforeSend` only
  * deleted cookies and missed every other field listed in
- * [`docs/security/pii-handling.md`](../../../../docs/security/pii-handling.md)
+ * [`docs/governance/security/pii-handling.md`](../../../../docs/governance/security/pii-handling.md)
  * (audit `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`
  * §6.5 — outstanding follow-up).
  *
@@ -33,7 +34,7 @@
  *      case-insensitive, see `REDACT_KEY_SET`).
  *   2. If pino-redaction needs a one-level path mirror, add it to
  *      `redactPaths` in `apps/server/src/obs/logger.ts`.
- *   3. Update the table in `docs/security/pii-handling.md` Class A/B/C.
+ *   3. Update the table in `docs/governance/security/pii-handling.md` Class A/B/C.
  */
 
 export const PII_REDACTED = "[redacted]";
@@ -74,6 +75,16 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "x-openclaw-webhook-secret",
   "x-api-secret",
   "x-internal-token",
+  // Telegram webhook secret (`setWebhook(secret_token)`) — приходить у
+  // заголовку, який Sentry кладе в `request.headers`.
+  "x-telegram-bot-api-secret-token",
+  // OAuth / snake_case форми (тіла форм, query-атрибути span-ів).
+  "access_token",
+  "refresh_token",
+  "id_token",
+  "client_secret",
+  "api_key",
+  "code_verifier",
   // PR-48 follow-up (HMAC #2733): `signature` (key) already covers
   // `X-Signature`-named fields only at root; header keys arrive lowercased
   // and prefixed, so we need an explicit entry.
@@ -98,9 +109,24 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "groqKey",
   "anthropicKey",
   "voyageKey",
+  // B18: OpenRouter-ключ (`sk-or-v1-…`) у diagnostics/`extra`.
+  "openrouterKey",
+  "silpoToken",
+  // Class B-adjacent — вміст розмови з асистентом (B43,
+  // `docs/work/specs/audits/ai-testing-2026-08-25.md`). Сюди беремо ЛИШЕ
+  // однозначно чат-специфічні імена: вони не зустрічаються ніде, крім
+  // payload-у асистента, тож матч на будь-якій глибині безпечний.
+  // `content`/`messages`/`context` НЕ додаємо навмисно — це найуживаніші
+  // імена полів у діагностиці взагалі, і глобальний deny на них засліпив
+  // би логи; для них у сервера є прицільні `req.body.*` шляхи
+  // (`apps/server/src/obs/logger.ts`).
+  "tool_calls_raw",
+  "tool_results",
   // Class B — personal identifiers (GDPR PII).
   "email",
   "phone",
+  "loyaltyCard",
+  "loyaltyCardNumber",
 ];
 
 const REDACT_KEY_SET: ReadonlySet<string> = new Set(
@@ -229,6 +255,19 @@ export const PII_STRING_PATTERNS: ReadonlyArray<{
     // header dumps where the placeholder string is short).
     pattern: /\b[Bb]earer\s+[A-Za-z0-9._-]{16,}/g,
     replacement: "Bearer [redacted]",
+  },
+  {
+    name: "anthropic-api-key",
+    // B18: `sk-ant-api03-…`, `sk-ant-admin01-…` — ключ провайдера в тексті
+    // помилки/стектрейсі (`err.config.headers`, `err.message`).
+    pattern: /\bsk-ant-[A-Za-z0-9_-]{16,}/g,
+    replacement: "[anthropic-key redacted]",
+  },
+  {
+    name: "openrouter-api-key",
+    // B18: `sk-or-v1-<64 hex>` (OpenRouter).
+    pattern: /\bsk-or-v1-[A-Za-z0-9_-]{16,}/g,
+    replacement: "[openrouter-key redacted]",
   },
 ];
 

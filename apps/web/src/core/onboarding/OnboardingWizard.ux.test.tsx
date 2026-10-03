@@ -119,32 +119,6 @@ describe("OnboardingWizard — Escape soft-pause (real-mode modal)", () => {
   });
 });
 
-describe("OnboardingWizard — Escape in tour-mode modal", () => {
-  afterEach(cleanup);
-
-  beforeEach(() => {
-    localStorage.clear();
-    vi.restoreAllMocks();
-  });
-
-  it("Escape closes tour replay with the tour_replay intent", () => {
-    const onDone = vi.fn();
-    render(<OnboardingWizard mode="tour" onDone={onDone} />);
-
-    fireEvent.keyDown(document, { key: "Escape" });
-
-    // Tour Escape must mirror the «Закрити» CTA exactly — same
-    // payload, same single-call contract — so the dismissal path
-    // stays single-source no matter which input the user uses.
-    expect(onDone).toHaveBeenCalledTimes(1);
-    expect(onDone).toHaveBeenCalledWith(null, {
-      intent: "tour_replay",
-      picks: [],
-    });
-    expect(localStorage.getItem("hub_onboarding_done_v1")).toBeNull();
-  });
-});
-
 describe("OnboardingWizard — double-submit guard", () => {
   afterEach(cleanup);
 
@@ -166,17 +140,6 @@ describe("OnboardingWizard — double-submit guard", () => {
     const cta = screen.getByRole("button", { name: /Розпочати/i });
     fireEvent.click(cta);
     fireEvent.click(cta);
-
-    expect(onDone).toHaveBeenCalledTimes(1);
-  });
-
-  it("does not call onDone twice when the «Закрити» CTA is double-clicked (tour mode)", () => {
-    const onDone = vi.fn();
-    render(<OnboardingWizard mode="tour" onDone={onDone} />);
-
-    const close = screen.getByRole("button", { name: /Закрити/i });
-    fireEvent.click(close);
-    fireEvent.click(close);
 
     expect(onDone).toHaveBeenCalledTimes(1);
   });

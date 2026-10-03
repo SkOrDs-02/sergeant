@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 // transactionsLib imports safeReadLS/safeWriteLS from @shared/lib/storage/storage,
 // which in turn chains into kvStoreBoot → @sergeant/db-schema/sqlite (not
@@ -11,8 +12,10 @@ vi.mock("@shared/lib/storage/storage", () => ({
 
 import {
   dayKeyFromTx,
+  findAddedManualExpenseDayKey,
   isDayExpanded,
   formatStickyDayLabel,
+  manualExpenseDayKey,
 } from "./transactionsLib";
 
 describe("dayKeyFromTx", () => {
@@ -78,18 +81,86 @@ describe("isDayExpanded", () => {
   });
 });
 
-describe("formatStickyDayLabel", () => {
-  it("returns 'Сьогодні' for today's date key", () => {
-    const now = new Date();
-    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    expect(formatStickyDayLabel(key)).toBe("Сьогодні");
+describe("manualExpenseDayKey", () => {
+  it("бере Kyiv-день з ISO-інстанта запису (UTC-полудень із форми)", () => {
+    expect(manualExpenseDayKey("2026-05-02T12:00:00.000Z")).toBe("2026-05-02");
   });
 
-  it("returns 'Вчора' for yesterday's date key", () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    expect(formatStickyDayLabel(key)).toBe("Вчора");
+  it("збігається з ключем групування (dayKeyFromTx) для того ж інстанта", () => {
+    const iso = "2026-05-02T21:30:00.000Z";
+    expect(manualExpenseDayKey(iso)).toBe(
+      dayKeyFromTx(Math.floor(Date.parse(iso) / 1000)),
+    );
+  });
+
+  it("повертає null для відсутньої чи некоректної дати", () => {
+    expect(manualExpenseDayKey(undefined)).toBeNull();
+    expect(manualExpenseDayKey("")).toBeNull();
+    expect(manualExpenseDayKey("не дата")).toBeNull();
+  });
+});
+
+describe("findAddedManualExpenseDayKey", () => {
+  it("повертає день єдиного нового запису", () => {
+    const known = new Set(["a"]);
+    expect(
+      findAddedManualExpenseDayKey(known, [
+        { id: "b", date: "2026-05-02T12:00:00.000Z" },
+        { id: "a", date: "2026-04-01T12:00:00.000Z" },
+      ]),
+    ).toBe("2026-05-02");
+  });
+
+  it("повертає день записаної дати, а не сьогоднішній", () => {
+    // Форма дозволяє «Не сьогодні? Змінити дату» — розгортати треба
+    // групу дня самої транзакції.
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [
+        { id: "x", date: "2020-01-15T12:00:00.000Z" },
+      ]),
+    ).toBe("2020-01-15");
+  });
+
+  it("повертає null, коли нових записів немає", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(["a"]), [
+        { id: "a", date: "2026-05-02T12:00:00.000Z" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("повертає null при bulk-гідрації (2+ нових записів)", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [
+        { id: "a", date: "2026-05-02T12:00:00.000Z" },
+        { id: "b", date: "2026-05-03T12:00:00.000Z" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("повертає null для порожнього / відсутнього списку", () => {
+    expect(findAddedManualExpenseDayKey(new Set(), [])).toBeNull();
+    expect(findAddedManualExpenseDayKey(new Set(), undefined)).toBeNull();
+  });
+
+  it("повертає null, якщо в нового запису невалідна дата", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [{ id: "a", date: "хтозна" }]),
+    ).toBeNull();
+  });
+});
+
+describe("formatStickyDayLabel", () => {
+  // Day keys are Europe/Kyiv-anchored (domain invariant), тож «сьогодні»
+  // будуємо через getKyivDayKey — тест детермінований у будь-якій TZ
+  // (host-local ключ у вікні 00:00–03:00 Kyiv зʼїжджав на день назад).
+  it("returns 'Сьогодні' for today's KYIV date key", () => {
+    expect(formatStickyDayLabel(getKyivDayKey())).toBe("Сьогодні");
+  });
+
+  it("returns 'Вчора' for yesterday's KYIV date key", () => {
+    const yesterdayKey = getKyivDayKey(new Date(Date.now() - 86400000));
+    expect(formatStickyDayLabel(yesterdayKey)).toBe("Вчора");
   });
 
   it("returns a Ukrainian weekday + date for older dates", () => {

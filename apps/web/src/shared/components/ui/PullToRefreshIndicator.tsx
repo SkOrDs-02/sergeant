@@ -4,7 +4,7 @@
  * @addedIn 1d443ac1 (feat(web): add UI/UX improvements and new components)
  * @nextStep Wire into Finyk/Fizruk/Routine/Nutrition module pages so
  *           PWA users get a native-like refresh gesture. See
- *           docs/design/design-system.md § PullToRefreshIndicator for
+ *           docs/design/design/design-system.md § PullToRefreshIndicator for
  *           the integration recipe.
  *
  * Scaffolded but not yet imported by any consumer. Do NOT delete as part of
@@ -47,7 +47,7 @@ export function PullToRefreshIndicator({
     <div
       className={cn(
         "absolute left-1/2 -translate-x-1/2 z-50 flex items-center justify-center",
-        "transition-[transform,opacity] duration-200 ease-out",
+        "transition-[transform,opacity] duration-base ease-standard",
         className,
       )}
       style={{
@@ -60,7 +60,7 @@ export function PullToRefreshIndicator({
           "w-10 h-10 rounded-full bg-panel shadow-card border flex items-center justify-center",
           VARIANT_COLORS[variant],
           canRefresh && "scale-110",
-          "transition-transform duration-150",
+          "transition-transform duration-fast",
         )}
       >
         <svg
@@ -77,7 +77,9 @@ export function PullToRefreshIndicator({
             transform: isRefreshing
               ? undefined
               : `rotate(${pullProgress * 360}deg)`,
-            transition: isRefreshing ? undefined : "transform 0.1s ease-out",
+            transition: isRefreshing
+              ? undefined
+              : "transform var(--motion-duration-instant) var(--motion-ease-standard)",
           }}
         >
           <path d="M21 12a9 9 0 11-6.219-8.56" />

@@ -1,7 +1,7 @@
 /**
  * Boot-time residual-import helper for the mobile Finyk MMKV keys.
  *
- * Stage 8 PR #057k-tombstone of `docs/planning/storage-roadmap.md`
+ * Stage 8 PR #057k-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * (mobile parity for `apps/web/src/modules/finyk/lib/residualImport.ts`).
  * Reads any leftover values from the now-deprecated MMKV keys (14
  * Finyk domain keys + `finyk_show_balance_v1`), imports them into the
@@ -19,13 +19,13 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyFinykDualWriteOps } from "./dualWrite/adapter";
+import { applyFinykDualWriteOps } from "./sqliteWriter/adapter";
 import {
   EMPTY_FINYK_STATE,
   diffFinykDualWriteOps,
   type FinykDualWriteState,
   type FinykPrefsSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import {
   blobsFromArray,
   idsFromArray,
@@ -33,7 +33,7 @@ import {
   networthHistoryFrom,
   txCatsFromMap,
   txSplitsFromMap,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
 

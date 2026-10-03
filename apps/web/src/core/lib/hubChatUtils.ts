@@ -1,5 +1,6 @@
 // Utility functions shared across HubChat modules
 
+import { isApiError } from "@sergeant/api-client";
 import { friendlyApiError as baseFriendlyApiError } from "@shared/lib/api/friendlyApiError";
 import type { CapabilityModule } from "@sergeant/shared";
 import type { ChatActionCard } from "./hubChatActionCards";
@@ -25,6 +26,13 @@ export interface ChatMessage {
   text: string;
   /** Опційний набір action-карт (рендериться у `ChatMessage` UI). */
   cards?: ChatActionCard[];
+  /**
+   * `true` — це повідомлення про ЗБІЙ, а не відповідь моделі. Рендериться
+   * як помилка і не озвучується: до 2026-09-03 збої лягали у звичайну
+   * бульбашку асистента, тож серверний текст 500-ки виглядав як його
+   * репліка, ще й із кнопкою «Озвучити» (browser-QA 2026-09-02).
+   */
+  error?: boolean;
   /** Optional extra fields preserved from persisted history. */
   [key: string]: unknown;
 }
@@ -56,29 +64,175 @@ export function getActiveModule(): ActiveModule | null {
 }
 
 /**
- * HubChat-специфічний `friendlyApiError`. Додає два кейси поверх
- * загального мапера в `@shared/lib/friendlyApiError`:
- *  - 500 без ключа AI → окремий текст про чат;
- *  - 429 з маркером AI_QUOTA / «ліміт AI» → явне повідомлення про
- *    денний ліміт (замість загального «Забагато запитів»).
+ * Єдиний текст для «сервер не пустив без сесії».
+ *
+ * `/api/chat` стоїть за `requireSession()` (аудит `ai-abuse-2026-08-05.md`,
+ * A1) — анонімного AI не існує НАВМИСНО, і послаблювати це не можна. Але
+ * загальний мапер віддавав на 401/403 суху «Доступ заборонено.», яку
+ * `friendlyChatError` ще й обгортав у «Помилка: …», тож незалогінений
+ * відвідувач упирався в глухий кут без жодної підказки (browser QA
+ * 2026-08-23). Текст називає вихід; кнопку входу дає `ChatAuthGate`.
  */
-export function friendlyApiError(status: number, message?: string): string {
+export const CHAT_AUTH_REQUIRED_TEXT =
+  "Я працюю після входу в акаунт. Увійди, і повернусь до розмови.";
+
+/**
+ * Потік відповіді перевищив стелю (`MAX_SSE_TOTAL_BYTES` /
+ * `MAX_SSE_LINE_BYTES`). Кидається як звичайний `Error`, але це НЕ технічна
+ * помилка — це копія для людини, тож `friendlyChatError` пропускає її як є.
+ *
+ * Ловиться за тотожністю константи, а не за виглядом рядка: саме на
+ * «перевіряти початок рядка» вже наступили один раз (див. AI-DANGER нижче).
+ * Дію дописано тут же — до PR-X3 текст був «Відповідь занадто довга» без
+ * жодного натяку, що з цим робити, тобто порушував §3 з іншого боку.
+ */
+export const CHAT_RESPONSE_TOO_LONG_TEXT =
+  "Відповідь занадто довга. Постав вужче питання.";
+
+/**
+ * Текст для збою, який не має власної гілки: `parse`-помилка api-client-а,
+ * мережевий виняток із нетиповим текстом, сирий `TypeError`. Спільне в них
+ * одне — `message` там технічний, і показувати його людині означає порушити
+ * §3 гайду копірайтингу («скажи що сталося, але без stack-trace-у»).
+ *
+ * Живе локальною константою, а не рядком каталогу, з тієї ж причини, що й
+ * `SYNC_ORIGIN_DEVICE_ID_KEY` в `AuthContext`: цей модуль сидить близько до
+ * критичного шляху, і новий імпорт `@shared/i18n` уміє перекроїти eager-граф
+ * (див. `apps/web/AGENTS.md` § AuthContext × @sergeant/shared і ратчет
+ * eager 280 → 268 kB).
+ */
+export const CHAT_UNKNOWN_ERROR_TEXT =
+  "Не вдалося отримати відповідь. Спробуй ще раз.";
+
+/**
+ * HubChat-специфічний `friendlyApiError`. Додає три кейси поверх
+ * загального мапера в `@shared/lib/friendlyApiError`:
+ *  - 401/403 → чесний текст «потрібен вхід» (див. `CHAT_AUTH_REQUIRED_TEXT`);
+ *  - 503 `ANTHROPIC_KEY_MISSING` (немає ключа upstream-у) → окремий текст
+ *    для розробника, а не користувацьке «тимчасово недоступний»;
+ *  - 429 `AI_QUOTA_PRESET` → серверна копія проходить БЕЗ перезапису;
+ *  - 429 з маркером AI_QUOTA / «ліміт AI» → явне повідомлення про
+ *    тижневий ліміт (замість загального «Забагато запитів»).
+ *
+ * AI-CONTEXT: `code` читається з тіла відповіді, а не з тексту — так копія
+ * лишається на сервері в одному екземплярі й не дрейфує.
+ *
+ * Гілки `AI_QUOTA_ANON` тут більше немає: сервер прибрав анонімне квотне
+ * відро цілком, `/api/chat` session-gated, тож анонім отримує 401, а не 429
+ * (репорт server-агента 2026-08-23). Її колишню роботу — сказати гостю, що
+ * вихід у вході, — тепер робить гілка 401/403 разом із `ChatAuthGate`.
+ */
+export function friendlyApiError(
+  status: number,
+  message?: string,
+  code?: string,
+): string {
   const m = message || "";
-  if (status === 500 && /ANTHROPIC|not set|key/i.test(m)) {
-    return "Чат на сервері не налаштовано (немає ключа AI).";
+  if (status === 401 || status === 403) return CHAT_AUTH_REQUIRED_TEXT;
+  // Ключ upstream-у відсутній. Гейти `requireChatUpstreamKey` /
+  // `requireLlmUpstream` (`apps/server/src/http/requireAnthropicKey.ts`)
+  // віддають **503** з маркером у `body.code`, а `body.error` — навмисно
+  // нейтральне «AI-помічник тимчасово недоступний» без назви env-змінної.
+  // До 2026-09-03 тут стояло `status === 500 && /ANTHROPIC|key/.test(m)` —
+  // обидві умови хибні для реальної відповіді, тож гілка була недосяжна, і
+  // розробник із незаповненим ключем бачив користувацький текст і шукав
+  // проблему не там (аудит `web-qa-pre-beta.md` § 11). Звіряємо по `code`
+  // й не по статусу: код — контракт, статус і текст можуть змінитись.
+  if (code === "ANTHROPIC_KEY_MISSING") {
+    return "Чат на сервері не налаштовано. Повідом у підтримку.";
+  }
+  // Сценарний preset має власне відро, і вихід у нього інший: ручне
+  // заповнення профілю, а не чекати понеділка.
+  if (status === 429 && code === "AI_QUOTA_PRESET" && m) {
+    return m;
   }
   if (status === 429 && /ліміт AI|AI_QUOTA|квот/i.test(m)) {
-    return "Денний ліміт AI вичерпано. Спробуй завтра або зменш навантаження.";
+    return "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.";
   }
+  // Шлюзові збої приходять від проксі, а не від застосунку, тож тіла з
+  // поясненням у них немає — і на екран виїжджало голе «Помилка 504», яке
+  // не каже ні що сталось, ні що робити (звіт власника 2026-09-02).
+  //
+  // Текст живе саме ТУТ, а не в спільному мапері: там форма `Помилка N` є
+  // сигналом для `formatApiError` підставити caller-специфічний fallback
+  // («Помилка генерації звіту»), і перебивати його загальним текстом про
+  // шлюз означало б забрати контекст у кожного викликача. У чату свого
+  // fallback-у немає, тож потрібен саме тут.
+  //
+  // 504 окремо від 502/503: там таймаут, і повтор має сенс — наступна
+  // спроба може вкластися. Обидві гілки під `!m`: якщо проксі все ж дав
+  // тіло, воно конкретніше.
+  if (!m && status === 504) {
+    return "Сервер не встиг відповісти. Спробуй ще раз.";
+  }
+  if (!m && (status === 502 || status === 503)) {
+    return "Сервер тимчасово недоступний. Спробуй за хвилину.";
+  }
+  // NB (browser-QA 2026-09-02): сюди доходить 5xx З ТІЛОМ, і серверний
+  // `error`-рядок іде на екран дослівно. Це СВІДОМЕ рішення — див. тест
+  // «шлюзові збої дістають текст із дією»: «серверне повідомлення, якщо воно
+  // є, конкретніше за наш загальний текст». QA-прогін відзначив ризик, що так
+  // у чат може потрапити внутрішня деталь збою, але міняти це означає
+  // перевернути задокументоване рішення, тож питання винесено власнику, а не
+  // вирішене тут. Що виправлено — сама ПОДАЧА: збій більше не рендериться як
+  // звичайна репліка асистента (`makeErrorMsg` + гілка `isError` у
+  // `components/ChatMessage.tsx`).
   return baseFriendlyApiError(status, message);
 }
 
+/**
+ * AI-DANGER: HTTP-помилка приходить сюди з `message`, ЯКИЙ УЖЕ пройшов
+ * `friendlyApiError` — `useChatSend` перезаписує його перед тим, як кинути
+ * далі (див. коментар «Rewrite `message` to user-friendly» там же). Тому
+ * сліпий префікс наприкінці цієї функції давав «Помилка: Помилка 504»:
+ * двічі те саме слово, і жодної підказки, що робити (звіт власника
+ * 2026-09-02).
+ *
+ * Гілка 401/403 нижче була плястиром на ту саму рану — вона ловила рівно
+ * один випадок із багатьох. Тепер причина знята за ТИПОМ, а не за виглядом
+ * рядка: HTTP-помилка вже готова до показу, тож віддається як є.
+ *
+ * Префікс «Помилка: » для сирих помилок теж прибрано (PR-X3, аудит
+ * 2026-09-13), і причина рівно та сама, тільки на крок далі. Його тримало
+ * міркування «без нього незрозуміло, що це взагалі збій» — правдиве рівно
+ * доти, доки збій рендерився як звичайна репліка асистента. Той самий захід,
+ * що прибрав подвоєння, це й полагодив: `makeErrorMsg` ставить `error: true`,
+ * а `core/components/ChatMessage.tsx` малює таку бульбашку червоною рамкою
+ * (`bg-danger/10 border-danger/30`) і вішає `role="alert"`. Другий споживач,
+ * `useInlineAiRail`, робить те саме — іконка `alert-circle` і заголовок
+ * «Помилка асистента». Тобто слово «Помилка» в тексті ДУБЛЮЄ те, що вже
+ * сказали і колір, і скрінрідер, а §7 гайду копірайтингу називає «Помилка»
+ * як standalone прямо забороненою конструкцією (не actionable).
+ *
+ * Сирий `message` при цьому не втрачається для діагностики, але й не їде на
+ * екран: у цю гілку доходять лише `parse`-помилки api-client-а, мережеві
+ * винятки з нетиповим текстом і сирі `TypeError` — тобто рівно ті, чий
+ * `message` технічний і людині не каже нічого, що вона могла б зробити.
+ *
+ * Перевіряти тут довжину чи початок рядка не можна: `friendlyApiError`
+ * віддає й тексти без слова «Помилка» («Доступ заборонено.», «Сервер не
+ * встиг відповісти.»), і вони так само не потребують обгортки.
+ */
 export function friendlyChatError(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/failed to fetch|network|load failed/i.test(msg)) {
-    return "Немає з'єднання з мережею або сервер недоступний.";
+    return "Немає зʼєднання з мережею або сервер недоступний.";
   }
-  return `Помилка: ${msg}`;
+  if (isApiError(e) && e.kind === "http") return msg;
+  // `/api/chat` стоїть за `requireSession()` (аудит `ai-abuse-2026-08-05.md`, A1),
+  // тож анонім упирається сюди. Сервер віддає «Потрібна автентифікація» —
+  // технічно правильно, але без підказки, що робити далі. Другий рукав —
+  // вже перекладений `friendlyApiError` текст: без нього повідомлення
+  // виїжджало назовні як «Помилка: Доступ заборонено.».
+  if (
+    /Потрібна автентифікація|UNAUTHORIZED|Доступ заборонено/i.test(msg) ||
+    msg === CHAT_AUTH_REQUIRED_TEXT
+  ) {
+    return CHAT_AUTH_REQUIRED_TEXT;
+  }
+  // Стеля потоку — не технічний збій, а копія для людини. Пропускаємо як є.
+  if (msg === CHAT_RESPONSE_TOO_LONG_TEXT) return CHAT_RESPONSE_TOO_LONG_TEXT;
+  return CHAT_UNKNOWN_ERROR_TEXT;
 }
 
 /** Максимум байтів усього SSE-потоку чату. 256 КБ ≈ 60-80 тис. символів — більше за будь-яку розумну AI-відповідь. Час обмежує `useChatSend` (90 с), цей ліміт обмежує память і CPU на rerender. */
@@ -86,7 +240,7 @@ const MAX_SSE_TOTAL_BYTES = 256 * 1024;
 /** Максимум на одну SSE-лінію (між `\n`). Захист від runaway-server, що шле один рядок без переносів. */
 const MAX_SSE_LINE_BYTES = 8 * 1024;
 
-/** Читає SSE з /api/chat (data: {"t":"..."} / [DONE]). Рядок за рядком — стійко до часткових чанків. Кидає `Error("Відповідь занадто довга")` якщо потік перевищує MAX_SSE_TOTAL_BYTES або одна лінія перевищує MAX_SSE_LINE_BYTES. */
+/** Читає SSE з /api/chat (data: {"t":"..."} / [DONE]). Рядок за рядком — стійко до часткових чанків. Кидає `Error(CHAT_RESPONSE_TOO_LONG_TEXT)` якщо потік перевищує MAX_SSE_TOTAL_BYTES або одна лінія перевищує MAX_SSE_LINE_BYTES. */
 export async function consumeHubChatSse(
   response: Response,
   onDelta: (delta: string) => void,
@@ -107,7 +261,7 @@ export async function consumeHubChatSse(
         } catch {
           /* reader вже закритий — гнатися немає за чим */
         }
-        throw new Error("Відповідь занадто довга");
+        throw new Error(CHAT_RESPONSE_TOO_LONG_TEXT);
       }
     }
     buf += dec.decode(value, { stream: true });
@@ -117,7 +271,7 @@ export async function consumeHubChatSse(
       } catch {
         /* див. вище */
       }
-      throw new Error("Відповідь занадто довга");
+      throw new Error(CHAT_RESPONSE_TOO_LONG_TEXT);
     }
     for (;;) {
       const nl = buf.indexOf("\n");
@@ -142,7 +296,7 @@ export async function consumeHubChatSse(
 export function newMsgId(): string {
   return (
     globalThis.crypto?.randomUUID?.() ??
-    `m_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+    `m_${Date.now()}_${crypto.randomUUID()}`
   );
 }
 
@@ -150,25 +304,42 @@ export function makeAssistantMsg(text: string): ChatMessage {
   return { id: newMsgId(), role: "assistant", text };
 }
 
+/** Бульбашка збою: та сама стрічка, але видно, що це не відповідь моделі. */
+export function makeErrorMsg(text: string): ChatMessage {
+  return { id: newMsgId(), role: "assistant", text, error: true };
+}
+
 export function makeUserMsg(text: string): ChatMessage {
   return { id: newMsgId(), role: "user", text };
 }
 
+/**
+ * PR-A7 (аудит `2026-09-13-product-full-review.md`): раніше порожній чи
+ * відсутній `raw` замінювався на одноелементний масив із привітальною
+ * реплікою. Це робило `messages.length === 0` НЕДОСЯЖНИМ за побудовою —
+ * кожна нова сесія (`createInitialSession`), кожне відновлення після
+ * пошкодженого сховища (`parseSessionsBlob`) і кожен «холодний» boot
+ * (`useChatSessions`) проходили через цю функцію, тож `<ChatEmpty>` (4
+ * модуль-залежні suggestion-и — `uk.core.ts` `chatEmptySuggestion*`) не
+ * рендерився НІКОЛИ. Тепер порожній вхід лишається порожнім масивом:
+ * порожній стан рендерить `<ChatEmpty>` замість прози-привітання —
+ * розкриття «це AI» (`chatEmptyAiDisclosure`) уже не залежить від цієї
+ * умови (воно безумовне в `HubChatBody`), тож EU AI Act ст. 50(1)
+ * лишається виконаним і для порожньої стрічки.
+ *
+ * AI-DANGER: не повертай сюди дефолтне assistant-повідомлення для
+ * порожнього/відсутнього `raw` — це саме той регрес, від якого захищає
+ * `hubChatUtils.test.ts` («does NOT synthesize a greeting…»).
+ */
 export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return [
-      makeAssistantMsg(
-        "Привіт! Я твій особистий асистент. Запитуй про фінанси (Фінік), тренування (Фізрук), звички (Рутина) або харчування. Можу також змінювати категорії, додавати борги, відмічати звички та записувати прийоми їжі.",
-      ),
-    ];
-  }
+  if (!Array.isArray(raw)) return [];
   return raw.map((m: Partial<ChatMessage> & Record<string, unknown>, i) => ({
     role: "assistant" as ChatRole,
     text: "",
     ...m,
     id:
       (typeof m.id === "string" && m.id) ||
-      `legacy_${i}_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      `legacy_${i}_${Date.now()}_${crypto.randomUUID()}`,
   }));
 }
 
@@ -176,6 +347,7 @@ export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
 // Callers import `ls`/`lsSet` for backward-compat; new code should prefer
 // `safeReadLS`/`safeWriteLS` from `@shared/lib/storage` directly.
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function ls<T>(key: string, fallback: T): T {
   return (safeReadLS<T>(key) as T | null) ?? fallback;
@@ -186,7 +358,7 @@ export function lsSet(key: string, value: unknown): void {
 }
 
 export function fmt(n: number): string {
-  return Math.round(n).toLocaleString("uk-UA");
+  return formatNumberUk(Math.round(n));
 }
 
 // IdleHandle can be either requestIdleCallback id (number) or setTimeout id (ReturnType<typeof setTimeout>)

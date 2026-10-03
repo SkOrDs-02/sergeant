@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
@@ -21,7 +20,25 @@ interface AuthPageProps {
 export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
   const { loginWithGoogle, loginWithApple, authError, setAuthError } =
     useAuth();
-  const { CelebrationComponent } = useCelebration();
+  /**
+   * Соцвхід вимикається на деплої, який живе НЕ на домені з `BETTER_AUTH_URL`.
+   *
+   * Better Auth будує OAuth `redirect_uri` з єдиного статичного `baseURL`.
+   * Тому фронт на власному домені — як бета-проєкт на окремому Vercel —
+   * відправляє людину в Google зі свого домену, а Google повертає її на
+   * домен із `baseURL`, тобто на прод. Кнопка, яка викидає тестера з бети
+   * у чужий застосунок, гірша за відсутню.
+   *
+   * Opt-out, а не opt-in: прод на соцвхід покладається, і мовчазна втрата
+   * кнопки через незадану змінну коштувала б дорожче за зайвий рядок у
+   * конфігу бети.
+   */
+  const socialLoginEnabled =
+    import.meta.env["VITE_SOCIAL_LOGIN_ENABLED"] !== "false";
+  // Apple requires a configured Apple Developer Program. Keep it opt-in so a
+  // missing production credential can never appear as a working sign-in path.
+  const appleLoginEnabled =
+    import.meta.env["VITE_APPLE_LOGIN_ENABLED"] === "true";
   const [mode, setMode] = useState<"login" | "register">("login");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -68,13 +85,12 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
   return (
     <>
-      {CelebrationComponent}
       {/*
         Phase 7 D1 — visual refresh. MeshBackground wraps the whole auth
         shell (auth is pre-module, so no `<ModuleAccentProvider>` here);
         BrandLogo sits ABOVE the hero card per the redesign brief.
         Flow logic is intentionally untouched — see
-        `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
+        `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
       */}
       <MeshBackground
         className="items-center px-5 overflow-y-auto"
@@ -86,7 +102,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
         <main
           id="main"
           tabIndex={-1}
-          className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500"
+          className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower"
         >
           <div className="text-center mb-6">
             <BrandLogo as="h1" size="md" className="justify-center" />
@@ -94,18 +110,20 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
           <Card
             prominence="hero"
-            radius="r-2xl"
+            radius="xl"
             padding="lg"
-            className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
+            className="space-y-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-slow"
           >
             <div className="text-center">
-              <h2 className="text-style-display-hero text-text">
+              <h2 className="text-style-headline text-text text-balance">
                 {mode === "login" ? "З поверненням" : "Створити акаунт"}
               </h2>
-              <p className="text-style-body-sm text-subtle mt-2">
+              <p className="text-style-label text-subtle mt-2">
                 {mode === "login"
-                  ? "Email і пароль, Google або Apple"
-                  : "Email і пароль — мінімум 10 символів"}
+                  ? appleLoginEnabled
+                    ? "Email і пароль, Google або Apple"
+                    : "Email і пароль або Google"
+                  : "Email і пароль: мінімум 10 символів"}
               </p>
             </div>
 
@@ -134,22 +152,30 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               <ForgotPasswordPanel state={forgot} authError={authError} />
             )}
 
-            <div className="my-6 flex items-center gap-3 text-style-overline text-muted">
-              <span className="flex-1 h-px bg-line" />
-              або
-              <span className="flex-1 h-px bg-line" />
-            </div>
+            {socialLoginEnabled && (
+              <>
+                {/* Роздільник живе всередині гілки: без кнопок «або» веде
+                    в нікуди. */}
+                <div className="my-6 flex items-center gap-3 text-style-caption text-muted">
+                  <span className="flex-1 h-px bg-line" />
+                  або
+                  <span className="flex-1 h-px bg-line" />
+                </div>
 
-            <div className="space-y-3">
-              <GoogleSignInButton
-                loading={googleLoading}
-                onClick={handleGoogleSignIn}
-              />
-              <AppleSignInButton
-                loading={appleLoading}
-                onClick={handleAppleSignIn}
-              />
-            </div>
+                <div className="space-y-3">
+                  <GoogleSignInButton
+                    loading={googleLoading}
+                    onClick={handleGoogleSignIn}
+                  />
+                  {appleLoginEnabled && (
+                    <AppleSignInButton
+                      loading={appleLoading}
+                      onClick={handleAppleSignIn}
+                    />
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="text-center pt-1">
               <button
@@ -168,14 +194,14 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
             <div className="mt-4 space-y-2">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="md"
                 className="w-full"
                 onClick={onContinueWithoutAccount}
               >
                 Поки що пропустити
               </Button>
-              <p className="text-center text-style-caption text-subtle leading-relaxed px-2">
+              <p className="text-center text-style-body text-subtle leading-relaxed px-2">
                 Все працює локально. Акаунт потрібен лише для синхронізації між
                 пристроями.
               </p>

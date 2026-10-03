@@ -3,7 +3,12 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import { Banner } from "@shared/components/ui/Banner";
+import { Icon } from "@shared/components/ui/Icon";
+import {
+  ATWATER_KCAL_PER_G,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { cn } from "@shared/lib/ui/cn";
 import {
   calcGoalRangeIssues,
@@ -30,10 +35,10 @@ export function MacroKcalWarning({
 
   const tone = overshoot
     ? "border-danger/40 bg-danger/10"
-    : "border-warn/40 bg-warn/10";
+    : "border-warning/40 bg-warning/10";
   const iconTone = overshoot
     ? "text-danger-strong dark:text-danger"
-    : "text-warn";
+    : "text-warning-strong dark:text-warning";
 
   return (
     <div
@@ -46,20 +51,23 @@ export function MacroKcalWarning({
       data-testid="macro-kcal-warning"
     >
       <div className="flex items-start gap-2">
-        <span className={cn("shrink-0 font-bold", iconTone)} aria-hidden>
-          {overshoot ? "⚠" : "ℹ"}
-        </span>
+        <Icon
+          name={overshoot ? "alert-triangle" : "info"}
+          size="sm"
+          className={cn("shrink-0", iconTone)}
+          aria-hidden
+        />
         <p className="text-text leading-snug">
           {overshoot ? (
             <>
-              Сума макро виходить на <strong>{calc} ккал</strong> — це на{" "}
+              Сума макро виходить на <strong>{calc} ккал</strong>, це на{" "}
               <strong>{absDiff} ккал</strong> більше за ціль{" "}
               <strong>{target} ккал</strong>. 1 г білка = 4 ккал, 1 г жиру = 9
               ккал, 1 г вуглеводів = 4 ккал.
             </>
           ) : (
             <>
-              Сума макро дає лише <strong>{calc} ккал</strong> — це на{" "}
+              Сума макро дає лише <strong>{calc} ккал</strong>, це на{" "}
               <strong>{absDiff} ккал</strong> менше за ціль{" "}
               <strong>{target} ккал</strong>.
             </>
@@ -92,7 +100,7 @@ export function MacroKcalWarning({
           }
           className={cn(
             "inline-flex items-center gap-1 rounded-xl border px-2 py-1",
-            "border-line/60 bg-bg/40 text-subtle hover:text-text hover:bg-panelHi",
+            "border-line bg-panel text-subtle hover:text-text hover:bg-panelHi",
             "disabled:opacity-50 transition-colors",
           )}
         >
@@ -112,8 +120,8 @@ interface MissingMacrosHintProps {
 /**
  * Користувач у фідбеку 2026-05 (UX-roast §3.3): «коли вводить ккал
  * воно підставляло середні стартові значення для макросів, а юзер
- * потім редачив». Тут — м'яка підказка з кнопкою «Підставити середні»,
- * яка з'являється тільки коли вже задано ккал, але макросів ще немає.
+ * потім редачив». Тут — мʼяка підказка з кнопкою «Підставити середні»,
+ * яка зʼявляється тільки коли вже задано ккал, але макросів ще немає.
  * Дефолти: 1.6 г білка / 1 г жиру на кг ваги (типові безпечні старт-
  * рекомендації); вуглеводи добираються залишком ккал. Ваги ми не
  * знаємо в цій картці, тому стартуємо з macro-сплітом 30/25/45 від
@@ -136,28 +144,37 @@ export function MissingMacrosHint({
   // 30 % білок · 25 % жир · 45 % вуглеводи від цільових ккал → грами.
   // Білок і жир округлюємо вниз, а вуглеводи добираємо залишком,
   // щоб сума макро ніколи не перевищувала цільові ккал.
-  const suggestedProtein = Math.floor((kcal * 0.3) / 4);
-  const suggestedFat = Math.floor((kcal * 0.25) / 9);
-  const remainingKcal = kcal - suggestedProtein * 4 - suggestedFat * 9;
-  const suggestedCarbs = Math.max(0, Math.floor(remainingKcal / 4));
+  const suggestedProtein = Math.floor(
+    (kcal * 0.3) / ATWATER_KCAL_PER_G.protein,
+  );
+  const suggestedFat = Math.floor((kcal * 0.25) / ATWATER_KCAL_PER_G.fat);
+  const remainingKcal =
+    kcal -
+    suggestedProtein * ATWATER_KCAL_PER_G.protein -
+    suggestedFat * ATWATER_KCAL_PER_G.fat;
+  const suggestedCarbs = Math.max(
+    0,
+    Math.floor(remainingKcal / ATWATER_KCAL_PER_G.carbs),
+  );
 
   return (
-    <div
+    <Banner
+      variant="warning"
       role="status"
       aria-live="polite"
-      className={cn(
-        "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
-        "text-xs space-y-2",
-      )}
+      className="mt-3 text-style-caption space-y-2"
       data-testid="missing-macros-hint"
     >
       <div className="flex items-start gap-2">
-        <span className="shrink-0 font-bold text-warn" aria-hidden>
-          ℹ
-        </span>
+        <Icon
+          name="info"
+          size="sm"
+          className="shrink-0 text-warning-strong dark:text-warning"
+          aria-hidden
+        />
         <p className="text-text leading-snug">
           Задано лише <strong>{kcal} ккал</strong>, але без макро AI не зрозуміє
-          що тобі важливо — білок, жир чи вуглеводи. Підстав середні стартові
+          що тобі важливо: білок, жир чи вуглеводи. Підстав середні стартові
           значення й відредагуй під себе.
         </p>
       </div>
@@ -183,7 +200,7 @@ export function MissingMacrosHint({
           {suggestedCarbs}
         </button>
       </div>
-    </div>
+    </Banner>
   );
 }
 
@@ -191,25 +208,26 @@ export function GoalRangeWarning({ prefs }: { prefs: NutritionPrefs }) {
   const issues = calcGoalRangeIssues(prefs);
   if (issues.length === 0) return null;
   return (
-    <div
+    <Banner
+      variant="warning"
       role="status"
       aria-live="polite"
-      className={cn(
-        "mt-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5",
-        "text-xs space-y-1",
-      )}
+      className="mt-3 text-style-caption space-y-1"
       data-testid="goal-range-warning"
     >
       <div className="flex items-start gap-2">
-        <span className="shrink-0 font-bold text-warn" aria-hidden>
-          ⚠
-        </span>
+        <Icon
+          name="alert-triangle"
+          size="sm"
+          className="shrink-0 text-warning-strong dark:text-warning"
+          aria-hidden
+        />
         <ul className="text-text leading-snug space-y-0.5 list-disc pl-4">
           {issues.map((issue) => (
             <li key={`${issue.field}-${issue.kind}`}>{issue.message}</li>
           ))}
         </ul>
       </div>
-    </div>
+    </Banner>
   );
 }

@@ -23,8 +23,6 @@ describe("useNutritionUiState", () => {
     expect(s.dayPlan).toBeNull();
     expect(s.dayPlanBusy).toBe(false);
     expect(s.shoppingBusy).toBe(false);
-    expect(s.dayHintText).toBe("");
-    expect(s.dayHintBusy).toBe(false);
     expect(s.cloudBackupBusy).toBe(false);
     expect(s.backupPasswordDialog).toBeNull();
     expect(s.restoreConfirm).toBeNull();

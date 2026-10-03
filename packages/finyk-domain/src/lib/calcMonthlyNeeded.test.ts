@@ -95,6 +95,22 @@ describe("calcMonthlyNeeded", () => {
     expect(r.monthlyNeeded).toBe(4);
   });
 
+  it("accepts a non-YYYY-MM-DD targetDate string (full ISO timestamp)", () => {
+    // Exercises the fallback `new Date(targetDate)` branch instead of the
+    // fast-path YYYY-MM-DD regex parse.
+    setNow("2026-04-16");
+    const r = calcMonthlyNeeded(6000, 0, "2026-06-16T10:30:00Z");
+    expect(r.monthsLeft).toBe(2);
+    expect(r.monthlyNeeded).toBe(3000);
+  });
+
+  it("accepts a Date instance as targetDate", () => {
+    setNow("2026-04-16");
+    const r = calcMonthlyNeeded(3000, 0, new Date(Date.UTC(2026, 5, 16)));
+    expect(r.isOverdue).toBe(false);
+    expect(r.monthsLeft).toBe(2);
+  });
+
   it("target date is today → still has at least 1 month window", () => {
     // Same-day target: not overdue (today > now is false if time is midnight),
     // but depending on parse, may be overdue. Min monthsLeft = 1 guards UX.

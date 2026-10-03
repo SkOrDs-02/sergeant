@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { useTransactionFilters } from "./useTransactionFilters";
 import type { TxAccount } from "./Transactions";
 
@@ -68,6 +69,7 @@ function buildDefaultParams(
     fetchMonth: NOOP_FETCH,
     categoryFilter: null,
     onClearCategoryFilter: undefined,
+    dayFilter: null,
     ...overrides,
   };
 }
@@ -145,6 +147,14 @@ describe("useTransactionFilters", () => {
     });
   });
 
+  /*
+   * Дрил-даун із Аналітики. `categoryFilter` — ОДНОРАЗОВА передача: власник
+   * кладе категорію, хук переносить її у власний стан і гасить проп.
+   *
+   * До 2026-08-06 переносу не було — значення читалось як `categoryFilter ??
+   * filter` і зникало разом із пропом, тобто дрил-даун не міг спрацювати
+   * взагалі. Тести нижче тримають саме перенос, а не сам факт застосування.
+   */
   describe("external categoryFilter override", () => {
     it("applies categoryFilter from props on mount", () => {
       const { result } = renderHook(() =>
@@ -152,6 +162,164 @@ describe("useTransactionFilters", () => {
       );
       expect(result.current.filter).toBe("food");
     });
+
+    it("keeps the filter after the one-shot prop is cleared", () => {
+      const onClear = vi.fn();
+      const { result, rerender } = renderHook(
+        (props: { categoryFilter: string | null }) =>
+          useTransactionFilters(
+            buildDefaultParams({
+              categoryFilter: props.categoryFilter,
+              onClearCategoryFilter: onClear,
+            }),
+          ),
+        { initialProps: { categoryFilter: "food" as string | null } },
+      );
+      expect(onClear).toHaveBeenCalled();
+
+      // Власник погасив проп — фільтр мусить лишитись.
+      rerender({ categoryFilter: null });
+      expect(result.current.filter).toBe("food");
+    });
+
+    it("re-applies the SAME category on a second drill-down", () => {
+      const { result, rerender } = renderHook(
+        (props: { categoryFilter: string | null }) =>
+          useTransactionFilters(
+            buildDefaultParams({ categoryFilter: props.categoryFilter }),
+          ),
+        { initialProps: { categoryFilter: "food" as string | null } },
+      );
+      rerender({ categoryFilter: null });
+      act(() => result.current.setFilter("all"));
+      expect(result.current.filter).toBe("all");
+
+      // Другий прихід у ту саму категорію: без скидання внутрішнього
+      // «вже бачив» значення дорівнювало б попередньому й не спрацювало б.
+      rerender({ categoryFilter: "food" });
+      expect(result.current.filter).toBe("food");
+    });
+
+    it("names the category even when it has no spend this month", () => {
+      // Порожній місяць: `catSpends` фільтрує по `spent > 0`, тож підпис
+      // мусить приходити з ПОВНОГО списку категорій, інакше чип був би без
+      // імені саме там, куди веде дрил-даун за інший місяць.
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams({ categoryFilter: "food" })),
+      );
+      expect(result.current.catSpends.some((c) => c.id === "food")).toBe(false);
+      expect(result.current.activeCategoryLabel).toBe("Продукти");
+    });
+
+    // Регресія: підпис із кількох слів різався до першого пробілу, і чип
+    // та тренд категорії казали «та ресторани».
+    it("keeps multi-word category labels whole", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({ categoryFilter: "restaurant" }),
+        ),
+      );
+      expect(result.current.activeCategoryLabel).toBe("Кафе та ресторани");
+    });
+
+    it("has no category label for the base pills", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams()),
+      );
+      expect(result.current.activeCategoryLabel).toBeNull();
+      act(() => result.current.setFilter("expense"));
+      expect(result.current.activeCategoryLabel).toBeNull();
+    });
+  });
+
+  describe("external dayFilter", () => {
+    it("keeps only the current Kyiv day for dayFilter='today'", () => {
+      const today = mkTx("today", -100, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const yesterday = mkTx("yesterday", -200, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+      });
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [today, yesterday],
+            dayFilter: "today",
+          }),
+        ),
+      );
+
+      expect(result.current.filtered.map((item) => item.id)).toEqual(["today"]);
+    });
+
+    it("keeps only the given day for a concrete YYYY-MM-DD dayFilter (MonthStrip cell tap)", () => {
+      const target = mkTx("target", -100, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+      });
+      const other = mkTx("other", -200, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [target, other],
+            dayFilter: "2025-06-03",
+          }),
+        ),
+      );
+
+      expect(result.current.filtered.map((item) => item.id)).toEqual([
+        "target",
+      ]);
+    });
+
+    it("ignores an invalid dayFilter string and shows all transactions", () => {
+      const today = mkTx("today", -100, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const yesterday = mkTx("yesterday", -200, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+      });
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [today, yesterday],
+            dayFilter: "not-a-date",
+          }),
+        ),
+      );
+
+      expect(result.current.filtered.map((item) => item.id).sort()).toEqual([
+        "today",
+        "yesterday",
+      ]);
+    });
+
+    // Регресія: сама лише регулярка `^\d{4}-\d{2}-\d{2}$` пропускає
+    // неіснуючі дати, а `Date.UTC(2026, 12, 45)` мовчки перекочується в
+    // інший рік — список виходив порожній, а чип над ним підписаний чужою
+    // датою. Такий параметр має ігноруватись так само, як "not-a-date".
+    it.each(["2025-13-04", "2025-06-31", "2025-02-30", "2025-00-10"])(
+      "ignores a well-shaped but non-existent day key (%s)",
+      (dayFilter) => {
+        const today = mkTx("today", -100, {
+          time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+        });
+        const yesterday = mkTx("yesterday", -200, {
+          time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+        });
+        const { result } = renderHook(() =>
+          useTransactionFilters(
+            buildDefaultParams({ realTx: [today, yesterday], dayFilter }),
+          ),
+        );
+
+        expect(result.current.filtered.map((item) => item.id).sort()).toEqual([
+          "today",
+          "yesterday",
+        ]);
+      },
+    );
   });
 
   describe("month navigation", () => {
@@ -364,6 +532,101 @@ describe("useTransactionFilters", () => {
     });
   });
 
+  // B6 — щойно додана транзакція «зникала» у згорнутій групі дня.
+  // Дефолт «усі дні згорнуті» лишається, але день нового запису
+  // розгортається автоматично.
+  describe("auto-expand дня щойно доданого ручного запису (B6)", () => {
+    function renderWithManual(initial: ManualExpense[] = []) {
+      return renderHook(
+        (props: { manualExpenses: ManualExpense[] }) =>
+          useTransactionFilters(buildDefaultParams(props)),
+        { initialProps: { manualExpenses: initial } },
+      );
+    }
+
+    it("розгортає групу дня, коли зʼявляється новий запис", () => {
+      const { result, rerender } = renderWithManual();
+      expect(result.current.flatItems).toHaveLength(0);
+
+      const added = mkManual("m1", 249, "2025-06-04T12:00:00.000Z");
+      rerender({ manualExpenses: [added] });
+
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(false);
+      expect(result.current.flatItems.map((t) => t.id)).toEqual(["manual_m1"]);
+    });
+
+    it("розгортає день самої операції, а не сьогоднішній", () => {
+      // Сьогодні (fake timers) — 2025-06-04; запис датований 2-м червня
+      // через «Не сьогодні? Змінити дату».
+      const today = mkTx("bank-today", -100, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const { result, rerender } = renderHook(
+        (props: { manualExpenses: ManualExpense[] }) =>
+          useTransactionFilters(
+            buildDefaultParams({ ...props, realTx: [today] }),
+          ),
+        { initialProps: { manualExpenses: [] as ManualExpense[] } },
+      );
+
+      rerender({
+        manualExpenses: [mkManual("m1", 249, "2025-06-02T12:00:00.000Z")],
+      });
+
+      expect(result.current.collapsedKeys.has("2025-06-02")).toBe(false);
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+      expect(result.current.flatItems.map((t) => t.id)).toEqual(["manual_m1"]);
+    });
+
+    it("не розгортає нічого для списку, з яким екран змонтувався", () => {
+      const { result } = renderWithManual([
+        mkManual("m1", 249, "2025-06-04T12:00:00.000Z"),
+      ]);
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+      expect(result.current.flatItems).toHaveLength(0);
+    });
+
+    it("не розгортає при bulk-гідрації списку (2+ нових записів)", () => {
+      const { result, rerender } = renderWithManual();
+      rerender({
+        manualExpenses: [
+          mkManual("m1", 10, "2025-06-04T12:00:00.000Z"),
+          mkManual("m2", 20, "2025-06-03T12:00:00.000Z"),
+        ],
+      });
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+      expect(result.current.collapsedKeys.has("2025-06-03")).toBe(true);
+    });
+
+    it("ручне згортання після авто-розгортання лишається за користувачем", () => {
+      const { result, rerender } = renderWithManual();
+      const added = mkManual("m1", 249, "2025-06-04T12:00:00.000Z");
+      rerender({ manualExpenses: [added] });
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(false);
+
+      act(() => result.current.toggleDay("2025-06-04"));
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+
+      // Ре-рендер із тим самим списком не «воскрешає» розгортання —
+      // ефект реагує лише на НОВИЙ id.
+      rerender({ manualExpenses: [added] });
+      expect(result.current.collapsedKeys.has("2025-06-04")).toBe(true);
+    });
+
+    it("персистить розгортання у localStorage (переживає перезавантаження)", () => {
+      const { rerender } = renderWithManual();
+      rerender({
+        manualExpenses: [mkManual("m1", 249, "2025-06-04T12:00:00.000Z")],
+      });
+
+      // Свіжий монтаж читає override з того самого сховища.
+      const { result: remounted } = renderWithManual([
+        mkManual("m1", 249, "2025-06-04T12:00:00.000Z"),
+      ]);
+      expect(remounted.current.collapsedKeys.has("2025-06-04")).toBe(false);
+    });
+  });
+
   describe("monthLabel", () => {
     it("monthLabel is a non-empty string for the current month", () => {
       const { result } = renderHook(() =>
@@ -371,6 +634,100 @@ describe("useTransactionFilters", () => {
       );
       expect(typeof result.current.monthLabel).toBe("string");
       expect(result.current.monthLabel.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("межі місяця — Київ, а не пристрій (ADR-0078, фінансові періоди)", () => {
+    it("банківська й ручна витрата о 00:30 за Києвом 1 травня потрапляють у травень", () => {
+      // 2025-05-01T00:30+03:00 = 2025-04-30T21:30Z: для пристрою в UTC/Нью-Йорку
+      // це ще квітень, для Києва (і Аналітики) — вже травень.
+      const instantSec = Date.parse("2025-05-01T00:30:00+03:00") / 1000;
+      const bank = mkTx("bank-edge", -10000, { time: instantSec });
+      const manual = mkManual("m-edge", 200, "2025-05-01T00:30:00+03:00");
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            historyTx: [bank],
+            manualExpenses: [manual],
+          }),
+        ),
+      );
+      act(() => result.current.goMonth(-1)); // червень → травень
+      const ids = result.current.activeTx.map((t) => t.id);
+      expect(ids).toContain("bank-edge");
+      expect(ids).toContain("manual_m-edge");
+    });
+  });
+
+  describe("правила «Завжди так для цього магазину» (2026-10-01)", () => {
+    const RULES = buildMerchantRuleIndex([
+      {
+        id: "mr_1",
+        kind: "expense",
+        merchantKey: "сільпо",
+        categoryId: "transport",
+        label: "Сільпо",
+        createdAt: "2026-10-01T10:00:00.000Z",
+        updatedAt: "2026-10-01T10:00:00.000Z",
+      },
+    ]);
+    const silpo = (id: string, amount = -10_000): Transaction => ({
+      ...mkTx(id, amount),
+      description: "Сільпо №5",
+    });
+
+    it("підсумки по категоріях рахують операції мерчанта в категорії правила", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [silpo("s1"), silpo("s2", -20_000)],
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      const transport = result.current.catSpends.find(
+        (c) => c.id === "transport",
+      );
+      expect(transport?.spent).toBe(300);
+    });
+
+    it("фільтр за категорією показує операції, чию категорію дає правило", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [
+              silpo("s1"),
+              { ...mkTx("x1", -5_000), description: "АТБ" },
+            ],
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      act(() => result.current.setFilter("transport"));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["s1"]);
+    });
+
+    it("явний override операції сильніший за правило", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [silpo("s1"), silpo("s2")],
+            txCategories: { s2: "food" },
+            merchantRules: RULES,
+          }),
+        ),
+      );
+      act(() => result.current.setFilter("transport"));
+      expect(result.current.filtered.map((t) => t.id)).toEqual(["s1"]);
+    });
+
+    it("без правил категорія лишається за MCC: транспорту в підсумках нема", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(buildDefaultParams({ realTx: [silpo("s1")] })),
+      );
+      expect(
+        result.current.catSpends.find((c) => c.id === "transport"),
+      ).toBeUndefined();
     });
   });
 });

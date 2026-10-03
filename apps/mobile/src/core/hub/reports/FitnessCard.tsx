@@ -9,7 +9,7 @@ import { useMemo } from "react";
 import { Text, View } from "react-native";
 
 import { safeReadStringLS } from "@/lib/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 
 import {
   aggregateWorkouts,
@@ -40,8 +40,8 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
     };
   }, [period, offset]);
 
-  const formattedCurrent = cur.count.toLocaleString("uk-UA");
-  const formattedPrev = prev.count.toLocaleString("uk-UA");
+  const formattedCurrent = formatNumberUk(cur.count);
+  const formattedPrev = formatNumberUk(prev.count);
 
   return (
     <ReportCardShell

@@ -20,7 +20,7 @@ import type {
 
 /**
  * Tests for {@link bootstrapKvStore} (Stage 9 / PR #062–#064 of
- * `docs/planning/storage-roadmap.md`). Coverage matches the boot-stage
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Coverage matches the boot-stage
  * invariants:
  *
  *  1. Cold boot against an empty `kv_store` populates the warm cache
@@ -101,6 +101,42 @@ describe("bootstrapKvStore — cold boot against empty kv_store", () => {
     const handle = await getSqliteDb();
     const rows = await handle.drizzle.select().from(kvStore);
     expect(rows.find((r) => r.key === "k")?.value).toBe("v");
+  });
+
+  it("survives a partition switch: writes land in the NEW handle, not the closed one", async () => {
+    // Аудит 2026-08-04, знахідка 2: AuthContext перемикає SQLite-партицію на
+    // sign-in, закриваючи старий handle; клієнт зі знімком handle сипав
+    // «DB has been closed» на кожен upsert до hard reload.
+    const first = await getSqliteDb();
+    let current = first;
+    const result = await bootstrapKvStore({
+      getDb: () => Promise.resolve(current),
+      broadcastChannel: null,
+      localStorage: null,
+    });
+    expect(result.loaded).toBe(true);
+    await result.sqlite!.upsert({
+      key: "before-switch",
+      value: "1",
+      updatedAt: 1_700_000_000_000,
+    });
+
+    // Симулюємо перемикання партиції: свіжий handle, старий забуто.
+    __resetSqliteDbForTests();
+    const second = await getSqliteDb();
+    expect(second).not.toBe(first);
+    current = second;
+
+    // Клієнт має сам перерезолвити handle і прогнати kv-міграції для нього.
+    await result.sqlite!.upsert({
+      key: "after-switch",
+      value: "2",
+      updatedAt: 1_700_000_000_001,
+    });
+    const rows = await second.drizzle.select().from(kvStore);
+    expect(rows.find((r) => r.key === "after-switch")?.value).toBe("2");
+    // Ізоляцію партицій тут НЕ асертимо: у тест-середовищі обидва handle
+    // ділять один kvvfs-storage, тож "before-switch" видимий і з другого.
   });
 });
 

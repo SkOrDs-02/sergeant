@@ -36,7 +36,6 @@ function state(partial: Partial<RoutineState> = {}): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     ...partial,
@@ -144,6 +143,22 @@ describe("routine-domain/calendarEvents", () => {
     expect(hidden.map((event) => event.sourceKind)).toEqual(["habit"]);
   });
 
+  it("does not prefix the habit title with the glyph slug", () => {
+    // Аудит 2026-08-04, знахідка 12: у полі `emoji` з 2026-08-03 лежить
+    // icon-slug (`glyphs.ts`), а не емодзі, тож склейка давала видимий
+    // «check Ранкова зарядка» у стрічці Рутини і в `aria-label` кнопки
+    // «Деталі». Той самий фікс уже застосований до нагадувань
+    // (`reminders.ts`) — цей шлях був пропущений.
+    const events = buildHubCalendarEvents(
+      state({ habits: [habit({ name: "Ранкова зарядка", emoji: "check" })] }),
+      { startKey: "2026-01-05", endKey: "2026-01-05" },
+      {},
+    );
+
+    expect(events[0]?.title).toBe("Ранкова зарядка");
+    expect(events[0]?.title).not.toContain("check");
+  });
+
   it("counts events per date", () => {
     const events = [
       finykEvent("a", "2026-01-05"),
@@ -162,6 +177,9 @@ describe("routine-domain/calendarEvents", () => {
     const events = buildFinykSubscriptionEvents(
       { startKey: "2026-02-01", endKey: "2026-03-31" },
       [
+        // `emoji` лишається в фікстурі навмисно: з 2026-08-21 заголовок
+        // події його ІГНОРУЄ (поле не редагується користувачем, тож у
+        // ньому завжди лежав засіяний дефолт «📱»). Тест фіксує саме це.
         { id: "ok", name: "Music", emoji: "M", billingDay: 31 },
         { id: "bad-low", billingDay: 0 },
         { id: "bad-high", billingDay: 32 },
@@ -180,7 +198,7 @@ describe("routine-domain/calendarEvents", () => {
     ]);
     expect(events[0]).toMatchObject({
       id: "finyk_sub_ok_2026-02-28",
-      title: "M Music",
+      title: "Music",
       tagLabels: [FINYK_SUB_GROUP_LABEL],
       finykSub: true,
       sourceKind: "finyk_sub",

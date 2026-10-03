@@ -1,5 +1,5 @@
 /**
- * Sergeant Hub-core — NotificationsSection (React Native, first cut)
+ * Sergeant Hub-core — NotificationsSection (React Native)
  *
  * Mobile port of `apps/web/src/core/settings/NotificationsSection.tsx`.
  *
@@ -13,22 +13,16 @@
  *    settings" hint but actionable on mobile (iOS/Android bury the
  *    system-notifications toggle deep enough that a one-tap shortcut
  *    is the whole UX).
- *  - Routine-reminders toggle — persists a plain boolean into the
- *    shared `@routine_prefs_v1` MMKV slice used by `RoutineSection`.
- *    The preference rides cloud-sync under the same envelope as the
- *    rest of the routine prefs, so when `@sergeant/routine` ports the
- *    scheduler (Phase 5) it can pick this flag up without a data
- *    migration.
- *
- * Deferred (tracked in `docs/mobile/react-native-migration.md` Phase 2 /
- * Hub-core, section 2.4) — rendered as `DeferredNotice` cards mirroring
- * `GeneralSection`:
- *  - **Routine scheduler.** The toggle above only flips the pref; the
- *    actual `Notifications.scheduleNotificationAsync` wiring lands
- *    with the Routine module port (Phase 5). Notice spells that out so
- *    users don't expect reminders to fire from this screen alone.
- *  - **Fizruk monthly-plan reminder** (web `useMonthlyPlan` — toggle +
- *    hour/minute picker). Ports with the Fizruk module (Phase 6).
+ *  - Routine-reminders toggle — persists `routineRemindersEnabled` into
+ *    the canonical `useRoutinePrefs` hook (SQLite `routine_prefs` table,
+ *    written via `saveRoutineState` / dual-write pipeline). The legacy
+ *    `@routine_prefs_v1` MMKV orphan path is retired; the preference is
+ *    merged with the calendar-visibility flags already stored by
+ *    `RoutineSection` in the same prefs record.
+ *  - Fizruk monthly-plan reminder — toggle + hour/minute via
+ *    `useMonthlyPlan` (SQLite warm cache + fizruk dual-write), analogue
+ *    to the web Фізрук sub-group.
+ *  - Nutrition reminder — toggle + hour via `useNutritionPrefs`.
  *
  * Notes on the permission-status model:
  *  - `expo-notifications` returns a `PermissionStatus` of
@@ -47,8 +41,9 @@ import * as Notifications from "expo-notifications";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { useLocalStorage } from "@/lib/storage";
+import { useMonthlyPlan } from "@/modules/fizruk/hooks/useMonthlyPlan";
 import { useNutritionPrefs } from "@/modules/nutrition/hooks/useNutritionPrefs";
+import { useRoutinePrefs } from "@/modules/routine/hooks/useRoutinePrefs";
 
 import {
   SettingsGroup,
@@ -70,25 +65,6 @@ const PERM_TEXT_CLASS: Record<PermStatus, string> = {
   undetermined: "text-amber-600",
 };
 
-// Mirrors the web `routine.prefs.routineRemindersEnabled` slice; the
-// mobile `RoutineSection` uses the same key for its calendar-visibility
-// flags so both port together when the shared routine store lands.
-const ROUTINE_PREFS_KEY = "@routine_prefs_v1";
-
-interface RoutinePrefs {
-  routineRemindersEnabled?: boolean;
-  showFizrukInCalendar?: boolean;
-  showFinykSubscriptionsInCalendar?: boolean;
-}
-
-function DeferredNotice({ children }: { children: string }) {
-  return (
-    <Card variant="flat" radius="md" padding="md" className="border-dashed">
-      <Text className="text-xs text-fg-muted leading-snug">{children}</Text>
-    </Card>
-  );
-}
-
 function isGranted(perm: Notifications.NotificationPermissionsStatus): boolean {
   if (perm.granted) return true;
   return perm.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
@@ -107,26 +83,40 @@ function clampReminderHour(value: number): number {
   return Math.min(23, Math.max(0, Math.trunc(value)));
 }
 
+function clampReminderMinute(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(59, Math.max(0, Math.trunc(value)));
+}
+
 export function NotificationsSection() {
   const [permStatus, setPermStatus] = useState<PermStatus>("undetermined");
-  const [routinePrefs, setRoutinePrefs] = useLocalStorage<RoutinePrefs>(
-    ROUTINE_PREFS_KEY,
-    {},
-  );
+  const { prefs: routinePrefs, updatePrefs: updateRoutinePrefs } =
+    useRoutinePrefs();
+  const {
+    reminderEnabled: fizrukReminderEnabled,
+    reminderHour: fizrukReminderHour,
+    reminderMinute: fizrukReminderMinute,
+    setReminder: setFizrukReminder,
+    setReminderEnabled: setFizrukReminderEnabled,
+  } = useMonthlyPlan();
   const { prefs: nutritionPrefs, updatePrefs: updateNutritionPrefs } =
     useNutritionPrefs();
+
+  const applyPermStatus = useCallback((next: PermStatus) => {
+    void Promise.resolve().then(() => setPermStatus(next));
+  }, []);
 
   const refreshPermissions = useCallback(async () => {
     try {
       const perm = await Notifications.getPermissionsAsync();
-      setPermStatus(toStatus(perm));
+      applyPermStatus(toStatus(perm));
     } catch {
       // Native modules can throw on some simulators / dev builds
       // without the notifications entitlement — treat as undetermined
       // rather than crashing the settings screen.
-      setPermStatus("undetermined");
+      applyPermStatus("undetermined");
     }
-  }, []);
+  }, [applyPermStatus]);
 
   useEffect(() => {
     void refreshPermissions();
@@ -136,13 +126,13 @@ export function NotificationsSection() {
     try {
       const perm = await Notifications.requestPermissionsAsync();
       const nextStatus = toStatus(perm);
-      setPermStatus(nextStatus);
+      applyPermStatus(nextStatus);
       return nextStatus;
     } catch {
-      setPermStatus("denied");
+      applyPermStatus("denied");
       return "denied";
     }
-  }, []);
+  }, [applyPermStatus]);
 
   const requestPermission = useCallback(() => {
     void requestPermissionStatus();
@@ -155,6 +145,31 @@ export function NotificationsSection() {
     // the app details page (user taps "Notifications" from there).
     void Linking.openSettings();
   }, []);
+
+  const handleFizrukToggle = useCallback(
+    async (next: boolean) => {
+      if (next && permStatus !== "granted") {
+        const nextStatus = await requestPermissionStatus();
+        if (nextStatus !== "granted") return;
+      }
+      setFizrukReminderEnabled(next);
+    },
+    [permStatus, requestPermissionStatus, setFizrukReminderEnabled],
+  );
+
+  const handleFizrukHourChange = useCallback(
+    (value: string) => {
+      setFizrukReminder(clampReminderHour(Number(value)), fizrukReminderMinute);
+    },
+    [fizrukReminderMinute, setFizrukReminder],
+  );
+
+  const handleFizrukMinuteChange = useCallback(
+    (value: string) => {
+      setFizrukReminder(fizrukReminderHour, clampReminderMinute(Number(value)));
+    },
+    [fizrukReminderHour, setFizrukReminder],
+  );
 
   const handleNutritionToggle = useCallback(
     async (next: boolean) => {
@@ -224,33 +239,64 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Рутина (звички)">
         <ToggleRow
           label="Нагадування про звички"
-          description="Спрацьовує у встановлений в кожній звичці час. Повноцінне планування нагадувань підключиться з портом модуля Рутина (Phase 5) — зараз значення зберігається і буде підхоплено автоматично."
+          description="Спрацьовує у встановлений в кожній звичці час. Повноцінне планування нагадувань підключиться з портом модуля Рутина (Phase 5), зараз значення зберігається і буде підхоплено автоматично."
           checked={routineEnabled}
           onChange={(next) =>
-            setRoutinePrefs((prev) => ({
-              ...prev,
-              routineRemindersEnabled: next,
-            }))
+            updateRoutinePrefs({ routineRemindersEnabled: next })
           }
           testID="notifications-routine-toggle"
         />
       </SettingsSubGroup>
 
-      {/* TODO(mobile-migration, Phase 6): wire to `useMonthlyPlan` once
-          the Fizruk module is ported — reminderEnabled + reminderHour /
-          reminderMinute picker, analogue to web `NotificationsSection`
-          Фізрук sub-group. */}
       <SettingsSubGroup title="Фізрук (тренування)">
-        <DeferredNotice>
-          Нагадування про тренування підключаться з портом модуля Фізрук (Phase
-          6).
-        </DeferredNotice>
+        <ToggleRow
+          label="Нагадування про тренування"
+          description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування. Якщо push-дозвіл ще не виданий, спершу попрошу дозвіл."
+          checked={fizrukReminderEnabled}
+          onChange={(next) => {
+            void handleFizrukToggle(next);
+          }}
+          testID="notifications-fizruk-toggle"
+        />
+        {fizrukReminderEnabled ? (
+          <View className="flex-row items-center justify-between gap-3">
+            <View className="flex-1 min-w-0">
+              <Text className="text-sm text-fg">Час нагадування</Text>
+              <Text className="text-xs text-fg-muted mt-0.5 leading-snug">
+                Година 0–23 і хвилина 0–59, як у web settings Фізрук.
+              </Text>
+            </View>
+            <View className="flex-row items-center gap-2">
+              <TextInput
+                value={String(fizrukReminderHour)}
+                onChangeText={handleFizrukHourChange}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                selectTextOnFocus
+                maxLength={2}
+                className="w-14 h-10 rounded-xl border border-cream-300 dark:border-cream-700 bg-cream-50 dark:bg-cream-800 px-2 text-center text-sm text-fg"
+                testID="notifications-fizruk-hour"
+              />
+              <Text className="text-xs text-fg-muted">:</Text>
+              <TextInput
+                value={String(fizrukReminderMinute).padStart(2, "0")}
+                onChangeText={handleFizrukMinuteChange}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                selectTextOnFocus
+                maxLength={2}
+                className="w-14 h-10 rounded-xl border border-cream-300 dark:border-cream-700 bg-cream-50 dark:bg-cream-800 px-2 text-center text-sm text-fg"
+                testID="notifications-fizruk-minute"
+              />
+            </View>
+          </View>
+        ) : null}
       </SettingsSubGroup>
 
       <SettingsSubGroup title="Харчування">
         <ToggleRow
           label="Нагадування про їжу"
-          description="Зберігає щоденне нагадування у nutrition prefs: toggle + година, як у web settings. Якщо push-дозвіл ще не виданий, спершу попросимо його."
+          description="Зберігає щоденне нагадування у nutrition prefs: toggle + година, як у web settings. Якщо push-дозвіл ще не виданий, спершу попрошу дозвіл."
           checked={nutritionReminderEnabled}
           onChange={(next) => {
             void handleNutritionToggle(next);

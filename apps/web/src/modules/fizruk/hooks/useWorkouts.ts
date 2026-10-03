@@ -1,18 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type {
   ChecklistItem,
   Workout,
   WorkoutGroup,
   WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractWorkoutSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractWorkoutSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import {
+  clearPendingRetroEnd,
+  takePendingRetroEnd,
+} from "../lib/pendingRetroEnd";
 
 /**
  * Window event fired when persisting workouts fails. Kept for backwards
@@ -32,13 +37,13 @@ function uid(prefix = "id") {
 const DEFAULT_WARMUP_ITEMS = [
   { label: "Загальна розминка (5-10 хв легкого кардіо)" },
   {
-    label: "Суглобова розминка (шия, плечі, лікті, зап'ястки, стегна, коліна)",
+    label: "Суглобова розминка (шия, плечі, лікті, запʼястки, стегна, коліна)",
   },
   { label: "Специфічна розминка до тренування (легкі підходи)" },
 ];
 
 const DEFAULT_COOLDOWN_ITEMS = [
-  { label: "Статична розтяжка опрацьованих м'язів (2-3 хв)" },
+  { label: "Статична розтяжка опрацьованих мʼязів (2-3 хв)" },
   { label: "Дихальні вправи / заспокоєння пульсу" },
   { label: "Пінний ролик або масаж (за потреби)" },
 ];
@@ -71,24 +76,18 @@ export function makeDefaultCooldown(): ChecklistItem[] {
  */
 export function useWorkouts() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [workouts, setWorkouts] = useState<Workout[]>(() => {
-    const cache = getCachedFizrukSqliteState();
-    return cache.refreshedAt === null ? [] : cache.workouts;
-  });
-  const [loaded, setLoaded] = useState(() => {
-    return getCachedFizrukSqliteState().refreshedAt !== null;
-  });
-
-  // Stage 8 PR #057f-tombstone: overlay workouts from the local SQLite
-  // cache once it's warm. The hook exposes `loaded=true` after the
-  // first cache refresh so consumers can distinguish "boot in flight"
-  // from "boot complete with empty state".
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setWorkouts(cache.workouts);
-    setLoaded(true);
-  }, [sqliteCacheTick]);
+  const [workouts, setWorkouts] = useSqliteTickOverlay<Workout[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.workouts;
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? [] : cache.workouts;
+    },
+  );
+  const loaded = getCachedFizrukSqliteState().refreshedAt !== null;
 
   /**
    * Persist an updated workouts array. Stage 8 PR #057f-tombstone: the
@@ -98,6 +97,8 @@ export function useWorkouts() {
    * pending UI reflects the change until the boot wires up the
    * context.
    */
+  const intended = useFizrukIntendedSlice<"workouts">(sqliteCacheTick);
+
   const persist = useCallback(
     (nextOrUpdater: Workout[] | ((prev: Workout[]) => Workout[])) => {
       setWorkouts((prevState) => {
@@ -106,14 +107,13 @@ export function useWorkouts() {
             ? nextOrUpdater(prevState)
             : nextOrUpdater;
 
-        const prevDualWrite =
-          peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-        const nextDualWrite = {
-          ...prevDualWrite,
-          workouts: extractWorkoutSnapshots(next),
-        };
+        const transition = fizrukDualWriteTransition(
+          "workouts",
+          intended,
+          extractWorkoutSnapshots(next),
+        );
         try {
-          triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+          triggerFizrukDualWrite(transition.prev, transition.next);
         } catch (err) {
           // The trigger is fire-and-forget — it should never throw, but
           // surface unexpected sync failures via the existing banner so
@@ -137,12 +137,13 @@ export function useWorkouts() {
         return next;
       });
     },
-    [],
+    [intended, setWorkouts],
   );
 
   const createWorkout = useCallback((): Workout => {
     const w: Workout = {
       id: uid("w"),
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
       startedAt: new Date().toISOString(),
       endedAt: null,
       items: [],
@@ -155,12 +156,25 @@ export function useWorkouts() {
     return w;
   }, [persist]);
 
+  /**
+   * `startedAt` із форми — для «внести проведене заняття»: сесія жива, просто
+   * почалась не зараз. `endedAt` тут лишається необовʼязковим і в ретро-шляху
+   * НЕ передається: введений кінець чекає у `pendingRetroEnd` до кроку
+   * «Завершити», інакше тренування одразу стало б read-only підсумком.
+   */
   const createWorkoutWithTimes = useCallback(
-    ({ startedAt }: { startedAt: string }): Workout => {
+    ({
+      startedAt,
+      endedAt = null,
+    }: {
+      startedAt: string;
+      endedAt?: string | null;
+    }): Workout => {
       const w: Workout = {
         id: uid("w"),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
         startedAt: startedAt || new Date().toISOString(),
-        endedAt: null,
+        endedAt,
         items: [],
         groups: [],
         warmup: null,
@@ -175,7 +189,11 @@ export function useWorkouts() {
 
   const endWorkout = useCallback(
     (id: string): Workout | null => {
-      const nowIso = new Date().toISOString();
+      // Ретро-сесія («Внести проведене заняття») заклала свій кінець ще у
+      // формі — беремо його замість «зараз». Гасіння всередині `take`, тож
+      // повторне завершення того самого id вже піде звичайним шляхом.
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для endedAt (не Kyiv-межа доби)
+      const nowIso = takePendingRetroEnd(id) ?? new Date().toISOString();
       let ended: Workout | null = null;
       persist((prev: Workout[]) =>
         prev.map((w: Workout): Workout => {
@@ -204,6 +222,9 @@ export function useWorkouts() {
 
   const deleteWorkout = useCallback(
     (id: string) => {
+      // Ретро викинули, не завершивши — інакше його мітка дочекалась би
+      // наступного тренування й тихо переписала б тому чужий `endedAt`.
+      clearPendingRetroEnd(id);
       persist((prev: Workout[]) => prev.filter((w: Workout) => w.id !== id));
     },
     [persist],

@@ -1,5 +1,5 @@
 -- 039: finyk_* normalized target tables — Stage 4 / PR #035 of
--- `docs/planning/storage-roadmap.md`.
+-- `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
 --
 -- Context. Finyk state is the largest cross-platform LS/MMKV blob set
 -- left in the app: 16 user-edited keys (`finyk_hidden`, `finyk_budgets`,

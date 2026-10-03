@@ -93,6 +93,24 @@ describe("mergeWorkoutsById", () => {
   it("ignores items without id", () => {
     expect(mergeWorkoutsById([{}, { id: "a" }], null)).toEqual([{ id: "a" }]);
   });
+
+  it("ignores non-object entries and treats missing a/b as empty", () => {
+    expect(
+      mergeWorkoutsById(["not-an-object", null, { id: "a" }], undefined),
+    ).toEqual([{ id: "a" }]);
+    expect(mergeWorkoutsById(undefined, undefined)).toEqual([]);
+  });
+
+  it("sorts entries missing startedAt to the end (empty-string fallback)", () => {
+    const merged = mergeWorkoutsById(
+      [
+        { id: "1", startedAt: "2025-01-01T10:00:00Z" },
+        { id: "2" }, // no startedAt
+      ],
+      null,
+    );
+    expect(merged.map((x) => x.id)).toEqual(["1", "2"]);
+  });
 });
 
 describe("mergeCustomById", () => {
@@ -106,5 +124,12 @@ describe("mergeCustomById", () => {
       name: { uk: "new" },
     });
     expect(merged.find((x) => x.id === "b")).toBeTruthy();
+  });
+
+  it("ignores non-object entries and treats missing a/b as empty", () => {
+    expect(mergeCustomById(["nope", 42, { id: "a" }], undefined)).toEqual([
+      { id: "a" },
+    ]);
+    expect(mergeCustomById(undefined, undefined)).toEqual([]);
   });
 });

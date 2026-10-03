@@ -9,8 +9,10 @@
  * them in as props.
  */
 
+import type { ReactNode } from "react";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
 import {
   formatRelativeDue,
   type UpcomingCharge,
@@ -23,7 +25,8 @@ type StatTileProps = {
   iconName: IconName;
   iconTone: IconTone;
   label: string;
-  value: string;
+  /** Сума або маска. `ReactNode`, бо суму малює `Money` кількома вузлами. */
+  value: ReactNode;
   hint?: string | undefined;
   onClick?: (() => void) | undefined;
 };
@@ -52,15 +55,17 @@ export function StatTile({
   );
   const inner = (
     <>
-      <div className="flex items-center gap-2 text-meta text-muted">
+      <div className="flex items-center gap-2 text-style-caption text-muted">
         <span className={cn("inline-flex", toneClass(iconTone))} aria-hidden>
-          <Icon name={iconName} size={14} />
+          <Icon name={iconName} size="sm" />
         </span>
         <span className="truncate">{label}</span>
       </div>
       <div className="text-style-label text-text mt-1 truncate">{value}</div>
       {hint && (
-        <div className="text-meta text-subtle mt-0.5 truncate">{hint}</div>
+        <div className="text-style-caption text-subtle mt-0.5 truncate">
+          {hint}
+        </div>
       )}
     </>
   );
@@ -109,8 +114,9 @@ export function FinykStatsStrip({
   const hideNumbers = !showBalance;
   return (
     <div
+      data-no-swipe
       className={cn(
-        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden",
+        "flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hidden [touch-action:pan-x_pan-y]",
         className,
       )}
       role="list"
@@ -121,11 +127,7 @@ export function FinykStatsStrip({
           iconTone="muted"
           label="Підписки · міс"
           value={
-            hideNumbers
-              ? "••••"
-              : `${subsMonthly.toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })} ₴`
+            hideNumbers ? "••••" : <Money amount={Math.round(subsMonthly)} />
           }
           hint={`${subsCount} активн${subsCount === 1 ? "а" : "их"}`}
           onClick={onOpenSubs}
@@ -137,11 +139,20 @@ export function FinykStatsStrip({
           iconTone={nextCharge.sign === "-" ? "danger" : "success"}
           label="Наступний платіж"
           value={
-            hideNumbers
-              ? "••••"
-              : `${nextCharge.sign}${nextCharge.amount.toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })} ₴`
+            hideNumbers ? (
+              "••••"
+            ) : (
+              // Знак приходить рядком-дефісом, як і в потоках огляду;
+              // напрямок нормалізуємо тут, символ малює `Money`.
+              <Money
+                amount={
+                  nextCharge.sign === "-"
+                    ? -Math.round(nextCharge.amount)
+                    : Math.round(nextCharge.amount)
+                }
+                signed
+              />
+            )
           }
           hint={`${nextCharge.label} · ${formatRelativeDue(
             nextCharge.dueDate,
@@ -155,11 +166,11 @@ export function FinykStatsStrip({
           iconTone="danger"
           label="Пасив з дедлайном"
           value={
-            hideNumbers
-              ? "••••"
-              : `−${urgentLiability.remaining.toLocaleString("uk-UA", {
-                  maximumFractionDigits: 0,
-                })} ₴`
+            hideNumbers ? (
+              "••••"
+            ) : (
+              <Money amount={-Math.round(urgentLiability.remaining)} />
+            )
           }
           hint={`${urgentLiability.name} · ${formatRelativeDue(
             urgentLiability.dueDate,

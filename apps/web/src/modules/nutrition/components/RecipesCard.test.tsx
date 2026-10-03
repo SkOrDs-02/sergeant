@@ -15,7 +15,7 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import type { NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { Meal } from "@sergeant/nutrition-domain";
 
 // ── vi.hoisted: variables that vi.mock factories reference ───────────
@@ -88,20 +88,13 @@ const PREFS: NutritionPrefs = {
   exclude: "",
 } as NutritionPrefs;
 
-const PANTRY: Pantry = {
-  id: "pantry-1",
-  name: "Дім",
-  items: [],
-  text: "",
-};
-
 const SAVED_RECIPE: import("../lib/recipeBook").SavedRecipe = {
   id: "rcp_saved_001",
   title: "Вівсяна каша",
   timeMinutes: 10,
   servings: 2,
   ingredients: ["вівсяні пластівці", "молоко"],
-  steps: ["Закип'ятити молоко", "Додати пластівці"],
+  steps: ["Закипʼятити молоко", "Додати пластівці"],
   tips: ["Можна додати ягоди"],
   macros: { kcal: 350, protein_g: 12, fat_g: 8, carbs_g: 55 },
   createdAt: 1716000000000,
@@ -129,7 +122,6 @@ function makeProps(
 ): Parameters<typeof RecipesCard>[0] {
   return {
     busy: false,
-    activePantry: PANTRY,
     prefs: PREFS,
     setPrefs: vi.fn(),
     recommendRecipes: vi.fn(),
@@ -185,7 +177,7 @@ describe("RecipesCard — saved-recipes section", () => {
     fireEvent.click(screen.getByRole("button", { name: /Мої рецепти/i }));
     await waitFor(() =>
       expect(
-        screen.getByText(/Тут з'являться збережені рецепти/i),
+        screen.getByText(/Тут зʼявляться збережені рецепти/i),
       ).toBeTruthy(),
     );
   });
@@ -238,9 +230,9 @@ describe("RecipesCard — saved-recipes section", () => {
 });
 
 describe("RecipesCard — recipe generator section", () => {
-  it("renders the generator card heading with pantry name", () => {
+  it("renders the generator card heading", () => {
     renderCard(makeProps());
-    expect(screen.getByText(/Рецепти \(Дім\)/i)).toBeTruthy();
+    expect(screen.getByText("Рецепти")).toBeTruthy();
   });
 
   it("renders the 'Запропонувати рецепти' button", () => {
@@ -341,20 +333,17 @@ describe("RecipesCard — recipe generator section", () => {
 
   it("renders goal select with the correct initial value", () => {
     renderCard(makeProps());
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    const select = screen.getByRole("combobox", {
+      name: "Ціль",
+    }) as HTMLSelectElement;
     expect(select.value).toBe("balanced");
   });
 
   it("calls setPrefs when goal select changes", () => {
     const setPrefs = vi.fn();
     renderCard(makeProps({ setPrefs }));
-    const select = screen.getByRole("combobox");
+    const select = screen.getByRole("combobox", { name: "Ціль" });
     fireEvent.change(select, { target: { value: "high_protein" } });
     expect(setPrefs).toHaveBeenCalledTimes(1);
-  });
-
-  it("uses 'Склад' fallback when activePantry is null", () => {
-    renderCard(makeProps({ activePantry: null }));
-    expect(screen.getByText(/Рецепти \(Склад\)/i)).toBeTruthy();
   });
 });

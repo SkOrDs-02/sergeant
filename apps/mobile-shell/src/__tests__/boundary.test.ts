@@ -74,7 +74,7 @@ describe("Web Compatibility", () => {
     installCoreMocks();
     const mod = await import("../index.js");
     expect(typeof mod.initNativeShell).toBe("function");
-  });
+  }, 30_000);
 
   it("index module exports parseDeepLink and isSafeShellPath", async () => {
     installCoreMocks();

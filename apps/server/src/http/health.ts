@@ -1,14 +1,22 @@
 import type { Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
-import { logger } from "../obs/logger.js";
+import { logger, serializeError } from "../obs/logger.js";
+import { toPublicErrorCode } from "../obs/errorCode.js";
 import { getRedisStats, pingRedis } from "../lib/redis.js";
 import { getPoolStats } from "../db.js";
-import { backgroundQueue } from "../lib/backgroundQueue.js";
+import { env } from "../env/env.js";
 import { anthropicCircuitBreaker } from "../lib/circuitBreaker.js";
 import { elapsedMs } from "../lib/timing.js";
 import { appState } from "../lib/appState.js";
 import { getMemoryIngestWorkerStats } from "../modules/ai-memory/ingestQueue.js";
 import { getMonoEnrichmentWorkerStatus } from "../modules/mono/enrichmentWorker.js";
+import { getGdprCleanupWorkerStatus } from "../modules/gdpr/cleanupPoller.js";
+import { getAccountDeletionWorkerStatus } from "../modules/me/deletionPoller.js";
+import {
+  driftBlocksReadiness,
+  getLastSchemaDriftReport,
+  getSchemaDriftCheckState,
+} from "../lib/schemaDrift.js";
 
 interface DbPool {
   query(sql: string): Promise<unknown>;
@@ -57,7 +65,36 @@ export function createReadyzHandler(pool: DbPool): RequestHandler {
         err: { message: err.message || String(e), code: err.code },
       });
     }
-    if (dbOk) res.status(200).type("text/plain").send("ok");
+
+    // Дрейф схеми читаємо з кешу, порахованого на старті: проба смикається
+    // кожні кілька секунд, а схема між рестартами не міняється (pre-deploy
+    // відпрацьовує до старту процесу). Гейт опційний — ціна хибного
+    // спрацювання тут повний простій, див. `lib/schemaDrift.ts`.
+    //
+    // Коли гейт увімкнено, «ще не знаємо» трактуємо як «не готові». Інакше
+    // між `app.listen` і резолвом запиту в `schema_migrations` лишалось би
+    // вікно, у якому проба зелена, а схема ще не перевірена — і платформа
+    // встигала б завести трафік саме на той контейнер, який гейт мав відсіяти.
+    //
+    // `failed` при цьому НЕ блокує — свідомо. Звірка виконується один раз на
+    // буті, тож разовий мережевий збій у момент старту назавжди лишив би
+    // контейнер не-ready і відкотив би справний деплой. Реально недоступну БД
+    // ловить `SELECT 1` вище в цьому ж хендлері.
+    const drift = getLastSchemaDriftReport();
+    const driftState = getSchemaDriftCheckState();
+    const schemaUnverified = driftState === "idle" || driftState === "checking";
+    const schemaBlocks =
+      driftBlocksReadiness() &&
+      (schemaUnverified || (drift !== null && !drift.inSync));
+    if (schemaBlocks) {
+      logger.error({
+        msg: "readyz_schema_drift_block",
+        state: driftState,
+        pending: drift?.pending ?? null,
+      });
+    }
+
+    if (dbOk && !schemaBlocks) res.status(200).type("text/plain").send("ok");
     else res.status(503).type("text/plain").send("unhealthy");
   };
 }
@@ -82,9 +119,44 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       };
     } catch (e) {
       overallHealthy = false;
+      // `/healthz` анонімний і без rate-limit (щоб probe платформи не
+      // голодували), а `e.message` від `pg` носить внутрішній хост, порт і
+      // імʼя DB-користувача — `password authentication failed for user
+      // "sergeant_app"`. Назовні йде лише клас помилки, повний текст —
+      // у лог, де його читає ops. Контракт: `obs/errorCode.ts`.
+      logger.error({ msg: "healthz_db_check_failed", err: serializeError(e) });
       checks["database"] = {
         status: "unhealthy",
-        details: { error: e instanceof Error ? e.message : String(e) },
+        details: { errorCode: toPublicErrorCode(e) },
+      };
+    }
+
+    // Schema drift. Читається з кешу стартової перевірки; `null` означає, що
+    // вона не встигла або впала — це «невідомо», а не «здорово».
+    const drift = getLastSchemaDriftReport();
+    if (drift === null) {
+      checks["schema"] = { status: "unknown" };
+    } else if (drift.inSync) {
+      checks["schema"] = {
+        status: "healthy",
+        details: { applied: drift.applied, shipped: drift.shipped },
+      };
+    } else {
+      // Незастосовані міграції = гарантовані 500 на роутах, що читають нові
+      // колонки. Це не degraded, це зламано — навіть якщо `SELECT 1` зелений.
+      overallHealthy = false;
+      // `pendingCount`, а не список імен: імена міграцій — це карта стану
+      // схеми прода (що саме зараз їде) плюс точне вікно неузгодженості, і
+      // віддавати її анонімові немає за що. Кількості вистачає і дашборду,
+      // і алерту «схема відстала»; самі імена вже є в лозі
+      // `readyz_schema_drift_block` і у відповіді `migrate.mjs`.
+      checks["schema"] = {
+        status: "unhealthy",
+        details: {
+          applied: drift.applied,
+          shipped: drift.shipped,
+          pendingCount: drift.pending.length,
+        },
       };
     }
 
@@ -98,13 +170,6 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
         reconnectAttempts: redisStats.reconnectAttempts,
         // Redis being down is degraded, not unhealthy (we have fallback)
       },
-    };
-
-    // Background queue
-    const queueStats = backgroundQueue.getStats();
-    checks["backgroundQueue"] = {
-      status: queueStats.isShuttingDown ? "shutting_down" : "healthy",
-      details: queueStats,
     };
 
     // Circuit breakers
@@ -137,9 +202,15 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  *      processing/failed/dead_letter для mono-enrichment).
  *
  * Контракт відповіді: `{status, timestamp, workers:{aiMemoryIngest,
- * monoEnrichment, backgroundQueue}}`. Не включає `version`/`commit`/`sha`
+ * monoEnrichment, gdprCleanup}}`. Не включає `version`/`commit`/`sha`
  * (L7 audit `docs/security/hardening/L7-health-endpoint-info-leak.md` —
- * ті самі invariants, що й для `/healthz`).
+ * ті самі invariants, що й для `/healthz`), і **не включає текст помилки
+ * воркера**: на фейлі sample-функції поле зветься `errorCode` і несе лише
+ * клас (`ECONNREFUSED`, `28P01`). Роут анонімний і без rate-limit, а
+ * `pg`/`ioredis` кладуть у `message` внутрішній хост, порт і імʼя
+ * DB-користувача — повний текст лишається в логах воркера
+ * (`obs/errorCode.ts`). Регресію стереже `routes/health.infoleak.test.ts`,
+ * де `error` стоїть у `FORBIDDEN_KEYS`.
  *
  * Status code:
  *   - 200 — всі sub-worker-и відповіли (можуть бути fallbackMode/disabled,
@@ -150,17 +221,27 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  */
 export function createWorkersHealthHandler(pool: Pool): RequestHandler {
   return async (_req, res) => {
-    const [memoryIngest, monoEnrichment] = await Promise.all([
-      getMemoryIngestWorkerStats(),
-      getMonoEnrichmentWorkerStatus(pool),
-    ]);
-    const bgQueue = backgroundQueue.getStats();
-
+    const [memoryIngest, monoEnrichment, gdprCleanup, accountDeletion] =
+      await Promise.all([
+        getMemoryIngestWorkerStats(),
+        getMonoEnrichmentWorkerStatus(pool),
+        getGdprCleanupWorkerStatus(pool),
+        getAccountDeletionWorkerStatus(
+          pool,
+          env.ACCOUNT_DELETION_POLL_INTERVAL_MS,
+        ),
+      ]);
     // Worker вважається "responsive": його sample-функція не повернула
-    // `error`. Disabled / fallback / порожня черга — все ще responsive.
-    const memoryIngestResponsive = memoryIngest.error === undefined;
-    const monoEnrichmentResponsive = monoEnrichment.error === undefined;
-    const allResponsive = memoryIngestResponsive && monoEnrichmentResponsive;
+    // `errorCode`. Disabled / fallback — все ще responsive.
+    const memoryIngestResponsive = memoryIngest.errorCode === undefined;
+    const monoEnrichmentResponsive = monoEnrichment.errorCode === undefined;
+    const gdprCleanupResponsive = gdprCleanup.errorCode === undefined;
+    const accountDeletionResponsive = accountDeletion.errorCode === undefined;
+    const allResponsive =
+      memoryIngestResponsive &&
+      monoEnrichmentResponsive &&
+      gdprCleanupResponsive &&
+      accountDeletionResponsive;
 
     res.status(allResponsive ? 200 : 503).json({
       status: allResponsive ? "healthy" : "unhealthy",
@@ -168,13 +249,8 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
       workers: {
         aiMemoryIngest: memoryIngest,
         monoEnrichment,
-        backgroundQueue: {
-          status: bgQueue.isShuttingDown ? "shutting_down" : "healthy",
-          queued: bgQueue.queued,
-          running: bgQueue.running,
-          concurrency: bgQueue.concurrency,
-          isShuttingDown: bgQueue.isShuttingDown,
-        },
+        gdprCleanup,
+        accountDeletion,
       },
     });
   };

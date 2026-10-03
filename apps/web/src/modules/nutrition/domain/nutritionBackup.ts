@@ -2,6 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { normalizeNutritionPrefs } from "@sergeant/nutrition-domain";
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,
@@ -91,7 +92,7 @@ function normalizePantry(x: unknown): NutritionBackupPantry | null {
   if (!x || typeof x !== "object") return null;
   const rec = x as Record<string, unknown>;
   const id = safeString(rec["id"], "").trim();
-  const name = safeString(rec["name"], "").trim() || "Склад";
+  const name = safeString(rec["name"], "").trim() || "Комора";
   const text = safeString(rec["text"], "");
   const items = Array.isArray(rec["items"])
     ? rec["items"]
@@ -110,10 +111,23 @@ function normalizePrefs(x: unknown): NutritionPrefs {
     servings: safeNumber(p.servings, 1) || 1,
     timeMinutes: safeNumber(p.timeMinutes, 25) || 25,
     exclude: p.exclude == null ? "" : String(p.exclude),
+    recipeMealType: p.recipeMealType,
+    recipePantryMode: p.recipePantryMode,
     dailyTargetKcal: optionalPositiveNumber(p.dailyTargetKcal),
     dailyTargetProtein_g: optionalPositiveNumber(p.dailyTargetProtein_g),
     dailyTargetFat_g: optionalPositiveNumber(p.dailyTargetFat_g),
     dailyTargetCarbs_g: optionalPositiveNumber(p.dailyTargetCarbs_g),
+    adaptiveGoalEnabled: Boolean(p.adaptiveGoalEnabled),
+    adaptiveGoalIntent: p.adaptiveGoalIntent,
+    adaptiveGoalLastUpdatedAt:
+      typeof p.adaptiveGoalLastUpdatedAt === "string"
+        ? p.adaptiveGoalLastUpdatedAt
+        : null,
+    // Знімок підстави проходить бекап через доменну нормалізацію, а не
+    // копіюється як є: половина знімка дала б картці «витрата ≈NaN».
+    adaptiveGoalLastReason: normalizeNutritionPrefs({
+      adaptiveGoalLastReason: p.adaptiveGoalLastReason,
+    }).adaptiveGoalLastReason,
     mealTemplates: Array.isArray(p.mealTemplates)
       ? p.mealTemplates.slice(0, 40)
       : [],

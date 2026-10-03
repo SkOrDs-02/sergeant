@@ -21,10 +21,13 @@ export {
 export {
   toNumberOrNull,
   normalizeMonoAccount,
+  normalizeMonoJar,
   normalizeMonoTransaction,
   type MonoAccountRow,
+  type MonoJarRow,
   type MonoTransactionRow,
   type NormalizedMonoAccount,
+  type NormalizedMonoJar,
   type NormalizedMonoTransaction,
 } from "./mono.js";
 
@@ -36,3 +39,14 @@ export {
 } from "./upcitemdb.js";
 
 export { UK_TO_EN, translateFirstToken } from "./uk-to-en.js";
+
+export {
+  normalizeSilpoReceiptItem,
+  normalizeSilpoReceiptSummary,
+  normalizeSilpoReceiptDetail,
+  type SilpoReceiptItemRow,
+  type SilpoReceiptRow,
+  type NormalizedSilpoReceiptItem,
+  type NormalizedSilpoReceiptSummary,
+  type NormalizedSilpoReceiptDetail,
+} from "./silpo.js";

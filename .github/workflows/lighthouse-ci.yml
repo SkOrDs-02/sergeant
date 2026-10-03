@@ -1,28 +1,21 @@
 name: Lighthouse CI
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
-# Closes T5 у `docs/90-work/planning/sprint-roadmap-q2q3-2026.md` § 1.1 Тех-борг
-# та P1.2 у `docs/90-work/audits/2026-05-13-dead-code-hard-rules-roast.md` —
+# Owner: @klas149 (solo maintainer).
+# Closes T5 у `docs/work/specs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 Тех-борг
+# та P1.2 у `docs/work/specs/audits/archive/2026-05-13-dead-code-hard-rules-roast.md` —
 # previously planned-only workflow. Runs `@lhci/cli` autorun against the
 # 4 routes (`/`, `/finyk`, `/fizruk`, `/nutrition/menu`)
-# per `apps/web/lighthouserc.json` — first-pass `warn`-only assertions
-# (LCP ≤ 2000 ms, FCP ≤ 1500 ms, TBT ≤ 200 ms). Tightening LCP to
-# `error` at > 3000 ms is the follow-up tracked in T5 acceptance.
+# per `apps/web/lighthouserc.json` — LCP is `error`-gated at > 3000 ms
+# (median); FCP ≤ 1500 ms and TBT ≤ 200 ms remain `warn`-only.
 # Triage: metric warnings → open the report URLs from the log; runtime
 # `NO_FCP` / server-start flakes are retried once and then soft-pass with
 # a GitHub warning while the underlying Chrome trace issue remains open.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/**"
-      - "pnpm-lock.yaml"
-      - "package.json"
-      - ".nvmrc"
-      - ".github/workflows/lighthouse-ci.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "10 5 * * 1"
 
 permissions:
   contents: read

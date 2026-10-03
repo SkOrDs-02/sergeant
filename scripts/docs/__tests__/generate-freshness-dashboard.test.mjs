@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import {
   classify,
   escapeHtml,
-  normaliseForCompare,
+  formatHtml,
   renderHtml,
 } from "../generate-freshness-dashboard.mjs";
 
@@ -97,57 +97,25 @@ describe("renderHtml", () => {
   });
 });
 
-describe("normaliseForCompare", () => {
-  it("ignores daily generated date and relative freshness counters", () => {
-    const a = renderHtml(
-      [
-        {
-          path: "docs/a.md",
-          cadence: 90,
-          status: "present",
-          lastValidated: "2026-02-01",
-          nextReview: "2026-07-28",
-          owner: "@alice",
-          daysUntilOverdue: 90,
-        },
-      ],
-      { today: "2026-04-29" },
-    );
-    const b = renderHtml(
-      [
-        {
-          path: "docs/a.md",
-          cadence: 90,
-          status: "present",
-          lastValidated: "2026-02-01",
-          nextReview: "2026-07-28",
-          owner: "@alice",
-          daysUntilOverdue: 89,
-        },
-      ],
-      { today: "2026-04-30" },
-    );
+describe("formatHtml", () => {
+  const sample = [
+    {
+      path: "docs/a.md",
+      cadence: 90,
+      status: "present",
+      lastValidated: "2026-02-01",
+      nextReview: "2026-07-28",
+      owner: "@alice",
+      daysUntilOverdue: 90,
+    },
+  ];
 
-    assert.equal(normaliseForCompare(a), normaliseForCompare(b));
-  });
+  it("віддає prettier-форматований HTML, коли prettier є", async () => {
+    // Генератор рендерить СИРИЙ HTML; `formatHtml` робить звіт читабельним.
+    const raw = renderHtml(sample, { today });
+    const formatted = await formatHtml(raw, "dashboard.html");
 
-  it("keeps row-level document changes visible", () => {
-    const a = renderHtml(
-      [
-        {
-          path: "docs/a.md",
-          cadence: 90,
-          status: "present",
-          lastValidated: "2026-02-01",
-          nextReview: "2026-07-28",
-          owner: "@alice",
-          daysUntilOverdue: 90,
-        },
-      ],
-      { today },
-    );
-    const b = a.replace("docs/a.md", "docs/b.md");
-
-    assert.notEqual(normaliseForCompare(a), normaliseForCompare(b));
+    assert.notEqual(formatted, raw, "prettier мусить щось змінити");
+    assert.match(formatted, /<!doctype html>/);
   });
 });

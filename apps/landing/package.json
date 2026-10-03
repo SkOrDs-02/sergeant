@@ -1,0 +1,43 @@
+{
+  "name": "@sergeant/landing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/postbuild-seo.mjs && node scripts/prerender.mjs",
+    "dev": "vite --port 3100 --host 0.0.0.0",
+    "lighthouse": "lhci autorun --config=lighthouserc.json",
+    "lint": "eslint --cache .",
+    "preview": "vite preview --port 3100",
+    "preview:lhci": "vite preview --port 4175 --host 127.0.0.1",
+    "shots": "node scripts/shot-pages.mjs",
+    "test": "vitest run",
+    "test:a11y": "playwright test",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify:browser": "node scripts/verify-browser.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/manrope": "^5.2.8",
+    "@fontsource/unbounded": "^5.2.5",
+    "@sergeant/shared": "workspace:*",
+    "@vercel/edge": "^1.2.2",
+    "posthog-js": "^1.399.2",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.61.1",
+    "@sergeant/design-tokens": "workspace:*",
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "playwright": "^1.61.1",
+    "tailwindcss": "^4.3.2",
+    "typescript": "^6.0.3",
+    "vite": "^7.0.0",
+    "vitest": "^3.2.4"
+  }
+}

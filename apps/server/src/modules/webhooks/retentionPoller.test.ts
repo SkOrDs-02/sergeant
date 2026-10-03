@@ -118,4 +118,76 @@ describe("WebhookEventsRetentionPoller", () => {
     vi.useRealTimers();
     await poller.stop();
   });
+
+  it("a failing scheduled tick is caught and logged, cron keeps running", async () => {
+    vi.useFakeTimers();
+    const pool = {
+      query: vi.fn().mockRejectedValue(new Error("delete failed")),
+    } as unknown as Pool;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 1000,
+    });
+    poller.start();
+    // Should not throw even though the underlying DELETE rejects.
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(pool.query).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+    await poller.stop();
+  });
+
+  it("stop() waits for an in-flight runOnce to finish before resolving", async () => {
+    let resolveQuery!: (value: { rows: unknown[]; rowCount: number }) => void;
+    const pool = {
+      query: vi.fn().mockReturnValue(
+        new Promise((resolve) => {
+          resolveQuery = resolve;
+        }),
+      ),
+    } as unknown as Pool;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 0,
+    });
+
+    const runOncePromise = poller.runOnce();
+    const stopPromise = poller.stop();
+    // Give the stop()'s polling loop a couple of ticks to actually wait.
+    await new Promise((r) => setTimeout(r, 50));
+    resolveQuery({ rows: [{ id: "1" }], rowCount: 1 });
+
+    await runOncePromise;
+    await stopPromise;
+    expect(pool.query).toHaveBeenCalledTimes(1);
+  });
+
+  it("stop() gives up at its ceiling instead of hanging on a stuck tick", async () => {
+    // Регресія (аудит 2026-09-16): раніше `stop()` крутив
+    // `while (this.running) await sleep(20)` БЕЗ верхньої межі. Tick ходить
+    // у Postgres, тож зависла БД означала, що `stop()` не повернеться
+    // ніколи — і graceful shutdown не існував саме в тому випадку, заради
+    // якого його писали.
+    const pool = {
+      // Запит, що не завершується ніколи.
+      query: vi.fn().mockImplementation(() => new Promise(() => {})),
+    } as unknown as Pool;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 0,
+    });
+
+    void poller.runOnce();
+    // Дати tick дійсно стартувати, щоб `running` став true.
+    await new Promise((r) => setTimeout(r, 10));
+
+    const started = Date.now();
+    await poller.stop();
+    const elapsed = Date.now() - started;
+
+    // Головне: ми взагалі повернулись, і в межах стелі (2 с) із запасом.
+    expect(elapsed).toBeLessThan(4_000);
+  }, 10_000);
 });

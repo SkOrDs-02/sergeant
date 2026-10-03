@@ -48,4 +48,20 @@ describe("SuspenseWithMinDelay", () => {
     const host = kid.parentElement as HTMLElement;
     expect(host.className).toContain("animate-fade-in");
   });
+
+  it("passes layout classes to the stable host", () => {
+    render(
+      <SuspenseWithMinDelay
+        fallback={<div>LoadingвЂ¦</div>}
+        className="flex-1 min-h-0 flex flex-col"
+      >
+        <span data-testid="layout-kid">hi</span>
+      </SuspenseWithMinDelay>,
+    );
+    expect(screen.getByTestId("layout-kid").parentElement).toHaveClass(
+      "flex-1",
+      "min-h-0",
+      "flex-col",
+    );
+  });
 });

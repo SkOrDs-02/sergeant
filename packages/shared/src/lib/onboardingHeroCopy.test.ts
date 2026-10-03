@@ -8,7 +8,7 @@ describe("getOnboardingHeroCopy — outcome variant (S1.1 mainline)", () => {
   it("leads with a user-outcome promise, not a product category", () => {
     const copy = getOnboardingHeroCopy("outcome");
     // S1.1 copy-review 2026-05-07: "зум" replaced with clearer "запис".
-    expect(copy.title).toBe("Один запис — і побачиш, куди йде твоє життя.");
+    expect(copy.title).toBe("Один запис, і побачиш, куди йде твоє життя.");
     // The audit explicitly called out "хаб" as marketer-speak.
     expect(copy.title).not.toMatch(/хаб/i);
     // "все в одному місці" is the dead overused cliché we're replacing.
@@ -34,7 +34,7 @@ describe("getOnboardingHeroCopy — outcome variant (S1.1 mainline)", () => {
 
   it("uses an action verb in the primary CTA, not a feature-noun", () => {
     const copy = getOnboardingHeroCopy("outcome");
-    expect(copy.primaryCta).toBe("Розпочати — 30 секунд");
+    expect(copy.primaryCta).toBe("Розпочати · 30 секунд");
     // Banned: pre-S1.2 feature-flavoured CTA copy.
     expect(copy.primaryCta).not.toMatch(/^Відкрити Sergeant/);
     expect(copy.primaryCta).not.toMatch(/^Налаштувати модулі/);
@@ -56,7 +56,7 @@ describe("getOnboardingHeroCopy — bold variant", () => {
   it("uses an exclusionary lead targeting the 'tired of forgetting' cohort", () => {
     const copy = getOnboardingHeroCopy("bold");
     expect(copy.title).toBe("Не для всіх. Для тих, хто втомився забувати.");
-    expect(copy.subtitle).toContain("пам'ятає за тебе");
+    expect(copy.subtitle).toContain("памʼятає за тебе");
   });
 });
 

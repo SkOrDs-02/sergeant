@@ -73,12 +73,14 @@ function TxListItemImpl({
     }
   }, [isManual, onPressManual, tx]);
 
+  // F7 (анти-слоп 2026-09-01): підпис дії без емодзі — колір треку
+  // (`swipeColor`) уже несе семантику, гліф дублював її системним шрифтом.
   const swipeLabel = canSwipeDelete
-    ? "🗑 Видалити"
+    ? "Видалити"
     : canSwipeHide
-      ? "🙈 Приховати"
+      ? "Приховати"
       : canSwipeUnhide
-        ? "👁 Показати"
+        ? "Показати"
         : "";
   const swipeColor = canSwipeDelete
     ? "bg-danger"

@@ -9,6 +9,8 @@ test.use({ storageState: { cookies: [], origins: [] } });
 
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_vibe_picks_v1: JSON.stringify({
     picks: ["finyk", "fizruk", "nutrition", "routine"],
@@ -36,7 +38,7 @@ test("@critical auth: sign-up leads to authenticated hub surface", async ({
 }) => {
   await seedLocalStorage(page);
 
-  const nonce = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const nonce = crypto.randomUUID();
   const email = `smoke_${nonce}@example.com`;
   const password = `pw_${nonce}_long_enough`;
 

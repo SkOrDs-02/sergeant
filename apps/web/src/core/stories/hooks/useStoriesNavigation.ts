@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 interface Options {
   total: number;
@@ -24,24 +24,29 @@ interface Api {
  */
 export function useStoriesNavigation({ total, onExhausted }: Options): Api {
   const [index, setIndex] = useState(0);
+  const [prevTotal, setPrevTotal] = useState(total);
+  if (total !== prevTotal) {
+    setPrevTotal(total);
+    if (total > 0) {
+      setIndex((i) => (i >= total ? total - 1 : i));
+    }
+  }
 
-  // Clamp when `total` shrinks. Don't auto-exhaust here (that would close
-  // the overlay on every digest mutation); callers use `onExhausted` only
-  // on the terminal `next()` call.
-  useEffect(() => {
-    if (total === 0) return;
-    setIndex((i) => (i >= total ? total - 1 : i));
-  }, [total]);
-
+  // `onExhausted` is fired here, NOT from inside a `setIndex` updater.
+  // React treats updaters as pure and may run them twice (StrictMode) or
+  // during the render phase, so a side effect in there could close the
+  // overlay twice or schedule a parent update mid-render. Reading `index`
+  // from this render is safe and matches the "no refs, no mirrors" contract
+  // above: the callback is recreated whenever `index` changes.
   const next = useCallback(() => {
-    setIndex((i) => {
-      if (i >= total - 1) {
-        onExhausted?.();
-        return i;
-      }
-      return i + 1;
-    });
-  }, [total, onExhausted]);
+    if (index >= total - 1) {
+      onExhausted?.();
+      return;
+    }
+    // Functional form so two calls batched into one render still compose into
+    // two advances instead of collapsing onto the same captured `index`.
+    setIndex((i) => (i >= total - 1 ? i : i + 1));
+  }, [index, total, onExhausted]);
 
   const prev = useCallback(() => {
     setIndex((i) => (i > 0 ? i - 1 : 0));

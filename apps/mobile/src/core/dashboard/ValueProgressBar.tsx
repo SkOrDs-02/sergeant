@@ -3,7 +3,7 @@
  * pre-first-entry «value-promise» bar (FTUX S3.3a + S3.3b).
  *
  * Closes the S3.3 mobile parity gap explicitly tracked in
- * `docs/launch/product-os/ftux-sprint-plan.md` (line 174):
+ * `docs/work/specs/launch/product-os/ftux-sprint-plan.md` (line 174):
  *
  *   > Mobile parity для `ValueProgressBar` (S3.3) ще не зроблена —
  *   > окрема історія, відкладена як cross-cutting cleanup нижче.
@@ -56,7 +56,7 @@ export function ValueProgressBar({
           className="flex-row items-center gap-3 px-1"
           accessibilityRole="progressbar"
           accessibilityValue={{ now: bar.percent, min: 0, max: 100 }}
-          accessibilityLabel={`${bar.label} — ${bar.current}`}
+          accessibilityLabel={`${bar.label} · ${bar.current}`}
         >
           <View className="h-1.5 flex-1 overflow-hidden rounded-full bg-cream-200">
             <View

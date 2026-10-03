@@ -8,6 +8,7 @@ import { Pressable, Text, View } from "react-native";
 import { MEAL_TYPES, type MealTypeId } from "@sergeant/nutrition-domain";
 import { hapticTap } from "@sergeant/shared";
 
+import { NutritionIcon } from "../NutritionIcon";
 import type { MealFormState } from "./mealFormUtils";
 
 interface MealTypePickerProps {
@@ -18,7 +19,6 @@ interface MealTypePickerProps {
 export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
   return (
     <View className="mb-4">
-      {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- section heading in form */}
       <Text className="text-xs font-bold uppercase text-fg-muted mb-2 tracking-wider">
         Прийом їжі
       </Text>
@@ -41,13 +41,20 @@ export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
                   : "bg-cream-100 border-cream-300"
               }`}
             >
-              <Text
-                className={`text-sm font-semibold ${
-                  active ? "text-white" : "text-fg-muted"
-                }`}
-              >
-                {mt.emoji} {mt.label}
-              </Text>
+              <View className="flex-row items-center gap-1.5">
+                <NutritionIcon
+                  name={mt.iconName}
+                  size={14}
+                  color={active ? "#FFFFFF" : "#7A7A7A"}
+                />
+                <Text
+                  className={`text-sm font-semibold ${
+                    active ? "text-white" : "text-fg-muted"
+                  }`}
+                >
+                  {mt.label}
+                </Text>
+              </View>
             </Pressable>
           );
         })}

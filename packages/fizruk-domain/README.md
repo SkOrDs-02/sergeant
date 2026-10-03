@@ -16,9 +16,14 @@
 import { createWorkout, calculateProgress } from "@sergeant/fizruk-domain";
 ```
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/fizruk-domain <script>`.
 
 ```bash
-pnpm --filter @sergeant/fizruk-domain test       # Vitest
-pnpm --filter @sergeant/fizruk-domain typecheck
+pnpm --filter @sergeant/fizruk-domain typecheck      # TypeScript
+pnpm --filter @sergeant/fizruk-domain lint           # ESLint
+pnpm --filter @sergeant/fizruk-domain test           # Vitest
+pnpm --filter @sergeant/fizruk-domain test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/fizruk-domain test:coverage  # Vitest з покриттям
 ```

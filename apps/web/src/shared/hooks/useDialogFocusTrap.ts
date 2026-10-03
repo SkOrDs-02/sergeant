@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 
 export interface DialogFocusTrapOptions {
   onEscape?: (() => void) | undefined;
@@ -12,6 +12,13 @@ export interface DialogFocusTrapOptions {
    */
   inertBackground?: boolean | undefined;
 }
+
+/**
+ * Стос відкритих пасток у порядку відкриття. Верхній елемент — єдиний,
+ * хто обробляє Escape і Tab. Живе на рівні модуля, бо слухачі висять на
+ * спільному `document`; скидається `__resetDialogInertForTests()`.
+ */
+const keyboardStack: symbol[] = [];
 
 /**
  * Tab циклічно лишається в межах контейнера; Escape викликає onEscape.
@@ -70,6 +77,12 @@ export function useDialogFocusTrap(
     const panel = containerRef.current;
     if (!panel) return;
 
+    // Унікальна мітка цієї пастки в стосі клавіатури (див. коментар
+    // біля `keyboardStack.push` нижче). Символ, а не сам `panel`: одна
+    // й та сама панель може змонтуватись повторно, і порівняння за
+    // вузлом переплутало б старий запис із новим.
+    const trapToken = Symbol("dialog-focus-trap");
+
     // Snapshot the currently-focused element so we can restore focus
     // after the dialog closes. Skip body itself — restoring focus to
     // <body> is identical to losing focus entirely.
@@ -119,7 +132,26 @@ export function useDialogFocusTrap(
         : null;
     if (inertRoot) registerInertRoot(inertRoot);
 
+    // Клавіатура належить ВЕРХНЬОМУ діалогу.
+    //
+    // AI-CONTEXT: слухач висить на `document`, тож без цієї перевірки
+    // кожна відкрита пастка обробляла кожне натискання. Escape закривав
+    // усі діалоги стосу разом (сканер штрихкоду + аркуш під ним, ревʼю
+    // PR #845), а Tab був іще підступніший: нижня пастка бачила фокус
+    // «поза своєю панеллю» — цілком нормальний стан, коли зверху інший
+    // діалог, — і смикала його назад до себе, тобто Tab у верхньому
+    // діалозі викидав людину в нижній.
+    //
+    // Порядок стосу — це порядок ВІДКРИТТЯ, не вкладеність DOM: сканер
+    // живе в `#root`, а аркуш під ним — у порталі `<body>`, тож жоден із
+    // них не є предком іншого, і визначити верхній по дереву неможливо.
+    // Якщо колись два діалоги змонтуються в ОДНОМУ коміті, верхнім стане
+    // той, чий ефект відпрацював пізніше, — тобто пізніший у JSX. Це
+    // єдина крихка точка; сьогодні такого випадку в коді немає.
+    keyboardStack.push(trapToken);
+
     const onKeyDown = (e: KeyboardEvent) => {
+      if (keyboardStack[keyboardStack.length - 1] !== trapToken) return;
       if (e.key === "Escape") {
         const cb = onEscapeRef.current;
         if (cb) {
@@ -156,6 +188,11 @@ export function useDialogFocusTrap(
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      // Знімаємо саме СВІЙ запис, а не верхній: діалоги закриваються не
+      // лише в порядку LIFO (кнопка «назад» у нижньому аркуші може
+      // прибрати обидва одразу).
+      const at = keyboardStack.indexOf(trapToken);
+      if (at !== -1) keyboardStack.splice(at, 1);
       // Un-inert the background BEFORE restoring focus: the restore
       // target lives in the subtree we just inerted, and `.focus()` is a
       // no-op on an element inside an `inert` subtree.
@@ -209,6 +246,51 @@ export function useDialogFocusTrap(
 const inertRoots = new Set<HTMLElement>();
 const managedEls = new Map<Element, { inert: boolean; ariaHidden: boolean }>();
 
+/* ------------------------------------------------------------------ *
+ * Modal presence
+ *
+ * Хто ще, крім самих діалогів, має знати, що на екрані модальний діалог:
+ * глобальний трей тостів (`ToastContainer`) якориться вгорі, поки відкритий
+ * аркуш чи модалка, бо внизу він накривав би футер аркуша з його CTA.
+ * Джерело правди те саме, що й для inert, — набір зареєстрованих
+ * roots, тож «модальний» тут означає рівно `inertBackground: true`.
+ * ------------------------------------------------------------------ */
+const presenceListeners = new Set<() => void>();
+
+function emitModalPresence(): void {
+  for (const listener of presenceListeners) {
+    try {
+      listener();
+    } catch {
+      /* noop — слухач не має ламати реєстрацію діалогу */
+    }
+  }
+}
+
+function subscribeModalPresence(listener: () => void): () => void {
+  presenceListeners.add(listener);
+  return () => {
+    presenceListeners.delete(listener);
+  };
+}
+
+function readModalPresence(): boolean {
+  return inertRoots.size > 0;
+}
+
+/**
+ * `true`, поки відкритий бодай один діалог із `inertBackground` (Sheet,
+ * Modal, ConfirmDialog, InputDialog, CommandPalette…). Немодальні
+ * поверхні (Popover, radial menu) сюди не потрапляють — навмисно.
+ */
+export function useModalDialogOpen(): boolean {
+  return useSyncExternalStore(
+    subscribeModalPresence,
+    readModalPresence,
+    () => false,
+  );
+}
+
 /**
  * The element to keep interactive is the dialog's overlay, not the inner
  * panel: the scrim/backdrop is usually a *sibling* of the panel inside a
@@ -237,11 +319,13 @@ function getDialogRoot(panel: HTMLElement): HTMLElement {
 function registerInertRoot(root: HTMLElement): void {
   inertRoots.add(root);
   syncInert();
+  emitModalPresence();
 }
 
 function unregisterInertRoot(root: HTMLElement): void {
   inertRoots.delete(root);
   syncInert();
+  emitModalPresence();
 }
 
 function syncInert(): void {
@@ -277,6 +361,11 @@ function syncInert(): void {
       for (const sibling of Array.from(parent.children)) {
         if (sibling === node) continue;
         if (keepAlive.has(sibling)) continue;
+        // Global live-status surfaces (currently the portalled toast tray)
+        // stay interactive above a modal. They can contain a time-limited
+        // Undo action, so making them inert would leave a visible control
+        // that sends the pointer event to the dialog scrim underneath.
+        if (sibling.hasAttribute("data-dialog-inert-exempt")) continue;
         desired.add(sibling);
       }
       if (parent === document.body) break;
@@ -323,4 +412,6 @@ export function __resetDialogInertForTests(): void {
   }
   managedEls.clear();
   inertRoots.clear();
+  keyboardStack.length = 0;
+  emitModalPresence();
 }

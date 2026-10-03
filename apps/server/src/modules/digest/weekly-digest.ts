@@ -9,6 +9,7 @@ import {
 } from "../../http/schemas.js";
 import {
   ExternalServiceError,
+  ForbiddenError,
   ValidationError,
   makeAiProviderError,
 } from "../../obs/errors.js";
@@ -20,7 +21,20 @@ import {
   type LLMProvider,
 } from "../../lib/llm/provider.js";
 import { logger } from "../../obs/logger.js";
+import { als } from "../../obs/requestContext.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
+import { getAiMemory } from "../ai-memory/bootstrap.js";
+import { buildWeeklyDigestPrompt } from "./weeklyDigestPrompt.js";
+import { replaceLongDash } from "../../lib/modelText.js";
+import {
+  countModuleSignals,
+  HEALTH_CONSENT_REQUIRED_CODE,
+  HEALTH_CONSENT_REQUIRED_MESSAGE,
+  MIN_SIGNAL_MODULES,
+} from "@sergeant/shared";
+import { resolveHealthConsent } from "../../lib/healthConsent.js";
+
+export { buildWeeklyDigestPrompt };
 
 type WithAnthropicKey = Request & { anthropicKey?: string };
 type WithSessionUser = Request & { user?: { id: string } };
@@ -40,9 +54,7 @@ function buildDigestMemoryContent(
   const tag = weekRange ? `Тижневий звіт ${weekRange}` : "Тижневий звіт";
   for (const key of ["finyk", "fizruk", "nutrition", "routine"] as const) {
     const sec = safe[key] as
-      | { summary?: string; comment?: string }
-      | null
-      | undefined;
+      { summary?: string; comment?: string } | null | undefined;
     if (!sec) continue;
     const summary = (sec.summary || "").trim();
     const comment = (sec.comment || "").trim();
@@ -62,7 +74,8 @@ function buildDigestMemoryContent(
   return `${tag}. ${joined}`.slice(0, cap);
 }
 
-function extractJsonObject(raw: unknown): unknown {
+/** Експортовано для стенду моделей — суддя має парсити рівно як прод. */
+export function extractJsonObject(raw: unknown): unknown {
   if (typeof raw !== "string") return null;
   let text = raw.trim();
   // Прибираємо markdown-обгортку ```json ... ``` або ``` ... ```
@@ -110,6 +123,23 @@ function extractJsonObject(raw: unknown): unknown {
 }
 
 /**
+ * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень — тонкий делегат
+ * `countModuleSignals` (`@sergeant/shared`), канон і для клієнтського
+ * `coachSnapshotSignals` (`apps/web/src/core/insights/useCoachInsight.ts`),
+ * зведено за аудитом §2.23 замість двох незалежних копій.
+ *
+ * AI-CONTEXT (Хвиля 4, hub-coach § G2): `finyk` приїжджає з клієнта
+ * ЗАВЖДИ truthy (`aggregateFinyk` повертає нулі навіть без транзакцій), тож
+ * стара перевірка «є хоч одна секція» (`!sections.length`) фактично ніколи
+ * не спрацьовувала — порожній тиждень завжди мав хоча б finyk-секцію з
+ * нулями, і дайджест генерувався з нічого. Рахуємо не «поле присутнє», а
+ * факт даних.
+ */
+export function countDigestSignalModules(data: WeeklyDigestRequest): number {
+  return countModuleSignals(data);
+}
+
+/**
  * PR-25: build template-based digest report з raw метрик (без LLM).
  * Використовується (а) як stub-response для `StubProvider`, і (б) як
  * автоматичний fallback коли Anthropic !ok і `LLM_DIGEST_FALLBACK_ON_ERROR=true`.
@@ -126,9 +156,9 @@ export function buildTemplateReport(
   return {
     finyk: finyk
       ? {
-          summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} транзакцій.`,
+          summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} операцій.`,
           comment:
-            "Шаблонний звіт без AI-аналізу (Anthropic недоступний або вимкнено). Числа взяті напряму з тижневих даних — інтерпретація буде доступна, коли AI-сервіс відновиться.",
+            "Це лише числа з тижневих даних: розбір зараз недоступний. Висновки додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -138,7 +168,7 @@ export function buildTemplateReport(
             fizruk.recoveryLabel ? `, стан: ${fizruk.recoveryLabel}` : ""
           }.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Покажемо детальний коментар, коли AI-сервіс відновиться.",
+            "Це лише числа з тижневих даних: розбір тренувань додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -146,7 +176,7 @@ export function buildTemplateReport(
       ? {
           summary: `Середньодобово ${nutrition.avgKcal ?? 0} ккал з ${nutrition.daysLogged ?? 0}/7 днів записів.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) з'являться після відновлення AI-сервісу.",
+            "Це лише числа з тижневих даних: макроси й тенденції розберу, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -154,7 +184,7 @@ export function buildTemplateReport(
       ? {
           summary: `${routine.habitCount ?? 0} звичок, загальний відсоток ${routine.overallRate ?? 0}%.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Розширений аналіз стане доступним після відновлення AI-сервісу.",
+            "Це лише числа з тижневих даних: розбір звичок додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -176,6 +206,11 @@ export interface WeeklyDigestHandlerOptions {
    * Корисно у тестах і у scoped deployments (e.g. e2e з `false`).
    */
   fallbackOnError?: boolean;
+  /**
+   * Підмінка перевірки `healthDataConsent` для тестів. Production читає
+   * збережену згоду з БД (`resolveHealthConsent`, fail-closed).
+   */
+  resolveHealthConsent?: (userId: string | undefined) => Promise<boolean>;
 }
 
 /**
@@ -189,112 +224,42 @@ export function createWeeklyDigestHandler(
   return async function handler(req: Request, res: Response): Promise<void> {
     const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
-    const parsed = parseBody(WeeklyDigestSchema, req);
-    const { weekRange, finyk, fizruk, nutrition, routine } = parsed;
+    const rawParsed = parseBody(WeeklyDigestSchema, req);
 
-    const sections: string[] = [];
+    // Гейт на дані про здоровʼя (GDPR Art. 9, рішення власника 2026-09-29):
+    // без збереженої згоди секції Фізрука й Харчування відкидаємо ДО
+    // лічильника сигналів, промпту й шаблонного fallback-у — ні в модель, ні
+    // в `ai_memories` вони не потраплять. Фінанси/звички звіт не ламає.
+    const healthConsent = await (
+      options.resolveHealthConsent ?? resolveHealthConsent
+    )((req as WithSessionUser).user?.id);
+    const parsed: WeeklyDigestRequest = healthConsent
+      ? rawParsed
+      : { ...rawParsed, fizruk: null, nutrition: null };
+    const { weekKey, weekRange, finyk, fizruk, nutrition, routine } = parsed;
 
-    if (finyk) {
-      const budgetLine = finyk.monthlyBudget
-        ? `Місячний бюджет: ${finyk.monthlyBudget} грн`
-        : "Місячний бюджет: не встановлено";
-      const topCats =
-        Array.isArray(finyk.topCategories) && finyk.topCategories.length
-          ? finyk.topCategories
-              .map((c) => `  - ${c.name}: ${c.amount} грн`)
-              .join("\n")
-          : "  Немає даних";
-      sections.push(`[ФІНАНСИ (${weekRange || "тиждень"})]
-Витрати: ${finyk.totalSpent ?? 0} грн | Надходження: ${finyk.totalIncome ?? 0} грн
-${budgetLine}
-Топ категорії витрат:
-${topCats}
-Транзакцій: ${finyk.txCount ?? 0}`);
+    // Гейт СТОЇТЬ ПЕРЕД побудовою промпту й перед мережевим викликом — тиждень
+    // без жодного змістовного сигналу не має ані отримувати шаблонний AI-аналіз
+    // нулів, ані палити виклик LLM. Заміняє стару структурну перевірку
+    // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
+    if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
+      // Якби health-секції дали б рівно той сигнал, якого бракує, — це не
+      // «замало даних», а «потрібна згода»: люди мають знати, що робити.
+      if (
+        !healthConsent &&
+        countDigestSignalModules(rawParsed) >= MIN_SIGNAL_MODULES
+      ) {
+        throw new ForbiddenError(HEALTH_CONSENT_REQUIRED_MESSAGE, {
+          code: HEALTH_CONSENT_REQUIRED_CODE,
+        });
+      }
+      throw new ValidationError(
+        "Замало даних за цей тиждень для звіту. Додай операцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
+        { code: "INSUFFICIENT_DATA" },
+      );
     }
 
-    if (fizruk) {
-      const exercises =
-        Array.isArray(fizruk.topExercises) && fizruk.topExercises.length
-          ? fizruk.topExercises
-              .map((e) => `  - ${e.name}: ${e.totalVolume} кг`)
-              .join("\n")
-          : "  Немає даних";
-      sections.push(`[ТРЕНУВАННЯ (${weekRange || "тиждень"})]
-Тренувань завершено: ${fizruk.workoutsCount ?? 0}
-Загальний об'єм: ${fizruk.totalVolume ?? 0} кг
-Стан відновлення: ${fizruk.recoveryLabel ?? "Немає даних"}
-Топ вправи:
-${exercises}`);
-    }
-
-    if (nutrition) {
-      const deficit = (nutrition.targetKcal ?? 0) - (nutrition.avgKcal ?? 0);
-      const balance =
-        deficit > 50
-          ? `дефіцит ${Math.round(deficit)} ккал`
-          : deficit < -50
-            ? `профіцит ${Math.round(Math.abs(deficit))} ккал`
-            : "баланс";
-      sections.push(`[ХАРЧУВАННЯ (${weekRange || "тиждень"})]
-Середньодобово: ${nutrition.avgKcal ?? 0} ккал (ціль ${nutrition.targetKcal ?? 2000} ккал, ${balance})
-Середній БЖВ: Б ${nutrition.avgProtein ?? 0}г / Ж ${nutrition.avgFat ?? 0}г / В ${nutrition.avgCarbs ?? 0}г
-Днів із записами: ${nutrition.daysLogged ?? 0} з 7`);
-    }
-
-    if (routine) {
-      const habitsInfo =
-        Array.isArray(routine.habits) && routine.habits.length
-          ? routine.habits
-              .map(
-                (h) =>
-                  `  - ${h.name}: ${h.completionRate}% (${h.done}/${h.total} днів)`,
-              )
-              .join("\n")
-          : "  Немає активних звичок";
-      sections.push(`[ЗВИЧКИ (${weekRange || "тиждень"})]
-Загальний відсоток: ${routine.overallRate ?? 0}%
-Активних звичок: ${routine.habitCount ?? 0}
-По звичках:
-${habitsInfo}`);
-    }
-
-    if (!sections.length) {
-      throw new ValidationError("Немає даних для генерації звіту");
-    }
-
-    const dataContext = sections.join("\n\n");
-    const userPrompt = `Проаналізуй тижневі дані юзера і поверни ТІЛЬКИ валідний JSON (без markdown-обгортки, без \`\`\`json) такого вигляду:
-{
-  "finyk": {
-    "summary": "1 речення: що відбулося з фінансами",
-    "comment": "2-3 речення: аналіз витрат, тенденції",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "fizruk": {
-    "summary": "1 речення: підсумок тренувань",
-    "comment": "2-3 речення: аналіз об'єму, відновлення",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "nutrition": {
-    "summary": "1 речення: підсумок харчування",
-    "comment": "2-3 речення: аналіз калоражу, макросів",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "routine": {
-    "summary": "1 речення: підсумок звичок",
-    "comment": "2-3 речення: аналіз виконання",
-    "recommendations": ["рекомендація 1", "рекомендація 2"]
-  },
-  "overallRecommendations": ["загальна рекомендація 1", "загальна рекомендація 2"]
-}
-Якщо даних по модулю немає — поверни null для цього ключа. Відповідай ВИКЛЮЧНО валідним JSON.`;
-
-    const systemPrompt = `Ти аналітик персональних даних користувача додатку "Мій простір".
-Відповідай ВИКЛЮЧНО валідним JSON — без markdown, без коментарів, без преамбули.
-Уся аналітика — українською. Числа бери з блоку даних.
-
-ДАНІ:
-${dataContext}`;
+    const prompt = buildWeeklyDigestPrompt(parsed);
 
     // PR-25: template-report заздалегідь — як stubResponse для StubProvider,
     // так і як автоматичний fallback на Anthropic-помилку.
@@ -314,12 +279,18 @@ ${dataContext}`;
     const llmResult = await invokeLLM(
       provider,
       {
-        model: "claude-sonnet-4-6",
+        model: env.DIGEST_MODEL,
         maxTokens: 2500,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        system: prompt.system,
+        messages: [{ role: "user", content: prompt.user }],
         endpoint: "internal/weekly-digest",
         timeoutMs: 45_000,
+        userId: (req as WithSessionUser).user?.id,
+        // Ініціатива 0025, Фаза 2 — «id прогону». Digest — один Anthropic-виклик
+        // на HTTP-запит, тож переюзаємо вже наявний per-request W3C trace id
+        // (`traceMiddleware`, `obs/requestContext.ts`) замість того, щоб
+        // вигадувати новий: цей самий id уже йде в `X-Trace-Id` і Sentry.
+        traceId: als.getStore()?.traceId ?? undefined,
       },
       options.addBreadcrumb ? { addBreadcrumb: options.addBreadcrumb } : {},
     );
@@ -345,7 +316,9 @@ ${dataContext}`;
       report = templateReport;
       usedFallback = true;
     } else {
-      const rawReport = extractJsonObject(llmResult.text);
+      // Довге тире в JSON буває лише всередині рядків, тож заміна по сирому
+      // тексту дорівнює заміні в кожному текстовому полі звіту (аудит P2-3).
+      const rawReport = extractJsonObject(replaceLongDash(llmResult.text));
       if (!rawReport) {
         if (!fallbackOnError) {
           throw new ExternalServiceError("Не вдалося розпарсити відповідь AI", {
@@ -396,43 +369,76 @@ ${dataContext}`;
     );
 
     // AI memory ingest hook (PR2). Fire-and-forget після відправки відповіді,
-    // щоб не затримувати клієнт. `userId` беремо з сесії; для anon-режиму
-    // (квота через IP) digest без `req.user` теж генерується — у такому разі
-    // memory не зберігаємо. `weekRange` як sourceRef означає, що повторні
-    // generate-кліки за той самий тиждень дедуплікуються (jobId-rule у BullMQ).
+    // щоб не затримувати клієнт (роут за requireSession(), тож req.user
+    // завжди є — ADR-0086 прибрав анонімний режим).
+    //
+    // Семантика "остання генерація тижня перемагає" (2026-08-30, знахідка
+    // W3 ревʼю дайджесту): sourceRef — канонічний weekKey (fallback на
+    // weekRange для старих бандлів), а перед enqueue старий рядок тижня
+    // hard-видаляється (той самий delete-then-insert патерн, що в
+    // profileMirror: BullMQ jobId-дедуп інакше мовчки відкидає повторну
+    // генерацію, і в памʼяті назавжди застигав перший, часто неповний,
+    // знімок тижня). dedupeSalt=generatedAt робить кожну генерацію
+    // окремим job-ом, а той самий знімок і далі дедуплікується.
     //
     // PR-25: template-fallback теж enqueue-ить memory (краще зберегти числа,
     // ніж залишити gap у history); тег `usedFallback` потрапляє у metadata
     // для post-hoc query "які тижні згенеровані без AI?".
     const sessionUser = (req as WithSessionUser).user ?? null;
-    if (sessionUser?.id && weekRange) {
-      try {
-        const content = buildDigestMemoryContent(weekRange, report);
-        void enqueueMemoryIngest({
-          userId: sessionUser.id,
-          source: "digest",
-          sourceRef: weekRange,
-          content,
-          metadata: {
-            weekRange,
-            generatedAt,
-            sections: {
-              finyk: !!finyk,
-              fizruk: !!fizruk,
-              nutrition: !!nutrition,
-              routine: !!routine,
+    const memorySourceRef = weekKey ?? weekRange ?? null;
+    if (sessionUser?.id && memorySourceRef) {
+      const userId = sessionUser.id;
+      void (async () => {
+        try {
+          const content = buildDigestMemoryContent(
+            weekRange ?? memorySourceRef,
+            report,
+          );
+          if (env.AI_MEMORY_ENABLED) {
+            await getAiMemory()
+              .forgetSource(userId, "digest", memorySourceRef)
+              .catch((err: unknown) => {
+                // Видалення — best-effort: якщо воно впало, enqueue все одно
+                // спробує записати (перший знімок тижня краще за жодного).
+                logger.warn({
+                  msg: "weekly_digest_memory_forget_failed",
+                  err: err instanceof Error ? err.message : String(err),
+                });
+              });
+          }
+          await enqueueMemoryIngest({
+            userId,
+            source: "digest",
+            sourceRef: memorySourceRef,
+            content,
+            metadata: {
+              weekRange,
+              generatedAt,
+              sections: {
+                finyk: !!finyk,
+                fizruk: !!fizruk,
+                nutrition: !!nutrition,
+                routine: !!routine,
+              },
+              usedFallback,
             },
-            usedFallback,
-          },
-        });
-      } catch (err) {
-        // enqueueMemoryIngest сам не throw-ить, але buildDigestMemoryContent
-        // теоретично може у крайньому випадку — не валимо response через це.
-        logger.warn({
-          msg: "weekly_digest_memory_ingest_skipped",
-          err: err instanceof Error ? err.message : String(err),
-        });
-      }
+            dedupeSalt: generatedAt,
+            // PR-S3: тижневий звіт осідає в `ai_memories` і потім щоразу
+            // підмішується в system prompt через `buildRagContext`. Коли в
+            // ньому є секції Фізрука чи Їжі — це дані про здоровʼя, і на
+            // персистентний запис потрібна окрема згода (GDPR Art. 9).
+            // Прапорець рахується з ФАКТИЧНОГО складу звіту, не з джерела:
+            // фінансово-рутинний тиждень health-даних не несе й гейтитись
+            // не має.
+            healthData: !!fizruk || !!nutrition,
+          });
+        } catch (err) {
+          logger.warn({
+            msg: "weekly_digest_memory_ingest_skipped",
+            err: err instanceof Error ? err.message : String(err),
+          });
+        }
+      })();
     }
   };
 }

@@ -22,8 +22,20 @@ describe("DebtCard", () => {
         total={10000}
       />,
     );
-    expect(screen.getByText(/💳 Кредит/)).toBeInTheDocument();
-    expect(screen.getByText(/−5,?000\s*₴|−5 000 ₴/)).toBeInTheDocument();
+    expect(screen.getByText("Кредит")).toBeInTheDocument();
+    // `Money` розкладає суму на тири, тож рядковий матчер її не бачить.
+    // Пробіли нерозривні: U+00A0 у розрядах, U+202F перед ₴ (див.
+    // `NARROW_NBSP` у `Money`). Зі звичайним пробілом тест не знайде
+    // нічого, хоча на екрані все правильно.
+    // `getAllByText`, а не `getByText`: збіг дає і обгортка суми, і
+    // сам `Money` всередині — у них однаковий `textContent`. Нас
+    // цікавить факт наявності, а не конкретний вузол.
+    expect(
+      screen.getAllByText(
+        (_, el) => el?.textContent === "\u22125\u00a0000\u202f\u20b4",
+        { selector: "span" },
+      ).length,
+    ).toBeGreaterThan(0);
     expect(screen.getByText(/Сплачено/)).toBeInTheDocument();
   });
 
@@ -39,7 +51,25 @@ describe("DebtCard", () => {
       />,
     );
     expect(screen.getByText(/Отримано/)).toBeInTheDocument();
-    expect(screen.getByText(/\+3/)).toBeInTheDocument();
+    expect(
+      screen.getAllByText((_, el) => (el?.textContent ?? "").startsWith("+3"), {
+        selector: "span",
+      }).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("не приховує копійки у точній сумі боргу", () => {
+    const { container } = render(
+      <DebtCard
+        name="Позика"
+        emoji=""
+        remaining={1721.14}
+        paid={0}
+        total={1721.14}
+      />,
+    );
+
+    expect(container).toHaveTextContent(/1[\s\u202f]?721,14/);
   });
 
   it("masks amounts when showBalance is false", () => {
@@ -99,9 +129,9 @@ describe("DebtCard", () => {
         linkedCount={2}
       />,
     );
-    fireEvent.click(screen.getByText("🗑"));
+    fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));
     expect(onDelete).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(2\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(2\)/));
     expect(onLink).toHaveBeenCalledTimes(1);
   });
 });

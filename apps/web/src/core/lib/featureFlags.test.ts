@@ -26,12 +26,20 @@ describe("featureFlags", () => {
     globalThis.localStorage = makeLS() as unknown as Storage;
   });
 
+  // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+  // «Конфіденційність» у Профіль → «Безпека» 2026-09-04, опис флага досі
+  // називав старе місце.
+  it("описує актуальне місце PIN-контролу — Профіль, не Налаштування", async () => {
+    const { FLAG_REGISTRY } = await loadFresh();
+    const flag = FLAG_REGISTRY.find((f) => f.id === "app-lock-enabled");
+    expect(flag?.description).toContain("Профілі");
+    expect(flag?.description).not.toContain("Конфіденційність");
+  });
+
   it("повертає defaultValue з реєстру, якщо флаг не встановлено", async () => {
     const { getFlag, FLAG_REGISTRY } = await loadFresh();
-    const sub = FLAG_REGISTRY.find(
-      (f) => f.id === "finyk_subscriptions_category",
-    );
-    expect(getFlag("finyk_subscriptions_category")).toBe(sub!.defaultValue);
+    const sub = FLAG_REGISTRY.find((f) => f.id === "hub_command_palette");
+    expect(getFlag("hub_command_palette")).toBe(sub!.defaultValue);
   });
 
   it("Stage 8 PR #056r drop: feature.routine.sqlite_v2.dual_write більше не існує у реєстрі", async () => {
@@ -131,8 +139,8 @@ describe("featureFlags", () => {
 
   it("setFlag зберігає boolean і getFlag його повертає", async () => {
     const { getFlag, setFlag } = await loadFresh();
-    expect(setFlag("finyk_subscriptions_category", true)).toBe(true);
-    expect(getFlag("finyk_subscriptions_category")).toBe(true);
+    expect(setFlag("hub_command_palette", true)).toBe(true);
+    expect(getFlag("hub_command_palette")).toBe(true);
   });
 
   it("ігнорує невідомі id (getFlag→false, setFlag→false)", async () => {
@@ -143,9 +151,9 @@ describe("featureFlags", () => {
 
   it("resetFlags знімає користувацькі значення", async () => {
     const { getFlag, setFlag, resetFlags } = await loadFresh();
-    setFlag("finyk_subscriptions_category", true);
+    setFlag("hub_command_palette", true);
     resetFlags();
-    expect(getFlag("finyk_subscriptions_category")).toBe(false);
+    expect(getFlag("hub_command_palette")).toBe(false);
   });
 
   it("getAllFlags підставляє defaults для відсутніх ключів", async () => {
@@ -161,10 +169,34 @@ describe("featureFlags", () => {
     const a = getAllFlags();
     const b = getAllFlags();
     expect(a).toBe(b);
-    setFlag("finyk_subscriptions_category", true);
+    setFlag("hub_command_palette", true);
     const c = getAllFlags();
     expect(c).not.toBe(a);
     const d = getAllFlags();
     expect(d).toBe(c);
+  });
+});
+
+// Стадія 3: прапорець `storage_sqlite_worker` прибрано з апки зовсім.
+// Воркер на OPFS — безумовний основний шлях, фолбек на kvvfs лишився
+// автоматичним (`openWorkerBackedDb` віддає `null` на будь-якій невдачі).
+//
+// Пін навмисний: тумблер тут не має зʼявитись назад. Ручне вимикання
+// РОЗЩЕПЛЮЄ дані — записи, зроблені в OPFS, у старе сховище не
+// повертаються, і людина лишається з двома половинами історії, не знаючи
+// про це. Рішення власника 2026-09-15; відкат тепер ревертом коміта.
+describe("прапорця сховища в апці більше немає (стадія 3)", () => {
+  it("реєстр його не містить", async () => {
+    const { FLAG_REGISTRY, getFlagDefinition } = await loadFresh();
+    expect(getFlagDefinition("storage_sqlite_worker")).toBeUndefined();
+    expect(FLAG_REGISTRY.map((f) => f.id)).not.toContain(
+      "storage_sqlite_worker",
+    );
+  });
+
+  it("жоден експериментальний тумблер його не показує", async () => {
+    const { FLAG_REGISTRY } = await loadFresh();
+    const experimental = FLAG_REGISTRY.filter((f) => f.experimental);
+    expect(experimental.some((f) => f.id.startsWith("storage_"))).toBe(false);
   });
 });

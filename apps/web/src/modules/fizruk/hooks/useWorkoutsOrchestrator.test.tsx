@@ -129,24 +129,12 @@ describe("useWorkoutsOrchestrator", () => {
     expect(executed || risky).toBe(true);
   });
 
-  it("submitRetroWorkout creates a back-dated workout and closes the sheet", () => {
+  it("handleQuickStart builds an empty workout", () => {
     const { result } = setup();
-    act(() => result.current.setRetroDate("2024-02-15"));
-    act(() => result.current.setRetroTime("09:30"));
-    act(() => result.current.setRetroOpen(true));
-    act(() => result.current.submitRetroWorkout());
-    expect(result.current.retroOpen).toBe(false);
-    expect(result.current.activeWorkoutId).not.toBeNull();
-  });
-
-  it("handleQuickStartConfirm builds a workout from picks", () => {
-    const { result } = setup();
-    const picks = result.current.exercises.slice(0, 2);
-    act(() => result.current.setQuickStartOpen(true));
-    act(() => result.current.handleQuickStartConfirm(picks));
-    expect(result.current.quickStartOpen).toBe(false);
+    act(() => result.current.handleQuickStart());
     expect(result.current.view).toBe("log");
     expect(result.current.activeWorkoutId).not.toBeNull();
+    expect(result.current.activeWorkout?.items ?? []).toHaveLength(0);
   });
 
   it("removeItemWithUndo removes an item and exposes an undo", () => {
@@ -187,5 +175,80 @@ describe("useWorkoutsOrchestrator", () => {
     );
     act(() => result.current.handleRiskyTemplateConfirm());
     expect(result.current.riskyTemplateConfirm).toBeNull();
+  });
+
+  describe("submitPastWorkout — внести проведене заняття", () => {
+    const TIMES = {
+      startedAt: "2026-08-09T15:00:00.000Z",
+      endedAt: "2026-08-09T16:30:00.000Z",
+    };
+
+    it("створює НЕзавершене тренування з введеним початком", () => {
+      // Ядро правки: якби `endedAt` стояв одразу, маршрут показав би
+      // read-only підсумок — ні вправ додати, ні оцінки пройти. Саме на це
+      // й поскаржився тестер.
+      const { result } = setup();
+      act(() => result.current.submitPastWorkout(TIMES));
+
+      const w = result.current.workouts[0]!;
+      expect(w.startedAt).toBe(TIMES.startedAt);
+      expect(w.endedAt).toBeNull();
+    });
+
+    it("підставляє введений кінець, коли людина натискає «Завершити»", () => {
+      // Введений час не губиться — він просто чекає кроку «Завершити»,
+      // разом з яким іде оцінка самопочуття й зони болю.
+      const { result } = setup();
+      act(() => result.current.submitPastWorkout(TIMES));
+      const id = result.current.workouts[0]!.id;
+
+      act(() => {
+        result.current.endWorkout(id);
+      });
+
+      expect(result.current.workouts[0]!.endedAt).toBe(TIMES.endedAt);
+    });
+
+    it("робить ретро активною сесією", () => {
+      // Поки його заповнюють, воно НЕ відрізняється від живого — тож і слот
+      // займає чесно. Інакше старт поруч дав би дві активні.
+      const { result } = setup();
+      act(() => result.current.submitPastWorkout(TIMES));
+      expect(result.current.activeWorkout?.endedAt).toBeNull();
+      expect(result.current.activeWorkout?.startedAt).toBe(TIMES.startedAt);
+    });
+
+    it("питає про конфлікт, коли вже є жива сесія", () => {
+      // Плата за повний потік: ретро тепер справді займає слот, тож іде
+      // через той самий діалог, що й решта шляхів.
+      const { result } = setup();
+      act(() => result.current.handleQuickStart());
+      const liveId = result.current.activeWorkout?.id;
+      expect(liveId).toBeTruthy();
+
+      act(() => result.current.submitPastWorkout(TIMES));
+
+      expect(result.current.activeWorkoutConflictOpen).toBe(true);
+      expect(result.current.activeWorkout?.id).toBe(liveId);
+      expect(result.current.workouts).toHaveLength(1);
+    });
+
+    it("після розвʼязання конфлікту ретро таки створюється", () => {
+      const { result } = setup();
+      act(() => result.current.handleQuickStart());
+      act(() => result.current.submitPastWorkout(TIMES));
+      act(() => result.current.discardActiveAndContinue());
+
+      expect(result.current.activeWorkoutConflictOpen).toBe(false);
+      expect(result.current.activeWorkout?.startedAt).toBe(TIMES.startedAt);
+      expect(result.current.workouts).toHaveLength(1);
+    });
+
+    it("закриває форму після внесення", () => {
+      const { result } = setup();
+      act(() => result.current.setLogPastOpen(true));
+      act(() => result.current.submitPastWorkout(TIMES));
+      expect(result.current.logPastOpen).toBe(false);
+    });
   });
 });

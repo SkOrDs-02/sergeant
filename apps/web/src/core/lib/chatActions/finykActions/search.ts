@@ -1,11 +1,22 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time --
+/* eslint-disable sergeant-design/no-raw-storage-key --
    Chat-action executors run outside React; storage key strings are used
-   directly here. Same pattern as queryFinykActions.ts. The host-local date
-   parts in `toIsoDay` are pre-existing display/parse code. */
+   directly here for the write-path (finyk_tx_cats). Manual expenses and
+   per-tx category overrides come from the canonical SQLite warm cache;
+   bank transactions now come from the Mono mirror reader. */
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import {
+  finykCategoryExists,
+  finykTransactionExists,
+  normalizeFinykId,
+  unknownCategoryMessage,
+  unknownTransactionMessage,
+} from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
+import { formatNumberUk } from "@sergeant/shared";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
   BatchCategorizeAction,
   ChangeCategoryAction,
@@ -18,7 +29,10 @@ export type FinykSearchTx = {
   date: string;
   amount: number;
   description: string;
+  /** Явний id категорії (override / серверний слаг / збережена), не резолвнутий. */
   category?: string | undefined;
+  /** MCC банківського рядка; ручні витрати його не мають. */
+  mcc?: number | undefined;
   type?: string | undefined;
   /**
    * Origin of the row, tagged at read time. Manual expenses (грн) come
@@ -46,9 +60,9 @@ export function toIsoDay(value: unknown): string {
   }
   if (typeof value === "number" && Number.isFinite(value)) {
     const ms = value > 10_000_000_000 ? value : value * 1000;
-    const date = new Date(ms);
-    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- formatting an already-fixed server timestamp, not reading "today"
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    // Bucket the transaction instant by its Europe/Kyiv calendar day so
+    // date filters compare against the user's civil day, not the host's.
+    return getKyivDayKey(new Date(ms));
   }
   return "";
 }
@@ -90,35 +104,16 @@ function readSearchTransactions(): FinykSearchTx[] {
   }>;
   const txCategories = sqlite.txCategories;
   const hidden = new Set(sqlite.hiddenTransactions);
-  const cached = ls<
-    | Array<{
-        id?: string;
-        time?: number | string;
-        date?: string;
-        description?: string;
-        merchant?: string;
-        amount?: number | string;
-        category?: string;
-        type?: string;
-      }>
-    | {
-        txs?: Array<{
-          id?: string;
-          time?: number | string;
-          date?: string;
-          description?: string;
-          merchant?: string;
-          amount?: number | string;
-          category?: string;
-          type?: string;
-        }>;
-      }
-  >("finyk_tx_cache", []);
-  const bankTxs = Array.isArray(cached)
-    ? cached
-    : Array.isArray(cached.txs)
-      ? cached.txs
-      : [];
+  const bankTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
+    id?: string;
+    time?: number | string;
+    date?: string;
+    description?: string;
+    merchant?: string;
+    amount?: number | string;
+    category?: string;
+    type?: string;
+  }>;
 
   const manualTxs = manual.map((tx): FinykSearchTx | null => {
     const id = String(tx.id || "").trim();
@@ -193,19 +188,43 @@ function formatTxList(items: FinykSearchTx[]): string {
       const category = tx.category ? ` · ${tx.category}` : "";
       const desc = tx.description ? ` · ${tx.description}` : "";
       const source = txSourceOf(tx);
-      return `${tx.id}: ${tx.date || "без дати"} · ${toDisplayAmount(tx, source)} грн${desc}${category}`;
+      return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(toDisplayAmount(tx, source))} грн${desc}${category}`;
     })
     .join("; ");
 }
 
 export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
-  const { tx_id, category_id } = action.input;
+  const txId = normalizeFinykId(action.input.tx_id);
+  const categoryId = normalizeFinykId(action.input.category_id);
+  // Validate before writing: an override keyed by a hallucinated tx id is
+  // invisible in every screen, so the model would report a success that
+  // never happened.
+  if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
+  if (!finykCategoryExists(categoryId))
+    return unknownCategoryMessage(categoryId);
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
-  cats[tx_id] = category_id;
+  // B39: reversible overwrite (canon §8 / founder decision) — snapshot the
+  // previous override BEFORE writing. `undefined` means "no override was
+  // set" (category came from the base rules), so undo removes the key
+  // instead of writing back an `undefined` string.
+  const prevCategoryId = cats[txId];
+  cats[txId] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
   const customC = getCachedFinykSqliteState().customCategories;
-  const cat = resolveExpenseCategoryMeta(category_id, customC);
-  return `Категорію транзакції ${tx_id} змінено на ${cat?.label || category_id}`;
+  const cat = resolveExpenseCategoryMeta(categoryId, customC);
+  const result = `Категорію операції ${txId} змінено на ${cat?.label || categoryId}`;
+  return {
+    result,
+    undo: () => {
+      const current = ls<Record<string, string>>("finyk_tx_cats", {});
+      if (prevCategoryId === undefined) {
+        delete current[txId];
+      } else {
+        current[txId] = prevCategoryId;
+      }
+      finykChatWrite("finyk_tx_cats", current);
+    },
+  };
 }
 
 export function findTransaction(
@@ -223,7 +242,7 @@ export function findTransaction(
       : 0.01;
   const query = String(input.query || "").trim();
   if (!query && amount === undefined && !input.date_from && !input.date_to) {
-    return "Потрібен query, amount або date-фільтр для пошуку транзакції.";
+    return "Потрібен query, amount або date-фільтр для пошуку операції.";
   }
   const limit = clampLimit(input.limit, 5, 10);
   const matches = readSearchTransactions()
@@ -237,8 +256,8 @@ export function findTransaction(
       }),
     )
     .slice(0, limit);
-  if (matches.length === 0) return "Транзакцій за цими фільтрами не знайдено.";
-  return `Знайдено ${matches.length} транзакц.: ${formatTxList(matches)}`;
+  if (matches.length === 0) return "Операцій за цими фільтрами не знайдено.";
+  return `Знайдено ${matches.length} операц.: ${formatTxList(matches)}`;
 }
 
 export function batchCategorize(
@@ -246,9 +265,11 @@ export function batchCategorize(
 ): ChatActionResult {
   const input = action.input;
   const pattern = String(input.pattern || "").trim();
-  const categoryId = String(input.category_id || "").trim();
+  const categoryId = normalizeFinykId(input.category_id);
   if (!pattern) return "Для batch_categorize потрібен pattern.";
   if (!categoryId) return "Для batch_categorize потрібен category_id.";
+  if (!finykCategoryExists(categoryId))
+    return unknownCategoryMessage(categoryId);
   const amount =
     input.amount != null && Number.isFinite(Number(input.amount))
       ? Number(input.amount)
@@ -271,14 +292,14 @@ export function batchCategorize(
     )
     .slice(0, limit);
   if (matches.length === 0) {
-    return `Не знайшов транзакцій за pattern "${pattern}".`;
+    return `Не знайшов операцій за pattern "${pattern}".`;
   }
   const preview = formatTxList(matches);
   if (input.dry_run !== false) {
-    return `Dry-run: ${matches.length} транзакц. буде перенесено в ${categoryId}: ${preview}`;
+    return `Dry-run: ${matches.length} операц. буде перенесено в ${categoryId}: ${preview}`;
   }
   const cats = ls<Record<string, string>>("finyk_tx_cats", {});
   for (const tx of matches) cats[tx.id] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
-  return `Категорію ${matches.length} транзакц. змінено на ${categoryId}: ${preview}`;
+  return `Категорію ${matches.length} операц. змінено на ${categoryId}: ${preview}`;
 }

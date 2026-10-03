@@ -6,24 +6,17 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadStringLS } from "@shared/lib/storage/storage";
 import {
-  DASHBOARD_DENSITY_EVENT,
-  DEFAULT_DASHBOARD_DENSITY,
-  STORAGE_KEYS,
-  countRealEntries,
   getActiveModules,
   getActiveNudge,
-  getHideInactiveModules,
+  getModulesWithFirstAction,
   getOnboardingGoals,
   getVibePicks,
   hasSeenCrossModulePreview,
-  isActiveModule,
-  normalizeDashboardDensity,
+  isWithinChecklistWindow,
+  pluralUa,
   recordLastActiveDate,
-  setHideInactiveModules,
   shouldShowReengagement,
-  type DashboardDensity,
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -31,6 +24,8 @@ import { useDashboardFocus } from "../insights/TodayFocusCard";
 import { hasLiveWeeklyDigest } from "../insights/WeeklyDigestCard";
 import { useCoachInsight } from "../insights/useCoachInsight";
 import {
+  countRealEntries,
+  detectFirstActionCompletedPerModule,
   detectFirstRealEntry,
   getFirstRealEntryModule,
 } from "../onboarding/firstRealEntry";
@@ -41,87 +36,51 @@ import {
 } from "../onboarding/vibePicks";
 import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
+import { isLocalOnlyBannerVisible } from "./localOnlyBannerVisibility";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
-import {
-  KeyboardSensor,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
-import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
-import {
-  loadDashboardOrder,
-  localStorageStore,
-  saveDashboardOrder,
-} from "./dashboard/dashboardStore";
-import { type ModuleId } from "./dashboard/moduleConfigs";
-import {
-  applyAdaptiveLift,
-  pickAdaptiveLift,
-  pickStrongestSeverity,
-} from "./dashboard/adaptiveSort";
+import { useHubStorageBump } from "./useHubStorageBump";
+import { localStorageStore } from "./dashboard/dashboardStore";
 import { useHubPref } from "../settings/hubPrefs";
 import { useMondayAutoDigest } from "./dashboard/useMondayAutoDigest";
 import type { User } from "./hub.types";
 
 // ─────────────────────────────────────────────────────────────────────
-// Dashboard density hook
-// ─────────────────────────────────────────────────────────────────────
-
-/**
- * Reactive read of the user's dashboard-density preference.
- *
- * Same-window `localStorage` writes do NOT fire `storage`, so the picker in
- * Settings → Дашборд dispatches a `DASHBOARD_DENSITY_EVENT` we listen to
- * here. Cross-tab writes are still handled via the standard `storage` event.
- */
-export function useDashboardDensity(): DashboardDensity {
-  const [density, setDensity] = useState<DashboardDensity>(() => {
-    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
-    return raw === null
-      ? DEFAULT_DASHBOARD_DENSITY
-      : normalizeDashboardDensity(raw);
-  });
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent<unknown>).detail;
-      setDensity(normalizeDashboardDensity(detail));
-    };
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.DASHBOARD_DENSITY) {
-        setDensity(normalizeDashboardDensity(e.newValue));
-      }
-    };
-    window.addEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-  return density;
-}
-
-// ─────────────────────────────────────────────────────────────────────
 // Ukrainian pluralisation
 // ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Позиційна обгортка над канонічним `pluralUa` з `@sergeant/shared`
+ * (Intl.PluralRules, ті самі CLDR-правила, що й колишня ручна реалізація).
+ * Сигнатуру збережено заради наявних call-site-ів.
+ */
 export function pluralize(
   n: number,
   one: string,
   few: string,
   many: string,
 ): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
-  return many;
+  return pluralUa(n, { one, few, many });
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Coach insight visibility gate (аудит PR-A1)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Чи видно блок з AI-порадою на екрані ЗАРАЗ.
+ *
+ * Дзеркалить умову рендеру `HubInsightsBlock` у `HubDashboard.tsx`
+ * (`s.hasRealEntry && showInsights`) — обидва місця мають лишатись
+ * синхронними, бо саме ця умова вирішує, чи варто взагалі бити запит до
+ * `useCoachInsight` (денна AI-квота Free-плану, ADR-0085).
+ */
+export function shouldFetchCoachInsight(
+  hasRealEntry: boolean,
+  showInsights: boolean,
+  insightsOpen: boolean,
+): boolean {
+  return hasRealEntry && showInsights && insightsOpen;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -129,9 +88,6 @@ export function pluralize(
 // ─────────────────────────────────────────────────────────────────────
 
 export interface HubDashboardState {
-  // Layout
-  density: DashboardDensity;
-
   // Onboarding / FTUX
   hasRealEntry: boolean;
   sessionDays: number;
@@ -151,29 +107,21 @@ export interface HubDashboardState {
   activeNudge: ReturnType<typeof getActiveNudge>;
   dismissNudge: () => void;
 
-  // Module grid
+  // Module rail / piles
   activeModules: readonly string[];
-  hideInactive: boolean;
-  toggleHideInactive: () => void;
-  hasInactive: boolean;
-  editMode: boolean;
-  toggleEditMode: () => void;
-  displayOrder: readonly string[];
-  order: readonly string[];
-  sensors: ReturnType<typeof useSensors>;
-  handleDragStart: (event: { active: { id: string | number } }) => void;
-  handleDragEnd: (event: {
-    active: { id: string | number };
-    over: { id: string | number } | null;
-  }) => void;
-  adaptive: { liftedId: ModuleId | null; reason: string | null };
+  /** Тік сховища — купа «Закрито» перераховується після запису в модулі. */
+  storageBump: number;
 
   // Focus / Insights
   focus: ReturnType<typeof useDashboardFocus>["focus"];
   rest: ReturnType<typeof useDashboardFocus>["rest"];
+  /** Усі активні рекомендації без відфільтрованих відкиданням (див. `useDashboardFocus`). */
+  allRecs: ReturnType<typeof useDashboardFocus>["allRecs"];
   dismiss: ReturnType<typeof useDashboardFocus>["dismiss"];
   openInsightTarget: (module: string, hash?: string) => void;
   coachInsightText: string | null;
+  /** `advice_id` поточної AI-поради (телеметрія `ai_advice_*`, Хвиля 2). */
+  coachAdviceId: string | null;
   coachLoading: boolean;
   coachError: string | null;
   coachRefresh: () => void;
@@ -199,21 +147,66 @@ export interface HubDashboardState {
 export function useHubDashboardState(props: {
   onOpenModule: (module: string) => void;
   user: User | null;
+  /**
+   * `status` з `AuthContext`, прокинутий згори (`HubDashboard.tsx`).
+   * Свідомо проп, а не `useAuthOptional()` тут: два юніт-тести цього модуля
+   * (`*.pluralize`, `*.coachInsightEnabled`) навмисно живуть без DOM, і
+   * імпорт `AuthContext` роняє їх на `window is not defined`. Навіщо статус
+   * потрібен — див. `localOnlyBannerVisibility.ts`.
+   */
+  authStatus?: string | undefined;
+  /**
+   * Чи РОЗГОРНУТИЙ блок «Що зараз важливо» прямо зараз.
+   *
+   * Стан живе в `HubDashboard`, а не тут, бо його джерело —
+   * `CollapsibleSection` усередині `HubInsightsBlock` (localStorage +
+   * `onOpenChange`). Хук лише читає його, щоб не палити денну AI-квоту
+   * Free-плану заради поради під закритим акордеоном (аудит PR-A1).
+   */
+  insightsOpen: boolean;
   onShowAuth: () => void;
 }): HubDashboardState {
-  const { onOpenModule, user, onShowAuth } = props;
+  const { onOpenModule, user, onShowAuth, authStatus, insightsOpen } = props;
 
-  const [order, setOrder] = useState(loadDashboardOrder);
-  const density = useDashboardDensity();
   useMondayAutoDigest();
 
+  // AI-CONTEXT: `bump` тут не декоративний. Докази «юзер уже не новий»
+  // живуть у SQLite warm-caches, які теплішають АСИНХРОННО після
+  // boot-кластерів — на першому (холодному) рендері хаба їх ще нема. Без
+  // ре-читання по `storageUpdated` детекція лишалася б назавжди на
+  // холодному знімку: `detectFirstRealEntry` не флипнувся б, FTUX-герой
+  // не зник, а `countRealEntries` показав би 0 записів активному юзеру.
+  const storageBump = useHubStorageBump();
+  void storageBump;
   const hasRealEntry = detectFirstRealEntry();
-  const celebration = useFirstEntryCelebration(hasRealEntry);
-  const [sessionDays, setSessionDays] = useState(-1);
-  useEffect(() => {
-    setSessionDays(recordSessionDay() || getSessionDays());
-  }, []);
-  const entryCount = useMemo(() => countRealEntries(localStorageStore), []);
+  // Fire `first_action_completed { module }` once per module that just got its
+  // first non-demo entry — must run alongside detectFirstRealEntry on the render
+  // path, else the event never emits and the activation funnel stays at 0%.
+  detectFirstActionCompletedPerModule();
+  // Hoisted above its original call-site (near `insightsDefaultOpen` below)
+  // so `useOnboardingState` can read it too — see `localOnlyBannerVisible`.
+  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  // Предикат винесено в `localOnlyBannerVisibility.ts` — там і повне
+  // пояснення, чому він мусить збігатися з гейтом самого банера, і чому
+  // `authStatus` обовʼязковий (виправлення ревʼю #1128). Потрібен тут
+  // (PR-H4, design-audit 2026-09-13), щоб soft-auth hero відступав, поки
+  // банер уже ставить те саме питання «увійди» — див.
+  // `computeSoftAuthEligible` в `useOnboardingState.ts`.
+  const localOnlyBannerVisible = isLocalOnlyBannerVisible({
+    inFtuxSession,
+    hasUser: Boolean(user),
+    authStatus,
+  });
+  const entryCount = useMemo(
+    () => countRealEntries(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- storage-write tick
+    [storageBump],
+  );
+  // LOG-8: `entryCount` doubles as the celebration's "is this genuinely the
+  // FIRST entry, or a returning device whose 60-day-old account just synced
+  // down" guard — see the doc-comment on `useFirstEntryCelebration`.
+  const celebration = useFirstEntryCelebration(hasRealEntry, entryCount);
+  const [sessionDays] = useState(() => recordSessionDay() || getSessionDays());
 
   const [reengagement, setReengagement] = useState(() =>
     shouldShowReengagement(localStorageStore),
@@ -230,6 +223,7 @@ export function useHubDashboardState(props: {
     todayFocusAvailable: focusProbe.focus !== null,
     reengagementEligible: reengagement.show,
     onShowAuth,
+    localOnlyBannerVisible,
   });
 
   const [crossModulePreviewSource, setCrossModulePreviewSource] =
@@ -248,36 +242,12 @@ export function useHubDashboardState(props: {
     if (nudgeDismissed || sessionDays < 2) return null;
     return getActiveNudge(localStorageStore, sessionDays, {
       picks: getVibePicks(localStorageStore),
+      modulesWithEntries: new Set(getModulesWithFirstAction(localStorageStore)),
     });
   }, [sessionDays, nudgeDismissed]);
 
   const activeModules = useMemo(() => getActiveModules(localStorageStore), []);
-  const [hideInactive, setHideInactive] = useState(() =>
-    getHideInactiveModules(localStorageStore),
-  );
-  const toggleHideInactive = useCallback(() => {
-    setHideInactive((prev) => {
-      const next = !prev;
-      setHideInactiveModules(localStorageStore, next);
-      return next;
-    });
-  }, []);
-  const hasInactive = useMemo(
-    () => order.some((id) => !isActiveModule(activeModules, id)),
-    [order, activeModules],
-  );
-
-  const [editMode, setEditMode] = useState(false);
-  const toggleEditMode = useCallback(() => setEditMode((p) => !p), []);
-  const visibleOrder = useMemo(
-    () =>
-      hideInactive
-        ? order.filter((id) => isActiveModule(activeModules, id))
-        : order,
-    [order, activeModules, hideInactive],
-  );
-
-  const { focus, rest, dismiss } = focusProbe;
+  const { focus, rest, allRecs, dismiss } = focusProbe;
 
   const openInsightTarget = useCallback(
     (module: string, hash?: string) => {
@@ -290,135 +260,39 @@ export function useHubDashboardState(props: {
     [onOpenModule],
   );
 
+  // Той самий прапор, який `HubDashboard.tsx` читає для видимості
+  // `HubInsightsBlock` (`showInsights`) — читаємо тут-таки, щоб не робити
+  // мережевий запит/не палити AI-квоту заради поради, якої ніде не
+  // показують (аудит PR-A1, канон hub-coach §6.2).
+  const [showInsights] = useHubPref<boolean>("showInsights", true);
+  // AI-DANGER: `insightsOpen` — НЕ дублікат двох прапорців вище, і
+  // прибрати його не можна.
+  //
+  // Два прапорці кажуть «блок змонтований», а він монтується ЗГОРНУТИМ:
+  // `HubDashboard` передає `insightsDefaultOpen={false}` навмисно
+  // (рішення «Тихо» — увесь розумний шум живе під згорнутим pill).
+  // Тобто без цього терма порада генерувалась у КОЖНОГО, хто просто
+  // відкрив хаб, і Free-користувач щодня платив частиною денної квоти
+  // (5 запитів) за текст, якого на екрані немає — залишок аудиту PR-A1.
+  //
+  // Згорнутий підпис від цього не біднішає: він поради не показує
+  // (`HubInsightsBlock.tsx` — третя гілка `collapsedSubtitle` віддає
+  // `rest[0]?.title`), тож зникає лише блимання «Готую пораду Сержанта…».
+  const coachInsightEnabled = shouldFetchCoachInsight(
+    hasRealEntry,
+    showInsights,
+    insightsOpen,
+  );
+
   const {
     insight: coachInsightText,
+    // `advice_id` поточної AI-поради — лише прокидається в UI для телеметрії
+    // `ai_advice_*`; жодне продуктове рішення від нього не залежить.
+    adviceId: coachAdviceId,
     loading: coachLoading,
     error: coachError,
     refresh: coachRefresh,
-  } = useCoachInsight();
-
-  const modulesWithSignal = useMemo(() => {
-    const all = focus ? [focus, ...rest] : rest;
-    const set = new Set<string>();
-    for (const r of all) {
-      if (r.module && r.module !== "hub") set.add(r.module);
-    }
-    return set;
-  }, [focus, rest]);
-
-  const [adaptivePref] = useHubPref<boolean>("adaptiveBento", true);
-
-  const severityByModule = useMemo(() => {
-    const all = focus ? [focus, ...rest] : rest;
-    const map: Partial<Record<ModuleId, "danger" | "warning" | undefined>> = {};
-    for (const r of all) {
-      if (!r.module || r.module === "hub") continue;
-      const id = r.module as ModuleId;
-      const sev =
-        r.severity === "danger" || r.severity === "warning"
-          ? r.severity
-          : undefined;
-      map[id] = pickStrongestSeverity([map[id], sev]);
-    }
-    return map;
-  }, [focus, rest]);
-
-  const [adaptiveNow, setAdaptiveNow] = useState(() => new Date());
-  useEffect(() => {
-    // Тікер потрібен лише коли adaptive-rebuild активний; інакше
-    // `pickAdaptiveLift` нижче одразу повертає `{ liftedId: null }`, тож
-    // щохвилинний re-render усього HubDashboard був би марним battery/CPU-cost-ом
-    // (page-audit-02 F8).
-    if (!adaptivePref || editMode) return;
-    // Refresh immediately on (re-)enable so the lift calc isn't stale for up
-    // to a minute until the first tick (cubic review on this PR).
-    setAdaptiveNow(new Date());
-    const id = setInterval(() => setAdaptiveNow(new Date()), 60_000);
-    return () => clearInterval(id);
-  }, [adaptivePref, editMode]);
-
-  const activeSet = useMemo(
-    () => new Set<string>(activeModules),
-    [activeModules],
-  );
-
-  const adaptive = useMemo(() => {
-    if (!adaptivePref || editMode) {
-      return {
-        liftedId: null as ModuleId | null,
-        reason: null as string | null,
-      };
-    }
-    const result = pickAdaptiveLift({
-      order: visibleOrder as ModuleId[],
-      modulesWithSignal,
-      severityByModule,
-      activeModules: activeSet,
-      now: adaptiveNow,
-    });
-    return { liftedId: result.liftedId, reason: result.reason };
-  }, [
-    adaptivePref,
-    editMode,
-    visibleOrder,
-    modulesWithSignal,
-    severityByModule,
-    activeSet,
-    adaptiveNow,
-  ]);
-
-  const displayOrder = useMemo(
-    () => applyAdaptiveLift(visibleOrder as ModuleId[], adaptive.liftedId),
-    [visibleOrder, adaptive.liftedId],
-  );
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 250, tolerance: 5 },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-  const { announce } = useAnnounce();
-
-  const handleDragStart = useCallback(
-    (event: { active: { id: string | number } }) => {
-      const activeId = String(event.active.id) as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
-      announce(
-        `Підняли ${label}. Стрілками обери позицію, Enter — зафіксувати.`,
-      );
-    },
-    [announce],
-  );
-
-  const handleDragEnd = useCallback(
-    (event: {
-      active: { id: string | number };
-      over: { id: string | number } | null;
-    }) => {
-      const { active, over } = event;
-      if (!active) return;
-      const activeId = String(active.id) as ModuleId;
-      const label = SHARED_DASHBOARD_MODULE_LABELS[activeId] ?? activeId;
-      if (over && active.id !== over.id) {
-        const overId = String(over.id) as ModuleId;
-        const oldIndex = order.indexOf(activeId);
-        const newIndex = order.indexOf(overId);
-        const next = arrayMove(order, oldIndex, newIndex);
-        setOrder(next);
-        saveDashboardOrder(next);
-        announce(
-          `${label} пересунуто на позицію ${newIndex + 1} з ${next.length}.`,
-        );
-      } else {
-        announce(`${label} залишилось на тому ж місці.`);
-      }
-    },
-    [announce, order],
-  );
+  } = useCoachInsight({ enabled: coachInsightEnabled });
 
   const [digestExpanded, setDigestExpanded] = useState(false);
   const digestFresh = hasLiveWeeklyDigest();
@@ -431,21 +305,30 @@ export function useHubDashboardState(props: {
   const showDigestFooter = true;
 
   const primaryModule = activeModules[0] as
-    | "finyk"
-    | "fizruk"
-    | "routine"
-    | "nutrition"
-    | undefined;
+    "finyk" | "fizruk" | "routine" | "nutrition" | undefined;
+  // AI-CONTEXT: the FTUX window is anchored to the ACCOUNT, not to this
+  // device. `sessionDays` comes from `recordSessionDay()` in
+  // localStorage, so a reinstall / cleared storage / second browser
+  // restarts it at 1 and resurrected this checklist for long-standing
+  // users (their data syncs back down, so `hasRealEntry` flips true
+  // again and every other term of the gate passes). Better Auth's
+  // server-stamped `user.createdAt` cannot be reset that way; the device
+  // counter is kept only as the pre-auth fallback, where it is also the
+  // correct signal because there is no account yet.
   const showChecklist =
     primaryModule &&
     hasRealEntry &&
     !onboardingState.showFirstAction &&
-    sessionDays <= 7;
+    isWithinChecklistWindow({
+      accountCreatedAt: user?.createdAt ?? null,
+      sessionDays,
+    });
 
   // Smart-expand: open insights on first render when the user has at least
   // one actionable rec, is past FTUX, and is on a viewport wide enough to
-  // benefit from seeing expanded content (>= 390px).
-  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  // benefit from seeing expanded content (>= 390px). `inFtuxSession` is
+  // computed above (near `hasRealEntry`) so `localOnlyBannerVisible` can
+  // read it too.
   const hasActionableInsight = rest.length > 0;
   const insightsDefaultOpen =
     sessionDays >= 7 ||
@@ -467,7 +350,6 @@ export function useHubDashboardState(props: {
   const dismissNudge = useCallback(() => setNudgeDismissed(true), []);
 
   return {
-    density,
     hasRealEntry,
     sessionDays,
     entryCount,
@@ -480,22 +362,14 @@ export function useHubDashboardState(props: {
     activeNudge,
     dismissNudge,
     activeModules,
-    hideInactive,
-    toggleHideInactive,
-    hasInactive,
-    editMode,
-    toggleEditMode,
-    displayOrder,
-    order,
-    sensors,
-    handleDragStart,
-    handleDragEnd,
-    adaptive,
+    storageBump,
     focus,
     rest,
+    allRecs,
     dismiss,
     openInsightTarget,
     coachInsightText,
+    coachAdviceId,
     coachLoading,
     coachError,
     coachRefresh,

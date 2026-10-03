@@ -89,6 +89,16 @@ describe("routine-domain/streaks", () => {
     expect(maxStreakAllTime(h, completions)).toBe(5);
   });
 
+  it("maxStreakAllTime bridges unscheduled days between weekly completions", () => {
+    const h: Habit = {
+      ...dailyHabit("weekly"),
+      recurrence: "weekly",
+      weekdays: [0, 4], // Monday + Friday.
+    };
+
+    expect(maxStreakAllTime(h, ["2026-01-05", "2026-01-09"])).toBe(2);
+  });
+
   it("streakForHabit terminates for monthly habits with long history", () => {
     // Раніше магічний ліміт 500 ітерацій обривав multi-year monthly-стрік.
     const h: Habit = {
@@ -164,5 +174,83 @@ describe("routine-domain/streaks", () => {
       completed: 2,
       rate: 2 / 3,
     });
+  });
+
+  it("habitCompletionRate returns 0-rate when the habit is never scheduled", () => {
+    const r = habitCompletionRate(
+      { ...dailyHabit("paused"), paused: true },
+      ["2026-01-08"],
+      "2026-01-08",
+      "2026-01-10",
+    );
+
+    expect(r).toEqual({
+      scheduled: 0,
+      completed: 0,
+      rate: 0,
+    });
+  });
+
+  it("completionRateForRange excludes once habits unless explicitly requested", () => {
+    const once: Habit = {
+      ...dailyHabit("once"),
+      recurrence: "once",
+      startDate: "2026-01-01",
+    };
+    expect(
+      completionRateForRange(
+        [once],
+        { once: ["2026-01-01"] },
+        "2026-01-01",
+        "2026-01-01",
+      ),
+    ).toEqual({ completed: 0, scheduled: 0, rate: 0 });
+    expect(
+      completionRateForRange(
+        [once],
+        { once: ["2026-01-01"] },
+        "2026-01-01",
+        "2026-01-01",
+        { includeOnce: true },
+      ),
+    ).toEqual({ completed: 1, scheduled: 1, rate: 1 });
+  });
+
+  it("removes skipped days from the denominator and respects pausedFrom", () => {
+    const h = dailyHabit("h");
+    expect(
+      completionRateForRange(
+        [h],
+        { h: ["2026-01-01"] },
+        "2026-01-01",
+        "2026-01-03",
+        { skips: { h: { "2026-01-02": { reason: "sick", at: "" } } } },
+      ),
+    ).toEqual({ completed: 1, scheduled: 2, rate: 0.5 });
+    expect(
+      completionRateForRange(
+        [h],
+        { h: ["2026-01-01"] },
+        "2025-12-31",
+        "2026-01-02",
+        { pausedFrom: "2026-01-01" },
+      ).scheduled,
+    ).toBe(2);
+  });
+
+  it("counts flexible habits against their weekly target", () => {
+    const h: Habit = {
+      ...dailyHabit("flex"),
+      recurrence: "flexible",
+      weeklyTargetHistory: [{ from: "2026-01-01", target: 2 }],
+    };
+    expect(
+      completionRateForRange(
+        [h],
+        { flex: ["2026-01-05", "2026-01-07"] },
+        "2026-01-05",
+        "2026-01-11",
+      ),
+    ).toEqual({ completed: 2, scheduled: 2, rate: 1 });
   });
 });

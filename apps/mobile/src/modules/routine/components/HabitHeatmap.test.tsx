@@ -23,12 +23,23 @@ import { HabitHeatmap } from "./HabitHeatmap";
 // Fixed "today" so date-key assertions are stable. 2025-01-15 is a Wed.
 const TODAY = new Date(2025, 0, 15, 12, 0, 0, 0);
 
+/**
+ * Очікувані заливки. Значення навмисно вписані літералами, а не взяті з
+ * `chartColors.routine`: інакше тест звіряв би джерело саме з собою і
+ * пропустив би перестановку відтінків між рівнями. Ціна такого пінa —
+ * ручна синхронізація, тому поруч стоїть точний токен-джерело.
+ *
+ * Три рожеві рівні тут були прострочені (`#ffd4cb` / `#ff8c78` /
+ * `#f97066` — шкала до її перетюнінгу). Компонент читає токени, тож
+ * помилявся саме фікстур; побачити це CI не міг, бо джоба `check`
+ * вмирала раніше, на гейті каденсу свіжості.
+ */
 const INTENSITY_FILL_HEX = {
-  future: "#f5ead8",
-  empty: "#faf3e8",
-  l1: "#ffd4cb",
-  l2: "#ff8c78",
-  l3: "#f97066",
+  future: "#f5ead8", // brandColors.cream[300]
+  empty: "#faf3e8", // brandColors.cream[200]
+  l1: "#fed3db", // brandColors.rose[200]
+  l2: "#f68da4", // brandColors.rose[400]
+  l3: "#eb7691", // brandColors.rose[500]
 } as const;
 
 /**

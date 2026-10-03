@@ -92,7 +92,11 @@ export function buildReminderSchedule(
         if (i === 0 && fireAtMs < baseMs) continue;
         out.push({
           habitId: h.id,
-          title: `${h.emoji || "✓"} ${h.name}`,
+          // Гліф звички більше не префіксує заголовок: з 2026-08-03 у полі
+          // лежить icon-slug (`glyphs.ts`), а не emoji, і `"droplet Пити
+          // воду"` — не той пуш, який хочеться отримати. Іконку малює UI,
+          // нотифікація несе саму назву.
+          title: h.name,
           dateKey: dk,
           time: hm,
           fireAtMs,

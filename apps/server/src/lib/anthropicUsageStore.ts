@@ -12,10 +12,13 @@
  * Storage shape (див. міграцію 059):
  *   PK   `(subject_key, usage_day, bucket)`
  *   bucket = `anthropic:<model>`
- *   subject_key = `provider:anthropic` (provider-level aggregate,
- *               не per-user — для PR-12 cost-tracking
- *               нам потрібен global usage view, per-user-ліміти
- *               вже окремо обчислюються у `aiQuota.ts`).
+ *   subject_key = `provider:anthropic` (provider-level aggregate) — пишеться
+ *               ЗАВЖДИ. Коли caller передає `userId`, паралельно пишемо
+ *               другий рядок `u:<userId>` у тому ж bucket — per-user token/USD
+ *               ledger для рішень про fair-use cap. Він окремий від
+ *               quota-лічильника (`aiQuota.ts` тримає `u:<userId>` у
+ *               bucket=`default`/`tool:*`), тож PK не конфліктують. Глобальний
+ *               aggregate лишається повним незалежно від наявності userId.
  *   request_count    += 1
  *   input_tokens     += response.usage.input_tokens
  *   output_tokens    += response.usage.output_tokens
@@ -32,7 +35,8 @@
  * по Kyiv-добі.
  */
 
-import pool from "../db.js";
+import { toLocalISODate } from "@sergeant/shared";
+import { withSubjectContext } from "../db.js";
 import { logger } from "../obs/logger.js";
 import {
   estimateAnthropicCostUsd,
@@ -42,17 +46,15 @@ import {
 /** Стале значення subject_key для provider-level Anthropic aggregate. */
 export const ANTHROPIC_PROVIDER_SUBJECT = "provider:anthropic";
 
+/**
+ * Префікс per-user subject_key — дзеркалить `aiQuota.ts` `subjectFor()`
+ * (`u:<userId>`), щоб per-user cost-рядки й quota-рядки ділили один формат
+ * ключа (лише різні bucket-и).
+ */
+const PER_USER_SUBJECT_PREFIX = "u:";
+
 /** Префікс bucket-у — узгоджений із CHECK-constraint-ом у міграції 059. */
 const ANTHROPIC_BUCKET_PREFIX = "anthropic:";
-
-function todayKyiv(): string {
-  // sv-SE locale → yyyy-mm-dd; той самий патерн, що у `transcribe/usdCap.ts`
-  // (єдиний централізований Kyiv-helper-а у репо ще немає — PR-12 не
-  // розширює scope).
-  return new Date().toLocaleDateString("sv-SE", {
-    timeZone: "Europe/Kyiv",
-  });
-}
 
 function toNonNegativeInt(value: unknown): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
@@ -72,13 +74,26 @@ function bucketFor(model: string): string {
  * Anthropic-виклик уже успішно повернув response до моменту виклику цього
  * helper-а.
  *
- * `await`-итись цей helper не зобов'язаний (fire-and-forget). Але ми все
+ * `await`-итись цей helper не зобовʼязаний (fire-and-forget). Але ми все
  * одно повертаємо `Promise<void>`, щоб caller-и, які мокають у тестах
  * (інтеграційні), могли дочекатися завершення INSERT-у.
  */
 export async function recordAnthropicUsageToDb(
   model: string,
   usage: AnthropicUsageTokens | null | undefined,
+  userId?: string,
+  /**
+   * Тег кроку (`chat`, `chat-stream`, `internal/weekly-digest`…). Без нього
+   * рядки різних кроків зливаються, щойно вони поділять модель — і питання
+   * «скільки коштує вибір інструмента проти відповіді» лишається без відповіді.
+   */
+  endpoint?: string,
+  /**
+   * Реально списана сума, якщо шлюз її повернув (OpenRouter кладе її у
+   * `usage.cost`). Пишеться окремо від `est_cost_usd`, щоб виміряне не
+   * змішувалося з порахованим за локальною прайс-таблицею.
+   */
+  actualCostUsd?: number,
 ): Promise<void> {
   if (!usage) return;
   if (!model || model === "unknown") return;
@@ -95,38 +110,74 @@ export async function recordAnthropicUsageToDb(
   // у DEFAULT 0.
   const estCost = estimateAnthropicCostUsd(model, usage) ?? 0;
 
-  const day = todayKyiv();
+  const day = toLocalISODate();
   const bucket = bucketFor(model);
+  // input_tokens-колонка історично несе суму input+cache (writer-семантика
+  // PR-12); зберігаємо її для обох рядків.
+  const inputCol = inTok + crTok + cwTok;
+
+  // Завжди — provider-aggregate; за наявності userId — ще per-user рядок у
+  // тому ж bucket. Кожен subject пишемо ОКРЕМИМ статичним параметризованим
+  // UPSERT-ом (а не динамічним multi-row VALUES) — так SQL лишається статичним
+  // рядком-літералом, що задовольняє M11 (no dynamic-template `pool.query`).
+  const subjects =
+    userId && userId.trim()
+      ? [ANTHROPIC_PROVIDER_SUBJECT, `${PER_USER_SUBJECT_PREFIX}${userId}`]
+      : [ANTHROPIC_PROVIDER_SUBJECT];
 
   try {
-    await pool.query(
-      `INSERT INTO ai_usage_daily (
-         subject_key,
-         usage_day,
-         bucket,
-         request_count,
-         input_tokens,
-         output_tokens,
-         total_tokens,
-         est_cost_usd
-       )
-       VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7)
-       ON CONFLICT (subject_key, usage_day, bucket) DO UPDATE SET
-         request_count = ai_usage_daily.request_count + 1,
-         input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
-         output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
-         total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens,
-         est_cost_usd  = ai_usage_daily.est_cost_usd  + EXCLUDED.est_cost_usd`,
-      [
-        ANTHROPIC_PROVIDER_SUBJECT,
-        day,
-        bucket,
-        inTok + crTok + cwTok,
-        outTok,
-        totalTok,
-        estCost,
-      ],
-    );
+    for (const subject of subjects) {
+      await withSubjectContext(subject, (db) =>
+        db.query(
+          `INSERT INTO ai_usage_daily (
+             subject_key,
+             usage_day,
+             bucket,
+             request_count,
+             input_tokens,
+             output_tokens,
+             total_tokens,
+             est_cost_usd,
+             endpoint,
+             cache_read_tokens,
+             cache_creation_tokens,
+             actual_cost_usd
+           )
+           VALUES ($1, $2::date, $3, 1, $4, $5, $6, $7, $8, $9, $10, $11)
+           ON CONFLICT (subject_key, usage_day, bucket, endpoint) DO UPDATE SET
+             request_count = ai_usage_daily.request_count + 1,
+             input_tokens  = ai_usage_daily.input_tokens  + EXCLUDED.input_tokens,
+             output_tokens = ai_usage_daily.output_tokens + EXCLUDED.output_tokens,
+             total_tokens  = ai_usage_daily.total_tokens  + EXCLUDED.total_tokens,
+             est_cost_usd  = ai_usage_daily.est_cost_usd  + EXCLUDED.est_cost_usd,
+             cache_read_tokens =
+               COALESCE(ai_usage_daily.cache_read_tokens, 0)
+               + COALESCE(EXCLUDED.cache_read_tokens, 0),
+             cache_creation_tokens =
+               COALESCE(ai_usage_daily.cache_creation_tokens, 0)
+               + COALESCE(EXCLUDED.cache_creation_tokens, 0),
+             actual_cost_usd =
+               COALESCE(ai_usage_daily.actual_cost_usd, 0)
+               + COALESCE(EXCLUDED.actual_cost_usd, 0)`,
+          [
+            subject,
+            day,
+            bucket,
+            inputCol,
+            outTok,
+            totalTok,
+            estCost,
+            // Sentinel-канон 'legacy' (не 'unknown') — узгоджено з backfill-ом
+            // у міграціях 104/106, щоб `GROUP BY endpoint` в /internal/ai-usage
+            // не розділяв один логічний "без ендпоінта" кейс на два рядки.
+            endpoint ?? "legacy",
+            crTok,
+            cwTok,
+            actualCostUsd ?? null,
+          ],
+        ),
+      );
+    }
   } catch (err) {
     logger.warn({
       msg: "anthropic_usage_ledger_failed",
@@ -140,7 +191,7 @@ export async function recordAnthropicUsageToDb(
 
 /** Експорти для тестів (без зміни public surface). */
 export const __testing = {
-  todayKyiv,
+  todayKyiv: toLocalISODate,
   bucketFor,
   ANTHROPIC_BUCKET_PREFIX,
 };

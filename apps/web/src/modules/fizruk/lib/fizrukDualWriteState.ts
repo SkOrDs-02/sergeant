@@ -2,7 +2,7 @@
  * Snapshot extraction + cache peek helpers for the Fizruk dual-write
  * pipeline.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * The hooks (`useWorkouts`, `useExerciseCatalog`, `useMeasurements`)
  * and the residual-import boot helper share these helpers so the
  * dual-write payloads are computed in exactly one place.
@@ -25,21 +25,24 @@ import type {
   FizrukData,
 } from "@sergeant/fizruk-domain";
 
-import { isFizrukDualWriteRegistered } from "./dualWrite/index.js";
+import { isFizrukDualWriteRegistered } from "./sqliteWriter/index.js";
 import {
+  type FizrukCustomActivitySnapshot,
   type FizrukCustomExerciseSnapshot,
   type FizrukDailyLogSnapshot,
   type FizrukDualWriteState,
+  type FizrukInjurySnapshot,
   type FizrukItemSnapshot,
   type FizrukMeasurementSnapshot,
   type FizrukMonthlyPlanSnapshot,
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "./dualWrite/diff/index.js";
+} from "./sqliteWriter/diff/index.js";
 import { getCachedFizrukSqliteState } from "./sqliteReader.js";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
+type ActivityDef = FizrukData.ActivityDef;
 
 /**
  * Stage 12 — minimal hook-side shapes the extractors accept. They are
@@ -77,6 +80,14 @@ export interface FizrukWorkoutTemplateLike {
   lastUsedAt?: string | null;
 }
 
+export interface FizrukInjuryLike {
+  id?: string | null;
+  site?: string | null;
+  startedAt?: string | null;
+  clearedAt?: string | null;
+  note?: string | null;
+}
+
 export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   workouts: [],
   customExercises: [],
@@ -84,6 +95,8 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   dailyLog: [],
   monthlyPlan: null,
   workoutTemplates: [],
+  injuries: [],
+  customActivities: [],
 };
 
 /**
@@ -103,6 +116,10 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
       monthlyPlan: extractMonthlyPlanSnapshot(cache.monthlyPlan ?? null),
       workoutTemplates: extractWorkoutTemplateSnapshots(
         cache.workoutTemplates ?? [],
+      ),
+      injuries: extractInjurySnapshots(cache.injuries ?? []),
+      customActivities: extractCustomActivitySnapshots(
+        cache.customActivities ?? [],
       ),
     };
   } catch {
@@ -134,6 +151,17 @@ export function extractCustomExerciseSnapshots(
   for (const e of customExercises) {
     if (!e || typeof e !== "object" || !e.id) continue;
     out.push({ ...e, id: String(e.id) });
+  }
+  return out;
+}
+
+export function extractCustomActivitySnapshots(
+  customActivities: readonly ActivityDef[],
+): FizrukCustomActivitySnapshot[] {
+  const out: FizrukCustomActivitySnapshot[] = [];
+  for (const a of customActivities) {
+    if (!a || typeof a !== "object" || !a.id) continue;
+    out.push({ ...a, id: String(a.id) });
   }
   return out;
 }
@@ -285,6 +313,11 @@ function toWorkoutSnapshot(workout: Workout): FizrukWorkoutSnapshot {
     wellbeing: workout.wellbeing
       ? toWellbeingSnapshot(workout.wellbeing)
       : null,
+    kcalBurned:
+      typeof workout.kcalBurned === "number" &&
+      Number.isFinite(workout.kcalBurned)
+        ? workout.kcalBurned
+        : null,
   };
 }
 
@@ -300,6 +333,7 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     sets?: FizrukSetSnapshot[];
     durationSec?: number;
     distanceM?: number;
+    chosenVariant?: string;
   } = {
     id: String(item.id),
     exerciseId: String(item.exerciseId ?? ""),
@@ -314,27 +348,41 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     type: String(item.type ?? "strength"),
   };
   if (Array.isArray(item.sets)) {
-    out.sets = item.sets.map(
-      (s): FizrukSetSnapshot => ({
-        weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
-        reps: typeof s.reps === "number" ? s.reps : 0,
-        ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
-      }),
-    );
+    out.sets = item.sets.map((s): FizrukSetSnapshot => ({
+      weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
+      reps: typeof s.reps === "number" ? s.reps : 0,
+      ...(typeof s["rpe"] === "number" ? { rpe: s["rpe"] } : {}),
+    }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
   if (typeof item.distanceM === "number") out.distanceM = item.distanceM;
+  // Той самий білий список, що й у `toWellbeingSnapshot`: без цього рядка
+  // вибір варіанта не переживе перезавантаження, а лічильник трьох
+  // полегшень поспіль ніколи не спрацює.
+  if (item.chosenVariant !== undefined) out.chosenVariant = item.chosenVariant;
   return out as FizrukItemSnapshot;
 }
 
 function toGroupSnapshot(group: WorkoutGroup): {
   id: string;
   itemIds: string[];
+  type?: "circuit" | "superset";
+  restSec?: number;
 } {
-  return {
+  const out: {
+    id: string;
+    itemIds: string[];
+    type?: "circuit" | "superset";
+    restSec?: number;
+  } = {
     id: String(group.id),
     itemIds: Array.isArray(group.itemIds) ? group.itemIds.map(String) : [],
   };
+  if (group.type === "circuit" || group.type === "superset") {
+    out.type = group.type;
+  }
+  if (typeof group.restSec === "number") out.restSec = group.restSec;
+  return out;
 }
 
 function toChecklistSnapshot(item: ChecklistItem): {
@@ -349,12 +397,52 @@ function toChecklistSnapshot(item: ChecklistItem): {
   };
 }
 
+/**
+ * AI-DANGER: це БІЛИЙ СПИСОК, а не копія обʼєкта. `WorkoutWellbeing` має
+ * індексну сигнатуру, тож нове поле типізується без правок ТУТ — і мовчки
+ * гине по дорозі в SQLite: типи зелені, тести зелені, зникає лише продукт.
+ * Рівно так уже губились `energy` / `mood` (див. `AI-DANGER` у
+ * `sqliteReader.ts`). Додав поле у `WorkoutWellbeing` — додай його і сюди.
+ */
 function toWellbeingSnapshot(w: WorkoutWellbeing): {
   energy?: number | null;
   mood?: number | null;
+  sleep?: number | null;
+  soreness?: number | null;
 } {
-  const out: { energy?: number | null; mood?: number | null } = {};
+  const out: {
+    energy?: number | null;
+    mood?: number | null;
+    sleep?: number | null;
+    soreness?: number | null;
+  } = {};
   if (w.energy !== undefined) out.energy = w.energy;
   if (w.mood !== undefined) out.mood = w.mood;
+  if (w.sleep !== undefined) out.sleep = w.sleep;
+  if (w.soreness !== undefined) out.soreness = w.soreness;
+  return out;
+}
+
+/**
+ * Injury marks — the "не можна" model (ADR-0083).
+ *
+ * `clearedAt` is normalized to `null` (never `undefined`): the diff compares
+ * it with `!==`, and `undefined` vs `null` would emit a phantom op on every
+ * write cycle.
+ */
+export function extractInjurySnapshots(
+  injuries: readonly FizrukInjuryLike[],
+): FizrukInjurySnapshot[] {
+  const out: FizrukInjurySnapshot[] = [];
+  for (const i of injuries) {
+    if (!i || typeof i !== "object" || !i.id || !i.site) continue;
+    out.push({
+      id: i.id,
+      site: i.site,
+      startedAt: i.startedAt ?? "",
+      clearedAt: i.clearedAt ?? null,
+      note: i.note ?? "",
+    });
+  }
   return out;
 }

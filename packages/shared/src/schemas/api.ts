@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+import { DASHBOARD_MODULE_IDS } from "../lib/dashboard";
+import { SEARCH_QUERY_MAX_LEN } from "./bounds";
+
 /**
  * Централізовані zod-схеми для AI/публічних endpoint-ів.
  * Обрізаємо довгі поля на сервері, щоб не платити Anthropic за
@@ -38,10 +41,129 @@ export const MeResponseSchema = z.object({ user: UserSchema });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 
 // ────────────────────── Data rights / /api/me/* ──────────────────────
+/**
+ * Межі мішка `hubPrefs`, спільні для відповіді й патча.
+ *
+ * Мішок навмисно ВІДКРИТИЙ — `hubPrefs.schema.ts` на вебі прямо каже, що
+ * власники фіч кладуть туди прапорці «without going through a central
+ * registry», і закритий перелік зняв би саме цю властивість. Але те, що
+ * годиться для localStorage, не годиться для колонки в чужій БД: відкритий
+ * `z.record(z.string(), z.unknown())` на серверному ендпоінті означав би,
+ * що будь-який клієнт із валідною сесією пише в `user_preferences`
+ * довільний JSON довільного розміру.
+ *
+ * Тому межі такі: значення — лише СКАЛЯРИ (той самий словник, що описує
+ * локальна схема: «booleans, layout strings, accent IDs»), без обʼєктів і
+ * масивів; ключ — до 64 символів; ключів — до 32. Фактичних ключів на
+ * 2026-09-14 пʼять, тож стеля з семикратним запасом і не тисне на
+ * продуктову роботу.
+ *
+ * `.catchall`/`.strict` тут не застосовні — це `z.record`, і саме він
+ * зберігає відкритість.
+ */
+const HUB_PREFS_MAX_KEYS = 32;
+const HubPrefsBagSchema = z
+  .record(
+    z.string().min(1).max(64),
+    z.union([z.boolean(), z.string().max(256), z.number().finite()]),
+  )
+  .refine((bag) => Object.keys(bag).length <= HUB_PREFS_MAX_KEYS, {
+    message: `hubPrefs: не більше ${HUB_PREFS_MAX_KEYS} ключів`,
+  });
+
+/**
+ * Стеля нагадувань на київську добу (міграція 148). Спільна для сервера,
+ * який її застосовує, і клієнта, який малює перемикач: розбіжність тут
+ * означала б, що UI пропонує значення, яке CHECK у БД відкине.
+ */
+export const PUSH_DAILY_CAP_DEFAULT = 2;
+export const PUSH_DAILY_CAP_MAX = 4;
+
 export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
   pushNotifications: z.boolean(),
+  /**
+   * Opt-in на проактивні повідомлення Сержанта (денний нудж від серверного
+   * шедулера). Свідомо окремо від `pushNotifications`: той прапорець — згода
+   * на пуші взагалі, цей — на конкретний канал. Дефолт `false` для всіх,
+   * включно з новими акаунтами, тож деплой нікого не будить.
+   *
+   * `.default(false)`, а не просто `z.boolean()`: веб їде на Vercel, а сервер
+   * на Coolify — окремими деплоями. У вікні між ними новий клієнт розмовляє зі
+   * старим сервером, який поля ще не віддає; без дефолту `getPreferences()`
+   * кидав би ZodError і клав усю сторінку налаштувань заради тумблера, який
+   * усе одно вимкнений. Дефолт збігається з `DEFAULT` колонки в міграції 100,
+   * тож «поля нема» і «поле false» означають рівно те саме.
+   */
+  sergeantNudges: z.boolean().default(false),
+  /**
+   * Скільки нагадувань на добу може надіслати сервер (спека
+   * `reward-loop-and-reminders.md`). Приводи понад стелю не губляться, а
+   * згортаються в одне сповіщення; `0` вимикає нагадування зовсім.
+   *
+   * `.default(...)` з тієї ж rolling-deploy причини, що й сусіди: новий
+   * клієнт може розмовляти зі старим сервером, який поля ще не віддає.
+   * Дефолт збігається з `DEFAULT` колонки, тож «поля нема» означає рівно
+   * те, що сервер і так застосує.
+   */
+  pushDailyCap: z
+    .number()
+    .int()
+    .min(0)
+    .max(PUSH_DAILY_CAP_MAX)
+    .default(PUSH_DAILY_CAP_DEFAULT),
+  /**
+   * Explicit consent for processing health-adjacent data (fizruk
+   * workouts/wellbeing, nutrition logs) per GDPR Art. 9 — special category
+   * personal data requires explicit opt-in, never inferred silence.
+   * `.default(false)` for the same rolling-deploy reason as
+   * `sergeantNudges`: web/server deploy independently (Vercel vs Coolify),
+   * so an old server response missing the field must not throw ZodError
+   * client-side. Matches the DB column DEFAULT (migration 111).
+   */
+  healthDataConsent: z.boolean().default(false),
+  /**
+   * Модулі, які людина лишила активними на хабі (браузерний аудит
+   * 2026-08-05, знахідка B2 — частина 2). До міграції 116 цей вибір жив
+   * ЛИШЕ в локальному KV (`hub_onboarding_vibes_v1` на web, MMKV на
+   * mobile) і не входив у cloud-sync, тож на новому пристрої хаб
+   * рендерився з фолбеком «усі чотири» замість справжнього вибору.
+   *
+   * Три стани, і всі три різні:
+   *  - `null` — серверного вибору ще немає; клієнт лишає локальний як є
+   *    (саме тому колонка nullable і без `DEFAULT '{}'` — див. 116);
+   *  - `[]` — вибір є, і він порожній;
+   *  - непорожній масив — власне вибір, у порядку, який людина зробила
+   *    (`sanitizePicks` порядок зберігає, `TEXT[]` теж).
+   *
+   * `.default(null)` — з тієї ж rolling-deploy причини, що й
+   * `sergeantNudges`/`healthDataConsent`: web (Vercel) і сервер
+   * (Coolify) деплояться окремо, тож новий клієнт може розмовляти зі
+   * старим сервером, який поля ще не віддає. «Поля нема» і «серверного
+   * вибору нема» тут означають рівно те саме, тож дефолт безпечний.
+   */
+  activeModules: z
+    .array(z.enum(DASHBOARD_MODULE_IDS))
+    .max(DASHBOARD_MODULE_IDS.length)
+    .nullable()
+    .default(null),
+  /**
+   * Налаштування вигляду хаба — дзеркало локального `hub_prefs_v1`
+   * (знахідка PR-S13 огляду 2026-09-13, рішення founder-а 2026-09-14).
+   *
+   * Три стани, і всі три різні — та сама трійця, що в `activeModules`
+   * вище, і з тієї ж причини (nullable-колонка без `DEFAULT`, міграція 137):
+   *  - `null` — серверних налаштувань ще немає; клієнт лишає локальні як є;
+   *  - `{}` — налаштування є, і всі дефолтні;
+   *  - непорожній обʼєкт — власне налаштування.
+   *
+   * `.default(null)` — з тієї ж rolling-deploy причини, що й у сусідів:
+   * web (Vercel) і сервер (Coolify) деплояться окремо, тож новий клієнт
+   * може розмовляти зі старим сервером, який поля ще не віддає. «Поля
+   * нема» і «серверних налаштувань нема» означають тут рівно те саме.
+   */
+  hubPrefs: HubPrefsBagSchema.nullable().default(null),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -51,18 +173,70 @@ export const UserPreferencesPatchSchema = z
     analytics: z.boolean().optional(),
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
+    sergeantNudges: z.boolean().optional(),
+    pushDailyCap: z.number().int().min(0).max(PUSH_DAILY_CAP_MAX).optional(),
+    healthDataConsent: z.boolean().optional(),
+    /**
+     * Відсутнє поле = «не чіпай вибір»; `null` = «прибери серверний
+     * вибір» (повернення до локального); масив = новий вибір.
+     *
+     * Дедуп робимо ТУТ, а не в БД: вираз `CHECK` не може містити
+     * підзапит, тож `{finyk,finyk}` пройшов би констрейнт міграції 116.
+     * `sanitizePicks` уже дедуплікує на клієнті — це друга лінія для
+     * будь-якого іншого споживача API.
+     */
+    activeModules: z
+      .array(z.enum(DASHBOARD_MODULE_IDS))
+      .max(DASHBOARD_MODULE_IDS.length)
+      .transform((ids) => [...new Set(ids)])
+      .nullable()
+      .optional(),
+    /**
+     * Відсутнє поле = «не чіпай налаштування»; `null` = «прибери серверні»
+     * (повернення до локальних); обʼєкт = новий стан ЦІЛКОМ.
+     *
+     * Саме цілком, не по-ключово — і це головне, що тут треба знати.
+     * Мішок їде як одне значення, тобто розвʼязання конфлікту між
+     * пристроями — LWW по всьому мішку (рішення 2026-09-14). Пер-ключові
+     * мітки часу були б над-інженерією для пʼяти тумблерів, які людина
+     * перемикає на одному екрані.
+     */
+    hubPrefs: HubPrefsBagSchema.nullable().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
 
 const ExportRecordSchema = z.record(z.string(), z.unknown());
 
+/** Таблиці одного продуктового модуля: ключ — імʼя таблиці як у базі. */
+const ExportModuleSectionSchema = z.record(
+  z.string(),
+  z.array(ExportRecordSchema),
+);
+
+/** Що свідомо не потрапило у файл, із причиною для людини. */
+const ExportExclusionSchema = z.object({
+  group: z.string(),
+  tables: z.array(z.string()),
+  reason: z.string(),
+});
+
 export const MeExportResponseSchema = z.object({
   generatedAt: z.string().datetime({ offset: true }),
   user: UserSchema,
   preferences: UserPreferencesSchema,
   data: z.object({
+    /**
+     * @deprecated Завжди `[]`. Ключ лишається від таблиці `module_data`,
+     * дропнутої міграцією 046; справжні дані модулів — у секціях `finyk`,
+     * `fizruk`, `nutrition`, `routine` нижче. Не наповнюється навмисно,
+     * щоб старий споживач не прочитав новий вміст за старою семантикою.
+     */
     moduleData: z.array(ExportRecordSchema),
+    finyk: ExportModuleSectionSchema,
+    fizruk: ExportModuleSectionSchema,
+    nutrition: ExportModuleSectionSchema,
+    routine: ExportModuleSectionSchema,
     mono: z.object({
       connection: ExportRecordSchema.nullable(),
       accounts: z.array(ExportRecordSchema),
@@ -75,19 +249,166 @@ export const MeExportResponseSchema = z.object({
       webSubscriptions: z.array(ExportRecordSchema),
       devices: z.array(ExportRecordSchema),
     }),
-    ai: z.object({
-      usageDaily: z.array(ExportRecordSchema),
-      memories: z.array(ExportRecordSchema),
-    }),
+    excluded: z.array(ExportExclusionSchema),
   }),
 });
 export type MeExportResponse = z.infer<typeof MeExportResponseSchema>;
 
+/**
+ * Тіло `DELETE /api/me`. Пароль обовʼязковий для акаунтів із
+ * credential-входом і безпредметний для тих, хто заходить лише через
+ * OAuth (`modules/me/verifyAccountPassword.ts` робить цю розвилку).
+ * До появи 30-денного вікна цю перевірку тримав Better Auth на
+ * `POST /api/auth/delete-user`.
+ */
+export const MeDeleteBodySchema = z.object({
+  password: z.string().min(1).max(128).optional(),
+});
+export type MeDeleteBody = z.infer<typeof MeDeleteBodySchema>;
+
+/**
+ * `DELETE /api/me` більше не видаляє одразу: воно ПОЗНАЧАЄ акаунт, і
+ * незворотне видалення виконує добивач через `ACCOUNT_DELETION_GRACE_DAYS`
+ * днів (спека docs/work/specs/user-deletion-grace-window.md, ADR-0098).
+ *
+ * `deletedAt` лишається під старим імʼям і старим змістом «коли сервер
+ * прийняв прохання» — його читає наявний UI. Нове поле `scheduledPurgeAt`
+ * несе дату, після якої акаунт зникне; саме його показує екран-блокер.
+ */
 export const MeDeleteResponseSchema = z.object({
   ok: z.literal(true),
   deletedAt: z.string().datetime({ offset: true }),
+  scheduledPurgeAt: z.string().datetime({ offset: true }),
 });
 export type MeDeleteResponse = z.infer<typeof MeDeleteResponseSchema>;
+
+/**
+ * `GET /api/me/deletion-status` — те, чим екран-блокер малює себе.
+ * `pending: false` означає активний акаунт, і тоді дат немає.
+ */
+export const MeDeletionStatusResponseSchema = z.discriminatedUnion("pending", [
+  z.object({ pending: z.literal(false) }),
+  z.object({
+    pending: z.literal(true),
+    requestedAt: z.string().datetime({ offset: true }),
+    scheduledPurgeAt: z.string().datetime({ offset: true }),
+  }),
+]);
+export type MeDeletionStatusResponse = z.infer<
+  typeof MeDeletionStatusResponseSchema
+>;
+
+/** `POST /api/me/restore` — скасування прохання, акаунт знову активний. */
+export const MeRestoreResponseSchema = z.object({
+  ok: z.literal(true),
+  restoredAt: z.string().datetime({ offset: true }),
+});
+export type MeRestoreResponse = z.infer<typeof MeRestoreResponseSchema>;
+
+// ────────────────────── Profile write-through (/api/me/profile) ───────────
+
+/**
+ * Serialized size cap for the profile blob (migration 115 `user_profile.
+ * payload`). ~16KB — generous for a profile/biometrics blob (mirrors
+ * `USER_PROFILE` + `HUB_BIOMETRICS` client-side shapes,
+ * `packages/shared/src/sync/modules.ts`), tight enough that a `curl` can't
+ * turn this write-through singleton into a free-form blob store.
+ */
+export const USER_PROFILE_MAX_BYTES = 16 * 1024;
+
+/**
+ * Max OBJECT property-nesting depth for the profile payload. The top-level
+ * object itself counts as depth 1, so depth 3 allows e.g.
+ * `{ biometrics: { history: [{ weightKg: 70 }] } }` (biometrics → history →
+ * the array-element object = 3 levels of object nesting) but rejects a 4th
+ * level. Arrays are transparent for this count — a list is a sibling
+ * collection, not an extra hierarchy level, so `weightHistory: [...]`
+ * (a very ordinary profile shape) doesn't get penalized just for being an
+ * array. Guards against pathological recursive payloads (JSON-bomb style)
+ * reaching JSONB storage unchecked — this is genuinely a write-through
+ * blob (no column-level schema, migration 115's own comment), so depth is
+ * the one structural invariant we DO enforce.
+ */
+export const USER_PROFILE_MAX_DEPTH = 3;
+
+function isJsonContainer(
+  value: unknown,
+): value is Record<string, unknown> | unknown[] {
+  return Array.isArray(value) || (value !== null && typeof value === "object");
+}
+
+/**
+ * Depth of OBJECT property nesting only. Arrays are transparent: their
+ * elements are evaluated at the array's own depth, not depth+1 — so an
+ * array of objects costs exactly as much depth as the objects it contains,
+ * not one extra level for the array wrapper itself.
+ */
+function jsonNestingDepth(value: unknown): number {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 0;
+    return Math.max(...value.map((item) => jsonNestingDepth(item)));
+  }
+  if (value !== null && typeof value === "object") {
+    const containerChildren = Object.values(
+      value as Record<string, unknown>,
+    ).filter(isJsonContainer);
+    if (containerChildren.length === 0) return 1;
+    return 1 + Math.max(...containerChildren.map(jsonNestingDepth));
+  }
+  return 0;
+}
+
+/**
+ * The profile payload itself — an open-ended JSON object (no column-level
+ * schema by design, migration 115), bounded by size and nesting depth.
+ * `z.record` already rejects arrays/primitives at the top level (must be a
+ * plain object).
+ */
+export const UserProfilePayloadSchema = z
+  .record(z.string(), z.unknown())
+  .refine(
+    (value) => {
+      try {
+        // `String.length` counts UTF-16 code units, not bytes — Unicode text
+        // (Cyrillic, emoji) that fits well under the 16KB cap by `.length`
+        // can still exceed it once encoded as the UTF-8 bytes Postgres/JSONB
+        // and the HTTP wire actually store/transmit (every non-Latin-1
+        // codepoint costs 2-4 UTF-8 bytes but only 1-2 UTF-16 units).
+        // CodeRabbit PR #627 review: measure real bytes via `TextEncoder`.
+        return (
+          new TextEncoder().encode(JSON.stringify(value)).byteLength <=
+          USER_PROFILE_MAX_BYTES
+        );
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: `profile payload must be at most ${USER_PROFILE_MAX_BYTES} bytes`,
+    },
+  )
+  .refine((value) => jsonNestingDepth(value) <= USER_PROFILE_MAX_DEPTH, {
+    message: `profile payload must not nest more than ${USER_PROFILE_MAX_DEPTH} levels deep`,
+  });
+export type UserProfilePayload = z.infer<typeof UserProfilePayloadSchema>;
+
+/** Request body for `PUT /api/me/profile`. */
+export const UserProfilePutBodySchema = z.object({
+  profile: UserProfilePayloadSchema,
+});
+export type UserProfilePutBody = z.infer<typeof UserProfilePutBodySchema>;
+
+/**
+ * Response shape for both `GET /api/me/profile` and `PUT /api/me/profile`.
+ * `profile: {}` / `updatedAt: null` is the default when no row exists yet
+ * (first-ever read before any write) — same "defaults, not 404" pattern as
+ * `UserPreferencesSchema`.
+ */
+export const UserProfileResponseSchema = z.object({
+  profile: UserProfilePayloadSchema,
+  updatedAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
 
 /** Модерація: чат-повідомлення. */
 export const ChatMessage = z.object({
@@ -101,37 +422,188 @@ export const ToolResult = z.object({
   content: z.union([z.string().max(8000), z.number(), z.boolean()]).optional(),
 });
 
+/**
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — блоки, дозволені
+ * всередині `tool_calls_raw`. До 2026-08-25 поле було `z.array(z.unknown())`
+ * — фактично unvalidated passthrough: `chat.ts` кладе його НАПРЯМУ в
+ * `{ role: "assistant", content: tool_calls_raw }`, єдину роль без
+ * `<user_data>`/`<tool_output>`-огорожі (`toolOutputWrapping.ts`). Клієнт
+ * міг тому написати довільний assistant-текст, повністю обійшовши
+ * injection-фенсинг, і отруїти `ai_memories` через `remember`.
+ *
+ * Type-allowlist сам по собі НЕ достатній, поки поля всередині блоку
+ * лишаються `unknown` — тому кожен варіант нижче `.strict()` з явним
+ * переліком полів (зайве поле → 400, не мовчазне перенесення).
+ *
+ * Навмисно НЕ у списку: `type: "text"`. Це той самий блок, що Anthropic
+ * повертає як текстовий preamble перед `tool_use` (див. фікстуру
+ * `textAndToolCall` у `contract-fixtures/chat.ts`) — і водночас РІВНО
+ * вектор цієї знахідки: `text`-поле є вільним рядком незалежно від
+ * `.strict()`-форми блоку, тож дозволити тип не закривши вміст означало б
+ * залишити injection-поверхню відкритою. Наслідок: клієнт, що echo-ить
+ * `tool_calls_raw` з text-preamble назад у другому турі, отримає 400 —
+ * `apps/web` має відфільтрувати нетул-блоки перед replay (окремий фронтовий
+ * фікс, поза скоупом цього серверного PR).
+ *
+ * Реальний whitelist ІМЕН інструментів (`TOOLS` з server-only
+ * `modules/chat/tools.ts`) і provenance-звʼязок з `tool_results`
+ * перевіряються ДАЛІ на сервері (`validateToolCallsRawProvenance` у
+ * `chat.ts`) — сюди server-модулі імпортувати не можна: `@sergeant/shared`
+ * лишається edge-runtime-friendly (той самий принцип, що й
+ * `RECALL_MEMORY_SOURCES` вище).
+ */
+const ToolUseBlockSchema = z
+  .object({
+    type: z.literal("tool_use"),
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    input: z.unknown(),
+    /**
+     * AI-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+     * OpenRouter's `tool_use` blocks carry a `caller` field that Anthropic's
+     * own API doesn't emit (provenance of which upstream hop issued the
+     * call). `.strict()` below rejected the whole block for this one
+     * known-but-unlisted field, so every tool round trip on
+     * `CHAT_VIA_OPENROUTER=true` failed the second turn with 400
+     * `CHAT_TOOL_ROUND_TRIP_INCOMPLETE` — no assistant text ever synthesised
+     * after a tool call. Allowlisted explicitly (not `.passthrough()`) so
+     * the B32 threat model — a genuinely unexpected field smuggled into the
+     * one assistant-role message with no `<user_data>` fencing — still 400s;
+     * `validateToolCallsRawProvenance` (`apps/server/src/modules/chat/
+     * validateToolCallsRaw.ts`) never reads `caller`, so widening the schema
+     * doesn't widen what the server trusts from this field.
+     */
+    caller: z.unknown().optional(),
+  })
+  .strict();
+
+/**
+ * Anthropic-hosted server tool call — наразі єдиний такий інструмент у нас
+ * — `tool_search_tool_regex` (`modules/chat/toolSearch.ts`). Форма поля
+ * ідентична `tool_use`; сервер додатково звіряє `name` з реальним
+ * `TOOL_SEARCH_TOOL.name`.
+ */
+const ServerToolUseBlockSchema = z
+  .object({
+    type: z.literal("server_tool_use"),
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    input: z.unknown(),
+  })
+  .strict();
+
+/**
+ * Результат серверного tool-search — Anthropic генерує це на своєму боці,
+ * ми лише echo-имо назад НЕЗМІНЕНИМ (інакше 400 від upstream), тому
+ * `content` навмисно `z.unknown()`: це не наша форма для валідації, і
+ * Anthropic розширює її без узгодження з нами.
+ */
+const ToolSearchToolResultBlockSchema = z
+  .object({
+    type: z.literal("tool_search_tool_result"),
+    tool_use_id: z.string().min(1).max(200),
+    content: z.unknown(),
+  })
+  .strict();
+
+export const ToolCallsRawBlockSchema = z.discriminatedUnion("type", [
+  ToolUseBlockSchema,
+  ServerToolUseBlockSchema,
+  ToolSearchToolResultBlockSchema,
+]);
+export type ToolCallsRawBlock = z.infer<typeof ToolCallsRawBlockSchema>;
+
+/**
+ * Ідентифікатори серверних preset-ів системної інструкції для `/api/chat`.
+ *
+ * Клієнт шле ЛИШЕ ідентифікатор — сам текст інструкції живе на сервері
+ * (`apps/server/src/modules/chat/chatPresets.ts`) і в клієнтський бандл не
+ * потрапляє. Це навмисно: інструкція, яку шле клієнт, — це переписаний
+ * системний промпт (та сама діра, що закрив v17 огорожею `<user_data>`
+ * навколо `context`). Enum на вході означає, що зловмисний POST може лише
+ * обрати один із двох наших сценаріїв, а не написати свій.
+ *
+ * Другий ефект — UX: інструкція більше не рендериться бульбашкою «від
+ * користувача» і не сміттить в історії чату (`hub_chat_history`).
+ *
+ * - `profile_interview` — коротке інтервʼю на порожньому банку памʼяті
+ *   (кнопка «Заповнити профіль» у секції «Памʼять ШІ»);
+ * - `profile_add_info` — доповнення вже непорожнього банку («Додати інфо»).
+ */
+export const CHAT_PRESETS = ["profile_interview", "profile_add_info"] as const;
+export type ChatPreset = (typeof CHAT_PRESETS)[number];
+
 /** /api/chat */
 export const ChatRequestSchema = z.object({
   context: z.string().max(40_000).optional().default(""),
+  preset: z.enum(CHAT_PRESETS).optional(),
   messages: z.array(ChatMessage).max(50).optional().default([]),
   tool_results: z.array(ToolResult).max(20).optional(),
-  // tool_calls_raw — сирий вміст від Anthropic, не валідуємо глибоко,
-  // лише гарантуємо, що це масив розумного розміру.
-  tool_calls_raw: z.array(z.unknown()).max(20).optional(),
+  // B32 — раніше `z.array(z.unknown())`; тепер кожен блок валідується проти
+  // `ToolCallsRawBlockSchema` (див. докстрінг вище). `name`-allowlist проти
+  // реального `TOOLS`-реєстру і provenance-звʼязок з `tool_results`
+  // перевіряються далі на сервері (`chat.ts`), сюди їх заносити не можна.
+  //
+  // AI-CONTEXT: cap підняли 20 → 60 разом із tool search (2026-07-25). Тепер
+  // у `content` крім `tool_use` приїжджають ще `server_tool_use` +
+  // `tool_search_tool_result` на КОЖЕН пошук, і Anthropic вимагає повернути
+  // їх назад НЕЗМІНЕНИМИ — інакше 400. Стеля на кількість самих `tool_use`
+  // лишається `MAX_TOOL_ITERATIONS = 8` і перевіряється окремо в `chat.ts`,
+  // тож це послаблення не розширює runaway-поверхню: воно лише перестає
+  // рубати легітимний пошуковий трафік нашою ж валідацією.
+  tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
   stream: z.boolean().optional(),
+  /**
+   * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
+   * — echo-иться назад із першого-турового `tool_calls`-відповіді на другому
+   * (tool-result-синтезному) запиті того самого ходу. Сервер видає його лише
+   * своєму ж юзеру (`chatRoundTripTicket.ts`), одноразово й короткоживуче;
+   * невалідний/відсутній квиток просто НЕ звільняє від звичайного списання
+   * квоти (safe default) — це не контракт довіри до клієнта, а суто
+   * best-effort optimization, тож поле опційне й без додаткової семантики
+   * тут, у схемі.
+   */
+  round_trip_ticket: z.string().max(200).optional(),
 });
+
+/**
+ * GET /api/chat/usage (PR-42 chat counter). Тижневе відро `ai.actions`
+ * реєстру доступу (`billing/entitlements.ts`); `limit`/`remaining` = `null`
+ * для Premium (без ліміту).
+ */
+export const ChatUsageResponseSchema = z.object({
+  plan: z.enum(["free", "pro"]),
+  limit: z.number().int().nonnegative().nullable(),
+  remaining: z.number().int().nonnegative().nullable(),
+});
+export type ChatUsageResponse = z.infer<typeof ChatUsageResponseSchema>;
 
 /**
  * Допустимі `source`-фільтри для `POST /api/ai-memory/recall`. Дзеркалить
  * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
  * літерали тут (а не enum-import з server-only модуля), щоб
  * `@sergeant/shared` лишився edge-runtime-friendly без deps на Postgres.
+ *
+ * Звужено до чотирьох живих значень ініціативою 0024, PR-3 (2026-09-19):
+ * `chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` — шість
+ * джерел без жодного продюсера в дереві — прибрані звідси разом зі
+ * звуженням CHECK-констрейнта `ai_memories_source_check` (міграція 144).
  */
 const RECALL_MEMORY_SOURCES = [
-  "chat",
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-  "journal",
   "digest",
   "cofounder",
-  // Migration 068 — PostHog → AI memory sync (PR-24). `product` source —
-  // behavioral events дзеркаляться з web `trackEvent` через
-  // `POST /api/ai-memory/event-sync`. Дозволяємо у recall-filter, щоб
-  // founder міг запитати combined `sources=['cofounder','product']` view.
+  // Migration 068 historically used `product` for PostHog → AI-memory sync.
+  // The event-sync endpoint was removed on 2026-08-29 because telemetry added
+  // noise to RAG; keep the value here only so existing rows remain readable in
+  // list/recall filters.
   "product",
+  // Migration 118 — L-8 (аудит Профілю/Налаштувань 2026-08-08). `profile` —
+  // явно заявлені людиною факти про себе (банк памʼяті: інтервʼю з
+  // асистентом або ручне введення). Дозволяємо у recall-фільтрі, бо саме
+  // заради recall-у цей source і заводиться: `ai-memory/ragContext.ts`
+  // автоматично вкидає top-K схожих записів у system prompt чату, тож
+  // асистент враховує «не їм молочне» без явного виклику тула `my_profile`.
+  "profile",
 ] as const;
 
 /** POST /api/ai-memory/recall — semantic memory retrieval. */
@@ -165,6 +637,64 @@ export type RecallMemoryRequest = z.infer<typeof RecallMemoryRequestSchema>;
 export type RecallMemoryResult = z.infer<typeof RecallMemoryResultSchema>;
 export type RecallMemoryResponse = z.infer<typeof RecallMemoryResponseSchema>;
 
+/** Response для `DELETE /api/ai-memory`. */
+export const AiMemoryClearResponseSchema = z.object({
+  ok: z.literal(true),
+  deleted: z.number().int().nonnegative(),
+});
+export type AiMemoryClearResponse = z.infer<typeof AiMemoryClearResponseSchema>;
+
+/**
+ * Query для `GET /api/ai-memory/list`.
+ *
+ * `coerce`, бо це query-string: `?limit=20` приходить рядком. `cursor` —
+ * keyset по `ai_memories.id` (не OFFSET: черга ingest-у дописує рядки
+ * поки користувач гортає, і OFFSET між сторінками або дублює, або губить).
+ */
+export const AiMemoryListQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.coerce.number().int().positive().optional(),
+});
+export type AiMemoryListQuery = z.infer<typeof AiMemoryListQuerySchema>;
+
+/**
+ * Один факт AI-памʼяті у списку налаштувань.
+ *
+ * `id` — `number`: у Postgres це `BIGSERIAL`, і pg-драйвер віддає його
+ * стрінгою. Коерція живе в серверному серіалізаторі (Hard Rule #1) — тут
+ * контракт уже числовий, бо клієнт кладе id у RQ-ключ і в URL.
+ */
+export const AiMemoryListItemSchema = z.object({
+  id: z.number().int().positive(),
+  source: z.string().min(1),
+  content: z.string(),
+  topic: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+export type AiMemoryListItem = z.infer<typeof AiMemoryListItemSchema>;
+
+/** Response для `GET /api/ai-memory/list`. */
+export const AiMemoryListResponseSchema = z.object({
+  items: z.array(AiMemoryListItemSchema),
+  /** `null` — сторінок більше немає. */
+  nextCursor: z.number().int().positive().nullable(),
+});
+export type AiMemoryListResponse = z.infer<typeof AiMemoryListResponseSchema>;
+
+/**
+ * Response для `DELETE /api/ai-memory/:id`.
+ *
+ * `deleted: false` — рядка вже не було. Це успіх, а не помилка: повторний
+ * тап чи паралельна вкладка приводять систему в той самий бажаний стан.
+ */
+export const AiMemoryDeleteResponseSchema = z.object({
+  ok: z.literal(true),
+  deleted: z.boolean(),
+});
+export type AiMemoryDeleteResponse = z.infer<
+  typeof AiMemoryDeleteResponseSchema
+>;
+
 /** /api/nutrition/analyze-photo */
 export const AnalyzePhotoSchema = z.object({
   image_base64: z
@@ -179,6 +709,16 @@ export const AnalyzePhotoSchema = z.object({
   locale: Locale,
 });
 
+/**
+ * B25: стеля серіалізованого `prior_result` у refine-photo, у БАЙТАХ UTF-8.
+ * Поле потрапляє в промпт Anthropic як є (`safeJson(prior_result)`), а
+ * `z.unknown()` пропускало будь-що до 10mb (ліміт тіла з фото) — тобто
+ * токени на чужий рахунок. Реальний `prior_result` — це відповідь
+ * analyze-photo (страва, макро, інгредієнти, питання) на 1–4 KB; 16 KB
+ * лишає запас у 4×.
+ */
+export const REFINE_PRIOR_RESULT_MAX_BYTES = 16 * 1024;
+
 /** /api/nutrition/refine-photo */
 export const RefinePhotoSchema = z.object({
   image_base64: z
@@ -190,7 +730,29 @@ export const RefinePhotoSchema = z.object({
     .regex(/^image\/[a-z+.-]+$/i)
     .max(64)
     .optional(),
-  prior_result: z.unknown().optional(),
+  // Форма — відповідь analyze-photo (вільний JSON-об'єкт без column-level
+  // схеми), тому тип лишається `unknown`, а межа — за розміром (B25).
+  prior_result: z
+    .unknown()
+    .refine(
+      (v) => {
+        try {
+          const json = JSON.stringify(v);
+          // `undefined`/функція → json === undefined → нема що вкладати.
+          return (
+            json === undefined ||
+            new TextEncoder().encode(json).byteLength <=
+              REFINE_PRIOR_RESULT_MAX_BYTES
+          );
+        } catch {
+          return false;
+        }
+      },
+      {
+        message: `prior_result must be at most ${REFINE_PRIOR_RESULT_MAX_BYTES} bytes`,
+      },
+    )
+    .optional(),
   portion_grams: z.number().finite().positive().optional().nullable(),
   qna: z
     .array(
@@ -236,6 +798,27 @@ const PantryItem = z.union([
   }),
 ]);
 
+/**
+ * Як генератор має ставитись до комори. Спільний для рецептів, денного і
+ * тижневого плану — користувач обирає режим один раз у «Меню», і всі три
+ * генератори мусять його поважати (інакше вибір «ignore» тихо губиться).
+ */
+export const PantryModeSchema = z.enum(["prefer", "only", "ignore"]);
+export type PantryMode = z.infer<typeof PantryModeSchema>;
+
+/**
+ * Тип прийому їжі — канон для трьох окремих оголошень (nutrition-domain
+ * `MealTypeId`, api-client `NutritionMealType`, і цей файл), знайдених
+ * unification-modules.md #2.25.
+ */
+export const MealTypeIdSchema = z.enum([
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+]);
+export type MealTypeId = z.infer<typeof MealTypeIdSchema>;
+
 /** /api/nutrition/recommend-recipes */
 export const RecommendRecipesSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
@@ -245,6 +828,10 @@ export const RecommendRecipesSchema = z.object({
       servings: z.number().finite().positive().optional(),
       timeMinutes: z.number().finite().positive().optional(),
       exclude: z.string().max(500).optional(),
+      mealType: z
+        .enum(["any", "breakfast", "lunch", "dinner", "snack"])
+        .optional(),
+      pantryMode: PantryModeSchema.optional(),
       locale: Locale,
     })
     .partial()
@@ -253,18 +840,10 @@ export const RecommendRecipesSchema = z.object({
   locale: Locale,
 });
 
-/** /api/nutrition/day-hint, day-plan, week-plan, shopping-list */
-const Macros = z.object({
-  kcal: z.number().finite().nonnegative().nullable().optional(),
-  protein_g: z.number().finite().nonnegative().nullable().optional(),
-  fat_g: z.number().finite().nonnegative().nullable().optional(),
-  carbs_g: z.number().finite().nonnegative().nullable().optional(),
-});
-
 /**
- * Цілі КБЖВ у форматі, який реально шле клієнт у day-hint:
- * `dailyTargetKcal`, `dailyTargetProtein_g`, ... Приймаємо і короткі
- * `kcal/protein_g/...` (як у day-plan), і довгі — тому `passthrough()`.
+ * Цілі КБЖВ для /api/nutrition/day-plan, week-plan і shopping-list.
+ * Приймаємо і короткі `kcal/protein_g/...`, і довгі
+ * `dailyTargetKcal/dailyTargetProtein_g/...` — тому `passthrough()`.
  */
 const NutritionTargets = z
   .object({
@@ -284,31 +863,19 @@ const NutritionTargets = z
   })
   .passthrough();
 
-export const DayHintSchema = z.object({
-  macros: Macros.optional(),
-  targets: NutritionTargets.optional(),
-  hasMeals: z.boolean().optional(),
-  hasAnyMacros: z.boolean().optional(),
-  macroSources: z
-    .union([
-      z.record(z.string().max(50), z.number().finite()),
-      z.array(z.string().max(50)).max(20),
-    ])
-    .optional(),
-  locale: Locale,
-});
-
 export const DayPlanSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
+  /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
+  pantryMode: PantryModeSchema.optional(),
   targets: NutritionTargets.optional(),
-  regenerateMealType: z
-    .enum(["breakfast", "lunch", "dinner", "snack"])
-    .optional(),
+  regenerateMealType: MealTypeIdSchema.optional(),
   locale: Locale,
 });
 
 export const WeekPlanSchema = z.object({
   pantry: z.array(PantryItem).max(200).optional(),
+  /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
+  pantryMode: PantryModeSchema.optional(),
   preferences: z
     .object({
       goal: z.string().max(40).optional(),
@@ -412,6 +979,26 @@ const RoutineDigestSchema = z
 // клієнт пропускає поле, чи надсилає його як `null`.
 export const WeeklyDigestSchema = z.object({
   weekRange: z.string().max(80).optional(),
+  // ISO-понеділок тижня (`YYYY-MM-DD`) — канонічний ключ тижня. Йде у
+  // `ai_memories.source_ref` (контракт `MemoryWrite.sourceRef` завжди
+  // обіцяв week_key, а фактично їхав display-рядок weekRange). Опційне з
+  // тих самих причин, що `metricsVersion` нижче: старі PWA-бандли поля не
+  // шлють — тоді сервер падає назад на weekRange.
+  weekKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  // Версія МЕТОДИКИ підрахунку, якою клієнт порахував числа нижче — див.
+  // `@sergeant/shared` → `METRICS_VERSION`. Опційне навмисно: старіші бандли
+  // (PWA з service-worker-ом) поля не шлють, і їхні дайджести мають
+  // прийматись, а не 400-ити. Відсутнє поле означає легасі-версію `0`, а НЕ
+  // поточну — методика на момент запису невідома.
+  //
+  // AI-DANGER: споживач, що будує ТРЕНД (коуч по 8 тижнях із `coach_memory`,
+  // тижневий графік, «порівняй тижні»), НЕ має права порівнювати записи
+  // різних версій — інакше стрибок визначення читається як зміна поведінки
+  // користувача. Перевірка — `comparableAsTrend` у `@sergeant/shared`.
+  metricsVersion: z.number().int().min(0).optional(),
   finyk: FinykDigestSchema.nullish(),
   fizruk: FizrukDigestSchema.nullish(),
   nutrition: NutritionDigestSchema.nullish(),
@@ -491,7 +1078,7 @@ export const WeeklyDigestResponseSchema = z.union([
 ]);
 export type WeeklyDigestResponse = z.infer<typeof WeeklyDigestResponseSchema>;
 
-// AI-NOTE: `dateContext` обов'язковий для адекватного темпорального
+// AI-NOTE: `dateContext` обовʼязковий для адекватного темпорального
 // обрамлення інсайту (без нього модель імпровізує "середина тижня" в неділю).
 // Поля: `todayKey` — Kyiv-time `YYYY-MM-DD`; `weekDayUk` — день тижня
 // українською ("понеділок"…"неділя"); `dayOfWeekIso` — 1 (пн)…7 (нд);
@@ -520,7 +1107,7 @@ const CoachSnapshotSchema = z
   })
   .partial();
 
-// Пам'ять coach-а зберігається сервером і повертається назад клієнтом —
+// Памʼять coach-а зберігається сервером і повертається назад клієнтом —
 // не валідуємо глибоко, лише обмежуємо кількість digest-ів.
 const CoachMemoryEchoSchema = z
   .object({
@@ -531,7 +1118,7 @@ const CoachMemoryEchoSchema = z
   .partial();
 
 // `snapshot` і `memory` можуть надходити як `null` (нема даних / перший
-// сеанс без збереженої пам'яті), тому приймаємо `nullish`, а handler уже
+// сеанс без збереженої памʼяті), тому приймаємо `nullish`, а handler уже
 // коректно обробляє обидва випадки через `snapshot?.finyk` / `memory || null`.
 export const CoachInsightSchema = z.object({
   snapshot: CoachSnapshotSchema.nullish(),
@@ -552,6 +1139,7 @@ export const CoachMemoryPostSchema = z.object({
       nutrition: z.unknown().optional(),
       routine: z.unknown().optional(),
       overallRecommendations: z.array(z.string()).optional(),
+      correlations: z.array(z.string()).optional(),
     })
     .optional(),
 });
@@ -566,7 +1154,7 @@ export const CoachMemoryPostSchema = z.object({
 // other callers, so the sunset middleware no longer needs them for
 // payload validation.
 //
-// Stage 2 / PR #021 із `docs/planning/storage-roadmap.md`. v2 — per-row
+// Stage 2 / PR #021 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. v2 — per-row
 // op-log замість whole-blob LWW v1. Ці схеми валідують HTTP-payload
 // до того, як handler звертається до `sync_op_log`. Серверний whitelist
 // дозволених `table` живе в `apps/server/src/modules/sync/syncV2.ts`
@@ -599,7 +1187,7 @@ const SyncV2OpKindEnum = z.enum(["insert", "update", "delete", "increment"]);
  * Один запис op-log-а. `row` — JSON-payload (PK + поля); серверний
  * apply-шлях знає shape per-table і не валідує тут. Розмір payload-а
  * обмежено окремим refine-ом (256 KB), щоб не платити за safeParse-инг
- * мегабайтних об'єктів.
+ * мегабайтних обʼєктів.
  *
  * `client_ts` приймається як ISO-8601 рядок з offset-ом; пізніше
  * сервер відхилить значення з clock skew > 1 година.
@@ -681,20 +1269,11 @@ const PushKeys = z.object({
   auth: z.string().min(1).max(256),
 });
 
-export const PushSubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
-  keys: PushKeys,
-});
-
-export const PushUnsubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
-});
-
 /**
  * `/api/v1/push/register` — уніфікована реєстрація push-пристрою.
  *
  * `platform: "web"` — web-push: `token` несемо як endpoint URL, `keys`
- * обов'язкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
+ * обовʼязкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
  * `token` — opaque APNs/FCM device token, `endpoint`/`keys` відсутні.
  *
  * Валідатор нижче приймає обидва shape-и; handler сам маршрутизує у
@@ -735,7 +1314,7 @@ export const PushUnregisterSchema = z.discriminatedUnion("platform", [
   }),
 ]);
 
-// `.nullable()` на необов'язкових полях — для back-compat із воркерами, які
+// `.nullable()` на необовʼязкових полях — для back-compat із воркерами, які
 // історично слали `null` замість відсутнього поля.
 export const PushSendSchema = z.object({
   userId: z.string().min(1).max(200),
@@ -747,7 +1326,7 @@ export const PushSendSchema = z.object({
 
 /**
  * `POST /api/v1/push/test` — ручка для відправки тестового пуша на всі
- * зареєстровані пристрої поточного користувача. Auth обов'язкова; сервер
+ * зареєстровані пристрої поточного користувача. Auth обовʼязкова; сервер
  * пропускає body через `sendToUser` (див. `apps/server/src/push/send.ts`)
  * і повертає агрегований summary.
  *
@@ -761,7 +1340,7 @@ export const PushTestRequestSchema = z.object({
   /**
    * Deep-link, що клієнт відкриє по тапу. Сервер прокине у `data.url` для
    * всіх трьох каналів; native/web handler читають з одного ключа.
-   * URL-валідацію навмисно робимо м'якою (`.url()` без `.startsWith`), щоб
+   * URL-валідацію навмисно робимо мʼякою (`.url()` без `.startsWith`), щоб
    * поза-HTTPS кастом-схеми (`sergeant://finyk/tx/123`) теж проходили.
    */
   url: z.string().trim().min(1).max(2048).optional(),
@@ -809,7 +1388,7 @@ export const PaginationSchema = z.object({
 
 // ────────────────────── Food-search / barcode ──────────────────────
 export const FoodSearchQuerySchema = z.object({
-  q: z.string().trim().min(2).max(120),
+  q: z.string().trim().min(2).max(SEARCH_QUERY_MAX_LEN),
   // `limit` — скільки результатів повернути (1–20, default 8). Query-param
   // приходить рядком — coerce конвертує автоматично.
   limit: z.coerce.number().int().min(1).max(20).default(8),
@@ -891,6 +1470,34 @@ export type MonoAccountDto = z.infer<typeof MonoAccountDtoSchema>;
 /** Response of `GET /api/mono/accounts` — array of accounts, no envelope. */
 export const MonoAccountsResponseSchema = z.array(MonoAccountDtoSchema);
 export type MonoAccountsResponse = z.infer<typeof MonoAccountsResponseSchema>;
+
+/**
+ * Row from `GET /api/mono/jars`. Mirrors the columns of `mono_jar` after
+ * `normalizeMonoJar()` coerces `bigint`→`number` (Hard Rule #1) and
+ * `Date`→ISO-8601 string. Jars ("банки") are Monobank's named savings
+ * sub-accounts — `goal` is the user-set target amount in the jar itself
+ * (nullable when the user never set one in the Monobank app), used as the
+ * default target when a Фінік goal links to this jar
+ * (docs/work/specs/goal-progress-auto.md).
+ */
+export const MonoJarDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoJarId: z.string().min(1),
+  sendId: z.string().nullable(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  currencyCode: z.number().int(),
+  // bigint columns coerced to number by `normalizeMonoJar`; `null` when
+  // Monobank hadn't reported a balance/goal yet.
+  balance: z.number().nullable(),
+  goal: z.number().nullable(),
+  lastSeenAt: z.string().min(1),
+});
+export type MonoJarDto = z.infer<typeof MonoJarDtoSchema>;
+
+/** Response of `GET /api/mono/jars` — array of jars, no envelope. */
+export const MonoJarsResponseSchema = z.array(MonoJarDtoSchema);
+export type MonoJarsResponse = z.infer<typeof MonoJarsResponseSchema>;
 
 /**
  * Row from `GET /api/mono/transactions`. Mirrors the columns of
@@ -1038,7 +1645,7 @@ export type MonoBackfillProgress = z.infer<typeof MonoBackfillProgressSchema>;
 // ────────────────────── Waitlist (Phase 0 monetization rails) ───────────────
 // Простий sign-up для майбутнього Pro-тіру. Валідується тут, щоб і клієнт
 // (через `@sergeant/api-client`) і сервер (через `validateBody`) мали одне
-// джерело правди. Tier-и навмисно матчать `docs/launch/01-monetization-and-pricing.md`.
+// джерело правди. Tier-и навмисно матчать `docs/work/specs/launch/business/01-monetization-and-pricing.md`.
 
 export const WaitlistTierSchema = z.enum(["free", "plus", "pro", "unsure"]);
 export type WaitlistTier = z.infer<typeof WaitlistTierSchema>;
@@ -1075,11 +1682,56 @@ export const WaitlistSubmitResponseSchema = z.object({
   ok: z.literal(true),
   // `created` — true якщо це новий запис; false якщо email уже був у списку.
   // Дозволяє UI показати «ми памʼятаємо твій інтерес» замість «дякуємо що
-  // підписався» — без розкриття конкретики.
+  // підписався». Це СВІДОМО розкриває членство у вейтлисті (і нічого
+  // більше — таблиця окрема від акаунтів); повний розбір інваріанта — у
+  // doc-string `apps/server/src/routes/waitlist.ts`.
   created: z.boolean(),
 });
 export type WaitlistSubmitResponse = z.infer<
   typeof WaitlistSubmitResponseSchema
+>;
+
+// ────────────────────── In-app feedback ─────────────────────────────────────
+// Головний багрепорт-канал закритої бети. Одне джерело правди для клієнта
+// (`@sergeant/api-client`) і сервера (`parseBody`).
+//
+// Чому взагалі є серверний endpoint, якщо подія вже летить у PostHog:
+// PostHog — аналітика (воронка opened → submitted), і її домен блокують
+// розширення. Текст фідбеку мусить пережити блокувальник, офлайн і будь-який
+// збій транспорту, тому джерело істини для нього — власна БД, а клієнт
+// показує «надіслано» лише після 200. Розбір — feedback-loop.md § 2a.
+
+export const FeedbackCategorySchema = z.enum(["idea", "bug", "other"]);
+export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
+
+/** Дзеркалить `MAX_MESSAGE_LENGTH` у `FeedbackDialog.tsx` і CHECK у міграції 093. */
+export const FEEDBACK_MESSAGE_MAX_LENGTH = 2000;
+
+export const FeedbackSubmitSchema = z.object({
+  category: FeedbackCategorySchema,
+  message: z.string().trim().min(1).max(FEEDBACK_MESSAGE_MAX_LENGTH),
+  // Контекст сторінки — опційний: `buildPageContext()` повертає null поза DOM.
+  // `page` уже пройшов `sanitizeUrl()` на клієнті, але сервер не довіряє
+  // цьому й ріже довжину сам (trust boundary).
+  page: z.string().trim().max(2048).optional(),
+  viewport: z
+    .string()
+    .trim()
+    .regex(/^\d{1,5}x\d{1,5}$/, "viewport має бути у форматі WxH")
+    .optional(),
+});
+export type FeedbackSubmitPayload = z.infer<typeof FeedbackSubmitSchema>;
+
+export const FeedbackSubmitResponseSchema = z.object({
+  ok: z.literal(true),
+  // `id` рядка у `feedback_entries`. BIGSERIAL у pg приїжджає рядком —
+  // серіалізатор коерсить у number (Hard Rule #1). Віддаємо, щоб людина
+  // могла назвати номер у Telegram, і щоб підтвердження було доказовим,
+  // а не просто «ok: true».
+  id: z.number().int().positive(),
+});
+export type FeedbackSubmitResponse = z.infer<
+  typeof FeedbackSubmitResponseSchema
 >;
 
 // ────────────────────── Billing (Stripe checkout MVP) ──────────────────────
@@ -1090,8 +1742,31 @@ export type WaitlistSubmitResponse = z.infer<
 export const BillingPlanSchema = z.enum(["plus", "pro"]);
 export type BillingPlan = z.infer<typeof BillingPlanSchema>;
 
+// Web payment providers (Phase 7 UA billing) — те, що юзер може ОБРАТИ на
+// checkout. `stripe` — dormant (ніколи не пропонується UA); `liqpay`
+// (ПриватБанк) + `plata` (monobank) — live UA.
+export const BillingProviderIdSchema = z.enum(["stripe", "liqpay", "plata"]);
+export type BillingProviderId = z.infer<typeof BillingProviderIdSchema>;
+
+// Provider, що може бути ЗАПИСАНИЙ у subscriptions.provider — ширший за
+// checkout-набір: включає `manual` (founder/comp-акаунти через
+// /api/internal/billing/upgrade, DB DEFAULT з m056). Read-side (status)
+// мусить серіалізувати такі рядки, тож окрема схема від checkout-enum.
+export const BillingSubscriptionProviderSchema = z.enum([
+  "stripe",
+  "liqpay",
+  "plata",
+  "manual",
+]);
+export type BillingSubscriptionProvider = z.infer<
+  typeof BillingSubscriptionProviderSchema
+>;
+
 export const BillingCheckoutRequestSchema = z.object({
   plan: BillingPlanSchema,
+  // Optional для back-compat зі старими `{plan}`-only Stripe-викликами: коли
+  // не передано, server бере перший enabled-provider для країни юзера.
+  provider: BillingProviderIdSchema.optional(),
 });
 export type BillingCheckoutRequest = z.infer<
   typeof BillingCheckoutRequestSchema
@@ -1109,30 +1784,101 @@ export type BillingCheckoutResponse = z.infer<
 
 export const BillingSubscriptionSchema = z.object({
   id: z.number().int().positive().nullable(),
-  provider: z.literal("stripe").nullable(),
+  provider: BillingSubscriptionProviderSchema.nullable(),
   plan: BillingPlanSchema.nullable(),
   status: z.string().nullable(),
   active: z.boolean(),
   currentPeriodEnd: z.string().nullable(),
+  /**
+   * Підписку скасовано, але доступ діє до `currentPeriodEnd` (колонка
+   * `subscriptions.cancel_at_period_end`). Статус рядка при цьому лишається
+   * `active`, тож без цього поля UI не відрізнив би «скасовано» від «діє»:
+   * кнопка «Скасувати» не зникала, а «Наступне списання» брехало.
+   *
+   * `.default(false)`, а не просто `z.boolean()`: веб (Vercel) і сервер
+   * (Coolify) деплояться окремо, тож у вікні між деплоями новий клієнт читає
+   * відповідь старого сервера, який поля ще не віддає. «Поля нема» тут
+   * означає рівно те саме, що `false`: старий сервер скасування не показував.
+   */
+  cancelAtPeriodEnd: z.boolean().default(false),
 });
 export type BillingSubscription = z.infer<typeof BillingSubscriptionSchema>;
 
-export const BillingStatusResponseSchema = z.object({
+/** Відповідь провайдера білінгу: лише рядок підписки, без знімка доступу. */
+export const BillingSubscriptionStatusSchema = z.object({
   subscription: BillingSubscriptionSchema,
 });
+export type BillingSubscriptionStatus = z.infer<
+  typeof BillingSubscriptionStatusSchema
+>;
+
+const BillingMeterSchema = z.object({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().nonnegative().nullable(),
+  resetsAt: z.string(),
+});
+export type BillingMeter = z.infer<typeof BillingMeterSchema>;
+
+// Знімок доступу (`docs/work/specs/access-tiers.md`). Сервер обчислює стан і
+// лічильники сам, web нічого не виводить із `plan`: під час trial і grace два
+// місця обчислення розійшлися б.
+export const BillingAccessSchema = z.object({
+  state: z.enum(["free", "trial", "pro", "grace"]),
+  trialEndsAt: z.string().nullable(),
+  graceEndsAt: z.string().nullable(),
+  features: z.record(z.string(), z.boolean()),
+  meters: z.object({
+    aiActions: BillingMeterSchema,
+    aiPhoto: BillingMeterSchema,
+    finykVision: BillingMeterSchema,
+  }),
+});
+export type BillingAccess = z.infer<typeof BillingAccessSchema>;
+
+export const BillingStatusResponseSchema =
+  BillingSubscriptionStatusSchema.extend({
+    access: BillingAccessSchema,
+  });
 export type BillingStatusResponse = z.infer<typeof BillingStatusResponseSchema>;
 
-// `POST /api/billing/portal` — створює Stripe Customer Portal session і
-// повертає короткоживучий redirect-URL для self-serve cancel / update
-// payment / change plan. Endpoint доступний лише для користувачів з
-// active/trialing/past_due підпискою (у яких є `provider_customer_id`);
-// інакше — `409 NO_BILLING_CUSTOMER`. Якщо `STRIPE_SECRET_KEY` не
-// сконфігурований — `503 BILLING_UNAVAILABLE` (як у `/checkout`).
+// `POST /api/billing/portal` — створює manage-session і повертає
+// короткоживучий redirect-URL. Stripe legacy → Customer Portal; LiqPay/Plata →
+// same-origin `/settings?billing=manage`. Endpoint доступний для користувачів
+// з active/trialing/past_due підпискою; інакше — `409 NO_BILLING_CUSTOMER`.
+// Якщо billing не сконфігурований — `503 BILLING_UNAVAILABLE` (як у `/checkout`).
 export const BillingPortalResponseSchema = z.object({
   ok: z.literal(true),
   url: z.string().url(),
 });
 export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
+
+// `POST /api/billing/cancel` (Phase 7 UA billing) — власна кнопка «Скасувати
+// Pro» замість Customer Portal (якого немає в LiqPay/Plata). Тіла запиту
+// немає (діє над поточним юзером). Доступ лишається до кінця оплаченого
+// періоду (`cancel_at_period_end`, у `/api/billing/status` це
+// `subscription.cancelAtPeriodEnd`).
+//
+// `200 {ok:true}` означає, що скасування підтверджено провайдером АБО вже було
+// заплановане раніше (повторний виклик ідемпотентний і провайдера не смикає).
+// Помилки йдуть стандартною формою `{error, code}`:
+//   - `409 NO_ACTIVE_SUBSCRIPTION` — жоден провайдер не має що скасовувати
+//     (немає підписки, founder-байпас або `provider='manual'`);
+//   - `502 PROVIDER_CANCEL_FAILED` — провайдер відмовив або не відповів,
+//     підписка лишається активною, можна повторити.
+export const BillingCancelResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type BillingCancelResponse = z.infer<typeof BillingCancelResponseSchema>;
+
+// `GET /api/billing/providers` — список payment-provider-ів, доступних
+// поточному юзеру (для кнопок на /pricing). UA → увімкнені liqpay/plata;
+// інші країни → stripe.
+export const BillingProvidersResponseSchema = z.object({
+  providers: z.array(BillingProviderIdSchema),
+});
+export type BillingProvidersResponse = z.infer<
+  typeof BillingProvidersResponseSchema
+>;
 
 // ────────────────────── Transcribe (Groq Whisper proxy) ─────────────────────
 // `POST /api/transcribe` приймає сире audio-тіло (Content-Type: `audio/*`),
@@ -1140,6 +1886,30 @@ export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
 // `validateQuery`, і для `@sergeant/api-client` (типізує query + response).
 
 const TRANSCRIBE_MAX_PROMPT_LENGTH = 1024;
+
+/**
+ * Модулі, з яких клієнт декларує голосовий запит (`?module=`).
+ *
+ * AI-NOTE: тег ДЕКЛАРАТИВНИЙ. Сервер не бачить, з якого екрана справді
+ * пішов запит, тож клієнт може збрехати або не передати тег зовсім. Це
+ * осмислений компроміс (рішення власника 2026-09-30): гейт згоди ловить
+ * чесний клієнт і не ламає старі, а не захищає від зловмисника з власним
+ * акаунтом (він і так може сам надиктувати що завгодно).
+ */
+export const TRANSCRIBE_MODULES = [
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "hub",
+] as const;
+export type TranscribeModule = (typeof TRANSCRIBE_MODULES)[number];
+
+/** Модулі, чий голос — дані про здоровʼя (GDPR Art. 9): потрібна `healthDataConsent`. */
+export const TRANSCRIBE_HEALTH_MODULES: readonly string[] = [
+  "nutrition",
+  "fizruk",
+];
 
 export const TranscribeQuerySchema = z.object({
   language: z
@@ -1155,6 +1925,16 @@ export const TranscribeQuerySchema = z.object({
     .max(TRANSCRIBE_MAX_PROMPT_LENGTH)
     .optional()
     .describe("Доменна підказка (списки вправ, продуктів тощо)."),
+  // Навмисно `string`, а не enum: невідомий тег має поводитись як відсутній
+  // (відкрито), а не давати 400 старому/новішому клієнту.
+  module: z
+    .string()
+    .trim()
+    .max(32)
+    .optional()
+    .describe(
+      "Модуль-виклик: nutrition | fizruk | finyk | routine | hub. Для nutrition/fizruk без згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED. Відсутній або невідомий — без гейту.",
+    ),
 });
 export type TranscribeQuery = z.infer<typeof TranscribeQuerySchema>;
 
@@ -1301,7 +2081,7 @@ export type AuthSessionResponse = z.infer<typeof AuthSessionResponseSchema>;
  * browser variants (Firefox, older Safari, Chromium reports-API drafts)
  * that all need to keep working through this sink.
  *
- * Audit reference: `docs/security/hardening/C2-frontend-csp.md`.
+ * Audit reference: `docs/work/specs/security-hardening/C2-frontend-csp.md`.
  */
 export const CspViolationDetailsSchema = z.record(z.string(), z.unknown());
 export type CspViolationDetails = z.infer<typeof CspViolationDetailsSchema>;
@@ -1361,89 +2141,5 @@ export const CspReportBodySchema = z.union([
   CspReportBareSchema,
 ]);
 export type CspReportBody = z.infer<typeof CspReportBodySchema>;
-
-// ────────────────────── /api/account/recovery (planned) ──────────────────────
-/**
- * Wire shapes for the planned `POST /api/account/recovery` /
- * `POST /api/account/recovery/confirm` security-critical endpoints. The
- * routes are referenced in the Sentry sampling table
- * (`apps/server/src/sentry.ts` line 42, `100%` trace rate) and the
- * fail-closed rate-limit policy (`docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md`)
- * but have **no handler yet** — locking the contract here means the
- * eventual implementation can be reviewed against an already-agreed shape
- * instead of bike-shed-debated mid-PR.
- *
- * Hard rule applied: response shape **MUST NOT** distinguish "email is
- * registered" from "email is not registered" via status code or body
- * differences — the response is identical in both cases (HTTP 202 +
- * `{ ok: true }`) to prevent account-enumeration. See
- * `docs/audits/2026-05-13-security-observability-roast.md` § S7 for the
- * carry-over rationale and `OWASP ASVS v4.0 § 2.2.1` for the enumeration
- * threat model.
- */
-export const AccountRecoveryInitiateRequestSchema = z
-  .object({
-    email: z.string().email().max(254),
-  })
-  .strict();
-export type AccountRecoveryInitiateRequest = z.infer<
-  typeof AccountRecoveryInitiateRequestSchema
->;
-
-/**
- * Identical for both registered + unregistered emails (anti-enumeration).
- * `ok: true` is the only guaranteed field — the route is async / queue-based.
- */
-export const AccountRecoveryInitiateResponseSchema = z
-  .object({
-    ok: z.literal(true),
-  })
-  .strict();
-export type AccountRecoveryInitiateResponse = z.infer<
-  typeof AccountRecoveryInitiateResponseSchema
->;
-
-/**
- * Confirm step — caller submits the opaque single-use token from the
- * recovery email plus the new password. Schema validates the same minimum
- * password strength rule as Better Auth's `password.min` config in
- * `apps/server/src/auth.ts`; if Better Auth ever raises the floor, this
- * schema must move in lockstep (Hard Rule #3).
- */
-export const AccountRecoveryConfirmRequestSchema = z
-  .object({
-    token: z.string().min(16).max(512),
-    newPassword: z.string().min(8).max(128),
-  })
-  .strict();
-export type AccountRecoveryConfirmRequest = z.infer<
-  typeof AccountRecoveryConfirmRequestSchema
->;
-
-/**
- * Success: `{ ok: true }`. The route deliberately omits the rotated session
- * to force the client through a fresh `/api/auth/sign-in` — preventing
- * token-replay from re-authenticating an attacker mid-flow.
- */
-export const AccountRecoveryConfirmResponseSchema = z
-  .object({
-    ok: z.literal(true),
-  })
-  .strict();
-export type AccountRecoveryConfirmResponse = z.infer<
-  typeof AccountRecoveryConfirmResponseSchema
->;
-
-/**
- * Error envelope — kept generic-shaped because the route must NOT reveal
- * whether the token was wrong, expired, or already-used (uniform 400
- * response defeats token-existence probing).
- */
-export const AccountRecoveryErrorSchema = z
-  .object({
-    error: z.string().min(1).max(200),
-  })
-  .strict();
-export type AccountRecoveryError = z.infer<typeof AccountRecoveryErrorSchema>;
 
 export { z };

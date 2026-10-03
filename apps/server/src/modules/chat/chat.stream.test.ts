@@ -5,7 +5,7 @@
  * із `tool_results + tool_calls_raw`, сервер відкриває upstream-стрім до
  * Anthropic і форвардить text-дельти у `data: {"t":"…"}\n\n` події. Цей файл
  * мокає `anthropicMessagesStream` фейковою `Response` із `ReadableStream`-боді,
- * а Express-`Response` — об'єктом, що збирає все, що пишуть у `res.write()`,
+ * а Express-`Response` — обʼєктом, що збирає все, що пишуть у `res.write()`,
  * щоб можна було асертити саме SSE-протокол (а не лише фінальний текст).
  *
  * Тести покривають:
@@ -36,6 +36,7 @@ vi.mock("../../obs/metrics.js", () => ({
   anthropicPromptCacheHitTotal: { inc: vi.fn() },
   chatToolInvocationsTotal: { inc: vi.fn() },
   aiRequestDurationMs: { observe: vi.fn() },
+  aiFirstTokenMs: { observe: vi.fn() },
   aiRequestsTotal: { inc: vi.fn() },
   aiTokensTotal: { inc: vi.fn() },
   externalHttpDurationMs: { observe: vi.fn() },
@@ -188,7 +189,9 @@ function makeStreamReqBody(): Record<string, unknown> {
       {
         type: "tool_use",
         id: "toolu_x",
-        name: "noop",
+        // Реальне імʼя з реєстру (`tools.ts`) — B32 валідує `name` проти
+        // `TOOLS`, тож синтетичне "noop" більше не проходить.
+        name: "delete_transaction",
         input: {},
       },
     ],
@@ -365,7 +368,7 @@ describe("chat handler — SSE auto-continuation на stop_reason=max_tokens", (
     // continuation.
     expect(dataPayloads(res.writes)).toEqual([
       JSON.stringify({ t: "Перша частина… " }),
-      JSON.stringify({ t: "друга частина — кінець." }),
+      JSON.stringify({ t: "друга частина – кінець." }),
       "[DONE]",
     ]);
   });
@@ -505,7 +508,12 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 
     const payloads = dataPayloads(res.writes);
     expect(payloads).toContain(JSON.stringify({ t: "часткова… " }));
-    expect(payloads).toContain(JSON.stringify({ err: "network down" }));
+    // Continuation-помилка віддає generic-меседж (CWE-209): сирий текст
+    // помилки провайдера не має витікати клієнту.
+    expect(payloads).toContain(
+      JSON.stringify({ err: "AI continuation failed" }),
+    );
+    expect(payloads.join("")).not.toContain("network down");
     expect(payloads[payloads.length - 1]).toBe("[DONE]");
   });
 });
@@ -513,8 +521,8 @@ describe("chat handler — SSE graceful degradation на continuation-помил
 describe("chat handler — SSE first-call upstream errors", () => {
   it("перший upstream !ok → кидає ExternalServiceError, БЕЗ SSE-заголовків і БЕЗ data-подій", async () => {
     // Pre-SSE upstream-помилка: SSE-заголовки ще не виставлені, тому
-    // нормалізуємо у `makeAiProviderError`. `asyncHandler` довеже до
-    // `errorHandler`, який віддасть JSON `{ error, code: ANTHROPIC_ERROR,
+    // нормалізуємо у `makeAiProviderError`. Express 5 нативно долавлює reject
+    // до `errorHandler`, який віддасть JSON `{ error, code: ANTHROPIC_ERROR,
     // requestId }` зі статусом 429 і безпечним UA-message (без сирого
     // тексту від провайдера). Перевіряємо контракт на рівні throw.
     anthropicMessagesStream.mockResolvedValueOnce({
@@ -535,7 +543,7 @@ describe("chat handler — SSE first-call upstream errors", () => {
     }
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
-      status: 429,
+      status: 503,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
@@ -567,7 +575,7 @@ describe("chat handler — SSE first-call upstream errors", () => {
     }
     expect(caught).toBeInstanceOf(ExternalServiceError);
     expect(caught).toMatchObject({
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
@@ -626,7 +634,7 @@ describe("chat handler — SSE protocol robustness", () => {
       delta: { stop_reason: "end_turn" },
     });
     const fullPayload = `data: ${json}\n\ndata: ${stop}\n\n`;
-    // Шматуємо по 7 байтів — гарантовано б'є по середині `data: `, JSON, та між \n\n.
+    // Шматуємо по 7 байтів — гарантовано бʼє по середині `data: `, JSON, та між \n\n.
     const chunks: string[] = [];
     for (let i = 0; i < fullPayload.length; i += 7) {
       chunks.push(fullPayload.slice(i, i + 7));
@@ -822,6 +830,42 @@ describe("chat handler — SSE prompt-cache metric", () => {
       input_tokens: 1000,
       cache_read_input_tokens: 4096,
       output_tokens: 250,
+    });
+  });
+
+  it("нульовий input_tokens із message_start добирається з message_delta (шлях OpenRouter)", async () => {
+    // OpenRouter віддає у `message_start.usage.input_tokens` НУЛЬ, а справжні
+    // вхідні токени і вже списану суму — лише у фінальному `message_delta`.
+    // Без добору в `ai_usage_daily` писались би нулі, і денна стеля вартості
+    // (`anthropicBudgetGuard`) перестала б бачити чат.
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "message_start",
+          message: { usage: { input_tokens: 0, output_tokens: 0 } },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "ok" },
+        },
+        {
+          type: "message_delta",
+          delta: { stop_reason: "end_turn" },
+          usage: { input_tokens: 18_400, output_tokens: 320, cost: 0.0319 },
+        },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const req = makeReq(makeStreamReqBody());
+    const res = makeSseRes();
+    await handler(req, res);
+
+    expect(recordAnthropicUsageMock).toHaveBeenCalledTimes(1);
+    expect(recordAnthropicUsageMock.mock.calls[0]![2]!).toMatchObject({
+      input_tokens: 18_400,
+      output_tokens: 320,
+      cost: 0.0319,
     });
   });
 

@@ -197,6 +197,7 @@ describe("buildRagContext — happy path", () => {
       userId: "u1",
       query: LONG_QUERY,
       topK: 4,
+      caller: "chat-rag",
     });
     expect(out.startsWith(SHORT_CONTEXT)).toBe(true);
     expect(out).toContain("СХОЖІ ЗАПИСИ З ПАМʼЯТІ КОРИСТУВАЧА");
@@ -207,6 +208,64 @@ describe("buildRagContext — happy path", () => {
     expect(loggerMock.info).toHaveBeenCalledWith(
       expect.objectContaining({ msg: "ai_memory_rag_injected", count: 2 }),
     );
+  });
+
+  it("→ підписує запис КИЇВСЬКОЮ добою, не UTC-нарізкою", async () => {
+    // Запис зроблено о 00:30 за Києвом (21:30Z попереднього дня влітку,
+    // EEST = UTC+3). `toISOString().slice(0,10)` підписав би його
+    // вчорашньою датою, і модель переказала б людині «вчора» про те, що
+    // сталось сьогодні. Той самий заборонений патерн — `kyivClock.ts`.
+    recallMock.mockResolvedValue([
+      {
+        id: 1,
+        source: "nutrition",
+        sourceRef: "meal-night",
+        content: "Пізня вечеря",
+        score: 0.9,
+        createdAt: new Date("2026-07-15T21:30:00Z"),
+        embeddingMeta: {
+          provider: "voyage",
+          model: "voyage-3.5-lite",
+          version: "1",
+          dim: 1024,
+        },
+        metadata: {},
+      },
+    ]);
+    const out = await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+    });
+    expect(out).toContain("2026-07-16");
+    expect(out).not.toContain("2026-07-15");
+  });
+
+  it("→ зимовий зсув (EET, UTC+2) враховано так само", async () => {
+    recallMock.mockResolvedValue([
+      {
+        id: 1,
+        source: "finyk",
+        sourceRef: "tx-night",
+        content: "Нічна покупка",
+        score: 0.9,
+        createdAt: new Date("2026-01-09T22:30:00Z"),
+        embeddingMeta: {
+          provider: "voyage",
+          model: "voyage-3.5-lite",
+          version: "1",
+          dim: 1024,
+        },
+        metadata: {},
+      },
+    ]);
+    const out = await buildRagContext({
+      userId: "u1",
+      baseContext: SHORT_CONTEXT,
+      messages: [userMsg(LONG_QUERY)],
+    });
+    expect(out).toContain("2026-01-10");
+    expect(out).not.toContain("2026-01-09");
   });
 
   it("→ truncate-ить content > 200 символів", async () => {
@@ -291,6 +350,7 @@ describe("buildRagContext — happy path", () => {
       userId: "u1",
       query: "новий запит про спорт",
       topK: 4,
+      caller: "chat-rag",
     });
   });
 });

@@ -40,6 +40,8 @@ import {
   getMonthlyPlanUsage,
   getMonthlySummary,
   getSubscriptionAmountMeta,
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain";
 import { calcForecast } from "@sergeant/finyk-domain/lib";
 
@@ -66,6 +68,7 @@ import { MonthlyPlanCard } from "@/modules/finyk/components/budgets/MonthlyPlanC
 import { PlanEditSheet } from "@/modules/finyk/components/budgets/PlanEditSheet";
 import { SubscriptionEditSheet } from "@/modules/finyk/components/budgets/SubscriptionEditSheet";
 import { SubscriptionRow } from "@/modules/finyk/components/budgets/SubscriptionRow";
+import { formatNumberUk } from "@sergeant/shared";
 
 type BudgetsSheet =
   | { kind: "closed" }
@@ -153,11 +156,18 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
     return map;
   }, [expenseCategoryList]);
 
+  // Прогноз досі одно-категорійний (`ForecastBudget.categoryId`): комбо-ліміт
+  // рахував би лише першу категорію проти повного ліміту й заспокоював би
+  // хибним «все ок» — тож комбо з прогнозу виключені до підтримки набору.
+  const forecastableLimits = useMemo(
+    () => limitBudgets.filter((b) => limitBudgetCategoryIds(b).length === 1),
+    [limitBudgets],
+  );
   const forecasts = useMemo(() => {
-    if (limitBudgets.length === 0) return [];
+    if (forecastableLimits.length === 0) return [];
     return calcForecast(
       statTx,
-      limitBudgets,
+      forecastableLimits,
       today,
       txStore.txCategories,
       txStore.txSplits,
@@ -165,7 +175,7 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
     );
   }, [
     statTx,
-    limitBudgets,
+    forecastableLimits,
     today,
     txStore.txCategories,
     txStore.txSplits,
@@ -338,21 +348,29 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 className="text-sm text-fg-muted text-center"
                 testID="finyk-budgets-limits-empty"
               >
-                Ще немає лімітів. Додай перший — і Finyk покаже, скільки
+                Ще немає лімітів. Додай перший, і Finyk покаже, скільки
                 залишилось до кінця місяця.
               </Text>
             </View>
           ) : (
             <View className="gap-2">
               {limitBudgets.map((b) => {
-                const spent = calcSpent(b.categoryId ?? "");
+                // Комбо-ліміт: факт — сума по всіх категоріях набору. Кожна
+                // транзакція резолвиться в одну категорію, тож сума по
+                // різних id не рахує нічого двічі.
+                const spent = limitBudgetCategoryIds(b).reduce(
+                  (sum, id) => sum + calcSpent(id),
+                  0,
+                );
                 const usage = calculateLimitUsage(b, spent);
                 return (
                   <LimitBudgetRow
                     key={b.id}
                     budget={b}
                     categoryLabel={
-                      labelById.get(b.categoryId ?? "") ?? b.categoryId ?? "—"
+                      formatLimitBudgetLabel(b, (id) => labelById.get(id)) ||
+                      b.categoryId ||
+                      "—"
                     }
                     spent={usage.spent}
                     pctRaw={usage.pctRaw}
@@ -405,7 +423,7 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 className="text-sm text-fg-muted text-center"
                 testID="finyk-budgets-goals-empty"
               >
-                Ще немає цілей. Додай ціль — і відстежуй прогрес місяць за
+                Ще немає цілей. Додай ціль, і відстежуй прогрес місяць за
                 місяцем.
               </Text>
             </View>
@@ -461,11 +479,11 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
                 const meta = getSubscriptionAmountMeta(s, txStore.realTx ?? []);
                 const explicit =
                   s.monthlyCost != null && Number.isFinite(s.monthlyCost)
-                    ? `${s.monthlyCost.toLocaleString("uk-UA")} ${meta.currency}`
+                    ? `${formatNumberUk(s.monthlyCost)} ${meta.currency}`
                     : null;
                 const fromTx =
                   meta.amount != null
-                    ? `${meta.amount.toLocaleString("uk-UA", { maximumFractionDigits: 0 })} ${meta.currency}`
+                    ? `${formatNumberUk(meta.amount, { maximumFractionDigits: 0 })} ${meta.currency}`
                     : null;
                 const nextDate = nextBillingDate(s.billingDay);
                 const nextChargeLabel = nextDate.toLocaleDateString("uk-UA", {
@@ -504,9 +522,9 @@ export function BudgetsPage({ seed, now, testID }: BudgetsPageProps) {
         budget={sheet.kind === "limit" ? sheet.budget : null}
         categoryLabel={
           sheet.kind === "limit"
-            ? (labelById.get(sheet.budget.categoryId ?? "") ??
-              sheet.budget.categoryId ??
-              "")
+            ? formatLimitBudgetLabel(sheet.budget, (id) => labelById.get(id)) ||
+              sheet.budget.categoryId ||
+              ""
             : ""
         }
         onSubmit={upsertBudget}

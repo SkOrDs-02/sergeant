@@ -5,7 +5,7 @@
  * Stage 8 telemetry sink for the SQLite dual-write rollout
  * decision-gates.
  *
- * Roadmap §3 Stage 8 (`docs/planning/storage-roadmap.md`) names three
+ * Roadmap §3 Stage 8 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`) names three
  * client-side metrics that gate progression past `default-on
  * .dual_write` and into `default-on .read_sqlite`:
  *
@@ -100,11 +100,7 @@ export function bucketCount(n: number): CountBucket {
 }
 
 export type ErrorRateBucket =
-  | "0"
-  | "<=0.1pct"
-  | "0.1-1pct"
-  | "1-5pct"
-  | ">5pct";
+  "0" | "<=0.1pct" | "0.1-1pct" | "1-5pct" | ">5pct";
 
 /**
  * Bucket the running error-rate (errored ops / total ops) into the

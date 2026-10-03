@@ -155,14 +155,33 @@ const StartWorkoutInputSchema = z.object({
 });
 
 // cross mutators
+// Дзеркало серверного `save_note` (`toolDefs/utility.ts`) і `SaveNoteAction`:
+// `{ text, tag? }`. Раніше схема вимагала `{ content, title }` — форму, якої
+// ніхто не слав, тож кожен справжній `save_note` валив усю пачку tool_calls.
 const SaveNoteInputSchema = z.object({
-  content: z.string().min(1),
-  title: z.string().optional(),
+  text: z.string().min(1),
+  tag: z.string().optional(),
 });
 
+/**
+ * Дзеркало серверного визначення `remember`
+ * (`apps/server/src/modules/chat/toolDefs/memory.ts`) — `{ fact, category }`.
+ *
+ * Схема довго вимагала `{ key, value }` — форму, якої не виробляв ніхто:
+ * ні промпт, ні тип `RememberAction`, ні хендлер `crossActions/memoryHandlers`.
+ * Модель слала правильний `{fact, category}`, фаєрвол відкидав ВСЮ пачку
+ * tool_calls, і користувач бачив тост «Не вдалося виконати дію» плюс
+ * «Немає відповіді». Тобто «Запамʼятай…» не міг спрацювати жодного разу.
+ *
+ * `category` тут не звужується до enum навмисно: серверне визначення йде
+ * зі `strict: true`, тож grammar-constrained sampling уже гарантує значення
+ * зі списку, а дубль enum-у на клієнті став би другим місцем, яке треба
+ * синхронізувати при кожній новій категорії — рівно тією розсинхронізацією,
+ * що й спричинила цей баг.
+ */
 const RememberInputSchema = z.object({
-  key: z.string().min(1),
-  value: z.unknown(),
+  fact: z.string().min(1),
+  category: z.string().optional(),
 });
 
 /**
@@ -234,6 +253,7 @@ export const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set([
   "add_recipe",
   "add_to_shopping_list",
   "consume_from_pantry",
+  "clear_pantry",
   "set_daily_plan",
   "suggest_meal",
   "copy_meal_from_date",
@@ -248,6 +268,7 @@ export const KNOWN_TOOL_NAMES: ReadonlySet<string> = new Set([
   "detect_anomalies",
   "compare_weeks",
   "convert_units",
+  "get_daily_series",
   "save_note",
   "list_notes",
   "export_module_data",

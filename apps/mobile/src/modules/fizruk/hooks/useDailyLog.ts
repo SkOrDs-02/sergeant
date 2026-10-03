@@ -3,7 +3,7 @@
  * (weight, sleep, energy, mood).
  *
  * Stage 12 / PR #057f-tombstone-mobile-stage12 of
- * `docs/planning/storage-roadmap.md` (mobile parity for Stage 8
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (mobile parity for Stage 8
  * `#057f-tombstone` extended to the new Stage 12 daily-log slot).
  * Reads from the SQLite warm cache (`getCachedFizrukSqliteState`)
  * and persists exclusively through the dual-write pipeline
@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { DailyLogEntry } from "@sergeant/fizruk-domain";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractDailyLogSnapshots,
@@ -33,7 +33,7 @@ import {
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 function uid(): string {
-  return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /** Project a cache row onto the loose `DailyLogEntry` hook shape. */
@@ -69,14 +69,21 @@ export function useDailyLog(): UseDailyLogResult {
 
   // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay daily-log
   // entries from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.dailyLog.map(projectFromCache);
-    stateRef.current = overlay;
-    setEntries(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setEntries(cache.dailyLog.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = entries;
+  }, [entries]);
 
   const persist = useCallback(
     (updater: (prev: DailyLogEntry[]) => DailyLogEntry[]) => {

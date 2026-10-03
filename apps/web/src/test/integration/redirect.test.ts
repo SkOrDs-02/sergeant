@@ -3,16 +3,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 /**
- * PR-25 (stack-pulse-2026-05) single-origin slice. The historic
- * `fizruk.vercel.app` origin must 301-redirect to the canonical
- * `sergeant.vercel.app`, preserving path + query. Vercel emits a 301 for a
- * redirect rule with `permanent: true`, so we assert the declarative rule in
- * `apps/web/vercel.json` (Vercel's Root Directory is `apps/web`, so this is
- * the only config it reads — see `vercelOutputConfig.test.ts`).
- *
- * This is the NON-breaking PR-1 slice: the redirect is additive. Dropping
- * `fizruk.vercel.app` from the CORS / OAuth allowlists is the deferred PR-2
- * and is explicitly out of scope here.
+ * PR-25 (stack-pulse-2026-05) single-origin policy. The historic
+ * `fizruk.vercel.app` origin 301-redirects to canonical `sergeant.vercel.app`
+ * (see ADR-0074 §74.2). CORS/OAuth cleanup shipped in [#327](https://github.com/Skords-01/Sergeant/pull/327).
  */
 
 type VercelRedirect = {

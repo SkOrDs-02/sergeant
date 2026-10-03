@@ -7,6 +7,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
 import { type Meal } from "@sergeant/nutrition-domain";
 import { getMealThumbnailBlob } from "../lib/mealPhotoStorage";
 
@@ -55,16 +56,16 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
   const macroSource = String(meal?.macroSource || "manual");
   const sourceLabel =
     macroSource === "photoAI"
-      ? "AI"
+      ? "Сержант"
       : macroSource === "recipeAI"
-        ? "AI-рецепт"
+        ? "рецепт Сержанта"
         : macroSource === "productDb"
           ? "DB"
           : "";
   // 6.4: AI-sourced entries (photoAI / recipeAI) get the nutrition-tinted
-  // sparkles badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
+  // sergeant-glyph badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
   // is a deterministic lookup, not AI inference, so it keeps the neutral
-  // soft tone without the sparkles icon.
+  // soft tone without the sergeant glyph.
   const isAiSourced = macroSource === "photoAI" || macroSource === "recipeAI";
   return (
     <div className="flex items-center gap-3 bg-panelHi rounded-2xl px-3 py-2.5 group">
@@ -84,40 +85,45 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
             {meal.name}
           </span>
           {meal.time && (
-            <span className="text-xs text-subtle shrink-0">{meal.time}</span>
+            <span className="text-style-caption text-subtle shrink-0">
+              {meal.time}
+            </span>
           )}
           {sourceLabel && (
             <Badge
               variant={isAiSourced ? "nutrition" : "neutral"}
               tone="soft"
               size="xs"
-              className="shrink-0 inline-flex items-center gap-1 rounded-full uppercase tracking-wider"
+              className="shrink-0 inline-flex items-center gap-1 rounded-full"
               title="Походження КБЖВ"
             >
-              {isAiSourced && <Icon name="sparkles" size={10} aria-hidden />}
+              {isAiSourced && <Icon name="sergeant" size={10} aria-hidden />}
               <span>{sourceLabel}</span>
             </Badge>
           )}
         </div>
         <div className="flex gap-2 mt-0.5 flex-wrap">
           {mac.kcal != null && (
-            <span className="text-xs text-nutrition-strong dark:text-nutrition font-bold">
-              {Math.round(mac.kcal)} ккал
-            </span>
+            <Measure
+              value={Math.round(mac.kcal)}
+              unit="ккал"
+              tone="inherit"
+              className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold"
+            />
           )}
           {mac.protein_g != null && (
-            <span className="text-xs text-subtle">
-              Б {Math.round(mac.protein_g)}г
+            <span className="text-style-caption text-subtle">
+              Б <Measure value={Math.round(mac.protein_g)} unit="г" />
             </span>
           )}
           {mac.fat_g != null && (
-            <span className="text-xs text-subtle">
-              Ж {Math.round(mac.fat_g)}г
+            <span className="text-style-caption text-subtle">
+              Ж <Measure value={Math.round(mac.fat_g)} unit="г" />
             </span>
           )}
           {mac.carbs_g != null && (
-            <span className="text-xs text-subtle">
-              В {Math.round(mac.carbs_g)}г
+            <span className="text-style-caption text-subtle">
+              В <Measure value={Math.round(mac.carbs_g)} unit="г" />
             </span>
           )}
         </div>
@@ -130,7 +136,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
         aria-label="Видалити запис"
         className="text-muted hover:text-danger hover:bg-danger/10 sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        ✕
+        <Icon name="close" size="sm" aria-hidden />
       </Button>
     </div>
   );

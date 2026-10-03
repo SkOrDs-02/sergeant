@@ -16,16 +16,16 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     id: "ppl",
     name: "Push Pull Legs",
     description:
-      "Класична 6-денна програма. Push (груди/плечі/трицепс), Pull (спина/біцепс), Legs (ноги/сідниці). Відмінно для середнього рівня.",
+      "Класична 6-денна програма. Push (груди/плечі/трицепс), Pull (спина/біцепс), Legs (ноги/сідниці). Для тих, хто вже тренується регулярно.",
     days: 6,
     durationWeeks: 8,
     schedule: [
-      { day: 1, sessionKey: "push", name: "Push — Груди, плечі, трицепс" },
-      { day: 2, sessionKey: "pull", name: "Pull — Спина, біцепс" },
-      { day: 3, sessionKey: "legs", name: "Legs — Ноги, сідниці" },
-      { day: 4, sessionKey: "push", name: "Push — Груди, плечі, трицепс" },
-      { day: 5, sessionKey: "pull", name: "Pull — Спина, біцепс" },
-      { day: 6, sessionKey: "legs", name: "Legs — Ноги, сідниці" },
+      { day: 1, sessionKey: "push", name: "Push: Груди, плечі, трицепс" },
+      { day: 2, sessionKey: "pull", name: "Pull: Спина, біцепс" },
+      { day: 3, sessionKey: "legs", name: "Legs: Ноги, сідниці" },
+      { day: 4, sessionKey: "push", name: "Push: Груди, плечі, трицепс" },
+      { day: 5, sessionKey: "pull", name: "Pull: Спина, біцепс" },
+      { day: 6, sessionKey: "legs", name: "Legs: Ноги, сідниці" },
     ],
     sessions: {
       push: {
@@ -73,14 +73,14 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     id: "upper_lower",
     name: "Upper / Lower",
     description:
-      "4-денна програма: два тренування на верх тіла та два на низ. Оптимальна частота для кожної групи. Підходить для початківців та середнього рівня.",
+      "4-денна програма: два тренування на верх тіла та два на низ, кожна група працює двічі на тиждень. Підходить і новачкам, і тим, хто вже тренується.",
     days: 4,
     durationWeeks: 8,
     schedule: [
-      { day: 1, sessionKey: "upper_a", name: "Upper A — Верх тіла (сила)" },
-      { day: 2, sessionKey: "lower_a", name: "Lower A — Низ тіла (сила)" },
-      { day: 4, sessionKey: "upper_b", name: "Upper B — Верх тіла (об'єм)" },
-      { day: 5, sessionKey: "lower_b", name: "Lower B — Низ тіла (об'єм)" },
+      { day: 1, sessionKey: "upper_a", name: "Upper A: Верх тіла (сила)" },
+      { day: 2, sessionKey: "lower_a", name: "Lower A: Низ тіла (сила)" },
+      { day: 4, sessionKey: "upper_b", name: "Upper B: Верх тіла (обʼєм)" },
+      { day: 5, sessionKey: "lower_b", name: "Lower B: Низ тіла (обʼєм)" },
     ],
     sessions: {
       upper_a: {
@@ -109,7 +109,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
         defaultRestSec: 120,
       },
       upper_b: {
-        name: "Upper B (об'єм)",
+        name: "Upper B (обʼєм)",
         exerciseIds: [
           "incline_bench_press",
           "cable_seated_row",
@@ -122,7 +122,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
         defaultRestSec: 75,
       },
       lower_b: {
-        name: "Lower B (об'єм)",
+        name: "Lower B (обʼєм)",
         exerciseIds: [
           "deadlift",
           "leg_press",
@@ -139,7 +139,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     id: "full_body",
     name: "Full Body 3×тиждень",
     description:
-      "Три повних тренування тіла на тиждень (Пн/Ср/Пт). Ідеально для початківців та тих, хто має обмежений час. Максимальна частота стимуляції м'язів.",
+      "Три повних тренування тіла на тиждень (Пн/Ср/Пт), кожен мʼяз працює тричі. Для новачків і для тижнів, коли часу мало.",
     days: 3,
     durationWeeks: 6,
     schedule: [
@@ -178,7 +178,7 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
     id: "starting_strength",
     name: "Лінійна прогресія",
     description:
-      "3-денна програма на основі базових багатосуглобових рухів. Щотренування +2.5 кг на штанзі. Найкраще для новачків — швидкий набір сили.",
+      "3-денна програма на базових багатосуглобових рухах. Щотренування +2,5 кг на штанзі. Для новачків, у яких сила ще росте від тренування до тренування.",
     days: 3,
     durationWeeks: 12,
     schedule: [
@@ -195,6 +195,202 @@ export const PROGRAM_CATALOGUE: readonly TrainingProgramDef[] = [
       },
       ss_b: {
         name: "Workout B",
+        exerciseIds: ["squat_barbell", "overhead_press_barbell", "deadlift"],
+        progressionKg: 2.5,
+        defaultRestSec: 180,
+      },
+    },
+  },
+  {
+    id: "home_bodyweight",
+    name: "Дім без обладнання",
+    description:
+      "Три тренування на тиждень із власною вагою: жодної штанги, гантелей і тренажерів. Для тижнів без залу: вдома або на майданчику.",
+    days: 3,
+    durationWeeks: 6,
+    schedule: [
+      { day: 1, sessionKey: "home_push", name: "Дім A: жим і прес" },
+      { day: 3, sessionKey: "home_pull", name: "Дім B: тяга і корпус" },
+      { day: 5, sessionKey: "home_legs", name: "Дім C: ноги" },
+    ],
+    sessions: {
+      home_push: {
+        name: "Дім A",
+        exerciseIds: [
+          "pushup",
+          "pike_pushup",
+          "diamond_pushup",
+          "decline_pushup",
+          "plank",
+          "hollow_hold",
+        ],
+        progressionKg: 0,
+        defaultRestSec: 60,
+      },
+      home_pull: {
+        name: "Дім B",
+        exerciseIds: [
+          "pullup",
+          "inverted_row",
+          "pullup_negative",
+          "superman",
+          "dead_hang",
+          "bird_dog",
+        ],
+        progressionKg: 0,
+        defaultRestSec: 75,
+      },
+      home_legs: {
+        name: "Дім C",
+        exerciseIds: [
+          "squat_bodyweight",
+          "split_squat",
+          "glute_bridge",
+          "nordic_curl",
+          "calf_raise_stairs",
+          "wall_sit",
+        ],
+        progressionKg: 0,
+        defaultRestSec: 60,
+      },
+    },
+  },
+  {
+    id: "two_day_minimum",
+    name: "Мінімум: 2 дні",
+    description:
+      "Два повних тренування на тиждень: рівно поріг, за яким тижневий стрік тримається. Для тижнів, коли часу мало, а випадати з ритму не хочеться.",
+    days: 2,
+    durationWeeks: 8,
+    schedule: [
+      { day: 2, sessionKey: "min_a", name: "День A: верх у пріоритеті" },
+      { day: 5, sessionKey: "min_b", name: "День B: низ у пріоритеті" },
+    ],
+    sessions: {
+      min_a: {
+        name: "День A",
+        exerciseIds: [
+          "bench_press_barbell",
+          "barbell_row",
+          "overhead_press_dumbbell",
+          "romanian_deadlift",
+          "plank",
+        ],
+        progressionKg: 2.5,
+        defaultRestSec: 120,
+      },
+      min_b: {
+        name: "День B",
+        exerciseIds: [
+          "squat_barbell",
+          "pullup",
+          "incline_dumbbell_press",
+          "hip_thrust",
+          "farmers_walk",
+        ],
+        progressionKg: 5,
+        defaultRestSec: 120,
+      },
+    },
+  },
+  {
+    id: "five_day_split",
+    name: "5-денний спліт",
+    description:
+      "Класичний спліт по групах: груди, спина, ноги, плечі, руки. Для того, хто вже тримає ритм і має пʼять вечорів на тиждень.",
+    days: 5,
+    durationWeeks: 8,
+    schedule: [
+      { day: 1, sessionKey: "chest_day", name: "Груди" },
+      { day: 2, sessionKey: "back_day", name: "Спина" },
+      { day: 3, sessionKey: "legs_day", name: "Ноги" },
+      { day: 5, sessionKey: "shoulders_day", name: "Плечі" },
+      { day: 6, sessionKey: "arms_day", name: "Руки" },
+    ],
+    sessions: {
+      chest_day: {
+        name: "Груди",
+        exerciseIds: [
+          "bench_press_barbell",
+          "incline_dumbbell_press",
+          "dips_chest",
+          "cable_crossover",
+          "dumbbell_pullover",
+        ],
+        progressionKg: 2.5,
+        defaultRestSec: 90,
+      },
+      back_day: {
+        name: "Спина",
+        exerciseIds: [
+          "pullup",
+          "pendlay_row",
+          "cable_lat_pulldown",
+          "chest_supported_row",
+          "hyperextension",
+        ],
+        progressionKg: 2.5,
+        defaultRestSec: 90,
+      },
+      legs_day: {
+        name: "Ноги",
+        exerciseIds: [
+          "squat_barbell",
+          "romanian_deadlift",
+          "leg_press",
+          "seated_leg_curl",
+          "calf_raise_standing",
+        ],
+        progressionKg: 5,
+        defaultRestSec: 120,
+      },
+      shoulders_day: {
+        name: "Плечі",
+        exerciseIds: [
+          "overhead_press_barbell",
+          "lateral_raise",
+          "rear_delt_machine",
+          "cable_face_pull",
+          "shrugs",
+        ],
+        progressionKg: 2.5,
+        defaultRestSec: 75,
+      },
+      arms_day: {
+        name: "Руки",
+        exerciseIds: [
+          "ez_bar_curl",
+          "close_grip_bench_press",
+          "cable_rope_hammer_curl",
+          "rope_pushdown",
+          "wrist_curl",
+        ],
+        progressionKg: 2.5,
+        defaultRestSec: 60,
+      },
+    },
+  },
+  {
+    id: "strength_5x5",
+    name: "Силовий 5×5",
+    description:
+      "Три дні на тиждень, по три базові рухи, пʼять підходів по пʼять повторень. Мало вправ, багато ваги: для тих, хто хоче саме сили.",
+    days: 3,
+    durationWeeks: 12,
+    schedule: [
+      { day: 1, sessionKey: "fivexfive_a", name: "5×5 A" },
+      { day: 3, sessionKey: "fivexfive_b", name: "5×5 B" },
+      { day: 5, sessionKey: "fivexfive_a", name: "5×5 A" },
+    ],
+    sessions: {
+      fivexfive_a: {
+        name: "5×5 A",
+        exerciseIds: ["squat_barbell", "bench_press_barbell", "barbell_row"],
+        progressionKg: 2.5,
+        defaultRestSec: 180,
+      },
+      fivexfive_b: {
+        name: "5×5 B",
         exerciseIds: ["squat_barbell", "overhead_press_barbell", "deadlift"],
         progressionKg: 2.5,
         defaultRestSec: 180,

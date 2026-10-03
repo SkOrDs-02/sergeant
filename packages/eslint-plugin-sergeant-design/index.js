@@ -1,149 +1,8 @@
 /**
- * sergeant-design — local ESLint plugin for Sergeant design-system guardrails.
- *
- * Rules:
- *   - no-eyebrow-drift: forbid the combination of `uppercase`, `tracking-*`,
- *     and `text-*` in a single className string. Use <SectionHeading> (or
- *     <Label normalCase={false}>) instead. Add
- *       // eslint-disable-next-line sergeant-design/no-eyebrow-drift
- *     for intentional stylistic exceptions (e.g. narrative overlay stories).
- *
- *   - no-ellipsis-dots: forbid three consecutive ASCII dots (`...`) inside
- *     string literals and JSX text nodes — the typographic ellipsis `…`
- *     (U+2026) is a single glyph, renders with correct kerning, and is
- *     what Web Interface Guidelines recommend for truncation cues
- *     ("Loading…", "Пошук…", etc.). Auto-fixable.
- *
- *   - no-hex-in-classname: forbid arbitrary-value hex colors in
- *     className (`bg-[#10b981]`, `text-[#fff]/50`, …). Every color must
- *     come from the design-system token layer so dark-mode, palette
- *     migration, and WCAG tiers apply uniformly.
- *
- *   - no-foreign-module-accent: inside `apps/[app]/src/modules/[X]/`
- *     subtrees, only `[X]`'s accent utilities (`bg-[X]-surface`,
- *     `text-[X]-strong`, `ring-[X]`, …) are allowed. Cross-module
- *     shells (`core/`, `shared/`, `stories/`) remain free to reference
- *     all four module accents.
- *
- * Motion / reduced-motion (convention — not auto-enforced yet):
- *   - Prefer `motion-safe:` on `animate-*` and decorative transitions so
- *     `prefers-reduced-motion: reduce` users get calmer UI; pair with
- *     `motion-reduce:transition-none` where you use `transition-all` on
- *     controls.
- *   - Global `index.css` already shortens animation/transition duration under
- *     `prefers-reduced-motion`; explicit `motion-safe:` keeps intent obvious
- *     in code review and avoids relying only on the global reset.
+ * Sergeant's local ESLint rules for runtime, privacy, storage, API-contract,
+ * repository-boundary, and domain invariants. Visual taste stays in design
+ * tokens and review guidance instead of custom AST rules.
  */
-
-// parse5 powers the `sri-on-third-party-script` rule (HTML `<script src>`
-// SRI guard). Root devDependency; the plugin is private + internal-only.
-import { parse as parseHtml } from "parse5";
-
-const EYEBROW_MESSAGE =
-  "Avoid the `uppercase` + `tracking-*` + `text-*` eyebrow combo in raw classNames — use <SectionHeading> (or <Label>) instead. Add // eslint-disable-next-line sergeant-design/no-eyebrow-drift only for intentional narrative / overlay typography.";
-
-// A className triggers the rule iff it contains all three markers.
-const RX_UPPERCASE = /(?:^|\s)uppercase(?:\s|$)/;
-const RX_TRACKING = /(?:^|\s)tracking-[\w-]+/;
-// Match any `text-*` utility (size OR color) — the drift is specifically the
-// colocation with `uppercase` + `tracking-`, regardless of which `text-*`.
-const RX_TEXT = /(?:^|\s)text-[\w-]+(?:\/\d+)?(?:\s|$)/;
-
-function classNameHasEyebrowDrift(value) {
-  if (typeof value !== "string") return false;
-  return (
-    RX_UPPERCASE.test(value) && RX_TRACKING.test(value) && RX_TEXT.test(value)
-  );
-}
-
-const noEyebrowDrift = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid the uppercase+tracking+text eyebrow combo outside the <SectionHeading> / <Label> design-system primitives.",
-    },
-    schema: [],
-    messages: { drift: EYEBROW_MESSAGE },
-  },
-  create(context) {
-    function report(node, value) {
-      if (classNameHasEyebrowDrift(value)) {
-        context.report({ node, messageId: "drift" });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        if (node.value && typeof node.value.cooked === "string") {
-          report(node, node.value.cooked);
-        } else if (node.value && typeof node.value.raw === "string") {
-          report(node, node.value.raw);
-        }
-      },
-    };
-  },
-};
-
-const ELLIPSIS_MESSAGE =
-  "Use `…` (U+2026, a single ellipsis glyph) instead of three ASCII dots `...` in user-facing strings. The typographic ellipsis renders with correct kerning and is what Web Interface Guidelines recommend for truncation cues (e.g. 'Loading…').";
-
-const RX_THREE_DOTS = /\.{3}/;
-
-function replaceEllipsisDots(text) {
-  return text.replace(/\.{3}/g, "…");
-}
-
-const noEllipsisDots = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Forbid three ASCII dots (`...`) inside string literals — use the typographic ellipsis `…` (U+2026).",
-    },
-    fixable: "code",
-    schema: [],
-    messages: { ellipsis: ELLIPSIS_MESSAGE },
-  },
-  create(context) {
-    function reportLiteral(node, raw) {
-      if (!RX_THREE_DOTS.test(raw)) return;
-      context.report({
-        node,
-        messageId: "ellipsis",
-        fix(fixer) {
-          const sourceCode = context.sourceCode ?? context.getSourceCode();
-          const text = sourceCode.getText(node);
-          return fixer.replaceText(node, replaceEllipsisDots(text));
-        },
-      });
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value !== "string") return;
-        reportLiteral(node, node.value);
-      },
-      TemplateElement(node) {
-        const raw = node.value && node.value.cooked;
-        if (typeof raw !== "string") return;
-        reportLiteral(node, raw);
-      },
-      JSXText(node) {
-        if (typeof node.value !== "string") return;
-        if (!RX_THREE_DOTS.test(node.value)) return;
-        context.report({
-          node,
-          messageId: "ellipsis",
-          fix(fixer) {
-            return fixer.replaceText(node, replaceEllipsisDots(node.value));
-          },
-        });
-      },
-    };
-  },
-};
 
 // ─── no-raw-tracked-storage ─────────────────────────────────────────────
 //
@@ -174,61 +33,15 @@ const noEllipsisDots = {
 // the rule (or vice versa).
 
 const TRACKED_STORAGE_KEY_NAMES = new Set([
-  // finyk — removed from SYNC_MODULES in PR #039 (storage-roadmap
-  // Stage 4). The nineteen `finyk_*` LS/MMKV keys are no longer
-  // cloud-synced through `module_data.finyk`; the per-table
-  // `finyk_*` SQLite mirror plus the op-log carry budgets / subs /
-  // assets / debts / receivables / hidden / monthly_plan / tx_cats /
-  // tx_splits / mono_debt_linked / networth_history / custom_cats /
-  // manual_expenses / tx_filters / show_balance plus the Mono cache
-  // mirror (tx_cache, info_cache, tx_cache_last_good) instead. The
-  // dedicated `no-restricted-syntax` guard in `eslint.config.js`
-  // prevents new direct reads of `STORAGE_KEYS.FINYK_<key>`.
-  // FINYK_TOKEN was already not tracked: the Monobank PAT is
-  // server-only (`mono_connection.token_ciphertext`) and writing it
-  // client-side is banned by the dedicated `no-finyk-token-in-storage`
-  // rule.
-  // fizruk — removed from SYNC_MODULES in PR #030 (storage-roadmap
-  // Stage 4). The eleven `fizruk_*_v1` LS/MMKV keys are no longer
-  // cloud-synced through `module_data.fizruk`; the per-table
-  // `fizruk_*` SQLite mirror plus the op-log carry workouts /
-  // measurements / templates / wellbeing / daily-log instead. The
-  // dedicated `no-restricted-syntax` guard in `eslint.config.js`
-  // prevents new direct reads of `STORAGE_KEYS.FIZRUK_<key>`.
-  // routine — removed from SYNC_MODULES in PR #026 (storage-roadmap
-  // Stage 4). Completions now live in SQLite; the LS blob is no longer
-  // cloud-synced. The dedicated ESLint guard in eslint.config.js
-  // prevents new direct reads of STORAGE_KEYS.ROUTINE.
-  // nutrition — removed from SYNC_MODULES in PR #034 (storage-roadmap
-  // Stage 4). The five `nutrition_*_v1` LS/MMKV keys are no longer
-  // cloud-synced through `module_data.nutrition`; the per-table
-  // `nutrition_*` SQLite mirror plus the op-log carry meals /
-  // pantries / prefs / saved-recipes instead. The dedicated
-  // `no-restricted-syntax` guard in `eslint.config.js` prevents new
-  // direct reads of `STORAGE_KEYS.NUTRITION_<key>`.
-  // profile (web-only payload — `USER_PROFILE` does not exist in MMKV,
-  // but listing it here keeps the cross-platform registry symmetric so
-  // mobile sync no longer null-overwrites the server blob).
-  // `HUB_BIOMETRICS` (added alongside `USER_PROFILE` in PR #2245 — the
-  // hub-level biometric parameters store, height/birth-date/sex/
-  // activity-level/current-weight, used by the nutrition Mifflin-St
-  // Jeor TDEE calculator). Synced via `SYNC_MODULES.profile` (LWW),
-  // same path as the user-profile blob.
+  // Only the `profile` sync module is still LS/MMKV-tracked: finyk /
+  // fizruk / routine / nutrition left SYNC_MODULES during storage-roadmap
+  // Stage 4 (SQLite mirror + op-log; `no-restricted-syntax` guards in
+  // `eslint.config.js` block new direct STORAGE_KEYS reads for them).
   "USER_PROFILE",
   "HUB_BIOMETRICS",
 ]);
 
 const TRACKED_STORAGE_KEY_VALUES = new Set([
-  // finyk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
-  // PR #039). "finyk_token" was already not tracked: server-only PAT,
-  // see `no-finyk-token-in-storage` rule.
-  // fizruk — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
-  // PR #030).
-  // routine — see TRACKED_STORAGE_KEY_NAMES comment above (retired in
-  // PR #026).
-  // nutrition — see TRACKED_STORAGE_KEY_NAMES comment above (retired
-  // in PR #034).
-  // profile (see USER_PROFILE / HUB_BIOMETRICS comments above).
   "hub_user_profile_v1",
   "hub_biometrics_v1",
 ]);
@@ -442,242 +255,6 @@ const noRawLocalStorage = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// `valid-tailwind-opacity` — flag color/opacity modifiers that won't render
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Tailwind v3 only generates a `<color>/<N>` utility when `N` exists in
-// `theme.opacity`. The default scale steps in 5-pt increments
-// (0, 5, 10, 15, 20… 100); the Sergeant preset extends that with `8`
-// (canonical "barely there" 8 % wash on panel surfaces — see
-// `packages/design-tokens/tailwind-preset.js`). Every other value
-// (`bg-finyk/7`, `text-danger/12`, `border-line/18`) silently produces
-// **no class** and the surrounding `dark:` / `hover:` override falls
-// through to the light-mode background — exactly the dark-mode "светлые
-// плитки" regression #814 fixed.
-//
-// This rule scans className strings (and template literals / JSX
-// attributes) for the pattern `<utility>-<color>/<N>` and reports any
-// `N` that is not in the allowed set. Arbitrary values (`bg-[#fff]/[.5]`)
-// are left alone — Tailwind handles them via the JIT path.
-//
-// Keep `ALLOWED_TAILWIND_OPACITY_STEPS` in sync with the `opacity`
-// extension in `packages/design-tokens/tailwind-preset.js`.
-
-const ALLOWED_TAILWIND_OPACITY_STEPS = new Set([
-  0, 5, 8, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90,
-  95, 100,
-]);
-
-const TAILWIND_OPACITY_UTILITIES = [
-  "bg",
-  "text",
-  "border",
-  "ring",
-  "fill",
-  "stroke",
-  "from",
-  "to",
-  "via",
-  "shadow",
-  "outline",
-  "divide",
-  "placeholder",
-  "caret",
-  "decoration",
-  "accent",
-];
-
-// Match `<utility>-<color-token>/<digits>` where:
-//   • `<utility>` is one of the color-aware utilities above,
-//   • `<color-token>` is a non-arbitrary identifier (letters, digits,
-//     hyphens) — the JIT path `bg-[#fff]/[.5]` is intentionally skipped,
-//   • `<digits>` is 1–3 decimal digits.
-// The leading `\b` lets variant prefixes (`dark:`, `hover:`, `lg:`) sit
-// in front of the utility.
-const RX_TAILWIND_OPACITY = new RegExp(
-  String.raw`\b(` +
-    TAILWIND_OPACITY_UTILITIES.join("|") +
-    String.raw`)-([a-zA-Z][a-zA-Z0-9-]*)\/(\d{1,3})\b`,
-  "g",
-);
-
-const TAILWIND_OPACITY_MESSAGE =
-  "Tailwind opacity step `/{{step}}` is not registered — `{{utility}}` will silently render no class. Use one of: 0, 5, 8, 10, 15, 20, 25 … 100, or extend `theme.opacity` in `packages/design-tokens/tailwind-preset.js`.";
-
-function findInvalidOpacitySteps(value) {
-  if (typeof value !== "string" || value.length === 0) return [];
-  // Skip strings that obviously aren't className soup — cheap escape so
-  // we don't tokenize unrelated literals (URLs, regexes, etc.).
-  if (!value.includes("/")) return [];
-  const hits = [];
-  let match;
-  RX_TAILWIND_OPACITY.lastIndex = 0;
-  while ((match = RX_TAILWIND_OPACITY.exec(value)) !== null) {
-    const [full, utilityPrefix, , stepRaw] = match;
-    const step = Number(stepRaw);
-    if (!Number.isFinite(step)) continue;
-    if (ALLOWED_TAILWIND_OPACITY_STEPS.has(step)) continue;
-    hits.push({ utility: full, prefix: utilityPrefix, step });
-  }
-  return hits;
-}
-
-const validTailwindOpacity = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid Tailwind `<color>/<N>` opacity modifiers whose step is not registered in `theme.opacity` — the class is silently dropped, breaking dark-mode and hover overrides.",
-    },
-    schema: [],
-    messages: { unregistered: TAILWIND_OPACITY_MESSAGE },
-  },
-  create(context) {
-    function report(node, value) {
-      const hits = findInvalidOpacitySteps(value);
-      for (const hit of hits) {
-        context.report({
-          node,
-          messageId: "unregistered",
-          data: { utility: hit.utility, step: String(hit.step) },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─── no-low-contrast-text-on-fill ──────────────────────────────────────
-//
-// Forbid the saturated brand-fill + `text-white` combination on light
-// surfaces. The full rationale, decision matrix, and contrast measurements
-// live in `docs/design/brandbook.md` → "WCAG-AA `-strong` Tier" and
-// `docs/design/brand-palette-wcag-aa-proposal.md`.
-//
-// Quick recap: every saturated brand colour ships with a `-strong`
-// companion that clears WCAG AA 4.5 : 1 against `text-white`. Reaching
-// for the saturated `bg-{family}` (or its `-{50…600}` scale steps) when
-// the foreground is `text-white` regresses to ~2.4–2.8 : 1, which is
-// what tripped /design's axe gate before PRs #854 / #855.
-//
-// What this rule flags (in a single className string):
-//   - `bg-{family}` or `bg-{family}-{50|100|200|300|400|500|600}`,
-//     un-prefixed by any variant (`dark:` / `hover:` / `lg:` etc.),
-//   - co-located with `text-white` (also un-prefixed).
-//
-// What this rule deliberately does NOT flag:
-//   - `bg-{family}-strong text-white` — the correct pairing.
-//   - `bg-{family}-{700|800|900}` — explicit dark steps.
-//   - `bg-{family}/<N>` — opacity-tinted soft washes (different concern;
-//     the soft-tier text token is `text-{family}-strong`, not white).
-//   - `bg-[#hex] text-white` — arbitrary values; opt-out for one-offs.
-//   - `dark:bg-{family} text-white` — on dark surfaces emerald-500
-//     vs. white passes (~5.4 : 1); the strong tier would actually
-//     regress contrast there.
-//   - `bg-{family} text-text` / no `text-white` — colour tile without
-//     white-on-fill text is a different design problem.
-
-const STRONG_BG_FAMILIES = [
-  "brand",
-  "accent",
-  "success",
-  "warning",
-  "danger",
-  "info",
-  "finyk",
-  "fizruk",
-  "routine",
-  "nutrition",
-];
-
-// Match `bg-{family}` or `bg-{family}-{step}` with **no** variant prefix
-// (variant prefixes contain a `:`; we exclude them via the leading
-// boundary). The (?<!\S) lookbehind ensures we only match at a
-// whitespace boundary so `dark:bg-finyk` does NOT match `bg-finyk`.
-//
-// The trailing lookahead deliberately rejects `/` so that
-// `bg-brand/50` (an opacity-tinted soft wash, explicitly out-of-scope
-// per the rule docs) does NOT half-match `bg-brand` with
-// `stepRaw=undefined`. Only whitespace / end-of-string close the
-// match; the optional `-(\d{1,3})` group already swallows the
-// numeric step, so `bg-brand-500/40` similarly fails the lookahead
-// and is left for the (separate) opacity-tier rules.
-const RX_SATURATED_BG = new RegExp(
-  String.raw`(?<!\S)bg-(${STRONG_BG_FAMILIES.join("|")})(?:-(\d{1,3}))?(?=\s|$)`,
-  "g",
-);
-
-// `text-white` similarly must be base-state; variant-prefixed
-// `dark:text-white` shouldn't fire the rule.
-const RX_TEXT_WHITE = /(?<!\S)text-white(?=\s|$)/;
-
-const LOW_CONTRAST_MESSAGE =
-  "`{{utility}}` + `text-white` fails WCAG AA (~2.4–2.8 : 1). Use `bg-{{family}}-strong` instead — see docs/design/brandbook.md → 'WCAG-AA `-strong` Tier'.";
-
-function findLowContrastFills(value) {
-  if (typeof value !== "string" || value.length === 0) return [];
-  if (!RX_TEXT_WHITE.test(value)) return [];
-  const hits = [];
-  let match;
-  RX_SATURATED_BG.lastIndex = 0;
-  while ((match = RX_SATURATED_BG.exec(value)) !== null) {
-    const [full, family, stepRaw] = match;
-    if (stepRaw !== undefined) {
-      const step = Number(stepRaw);
-      // Steps 700/800/900 are dark enough to clear AA against white;
-      // we only flag the lighter scale steps. (Nutrition's lime-700
-      // technically clears 4.5 : 1 by a 0.17 margin only — the
-      // `-strong` companion bumps it to lime-800; treat lime-700 as
-      // acceptable here so we don't false-flag explicit dark-step
-      // overrides like `bg-nutrition-700`.)
-      if (!Number.isFinite(step) || step >= 700) continue;
-    }
-    hits.push({ utility: full, family });
-  }
-  return hits;
-}
-
-const noLowContrastTextOnFill = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid saturated brand `bg-*` utilities behind `text-white` — use the `-strong` companion (= 700/800 step) so the pairing clears WCAG AA 4.5 : 1.",
-    },
-    schema: [],
-    messages: { lowContrast: LOW_CONTRAST_MESSAGE },
-  },
-  create(context) {
-    function report(node, value) {
-      const hits = findLowContrastFills(value);
-      for (const hit of hits) {
-        context.report({
-          node,
-          messageId: "lowContrast",
-          data: { utility: hit.utility, family: hit.family },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
 // ─── no-bigint-string ───────────────────────────────────────────────────
 //
 // The `pg` driver returns `int8` / `bigint` columns as JavaScript strings
@@ -1292,7 +869,7 @@ const noAnthropicKeyInLogs = {
   },
 };
 
-// ─── no-strict-bypass ───────────────────────────────────────────────────
+// ─── no-strict-bypass ───������──────────────────────────────────────────────
 //
 // PR-6.E — forbid new type-safety bypasses in production code:
 //   1. `// @ts-expect-error` comments
@@ -1302,7 +879,7 @@ const noAnthropicKeyInLogs = {
 //      TSAsExpression whose typeAnnotation is TSUnknownKeyword)
 //
 // Test files are exempt via eslint.config.js `ignores`.
-// Existing violations are allowlisted (see docs/tech-debt/frontend.md).
+// Existing violations are allowlisted (see docs/work/specs/tech-debt/frontend.md).
 
 const NO_STRICT_BYPASS_MESSAGES = {
   tsExpectError:
@@ -1403,635 +980,6 @@ const noStrictBypass = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// `no-hex-in-classname` — forbid arbitrary hex colors in Tailwind className
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Tailwind's arbitrary-value syntax (`bg-[#10b981]`, `text-[#fff]/50`,
-// `border-[#123]`) bypasses the design-system tokens entirely. A raw hex
-// in a className means: (a) dark-mode won't adapt, (b) the value doesn't
-// re-theme when the palette evolves, (c) it can't be grep'd from a single
-// place when we need to migrate. The Sergeant rule is simple: every color
-// in a className comes from the token scale (`bg-surface`, `text-muted`,
-// `border-border`, `bg-finyk-surface`, `text-brand-strong`, `bg-success-soft`,
-// …). If a colour is truly one-off (chart series, illustration fill), put
-// it in the token layer (CSS var + preset alias) — not inline.
-//
-// The rule only flags hex inside the arbitrary-value brackets of
-// Tailwind's color-aware utilities (`bg-`, `text-`, `border-`, `ring-`,
-// `fill-`, `stroke-`, `from-`, `to-`, `via-`, `shadow-`, `outline-`,
-// `divide-`, `placeholder-`, `caret-`, `decoration-`, `accent-`). Plain
-// hex literals outside className context (e.g. chart config passing a
-// hex to recharts) are NOT this rule's concern — those are a code review
-// issue for `shared/charts/chartPalette.ts`.
-
-const HEX_IN_CLASSNAME_MESSAGE =
-  "Raw hex `{{utility}}-[#{{hex}}]` bypasses the design-system tokens — use a semantic utility (e.g. `bg-surface`, `text-fg`, `bg-finyk-surface`, `text-brand-strong`, `bg-success-soft`) or extend the palette in `packages/design-tokens/tailwind-preset.js` if a new token is genuinely needed.";
-
-// Match `[variants:]<utility>-[#HEX]` with optional `/OPACITY` suffix.
-//   • utility ∈ TAILWIND_OPACITY_UTILITIES (the color-aware set reused from
-//     valid-tailwind-opacity so we keep one list).
-//   • `<HEX>` is 3, 4, 6, or 8 hex digits.
-//   • `\b` anchor lets variant prefixes (`dark:`, `hover:`, `lg:`) sit in
-//     front of the utility without tripping the regex.
-const RX_HEX_IN_CLASSNAME = new RegExp(
-  String.raw`\b(` +
-    TAILWIND_OPACITY_UTILITIES.join("|") +
-    String.raw`)-\[#([0-9a-fA-F]{3,8})\]`,
-  "g",
-);
-
-function findHexInClassName(value) {
-  if (typeof value !== "string" || value.length === 0) return [];
-  if (!value.includes("[#")) return [];
-  const hits = [];
-  let match;
-  RX_HEX_IN_CLASSNAME.lastIndex = 0;
-  while ((match = RX_HEX_IN_CLASSNAME.exec(value)) !== null) {
-    const [, utility, hex] = match;
-    // Validate hex length so `bg-[#12]` or `bg-[#1234567]` don't trigger.
-    if (![3, 4, 6, 8].includes(hex.length)) continue;
-    hits.push({ utility, hex });
-  }
-  return hits;
-}
-
-const noHexInClassname = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid arbitrary `<utility>-[#hex]` colors in className — every color must come from the design-system token layer.",
-    },
-    schema: [],
-    messages: { hex: HEX_IN_CLASSNAME_MESSAGE },
-  },
-  create(context) {
-    function report(node, value) {
-      const hits = findHexInClassName(value);
-      for (const hit of hits) {
-        context.report({
-          node,
-          messageId: "hex",
-          data: { utility: hit.utility, hex: hit.hex },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
-// `no-foreign-module-accent` — keep module colors within their module
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Sergeant has 4 module brand colors: `finyk` (emerald), `fizruk` (teal),
-// `routine` (coral), `nutrition` (lime). They're tuned close in saturation,
-// so accidental cross-module use reads as a design bug — a fizruk button
-// rendering coral `ring-routine` says "Рутина" to the user. The rule:
-//
-//   Files under `apps/web/src/modules/<X>/**` may only use `<X>`'s accent
-//   utilities. Cross-module shells (`core/**`, `shared/**`, `stories/**`)
-//   are free to use all four, because that's their job.
-//
-// Accent utilities matched: `(bg|text|border|ring|from|to|via|fill|stroke|
-// shadow|outline|divide|placeholder|caret|decoration|accent)-<module>`
-// with optional `-<shade>` suffix (e.g. `-strong`, `-soft`, `-500`,
-// `-surface`) and optional `/<opacity>` suffix. Variant prefixes
-// (`dark:`, `hover:`, `lg:`) are allowed in front.
-
-const MODULE_ACCENTS = ["finyk", "fizruk", "routine", "nutrition"];
-
-// Chart-series tokens are first-class: they map to module-strong shades
-// via the design-tokens preset. Components that build charts MUST use
-// `bg-chart-{module}` instead of raw `bg-sky-500` etc.
-const ALLOWED_CHART_TOKENS = new Set([
-  "bg-chart-finyk",
-  "bg-chart-fizruk",
-  "bg-chart-routine",
-  "bg-chart-nutrition",
-]);
-
-// Raw Tailwind palette utilities banned in chart-context files (Hub*.tsx).
-// Use the semantic `bg-chart-{module}` tokens instead.
-const BANNED_CHART_RAW =
-  /\b((?:[\w-]+:)*)bg-(sky|orange|emerald|lime|cyan|amber|rose|violet)-(400|500|600)\b/g;
-
-const FOREIGN_MODULE_ACCENT_MESSAGE =
-  "`{{match}}` is a `{{foreign}}` accent inside a `{{home}}` module — modules must only use their own accent. Use `{{home}}` equivalents or move this to a cross-module surface (`core/**`, `shared/**`).";
-
-// Match `[variants:]<utility>-<module>[-<shade>][/<opacity>]`.
-const RX_MODULE_ACCENT = new RegExp(
-  String.raw`\b(` +
-    TAILWIND_OPACITY_UTILITIES.join("|") +
-    String.raw`)-(` +
-    MODULE_ACCENTS.join("|") +
-    String.raw`)(-[a-z0-9]+(?:-[a-z0-9]+)?)?(\/\d{1,3})?\b`,
-  "g",
-);
-
-// Derive the "home" module from an absolute or repo-relative file path.
-// Accepts web and mobile source trees; returns null for non-module paths
-// and for `modules/shared/` (a cross-module utility folder that hosts
-// primitives rendering any of the four accents — e.g.
-// `apps/mobile/src/modules/shared/ModuleErrorBoundary.tsx`).
-function homeModuleFromFilename(filename) {
-  if (typeof filename !== "string") return null;
-  // Normalize path separators for Windows; tests feed a unix-style mock.
-  const norm = filename.replace(/\\/g, "/");
-  const m = norm.match(
-    /\/(?:apps\/(?:web|mobile)\/src|apps\/mobile\/app)\/modules\/([a-z]+)\//,
-  );
-  if (!m) return null;
-  const home = m[1];
-  // Only the four canonical modules own their accent palette — any
-  // other folder under `modules/` is a cross-module utility and must
-  // stay free to render every accent.
-  return MODULE_ACCENTS.includes(home) ? home : null;
-}
-
-function findForeignModuleAccents(value, home) {
-  if (typeof value !== "string" || value.length === 0) return [];
-  if (!home) return [];
-  // Cheap prefilter so we don't regex every unrelated literal.
-  let maybe = false;
-  for (const m of MODULE_ACCENTS) {
-    if (m !== home && value.includes(`-${m}`)) {
-      maybe = true;
-      break;
-    }
-  }
-  if (!maybe) return [];
-  const hits = [];
-  let match;
-  RX_MODULE_ACCENT.lastIndex = 0;
-  while ((match = RX_MODULE_ACCENT.exec(value)) !== null) {
-    const [full, , mod] = match;
-    if (mod !== home) hits.push({ match: full, foreign: mod });
-  }
-  return hits;
-}
-
-const noForeignModuleAccent = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid cross-module accent utilities inside `apps/*/src/modules/<X>/**` — a fizruk component must not render `ring-routine` etc.",
-    },
-    schema: [],
-    messages: { foreign: FOREIGN_MODULE_ACCENT_MESSAGE },
-  },
-  create(context) {
-    const filename =
-      (context.filename != null ? context.filename : context.getFilename()) ||
-      "";
-    const home = homeModuleFromFilename(filename);
-    // Hub*.tsx files are chart-context: ban raw palette, require chart-series tokens.
-    const isHubChartFile =
-      /\/core\/hub\/Hub[^/]*\.tsx?$/.test(filename) ||
-      /\/core\/hub\/Hub[^/]*\.tsx?$/.test(filename.replace(/\\/g, "/"));
-    if (!home && !isHubChartFile) return {};
-    // Cross-module accent rule doesn't apply to the module-accent system
-    // itself (the map literals that declare every accent) or to module-
-    // scoped tests (they naturally reference all four for coverage).
-    if (/\.(test|spec)\.[jt]sx?$/.test(filename)) return {};
-
-    function reportBannedChartRaw(node, value) {
-      if (typeof value !== "string") return;
-      BANNED_CHART_RAW.lastIndex = 0;
-      let m;
-      while ((m = BANNED_CHART_RAW.exec(value)) !== null) {
-        const full = m[0].trim();
-        if (ALLOWED_CHART_TOKENS.has(full)) continue;
-        context.report({
-          node,
-          message: `\`${full}\` is a raw Tailwind palette utility in a chart context — use \`bg-chart-{module}\` tokens instead (e.g. \`bg-chart-fizruk\`). See docs/design/brandbook.md § «Chart series».`,
-        });
-      }
-    }
-
-    function report(node, value) {
-      if (home) {
-        const hits = findForeignModuleAccents(value, home);
-        for (const hit of hits) {
-          context.report({
-            node,
-            messageId: "foreign",
-            data: { match: hit.match, foreign: hit.foreign, home },
-          });
-        }
-      }
-      if (isHubChartFile) {
-        reportBannedChartRaw(node, value);
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
-// `no-raw-dark-palette` — forbid the raw-palette light/dark anti-pattern
-// ─────────────────────────────────────────────────────────────────────────
-//
-// The dark-mode audit (`docs/design/dark-mode-audit.md`) catalogues a
-// recurring shape: a className that encodes both themes by hand by
-// pairing a raw Tailwind palette utility on the light side with a
-// `dark:` raw-palette override —
-//
-//   bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300
-//   bg-coral-100 dark:bg-coral-900/30
-//   border-teal-200/50 ... dark:border-teal-800/30
-//
-// Both halves of the pair encode palette knowledge at the call-site, so
-// the next palette migration (or the next `theme.opacity` step renaming
-// — bug #814) silently drops one half and the surrounding override
-// falls through to the wrong colour. The fix is always the same: lift
-// the (light, dark) pair into the design-system token layer
-// (`bg-success-soft`, `bg-finyk-surface`, `border-routine-soft-border`,
-// …) so the preset owns the swap and the call-site has zero `dark:`
-// overrides.
-//
-// The rule fires on a className **only** when *both* halves of the
-// pair are present:
-//
-//   • a bare `<utility>-<PALETTE>-<SHADE>` (or `…/<opacity>`), AND
-//   • a `dark:<utility>-<PALETTE>-<SHADE>` (or `…/<opacity>`),
-//
-// where `<utility>` ∈ { bg, text, border } and `<PALETTE>` is one of
-// the 24 raw Tailwind palette names (24 = 22 default Tailwind families
-// + Sergeant's `brand` and `coral` aliases — both are theme-inert raw
-// palettes despite the brand-y names; the per-theme aware utilities
-// are `bg-brand-soft`, `bg-routine-surface`, etc.). `<SHADE>` is a
-// numeric step (`50`, `100`, …, `950`), so semantic suffixes
-// (`brand-soft`, `brand-strong`, `coral-soft-border`) do NOT match.
-//
-// Patterns that intentionally STAY (do NOT fire):
-//
-//   • `dark:bg-white/10`, `dark:border-white/15`, `dark:bg-black/40` —
-//     bare colour washes (no palette name), per
-//     `docs/design/design-system.md` § 2.1.
-//   • `dark:bg-surface`, `dark:text-fg`, `dark:border-border` —
-//     semantic tokens that simply happen to carry a `dark:` prefix
-//     because a stacked surface needs an explicit override.
-//   • Dark-side-only "patches" where the *light* half is already a
-//     semantic token (e.g. `Banner.tsx` line 22:
-//     `bg-success-soft text-success-strong dark:text-emerald-100` —
-//     light is the semantic `text-success-strong`, dark patches a
-//     lighter shade because the `-strong` companion does not adapt
-//     well on dark panels). These are documented gaps in the
-//     `-strong` companion scale, not raw-palette pairs.
-//
-// Promotion path: this rule ships at `error` level once the audit's
-// inventory hits zero (Wave 2c of `docs/design/dark-mode-audit.md`).
-// Any future violation must be intentional — either extend the token
-// layer in `packages/design-tokens/tailwind-preset.js` or, in the rare
-// case where an inline raw-palette override is justified (e.g. a
-// chart-series fallback), add an `// eslint-disable-next-line
-// sergeant-design/no-raw-dark-palette` with a comment explaining why
-// the token layer cannot own the pair.
-
-const RAW_DARK_PALETTE_FAMILIES = [
-  "gray",
-  "slate",
-  "zinc",
-  "neutral",
-  "stone",
-  "red",
-  "orange",
-  "amber",
-  "yellow",
-  "lime",
-  "green",
-  "emerald",
-  "teal",
-  "cyan",
-  "sky",
-  "blue",
-  "indigo",
-  "violet",
-  "purple",
-  "fuchsia",
-  "pink",
-  "rose",
-  // Sergeant aliases that map to raw Tailwind palettes (not theme-aware).
-  "brand",
-  "coral",
-];
-
-const RAW_DARK_PALETTE_UTILITIES = ["bg", "text", "border"];
-
-const RAW_DARK_PALETTE_MESSAGE =
-  "Raw-palette light/dark pair (`{{light}}` + `{{dark}}`) — the call-site encodes both themes by hand. Use a single semantic utility (e.g. `bg-{family}-soft`, `bg-{module}-surface`, `border-{module}-soft-border`, `text-{status}-strong`) so the preset owns the light/dark swap. See `docs/design/dark-mode-audit.md` for the migration recipe.";
-
-// Match `<utility>-<palette>-<step>[/<opacity>]` where step is numeric
-// (so `brand-soft`, `brand-strong`, `coral-soft-border` do NOT match).
-const RX_LIGHT_RAW_PALETTE = new RegExp(
-  String.raw`(?<![\w:-])(` +
-    RAW_DARK_PALETTE_UTILITIES.join("|") +
-    String.raw`)-(` +
-    RAW_DARK_PALETTE_FAMILIES.join("|") +
-    String.raw`)-(\d{2,3})(\/\d{1,3})?\b`,
-  "g",
-);
-
-// Match `dark:<utility>-<palette>-<step>[/<opacity>]`. The negative
-// lookbehind `(?<![\w:-])` excludes any token where `dark:` itself is
-// preceded by another variant (`lg:dark:bg-amber-500/15`,
-// `hover:dark:text-coral-300`, …) — those tokens carry an extra
-// breakpoint / state condition that the rule's pair-only contract does
-// not model, and treating them as bare `dark:` matches produced
-// false-positive pair reports against unrelated bare light utilities
-// elsewhere in the same className. The light-side regex already uses
-// the same lookbehind, so the pair logic stays symmetric: only
-// genuinely bare `<utility>-<palette>-<step>` and bare
-// `dark:<utility>-<palette>-<step>` tokens contribute to a match.
-const RX_DARK_RAW_PALETTE = new RegExp(
-  String.raw`(?<![\w:-])dark:(` +
-    RAW_DARK_PALETTE_UTILITIES.join("|") +
-    String.raw`)-(` +
-    RAW_DARK_PALETTE_FAMILIES.join("|") +
-    String.raw`)-(\d{2,3})(\/\d{1,3})?\b`,
-  "g",
-);
-
-function findRawDarkPalettePairs(value) {
-  if (typeof value !== "string" || value.length === 0) return [];
-  // Cheap prefilter: must contain both `dark:` and a palette family
-  // name. Without this every literal in the codebase pays a regex tax.
-  if (!value.includes("dark:")) return [];
-  let hasFamily = false;
-  for (const f of RAW_DARK_PALETTE_FAMILIES) {
-    if (value.includes(`-${f}-`)) {
-      hasFamily = true;
-      break;
-    }
-  }
-  if (!hasFamily) return [];
-
-  const lightHits = [];
-  let m;
-  RX_LIGHT_RAW_PALETTE.lastIndex = 0;
-  while ((m = RX_LIGHT_RAW_PALETTE.exec(value)) !== null) {
-    // Skip `dark:`-prefixed matches — the lookbehind catches `:`,
-    // but a regex engine without lookbehind support would still need
-    // this guard. Confirm the char before the match isn't `:`.
-    const start = m.index;
-    if (start > 0 && value[start - 1] === ":") continue;
-    lightHits.push(m[0]);
-  }
-  if (lightHits.length === 0) return [];
-
-  const darkHits = [];
-  RX_DARK_RAW_PALETTE.lastIndex = 0;
-  while ((m = RX_DARK_RAW_PALETTE.exec(value)) !== null) {
-    darkHits.push(m[0]);
-  }
-  if (darkHits.length === 0) return [];
-
-  // One report per className value — pair the first light hit with
-  // the first dark hit so the message stays focused. Reporting every
-  // (light, dark) pair would spam call-sites that already migrate as
-  // a single edit.
-  return [{ light: lightHits[0], dark: darkHits[0] }];
-}
-
-const noRawDarkPalette = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid raw-palette light/dark pairs in className — both halves of the (light, dark) swap must come from the design-system token layer.",
-    },
-    schema: [],
-    messages: { pair: RAW_DARK_PALETTE_MESSAGE },
-  },
-  create(context) {
-    function report(node, value) {
-      const hits = findRawDarkPalettePairs(value);
-      for (const hit of hits) {
-        context.report({
-          node,
-          messageId: "pair",
-          data: { light: hit.light, dark: hit.dark },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
-// `prefer-focus-visible` — ban `focus:` color utilities, require
-//                          `focus-visible:` for visible focus rings
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Sergeant's design-system contract (see `docs/design/design-system.md`):
-//
-//   | Стан             | Поведінка                                                    |
-//   | :focus-visible   | ring-2 ring-brand-500/45 ring-offset-2 ring-offset-surface   |
-//
-//   "Focus — focus-visible:ring-brand-500/30, а не focus:, аби pointer-клік
-//    не блимав кільцем."
-//
-// `focus:` fires for any focus state, including pointer click — which
-// produces a flashing ring on every mouse interaction. `focus-visible:`
-// only fires when the user is navigating with the keyboard (or assistive
-// tech) and is the correct primitive for a visible focus indicator.
-//
-// The single legitimate `focus:` utility is `focus:outline-none`: it
-// resets the user-agent outline so the design-system ring (rendered via
-// `focus-visible:ring-*`) takes over. The rule therefore allows
-// `focus:outline-none` and bans every `focus:` color/border/ring/shadow
-// utility — those must be `focus-visible:` instead.
-//
-// Scope: `apps/web/**/*.{ts,tsx,js,jsx}`. Mobile (NativeWind) doesn't
-// have a `:focus-visible` pseudo-class equivalent; React Native uses
-// `onFocus` handlers and the ring concept is web-only. Registering the
-// rule on mobile would force authors to use a primitive that doesn't
-// exist in their target runtime.
-
-const FOCUS_COLOR_UTILITIES = [
-  "bg",
-  "text",
-  "border",
-  "ring",
-  "ring-offset",
-  "shadow",
-  "fill",
-  "stroke",
-  "divide",
-  "placeholder",
-  "caret",
-  "decoration",
-  "accent",
-  "outline-offset",
-];
-
-const PREFER_FOCUS_VISIBLE_MESSAGE =
-  "`{{match}}` uses the `focus:` variant — pointer clicks blink the colour. Replace with `focus-visible:{{tail}}` so only keyboard/assistive-tech focus shows the indicator. The single legitimate `focus:` utility is `focus:outline-none` (resets the user-agent outline so the design-system ring takes over).";
-
-// Match a bare `focus:<utility>-...` token. We intentionally exclude
-// `focus:outline-none` (the canonical reset that pairs with
-// `focus-visible:ring-*`) and any token where `focus:` itself is
-// preceded by another variant — `lg:focus:bg-…`, `hover:focus:…`,
-// `dark:focus:…`, `group-focus:…`, `peer-focus:…`. The lookbehind
-// `(?<![\w:-])` keeps the contract tight.
-//
-// `<utility>-<rest>` covers the colour/visual utilities listed in
-// `FOCUS_COLOR_UTILITIES`. `<rest>` is `[\w/.\-[\]#%]+` so we capture
-// arbitrary values (`bg-[#fff]`), opacity suffixes (`/45`), and dotted
-// shades (`text-brand-strong`). `outline-` itself isn't in the list
-// because the only legit `focus:outline-*` is `focus:outline-none`,
-// which is excluded by the explicit guard below; everything else
-// (`focus:outline-2`, `focus:outline-brand-500`, …) falls through to
-// the regex via `outline-offset` (intentionally) plus a separate
-// `outline-` arm below.
-const RX_PREFER_FOCUS_VISIBLE = new RegExp(
-  String.raw`(?<![\w:-])focus:(` +
-    FOCUS_COLOR_UTILITIES.join("|") +
-    String.raw`)-([\w/.\-#%[\]]+)`,
-  "g",
-);
-
-// Separate arm for `focus:outline-*` so we can exempt
-// `focus:outline-none` (and the inert `focus:outline-hidden`,
-// `focus:outline-transparent`) without uglifying the colour-utility
-// regex above.
-const RX_PREFER_FOCUS_VISIBLE_OUTLINE = new RegExp(
-  String.raw`(?<![\w:-])focus:outline-([\w/.\-#%[\]]+)`,
-  "g",
-);
-
-const FOCUS_OUTLINE_ALLOWED_TAILS = new Set(["none", "hidden", "transparent"]);
-
-// `text-` is overloaded in Tailwind: `text-{color}` is a colour
-// (`text-brand-strong`, `text-danger`), but `text-{size|alignment|
-// transform|opacity}` are unrelated dimensions (`text-sm`, `text-base`,
-// `text-center`, `text-left`, `text-uppercase`, …). The rule's intent
-// is to ban *colour* blinks on pointer focus, so we explicitly exempt
-// the non-colour `text-` tails that Sergeant uses (size scale + the
-// `text-mini` / `text-dialog` tokens added in Wave 2d, plus alignment
-// + transform). A `focus:text-sm` on a skip-link that grows on focus
-// is intentional UX, not a regression.
-const FOCUS_TEXT_NON_COLOR_TAILS = new Set([
-  // Tailwind default size scale
-  "xs",
-  "sm",
-  "base",
-  "lg",
-  "xl",
-  "2xl",
-  "3xl",
-  "4xl",
-  "5xl",
-  "6xl",
-  "7xl",
-  "8xl",
-  "9xl",
-  // Sergeant custom size tokens (Wave 2d)
-  "mini",
-  "dialog",
-  // Alignment / wrap / overflow / transform
-  "left",
-  "right",
-  "center",
-  "justify",
-  "start",
-  "end",
-  "wrap",
-  "nowrap",
-  "balance",
-  "pretty",
-  "ellipsis",
-  "clip",
-  "uppercase",
-  "lowercase",
-  "capitalize",
-  "normal-case",
-]);
-
-function findPreferFocusVisibleHits(value) {
-  if (typeof value !== "string" || value.length === 0) return [];
-  if (!value.includes("focus:")) return [];
-  const hits = [];
-  let m;
-  RX_PREFER_FOCUS_VISIBLE.lastIndex = 0;
-  while ((m = RX_PREFER_FOCUS_VISIBLE.exec(value)) !== null) {
-    const [full, util, rest] = m;
-    if (util === "text" && FOCUS_TEXT_NON_COLOR_TAILS.has(rest)) continue;
-    hits.push({ match: full, tail: `${util}-${rest}` });
-  }
-  RX_PREFER_FOCUS_VISIBLE_OUTLINE.lastIndex = 0;
-  while ((m = RX_PREFER_FOCUS_VISIBLE_OUTLINE.exec(value)) !== null) {
-    const [full, tail] = m;
-    if (FOCUS_OUTLINE_ALLOWED_TAILS.has(tail)) continue;
-    // The colour-utility arm above already covers `focus:outline-offset-N`
-    // (because `outline-offset` is in `FOCUS_COLOR_UTILITIES`); the outline
-    // arm's broader regex also matches the same token. Dedup by `match`
-    // so each token produces a single report.
-    if (hits.some((h) => h.match === full)) continue;
-    hits.push({ match: full, tail: `outline-${tail}` });
-  }
-  return hits;
-}
-
-const preferFocusVisible = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid `focus:` color/ring/shadow utilities — visible focus indicators must use `focus-visible:` so pointer clicks don't blink the ring.",
-    },
-    schema: [],
-    messages: { focus: PREFER_FOCUS_VISIBLE_MESSAGE },
-  },
-  create(context) {
-    function report(node, value) {
-      const hits = findPreferFocusVisibleHits(value);
-      for (const hit of hits) {
-        context.report({
-          node,
-          messageId: "focus",
-          data: { match: hit.match, tail: hit.tail },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
 // ─── no-finyk-token-in-storage ─────────────────────────────────────────
 //
 // Monobank PAT must live exclusively in the server-side
@@ -2063,8 +1011,22 @@ const preferFocusVisible = {
 const FINYK_TOKEN_KEY_VALUES = new Set([
   "finyk_token",
   "finyk_token_remembered",
+  // PrivatBank merchant credentials. Added after the beta-readiness audit
+  // (`docs/work/specs/beta-security-readiness.md`, F1) found the
+  // merchant token sitting in cleartext `localStorage`: the Monobank fix had
+  // been locked down by this very rule, but the rule was written narrowly
+  // around Monobank's key names, so PrivatBank walked straight past it.
+  // The merchant id is guarded alongside the token because the pair is the
+  // credential — and because writing the id back is exactly the signal that
+  // the old client-side flow has returned.
+  "finyk_privat_token",
+  "finyk_privat_id",
 ]);
-const FINYK_TOKEN_KEY_NAMES = new Set(["FINYK_TOKEN"]);
+const FINYK_TOKEN_KEY_NAMES = new Set([
+  "FINYK_TOKEN",
+  "FINYK_PRIVAT_TOKEN",
+  "FINYK_PRIVAT_ID",
+]);
 
 const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
   "setItem",
@@ -2077,10 +1039,14 @@ const FINYK_TOKEN_WRITE_FUNCTIONS = new Set([
   "createModuleStorage",
   "lsSet",
   "writeLS",
+  // `finykStorage.writeRaw` — the wrapper the PrivatBank flow used to persist
+  // its merchant token. Non-credential keys pass through untouched; the rule
+  // only fires when the key argument itself is a guarded one.
+  "writeRaw",
 ]);
 
 const FINYK_TOKEN_MESSAGE =
-  "Monobank PAT (`finyk_token`) must not be persisted client-side. The token lives in `mono_connection.token_ciphertext` server-side; legacy LS/sessionStorage values are migrated by `useMonoTokenMigration` and then removed. Only reads (for migration) and removals are allowed.";
+  "Bank credentials (`finyk_token`, `finyk_privat_token`, `finyk_privat_id`) must not be persisted client-side. They live encrypted server-side (`mono_connection` / `privat_connection` `token_ciphertext`); legacy LS/sessionStorage values are migrated once on cold-boot and then removed. Only reads (for migration) and removals are allowed.";
 
 function isFinykTokenKeyArgument(arg) {
   if (!arg) return false;
@@ -2158,248 +1124,10 @@ const noFinykTokenInStorage = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// `no-rounded-lg` — prevent border-radius drift back to the 8 px tier
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Sergeant uses a size-driven radius scale (docs/design/radius-rhythm.md):
-//   Swatch   rounded-sm  (2 px)   — heatmap cells, chart legend dots
-//   Marker   rounded-md  (6 px)   — chips, badges, checkboxes ≤6 px
-//   Control  rounded-xl  (12 px)  — buttons xs/sm, icon-buttons ≤40 px
-//   Card     rounded-2xl (16 px)  — cards, buttons md/lg, icon-buttons ≥44 px
-//   Hero     rounded-3xl (24 px)  — hero cards, modals, bottom sheets
-//   Pill     rounded-full (∞)     — FABs, avatars, status dots
-//
-// `rounded-lg` (8 px) sits between Marker and Control without a clear
-// semantic role. It was present in 53 locations before the audit; those
-// were cleaned up. This rule prevents re-introduction.
-//
-// Exempt paths:
-//   - `packages/design-tokens/**` (token definitions use raw px values)
-//   - `apps/web/src/index.css` (legacy progress-bar utilities, tracked)
-//   - `*.test.{ts,tsx,mjs}` (test fixtures may reference legacy class names)
-
-const NO_ROUNDED_LG_MESSAGE =
-  "Avoid `rounded-lg` (8 px) — it sits between Marker and Control without a semantic role. " +
-  "Use `rounded-md` (6 px, Marker tier) for chips / badges / inline pills, or " +
-  "`rounded-xl` (12 px, Control tier) for buttons ≤40 px and icon-buttons. " +
-  "See docs/design/radius-rhythm.md for the full scale.";
-
-const RX_ROUNDED_LG = /(?:^|\s)(?:[\w-]+:)*rounded-lg(?:\s|$)/;
-
-function classNameHasRoundedLg(value) {
-  if (typeof value !== "string") return false;
-  return RX_ROUNDED_LG.test(value);
-}
-
-const noRoundedLg = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Forbid `rounded-lg` (8 px) in className strings — use `rounded-md` (Marker) or `rounded-xl` (Control sm) from the semantic radius scale.",
-    },
-    schema: [],
-    messages: { rounded: NO_ROUNDED_LG_MESSAGE },
-  },
-  create(context) {
-    const filename =
-      (context.filename != null ? context.filename : context.getFilename()) ||
-      "";
-    // Exempt token definitions, legacy CSS, and test files.
-    if (
-      /packages[\\/]design-tokens[\\/]/.test(filename) ||
-      /src[\\/]index\.css$/.test(filename) ||
-      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
-      /__tests__[\\/]/.test(filename)
-    ) {
-      return {};
-    }
-
-    function report(node, value) {
-      if (classNameHasRoundedLg(value)) {
-        context.report({ node, messageId: "rounded" });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
-// `no-v1-gradient` — block re-introduction of Sergeant v1 module gradients
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Sergeant v2 redesign (2026-05) replaces the legacy pastel
-// `--gradient-{finyk,fizruk,routine,nutrition}` and
-// `--gradient-card-{module}-dark` CSS vars (plus the `bg-card-{module}-dark`
-// Tailwind utilities they back) with the brighter `--hero-grad-{module}` set
-// + the `bg-hero-grad-{module}` utility family. The v1 vars are JSDoc
-// `@deprecated` in `apps/web/src/styles/theme.css` and kept only for the
-// in-flight v1→v2 migration sweep; this rule prevents new consumers from
-// taking a dependency on them. Existing call-sites (currently zero — recon
-// 2026-05-17) are exempt only via the file-level exemption list below.
-// See docs/design/redesign-v2-migration.md.
-
-const NO_V1_GRADIENT_MESSAGE =
-  "Avoid v1 module gradient `{{token}}` — Sergeant v2 redesign replaces it with " +
-  "`--hero-grad-{module}` / `bg-hero-grad-{module}`. See docs/design/redesign-v2-migration.md.";
-
-const RX_V1_GRADIENT_UTILITY =
-  /(?:^|\s)(?:[\w-]+:)*bg-card-(?:finyk|fizruk|routine|nutrition)-dark(?:\s|$)/;
-const RX_V1_GRADIENT_VAR =
-  /var\(\s*--gradient-(?:finyk|fizruk|routine|nutrition|card-(?:finyk|fizruk|routine|nutrition)-dark)\b/;
-
-function findV1GradientToken(value) {
-  if (typeof value !== "string") return null;
-  const utilityHit = RX_V1_GRADIENT_UTILITY.exec(value);
-  if (utilityHit) return utilityHit[0].trim();
-  const varHit = RX_V1_GRADIENT_VAR.exec(value);
-  if (varHit) return varHit[0];
-  return null;
-}
-
-const noV1Gradient = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid Sergeant v1 module gradients (`bg-card-{module}-dark`, `var(--gradient-{module})`, `var(--gradient-card-{module}-dark)`) — use the v2 `bg-hero-grad-{module}` / `--hero-grad-{module}` set instead.",
-    },
-    schema: [],
-    messages: { v1Gradient: NO_V1_GRADIENT_MESSAGE },
-  },
-  create(context) {
-    const filename =
-      (context.filename != null ? context.filename : context.getFilename()) ||
-      "";
-    // Exempt the v1 token bridge (design-tokens preset maps the legacy
-    // `bg-card-{module}-dark` keys to their CSS vars) and tests. The
-    // `apps/web/src/styles/theme.css` declarations themselves never reach
-    // this rule — ESLint's JS parser doesn't lint `.css` files.
-    if (
-      /packages[\\/]design-tokens[\\/]/.test(filename) ||
-      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
-      /__tests__[\\/]/.test(filename)
-    ) {
-      return {};
-    }
-
-    function report(node, value) {
-      const hit = findV1GradientToken(value);
-      if (hit) {
-        context.report({
-          node,
-          messageId: "v1Gradient",
-          data: { token: hit },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
-// `no-bare-empty-text` — enforce empty-state tier discipline
-// ─────────────────────────────────────────────────────────────────────────
-//
-// docs/design/empty-states.md defines three tiers:
-//   Tier 1 — Full-screen: <ModuleEmptyState> or <EmptyState> (no compact)
-//   Tier 2 — Compact card: <EmptyState compact>
-//   Tier 3 — Inline text: one muted line (text-xs text-muted)
-//
-// The anti-pattern this rule targets: bare JSX text or <p>/<span> tags
-// with Ukrainian "Поки" / "поки" / "немає" / "ще немає" patterns that
-// signal an empty-state message but are rendered outside any EmptyState
-// component. These ad-hoc messages bypass the tier system and produce
-// visually inconsistent empty views.
-//
-// The rule fires on JSXText or string literals inside JSX that contain
-// the signal phrases AND whose parent is NOT an EmptyState/ModuleEmptyState
-// element (checked via JSX ancestor scanning).
-
-const NO_BARE_EMPTY_TEXT_MESSAGE =
-  "Use the <EmptyState> component (or <ModuleEmptyState>) instead of bare text for empty states. " +
-  "Choose the right tier: full-screen → no `compact`, card-internal → `compact`, " +
-  "mini stat (< 120 px tall) → `text-xs text-muted` is OK. " +
-  "See docs/design/empty-states.md for tier guidance.";
-
-// Phrases that signal an empty-state message in Ukrainian product copy.
-const RX_EMPTY_SIGNAL =
-  /(?:Поки|поки)\s+(?:що\s+)?(?:немає|порожньо|нічого|пусто)|ще\s+немає|не\s+має\s+даних/;
-
-function isInsideEmptyStateComponent(node) {
-  let current = node.parent;
-  while (current) {
-    if (
-      current.type === "JSXElement" &&
-      current.openingElement &&
-      current.openingElement.name
-    ) {
-      const name =
-        current.openingElement.name.name ||
-        (current.openingElement.name.property &&
-          current.openingElement.name.property.name) ||
-        "";
-      if (name === "EmptyState" || name === "ModuleEmptyState") return true;
-    }
-    current = current.parent;
-  }
-  return false;
-}
-
-const noBareEmptyText = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Forbid bare JSX text / <p> / <span> empty-state messages outside <EmptyState> or <ModuleEmptyState>.",
-    },
-    schema: [],
-    messages: { bare: NO_BARE_EMPTY_TEXT_MESSAGE },
-  },
-  create(context) {
-    return {
-      JSXText(node) {
-        const text = typeof node.value === "string" ? node.value.trim() : "";
-        if (!text || !RX_EMPTY_SIGNAL.test(text)) return;
-        if (isInsideEmptyStateComponent(node)) return;
-        context.report({ node, messageId: "bare" });
-      },
-      Literal(node) {
-        // Catch string literals passed as children in JSX expressions like
-        // {condition && "Поки що порожньо"}
-        if (typeof node.value !== "string") return;
-        if (!RX_EMPTY_SIGNAL.test(node.value)) return;
-        // Only fire when the literal is used as JSX child content.
-        if (!node.parent || node.parent.type !== "JSXExpressionContainer")
-          return;
-        if (isInsideEmptyStateComponent(node)) return;
-        context.report({ node, messageId: "bare" });
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
 // `no-cyrillic-jsx-literal` — flag inline cyrillic JSX text/attrs
 // ─────────────────────────────────────────────────────────────────────────
 //
-// docs/i18n/readiness.md describes a "lightweight foundation": every UA
+// docs/design/i18n/readiness.md describes a "lightweight foundation": every UA
 // string the user sees should live in `apps/web/src/shared/i18n/uk.ts`
 // as `messages.<group>.<key>`. The day-to-day code references that key
 // instead of inlining a literal. When/if the project adds runtime-i18n
@@ -2438,7 +1166,7 @@ const noBareEmptyText = {
 const NO_CYRILLIC_JSX_LITERAL_MESSAGE =
   "JSX-літерал з кирилицею має посилатися на messages-каталог. " +
   "Винеси рядок у `apps/web/src/shared/i18n/uk.ts` (group `messages.<group>.<key>`) " +
-  "і використовуй `messages.<group>.<key>` тут. Див. `docs/i18n/readiness.md`.";
+  "і використовуй `messages.<group>.<key>` тут. Див. `docs/design/i18n/readiness.md`.";
 
 const RX_CYRILLIC = /[\u0400-\u04FF]/;
 
@@ -2517,210 +1245,6 @@ const noCyrillicJsxLiteral = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// `prefer-text-style` — semantic typography over hand-rolled combos
-// ─────────────────────────────────────────────────────────────────────────
-//
-// Sergeant has `.text-style-*` semantic utilities defined in index.css
-// (hero, title, body, label, caption, overline). These encode the full
-// pairing (size + weight + tracking) so a future design-system change
-// only touches the CSS, not hundreds of call-sites.
-//
-// The rule flags className strings that contain a (text-{size}, font-{weight})
-// pair matching a known text-style slot, AND do NOT already contain a
-// `text-style-` utility. It suggests the semantic alternative.
-//
-// Exempt: design-system primitives that intentionally define the raw scale
-// (SectionHeading, Button, Label, Badge, etc.) — these are excluded by
-// allowing `// eslint-disable-next-line sergeant-design/prefer-text-style`.
-
-const PREFER_TEXT_STYLE_MESSAGE =
-  "Hand-rolled `{{combo}}` can be replaced with the semantic `text-style-{{slot}}` utility. " +
-  "The semantic utility owns size + weight + tracking as a unit so design-token changes " +
-  "propagate automatically. See docs/design/design-system.md § Typography.";
-
-// Ordered from most-specific to least-specific so the first match wins.
-const TEXT_STYLE_MAPPINGS = [
-  // hero: large display heading
-  {
-    slot: "hero",
-    sizes: new Set(["text-2xl", "text-3xl"]),
-    weights: new Set(["font-bold", "font-extrabold"]),
-  },
-  // title: section/card heading
-  {
-    slot: "title",
-    sizes: new Set(["text-xl", "text-lg"]),
-    weights: new Set(["font-semibold", "font-bold"]),
-  },
-  // label: data labels, small headings
-  {
-    slot: "label",
-    sizes: new Set(["text-sm"]),
-    weights: new Set(["font-medium", "font-semibold"]),
-  },
-  // caption: supporting text
-  {
-    slot: "caption",
-    sizes: new Set(["text-xs"]),
-    weights: new Set(["font-normal", "font-medium"]),
-  },
-];
-
-const RX_TEXT_SIZE =
-  /(?:^|\s)(text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl))(?:\s|$)/;
-const RX_FONT_WEIGHT =
-  /(?:^|\s)(font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black))(?:\s|$)/;
-const RX_TEXT_STYLE = /(?:^|\s)text-style-[\w-]+/;
-
-function findTextStyleSlot(value) {
-  if (typeof value !== "string") return null;
-  if (RX_TEXT_STYLE.test(value)) return null; // already using semantic utility
-
-  const sizeMatch = RX_TEXT_SIZE.exec(value);
-  const weightMatch = RX_FONT_WEIGHT.exec(value);
-  if (!sizeMatch || !weightMatch) return null;
-
-  const size = sizeMatch[1];
-  const weight = weightMatch[1];
-
-  for (const mapping of TEXT_STYLE_MAPPINGS) {
-    if (mapping.sizes.has(size) && mapping.weights.has(weight)) {
-      return { slot: mapping.slot, combo: `${size} ${weight}` };
-    }
-  }
-  return null;
-}
-
-const preferTextStyle = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Prefer `text-style-*` semantic utilities over hand-rolled size+weight combinations.",
-    },
-    schema: [],
-    messages: { prefer: PREFER_TEXT_STYLE_MESSAGE },
-  },
-  create(context) {
-    const filename =
-      (context.filename != null ? context.filename : context.getFilename()) ||
-      "";
-    // Exempt design-system primitive source files and test files.
-    if (
-      /shared[\\/]components[\\/]ui[\\/](?:Button|SectionHeading|Label|Badge|Stat|Card|Input|Tabs|Segmented)\.tsx?$/.test(
-        filename,
-      ) ||
-      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
-      /__tests__[\\/]/.test(filename)
-    ) {
-      return {};
-    }
-
-    function report(node, value) {
-      const hit = findTextStyleSlot(value);
-      if (hit) {
-        context.report({
-          node,
-          messageId: "prefer",
-          data: { combo: hit.combo, slot: hit.slot },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
-// ─────────────────────────────────────────────────────────────────────────
-// `no-arbitrary-text-size` — ban Tailwind arbitrary `text-[Npx]` / `text-[Nrem]`
-// ─────────────────────────────────────────────────────────────────────────
-//
-// The Sergeant typography scale is defined in `apps/web/src/index.css`
-// (`.text-display`, `.text-h1..h3`, `.text-body`, `.text-body-sm`,
-// `.text-caption`, `.text-eyebrow`, `.text-meta`, `.text-micro`,
-// `.text-display-stat`, `.text-display-hero`, `.text-style-{hero,title,
-// body,label,caption,overline}`, `.text-celebration`, `.text-xp`).
-//
-// Hand-rolled `text-[12px]` / `text-[14px]` strings bypass the scale —
-// they create vertical-rhythm drift, often land below WCAG-comfort
-// (8 px in PushupsWidget, 10 px in stats badges), and don't move with
-// design-token updates. Forbid them and route every author to a named
-// utility instead. Stage-one rollout is `warn`, then `error` once
-// migrations land.
-
-const NO_ARBITRARY_TEXT_SIZE_MESSAGE =
-  "Arbitrary `{{cls}}` bypasses the Sergeant typography scale. " +
-  "Use a named utility from index.css (`text-display`, `text-h1..h3`, " +
-  "`text-body`, `text-body-sm`, `text-caption`, `text-eyebrow`, " +
-  "`text-meta`, `text-micro`, `text-display-stat`, `text-display-hero`, " +
-  "`text-style-*`) or a Tailwind preset size (`text-xs..text-5xl`). " +
-  "See docs/design/design-system.md § Typography.";
-
-const RX_ARBITRARY_TEXT_SIZE = /text-\[\d+(?:\.\d+)?(?:px|rem|em)\]/g;
-
-// Files that legitimately encode raw size literals: the tokens / scale
-// are defined here, so they must spell out the px values. Everything
-// else routes through the named utilities.
-const NO_ARBITRARY_TEXT_SIZE_EXEMPT_RX = [
-  /shared[\\/]components[\\/]ui[\\/](?:Button|SectionHeading|Label|Badge|Stat|Input|Tabs|Segmented|Toast|Skeleton)\.tsx?$/,
-  /\.(test|spec)\.[jt]sx?$/,
-  /__tests__[\\/]/,
-];
-
-const noArbitraryTextSize = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Disallow Tailwind arbitrary `text-[Npx]` / `text-[Nrem]` text-size values; use a named typography utility from index.css.",
-    },
-    schema: [],
-    messages: { ban: NO_ARBITRARY_TEXT_SIZE_MESSAGE },
-  },
-  create(context) {
-    const filename =
-      (context.filename != null ? context.filename : context.getFilename()) ||
-      "";
-    if (NO_ARBITRARY_TEXT_SIZE_EXEMPT_RX.some((rx) => rx.test(filename))) {
-      return {};
-    }
-
-    function report(node, value) {
-      if (typeof value !== "string") return;
-      const matches = value.match(RX_ARBITRARY_TEXT_SIZE);
-      if (!matches) return;
-      // Report once per literal even if multiple hits — the message
-      // already shows the offending class.
-      const seen = new Set();
-      for (const cls of matches) {
-        if (seen.has(cls)) continue;
-        seen.add(cls);
-        context.report({
-          node,
-          messageId: "ban",
-          data: { cls },
-        });
-      }
-    }
-    return {
-      Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
-      },
-      TemplateElement(node) {
-        const cooked = node.value && node.value.cooked;
-        if (typeof cooked === "string") report(node, cooked);
-      },
-    };
-  },
-};
-
 // ── no-flat-shared-lib ──────────────────────────────────────────────────
 //
 // Prevent regressing `apps/web/src/shared/lib/` back to a flat layout. After
@@ -2964,7 +1488,7 @@ const forbidShellOnlyFeature = {
 // Звіт через `messageId: "hashRouter"` з посиланням на initiative 0006.
 
 const NO_HASH_ROUTER_MESSAGE =
-  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/initiatives/0006-frontend-routing-and-code-split.md.";
+  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Ініціативу 0006 закрито й заархівовано — розбір у git history.";
 
 const HASH_ROUTER_HOOK_NAMES = new Set(["useHashRouter", "useHashRoute"]);
 
@@ -3045,505 +1569,6 @@ const noHashRouterInModules = {
   },
 };
 
-// ─── no-legacy-telegram-parse-mode (M16) ─────────────────────────────
-//
-// Bans `parse_mode: "Markdown"` (the legacy Telegram parser) in favour
-// of `MarkdownV2` or `HTML`. The legacy parser silently truncates on
-// unbalanced markers and ignores zero-width Unicode sequences; V2
-// fails loudly. See `docs/security/hardening/M16-telegram-markdown-v2.md`.
-//
-// Selector matches **only** object-property `parse_mode: "Markdown"`,
-// so regex literals / string literals in tests (e.g. the
-// parse-mode-guard regression test that contains the literal string
-// inside a regex) are unaffected.
-
-const NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE =
-  'Use parse_mode: "MarkdownV2" (or "HTML"); legacy "Markdown" silently truncates on unbalanced markers. See docs/security/hardening/M16-telegram-markdown-v2.md.';
-
-const noLegacyTelegramParseMode = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        'Disallow legacy Telegram parse_mode: "Markdown" — use MarkdownV2 or HTML.',
-    },
-    schema: [],
-    messages: { legacyParseMode: NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE },
-  },
-  create(context) {
-    function isParseModeKey(node) {
-      // Identifier key: { parse_mode: ... }
-      if (node.key.type === "Identifier" && node.key.name === "parse_mode") {
-        return true;
-      }
-      // Literal-string key: { "parse_mode": ... }
-      if (
-        node.key.type === "Literal" &&
-        typeof node.key.value === "string" &&
-        node.key.value === "parse_mode"
-      ) {
-        return true;
-      }
-      return false;
-    }
-    function isMarkdownLiteral(node) {
-      return (
-        node.type === "Literal" &&
-        typeof node.value === "string" &&
-        node.value === "Markdown"
-      );
-    }
-    return {
-      Property(node) {
-        if (node.computed) return;
-        if (!isParseModeKey(node)) return;
-        if (!isMarkdownLiteral(node.value)) return;
-        context.report({ node: node.value, messageId: "legacyParseMode" });
-      },
-    };
-  },
-};
-
-// ─── require-stories-for-ui-components ──────────────────────────────────
-//
-// Initiative 0007 (Design-system tooling: Storybook + visual regression).
-// Storybook каталог у `apps/web/.storybook/` — основний playground для
-// `apps/web/src/shared/components/ui/**`. Кожен top-level UI-компонент
-// (PascalCase, default-export або named-export з функції/класу) повинен
-// мати сусідній `<Name>.stories.tsx` файл, інакше:
-//   - Дизайн-партнери / нові розробники не бачать компонента у каталозі.
-//   - Visual regression (Phase 4) не покриває компонент.
-//   - При декомпозиції (initiative 0001) ламаємо рендер без сигналу.
-//
-// Поки coverage <100%, rule працює як **warn-only canary**. Перевіряє
-// тільки файли в default scope (`apps/web/src/shared/components/ui/*.tsx`):
-//   - skip `*.stories.tsx`, `*.test.tsx`, `*.spec.tsx`, `__tests__/`.
-//   - skip файли з крапкою у basename (`Icon.paths.content.tsx` —
-//     допоміжний sub-module, не самостійний UI-компонент).
-//   - skip `index.tsx` (re-export barrel, не компонент).
-//   - skip lower-case basename (PascalCase = публічний API).
-//   - skip явний opt-out у `allowlist` опції rule (e.g. helper-файли
-//     `EmptyStateIllustrations.tsx`, що ре-експортують ілюстрації для
-//     інших компонентів).
-//
-// Якщо файл проходить фільтри, але сусіднього `.stories.tsx` нема —
-// репортимо один раз на `Program` з посиланням на initiative 0007.
-// Перевірка існування файлу — sync `existsSync`, як у `tsconfig-guard`;
-// перевірка дешева (1 syscall на файл, які проходять фільтр).
-
-import { existsSync } from "node:fs";
-import { dirname, basename, join } from "node:path";
-
-const REQUIRE_STORIES_MESSAGE =
-  "UI-компонент `{{name}}` не має сусіднього `{{stories}}` файлу. Initiative 0007 (Design-system tooling) вимагає Storybook-coverage для кожного `apps/web/src/shared/components/ui/*.tsx` — це playground + baseline для visual regression. Додай `<Name>.stories.tsx` поряд з компонентом. Якщо файл навмисно НЕ компонент (helper / illustration / sub-module), додай шлях у `allowlist` опції правила в `eslint.config.js`.";
-
-// Default scope — `apps/web/src/shared/components/ui/<Name>.tsx`.
-// Налаштовується через rule options (`pathPattern`) для майбутнього
-// розширення на mobile / module-level каталоги.
-const DEFAULT_REQUIRE_STORIES_PATH_RE =
-  /(?:^|\/)apps\/web\/src\/shared\/components\/ui\/[^/]+\.tsx$/;
-
-// Default allowlist — basename-only (POSIX). Файли, які живуть у
-// `shared/components/ui/`, але навмисно НЕ окремі сторі-кандидати.
-//
-// Дві групи allowlist-у:
-//
-//   A) Sub-module / barrel — фактично не компонент:
-//      - `index.tsx` — barrel re-export (skipped через basename rule).
-//      - `Icon.paths.*.tsx` — sub-module з SVG path-ами, рендериться
-//        через `<Icon>` (який має власну стори).
-//      - `EmptyStateIllustrations.tsx` — колекція SVG-ілюстрацій для
-//        `EmptyState` (`EmptyState.stories.tsx` покриває їх).
-//
-//   B) Utility / wrapper / a11y / gesture — "невидимі" або вже покриті
-//      story композицій-host-у. Initiative 0007 round-10 закриває
-//      shared/ui coverage до 80%+; ці файли не дають окремого visual
-//      sample-у і ловляться візуально лише в композиціях:
-//
-//      Visual-агностичні (логіка / a11y wrappers / hidden-by-default):
-//      - `PageTransition.tsx` — fragment-обгортка над route-children.
-//      - `ScreenReaderAnnouncer.tsx` — `aria-live` без visible UI.
-//      - `SkipLink.tsx` — прихований до фокусу a11y-helper.
-//      - `SectionErrorBoundary.tsx` — error boundary, fallback тестується
-//        у `DataState.stories.tsx`.
-//      - `SuspenseWithMinDelay.tsx` — `<Suspense>` wrapper із min-delay,
-//        візуально = `<Spinner>` (вже story).
-//      - `ModulePageLoader.tsx` — module-tinted spinner; чисто loader,
-//        візуально = `<Spinner>` варіанти.
-//
-//      Gesture / mobile-only / native-input wrappers:
-//      - `KeyboardAccessory.tsx` — мобільний keyboard-accessory bar,
-//        non-functional у Storybook iframe (нема visual viewport API).
-//      - `PullToRefresh.tsx` — pure gesture-обгортка; візуальний
-//        індикатор живе у `PullToRefreshIndicator`.
-//      - `PullToRefreshIndicator.tsx` — внутрішній child `PullToRefresh`,
-//        стандалоном не рендериться (потрібні координати pull-state).
-//      - `OptimizedImage.tsx` — `<img>` із LQIP/skeleton; візуально =
-//        `<Skeleton>` (вже story) + native image rendering.
-//      - `SwipeToAction.tsx` — pure gesture-обгортка над list-item-ом,
-//        статичний state не несе візуальної цінності.
-//      - `QuickActionsMenu.tsx` — radial-меню, відкривається лише через
-//        long-press touch event; portal-render у `document.body` поза
-//        iframe-ом story-я ламає visual regression.
-//
-//      Transient / overlay / context-залежні:
-//      - `CelebrationModal.tsx` — повноекранний overlay із 3-сек
-//        animation-ом; візуальні приклади — story.
-//      - `KeyboardShortcutsModal.tsx` — UI зчитує реєстр гарячих клавіш
-//        host-app-у через context, недоступний у Storybook isolation.
-//      - `VoiceMicButton.tsx` — потребує MediaRecorder + voice-recognition
-//        infra; візуально = `<IconButton>` (вже story).
-const DEFAULT_REQUIRE_STORIES_ALLOWLIST = new Set([
-  "apps/web/src/shared/components/ui/EmptyStateIllustrations.tsx",
-  "apps/web/src/shared/components/ui/Icon.paths.content.tsx",
-  "apps/web/src/shared/components/ui/Icon.paths.domain.tsx",
-  "apps/web/src/shared/components/ui/Icon.paths.status.tsx",
-  "apps/web/src/shared/components/ui/Icon.paths.system.tsx",
-  // Initiative 0007 round-10 — utility / wrapper allowlist. See block
-  // comment above for the rationale per file.
-  "apps/web/src/shared/components/ui/PageTransition.tsx",
-  "apps/web/src/shared/components/ui/ScreenReaderAnnouncer.tsx",
-  "apps/web/src/shared/components/ui/SkipLink.tsx",
-  "apps/web/src/shared/components/ui/SectionErrorBoundary.tsx",
-  "apps/web/src/shared/components/ui/SuspenseWithMinDelay.tsx",
-  "apps/web/src/shared/components/ui/ModulePageLoader.tsx",
-  "apps/web/src/shared/components/ui/KeyboardAccessory.tsx",
-  "apps/web/src/shared/components/ui/PullToRefresh.tsx",
-  "apps/web/src/shared/components/ui/PullToRefreshIndicator.tsx",
-  "apps/web/src/shared/components/ui/OptimizedImage.tsx",
-  "apps/web/src/shared/components/ui/SwipeToAction.tsx",
-  "apps/web/src/shared/components/ui/QuickActionsMenu.tsx",
-  "apps/web/src/shared/components/ui/CelebrationModal.tsx",
-  "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
-  "apps/web/src/shared/components/ui/VoiceMicButton.tsx",
-  // Lazy-chunk UI body split-outs (initiative 0017 bundle-size) — not
-  // standalone public components; they're dynamically imported by their
-  // sibling provider/hook module and share that module's stories.
-  "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
-  "apps/web/src/shared/components/ui/KeyboardShortcutsModalUI.tsx",
-]);
-
-const REQUIRE_STORIES_TEST_RE = /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;
-
-function isStoriesFile(filename) {
-  return /\.stories\.tsx?$/.test(filename);
-}
-
-function toRequireStoriesRelativePath(filename) {
-  if (!filename) return "";
-  const norm = filename.replace(/\\/g, "/");
-  const idx = norm.indexOf("/apps/web/src/shared/components/ui/");
-  if (idx === -1) return norm.replace(/^\/+/, "");
-  return norm.slice(idx + 1);
-}
-
-const requireStoriesForUiComponents = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Require sibling `<Name>.stories.tsx` for every top-level UI-component file in `apps/web/src/shared/components/ui/`. Initiative 0007 (Design-system tooling) — warn-only canary while Storybook coverage rolls toward 100%.",
-    },
-    schema: [
-      {
-        type: "object",
-        properties: {
-          pathPattern: { type: "string" },
-          allowlist: {
-            type: "array",
-            items: { type: "string" },
-            uniqueItems: true,
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
-    messages: { missingStory: REQUIRE_STORIES_MESSAGE },
-  },
-  create(context) {
-    const filename = context.filename ?? context.getFilename?.() ?? "";
-    if (!filename) return {};
-    const norm = filename.replace(/\\/g, "/");
-
-    // Path scope — default OR custom from options.pathPattern.
-    const opts = context.options[0] ?? {};
-    const pathRe =
-      typeof opts.pathPattern === "string" && opts.pathPattern.length > 0
-        ? new RegExp(opts.pathPattern)
-        : DEFAULT_REQUIRE_STORIES_PATH_RE;
-    if (!pathRe.test(norm)) return {};
-
-    // Skip stories themselves + tests.
-    if (isStoriesFile(norm)) return {};
-    if (REQUIRE_STORIES_TEST_RE.test(norm)) return {};
-
-    // Skip non-component file shapes by basename:
-    //   - `index.tsx` (barrel)
-    //   - lowercase first letter (not a public component)
-    //   - dotted basename (`Icon.paths.content.tsx`) — sub-module
-    const base = basename(norm);
-    const stem = base.replace(/\.tsx?$/, "");
-    if (stem === "index") return {};
-    const firstChar = stem.charAt(0);
-    if (
-      firstChar !== firstChar.toUpperCase() ||
-      firstChar === firstChar.toLowerCase()
-    ) {
-      // first char is not an uppercase letter — skip non-PascalCase.
-      return {};
-    }
-    if (stem.includes(".")) return {};
-
-    // Repo-relative path for allowlist matching.
-    const rel = toRequireStoriesRelativePath(filename);
-    const allowlist = new Set([
-      ...DEFAULT_REQUIRE_STORIES_ALLOWLIST,
-      ...(Array.isArray(opts.allowlist) ? opts.allowlist : []),
-    ]);
-    if (allowlist.has(rel)) return {};
-
-    // Sibling `.stories.tsx` filesystem check (sync — 1 syscall per
-    // qualifying file; lint runs on a small subset so impact is
-    // negligible). Tests pass `filename` as an absolute path; if the
-    // file is virtual (e.g. RuleTester without disk-backing), we skip
-    // the existence check and trust the test fixture path.
-    const dir = dirname(filename);
-    const storiesBase = `${stem}.stories.tsx`;
-    const storiesAbs = join(dir, storiesBase);
-    if (existsSync(storiesAbs)) return {};
-
-    return {
-      Program(node) {
-        context.report({
-          node,
-          messageId: "missingStory",
-          data: { name: stem, stories: storiesBase },
-        });
-      },
-    };
-  },
-};
-
-// ─── prefer-data-state ──────────────────────────────────────────────────
-//
-// Initiative 0011 Phase 2.9 (Foundation adoption — DataState rollout).
-// `<DataState>` (`apps/web/src/shared/components/ui/DataState.tsx`) — це
-// канонічний wrapper для loading/empty/error/stale станів React Query
-// resultata. Phases 2.4–2.8 мігрували існуючі manual-ladder callsite-и
-// (finyk Mono, fizruk Workouts, nutrition Menu, routine Timeline,
-// HubChat / digest) на `<DataState>`. Поки ad-hoc patterns не повернулися
-// у `apps/web/src/modules/**`, ця rule працює як **warn-only canary**:
-// підсвічує нові callsite-и, де код повертає JSX рано через
-// `if (X.isLoading) return <…/>` / `if (X.isError) return <…/>` /
-// `if (X.isPending) return <…/>`, але НЕ блокує існуючі. Після того, як
-// 100% modules підтверджені без manual ladders (sucess-criterion з
-// `docs/initiatives/0011-foundation-adoption-and-process-discipline.md`
-// § 6 — `<DataState>` adopted), rule піднімається до `error`.
-//
-// Детектимо тільки **early return JSX** pattern, тому що це канонічна
-// форма ladder-у, яку DataState замінює. Інші callsite-и (button
-// disable, badge color, optional element rendering) часто не мають
-// заміни через DataState, тому rule НЕ flag-ає:
-//   - `disabled={X.isLoading}` (button-disable)
-//   - `<Badge tone={isError ? "danger" : "info"} />` (UI tonal)
-//   - `{X.isLoading && <Spinner />}` inline (можна було б flag-ити, але
-//     тут більше false-positive-ів — оптимізуємо на precision у Phase 2.9)
-//   - `useMutation` callsite-и (вони не fetch і не мають data слоту)
-//
-// Allowlist (basename / prefix-path POSIX):
-//   - `apps/web/src/shared/components/ui/DataState.tsx` — сама компонента.
-//   - `apps/web/src/core/auth/**` — auth-форми мають свій pattern
-//     (useApiForm + AuthErrorBanner, не DataState).
-//   - Files matching `*.test.tsx` / `*.spec.tsx` / `__tests__/` — тести
-//     навмисно мокають всі гілки.
-
-const PREFER_DATA_STATE_MESSAGE =
-  "Manual `if ({{kind}}) return <…/>` ladder у `apps/web/src/modules/**` дублює loading/error policy, який `<DataState>` (`@shared/components/ui/DataState`) інкапсулює. Initiative 0011 Phase 2 (foundation adoption) вимагає міграцію на `<DataState query={…} skeleton={…} error={…}>{(data) => …}</DataState>` — див. `apps/web/src/modules/finyk/pages/transactions/TransactionList.tsx` як reference. Якщо твій callsite принципово НЕ fetch-side (mutation / coordinator hook без data), додай шлях у `allowlist` опції правила в `eslint.config.js`.";
-
-const PREFER_DATA_STATE_PATH_RE = /(?:^|\/)apps\/web\/src\/modules\//;
-const PREFER_DATA_STATE_TEST_RE =
-  /(?:\.test|\.spec)\.tsx?$|(?:^|\/)__tests__\//;
-
-// Default allowlist — repo-relative POSIX prefixes. Файли з шляхом, що
-// СТАРТУЄ з будь-якого з цих префіксів, ігноруються rule. Default
-// allowlist вибраний так, щоб з коробки закрити known-non-DataState
-// patterns: сам DataState (на випадок re-import у modules), auth-forms
-// (useApiForm), shared-bands (вони НЕ у scope, але дублюємо для safety).
-const DEFAULT_PREFER_DATA_STATE_ALLOWLIST = [
-  "apps/web/src/shared/components/ui/DataState.tsx",
-  "apps/web/src/core/auth/",
-];
-
-// Loading / error / pending property names, які rule вважає сигналом
-// "manual ladder". `isFetching` навмисно НЕ включаємо — це stale-flag,
-// у `<DataState>` він живе у `stale` слоті, але manual-ladder rare-ly
-// використовує його як early-return.
-const LADDER_PROPERTY_NAMES = new Set(["isLoading", "isError", "isPending"]);
-
-// Перевіряє, чи будь-де в test-вираженні `IfStatement.test` згадується
-// одне з ladder-property імен (як Identifier або property access).
-function findLadderPropertyName(testNode) {
-  if (!testNode) return null;
-
-  // Прямий Identifier: `if (isLoading) ...`
-  if (
-    testNode.type === "Identifier" &&
-    LADDER_PROPERTY_NAMES.has(testNode.name)
-  ) {
-    return testNode.name;
-  }
-  // MemberExpression: `query.isLoading`, `query["isLoading"]`,
-  // `chain.foo.bar.isLoading`. Беремо `property` як останню ланку.
-  if (testNode.type === "MemberExpression") {
-    if (
-      !testNode.computed &&
-      testNode.property?.type === "Identifier" &&
-      LADDER_PROPERTY_NAMES.has(testNode.property.name)
-    ) {
-      return testNode.property.name;
-    }
-    if (
-      testNode.computed &&
-      testNode.property?.type === "Literal" &&
-      typeof testNode.property.value === "string" &&
-      LADDER_PROPERTY_NAMES.has(testNode.property.value)
-    ) {
-      return testNode.property.value;
-    }
-    // Recurse into object — `chain.foo.isLoading.something` fallback.
-    const nested = findLadderPropertyName(testNode.object);
-    if (nested) return nested;
-  }
-  // LogicalExpression / BinaryExpression / UnaryExpression — рекурсивно
-  // шукаємо у обох операндах. Покриває `isLoading || isError`,
-  // `!isLoading && data`, `q.isLoading === true`, etc.
-  if (
-    testNode.type === "LogicalExpression" ||
-    testNode.type === "BinaryExpression"
-  ) {
-    return (
-      findLadderPropertyName(testNode.left) ||
-      findLadderPropertyName(testNode.right)
-    );
-  }
-  if (testNode.type === "UnaryExpression") {
-    return findLadderPropertyName(testNode.argument);
-  }
-  if (testNode.type === "ChainExpression") {
-    return findLadderPropertyName(testNode.expression);
-  }
-  return null;
-}
-
-// Перевіряє, чи у `consequent` гілці IfStatement є ReturnStatement, що
-// повертає JSX (елемент або фрагмент). Підтримує і прямий
-// `return <X/>`, і блок `{ return <X/>; }`.
-function consequentReturnsJsx(consequent) {
-  if (!consequent) return false;
-  if (consequent.type === "ReturnStatement") {
-    return isJsxLike(consequent.argument);
-  }
-  if (consequent.type === "BlockStatement") {
-    for (const stmt of consequent.body) {
-      if (stmt.type === "ReturnStatement" && isJsxLike(stmt.argument)) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
-
-function isJsxLike(node) {
-  if (!node) return false;
-  if (node.type === "JSXElement" || node.type === "JSXFragment") return true;
-  // ConditionalExpression: `return X ? <A/> : <B/>` теж JSX-like.
-  if (node.type === "ConditionalExpression") {
-    return isJsxLike(node.consequent) || isJsxLike(node.alternate);
-  }
-  // LogicalExpression: `return cond && <A/>` — допускаємо.
-  if (node.type === "LogicalExpression") {
-    return isJsxLike(node.left) || isJsxLike(node.right);
-  }
-  // ParenthesizedExpression / TSAsExpression / TSNonNullExpression
-  // прозоро дивимось у нутро.
-  if (
-    node.type === "ParenthesizedExpression" ||
-    node.type === "TSAsExpression" ||
-    node.type === "TSNonNullExpression" ||
-    node.type === "TSTypeAssertion"
-  ) {
-    return isJsxLike(node.expression);
-  }
-  return false;
-}
-
-function toPreferDataStateRelativePath(filename) {
-  if (!filename) return "";
-  const norm = filename.replace(/\\/g, "/");
-  const idx = norm.indexOf("/apps/web/src/");
-  if (idx === -1) return norm.replace(/^\/+/, "");
-  return norm.slice(idx + 1);
-}
-
-const preferDataState = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        "Warn on manual `if (X.isLoading|isError|isPending) return <JSX/>` ladder in `apps/web/src/modules/**` — `<DataState>` (Initiative 0011 Phase 2) is the canonical replacement.",
-    },
-    schema: [
-      {
-        type: "object",
-        properties: {
-          allowlist: {
-            type: "array",
-            items: { type: "string" },
-            uniqueItems: true,
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
-    messages: { manualLadder: PREFER_DATA_STATE_MESSAGE },
-  },
-  create(context) {
-    const filename = context.filename ?? context.getFilename?.() ?? "";
-    if (!filename) return {};
-    const norm = filename.replace(/\\/g, "/");
-
-    // Path scope — modules-only.
-    if (!PREFER_DATA_STATE_PATH_RE.test(norm)) return {};
-
-    // Test-file skip.
-    if (PREFER_DATA_STATE_TEST_RE.test(norm)) return {};
-
-    // Allowlist (built-in + user-supplied) — prefix match on relative path.
-    const opts = context.options[0] ?? {};
-    const allowPrefixes = [
-      ...DEFAULT_PREFER_DATA_STATE_ALLOWLIST,
-      ...(Array.isArray(opts.allowlist) ? opts.allowlist : []),
-    ];
-    const rel = toPreferDataStateRelativePath(filename);
-    for (const prefix of allowPrefixes) {
-      if (rel === prefix || rel.startsWith(prefix)) return {};
-    }
-
-    return {
-      IfStatement(node) {
-        const ladderName = findLadderPropertyName(node.test);
-        if (!ladderName) return;
-        if (!consequentReturnsJsx(node.consequent)) return;
-        context.report({
-          node: node.test,
-          messageId: "manualLadder",
-          data: { kind: ladderName },
-        });
-      },
-    };
-  },
-};
-
 // ─── no-inline-body-size-limit ──────────────────────────────────────────
 //
 // Stack-pulse PR-07 (Body-size declarative policy). Усі route-specific
@@ -3599,7 +1624,7 @@ function isBodySizeLimitValue(valueNode) {
 function isLimitedBodyParserCall(node) {
   // node — CallExpression. Ми очікуємо callee на кшталт
   // `express.json({ limit })` або `express.raw({ ..., limit })`. Без
-  // обов'язкового імені модуля `express`, бо хтось може робити
+  // обовʼязкового імені модуля `express`, бо хтось може робити
   // `import { json } from "express"` і потім `json({ limit })`.
   if (node.type !== "CallExpression") return null;
   const args = node.arguments;
@@ -3675,13 +1700,13 @@ const noInlineBodySizeLimit = {
 // списком ~50 полів (Authorization, Cookie, password, email, phone, …),
 // але redact-paths працюють тільки на КЛЮЧАХ, які явно перераховані.
 // Якщо хтось пише `logger.info(req)` — у JSON-payload потрапляють УСІ
-// поля об'єкта Express Request, включно з тими, що не у redact-list:
+// поля обʼєкта Express Request, включно з тими, що не у redact-list:
 // `req.signedCookies`, custom-headers від upstream-проксі, `req.user`
 // (Better Auth session), `req.body` для нових endpoint-ів. Pino
-// redact-paths не закривають "зростаюче дерево" — нові sensitive-поля
-// з'являються без auto-redaction.
+// redact-paths не закривають "зрост��юче дерево" — нові sensitive-поля
+// зʼявляються без auto-redaction.
 //
-// Це правило змушує робити **явний destructure** замість raw-об'єкта:
+// Це правило змушує робити **явний destructure** замість raw-обʼєкта:
 //
 //   ❌ logger.info(req)
 //   ❌ logger.error(res.headers, "request failed")
@@ -3740,8 +1765,8 @@ const PINO_RAW_REQ_LIKE_MEMBER_PROPS = new Set([
 const NO_RAW_REQ_IN_PINO_LOG_MESSAGE =
   "Не передавай raw `{{name}}` у `{{method}}()` — це ризик протекти Authorization/Cookie/password/email/session-token " +
   "у Pino-output або Sentry breadcrumbs. Зроби явний destructure: `logger.{{method}}({ field: req.url, status: res.statusCode }, 'msg')`. " +
-  "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-об'єкт лишає контракт неявним — " +
-  "нові sensitive-поля з'являються без redaction. Див. `docs/security/logging-redaction-policy.md`.";
+  "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-обʼєкт лишає контракт неявним — " +
+  "нові sensitive-поля зʼявляються без redaction. Див. `docs/governance/security/logging-redaction-policy.md`.";
 
 function isPinoLoggerReceiver(callee) {
   if (
@@ -3814,7 +1839,7 @@ const noRawReqInPinoLog = {
     type: "problem",
     docs: {
       description:
-        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/security/logging-redaction-policy.md`.",
+        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/governance/security/logging-redaction-policy.md`.",
     },
     schema: [],
     messages: { rawReq: NO_RAW_REQ_IN_PINO_LOG_MESSAGE },
@@ -3843,147 +1868,6 @@ const noRawReqInPinoLog = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────
-// `require-toast-error-action` — every error-toast must carry a retry/CTA
-// ─────────────────────────────────────────────────────────────────────────
-//
-// `docs/ui/toast-policy.md` mandates that `error`-tone toasts include an
-// `action: { label, onClick }` so users can recover (retry the failed
-// operation, open Sessions to fix, etc.). A bare `toast.error("Не вдалося
-// синхронізувати")` traps users in a dead-end: the message disappears,
-// nothing changes, they don't know what to do next.
-//
-// Surfaces flagged:
-//   - `toast.error(msg)` / `toast.error(msg, duration)` / etc. — flagged
-//     when the `action` parameter (3rd positional arg, see useToast.tsx
-//     `error: (msg, duration?, action?) => number`) is absent or
-//     literal-`null` / literal-`undefined`.
-//   - `toast.show(msg, "error", duration?, action?)` — flagged on the
-//     same shape when the 4th arg is missing / null / undefined.
-//
-// Burndown gate: warn-only by default with a path allowlist for legacy
-// callsites. New error-toasts must include an action; existing offenders
-// are tracked in `apps/web/eslint.toast-error-action-allowlist.json` and
-// removed as those callsites are refactored. Mirrors the same burndown
-// shape as `no-raw-local-storage` (item #6) and `no-cyrillic-jsx-literal`
-// (item #18).
-//
-// Escape hatches:
-//   - Boot-time errors before any state is renderable (e.g. PWA storage
-//     diagnostics, biometric secret-not-supported) where retry doesn't
-//     apply: opt out with `// eslint-disable-next-line
-//     sergeant-design/require-toast-error-action` + comment explaining
-//     why retry is N/A.
-//   - Server-mapped error messages where the message itself IS the
-//     action ("Введи коректний email" — retry = re-submit form) still
-//     need an action: pass the submit handler as the retry callback.
-
-const REQUIRE_TOAST_ERROR_ACTION_MESSAGE =
-  '`toast.error(...)` (and `toast.show(..., "error")`) must include an `action: { label, onClick }` parameter so users can retry / recover. Bare error toasts trap users in a dead-end. See docs/ui/toast-policy.md.';
-
-function isLiteralNullish(arg) {
-  if (!arg) return true;
-  if (arg.type === "Literal" && arg.value === null) return true;
-  if (arg.type === "Identifier" && arg.name === "undefined") return true;
-  return false;
-}
-
-function getMemberMethodName(callee) {
-  if (!callee || callee.type !== "MemberExpression") return null;
-  const prop = callee.property;
-  if (!prop) return null;
-  if (prop.type === "Identifier") return prop.name;
-  if (prop.type === "Literal" && typeof prop.value === "string")
-    return prop.value;
-  return null;
-}
-
-function getCalleeReceiverName(callee) {
-  if (!callee || callee.type !== "MemberExpression") return null;
-  const obj = callee.object;
-  if (!obj) return null;
-  if (obj.type === "Identifier") return obj.name;
-  return null;
-}
-
-function requireToastErrorActionRelativePath(filename) {
-  if (!filename) return "";
-  const norm = filename.replace(/\\/g, "/");
-  const idx = norm.indexOf("/apps/");
-  if (idx === -1) return norm.replace(/^\/+/, "");
-  return norm.slice(idx + 1);
-}
-
-const requireToastErrorAction = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        "Forbid bare `toast.error(...)` / `toast.show(..., 'error')` without an `action: { label, onClick }`. Every error toast must give the user a recovery path.",
-    },
-    schema: [
-      {
-        type: "object",
-        properties: {
-          allowlist: {
-            type: "array",
-            items: { type: "string" },
-            uniqueItems: true,
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
-    messages: { bare: REQUIRE_TOAST_ERROR_ACTION_MESSAGE },
-  },
-  create(context) {
-    const filename = context.filename ?? context.getFilename?.() ?? "";
-    const opts = context.options[0] ?? {};
-    const allowPrefixes = Array.isArray(opts.allowlist) ? opts.allowlist : [];
-    const rel = requireToastErrorActionRelativePath(filename);
-    const isAllowlisted = allowPrefixes.some(
-      (p) => rel === p || rel.startsWith(p),
-    );
-    if (isAllowlisted) return {};
-
-    return {
-      CallExpression(node) {
-        const method = getMemberMethodName(node.callee);
-        if (!method) return;
-        const receiver = getCalleeReceiverName(node.callee);
-        // Only consider `<ident>.error(...)` / `<ident>.show(...)` —
-        // the receiver name must be `toast` to avoid false positives on
-        // unrelated `.error()` methods (Sentry, logger, console, etc.).
-        if (receiver !== "toast") return;
-
-        if (method === "error") {
-          // Signature: error(msg, duration?, action?)
-          // Action is the 3rd positional arg (index 2).
-          const action = node.arguments[2];
-          if (isLiteralNullish(action)) {
-            context.report({ node, messageId: "bare" });
-          }
-          return;
-        }
-        if (method === "show") {
-          // Signature: show(msg, type?, duration?, action?)
-          const typeArg = node.arguments[1];
-          if (
-            !typeArg ||
-            typeArg.type !== "Literal" ||
-            typeArg.value !== "error"
-          ) {
-            return;
-          }
-          const action = node.arguments[3];
-          if (isLiteralNullish(action)) {
-            context.report({ node, messageId: "bare" });
-          }
-        }
-      },
-    };
-  },
-};
-
 // ─── no-console-pii ─────────────────────────────────────────────────────
 //
 // S2 (audit `docs/audits/2026-05-13-security-observability-roast.md`).
@@ -4025,7 +1909,7 @@ const requireToastErrorAction = {
 const NO_CONSOLE_PII_REGEX = /email|phone|password|token|secret|auth/i;
 const NO_CONSOLE_PII_METHODS = new Set(["log", "error", "warn", "info"]);
 const NO_CONSOLE_PII_MESSAGE =
-  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. See docs/audits/2026-05-13-security-observability-roast.md § S2.";
+  "Do not pass PII / secret-shaped values (email, phone, password, token, secret, auth) to console.{log,error,warn,info}. Sentry, DevTools, and browser extensions all tap into console output. Розбір — у git history аудиту 2026-05-13-security-observability-roast § S2.";
 
 function isConsolePiiMethodCall(callee) {
   return (
@@ -4133,327 +2017,32 @@ const noConsolePii = {
   },
 };
 
-// ─── no-bare-fixed-inset-modal ──────────────────────────────────────────
-//
-// Audit `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md` § F2
-// (P1). Web-only guardrail для «псевдо-модалок» — JSX-елементів, що
-// займають увесь viewport (`fixed inset-0`, з опційним `z-*` чи
-// `pointer-events-*` сусідом), але не оголошують себе як dialog для
-// assistive tech: відсутні `role="dialog"` / `role="alertdialog"` /
-// `role="presentation"` АБО `aria-modal` на тому самому елементі.
-//
-// Канонічні модальні примітиви (`Modal`, `Sheet`, `ConfirmDialog`,
-// `InputDialog`, `KeyboardShortcutsModal`, `OnboardingWizard`)
-// інкапсулюють focus-trap + scroll-lock + a11y-атрибути і виводять
-// `fixed inset-0` всередині — вони у allowlist (`options.allow`).
-//
-// Чому warn-only: rule покликаний підсвічувати нові регресії на час,
-// поки існуючі offender-и (`QuickActionsMenu`, …) ще не рефакторені.
-// Файлові виправлення + axe prop-тести — окрема partII (див. audit § F2
-// «Дії (не в цьому PR)»). `StreakCelebration` + `FeatureSpotlight`
-// видалено у PR #2998 як unused orphans (alignment audit Q8).
-//
-// What the rule flags (per JSX opening element):
-//   1. The element's `className` (string-literal, template literal,
-//      `cn(...)` / `clsx(...)` / `classnames(...)` argument tree)
-//      contains BOTH the `fixed` token AND the `inset-0` token
-//      (separated by any whitespace / interleaving utilities).
-//   2. The same element has NONE of:
-//        - `role="dialog"` | `role="alertdialog"` | `role="presentation"`
-//        - `aria-modal` (any truthy value, bare boolean, or expression)
-//
-// What it does NOT flag:
-//   - Files whose normalized path (forward-slash) ends with — or
-//     contains — any entry from `options.allow`. Suggested baseline
-//     allowlist (legit primitives) lives in the eslint config.
-//   - className soup without `inset-0` (e.g. `fixed bottom-0 left-0`).
-//   - className soup without `fixed` (e.g. `absolute inset-0`).
-//   - Variable-resolved classNames (`const overlay = "fixed inset-0";
-//     <div className={overlay}>`). Out of scope — variable tracking is
-//     intentionally skipped to keep the rule cheap and predictable.
-//
-// Example offenders (audit § F2):
-//   - Both pre-existing offenders (`StreakCelebration.tsx:138` &
-//     `FeatureSpotlight.tsx:323`) deleted in PR #2998 as unused orphans.
-//     Future offenders should follow the same `role`/`aria-modal` fix.
-//
-// BAD:
-//   <div className="fixed inset-0 z-50 bg-black/40" />
-//   <div className={cn("fixed inset-0", isOpen && "animate-in")} />
-//
-// GOOD:
-//   <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" />
-//   <div className="fixed inset-0" role="presentation" />
-//   <Modal isOpen={open} onClose={close}>…</Modal>
-//   <Sheet isOpen={open} onClose={close}>…</Sheet>
-
-const NO_BARE_FIXED_INSET_MODAL_MESSAGE =
-  '`fixed inset-0` overlay declares a full-viewport dialog surface but the same element is missing `role="dialog"` / `role="alertdialog"` / `role="presentation"` AND `aria-modal`. Wrap the content in `<Modal>` / `<Sheet>` / `<ConfirmDialog>`, or add the missing a11y attributes inline. See docs/audits/2026-05-13-web-frontend-ergonomics-roast.md § F2.';
-
-const BARE_FIXED_INSET_DIALOG_ROLES = new Set([
-  "dialog",
-  "alertdialog",
-  "presentation",
-]);
-
-const BARE_FIXED_INSET_CN_FNS = new Set([
-  "cn",
-  "clsx",
-  "classnames",
-  "classNames",
-  "twMerge",
-  "twJoin",
-]);
-
-function bareFixedInsetMatchesAllowEntry(fwd, entry) {
-  if (!entry) return false;
-  const norm = entry.replace(/\\/g, "/").replace(/^\.\//, "");
-  if (!norm) return false;
-  return (
-    fwd === norm ||
-    fwd.endsWith("/" + norm) ||
-    fwd.includes("/" + norm + "/") ||
-    fwd.includes(norm)
-  );
-}
-
-// Walks any expression that ultimately feeds `className={...}` and
-// returns the concatenation of every literal-ish string fragment it
-// can see (joined by a single space so multi-arg `cn("fixed",
-// "inset-0")` still matches the both-tokens-present check).
-function collectClassNameStrings(node, sink) {
-  if (!node) return;
-  switch (node.type) {
-    case "Literal":
-      if (typeof node.value === "string") sink.push(node.value);
-      return;
-    case "TemplateLiteral":
-      for (const q of node.quasis) {
-        if (q.value && typeof q.value.cooked === "string") {
-          sink.push(q.value.cooked);
-        } else if (q.value && typeof q.value.raw === "string") {
-          sink.push(q.value.raw);
-        }
-      }
-      for (const expr of node.expressions) {
-        collectClassNameStrings(expr, sink);
-      }
-      return;
-    case "ConditionalExpression":
-      collectClassNameStrings(node.consequent, sink);
-      collectClassNameStrings(node.alternate, sink);
-      return;
-    case "LogicalExpression":
-      collectClassNameStrings(node.left, sink);
-      collectClassNameStrings(node.right, sink);
-      return;
-    case "BinaryExpression":
-      if (node.operator === "+") {
-        collectClassNameStrings(node.left, sink);
-        collectClassNameStrings(node.right, sink);
-      }
-      return;
-    case "ArrayExpression":
-      for (const el of node.elements) collectClassNameStrings(el, sink);
-      return;
-    case "ObjectExpression":
-      // `cn({ "fixed inset-0": isOpen })` — keys are className soup,
-      // values are truthy gates.
-      for (const prop of node.properties) {
-        if (prop.type !== "Property") continue;
-        const key = prop.key;
-        if (!key) continue;
-        if (key.type === "Literal" && typeof key.value === "string") {
-          sink.push(key.value);
-        } else if (key.type === "Identifier" && !prop.computed) {
-          sink.push(key.name);
-        } else if (key.type === "TemplateLiteral" || key.type === "Literal") {
-          collectClassNameStrings(key, sink);
-        }
-      }
-      return;
-    case "CallExpression": {
-      const callee = node.callee;
-      let calleeName = null;
-      if (callee.type === "Identifier") calleeName = callee.name;
-      else if (
-        callee.type === "MemberExpression" &&
-        callee.property &&
-        callee.property.type === "Identifier"
-      ) {
-        calleeName = callee.property.name;
-      }
-      if (calleeName && BARE_FIXED_INSET_CN_FNS.has(calleeName)) {
-        for (const arg of node.arguments) {
-          if (arg.type === "SpreadElement") {
-            collectClassNameStrings(arg.argument, sink);
-          } else {
-            collectClassNameStrings(arg, sink);
-          }
-        }
-      }
-      return;
-    }
-    case "JSXExpressionContainer":
-      collectClassNameStrings(node.expression, sink);
-      return;
-    case "SpreadElement":
-      collectClassNameStrings(node.argument, sink);
-      return;
-    case "ParenthesizedExpression":
-      collectClassNameStrings(node.expression, sink);
-      return;
-    default:
-      return;
-  }
-}
-
-// Token-aware: ensures `fixed` and `inset-0` appear as standalone
-// utilities (not as suffixes of something like `unfixed` or
-// `inset-0.5`). Whitespace (including newlines from template literals)
-// is the canonical delimiter.
-const RX_FIXED_TOKEN = /(?:^|\s)fixed(?:\s|$)/;
-const RX_INSET_0_TOKEN = /(?:^|\s)inset-0(?:\s|$)/;
-
-function classNameHasBareFixedInset(joined) {
-  if (typeof joined !== "string" || joined.length === 0) return false;
-  return RX_FIXED_TOKEN.test(joined) && RX_INSET_0_TOKEN.test(joined);
-}
-
-function openingElementHasDialogA11y(openingEl) {
-  if (!openingEl || !Array.isArray(openingEl.attributes)) return false;
-  for (const attr of openingEl.attributes) {
-    if (attr.type !== "JSXAttribute") continue;
-    const name = attr.name;
-    if (!name || name.type !== "JSXIdentifier") continue;
-    if (name.name === "aria-modal") {
-      // `aria-modal` (any presence — bare, literal, expression).
-      // Strict ARIA semantics: only `aria-modal="true"` matters at
-      // runtime, but the audit's goal is «author signaled intent»,
-      // so accept any non-explicit-false value.
-      if (attr.value == null) return true;
-      if (
-        attr.value.type === "Literal" &&
-        typeof attr.value.value === "string" &&
-        attr.value.value.toLowerCase() === "false"
-      ) {
-        continue;
-      }
-      return true;
-    }
-    if (name.name === "role") {
-      const val = attr.value;
-      if (!val) continue;
-      if (val.type === "Literal" && typeof val.value === "string") {
-        if (BARE_FIXED_INSET_DIALOG_ROLES.has(val.value)) return true;
-      } else if (val.type === "JSXExpressionContainer") {
-        const expr = val.expression;
-        if (
-          expr &&
-          expr.type === "Literal" &&
-          typeof expr.value === "string" &&
-          BARE_FIXED_INSET_DIALOG_ROLES.has(expr.value)
-        ) {
-          return true;
-        }
-        if (
-          expr &&
-          expr.type === "TemplateLiteral" &&
-          expr.expressions.length === 0 &&
-          expr.quasis.length === 1 &&
-          BARE_FIXED_INSET_DIALOG_ROLES.has(
-            expr.quasis[0].value.cooked ?? expr.quasis[0].value.raw,
-          )
-        ) {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-function findClassNameAttribute(openingEl) {
-  if (!openingEl || !Array.isArray(openingEl.attributes)) return null;
-  for (const attr of openingEl.attributes) {
-    if (attr.type !== "JSXAttribute") continue;
-    const name = attr.name;
-    if (!name || name.type !== "JSXIdentifier") continue;
-    if (name.name === "className") return attr;
-  }
-  return null;
-}
-
-const noBareFixedInsetModal = {
-  meta: {
-    type: "suggestion",
-    docs: {
-      description:
-        'Warn on JSX elements with `fixed inset-0` className that lack `role="dialog"` / `role="alertdialog"` / `role="presentation"` or `aria-modal`. Use a canonical modal primitive instead.',
-    },
-    schema: [
-      {
-        type: "object",
-        properties: {
-          allow: {
-            type: "array",
-            items: { type: "string" },
-            uniqueItems: true,
-            description:
-              "File-path patterns (forward-slash, substring / suffix match) that opt the file out of this rule. Use for canonical modal primitives (Modal, Sheet, ConfirmDialog, …) whose `fixed inset-0` overlay is encapsulated.",
-          },
-        },
-        additionalProperties: false,
-      },
-    ],
-    messages: { bare: NO_BARE_FIXED_INSET_MODAL_MESSAGE },
-  },
-  create(context) {
-    const filename = context.filename ?? context.getFilename?.() ?? "";
-    const fwd = filename.replace(/\\/g, "/");
-    const opts = context.options[0] ?? {};
-    const allow = Array.isArray(opts.allow) ? opts.allow : [];
-    for (const entry of allow) {
-      if (bareFixedInsetMatchesAllowEntry(fwd, entry)) return {};
-    }
-
-    return {
-      JSXOpeningElement(node) {
-        const classNameAttr = findClassNameAttribute(node);
-        if (!classNameAttr || !classNameAttr.value) return;
-        const sink = [];
-        collectClassNameStrings(classNameAttr.value, sink);
-        if (sink.length === 0) return;
-        const joined = sink.join(" ");
-        if (!classNameHasBareFixedInset(joined)) return;
-        if (openingElementHasDialogA11y(node)) return;
-        context.report({
-          node: classNameAttr,
-          messageId: "bare",
-        });
-      },
-    };
-  },
-};
-
-// ──────────────────────────────────────────────────────────────────────
-// prefer-kyiv-time — Theme 1 (audit consolidated 2026-05-13 § Theme 1).
+// prefer-kyiv-time — Theme 1 (audit consolidated 2026-05-13 § Theme 1),
+// re-scoped 2026-08-04 by ADR-0078.
 //
 // `Date.prototype.getHours()` / `getMinutes()` / `getDate()` / `getDay()` /
-// `getMonth()` / `getFullYear()` / `getSeconds()` return host-local values,
-// not Europe/Kyiv. Reading them and stamping a day-key / streak / drawer
-// label silently drifts off-by-one when the device timezone differs from
-// Kyiv. The repo declares **Europe/Kyiv** as the single source of truth
-// for time (`docs/architecture/domain-invariants.md`).
+// `getMonth()` / `getFullYear()` / `getSeconds()` return host-local values.
+// The rule does NOT mean "Kyiv belongs here" — ADR-0078 ratified the opposite
+// for the **personal day boundary**: a habit tick / meal log / daily entry
+// belongs to the device clock, and Europe/Kyiv stays only for time *display*,
+// server-side reports and financial periods. Both doctrines are live, so a
+// bare host-getter is ambiguous: it never shows whether the author chose the
+// device on purpose or just wrote the shortest code. This rule forces that
+// choice to be explicit.
 //
-// Use helpers in `apps/web/src/shared/lib/time/kyivTime.ts`:
-//   getKyivDateParts(ts)   → { year, month, day, hour, minute }
-//   getKyivDayKey(d)       → "YYYY-MM-DD" in Kyiv
-//   isSameKyivDay(ts)      → boolean
+// Two legitimate resolutions per site:
+//   1. Kyiv (display / report / financial period) — use the helpers in
+//      `apps/web/src/shared/lib/time/kyivTime.ts`:
+//        getKyivDateParts(ts) → { year, month, day, hour, minute }
+//        getKyivDayKey(d)     → "YYYY-MM-DD" in Kyiv
+//        isSameKyivDay(ts)    → boolean
+//   2. Device (personal day) — keep the host getters and suppress with a WHY
+//      that names ADR-0078. Reference: `deviceDayKey` in
+//      `apps/web/src/core/observability/adviceTelemetry.ts`. In shared code
+//      prefer `dateKeyFromDate` from `@sergeant/routine-domain`.
 //
-// Severity ramp: `warn` initially (many existing sites — covered by
-// `kyivTime.ts` exemption + per-file `eslint-disable` comments while
-// migration is in flight). Promote to `error` when audit closes.
+// Severity: stays `warn` permanently. The old ramp to `error` targeted zero
+// host-getters, which after ADR-0078 would penalise correct device-local code.
 //
 // Allowlist (rule-level skip):
 //   - The helper itself (`kyivTime.ts`)
@@ -4462,12 +2051,15 @@ const noBareFixedInsetModal = {
 //   - Strategy `kyivMondayISO` uses `Intl.DateTimeFormat` directly and is
 //     itself the recommended pattern.
 //
-// See docs/governance/rules/kyiv-time-helpers.md for the full migration
-// plan and the audit cross-ref.
+// See docs/governance/governance/rules/kyiv-time-helpers.md for the full
+// doctrine table, the suppress-comment contract and the audit cross-ref.
 const PREFER_KYIV_TIME_MESSAGE =
-  "Don't read host-local date parts ({{name}}). Use @shared/lib/time/kyivTime helpers " +
-  "(getKyivDateParts, getKyivDayKey, isSameKyivDay) so day boundaries stay anchored " +
-  "to Europe/Kyiv per the domain-invariants spec.";
+  "Host-local date part ({{name}}) — make the day-boundary doctrine explicit (ADR-0078). " +
+  "Display, server reports and financial periods → @shared/lib/time/kyivTime " +
+  "(getKyivDateParts, getKyivDayKey, isSameKyivDay). The PERSONAL day (habit tick, meal " +
+  "log, daily entry, streak) belongs to the DEVICE — that is canonical, so keep the host " +
+  "getters and suppress with `-- ADR-0078: <why the device owns this day>`. " +
+  "See docs/governance/governance/rules/kyiv-time-helpers.md.";
 
 const HOST_TIME_GETTERS = new Set([
   "getFullYear",
@@ -4484,7 +2076,7 @@ const preferKyivTime = {
     type: "suggestion",
     docs: {
       description:
-        "Forbid host-local Date getters; route through @shared/lib/time/kyivTime helpers.",
+        "Flag host-local Date getters so the day-boundary doctrine is explicit (ADR-0078): Kyiv helpers for display/reports, documented suppress for the device-local personal day.",
     },
     schema: [],
     messages: {
@@ -4535,16 +2127,16 @@ const preferKyivTime = {
 //     функції визначені, включати їх у заборону означало б flag-ити власне
 //     оголошення.
 //   - Виключаємо `*.test.[jt]s(x)?` — тести можуть перевіряти legacy-поведінку
-//     через мок чи вже закритий шлях.
+//     через мок чи вже закритий шля��.
 //
 // Rollout: `warn` зараз → `error` через 1 sprint після підтвердження, що
 // усі callsite-и у PR-09 + PR-10 мігровані. Дивись AGENTS.md §Hard rules
-// та docs/governance/rules/27-prefer-parse-body.md.
+// та docs/governance/governance/rules/prefer-parse-body.md.
 
 const PREFER_PARSE_BODY_MESSAGE =
-  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/governance/rules/27-prefer-parse-body.md.";
+  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/governance/governance/rules/prefer-parse-body.md.";
 const PREFER_PARSE_QUERY_MESSAGE =
-  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/governance/rules/27-prefer-parse-body.md.";
+  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/governance/governance/rules/prefer-parse-body.md.";
 
 // Paths that are allowed to import/call validateBody — the definition file
 // and its test.
@@ -4558,7 +2150,7 @@ const preferParseBodyOverValidateBody = {
       description:
         "Prefer throw-based parseBody/parseQuery over sentinel validateBody/validateQuery in Express handlers",
       recommended: false,
-      url: "docs/governance/rules/27-prefer-parse-body.md",
+      url: "docs/governance/governance/rules/prefer-parse-body.md",
     },
     schema: [],
     messages: {
@@ -4590,177 +2182,6 @@ const preferParseBodyOverValidateBody = {
           context.report({ node, messageId: "preferParseBody" });
         } else if (callee.name === "validateQuery") {
           context.report({ node, messageId: "preferParseQuery" });
-        }
-      },
-    };
-  },
-};
-
-// ─── sri-on-third-party-script ───────────────────────────────────────────
-//
-// S3 (audit `docs/audits/2026-05-13-security-observability-roast.md`,
-// PR-plan `docs/planning/pr-plan-security-obs-2026-05.md`). Require SRI
-// (`integrity="sha(256|384|512)-…"`) plus `crossorigin="anonymous"` on every
-// cross-origin `<script src="https://…">` (or schema-relative `//cdn…`) in
-// the app HTML shells (`apps/**/index.html`).
-//
-// Why: the production CSP allowlist in `apps/web/vercel.json`
-// (`script-src`) admits `https://*.posthog.com`, `https://*.sentry-cdn.com`,
-// `https://js.sentry-cdn.com`. Today none of these load statically from
-// `index.html` (PostHog / Sentry ship via the npm bundle), so the rule is
-// clean on `main`. But a future PR adding
-// `<script src="https://cdn.example.com/x.js">` without `integrity=` would
-// silently open a one-step supply-chain XSS that bypasses our CSP pipeline.
-// This rule is the fail-closed tripwire — see
-// `docs/security/hardening/sri-on-third-party-scripts.md` (incl. how to
-// generate the SHA-384 hash + bump it on CDN-version updates).
-//
-// Local / relative sources (`src="/src/main.tsx"`, `src="./x.js"`) and
-// inline `<script>` (no `src`) are controlled by our own Vite build + CSP
-// `'self'`, so they are intentionally NOT flagged.
-//
-// The rule operates on the raw HTML source text (parse5), so it is parser-
-// agnostic: it works on `.html` files wired through an HTML processor and is
-// unit-tested by feeding HTML straight through the exported helpers.
-
-// `<algo>-<base64>` where `algo ∈ {sha256, sha384, sha512}`. Base64 alphabet
-// (RFC 4648 § 4) + URL-safe variants (`-`, `_`); trailing `=` padding allowed.
-const SRI_HASH_RE = /^(sha256|sha384|sha512)-[A-Za-z0-9+/=_-]+$/;
-
-// W3C SRI § 3.5 recommends SHA-384 as the baseline for new code.
-const SRI_PREFERRED_ALGO = "sha384";
-
-const SRI_MESSAGES = {
-  missingIntegrity:
-    'Third-party `<script src="{{src}}">` is missing an `integrity` attribute. Add `integrity="sha384-<base64>"` (W3C SRI baseline) — see docs/security/hardening/sri-on-third-party-scripts.md.',
-  malformedIntegrity:
-    'Third-party `<script src="{{src}}">` has a malformed `integrity="{{integrity}}"`. Expected `sha384-<base64>` (or sha256/sha512), space-separated for multi-hash.',
-  missingCrossorigin:
-    'Third-party `<script src="{{src}}">` is missing `crossorigin="anonymous"`. Without CORS the browser silently skips the SRI integrity check, nullifying the guard.',
-};
-
-/**
- * Is this `src` a cross-origin source that requires SRI?
- *   - `https://…` / `http://…`  → yes (cross-origin / CDN)
- *   - `//cdn.example.com/…`     → yes (schema-relative, same risk)
- *   - `/x.js`, `./x.js`, `data:`, `blob:`, inline → no (controlled by us)
- */
-function isCrossOriginScriptSrc(url) {
-  if (typeof url !== "string" || url.length === 0) return false;
-  if (url.startsWith("//")) return true;
-  if (/^https?:\/\//i.test(url)) return true;
-  return false;
-}
-
-/** parse5 attribute array → `name → value` Map (first wins on duplicates). */
-function sriAttrsToMap(attrs) {
-  const map = new Map();
-  for (const a of attrs ?? []) {
-    if (typeof a?.name === "string" && !map.has(a.name)) {
-      map.set(a.name, typeof a.value === "string" ? a.value : "");
-    }
-  }
-  return map;
-}
-
-/**
- * Validate one `<script>`'s attribute map. Returns an array of
- * `{ messageId, data }` (empty when the tag is compliant / out-of-scope).
- * Pure — no I/O, exported for unit tests.
- */
-function validateSriScriptAttrs(attrs) {
-  const violations = [];
-  const src = attrs.get("src");
-  if (typeof src !== "string" || src.length === 0) return violations;
-  if (!isCrossOriginScriptSrc(src)) return violations;
-
-  const integrity = attrs.get("integrity");
-  if (typeof integrity !== "string" || integrity.length === 0) {
-    violations.push({ messageId: "missingIntegrity", data: { src } });
-  } else {
-    // W3C SRI § 3.5 multi-hash: space-separated; each must parse.
-    const tokens = integrity.split(/\s+/).filter(Boolean);
-    if (tokens.length === 0 || !tokens.every((t) => SRI_HASH_RE.test(t))) {
-      violations.push({
-        messageId: "malformedIntegrity",
-        data: { src, integrity },
-      });
-    }
-  }
-
-  const crossorigin = attrs.get("crossorigin");
-  if (crossorigin !== "anonymous" && crossorigin !== "use-credentials") {
-    violations.push({ messageId: "missingCrossorigin", data: { src } });
-  }
-
-  return violations;
-}
-
-/** Recursively collect every `<script>` element from a parse5 tree. */
-function collectSriScriptElements(node, out = []) {
-  if (!node || typeof node !== "object") return out;
-  if (node.nodeName === "script" && Array.isArray(node.attrs)) {
-    out.push({
-      attrs: sriAttrsToMap(node.attrs),
-      location: node.sourceCodeLocation ?? null,
-    });
-  }
-  if (Array.isArray(node.childNodes)) {
-    for (const child of node.childNodes) collectSriScriptElements(child, out);
-  }
-  return out;
-}
-
-/**
- * Parse raw HTML and return `{ messageId, data, loc }` violations for every
- * non-compliant cross-origin `<script src>`. Exported for unit tests.
- */
-function lintHtmlForSri(html) {
-  const document = parseHtml(html, { sourceCodeLocationInfo: true });
-  const scripts = collectSriScriptElements(document);
-  const out = [];
-  for (const { attrs, location } of scripts) {
-    for (const v of validateSriScriptAttrs(attrs)) {
-      out.push({
-        ...v,
-        loc: location
-          ? {
-              line: location.startLine,
-              column: location.startCol,
-            }
-          : null,
-      });
-    }
-  }
-  return out;
-}
-
-const sriOnThirdPartyScript = {
-  meta: {
-    type: "problem",
-    docs: {
-      description:
-        'Require `integrity` (sha256/384/512) + `crossorigin="anonymous"` on cross-origin `<script src="https://…">` in app HTML shells, so a CDN compromise cannot inject one-step XSS past the CSP. See docs/security/hardening/sri-on-third-party-scripts.md.',
-    },
-    schema: [],
-    messages: SRI_MESSAGES,
-  },
-  create(context) {
-    const sourceCode = context.sourceCode ?? context.getSourceCode();
-    return {
-      Program(node) {
-        const html =
-          typeof sourceCode.text === "string"
-            ? sourceCode.text
-            : sourceCode.getText();
-        if (typeof html !== "string" || html.length === 0) return;
-        for (const v of lintHtmlForSri(html)) {
-          context.report({
-            node,
-            loc: v.loc ? { start: v.loc, end: v.loc } : node.loc,
-            messageId: v.messageId,
-            data: v.data,
-          });
         }
       },
     };
@@ -4865,7 +2286,7 @@ const RAW_STORAGE_HELPER_NAMES = new Set([
 const NO_RAW_STORAGE_KEY_MESSAGE =
   "Raw localStorage key literal '{{key}}' — use `STORAGE_KEYS.<NAME>` from `@sergeant/shared` instead. " +
   "Inline string literals drift from the registry when keys are renamed/deprecated. " +
-  "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 5. " +
+  "Розбір — у git history аудиту 2026-05-13-consolidated-page-audit § Theme 5. " +
   "Burn-down: 2026-Q3.";
 
 function extractStringValue(node) {
@@ -4943,89 +2364,132 @@ const noRawStorageKey = {
   },
 };
 
-// ─── no-small-button-touch-target ────────────────────────────────────────────
+// ─── no-adhoc-metric-aggregation ────────────────────────────────────────
 //
-// Theme 2 (consolidated audit 2026-05-13 / WCAG 2.5.5): inline `<button>`
-// elements that explicitly declare a height/width below the 44px floor via
-// Tailwind utilities (h-6 = 24px, h-8 = 32px, h-10 = 40px, etc.) without a
-// compensating `min-h-[44px]` / `min-w-[44px]` / `touch-target` / `pointer-coarse`
-// class. The `Button` primitive (`@shared/components/ui/Button`) auto-applies
-// the safety-net via `pointer-coarse:min-h-[44px]`; prefer it for icon-only /
-// xs / sm variants.
+// Реєстр метрик (`docs/engineering/architecture/metric-registry.md`),
+// стадія 5. Аудит показав, що та сама метрика мала 4-6 незалежних
+// реалізацій і числа розходились у користувача на різних екранах в одну
+// хвилину. Cutover звів їх на канонічні функції доменних пакетів; це
+// правило не дає наступному інлайн-редьюсу знову розійтися.
 //
-// Severity: `warn` — many call-sites are data-cell contexts (calendar cells,
-// chart bars) where 44px would break layout. Each is manually auditable.
-// Burn-down: 2026-Q3. See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 2.
+// Ловить РІВНО одну форму: інлайн-перетворення копійок у гривні для
+// ВИТРАТИ (`Math.abs(<tx>.amount / 100)`) в **акумуляторі** — тобто
+// підрахунок суми витрат за набором транзакцій вручну. Це буквально тіло
+// `getTxStatAmount` з `@sergeant/finyk-domain`, тільки без сплітів, тому
+// кожне таке місце тихо втрачає спліти і розходиться з каноном.
+//
+// Навмисно НЕ ловить (інакше правило кричало б вовк):
+//   - показ однієї суми: `const total = Math.abs(tx.amount / 100)`,
+//     фільтр за діапазоном, рядок пошуку, підпис у JSX;
+//   - дохід (`t.amount / 100` без `Math.abs`) — додатні суми не потребують
+//     модуля, і канонічної функції для доходу реєстр не має;
+//   - будь-яку іншу арифметику з `/ 100` (відсотки, ккал на 100 г, кути).
+//
+// `Math.abs` — не косметика, а сам дискримінатор: витрати зберігаються
+// відʼємними, тож модуль бере рівно той код, що сумує витрати.
+//
+// Доменні пакети (`packages/*-domain/**`) звільнені — там канон і живе.
 
-// Tailwind height utilities that resolve to < 44px (h-1 = 4px … h-10 = 40px).
-// h-11 = 44px is the floor and is therefore NOT listed.
-const SMALL_HEIGHT_CLASSES = new Set([
-  "h-1",
-  "h-2",
-  "h-3",
-  "h-4",
-  "h-5",
-  "h-6",
-  "h-7",
-  "h-8",
-  "h-9",
-  "h-10",
-  "size-1",
-  "size-2",
-  "size-3",
-  "size-4",
-  "size-5",
-  "size-6",
-  "size-7",
-  "size-8",
-  "size-9",
-  "size-10",
-]);
+const ADHOC_METRIC_MESSAGE =
+  "Інлайн-підрахунок витрат: `Math.abs(<tx>.amount / 100)` в акумуляторі. " +
+  "Це копія `getTxStatAmount` без сплітів — число розійдеться з рештою екранів. " +
+  "Використай канонічну функцію з `@sergeant/finyk-domain` " +
+  "(`getTxStatAmount`, `calcCategorySpent`, `calcFinykPeriodAggregate`). " +
+  "Реєстр метрик: docs/engineering/architecture/metric-registry.md.";
 
-const TOUCH_TARGET_COMPENSATORS = [
-  "min-h-[44px]",
-  "min-w-[44px]",
-  "touch-target",
-  "pointer-coarse",
-];
-
-const NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE =
-  "Raw `<button>` element has height/size class '{{cls}}' (< 44px) without a touch-target compensator " +
-  "(`min-h-[44px]`, `min-w-[44px]`, `touch-target`, or `pointer-coarse:…`). " +
-  "WCAG 2.5.5 requires ≥ 44×44px hit area on coarse-pointer devices. " +
-  "Use the `Button` primitive (auto-applies `pointer-coarse:min-h-[44px]`) or add `min-h-[44px] min-w-[44px]` manually. " +
-  "See docs/audits/2026-05-13-consolidated-page-audit.md § Theme 2.";
-
-function extractClassNameString(node) {
-  // className="..." → Literal
-  if (node.type === "Literal" && typeof node.value === "string") {
-    return node.value;
+/** `<expr>.amount / 100` — інлайн-перетворення копійок у гривні. */
+function isMinorAmountDivision(node) {
+  if (!node || node.type !== "BinaryExpression" || node.operator !== "/") {
+    return false;
   }
-  // className={cn("...", ...)} → ignore (dynamic, too complex)
-  return null;
+  const { left, right } = node;
+  if (right.type !== "Literal" || right.value !== 100) return false;
+  const target = left.type === "CallExpression" ? left.arguments[0] : left;
+  return (
+    !!target &&
+    target.type === "MemberExpression" &&
+    !target.computed &&
+    target.property.type === "Identifier" &&
+    target.property.name === "amount"
+  );
 }
 
-function hasSmallHeightClass(classStr) {
-  const classes = classStr.split(/\s+/);
-  for (const cls of classes) {
-    if (SMALL_HEIGHT_CLASSES.has(cls)) return cls;
+function isMathAbsCall(node) {
+  return (
+    node.type === "CallExpression" &&
+    node.callee.type === "MemberExpression" &&
+    !node.callee.computed &&
+    node.callee.object.type === "Identifier" &&
+    node.callee.object.name === "Math" &&
+    node.callee.property.type === "Identifier" &&
+    node.callee.property.name === "abs"
+  );
+}
+
+/** `Math.abs(x.amount / 100)` або `Math.abs(x.amount) / 100`. */
+function isAbsoluteSpendAmount(node) {
+  if (isMathAbsCall(node)) return isMinorAmountDivision(node.arguments[0]);
+  return (
+    isMinorAmountDivision(node) &&
+    node.left.type === "CallExpression" &&
+    isMathAbsCall(node.left)
+  );
+}
+
+function isReduceCallback(fn) {
+  const call = fn.parent;
+  return (
+    !!call &&
+    call.type === "CallExpression" &&
+    call.arguments[0] === fn &&
+    call.callee.type === "MemberExpression" &&
+    !call.callee.computed &&
+    call.callee.property.type === "Identifier" &&
+    call.callee.property.name === "reduce"
+  );
+}
+
+/**
+ * Сума накопичується? `acc += X`, `acc[k] = (acc[k] || 0) + X`,
+ * або `X` в `+`-ланцюжку, що повертається з `.reduce`-колбека.
+ */
+function isAccumulatedTerm(node) {
+  let cur = node;
+  let parent = cur.parent;
+  let sawPlus = false;
+  while (parent) {
+    if (parent.type === "BinaryExpression" && parent.operator === "+") {
+      sawPlus = true;
+    } else if (parent.type === "AssignmentExpression") {
+      return parent.operator === "+=" || sawPlus;
+    } else if (parent.type === "ReturnStatement") {
+      return sawPlus;
+    } else if (
+      parent.type === "ArrowFunctionExpression" ||
+      parent.type === "FunctionExpression"
+    ) {
+      return sawPlus && isReduceCallback(parent);
+    } else if (
+      parent.type !== "ConditionalExpression" &&
+      parent.type !== "LogicalExpression"
+    ) {
+      return false;
+    }
+    cur = parent;
+    parent = cur.parent;
   }
-  return null;
+  return false;
 }
 
-function hasTouchTargetCompensator(classStr) {
-  return TOUCH_TARGET_COMPENSATORS.some((c) => classStr.includes(c));
-}
-
-const noSmallButtonTouchTarget = {
+const noAdhocMetricAggregation = {
   meta: {
-    type: "suggestion",
+    type: "problem",
     docs: {
       description:
-        "Warn when a raw `<button>` JSX element has a sub-44px height class without a touch-target compensator.",
+        "Forbid ad-hoc spending aggregation (`Math.abs(tx.amount / 100)` accumulated by hand) outside the domain packages — metrics must go through the canonical functions listed in the metric registry.",
     },
     schema: [],
-    messages: { small: NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE },
+    messages: { adhocAggregation: ADHOC_METRIC_MESSAGE },
   },
   create(context) {
     const filename = (
@@ -5033,52 +2497,933 @@ const noSmallButtonTouchTarget = {
       context.getFilename?.() ??
       ""
     ).replace(/\\/g, "/");
-    // Only applies to web app and mobile UI code.
-    if (
-      !/apps\/(web|mobile)\/src\//.test(filename) &&
-      !/apps\/mobile\/app\//.test(filename)
-    ) {
-      return {};
+    // Доменні пакети — місце, де канон і живе.
+    if (/packages\/[^/]*-domain\//.test(filename)) return {};
+
+    function check(node) {
+      if (!isAbsoluteSpendAmount(node)) return;
+      if (!isAccumulatedTerm(node)) return;
+      context.report({ node, messageId: "adhocAggregation" });
     }
+
+    return { CallExpression: check, BinaryExpression: check };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// ── require-toast-error-action ──────────────────────────────────────────
+//
+// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`
+// (на мобілці — `{ label, onPress }`, різниця лише в обробнику).
+//
+// Історія. Правило з такою ж назвою існувало до ADR-0081 і було retired
+// разом із рештою «естетичних» AST-правил — з тезою, що коректність дії
+// залежить від сценарію й не має надійного синтаксичного сигналу. Теза
+// правильна, висновок — ні: за пів року без гейта з 37 error-тостів у
+// `apps/web` дію мали ТРИ. Решта 34 лишали користувача в глухому куті
+// («Не вдалося оновити аватар» — і все).
+//
+// Тому правило повертається, але у формі, яка визнає ту саму тезу:
+// синтаксично воно ловить лише ФАКТ відсутності дії, а рішення «тут дії
+// справді бути не може» фіксується явним записом в `allowlist` — з
+// причиною в коді конфіга. Тобто гейт не вирішує за людину, а вимагає,
+// щоб мовчазний глухий кут став свідомим і підписаним.
+//
+// Виявляє `toast.error(...)`, `t.error(...)`, `toastApi.error(...)` — усе,
+// де обʼєкт-приймач названий `*toast*` (case-insensitive), плюс голий
+// `error(...)`, деструктурований з `useToast()`. Третій аргумент має бути
+// обʼєктним літералом із `label` і `onClick`, або ідентифікатором /
+// spread-ом (тоді довіряємо — форма не читається статично).
+const REQUIRE_TOAST_ERROR_ACTION_MESSAGE =
+  '`toast.error()` без recovery-дії лишає користувача в глухому куті: він не знає, чи буде нова спроба і що робити далі. Додай третім аргументом `{ label, onClick }` (напр. `{ label: "Повторити", onClick: retry }`). Якщо дії справді не може бути — валідація файлу, rate-limit із поясненням у копії, помилка форми, що вже видно інлайном — додай файл у `allowlist` цього правила з коментарем-причиною.';
+
+function isToastReceiver(node) {
+  if (!node) return false;
+  if (node.type === "Identifier") return /toast/i.test(node.name);
+  // `this.toast.error(...)` / `ctx.toast.error(...)`
+  if (
+    node.type === "MemberExpression" &&
+    node.property?.type === "Identifier"
+  ) {
+    return /toast/i.test(node.property.name);
+  }
+  return false;
+}
+
+function hasToastAction(args) {
+  const action = args[2];
+  if (!action) return false;
+  // Не object-literal (змінна, spread, виклик) — статично не прочитати,
+  // довіряємо авторові.
+  if (action.type !== "ObjectExpression") return true;
+  let hasLabel = false;
+  let hasClick = false;
+  for (const prop of action.properties) {
+    if (prop.type === "SpreadElement") return true;
+    const key = prop.key;
+    const name =
+      key?.type === "Identifier"
+        ? key.name
+        : key?.type === "Literal"
+          ? String(key.value)
+          : null;
+    if (name === "label") hasLabel = true;
+    // `onPress` — мобільний еквівалент. Обидві поверхні мають ОДНАКОВИЙ
+    // API тоста (`error(msg, duration?, action?)`), але різний обробник
+    // натискання: у вебі `onClick` (DOM), у React Native `onPress`.
+    // Доти правило знало лише веб-форму, тож на мобілці воно не змогло б
+    // визнати жодної коректної дії — і глоб, розширений без цієї правки,
+    // валив би навіть правильний код (знахідка при закритті PR-X3).
+    if (name === "onClick" || name === "onPress") hasClick = true;
+  }
+  return hasLabel && hasClick;
+}
+
+const requireToastErrorAction = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Require a `{ label, onClick }` recovery action on `toast.error(...)`; exempt files must be listed in `allowlist` with a reason.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Project-relative file paths (forward-slash) exempt from the rule. " +
+              "Кожен запис — свідоме рішення; тримай причину коментарем поруч.",
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+    messages: { needsAction: REQUIRE_TOAST_ERROR_ACTION_MESSAGE },
+  },
+  create(context) {
+    const options = context.options[0] || {};
+    const allowlist = options.allowlist || [];
+    const filename = (
+      context.filename ??
+      context.getFilename?.() ??
+      ""
+    ).replace(/\\/g, "/");
+
+    for (const entry of allowlist) {
+      const norm = entry.replace(/\\/g, "/").replace(/^\.\//, "");
+      if (filename === norm || filename.endsWith("/" + norm)) return {};
+    }
+    // Тести, stories і сам toast-примітив живуть за іншими правилами.
     if (
-      /\.test\.(ts|tsx|js|jsx)$/.test(filename) ||
+      /\.test\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
       /(^|\/)__tests__\//.test(filename) ||
-      /\.stories\.(ts|tsx|js|jsx)$/.test(filename)
+      /\.stories\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename)
     ) {
       return {};
     }
+
+    // Імена, деструктуровані з `useToast()` — щоб голий `error("…")` теж
+    // ловився, а не лише `toast.error("…")`.
+    const destructuredErrorNames = new Set();
+
     return {
-      JSXOpeningElement(node) {
-        // Only raw <button> elements (not Button component).
-        const name = node.name;
-        if (!name || name.type !== "JSXIdentifier" || name.name !== "button") {
+      VariableDeclarator(node) {
+        if (node.id?.type !== "ObjectPattern") return;
+        const init = node.init;
+        if (
+          init?.type !== "CallExpression" ||
+          init.callee?.type !== "Identifier" ||
+          init.callee.name !== "useToast"
+        ) {
           return;
         }
-        // Look for className attribute.
-        for (const attr of node.attributes) {
-          if (
-            attr.type !== "JSXAttribute" ||
-            !attr.name ||
-            attr.name.name !== "className"
-          ) {
+        for (const prop of node.id.properties) {
+          if (prop.type !== "Property") continue;
+          if (prop.key?.type !== "Identifier" || prop.key.name !== "error") {
             continue;
           }
-          // JSXAttribute value can be a Literal or JSXExpressionContainer.
-          let classStr = null;
-          if (attr.value && attr.value.type === "Literal") {
-            classStr = extractClassNameString(attr.value);
+          const local = prop.value;
+          if (local?.type === "Identifier") {
+            destructuredErrorNames.add(local.name);
           }
-          if (!classStr) return; // dynamic className — skip
-          const offendingCls = hasSmallHeightClass(classStr);
-          if (!offendingCls) return;
-          if (hasTouchTargetCompensator(classStr)) return;
-          context.report({
-            node,
-            messageId: "small",
-            data: { cls: offendingCls },
-          });
-          return;
         }
+      },
+      CallExpression(node) {
+        const callee = node.callee;
+        const isMemberCall =
+          callee?.type === "MemberExpression" &&
+          callee.property?.type === "Identifier" &&
+          callee.property.name === "error" &&
+          !callee.computed &&
+          isToastReceiver(callee.object);
+        const isBareCall =
+          callee?.type === "Identifier" &&
+          destructuredErrorNames.has(callee.name);
+        if (!isMemberCall && !isBareCall) return;
+        if (hasToastAction(node.arguments)) return;
+        context.report({ node, messageId: "needsAction" });
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `no-raw-motion-value` — сирі тривалості й криві в className.
+//
+// Токени руху існують у `theme.css` і прокинуті в Tailwind
+// (`duration-fast|base|slow|slower|slowest`, `ease-standard|…`). До
+// 2026-08-06 компонентний код їх НЕ знав: 141 сирий літерал у пʼяти
+// значеннях проти двох через токен, причому шкали навіть не збігались —
+// `duration-200` ≠ `--motion-duration-base` (220 ms).
+//
+// Без цього правила прохід розпадеться: `duration-200` лишається
+// валідним класом Tailwind, тож наступний автор напише його не зі зла, а
+// тому, що воно працює.
+const RAW_MOTION_VALUE_MESSAGE =
+  "Сира тривалість чи крива в className. Візьми токен: duration-{instant|fast|base|slow|slower|slowest} або ease-{standard|emphasized|accelerate|decelerate|overshoot}. Шкала — apps/web/src/styles/theme.css, обґрунтування — анти-слоп §4/П5.";
+
+const RAW_MOTION_RE = new RegExp(
+  "(?:^|[\\s\"'`])(?:[a-z-]+:)*(?:duration-(?:\\d+|\\[[^\\]]+\\])|ease-(?:in-out|in|out|linear)(?![-a-z]))",
+);
+
+// Друга половина правила: імʼя ТОКЕНА, що потрапило в CSS-літерал.
+//
+// AI-DANGER: `ease-standard` — клас Tailwind, а НЕ функція плавності.
+// Опинившись у рядку `transition: transform 0.2s ease-standard`, воно
+// робить усю декларацію невалідною, і браузер її мовчки відкидає: перехід
+// стає миттєвим, анімація не запускається взагалі. Нічого не падає.
+//
+// Саме так і сталося 2026-08-06: прохід П5 замінював `ease-out` на
+// `ease-standard` регуляркою, і чотири інлайнові стилі (BreathingMeshDemo,
+// EmptyStateIdleDemo, PullToRefreshIndicator, SwipeToAction) отримали
+// клас туди, де потрібна змінна. У CSS-літералі правильна форма —
+// `var(--motion-ease-standard)` і `var(--motion-duration-base)`.
+// Токен, що НЕ є частиною `var(--motion-…)`.
+const MOTION_TOKEN_NAME_RE =
+  /(?<!--motion-)\b(?:ease-(?:standard|emphasized|accelerate|decelerate|overshoot)|duration-(?:instant|fast|base|slow|slower|slowest))\b/;
+
+// Ознаки, що рядок — це CSS, а не список класів:
+//   1. літерал часу (`0.2s`, `320ms`) — у className його не буває;
+//   2. декларація `animation:` / `transition:` з двокрапкою (клас
+//      `transition-[…]` двокрапки не має, тож сюди не потрапляє).
+const CSS_TIME_RE = /\b\d+(?:\.\d+)?m?s\b/;
+const CSS_DECLARATION_RE =
+  /\b(?:animation|transition)(?:-(?:duration|timing-function))?\s*:/;
+
+function isCssLiteralWithTokenName(value) {
+  if (!MOTION_TOKEN_NAME_RE.test(value)) return false;
+  return CSS_TIME_RE.test(value) || CSS_DECLARATION_RE.test(value);
+}
+
+const CSS_LITERAL_TOKEN_MESSAGE =
+  "Імʼя Tailwind-класу в CSS-літералі: `ease-standard` / `duration-base` тут НЕ працюють — браузер відкине всю декларацію мовчки. Візьми змінну: var(--motion-ease-standard), var(--motion-duration-base).";
+
+const rawMotionValue = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid raw Tailwind duration/easing literals in className — use the motion tokens forwarded from theme.css.",
+    },
+    schema: [],
+    messages: {
+      rawMotion: RAW_MOTION_VALUE_MESSAGE,
+      cssLiteralToken: CSS_LITERAL_TOKEN_MESSAGE,
+    },
+  },
+  create(context) {
+    const check = (node, value) => {
+      if (typeof value !== "string") return;
+      if (isCssLiteralWithTokenName(value)) {
+        context.report({ node, messageId: "cssLiteralToken" });
+        return;
+      }
+      if (!RAW_MOTION_RE.test(value)) return;
+      context.report({ node, messageId: "rawMotion" });
+    };
+    return {
+      Literal(node) {
+        check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value && (node.value.cooked ?? node.value.raw));
+      },
+    };
+  },
+};
+
+// ─── no-opacity-on-text-token ──────────────────────────────────────────
+//
+// Анти-слоп, атрактор 9 (аудит 2026-08-08). `--c-subtle` і `--c-muted` —
+// третинні тири з мінімальним запасом над порогом WCAG AA. Наслідок
+// арифметичний, не смаковий: будь-яка прозорість нижче 100% виводить
+// такий текст під поріг.
+//
+//   subtle #605a54 на фоні сторінки #ecebe7:
+//     100% → 5.70   /80 → 3.72   /70 → 3.03   /60 → 2.53
+//
+// Числа перераховано 2026-09-11 після того, як обидва тони затемнили
+// (#6b645d → #605a54, #5c665f → #535c56): на порозі рівно вони стояли до
+// того, і саме через це «стіл і зона» поклали 11 маршрутів. Запас тепер
+// є, але його вистачає рівно на непрозорий текст: /80 усе одно нижче 4.5.
+//
+// Гейт контрасту (`packages/design-tokens/contrast.test.js`) цього не
+// ловить і не може: він перевіряє ЗНАЧЕННЯ токенів, а `/70` дописують
+// у className, тобто на місці використання. Це той самий механізм, що
+// дав три копії семантичних тирів і хекс, який їхав через застосунок:
+// інваріант захищено там, де його визначають, і не захищено там, де
+// ним користуються. Правило закриває саме цей розрив.
+//
+// Семантичні кольори (`success`/`danger`/`warning`/`info`) тут теж є —
+// вони ще темніші за subtle і так само не мають запасу під розведення.
+const OPACITY_ON_TEXT_TOKEN_MESSAGE =
+  "Прозорість на кольоровому токені тексту. Нейтральні токени мають мінімальний запас над порогом WCAG AA (subtle 5.7 на фоні сторінки), тож для них навіть /80 дає 3.7 — нижче 4.5; `-strong` мають трохи запасу й тримаються до /80, але вже /70 їх валить. Бери тихіший ТОКЕН або `-strong` companion замість розведення. Винятки, де правило не застосовне, — hover-стан над правильною базою, вимкнений контрол і неозначальна іконка (поріг 3:1): познач їх `eslint-disable-next-line` з причиною. Заміри — анти-слоп §3.2, атрактор 9.";
+
+// Суфікси обовʼязкові. Перша версія цього регексу дивилась лише на
+// голі корені й пропускала 18 місць із 60 — `text-danger-strong/80`,
+// `text-info-soft-fg/70` тощо. Той самий клас помилки, проти якого
+// написано §8 анти-слоп канону («не описувати ціле за заміром
+// підмножини»), і зроблений у гейті, що мав його ловити.
+const OPACITY_ON_TEXT_TOKEN_RE =
+  /\btext-(?:subtle|muted|text|success|danger|warning|info|brand|accent)(?:-(?:strong|soft|soft-fg))?\/\d{1,3}\b/;
+
+const noOpacityOnTextToken = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Forbid opacity modifiers on colour text tokens — their values already sit at the WCAG AA floor, so any dilution drops the text below 4.5:1.",
+    },
+    schema: [],
+    messages: { opacityOnTextToken: OPACITY_ON_TEXT_TOKEN_MESSAGE },
+  },
+  create(context) {
+    const check = (node, value) => {
+      if (typeof value !== "string") return;
+      if (!OPACITY_ON_TEXT_TOKEN_RE.test(value)) return;
+      context.report({ node, messageId: "opacityOnTextToken" });
+    };
+    return {
+      Literal(node) {
+        check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value && (node.value.cooked ?? node.value.raw));
+      },
+    };
+  },
+};
+
+// ─── no-raw-type-size ──────────────────────────────────────────────────
+//
+// Анти-слоп, атрактор 8 (аудит 2026-08-08). Правило вже було написане
+// прозою — П4, пункт 5: «Без сирих `text-xs` / `text-sm`. Дві
+// паралельні шкали = ієрархія, за якою не може стежити лінт». Замір
+// показав 300 входжень у 116 файлах: правило лишилось текстом, тож
+// його просто не виконували.
+//
+// Рівень `warn`, а не `error`, і це навмисно. Заміна НЕ механічна:
+// `text-style-label` — це clamp(13→14px) плюс вага 500, а сирий
+// `text-sm` — рівно 14px з успадкованою вагою. Тобто міграція змінює
+// вигляд, і кожне місце потребує ока, а не sed-у. `error` тут зробив
+// би гейт червоним від народження — рівно той стан «червоний завжди =
+// вимкнений», проти якого цей репо вже боровся з бандл-бюджетами.
+// Прецедент рівня — `prefer-kyiv-time: "warn"` у тому ж конфігу.
+const RAW_TYPE_SIZE_MESSAGE =
+  "Сирий розмір шрифта в className. Візьми семантичну роль: text-style-{display|headline|title|body|label|caption|overline|code}. Дві паралельні шкали дають ієрархію, за якою не стежить ніхто — анти-слоп §4/П4 правило 5, §3.2 атрактор 8.";
+
+const RAW_TYPE_SIZE_RE =
+  /(?:^|[\s"'`])(?:[a-z-]+:)*text-(?:xs|sm|base|lg|xl|2xl|3xl|4xl|5xl)(?![-a-z0-9])/;
+
+const noRawTypeSize = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Prefer the semantic type roles (text-style-*) over raw Tailwind font-size utilities in className.",
+    },
+    schema: [],
+    messages: { rawTypeSize: RAW_TYPE_SIZE_MESSAGE },
+  },
+  create(context) {
+    const check = (node, value) => {
+      if (typeof value !== "string") return;
+      if (!RAW_TYPE_SIZE_RE.test(value)) return;
+      context.report({ node, messageId: "rawTypeSize" });
+    };
+    return {
+      Literal(node) {
+        check(node, node.value);
+      },
+      TemplateElement(node) {
+        check(node, node.value && (node.value.cooked ?? node.value.raw));
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// `ukrainian-copy` — гейт tone-of-voice для UA-копії
+// ─────────────────────────────────────────────────────────────────────────
+//
+// Канон: `docs/product/copy/style-guide.uk.md`. До 2026-08-26 він був
+// лише документом, і аудит копії показав, що без механічного гейта правила
+// дрейфують саме в найновішому коді: довге тире жило в чек-скані, bulk-
+// імпорті та Сільпо — тобто в тому, що писалося останнім.
+//
+// Три перевірки, усі — про рядки, які бачить людина:
+//   1. EM_DASH — довге тире «—» у копії. §1.9: воно читається як «це писала
+//      машина». Виняток — самотнє «—» як плейсхолдер порожнього значення,
+//      бо там це символ, а не текст. Сусід літерала (інтерполяція, операнд
+//      `+`, сусідній JSX-вузол) рахується як текст.
+//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини за закінченням
+//      («Спробуйте», «Введіть»). §1.1: звертання лише на «ти».
+//   3. FIRST_PERSON_PLURAL — «ми» у голосі продукту. §2.
+//
+// Що НЕ ловить: коментарі (ESLint не віддає їх як вузли), рядки без
+// кирилиці, тести й stories (там копія запінена навмисно).
+//
+//   4. APOSTROPHE — `'` (U+0027) чи `’` (U+2019) між українськими
+//      літерами. §1.10: канонічний апостроф — `ʼ` (U+02BC).
+//
+// Гейт апострофа зʼявився ТРЕТІМ кроком, і порядок тут важливіший за саму
+// перевірку. Ці слова не завжди копія: у `packages/**` і `apps/server` ті
+// самі рядки працюють ключами зіставлення й значеннями у сховищі
+// користувача. Спроба замінити символ ПЕРШИМ ділом (2026-08-26) мовчки
+// розірвала розпізнавання числівників і категоризацію ручних витрат — і
+// була відкочена. Тому спершу кожна межа порівняння отримала
+// `foldApostrophes` (`@sergeant/shared`), потім пройшла заміна у показі, і
+// лише тепер стоїть цей гейт. Знімати його — лише разом із поверненням
+// перших двох кроків.
+
+const UKRAINIAN_COPY_MESSAGES = {
+  emDash:
+    "Довге тире «—» у копії читається як ШІ-текст (канон §1.9). " +
+    "Заміни на кому, двокрапку чи окреме речення; якщо тире несе граматику — коротке «–» (§9а).",
+  formalVy:
+    "Звертання до людини — на «ти» (канон §1.1). Знайдено формальне «{{found}}».",
+  firstPersonPlural:
+    "1-а особа множини заборонена (канон §2): «ми» створює дистанцію «команда проти користувача». " +
+    "Голос асистента — 1-а однини («не раджу»), опис системи — 3-я однини. Знайдено «{{found}}».",
+  apostrophe:
+    "Український апостроф — «ʼ» (U+02BC), канон §1.10. Знайдено «{{found}}»: " +
+    "`'` і `’` це лапки, а не літера, тож пошук по слову з одним символом не знаходить слово з іншим. " +
+    "Якщо цей рядок — КЛЮЧ зіставлення чи значення у сховищі, не міняй символ наосліп: " +
+    "спершу згорни форми через `foldApostrophes` на межі порівняння.",
+};
+
+const RX_EM_DASH_IN_COPY = /\S\s*—\s*\S/;
+const RX_FORMAL_PRONOUN =
+  /(^|[\s"'`>(«])(Ви|Вас|Вам|Ваш[а-яіїєґ]*)([\s,.!?»]|$)/;
+// Імператив 2-ї множини ловиться за ЗАКІНЧЕННЯМ, не за списком (аудит копії
+// вебу 2026-09-23 §2.1). Список із 21 дієслова пропускав «Вставте»,
+// «Отримайте», «Зберігайте», «привʼязуйте», «затисніть», «використайте»:
+// сім живих порушень §1.1 у вебі, і жодне не екзотика. Форма стійка:
+// приголосна (разом із «й» та «ь») + «те» («спробуйте», «перевірте»,
+// «будьте») або «іть» («введіть», «натисніть»), необовʼязково зворотне
+// «-ся/-сь» («поверніться», «хвилюйтесь»). Голосна перед «те» навмисно НЕ
+// ловиться: це дієприкметники й порядкові середнього роду («відкрите»,
+// «закрите», «пʼяте») та 2-а множини теперішнього («маєте»), яку тримає
+// гілка «Ви». Щонайменше дві літери перед закінченням, щоб «те» й «оте»
+// не ловились. 3-я особа однини безпечна сама собою: вона закінчується на
+// «-ить/-їть» («стоїть», «говорить»), не на «-іть».
+const RX_IMPERATIVE_PLURAL =
+  /(^|[\s"'`>(«])([А-ЯІЇЄҐа-яіїєґ][а-яіїєґʼ’']+(?:[бвгґджзйклмнпрстфхцчшщь]те|іть)(?:ся|сь)?)(?=[\s,.!?»…:;)"'`]|$)/;
+
+// Не-імперативи з тим самим хвостом. Замір 2026-09-23 по web, landing і
+// server дав рівно два живих: «навіть» (23 рядки) і «росте» з префіксами
+// («зросте», «виросте»; 4 рядки). Решта того самого класу, якого в копії
+// ще нема, але який нею буде: прикметники й дієприкметники середнього роду
+// з приголосною перед «те» і порядкові «четверте», «шосте».
+const IMPERATIVE_PLURAL_STOPLIST = new Set([
+  "навіть",
+  "просте",
+  "чисте",
+  "пусте",
+  "густе",
+  "часте",
+  "товсте",
+  "жовте",
+  "відверте",
+  "уперте",
+  "потерте",
+  "стерте",
+  "затерте",
+  "четверте",
+  "шосте",
+]);
+const RX_IMPERATIVE_PLURAL_STOP = /^[а-яіїєґ]{0,4}росте$/;
+
+/** Перше слово в наказовій формі множини поза стоп-списком, або null. */
+function findImperativePlural(text) {
+  const re = new RegExp(RX_IMPERATIVE_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const word = m[2];
+    const key = word.replace(/[ʼ’']/g, "").toLowerCase();
+    if (IMPERATIVE_PLURAL_STOPLIST.has(key)) continue;
+    if (RX_IMPERATIVE_PLURAL_STOP.test(key)) continue;
+    return word;
+  }
+  return null;
+}
+
+// «Ми» як займенник + характерні закінчення 1-ї особи множини теперішнього
+// й майбутнього часу. Коментарі сюди не потрапляють — правило ходить лише
+// по Literal / JSXText / TemplateElement, а розробницьке «ми» живе саме в
+// коментарях, тож шуму від нього нема.
+// `…` у класі завершальних символів обовʼязкове: найчастіша форма 1-ї
+// множини в цьому коді — саме спінер «Завантажуємо…», і без трикрапки
+// правило мовчало б рівно там, де порушення трапляється найчастіше
+// (знайдено юніт-тестом до цього правила, а не на кодовій базі).
+// Апостроф у показі: `'` або `’` між українськими літерами. Саме «між
+// літерами» — інакше правило ловило б звичайні лапки навколо слова
+// («'Готово'») і англійські контракції, які до §1.10 стосунку не мають.
+const RX_APOSTROPHE = /[а-яіїєґА-ЯІЇЄҐ](['’])[а-яіїєґА-ЯІЇЄҐ]/;
+
+// Закінчення: -ємо/-емо (ідемо, радимо → ні, це -имо), -имо (робимо,
+// любимо), -їмо (боїмо-сь), плюс зворотні -мось/-мося (вчимося). До
+// 2026-09-16 -емо/-имо/-мось проходили повз (аудит 2026-09-15 § 6) — тобто
+// «робимо», «вчимося», «ідемо» правило не бачило, і саме такі рядки жили в
+// копі. Дві літери перед закінченням (перша може бути великою: «Ідемо»,
+// «Вчимося») — щоб «демо» (1 літера) не ловилось.
+const RX_FIRST_PERSON_PLURAL =
+  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґА-ЯІЇЄҐ][а-яіїєґ](аємо|уємо|юємо|имемо|немо|ємо|емо|имо|їмо)(сь|ся)?(\s|[.,!?»…:;)]|$)/;
+
+// Слова з тими самими закінченнями, які НЕ є дієсловами 1-ї множини:
+// прислівники на -емо/-имо («окремо», «видимо») і усталене привітання
+// «ласкаво просимо». Останнє — свідомий виняток: заміна привітання на
+// «Вітаю» — рішення founder-а, а не лінтера (аудит 2026-09-15 § 6).
+const FIRST_PERSON_PLURAL_ALLOWLIST = new Set([
+  "окремо",
+  "видимо",
+  "невидимо",
+  "незримо",
+  "невловимо",
+  "терпимо",
+  "нестерпимо",
+]);
+const FIRST_PERSON_PLURAL_ALLOWED_PHRASES = [/ласкаво\s+просимо/i];
+const RX_UA_LETTER = /[а-яіїєґА-ЯІЇЄҐʼ'’]/;
+
+/**
+ * Перший збіг 1-ї особи множини, що не потрапляє в allowlist. Дієслівна
+ * гілка регулярки ловить лише хвіст слова (дві літери + закінчення), тож
+ * для звірки з allowlist збіг розширюється до цілого слова.
+ */
+function findFirstPersonPlural(text) {
+  const re = new RegExp(RX_FIRST_PERSON_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[0] === "") {
+      re.lastIndex += 1;
+      continue;
+    }
+    if (m[3] === undefined) return m; // гілка «ми …» — allowlist не стосується
+    let start = m.index;
+    while (start > 0 && RX_UA_LETTER.test(text[start - 1])) start -= 1;
+    // `m[0]` тягне ще й завершальний символ межі (група 5 — пробіл або
+    // розділовий знак), тож відлік уперед мусить починатися ПЕРЕД ним.
+    // Без цього віднімання межа-пробіл «зʼїдалась», крок уперед бачив
+    // першу літеру НАСТУПНОГО слова і склеював два слова в одне: рядок
+    // «Окремо є ручне…» давав `окремоє`, якого в allowlist немає й бути
+    // не може. Наслідок — allowlist мовчки не працював для найчастішого
+    // випадку «слово + пробіл + слово», тобто майже завжди; спрацьовував
+    // лише тоді, коли за словом ішов розділовий знак у кінці рядка.
+    // Знайдено 2026-09-19 першим живим прогоном правила на лендінгу:
+    // чотири законні «окремо» (HroshiPage, TrenuvanniaPage ×2, DataPage)
+    // репортувались як 1-а особа множини.
+    const trailingBoundary = m[5] ?? "";
+    let end = m.index + m[0].length - trailingBoundary.length;
+    while (end < text.length && RX_UA_LETTER.test(text[end])) end += 1;
+    const word = text
+      .slice(start, end)
+      .replace(/[^а-яіїєґА-ЯІЇЄҐ]/g, "")
+      .toLowerCase();
+    if (FIRST_PERSON_PLURAL_ALLOWLIST.has(word)) continue;
+    const phraseWindow = text.slice(Math.max(0, start - 12), end);
+    if (FIRST_PERSON_PLURAL_ALLOWED_PHRASES.some((rx) => rx.test(phraseWindow)))
+      continue;
+    return m;
+  }
+  return null;
+}
+
+// Непробільний сентинел на місці інтерполяції: каже «тут вираз МОЖЕ
+// віддати текст». Потрібен лише перевірці тире, яка дивиться на сусідів
+// зліва й справа; решту патернів ним годувати не можна — вони мають
+// класи меж (`[\s"'`>(«]`, `[\s,.!?»…:;)]`), і чужий символ у них
+// зламав би збіг. Тому дві версії рядка, а не одна.
+const UA_EXPR_SENTINEL = "\u0001";
+
+// Той самий сентинел на КРАЯХ літерала, коли текст триває поза ним:
+// сусідній операнд `+` або сусід у JSX (аудит копії вебу 2026-09-23 §2.2).
+// `"…напишу сюди першим — " + "нічого робити не треба"`, `` `…` + ` — сервер
+// їх так і не отримав` ``, `{list}{" — витрати рахуватимуться…"}`: тире
+// стоїть на межі літерала, і `\S\s*—\s*\S` не бачить сусіда, бо той живе в
+// іншому вузлі. Ланцюжок `+` проходиться до кінця, тож `a + " — " + b` теж
+// рахується. Порожній JSXText (самі пробіли й переноси між елементами)
+// сусідом не вважається: JSX його не рендерить. Елемент масиву й аргумент
+// виклику сусідів не мають, це свідома межа: там склейка не гарантована.
+function edgeNeighbours(node) {
+  let left = false;
+  let right = false;
+  let child = node;
+  let parent = node.parent;
+  while (
+    parent &&
+    parent.type === "BinaryExpression" &&
+    parent.operator === "+"
+  ) {
+    if (parent.left === child) right = true;
+    else left = true;
+    child = parent;
+    parent = parent.parent;
+  }
+  if (parent && parent.type === "JSXExpressionContainer") {
+    child = parent;
+    parent = parent.parent;
+  }
+  if (
+    parent &&
+    (parent.type === "JSXElement" || parent.type === "JSXFragment")
+  ) {
+    const isContent = (n) => n.type !== "JSXText" || n.value.trim() !== "";
+    const i = parent.children.indexOf(child);
+    left = left || parent.children.slice(0, i).some(isContent);
+    right = right || parent.children.slice(i + 1).some(isContent);
+  }
+  return { left, right };
+}
+
+function withEdgeSentinels(node, text) {
+  const { left, right } = edgeNeighbours(node);
+  return (
+    (left ? UA_EXPR_SENTINEL : "") + text + (right ? UA_EXPR_SENTINEL : "")
+  );
+}
+
+// SQL у шаблонному літералі — не копія, і правило мусить це знати.
+//
+// Докстрінг вище обіцяє «що НЕ ловить: коментарі (ESLint не віддає їх як
+// вузли)». Для JS-коментарів це правда, а для SQL — ні: `-- Знімаємо
+// очікування…` живе ВСЕРЕДИНІ рядкового вузла, тож правило його бачить і
+// чесно рапортує 1-шу множини в тексті, який людина ніколи не побачить.
+// Знайдено заміром перед вмиканням правила на `apps/server` (2026-09-14):
+// з девʼяти влучань у копійних теках два були саме такі, обидва в
+// `waitlistBot.ts`.
+//
+// Скіпаємо ЦІЛИЙ літерал, а не вирізаємо з нього коментарі: запит — це від
+// початку до кінця машинний текст, і перевіряти в ньому тон голосу не має
+// сенсу ні в коментарі, ні поза ним. Межа вузька навмисно — літерал
+// мусить ПОЧИНАТИСЬ інструкцією SQL, тож звичайна копія, у якій випадково
+// трапилось слово `select`, під виняток не потрапляє.
+const RX_SQL_STATEMENT_START =
+  /^\s*(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|ALTER|DROP|TRUNCATE|BEGIN|COMMIT|ROLLBACK)\s/i;
+
+function ukrainianCopyViolations(text, emDashText = text) {
+  if (!RX_CYRILLIC.test(text)) return [];
+  const out = [];
+  // Плейсхолдер порожнього значення — символ, не копія.
+  if (emDashText.trim() !== "—" && RX_EM_DASH_IN_COPY.test(emDashText)) {
+    out.push({ messageId: "emDash", data: {} });
+  }
+  const pronoun = RX_FORMAL_PRONOUN.exec(text);
+  if (pronoun) {
+    out.push({ messageId: "formalVy", data: { found: pronoun[2] } });
+  } else {
+    const verb = findImperativePlural(text);
+    if (verb) out.push({ messageId: "formalVy", data: { found: verb } });
+  }
+  const apostrophe = RX_APOSTROPHE.exec(text);
+  if (apostrophe) {
+    out.push({ messageId: "apostrophe", data: { found: apostrophe[1] } });
+  }
+  const plural = findFirstPersonPlural(text);
+  if (plural) {
+    out.push({
+      messageId: "firstPersonPlural",
+      data: { found: plural[0].trim() },
+    });
+  }
+  return out;
+}
+
+const ukrainianCopy = {
+  meta: {
+    type: "problem",
+    docs: {
+      description:
+        "Enforce UA copy tone-of-voice: no em-dash, informal «ти», no first-person plural.",
+    },
+    messages: UKRAINIAN_COPY_MESSAGES,
+    schema: [
+      {
+        type: "object",
+        properties: {
+          allowlist: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Project-relative file paths (forward-slash) that are exempt.",
+          },
+          allowFirstPersonPlural: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Paths (file or directory) where only the «ми» check is skipped: " +
+              "legal texts, data disclosure and support appeals speak for the team (канон §2).",
+          },
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  create(context) {
+    const { allowlist = [], allowFirstPersonPlural = [] } =
+      context.options[0] ?? {};
+    const filename = (context.filename ?? context.getFilename() ?? "").replace(
+      /\\/g,
+      "/",
+    );
+    // Запис — або конкретний файл (`endsWith`), або каталог (`.../<p>/...`).
+    // Без другої гілки виняток на теку мовчки не діяв би.
+    const matchesPath = (p) =>
+      filename.endsWith(p) || filename.includes(`${p}/`);
+    if (
+      /\.(test|spec)\.[jt]sx?$/.test(filename) ||
+      filename.includes("/__tests__/") ||
+      // Уся тека `tests/` — E2E/QA-обвʼязка, а не продукт. Крім спеків там
+      // лежать матриці ручних прогонів (`tests/beta/betaMatrix.ts`,
+      // `tests/profiles/profileMatrix.ts`), де «питання» адресовані
+      // ТЕСТЕРУ, а не користувачу: «чи не продаємо платнику підписку
+      // вдруге?». Це внутрішній документ у формі коду, і ToV продукту до
+      // нього не застосовний. Самого `*.test.*` тут мало — ці файли так
+      // не називаються.
+      filename.includes("/tests/") ||
+      /\.stories\.[jt]sx?$/.test(filename) ||
+      allowlist.some(matchesPath)
+    ) {
+      return {};
+    }
+    // Legal, розкриття даних і звернення в підтримку говорять від «ми»
+    // (канон §2): там вимикається лише ця перевірка, решта діє.
+    const skipFirstPersonPlural = allowFirstPersonPlural.some(matchesPath);
+    const report = (node, text, emDashText = text) => {
+      for (const v of ukrainianCopyViolations(text, emDashText)) {
+        if (skipFirstPersonPlural && v.messageId === "firstPersonPlural")
+          continue;
+        context.report({ node, messageId: v.messageId, data: v.data });
+      }
+    };
+    return {
+      Literal(node) {
+        if (typeof node.value === "string")
+          report(node, node.value, withEdgeSentinels(node, node.value));
+      },
+      JSXText(node) {
+        report(node, node.value, withEdgeSentinels(node, node.value));
+      },
+      // Літерал перевіряємо ЦІЛИМ, а не поквазі: тире часто стоїть саме
+      // на межі інтерполяції, і поквазі там не збігається нічого.
+      //
+      // Але одного склеювання мало, і це коштувало другого заходу
+      // (ревʼю CodeRabbit). Пробіл-роздільник рятує лише випадок, коли
+      // ліворуч від тире вже є текст у своєму квазі: `Немає ${n} — …`
+      // дає «Немає   — …», де `\S\s*—` збігається на «є». А коли квазі
+      // ПОРОЖНІЙ — `${name} — …` — квазі це ["", " — …"], склейка дає
+      // самі пробіли перед тире, і порушення знову проходить повз. Те
+      // саме між двома інтерполяціями: `${a} — ${b} грн`.
+      //
+      // Тому перевірці тире віддаємо версію із сентинелом на місці
+      // виразу (він і означає «тут може бути текст»), а решті патернів —
+      // версію з пробілом: їхні класи меж чужого символу не приймають.
+      // Повідомляємо один раз — обидві версії йдуть в один виклик.
+      TemplateLiteral(node) {
+        const parts = node.quasis.map((q) => q.value.cooked ?? q.value.raw);
+        if (RX_SQL_STATEMENT_START.test(parts[0] ?? "")) return;
+        report(
+          node,
+          parts.join(" "),
+          withEdgeSentinels(node, parts.join(UA_EXPR_SENTINEL)),
+        );
+      },
+    };
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// ── no-sentence-in-caption ──────────────────────────────────────────────
+//
+// `.text-style-caption` — найдрібніша роль шкали (12px), і за призначенням
+// вона несе МЕТУ: час, лічильник, одиницю, «оновлено щойно». Замір
+// 2026-09-02 (`scripts/scan-caption-sentences.mjs`) знайшов 190 місць, де
+// нею набрано речення, які людина читає, щоб зрозуміти, що робити, —
+// інструкції, порожні стани, застереження приватності. Розбір і рішення
+// по кожному типу тексту: `docs/design/design/density-hierarchy-spec.md`.
+//
+// ЧОМУ ГЕЙТ ЛЕГІТИМНИЙ, ХОЧА CODEMOD — НІ. Той самий документ (§4) тричі
+// записав, чим закінчується механічна ЗАМІНА за патерном тексту: вона не
+// бачить екрана і псує саме ті місця, де дрібний кегль правильний —
+// підказку під полем вводу, дисклеймер, компактну пару в картці. Гейт
+// нічого не замінює. Він спрацьовує в момент написання, коли автор
+// дивиться саме на цей екран і може відповісти за секунду; хибне
+// спрацювання коштує один коментар з причиною — і цей коментар сам стає
+// тим записом, якого зараз бракує.
+//
+// Поріг 60, а не 45 як у заміру, теж свідомо: замір має перелічити всіх
+// кандидатів (краще зайві), гейт має не заважати (краще пропустити).
+// Різні ціни помилки — різні числа.
+//
+// ЧОГО ПРАВИЛО НЕ ЛОВИТЬ І НЕ МАЄ: тіла зі словника (`{m.section.body}` —
+// літерала в JSX немає), склейки з інтерполяцією, довгий текст у `label`.
+// Половину заміру дає саме словник, і закрити її статичним аналізом JSX
+// неможливо — для цього є скрипт заміру.
+const CAPTION_SENTENCE_MIN = 60;
+const RX_CAPTION_CYRILLIC = /[А-Яа-яЇїІіЄєҐґ]/;
+const CAPTION_SUPPRESSION_LINES = 6;
+// Глушник — саме КАНОНІЧНИЙ маркер, той самий, що вимагає
+// `ai-marker-syntax` вище: якір на початку рядка коментаря (після `/`,
+// `*`, пробілів) плюс двокрапка з пробілом. Без якоря й двокрапки
+// глушила б будь-яка згадка — `// додати AI-NOTE колись` прибирав би
+// попередження, не давши жодної причини, тобто рівно навпаки до задуму:
+// сенс гейта в тому, що поруч ЛИШАЄТЬСЯ записана причина.
+const CAPTION_SUPPRESSION_RE = /^[\s/*]*AI-(NOTE|DANGER):\s/;
+
+/** Збирає рядкові частини `className`, включно з аргументами `cn(...)`. */
+function collectClassNameStrings(attrValue) {
+  const out = [];
+  const walk = (node) => {
+    if (!node || typeof node !== "object") return;
+    if (node.type === "Literal" && typeof node.value === "string") {
+      out.push(node.value);
+      return;
+    }
+    if (node.type === "TemplateLiteral") {
+      for (const q of node.quasis) out.push(q.value.cooked ?? q.value.raw);
+      for (const e of node.expressions) walk(e);
+      return;
+    }
+    if (node.type === "JSXExpressionContainer") {
+      walk(node.expression);
+      return;
+    }
+    if (node.type === "CallExpression") {
+      for (const a of node.arguments) walk(a);
+      return;
+    }
+    if (node.type === "ConditionalExpression") {
+      walk(node.consequent);
+      walk(node.alternate);
+      return;
+    }
+    if (node.type === "LogicalExpression") {
+      walk(node.left);
+      walk(node.right);
+      return;
+    }
+    if (node.type === "ArrayExpression") {
+      for (const e of node.elements) walk(e);
+      return;
+    }
+    if (node.type === "ObjectExpression") {
+      for (const p of node.properties) {
+        if (p.type === "Property" && p.key) walk(p.key);
+      }
+    }
+  };
+  walk(attrValue);
+  return out;
+}
+
+const noSentenceInCaption = {
+  meta: {
+    type: "suggestion",
+    docs: {
+      description:
+        "Речення в ролі `.text-style-caption` (12px) — підніми до `.text-style-body`, " +
+        "або поясни коментарем AI-NOTE / AI-DANGER, чому дрібний кегль тут правильний.",
+    },
+    schema: [
+      {
+        type: "object",
+        properties: { minLength: { type: "number" } },
+        additionalProperties: false,
+      },
+    ],
+    messages: {
+      sentence:
+        "Речення ({{len}} знаків) у ролі `text-style-caption` (12px). Це найдрібніша роль шкали, " +
+        "і вона для мети — часу, лічильника, одиниці. Текст, який читають, набирай `text-style-body` " +
+        "(вага 400 лишається, тон не змінюється). Якщо кегль тут правильний — підказка під контролом, " +
+        "дисклеймер, компактна пара в картці — постав поруч коментар AI-NOTE з причиною. " +
+        "Розбір: docs/design/design/density-hierarchy-spec.md §4.",
+    },
+  },
+  create(context) {
+    const options = context.options[0] || {};
+    const minLength = options.minLength ?? CAPTION_SENTENCE_MIN;
+    const filename = (context.filename || context.getFilename() || "").replace(
+      /\\/g,
+      "/",
+    );
+    if (
+      /\.test\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      /(^|\/)__tests__\//.test(filename) ||
+      /\.stories\.(ts|tsx|js|jsx|mjs|cjs)$/.test(filename) ||
+      // Внутрішня демо-сторінка дизайн-системи: там `caption` подекуди сам
+      // є предметом показу, і в прод-збірку вона не входить.
+      /(^|\/)DesignShowcase\//.test(filename)
+    ) {
+      return {};
+    }
+    const sourceCode = context.sourceCode ?? context.getSourceCode();
+
+    /** Канонічний `AI-NOTE:` / `AI-DANGER:` не далі кількох рядків над вузлом. */
+    function hasSuppression(node) {
+      const line = node.loc.start.line;
+      return sourceCode.getAllComments().some((c) => {
+        if (c.loc.end.line >= line) return false;
+        if (line - c.loc.end.line > CAPTION_SUPPRESSION_LINES) return false;
+        // Блоковий коментар — багаторядковий; маркер може стояти на
+        // будь-якому його рядку, але щоразу на ПОЧАТКУ рядка.
+        return c.value.split("\n").some((l) => CAPTION_SUPPRESSION_RE.test(l));
+      });
+    }
+
+    return {
+      JSXOpeningElement(node) {
+        const classAttr = node.attributes.find(
+          (a) =>
+            a.type === "JSXAttribute" && a.name && a.name.name === "className",
+        );
+        if (!classAttr || !classAttr.value) return;
+        const classes = collectClassNameStrings(classAttr.value).join(" ");
+        if (!classes.includes("text-style-caption")) return;
+
+        const element = node.parent;
+        if (!element || !Array.isArray(element.children)) return;
+
+        // Тільки ПРЯМІ текстові діти: вкладений вузол має власну роль,
+        // і його кегль — питання до нього, не до цього вузла.
+        const text = element.children
+          .filter((c) => c.type === "JSXText")
+          .map((c) => c.value)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (text.length < minLength) return;
+        if (!RX_CAPTION_CYRILLIC.test(text)) return;
+        if (hasSuppression(node)) return;
+
+        context.report({
+          node,
+          messageId: "sentence",
+          data: { len: String(text.length) },
+        });
       },
     };
   },
@@ -5086,44 +3431,31 @@ const noSmallButtonTouchTarget = {
 
 const plugin = {
   rules: {
-    "no-eyebrow-drift": noEyebrowDrift,
-    "no-ellipsis-dots": noEllipsisDots,
+    "ukrainian-copy": ukrainianCopy,
+    "no-sentence-in-caption": noSentenceInCaption,
+    "no-opacity-on-text-token": noOpacityOnTextToken,
+    "no-raw-type-size": noRawTypeSize,
     "no-raw-tracked-storage": noRawTrackedStorage,
     "no-raw-local-storage": noRawLocalStorage,
     "no-finyk-token-in-storage": noFinykTokenInStorage,
     "ai-marker-syntax": aiMarkerSyntax,
-    "valid-tailwind-opacity": validTailwindOpacity,
-    "no-hex-in-classname": noHexInClassname,
-    "no-foreign-module-accent": noForeignModuleAccent,
-    "no-low-contrast-text-on-fill": noLowContrastTextOnFill,
     "no-bigint-string": noBigintString,
     "rq-keys-only-from-factory": rqKeysOnlyFromFactory,
     "no-anthropic-key-in-logs": noAnthropicKeyInLogs,
     "no-console-pii": noConsolePii,
     "no-raw-req-in-pino-log": noRawReqInPinoLog,
     "no-strict-bypass": noStrictBypass,
-    "no-raw-dark-palette": noRawDarkPalette,
-    "prefer-focus-visible": preferFocusVisible,
-    "no-rounded-lg": noRoundedLg,
-    "no-v1-gradient": noV1Gradient,
-    "no-bare-empty-text": noBareEmptyText,
     "no-cyrillic-jsx-literal": noCyrillicJsxLiteral,
-    "prefer-text-style": preferTextStyle,
-    "no-arbitrary-text-size": noArbitraryTextSize,
     "no-flat-shared-lib": noFlatSharedLib,
     "forbid-shell-only-feature": forbidShellOnlyFeature,
     "no-hash-router-in-modules": noHashRouterInModules,
-    "no-legacy-telegram-parse-mode": noLegacyTelegramParseMode,
     "prefer-kyiv-time": preferKyivTime,
-    "require-stories-for-ui-components": requireStoriesForUiComponents,
-    "prefer-data-state": preferDataState,
     "no-inline-body-size-limit": noInlineBodySizeLimit,
-    "require-toast-error-action": requireToastErrorAction,
-    "no-bare-fixed-inset-modal": noBareFixedInsetModal,
     "prefer-parse-body-over-validate-body": preferParseBodyOverValidateBody,
-    "sri-on-third-party-script": sriOnThirdPartyScript,
     "no-raw-storage-key": noRawStorageKey,
-    "no-small-button-touch-target": noSmallButtonTouchTarget,
+    "no-adhoc-metric-aggregation": noAdhocMetricAggregation,
+    "require-toast-error-action": requireToastErrorAction,
+    "no-raw-motion-value": rawMotionValue,
   },
 };
 
@@ -5132,9 +3464,6 @@ export {
   TRACKED_STORAGE_KEY_VALUES,
   RAW_TRACKED_STORAGE_MESSAGE,
   RAW_LOCAL_STORAGE_MESSAGE,
-  ALLOWED_TAILWIND_OPACITY_STEPS,
-  TAILWIND_OPACITY_UTILITIES,
-  STRONG_BG_FAMILIES,
   DEFAULT_NUMERIC_COLUMNS,
   RQ_KEYS_MESSAGE,
   DEFAULT_FACTORY_PATH,
@@ -5142,39 +3471,21 @@ export {
   NO_CONSOLE_PII_MESSAGE,
   NO_STRICT_BYPASS_MESSAGES,
   DEFAULT_FORBID_PATTERNS,
-  RAW_DARK_PALETTE_FAMILIES,
-  RAW_DARK_PALETTE_UTILITIES,
-  RAW_DARK_PALETTE_MESSAGE,
-  FOCUS_COLOR_UTILITIES,
-  FOCUS_OUTLINE_ALLOWED_TAILS,
-  PREFER_FOCUS_VISIBLE_MESSAGE,
-  NO_ROUNDED_LG_MESSAGE,
-  NO_V1_GRADIENT_MESSAGE,
-  NO_BARE_EMPTY_TEXT_MESSAGE,
   NO_CYRILLIC_JSX_LITERAL_MESSAGE,
-  PREFER_TEXT_STYLE_MESSAGE,
-  TEXT_STYLE_MAPPINGS,
-  NO_ARBITRARY_TEXT_SIZE_MESSAGE,
   NO_FLAT_SHARED_LIB_MESSAGE,
   NO_FLAT_SHARED_LIB_ALLOWED_TOP,
   NO_HASH_ROUTER_MESSAGE,
-  NO_LEGACY_TELEGRAM_PARSE_MODE_MESSAGE,
-  NO_BARE_FIXED_INSET_MODAL_MESSAGE,
   PREFER_KYIV_TIME_MESSAGE,
   PREFER_PARSE_BODY_MESSAGE,
   PREFER_PARSE_QUERY_MESSAGE,
-  SRI_MESSAGES,
-  SRI_HASH_RE,
-  SRI_PREFERRED_ALGO,
-  isCrossOriginScriptSrc,
-  validateSriScriptAttrs,
-  lintHtmlForSri,
   RAW_STORAGE_KEY_LITERALS,
   RAW_STORAGE_HELPER_NAMES,
   NO_RAW_STORAGE_KEY_MESSAGE,
-  NO_SMALL_BUTTON_TOUCH_TARGET_MESSAGE,
-  SMALL_HEIGHT_CLASSES,
-  TOUCH_TARGET_COMPENSATORS,
+  REQUIRE_TOAST_ERROR_ACTION_MESSAGE,
+  RAW_MOTION_VALUE_MESSAGE,
+  CSS_LITERAL_TOKEN_MESSAGE,
+  OPACITY_ON_TEXT_TOKEN_MESSAGE,
+  RAW_TYPE_SIZE_MESSAGE,
 };
 
 export default plugin;

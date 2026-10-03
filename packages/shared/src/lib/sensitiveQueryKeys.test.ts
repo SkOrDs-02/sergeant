@@ -1,7 +1,7 @@
 /**
  * Tests for the sensitive query-key policy used by the web and
  * mobile React Query persisters. See
- * `docs/planning/storage-roadmap.md` PR #004.
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` PR #004.
  *
  * The policy is the only thing standing between auth/me/coach/sync
  * /balance feeds and a verbatim copy of those payloads being
@@ -42,6 +42,12 @@ describe("isSensitiveQueryKey — namespace exclusions", () => {
     expect(isSensitiveQueryKey(["sync"])).toBe(true);
     expect(isSensitiveQueryKey(["sync", "manifest"])).toBe(true);
     expect(isSensitiveQueryKey(["sync", "module", "finyk"])).toBe(true);
+  });
+
+  it("excludes the billing namespace (F13 — persisted tier crossed accounts)", () => {
+    expect(isSensitiveQueryKey(["billing"])).toBe(true);
+    expect(isSensitiveQueryKey(["billing", "status"])).toBe(true);
+    expect(isSensitiveQueryKey(["billing", "providers"])).toBe(true);
   });
 });
 
@@ -116,6 +122,7 @@ describe("SENSITIVE_QUERY_KEY_NAMESPACES contents", () => {
     // drift is exactly what this test is meant to catch.
     expect([...SENSITIVE_QUERY_KEY_NAMESPACES].sort()).toEqual([
       "auth",
+      "billing",
       "coach",
       "me",
       "sync",

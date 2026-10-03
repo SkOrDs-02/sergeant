@@ -14,13 +14,6 @@ import { SW_VERSION } from "./version";
 import { clearAppCaches, setActiveUserKey } from "./cache";
 import { buildSwSnapshot, setDebugEnabled } from "./debug";
 import { recordNotified } from "./notifiedKeys";
-import {
-  setFizrukData,
-  setNutritionData,
-  setRoutineData,
-  startReminderLoop,
-} from "./reminders";
-
 declare const self: ServiceWorkerGlobalScope;
 
 export function handleSwMessage(event: ExtendableMessageEvent): void {
@@ -113,24 +106,12 @@ export function handleSwMessage(event: ExtendableMessageEvent): void {
     return;
   }
 
-  if (type === "ROUTINE_STATE_UPDATE") {
-    setRoutineData(data as Parameters<typeof setRoutineData>[0]);
-    startReminderLoop();
-    return;
-  }
-
-  if (type === "FIZRUK_STATE_UPDATE") {
-    setFizrukData(data as Parameters<typeof setFizrukData>[0]);
-    startReminderLoop();
-    return;
-  }
-
-  if (type === "NUTRITION_STATE_UPDATE") {
-    setNutritionData(data as Parameters<typeof setNutritionData>[0]);
-    startReminderLoop();
-    return;
-  }
-
+  // AI-CONTEXT: тут раніше жили `ROUTINE|FIZRUK|NUTRITION_STATE_UPDATE`, які
+  // заводили в сервіс-воркері власний ланцюжок `setTimeout` для нагадувань.
+  // Він не міг працювати: браузер вбиває неактивний SW за ~30 секунд, а
+  // отриманий стан лежав у памʼяті воркера і після перезапуску був порожній.
+  // Нагадування тепер шле сервер (`apps/server/src/lib/reminders/`), тож
+  // повідомлення прибрані разом із самим циклом.
   if (type === "ROUTINE_NOTIFICATION_SENT") {
     const storageKey = (data as { storageKey?: string } | undefined)
       ?.storageKey;

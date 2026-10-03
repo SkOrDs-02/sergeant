@@ -12,6 +12,7 @@ import { Text, View } from "react-native";
 import type { MonthlySummary } from "@sergeant/finyk-domain/domain";
 
 import { Skeleton } from "../../../../components/ui/Skeleton";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface SummaryCardProps {
   summary: MonthlySummary;
@@ -19,7 +20,7 @@ export interface SummaryCardProps {
 }
 
 function fmt(uah: number): string {
-  return uah.toLocaleString("uk-UA");
+  return formatNumberUk(uah);
 }
 
 function SummaryCardComponent({ summary, loading }: SummaryCardProps) {

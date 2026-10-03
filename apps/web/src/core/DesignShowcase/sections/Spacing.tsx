@@ -6,7 +6,7 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Stacked padding — Tailwind scale only
+const SAMPLE_USAGE = `// Stacked padding: Tailwind scale only
 <Card padding="md" radius="lg">…</Card>
 
 // Layout gap — same scale, sym across breakpoints
@@ -59,7 +59,7 @@ export function SpacingSection() {
       intro={
         <>
           Tailwind 4-pt base scale (0.5 = 2px → 16 = 64px). Не вигадуй{" "}
-          <code>p-[14px]</code> — використовуй найближче значення зі шкали.
+          <code>p-[14px]</code>, використовуй найближче значення зі шкали.
           Радіуси відповідають size-driven rhythm: <code>rounded-xl</code> для
           controls, <code>rounded-2xl</code> для cards, <code>rounded-3xl</code>{" "}
           для hero/sheet.
@@ -69,8 +69,11 @@ export function SpacingSection() {
       <Group label="Канонічна spacing-шкала">
         <div className="space-y-1.5">
           {SPACING_SCALE.map((row) => (
-            <div key={row.label} className="flex items-center gap-3 text-xs">
-              <span className="w-8 text-2xs text-subtle font-mono">
+            <div
+              key={row.label}
+              className="flex items-center gap-3 text-style-caption"
+            >
+              <span className="w-8 text-style-code text-subtle">
                 {row.label}
               </span>
               <code className="text-muted">{row.value}</code>
@@ -87,23 +90,21 @@ export function SpacingSection() {
           {SPACING_BARS.map((bar) => (
             <div key={bar.label} className="flex items-center gap-3">
               <div className={`${bar.cls} bg-accent rounded-md`} />
-              <span className="text-2xs font-mono text-subtle">
-                {bar.label}
-              </span>
+              <span className="text-style-code text-subtle">{bar.label}</span>
             </div>
           ))}
         </div>
       </Group>
 
-      <Group label="Border-radius — size-driven шкала">
+      <Group label="Border-radius: size-driven шкала">
         <div className="flex flex-wrap gap-4">
           {RADII.map((r) => (
             <div key={r.cls} className="flex flex-col items-center gap-1.5">
               <div
                 className={`${r.cls} w-16 h-16 bg-panelHi border border-line shadow-soft`}
               />
-              <span className="text-2xs font-mono text-subtle">{r.cls}</span>
-              <span className="text-2xs text-subtle text-center w-32">
+              <span className="text-style-code text-subtle">{r.cls}</span>
+              <span className="text-style-caption text-subtle text-center w-32">
                 {r.spec}
               </span>
             </div>
@@ -112,20 +113,19 @@ export function SpacingSection() {
       </Group>
 
       <Group label="Контейнерна стек-шкала">
-        <div className="space-y-3 text-xs text-muted">
+        <div className="space-y-3 text-style-caption text-muted">
           <p>
-            <code>space-y-2</code> · 8px — щільні списки, форми
+            <code>space-y-2</code> · 8px: щільні списки, форми
           </p>
           <p>
-            <code>space-y-4</code> · 16px — група елементів, default vertical
+            <code>space-y-4</code> · 16px: група елементів, default vertical
             rhythm
           </p>
           <p>
-            <code>space-y-6</code> · 24px — section spacing на mobile
+            <code>space-y-6</code> · 24px: section spacing на mobile
           </p>
           <p>
-            <code>space-y-10 / 12</code> · 40 / 48px — section spacing на
-            desktop
+            <code>space-y-10 / 12</code> · 40 / 48px: section spacing на desktop
           </p>
         </div>
       </Group>
@@ -165,12 +165,7 @@ export function SpacingSection() {
         hardRules={[
           { label: "HR #18", hint: "Module-size discipline (max-lines: 600)" },
         ]}
-        lintRules={[
-          {
-            label: "no-rounded-lg",
-            hint: "Use rounded-md/xl/2xl tiers — never the 8px in-between",
-          },
-        ]}
+        lintRules={[]}
       />
     </Sec>
   );

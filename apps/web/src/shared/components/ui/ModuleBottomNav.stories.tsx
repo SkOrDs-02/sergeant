@@ -6,11 +6,10 @@ import { RoutineBottomNav } from "../../../modules/routine/components/RoutineBot
 /**
  * `ModuleBottomNav` — спільна bottom-navigation shell для Finyk /
  * Fizruk / Routine / Nutrition. Browser: floating pill (`bottom-nav-shell`
- * utility — mx-3, mb-[safe-area+0.5rem], rounded-3xl). PWA standalone:
+ * utility — mx-4, mb-[safe-area+0.75rem], rounded-3xl). PWA standalone:
  * edge-to-edge dock (mx-0, mb-0, rounded-t-3xl, pb-[safe-area]).
- * Активний таб маркується тонким кольоровим контуром (`rounded-2xl border`)
- * з module-tinted кольором — це носій module identity. Активна іконка
- * приймає `tokens.text`, label лишається `text-text`.
+ * Активний таб — суцільна module-strong заливка (`rounded-xl`, tier-400
+ * у dark) з `text-bg` foreground в обох темах — носій module identity.
  */
 const meta: Meta<typeof ModuleBottomNav> = {
   title: "Shared / ModuleBottomNav",
@@ -61,10 +60,11 @@ export default meta;
 
 type Story = StoryObj<typeof ModuleBottomNav>;
 
-/** Фінік — emerald-700 active pill, активна вкладка «Головна». */
+/** Фінік — active tab: emerald outline (light) / solid emerald-400 fill
+ *  + ink icon (dark «Чорнило»), активна вкладка «Головна». */
 export const Finyk: Story = {};
 
-/** Фізрук — cyan-800 active pill, активна вкладка «Бюджети». */
+/** Фізрук: cyan outline (light) / solid cyan-400 fill (dark), «Бюджети». */
 export const Fizruk: Story = {
   args: {
     module: "fizruk",
@@ -90,7 +90,7 @@ export const Fizruk: Story = {
   },
 };
 
-/** Routine — coral-700 active pill (без центрального FAB). */
+/** Routine — rose outline (light) / solid rose-400 fill (dark), без FAB. */
 export const Routine: Story = {
   args: {
     module: "routine",
@@ -111,7 +111,7 @@ export const Routine: Story = {
   },
 };
 
-/** Nutrition — lime-800 active pill. */
+/** Nutrition — lime outline (light) / solid lime-400 fill (dark). */
 export const Nutrition: Story = {
   args: {
     module: "nutrition",
@@ -162,12 +162,13 @@ export const WithBadge: Story = {
 };
 
 /**
- * Routine special-case — 2-tab pill з центральним FAB як sibling
- * (НЕ nested усередині nav). FAB sits at `z-40` 22 px above the
- * pill's top edge, зберігаючи власний coral gradient та `shadow-float`.
- * Використовується в RoutineApp як основна навігація.
+ * Routine 2-tab pill. The bespoke center-docked "+" FAB this story used to
+ * showcase was replaced by the shared `FloatingActionButton` (variant
+ * "v2-routine", bottom-right, mounted in `RoutineActions`/`RoutineApp`) as
+ * part of the fab-and-manual-income spec's cross-module FAB unification —
+ * see `Shared / FloatingActionButton` for that story instead.
  */
-export const RoutineWithFab: StoryObj<typeof RoutineBottomNav> = {
+export const RoutineNav: StoryObj<typeof RoutineBottomNav> = {
   render: (args) => (
     <div className="relative h-[200px] w-full bg-bg">
       <div className="absolute inset-x-0 bottom-0">
@@ -178,7 +179,6 @@ export const RoutineWithFab: StoryObj<typeof RoutineBottomNav> = {
   args: {
     mainTab: "calendar",
     onSelectTab: () => {},
-    onAddHabit: () => {},
   },
   parameters: { chromatic: { viewports: [375, 768] } },
 };

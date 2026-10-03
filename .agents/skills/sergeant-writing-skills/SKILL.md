@@ -1,8 +1,8 @@
 ---
 name: sergeant-writing-skills
-description: Use when creating, editing, or pressure-testing a `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill content; UA: пишеш або редагуєш SKILL.md.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` so UA-only chat routing still resolves the right SKILL.
+description: "Use when creating, editing, or pressure-testing a `.agents/skills/*/SKILL.md` in Sergeant — applies TDD to skill content; UA: пишеш або редагуєш SKILL.md."
+lang: uk
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Як писати SKILL у Sergeant
@@ -38,7 +38,7 @@ SKILL.md — це не проза, а інструкція, яку агент в
 
 - Frontmatter: `name` = slug папки, `description` ≤ 220 символів з UA-тригером (`; UA: …`), `lang: en`, `lang-reason`.
 - Body — EN, грунтований у конкретних шляхах (`apps/`, `packages/`, `scripts/`, `docs/`, `.agents/`) або `pnpm` командах.
-- Один обовʼязковий лінк на playbook у `docs/00-start/playbooks/` або на `docs/00-start/agents/agent-skills-catalog.md`.
+- Один обовʼязковий лінк на playbook у `docs/start/instructions/` або на `docs/start/agents/agent-skills-catalog.md`.
 - Адресуй **саме ті** раціоналізації з RED-фази. Не пиши «загальну освіту» — пиши контр-приклади.
 - Жодних injection-/exfiltration-патернів — `pnpm lint:skills` ловить їх через `scripts/check-skill-body-security.mjs` (7 категорій загроз, Hard Rule #22).
 
@@ -61,19 +61,20 @@ SKILL.md — це не проза, а інструкція, яку агент в
 1. Починається з `---` YAML-frontmatter з `name`, `description` (≤220 chars), `lang: en`, `lang-reason`.
 2. `name:` дорівнює slug-у директорії — інакше `pnpm lint:skills` падає.
 3. Body містить конкретний шлях у репо або `pnpm`/`pnpx` команду — інакше SKILL «не заземлений» і ловиться `check-skill-shape.mjs`.
-4. Body лінкує мінімум один playbook у `docs/00-start/playbooks/` або сам `docs/00-start/agents/agent-skills-catalog.md`.
-5. Реєструється в `.agents/skills-lock.json` (через `pnpm skills:lock`) і в таблиці Active Skills у `docs/00-start/agents/agent-skills-catalog.md`.
-6. Не містить патернів з 7 категорій загроз — `pnpm lint:skills` валідовує через `scripts/check-skill-body-security.mjs` (Hard Rule #22, див. [`docs/04-governance/governance/rules/22-skill-body-security-scan.md`](../../../docs/04-governance/governance/rules/22-skill-body-security-scan.md)).
+4. Body лінкує мінімум один playbook у `docs/start/instructions/` або сам `docs/start/agents/agent-skills-catalog.md`.
+5. Реєструється в `.agents/skills-lock.json` (через `pnpm skills:lock`), у таблиці Active Skills у `docs/start/agents/agent-skills-catalog.md` **і як вузол у [`.agents/agent-graph.json`](../../agent-graph.json)** — інакше `pnpm lint:agent-graph` падає з `disk-not-in-graph`. Якщо скіл диспетчерить агентів або ескалює в інший скіл — додай і відповідні ребра (`dispatches` / `escalates`).
+6. Не містить патернів з 7 категорій загроз — `pnpm lint:skills` валідовує через `scripts/check-skill-body-security.mjs` (Hard Rule #22, див. [`docs/governance/governance/rules/22-skill-body-security-scan.md`](../../../docs/governance/governance/rules/22-skill-body-security-scan.md)).
 
 ## Локальний контроль перед PR
 
 ```bash
-pnpm lint:skills    # shape + lock SHA-256 + security scan
+pnpm lint:skills    # shape + lock SHA-256 + security scan + agent-graph + trigger evals
 pnpm skills:lock    # регенерує SHA-256 після свідомої зміни вмісту
+pnpm lint:agent-graph       # топологія: висячі ребра, вузли-сироти, least-privilege
 pnpm lint:discoverability   # переконатися, що нові доки досяжні з AGENTS.md ≤ 2 hops
 ```
 
-Якщо ти додав новий SKILL — додай рядок у Active Skills таблицю в `docs/00-start/agents/agent-skills-catalog.md` і, якщо це новий routing-сценарій, у роутинг-таблицю `.agents/skills/sergeant-start-here/SKILL.md`.
+Якщо ти додав новий SKILL — додай рядок у Active Skills таблицю в `docs/start/agents/agent-skills-catalog.md` і, якщо це новий routing-сценарій, у роутинг-таблицю `.agents/skills/sergeant-start-here/SKILL.md`.
 
 ## Червоні прапорці
 
@@ -88,7 +89,7 @@ SKILL.md впливає на runtime-поведінку агента, який �
 
 ## Playbooks
 
-- Виконавчий playbook: [`docs/00-start/playbooks/author-skill.md`](../../../docs/00-start/playbooks/author-skill.md) — порядок RED → GREEN → REFACTOR → реєстрація для створення/правки SKILL.
-- Каталог skill-ів: [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — додай рядок у таблицю Active Skills.
+- Виконавчий playbook: [`docs/start/instructions/author-skill.md`](../../../docs/start/instructions/author-skill.md) — порядок RED → GREEN → REFACTOR → реєстрація для створення/правки SKILL.
+- Каталог skill-ів: [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — додай рядок у таблицю Active Skills.
 - Routing-таблиця: [`.agents/skills/sergeant-start-here/SKILL.md`](../sergeant-start-here/SKILL.md) — додай рядок, якщо це новий routing-сценарій.
-- Governance rule про безпеку body: [`docs/04-governance/governance/rules/22-skill-body-security-scan.md`](../../../docs/04-governance/governance/rules/22-skill-body-security-scan.md).
+- Governance rule про безпеку body: [`docs/governance/governance/rules/22-skill-body-security-scan.md`](../../../docs/governance/governance/rules/22-skill-body-security-scan.md).

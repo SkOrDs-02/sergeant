@@ -36,7 +36,9 @@ function hasMutationsInFlight(
 export function useSWUpdate() {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(
+    () => typeof window !== "undefined" && Boolean(window.__pwaUpdateReady),
+  );
 
   // Tracks whether we have already shown (or are about to show) the
   // update toast so we never fire it twice.
@@ -50,22 +52,52 @@ export function useSWUpdate() {
   // Refs forwarded into effects so callbacks are always up-to-date
   // without re-registering event listeners on every render.
   const toastRef = useRef(toast);
-  toastRef.current = toast;
   const queryClientRef = useRef(queryClient);
-  queryClientRef.current = queryClient;
+  useEffect(() => {
+    toastRef.current = toast;
+    queryClientRef.current = queryClient;
+  }, [toast, queryClient]);
 
+  /**
+   * Застосувати оновлення.
+   *
+   * `updateSW()` з `virtual:pwa-register` зводиться до
+   * `wb.messageSkipWaiting()`, а той шле `SKIP_WAITING` ЛИШЕ за наявності
+   * `registration.waiting`; сам reload робить слухач `controlling`, який
+   * `vite-plugin-pwa` вішає в момент `onNeedRefresh`. Обидві умови
+   * виконуються на штатному SW-шляху, але плашку піднімає ще й build-id
+   * hard-floor (`autoUpdate.ts`) — а він спрацьовує саме тоді, коли
+   * waiting-воркера немає (стара вкладка проти вже нового сервера). На
+   * тому шляху клік не робив рівно нічого. Тому: якщо waiting-воркера не
+   * видно, перезавантажуємось напряму.
+   */
   const applyUpdate = useCallback(() => {
-    if (typeof window.__pwaUpdateSW === "function") {
-      window.__pwaUpdateSW(true);
-    } else {
+    const updateSW = window.__pwaUpdateSW;
+    if (typeof updateSW !== "function") {
       window.location.reload();
+      return;
     }
+    void (async () => {
+      let hasWaiting = false;
+      try {
+        const registration = await navigator.serviceWorker?.getRegistration();
+        hasWaiting = Boolean(registration?.waiting);
+      } catch {
+        // Реєстрацію не прочитати (privacy-режим, SW недоступний) — падаємо
+        // у reload-гілку: вона гірша лише зайвим мережевим запитом.
+        hasWaiting = false;
+      }
+      updateSW(true);
+      if (!hasWaiting) window.location.reload();
+    })();
   }, []);
 
   // Stored in a ref so the poll interval can reference the latest version
   // without re-subscribing.
   const applyUpdateRef = useRef(applyUpdate);
-  applyUpdateRef.current = applyUpdate;
+  useEffect(() => {
+    applyUpdateRef.current = applyUpdate;
+  }, [applyUpdate]);
 
   useEffect(() => {
     let pollIntervalId: ReturnType<typeof setInterval> | null = null;
@@ -85,9 +117,10 @@ export function useSWUpdate() {
         hardTimeoutId = null;
       }
 
-      toastRef.current.info("Доступна нова версія", 15000, {
+      toastRef.current.info("Доступна нова версія", null, {
         label: "Оновити",
         onClick: applyUpdateRef.current,
+        dismissLabel: "Пізніше",
       });
     }
 
@@ -117,7 +150,10 @@ export function useSWUpdate() {
       if (pollIntervalId === null) {
         pollIntervalId = setInterval(() => {
           if (toastShownRef.current) {
-            clearInterval(pollIntervalId!);
+            const intervalId = pollIntervalId;
+            if (intervalId !== null) {
+              clearInterval(intervalId);
+            }
             pollIntervalId = null;
             return;
           }
@@ -154,11 +190,10 @@ export function useSWUpdate() {
     };
 
     const onOffline = () => {
-      toastRef.current.success("Додаток готовий до роботи офлайн", 4000);
+      toastRef.current.info("Додаток готовий до роботи офлайн", 4000);
     };
 
     if (window.__pwaUpdateReady) {
-      setUpdateAvailable(true);
       scheduleOrShowUpdateToast();
     }
 

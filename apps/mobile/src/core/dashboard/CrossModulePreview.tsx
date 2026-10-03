@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Sparkles, X } from "lucide-react-native";
+import { X } from "lucide-react-native";
 
 import {
   type DashboardModuleId,
@@ -31,6 +31,8 @@ import {
 } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
+import { SergeantGlyph } from "@/components/ui/SergeantGlyph";
+import { brandColors } from "@/theme";
 import { mobileKVStore } from "@/lib/storage";
 import { ANALYTICS_EVENTS, trackEvent } from "@/lib/analytics";
 
@@ -102,7 +104,7 @@ export function CrossModulePreview({
 
       <View className="flex-row items-start gap-3 pr-6">
         <View className="h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-500/10">
-          <Sparkles size={18} color="#0ea5a4" />
+          <SergeantGlyph size={18} color={brandColors.teal[500]!} />
         </View>
         <View className="min-w-0 flex-1 gap-2">
           <View className="gap-1">

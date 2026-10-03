@@ -19,7 +19,7 @@ import {
  * locking down the column ordering, types, nullability, indexes, and
  * defaults that mirror migration 029_fizruk_tables.sql.
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 
 describe("pg/fizrukWorkouts schema snapshot", () => {
@@ -41,19 +41,26 @@ describe("pg/fizrukWorkouts schema snapshot", () => {
       "warmup_json",
       "cooldown_json",
       "wellbeing_json",
+      "kcal_burned",
       "created_at",
       "updated_at",
       "deleted_at",
     ]);
   });
 
-  it("declares column types matching migration 029", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
+    // id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text
+    //
+    // Migration 029 declared UUID, but client-side workout ids use the
+    // `w_${Date.now().toString(36)}_${crypto.randomUUID()}` shape, which
+    // isn't a UUID. 097 widened the column the same way 094 did for
+    // routine and 095 did for nutrition.
     expect(columnMap["id"]!.dataType).toBe("string");
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
@@ -101,6 +108,8 @@ describe("pg/fizrukWorkoutItems schema snapshot", () => {
       "type",
       "duration_sec",
       "distance_m",
+      // Міграція 134 (pg) / 006 (клієнт): обраний варіант підказки.
+      "chosen_variant",
       "sort_order",
       "created_at",
       "updated_at",
@@ -108,13 +117,15 @@ describe("pg/fizrukWorkoutItems schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
-    expect(columnMap["workout_id"]!.columnType).toBe("PgUUID");
+    // id / workout_id TEXT — 097 widened both sides of the FK together
+    // (client item ids use `i_${Date.now().toString(36)}_...`).
+    expect(columnMap["id"]!.columnType).toBe("PgText");
+    expect(columnMap["workout_id"]!.columnType).toBe("PgText");
     expect(columnMap["sort_order"]!.dataType).toBe("number");
     expect(columnMap["muscles_primary"]!.columnType).toBe("PgJsonb");
   });
@@ -143,11 +154,15 @@ describe("pg/fizrukWorkoutSets schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
+    // id / workout_item_id TEXT — 097 widened both sides of this FK too
+    // (set ids are built as `${item.id}:s${n}`, never a bare UUID).
+    expect(columnMap["id"]!.columnType).toBe("PgText");
+    expect(columnMap["workout_item_id"]!.columnType).toBe("PgText");
     expect(columnMap["weight_kg"]!.columnType).toBe("PgReal");
     expect(columnMap["reps"]!.dataType).toBe("number");
     expect(columnMap["rpe"]!.notNull).toBe(false);
@@ -173,11 +188,12 @@ describe("pg/fizrukCustomExercises schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["data_json"]!.columnType).toBe("PgJsonb");
     expect(columnMap["data_json"]!.notNull).toBe(true);
   });
@@ -201,6 +217,16 @@ describe("pg/fizrukMeasurements schema snapshot", () => {
       "chest_cm",
       "hips_cm",
       "bicep_cm",
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
       "sleep_hours",
       "energy_level",
       "mood",
@@ -210,10 +236,12 @@ describe("pg/fizrukMeasurements schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 029", () => {
+  it("declares column types matching migration 029 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
+
+    expect(columnMap["id"]!.columnType).toBe("PgText");
 
     expect(columnMap["measured_at"]!.columnType).toBe("PgTimestamp");
     expect(columnMap["measured_at"]!.notNull).toBe(true);
@@ -249,12 +277,15 @@ describe("pg/fizrukDailyLog schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 052", () => {
+  it("declares column types matching migration 052 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    // id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text — 097. Client
+    // daily-log ids use `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`
+    // (see AI-DANGER comment on useDailyLog.ts's uid()), never a bare UUID.
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 
@@ -435,12 +466,12 @@ describe("pg/fizrukWorkoutTemplates schema snapshot", () => {
     ]);
   });
 
-  it("declares column types matching migration 052", () => {
+  it("declares column types matching migration 052 + 097", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);
 

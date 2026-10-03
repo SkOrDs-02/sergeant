@@ -3,7 +3,7 @@
  *
  * Mirror of `apps/web/src/modules/fizruk/lib/sqliteReader.ts` — see
  * the web copy for the full design rationale (PR #029 of
- * `docs/planning/storage-roadmap.md`). Mobile keeps the cache shape
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Mobile keeps the cache shape
  * and refresh helper at parity so a later mobile read-cutover PR
  * can wire the hook overlay without touching the data layer.
  *

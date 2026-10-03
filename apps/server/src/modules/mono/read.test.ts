@@ -6,8 +6,15 @@ vi.mock("../../db.js", () => ({
   query: vi.fn(),
 }));
 
+// `jarsHandler` best-effort refreshes from Monobank before the SELECT
+// (see `refreshJarsFromMono` in `jars.ts`) — mocked out here so this stays
+// a pure unit test of the SELECT + serialize path, same as `accountsHandler`.
+vi.mock("./jars.js", () => ({
+  refreshJarsFromMono: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { query as _query } from "../../db.js";
-import { accountsHandler, transactionsHandler } from "./read.js";
+import { accountsHandler, jarsHandler, transactionsHandler } from "./read.js";
 
 const queryMock = _query as unknown as Mock;
 
@@ -95,6 +102,23 @@ describe("accountsHandler", () => {
     await accountsHandler({ query: {} } as unknown as Request, res);
 
     expect(res.statusCode).toBe(401);
+  });
+
+  // Регресія: банка теж має рахунковий id і теж шле statement-items, тож
+  // вебхук був змушений заводити під неї рядок у `mono_account` (FK
+  // `mono_transaction`). Без фільтра вона верталась сюди як картка —
+  // безіменна «Картка / Monobank» у списку, а її баланс входив у капітал
+  // двічі: як картка і вдруге через `sumJarsUAH`. Знахідка founder-а
+  // 2026-08-10; DB-рівнева перевірка — у `read.integration.test.ts`.
+  it("виключає заглушки під банки зі списку рахунків", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const res = makeRes();
+    await accountsHandler(makeReq(), res);
+
+    const sql = String(queryMock.mock.calls[0]![0]);
+    expect(sql).toContain("FROM mono_account");
+    expect(sql).toContain("is_jar = FALSE");
   });
 
   it("coerces bigint string columns (balance, creditLimit) to numbers", async () => {
@@ -222,6 +246,104 @@ describe("accountsHandler", () => {
     await accountsHandler(makeReq(), res);
 
     expect(res.body).toMatchSnapshot();
+  });
+});
+
+describe("jarsHandler", () => {
+  it("returns jars for authenticated user", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          userId: "user_1",
+          monoJarId: "jar1",
+          sendId: null,
+          title: "На відпустку",
+          description: null,
+          currencyCode: 980,
+          balance: 50000,
+          goal: 200000,
+          lastSeenAt: new Date("2025-01-01T00:00:00Z"),
+        },
+      ],
+    });
+
+    const res = makeRes();
+    await jarsHandler(makeReq(), res);
+
+    expect(res.statusCode).toBe(200);
+    const body = res.body as Array<Record<string, unknown>>;
+    expect(body).toHaveLength(1);
+    expect(body[0]!["monoJarId"]).toBe("jar1");
+    expect(body[0]!["lastSeenAt"]).toBe("2025-01-01T00:00:00.000Z");
+  });
+
+  it("returns empty array when no jars", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const res = makeRes();
+    await jarsHandler(makeReq(), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it("returns 401 if no user", async () => {
+    const res = makeRes();
+    await jarsHandler({ query: {} } as unknown as Request, res);
+
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("coerces bigint string columns (balance, goal) to numbers", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          userId: "user_1",
+          monoJarId: "jar1",
+          sendId: null,
+          title: "Ремонт",
+          description: null,
+          currencyCode: 980,
+          balance: "123450",
+          goal: "500000",
+          lastSeenAt: new Date("2025-01-01T00:00:00Z"),
+        },
+      ],
+    });
+
+    const res = makeRes();
+    await jarsHandler(makeReq(), res);
+
+    const body = res.body as Array<Record<string, unknown>>;
+    expect(body[0]!["balance"]).toBe(123450);
+    expect(body[0]!["goal"]).toBe(500000);
+    expect(typeof body[0]!["balance"]).toBe("number");
+    expect(typeof body[0]!["goal"]).toBe("number");
+  });
+
+  it("preserves null balance/goal", async () => {
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          userId: "user_1",
+          monoJarId: "jar1",
+          sendId: null,
+          title: null,
+          description: null,
+          currencyCode: 980,
+          balance: null,
+          goal: null,
+          lastSeenAt: new Date("2025-01-01T00:00:00Z"),
+        },
+      ],
+    });
+
+    const res = makeRes();
+    await jarsHandler(makeReq(), res);
+
+    const body = res.body as Array<Record<string, unknown>>;
+    expect(body[0]!["balance"]).toBeNull();
+    expect(body[0]!["goal"]).toBeNull();
   });
 });
 

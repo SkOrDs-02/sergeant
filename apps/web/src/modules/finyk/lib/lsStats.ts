@@ -1,34 +1,131 @@
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Cold-cache fallback читає retired finyk-ключі
+   (finyk_hidden_txs / finyk_tx_cats / finyk_recv / finyk_excluded_stat_txs /
+   finyk_tx_splits / finyk_custom_cats_v1 / finyk_budgets) напряму — це і є
+   призначення модуля: дашбордні агрегатори працюють поза mounted-хуком
+   useStorage. Канонічне джерело — SQLite (див. AI-CONTEXT нижче); LS
+   лишається лише на перший кадр, поки кеш холодний. Ключі в burn-down
+   2026-Q3. */
+import {
+  buildFinykExcludedTxIds,
+  buildFinykSpendingUniverse,
+} from "@sergeant/finyk-domain";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import {
+  buildMerchantRuleIndex,
+  type MerchantRule,
+} from "@sergeant/finyk-domain/lib/merchantRules";
 import { safeReadLS } from "@shared/lib/storage/storage";
-import { INTERNAL_TRANSFER_ID } from "../constants";
+import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
+import { getCachedFinykSqliteState } from "./sqliteReader";
 
-// Збирає Set ID транзакцій, що виключаються зі статистики ФІНІК (та сама логіка, що
-// в `useStorage` → `excludedTxIds`), читаючи безпосередньо з localStorage.
-// Це дозволяє іншим сторінкам (Звіти, AI Digest) використовувати ту саму логіку
-// без mounted-хука useStorage.
+/**
+ * Прочитані персональні налаштування Фініка, з яких збирається excluded-set
+ * і розкриваються категорії.
+ *
+ * AI-CONTEXT (bug 2026-08-09, тижневий дайджест): усі шість ключів нижче
+ * **tombstoned** (`@deprecated Stage 8 PR #057k` / `Stage 13 PR #075` у
+ * `packages/shared/src/lib/storageKeys.ts`). `useReadonlyPersist` більше в
+ * них НЕ пише — єдиний sink це dual-write у SQLite, а residual-import
+ * дренає LS на буті. Тобто читання лише з LS повертало порожньо на будь-
+ * якому пристрої, де drain уже відпрацював: дайджест і коуч не бачили ані
+ * оверрайдів категорій, ані позначки «внутрішній переказ». Наслідок, який
+ * бачив користувач: переказ між власними картками рахувався витратою і
+ * друкувався сирим `MCC 4829`, хоча в модулі Фінік він давно позначений
+ * переказом. Той самий клас багу вже ловили в дайджесті для звичок
+ * (`hub_routine_v1`, PR #057r) і для `monthlyBudget` (PR #072) — тут він
+ * лишався на шести останніх ключах.
+ *
+ * Тому канонічне джерело — SQLite warm cache; LS лишається синхронним
+ * fallback-ом рівно на той кадр, поки кеш іще холодний
+ * (`refreshedAt === null`) — так само, як це робить `useFinykStorageSlots`
+ * для самого модуля.
+ */
+interface FinykPrefsSources {
+  hiddenTxIds: string[];
+  txCategories: Record<string, string>;
+  receivables: Array<{ linkedTxIds?: string[] }>;
+  excludedStatTxIds: string[];
+  txSplits: Record<string, unknown>;
+  customCategories: CategoryLike[];
+  budgets: Budget[];
+  /** Правила «Завжди так для цього магазину» (лише SQLite: у LS їх ніколи не було). */
+  merchantRules: MerchantRule[];
+}
+
+function asObject<T extends object>(value: unknown, fallback: T): T {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as T)
+    : fallback;
+}
+
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
+function readFinykPrefsSources(): FinykPrefsSources {
+  const cache = getCachedFinykSqliteState();
+  if (cache.refreshedAt !== null) {
+    return {
+      hiddenTxIds: cache.hiddenTransactions,
+      txCategories: cache.txCategories as Record<string, string>,
+      receivables: cache.receivables as Array<{ linkedTxIds?: string[] }>,
+      // `excludedStatTxIds` — singleton із `finyk_prefs`: `null` означає
+      // «рядка ще нема», а не «список порожній».
+      excludedStatTxIds: cache.excludedStatTxIds ?? [],
+      txSplits: cache.txSplits as Record<string, unknown>,
+      customCategories: cache.customCategories as CategoryLike[],
+      budgets: cache.budgets,
+      merchantRules: cache.merchantRules ?? [],
+    };
+  }
+  return {
+    hiddenTxIds: asArray<string>(safeReadLS<string[]>("finyk_hidden_txs", [])),
+    txCategories: asObject<Record<string, string>>(
+      safeReadLS<Record<string, string>>("finyk_tx_cats", {}),
+      {},
+    ),
+    receivables: asArray<{ linkedTxIds?: string[] }>(
+      safeReadLS<Array<{ linkedTxIds?: string[] }>>("finyk_recv", []),
+    ),
+    excludedStatTxIds: asArray<string>(
+      safeReadLS<string[]>("finyk_excluded_stat_txs", []),
+    ),
+    txSplits: asObject<Record<string, unknown>>(
+      safeReadLS("finyk_tx_splits", {}),
+      {},
+    ),
+    customCategories: asArray<CategoryLike>(
+      safeReadLS<CategoryLike[]>("finyk_custom_cats_v1", []),
+    ),
+    budgets: asArray<Budget>(safeReadLS<Budget[]>("finyk_budgets", [])),
+    merchantRules: [],
+  };
+}
+
+// Збирає Set ID транзакцій, що виключаються зі статистики ФІНІК (та сама
+// логіка, що в `useStorage` → `excludedTxIds`), читаючи канонічний SQLite-кеш
+// (з LS-fallback-ом на холодний кеш). Це дозволяє іншим сторінкам (Звіти,
+// AI Digest) використовувати ту саму логіку без mounted-хука useStorage.
 export function getFinykExcludedTxIdsFromStorage() {
-  const hidden = safeReadLS<string[]>("finyk_hidden_txs", []);
-  const txCats = safeReadLS<Record<string, string>>("finyk_tx_cats", {});
-  const recv = safeReadLS<Array<{ linkedTxIds?: string[] }>>("finyk_recv", []);
-  const extra = safeReadLS<string[]>("finyk_excluded_stat_txs", []);
-  const transferIds = Object.entries(
-    txCats && typeof txCats === "object" ? txCats : {},
-  )
-    .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
-    .map(([k]) => k);
-  const recvIds = Array.isArray(recv)
-    ? recv.flatMap((r) => (Array.isArray(r?.linkedTxIds) ? r.linkedTxIds : []))
-    : [];
-  return new Set([
-    ...(Array.isArray(hidden) ? hidden : []),
-    ...transferIds,
-    ...recvIds,
-    ...(Array.isArray(extra) ? extra : []),
-  ]);
+  // Читання ключів лишається тут (це і є призначення модуля), а сам набір
+  // збирає канонічна `buildFinykExcludedTxIds` — та сама, що обслуговує
+  // HubChat-контекст і quick-stats.
+  const prefs = readFinykPrefsSources();
+  return buildFinykExcludedTxIds({
+    hiddenTxIds: prefs.hiddenTxIds,
+    txCategories: prefs.txCategories,
+    receivables: prefs.receivables,
+    excludedStatTxIds: prefs.excludedStatTxIds,
+    // Банк із дзеркала: пара «списання ↔ скасування» потребує обох ніг
+    // (рішення власника 2026-10-01).
+    transactions: getVisibleFinykMonoMirrorState().transactions,
+  });
 }
 
 export function getFinykTxSplitsFromStorage() {
-  const v = safeReadLS("finyk_tx_splits", {});
-  return v && typeof v === "object" ? v : {};
+  return readFinykPrefsSources().txSplits;
 }
 
 interface BankTxLike {
@@ -37,6 +134,9 @@ interface BankTxLike {
   time?: number;
   mcc?: number;
   description?: string;
+  categoryId?: string | undefined;
+  type?: string | undefined;
+  manual?: boolean | undefined;
 }
 
 interface CategoryLike {
@@ -49,44 +149,72 @@ interface CategoryLike {
 /**
  * Повертає весь контекст, потрібний для агрегації Фінік-транзакцій
  * дашбордними споживачами (`useWeeklyDigest`, `useCoachInsight` тощо):
- * список банківських транзакцій з кешу, набір excluded id-шників (за тими
- * ж правилами що й Overview/Reports), мапу spli-ів, мапу tx → categoryId
- * та користувацькі категорії. Замість кожного разу повторювати 5 викликів
- * `safeReadLS` з різних кешів — забираємо їх в одному місці.
+ * канонічний всесвіт витрат (банк + готівка), набір excluded id-шників (за
+ * тими ж правилами що й Overview/Reports), мапу splitʼів, мапу
+ * tx → categoryId та користувацькі категорії. Замість кожного разу
+ * повторювати 5 викликів `safeReadLS` з різних кешів — забираємо їх в
+ * одному місці.
+ *
+ * AI-CONTEXT (W1-CANON-AGG, стадія 2d): `txs` — це тепер `bank + manual`,
+ * а не лише банк. До цього патча дайджест і коуч не бачили готівкових
+ * витрат узагалі: людина, що записала 250 грн на ринку руками, читала в
+ * тижневому підсумку менше, ніж витратила, а Overview на тому самому
+ * пристрої показував більше. Канон finyk §5 («гібрид: банк і ручний світ
+ * рівні») вимагає одного всесвіту від усіх поверхонь.
+ *
+ * ⚠️ Це ПЕРША зміна Хвилі 1, що піднімає видиме число, — тому вона йде
+ * разом із бампом `METRICS_VERSION` (3 → 4). Тренд через цю межу будувати
+ * не можна: інакше коуч прочитає стрибок визначення як «ти став витрачати
+ * більше». Реєстр: docs/engineering/architecture/metric-registry.md.
  */
 export interface FinykStatsContext {
   txs: BankTxLike[];
   excludedTxIds: Set<string>;
+  /** Лише приховані користувачем; `excludedTxIds` вже містить їх. */
+  hiddenTxIds: string[];
   txSplits: Record<string, unknown>;
   txCategories: Record<string, string>;
   customCategories: CategoryLike[];
+  budgets: Budget[];
 }
 
 export function readFinykStatsContext(): FinykStatsContext {
-  const txRaw = safeReadLS<{ txs?: BankTxLike[] } | BankTxLike[] | null>(
-    "finyk_tx_cache",
-    null,
-  );
-  const txs: BankTxLike[] = Array.isArray(txRaw)
-    ? txRaw
-    : Array.isArray(txRaw?.txs)
-      ? txRaw.txs
-      : [];
-  const txCategoriesRaw = safeReadLS<Record<string, string>>(
-    "finyk_tx_cats",
-    {},
-  );
-  const txCategories =
-    txCategoriesRaw && typeof txCategoriesRaw === "object"
-      ? txCategoriesRaw
-      : {};
-  const customCategories =
-    safeReadLS<CategoryLike[]>("finyk_custom_cats_v1", []) || [];
+  const prefs = readFinykPrefsSources();
+
+  // Ручні витрати беремо з SQLite, а не з LS: легасі-ключ
+  // `finyk_manual_expenses_v1` дренається й tombstone-иться на буті, тож
+  // запис, створений AI або сервером, у ньому просто не зʼявиться.
+  const universe = buildFinykSpendingUniverse({
+    bankTxs: getVisibleFinykMonoMirrorState().transactions,
+    manualExpenses: getCachedFinykSqliteState().manualExpenses,
+    hiddenTxIds: prefs.hiddenTxIds,
+    txCategories: prefs.txCategories,
+    receivables: prefs.receivables,
+    excludedStatTxIds: prefs.excludedStatTxIds,
+  });
+
+  // Правила «Завжди так для цього магазину»: дайджест, коуч і quick-stats
+  // читають категорію з `txCategories[tx.id]`, тож віддаємо їм ЕФЕКТИВНУ мапу
+  // (явні override-и + виведене правилами). Виключення (`universe` вище) і
+  // тут рахуються з явних override-ів: правило не може зробити операцію
+  // переказом. Мапа лише для читання, у сховище не пишеться.
+  const txCategories = withMerchantRuleOverrides(
+    universe.transactions as BankTxLike[],
+    prefs.txCategories,
+    buildMerchantRuleIndex(prefs.merchantRules),
+    prefs.customCategories,
+  ) as Record<string, string>;
+
   return {
-    txs,
-    excludedTxIds: getFinykExcludedTxIdsFromStorage(),
-    txSplits: getFinykTxSplitsFromStorage() as Record<string, unknown>,
+    txs: universe.transactions as BankTxLike[],
+    // Excluded-set бере і мапу оверрайдів, і мітку на самій транзакції
+    // (`categoryId`/`type` === переказ) — саме тому він рахується з
+    // `universe`, а не окремим викликом на самих лише ключах.
+    excludedTxIds: universe.excludedTxIds,
+    hiddenTxIds: prefs.hiddenTxIds,
+    txSplits: prefs.txSplits,
     txCategories,
-    customCategories: Array.isArray(customCategories) ? customCategories : [],
+    customCategories: prefs.customCategories,
+    budgets: prefs.budgets,
   };
 }

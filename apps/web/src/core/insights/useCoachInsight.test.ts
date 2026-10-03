@@ -52,11 +52,15 @@ vi.mock("@finyk/lib/lsStats", () => ({
   }),
 }));
 
+// `txCount: 1` — не косметика. Цей файл перевіряє МЕРЕЖЕВИЙ шар (retry,
+// 429, кеш), і йому потрібен снапшот, що проходить поріг публікації
+// (канон hub-coach §6.2, аудит § G2): з нульовим сигналом хук навмисно
+// не робить жодного запиту, і всі ці тестиміряли б тишу.
 vi.mock("@sergeant/finyk-domain", () => ({
   calcFinykPeriodAggregate: () => ({
     totalSpent: 0,
     totalIncome: 0,
-    txCount: 0,
+    txCount: 1,
     byCategory: {},
   }),
 }));
@@ -133,7 +137,10 @@ describe("useCoachInsight", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.insight).toBeNull();
-    expect(result.current.error).toMatch(/Network error/);
+    // Сирий error.message людині не показуємо (хвиля A аудиту копі).
+    expect(result.current.error).toBe(
+      "Не вдалося завантажити пораду. Спробуй ще раз.",
+    );
   });
 
   it("returns initialData from LS cache when date matches today", async () => {
@@ -244,6 +251,203 @@ describe("useCoachInsight", () => {
 
     expect(result.current.insight).toBeNull();
     expect(mockPostInsight).toHaveBeenCalledTimes(1);
+  });
+
+  // ── advice_id (Хвиля 2, W2-AI-ADVICE-EVENTS, стадія 1) ────────────────────
+
+  it("присвоює adviceId один раз на згенеровану пораду і кладе його в кеш", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Порада дня" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result, rerender } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.adviceId).toBeTruthy());
+    const id = result.current.adviceId;
+
+    // Рендер сам по собі id не перегенеровує.
+    rerender();
+    rerender();
+    expect(result.current.adviceId).toBe(id);
+
+    // Шукаємо запис ПО КЛЮЧУ, а не беремо останній: через той самий мок
+    // `safeWriteLS` ходить ring-buffer аналітики (`hub_analytics_log_v1`),
+    // причому батчем після дебаунсу, тож останнім легко виявляється він.
+    const write = mockSafeWriteLS.mock.calls
+      .filter(([key]) => key === "hub_coach_insight_cache_v1")
+      .at(-1);
+    expect(write).toBeDefined();
+    expect(write?.[1]).toMatchObject({ text: "Порада дня", adviceId: id });
+
+    // id — випадковий, а НЕ хеш тексту: він не має бути похідною від поради.
+    expect(String(id)).not.toContain("Порада");
+  });
+
+  it("піднімає adviceId з кешу разом із текстом (id переживає перезавантаження)", async () => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    mockSafeReadLS.mockImplementation((key: string) =>
+      key === "hub_coach_insight_cache_v1"
+        ? { date: todayKey, text: "Кешована порада", adviceId: "advice-cached" }
+        : null,
+    );
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.insight).toBe("Кешована порада"));
+    expect(result.current.adviceId).toBe("advice-cached");
+    // Кеш уже повний — переписувати його нема потреби.
+    //
+    // Фільтр по ключу, а не `not.toHaveBeenCalled()`: через той самий мок
+    // `safeWriteLS` ходить і ring-buffer аналітики (`hub_analytics_log_v1`),
+    // причому батчем після дебаунсу. Батч, запущений попереднім тестом,
+    // приземляється вже після `vi.clearAllMocks()` — і тест падав на чужому
+    // записі. Твердження тут вужче: коуч-кеш не переписано.
+    expect(
+      mockSafeWriteLS.mock.calls.filter(
+        ([key]) => key === "hub_coach_insight_cache_v1",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("не падає на legacy-записі без adviceId — дописує id ліниво", async () => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    // Запис, збережений СТАРИМ бандлом: `{date, text}`, без id.
+    mockSafeReadLS.mockImplementation((key: string) =>
+      key === "hub_coach_insight_cache_v1"
+        ? { date: todayKey, text: "Порада зі старого бандла" }
+        : null,
+    );
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() =>
+      expect(result.current.insight).toBe("Порада зі старого бандла"),
+    );
+    await waitFor(() => expect(result.current.adviceId).toBeTruthy());
+
+    expect(mockSafeWriteLS).toHaveBeenCalledWith(
+      "hub_coach_insight_cache_v1",
+      expect.objectContaining({
+        text: "Порада зі старого бандла",
+        adviceId: result.current.adviceId,
+      }),
+    );
+  });
+
+  it("adviceId стабільний, навіть коли сховище нічого не зберігає (private mode)", async () => {
+    // `safeReadLS` завжди повертає null (квота/приватний режим): якби id
+    // визначався round-trip-ом через localStorage, ефект генерував би новий
+    // id щорендеру і хук зациклився б.
+    mockSafeReadLS.mockReturnValue(null);
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Порада без сховища" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result, rerender } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.adviceId).toBeTruthy());
+    const id = result.current.adviceId;
+    rerender();
+    rerender();
+    rerender();
+    expect(result.current.adviceId).toBe(id);
+  });
+
+  it("нова згенерована порада отримує НОВИЙ adviceId", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValueOnce({ insight: "Перша порада" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.insight).toBe("Перша порада"));
+    const firstId = result.current.adviceId;
+    expect(firstId).toBeTruthy();
+
+    mockPostInsight.mockResolvedValue({ insight: "Друга порада" });
+    await result.current.refresh();
+
+    await waitFor(() => expect(result.current.insight).toBe("Друга порада"));
+    await waitFor(() => expect(result.current.adviceId).not.toBe(firstId));
+    expect(result.current.adviceId).toBeTruthy();
+  });
+
+  // ── enabled (аудит PR-A1 — не палити AI-квоту, коли блок не рендериться) ──
+
+  it("не робить мережевий запит, коли enabled: false", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Не має прийти" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight({ enabled: false }), {
+      wrapper: makeWrapper(qc),
+    });
+
+    // Даємо шанс мікротаскам відпрацювати, якби запит усе ж пішов.
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(mockPostInsight).not.toHaveBeenCalled();
+    expect(mockGetMemory).not.toHaveBeenCalled();
+    expect(result.current.insight).toBeNull();
+  });
+
+  it("іде в мережу нормально, коли блок стає видимим пізніше (enabled: false → true)", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Порада після появи блоку" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) => useCoachInsight({ enabled }),
+      { wrapper: makeWrapper(qc), initialProps: { enabled: false } },
+    );
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(mockPostInsight).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+
+    await waitFor(() =>
+      expect(result.current.insight).toBe("Порада після появи блоку"),
+    );
+    expect(mockPostInsight).toHaveBeenCalledTimes(1);
+  });
+
+  it("enabled за замовчуванням true — існуючі виклики без опцій не міняють поведінку", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Дефолтна поведінка" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() =>
+      expect(result.current.insight).toBe("Дефолтна поведінка"),
+    );
   });
 
   it("retries once on a transient network error", async () => {

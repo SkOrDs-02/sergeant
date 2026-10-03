@@ -23,8 +23,21 @@ beforeEach(() => {
 });
 
 describe("useFinykSqliteReadBoot", () => {
-  it("does not boot without an authenticated user", () => {
-    useAuthMock.mockReturnValue({ user: null });
+  it("boots under the anonymous id without an authenticated user", async () => {
+    // Regression: this hook gated on a real account id, so an expense
+    // added before signing in was never read back after reload.
+    useAuthMock.mockReturnValue({ user: null, status: "unauthenticated" });
+    bootMock.mockResolvedValue(false);
+
+    renderHook(() => useFinykSqliteReadBoot());
+
+    await waitFor(() => {
+      expect(bootMock).toHaveBeenCalledWith("local-anon");
+    });
+  });
+
+  it("does not boot while the session is still resolving", () => {
+    useAuthMock.mockReturnValue({ user: null, status: "loading" });
     renderHook(() => useFinykSqliteReadBoot());
     expect(bootMock).not.toHaveBeenCalled();
   });

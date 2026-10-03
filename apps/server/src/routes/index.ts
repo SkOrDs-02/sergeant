@@ -15,10 +15,13 @@ import { createFinykRouter } from "./finyk.js";
 import { createFoodSearchRouter } from "./food-search.js";
 import { createHealthRouter } from "./health.js";
 import { createMeRouter } from "./me.js";
+import { createFeedbackRouter } from "./feedback.js";
 import { createNutritionRouter } from "./nutrition.js";
 import { createPushRouter } from "./push.js";
+import { createSilpoRouter } from "./silpo.js";
 import { createStatusRouter } from "./status.js";
 import { createSyncRouter } from "./sync.js";
+import { createTelegramWebhookRouter } from "./telegram-webhook.js";
 import { createTranscribeRouter } from "./transcribe.js";
 import { createWaitlistRouter } from "./waitlist.js";
 import { createWebVitalsRouter } from "./web-vitals.js";
@@ -47,8 +50,9 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createChatRouter());
   app.use(createMonoWebhookRouter());
   app.use(createBanksRouter());
+  app.use(createSilpoRouter());
   app.use(createBarcodeRouter());
-  app.use(createNutritionRouter());
+  app.use(createNutritionRouter({ pool }));
   app.use(createFinykRouter());
   app.use(createWeeklyDigestRouter());
   app.use(createCoachRouter());
@@ -57,7 +61,9 @@ export function registerRoutes(app: Express, { pool }: { pool: Pool }): void {
   app.use(createCspReportRouter());
   app.use(createEmailUnsubscribeRouter({ pool }));
   app.use(createPushRouter());
-  app.use(createTranscribeRouter());
+  app.use(createTranscribeRouter({ pool }));
   app.use(createWaitlistRouter());
+  app.use(createFeedbackRouter());
+  app.use(createTelegramWebhookRouter({ pool }));
   app.use(createAiMemoryRouter({ pool }));
 }

@@ -51,6 +51,7 @@ import {
   ManualAssetRow,
   ReceivableRow,
 } from "@/modules/finyk/components/assets/rows";
+import { formatNumberUk } from "@sergeant/shared";
 
 type SheetState =
   | { kind: "closed" }
@@ -61,7 +62,17 @@ type SheetState =
 const CLOSED: SheetState = { kind: "closed" };
 
 function fmt(uah: number): string {
-  return uah.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(uah, { maximumFractionDigits: 0 });
+}
+
+// Ukrainian pluralisation — mirrors
+// `apps/web/src/core/hub/useHubDashboardState.ts` `pluralize()`.
+function pluralizeUk(n: number, one: string, few: string, many: string) {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
 }
 
 export interface AssetsPageProps {
@@ -134,6 +145,16 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
       store.receivables,
       store.transactions,
     ],
+  );
+
+  // Non-UAH manual assets are excluded from networth (see
+  // `sumManualAssetsUAH` in `@sergeant/finyk-domain`) — surface the count
+  // so the exclusion isn't silent. Mirrors the web banner in
+  // `apps/web/src/modules/finyk/pages/Overview.tsx`.
+  const nonUahManualAssetCount = useMemo(
+    () =>
+      store.manualAssets.filter((a) => (a.currency ?? "UAH") !== "UAH").length,
+    [store.manualAssets],
   );
 
   const visibleAccounts = useMemo(() => {
@@ -225,10 +246,10 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
       >
         {/* Networth hero */}
         <View
-          className="rounded-2xl bg-emerald-700 p-4"
+          className="rounded-2xl bg-teal-700 p-4"
           testID={testID ? `${testID}-networth` : undefined}
         >
-          <Text className="text-xs font-medium uppercase text-emerald-100/80">
+          <Text className="text-xs font-medium uppercase text-teal-100/80">
             Чисті активи
           </Text>
           <Text
@@ -237,11 +258,28 @@ export function AssetsPage({ seed, testID }: AssetsPageProps) {
           >
             {fmt(summary.networth)} ₴
           </Text>
-          <Text className="text-xs text-emerald-100/85 mt-1">
+          <Text className="text-xs text-teal-100/85 mt-1">
             Активи: {fmt(summary.totalAssets)} ₴ · Пасиви: −
             {fmt(summary.totalLiabilities)} ₴
           </Text>
         </View>
+
+        {nonUahManualAssetCount > 0 && (
+          <View
+            className="rounded-2xl px-4 py-3 border border-warning/20 bg-warning/8"
+            testID={testID ? `${testID}-non-uah-banner` : undefined}
+          >
+            <Text className="text-xs text-warning-strong">
+              {nonUahManualAssetCount}{" "}
+              {pluralizeUk(
+                nonUahManualAssetCount,
+                "актив в іноземній валюті не враховую в нетворсі",
+                "активи в іноземній валюті не враховую в нетворсі",
+                "активів в іноземній валюті не враховую в нетворсі",
+              )}
+            </Text>
+          </View>
+        )}
 
         {/* Accounts section */}
         <View className="gap-2">

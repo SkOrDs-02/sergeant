@@ -13,23 +13,59 @@ import {
   type CacheableInputMessage,
 } from "./promptCache.js";
 
+/** 5-хвилинний (дефолтний) TTL — лишається на message-breakpoint-і. */
 const EPHEMERAL = { type: "ephemeral" } as const;
+/** 1-годинний TTL — стабільний префікс (tools + SYSTEM_PREFIX). */
+const EPHEMERAL_1H = { type: "ephemeral", ttl: "1h" } as const;
 
 describe("buildSystem", () => {
   it("без context повертає лише cached SYSTEM_PREFIX-блок", () => {
     const blocks = buildSystem("");
     expect(blocks).toHaveLength(1);
     expect(blocks[0]!.type).toBe("text");
-    expect(blocks[0]!.cache_control).toEqual(EPHEMERAL);
+    expect(blocks[0]!.cache_control).toEqual(EPHEMERAL_1H);
     expect(blocks[0]!.text.length).toBeGreaterThan(0);
   });
 
   it("з context додає другий, НЕ кешований блок", () => {
     const blocks = buildSystem("[Профіль] Алергія на горіхи");
     expect(blocks).toHaveLength(2);
-    expect(blocks[0]!.cache_control).toEqual(EPHEMERAL);
+    expect(blocks[0]!.cache_control).toEqual(EPHEMERAL_1H);
     expect(blocks[1]!.cache_control).toBeUndefined();
     expect(blocks[1]!.text).toContain("Алергія на горіхи");
+  });
+
+  it("preset іде окремим блоком МІЖ cached-префіксом і context-ом", () => {
+    const blocks = buildSystem("[Профіль] Алергія", "profile_interview");
+    expect(blocks).toHaveLength(3);
+    // Порядок критичний: preset ПІСЛЯ breakpoint-а (інакше кожен запит із
+    // preset-ом інвалідував би cross-user кеш `tools + SYSTEM_PREFIX`) і
+    // ПЕРЕД даними (правила, потім дані).
+    expect(blocks[0]!.cache_control).toEqual(EPHEMERAL_1H);
+    expect(blocks[1]!.cache_control).toBeUndefined();
+    expect(blocks[1]!.text).toContain("РЕЖИМ:");
+    expect(blocks[2]!.text).toContain("Алергія");
+  });
+
+  it("preset без context — рівно два блоки", () => {
+    const blocks = buildSystem("", "profile_add_info");
+    expect(blocks).toHaveLength(2);
+    expect(blocks[1]!.text).toContain("РЕЖИМ:");
+  });
+
+  // Огорожа `<user_data>` навколо клієнтського context-у наказує моделі
+  // читати вміст як ДАНІ. Preset — наш текст і має лишатись інструкцією,
+  // інакше він просто не діє.
+  it("preset НЕ загортається в <user_data>", () => {
+    const blocks = buildSystem("контекст", "profile_interview");
+    expect(blocks[1]!.text).not.toContain("<user_data>");
+    expect(blocks[2]!.text).toContain("<user_data>");
+  });
+
+  it("невідомий preset ігнорується (жодного зайвого блоку)", () => {
+    expect(buildSystem("", "не-наш-режим")).toHaveLength(1);
+    expect(buildSystem("", 42)).toHaveLength(1);
+    expect(buildSystem("", { preset: "profile_interview" })).toHaveLength(1);
   });
 });
 
@@ -37,17 +73,37 @@ describe("applyToolsCacheBreakpoint", () => {
   it("додає cache_control лише до останнього tool", () => {
     expect(TOOLS_WITH_CACHE.length).toBeGreaterThan(0);
     const last = TOOLS_WITH_CACHE[TOOLS_WITH_CACHE.length - 1]!;
-    expect(last.cache_control).toEqual(EPHEMERAL);
+    expect(last.cache_control).toEqual(EPHEMERAL_1H);
     for (let i = 0; i < TOOLS_WITH_CACHE.length - 1; i++) {
       expect(TOOLS_WITH_CACHE[i]!.cache_control).toBeUndefined();
     }
+  });
+
+  it("НЕ ставить breakpoint на deferred tool — Anthropic на це віддає 400", () => {
+    // Робить неможливим найдорожчий регрес цієї зміни: `cache_control`
+    // разом із `defer_loading: true` — це не деградація кешу, це 400 на
+    // КОЖЕН /api/chat (та сама форма, що інцидент 2026-05-16 зі strict).
+    const out = applyToolsCacheBreakpoint([
+      { name: "hot", input_schema: {} },
+      { name: "cold", input_schema: {}, defer_loading: true },
+    ]);
+    expect(out[0]!.cache_control).toEqual(EPHEMERAL_1H);
+    expect(out[1]!.cache_control).toBeUndefined();
+  });
+
+  it("усі tools deferred → breakpoint не ставиться взагалі", () => {
+    const out = applyToolsCacheBreakpoint([
+      { name: "a", input_schema: {}, defer_loading: true },
+      { name: "b", input_schema: {}, defer_loading: true },
+    ]);
+    expect(out.every((t) => t.cache_control === undefined)).toBe(true);
   });
 
   it("порожній масив повертає порожній (без падіння)", () => {
     expect(applyToolsCacheBreakpoint([])).toEqual([]);
   });
 
-  it("strips strict mode from the live Anthropic payload", () => {
+  it("stripStrictModeForAnthropic (kill-switch helper) знімає strict з усіх tools, не мутуючи вхід", () => {
     const input = [
       { name: "strict_tool", strict: true, input_schema: { type: "object" } },
       { name: "regular_tool", input_schema: { type: "object" } },
@@ -59,7 +115,23 @@ describe("applyToolsCacheBreakpoint", () => {
       { name: "regular_tool", input_schema: { type: "object" } },
     ]);
     expect(input).toEqual(snapshot);
-    expect(TOOLS_WITH_CACHE.some((tool) => "strict" in tool)).toBe(false);
+  });
+
+  it("з CHAT_STRICT_TOOLS=true (default) у payload проходить strict:true, але НІКОЛИ strict:false", () => {
+    // Anthropic приймає strict-прапор лише як `true` або як відсутній —
+    // `strict: false` у схемі відхиляється. Тому в payload не може бути
+    // жодного tool із strict:false, а strict:true — лише на курованому subset.
+    const strictFalse = TOOLS_WITH_CACHE.filter(
+      (tool) => (tool as { strict?: unknown }).strict === false,
+    );
+    expect(strictFalse).toHaveLength(0);
+
+    const strictTrue = TOOLS_WITH_CACHE.filter(
+      (tool) => (tool as { strict?: unknown }).strict === true,
+    );
+    // Subset активний (>0) і в межах Anthropic-ліміту 20 strict tools/запит.
+    expect(strictTrue.length).toBeGreaterThan(0);
+    expect(strictTrue.length).toBeLessThanOrEqual(20);
   });
 });
 

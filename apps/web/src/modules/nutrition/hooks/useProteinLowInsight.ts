@@ -14,10 +14,18 @@
  */
 
 import { useMemo } from "react";
-import type { NutritionLog, NutritionPrefs } from "@sergeant/nutrition-domain";
-import { getDayMacros } from "../lib/nutritionStorage";
-import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import {
+  todayISODate,
+  type NutritionLog,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
+import {
+  ESTIMATED_KCAL_SHARE_THRESHOLD,
+  getDaySummary,
+} from "../lib/nutritionStorage";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Insight } from "@shared/lib/insights/types";
+import { messages } from "@shared/i18n/uk";
 
 export function useProteinLowInsight(
   log: NutritionLog,
@@ -27,20 +35,33 @@ export function useProteinLowInsight(
     const goal = prefs.dailyTargetProtein_g ?? 0;
     if (goal <= 0) return null;
 
+    // Час доби (>= 18:00) лишається Kyiv-анкорним навмисно — це НЕ день-ключ,
+    // а wall-clock gate, поза межами виміру ADR-0078 для цієї зміни.
     const { hour } = getKyivDateParts();
     if (hour < 18) return null;
 
-    const today = getKyivDayKey();
-    const macros = getDayMacros(log, today);
-    const consumed = Math.round(macros.protein_g ?? 0);
+    // ADR-0078: читаємо той самий день, під яким журнал зберігає прийоми
+    // їжі — день пристрою, а не Kyiv.
+    const today = todayISODate();
+    const summary = getDaySummary(log, today);
+    const consumed = Math.round(summary.protein_g ?? 0);
 
     if (consumed >= goal * 0.6) return null;
+
+    // Nutrition audit E-5 / founder decision 2026-08-04: a mostly-guessed
+    // day (>50% of kcal from photoAI) must not read as a categorical
+    // verdict — soften the wording instead of silencing the nudge.
+    const isMostlyEstimated =
+      summary.estimatedKcalShare > ESTIMATED_KCAL_SHARE_THRESHOLD;
 
     return {
       id: "nutrition-protein-low",
       module: "nutrition",
       title: `Білку: ${consumed} з ${goal}г`,
-      subtitle: `Час додати джерело білка?`,
+      subtitle: isMostlyEstimated
+        ? messages.nutrition.proteinLowEstimated.subtitle
+        : `Час додати джерело білка?`,
+      askAiPrompt: `Сьогодні білка ${consumed} г із цілі ${goal} г, уже вечір. Що реально додати з простого, щоб добрати хоча б до ${Math.round(goal * 0.8)} г?`,
       action: { type: "navigate", path: "/nutrition/log" },
       // Hub surface promoted post-Phase 5e: end-of-day protein gap is an
       // actionable nudge that doesn't require in-Nutrition context — single

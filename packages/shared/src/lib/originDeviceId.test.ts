@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createMemoryKVStore } from "../test-utils";
 import {
@@ -30,6 +30,11 @@ describe("normalizeOriginDeviceId", () => {
 });
 
 describe("resolveOriginDeviceId", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it("mints + persists a fresh ID when the store is empty", () => {
     const store = createMemoryKVStore();
     let calls = 0;
@@ -83,6 +88,24 @@ describe("resolveOriginDeviceId", () => {
     expect(id).toHaveLength(ORIGIN_DEVICE_ID_MAX_LENGTH);
     expect(store.getString(STORAGE_KEYS.SYNC_ORIGIN_DEVICE_ID)).toHaveLength(
       ORIGIN_DEVICE_ID_MAX_LENGTH,
+    );
+  });
+
+  it("uses global crypto.randomUUID when no factory is injected", () => {
+    const store = createMemoryKVStore();
+    vi.stubGlobal("crypto", {
+      randomUUID: () => "global-random-id",
+    });
+
+    expect(resolveOriginDeviceId({ store })).toBe("global-random-id");
+  });
+
+  it("fails closed when Web Crypto is unavailable", () => {
+    const store = createMemoryKVStore();
+    vi.stubGlobal("crypto", {});
+
+    expect(() => resolveOriginDeviceId({ store })).toThrow(
+      "Web Crypto is required",
     );
   });
 

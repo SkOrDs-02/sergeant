@@ -34,7 +34,21 @@ export interface HubSearchProps {
 }
 
 export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
-  const engine = useSearchEngine({ onClose, onOpenModule });
+  const {
+    inputRef,
+    query,
+    setQuery,
+    results,
+    flat,
+    activeIdx,
+    recents,
+    openHit,
+    pickRecent,
+    clearRecents,
+    commitQuery,
+    inlineAi,
+    escalateToChat,
+  } = useSearchEngine({ onClose, onOpenModule });
 
   return (
     <SafeAreaView
@@ -44,30 +58,30 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
     >
       <View className="flex-1">
         <SearchInput
-          ref={engine.inputRef}
-          query={engine.query}
-          onQueryChange={engine.setQuery}
+          ref={inputRef}
+          query={query}
+          onQueryChange={setQuery}
           onClose={onClose}
         />
 
         <InlineAiRail
-          state={engine.inlineAi.state}
-          onRetry={(q) => void engine.inlineAi.ask(q)}
-          onCancel={engine.inlineAi.cancel}
-          onOpenInChat={engine.escalateToChat}
-          onDismiss={engine.inlineAi.reset}
+          state={inlineAi.state}
+          onRetry={(q) => void inlineAi.ask(q)}
+          onCancel={inlineAi.cancel}
+          onOpenInChat={escalateToChat}
+          onDismiss={inlineAi.reset}
         />
 
         <SearchResults
-          query={engine.query}
-          results={engine.results}
-          flat={engine.flat}
-          activeIdx={engine.activeIdx}
-          recents={engine.recents}
-          onActivate={engine.openHit}
-          onPickRecent={engine.pickRecent}
-          onClearRecents={engine.clearRecents}
-          onCommitQuery={engine.commitQuery}
+          query={query}
+          results={results}
+          flat={flat}
+          activeIdx={activeIdx}
+          recents={recents}
+          onActivate={openHit}
+          onPickRecent={pickRecent}
+          onClearRecents={clearRecents}
+          onCommitQuery={commitQuery}
           onOpenModule={(moduleId) => {
             if (onOpenModule) onOpenModule(moduleId);
           }}

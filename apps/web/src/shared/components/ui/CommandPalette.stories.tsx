@@ -31,7 +31,7 @@ const DEMO_COMMANDS: PaletteCommand[] = [
   {
     id: "nav.hub",
     title: "Перейти на головну",
-    description: "Hub — стрічка модулів",
+    description: "Hub: стрічка модулів",
     group: "Навігація",
     icon: <Icon name="home" />,
     run: () => console.log("[story] hub"),
@@ -55,7 +55,7 @@ const DEMO_COMMANDS: PaletteCommand[] = [
   },
   {
     id: "ai.ask",
-    title: "Запитати AI-асистента",
+    title: "Запитати Сержанта",
     group: "AI",
     icon: <Icon name="sparkle" />,
     run: () => console.log("[story] ai"),
@@ -72,7 +72,7 @@ const DEMO_COMMANDS: PaletteCommand[] = [
     title: "Налаштування експорту",
     group: "Налаштування",
     disabled: true,
-    description: "Доступно після підписки Pro",
+    description: "Доступно після підписки Premium",
     run: () => console.log("[story] export"),
   },
 ];

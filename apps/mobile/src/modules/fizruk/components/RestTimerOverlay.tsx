@@ -13,7 +13,7 @@
  * Design notes:
  *   - The web version draws a circular SVG progress ring. We are
  *     holding off on `react-native-svg` until the BodyAtlas PR (PR-C)
- *     picks an SVG library — see `docs/mobile/react-native-migration.md` §6.8.
+ *     picks an SVG library — see `docs/engineering/mobile/react-native-migration.md` §6.8.
  *     Until then, the overlay uses a linear progress bar (`View` +
  *     animated width), which reads cleanly on a bottom-of-screen
  *     sheet and is indistinguishable from the web version in
@@ -28,7 +28,7 @@
  */
 
 import { formatRestClock } from "@sergeant/fizruk-domain/lib/workoutUi";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -51,7 +51,11 @@ export function RestTimerOverlay({
   restTimer,
   onCancel,
 }: RestTimerOverlayProps) {
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [progressAnim] = useState(() => new Animated.Value(0));
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {

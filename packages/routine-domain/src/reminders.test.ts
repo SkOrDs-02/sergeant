@@ -36,7 +36,6 @@ function state(partial: Partial<RoutineState> = {}): RoutineState {
     categories: [],
     habits: [],
     completions: {},
-    pushupsByDate: {},
     habitOrder: [],
     completionNotes: {},
     ...partial,
@@ -109,7 +108,8 @@ describe("routine-domain/reminders", () => {
           reminder.time === "12:00",
       ),
     ).toMatchObject({
-      title: "S Daily",
+      // Гліф більше не префіксує заголовок пуша (slug читався б як текст).
+      title: "Daily",
       notifyKey: reminderNotifyKey("daily", "12:00", "2026-01-05"),
     });
   });

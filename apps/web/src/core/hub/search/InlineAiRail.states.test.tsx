@@ -29,7 +29,7 @@ afterEach(() => {
 describe("InlineAiRail — loading state", () => {
   it("shows the spinner label and cancels", () => {
     const { onCancel } = renderRail({ status: "loading", question: "кава" });
-    expect(screen.getByText("AI шукає відповідь")).toBeInTheDocument();
+    expect(screen.getByText("Сержант шукає відповідь")).toBeInTheDocument();
     expect(screen.getByText("Думаю…")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
@@ -67,13 +67,13 @@ describe("InlineAiRail — success state", () => {
     ).toBeInTheDocument();
     // Truncated hint is suppressed while a tool call is pending.
     expect(
-      screen.queryByText("Повна відповідь — у чаті"),
+      screen.queryByText("Повна відповідь – у чаті"),
     ).not.toBeInTheDocument();
   });
 
   it("shows the truncated hint only when truncated and no tool calls", () => {
     renderRail({ ...base, truncated: true });
-    expect(screen.getByText("Повна відповідь — у чаті")).toBeInTheDocument();
+    expect(screen.getByText("Повна відповідь – у чаті")).toBeInTheDocument();
   });
 });
 
@@ -93,7 +93,7 @@ describe("InlineAiRail — error state", () => {
       question: "кава",
       message: "Сервер недоступний",
     });
-    expect(screen.getByText("Помилка асистента")).toBeInTheDocument();
+    expect(screen.getByText("Сержант не відповів")).toBeInTheDocument();
     expect(screen.getByText("Сервер недоступний")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Повторити/ }));
     expect(onRetry).toHaveBeenCalledWith("кава");

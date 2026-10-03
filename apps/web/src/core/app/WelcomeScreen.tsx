@@ -9,16 +9,19 @@ import {
   markFirstActionStartedAt,
   saveVibePicks,
 } from "../onboarding/vibePicks";
-import { seedDemoData } from "../onboarding/seedDemoData";
+import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   isOnboardingCompletedFired,
   markOnboardingCompletedFired,
   markOnboardingDone,
 } from "../onboarding/onboardingGate";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
-import { useCallback } from "react";
+import { getAnalyticsDecision } from "../observability/analyticsConsent";
+import { OnboardingConsentStep } from "../onboarding/OnboardingConsentStep";
+import { useCallback, useState } from "react";
 import { WelcomeModulePicker } from "./WelcomeModulePicker";
 import type { DashboardModuleId } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 // Static preview of the populated hub that sits behind the splash card on
 // `/welcome`. Renders a 2×2 bento grid matching `HubDashboard`'s module
@@ -26,10 +29,18 @@ import type { DashboardModuleId } from "@sergeant/shared";
 // real dashboard layout new users are about to see.
 //
 // PR-06 — canonical Cyrillic without emoji. Module labels are bare brand
-// names (`Фінік / Фізрук / Рутина / Харчування`) — the colored module-icon
+// names (`Фінік / Фізрук / Рутина / Їжа`) — the colored module-icon
 // bubble already carries the visual association, so emoji prefixed to the
 // text was duplicative and broke uniformity vs the hub bottom-nav and
 // settings groups.
+//
+// AI-CONTEXT: картки навмисно БЕЗ числових значень. Доти тут стояли
+// `−320 ₴`, `5 трен.`, `7 днів`, `420 ккал`, а підпис «Це приклад» мав
+// `hidden sm:flex` — тобто на телефоні, основній платформі web-first PWA,
+// новачок бачив чужі числа без жодної ознаки, що вони несправжні
+// (`docs/work/specs/audits/2026-09-20-rada-skeptykiv.md` § G). Форму
+// дашборда тепер тримають скелетон-риски: вони не вдають дані, тож і
+// дисклеймер більше не потрібен.
 const PEEK_CARDS = [
   {
     id: "finyk",
@@ -37,8 +48,6 @@ const PEEK_CARDS = [
     cardBg: "bg-finyk-soft/40 dark:bg-finyk-surface-dark/8",
     iconClass: "bg-finyk-soft text-finyk dark:bg-finyk-surface-dark/15",
     icon: "credit-card",
-    metric: "−320 ₴",
-    sub: "тиждень",
   },
   {
     id: "fizruk",
@@ -46,8 +55,6 @@ const PEEK_CARDS = [
     cardBg: "bg-fizruk-soft/40 dark:bg-fizruk-surface-dark/8",
     iconClass: "bg-fizruk-soft text-fizruk dark:bg-fizruk-surface-dark/15",
     icon: "dumbbell",
-    metric: "5 трен.",
-    sub: "14 днів",
   },
   {
     id: "routine",
@@ -56,18 +63,14 @@ const PEEK_CARDS = [
     iconClass:
       "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
     icon: "check",
-    metric: "7 днів",
-    sub: "серія",
   },
   {
     id: "nutrition",
-    label: "Харчування",
+    label: "Їжа",
     cardBg: "bg-nutrition-soft/40 dark:bg-nutrition-surface-dark/8",
     iconClass:
       "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",
     icon: "utensils",
-    metric: "420 ккал",
-    sub: "сніданок",
   },
 ];
 
@@ -92,35 +95,6 @@ function PeekBackdrop() {
           "bg-linear-to-b from-brand-500/5 via-transparent to-transparent",
         )}
       />
-      {/* Honest peek disclaimer. The blurred cards beneath carry fake
-          metrics (`−320 ₴`, `5 трен.`, ...) so on first load the splash
-          visually promises a populated dashboard. The disclaimer keeps
-          that promise honest without competing with the primary CTA:
-          muted caption-size text, single-line, pinned just below the
-          safe-area top so it sits inside the peek area but above the
-          blurred bento.
-
-          UX-feedback 2026-05-08: hidden below `sm` because on mobile
-          the splash card sits `items-end` and covers the full width
-          and ~80% of the viewport — the blurred bento behind has no
-          visible vertical room (squeezed between safe-area-top and
-          the card), so this caption was floating over an empty cream
-          background and reading as a broken promise («це приклад» —
-          where?). On `sm+` the card centres and the bento is visible
-          on either side, so the disclaimer keeps making sense. The
-          demo entry point on mobile is the secondary CTA inside the
-          splash card («Подивитись приклад»). */}
-      <div
-        className={cn(
-          "absolute inset-x-0",
-          "pt-[max(0.5rem,calc(env(safe-area-inset-top)+0.25rem))] px-5",
-          "hidden sm:flex sm:justify-center",
-        )}
-      >
-        <span className="text-style-caption text-muted/80">
-          Це приклад. Твоя головна буде твоєю.
-        </span>
-      </div>
       {/* Animated floating shapes for visual interest */}
       <div className="absolute inset-0">
         <div
@@ -137,9 +111,10 @@ function PeekBackdrop() {
         />
       </div>
       {/* Faux hub rendered under a blur so the user perceives the shape
-          and accent colors of their about-to-be-populated dashboard, but
-          can't read individual numbers well enough to be distracted from
-          the splash copy. Uses a 2×2 bento grid matching the real dashboard. */}
+          and accent colors of their about-to-be-populated dashboard. The
+          cards carry skeleton bars, not numbers — nothing here pretends to
+          be data, so no disclaimer is needed. Uses a 2×2 bento grid
+          matching the real dashboard. */}
       <div
         className={cn(
           "absolute inset-x-0 top-0 pt-[max(2.5rem,env(safe-area-inset-top))] px-5 max-w-lg mx-auto w-full",
@@ -165,7 +140,12 @@ function PeekBackdrop() {
                   card.cardBg,
                   "motion-safe:animate-card-enter",
                 )}
-                style={{ animationDelay: `${0.4 + idx * 0.1}s` }}
+                // Hard Rule #17 — крок стагеру ≤30 мс (було 100 мс).
+                // 0.4 с — це затримка входу всієї peek-групи, не крок
+                // між дітьми, тому лишається.
+                style={{
+                  animationDelay: `calc(0.4s + ${Math.min(idx * 30, 150)}ms)`,
+                }}
               >
                 <div
                   className={cn(
@@ -175,20 +155,16 @@ function PeekBackdrop() {
                 >
                   <Icon
                     name={card.icon}
-                    size={16}
+                    size="md"
                     strokeWidth={2}
                     aria-hidden
                   />
                 </div>
-                <span className="text-xs font-semibold text-text">
+                <span className="text-style-label font-semibold text-text">
                   {card.label}
                 </span>
-                <span className="text-style-title text-text tabular-nums mt-1">
-                  {card.metric}
-                </span>
-                <span className="text-style-caption text-muted mt-0.5">
-                  {card.sub}
-                </span>
+                <div className="h-5 w-16 rounded-xl bg-panelHi mt-1" />
+                <div className="h-3 w-12 rounded-xl bg-panelHi mt-1.5" />
               </div>
             ))}
           </div>
@@ -214,43 +190,58 @@ interface WelcomeScreenProps {
  *
  * Phase 7 D4 (2026-05-22) swapped the row-based `OnboardingWizard`
  * splash for a preset-first 2x2 module-card grid — see
- * `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
+ * `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
  * § D4. The wizard component still ships for tour-replay launched
  * from Settings → «Переглянути вступну екскурсію»; only this
  * `/welcome` cold-start surface swapped. Persistence still flows
  * through `vibePicks` + `onboardingGate` so HubDashboard,
- * `getActiveModules`, and `productMemorySync` observe the same
+ * `getActiveModules` observe the same
  * downstream state regardless of which welcome surface ran.
  *
- * PR-05 promoted the demo entry to a first-class CTA *inside* the
- * splash card — the picker keeps that contract via
- * `onSecondaryAction` so the "просто подивитись" cohort still
- * lands on the same demo seeder without scanning past the card.
+ * До 2026-09-17 картка несла ще й другорядний CTA «Подивитись
+ * приклад», що сіяв демо-payload. Демо-режим знято — лишається один
+ * шлях: обрати модулі або увійти в наявний акаунт.
+ *
+ * З 2026-10-01 після вибору модулів іде другий крок — згода на продуктову
+ * аналітику (`OnboardingConsentStep`, рішення власника): вона частина
+ * онбордингу, а не плаваючий банер над ним (`AnalyticsConsentGate` на цих
+ * маршрутах мовчить). Крок пропускається, якщо рішення на пристрої вже є.
  */
 export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
-  // S4.1 + PR-05 demo handler. Seeds a synthetic hub payload across
-  // all four modules and reloads onto `/` so the demo state is
-  // visible immediately. Tracking is fired before the redirect so the
-  // `demo_started` event lands even if the new page mounts before the
-  // old PostHog buffer flushes (the SDK persists pending events).
-  const startDemoAndGoHome = useCallback(() => {
-    trackEvent(ANALYTICS_EVENTS.DEMO_STARTED, { source: "welcome" });
-    seedDemoData();
-    try {
-      window.location.assign("/");
-    } catch {
-      /* noop */
-    }
-  }, []);
+  // "У мене вже є акаунт" — just navigates to `/sign-in`. Does NOT mark
+  // onboarding done here (PR-H7, design-audit 2026-09-13): a mistaken tap
+  // followed by "Поки що пропустити" on `/sign-in` used to leave the local
+  // gate closed forever (a plain nav.click before we knew whether this
+  // visitor had an account at all), so the visitor landed on an empty hub
+  // with no FTUX hero and no way back to the splash. The gate now closes
+  // in exactly one place, once a session is actually confirmed — see the
+  // `SIGN_IN_PATH` entry in `StandaloneRoutes.tsx`, which covers both a
+  // fresh sign-in on this screen and an already-restored session.
+  const handleOpenAuth = useCallback(() => {
+    onOpenAuth();
+  }, [onOpenAuth]);
+
+  // Два кроки на одному маршруті: вибір модулів → згода на аналітику
+  // (рішення власника 2026-10-01). Обрані модулі чекають у стані, доки людина
+  // не відповість; нічого не пишемо в сховище й не шлемо в аналітику до кінця
+  // кроку згоди, тож `onboarding_vibe_picked` / `onboarding_completed`
+  // стартують ПІСЛЯ рішення і потрапляють у PostHog, якщо згода є.
+  const [pendingPicks, setPendingPicks] = useState<DashboardModuleId[] | null>(
+    null,
+  );
 
   // Phase 7 D4 preset-picker submit path. Persists the user's module
   // selection, marks onboarding done, fires the canonical analytics
   // funnel and bubbles the picks up to App-level navigation. Mirrors
   // `useOnboardingWizardState.finish()` so legacy consumers
-  // (onboardingGate, productMemorySync) see identical state.
-  const handlePicksComplete = useCallback(
+  // (onboardingGate) see identical state.
+  const completeOnboarding = useCallback(
     (picks: DashboardModuleId[]) => {
       saveVibePicks(picks);
+      // Див. `useOnboardingWizardState`: boot-гідрація вже відпрацювала на
+      // порожньому стані, тож без явного пушу вибір не потрапляє на акаунт
+      // до наступного буту.
+      pushActiveModules(picks);
       markOnboardingDone();
       trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
         picks,
@@ -271,17 +262,37 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     [onDone],
   );
 
+  // Модулі обрано. Рішення про аналітику на цьому пристрої вже є (повторний
+  // прохід, тумблер у налаштуваннях, згода з іншого пристрою) — питати вдруге
+  // не треба, завершуємо одразу.
+  const handlePicksSelected = useCallback(
+    (picks: DashboardModuleId[]) => {
+      if (getAnalyticsDecision() !== null) {
+        completeOnboarding(picks);
+        return;
+      }
+      setPendingPicks(picks);
+    },
+    [completeOnboarding],
+  );
+
+  // `OnboardingConsentStep` викликає це вже ПІСЛЯ запису згоди.
+  const handleConsentDecided = useCallback(() => {
+    if (pendingPicks) completeOnboarding(pendingPicks);
+  }, [pendingPicks, completeOnboarding]);
+
   // 2026-05-08 — окремий scroll-шар на page-wrapper'і.
-  // `html, body, #root` усі зафіксовані на `height: 100dvh`
-  // (`apps/web/src/styles/base.css`), тож натуральний body-scroll
-  // вимкнений. До цього фіксу page-wrapper був
+  // `html`/`body` не прокручуються, а `#root` має точну висоту viewport
+  // (`100dvh` у browser mode, `100vh` у standalone PWA; див.
+  // `apps/web/src/styles/base.css`), тож натуральний body-scroll вимкнений.
+  // До цього фіксу page-wrapper був
   // `min-h-dvh ... overflow-hidden`: коли користувач розгортав
   // модулі через «Що це за розділи?», splash-картка ставала вищою
-  // за viewport, але body не міг прокрутитись (#root зафіксований),
+  // за viewport, але body не міг прокрутитись,
   // а `overflow-hidden` обрізав картку зверху (логотип) і знизу
   // (CTA / «Згорнути») — без можливості скрола взагалі.
   //
-  // Тепер page-wrapper — справжній scroll-контейнер: `h-dvh`
+  // Тепер page-wrapper — справжній scroll-контейнер: `h-app-dvh`
   // (рівно viewport), `overflow-y-auto` (внутрішній скрол),
   // `overscroll-contain` (гасить body-bounce на iOS). `PeekBackdrop`
   // переведено на `fixed inset-0`, тож floating-shapes / blurred
@@ -302,20 +313,24 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     <main
       id="main"
       tabIndex={-1}
-      className="relative h-dvh overflow-y-auto overscroll-contain bg-mesh text-text page-enter outline-none"
+      className="relative h-app-dvh overflow-y-auto overscroll-contain bg-mesh text-text outline-none"
     >
       <PeekBackdrop />
       <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
+        <h1 className="sr-only">{messages.nav.welcome}</h1>
         <div className="w-full max-w-md space-y-3">
           {/* Phase 7 D4 — preset picker replaces the row-based
               OnboardingWizard as the cold-start surface. The wizard
               still ships for tour-replay (Settings → "Подивитись
               екскурсію"); only this `/welcome` entry point swaps. */}
-          <WelcomeModulePicker
-            onComplete={handlePicksComplete}
-            onOpenAuth={onOpenAuth}
-            onSecondaryAction={startDemoAndGoHome}
-          />
+          {pendingPicks ? (
+            <OnboardingConsentStep onDecided={handleConsentDecided} />
+          ) : (
+            <WelcomeModulePicker
+              onComplete={handlePicksSelected}
+              onOpenAuth={handleOpenAuth}
+            />
+          )}
         </div>
       </div>
     </main>

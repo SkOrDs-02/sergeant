@@ -15,6 +15,11 @@
 
 import { parseFizrukWorkouts } from "@shared/lib/ui/parseFizrukWorkouts";
 import { calcFinykSpendingByDate } from "@finyk/utils";
+import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
+import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
+import type { Habit } from "@sergeant/routine-domain/types";
+import { deviceMondayStart, toKyivISODate } from "@sergeant/shared";
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -25,15 +30,26 @@ export interface PeriodRange {
   end: Date;
 }
 
+/**
+ * Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
+ * з `@sergeant/routine-domain` (раніше — інлайн-копія того самого тіла).
+ * `addDays` теж ре-експортується звідти — реалізації байт-еквівалентні.
+ */
 export function localDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return dateKeyFromDate(d);
 }
 
-export function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
-}
+export { addDays };
+
+/* eslint-disable sergeant-design/prefer-kyiv-time --
+   Вісь днів (пн–нд, 1-ше – останнє) — календарні дати за годинником ПРИСТРОЮ
+   (ADR-0078): так живуть звички, їжа й тренування. Гроші ріжуться за Києвом,
+   і це робить не вісь, а те, ЯК кожен запис потрапляє на день: `aggregateSpending`
+   бере київський день-ключ транзакції, а `reportWindows().money` — київське
+   «сьогодні» (рішення власника 2026-10-01, f6; інакше Звіти біля опівночі
+   розходились з Аналітикою Фініка, що ріже дні за Києвом). Скоуп disable-у
+   обмежений блоком date-helper-ів нижче — агрегатори під ним правило
+   перевіряє як завжди. */
 
 /**
  * Тиждень: пн–нд (Kyiv-style; getDay() = 0 = неділя). Місяць: 1-ше – останнє
@@ -48,10 +64,12 @@ export function getPeriodRange(
   now: Date = new Date(),
 ): PeriodRange {
   if (period === "week") {
-    const mondayOffset = (now.getDay() + 6) % 7;
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - mondayOffset + offset * 7);
-    mon.setHours(0, 0, 0, 0);
+    // offset*7 днів — цілу кількість тижнів, тож день тижня не зсувається:
+    // Monday-старт зсунутої дати збігається з тим, що раніше давала
+    // `now.getDate() - mondayOffset + offset*7` напряму.
+    const offsetDate = new Date(now);
+    offsetDate.setDate(now.getDate() + offset * 7);
+    const mon = new Date(deviceMondayStart(offsetDate));
     const sun = addDays(mon, 6);
     return { start: mon, end: sun };
   }
@@ -70,6 +88,72 @@ export function datesInRange(start: Date, end: Date): string[] {
     d.setDate(d.getDate() + 1);
   }
   return dates;
+}
+/* eslint-enable sergeant-design/prefer-kyiv-time */
+
+export interface ReportWindows {
+  /** Усі дні поточного періоду: вісь графіка. */
+  dates: string[];
+  /** Дні поточного періоду, що вже настали (включно з сьогодні). */
+  cur: string[];
+  /** Дні попереднього періоду, з якими чесно порівнювати `cur`. */
+  prev: string[];
+  /**
+   * Попередній період повністю. Лише для питання «чи є дані взагалі»:
+   * порожній стан картки не має казати «ще не записано», коли записи
+   * минулого тижня просто лягли на дні після сьогоднішнього.
+   */
+  prevAll: string[];
+  /** Поточний період ще не скінчився, тож `prev` обрізано до тієї ж довжини. */
+  partial: boolean;
+  /**
+   * Ті самі вікна для ГРОШЕЙ: «сьогодні» тут київське, а не годинник
+   * телефона. Біля опівночі (або поза Києвом) воно може на день відрізнятись
+   * від `cur`/`prev`, тож витрати рахуються до тієї ж доби, до якої їх
+   * відносить Аналітика Фініка. Вісь `dates` спільна.
+   */
+  money: { cur: string[]; prev: string[]; partial: boolean };
+}
+
+/** Вікна «до сьогодні» і «стільки ж перших днів попереднього періоду». */
+function windowsUpTo(
+  dates: readonly string[],
+  prevDates: readonly string[],
+  today: string,
+): { cur: string[]; prev: string[]; partial: boolean } {
+  const cur = dates.filter((d) => d <= today);
+  const partial = cur.length < dates.length;
+  return {
+    cur,
+    prev: partial ? prevDates.slice(0, cur.length) : [...prevDates],
+    partial,
+  };
+}
+
+/**
+ * Вікна для дельти «поточний проти попереднього». Незавершений період не
+ * можна міряти повним попереднім: у середу тиждень має три прожиті дні, і
+ * сума за них проти суми за сім давала «−33 %» при незмінному темпі, а
+ * відсоток звичок ще й тягнув майбутні дні в знаменник. Тому поточний
+ * рахується до сьогодні, а попередній береться за стільки ж перших днів.
+ * Завершений період (offset < 0) порівнюється з попереднім повністю.
+ */
+export function reportWindows(
+  period: Period,
+  offset: number,
+  now: Date = new Date(),
+): ReportWindows {
+  const curRange = getPeriodRange(period, offset, now);
+  const prevRange = getPeriodRange(period, offset - 1, now);
+  const dates = datesInRange(curRange.start, curRange.end);
+  const prevDates = datesInRange(prevRange.start, prevRange.end);
+  const device = windowsUpTo(dates, prevDates, localDateKey(now));
+  return {
+    dates,
+    ...device,
+    prevAll: prevDates,
+    money: windowsUpTo(dates, prevDates, toKyivISODate(now)),
+  };
 }
 
 // ── Per-module aggregators ───────────────────────────────────────────────────
@@ -150,7 +234,8 @@ export interface SpendingInputs {
  * Делегує до `calcFinykSpendingByDate` (єдиний source-of-truth для
  * Фінік-агрегації — використовується також у Overview/digest). Тут лише
  * адаптуємо вхід під Hub-Reports форму (dateSet з рядкових ключів +
- * `localDateKey` як локалізатор).
+ * київський день-ключ як локалізатор: гроші ріжуться за Києвом, а не за
+ * годинником телефона, f6 «Одна правда про витрати»).
  */
 export function aggregateSpending(
   inputs: SpendingInputs,
@@ -160,13 +245,8 @@ export function aggregateSpending(
     excludedTxIds: inputs.excludedTxIds,
     txSplits: inputs.txSplits,
     dateSet: new Set(dates),
-    localDateKeyFn: localDateKey,
+    localDateKeyFn: toKyivISODate,
   });
-}
-
-interface Habit {
-  id: string;
-  archived?: boolean;
 }
 
 export interface RoutineState {
@@ -175,41 +255,57 @@ export interface RoutineState {
 }
 
 /**
- * Рахує % виконання звичок: `done / possible * 100` сумарно по всіх днях у
- * діапазоні, плюс daily-розклад для bar-chart-у. Архівовані звички
- * виключаються з `possible` (ефективно "не існували в цьому періоді").
+ * Рахує % виконання звичок за період плюс daily-розклад для bar-chart-у.
+ *
+ * AI-CONTEXT: W1-CANON-AGG стадія 4 — знаменник тепер **заплановані дні**, а
+ * не «кількість звичок × кожен день». Раніше звичка «Пн/Ср/Пт», виконана 3/3,
+ * показувалась як 43%: чотири дні, у які вона й не планувалась, сиділи в
+ * знаменнику як провали. Тепер це 100% — та сама семантика, що в модулі
+ * Звички (`completionRateForRange`) і в heatmap. Розрахунок делегований
+ * канонічній `calcRoutinePeriodCompletion`, тож розсихання неможливе за
+ * побудовою.
+ *
+ * AI-DANGER: щоб знаменник узагалі можна було порахувати, викликач мусить
+ * передати **повні** звички з розкладом (`recurrence` / `weekdays` /
+ * `startDate`). Зрізаний `{id, archived}` мовчки дасть щоденний розклад за
+ * дефолтом `habitScheduledOnDate` і поверне старе плоске число.
  *
  * Інваріант: `state == null` → `pct: 0, daily: {}` (HubReports повертав той же
  * shape; знаменник 0 теж дає 0 без NaN).
  */
+export interface HabitsAggregateOptions {
+  /**
+   * День «сьогодні» (`YYYY-MM-DD`), від якого пауза починає діяти —
+   * заморозка минулого (ADR-0079 §2). Без нього пауза, поставлена сьогодні,
+   * ретроактивно вимиває звичку з усіх минулих періодів, які показує ця
+   * картка. Параметр, а не виклик годинника всередині: модуль навмисно
+   * чистий, і на цьому тримаються його snapshot-тести.
+   */
+  pausedFrom?: string | undefined;
+}
+
 export function aggregateHabits(
   state: RoutineState | null,
   dates: string[],
+  opts: HabitsAggregateOptions = {},
 ): HabitsAggregate {
   if (!state) return { pct: 0, daily: {} };
-  const habits = Array.isArray(state.habits)
-    ? state.habits.filter((h) => !h.archived)
-    : [];
-  const completions = state.completions ?? {};
+  // `archived` фільтруємо і тут, і в каноні. Дублювання навмисне: канон
+  // зобовʼязаний бути самодостатнім, а рання втеча тримає історичний контракт
+  // «нема живих звичок → `daily: {}`». Без неї bar-chart отримав би ряд
+  // нульових стовпців там, де раніше не малював нічого.
+  const habits = (Array.isArray(state.habits) ? state.habits : []).filter(
+    (h) => h && !h.archived,
+  );
   if (!habits.length) return { pct: 0, daily: {} };
 
-  const daily: Record<string, number> = {};
-  let totalPossible = 0;
-  let totalDone = 0;
-  for (const dk of dates) {
-    const possible = habits.length;
-    const done = habits.filter(
-      (h) =>
-        Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk),
-    ).length;
-    totalPossible += possible;
-    totalDone += done;
-    daily[dk] = possible > 0 ? Math.round((done / possible) * 100) : 0;
-  }
-  return {
-    pct: totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0,
-    daily,
-  };
+  const { pct, daily } = calcRoutinePeriodCompletion(
+    habits,
+    state.completions ?? {},
+    dates,
+    opts.pausedFrom === undefined ? {} : { pausedFrom: opts.pausedFrom },
+  );
+  return { pct, daily };
 }
 
 interface NutritionMeal {
@@ -224,9 +320,16 @@ export type NutritionLog = Record<string, NutritionDayLog>;
 
 /**
  * Сума ккал у meal-log за період. Daily-точка — сума `meal.macros.kcal` усіх
- * прийомів за день (округлюється). `avg` — це **середнє по днях, де є хоч
- * один meal**, а не по всіх днях періоду — навмисно, бо HubReports так і
- * робив (нульові дні не "розмазують" середнє).
+ * прийомів за день (округлюється).
+ *
+ * AI-CONTEXT: W1-CANON-AGG стадія 4 — `avg` тепер ділиться на **дні з ≥1
+ * прийомом**, як вимагає канон `nutrition.md §5.2` («неповний день — це
+ * неповні дані, а не дефіцит»). Докстрінг це й обіцяв, але код брав
+ * `Object.keys(daily).length` — тобто дні, для яких **існує ключ** у лозі.
+ * День із записом і порожнім `meals` (створюється, наприклад, коли юзер
+ * відкрив день і нічого не додав) потрапляв у знаменник нулем і занижував
+ * середнє: 1200 ккал за два дні читалось як 400, а не 600. `total` і `daily`
+ * не змінились — рухається лише `avg`.
  */
 export function aggregateKcal(
   log: NutritionLog | null | undefined,
@@ -238,15 +341,18 @@ export function aggregateKcal(
   let total = 0;
   for (const dk of Object.keys(safeLog)) {
     if (!dateSet.has(dk)) continue;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- `Array.isArray` уже звузив, але TS цього не бачить крізь індексний доступ
     const meals = Array.isArray(safeLog[dk]?.meals) ? safeLog[dk].meals! : [];
     const kcal = meals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
     total += kcal;
     daily[dk] = Math.round(kcal);
   }
-  const daysWithData = Object.keys(daily).length;
+  // Знаменник — канонічний. Суми лишаємо власні: канон рахує лише по `dates`,
+  // а `daily` тут історично покриває той самий зріз, тож числа збігаються.
+  const { daysLogged } = calcNutritionPeriodAverages(safeLog, dates);
   return {
     total: Math.round(total),
-    avg: daysWithData > 0 ? Math.round(total / daysWithData) : 0,
+    avg: daysLogged > 0 ? Math.round(total / daysLogged) : 0,
     daily,
   };
 }
@@ -286,28 +392,26 @@ export function aggregateReport(
   inputs: ReportInputs,
   now: Date = new Date(),
 ): ReportData {
-  const cur = getPeriodRange(period, offset, now);
-  const prev = getPeriodRange(period, offset - 1, now);
-  const curDates = datesInRange(cur.start, cur.end);
-  const prevDates = datesInRange(prev.start, prev.end);
+  const range = getPeriodRange(period, offset, now);
+  const w = reportWindows(period, offset, now);
 
   return {
-    period: { start: cur.start, end: cur.end, dates: curDates },
+    period: { start: range.start, end: range.end, dates: w.dates },
     workouts: {
-      cur: aggregateWorkouts(inputs.rawFizrukWorkouts, curDates),
-      prev: aggregateWorkouts(inputs.rawFizrukWorkouts, prevDates),
+      cur: aggregateWorkouts(inputs.rawFizrukWorkouts, w.cur),
+      prev: aggregateWorkouts(inputs.rawFizrukWorkouts, w.prev),
     },
     spending: {
-      cur: aggregateSpending(inputs.finyk, curDates),
-      prev: aggregateSpending(inputs.finyk, prevDates),
+      cur: aggregateSpending(inputs.finyk, w.money.cur),
+      prev: aggregateSpending(inputs.finyk, w.money.prev),
     },
     habits: {
-      cur: aggregateHabits(inputs.routineState, curDates),
-      prev: aggregateHabits(inputs.routineState, prevDates),
+      cur: aggregateHabits(inputs.routineState, w.cur),
+      prev: aggregateHabits(inputs.routineState, w.prev),
     },
     kcal: {
-      cur: aggregateKcal(inputs.nutritionLog, curDates),
-      prev: aggregateKcal(inputs.nutritionLog, prevDates),
+      cur: aggregateKcal(inputs.nutritionLog, w.cur),
+      prev: aggregateKcal(inputs.nutritionLog, w.prev),
     },
   };
 }

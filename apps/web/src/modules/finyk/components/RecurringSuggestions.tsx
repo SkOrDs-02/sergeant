@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
+import { Money } from "@shared/components/ui/Money";
 import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 
 type Cadence = "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
@@ -55,12 +57,33 @@ interface RecurringSuggestionsProps {
   excludedTxIds?: ReadonlySet<string> | readonly string[];
   onAdd?: (candidate: RecurringCandidate) => void;
   onDismiss?: (key: string) => void;
+  /**
+   * Розкрити список одразу на монтуванні. Використовує deep-link із
+   * хаб-інсайту «Знайшов повторення» (`?section=recurring`): інакше юзер
+   * приїжджає на згорнутий акордеон і не бачить, що саме знайдено.
+   */
+  defaultOpen?: boolean;
 }
 
-function fmtAmount(amount: number, currency: string | undefined) {
-  const symbol = currency === "USD" ? "$" : "₴";
-  const value = Math.round(amount * 100) / 100;
-  return `${value.toLocaleString("uk-UA", { maximumFractionDigits: 2 })} ${symbol}`;
+/**
+ * Сума кандидата в підписки. Копійки тут увімкнені: це СЕРЕДНЄ по
+ * кількох списаннях, і рівна гривня в ньому — рідкість; округливши,
+ * ми показали б точніше число, ніж насправді знаємо.
+ */
+function AmountValue({
+  amount,
+  currency,
+}: {
+  amount: number;
+  currency: string | undefined;
+}) {
+  return (
+    <Money
+      amount={Math.round(amount * 100) / 100}
+      kopecks
+      symbol={currency === "USD" ? "$" : "₴"}
+    />
+  );
 }
 
 /**
@@ -74,8 +97,9 @@ export function RecurringSuggestions({
   excludedTxIds,
   onAdd,
   onDismiss,
+  defaultOpen = false,
 }: RecurringSuggestionsProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   const candidates = useMemo<RecurringCandidate[]>(() => {
     if (!transactions || !transactions.length) return [];
@@ -101,7 +125,12 @@ export function RecurringSuggestions({
         className="w-full flex items-center justify-between px-4 py-3 bg-panelHi border border-line rounded-2xl text-left transition-colors hover:border-muted/50"
       >
         <div className="flex items-center gap-2">
-          <span className="text-lg">💡</span>
+          <Icon
+            name="lightbulb"
+            size={18}
+            className="text-warning"
+            aria-hidden
+          />
           <div>
             <div className="text-style-label text-text">
               Можливі підписки
@@ -109,13 +138,14 @@ export function RecurringSuggestions({
                 ({candidates.length})
               </span>
             </div>
-            <div className="text-xs text-muted mt-0.5">
-              Повторювані витрати — можна додати як підписки
+            <div className="text-style-caption text-muted mt-0.5">
+              Повторювані витрати, можна додати як підписки
             </div>
           </div>
         </div>
-        <span className="text-xs text-muted shrink-0 ml-2">
-          {open ? "Згорнути ↑" : "Розкласти ↓"}
+        <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2">
+          {open ? "Згорнути" : "Розгорнути"}
+          <Icon name={open ? "chevron-up" : "chevron-down"} size="sm" />
         </span>
       </button>
 
@@ -140,8 +170,11 @@ export function RecurringSuggestions({
                       {c.displayName}
                     </div>
                   </div>
-                  <div className="text-xs text-muted mt-1 space-x-2">
-                    <span>~{fmtAmount(c.avgAmount, c.currency)}</span>
+                  <div className="text-style-caption text-muted mt-1 space-x-2">
+                    <span>
+                      ~
+                      <AmountValue amount={c.avgAmount} currency={c.currency} />
+                    </span>
                     <span>·</span>
                     <span>{CADENCE_LABEL[c.cadence] || c.cadence}</span>
                     <span>·</span>
@@ -164,7 +197,7 @@ export function RecurringSuggestions({
                   </Button>
                   <button
                     onClick={() => onDismiss?.(c.key)}
-                    className="text-xs text-muted hover:text-text transition-colors px-2 py-1"
+                    className="text-style-caption text-muted hover:text-text transition-colors px-2 py-1"
                   >
                     Приховати
                   </button>

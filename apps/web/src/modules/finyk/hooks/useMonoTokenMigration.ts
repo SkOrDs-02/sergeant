@@ -90,7 +90,9 @@ export function useMonoTokenMigration(isLoggedIn: boolean): void {
           source: "auto",
         });
 
-        toast.success("Monobank мігровано на webhook-режим");
+        toast.success(
+          "Monobank перепідключено: нові операції приходитимуть самі",
+        );
       } catch {
         // Migration failed — keep legacy token, user can retry manually
         migratedRef.current = false;

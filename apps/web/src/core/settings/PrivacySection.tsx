@@ -1,35 +1,82 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
-import { useFlag, setFlag } from "../lib/featureFlags";
-import { useAppLockContext } from "../security/AppLockContext";
+import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
+import { useOptionalHubShell } from "../app/HubShellContext";
 import { LegalLinks } from "../legal/LegalLinks";
-import { ConfirmModal, SettingsGroup, ToggleRow } from "./SettingsPrimitives";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
+import {
+  SettingsGroup,
+  SettingsSubGroup,
+  ToggleRow,
+} from "./SettingsPrimitives";
+import {
+  hydrateAnalyticsConsent,
+  setAnalyticsConsent,
+} from "../observability/analyticsConsent";
+import {
+  classifyPreferenceLoadFailure,
+  PREFERENCE_LOAD_FAILURE_COPY,
+  type PreferenceLoadFailure,
+} from "./preferenceLoadFailure";
 
-const m = messages.privacy.lock;
+// Експортовано для `PrivacySection.test.tsx` (L-3): loading-гейт нижче
+// означає, що це значення НІКОЛИ не може просочитись у DOM чи
+// `analyticsConsent` до завершення гідрації, тож перевіряти його треба
+// напряму, а не виводити з відрендереного виводу (2026-08-08 adversarial
+// review, finding #4).
+const disclosure = messages.dataDisclosure;
 
-const DEFAULT_PREFERENCES: UserPreferences = {
-  analytics: true,
+export const DEFAULT_PREFERENCES: UserPreferences = {
+  // L-3: продукт — opt-in analytics, не opt-out. Дефолт тут мусить
+  // збігатися з серверним DEFAULT FALSE (apps/server/src/modules/me/
+  // dataRights.ts, міграція 111) і з in-memory-кешем `analyticsConsent.ts`
+  // ("DENY UNTIL HYDRATED"). До відповіді сервера екран нижче все одно не
+  // стверджує ні "увімкнено", ні "вимкнено" — див. `preferencesLoaded`-гейт
+  // у розмітці нижче.
+  analytics: false,
   aiMemory: true,
   pushNotifications: false,
+  sergeantNudges: false,
+  pushDailyCap: PUSH_DAILY_CAP_DEFAULT,
+  healthDataConsent: false,
+  // Приватність цим екраном не керує — вибір модулів живе в «Головна»
+  // (`DashboardSection`) і синхронізується окремо (`activeModulesSync`).
+  activeModules: null,
+  hubPrefs: null,
   updatedAt: null,
 };
 
-type PreferenceKey = "analytics" | "aiMemory" | "pushNotifications";
+type PreferenceKey =
+  "analytics" | "aiMemory" | "pushNotifications" | "healthDataConsent";
 
+/**
+ * «Дані та приватність» — згоди на обробку даних і правові документи.
+ *
+ * Огляд 2026-09-04: PIN-блокування переїхало в Профіль → «Безпека»
+ * (`security/AppLockSettings.tsx`), список серверної памʼяті з очищенням —
+ * у Профіль → «Памʼять» (`profile/AiMemorySection.tsx`). Тут лишилось
+ * рівно те, що є ЗГОДОЮ: аналітика, памʼять для Сержанта, здоровʼя.
+ */
 export function PrivacySection() {
-  const appLock = useAppLockContext();
-  const flagEnabled = useFlag("app-lock-enabled");
-  const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
+  const shell = useOptionalHubShell();
   const [preferences, setPreferences] =
     useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [preferencesError, setPreferencesError] = useState<string | null>(null);
+  // ЧОМУ не вдалося завантажити, а не лише «не вдалося»: гість і збій мережі
+  // розходяться і в тексті, і в подачі (див. гілку рендеру нижче). `null`
+  // поки нічого не падало або коли впало ЗБЕРЕЖЕННЯ (там гілка своя).
+  const [loadFailure, setLoadFailure] = useState<PreferenceLoadFailure | null>(
+    null,
+  );
   const [savingPreference, setSavingPreference] =
     useState<PreferenceKey | null>(null);
 
-  useEffect(() => {
+  // L-3: винесено окремо, щоб стан помилки (див. рендер нижче) міг
+  // пропонувати справжній retry, а не глухий кут (finding #9).
+  const loadPreferences = useCallback(() => {
     let cancelled = false;
     meApi
       .getPreferences()
@@ -37,12 +84,23 @@ export function PrivacySection() {
         if (cancelled) return;
         setPreferences(next);
         setPreferencesLoaded(true);
+        setPreferencesError(null);
+        setLoadFailure(null);
+        hydrateAnalyticsConsent(next.analytics);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
+        // PR-S2: доти будь-який збій GET (офлайн, 5xx, таймаут) ставав
+        // «Увійди в акаунт» — неправдиве твердження про стан акаунта, яке
+        // жене залогінену людину перелогінюватись. Причину тепер
+        // розрізняємо; обґрунтування сигналу — `preferenceLoadFailure.ts`.
+        const failure = classifyPreferenceLoadFailure(err);
         setPreferencesLoaded(false);
+        setLoadFailure(failure);
         setPreferencesError(
-          "Увійди в акаунт, щоб керувати серверними consent preferences.",
+          failure === "auth"
+            ? "Увійди в акаунт, щоб керувати налаштуваннями згоди на сервері."
+            : PREFERENCE_LOAD_FAILURE_COPY[failure],
         );
       });
     return () => {
@@ -50,132 +108,229 @@ export function PrivacySection() {
     };
   }, []);
 
-  const handleToggle = async (checked: boolean) => {
-    if (checked) {
-      setFlag("app-lock-enabled", true);
-      // Audit F16: check the *current user's* PIN partition, not `anon`.
-      // `appLock.hasPin()` closes over `user?.id` from `useAppLock`.
-      const has = await appLock.hasPin();
-      if (!has) {
-        appLock.startSetup();
-      }
-    } else {
-      setDisableConfirmOpen(true);
-    }
-  };
-
-  const handleDisableConfirm = async () => {
-    setDisableConfirmOpen(false);
-    setFlag("app-lock-enabled", false);
-    // Audit F16: clear the current user's credential, not the `anon` slot.
-    await appLock.disablePin();
-  };
+  useEffect(() => loadPreferences(), [loadPreferences]);
 
   const updatePreference = async (key: PreferenceKey, checked: boolean) => {
     setPreferencesError(null);
+    setLoadFailure(null);
     setSavingPreference(key);
     const previous = preferences;
     setPreferences({ ...previous, [key]: checked });
+    if (key === "analytics") {
+      // Оптимістично, ще ДО мережевого round trip (CodeRabbit PR #627):
+      // dismiss між кліком і відповіддю сервера має вже враховувати новий
+      // вибір. Відкочується в `catch` нижче при збої.
+      setAnalyticsConsent(checked);
+    }
     try {
       const next = await meApi.updatePreferences({ [key]: checked });
       setPreferences(next);
       setPreferencesLoaded(true);
+      if (key === "analytics") {
+        // Явний вибір людини на цьому пристрої — фіксуємо як рішення.
+        setAnalyticsConsent(next.analytics);
+      } else {
+        // Інший тумблер (aiMemory, healthDataConsent…) — не відповідь про
+        // аналітику: лише синхронізуємо кеш із сервером, не записуючи
+        // «рішення» на пристрої (інакше банер згоди мовчки зникав би).
+        hydrateAnalyticsConsent(next.analytics);
+      }
     } catch {
       setPreferences(previous);
-      setPreferencesError("Не вдалося зберегти preference. Спробуй ще раз.");
+      if (key === "analytics") {
+        setAnalyticsConsent(previous.analytics);
+      }
+      setPreferencesError("Не вдалося зберегти налаштування. Спробуй ще раз.");
     } finally {
       setSavingPreference(null);
     }
   };
 
   return (
-    <SettingsGroup title={m.sectionTitle} emoji="🔒">
-      <ToggleRow
-        label={m.enableLabel}
-        description={m.enableDescription}
-        checked={flagEnabled}
-        onChange={handleToggle}
-      />
-
-      {flagEnabled && (
-        <div className="flex flex-col gap-3 pt-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={appLock.startChange}
-            className="self-start text-brand"
+    <SettingsGroup
+      title={settingsSectionTitle("privacy")}
+      icon="shield"
+      anchorId="settings-privacy"
+    >
+      <SettingsSubGroup title="Згода та дані">
+        <p className="text-style-body text-subtle leading-relaxed">
+          Обери, що Sergeant може використовувати для якості продукту та
+          персоналізації. Дані для входу, безпеки й оплати залишаються
+          потрібними для роботи застосунку. Сповіщення налаштовуються в окремому
+          розділі.
+        </p>
+        {preferencesLoaded ? (
+          <>
+            <ToggleRow
+              label="Аналітика продукту"
+              description={
+                savingPreference === "analytics"
+                  ? "Зберігаю…"
+                  : "Допомагає бачити, де інтерфейс незручний або ламається."
+              }
+              checked={preferences.analytics}
+              onChange={(checked) =>
+                void updatePreference("analytics", checked)
+              }
+            />
+            <ToggleRow
+              label="Памʼять для Сержанта"
+              description={
+                savingPreference === "aiMemory"
+                  ? "Зберігаю…"
+                  : "Дозволяє Сержанту памʼятати корисні факти між сесіями, щоб відповіді були точнішими. Вимкнення не видаляє вже збережене."
+              }
+              checked={preferences.aiMemory}
+              onChange={(checked) => void updatePreference("aiMemory", checked)}
+            />
+            {/* Рішення власника 2026-09-29 (вузький гейт, GDPR Art. 9): це
+                ЄДИНА згода на дані про здоровʼя, і вона працює на СЕРВЕРІ —
+                без неї тренування, вага, самопочуття й харчування не йдуть у
+                модель (чат, коуч, тижневий звіт, фото страв) і не осідають у
+                памʼяті AI. Модулі Фізрук/Харчування від неї не залежать.
+                Раніше (PR-S3, 2026-09-14) тумблер гейтив лише запис у памʼять
+                і чесно казав, що відповідь у чаті працює без згоди; це
+                скасовано, бо згода без наслідків не має юридичної сили.
+                Копія каже рівно те, що робить код, включно з тим, чого
+                тумблер НЕ охоплює (вільний текст у повідомленнях). */}
+            <ToggleRow
+              label="Дані про здоровʼя для Сержанта"
+              description={
+                savingPreference === "healthDataConsent"
+                  ? "Зберігаю…"
+                  : "Дозволяє Сержанту бачити й запамʼятовувати тренування, вагу, самопочуття та харчування: у чаті, повідомленнях дня, тижневих звітах і при аналізі фото страв. Без згоди він цього не бачить і скаже, що потрібен дозвіл; фінанси й звички працюють як завжди. Вимкнення не видаляє вже збережене."
+              }
+              checked={preferences.healthDataConsent}
+              onChange={(checked) =>
+                void updatePreference("healthDataConsent", checked)
+              }
+            />
+            {preferencesError ? (
+              // Finding #7: рендериться одразу біля групи тумблерів, що не
+              // зберіглась — зрячий юзер, що щойно бачив, як тумблер
+              // мовчки відкотився, потребує пояснення поруч із контролом.
+              <p className="text-style-caption text-danger-strong" role="alert">
+                {preferencesError}
+              </p>
+            ) : null}
+          </>
+        ) : preferencesError ? (
+          // Огляд 2026-09-04: для ГОСТЯ це не збій, а очікуваний стан —
+          // «увійди, і зможеш керувати» — тож фарбувати його danger і
+          // оголошувати як alert означало показувати демо зламаним.
+          // Помилка ЗБЕРЕЖЕННЯ (гілка вище) лишається червоною: там
+          // людина щойно щось натиснула, і тумблер відкотився.
+          // Finding #9: справжній retry, а не глухий кут.
+          //
+          // PR-S2 (2026-09-14): спокійна подача правильна саме для гостя, а
+          // не для будь-якого збою. Офлайн чи 500 — це таки поломка, і
+          // людина має почути її як поломку, інакше вона шукатиме проблему
+          // в собі. Тому подача тепер іде за ПРИЧИНОЮ, а не за самим
+          // фактом помилки.
+          <div className="flex flex-col items-start gap-2">
+            <p
+              className={
+                loadFailure === "auth"
+                  ? "text-style-caption text-muted"
+                  : "text-style-caption text-danger-strong"
+              }
+              role={loadFailure === "auth" ? "status" : "alert"}
+            >
+              {preferencesError}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPreferencesError(null);
+                setLoadFailure(null);
+                loadPreferences();
+              }}
+            >
+              Спробувати ще
+            </Button>
+          </div>
+        ) : (
+          // L-3: до відповіді сервера екран не має стверджувати НІ
+          // "увімкнено", НІ "вимкнено" — явний loading-стан без тумблерів.
+          <p
+            className="text-style-caption text-subtle"
+            role="status"
+            aria-live="polite"
           >
-            {m.changePin}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={appLock.lock}
-            className="self-start text-muted"
-          >
-            {m.lockNow}
-          </Button>
-        </div>
-      )}
+            Завантажую налаштування…
+          </p>
+        )}
+        {/* Що саме Сержант памʼятає і як це стерти — у Профілі, поруч із
+            фактами, які людина розповіла сама (один вхід замість двох). */}
+        {shell ? (
+          <div className="flex flex-col items-start gap-1">
+            <p className="text-style-body text-subtle leading-relaxed">
+              Що саме Сержант памʼятає і як це стерти: у Профілі, поруч із
+              твоїми фактами.
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => shell.ui.setHubView("profile")}
+            >
+              Відкрити Профіль → Памʼять
+            </Button>
+          </div>
+        ) : null}
+        {/* Рішення founder-а 2026-09-14. Видалення акаунта ІСНУЄ —
+            `profile/DangerZoneSection` із підтвердженням, — але живе воно в
+            Профілі, а шукають його тут: це та сама поличка «мої дані й що з
+            ними можна зробити», що й експорт зі згодами. Продуктовий огляд
+            спершу записав це як «пункту немає взагалі», і помилився; чинна
+            знахідка вужча — його немає ТАМ, ДЕ ЙОГО ШУКАЮТЬ.
 
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-style-label text-text">Згода та privacy</h3>
-          <p className="mt-1 text-xs text-subtle leading-relaxed">
-            Керуй серверними consent preferences для аналітики, AI memory і
-            push-повідомлень. Essential cookies для входу, безпеки та billing
-            залишаються активними.
-          </p>
-        </div>
-        <ToggleRow
-          label="Аналітика продукту"
-          description={
-            savingPreference === "analytics"
-              ? "Зберігаю…"
-              : "Допомагає бачити якість funnel, UX і стабільність."
-          }
-          checked={preferences.analytics}
-          onChange={(checked) => void updatePreference("analytics", checked)}
-        />
-        <ToggleRow
-          label="AI memory"
-          description={
-            savingPreference === "aiMemory"
-              ? "Зберігаю…"
-              : "Дозволяє персоналізувати AI-контекст між сесіями."
-          }
-          checked={preferences.aiMemory}
-          onChange={(checked) => void updatePreference("aiMemory", checked)}
-        />
-        <ToggleRow
-          label="Push-повідомлення"
-          description={
-            savingPreference === "pushNotifications"
-              ? "Зберігаю…"
-              : "Керує серверною згодою для нагадувань і системних пушів."
-          }
-          checked={preferences.pushNotifications}
-          onChange={(checked) =>
-            void updatePreference("pushNotifications", checked)
-          }
-        />
-        {!preferencesLoaded && preferencesError ? (
-          <p className="text-xs text-danger-strong" role="alert">
-            {preferencesError}
-          </p>
+            Тому тут вказівник, а не друга кнопка. Дублювати незворотну дію
+            в два місця означало б два шляхи до неї й два місця, де може
+            розʼїхатись підтвердження. Форма та сама, що у вказівника на
+            памʼять вище. */}
+        {shell ? (
+          <div className="flex flex-col items-start gap-1">
+            <p className="text-style-body text-subtle leading-relaxed">
+              Видалити акаунт разом з усіма даними можна в Профілі, у розділі
+              «Небезпечна зона».
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => shell.ui.setHubView("profile")}
+            >
+              Відкрити Профіль → Небезпечна зона
+            </Button>
+          </div>
         ) : null}
         <LegalLinks compact className="justify-start" />
-      </div>
+      </SettingsSubGroup>
 
-      <ConfirmModal
-        open={disableConfirmOpen}
-        title={m.disableConfirmTitle}
-        body={m.disableConfirmBody}
-        confirmLabel={m.disableConfirmButton}
-        danger
-        onConfirm={handleDisableConfirm}
-        onCancel={() => setDisableConfirmOpen(false)}
-      />
+      {/* PR-S4 (рішення founder-а 2026-09-14): обидві декларації переїхали
+          сюди з «Резервної копії». Вони стоять ПІСЛЯ згод і юрдоків
+          навмисно — спершу те, чим людина керує, потім те, що їй обіцяють.
+          Текст не змінено жодним словом, лише місце. */}
+      <SettingsSubGroup title={disclosure.subprocessors.title}>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.subprocessors.body}
+        </p>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.subprocessors.photoNote}
+        </p>
+      </SettingsSubGroup>
+
+      <SettingsSubGroup title={disclosure.sunset.title}>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.sunset.body}
+        </p>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.sunset.bankNote}
+        </p>
+      </SettingsSubGroup>
     </SettingsGroup>
   );
 }

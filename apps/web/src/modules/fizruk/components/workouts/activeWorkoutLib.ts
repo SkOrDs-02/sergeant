@@ -2,10 +2,11 @@
  * Helpers shared across the ActiveWorkoutPanel and its sub-components.
  * Pure functions only — no React, no hooks, no DOM access.
  */
+import { fmt } from "../../lib/numberFmt";
 
 /** Generate a short collision-safe id for client-side groups / sets. */
 export function uid(prefix = "id") {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**
@@ -18,6 +19,7 @@ export function isoToDatetimeLocalValue(iso: string | null | undefined) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: значення `<input type="datetime-local">` за специфікацією HTML — НАСТІННИЙ час пристрою, і саме його покаже пікер. Київські геттери тут дали б рядок, який не збігається з тим, що людина бачить у контролі.
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
@@ -55,6 +57,6 @@ export function calcCardioMetrics(
   }
   return {
     pace: `${paceMin}:${String(paceSec).padStart(2, "0")} хв/км`,
-    speed: `${speedKmh.toFixed(1)} км/год`,
+    speed: `${fmt(speedKmh, 1)} км/год`,
   };
 }

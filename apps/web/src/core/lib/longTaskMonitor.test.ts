@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   __resetForTests,
   getLongTasksSince,
@@ -133,9 +133,7 @@ describe("longTaskMonitor", () => {
     expect(all[all.length - 1]?.startTime).toBe(249);
   });
 
-  // Restore the real global after each describe-block so adjacent
-  // suites do not see the mocked constructor.
-  it.skip("teardown", () => {
+  afterAll(() => {
     if (originalPO) {
       (
         globalThis as unknown as {

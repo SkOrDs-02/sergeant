@@ -40,7 +40,7 @@ export function NutritionBarcodeScanScreen() {
     async (raw: string) => {
       const code = normalizeBarcodeRaw(raw);
       if (!code) {
-        setIdleHint("Очікуємо EAN/UPC (8–14 цифр).");
+        setIdleHint("Очікування EAN/UPC (8–14 цифр).");
         return;
       }
       if (handledRef.current === code) return;
@@ -85,7 +85,7 @@ export function NutritionBarcodeScanScreen() {
       } catch (e) {
         if (isApiError(e) && e.kind === "network") {
           setError(
-            e.message || "Немає мережі. Перевір з'єднання і спробуй знову.",
+            e.message || "Немає мережі. Перевір зʼєднання і спробуй знову.",
           );
         } else if (isApiError(e) && e.kind === "http") {
           setError(
@@ -118,7 +118,7 @@ export function NutritionBarcodeScanScreen() {
   if (!permission) {
     return (
       <View className="flex-1 p-4 justify-center">
-        <Text className="text-fg-muted">Перевіряємо дозвіл на камеру…</Text>
+        <Text className="text-fg-muted">Перевірка дозволу на камеру…</Text>
       </View>
     );
   }
@@ -139,7 +139,7 @@ export function NutritionBarcodeScanScreen() {
         </Text>
         {!canPrompt && (
           <Text className="text-fg-muted text-center">
-            Дозвіл було відхилено. Система більше не покаже діалог — відкрий
+            Дозвіл було відхилено. Система більше не покаже діалог, відкрий
             налаштування, щоб увімкнути камеру.
           </Text>
         )}
@@ -176,7 +176,7 @@ export function NutritionBarcodeScanScreen() {
         </Text>
         {productPreview.p.partial ? (
           <Text className="text-xs text-amber-700 text-center">
-            Дані часткові — уточни КБЖВ вручну після додавання.
+            Дані часткові, уточни КБЖВ вручну після додавання.
           </Text>
         ) : null}
         <Text className="text-sm text-fg-muted text-center">

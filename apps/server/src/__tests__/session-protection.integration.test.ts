@@ -127,11 +127,15 @@ interface RouteSpec {
 }
 
 /**
- * Walk Express 4's internal `_router.stack` to enumerate every
- * `(method, path)` pair registered by `createApp()`. We descend into
- * mounted Router instances because `registerRoutes` calls
- * `app.use(domainRouter)` for each domain — those routers register their
- * own `/api/...` paths internally (no prefix-mounting at the app level).
+ * Walk the Express router stack to enumerate every `(method, path)` pair
+ * registered by `createApp()`. We descend into mounted Router instances
+ * because `registerRoutes` calls `app.use(domainRouter)` for each domain —
+ * those routers register their own `/api/...` paths internally (no
+ * prefix-mounting at the app level).
+ *
+ * Express 5 exposes the router via the public `app.router` getter; Express 4
+ * lazily populated the private `app._router` after the first `.use()` call
+ * (see the same fallback in `routes/registerRoutes.test.ts`).
  *
  * We deliberately filter out:
  *   - HEAD methods (Express auto-mirrors GET handlers; the same chain
@@ -168,7 +172,8 @@ function listRoutes(express: Express): RouteSpec[] {
     }
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const router = (express as any)._router;
+  const expressAny = express as any;
+  const router = expressAny.router ?? expressAny._router;
   if (router?.stack) visit(router.stack);
   return out;
 }
@@ -200,16 +205,26 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/healthz",
   "/metrics",
   // Better Auth — its own cookie/session protocol; not a `requireSession`
-  // consumer. OAuth callbacks land here.
-  "/api/auth/*",
+  // consumer. OAuth callbacks land here. Express 5 registers this route as
+  // `/api/auth/{*splat}` (path-to-regexp v8 named wildcard), not the old
+  // Express 4 `/api/auth/*` string — EXEMPT_ROUTES uses exact string
+  // equality (see `isExempt`), so this literal must track the real path.
+  "/api/auth/{*splat}",
   // CSP report-only endpoint — browser sends from the Vercel SPA origin.
   "/api/csp-report",
   // Public web-vitals beacon from anonymous browsers.
   "/api/metrics/web-vitals",
   // Anonymous / public endpoints, gated by anonymous-quota or rate-limit.
-  "/api/privat", // bank lookup proxy
+  //
+  // NOT here: `/api/chat`, `/api/weekly-digest`. Both used to be anonymous
+  // (IP-keyed AI quota) and lived in this list, but the AI-abuse audit
+  // (finding A1, `docs/work/specs/audits/ai-abuse-2026-08-05.md`) found that an
+  // IP-keyed quota is not a real limit for an IPv6 client (a whole /64 under
+  // one subscription) and that both routes spend the owner's Anthropic key —
+  // a per-user feature, not a public proxy. Both now sit behind
+  // `requireSession()` (`routes/chat.ts`, `routes/weekly-digest.ts`) and are
+  // asserted `same-origin` like every other session-protected route below.
   "/api/barcode", // anonymous nutrition scan
-  "/api/chat", // anonymous chat with quota
   "/api/food-search", // anonymous food search
   "/api/email/unsubscribe", // public unsubscribe link
   "/api/email/unsubscribe/confirm", // public unsubscribe confirm
@@ -219,15 +234,29 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/api/v1/waitlist",
   "/api/waitlist/confirm",
   "/api/v1/waitlist/confirm",
+  // In-app фідбек — свідомо анонімний (див. шапку `routes/feedback.ts`):
+  // тестер бети має могти поскаржитись ще до логіну, і вимагати акаунт саме
+  // від людини, яка прийшла з проблемою, — найгірший момент для барʼєру.
+  // Сесія читається best-effort і лише щоб підвʼязати `user_id`; її
+  // відсутність не блокує запис. Захист — rate-limit 20/IP/год.
+  "/api/feedback",
+  "/api/v1/feedback",
   // Mono webhook — secret-in-URL, not session.
   "/api/mono/webhook",
   "/api/mono/webhook/:secret",
+  // Telegram Bot API webhook — provider-to-provider POST authenticated by
+  // `X-Telegram-Bot-Api-Secret-Token` through `isValidWebhookSecret` before
+  // the payload is processed; user-session middleware cannot apply here.
+  "/api/telegram/webhook",
   // Stripe webhook — signature-verified by Stripe lib; calling it
   // requires possession of `STRIPE_WEBHOOK_SECRET`, not a user session.
   "/api/billing/stripe-webhook",
-  // Anonymous AI endpoint — gated by `requireAnthropicKey` +
-  // `requireAiQuota` (anonymous bucket via IP), same shape as `/api/chat`.
-  "/api/weekly-digest",
+  // LiqPay / Plata callbacks are provider-to-provider webhooks. Each route
+  // verifies its provider signature before processing and cannot carry a
+  // browser session cookie by design.
+  "/api/billing/liqpay-callback",
+  "/api/billing/plata-charge",
+  "/api/billing/plata-status",
   // Public VAPID key — frontend reads this to subscribe a push
   // subscription. By design no session, no rate-limit (it's static).
   "/api/push/vapid-public",
@@ -243,6 +272,14 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   "/api/sync/pull",
   "/api/sync/pull-all",
   "/api/sync/push-all",
+  // OAuth-колбек Сільпо — повернення від зовнішнього провайдера на
+  // api-домен, де куки сесії немає НІ В КОГО: `BETTER_AUTH_URL` живе на
+  // Vercel-домені, а `PUBLIC_API_BASE_URL` — окремий сайт (інцидент
+  // 2026-08-25, PR #849). Носій контексту тут — `state` із
+  // `silpo_oauth_state`, звірений і спалений у хендлері; сесія на цьому
+  // роуті не потрібна за жодної топології. Решта `/api/silpo/*` лишається
+  // за `requireSession()`.
+  "/api/silpo/callback",
   // Internal-only push fan-out — M14 hardening uses `requireInternalIp`
   // + `requireApiSecret("API_SECRET")` with constant-time compare. The
   // surface is not exposed to browsers (CGN range / loopback only), so

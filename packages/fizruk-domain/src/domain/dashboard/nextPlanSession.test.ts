@@ -24,11 +24,43 @@ const TEMPLATES: readonly DashboardTemplateLike[] = [
 ];
 
 describe("getNextPlanSession", () => {
+  it("returns null for nullish plans or negative lookahead", () => {
+    expect(
+      getNextPlanSession({
+        plan: null as never,
+        templatesById: TEMPLATES,
+        now: FROZEN_NOW,
+      }),
+    ).toBeNull();
+    expect(
+      getNextPlanSession({
+        plan: stateWithDays({ "2026-04-22": "tpl-push" }),
+        templatesById: TEMPLATES,
+        now: FROZEN_NOW,
+        lookaheadDays: -1,
+      }),
+    ).toBeNull();
+  });
+
   it("returns null when nothing is scheduled in the window", () => {
     const plan = stateWithDays({});
     expect(
       getNextPlanSession({ plan, templatesById: TEMPLATES, now: FROZEN_NOW }),
     ).toBeNull();
+  });
+
+  it("skips days assigned an empty template id", () => {
+    const plan = stateWithDays({
+      "2026-04-22": "",
+      "2026-04-23": "tpl-push",
+    });
+
+    expect(
+      getNextPlanSession({ plan, templatesById: TEMPLATES, now: FROZEN_NOW }),
+    ).toMatchObject({
+      dateKey: "2026-04-23",
+      templateId: "tpl-push",
+    });
   });
 
   it("surfaces today when today has a template", () => {
@@ -88,6 +120,19 @@ describe("getNextPlanSession", () => {
     expect(result?.exerciseCount).toBe(0);
   });
 
+  it("returns exerciseCount=0 when a known template omits exerciseIds", () => {
+    const plan = stateWithDays({ "2026-04-22": "tpl-no-exercises" });
+    const result = getNextPlanSession({
+      plan,
+      templatesById: [{ id: "tpl-no-exercises", name: "Mobility" }],
+      now: FROZEN_NOW,
+    });
+    expect(result).toMatchObject({
+      templateName: "Mobility",
+      exerciseCount: 0,
+    });
+  });
+
   it("returns exerciseCount=null when template is unknown to the catalogue", () => {
     const plan = stateWithDays({ "2026-04-22": "tpl-deleted" });
     const result = getNextPlanSession({
@@ -100,29 +145,5 @@ describe("getNextPlanSession", () => {
       templateName: "Тренування",
       exerciseCount: null,
     });
-  });
-
-  it("accepts a Map as the template catalogue", () => {
-    const plan = stateWithDays({ "2026-04-22": "tpl-push" });
-    const byId = new Map<string, DashboardTemplateLike>(
-      TEMPLATES.map((t) => [t.id, t]),
-    );
-    const result = getNextPlanSession({
-      plan,
-      templatesById: byId,
-      now: FROZEN_NOW,
-    });
-    expect(result?.templateName).toBe("Push");
-  });
-
-  it("accepts a Record object as the template catalogue", () => {
-    const plan = stateWithDays({ "2026-04-22": "tpl-push" });
-    const byId = Object.fromEntries(TEMPLATES.map((t) => [t.id, t]));
-    const result = getNextPlanSession({
-      plan,
-      templatesById: byId,
-      now: FROZEN_NOW,
-    });
-    expect(result?.templateName).toBe("Push");
   });
 });

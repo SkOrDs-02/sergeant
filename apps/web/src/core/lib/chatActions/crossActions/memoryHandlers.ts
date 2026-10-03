@@ -24,7 +24,7 @@ export function remember(action: RememberAction): ChatActionResult {
     writeMemoryEntries(result.entries);
     const meta = CATEGORY_META[result.entry.category];
     const label = meta?.label ?? result.entry.category;
-    const resultStr = `${result.created ? "Запам'ятав" : "Оновив"}: ${result.entry.fact} (${label}, id:${result.entry.id})`;
+    const resultStr = `${result.created ? "Запамʼятав" : "Оновив"}: ${result.entry.fact} (${label}, id:${result.entry.id})`;
     const entryId = result.entry.id;
     // Undo:
     // - якщо був created — просто видаляємо факт;
@@ -65,7 +65,7 @@ export function forget(action: ForgetAction): string {
 export function myProfile(action: MyProfileAction): string {
   const { category } = (action as MyProfileAction).input || {};
   const profile = readMemoryEntries();
-  if (profile.length === 0) return "Профіль пам'яті порожній.";
+  if (profile.length === 0) return "Профіль памʼяті порожній.";
   const cat = category?.trim().toLowerCase();
   const filtered = cat
     ? profile.filter((entry) => entry.category.toLowerCase() === cat)

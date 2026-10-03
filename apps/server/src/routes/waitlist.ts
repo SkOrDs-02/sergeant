@@ -5,12 +5,7 @@ import {
   WaitlistSubmitResponseSchema,
   type WaitlistSubmitResponse,
 } from "@sergeant/shared";
-import {
-  asyncHandler,
-  rateLimitExpress,
-  setModule,
-  parseBody,
-} from "../http/index.js";
+import { rateLimitExpress, setModule, parseBody } from "../http/index.js";
 import { getSessionUser } from "../auth.js";
 import pool from "../db.js";
 import { submitWaitlistEntry } from "../modules/waitlist/waitlistService.js";
@@ -32,15 +27,35 @@ import { submitWaitlistEntry } from "../modules/waitlist/waitlistService.js";
  *  - `created: true` — новий запис.
  *  - `created: false` — email уже у списку (idempotent).
  *
- * Жодного "уже зареєстровано" 4xx — не розкриваємо чи email уже у БД, щоб
- * endpoint не служив enumeration-oracle для існуючих користувачів.
+ * Що саме `created` розкриває, і чому це свідомо лишено. Попередня редакція
+ * цього коментаря стверджувала, що ми «не розкриваємо чи email уже у БД» —
+ * це було просто неправдою: `created` є рівно тим прапорцем, а
+ * `WaitlistForm.tsx` показує на ньому два різні тости. Тобто endpoint —
+ * оракул членства у ВЕЙТЛИСТІ, і вдавати інше не можна.
+ *
+ * Чому це прийнятно, на відміну від оракула по акаунтах. `waitlist_entries`
+ * — окрема таблиця від акаунтів Better Auth: `created: false` означає «цей
+ * email колись лишив інтерес до Pro», а не «на цей email є акаунт». Перше
+ * не дає ні входу, ні підстав для цільового фішингу «ваш акаунт у
+ * Sergeant»; друге давало б, і саме тому auth-роути (`sign-in`,
+ * `request-password-reset`) поводяться однаково на існуючий і неіснуючий
+ * email, а тутешній rate-limit (10/IP/год) ще й робить перебір списку
+ * дорогим.
+ *
+ * **Інваріант, який тут легко зламати:** щойно цей endpoint почне
+ * заглядати в таблицю користувачів (наприклад, «не дублюй waitlist для
+ * вже зареєстрованих»), `created` МИТТЮ стане оракулом по акаунтах — і
+ * тоді його треба прибирати з відповіді разом із двома тостами у
+ * `WaitlistForm.tsx`, типом у `@sergeant/api-client` і
+ * `WaitlistSubmitResponseSchema` (Hard Rule #3 — трійця рухається разом).
+ * Жодного "уже зареєстровано" 4xx тут немає і бути не повинно.
  */
 export function createWaitlistRouter(): Router {
   const r = Router();
   r.use("/api/v1/waitlist", setModule("waitlist"));
   r.use("/api/waitlist", setModule("waitlist"));
 
-  const handler = asyncHandler(async (req: Request, res: Response) => {
+  const handler = async (req: Request, res: Response) => {
     const parsed = parseBody(WaitlistSubmitSchema, req);
 
     // Опційне привʼязування до сесії, якщо користувач залогінений. Не
@@ -74,7 +89,7 @@ export function createWaitlistRouter(): Router {
       created: result.created,
     });
     res.json(payload);
-  });
+  };
 
   r.post(
     "/api/v1/waitlist",

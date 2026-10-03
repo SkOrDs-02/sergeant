@@ -1,6 +1,5 @@
-import { Suspense, type CSSProperties } from "react";
+import { Suspense, useCallback } from "react";
 import { type User } from "@sergeant/shared";
-import { AIPill } from "@shared/components/ui/AIPill";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
 import { HubBottomNav } from "./HubBottomNav";
@@ -9,18 +8,14 @@ import { type HubNotification } from "./NotificationBell";
 import { HubMainContent } from "./HubMainContent";
 import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
-import { HintsOrchestrator } from "../hints/HintsOrchestrator";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import {
-  shouldShowOnboarding,
-  isDemoActive,
-} from "../onboarding/onboardingGate";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
+import { MemoryOnlyStorageBanner } from "../durability/MemoryOnlyStorageBanner";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
-import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 
 // The shortcuts modal body is heavy (portal + focus-trap + key grid) and
 // only renders on the `?` hotkey, so it ships as its own chunk and loads
@@ -51,7 +46,8 @@ export interface HubHomeViewProps {
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
   updateAvailable: boolean;
   onApplyUpdate: () => void;
   openModule: HubNavigation["openModule"];
@@ -74,13 +70,29 @@ export function HubHomeView(props: HubHomeViewProps) {
     onInstall,
     onDismissInstall,
     iosVisible,
-    onDismissIos,
+    onDismissIosForever,
+    onSnoozeIos,
     updateAvailable,
     onApplyUpdate,
     openModule,
     shortcutsOpen,
     onCloseShortcuts,
   } = props;
+
+  // Базова лінія перед віссю дії хабу (P3): `MODULE_OPENED` стріляє в
+  // самому `openModule`, а джерело їде опцією. Прямий проп із головної
+  // (плитка, secondary-лінк hero, картка результату FTUX) — `hub_dashboard`;
+  // саму плитку всередині нього видно окремо по `HUB_MODULE_TILE_CLICKED`.
+  // Пошук через модалку — `search`. Решта входів іде шиною і несе джерело
+  // в деталях події.
+  const openFromDashboard = useCallback<HubNavigation["openModule"]>(
+    (id, opts) => openModule(id, { ...opts, source: "hub_dashboard" }),
+    [openModule],
+  );
+  const openFromSearch = useCallback<HubNavigation["openModule"]>(
+    (id, opts) => openModule(id, { ...opts, source: "search" }),
+    [openModule],
+  );
 
   // FTUX session = the window between the splash and the user's first
   // real (non-demo) entry. During this window we intentionally
@@ -104,8 +116,20 @@ export function HubHomeView(props: HubHomeViewProps) {
   // вискакував би одразу при вході в demo («Подивитись приклад») —
   // юзеру, що тільки відкрив приклад і ще нічого не робив, changelog
   // недоречний.
+  //
+  // Самих цих умов НЕ досить: новий акаунт перетинає обидві за кілька
+  // хвилин (перший запис і є виходом із FTUX-вікна), тож «returning user»
+  // тут насправді означало «пробув тут кілька хвилин». Другу половину
+  // гейта тримає `pickRelease` — вона глушить ноти, старші за сам акаунт.
+  //
+  // `!authLoading` — не косметика, а частина того самого гейта: поки сесія
+  // резолвиться, `user` ще `null`, тобто й `accountCreatedAt`, і
+  // 2.5-секундний таймер устиг би відкрити реліз БЕЗ перевірки віку акаунта.
+  // `shownRef` усередині хука одноразовий, тож приїзд `createdAt` після
+  // відкриття вже нічого не змінив би (ревʼю PR #1053).
   const whatsNew = useWhatsNew({
-    enabled: hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
+    enabled: !authLoading && hasFirstRealEntry && !inFtuxSession,
+    accountCreatedAt: user?.createdAt ?? null,
   });
 
   // C · Контроль (home redesign 2026-06): system chrome banners (SW update,
@@ -142,37 +166,37 @@ export function HubHomeView(props: HubHomeViewProps) {
     // <MeshBackground> so the mesh-gradient surface (`.bg-mesh` utility
     // from theme.css) renders behind all hub content. `h-dvh flex flex-col
     // overflow-hidden` is baked into MeshBackground; the remaining
-    // `safe-area-pt page-enter` slot through as className.
+    // `safe-area-pt` slots through as className. The full-height shell must
+    // not carry `page-enter`: its translateY keyframe creates document-level
+    // overflow on iOS and moves bottom-edge hit targets during the gesture.
     // Sergeant v2 redesign Phase 1 (T6 synergy) — exposes
-    // `--bottom-nav-height` so portaled <Sheet>s and the AIPill below
-    // resolve their `var(--bottom-nav-height, 0px)` calc against a real
-    // 60px floor instead of 0px. Closes M4 + M6 (Sheet positioning on
-    // hub) with the same single edit. The 60px matches the inner
-    // `h-[60px]` track of HubBottomNav (see HubBottomNav.tsx tablist).
-    <MeshBackground
-      className="safe-area-pt page-enter"
-      style={{ "--bottom-nav-height": "60px" } as CSSProperties}
-    >
-      <HintsOrchestrator
-        inFtuxSession={inFtuxSession}
-        hasFirstRealEntry={hasFirstRealEntry}
-      />
+    // `--bottom-nav-height` so portaled <Sheet>s resolve their
+    // `var(--bottom-nav-height, 0px)` calc against the nav's real box
+    // instead of 0px. Closes M4 + M6 (Sheet positioning on hub). The
+    // `bottom-nav-height-var` utility (styles/utilities.css) tracks the
+    // actual occupied height — inner track + `bottom-nav-shell`'s border
+    // and top padding — including the coarse-pointer 64px track, so it
+    // stays in sync with HubBottomNav.tsx instead of guessing here.
+    <MeshBackground className="safe-area-pt bottom-nav-height-var">
       <OfflineBanner />
 
       <HubHeader
         onOpenSearch={() => ui.setSearchOpen(true)}
-        onOpenPrivacy={() => openHubSettingsSection("privacy")}
         user={user}
         authLoading={authLoading}
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
+        activeTab={ui.hubView}
       />
 
+      <MemoryOnlyStorageBanner />
+
       <HubMainContent
-        onOpenModule={openModule}
+        onOpenModule={openFromDashboard}
         iosVisible={iosVisible}
-        onDismissIos={onDismissIos}
+        onDismissIosForever={onDismissIosForever}
+        onSnoozeIos={onSnoozeIos}
         hubView={ui.hubView}
         user={user}
         onShowAuth={onOpenAuth}
@@ -200,8 +224,9 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubModals
         searchOpen={ui.searchOpen}
+        searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
-        onOpenModule={openModule}
+        onOpenModule={openFromSearch}
       />
       {shortcutsOpen && (
         <Suspense fallback={null}>
@@ -220,17 +245,11 @@ export function HubHomeView(props: HubHomeViewProps) {
         />
       </Suspense>
 
-      {/* Sergeant v2 redesign (2026-05, PR-7b) — persistent AI-assistant
-          pill replaces the previous sparkle FAB. Shown only on the
-          dashboard tab + hidden during FTUX so the first-action signal
-          stays the single CTA. `bottom={96}` lifts the pill above the
-          floating glass HubBottomNav (which sits at `mb-3` with ~60px
-          inner height). `module={null}` selects the hub-level
-          placeholder copy ("Запитай Sergeant…"). AIPill itself owns the
-          navigate(CHAT_PATH) handler — caller doesn't need to plumb it. */}
-      {ui.hubView === "dashboard" && !inFtuxSession && (
-        <AIPill module={null} bottom={96} />
-      )}
+      {/* The global AI-assistant entry now lives in <HubHeader> (top-bar,
+          brand-tinted sparkle) so it is present on every hub tab and does
+          not depend on the dashboard-only FTUX gate. The previous
+          dashboard FAB duplicated that entry and was invisible on the
+          empty home + reports/profile tabs — user report 2026-07-03. */}
     </MeshBackground>
   );
 }

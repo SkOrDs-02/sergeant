@@ -1,22 +1,29 @@
 import { Suspense, type ReactNode } from "react";
 import { lazyImport } from "../lib/lazyImport";
-import { shouldShowOnboarding } from "../onboarding/onboardingGate";
+import {
+  markOnboardingDone,
+  shouldShowOnboarding,
+} from "../onboarding/onboardingGate";
 import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
 import {
   ASSISTANT_PATH,
+  CAPABILITIES_PATH,
   CHAT_PATH,
   DESIGN_PATH,
   LEGAL_COOKIES_PATH,
   LEGAL_OFFER_PATH,
   LEGAL_PRIVACY_PATH,
   LEGAL_TERMS_PATH,
+  OFFLINE_PATH,
   PRICING_PATH,
+  SERVER_ERROR_PATH,
   STATUS_PATH,
   PROFILE_PATH,
   RESET_PASSWORD_PATH,
   SIGN_IN_ALIAS_PATHS,
   SIGN_IN_PATH,
+  VERIFY_EMAIL_PATH,
   WELCOME_PATH,
   isPathBasedModulePath,
 } from "./appPaths";
@@ -34,9 +41,17 @@ const WelcomeScreen = lazyImport(
   "WelcomeScreen",
 );
 const AuthPage = lazyImport(() => import("../auth/AuthPage"), "AuthPage");
+const CapabilitiesPage = lazyImport(
+  () => import("../capabilities/CapabilitiesPage"),
+  "CapabilitiesPage",
+);
 const ResetPasswordPage = lazyImport(
   () => import("../auth/ResetPasswordPage"),
   "ResetPasswordPage",
+);
+const VerifyEmailPage = lazyImport(
+  () => import("../auth/VerifyEmailPage"),
+  "VerifyEmailPage",
 );
 // Internal styleguide — dev-only. The `import.meta.env.DEV` guard lets Vite
 // statically drop the `import()` (and the whole DesignShowcase chunk) from
@@ -49,7 +64,6 @@ const AssistantCataloguePage = lazyImport(
   "AssistantCataloguePage",
 );
 const PricingPage = lazyImport(() => import("../PricingPage"), "PricingPage");
-const LandingPage = lazyImport(() => import("../LandingPage"), "LandingPage");
 const LegalPage = lazyImport(() => import("../legal/LegalPage"), "LegalPage");
 const StatusPage = lazyImport(
   () => import("../status/StatusPage"),
@@ -62,6 +76,14 @@ const HubChatPage = lazyImport(
 const NotFoundPage = lazyImport(
   () => import("../errors/NotFoundPage"),
   "NotFoundPage",
+);
+const OfflinePage = lazyImport(
+  () => import("../errors/OfflinePage"),
+  "OfflinePage",
+);
+const ServerErrorPage = lazyImport(
+  () => import("../errors/ServerErrorPage"),
+  "ServerErrorPage",
 );
 
 export interface StandaloneRouteArgs {
@@ -126,33 +148,25 @@ export function defineStandaloneRoute<
 }
 
 const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
-  // `/` — public landing page for non-auth visitors (initiative 0010
-  // Phase 6.1, audit `2026-05-13-revenue-monetization-roast.md` §P1-3).
-  // We only render the marketing surface when there's no session AND
-  // no existing local data: that keeps local-first users (who never
-  // signed up but already populated the app) on their Hub home, and
-  // keeps the funnel-targeted landing for genuine fresh visitors.
-  // Authed users + warm local-first installs fall through to the
-  // existing Hub composition by returning `null`.
+  // `/` — маршрут лишається в реєстрі ЛИШЕ заради контракту відомих
+  // шляхів (`STANDALONE_ROUTE_PATHS` живить 404-гвардію нижче). Рендером
+  // кореня володіє `HubPage`.
+  //
+  // Тут раніше жив маркетинговий `LandingPage` (initiative 0010 Phase 6.1).
+  // Дизайн-аудит 2026-07 (цикл 3) виміряв, що він **недосяжний**: на
+  // prod-збірці з живим API 0 із 5 свіжих візитерів його побачили. Причина —
+  // гонка двох гейтів на ту саму умову: цей чекав на `authLoading`, а
+  // редирект на `/welcome` у `HubPage` — ні, і локальний стор осідав раніше
+  // за раунд-тріп до `/api/auth`. Вирок аудиту: не лагодити гонку, а зняти
+  // маршрут — `/welcome` виконує роботу лендинга краще (цінність через
+  // пікер, demo в один клік, воронка 3 кліки / 0 полів), і ставити
+  // slop-екран ПЕРЕД найсильнішим екраном воронки немає сенсу.
+  //
+  // Після зняття рішення про корінь ухвалює рівно одна умова
+  // (`storageReady` у `HubPage`) — гонки більше немає.
   defineStandaloneRoute({
     paths: ["/"],
-    render: ({ user, authLoading, storageReady, onLeaveWelcome }) => {
-      if (authLoading || user) return null;
-      // Anon visitor: landing-vs-Hub depends on `shouldShowOnboarding()`, which
-      // reads the SQLite-backed store. Before it resolves, a returning
-      // local-first user (who has data but no session) would be misread as a
-      // fresh visitor and ambushed by the marketing landing on every reload —
-      // splash until the store settles, then decide.
-      if (!storageReady) return <PageLoader />;
-      if (!shouldShowOnboarding()) return null;
-      return (
-        <Suspense fallback={<PageLoader />}>
-          <div className="page-enter">
-            <LandingPage onContinueWithoutAccount={onLeaveWelcome} />
-          </div>
-        </Suspense>
-      );
-    },
+    render: () => null,
   }),
 
   // `/sign-in` is a URL-addressable auth entry. Already-authenticated
@@ -166,11 +180,29 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [SIGN_IN_PATH],
     render: ({ user, authLoading, onLeaveAuth }) => {
       if (!authLoading && user) {
+        // PR-H7 (design-audit 2026-09-13): closes the local onboarding
+        // gate exactly here — once a session is CONFIRMED (fresh sign-in
+        // *or* an already-restored one), never before. `WelcomeScreen`
+        // used to call `markOnboardingDone()` the instant "У мене вже є
+        // акаунт" was tapped, before knowing whether the visitor actually
+        // had one. A mistaken tap that then hit "Поки що пропустити"
+        // (`onLeaveAuth`) landed on a hub with the FTUX gate already
+        // closed forever — no splash, no "З чого почнемо?" hero, nothing.
+        // Idempotent write; harmless if this render fires more than once
+        // before `<RedirectTo>`'s effect navigates away.
+        markOnboardingDone();
         return <RedirectTo to="/" />;
       }
       return (
         <Suspense fallback={<PageLoader />}>
-          <div className="page-enter">
+          {/* AI-DANGER: `page-enter` — проміжний блок між `#root` і `MeshBackground`.
+              Без явної висоти він auto, тож `h-app-dvh` (=`height:100%`) усередині
+              резолвиться в `auto`, шел росте під контент, а `body{overflow:hidden}`
+              просто зрізає низ — власний `overflow-y-auto` шела при цьому не має
+              чого скролити. Саме так на 1280×720 ставав недосяжним футер із
+              легальними лінками, а на 1280×633 — кнопка «Зареєструватися»
+              (browser QA 2026-08-23). Той самий токен уже стоїть на `/legal/*`. */}
+          <div className="page-enter h-app-dvh min-h-0">
             <AuthPage onContinueWithoutAccount={onLeaveAuth} />
           </div>
         </Suspense>
@@ -194,8 +226,27 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [RESET_PASSWORD_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        {/* Висота — з тієї ж причини, що на `/sign-in`: цей екран теж стоїть
+            на `MeshBackground` з власним `overflow-y-auto`. */}
+        <div className="page-enter h-app-dvh min-h-0">
           <ResetPasswordPage />
+        </div>
+      </Suspense>
+    ),
+  }),
+
+  // `/verify-email` — лендинг Better Auth після `GET /api/auth/verify-email`.
+  // Рендеримо безумовно: на цю адресу приходять із поштового клієнта, і сесії
+  // в цьому браузері може не бути взагалі (лист відкрили на іншому пристрої).
+  // Гейт на `user` тут відрізав би саме той сценарій, заради якого сторінка
+  // існує.
+  defineStandaloneRoute({
+    paths: [VERIFY_EMAIL_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        {/* Див. коментар на `/sign-in` — той самий скрол-контракт. */}
+        <div className="page-enter h-app-dvh min-h-0">
+          <VerifyEmailPage />
         </div>
       </Suspense>
     ),
@@ -241,13 +292,18 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // `/pricing` — Phase 0 monetization рейки: статична сторінка з тарифами
   // і waitlist-формою. Анонімна (auth не вимагається), бо основний
   // траффік — неавторизовані відвідувачі, які ще не зробили sign-up.
+  // ОПТ-АУТ з `page-enter` — «one entry system per page» (Hard Rule #17).
+  // `PricingPage` має власну вхідну хореографію (стагер тарифних карток),
+  // і обгортка додавала другу: виміряно на prod 2 RESPONSE одночасно при
+  // ліміті «1 AMBIENT + 1 RESPONSE». Правило прямо забороняє загортати
+  // компонент із власним входом у ще один вхід. Той самий опт-аут уже де-факто
+  // діяв для `/welcome` (він теж рендериться без `page-enter`) — тут він
+  // просто стає явним.
   defineStandaloneRoute({
     paths: [PRICING_PATH],
     render: () => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
-          <PricingPage />
-        </div>
+        <PricingPage />
       </Suspense>
     ),
   }),
@@ -261,7 +317,7 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     ],
     render: ({ pathname }) => (
       <Suspense fallback={<PageLoader />}>
-        <div className="page-enter">
+        <div className="page-enter h-app-dvh min-h-0 overflow-hidden">
           <LegalPage pathname={pathname} />
         </div>
       </Suspense>
@@ -284,12 +340,54 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     ),
   }),
 
+  // `/offline` — canonical offline surface (page-audit-10 F1 follow-up).
+  // Directly navigable / deep-linkable / bookmarkable. The SW's offline
+  // navigation fallback (`sw/cache.ts`'s `setCatchHandler`) already serves
+  // the precached SPA shell for any uncached navigation while offline, so
+  // this entry needs no additional SW wiring — once `/offline` is a real
+  // client route, the existing fallback covers it for free. No auth gate:
+  // an offline visitor may not have a resolved session yet.
+  defineStandaloneRoute({
+    paths: [OFFLINE_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        <OfflinePage />
+      </Suspense>
+    ),
+  }),
+
+  // `/500` — canonical unrecoverable-render-error surface. Mounted as the
+  // top-level `<ErrorBoundary>` fallback in `main.tsx`; registered here too
+  // so it stays directly navigable/deep-linkable for parity with `/offline`
+  // (e.g. a support link that says "if this keeps happening, visit /500").
+  defineStandaloneRoute({
+    paths: [SERVER_ERROR_PATH],
+    render: () => (
+      <Suspense fallback={<PageLoader />}>
+        <ServerErrorPage />
+      </Suspense>
+    ),
+  }),
+
   defineStandaloneRoute({
     paths: [ASSISTANT_PATH],
     render: ({ onAssistantClose }) => (
       <Suspense fallback={<PageLoader />}>
         <div className="page-enter">
           <AssistantCataloguePage onClose={onAssistantClose} />
+        </div>
+      </Suspense>
+    ),
+  }),
+
+  // Каталог можливостей додатка. Замінив колишню «вступну екскурсію», що
+  // лише переграла вітальний екран у read-only.
+  defineStandaloneRoute({
+    paths: [CAPABILITIES_PATH],
+    render: ({ onAssistantClose }) => (
+      <Suspense fallback={<PageLoader />}>
+        <div className="page-enter">
+          <CapabilitiesPage onClose={onAssistantClose} />
         </div>
       </Suspense>
     ),
@@ -309,7 +407,24 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
   // the dashboard instead of being asked to re-onboard.
   defineStandaloneRoute({
     paths: [WELCOME_PATH],
-    render: ({ storageReady, onLeaveWelcome, onOpenAuth }) => {
+    render: ({
+      user,
+      authLoading,
+      storageReady,
+      onLeaveWelcome,
+      onOpenAuth,
+    }) => {
+      // An authenticated user is never a first-time visitor. `/welcome` is the
+      // anonymous surface — a demo dashboard plus «Почати» / «У мене вже є
+      // акаунт» — and the local-only `shouldShowOnboarding()` heuristic below
+      // cannot see the session, so a user who signed in on a clean device was
+      // shown the splash and offered to log into the account they were already
+      // signed into (аудит 2026-08-04, знахідка 5). Same `!authLoading && user`
+      // shape as the `/sign-in` entry above: defer until the session settles so
+      // a freshly-mounted page does not bounce a genuine visitor away.
+      if (!authLoading && user) {
+        return <RedirectTo to="/" />;
+      }
       // Until the persistent store resolves we cannot tell a genuine first-time
       // visitor (show the splash screen) from a returning user who deep-linked
       // `/welcome` (bounce to `/`). Render a loader rather than flashing the

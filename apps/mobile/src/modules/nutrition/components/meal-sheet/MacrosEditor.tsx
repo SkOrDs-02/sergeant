@@ -14,7 +14,7 @@ const FIELDS = [
   { key: "kcal" as const, label: "Ккал", placeholder: "350" },
   { key: "protein_g" as const, label: "Білки г", placeholder: "12" },
   { key: "fat_g" as const, label: "Жири г", placeholder: "6" },
-  { key: "carbs_g" as const, label: "Вуглев. г", placeholder: "60" },
+  { key: "carbs_g" as const, label: "Вугл г", placeholder: "60" },
 ];
 
 interface MacrosEditorProps {
@@ -26,7 +26,6 @@ interface MacrosEditorProps {
 export function MacrosEditor({ form, field }: MacrosEditorProps) {
   return (
     <View className="mb-1">
-      {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- section heading in form */}
       <Text className="text-xs font-bold uppercase text-fg-muted mb-2 tracking-wider">
         КБЖВ
       </Text>

@@ -22,10 +22,8 @@ describe("finykKeys — module namespace containment", () => {
     const staticKeys = [
       finykKeys.all,
       finykKeys.mono,
-      finykKeys.monoStatements,
       finykKeys.monoSyncState,
       finykKeys.monoBackfillProgress,
-      finykKeys.monoAccounts,
       finykKeys.monoWebhookAccounts,
       finykKeys.monoWebhookTransactionsPrefix,
       finykKeys.privat,
@@ -36,12 +34,8 @@ describe("finykKeys — module namespace containment", () => {
 
     const dynamicKeys = [
       finykKeys.proactiveAdvice("2026-05", "food"),
-      finykKeys.monoClientInfo("hash"),
-      finykKeys.monoStatement("acc1", 1, 2),
       finykKeys.monoTransactionsDb("a", "b", "c"),
       finykKeys.monoWebhookTransactions(),
-      finykKeys.privatAccounts("idhash"),
-      finykKeys.privatStatement("idhash", "acc", "a", "b"),
     ];
     for (const key of dynamicKeys) {
       expect(key[0]).toBe(FINYK_ROOT);
@@ -86,30 +80,5 @@ describe("finykKeys — module namespace containment", () => {
     );
     expect(JSON.stringify(base)).not.toBe(JSON.stringify(otherAccount));
     expect(JSON.stringify(base)).not.toBe(JSON.stringify(otherRange));
-  });
-
-  it("privatStatement distinguishes account and time-range tails", () => {
-    const a = finykKeys.privatStatement(
-      "id",
-      "acc",
-      "2026-01-01",
-      "2026-01-31",
-    );
-    const b = finykKeys.privatStatement(
-      "id",
-      "acc",
-      "2026-01-01",
-      "2026-02-28",
-    );
-    expect(JSON.stringify(a)).not.toBe(JSON.stringify(b));
-  });
-
-  it("never leaks a raw token into a key (client-info uses a hash tail)", () => {
-    // The hook hashes the token before keying; the selector itself only
-    // ever sees the already-hashed value, so a 64-char raw PAT must never
-    // appear verbatim in the produced tuple.
-    const rawToken = "u_token_0123456789abcdef0123456789abcdef";
-    const key = finykKeys.monoClientInfo("8charsha");
-    expect(JSON.stringify(key)).not.toContain(rawToken);
   });
 });

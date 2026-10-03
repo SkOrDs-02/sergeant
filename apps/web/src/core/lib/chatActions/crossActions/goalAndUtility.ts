@@ -4,6 +4,7 @@ import {
   persistNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import type { ConvertUnitsAction, SetGoalAction } from "../types";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function setGoal(action: SetGoalAction): string {
   const {
@@ -27,7 +28,7 @@ export function setGoal(action: SetGoalAction): string {
     }>
   >("hub_goals_v1", []);
   const goal: (typeof goals)[0] = {
-    id: `goal_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `goal_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     description: desc,
     createdAt: new Date().toISOString(),
   };
@@ -36,7 +37,7 @@ export function setGoal(action: SetGoalAction): string {
     const tw = Number(target_weight_kg);
     if (Number.isFinite(tw) && tw > 0) {
       goal.targetWeightKg = tw;
-      parts.push(`цільова вага: ${tw} кг`);
+      parts.push(`цільова вага: ${formatNumberUk(tw)} кг`);
     }
   }
   if (target_date && /^\d{4}-\d{2}-\d{2}$/.test(target_date)) {
@@ -47,7 +48,7 @@ export function setGoal(action: SetGoalAction): string {
     const dk = Number(daily_kcal);
     if (Number.isFinite(dk) && dk > 0) {
       goal.dailyKcal = dk;
-      parts.push(`калорії: ${dk} ккал/день`);
+      parts.push(`калорії: ${formatNumberUk(dk)} ккал/день`);
       // Persist the kcal target through the canonical nutrition store
       // (dual-writes to SQLite). The legacy `nutrition_prefs_v1` LS key is
       // tombstoned — writing it raw never reached the module UI.
@@ -92,5 +93,5 @@ export function convertUnits(action: ConvertUnitsAction): string {
   if (!fn)
     return `Невідома конвертація: ${f} → ${t}. Підтримуються: kg↔lb, cm↔in, km↔mi, c↔f, kcal↔kj, m↔ft, g↔oz`;
   const result = Math.round(fn(v) * 100) / 100;
-  return `${v} ${f} = ${result} ${t}`;
+  return `${formatNumberUk(v)} ${f} = ${formatNumberUk(result, { maximumFractionDigits: 2 })} ${t}`;
 }

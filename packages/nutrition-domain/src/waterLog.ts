@@ -5,8 +5,12 @@
  * I/O-адаптером, який бере `createModuleStorage` і ці помічники; `apps/mobile`
  * буде імпортувати ці ж функції напряму з `@sergeant/nutrition-domain` і
  * підкладати MMKV-адаптер.
+ *
+ * `today` тут — день ПРИСТРОЮ (ADR-0078), не Kyiv: пляшка води випита о
+ * 23:30 місцевого часу мусить зарахуватись у той день, який бачить сам
+ * користувач, а не в завтрашній київський.
  */
-import { toLocalISODate } from "@sergeant/shared";
+import { deviceDayKey } from "./deviceDayKey.js";
 
 export const WATER_LOG_KEY = "nutrition_water_v1";
 
@@ -33,7 +37,7 @@ export function normalizeWaterLog(raw: unknown): WaterLog {
 
 export function getTodayWaterMl(log: unknown): number {
   if (!log || typeof log !== "object") return 0;
-  const today = toLocalISODate();
+  const today = deviceDayKey();
   const n = Number((log as Record<string, unknown>)[today]);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
@@ -42,7 +46,7 @@ export function addWaterMl(log: unknown, ml: unknown): WaterLog {
   const delta = sanitizeMl(ml);
   if (delta <= 0) return normalizeWaterLog(log);
   const base = normalizeWaterLog(log);
-  const today = toLocalISODate();
+  const today = deviceDayKey();
   return { ...base, [today]: (base[today] || 0) + delta };
 }
 
@@ -50,7 +54,7 @@ export function subtractWaterMl(log: unknown, ml: unknown): WaterLog {
   const delta = sanitizeMl(ml);
   const base = normalizeWaterLog(log);
   if (delta <= 0) return base;
-  const today = toLocalISODate();
+  const today = deviceDayKey();
   const next = (base[today] || 0) - delta;
   if (next <= 0) {
     const { [today]: _removed, ...rest } = base;
@@ -62,7 +66,7 @@ export function subtractWaterMl(log: unknown, ml: unknown): WaterLog {
 
 export function resetTodayWater(log: unknown): WaterLog {
   const base = normalizeWaterLog(log);
-  const today = toLocalISODate();
+  const today = deviceDayKey();
   const { [today]: _removed, ...rest } = base;
   void _removed;
   return rest;

@@ -9,24 +9,49 @@
  * available. Steps:
  *
  *  1. Runs the fizruk SQLite migrations so the tables exist.
- *  2. Stage 8 PR #057f-tombstone: imports any residual LS values
- *     (`fizruk_workouts_v1`, `fizruk_custom_exercises_v1`,
- *     `fizruk_measurements_v1`) into the SQLite tables and deletes
- *     the LS keys. Idempotent; subsequent boots no-op once the LS
- *     keys are gone.
- *  3. Performs the initial `refreshFizrukSqliteState()` so the cache
+ *  2. Performs the initial `refreshFizrukSqliteState()` so the cache
  *     is warm before the first overlay read.
+ *  3. W1-WEIGHT-SOT стадія 3: `bootstrapBodyWeightFromBiometrics()`
+ *     seeds `fizruk_measurements` from `hub_biometrics.weightKg` when
+ *     the journal has no weight sample yet. Idempotent; no-ops once a
+ *     weight entry exists in either fizruk store.
  *
  * The function is idempotent — calling it twice within the same
  * process is a no-op on the second call.
+ *
+ * Stage 8 PR #057f-tombstone originally also drained any residual LS
+ * values (`fizruk_workouts_v1`, `fizruk_custom_exercises_v1`,
+ * `fizruk_measurements_v1`) into SQLite here via
+ * `importFizrukResidualFromLs` (`./residualImport.ts`). That one-time
+ * pre-beta drain was removed 2026-08 once no testers were left with
+ * pre-SQLite LS data to migrate — see git history for the prior
+ * implementation.
+ *
+ * Між 2026-08 і 2026-09 тут стояв ще один крок — місток демо-сіду
+ * (`importFizrukDemoSeed`), який під демо-прапорцем доносив засіяний
+ * LS-payload до SQLite. Демо-режим знято 2026-09-17 разом із ним.
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
+import { bootstrapBodyWeightFromBiometrics } from "./bodyWeightBootstrap.js";
 import { migrateFizruk } from "./clientMigrate.js";
-import { importFizrukResidualFromLs } from "./residualImport.js";
-import { refreshFizrukSqliteState } from "./sqliteReader.js";
+import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
+import {
+  getCachedFizrukSqliteState,
+  refreshFizrukSqliteState,
+} from "./sqliteReader.js";
+
+// AI-CONTEXT: FTUX-детекція «чи є справжні записи» читає канонічний
+// warm-cache через реєстр (`core/onboarding/realEntryProbe`), а не
+// tombstone-нутий LS-ключ `fizruk_workouts_v1`. Реєструємось на module-scope:
+// цей файл вантажиться лише у складі лінивого boot-кластера модуля,
+// тож хабовий eager-чанк нових ребер не отримує.
+registerRealEntryCounter(
+  "fizruk",
+  () => getCachedFizrukSqliteState().workouts.length,
+);
 
 let booted = false;
 
@@ -49,14 +74,13 @@ export async function bootFizrukSqliteReadPath(
     const client = handle.migrationClient();
     await migrateFizruk(client);
 
-    // Stage 8 PR #057f-tombstone: drain LS into SQLite before the
-    // first cache refresh so warm-up sees any leftover values that
-    // older builds wrote. Failures here are non-fatal — the residual
-    // helper logs and falls back to a no-op so the boot can keep
-    // going on a fresh-install / clean-LS device.
-    await importFizrukResidualFromLs(client, userId);
-
     await refreshFizrukSqliteState(client, userId);
+
+    // W1-WEIGHT-SOT стадія 3: seed the journal from the Profile
+    // biometrics cache when it has no weight sample yet — see
+    // `bodyWeightBootstrap.ts` (self-contained error handling; never
+    // throws, so it can't fail the rest of the boot).
+    await bootstrapBodyWeightFromBiometrics(client, userId);
 
     booted = true;
     return true;

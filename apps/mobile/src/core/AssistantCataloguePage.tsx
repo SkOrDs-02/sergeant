@@ -36,6 +36,7 @@ import {
   CAPABILITY_MODULE_ORDER,
   groupCapabilitiesByModule,
   searchCapabilities,
+  isRecentCapability,
   type AssistantCapability,
   type CapabilityModule,
 } from "@sergeant/shared";
@@ -152,9 +153,7 @@ export function AssistantCataloguePage({
           autoNavigate={false}
           testID="assistant-catalogue-back"
         />
-        <Text className="text-[20px] font-bold text-fg">
-          Можливості асистента
-        </Text>
+        <Text className="text-[20px] font-bold text-fg">Що вміє Сержант</Text>
       </View>
 
       <ScrollView
@@ -163,8 +162,8 @@ export function AssistantCataloguePage({
         keyboardShouldPersistTaps="handled"
       >
         <Text className="text-sm text-fg-muted mb-3 leading-snug">
-          Усе, що вміє асистент. Тапни картку — побачиш приклади команд та опис.
-          Запуск сценаріїв — у HubChat (наразі веб-версія).
+          Усе, що вміє Сержант. Тапни картку, побачиш приклади команд та опис.
+          Запуск сценаріїв – у HubChat (наразі веб-версія).
         </Text>
 
         <CapabilityLegend />
@@ -174,7 +173,7 @@ export function AssistantCataloguePage({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Пошук — «витрата», «звичка», «1RM»…"
+            placeholder="Пошук: «витрата», «звичка», «1RM»"
             placeholderTextColor="#a8a29e"
             className="flex-1 text-sm text-fg py-1"
             accessibilityLabel="Пошук можливостей"
@@ -208,7 +207,7 @@ export function AssistantCataloguePage({
 
         {filtered.length === 0 ? (
           <Text className="text-center text-fg-muted py-8 text-sm">
-            Нічого не знайдено за «{query}». Спробуй інший термін.
+            Нічого не знайшов за «{query}». Спробуй інший термін.
           </Text>
         ) : (
           <View className="gap-5">
@@ -306,10 +305,8 @@ function CapabilityLegend() {
         <Text className="text-[11px] text-fg-muted">критична дія</Text>
       </View>
       <View className="flex-row items-center gap-1.5">
-        <View className="border border-emerald-400 bg-emerald-50 rounded-full px-2 py-0.5">
-          <Text className="text-[10px] font-bold text-emerald-700">
-            ✨ НОВИНКА
-          </Text>
+        <View className="border border-teal-500 bg-teal-50 rounded-full px-2 py-0.5">
+          <Text className="text-[10px] font-bold text-teal-800">НОВИНКА</Text>
         </View>
         <Text className="text-[11px] text-fg-muted">нещодавно додано</Text>
       </View>
@@ -336,13 +333,13 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           <Text className="text-sm font-semibold text-fg flex-shrink">
             {capability.label}
           </Text>
-          {capability.isNew ? (
+          {isRecentCapability(capability.since) ? (
             <View
               testID={`catalogue-capability-${capability.id}-new`}
-              className="border border-emerald-400 bg-emerald-50 rounded-full px-2 py-0.5"
+              className="border border-teal-500 bg-teal-50 rounded-full px-2 py-0.5"
             >
-              <Text className="text-[10px] font-bold text-emerald-700">
-                ✨ НОВИНКА
+              <Text className="text-[10px] font-bold text-teal-800">
+                НОВИНКА
               </Text>
             </View>
           ) : null}
@@ -391,7 +388,7 @@ function CapabilityDetailSheet({
           {cap.risky ? (
             <View className="border border-amber-400 bg-amber-50 rounded-2xl px-3 py-2">
               <Text className="text-xs text-amber-800">
-                Критична дія. Перевір дані перед відправкою — деякі зміни
+                Критична дія. Перевір дані перед відправкою, деякі зміни
                 скасувати не можна.
               </Text>
             </View>
@@ -413,7 +410,7 @@ function CapabilityDetailSheet({
 
           <Text className="text-xs text-fg-muted leading-snug">
             Запуск сценарію відбувається в HubChat. Поки що чат AI-асистента
-            доступний у веб-версії — мобільна версія в дорозі.
+            доступний у веб-версії, мобільна версія в дорозі.
           </Text>
         </View>
       ) : null}

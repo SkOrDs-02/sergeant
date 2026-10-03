@@ -29,9 +29,24 @@ export { HUB_USER_AUTH_STATE };
 setup("authenticate hub user", async ({ page }) => {
   // Deterministic email per run (CI artifact persistence is bounded; we
   // don't reuse accounts across runs because the smoke DB is wiped).
-  const nonce = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  const nonce = crypto.randomUUID();
   const email = `smoke_setup_${nonce}@example.com`;
   const password = `pw_${nonce}_long_enough`;
+
+  // Банер згоди на аналітику (#1244) плаває внизу екрана і перехоплює кліки
+  // по кнопках форми. Рішення кладемо до першого рендеру; воно їде в
+  // storageState, тож банер не з'являється і в specs, що від нього залежать.
+  // «granted», а не «denied»: частина specs перевіряє аналітичні події.
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem(
+        "sergeant.analytics_consent_decision.v1",
+        JSON.stringify({ v: "granted" }),
+      );
+    } catch {
+      /* ignore */
+    }
+  });
 
   await page.goto("/sign-in", { waitUntil: "domcontentloaded" });
 

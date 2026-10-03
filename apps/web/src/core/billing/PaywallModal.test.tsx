@@ -40,7 +40,7 @@ function renderModal(open: boolean) {
                 onClose={() => {}}
                 surface="ai_chat_limit"
                 title="AI-чат на ліміті"
-                description="Free план: 5 повідомлень/день."
+                description="Free план: 5 запитів/день."
               />
             </>
           }
@@ -63,7 +63,7 @@ describe("PaywallModal", () => {
         <PaywallModal
           open={false}
           onClose={() => {}}
-          surface="cloud_sync"
+          surface="finyk_vision"
           title="CloudSync"
           description="Sync."
         />
@@ -76,7 +76,7 @@ describe("PaywallModal", () => {
         <PaywallModal
           open={true}
           onClose={() => {}}
-          surface="cloud_sync"
+          surface="finyk_vision"
           title="CloudSync"
           description="Sync."
         />
@@ -84,21 +84,81 @@ describe("PaywallModal", () => {
     );
     expect(trackEventMock).toHaveBeenCalledWith(
       ANALYTICS_EVENTS.PAYWALL_VIEWED,
-      { surface: "cloud_sync" },
+      { surface: "finyk_vision" },
     );
   });
 
   it("renders the headline + description and a primary Pro CTA when open", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();
-    expect(screen.getByText("Free план: 5 повідомлень/день.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Перейти до Pro/ })).toBeTruthy();
+    expect(screen.getByText("Free план: 5 запитів/день.")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Перейти на Premium/ }),
+    ).toBeTruthy();
+  });
+
+  // Trial дає лише новому акаунту і лише за прапорцем (спека access-tiers),
+  // тож дефолтний список paywall-у не має обіцяти trial.
+  it("does not promise a trial in the default feature list", () => {
+    renderModal(true);
+    expect(screen.queryByText(/trial/i)).toBeNull();
+    expect(screen.queryByText(/привʼязки картки/i)).toBeNull();
+    // Решта дефолтних булітів лишається на місці.
+    expect(
+      screen.getByText(/Сержант без тижневого ліміту/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/PDF-звіти/)).toBeInTheDocument();
   });
 
   it("navigates to /pricing?source=paywall when the primary CTA is pressed", () => {
     renderModal(true);
     navigateSpy.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /Перейти до Pro/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Перейти на Premium/ }));
     expect(navigateSpy).toHaveBeenLastCalledWith("/pricing?source=paywall");
+  });
+
+  it("uses custom labels/features and closes from the dismiss CTA", () => {
+    const onClose = vi.fn();
+    render(
+      <MemoryRouter>
+        <PaywallModal
+          open
+          onClose={onClose}
+          surface="week_plan"
+          title="Themes"
+          description="Custom description"
+          features={["Feature A", "Feature B"]}
+          ctaLabel="Upgrade now"
+          dismissLabel="Later"
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Feature A")).toBeInTheDocument();
+    expect(screen.getByText("Feature B")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Later" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires once per open transition, including after a close and reopen", () => {
+    const onClose = vi.fn();
+    const view = (open: boolean) => (
+      <MemoryRouter>
+        <PaywallModal
+          open={open}
+          onClose={onClose}
+          surface="finyk_vision"
+          title="CloudSync"
+          description="Sync."
+        />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view(true));
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+    rerender(view(true));
+    expect(trackEventMock).toHaveBeenCalledTimes(1);
+    rerender(view(false));
+    rerender(view(true));
+    expect(trackEventMock).toHaveBeenCalledTimes(2);
   });
 });

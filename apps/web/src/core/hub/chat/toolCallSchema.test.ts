@@ -116,3 +116,80 @@ describe("parseToolCalls — talk-to-your-data read/query tools (regression)", (
     expect(result.ok).toBe(true);
   });
 });
+
+describe("parseToolCalls — remember (regression)", () => {
+  /**
+   * Схема довго вимагала `{ key, value }`, тоді як серверне визначення тула,
+   * тип `RememberAction` і хендлер працюють з `{ fact, category }`. Модель
+   * слала правильну форму, фаєрвол відкидав усю пачку, і «Запамʼятай…»
+   * не спрацьовував ЖОДНОГО разу — користувач бачив тост «Не вдалося
+   * виконати дію» і «Немає відповіді».
+   */
+  it("приймає форму, яку реально шле модель", () => {
+    const out = parseToolCalls([
+      {
+        id: "t1",
+        name: "remember",
+        input: { fact: "не люблю чорнослив", category: "diet" },
+      },
+    ]);
+    expect(out.ok).toBe(true);
+  });
+
+  it("category необовʼязкова — enum гарантує сервер зі strict:true", () => {
+    const out = parseToolCalls([
+      { id: "t2", name: "remember", input: { fact: "біжу марафон у травні" } },
+    ]);
+    expect(out.ok).toBe(true);
+  });
+
+  it("порожній fact відкидається — зберігати нічого", () => {
+    const out = parseToolCalls([
+      { id: "t3", name: "remember", input: { fact: "", category: "diet" } },
+    ]);
+    expect(out.ok).toBe(false);
+  });
+
+  it("стара форма {key,value} більше не проходить", () => {
+    // Якщо схему колись відкотять, цей тест впаде першим.
+    const out = parseToolCalls([
+      { id: "t4", name: "remember", input: { key: "diet", value: "x" } },
+    ]);
+    expect(out.ok).toBe(false);
+  });
+});
+
+describe("parseToolCalls — save_note / get_daily_series", () => {
+  it("приймає справжній payload save_note {text, tag}", () => {
+    const r = parseToolCalls([
+      {
+        id: "n1",
+        name: "save_note",
+        input: { text: "купити протеїн", tag: "todo" },
+      },
+    ]);
+    expect(r.ok).toBe(true);
+  });
+
+  it("батч із save_note не відкидається цілком", () => {
+    const r = parseToolCalls([
+      { id: "a", name: "log_water", input: { amount_ml: 250 } },
+      { id: "b", name: "save_note", input: { text: "запис" } },
+    ]);
+    expect(r.ok).toBe(true);
+  });
+
+  it("відхиляє save_note без text", () => {
+    const r = parseToolCalls([
+      { id: "n2", name: "save_note", input: { tag: "x" } },
+    ]);
+    expect(r.ok).toBe(false);
+  });
+
+  it("allow-list містить кожен tool зі спільного реєстру", async () => {
+    const { ALL_HUBCHAT_TOOL_NAMES } = await import("@sergeant/shared");
+    expect(
+      ALL_HUBCHAT_TOOL_NAMES.filter((n) => !KNOWN_TOOL_NAMES.has(n)),
+    ).toEqual([]);
+  });
+});

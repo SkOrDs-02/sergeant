@@ -12,6 +12,7 @@ import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { Card } from "../../../../components/ui/Card";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface PlanFactCardProps {
   planIncome: number;
@@ -24,7 +25,7 @@ export interface PlanFactCardProps {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 const PlanFactCardImpl = function PlanFactCard({
@@ -80,7 +81,7 @@ const PlanFactCardImpl = function PlanFactCard({
                 ? "h-full bg-danger"
                 : pctExpense >= 85
                   ? "h-full bg-amber-500"
-                  : "h-full bg-emerald-500"
+                  : "h-full bg-teal-700"
             }
           />
         </View>

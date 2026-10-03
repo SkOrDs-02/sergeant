@@ -2,7 +2,7 @@
 // user-facing capabilities. Drives the catalogue UI, in-chat quick-action
 // chips, and (post follow-up PR) the system prompt's tool list.
 //
-// Spec: docs/agents/specs/2026-04-25-assistant-capability-catalogue-design.md
+// Spec: docs/design/design/specs/2026-04-25-assistant-capability-catalogue-design.md
 //
 // Invariants (enforced by assistantCatalogue.test.ts):
 //   - all `id` values are unique;
@@ -15,6 +15,9 @@
 // apps/server/src/modules/chat/toolDefs/, add a matching entry here too.
 // Without an entry the capability is invisible to the user and absent
 // from /help, even though the model can still call it.
+
+import { kyivCalendarDaysBetween } from "../utils/date";
+import { foldApostrophes } from "../utils/ukApostrophe";
 
 export type CapabilityModule =
   | "finyk"
@@ -56,11 +59,18 @@ export interface AssistantCapability {
   /** Destructive — shown with a warning badge. */
   risky?: boolean;
   /**
-   * Recently added — shown with a "Новинка" badge in the catalogue.
-   * Set to `true` for capabilities introduced in the last few releases;
-   * flip back to `undefined` once the feature is no longer notable.
+   * Дата (`YYYY-MM-DD`, календарна — той самий Kyiv-режим, що й
+   * `WhatsNewRelease.date` у `core/whatsNew/releases.ts`), відколи
+   * можливість додана. `isRecentCapability()` рахує «Новинка» як
+   * «`since` молодше {@link ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS} днів» —
+   * бейдж знімається сам, руками нічого прибирати не треба.
+   *
+   * Замінює колишній `isNew: boolean` (founder-ux-review round 2, O3):
+   * той знімався тільки руками, і чіп на `compare_weeks` провисів ≈4,5
+   * місяця від специфікації каталогу (2026-04-25) до 2026-09-11, поки
+   * його не спіймав тест легенди.
    */
-  isNew?: boolean;
+  since?: string;
   /** Surfaced as a chip below the chat input. */
   isQuickAction?: boolean;
   /** Lower number sorts higher among quick-action chips. */
@@ -109,11 +119,11 @@ export const CAPABILITY_MODULE_META: Record<
   finyk: { title: "Фінік", icon: "wallet" },
   fizruk: { title: "Фізрук", icon: "dumbbell" },
   routine: { title: "Рутина", icon: "check" },
-  nutrition: { title: "Харчування", icon: "utensils" },
+  nutrition: { title: "Їжа", icon: "utensils" },
   cross: { title: "Кросмодульні", icon: "sparkles" },
   analytics: { title: "Аналітика", icon: "bar-chart" },
   utility: { title: "Утиліти", icon: "tool" },
-  memory: { title: "Пам'ять", icon: "brain" },
+  memory: { title: "Памʼять", icon: "brain" },
 };
 
 // AI-NOTE: counts in section comments below match `ASSISTANT_CAPABILITIES`.
@@ -134,38 +144,44 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Додай витрату: ",
     requiresInput: true,
+    // Пише на сервер без undo; чат питає згоду перед виконанням (B21).
+    risky: true,
     isQuickAction: true,
     quickActionPriority: 10,
     requiresOnline: true,
-    keywords: ["expense", "транзакція", "income"],
+    keywords: ["expense", "транзакція", "операція", "income"],
   },
   {
     id: "change_category",
     module: "finyk",
     label: "Змінити категорію",
     icon: "tag",
-    description: "Перенести існуючу транзакцію в іншу категорію.",
+    description: "Перенести існуючу операцію в іншу категорію.",
     examples: [
-      "перенеси останню транзакцію в їжу",
+      "перенеси останню операцію в їжу",
       "зміни категорію m_42 на транспорт",
     ],
-    prompt: "Зміни категорію транзакції: ",
+    prompt: "Зміни категорію операції: ",
     requiresInput: true,
+    // Перезаписує категорію без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередню категорію.
+    risky: true,
     requiresOnline: true,
   },
   {
     id: "find_transaction",
     module: "finyk",
-    label: "Знайти транзакцію",
+    label: "Знайти операцію",
     icon: "search",
     description:
-      "Пошук транзакції за описом, мерчантом, сумою або датою. Не змінює дані.",
+      "Пошук операції за описом, мерчантом, сумою або датою. Не змінює дані.",
     examples: [
       "знайди покупку в АТБ",
-      "транзакція на 450 грн позавчора",
+      "операція на 450 грн позавчора",
       "що було в Сільпо за тиждень",
     ],
-    prompt: "Знайди транзакцію: ",
+    prompt: "Знайди операцію: ",
     requiresInput: true,
     requiresOnline: true,
     keywords: ["search", "пошук", "merchant"],
@@ -176,13 +192,17 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     label: "Категоризувати масово",
     icon: "tags",
     description:
-      "Перенести багато транзакцій в одну категорію за патерном. Спочатку показує preview (dry_run), застосовує лише після підтвердження.",
+      "Перенести багато операцій в одну категорію за патерном. Спочатку показує preview (dry_run), застосовує лише після підтвердження.",
     examples: [
       "віднеси все Сільпо в продукти",
       "категоризуй всі АЗС на транспорт",
     ],
     prompt: "Категоризуй масово: ",
     requiresInput: true,
+    // Перезаписує категорії до 50 транзакцій без збереження попередніх —
+    // «перезапис» у термінах рішення founder-а #8. Режим — `destructive`
+    // у `toolRisk.ts`.
+    risky: true,
     requiresOnline: true,
     aiHint: "dry_run спершу",
     keywords: ["batch", "масово", "категорія"],
@@ -190,11 +210,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "hide_transaction",
     module: "finyk",
-    label: "Приховати транзакцію",
+    label: "Приховати операцію",
     icon: "eye-off",
-    description: "Прибрати транзакцію зі статистики (без видалення).",
-    examples: ["сховай транзакцію m_42 зі звіту"],
-    prompt: "Сховай транзакцію: ",
+    description: "Прибрати операцію зі статистики (без видалення).",
+    examples: ["сховай операцію m_42 зі звіту"],
+    prompt: "Сховай операцію: ",
     requiresInput: true,
     risky: true,
     requiresOnline: true,
@@ -202,12 +222,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "delete_transaction",
     module: "finyk",
-    label: "Видалити транзакцію",
+    label: "Видалити операцію",
     icon: "trash",
-    description:
-      "Видалити ручну транзакцію (m_*). Авто-транзакції не видаляються.",
-    examples: ["видали останню транзакцію", "прибери m_42"],
-    prompt: "Видали транзакцію: ",
+    description: "Видалити ручну операцію (m_*). Авто-операції не видаляються.",
+    examples: ["видали останню операцію", "прибери m_42"],
+    prompt: "Видали операцію: ",
     requiresInput: true,
     risky: true,
     requiresOnline: true,
@@ -271,6 +290,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     examples: ["встанови ліміт на їжу 3000 грн", "ліміт на розваги 1500"],
     prompt: "Постав ліміт: ",
     requiresInput: true,
+    // Перезаписує ліміт без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попереднє значення.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -285,6 +308,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Онови бюджет: ",
     requiresInput: true,
+    // Перезаписує ліміт/ціль без підтвердження (рішення founder-а #8:
+    // режим `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередній запис бюджету.
+    risky: true,
     requiresOnline: true,
     aiHint: "ліміт або ціль",
   },
@@ -300,6 +327,10 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Фінплан: ",
     requiresInput: true,
+    // Перезаписує фінплан без підтвердження (рішення founder-а #8: режим
+    // `reversible` у toolRisk.ts) — виконавець повертає `undo`, що
+    // відновлює попередній фінплан.
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -318,8 +349,8 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     module: "finyk",
     label: "Імпорт Monobank",
     icon: "download",
-    description: "Завантажити транзакції Monobank за діапазон дат.",
-    examples: ["завантаж транзакції за квітень", "імпорт з 1 по 15 травня"],
+    description: "Завантажити операції Monobank за діапазон дат.",
+    examples: ["завантаж операції за квітень", "імпорт з 1 по 15 травня"],
     prompt: "Імпортуй Monobank за період: ",
     requiresInput: true,
     risky: true,
@@ -328,11 +359,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "split_transaction",
     module: "finyk",
-    label: "Розділити транзакцію",
+    label: "Розділити операцію",
     icon: "scissors",
     description: "Розбити одну покупку на кілька категорій.",
     examples: ["розділи покупку: 200 їжа, 100 побут"],
-    prompt: "Розділи транзакцію: ",
+    prompt: "Розділи операцію: ",
     requiresInput: true,
     requiresOnline: true,
   },
@@ -361,21 +392,21 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "query_transactions",
     module: "finyk",
-    label: "Запит по транзакціях",
+    label: "Запит по операціях",
     shortLabel: "Запит",
     icon: "search",
     description:
-      "Вибірка транзакцій за текстом, категорією, сумою, типом чи датою з підсумком. Read-only — нічого не змінює.",
+      "Вибірка операцій за текстом, категорією, сумою, типом чи датою з підсумком. Read-only, нічого не змінює.",
     examples: [
       "покажи всі покупки в АТБ більше 200 грн",
-      "скільки транзакцій на каву за квітень",
+      "скільки операцій на каву за квітень",
       "усі доходи за травень",
     ],
-    prompt: "Знайди по транзакціях: ",
+    prompt: "Знайди по операціях: ",
     requiresInput: true,
     requiresOnline: true,
     aiHint: "read-only вибірка",
-    keywords: ["query", "запит", "вибірка", "data", "транзакції"],
+    keywords: ["query", "запит", "вибірка", "data", "транзакції", "операції"],
   },
   {
     id: "aggregate_spending",
@@ -403,7 +434,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Періоди",
     icon: "bar-chart",
     description:
-      "Порівняти два довільні періоди за витратами, доходом або кількістю транзакцій — з абсолютною і відсотковою різницею.",
+      "Порівняти два довільні періоди за витратами, доходом або кількістю операцій, з абсолютною і відсотковою різницею.",
     examples: [
       "порівняй витрати березня і квітня",
       "наскільки більше я витратив цього місяця",
@@ -463,7 +494,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     label: "Запланувати тренування",
     icon: "calendar-plus",
     description: "Поставити тренування на майбутню дату.",
-    examples: ["заплануй ноги на завтра", "груди в п'ятницю"],
+    examples: ["заплануй ноги на завтра", "груди в пʼятницю"],
     prompt: "Заплануй тренування: ",
     requiresInput: true,
     requiresOnline: true,
@@ -506,7 +537,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     module: "fizruk",
     label: "Самопочуття",
     icon: "heart",
-    description: "Сон, енергія, настрій — щоденні маркери.",
+    description: "Сон, енергія, настрій: щоденні маркери.",
     examples: ["сон 7 год, енергія 4, настрій 5"],
     prompt: "Самопочуття: ",
     requiresInput: true,
@@ -552,7 +583,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Тренування",
     icon: "list",
     description:
-      "Вибірка завершених тренувань за період з опційним фільтром за вправою чи м'язом. Read-only — з кількістю й сумарним об'ємом.",
+      "Вибірка завершених тренувань за період з опційним фільтром за вправою чи мʼязом. Read-only, з кількістю й сумарним обʼємом.",
     examples: [
       "покажи мої тренування за останній тиждень",
       "скільки разів я робив присідання за місяць",
@@ -571,7 +602,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Динаміка",
     icon: "trending-up",
     description:
-      "Зміна показників у конкретній вправі (вага, об'єм, повтори) за період — від першої до останньої сесії плюс найкращі результати.",
+      "Зміна показників у конкретній вправі (вага, обʼєм, повтори) за період, від першої до останньої сесії плюс найкращі результати.",
     examples: [
       "як змінилась моя жим лежачи за місяць",
       "динаміка присідань за 3 місяці",
@@ -581,7 +612,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: true,
     requiresOnline: true,
     aiHint: "динаміка вправи",
-    keywords: ["progress", "динаміка", "вага", "об'єм"],
+    keywords: ["progress", "динаміка", "вага", "обʼєм"],
   },
   {
     id: "training_stats",
@@ -590,17 +621,17 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Статистика",
     icon: "bar-chart-2",
     description:
-      "Агрегована статистика за період: частота на тиждень, улюблені вправи, розподіл по м'язових групах.",
+      "Агрегована статистика за період: частота на тиждень, улюблені вправи, розподіл по мʼязових групах.",
     examples: [
-      "які м'язи я треную найчастіше",
+      "які мʼязи я треную найчастіше",
       "статистика тренувань за місяць",
       "як часто я тренуюсь",
     ],
     prompt: "Статистика тренувань: ",
     requiresInput: true,
     requiresOnline: true,
-    aiHint: "частота+м'язи",
-    keywords: ["stats", "статистика", "частота", "м'язи"],
+    aiHint: "частота+мʼязи",
+    keywords: ["stats", "статистика", "частота", "мʼязи"],
   },
 
   // ───── Рутина (14) ─────────────────────────────────────────────────────
@@ -678,7 +709,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Постав розклад звички: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "примусово weekly",
     keywords: ["weekday", "schedule", "weekly", "розклад", "дні"],
   },
@@ -689,7 +719,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Пауза",
     icon: "pause-circle",
     description:
-      "Тимчасово відключити звичку без архівування — не потрапляє в календар і не шле нагадування. Оборотно.",
+      "Тимчасово відключити звичку без архівування, не потрапляє в календар і не шле нагадування. Оборотно.",
     examples: [
       "постав 'Біг' на паузу",
       "запаузь медитацію",
@@ -698,7 +728,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Постав звичку на паузу: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "ідемпотентно",
     keywords: ["pause", "resume", "unpause", "пауза", "відновити"],
   },
@@ -743,7 +772,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Звичка",
     icon: "bar-chart-2",
     description:
-      "Детальна статистика звички за період: completion rate, найкращі/найгірші дні тижня, пропуски. Read-only — нічого не змінює.",
+      "Детальна статистика звички за період: completion rate, найкращі/найгірші дні тижня, пропуски. Read-only, нічого не змінює.",
     examples: [
       "в які дні тижня я пропускаю медитацію",
       "статистика по звичці вода за місяць",
@@ -762,7 +791,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Кореляція",
     icon: "activity",
     description:
-      "Кореляція виконання звички з витратами Фініка або тренуваннями Фізрука — дні зі звичкою vs дні без. Read-only.",
+      "Кореляція виконання звички з витратами Фініка або тренуваннями Фізрука, дні зі звичкою vs дні без. Read-only.",
     examples: [
       "чи менше я витрачаю коли тренуюсь",
       "чи частіше медитую в дні тренувань",
@@ -805,7 +834,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Харчування (11) ────────────────────────────────────────────────
+  // ───── Харчування (12) ────────────────────────────────────────────────
   {
     id: "log_meal",
     module: "nutrition",
@@ -813,7 +842,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Їжа",
     icon: "utensils",
     description: "Записати страву з калоріями і макросами.",
-    examples: ["з'їв вівсянку 350 ккал", "обід: курка з рисом 600 ккал"],
+    examples: ["зʼїв вівсянку 350 ккал", "обід: курка з рисом 600 ккал"],
     prompt: "Залогай їжу: ",
     requiresInput: true,
     isQuickAction: true,
@@ -845,11 +874,11 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
   {
     id: "suggest_meal",
     module: "nutrition",
-    label: "Що з'їсти зараз",
+    label: "Що зʼїсти зараз",
     icon: "lightbulb",
     description: "Порада що приготувати під поточний macro-баланс.",
-    examples: ["що з'їсти щоб добити білок", "поради на вечерю"],
-    prompt: "Що з'їсти сьогодні, щоб добити білок без перебору калорій?",
+    examples: ["що зʼїсти щоб добити білок", "поради на вечерю"],
+    prompt: "Що зʼїсти сьогодні, щоб добити білок без перебору калорій?",
     requiresInput: false,
     isQuickAction: true,
     quickActionPriority: 20,
@@ -890,6 +919,18 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
   {
+    id: "clear_pantry",
+    module: "nutrition",
+    label: "Очистити комору",
+    icon: "trash",
+    description: "Прибрати всі продукти з активної комори.",
+    examples: ["видали все з комори", "очисти комору"],
+    prompt: "Очисти комору",
+    requiresInput: false,
+    requiresOnline: true,
+    risky: true,
+  },
+  {
     id: "copy_meal_from_date",
     module: "nutrition",
     label: "Повторити їжу",
@@ -918,7 +959,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Їжа",
     icon: "search",
     description:
-      "Пошук по журналу їжі за період з опційним фільтром за продуктом. Read-only — кількість прийомів, сумарні калорії й макроси.",
+      "Пошук по журналу їжі за період з опційним фільтром за продуктом. Read-only, кількість прийомів, сумарні калорії й макроси.",
     examples: [
       "що я їв у понеділок",
       "скільки разів я їв курку за тиждень",
@@ -937,7 +978,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     shortLabel: "Середнє",
     icon: "bar-chart",
     description:
-      "Середні денні калорії й макроси за період з трендом першої vs другої половини. Read-only — рахує лише дні із записами.",
+      "Середні денні калорії й макроси за період з трендом першої vs другої половини. Read-only, рахує лише дні із записами.",
     examples: [
       "яка моя середня калорійність за тиждень",
       "середній білок за місяць",
@@ -1012,7 +1053,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: false,
     isQuickAction: true,
     quickActionPriority: 40,
-    isNew: true,
     requiresOnline: true,
     keywords: ["тиждень", "порівняння", "аналіз"],
     aiHint: "YYYY-Www; default цей+минулий",
@@ -1032,7 +1072,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Аналітика (5) — окрема UI-група, фізично у crossModule.ts ──────
+  // ───── Аналітика (6) — окрема UI-група, фізично у crossModule.ts ──────
   {
     id: "spending_trend",
     module: "analytics",
@@ -1090,6 +1130,24 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: true,
     requiresOnline: true,
   },
+  {
+    id: "get_daily_series",
+    module: "analytics",
+    label: "Звʼязки між метриками",
+    shortLabel: "Кореляції",
+    icon: "activity",
+    description:
+      "Чи повʼязано X з Y? Вирівнює по днях метрики різних модулів і рахує кореляцію: витрати↔тренування, вага↔калорії, звички↔білок.",
+    examples: [
+      "чи повʼязані мої витрати з тренуваннями",
+      "вага корелює з калоріями?",
+      "у дні коли роблю звички, їм більше білка?",
+    ],
+    prompt: "Проаналізуй звʼязок між: ",
+    requiresInput: true,
+    requiresOnline: true,
+    aiHint: "1-6 метрик, кореляція кодом",
+  },
 
   // ───── Утиліти (5) ────────────────────────────────────────────────────
   {
@@ -1145,23 +1203,27 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     examples: ["експортуй дані Фініка в csv", "вивантаж тренування в json"],
     prompt: "Експортуй дані: ",
     requiresInput: true,
+    // Віддає сирий JSON модуля в чат: чат питає згоду (B21/B23).
+    risky: true,
     requiresOnline: true,
   },
 
-  // ───── Пам'ять (4) ────────────────────────────────────────────────────
+  // ───── Памʼять (4) ────────────────────────────────────────────────────
   {
     id: "remember",
     module: "memory",
-    label: "Запам'ятати факт",
+    label: "Запамʼятати факт",
     icon: "brain",
     description: "Зафіксувати інформацію про себе (алергії, цілі, обмеження).",
     examples: [
-      "запам'ятай: алергія на горіхи",
-      "ціль — схуднути до 75 кг",
+      "запамʼятай: алергія на горіхи",
+      "ціль: схуднути до 75 кг",
       "не їм після 20:00",
     ],
-    prompt: "Запам'ятай: ",
+    prompt: "Запамʼятай: ",
     requiresInput: true,
+    // Memory Bank підмішується в промпт назад: чат питає згоду (B21/B22).
+    risky: true,
     requiresOnline: true,
   },
   {
@@ -1183,7 +1245,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     icon: "user",
     description: "Показати все, що асистент про тебе знає.",
     examples: ["що ти про мене знаєш", "покажи мій профіль"],
-    prompt: "Що ти про мене запам'ятав?",
+    prompt: "Що ти про мене запамʼятав?",
     requiresInput: false,
     requiresOnline: true,
   },
@@ -1203,10 +1265,39 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Знайди в памʼяті: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     keywords: ["recall", "search", "memory", "семантичний"],
   },
 ];
+
+/**
+ * «Новинка»-вікно (у днях) для {@link isRecentCapability}. Той самий
+ * порядок величини, що й `WhatsNewModal`, з тим самим обґрунтуванням —
+ * достатньо, щоб рядок помітили, замало, щоб бейдж набриднув.
+ */
+export const ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS = 30;
+
+/**
+ * `true`, якщо `since` (календарна `YYYY-MM-DD`, Kyiv-режим — це дата
+ * релізу можливості, спільна для всіх користувачів, а не персональна доба
+ * за ADR-0078) молодша за {@link ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS} днів
+ * від `now`.
+ *
+ * Замінює колишній ручний `isNew: boolean`: той не мав TTL і знімався
+ * тільки руками (founder-ux-review round 2, O3). Порожній/некоректний
+ * `since` = "ніколи не новинка", а не "завжди новинка" — щоб забутий
+ * запис мовчки не висів вічно.
+ */
+export function isRecentCapability(
+  since: string | undefined,
+  now: Date | number = Date.now(),
+): boolean {
+  if (!since) return false;
+  const sinceMs = Date.parse(since);
+  if (Number.isNaN(sinceMs)) return false;
+  const nowMs = typeof now === "number" ? now : now.getTime();
+  const daysSince = kyivCalendarDaysBetween(nowMs, sinceMs);
+  return daysSince >= 0 && daysSince < ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS;
+}
 
 /**
  * Resolve the server tool name for a capability.
@@ -1217,6 +1308,25 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
 export function getCapabilityServerTool(c: AssistantCapability): string | null {
   if (c.serverTool === null) return null;
   return c.serverTool ?? c.id;
+}
+
+/**
+ * Модуль, до якого належить серверний tool, за іменем інструмента.
+ *
+ * Джерело — той самий `ASSISTANT_CAPABILITIES`, що вже синхронізується з
+ * `apps/server/src/modules/chat/toolDefs/`. Окрема мапа «tool → модуль» тут
+ * НЕ заводиться свідомо: другий список розійшовся б із першим при наступній
+ * зміні реєстру, і саме ця хвороба дала знахідки B37 і B38.
+ *
+ * Повертає `"unknown"` для невідомого імені: викликач — телеметрія, і
+ * зронити подію через незнайомий tool гірше, ніж записати її з чесною
+ * міткою. Той самий принцип, що в `safeName()` у `toolOutputWrapping.ts`.
+ */
+export function getToolModule(toolName: string): CapabilityModule | "unknown" {
+  const hit = ASSISTANT_CAPABILITIES.find(
+    (c) => getCapabilityServerTool(c) === toolName,
+  );
+  return hit?.module ?? "unknown";
 }
 
 /**
@@ -1324,7 +1434,10 @@ export function groupCapabilitiesByModule(
 
 /** Plain-text search across label / shortLabel / description / examples / keywords. */
 export function searchCapabilities(query: string): AssistantCapability[] {
-  const q = query.trim().toLowerCase();
+  // Згортаємо апостроф з обох боків (канон §1.10): запит людина набирає
+  // тією клавіатурою, що має, а `keywords` тут канонічні. Без цього
+  // «обʼєм» не знаходив би картку, підписану «обʼєм».
+  const q = foldApostrophes(query.trim().toLowerCase());
   if (!q) return [...ASSISTANT_CAPABILITIES];
   return ASSISTANT_CAPABILITIES.filter((c) => {
     const haystack = [
@@ -1337,6 +1450,6 @@ export function searchCapabilities(query: string): AssistantCapability[] {
     ]
       .join(" ")
       .toLowerCase();
-    return haystack.includes(q);
+    return foldApostrophes(haystack).includes(q);
   });
 }

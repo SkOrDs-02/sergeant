@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
@@ -11,8 +12,12 @@ import {
   getOnboardingGoals,
   rankFirstActionCandidates,
   type FirstActionRanking,
+  formatNumberUk,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
+// AI-CONTEXT: `uk.ts`, не `uk.core` — аркуш живе в лінивому чанку хаба, тож
+// повний каталог йому безкоштовний (розбір — у самій групі `firstAction`).
+import { messages } from "@shared/i18n/uk";
 
 type IconName = Parameters<typeof Icon>[0]["name"];
 
@@ -39,34 +44,28 @@ interface FirstActionEntry {
  * «Власний варіант» fallback that still deep-links via
  * `openHubModuleWithAction`.
  */
+const COPY = messages.firstAction;
+
 const ACTIONS: Record<ModuleId, FirstActionEntry> = {
   routine: {
     icon: "check",
-    title: "Створи першу звичку",
-    desc: "~5 секунд. І серія днів стартує одразу.",
-    accent: "text-routine-strong dark:text-routine bg-routine-surface",
-    chipLabel: "Рутина",
+    accent: "text-routine-soft-fg bg-routine-soft",
+    ...COPY.actions.routine,
   },
   finyk: {
     icon: "credit-card",
-    title: "Додай першу витрату",
-    desc: "~5 секунд, будь-яка сума.",
-    accent: "text-finyk-strong dark:text-finyk bg-finyk-soft",
-    chipLabel: "Фінік",
+    accent: "text-finyk-soft-fg bg-finyk-soft",
+    ...COPY.actions.finyk,
   },
   nutrition: {
     icon: "utensils",
-    title: "Запиши перший прийом їжі",
-    desc: "Калорії порахую я.",
-    accent: "text-nutrition-strong dark:text-nutrition bg-nutrition-soft",
-    chipLabel: "Харчування",
+    accent: "text-nutrition-soft-fg bg-nutrition-soft",
+    ...COPY.actions.nutrition,
   },
   fizruk: {
     icon: "dumbbell",
-    title: "Увімкни розминку",
-    desc: "10 хв, таймер сам.",
-    accent: "text-fizruk-strong dark:text-fizruk-300 bg-fizruk-soft",
-    chipLabel: "Фізрук",
+    accent: "text-fizruk-soft-fg bg-fizruk-soft",
+    ...COPY.actions.fizruk,
   },
 };
 
@@ -107,27 +106,20 @@ function rankPrimary(picks: string[]): FirstActionRanking {
 function getGoalAwareDesc(moduleId: string, fallback: string): string {
   const goals = getOnboardingGoals(webKVStore);
   if (moduleId === "finyk" && goals.finykBudget) {
-    return `Встанови бюджет ${goals.finykBudget.toLocaleString("uk-UA")}₴ — додай першу витрату.`;
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
   }
   if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
-    return `${goals.fizrukWeeklyGoal}× на тиждень — починай із розминки.`;
+    return `${goals.fizrukWeeklyGoal}× на тиждень, починай із розминки.`;
   }
   if (moduleId === "routine" && goals.routineFirstHabit) {
-    const habitLabels: Record<string, string> = {
-      water: "«Пити воду»",
-      exercise: "«Зарядка»",
-      reading: "«Читання»",
-    };
-    const label = habitLabels[goals.routineFirstHabit] ?? "свою звичку";
-    return `Створи ${label} — і починається серія днів.`;
+    const habitLabels: Record<string, string> = COPY.habitLabels;
+    const label =
+      habitLabels[goals.routineFirstHabit] ?? COPY.habitLabels.fallback;
+    return `Створи ${label}, і починається серія днів.`;
   }
   if (moduleId === "nutrition" && goals.nutritionGoal) {
-    const goalLabels: Record<string, string> = {
-      lose: "Схуднути",
-      gain: "Набрати масу",
-      maintain: "Підтримка",
-    };
-    return `${goalLabels[goals.nutritionGoal]} — залогай перший прийом їжі.`;
+    const goalLabels: Record<string, string> = COPY.goalLabels;
+    return `${goalLabels[goals.nutritionGoal]}, залогай перший прийом їжі.`;
   }
   return fallback;
 }
@@ -137,10 +129,12 @@ interface FirstActionHeroCardProps {
 }
 
 export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
-  const picks = useMemo<string[]>(() => {
+  const picks = useMemo<ModuleId[]>(() => {
     const raw = getVibePicks();
-    return raw.length > 0 ? raw : Object.keys(ACTIONS);
+    return raw.filter((id) => isModuleId(id));
   }, []);
+
+  const [activePresetId, setActivePresetId] = useState<ModuleId | null>(null);
 
   // `rankPrimary` reads onboarding goals once and runs a trivial
   // 4-module scan; memoising would add more bookkeeping than it
@@ -154,13 +148,8 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     [ranking.others],
   );
 
-  // Module id whose PresetSheet is currently open, or `null` if closed.
-  // Keeping the hero card mounted while the sheet is open means the
-  // user can dismiss the sheet and try another module without losing
-  // their FTUX context.
-  const [activePresetId, setActivePresetId] = useState<ModuleId | null>(null);
-
   useEffect(() => {
+    if (picks.length === 0) return;
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
       picks,
       primary: primaryId,
@@ -178,12 +167,17 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
       module: id,
       primary: primaryId,
-      primary_reason: ranking.reason,
+      primary_reason: picks.length === 0 ? "no-picks" : ranking.reason,
       // S2.3: "chip" replaces the legacy "expand" tag now that the inline
       // chip row is always-visible. PostHog dashboards reading the raw
       // event can compute switch-rate as `count(via="chip") /
       // count(*)`. Keep the value short (one token) — it's faceted on.
-      via: id === primaryId ? "primary" : "chip",
+      via:
+        picks.length === 1 && id === primaryId
+          ? "primary"
+          : picks.length > 1
+            ? "equal-choice"
+            : "chip",
     });
     setActivePresetId(id);
   };
@@ -199,7 +193,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     // add-sheet — і `detectFirstRealEntry` → `useFirstEntryCelebration`
     // ніколи б не спрацювали. Натомість лишаємо прапор висіти: при
     // наступному маунті дашборду hero-картка повертається, а коли
-    // справжній запис з'явиться — обидва механізми знімуть її разом.
+    // справжній запис зʼявиться — обидва механізми знімуть її разом.
     setActivePresetId(null);
     if (persisted) {
       clearFirstActionPending();
@@ -207,24 +201,201 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
     }
   };
 
+  if (picks.length === 0) {
+    const moduleIds = Object.keys(ACTIONS).filter((id): id is ModuleId =>
+      isModuleId(id),
+    );
+
+    return (
+      <>
+        <Card
+          as="section"
+          radius="lg"
+          padding="md"
+          className="relative space-y-3"
+          aria-label={COPY.sheetLabel}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <SectionHeading as="div" size="xs" variant="subtle">
+                {COPY.kicker}
+              </SectionHeading>
+              <h2 className="text-style-title text-text mt-0.5">
+                {COPY.headingMany}
+              </h2>
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
+                {COPY.subtitleSingle}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              onClick={dismiss}
+              aria-label={COPY.hideLabel}
+              className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+            >
+              <Icon name="close" size="md" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {moduleIds.map((id) => {
+              const action = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "w-full min-h-[56px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "text-left transition-[background-color,border-color]",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        action.accent,
+                      )}
+                      aria-hidden
+                    >
+                      <Icon name={action.icon} size="lg" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-style-title text-text">
+                        {action.chipLabel}
+                      </span>
+                      <span className="block text-style-caption text-muted">
+                        {action.title}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+        <PresetSheet
+          open={activePresetId != null}
+          moduleId={activePresetId}
+          onClose={() => setActivePresetId(null)}
+          onPick={handlePresetPick}
+        />
+      </>
+    );
+  }
+
+  if (picks.length > 1) {
+    return (
+      <>
+        <Card
+          as="section"
+          radius="lg"
+          padding="md"
+          className="relative space-y-3"
+          aria-label={COPY.sheetLabel}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <SectionHeading as="div" size="xs" variant="subtle">
+                {COPY.kicker}
+              </SectionHeading>
+              <h2 className="text-style-title text-text mt-0.5">
+                {COPY.headingMany}
+              </h2>
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
+                {COPY.subtitleMulti}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              onClick={dismiss}
+              aria-label={COPY.hideLabel}
+              className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+            >
+              <Icon name="close" size="md" />
+            </Button>
+          </div>
+
+          <div
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+            role="group"
+            aria-label={COPY.picksLabel}
+          >
+            {picks.map((id) => {
+              const action = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "w-full min-h-[60px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "text-left transition-[background-color,border-color]",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        action.accent,
+                      )}
+                      aria-hidden
+                    >
+                      <Icon name={action.icon} size="lg" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-style-title text-text">
+                        {action.chipLabel}
+                      </span>
+                      <span className="block text-style-caption text-muted">
+                        {action.title}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+        <PresetSheet
+          open={activePresetId != null}
+          moduleId={activePresetId}
+          onClose={() => setActivePresetId(null)}
+          onPick={handlePresetPick}
+        />
+      </>
+    );
+  }
+
   if (!primary) return null;
 
   return (
     <>
-      <section
-        className="relative bg-panel border border-line rounded-2xl p-4 shadow-card space-y-3"
-        aria-label="Перша дія"
+      <Card
+        as="section"
+        radius="lg"
+        padding="md"
+        className="relative space-y-3"
+        aria-label={COPY.sheetLabel}
       >
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <SectionHeading as="div" size="sm" variant="subtle">
-              Старт
+            <SectionHeading as="div" size="xs" variant="subtle">
+              {COPY.kicker}
             </SectionHeading>
-            <h2 className="text-base font-bold text-text mt-0.5">
-              Один запис — і головна твоя
+            <h2 className="text-style-title text-text mt-0.5">
+              {picks.length > 1 ? COPY.headingMany : COPY.headingOne}
             </h2>
-            <p className="text-xs text-muted mt-0.5 leading-snug">
-              Цифри нижче — приклад. Твої з&apos;являться після першого запису.
+            <p className="text-style-body text-muted mt-0.5 leading-snug">
+              {COPY.subtitleEmpty}
             </p>
           </div>
           <Button
@@ -232,10 +403,10 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             size="xs"
             iconOnly
             onClick={dismiss}
-            aria-label="Сховати"
+            aria-label={COPY.hideLabel}
             className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
           >
-            <Icon name="close" size={16} />
+            <Icon name="close" size="md" />
           </Button>
         </div>
 
@@ -258,15 +429,15 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
               <Icon name={primary.icon} size={22} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-text">{primary.title}</div>
-              <div className="text-xs text-muted mt-0.5 truncate">
+              <div className="text-style-title text-text">{primary.title}</div>
+              <div className="text-style-body text-muted mt-0.5 truncate">
                 {getGoalAwareDesc(primaryId, primary.desc)}
               </div>
             </div>
             <Icon
               name="chevron-right"
               size={18}
-              className="text-brand-strong dark:text-brand"
+              className="text-brand-strong"
             />
           </div>
         </button>
@@ -280,9 +451,11 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
           <div
             className="flex flex-wrap items-center gap-2 pt-1"
             role="group"
-            aria-label="Інший модуль"
+            aria-label={COPY.otherModuleLabel}
           >
-            <span className="text-style-caption text-muted shrink-0">Або:</span>
+            <span className="text-style-caption text-muted shrink-0">
+              {COPY.orPrefix}
+            </span>
             {others.map((id) => {
               const a = ACTIONS[id];
               return (
@@ -305,7 +478,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
                     )}
                     aria-hidden
                   >
-                    <Icon name={a.icon} size={12} />
+                    <Icon name={a.icon} size="xs" />
                   </span>
                   <span className="text-style-caption font-medium">
                     {a.chipLabel}
@@ -315,7 +488,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             })}
           </div>
         )}
-      </section>
+      </Card>
       <PresetSheet
         open={activePresetId != null}
         moduleId={activePresetId}

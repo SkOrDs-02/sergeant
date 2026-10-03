@@ -5,7 +5,7 @@
  *  - Рендер заголовка та секції цілей навіть з default prefs.
  *  - Goal-preset chip натискання викликає `updatePrefs` з пресет-значеннями
  *    (контракт «пресет → MMKV» з web parity).
- *  - `GoalRangeWarning` показується для занадто низького kcal (м'які
+ *  - `GoalRangeWarning` показується для занадто низького kcal (мʼякі
  *    наукові межі з `@sergeant/nutrition-domain`).
  *  - Прогрес-бар і `MacroBadge` для журналу рендеряться коли є kcal-ціль.
  *  - `DailyPlanMealRow` рендериться для AI-плану (опційний `dayPlan`).

@@ -52,7 +52,7 @@ describe("applyStrictMode (одиничний tool)", () => {
     expect(tool.input_schema).not.toHaveProperty("additionalProperties");
   });
 
-  it("ставить `additionalProperties: false` на root-об'єкті", () => {
+  it("ставить `additionalProperties: false` на root-обʼєкті", () => {
     const tool: AnthropicTool = {
       name: "t",
       description: "d",

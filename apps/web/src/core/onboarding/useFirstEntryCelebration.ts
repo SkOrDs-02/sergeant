@@ -7,7 +7,7 @@
 //   - Fires exactly once, client-side, per browser profile.
 //   - Skipped on sessions where the user already has real data on mount.
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import type { DashboardModuleId } from "@sergeant/shared";
 import { getTimeToValueMs } from "./vibePicks";
 import { getFirstRealEntryModule } from "./firstRealEntry";
@@ -29,38 +29,41 @@ interface CelebrationState {
 
 export function useFirstEntryCelebration(
   hasRealEntry: boolean,
+  /**
+   * Total non-demo entry count across all modules right now
+   * (`countRealEntries()`). LOG-8 guard (2026-09-01 product audit): a
+   * device's SQLite warm caches hydrate ASYNCHRONOUSLY after a sync pull,
+   * so on a brand-new device for a 60-day-old account `hadEntryAtMount`
+   * below can lock in `false` before the pull lands, then `hasRealEntry`
+   * flips `true` once the caches warm — indistinguishable from a genuine
+   * first entry by the boolean alone. The count tells them apart: a real
+   * "first entry" transition has a small count (normally 1); an account
+   * whose history just arrived over sync has many. See
+   * `docs/work/specs/audits/2026-09-01-product-audit/findings.md` § LOG-8.
+   */
+  realEntryCount: number,
 ): CelebrationState {
   const [open, setOpen] = useState(false);
   const [ttvMs, setTtvMs] = useState<number | null>(null);
   const [moduleId, setModuleId] = useState<DashboardModuleId | null>(null);
-  const firedRef = useRef(false);
-  // Snapshot value at mount — if user already has data, skip celebration
-  const initialRef = useRef(hasRealEntry);
+  const [hadEntryAtMount] = useState(() => hasRealEntry);
+  const [celebrationFired, setCelebrationFired] = useState(false);
 
   const close = useCallback(() => {
     setOpen(false);
   }, []);
 
-  useEffect(() => {
-    if (firedRef.current) return;
-    if (initialRef.current) {
-      firedRef.current = true;
-      return;
-    }
-    if (!hasRealEntry) return;
-    firedRef.current = true;
-    // Read TTV value persisted by detectFirstRealEntry
-    const ttv = getTimeToValueMs();
-    // External-event adaptor: this effect translates a freshly-flipped
-    // first-real-entry flag into the celebration state. The setState
-    // calls drive a one-shot UI transition, not a render derivation,
-    // so we suppress `react-hooks/set-state-in-effect` rather than
-    // restructure (same precedent as `useRoutineAppState.ts:201`).
-
-    setTtvMs(ttv);
+  if (
+    !hadEntryAtMount &&
+    hasRealEntry &&
+    !celebrationFired &&
+    realEntryCount <= 1
+  ) {
+    setCelebrationFired(true);
+    setTtvMs(getTimeToValueMs());
     setModuleId(getFirstRealEntryModule());
     setOpen(true);
-  }, [hasRealEntry]);
+  }
 
   return { open, ttvMs, moduleId, close };
 }

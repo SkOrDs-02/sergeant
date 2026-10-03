@@ -45,8 +45,17 @@ vi.mock("../db/sqlite", () => ({ getSqliteDb: () => mockGetSqliteDb() }));
 
 // ── api-client ───────────────────────────────────────────────────────────────
 const mockPushV2 = vi.fn(async (..._a: unknown[]) => ({ pushed: 0 }));
+const mockPullV2 = vi.fn(async (..._a: unknown[]) => ({
+  ops: [],
+  next_cursor: null,
+}));
 vi.mock("@shared/api", () => ({
-  apiClient: { syncV2: { pushV2: (...a: unknown[]) => mockPushV2(...a) } },
+  apiClient: {
+    syncV2: {
+      pushV2: (...a: unknown[]) => mockPushV2(...a),
+      pullV2: (...a: unknown[]) => mockPullV2(...a),
+    },
+  },
 }));
 
 // ── sentry ───────────────────────────────────────────────────────────────────
@@ -67,6 +76,7 @@ const mockRecoverDeadLetter = vi.fn(async (..._a: unknown[]) => ({
   recovered: 0,
 }));
 const mockPurgeStale = vi.fn(async (..._a: unknown[]) => 0);
+const mockCountRejected = vi.fn(async (..._a: unknown[]) => 2);
 vi.mock("@sergeant/db-schema/sqlite", () => ({
   repairPartialOutboxMigration: (...a: unknown[]) => mockRepair(...a),
   ROUTINE_MIGRATIONS_TABLE: "__routine_migrations",
@@ -77,6 +87,7 @@ vi.mock("@sergeant/db-schema/sqlite", () => ({
   markOutboxRejected: vi.fn(async () => {}),
   planRetry: vi.fn(),
   countOutboxByStatus: (...a: unknown[]) => mockCountByStatus(...a),
+  countRejectedOutbox: (...a: unknown[]) => mockCountRejected(...a),
   recoverDeadLetter: (...a: unknown[]) => mockRecoverDeadLetter(...a),
   purgeStaleTerminalOutbox: (...a: unknown[]) => mockPurgeStale(...a),
   SYNC_OP_OUTBOX_STALE_TTL_DAYS: 30,
@@ -93,7 +104,9 @@ vi.mock("@sergeant/db-schema/migrate/sqlite", () => ({
 
 import {
   __resetSyncEngineWriterForTests,
+  bootSyncEngineReader,
   bootSyncEngineWriter,
+  getSyncEngineReader,
   getSyncEngineWriter,
 } from "./singleton";
 
@@ -132,8 +145,13 @@ describe("createDefaultRuntime (default boot path)", () => {
   it("getStatus on the runtime resolves the live counts via countOutboxByStatus", async () => {
     const runtime = await bootSyncEngineWriter();
     const status = await runtime!.getStatus();
-    expect(status).toEqual({ pending: 0 });
+    // `rejected` перекривається відфільтрованим лічильником (без
+    // `lww_conflict`), щоб пілюля і `SyncRejectedList` рахували одну множину.
+    expect(status).toEqual({ pending: 0, rejected: 2 });
     expect(mockCountByStatus).toHaveBeenCalled();
+    expect(mockCountRejected).toHaveBeenCalledWith(expect.anything(), {
+      excludeReasons: ["lww_conflict"],
+    });
   });
 
   it("tags failure and reports via captureException when migrations throw", async () => {
@@ -147,6 +165,35 @@ describe("createDefaultRuntime (default boot path)", () => {
     expect(mockSetTag).toHaveBeenCalledWith("outbox.boot.outcome", "failed");
     expect(captureException).toHaveBeenCalledWith(expect.any(Error), {
       scope: "sync-v2-writer-boot",
+    });
+  });
+});
+
+describe("createDefaultReaderRuntime (default reader boot path)", () => {
+  it("boots a started reader runtime that reuses the shared schema context", async () => {
+    const reader = await bootSyncEngineReader();
+
+    expect(reader).not.toBeNull();
+    expect(getSyncEngineReader()).toBe(reader);
+
+    expect(mockRepair).toHaveBeenCalledTimes(1);
+    expect(mockRunMigrations).toHaveBeenCalledTimes(1);
+    expect(mockSetTag).toHaveBeenCalledWith(
+      "sync.origin_device_id_present",
+      "true",
+    );
+  });
+
+  it("tags failure and reports via captureException when reader boot fails", async () => {
+    mockRunMigrations.mockRejectedValueOnce(new Error("reader migrate boom"));
+    const captureException = vi.fn();
+
+    const reader = await bootSyncEngineReader({ captureException });
+
+    expect(reader).toBeNull();
+    expect(mockSetTag).toHaveBeenCalledWith("outbox.boot.outcome", "failed");
+    expect(captureException).toHaveBeenCalledWith(expect.any(Error), {
+      scope: "sync-v2-reader-boot",
     });
   });
 });

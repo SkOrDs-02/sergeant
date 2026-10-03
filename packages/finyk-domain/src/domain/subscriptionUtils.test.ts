@@ -20,7 +20,7 @@ describe("getLastTxForSubscription", () => {
     expect(getLastTxForSubscription({}, null as unknown as never[])).toBeNull();
   });
 
-  it("повертає прив'язану tx, якщо linkedTxId знайдено і вона витратна", () => {
+  it("повертає привʼязану tx, якщо linkedTxId знайдено і вона витратна", () => {
     const transactions = [
       { id: "t1", amount: -200_00, time: 1_700_000_000 },
       { id: "t2", amount: -100_00, time: 1_700_010_000 }, // новіша
@@ -150,6 +150,23 @@ describe("getSubscriptionAmountMeta", () => {
   it("повертає null amount + '$' коли sub.currency === 'USD' і tx не знайдена", () => {
     const meta = getSubscriptionAmountMeta({ currency: "USD" }, []);
     expect(meta).toEqual({ amount: null, currency: "$", lastTx: null });
+  });
+
+  // Р20: підписка з пропозиції знає очікувану суму ще до першого збігу.
+  it("без зіставленої tx показує expectedAmount замість «сума невідома»", () => {
+    const meta = getSubscriptionAmountMeta(
+      { keyword: "netflix", expectedAmount: 19_900 },
+      [],
+    );
+    expect(meta).toEqual({ amount: 199, currency: "₴", lastTx: null });
+  });
+
+  it("зіставлена tx важить більше за expectedAmount", () => {
+    const meta = getSubscriptionAmountMeta(
+      { keyword: "netflix", expectedAmount: 19_900 },
+      [{ id: "t", amount: -24_900, time: 1, description: "Netflix" }],
+    );
+    expect(meta.amount).toBe(249);
   });
 
   it("обчислює amount як |tx.amount/100| коли tx знайдена", () => {

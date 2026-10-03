@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ANALYTICS_EVENTS } from "./analyticsEvents";
+import { ANALYTICS_EVENTS, type AnalyticsEventName } from "./analyticsEvents";
+import { VALUE_LOOP_ANALYTICS_EVENTS } from "./analyticsEvents.valueLoops";
 
 describe("ANALYTICS_EVENTS registry", () => {
   it("is frozen so callsites cannot mutate event names at runtime", () => {
@@ -48,6 +49,38 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.SUBSCRIPTION_RENEWED).toBe("subscription_renewed");
   });
 
+  it("exposes the feedback-loop group verbatim", () => {
+    // `nps_survey_eligible` is referenced verbatim by the PostHog Survey
+    // display condition (dashboard-side config), and `feedback_submitted`
+    // by the feedback-inbox insight. A rename here silently kills the NPS
+    // survey trigger — pin the strings.
+    expect(ANALYTICS_EVENTS.FEEDBACK_WIDGET_OPENED).toBe(
+      "feedback_widget_opened",
+    );
+    expect(ANALYTICS_EVENTS.FEEDBACK_SUBMITTED).toBe("feedback_submitted");
+    expect(ANALYTICS_EVENTS.NPS_SURVEY_ELIGIBLE).toBe("nps_survey_eligible");
+  });
+
+  it("exposes the hub-axis baseline group verbatim", () => {
+    // Базова лінія перед віссю дії хабу (P3). Рядки пінимо, бо саме ці
+    // імена підуть у PostHog-запити двотижневого заміру, з яким потім
+    // порівнюватимуть A1 — ренейм посеред заміру обнулив би порівняння.
+    expect(ANALYTICS_EVENTS.HUB_MODULE_TILE_CLICKED).toBe(
+      "hub_module_tile_clicked",
+    );
+    expect(ANALYTICS_EVENTS.MODULE_OPENED).toBe("module_opened");
+    expect(ANALYTICS_EVENTS.TODAY_FOCUS_CTA_CLICKED).toBe(
+      "today_focus_cta_clicked",
+    );
+  });
+
+  it("exposes the billing-failure (observability) event verbatim", () => {
+    // Fired server-side from the Stripe webhook handler; PostHog funnels for
+    // checkout drop-rate / 3DS-fail rate key off this exact string. Renaming
+    // it silently breaks those dashboards — pin it here.
+    expect(ANALYTICS_EVENTS.PAYMENT_FAILED).toBe("payment_failed");
+  });
+
   it("exposes the Pricing / Waitlist (Phase 0 monetization) group verbatim", () => {
     expect(ANALYTICS_EVENTS.PRICING_VIEWED).toBe("pricing_viewed");
     expect(ANALYTICS_EVENTS.PRICING_CTA_CLICKED).toBe("pricing_cta_clicked");
@@ -65,9 +98,13 @@ describe("ANALYTICS_EVENTS registry", () => {
 
     // Landing surfaces (initiative 0010 Phase 6.1).
     expect(ANALYTICS_EVENTS.LANDING_VIEWED).toBe("landing_viewed");
-    expect(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED).toBe(
-      "landing_email_captured",
+    expect(ANALYTICS_EVENTS.LANDING_TELEGRAM_CLICKED).toBe(
+      "landing_telegram_clicked",
     );
+    expect(ANALYTICS_EVENTS.LANDING_WIDGET_CHANGED).toBe(
+      "landing_widget_changed",
+    );
+    expect(ANALYTICS_EVENTS.LANDING_FAQ_OPENED).toBe("landing_faq_opened");
 
     // Auth multi-provider (initiative 0010 Phase 4.3).
     expect(ANALYTICS_EVENTS.SIGNUP_PROVIDER_SELECTED).toBe(
@@ -122,5 +159,116 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.PERMISSION_STATUS_CHANGED).toBe(
       "permission_status_changed",
     );
+  });
+
+  // Хвиля 2 — петлі цінності. Ці 10 рядків заморожені ДО того, як
+  // інструментовано хоч один callsite: `.telemetry/tracking-plan.yaml`
+  // § naming_convention прямо каже, що ренейм ламає дашборди й губить
+  // історію. Асерти нижче роблять перейменування падінням тесту, а не
+  // мовчазною смертю дашборда.
+  it("exposes the Wave-2 value-loop groups verbatim", () => {
+    // Сигнал показано / активовано / приховано (спільний шов InsightCard).
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN).toBe("value_signal_shown");
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED).toBe(
+      "value_signal_activated",
+    );
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED).toBe(
+      "value_signal_dismissed",
+    );
+    expect(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI).toBe("value_signal_ask_ai");
+
+    // Друга половина петлі — «дію зроблено», по одній події на модуль.
+    expect(ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED).toBe(
+      "routine_habit_checked",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED).toBe(
+      "fizruk_workout_finished",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_STARTED).toBe(
+      "fizruk_workout_started",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_WORKOUT_DISCARDED).toBe(
+      "fizruk_workout_discarded",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_REST_TIMER_DONE).toBe(
+      "fizruk_rest_timer_done",
+    );
+    expect(ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED).toBe("fizruk_injury_marked");
+    expect(ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED).toBe(
+      "fizruk_injury_cleared",
+    );
+    expect(ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED).toBe(
+      "nutrition_meal_logged",
+    );
+    expect(ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED).toBe("finyk_tx_categorized");
+
+    // AI-порада: показ + реакція + провал (тіло поради в payload не існує).
+    expect(ANALYTICS_EVENTS.AI_ADVICE_SHOWN).toBe("ai_advice_shown");
+    expect(ANALYTICS_EVENTS.AI_ADVICE_REACTED).toBe("ai_advice_reacted");
+    expect(ANALYTICS_EVENTS.AI_ADVICE_FAILED).toBe("ai_advice_failed");
+
+    // Експозиція стріку поза InsightCard.
+    expect(ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN).toBe("routine_streak_shown");
+
+    // Стабільний крос-девайсний advice_id (беta-хардненінг).
+    expect(ANALYTICS_EVENTS.ADVICE_SHOWN).toBe("advice_shown");
+    expect(ANALYTICS_EVENTS.ADVICE_DISMISSED).toBe("advice_dismissed");
+
+    // Тертя запису: «від кнопки до збереженого».
+    expect(ANALYTICS_EVENTS.ENTRY_COMPOSE_FINISHED).toBe(
+      "entry_compose_finished",
+    );
+  });
+
+  it("keeps the Wave-2 value-loop group reachable through the single registry", () => {
+    // Група винесена в `analyticsEvents.valueLoops.ts` заради
+    // module-size-дисципліни (Hard Rule #18). Реєстр мусить лишатися
+    // ОДИН: якщо spread колись загубиться, доступ
+    // `ANALYTICS_EVENTS.<X>` мовчки стане `undefined` — цей тест ловить
+    // саме це, а не просто рядкові значення.
+    const wave2 = [
+      ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN,
+      ANALYTICS_EVENTS.VALUE_SIGNAL_ACTIVATED,
+      ANALYTICS_EVENTS.VALUE_SIGNAL_DISMISSED,
+      ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI,
+      ANALYTICS_EVENTS.ROUTINE_HABIT_CHECKED,
+      ANALYTICS_EVENTS.FIZRUK_WORKOUT_STARTED,
+      ANALYTICS_EVENTS.FIZRUK_WORKOUT_FINISHED,
+      ANALYTICS_EVENTS.FIZRUK_WORKOUT_DISCARDED,
+      ANALYTICS_EVENTS.FIZRUK_REST_TIMER_DONE,
+      ANALYTICS_EVENTS.FIZRUK_INJURY_MARKED,
+      ANALYTICS_EVENTS.FIZRUK_INJURY_CLEARED,
+      ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED,
+      ANALYTICS_EVENTS.FINYK_TX_CATEGORIZED,
+      ANALYTICS_EVENTS.AI_ADVICE_SHOWN,
+      ANALYTICS_EVENTS.AI_ADVICE_REACTED,
+      ANALYTICS_EVENTS.AI_ADVICE_FAILED,
+      ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN,
+      ANALYTICS_EVENTS.ADVICE_SHOWN,
+      ANALYTICS_EVENTS.ADVICE_DISMISSED,
+      ANALYTICS_EVENTS.ENTRY_COMPOSE_FINISHED,
+    ];
+
+    // Тип мусить лишатись ЛІТЕРАЛЬНИМ після spread-у, а не розширитись до
+    // `string` — інакше `AnalyticsEventName` тихо перестане ловити одруківки
+    // на callsite-ах. Ці два рядки падають на typecheck, не на runtime.
+    const literal: "value_signal_shown" = ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN;
+    const fromUnion: AnalyticsEventName = ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN;
+    expect(literal).toBe("value_signal_shown");
+    expect(fromUnion).toBe("routine_streak_shown");
+
+    // Звірка МНОЖИН, а не довжин. Спершу тут стояло `toHaveLength(10)` —
+    // тавтологія проти рукописного літерала. Довжина проти реєстру була вже
+    // кращою, але теж дірявою: дубль у `wave2` плюс пропущена подія дають ту
+    // саму довжину і тест мовчить. Рівність множин ловить обидва випадки.
+    expect(new Set(wave2)).toEqual(
+      new Set(Object.values(VALUE_LOOP_ANALYTICS_EVENTS)),
+    );
+    // Окремо — що дублів немає: `Set` вище сам би їх схлопнув.
+    expect(wave2).toHaveLength(new Set(wave2).size);
+    for (const name of wave2) {
+      expect(typeof name).toBe("string");
+      expect(Object.values(ANALYTICS_EVENTS)).toContain(name);
+    }
   });
 });

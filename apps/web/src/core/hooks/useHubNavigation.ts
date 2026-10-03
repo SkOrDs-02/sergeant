@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import type { ModuleAccent } from "@sergeant/design-tokens";
+import { useCallback, useState } from "react";
+import { startViewTransition } from "@shared/lib/ui/viewTransition";
+import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
+import { isHubModuleId, type HubModuleId } from "@shared/lib/modules/hubNav";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ANALYTICS_EVENTS } from "@sergeant/shared";
+import { ANALYTICS_EVENTS, type ModuleOpenSource } from "@sergeant/shared";
 import { capturePostHogEvent } from "../observability/posthog";
+import { trackEvent } from "../observability/analytics";
 import { recordModuleOpen } from "../lib/recentModules";
 import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
-import { useBrowserLocation } from "./useBrowserLocation";
-
-const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
 
 /**
  * Subset of {@link VALID_MODULES} which has graduated from the legacy
@@ -22,23 +22,37 @@ const VALID_MODULES = new Set(["finyk", "fizruk", "routine", "nutrition"]);
  */
 const PATH_BASED_MODULES = PATH_BASED_MODULE_IDS;
 
-export type HubModuleId = ModuleAccent;
+// `HubModuleId` живе у `@shared/lib/modules/hubNav`; реекспортуємо для
+// споживачів цього хука (ModuleShell / HubShellContext / useModuleRouteLoader).
+export type { HubModuleId };
 
 export interface OpenModuleOptions {
   hash?: string | null;
+  /**
+   * Звідки відкрито модуль — для `MODULE_OPENED` (базова лінія перед
+   * віссю дії хабу, P3 `anti-slop-strategy.md`). Без значення → `other`.
+   */
+  source?: ModuleOpenSource | undefined;
 }
 
 export interface HubNavigation {
   activeModule: HubModuleId | null;
   openModule: (id: string | null | undefined, opts?: OpenModuleOptions) => void;
   goToHub: () => void;
+  /**
+   * History-aware "back" for the module header back button: steps back one
+   * in-app entry when the browser history has one (idx > 0), otherwise falls
+   * back to the hub. Distinct from {@link goToHub}, which always hard-navigates
+   * to `/` (used by swipe-back and the module error boundary).
+   */
+  goBackOrHub: () => void;
   /** Navigate to hub and scroll to the given module's settings section. */
   goToModuleSettings: (moduleId: HubModuleId) => void;
   moduleAnimClass: "module-enter" | "hub-enter";
 }
 
 function parseModule(value: string | null): HubModuleId | null {
-  if (value && VALID_MODULES.has(value)) return value as HubModuleId;
+  if (isHubModuleId(value)) return value;
   return null;
 }
 
@@ -61,10 +75,23 @@ function parsePathnameModule(pathname: string): HubModuleId | null {
   return firstSegment as HubModuleId;
 }
 
+/**
+ * History depth within the current app session. React Router 7 stores an
+ * incrementing `idx` on `window.history.state`; `idx > 0` means there is a
+ * previous in-app entry we can safely `navigate(-1)` to (mobile-audit A5).
+ */
+function readHistoryIdx(): number {
+  if (typeof window === "undefined") return 0;
+  const state = window.history.state as { idx?: number } | null;
+  return typeof state?.idx === "number" ? state.idx : 0;
+}
+
 export function useHubNavigation(): HubNavigation {
   const navigate = useNavigate();
-  const routerLocation = useLocation();
-  const location = useBrowserLocation(routerLocation);
+  // Module entry is path/search driven. React Router is the canonical
+  // location; a second native-location snapshot can be stale between rapid
+  // clicks and incorrectly re-apply the previous module.
+  const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
 
   // Pathname wins over `?module=` — once a domain has migrated, the
@@ -82,9 +109,30 @@ export function useHubNavigation(): HubNavigation {
   >("module-enter");
 
   const goToHub = useCallback(() => {
-    setModuleAnimClass("hub-enter");
-    setActiveModule(null);
-    navigate("/", { replace: false });
+    // R2-V-1/V-2 · Wrap the visible module→hub swap in a view transition
+    // so the module card morphs back into its hub tile. Keep the state swap
+    // and URL mutation in the same transition transaction so neither can
+    // race the other during rapid taps.
+    startViewTransition(() => {
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+      navigate("/", { replace: false });
+    });
+  }, [navigate]);
+
+  const goBackOrHub = useCallback(() => {
+    if (readHistoryIdx() > 0) {
+      // A previous in-app entry exists — step back through history so the
+      // deep-page → module-overview → hub chain unwinds naturally.
+      navigate(-1);
+      return;
+    }
+    // Fresh entry / deep link with no in-app history — land on the hub.
+    startViewTransition(() => {
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+      navigate("/", { replace: false });
+    });
   }, [navigate]);
 
   const goToModuleSettings = useCallback(
@@ -109,65 +157,61 @@ export function useHubNavigation(): HubNavigation {
   const openModule = useCallback(
     (id: string | null | undefined, opts: OpenModuleOptions = {}) => {
       const nextId = String(id ?? "").trim();
-      if (!VALID_MODULES.has(nextId)) return;
-      const typedId = nextId as HubModuleId;
-      const isSame = typedId === activeModule;
-
-      const isPathBased = PATH_BASED_MODULES.has(typedId);
-      let hashStr = "";
+      if (!isHubModuleId(nextId)) return;
+      const typedId = nextId;
       let pathSuffix = "";
       try {
         const raw = opts.hash != null ? String(opts.hash).trim() : "";
         if (raw) {
-          // For path-based modules, "log" means `/nutrition/log`; for
-          // hash-based ones it stays `#log` until they migrate.
-          // Strip leading `#` either way so callers can pass either form.
+          // All modules are path-based. Strip a legacy leading hash so old
+          // callers can keep passing either "log" or "#log".
           const cleaned = raw.startsWith("#") ? raw.slice(1) : raw;
-          if (isPathBased) {
-            pathSuffix = cleaned ? `/${cleaned}` : "";
-          } else {
-            hashStr = `#${cleaned}`;
-            window.location.hash = hashStr;
-          }
-        } else if (!isPathBased && !isSame) {
-          // Legacy hash-router modules expect a clean hash on entry
-          // when no specific page was requested.
-          window.location.hash = "";
+          pathSuffix = cleaned ? `/${cleaned}` : "";
         }
       } catch {
         /* ignore */
       }
 
-      setModuleAnimClass("module-enter");
-      setActiveModule(typedId);
+      // R2-V-1/V-2 · Hub→module entry: the tapped hub tile morphs into
+      // the module header via matching `view-transition-name`s while the
+      // rest of the surface crossfades.
+      startViewTransition(() => {
+        setModuleAnimClass("module-enter");
+        setActiveModule(typedId);
+      });
       // Best-effort tracker for `prefetchCriticalModules` priority —
       // see `core/lib/recentModules.ts`. Storage failures are swallowed
       // there; nothing here cares about the result.
       recordModuleOpen(typedId);
-      const target = isPathBased
-        ? `/${typedId}${pathSuffix}`
-        : `/?module=${typedId}${hashStr}`;
-      navigate(target, { replace: false });
+      // Базова лінія перед віссю дії хабу (P3, рішення власника
+      // 2026-08-07): «відкриття модуля як продуктова подія». Стріляє
+      // ТУТ, а не в кожному вході окремо, бо крізь цю функцію проходять
+      // усі шляхи — проп із головної, шина `hub:open-module`, PWA-shortcut
+      // із сервіс-воркера. Джерело їде property-полем.
+      trackEvent(ANALYTICS_EVENTS.MODULE_OPENED, {
+        module: typedId,
+        source: opts.source ?? "other",
+      });
+      navigate(`/${typedId}${pathSuffix}`, { replace: false });
     },
-    [activeModule, navigate],
+    [navigate],
   );
 
-  useEffect(() => {
+  const locKey = `${location.pathname}|${location.search}`;
+  useSyncedFromKey(locKey, () => {
+    const params = new URLSearchParams(location.search);
     const mod =
       parsePathnameModule(location.pathname) ??
-      parseModule(searchParams.get("module"));
-    if (mod !== activeModule) {
-      setModuleAnimClass(mod ? "module-enter" : "hub-enter");
-      setActiveModule(mod);
-    }
-    // `activeModule` is read but also set — adding it would loop.
-    // Setters (`setActiveModule`, `setModuleAnimClass`) are stable.
-  }, [location.pathname, location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+      parseModule(params.get("module"));
+    setModuleAnimClass(mod ? "module-enter" : "hub-enter");
+    setActiveModule(mod);
+  });
 
   return {
     activeModule,
     openModule,
     goToHub,
+    goBackOrHub,
     goToModuleSettings,
     moduleAnimClass,
   };

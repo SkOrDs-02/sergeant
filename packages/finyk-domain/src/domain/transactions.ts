@@ -11,6 +11,7 @@
  */
 
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { txTimeMs } from "../lib/transactions.js";
 import type { Transaction, TransactionSource, TransactionType } from "./types";
 
 interface NormalizeDefaults {
@@ -68,10 +69,10 @@ const SOURCE_ALIASES: Record<string, TransactionSource> = {
  */
 function toSafeTimestampSeconds(input: unknown): number {
   if (typeof input === "number" && Number.isFinite(input)) {
-    // Якщо це мілісекунди (10^10 межа для секунд — приблизно 2286 рік).
-    return input > 10_000_000_000
-      ? Math.floor(input / 1000)
-      : Math.floor(input);
+    // `txTimeMs` (§2.10 canon) makes this decision the other way round
+    // (any → ms); dividing its output back to seconds keeps both
+    // directions on the same 1e10 threshold.
+    return Math.floor(txTimeMs(input) / 1000);
   }
   if (input instanceof Date) return Math.floor(input.getTime() / 1000);
   const parsed = new Date((input as string | number) || Date.now()).getTime();
@@ -208,7 +209,7 @@ export function normalizeTransaction(
   const note = resolveNote(tx, source);
 
   // Стабільний id: або власний, або детермінований від source/time/amount + рандомний хвіст.
-  const fallbackId = `${source}_${time}_${normalizedAmount}_${Math.random().toString(36).slice(2, 8)}`;
+  const fallbackId = `${source}_${time}_${normalizedAmount}_${crypto.randomUUID()}`;
 
   // legacy _source: якщо на вхід приходив оригінальний label (monobank/privatbank/unknown)
   // — зберігаємо його для існуючих перевірок у UI (TxRow і т.п.).
@@ -274,7 +275,7 @@ export function filterStatTransactions(
 }
 
 // Захищаємось від "сирих" входів з неправильною формою: нормалізуємо
-// лише валідні об'єкти, пропускаємо пусті/null/недійсні записи та гарантуємо
+// лише валідні обʼєкти, пропускаємо пусті/null/недійсні записи та гарантуємо
 // унікальність за стабільним id. Остання транзакція з тим же id виграє —
 // це важливо для merge між cache + network, коли сервер повернув свіжу копію.
 export function dedupeAndSortTransactions(
@@ -298,8 +299,9 @@ export function dedupeAndSortTransactions(
 
 /**
  * Перетворює збережену manual-витрату (`addManualExpense`-entry) у
- * нормалізовану Transaction. Зберігає amount у копійках зі знаком "витрата"
- * та проставляє categoryId з поля `category`.
+ * нормалізовану Transaction. Зберігає amount у копійках зі знаком, похідним
+ * від `kind` (expense → відʼємний, income → додатний), та проставляє
+ * categoryId з поля `category`.
  */
 export interface ManualExpenseEntry {
   id: string | number;
@@ -307,6 +309,33 @@ export interface ManualExpenseEntry {
   description?: string;
   amount?: number | string;
   category?: string;
+  kind?: string;
+  /**
+   * Legacy alias для `kind`: HubChat chat-actions (`finykActions/transactions.ts`)
+   * штампували цей запис як `type: "income" | "expense"` до появи `kind` у
+   * формі ручного вводу. Читається як fallback у {@link resolveManualExpenseKind},
+   * ніколи не пишеться новим кодом.
+   */
+  type?: string;
+}
+
+export type ManualExpenseKind = "expense" | "income";
+
+/**
+ * Визначає ефективний `kind` manual-запису: `kind` має пріоритет; за
+ * відсутності — легасі поле `type` (HubChat-записи, зроблені до появи
+ * `kind`); інакше — `"expense"` (старі записи без жодного поля лишаються
+ * валідними без міграції даних).
+ */
+export function resolveManualExpenseKind(
+  entry:
+    | { kind?: string | null | undefined; type?: string | null | undefined }
+    | null
+    | undefined,
+): ManualExpenseKind {
+  if (entry?.kind === "income" || entry?.kind === "expense") return entry.kind;
+  if (entry?.type === "income") return "income";
+  return "expense";
 }
 
 export function manualExpenseToTransaction(
@@ -314,18 +343,47 @@ export function manualExpenseToTransaction(
 ): Transaction {
   const e: ManualExpenseEntry = entry || { id: "" };
   const time = e.date ? Math.floor(new Date(e.date).getTime() / 1000) : 0;
+  const isIncome = resolveManualExpenseKind(e) === "income";
+  const amountMinor = Math.abs(Math.round(Number(e.amount || 0) * 100));
   return normalizeTransaction(
     {
       id: `manual_${e.id}`,
       manual: true,
       manualId: e.id,
       time,
-      // UI зберігає amount як додатнє число у гривнях → конвертуємо у мінус-копійки.
-      amount: -Math.abs(Math.round(Number(e.amount || 0) * 100)),
+      // UI зберігає amount як додатнє число у гривнях → конвертуємо у
+      // копійки зі знаком за kind (expense мінус, income плюс).
+      amount: isIncome ? amountMinor : -amountMinor,
       description: e.description || "",
       mcc: 0,
       raw: { category: e.category },
     },
     { source: "manual", accountId: null, categoryId: e.category || "" },
   );
+}
+
+/**
+ * Банківський потік плюс ручні витрати, одним списком.
+ *
+ * Ручні витрати живуть у storage, а не в потоці транзакцій банку, тож
+ * кожен селектор, який рахує «скільки витрачено», мусить домержити їх сам.
+ * Овервʼю це робило інлайном, а інсайт-хуки отримували сирий банківський
+ * потік - і на одному екрані плашка лімітів казала «Продукти 140%
+ * перевищено», поки інсайт тих самих грошей не бачив (браузерна перевірка
+ * 2026-08-31, готівкова витрата 4 200 грн при ліміті 3 000). Спільна
+ * функція існує, щоб наступний виклик не повторив розходження.
+ *
+ * Вікно не звужує: місячний clamp і фільтр виключень лишаються на совісті
+ * виклику - `useCoffeeLimitInsight` порівнює два місяці, тож клампувати
+ * тут було б помилкою.
+ */
+export function withManualExpenses(
+  transactions: readonly Transaction[] | null | undefined,
+  manualExpenses: readonly ManualExpenseEntry[] | null | undefined,
+): Transaction[] {
+  const bank = Array.isArray(transactions) ? [...transactions] : [];
+  if (!Array.isArray(manualExpenses) || manualExpenses.length === 0) {
+    return bank;
+  }
+  return [...bank, ...manualExpenses.map(manualExpenseToTransaction)];
 }

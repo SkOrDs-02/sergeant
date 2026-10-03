@@ -8,6 +8,8 @@ import {
   DataState,
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
+import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { DailyPlanCard } from "../components/DailyPlanCard";
 import type { PlanMeal } from "../components/DailyPlanMealRow";
@@ -36,6 +38,7 @@ interface NutritionMenuPageProps {
   dayPlan: NutritionDayPlan | null;
   dayPlanBusy: boolean;
   dayPlanQuery: DataStateQueryLike<NutritionDayPlan | null>;
+  dayPlanSavedAt: number | null;
   dayPlanLoadingSkeleton: ReactNode;
   fetchDayPlan: (mealType: string | null) => void | Promise<void>;
   addMealFromPlan: (meal: PlanMeal) => void | Promise<void>;
@@ -65,6 +68,7 @@ export function NutritionMenuPage({
   dayPlan,
   dayPlanBusy,
   dayPlanQuery,
+  dayPlanSavedAt,
   dayPlanLoadingSkeleton,
   fetchDayPlan,
   addMealFromPlan,
@@ -87,6 +91,7 @@ export function NutritionMenuPage({
       <>
         <h1 className="sr-only">Меню</h1>
         <SubTabs
+          ariaLabel="Розділи меню"
           value={menuSubTab}
           onChange={(id) => setMenuSubTab(id as MenuSubTab)}
           tabs={[
@@ -95,7 +100,22 @@ export function NutritionMenuPage({
           ]}
         />
         {menuSubTab === "plan" ? (
-          <DataState query={dayPlanQuery} skeleton={dayPlanLoadingSkeleton}>
+          <DataState
+            query={dayPlanQuery}
+            skeleton={dayPlanLoadingSkeleton}
+            errorAction={
+              // R2-UX-18 · The day-plan derives from cached prefs + recipes;
+              // when it fails, a full reload rebuilds that state reliably
+              // when a bare retry of the query doesn't.
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.location.reload()}
+              >
+                {messages.actions.reload}
+              </Button>
+            }
+          >
             {() => (
               <DailyPlanCard
                 prefs={prefs}
@@ -103,6 +123,7 @@ export function NutritionMenuPage({
                 pantryItems={pantry.effectiveItems}
                 busy={busy}
                 dayPlan={dayPlan}
+                dayPlanSavedAt={dayPlanSavedAt}
                 dayPlanBusy={dayPlanBusy}
                 fetchDayPlan={() => fetchDayPlan(null)}
                 regenMeal={(mealType) => fetchDayPlan(mealType)}
@@ -119,7 +140,6 @@ export function NutritionMenuPage({
         ) : (
           <RecipesCard
             busy={busy}
-            activePantry={pantry.activePantry}
             prefs={prefs}
             setPrefs={setPrefs}
             recommendRecipes={recommendRecipes}

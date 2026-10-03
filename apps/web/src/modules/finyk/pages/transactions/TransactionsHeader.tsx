@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 
 export interface TransactionsHeaderProps {
   monthLabel: string;
@@ -10,6 +11,18 @@ export interface TransactionsHeaderProps {
   showHidden: boolean;
   setShowHidden: (updater: (v: boolean) => boolean) => void;
   hiddenCount: number;
+  /** Batch selection size — drives the inline "Обери транзакції" hint. */
+  selectedCount?: number;
+  /**
+   * Вивантажити видимі операції у CSV. Без колбека кнопка не рендериться:
+   * експортувати нема чого.
+   */
+  onExportCsv?: (() => void) | undefined;
+  /**
+   * Скільки рядків піде у файл. `0` ховає кнопку — порожній CSV із самою
+   * шапкою виглядає як поламаний експорт, а не як порожній місяць.
+   */
+  exportCount?: number;
 }
 
 /**
@@ -32,6 +45,9 @@ export function TransactionsHeader({
   showHidden,
   setShowHidden,
   hiddenCount,
+  selectedCount = 0,
+  onExportCsv,
+  exportCount = 0,
 }: TransactionsHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-3">
@@ -39,30 +55,35 @@ export function TransactionsHeader({
         <button
           onClick={() => goMonth(-1)}
           aria-label="Попередній місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
         >
-          ‹
+          <Icon name="chevron-left" size="sm" />
         </button>
-        <span className="text-style-label text-text capitalize px-1">
-          {monthLabel}
-        </span>
+        <span className="text-style-label text-text px-1">{monthLabel}</span>
         <button
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}
           aria-label="Наступний місяць"
-          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors text-lg disabled:opacity-30"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
         >
-          ›
+          <Icon name="chevron-right" size="sm" />
         </button>
       </div>
       <div className="flex items-center gap-1.5">
         {selectMode ? (
-          <button
-            onClick={exitSelectMode}
-            className="text-xs px-3 py-2 rounded-full border border-primary/40 bg-primary/8 text-primary min-h-[36px] font-semibold"
-          >
-            Скасувати
-          </button>
+          <>
+            {selectedCount === 0 && (
+              <span className="text-style-caption text-muted">
+                Обери операції
+              </span>
+            )}
+            <button
+              onClick={exitSelectMode}
+              className="text-xs px-3 py-2 rounded-full border border-primary/40 bg-primary/8 text-primary min-h-[36px] font-semibold"
+            >
+              Скасувати
+            </button>
+          </>
         ) : (
           <>
             {hiddenCount > 0 && (
@@ -93,15 +114,29 @@ export function TransactionsHeader({
                 )}
               </button>
             )}
+            {/* Експорт стоїть поруч із «прих.» і режимом вибору — у тому
+                самому кластері дій над видимим списком. Ховається разом із
+                ними в select-режимі: вивантажувати те, що людина зараз
+                перебирає, означало б віддати файл із проміжного стану. */}
+            {onExportCsv && exportCount > 0 && (
+              <button
+                onClick={onExportCsv}
+                className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                title={`Вивантажити ${exportCount} у CSV`}
+                aria-label={`Вивантажити операції у CSV: ${exportCount}`}
+              >
+                <Icon name="download" size="md" aria-hidden />
+              </button>
+            )}
             <button
               onClick={() => setSelectMode(true)}
-              className="text-xs px-3 py-2 rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors min-h-[36px]"
+              className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors"
               title="Вибрати кілька"
               aria-label="Режим вибору"
             >
               <svg
-                width="14"
-                height="14"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"

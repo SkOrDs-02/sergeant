@@ -1,33 +1,39 @@
 // Web-обгортка над чистим фінансовим контекстом з `@sergeant/insights`.
-// Читає `localStorage` один раз і готує похідні дані (canonical-id сумарні,
-// множини transferIds тощо), щоб окремі правила не дублювали парсинг.
+// Дані беруться з того самого всесвіту, що й решта дашборду:
+// `readFinykStatsContext` (Mono mirror + ручні записи з SQLite-кешу,
+// канонічний excluded-set, оверрайди категорій, бюджети).
 //
-// Навмисно — тут не використовується typedStore: існуючі LS-ключі читаються
-// у старому форматі, а міграція — окрема фіча (див. `migrateFinykStorage`).
+// AI-CONTEXT (сліпий замір 2026-09-24, Р5 спеки аналітики v2): до цього
+// патча файл читав `finyk_budgets` і `finyk_manual_expenses_v1` з
+// localStorage. Обидва ключі tombstoned і дренаються на буті, тож на
+// будь-якому пристрої після дрену `limits` був порожній, `budget_over_*`
+// не спрацьовував ніколи, і хаб писав «перевищень немає» поруч із карткою
+// «використано 162 % ліміту». Стан лімітів тепер рахує `calcLimitUsages`:
+// той самий прохід, що й картка ліміту в Плануванні та хаб-картка.
+//
 // Правила (у пакеті `@sergeant/insights`) платформо-незалежні; цей файл —
-// єдина точка, де контекст «запікається» з Web-LS.
+// єдина точка, де контекст «запікається» з Web-даних.
 
 import { getCategory } from "../../../modules/finyk/utils";
 import { getCategorySpendList } from "@sergeant/finyk-domain/domain/categories";
+import { calcLimitUsages } from "@sergeant/finyk-domain/domain/budget";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 import { manualCategoryToCanonicalId } from "@sergeant/finyk-domain/domain/personalization";
+import { resolveManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import { Recommendations } from "@sergeant/insights";
-import { safeReadLS } from "@shared/lib/storage/storage";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { readFinykStatsContext } from "../../../modules/finyk/lib/lsStats";
+import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 
 type FinanceContext = Recommendations.FinanceContext;
 type Transaction = Recommendations.Transaction;
-type ManualExpense = Recommendations.ManualExpense;
-type Budget = Recommendations.Budget;
 type CustomCategory = Recommendations.CustomCategory;
 
 // Реекспортуємо тип для консумерів у web, щоб шлях імпорту лишався знайомим.
 export type { FinanceContext };
 // Реекспортуємо helper для консумерів у web (історично жив тут).
 export const txTimestamp = Recommendations.txTimestamp;
-
-function safeLS<T>(key: string, fallback: T): T {
-  return safeReadLS<T>(key, fallback) ?? fallback;
-}
 
 function startOfCurrentMonth(): Date {
   const d = new Date();
@@ -51,63 +57,35 @@ export function buildFinanceContext(): FinanceContext {
   const monthStart = startOfCurrentMonth();
   const monthStartMs = monthStart.getTime();
 
-  const txCache = safeLS<{ txs?: Transaction[] } | Transaction[] | null>(
-    "finyk_tx_cache",
-    null,
-  );
-  const transactions: Transaction[] = Array.isArray(txCache)
-    ? txCache
-    : (txCache?.txs ?? []);
+  const stats = readFinykStatsContext();
+  const transactions: Transaction[] = getVisibleFinykMonoMirrorState()
+    .transactions as Transaction[];
 
-  const budgets = safeLS<Budget[]>("finyk_budgets", []);
-  const txCategories = safeLS<Record<string, string>>("finyk_tx_cats", {});
-  const customCategories = safeLS<CustomCategory[]>("finyk_custom_cats_v1", []);
-  const hiddenTxIds = new Set(safeLS<string[]>("finyk_hidden_txs", []));
+  const { budgets, txCategories } = stats;
+  const txSplits = stats.txSplits as TxSplitsLike;
+  const customCategories: CustomCategory[] = stats.customCategories.map(
+    (c) => ({ id: c.id, label: c.label ?? c.name ?? c.id }),
+  );
+  const hiddenTxIds = new Set(stats.hiddenTxIds);
   const transferIds = new Set(
     Object.entries(txCategories)
-      .filter(([, v]) => v === "internal_transfer")
+      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
       .map(([k]) => k),
   );
-  const manualExpenses = safeLS<ManualExpense[]>(
-    "finyk_manual_expenses_v1",
-    [],
+  // `@sergeant/insights`' ManualExpense contract is expense-only (its rules
+  // add every entry's `amount` straight to spend/velocity/pace totals).
+  // The manual-income feature (fab-and-manual-income spec) writes income
+  // rows into the same table, so they must be filtered out here — otherwise
+  // a salary entry would count as spending in every AI-advice rule.
+  const manualExpenses = getCachedFinykSqliteState().manualExpenses.filter(
+    (e) => resolveManualExpenseKind(e) === "expense",
   );
-  const txSplitsRaw = safeLS<TxSplitsLike>("finyk_tx_splits", {});
-  const txSplits: TxSplitsLike =
-    txSplitsRaw && typeof txSplitsRaw === "object" ? txSplitsRaw : {};
 
   const thisMonthTx = transactions.filter((tx) => {
     if (hiddenTxIds.has(tx.id)) return false;
     if (transferIds.has(tx.id)) return false;
     return txTimestamp(tx) >= monthStartMs;
   });
-
-  // Legacy categorySpend (raw override keys) — збережено для сумісності з
-  // правилами, де categoryId бюджету може не збігатися з canonical id.
-  // budgetLimitsRule використовує як fallback після canonicalMonthSpend.
-  const categorySpend: Record<string, number> = {};
-  for (const tx of thisMonthTx) {
-    if ((tx.amount ?? 0) >= 0) continue;
-    const splits = readSplits(txSplits, tx.id);
-    if (splits.length > 0) {
-      for (const s of splits) {
-        if (!s.categoryId || s.categoryId === "internal_transfer") continue;
-        const amt = Math.abs(Number(s.amount) || 0);
-        if (amt <= 0) continue;
-        categorySpend[s.categoryId] = (categorySpend[s.categoryId] || 0) + amt;
-      }
-    } else {
-      const catId = txCategories[tx.id] || "other";
-      categorySpend[catId] =
-        (categorySpend[catId] || 0) + Math.abs(tx.amount / 100);
-    }
-  }
-  for (const me of manualExpenses) {
-    const ts = new Date(me.date).getTime();
-    if (ts < monthStartMs) continue;
-    const catId = me.category || "other";
-    categorySpend[catId] = (categorySpend[catId] || 0) + Math.abs(me.amount);
-  }
 
   // Canonical-id витрати — делегуємо до getCategorySpendList (єдине
   // джерело правди для Finyk Overview, Budgets і Hub).
@@ -124,7 +102,7 @@ export function buildFinanceContext(): FinanceContext {
   for (const me of manualExpenses) {
     if (new Date(me.date).getTime() < monthStartMs) continue;
     const canonKey = manualCategoryToCanonicalId(me.category) || "other";
-    if (canonKey === "internal_transfer") continue;
+    if (canonKey === INTERNAL_TRANSFER_ID) continue;
     canonicalMonthSpend.set(
       canonKey,
       (canonicalMonthSpend.get(canonKey) || 0) +
@@ -141,7 +119,7 @@ export function buildFinanceContext(): FinanceContext {
     const splits = readSplits(txSplits, tx.id);
     if (splits.length > 0) {
       for (const s of splits) {
-        if (!s.categoryId || s.categoryId === "internal_transfer") continue;
+        if (!s.categoryId || s.categoryId === INTERNAL_TRANSFER_ID) continue;
         canonicalTotalCount.set(
           s.categoryId,
           (canonicalTotalCount.get(s.categoryId) || 0) + 1,
@@ -156,17 +134,27 @@ export function buildFinanceContext(): FinanceContext {
         customCategories,
       );
       const catId = cat?.id;
-      if (!catId || catId === "internal_transfer") continue;
+      if (!catId || catId === INTERNAL_TRANSFER_ID) continue;
       canonicalTotalCount.set(catId, (canonicalTotalCount.get(catId) || 0) + 1);
     }
   }
   for (const me of manualExpenses) {
     const key = manualCategoryToCanonicalId(me.category) || "other";
-    if (key === "internal_transfer") continue;
+    if (key === INTERNAL_TRANSFER_ID) continue;
     canonicalTotalCount.set(key, (canonicalTotalCount.get(key) || 0) + 1);
   }
 
   const limits = budgets.filter((b) => b.type === "limit");
+
+  // Стан лімітів: універсум `bank + manual` без прихованих і виключених зі
+  // статистики, вікно періоду кожного ліміту накладає сам `calcLimitUsages`.
+  const statTx = stats.txs.filter((tx) => !stats.excludedTxIds.has(tx.id));
+  const limitUsage = calcLimitUsages(budgets, statTx, {
+    txCategories,
+    txSplits,
+    customCategories: stats.customCategories,
+    now,
+  });
 
   return {
     now,
@@ -179,8 +167,9 @@ export function buildFinanceContext(): FinanceContext {
     customCategories,
     hiddenTxIds,
     transferIds,
+    txSplits,
     thisMonthTx,
-    categorySpend,
+    limitUsage,
     canonicalMonthSpend,
     canonicalTotalCount,
   };

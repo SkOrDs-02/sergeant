@@ -94,6 +94,36 @@ describe("requireInternalIp — parser", () => {
     });
   });
 
+  it("normalizeIp keeps a real IPv6 address as ipv6", () => {
+    // Не всякий рядок із двокрапками — обгортка над v4. Плутанина сімейства
+    // тут коштує дорого: `BlockList.check(addr, "ipv4")` на v6-адресі не
+    // збігається з жодним записом, тобто allowlist мовчки перетворився б на
+    // «завжди 403» для v6-клієнтів.
+    expect(__internal.normalizeIp("FD00::1")).toEqual({
+      ip: "fd00::1",
+      type: "ipv6",
+    });
+  });
+
+  it("normalizeIp падає у ipv4 на тому, що взагалі не адреса", () => {
+    // `getIp` теоретично може віддати порожнечу чи сміття (проксі без
+    // X-Forwarded-For). Тоді краще піти в перевірку і чесно не збігтися,
+    // ніж кинути виняток посеред мідлвари.
+    expect(__internal.normalizeIp("не-адреса")).toEqual({
+      ip: "не-адреса",
+      type: "ipv4",
+    });
+  });
+
+  it("normalizeIp не приймає ::ffff: з несправжнім хвостом за v4", () => {
+    // Префікс сам собою нічого не доводить: хвіст мусить бути валідною
+    // v4-адресою, інакше згортання дало б адресу, якої не існує.
+    expect(__internal.normalizeIp("::ffff:not-an-ip")).toEqual({
+      ip: "::ffff:not-an-ip",
+      type: "ipv4",
+    });
+  });
+
   it("isAllowlistEmpty true for empty/garbage-only input", () => {
     expect(__internal.isAllowlistEmpty("")).toBe(true);
     expect(__internal.isAllowlistEmpty("   ")).toBe(true);

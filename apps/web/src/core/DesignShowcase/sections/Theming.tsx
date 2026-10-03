@@ -8,13 +8,14 @@ import {
 } from "../_shared/primitives";
 import { useShowcaseSettings } from "../_shared/context";
 
-const SAMPLE_USAGE = `// Toggle theme via classList — tokens cascade for free
-document.documentElement.classList.toggle("dark");
+const SAMPLE_USAGE = `// Three explicit choices, one owner of the <html> classes
+const { choice, setChoice, isDark, isHighContrast } = useTheme();
+setChoice("dark"); // "light" | "dark" | "hc" — no schedule, no "system"
 
 // In Tailwind classes, use semantic tokens — they swap automatically
 <div className="bg-panel text-text border border-line">…</div>
 
-// Anti-pattern (Hard Rule #13): see Do/Don't row below for the raw-palette example`;
+// Anti-pattern (review-only convention): see Do/Don't row below for the raw-palette example`;
 
 const THEME_MATRIX = [
   {
@@ -37,7 +38,7 @@ const THEME_MATRIX = [
   },
   {
     label: "High contrast",
-    tone: "Toggle in showcase top-bar — bumps text + line contrast",
+    tone: "Toggle in showcase top-bar: bumps text + line contrast",
     swatches: [
       { label: "bg-bg", className: "bg-bg" },
       { label: "bg-panel", className: "bg-panel" },
@@ -54,22 +55,23 @@ export function ThemingSection() {
       title="Theming"
       intro={
         <>
-          Світла / темна / high-contrast — всі живуть на одному tokenset.
+          Світла / темна / high-contrast, всі живуть на одному tokenset.
           Перемикач у топ-барі змінює клас на <code>documentElement</code>.
-          Парні <code>dark:bg-stone-900</code> заборонено (HR #13, lint{" "}
-          <code>no-raw-dark-palette</code>).
+          Парні <code>dark:bg-stone-900</code> заборонено, конвенція review-only
+          (ADR-0081); механічно гейтиться лише сирий hex у className (
+          <code>check-design-conventions</code>).
         </>
       }
     >
       <Group label="Поточна тема">
-        <div className="flex items-center gap-3 text-xs text-muted">
+        <div className="flex items-center gap-3 text-style-caption text-muted">
           <span>
             Активна тема:{" "}
             <code className="text-text font-semibold">{theme}</code>
           </span>
           <span className="text-subtle">
             (перемикається у топ-барі або вручну через{" "}
-            <code>useDarkMode()</code>)
+            <code>useTheme().setChoice()</code>)
           </span>
         </div>
       </Group>
@@ -82,7 +84,7 @@ export function ThemingSection() {
               className="bg-panel border border-line rounded-2xl p-4 space-y-2"
             >
               <div className="text-style-label text-text">{row.label}</div>
-              <p className="text-2xs text-muted">{row.tone}</p>
+              <p className="text-style-caption text-muted">{row.tone}</p>
               <div className="flex gap-2 pt-1">
                 {row.swatches.map((s) => (
                   <Swatch
@@ -97,19 +99,23 @@ export function ThemingSection() {
         </div>
       </Group>
 
-      <Group label="Schedule modes (useDarkMode)">
-        <div className="space-y-2 text-xs text-muted">
+      <Group label="Три режими (useTheme)">
+        <div className="space-y-2 text-style-caption text-muted">
           <p>
-            <code className="text-text">manual</code> — вручну через{" "}
-            <code>toggle()</code>. localStorage: <code>hub_dark_mode_v1</code>.
+            <code className="text-text">light</code> /{" "}
+            <code className="text-text">dark</code> /{" "}
+            <code className="text-text">hc</code>: явний вибір користувача, один
+            власник класів <code>dark</code> і <code>hc</code> на{" "}
+            <code>&lt;html&gt;</code>. Режиму «за розкладом» і «як у системі»
+            немає: колишній <code>useDarkMode</code> із manual / system / sunset
+            знято, а збережене <code>system</code> мігрується в одноразовий
+            знімок <code>prefers-color-scheme</code>.
           </p>
           <p>
-            <code className="text-text">system</code> — слухаємо{" "}
-            <code>prefers-color-scheme</code>.
-          </p>
-          <p>
-            <code className="text-text">sunset</code> — Kyiv-широта (~50N),
-            apparent sunrise / sunset з cosine-апроксимацією.
+            Вибір переживає перезавантаження, синхронізується між вкладками і
+            перевстановлюється після bfcache на iOS PWA (<code>pageshow</code>
+            ). Лейбли й іконки для перемикачів беруться з{" "}
+            <code>THEME_CHOICE_LABELS</code> / <code>THEME_CHOICE_ICONS</code>.
           </p>
         </div>
       </Group>
@@ -127,27 +133,28 @@ export function ThemingSection() {
               bad: <code>bg-white dark:bg-stone-900</code>,
             },
             {
-              label: "Theme toggle",
-              good: <code>useDarkMode().toggle()</code>,
+              label: "Theme switch",
+              good: <code>useTheme().setChoice(&quot;dark&quot;)</code>,
               bad: <code>localStorage.setItem(&quot;theme&quot;, …)</code>,
             },
             {
-              label: "Schedule",
-              good: <code>setSchedule(&quot;sunset&quot;)</code>,
-              bad: <code>setTimeout(toggle, msUntilSunset)</code>,
+              label: "Dark class",
+              good: <code>useTheme()</code>,
+              bad: (
+                <code>documentElement.classList.toggle(&quot;dark&quot;)</code>
+              ),
             },
           ]}
         />
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #13", hint: "No raw dark palette" },
-          { label: "HR #11", hint: "No hex in className" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "no-raw-dark-palette" },
-          { label: "no-hex-in-classname" },
+          {
+            label: "check-design-conventions",
+            hint: "raw hex у className, кольори лише через токени",
+          },
         ]}
       />
     </Sec>

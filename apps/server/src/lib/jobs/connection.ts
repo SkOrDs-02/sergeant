@@ -53,20 +53,25 @@ export function createBullConnection(name: string): IORedisClient | null {
  * (`QueueBase`). До цього історично `sergeant:auth-mail` працював і
  * зашивав namespace у назву; тепер namespace задається окремим полем.
  *
- * Зміна Redis-key-layout-у — backwards-compatible: до цього PR-а Redis у
- * production ніколи не був увімкнений (`REDIS_URL` не заданий), тож
- * legacy-job-ів зі старим префіксом не існує.
+ * Зміна Redis-key-layout-у була backwards-compatible: на момент переходу на
+ * окремий `prefix` (2026-05-02, Railway) Redis у production ніколи не був
+ * увімкнений, тож legacy-job-ів зі старим префіксом не існувало. Відтоді
+ * Redis зʼявився — з переїздом на Coolify (2026-07-11) `REDIS_URL` заданий,
+ * і всі три черги реально працюють. Тобто речення вище — історична довідка
+ * про ту міграцію, а не опис поточного стану.
  */
 export const BULLMQ_QUEUE_PREFIX = "sergeant";
 
-/** Ім'я BullMQ-черги, шарене між producer-ом і consumer-ом. */
+/** Імʼя BullMQ-черги, шарене між producer-ом і consumer-ом. */
 export const AUTH_MAIL_QUEUE_NAME = "auth-mail";
 
 /**
- * Черга async-ingestion-у AI memory (PR2 з ADR-0028). Producer-и:
- *   - hooks у `mono/webhook.ts` (finyk) та `digest/weekly-digest.ts` (digest)
- *   - публічний endpoint `POST /api/ai-memory/ingest` для клієнт-driven
- *     sources (nutrition / fizruk / journal / routine)
+ * Черга async-ingestion-у AI memory (PR2 з ADR-0028). Живі producer-и
+ * (ініціатива 0024, замір § Перезамір 2026-09-03) —
+ * `digest/weekly-digest.ts` (`source=digest`) і
+ * `ai-memory/profileMirror.ts` (`source=profile`). `mono/webhook.ts`
+ * (`finyk`) і клієнт-driven `POST /api/ai-memory/ingest` прибрані PR-1
+ * тієї ж ініціативи — жоден із них не мав продюсера в дереві.
  * Consumer — `startMemoryIngestWorker` у `modules/ai-memory/ingestQueue.ts`.
  */
 export const AI_MEMORY_INGEST_QUEUE_NAME = "ai-memory-ingest";

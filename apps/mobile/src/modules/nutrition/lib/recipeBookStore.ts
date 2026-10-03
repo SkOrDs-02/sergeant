@@ -1,7 +1,7 @@
 /**
  * Локальна книга рецептів (mobile).
  *
- * Stage 13 PR #073 of `docs/planning/storage-roadmap.md` —
+ * Stage 13 PR #073 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` —
  * `loadSavedRecipes` reads recipes з SQLite warm cache (`nutrition_recipes`),
  * `saveRecipeBook` диспатчить через `triggerNutritionDualWrite` без
  * MMKV-write. Boot-time `residualImport.ts` дренує старі MMKV-блоби
@@ -16,8 +16,8 @@ import {
   isNutritionDualWriteRegistered,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
-} from "./dualWrite";
-import type { NutritionRecipeSnapshot } from "./dualWrite/diff";
+} from "./sqliteWriter";
+import type { NutritionRecipeSnapshot } from "./sqliteWriter/diff";
 import { peekNutritionDualWriteState } from "./dualWriteState";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 
@@ -49,7 +49,7 @@ export function normalizeSavedRecipe(raw: unknown): SavedRecipe {
   const id =
     o.id && String(o.id).trim()
       ? String(o.id).trim()
-      : `rcp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      : `rcp_${Date.now()}_${crypto.randomUUID()}`;
   return {
     id,
     title: title || "Без назви",
@@ -134,7 +134,7 @@ export function removeSavedRecipe(id: string): boolean {
 }
 
 /**
- * Імпорт з експорту web (JSON) / масиву / об'єкта { recipes: [...] }.
+ * Імпорт з експорту web (JSON) / масиву / обʼєкта { recipes: [...] }.
  * Кожен елемент нормалізується; існуючі id перезаписуються. Усі updates
  * батчаться в один `saveRecipeBook` щоб уникнути race-у з SQLite cache
  * refresh-ом між послідовними викликами.
@@ -162,7 +162,7 @@ export function importRecipesFromJson(
   } else if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
     list = [parsed];
   } else {
-    return { ok: false, error: "Очікується об’єкт рецепта або масив" };
+    return { ok: false, error: "Очікується обʼєкт рецепта або масив" };
   }
 
   if (list.length === 0) {

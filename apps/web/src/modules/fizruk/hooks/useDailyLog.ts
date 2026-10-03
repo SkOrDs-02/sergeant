@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import type { DailyLogEntry as DomainDailyLogEntry } from "@sergeant/fizruk-domain";
-import { mirrorWeightToBiometrics } from "../../../core/profile/biometrics";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractDailyLogSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractDailyLogSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
-
-const KEY = STORAGE_KEYS.FIZRUK_DAILY_LOG;
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 /**
  * Daily log entry schema. Extends the domain `DailyLogEntry` (used by
@@ -28,10 +27,7 @@ export interface DailyLogEntry extends DomainDailyLogEntry {
 }
 
 export type DailyLogNumericField =
-  | "weightKg"
-  | "sleepHours"
-  | "energyLevel"
-  | "moodScore";
+  "weightKg" | "sleepHours" | "energyLevel" | "moodScore";
 
 // AI-DANGER: local id generation for daily-log entries. The `dl_` prefix
 // and time+random shape are relied on by the dual-write/cloud-sync pipeline
@@ -41,40 +37,67 @@ export type DailyLogNumericField =
 // WorkoutTemplatesSection.tsx, useWorkoutTemplates.ts and activeWorkoutLib.ts —
 // keep them in lockstep if this changes.)
 function uid() {
-  return `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
+/**
+ * DCRUD-007 cutover: the journal is sourced from the SQLite cache
+ * (`fizruk_daily_log` table) and persisted exclusively through the
+ * dual-write pipeline — mirroring `useMeasurements`. The legacy
+ * `fizruk_daily_log_v1` LS key was a divergent read source (writes
+ * landed in the structured table, reads came from LS/kv_store, so a
+ * reload "lost" the entry); it is drained on boot via
+ * `importFizrukResidualFromLs` and removed.
+ */
 export function useDailyLog() {
-  const [entries, setEntries] = useState<DailyLogEntry[]>([]);
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [entries, setEntries] = useSqliteTickOverlay<DailyLogEntry[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : (cache.dailyLog as DailyLogEntry[]);
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? []
+        : (cache.dailyLog as DailyLogEntry[]);
+    },
+  );
 
-  useEffect(() => {
-    const loaded = safeReadLS<DailyLogEntry[]>(KEY, []);
-    if (Array.isArray(loaded)) setEntries(loaded);
-  }, []);
+  // AI-CONTEXT: prev для diff-у — з останнього наміру, не з сирого кешу;
+  // чому — у шапці `fizrukDualWriteIntent.ts` (undo-гонка журналу тіла,
+  // PR #64). Стережеться `useDailyLog.undoRace.test.tsx`.
+  const intended = useFizrukIntendedSlice<"dailyLog">(sqliteCacheTick);
 
-  const persist = useCallback((next: DailyLogEntry[]) => {
-    setEntries(next);
-    safeWriteLS(KEY, next);
-    // Stage 12 / PR #070f-dualwrite — mirror the LS write into SQLite
-    // through the dual-write pipeline. Fire-and-forget; trigger is a
-    // no-op when the context is not registered (pre-auth).
-    const prevDualWrite =
-      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    const nextDualWrite = {
-      ...prevDualWrite,
-      dailyLog: extractDailyLogSnapshots(next),
-    };
-    try {
-      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-    } catch {
-      /* trigger is fire-and-forget — never propagate */
-    }
-  }, []);
+  const persist = useCallback(
+    (next: DailyLogEntry[]) => {
+      setEntries(next);
+      // Stage 12 / PR #070f-dualwrite — persist through the dual-write
+      // pipeline (SQLite is the source of truth for the journal).
+      // Fire-and-forget; trigger is a no-op when the context is not
+      // registered (pre-auth).
+      const transition = fizrukDualWriteTransition(
+        "dailyLog",
+        intended,
+        extractDailyLogSnapshots(next),
+      );
+      try {
+        triggerFizrukDualWrite(transition.prev, transition.next);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [intended, setEntries],
+  );
 
   const addEntry = useCallback(
     (data: Partial<DailyLogEntry>) => {
       const e: DailyLogEntry = {
         id: uid(),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для timestamp запису (не Kyiv-межа доби)
         at: new Date().toISOString(),
         weightKg: null,
         sleepHours: null,
@@ -87,11 +110,11 @@ export function useDailyLog() {
       // Bidirectional weight sync — a Fizruk-side weigh-in is also the
       // canonical "current weight" for Nutrition (and the "Поточна
       // вага" field on Profile). LWW: every weigh-in beats the last
-      // value regardless of which surface initiated it; CloudSync
-      // resolves cross-device conflicts on the merged Profile blob via
-      // the same module-level LWW.
+      // value regardless of which surface initiated it.
+      // W1-WEIGHT-SOT стадія 2: дзеркалення живе в одному хелпері
+      // (`recordBodyWeight`), а не в чотирьох копіях по кодовій базі.
       if (e.weightKg != null) {
-        mirrorWeightToBiometrics(e.weightKg, e.at);
+        recordBodyWeight({ weightKg: e.weightKg, at: e.at });
       }
       return e;
     },

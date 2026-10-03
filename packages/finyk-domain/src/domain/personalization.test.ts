@@ -45,6 +45,29 @@ describe("manualCategoryToCanonicalId", () => {
     expect(manualCategoryToCanonicalId("Кальян")).toBe("кальян");
   });
 
+  // Регресія 2026-08-13: мапа знала лише УКРАЇНСЬКІ підписи Ер 1–2, тож
+  // слаги Ери 3 проходили крізь неї як є. `groceries`, `cafe` і `tech`
+  // осідали окремими «категоріями», яких немає в MCC-каталозі: ліміт на
+  // «Кафе та ресторани» (`restaurant`) не бачив ручних витрат зі слагом
+  // `cafe`, а продукти й їжа рахувались як дві різні звички.
+  it("зводить слаги Ери 3 до канонічної категорії", () => {
+    expect(manualCategoryToCanonicalId("groceries")).toBe("food");
+    expect(manualCategoryToCanonicalId("cafe")).toBe("restaurant");
+    expect(manualCategoryToCanonicalId("tech")).toBe("tech");
+    expect(manualCategoryToCanonicalId("tech", "2026-08-31T12:00:00Z")).toBe(
+      "shopping",
+    );
+    expect(manualCategoryToCanonicalId("tech", "2026-09-01T12:00:00Z")).toBe(
+      "tech",
+    );
+  });
+
+  it("слаги, що збігаються з канонічним id, не змінюються", () => {
+    for (const slug of ["food", "transport", "health", "travel", "other"]) {
+      expect(manualCategoryToCanonicalId(slug)).toBe(slug);
+    }
+  });
+
   it("пусті значення → other", () => {
     expect(manualCategoryToCanonicalId("")).toBe("other");
     expect(manualCategoryToCanonicalId(undefined)).toBe("other");
@@ -100,7 +123,7 @@ describe("getFrequentCategories", () => {
     expect(ids).toContain("transport");
   });
 
-  it("ігнорує транзакції поза вікном", () => {
+  it("ігнорує операції поза вікном", () => {
     const txs = [
       bankTx({
         id: "old",
@@ -146,6 +169,37 @@ describe("getFrequentCategories", () => {
       txCategories: { t1: "entertainment" },
     });
     expect(res[0]!.id).toBe("entertainment");
+  });
+
+  it("resolves an unrecognized manual category label via the manualLabel fallback", () => {
+    const manuals = [
+      manual({ category: "Кальян", amount: 50 }), // unmapped, not a canonical MCC id
+    ];
+    const res = getFrequentCategories([], manuals as never, { now });
+    expect(res[0]!.id).toBe("кальян");
+    expect(res[0]!.label).toBe("Кальян");
+  });
+
+  it("breaks a count tie by total spent, then by most-recent use", () => {
+    const txs = [
+      // "food" (mcc 5411): 1 use, small amount, oldest
+      bankTx({
+        id: "t1",
+        mcc: 5411,
+        amount: -5000,
+        dateMs: now.getTime() - 10 * 86400000,
+      }),
+      // "transport" (mcc 4121): 1 use, larger amount, more recent
+      bankTx({
+        id: "t2",
+        mcc: 4121,
+        amount: -50000,
+        dateMs: now.getTime() - 1 * 86400000,
+      }),
+    ];
+    const res = getFrequentCategories(txs as never, [], { now });
+    expect(res[0]!.id).toBe("transport"); // ties on count(1), wins on total
+    expect(res[1]!.id).toBe("food");
   });
 });
 

@@ -351,6 +351,246 @@ describe("subscription_started PostHog capture (PR-09)", () => {
   });
 });
 
+describe("payment_failed PostHog capture (billing observability)", () => {
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+  });
+
+  afterEach(() => {
+    __setPostHogCaptureForTesting(null);
+  });
+
+  function setupCapture() {
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+    return capture;
+  }
+
+  it("fires payment_failed with is_3ds + decline codes on payment_intent.payment_failed (anonymous when customer unknown)", async () => {
+    // createClient(1): the customer→user_id SELECT resolves to rows:[] → the
+    // payer is unknown, so the event must fall back to an anonymous distinctId.
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_pi_failed_1",
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: "pi_1",
+            customer: "cus_unknown",
+            last_payment_error: {
+              code: "payment_intent_authentication_failure",
+              decline_code: "authentication_required",
+            },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      event: string;
+      distinctId: string;
+      uuid: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.event).toBe("payment_failed");
+    expect(arg.uuid).toBe("evt_pi_failed_1");
+    expect(arg.properties["kind"]).toBe("payment_intent");
+    expect(arg.properties["is_3ds"]).toBe(true);
+    expect(arg.properties["error_code"]).toBe(
+      "payment_intent_authentication_failure",
+    );
+    expect(arg.properties["decline_code"]).toBe("authentication_required");
+    expect(arg.properties["source"]).toBe("stripe_webhook");
+    expect(arg.properties["user_resolved"]).toBe(false);
+    expect(arg.distinctId).toBe("stripe_customer:cus_unknown");
+  });
+
+  it("resolves user_id via the customer→subscription lookup for charge.failed", async () => {
+    const client = createClient(1);
+    // The user_id SELECT maps cus_77 → user_77; every other query keeps the
+    // default 1-row / empty-rows shape.
+    client.query.mockImplementation(async (sql: string) => {
+      if (typeof sql === "string" && sql.includes("SELECT user_id")) {
+        return { rowCount: 1, rows: [{ user_id: "user_77" }] };
+      }
+      return { rowCount: 1, rows: [] };
+    });
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_charge_failed_1",
+        type: "charge.failed",
+        data: {
+          object: {
+            id: "ch_1",
+            customer: "cus_77",
+            failure_code: "card_declined",
+            outcome: { network_decline_code: "51" },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      distinctId: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.properties["kind"]).toBe("charge");
+    expect(arg.properties["failure_code"]).toBe("card_declined");
+    expect(arg.properties["network_decline_code"]).toBe("51");
+    expect(arg.properties["user_resolved"]).toBe(true);
+    expect(arg.distinctId).toBe("user_77");
+  });
+
+  it("fires payment_failed for invoice.payment_failed with attempt_count + ISO next_payment_attempt", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_inv_failed_1",
+        type: "invoice.payment_failed",
+        data: {
+          object: {
+            id: "in_1",
+            customer: "cus_unknown",
+            subscription: "sub_9",
+            attempt_count: 2,
+            next_payment_attempt: 1_770_000_000,
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      properties: Record<string, unknown>;
+    };
+    expect(arg.properties["kind"]).toBe("invoice");
+    expect(arg.properties["attempt_count"]).toBe(2);
+    expect(arg.properties["next_payment_attempt"]).toBe(
+      new Date(1_770_000_000 * 1000).toISOString(),
+    );
+    expect(arg.properties["stripe_subscription_id"]).toBe("sub_9");
+  });
+
+  it("fires payment_failed (kind=checkout_expired) using client_reference_id, with no DB customer lookup", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_cs_expired_1",
+        type: "checkout.session.expired",
+        data: {
+          object: {
+            id: "cs_expired_1",
+            client_reference_id: "user_55",
+            customer: "cus_55",
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      distinctId: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.properties["kind"]).toBe("checkout_expired");
+    expect(arg.properties["user_resolved"]).toBe(true);
+    expect(arg.distinctId).toBe("user_55");
+    // Expiry must not touch subscriptions: only BEGIN, INSERT webhook, COMMIT —
+    // no SELECT user_id, no upsert.
+    const sqls = client.query.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(sqls.some((s) => s.includes("SELECT user_id"))).toBe(false);
+    expect(sqls.some((s) => s.includes("INSERT INTO subscriptions"))).toBe(
+      false,
+    );
+  });
+
+  it("emits payment_failed AFTER COMMIT and never rolls back when capture throws", async () => {
+    const client = createClient(1);
+    const callOrder: string[] = [];
+    client.query.mockImplementation(async (sql: string) => {
+      callOrder.push(`query:${String(sql).split(" ")[0]}`);
+      return { rowCount: 1, rows: [] };
+    });
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi.fn(async () => {
+      callOrder.push("capture");
+      throw new Error("posthog down");
+    });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    const result = await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_pi_failed_2",
+        type: "payment_intent.payment_failed",
+        data: {
+          object: { id: "pi_2", last_payment_error: { code: "card_declined" } },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(result).toEqual({ ok: true, duplicate: false });
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(capture).toHaveBeenCalledTimes(1);
+    expect(callOrder.indexOf("capture")).toBeGreaterThan(
+      callOrder.indexOf("query:COMMIT"),
+    );
+  });
+
+  it("does NOT fire payment_failed on a duplicate webhook (idempotent)", async () => {
+    const client = createClient(0); // rowCount=0 → duplicate
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_pi_failed_dup",
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: "pi_dup",
+            last_payment_error: { code: "card_declined" },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).not.toHaveBeenCalled();
+  });
+});
+
 describe("verifyStripeSignature (T2 audit hardening)", () => {
   const SECRET = "whsec_test_1234567890abcdef";
   const payload = Buffer.from(`{"id":"evt_1","type":"ping"}`);

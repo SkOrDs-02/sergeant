@@ -4,13 +4,12 @@
  * Виокремлено з sw.ts (initiative 0001 Phase 2 — module decomposition).
  * Snapshot використовується UI «Дебаг service worker» (page
  * `/debug/sw`), де ми показуємо адміну поточний стан кешів і
- * dedup-set-у. Збираємо все async-у і повертаємо плоский об'єкт, бо
+ * dedup-set-у. Збираємо все async-у і повертаємо плоский обʼєкт, бо
  * postMessage сериалізує тільки structured-clonable.
  */
 
 import { CACHE_NAMES, SW_VERSION } from "./version";
 import { cacheEntryCount } from "./cache";
-import { getReminderState } from "./reminders";
 import { loadNotifiedKeys, notifiedKeys } from "./notifiedKeys";
 
 let debugEnabled = false;
@@ -33,11 +32,12 @@ export type SwSnapshot =
       version: string;
       debugEnabled: boolean;
       caches: { names: string[]; counts: Record<string, number | null> };
+      // `hasRoutine` / `hasFizruk` / `hasNutrition` прибрані разом із
+      // локальним циклом нагадувань у SW — нагадування шле сервер.
+      // Лишається лічильник dedup-ключів: він усе ще наповнюється з
+      // `notificationclose` і показує, скільки банерів SW уже бачив.
       reminders: {
         notifiedKeys: number | null;
-        hasRoutine: boolean;
-        hasFizruk: boolean;
-        hasNutrition: boolean;
       };
     }
   | { ok: false; version: string; error: string };
@@ -67,6 +67,6 @@ export async function buildSwSnapshot(): Promise<SwSnapshot> {
     version: SW_VERSION,
     debugEnabled,
     caches: { names: cacheNames, counts },
-    reminders: { notifiedKeys: notifiedKeyCount, ...getReminderState() },
+    reminders: { notifiedKeys: notifiedKeyCount },
   };
 }

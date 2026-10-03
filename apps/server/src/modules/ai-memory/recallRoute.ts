@@ -1,7 +1,7 @@
 /**
  * Handler `POST /api/ai-memory/recall` — semantic memory retrieval.
  *
- * Розв'язує задачу: "знайди top-K схожих записів для запиту юзера". Викликають
+ * Розвʼязує задачу: "знайди top-K схожих записів для запиту юзера". Викликають
  * двоє caller-ів:
  *   1. HubChat tool `recall_memory` (`apps/web/src/core/lib/chatActions/`) —
  *      коли LLM явно вирішив пошукати у memory bank.
@@ -27,6 +27,7 @@ import {
 import { env } from "../../env.js";
 import { parseBody } from "../../http/validate.js";
 import { logger } from "../../obs/logger.js";
+import { AppError } from "../../obs/errors.js";
 import { getAiMemory } from "./bootstrap.js";
 import {
   MissingVoyageApiKeyError,
@@ -56,11 +57,10 @@ export async function recallMemoryHandler(
   res: Response,
 ): Promise<void> {
   if (!env.AI_MEMORY_ENABLED) {
-    res.status(503).json({
-      error: "AI memory вимкнено на сервері",
+    throw new AppError("AI memory вимкнено на сервері", {
+      status: 503,
       code: "AI_MEMORY_DISABLED",
     });
-    return;
   }
 
   const { query, topK, sources } = parseBody(RecallMemoryRequestSchema, req);
@@ -73,6 +73,7 @@ export async function recallMemoryHandler(
       query,
       topK,
       sources: sources as MemorySource[] | undefined,
+      caller: "explicit-recall",
     });
 
     const payload: RecallMemoryResponse = {
@@ -104,26 +105,26 @@ export async function recallMemoryHandler(
       err instanceof VoyageHttpError ||
       err instanceof VoyageContractError
     ) {
-      logger.warn({
-        msg: "ai_memory_recall_provider_unavailable",
-        userId,
-        err: err.message,
-        code: "code" in err ? (err as { code?: string }).code : undefined,
-      });
-      res.status(503).json({
-        error: "Провайдер ембеддингів тимчасово недоступний",
+      throw new AppError("Провайдер ембеддингів тимчасово недоступний", {
+        status: 503,
         code: "EMBEDDING_PROVIDER_UNAVAILABLE",
+        // Поле мусить називатись саме `code`: `serializeError` мапить із
+        // cause лише `name`/`message`/`code`/`status`, тож `providerCode`
+        // мовчки випадав би з логу — а це єдине, що розрізняє чотири
+        // причини недоступності (немає ключа / HTTP / дрейф контракту /
+        // відкритий circuit). Перевірено відтворенням серіалізатора.
+        cause: {
+          message: err.message,
+          code: "code" in err ? (err as { code?: string }).code : undefined,
+        },
       });
-      return;
     }
-    logger.error({
-      msg: "ai_memory_recall_route_unexpected_error",
-      userId,
-      err: err instanceof Error ? err.message : String(err),
-    });
-    res.status(500).json({
-      error: "Не вдалося виконати recall",
+    throw new AppError("Не вдалося виконати recall", {
+      status: 500,
       code: "RECALL_FAILED",
+      cause: {
+        message: err instanceof Error ? err.message : String(err),
+      },
     });
   }
 }

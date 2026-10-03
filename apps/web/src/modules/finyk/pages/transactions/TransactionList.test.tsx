@@ -1,34 +1,25 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
-// `GroupedVirtuoso` needs ResizeObserver / a real layout to render its
-// items. For the DataState routing test we only care which slot is
-// rendered (skeleton / empty / list) — a trivial mock that surfaces
-// children via `groupContent` + `itemContent` is enough.
-vi.mock("react-virtuoso", () => ({
-  GroupedVirtuoso: ({
-    groupCounts,
-    groupContent,
-    itemContent,
+// `VirtualList` needs ResizeObserver / a real layout to compute virtual items.
+// For the DataState routing test we only care which slot is rendered
+// (skeleton / empty / list) — a synchronous flat-render mock is enough.
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
   }: {
-    groupCounts: number[];
-    groupContent: (i: number) => React.ReactNode;
-    itemContent: (i: number) => React.ReactNode;
-  }) => {
-    const total = groupCounts.reduce((s, n) => s + n, 0);
-    return (
-      <div data-testid="grouped-virtuoso">
-        {groupCounts.map((_, gi) => (
-          <div key={`g-${gi}`}>{groupContent(gi)}</div>
-        ))}
-        {Array.from({ length: total }).map((_, i) => (
-          <div key={`i-${i}`}>{itemContent(i)}</div>
-        ))}
-      </div>
-    );
-  },
+    items: unknown[];
+    children: (item: unknown, index: number) => React.ReactNode;
+  }) => (
+    <div data-testid="virtual-list">
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
+      ))}
+    </div>
+  ),
 }));
 
 import { TransactionList } from "./TransactionList";
@@ -51,6 +42,7 @@ const baseProps = {
   selectMode: false,
   selectedIds: new Set<string>(),
   hiddenTxIdSet: new Set<string>(),
+  excludedStatTxIdSet: new Set<string>(),
   txCategories: {},
   txSplits: {},
   accounts: undefined,
@@ -58,10 +50,7 @@ const baseProps = {
   onToggleSelect: NOOP,
   onSwipeHideTx: NOOP,
   onSwipeDeleteManual: NOOP,
-  onEditManual: NOOP,
-  onHideTx: NOOP,
-  onCatChange: NOOP,
-  onSplitChange: NOOP,
+  onOpenTransaction: NOOP,
 };
 
 const SAMPLE_TX: Transaction = {
@@ -97,8 +86,8 @@ describe("TransactionList — DataState routing", () => {
 
     // The empty-state title and the virtualized list must NOT be
     // rendered while skeleton is on.
-    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByText("Немає операцій")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
   it("renders the empty slot when not loading and filtered list is empty (with activeTx present)", () => {
@@ -111,16 +100,15 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.getByText("Немає операцій")).toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
-  it("renders the tier-1 ModuleEmptyState when not loading and activeTx itself is empty (first-run)", () => {
-    // When the user lands on Transactions with no rows for the entire
-    // month, surface the module-tuned hero from `ModuleEmptyState` so
-    // FTUX gets a proper hint about what Finyk does — not the filter-
-    // tuned "Немає транзакцій" copy which only makes sense once the
-    // user has data and has narrowed it down.
+  it("renders the list-scoped no-data-at-all state when not loading and activeTx itself is empty (first-run)", () => {
+    // When the user lands on Transactions with no rows anywhere, this must
+    // NOT repeat Overview's tier-1 `ModuleEmptyState` hero verbatim
+    // (founder-UX audit round 2, F1) — Transactions gets its own,
+    // list-scoped copy instead.
     render(
       <TransactionList
         {...baseProps}
@@ -130,12 +118,78 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    // Title comes from the curated finyk config inside
-    // `ModuleEmptyState` (MODULE_EMPTY_CONFIG.finyk.title).
-    expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+    expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
+    // Must NOT repeat Overview's hero title verbatim.
+    expect(
+      screen.queryByText("Куди йдуть твої гроші?"),
+    ).not.toBeInTheDocument();
     // The filter-empty copy must NOT also render at the same time.
-    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("grouped-virtuoso")).not.toBeInTheDocument();
+    expect(screen.queryByText("Немає операцій")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
+  });
+
+  // Regression: founder report 2026-07-31 — «Зникли транзакції, хоч пише що
+  // токен підключений». On 1 серпня the month genuinely had no rows yet, but
+  // the tab greeted a bank-connected user with a full history by showing the
+  // first-run hero («Додай першу витрату… Підключи Monobank»), which reads as
+  // data loss rather than "цей місяць ще порожній".
+  describe("month-empty vs first-run empty", () => {
+    it("shows the month-scoped state when other months still have data", () => {
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth
+          monthLabel="серпень 2026"
+        />,
+      );
+
+      expect(screen.getByText("Цей місяць ще порожній")).toBeInTheDocument();
+      expect(
+        screen.getByText(/За серпень 2026 операцій поки немає/),
+      ).toBeInTheDocument();
+      // The first-run onboarding hero must NOT claim this user has no data.
+      expect(
+        screen.queryByText("Куди йдуть твої гроші?"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("offers a jump back to the previous month", () => {
+      const onGoPreviousMonth = vi.fn();
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth
+          monthLabel="серпень 2026"
+          onGoPreviousMonth={onGoPreviousMonth}
+        />,
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Попередній місяць" }),
+      );
+      expect(onGoPreviousMonth).toHaveBeenCalledTimes(1);
+    });
+
+    it("still shows the list-scoped no-data state when there is no data anywhere", () => {
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth={false}
+          monthLabel="серпень 2026"
+        />,
+      );
+
+      expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
+    });
   });
 
   it("renders the virtualized list when filtered has rows", () => {
@@ -151,8 +205,91 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByTestId("grouped-virtuoso")).toBeInTheDocument();
-    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
+    expect(screen.queryByText("Немає операцій")).not.toBeInTheDocument();
+  });
+
+  // PR-F4 (founder-UX audit wave 6, «Чесність показників»): the row-level
+  // «не в статистиці» marker was wired ONLY to internal transfers —
+  // `excludedStatTxIdSet` never reached the row, so a single or batch
+  // "Не враховувати" action changed Overview/Analytics totals with zero
+  // visible trace in the list itself.
+  it("shows the «не в статистиці» marker for a row in excludedStatTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        excludedStatTxIdSet={new Set([SAMPLE_TX.id])}
+      />,
+    );
+
+    expect(screen.getByText("не в статистиці")).toBeInTheDocument();
+  });
+
+  it("omits the «не в статистиці» marker once the transaction leaves excludedStatTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        excludedStatTxIdSet={new Set<string>()}
+      />,
+    );
+
+    expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
+  });
+
+  // Рішення власника 2026-10-01: обидві ноги скасованого платежу
+  // («Uklon −189» / «Скасування. Uklon +189») не рахуються у статистиці, і
+  // рядок каже чому — «скасовано», а не загальне «не в статистиці».
+  it("shows «скасовано» for rows in cancelledTxIdSet", () => {
+    const refund = {
+      ...SAMPLE_TX,
+      id: "tx-2",
+      description: "Скасування. Сільпо",
+      amount: 250,
+    } as unknown as Transaction;
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX, refund]}
+        filtered={[SAMPLE_TX, refund]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX, refund] }]}
+        groupCounts={[2]}
+        flatItems={[SAMPLE_TX, refund]}
+        cancelledTxIdSet={new Set([SAMPLE_TX.id, refund.id])}
+      />,
+    );
+
+    expect(screen.getAllByText("скасовано")).toHaveLength(2);
+    expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
+  });
+
+  it("does not mark rows outside cancelledTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        cancelledTxIdSet={new Set<string>()}
+      />,
+    );
+
+    expect(screen.queryByText("скасовано")).not.toBeInTheDocument();
   });
 
   it("keeps the list visible during a background refetch (loading=true with prior activeTx)", () => {
@@ -172,7 +309,36 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    expect(screen.getByTestId("grouped-virtuoso")).toBeInTheDocument();
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
     expect(document.querySelectorAll('[aria-busy="true"]')).toHaveLength(0);
+  });
+
+  it("routes a manual row tap to the canonical transaction editor", () => {
+    const onOpenTransaction = vi.fn();
+    const manualTx = {
+      ...SAMPLE_TX,
+      id: "manual-1",
+      _manual: true,
+      _manualId: "manual-1",
+    } as unknown as Transaction;
+
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[manualTx]}
+        filtered={[manualTx]}
+        groupedByDate={[{ key: "2026-05-04", items: [manualTx] }]}
+        groupCounts={[1]}
+        flatItems={[manualTx]}
+        onOpenTransaction={onOpenTransaction}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Сільпо"));
+    expect(onOpenTransaction).toHaveBeenCalledWith(manualTx);
+    expect(
+      screen.queryByRole("button", { name: "Розподілити операцію" }),
+    ).not.toBeInTheDocument();
   });
 });

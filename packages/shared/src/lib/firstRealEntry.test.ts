@@ -12,6 +12,8 @@ import {
   moduleHasRealEntry,
   TTV_MS_KEY,
 } from "./firstRealEntry";
+import { ANALYTICS_EVENTS } from "./analyticsEvents";
+import { MULTI_MODULE_ACTIVATED_FIRED_KEY } from "./vibePicks";
 
 function writeJson(
   store: ReturnType<typeof createMemoryKVStore>,
@@ -154,12 +156,155 @@ describe("first real entry detection", () => {
       "routine",
       "nutrition",
     ]);
-    expect(trackEvent).toHaveBeenCalledTimes(4);
+    // 4 per-module events + 1 multi-module event (count 4 ≥ threshold 2).
+    expect(trackEvent).toHaveBeenCalledTimes(5);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      {
+        module_count: 4,
+        modules: ["finyk", "fizruk", "routine", "nutrition"],
+        days_since_first_action: null,
+      },
+    );
 
     trackEvent.mockClear();
     expect(detectFirstActionCompletedPerModule(store, { trackEvent })).toEqual(
       [],
     );
     expect(trackEvent).not.toHaveBeenCalled();
+  });
+
+  it("does not fire multi_module_activated for a single activated module", () => {
+    const store = createMemoryKVStore();
+    const trackEvent = vi.fn();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL, [{ id: "m1" }]);
+
+    expect(detectFirstActionCompletedPerModule(store, { trackEvent })).toEqual([
+      "finyk",
+    ]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "finyk" },
+    );
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      expect.anything(),
+    );
+    expect(store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY)).toBeNull();
+  });
+
+  it("fires multi_module_activated once when the second module crosses the threshold", () => {
+    const store = createMemoryKVStore();
+    const trackEvent = vi.fn();
+    const day = 24 * 60 * 60 * 1000;
+    // Non-zero stamp: getFirstActionStartedAt rejects "0" (n > 0 guard).
+    store.setString(FIRST_ACTION_STARTED_AT_KEY, String(day));
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.FINYK_MANUAL, [{ id: "m1" }]);
+
+    // First module — below threshold, no multi-module event.
+    detectFirstActionCompletedPerModule(store, { trackEvent });
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      expect.anything(),
+    );
+
+    // Second module three days later — crosses the threshold.
+    trackEvent.mockClear();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.FIZRUK_WORKOUTS, {
+      workouts: [{ id: "w1" }],
+    });
+    expect(
+      detectFirstActionCompletedPerModule(store, {
+        trackEvent,
+        now: () => 4 * day,
+      }),
+    ).toEqual(["fizruk"]);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      {
+        module_count: 2,
+        modules: ["finyk", "fizruk"],
+        days_since_first_action: 3,
+      },
+    );
+    expect(store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY)).toBe("1");
+
+    // Third module later — flag already set, no second multi-module event.
+    trackEvent.mockClear();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.ROUTINE, {
+      habits: [{ id: "h1" }],
+    });
+    expect(detectFirstActionCompletedPerModule(store, { trackEvent })).toEqual([
+      "routine",
+    ]);
+    expect(trackEvent).toHaveBeenCalledTimes(1);
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.MULTI_MODULE_ACTIVATED,
+      expect.anything(),
+    );
+  });
+});
+
+describe("canonical entry probe (tombstoned legacy slots)", () => {
+  // Регресія: на web усі пʼять legacy-ключів tombstone-нуті — дані живуть
+  // у SQLite. Без probe детекція бачила порожній store для активного
+  // юзера, `hasRealEntry` не флипався, і FTUX-герой не зникав ніколи.
+  const canonical =
+    (counts: Partial<Record<string, number>>) => (moduleId: string) =>
+      counts[moduleId] ?? 0;
+
+  it("detects entries that exist only in the canonical store", () => {
+    const store = createMemoryKVStore();
+
+    expect(hasAnyRealEntry(store)).toBe(false);
+    expect(hasAnyRealEntry(store, canonical({ finyk: 3 }))).toBe(true);
+    expect(moduleHasRealEntry(store, "finyk", canonical({ finyk: 3 }))).toBe(
+      true,
+    );
+    expect(moduleHasRealEntry(store, "routine", canonical({ finyk: 3 }))).toBe(
+      false,
+    );
+    expect(getFirstRealEntryModule(store, canonical({ routine: 1 }))).toBe(
+      "routine",
+    );
+    expect(countRealEntries(store, canonical({ finyk: 3, routine: 2 }))).toBe(
+      5,
+    );
+  });
+
+  it("keeps the legacy scan as a fallback and never double-counts", () => {
+    const store = createMemoryKVStore();
+    writeJson(store, FIRST_REAL_ENTRY_SOURCES.ROUTINE, {
+      habits: [{ id: "h1" }, { id: "h2" }],
+    });
+
+    // Cold canonical cache (0) must not erase the legacy evidence…
+    expect(hasAnyRealEntry(store, canonical({}))).toBe(true);
+    expect(countRealEntries(store, canonical({}))).toBe(2);
+    // …and a mid-drain profile, where both sources describe the SAME two
+    // habits, still counts them once.
+    expect(countRealEntries(store, canonical({ routine: 2 }))).toBe(2);
+  });
+
+  it("flips first_real_entry and the per-module flags from the probe alone", () => {
+    const store = createMemoryKVStore();
+    const trackEvent = vi.fn();
+    const probe = canonical({ nutrition: 1 });
+
+    expect(detectFirstRealEntry(store, { trackEvent })).toBe(false);
+    expect(trackEvent).not.toHaveBeenCalled();
+
+    expect(detectFirstRealEntry(store, { trackEvent, probe })).toBe(true);
+    expect(trackEvent).toHaveBeenCalledWith(
+      FIRST_REAL_ENTRY_EVENTS.FIRST_REAL_ENTRY,
+    );
+    expect(
+      detectFirstActionCompletedPerModule(store, { trackEvent, probe }),
+    ).toEqual(["nutrition"]);
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "nutrition" },
+    );
   });
 });

@@ -34,10 +34,11 @@ import { logger } from "@shared/lib";
 import { initWebVitals } from "./core/observability/webVitals.js";
 import { initPostHog } from "./core/observability/posthog.js";
 import { initLongTaskMonitor } from "./core/lib/longTaskMonitor";
-import { maybeRunOnboarding } from "./core/onboarding/index.js";
+import { cleanupDemoLeftoversOnce } from "./core/onboarding/demoLeftoverCleanup.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
+import { requestPersistentStorage } from "./core/db/persistentStorage.js";
+import { probeOpfsInWorker } from "./core/db/opfsProbe.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 import {
   markStorageBooting,
@@ -58,6 +59,13 @@ if (isCapacitor() && getPlatform() === "ios") {
 }
 
 const queryClient = createAppQueryClient();
+// Порівняння інлайн, не через спільний хелпер: інакше Rollup не згорне
+// гілку і чанк мосту потрапить у прод (feature-flags.md § dead-code).
+if (import.meta.env.VITE_E2E_SEED === "true") {
+  void import("./e2e/installScenarioBridge").then((m) =>
+    m.installScenarioBridge(queryClient),
+  );
+}
 // Persistent IDB-backed snapshot для warm-start: на холодному старті
 // PWA / Capacitor-shell `PersistQueryClientProvider` гідрирує
 // `QueryCache` з диску до того, як React зможе монтувати `useQuery`,
@@ -76,11 +84,6 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : null;
 
-// Demo-mode URL trigger: `?demo=1` (alias `?demo=seed`) populates the
-// local store with a realistic sample payload across all modules and
-// reloads onto `/`. `?demo=reset` wipes it. Called BEFORE storage
-// migrations / the legacy demo-cleanup pass so the seeded payload is
-// visible to both and survives the boot.
 // Stale-bundle recovery: глобальні слухачі `vite:preloadError` /
 // `unhandledrejection` / `error`, що роблять одноразовий `location.reload()`
 // на `Failed to fetch dynamically imported module`. Має стояти максимально
@@ -92,32 +95,33 @@ interface ErrorFallbackProps {
   resetError: () => void;
 }
 
+// Lazy: the top-level `<ErrorBoundary>` fallback only renders on an
+// unrecoverable crash (rare path), so the design-system `ServerErrorPage`
+// (`EmptyState` + illustration) stays out of the eager entry bundle —
+// `lazyImport` (not a bare `React.lazy`) so a stale-chunk-hash failure here
+// gets the same `ChunkLoadError` recovery as every other lazy route instead
+// of a raw `TypeError` on `m.ServerErrorPage`.
+const ServerErrorPage = lazyImport(
+  () => import("./core/errors/ServerErrorPage.js"),
+  "ServerErrorPage",
+);
+
 function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
   // Hard rule #21 spirit: raw error.message може витекти внутрішні шляхи,
   // DB-колонки, API URL-и та `Error.cause`-ланцюги. У проді показуємо лише
-  // локалізований заголовок; повний нарратив усе ще в Sentry. Vite DCE
-  // вирізає dev-гілку з prod-бандлу.
+  // локалізований заголовок (усередині `ServerErrorPage`); повний нарратив
+  // усе ще в Sentry. Vite DCE вирізає dev-гілку з prod-бандлу.
   return (
-    <div className="p-8 font-sans">
-      <h2 className="text-style-title text-text">
-        {messages.errors.generic.somethingWrong}
-      </h2>
+    <>
+      <Suspense fallback={null}>
+        <ServerErrorPage onReset={resetError} />
+      </Suspense>
       {import.meta.env.DEV ? (
-        <pre className="text-xs text-danger-strong dark:text-danger whitespace-pre-wrap mt-2">
+        <pre className="text-style-caption text-danger-strong dark:text-danger whitespace-pre-wrap m-4 p-4 rounded-xl bg-panel border border-line">
           {error?.message}
         </pre>
       ) : null}
-      <button
-        type="button"
-        onClick={() => {
-          resetError?.();
-          window.location.reload();
-        }}
-        className="mt-4 px-4 py-2 rounded-xl border border-line bg-panel text-style-label text-text"
-      >
-        {messages.actions.reload}
-      </button>
-    </div>
+    </>
   );
 }
 
@@ -196,10 +200,10 @@ void initSentry();
 mountApp();
 
 // Settle the SQLite warm-cache in the background, then run the storage-dependent
-// boot steps and release the readiness gate. The WRITE steps (demo seed,
-// `storageManager` migrations, sync-engine writer) still run only AFTER
-// bootstrap settles, so there is no LS→SQLite write race — only the read-only,
-// splash-gated first paint moved ahead of the boot.
+// boot steps and release the readiness gate. The WRITE steps
+// (`storageManager` migrations, sync-engine writer, демо-прибирання) still run
+// only AFTER bootstrap settles, so there is no LS→SQLite write race — only the
+// read-only, splash-gated first paint moved ahead of the boot.
 //
 // `bootstrapKvStore` is documented as never-throwing: every failure path
 // (SQLite init, migration runner, scan) leaves `kvStoreBoot.loaded = false` and
@@ -244,8 +248,23 @@ void (async () => {
     });
     logger.warn("[main] kvStoreBoot threw (should be unreachable)", err);
   } finally {
-    void maybeRunOnboarding();
+    // Демо-режим знято 2026-09-17. Одноразово прибираємо його payload у
+    // тих, хто встиг його відкрити; на решті пристроїв — одне читання
+    // рядка. Стоїть ПЕРЕД міграціями, як раніше стояв демо-сід: щоб
+    // `storageManager` не мігрував дані, яких за мить не стане.
+    cleanupDemoLeftoversOnce();
     storageManager.runAll();
+    // Просимо постійне сховище рівно тут: після того, як буту вже є що
+    // зберігати, і поза гейтом — відмова браузера нічого не блокує.
+    // Навіщо взагалі: локальна копія для офлайн-first продукту подеколи
+    // ЄДИНА (черга `sync_op_outbox` тримає записи, яких немає на сервері),
+    // а типове сховище система витирає першим під тиском місця.
+    void requestPersistentStorage();
+    // Стадія 0 спеки `sqlite-opfs-worker.md`: дізнатись із РЕАЛЬНОГО
+    // пристрою, чи підніметься OPFS у воркері. Нічого не гейтить і нічого
+    // не змінює — лише ставить тег у Sentry, щоб рішення про переїзд бази
+    // спиралось на факт, а не на припущення про Safari.
+    void probeOpfsInWorker();
     void bootSyncEngineWriter({ captureException });
     // Release the gate last — after the synchronous migrations have run — so
     // guards never observe a half-migrated store.
@@ -282,13 +301,9 @@ if (typeof window !== "undefined") {
 // Dynamic import ⇒ Vite кладе `@sergeant/mobile-shell` та всі `@capacitor/*`
 // плагіни в окремий chunk, тож browser-бандл не тягне їх зовсім.
 //
-// Deep-link bridge підʼєднується НЕ через `options.navigate` (який викликає
-// `history.pushState` out-of-component і плутає React Router з «перший render
-// уже завершився» сценарієм), а через namespaced `window.__sergeantShellNavigate`,
-// який виставляє `<ShellDeepLinkBridge/>` у `core/App.tsx` після маунту
-// роутера. Якщо `appUrlOpen` прилітає ДО маунту (cold start через deep link),
-// shell буферизує path у `window.__sergeantShellDeepLinkQueue` і bridge
-// drain-ить його при install-і.
+// Deep-link bridge підʼєднується через BroadcastChannel + pre-mount queue
+// (`ShellDeepLinkBridge` у web). Shell не викликає `options.navigate` з
+// `main.tsx` — навмисно, щоб не плутати React Router з out-of-band pushState.
 if (isCapacitor()) {
   import("@sergeant/mobile-shell")
     .then(({ initNativeShell }) => initNativeShell())
@@ -311,19 +326,51 @@ if (
   !isCapacitor() &&
   "serviceWorker" in navigator
 ) {
-  // Hard-reload one time when the SW controller changes. SW `install`
-  // тепер unconditional-но робить `skipWaiting()`, тож новий worker
-  // активується одразу і `clients.claim()` у `activate` тригерить
-  // `controllerchange` у всіх відкритих вкладках. Без reload-у
-  // dynamic-import-и старих hash-named chunks падають у 404, бо
-  // workbox-precache новij ге́нерації не містить їх. Guard `refreshing`
-  // блокує цикл, якщо SW з якоїсь причини активувався двічі підряд.
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (refreshing) return;
-    refreshing = true;
-    window.location.reload();
-  });
+  // AI-DANGER: тут НЕ можна перезавантажувати сторінку на `controllerchange`.
+  //
+  // Історія. Раніше тут стояв `window.location.reload()` під гейтом
+  // «контролер уже був на момент завантаження». Він захищав від того, що
+  // після деплою dynamic-import-и старих hash-named chunks падають у 404 —
+  // workbox-precache нової генерації їх не містить.
+  //
+  // Чому прибрано (браузерний аудит 2026-08-05, знахідка B1). Тоді SW робив
+  // `skipWaiting()` в `install` і `clients.claim()` в `activate`, тож
+  // `controllerchange` міг прилетіти будь-коли — включно з моментом, коли
+  // сторінка ще тягне свій entry-модуль. Reload у цю мить рубає завантаження
+  // СТАТИЧНИХ залежностей entry-чанка (`vendor-react`, `vendor-react-query`,
+  // `vendor-sqlite`) з `net::ERR_ABORTED` — і головний модуль ніколи не
+  // виконується. Наслідок: `#root` лишається порожнім НАЗАВЖДИ, білий екран,
+  // рятує лише ручний reload. При цьому винятку не кидається, тож
+  // `installChunkLoadRecover()` не спрацьовує — йому нема на що реагувати.
+  // Відтворювалось приблизно на 1–2 навігації зі ста, на анонімному
+  // користувачі, на прод-білді. Та сама гонка роками отруювала CI-лейни —
+  // див. `tests/a11y/expanded-routes.spec.ts` і
+  // `tests/smoke/fizruk-active-workout.spec.ts`.
+  //
+  // Чим закрито те, від чого reload захищав:
+  //   1. `chunkReload.ts` (`installChunkLoadRecover`) ловить 404 на
+  //      dynamic-import старого чанка і робить один reload — з cooldown-ом і
+  //      counter-guard-ом проти циклу. Це саме той сценарій, тільки з
+  //      відновленням замість сліпого перезавантаження.
+  //   2. `onNeedRefresh` нижче піднімає `pwa-update-ready`, який
+  //      `useSWUpdate` → `RootLayout` показують плашкою «є оновлення».
+  //      Reload там робить `applyUpdate()` — свідомо, за кліком користувача
+  //      і вже ПІСЛЯ того, як застосунок змонтувався.
+  //   3. `setupAutoUpdate` тримає periodic-polling і build-id hard-floor.
+  //
+  // Тобто оновлення тепер завжди застосовується у момент, коли сторінка
+  // жива, а не посеред її буту.
+  //
+  // Після того, як `sw.ts` перестав робити `skipWaiting()` в `install`
+  // (той самий аудит), воркер-ЗАМІННИК більше не перехоплює сторінку сам:
+  // він чекає в `waiting`, поки користувач не натисне «Оновити», і reload
+  // на `controlling` робить сам `vite-plugin-pwa` (слухач усередині
+  // `showSkipWaitingPrompt`) — другий reload тут дав би подвійне
+  // перезавантаження. Але `controllerchange` цим не вичерпується: ПЕРШИЙ
+  // воркер активується без попередника, і `clients.claim()` в `activate`
+  // забирає контроль над уже відкритою сторінкою одразу. Саме тому
+  // заборона на reload тут безумовна — той перший claim прилітає рівно
+  // посеред буту, і це той самий білий екран, з якого все почалось.
 
   import("virtual:pwa-register").then(async ({ registerSW }) => {
     const updateSW = registerSW({

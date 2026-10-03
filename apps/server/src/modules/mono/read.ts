@@ -3,15 +3,19 @@ import { query } from "../../db.js";
 import { parseQuery } from "../../http/validate.js";
 import {
   MonoAccountsResponseSchema,
+  MonoJarsResponseSchema,
   MonoTransactionsPageSchema,
   MonoTransactionsQuerySchema,
 } from "../../http/schemas.js";
 import {
   normalizeMonoAccount,
+  normalizeMonoJar,
   normalizeMonoTransaction,
   type MonoAccountRow,
+  type MonoJarRow,
   type MonoTransactionRow,
 } from "../../lib/normalizers/index.js";
+import { refreshJarsFromMono } from "./jars.js";
 
 interface AuthedRequest extends Request {
   user?: { id: string };
@@ -49,6 +53,13 @@ export async function accountsHandler(
        last_seen_at     AS "lastSeenAt"
      FROM mono_account
      WHERE user_id = $1
+       -- Заглушки під банки (міграція 119) - не картки. Вебхук змушений
+       -- створювати для них рядок тут через FK mono_transaction, але
+       -- назовні вони мають бути рівно в одному місці - /api/mono/jars.
+       -- Без цього фільтра клієнт малював безіменну «Картка / Monobank»,
+       -- а getMonoOwnFunds зараховував баланс банки в капітал повторно
+       -- (другий раз він приходить через sumJarsUAH).
+       AND is_jar = FALSE
      ORDER BY currency_code, mono_account_id`,
     [userId],
     { op: "mono_accounts_read" },
@@ -61,6 +72,47 @@ export async function accountsHandler(
   res.json(
     MonoAccountsResponseSchema.parse(
       rows.map((r) => normalizeMonoAccount(r as MonoAccountRow)),
+    ),
+  );
+}
+
+/**
+ * GET /api/mono/jars — returns user's Monobank jars from DB, after a
+ * best-effort refresh from `/personal/client-info` (see `refreshJarsFromMono`
+ * for why this happens on every read instead of via webhook/cron).
+ */
+export async function jarsHandler(req: Request, res: Response): Promise<void> {
+  const userId = (req as AuthedRequest).user?.id;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  await refreshJarsFromMono(userId);
+
+  const { rows } = await query(
+    `SELECT
+       user_id          AS "userId",
+       mono_jar_id      AS "monoJarId",
+       send_id          AS "sendId",
+       title,
+       description,
+       currency_code    AS "currencyCode",
+       balance,
+       goal,
+       last_seen_at     AS "lastSeenAt"
+     FROM mono_jar
+     WHERE user_id = $1
+     ORDER BY currency_code, mono_jar_id`,
+    [userId],
+    { op: "mono_jars_read" },
+  );
+
+  // Validate response shape against the SSOT before emitting (Hard Rule #3),
+  // same pattern as `accountsHandler`.
+  res.json(
+    MonoJarsResponseSchema.parse(
+      rows.map((r) => normalizeMonoJar(r as MonoJarRow)),
     ),
   );
 }

@@ -25,7 +25,7 @@
  * активному використанні легко перевалює за 5 MB, і JSON.stringify
  * у localStorage блокував би основний потік. Async-persister пише в
  * IDB поза main thread і на 1s throttle (відповідає дефолту
- * TanStack), тому навіть burst оновлень кешу не б'є по UI.
+ * TanStack), тому навіть burst оновлень кешу не бʼє по UI.
  *
  * ## Cache busting
  *
@@ -59,7 +59,7 @@
  *     logout (persister keyed by build-id, not by user-id) і
  *     не мають витікати у IDB-снепшот, що читається з devtools
  *     будь-яким XSS. Список наций — у `@sergeant/shared`
- *     `isSensitiveQueryKey` (PR #004 у `docs/planning/storage-roadmap.md`).
+ *     `isSensitiveQueryKey` (PR #004 у `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *     Дзеркалиться у мобільному `mmkvPersister.ts`.
  *
  * ## Capacitor
@@ -173,7 +173,7 @@ export const idbKeyvalStorage: AsyncStorage<string> = {
 };
 
 /**
- * Фабрика persister-а. Повертає об'єкт, який можна напряму передати
+ * Фабрика persister-а. Повертає обʼєкт, який можна напряму передати
  * у `<PersistQueryClientProvider persistOptions={{ persister, ... }} />`.
  *
  * Throttle 1000 мс відповідає дефолту TanStack і збігається з
@@ -186,6 +186,20 @@ export function createWebPersister() {
     key: STORAGE_KEYS.WEB_QUERY_CACHE,
     throttleTime: 1_000,
   });
+}
+
+/**
+ * Знести persisted-снапшот RQ-кешу з диска (IDB `rq_cache`).
+ *
+ * Викликається identity-wipe-ефектом в `AuthContext`, коли на пристрої
+ * зʼявляється ІНША identity, ніж та, за якої снапшот писався: persister
+ * keyed by build-id, тож гідратація після reload віддавала наступному
+ * юзеру module-фіди попереднього (бюджети, журнали, транзакції) до
+ * першого revalidate. `queryClient.clear()` чистить лише памʼять —
+ * без цього виклику чужий снапшот повертається з диска.
+ */
+export async function clearPersistedQueryCache(): Promise<void> {
+  await idbKeyvalStorage.removeItem(STORAGE_KEYS.WEB_QUERY_CACHE);
 }
 
 /**
@@ -222,7 +236,7 @@ export function shouldDehydrateQueryForPersist(query: Query): boolean {
 
 /**
  * Зібраний `persistOptions` для `<PersistQueryClientProvider />`.
- * Об'єднує persister, TTL, buster і `dehydrateOptions` в одне місце,
+ * Обʼєднує persister, TTL, buster і `dehydrateOptions` в одне місце,
  * щоб `main.tsx` не тримав цю верстку у себе.
  */
 export function createWebPersistOptions() {

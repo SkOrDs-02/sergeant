@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 /**
  * PWA-action dispatcher.
@@ -27,16 +27,21 @@ export function usePwaAction(
   onConsumed: (() => void) | undefined,
   handlers: Record<string, PwaActionHandler>,
 ): void {
+  // "Always-current" ref pattern: layout effect runs synchronously after
+  // commit and before any effects, so the effect below always reads the
+  // latest handlers map even when callers pass a new inline object each
+  // render. No dep array — intentionally runs on every render.
+  const handlersRef = useRef(handlers);
+  useLayoutEffect(() => {
+    handlersRef.current = handlers;
+  });
+
   useEffect(() => {
     if (!action) return;
-    const handler = handlers[action];
+    const handler = handlersRef.current[action];
     if (!handler) return;
     const cleanup = handler();
     onConsumed?.();
     return typeof cleanup === "function" ? cleanup : undefined;
-    // handlers is intentionally not in the dep list — callers pass an
-    // inline object and we key off the action string, which is the
-    // meaningful trigger. This matches the original per-module effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [action, onConsumed]);
 }

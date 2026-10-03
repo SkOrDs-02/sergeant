@@ -2,37 +2,30 @@
  * Cross-context bridge для shell-deep-link навігації — `apps/mobile-shell`
  * (Capacitor WebView script) надсилає, `apps/web/src/core/app/
  * ShellDeepLinkBridge.tsx` слухає. Реалізовано через стандартний
- * `BroadcastChannel` API (PR-29 у `docs/initiatives/stack-pulse-2026-05/
- * pr-29-shell-navigate-broadcast-channel.md`).
+ * `BroadcastChannel` API (stack-pulse PR-29).
  *
- * Чому BroadcastChannel замість `window.__sergeantShellNavigate` global-у:
- *   1. Race-condition-free — persistent listener; повідомлення, надіслане
- *      ПЕРЕД маунтом React-bridge-у, не drop-иться доки в нас є
- *      pre-mount queue fallback на window-globalу.
- *   2. Testable — `BroadcastChannel` стандартизований у jsdom (через
- *      polyfill) і node 18+; не треба мокати глобальну функцію.
- *   3. Idiomatic — bridge не лишає global mutable state, який треба чистити
- *      при unmount-і HMR.
+ * Delivery paths (PR-29 PR-2):
+ *   1. **BroadcastChannel** — canonical, коли WebView підтримує API і web-bridge
+ *      змонтований.
+ *   2. **`window.__sergeantShellDeepLinkQueue`** — cold-start / BC-less WebView;
+ *      web drain-ить при mount-і або на `SHELL_DEEPLINK_QUEUE_EVENT`.
  *
- * Backward-compat: під час async deploy mobile-shell і web можуть бути на
- * різних версіях. PR-29 свідомо лишає `__sergeantShellNavigate` як alias
- * 3 місяці після ship-у (rollout PR-2 у тому ж spec-у), тому
- * `apps/mobile-shell/src/index.ts` ШЛЕ ОБОМА шляхами (BC + window-global),
- * а `ShellDeepLinkBridge.tsx` ЛИСТЕНИТЬ ОБИДВА з coalescing-вікном по
- * `(url, timestamp)` — щоб одна deep-link подія не призвела до двох
- * `navigate()` коли обидва шляхи живі.
- *
- * Fallback для старих WKWebView (<iOS 15.4) і Android System WebView без
- * BroadcastChannel: `createDeepLinkChannel()` повертає null-канал
- * (`post()` no-op, `subscribe()` no-op) і shell автоматично проходить
- * через legacy window-global path. Це навмисно — додатковий
- * `localStorage`-fallback (запропонований у spec) поки не потрібен, бо
- * Capacitor WebView вже мінімум iOS 14 / Android 7 з System WebView,
- * де native deep-link дисер shell-а просто викличе window-global.
+ * Чому не global function на `window`: race-free listener, testable API,
+ * без mutable global handler-ів під HMR.
  */
 
 /** Назва BroadcastChannel — мусить збігатись на shell і web side. */
 export const SHELL_DEEPLINK_CHANNEL = "sergeant-shell-deeplink";
+
+/** Pre-mount queue на `window` — shell push-ить, web drain-ить. */
+export const SHELL_DEEPLINK_QUEUE_KEY = "__sergeantShellDeepLinkQueue";
+
+/** Web виставляє `true` після mount-у `ShellDeepLinkBridge`. */
+export const SHELL_DEEPLINK_BRIDGE_READY_KEY =
+  "__sergeantShellDeepLinkBridgeReady";
+
+/** CustomEvent для drain queue після mount-у (BC-less WebView). */
+export const SHELL_DEEPLINK_QUEUE_EVENT = "sergeant-shell-deeplink-queue";
 
 /**
  * Версія wire-формату повідомлення. Bump-имо коли змінюємо shape
@@ -56,10 +49,8 @@ export interface DeepLinkMessage {
   /** Джерело події — поки що завжди `"shell"`, web→shell стрім не зарезервовано. */
   source: "shell" | "web";
   /**
-   * `Date.now()` на момент відправлення. Використовується web-bridge-ом
-   * для coalescing-вікна між BroadcastChannel і `window.__sergeantShellNavigate`
-   * — щоб одна deep-link подія, надіслана обома шляхами, призводила до
-   * рівно одного `navigate()`.
+   * `Date.now()` на момент відправлення. Web-bridge coalesce-ить дублі
+   * queue + BroadcastChannel у вікні `COALESCE_WINDOW_MS`.
    */
   timestamp: number;
 }
@@ -81,13 +72,8 @@ export function isDeepLinkMessage(value: unknown): value is DeepLinkMessage {
  * (читає `globalThis.BroadcastChannel`), тому модуль безпечно імпортується
  * у будь-якому контексті — node, jsdom, web, Capacitor.
  *
- * Коли `BroadcastChannel` недоступний у глобалі (`< iOS 15.4`, дуже старі
- * Android System WebView) — фабрика повертає null-канал: усі методи no-op,
- * `post()` повертає `false`. Caller (shell або web) має сам fallback-нутися
- * на window-global path. Це не баг, а свідоме design-рішення: не маскуємо
- * відсутність BC локальним localStorage, бо deep-link дисер у Capacitor
- * крутиться у тому ж main-thread browsing context, що й React, і window-
- * global працює без додаткового storage I/O.
+ * Коли `BroadcastChannel` недоступний у глобалі — null-канал; shell
+ * fallback-иться на pre-mount queue + `SHELL_DEEPLINK_QUEUE_EVENT`.
  */
 export interface DeepLinkChannel {
   /**

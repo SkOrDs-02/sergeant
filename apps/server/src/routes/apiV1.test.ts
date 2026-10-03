@@ -4,7 +4,7 @@ import request from "supertest";
 /**
  * Supertest-покриття нового `/api/v1/*` префікса і bearer-auth шляху.
  *
- * Ми покриваємо ключові гарантії з `docs/architecture/api-v1.md`:
+ * Ми покриваємо ключові гарантії з `docs/engineering/architecture/api-v1.md`:
  *   1. роут працює і на `/api/*`, і на `/api/v1/*` (дзеркало 1:1);
  *   2. `/api/v1/me` резолвить юзера і через cookie, і через
  *      `Authorization: Bearer`;
@@ -32,6 +32,25 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   return { mockPool, queryMock, getSessionUserMock };
 });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+  requestAccountDeletion: vi.fn(async () => ({
+    ok: true,
+    deletedAt: "2026-09-23T10:00:00.000Z",
+    scheduledPurgeAt: "2026-10-23T10:00:00.000Z",
+  })),
+}));
+
+// Звірку пароля й саму мітку покривають `me.delete.route.test.ts` і
+// `dataRights.test.ts`; тут перевіряється лише, що запит доходить до них.
+vi.mock("../modules/me/verifyAccountPassword.js", () => ({
+  verifyAccountPassword: vi.fn(async () => ({ ok: true })),
+}));
+
 vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
@@ -42,6 +61,9 @@ vi.mock("./../db.js", () => ({
 vi.mock("./../auth.js", () => ({
   auth: { handler: async () => new Response(null, { status: 404 }) },
   getSessionUser: getSessionUserMock,
+  // `requireFreshSession()` (export / DELETE me / bank link) резолвить через
+  // fresh-варіант; у цих тестах він поводиться як кешований.
+  getFreshSessionUser: getSessionUserMock,
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 
@@ -109,6 +131,29 @@ describe("api versioning — /api/v1/* дзеркалить /api/*", () => {
     // Якщо apiVersionRewrite помилково зачепив би цей шлях, він би став
     // `/push/vapid-public` і полетів би у 404.
     expect(res.status).toBe(503);
+  });
+
+  it("Telegram-вебхук досяжний і як /api/*, і як /api/v1/* — і не 403", async () => {
+    // Регресія (#493 → #495): роут спершу зареєстрували на
+    // `/api/v1/telegram/webhook`, а `apiVersionRewrite` зрізає `/v1` ДО
+    // маршрутизації — тому шлях був недосяжний у принципі. Паралельно
+    // CSRF-виняток теж прописали у `/v1`-формі, тож гард відсікав запит
+    // Telegram-а з 403 CSRF_HEADER_REQUIRED, і бот мовчав на /start.
+    //
+    // Тест ловить обидва: 403 означає, що exempt-list розійшовся з
+    // канонічним шляхом, 404 — що роут висить на недосяжному префіксі.
+    // 503 — правильна відповідь незконфігурованого вебхука (немає
+    // TELEGRAM_WAITLIST_* env), тобто запит дійшов до handler-а.
+    const app = createApp();
+    for (const path of ["/api/telegram/webhook", "/api/v1/telegram/webhook"]) {
+      const res = await request(app)
+        .post(path)
+        .set("Content-Type", "application/json")
+        .send({});
+      expect(res.status, `${path} має дійти до handler-а`).not.toBe(403);
+      expect(res.status, `${path} має бути зареєстрований`).not.toBe(404);
+      expect(res.status).toBe(503);
+    }
   });
 
   it("не чіпає /api/auth/* префікс — Better Auth basePath незмінний", async () => {
@@ -215,9 +260,19 @@ describe("/api/v1/me data rights", () => {
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({
-      analytics: true,
+      // Migration 111: DB DEFAULT flipped TRUE → FALSE (opt-in analytics).
+      analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      pushDailyCap: 2,
+      // Проактивний канал Сержанта — opt-in, вимкнений і для нових акаунтів.
+      sergeantNudges: false,
+      // GDPR Art. 9 health-data consent — explicit opt-in only (migration 111).
+      healthDataConsent: false,
+      // Міграція 116 (знахідка B2): `null` = «серверного вибору нема»,
+      // і це НЕ те саме, що `[]` = «вибір є, і він порожній».
+      activeModules: null,
+      hubPrefs: null,
       updatedAt: null,
     });
   });
@@ -230,6 +285,16 @@ describe("/api/v1/me data rights", () => {
           analytics: false,
           ai_memory: true,
           push_notifications: false,
+          sergeant_nudges: false,
+          // `true` (not the DEFAULT_PREFERENCES value `false`) on purpose —
+          // CodeRabbit PR #627 review: the old mocked row omitted this
+          // column entirely, so the assertion below matched by COINCIDENCE
+          // with serializePreferences()'s own `=== true` default-to-false
+          // fallback and could never catch a real regression (wrong column
+          // name, dropped SELECT/RETURNING field, etc). Asserting `true`
+          // here is a genuine round-trip check of `row["health_data_consent"]`.
+          health_data_consent: true,
+          active_modules: ["finyk", "routine"],
           updated_at: new Date("2026-06-06T10:05:00.000Z"),
         },
       ],
@@ -246,11 +311,93 @@ describe("/api/v1/me data rights", () => {
       analytics: false,
       aiMemory: true,
       pushNotifications: false,
+      pushDailyCap: 2,
+      sergeantNudges: false,
+      healthDataConsent: true,
+      activeModules: ["finyk", "routine"],
+      // Міграція 137: колонка нова, мок-рядок її не несе — тобто
+      // серіалізатор мусить дати `null` («серверних налаштувань вигляду
+      // ще немає»), а не `{}` і не `undefined`.
+      hubPrefs: null,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
     expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
-    expect(params).toEqual([user.id, false, true, false]);
+    // `active_modules`, `hub_prefs` і `push_daily_cap` патч не згадує, тож
+    // upsert мусить перенести поточні значення (тут `null` і дефолт 2, бо
+    // перший SELECT повернув порожній набір), а не затерти вибір.
+    expect(params).toEqual([
+      user.id,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      null,
+      2,
+    ]);
+  });
+
+  it("PATCH /api/v1/me/preferences зберігає вибір модулів і дедуплікує його", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: false,
+          ai_memory: true,
+          push_notifications: false,
+          sergeant_nudges: false,
+          health_data_consent: false,
+          active_modules: ["nutrition", "finyk"],
+          updated_at: new Date("2026-08-05T09:00:00.000Z"),
+        },
+      ],
+    });
+    const app = createApp();
+    const res = await request(app)
+      .patch("/api/v1/me/preferences")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      // Дублікат навмисне: `CHECK` міграції 116 його НЕ ловить (вираз
+      // CHECK не може містити підзапит), тож дедуп — обовʼязок Zod-схеми.
+      .send({ activeModules: ["nutrition", "finyk", "nutrition"] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.activeModules).toEqual(["nutrition", "finyk"]);
+    const [, params] = queryMock.mock.calls[1]!;
+    expect(params?.[6]).toEqual(["nutrition", "finyk"]);
+  });
+
+  it("PATCH /api/v1/me/preferences розрізняє порожній вибір і його відсутність", async () => {
+    getSessionUserMock.mockResolvedValueOnce(user);
+    queryMock.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: false,
+          ai_memory: true,
+          push_notifications: false,
+          sergeant_nudges: false,
+          health_data_consent: false,
+          active_modules: [],
+          updated_at: new Date("2026-08-05T09:00:00.000Z"),
+        },
+      ],
+    });
+    const app = createApp();
+    const res = await request(app)
+      .patch("/api/v1/me/preferences")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .send({ activeModules: [] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.activeModules).toEqual([]);
+    const [, params] = queryMock.mock.calls[1]!;
+    // `[]`, а не `null`: якби `upsertUserPreferences` зливав ці два
+    // стани через `??`, порожній вибір мовчки перетворився б на «не
+    // чіпай» і людина не змогла б вимкнути всі модулі.
+    expect(params?.[6]).toEqual([]);
   });
 
   it("PATCH /api/v1/me/preferences відхиляє невідомий shape", async () => {
@@ -280,35 +427,32 @@ describe("/api/v1/me data rights", () => {
       mono: { connection: null, accounts: [], transactions: [] },
       billing: { subscriptions: [] },
       push: { webSubscriptions: [], devices: [] },
-      ai: { usageDaily: [], memories: [] },
     });
+    expect(res.body.data.routine).toHaveProperty("routine_habits");
     const sql = queryMock.mock.calls.map((call) => String(call[0])).join("\n");
     expect(sql).not.toMatch(/token_ciphertext|webhook_secret|token_hash/);
   });
 
-  it("DELETE /api/v1/me запускає deletion transaction", async () => {
+  it("DELETE /api/v1/me доходить до вікна видалення: пароль звірено, мітку поставлено", async () => {
+    // Від вікна видалення (2026-09-21) DELETE лише ставить мітку і вимагає
+    // пароль; миттєвої deletion transaction більше немає. Тут перевіряється
+    // саме аліас /api/v1: запит проходить гварди й доходить до мітки.
     getSessionUserMock.mockResolvedValueOnce(user);
-    const client = {
-      query: vi.fn().mockResolvedValue({ rows: [], rowCount: 1 }),
-      release: vi.fn(),
-    };
-    mockPool.connect.mockResolvedValueOnce(client);
+    const { requestAccountDeletion } =
+      await import("../modules/me/dataRights.js");
     const app = createApp();
     const res = await request(app)
       .delete("/api/v1/me")
       .set("X-Requested-With", "XMLHttpRequest")
-      .set("Authorization", "Bearer x");
+      .set("Authorization", "Bearer x")
+      .send({ password: "correct-horse" });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    expect(client.query.mock.calls.map((call) => String(call[0]))).toEqual([
-      "BEGIN",
-      expect.stringMatching(/UPDATE subscriptions/),
-      expect.stringMatching(/UPDATE ai_memories/),
-      expect.stringMatching(/DELETE FROM "user"/),
-      "COMMIT",
-    ]);
-    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(requestAccountDeletion)).toHaveBeenCalledWith(
+      expect.anything(),
+      user.id,
+    );
   });
 });
 
@@ -587,11 +731,14 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
 });
 
 /**
- * H6 — sensitive-action gate `/api/mono/connect` мусить вимагати
- * `email_verified=true`. Закриває squat-attack: атакувальник реєструє
- * акаунт на чужий email і одразу під'єднує свій Mono-token, отримуючи
- * картину "хтось бачить мої транзакції" та забруднюючи нашу БД
- * кросс-власницькими записами.
+ * H6 — sensitive-action gate `/api/mono/connect`.
+ *
+ * Гейт відновлено 2026-09-16 разом із беточним винятком у `mono-webhook.ts`:
+ * `RESEND_API_KEY` тепер обовʼязковий для старту прода (`betterAuthEnv.ts`),
+ * `RESEND_FROM` і верифікований домен налаштовані, тож передумова «листи не
+ * доходять» більше не діє. Неверифікований користувач знову отримує
+ * `403 EMAIL_VERIFICATION_REQUIRED`; `requireSession()` (401 для анонів)
+ * лишається чинним і не має downgrade-итись у 403.
  */
 describe("H6: /api/mono/connect gate on email verification", () => {
   // `MONO_WEBHOOK_ENABLED` за замовчуванням false у тест-env, тож для
@@ -618,7 +765,7 @@ describe("H6: /api/mono/connect gate on email verification", () => {
     }
   });
 
-  it("unverified user → 403 EMAIL_VERIFICATION_REQUIRED, без виклику Mono-API", async () => {
+  it("unverified user → 403 EMAIL_VERIFICATION_REQUIRED", async () => {
     getSessionUserMock.mockResolvedValueOnce({
       id: "u-unverified",
       email: "squat@victim.com",
@@ -627,21 +774,39 @@ describe("H6: /api/mono/connect gate on email verification", () => {
       emailVerified: false,
     });
     const app = createApp();
+    // Токен навмисно короткий: якби гейт пропустив, запит дійшов би до
+    // `connectHandler` і впав уже на його перевірці — тобто з іншим кодом.
+    // Саме тому тут звіряється КОД, а не лише статус: 403 без
+    // `EMAIL_VERIFICATION_REQUIRED` означав би, що відмову дав хтось інший.
     const res = await request(app)
       .post("/api/mono/connect")
       .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .set("Content-Type", "application/json")
-      .send({ token: "would-be-victim-token-12345" });
+      .send({ token: "short" });
     expect(res.status).toBe(403);
-    expect(res.body).toMatchObject({
-      code: "EMAIL_VERIFICATION_REQUIRED",
+    expect(res.body?.code).toBe("EMAIL_VERIFICATION_REQUIRED");
+  });
+
+  it("verified user проходить email-гейт (відмова, якщо є, приходить не від нього)", async () => {
+    getSessionUserMock.mockResolvedValueOnce({
+      id: "u-verified",
+      email: "owner@example.com",
+      name: "Owner",
+      image: null,
+      emailVerified: true,
     });
-    // CORP-гарантія H8 продовжує діяти і на 403.
-    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
-    // Жоден запит до БД (encrypt-token, INSERT mono_connection) не мав
-    // піти, бо middleware відсікає ДО handler-а.
-    expect(queryMock).not.toHaveBeenCalled();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/mono/connect")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .set("Content-Type", "application/json")
+      .send({ token: "short" });
+    // Контрольний бік гейта: підтверджена пошта не має отримувати
+    // `EMAIL_VERIFICATION_REQUIRED` за жодних обставин. Без цього тесту
+    // гейт, який реджектить ВСІХ, виглядав би так само зелено.
+    expect(res.body?.code).not.toBe("EMAIL_VERIFICATION_REQUIRED");
   });
 
   it("unauthenticated → 401 (gate не downgrades 401 у 403)", async () => {

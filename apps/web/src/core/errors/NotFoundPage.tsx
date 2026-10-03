@@ -37,34 +37,40 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         eyebrow="404"
         illustration={<NotFoundIllustration size={200} />}
         title="Сторінку не знайдено"
-        description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну — звідти можна знайти потрібний модуль."
+        // The empty state is the entire 404 surface, so it has to carry the
+        // page heading — otherwise this route ships with no heading at all.
+        titleAs="h1"
+        description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну, звідти можна знайти потрібний модуль."
         primaryAction={
           <Button
             type="button"
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={() => {
               navigate(homePath, { replace: true });
             }}
           >
-            <Icon name="home" size={16} />
+            <Icon name="home" size="md" />
             На головну
           </Button>
         }
         secondaryAction={
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="lg"
             onClick={() => {
               navigate(-1);
             }}
           >
-            <Icon name="chevron-left" size={16} />
+            <Icon name="chevron-left" size="md" />
             Назад
           </Button>
         }
-        hint="Якщо ти перейшов сюди із зовнішнього посилання — напиши нам, ми його полагодимо."
+        // §2 забороняє «ми», але тут це не голос застосунку, а жива команда,
+        // до якої людину і просять написати. 1-а однини («напиши мені, я
+        // полагоджу») обіцяла б, що битий лінк лагодить сам застосунок.
+        hint="Якщо ти перейшов сюди із зовнішнього посилання, напиши нам, ми його полагодимо."
       />
     </main>
   );

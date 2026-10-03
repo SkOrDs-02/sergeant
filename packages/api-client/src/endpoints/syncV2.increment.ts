@@ -25,7 +25,7 @@ import type { SyncV2PushOp } from "./syncV2";
  * самий патерн, що `apps/web/src/modules/finyk/lib/conflicts/store.ts`
  * пушить `reason: 'lww_conflict' | 'tombstoned'` із серверних reject-результатів.
  *
- * Stage 5 PR #042c (`docs/planning/storage-roadmap.md`). Ще не має
+ * Stage 5 PR #042c (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Ще не має
  * callsite-у — кладемо в api-client як public surface для майбутнього
  * client-side push-loop-у; сервер-side allowlist (`routine_streaks`) і
  * delta-bound (1000) тримаємо в синхроні через regression-тест нижче +
@@ -39,9 +39,7 @@ export type IncrementOpTable = (typeof INCREMENT_OP_SUPPORTED_TABLES)[number];
 export const INCREMENT_DELTA_MAX_ABS = 1000;
 
 export type BuildSyncV2IncrementOpReason =
-  | "op_not_supported"
-  | "missing_delta"
-  | "invalid_delta";
+  "op_not_supported" | "missing_delta" | "invalid_delta";
 
 export interface BuildSyncV2IncrementOpInput {
   /**

@@ -7,7 +7,7 @@
  * bottom-sheet affordance used by every other form (Habits, …).
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import type { ManualAsset } from "@sergeant/finyk-domain/domain";
@@ -61,13 +61,16 @@ export function ManualAssetSheet({
   const [draft, setDraft] = useState<DraftState>(() => toDraft(asset));
   const [nameError, setNameError] = useState(false);
   const [amountError, setAmountError] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setDraft(toDraft(asset));
-    setNameError(false);
-    setAmountError(false);
-  }, [open, asset]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(toDraft(asset));
+      setNameError(false);
+      setAmountError(false);
+    }
+  }
 
   const isEditing = !!asset;
 
@@ -147,7 +150,7 @@ export function ManualAssetSheet({
             Назва
           </Text>
           <Input
-            placeholder="Готівка, брокер, крипта…"
+            placeholder="Готівка, брокер, крипта"
             value={draft.name}
             onChangeText={(t) => setDraft((d) => ({ ...d, name: t }))}
             error={nameError}
@@ -208,6 +211,12 @@ export function ManualAssetSheet({
               );
             })}
           </View>
+          {draft.currency !== "UAH" && (
+            <Text className="text-xs text-warning-strong mt-1">
+              Збережу актив, але поки не враховую його в загальному капіталі,
+              рахую лише активи в гривні.
+            </Text>
+          )}
         </View>
       </View>
     </Sheet>

@@ -1,25 +1,60 @@
 // @vitest-environment jsdom
 //
 // PR-A v2-polish-redesign — SettingsPrimitives icon prop + glass surface.
-// Covers: SettingsGroup renders <Icon> when `icon` is passed; falls back to
-// `emoji` when no `icon`; module badge applies correct bg class.
+// Covers: SettingsGroup renders the design-system <Icon>; module badge applies
+// the correct scoped surface class.
+import { StrictMode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import {
   SettingsGroup,
+  SettingsGroupDefaultOpenContext,
   SettingsSubGroup,
   ToggleRow,
-  ConfirmModal,
   SectionSkeleton,
 } from "./SettingsPrimitives";
 
 // Icon is a thin wrapper; stub it so tests don't need an SVG sprite.
-vi.mock("@shared/components/ui/Icon", () => ({
-  Icon: ({ name, size }: { name: string; size?: number }) => (
-    <span data-testid="icon" data-name={name} data-size={size} />
-  ),
-}));
+//
+// Мок РОЗВʼЯЗУЄ токен у піксель через справжній `ICON_SIZES`, а не віддає
+// сирий проп. До 2026-09-15 він приймав лише `size?: number` і писав його в
+// `data-size` як є — це було вірно рівно доти, доки всі виклики сиділи на
+// числах. Щойно `SettingsGroup` перейшов на `size="lg"`, мок віддав рядок
+// «lg» там, де тест чекав «20», і падіння виглядало як регресія, хоча
+// компонент рендерив ті самі 20px.
+//
+// Тягнемо шкалу з оригіналу, а не дублюємо її тут: мок, який має ВЛАСНУ
+// копію канону, розходиться з ним тихо — а це рівно те, що цей тест і
+// мав би ловити.
+vi.mock("@shared/components/ui/Icon", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/components/ui/Icon")>();
+  return {
+    Icon: ({
+      name,
+      size = "lg",
+      className,
+    }: {
+      name: string;
+      size?: import("@shared/components/ui/Icon").IconSize;
+      className?: string;
+    }) => (
+      <span
+        data-testid="icon"
+        data-name={name}
+        data-size={typeof size === "number" ? size : actual.ICON_SIZES[size]}
+        className={className}
+      />
+    ),
+  };
+});
 
 afterEach(() => {
   cleanup();
@@ -38,54 +73,32 @@ describe("SettingsGroup — icon prop", () => {
     // First icon belongs to the icon badge; second is the ChevronIcon.
     const badgeIcon = icons.find((el) => el.dataset["name"] === "user");
     expect(badgeIcon).toBeTruthy();
-    expect(badgeIcon?.dataset["size"]).toBe("18");
+    expect(badgeIcon?.dataset["size"]).toBe("20");
   });
 
-  it("does NOT render an emoji span when only `icon` is provided", () => {
-    render(
-      <SettingsGroup title="Профіль" icon="user" emoji="👤">
-        <div>child</div>
-      </SettingsGroup>,
-    );
-
-    // emoji span has text-lg class; should not appear when icon wins
-    const emojiSpan = document.querySelector("span.text-lg");
-    expect(emojiSpan).toBeNull();
-  });
-
-  it("falls back to emoji span when no `icon` is set", () => {
-    render(
-      <SettingsGroup title="Профіль" emoji="👤">
-        <div>child</div>
-      </SettingsGroup>,
-    );
-
-    const emojiSpan = document.querySelector("span.text-lg");
-    expect(emojiSpan).toBeTruthy();
-    expect(emojiSpan?.textContent).toBe("👤");
-  });
-
-  it("applies module soft-surface class on the icon badge span", () => {
+  it("colours the header glyph with the module accent, without a tinted badge (огляд 2026-09-04)", () => {
     render(
       <SettingsGroup title="Фінанси" icon="wallet" module="finyk">
         <div>child</div>
       </SettingsGroup>,
     );
 
-    // The badge span wrapping the Icon should carry the finyk soft bg class.
-    const badge = document.querySelector("span.bg-finyk-soft");
-    expect(badge).toBeTruthy();
+    const glyph = document.querySelector('[data-name="wallet"]');
+    expect(glyph).toBeTruthy();
+    expect(glyph?.className).toContain("text-finyk");
+    expect(document.querySelector("span.bg-finyk-soft")).toBeNull();
   });
 
-  it("uses neutral surface class when no module is given", () => {
+  it("uses the muted glyph colour when no module is given", () => {
     render(
       <SettingsGroup title="Загальне" icon="settings">
         <div>child</div>
       </SettingsGroup>,
     );
 
-    const badge = document.querySelector("span.bg-surface-soft-glass");
-    expect(badge).toBeTruthy();
+    const glyph = document.querySelector('[data-name="settings"]');
+    expect(glyph?.className).toContain("text-muted");
+    expect(document.querySelector("span.bg-surface-soft-glass")).toBeNull();
   });
 
   it("expands children on button click", () => {
@@ -100,19 +113,277 @@ describe("SettingsGroup — icon prop", () => {
     fireEvent.click(btn);
     expect(btn).toHaveAttribute("aria-expanded", "true");
   });
+
+  // L-7 parity (адверсарне ревʼю 2026-08-08, знахідка №4): CollapsibleSection
+  // закрив tab-trap для свого акордеона через `inert`, але SettingsGroup зі
+  // спільним `grid-rows-[0fr] overflow-hidden`-патерном лишався непокритим —
+  // Tab від згорнутого заголовка провалювався у приховані контроли.
+  //
+  // Round-trip в одному тесті: перевірка "після кліку inert знято" сама по
+  // собі нічого не доводить, якщо inert ніколи не виставлявся взагалі —
+  // ловимо регресію, лише зафіксувавши "виставлено" ДО кліку.
+  it("ставить inert+aria-hidden на вміст, коли група монтується згорнутою (default), і знімає обидва при розгортанні", () => {
+    render(
+      <SettingsGroup title="Дашборд" icon="layout">
+        <button type="button">Приховане поле</button>
+      </SettingsGroup>,
+    );
+    const btn = screen.getByRole("button", { name: /Дашборд/ });
+    // Дефект №5 (адверсарне ревʼю 2026-08-08): кнопка тепер живе всередині
+    // `<h2 className="contents">`, тож `btn.nextElementSibling` — вже не
+    // контент-панель (у h2 кнопка єдина дитина), а `btn.parentElement`
+    // (`<h2>`)'s наступний сиблінг лишається тим самим контент-`<div>`.
+    const content = btn.parentElement?.nextElementSibling ?? null;
+    expect(content).not.toBeNull();
+    expect(content).toHaveAttribute("inert");
+    expect(content).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.click(btn);
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+  });
+
+  it("не ставить inert/aria-hidden, коли група монтується розгорнутою, і ставить обидва при згортанні", () => {
+    render(
+      <SettingsGroup title="Профіль" icon="user" defaultOpen>
+        <button type="button">Видиме поле</button>
+      </SettingsGroup>,
+    );
+    const btn = screen.getByRole("button", { name: /Профіль/ });
+    const content = btn.parentElement?.nextElementSibling ?? null;
+    expect(content).not.toBeNull();
+    expect(content).not.toHaveAttribute("inert");
+    expect(content).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(btn);
+    expect(content).toHaveAttribute("inert");
+    expect(content).toHaveAttribute("aria-hidden", "true");
+  });
 });
 
+// Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
+// `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+// `SettingsSubGroup` більше не другий рівень акордеона — немає кнопки,
+// `aria-expanded`, стану розкриття чи `inert`-логіки. Це підписана група:
+// заголовок + завжди видимий вміст.
 describe("SettingsSubGroup", () => {
-  it("expands on click", () => {
+  it("рендерить заголовок як текст (не кнопку) і одразу показує вміст без взаємодії", () => {
     render(
       <SettingsSubGroup title="Деталі">
         <p>вміст</p>
       </SettingsSubGroup>,
     );
 
-    const btn = screen.getByRole("button");
+    // Немає кнопки-тригера другого рівня взагалі — весь вміст видимий одразу.
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText("вміст")).toBeInTheDocument();
+    const heading = screen.getByText("Деталі");
+    expect(heading.tagName).toBe("H3");
+  });
+
+  it("не ставить inert/aria-hidden на вміст — на відміну від SettingsGroup, підгрупа ніколи не згорнута", () => {
+    render(
+      <SettingsSubGroup title="Розділи на головній">
+        <button type="button">Кнопка всередині</button>
+      </SettingsSubGroup>,
+    );
+
+    const innerButton = screen.getByRole("button", {
+      name: "Кнопка всередині",
+    });
+    expect(innerButton).toBeInTheDocument();
+    expect(innerButton.closest("[inert]")).toBeNull();
+    expect(innerButton.closest('[aria-hidden="true"]')).toBeNull();
+  });
+});
+
+describe("SettingsGroupDefaultOpenContext", () => {
+  it("тримає значення true за замовчуванням у SettingsGroup, коли провайдер задає defaultOpen: true", () => {
+    render(
+      <SettingsGroupDefaultOpenContext.Provider value={{ defaultOpen: true }}>
+        <SettingsGroup title="Перша секція" icon="compass">
+          <p>вміст першої секції</p>
+        </SettingsGroup>
+      </SettingsGroupDefaultOpenContext.Provider>,
+    );
+
+    const btn = screen.getByRole("button", { name: /Перша секція/ });
+    expect(btn).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("не впливає на SettingsGroup, змонтовану без провайдера (дефолт контексту — { defaultOpen: false })", () => {
+    render(
+      <SettingsGroup title="Секція без провайдера" icon="compass">
+        <p>вміст</p>
+      </SettingsGroup>,
+    );
+
+    const btn = screen.getByRole("button", {
+      name: /Секція без провайдера/,
+    });
+    expect(btn).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // PR-S1 (аудит 2026-09-13 хвиля 5): диплінк у секцію, що вже змонтована
+  // в активній вкладці (⌘K/пошук → «Сповіщення» чи «Сержант», коли
+  // «Загальні» вже відкриті), мусить розкрити її БЕЗ ремаунту. Раніше
+  // контекстний `defaultOpen` читався лише в ініціалізаторі `useState`,
+  // тож зміна значення провайдера постфактум нічого не робила для 10 із
+  // 14 секцій (усі без `anchorId`) — цей тест ловить рівно ту регресію на
+  // одному примітиві, без потреби піднімати всю `HubSettingsPage`.
+  it("розкриває секцію, коли контекстний defaultOpen змінюється на true ПІСЛЯ монтування, без ремаунту", async () => {
+    function Harness() {
+      const [open, setOpenCtx] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpenCtx(true)}>
+            simulate deep-link
+          </button>
+          <SettingsGroupDefaultOpenContext.Provider
+            value={{ defaultOpen: open }}
+          >
+            <SettingsGroup title="Сповіщення" icon="bell">
+              <p>вміст</p>
+            </SettingsGroup>
+          </SettingsGroupDefaultOpenContext.Provider>
+        </>
+      );
+    }
+    render(<Harness />);
+
+    const toggle = screen.getByRole("button", { name: /Сповіщення/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(screen.getByText("simulate deep-link"));
+
+    // Ефект розкриття відкладений через `queueMicrotask` (обхід
+    // `react-hooks/set-state-in-effect`, той самий ідіом, що в
+    // `HubSettingsPage.tsx`) — потрібен `waitFor`, а не синхронний assert.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Сповіщення/ }),
+      ).toHaveAttribute("aria-expanded", "true"),
+    );
+  });
+
+  // Дзеркальна перевірка: контекст, що стає `false` (диплінк в ІНШУ
+  // секцію), не повинен згортати те, що вже відкрито — той самий
+  // односторонній контракт, що мав старий `hashchange`-слухач.
+  it("не згортає вже відкриту секцію, коли контекстний defaultOpen стає false", () => {
+    function Harness() {
+      const [open, setOpenCtx] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpenCtx(false)}>
+            simulate deep-link elsewhere
+          </button>
+          <SettingsGroupDefaultOpenContext.Provider
+            value={{ defaultOpen: open }}
+          >
+            <SettingsGroup title="Сержант" icon="sparkles">
+              <p>вміст</p>
+            </SettingsGroup>
+          </SettingsGroupDefaultOpenContext.Provider>
+        </>
+      );
+    }
+    render(<Harness />);
+
+    expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    fireEvent.click(screen.getByText("simulate deep-link elsewhere"));
+
+    expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  // Дефект №3 (адверсарне ревʼю 2026-08-08): без цього зворотного виклику
+  // власник контексту (`HubSettingsPage`) не мав способу дізнатись, що
+  // юзер сам, явно, згорнув чи розгорнув секцію — і тому не міг
+  // запамʼятати цей вибір і зберегти його між ремаунтами (перемикання
+  // вкладки, search). Перевіряємо саме межу SettingsGroup↔контекст, не
+  // повну персистентність (та — на рівні HubSettingsPage.test.tsx).
+  it("викликає onUserToggle з новим станом open щоразу, коли юзер сам клікає заголовок", () => {
+    const onUserToggle = vi.fn();
+    render(
+      <SettingsGroupDefaultOpenContext.Provider
+        value={{ defaultOpen: false, onUserToggle }}
+      >
+        <SettingsGroup title="Секція" icon="compass">
+          <p>вміст</p>
+        </SettingsGroup>
+      </SettingsGroupDefaultOpenContext.Provider>,
+    );
+
+    const btn = screen.getByRole("button", { name: /Секція/ });
+    expect(onUserToggle).not.toHaveBeenCalled();
+
     fireEvent.click(btn);
-    expect(screen.getByText("вміст")).toBeTruthy();
+    expect(onUserToggle).toHaveBeenLastCalledWith(true);
+
+    fireEvent.click(btn);
+    expect(onUserToggle).toHaveBeenLastCalledWith(false);
+    expect(onUserToggle).toHaveBeenCalledTimes(2);
+  });
+
+  // CodeRabbit-ревʼю PR #757: раніше `onUserToggle` викликався ВСЕРЕДИНІ
+  // функціонального апдейтера `setOpen`, а updater мусить лишатись
+  // ЧИСТИМ — React 18 (незалежно від dev/prod) інколи обчислює апдейтер
+  // "eager" — одразу в обробнику диспатчу, щоб перевірити, чи справді
+  // змінюється стан, а потім ЩЕ РАЗ під час самого рендеру. Емпірично це
+  // не проявляється на першому кліку по щойно змонтованому компоненту
+  // (React ще не має "eager"-шляху для першого dispatch на fiber-і), але
+  // проявляється на ДРУГОМУ й наступних — тому тест клікає двічі:
+  // перевіряємо, що юзер, який клікнув двічі, бачить РІВНО два виклики,
+  // а не три через побічний ефект, що подвоївся всередині апдейтера.
+  // Сьогоднішній `HubSettingsPage` цього не бачить лише тому, що його
+  // `setSectionOpenOverrides` ідемпотентний (той самий `next` двічі —
+  // той самий підсумковий стан), але будь-який лічильник тапів чи
+  // аналітична подія на цьому колбеку задвоїлась би.
+  it("викликає onUserToggle рівно один раз на кожен клік, а не більше через побічний ефект усередині апдейтера setOpen (CodeRabbit PR #757)", () => {
+    const onUserToggle = vi.fn();
+    render(
+      <StrictMode>
+        <SettingsGroupDefaultOpenContext.Provider
+          value={{ defaultOpen: false, onUserToggle }}
+        >
+          <SettingsGroup title="Секція" icon="compass">
+            <p>вміст</p>
+          </SettingsGroup>
+        </SettingsGroupDefaultOpenContext.Provider>
+      </StrictMode>,
+    );
+
+    const btn = screen.getByRole("button", { name: /Секція/ });
+    fireEvent.click(btn);
+    fireEvent.click(btn);
+
+    expect(onUserToggle).toHaveBeenCalledTimes(2);
+    expect(onUserToggle).toHaveBeenNthCalledWith(1, true);
+    expect(onUserToggle).toHaveBeenNthCalledWith(2, false);
+  });
+
+  // Дефект №5 (адверсарне ревʼю 2026-08-08): найближчий заголовок вище на
+  // сторінці Налаштувань — sr-only `<h1>`; заголовок секції малювався як
+  // голий `<span>` усередині кнопки (не заголовок узагалі), тож аутлайн
+  // стрибав h1 → h3 (заголовок SettingsSubGroup) і axe `heading-order` це
+  // ловив. Канонічний disclosure-патерн — `<h2><button aria-expanded>…`.
+  it("рендерить заголовок секції як h2>button, а не голий span (дефект №5, axe heading-order)", () => {
+    render(
+      <SettingsGroup title="Дашборд" icon="layout">
+        <p>вміст</p>
+      </SettingsGroup>,
+    );
+
+    const btn = screen.getByRole("button", { name: /Дашборд/ });
+    const heading = btn.closest("h2");
+    expect(heading).not.toBeNull();
+    expect(heading?.tagName).toBe("H2");
   });
 });
 
@@ -131,60 +402,28 @@ describe("ToggleRow", () => {
     fireEvent.click(input);
     expect(onChange).toHaveBeenCalled();
   });
-});
 
-describe("ConfirmModal", () => {
-  it("renders nothing when closed", () => {
-    render(
-      <ConfirmModal
-        open={false}
-        title="Видалити?"
-        confirmLabel="Так"
-        onConfirm={vi.fn()}
-        onCancel={vi.fn()}
-      />,
-    );
-
-    expect(screen.queryByRole("dialog")).toBeNull();
+  // Регресія на `[critical] label: Form elements must have labels` — axe
+  // ловив це на `/settings` у всіх трьох темах. Причина: рядок сам є
+  // `label` і обгортає `Switch`, який малює власний `label htmlFor`;
+  // вкладені `label` невалідні за контент-моделлю HTML, внутрішній
+  // explicit-label перемагає, і Chrome не давав інпуту доступного імені
+  // взагалі. Лікується явним `aria-labelledby` на підпис рядка.
+  //
+  // Запит `getByRole(..., { name })` резолвиться тим самим accname-
+  // алгоритмом, що й axe, тож перевіряє рівно те, що падало в гейті.
+  it("gives the switch an accessible name from the row label", () => {
+    render(<ToggleRow label="Сповіщення" checked={false} onChange={vi.fn()} />);
+    expect(screen.getByRole("switch", { name: "Сповіщення" })).toBeTruthy();
   });
 
-  it("renders dialog and calls onConfirm", () => {
-    const onConfirm = vi.fn();
-    const onCancel = vi.fn();
+  it("toggles when the visible label text is clicked", () => {
+    const onChange = vi.fn();
     render(
-      <ConfirmModal
-        open={true}
-        title="Видалити акаунт?"
-        confirmLabel="Підтвердити"
-        onConfirm={onConfirm}
-        onCancel={onCancel}
-      />,
+      <ToggleRow label="Сповіщення" checked={false} onChange={onChange} />,
     );
-
-    expect(screen.getByRole("dialog")).toBeTruthy();
-    fireEvent.click(screen.getByText("Підтвердити"));
-    expect(onConfirm).toHaveBeenCalled();
-  });
-
-  it("calls onCancel on backdrop click", () => {
-    const onCancel = vi.fn();
-    render(
-      <ConfirmModal
-        open={true}
-        title="Тест"
-        confirmLabel="ОК"
-        onConfirm={vi.fn()}
-        onCancel={onCancel}
-      />,
-    );
-
-    // Backdrop button is the sibling of the dialog panel.
-    const backdrop = document.querySelector(
-      "button.absolute.inset-0",
-    ) as HTMLButtonElement | null;
-    if (!backdrop) throw new Error("backdrop button not found");
-    fireEvent.click(backdrop);
-    expect(onCancel).toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Сповіщення"));
+    expect(onChange).toHaveBeenCalledWith(true);
   });
 });
 

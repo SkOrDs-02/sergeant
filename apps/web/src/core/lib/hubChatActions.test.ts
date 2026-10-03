@@ -9,8 +9,44 @@ import {
   clearSqliteCompletionsCache,
   clearSqliteRoutineStateCache,
 } from "../../modules/routine/lib/sqliteReader";
+// F-12: `executeActions` тепер дочікується підтвердження довговічності і
+// підміняє текст, коли запис не ліг у SQLite. У jsdom SQLite нема, тож без
+// цього моку КОЖЕН routine-write тут рапортував би чесну відмову — а ці
+// специфікації про ПОРЯДОК і ІЗОЛЯЦІЮ результатів, не про персистенцію.
+// Сам контракт чесності пінить `hubChatActions.durability.test.ts`.
+vi.mock("./chatActions/routinePersistence", async (orig) => {
+  const actual =
+    await orig<typeof import("./chatActions/routinePersistence")>();
+  const storage = await import("../../modules/routine/lib/routineStorage");
+  return {
+    ...actual,
+    // Тепла копія пишеться синхронно, як у проді; підтвердження — успішне.
+    persistRoutineState: vi.fn(
+      (next: Parameters<typeof storage.saveRoutineState>[0]) => {
+        storage.saveRoutineState(next);
+        return Promise.resolve(true);
+      },
+    ),
+  };
+});
+
 import { executeAction, executeActions } from "./hubChatActions";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
+
+// `waterStorage` moved to SQLite-only writes. Mock load/save with in-memory
+// state so log_water tests remain deterministic without a real SQLite DB.
+const memWater = vi.hoisted(() => ({ log: {} as Record<string, number> }));
+vi.mock("../../modules/nutrition/lib/waterStorage", async (orig) => {
+  const actual =
+    await orig<typeof import("../../modules/nutrition/lib/waterStorage")>();
+  return {
+    ...actual,
+    loadWaterLog: vi.fn(() => memWater.log),
+    saveWaterLog: vi.fn((log: unknown) => {
+      memWater.log = actual.normalizeWaterLog(log) as Record<string, number>;
+    }),
+  };
+});
 
 // `fizruk_workouts_v1` is tombstoned — the workout mutators read/write the
 // SQLite cache via shared helpers, not LS. Fake those two so these integration
@@ -33,6 +69,7 @@ beforeEach(() => {
   // warm cache, not localStorage. Reset both so each spec starts clean.
   localStorage.clear();
   memWk.workouts = [];
+  memWater.log = {};
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   vi.useFakeTimers();
@@ -204,7 +241,7 @@ describe("create_transaction", () => {
     expect(arr[0]!.amount).toBe(5000);
   });
 
-  it("відмовляє на 0 або від'ємну суму без серверного виклику", async () => {
+  it("відмовляє на 0 або відʼємну суму без серверного виклику", async () => {
     stubFetchReject();
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
     const results = await executeActions([
@@ -284,15 +321,14 @@ describe("log_water", () => {
       input: { amount_ml: 250 },
     });
     expect(msg).toContain("250 мл");
-    const log = readLS<Record<string, number>>("nutrition_water_v1", {});
-    expect(log["2024-06-15"]).toBe(250);
+    // waterStorage is mocked with in-memory state (SQLite-only writes).
+    expect(memWater.log["2024-06-15"]).toBe(250);
   });
 
   it("акумулює послідовні записи на той самий день", () => {
     executeAction({ name: "log_water", input: { amount_ml: 250 } });
     executeAction({ name: "log_water", input: { amount_ml: 500 } });
-    const log = readLS<Record<string, number>>("nutrition_water_v1", {});
-    expect(log["2024-06-15"]).toBe(750);
+    expect(memWater.log["2024-06-15"]).toBe(750);
   });
 
   it("підтримує кастомну дату", () => {
@@ -300,9 +336,8 @@ describe("log_water", () => {
       name: "log_water",
       input: { amount_ml: 300, date: "2024-01-10" },
     });
-    const log = readLS<Record<string, number>>("nutrition_water_v1", {});
-    expect(log["2024-01-10"]).toBe(300);
-    expect(log["2024-06-15"]).toBeUndefined();
+    expect(memWater.log["2024-01-10"]).toBe(300);
+    expect(memWater.log["2024-06-15"]).toBeUndefined();
   });
 
   it("відмовляє на некоректну кількість", () => {

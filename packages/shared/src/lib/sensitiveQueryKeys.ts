@@ -1,7 +1,7 @@
 /**
  * Sensitive query-key policy for React Query persisters.
  *
- * Stage 0 / PR #004 from `docs/planning/storage-roadmap.md`. The
+ * Stage 0 / PR #004 from `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The
  * web (`apps/web/src/shared/lib/api/queryClientPersister.ts`) and mobile
  * (`apps/mobile/src/sync/persister/mmkvPersister.ts`) persisters
  * dehydrate a snapshot of the React Query cache to disk on every
@@ -59,6 +59,12 @@ export const SENSITIVE_QUERY_KEY_NAMESPACES: ReadonlySet<string> = new Set([
   "coach",
   // Cloud-sync subsystem — `module_data` payloads, manifest, etc.
   "sync",
+  // Billing/subscription state (`["billing", "status"]` та ін.) —
+  // user-scoped: persisted снапшот пережив reload і НАВІТЬ зміну
+  // акаунта на пристрої (persister keyed by build-id), тож trialing-
+  // платник бачив «Free — зараз ваш план» зі старого кешу сусіднього
+  // акаунта (браузерна верифікація 2026-08-06, F13).
+  "billing",
 ]);
 
 /**

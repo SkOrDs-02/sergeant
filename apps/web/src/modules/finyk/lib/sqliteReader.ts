@@ -4,7 +4,7 @@
  * categories / manual expenses, per-tx category / splits / mono-debt
  * mappings, networth history, prefs).
  *
- * Stage 4 PR #037 of `docs/planning/storage-roadmap.md`. When the
+ * Stage 4 PR #037 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. When the
  * `feature.finyk.sqlite_v2.read_sqlite` flag is on, the public storage
  * hook (`useStorage` via `useFinykStorageSlots`) overlays its slot
  * values from this cache instead of the LS bundle. LS writes still
@@ -33,6 +33,10 @@ import type {
   TxSplitsMap,
 } from "../hooks/useStorage.types";
 import type { Debt, Receivable, TxSplit } from "@sergeant/finyk-domain/domain";
+import {
+  sanitizeMerchantRules,
+  type MerchantRule,
+} from "@sergeant/finyk-domain/lib/merchantRules";
 
 export interface SqliteFinykCache {
   /** Account ids hidden from balances (set membership). */
@@ -76,6 +80,13 @@ export interface SqliteFinykCache {
    * (parsed from `dismissed_recurring_json`).
    */
   dismissedRecurring: string[] | null;
+  /**
+   * Правила «Завжди так для цього магазину» (parsed from
+   * `prefs_json.merchantRules`). `null` — як і в сусідніх prefs-полів — до
+   * першого прогріву й коли рядка prefs ще немає: тоді слот лишає те, що має,
+   * а не затирає його порожнім списком.
+   */
+  merchantRules: MerchantRule[] | null;
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -98,10 +109,24 @@ const EMPTY_CACHE: SqliteFinykCache = {
   showBalance: null,
   excludedStatTxIds: null,
   dismissedRecurring: null,
+  merchantRules: null,
   refreshedAt: null,
 };
 
 let cache: SqliteFinykCache = { ...EMPTY_CACHE };
+
+// DCRUD-007b: `cache` is published last-writer-wins, but refreshes run
+// concurrently — the boot refresh (slow: migrations + 14 SELECTs) is NOT
+// serialized with the writer-queue's post-apply refresh. A refresh that
+// STARTED before a local mutation but FINISHED after the writer's own
+// refresh used to clobber the newer snapshot; the overlay swap then fed
+// the stale state through the diff-writer, escalating into a spurious
+// blob-delete of the just-created row (server tombstone → data loss).
+// Generation guard: a refresh may publish only while no later-started
+// refresh has published first. SQLite writes are serialized, so a
+// later-started refresh always reads an equal-or-newer DB state.
+let refreshSeq = 0;
+let publishedSeq = 0;
 
 /** Returns the current cached finyk state (sync, zero-cost). */
 export function getCachedFinykSqliteState(): SqliteFinykCache {
@@ -216,6 +241,7 @@ export async function refreshFinykSqliteState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteFinykCache> {
+  const seq = ++refreshSeq;
   const [
     hiddenAccountRows,
     hiddenTransactionRows,
@@ -392,7 +418,12 @@ export async function refreshFinykSqliteState(
   const dismissedRecurring = prefsRow
     ? safeStringArray(prefsRow.dismissed_recurring_json)
     : null;
+  const merchantRules = prefsRow
+    ? parseMerchantRules(prefsRow.prefs_json)
+    : null;
 
+  if (seq <= publishedSeq) return cache;
+  publishedSeq = seq;
   cache = {
     hiddenAccounts: hiddenAccountRows.map((r) => r.account_id),
     hiddenTransactions: hiddenTransactionRows.map((r) => r.transaction_id),
@@ -411,10 +442,20 @@ export async function refreshFinykSqliteState(
     showBalance,
     excludedStatTxIds,
     dismissedRecurring,
+    merchantRules,
     // eslint-disable-next-line no-restricted-syntax -- UTC-anchored refresh timestamp (updatedAt-style), not a Kyiv day boundary; pre-existing
     refreshedAt: new Date().toISOString(),
   };
   return cache;
+}
+
+/** `finyk_prefs.prefs_json` → правила мерчантів; зіпсований JSON = порожньо. */
+function parseMerchantRules(raw: string | null | undefined): MerchantRule[] {
+  const parsed = safeParseJson<unknown>(raw ?? null, null);
+  if (!parsed || typeof parsed !== "object") return [];
+  return sanitizeMerchantRules(
+    (parsed as { merchantRules?: unknown }).merchantRules,
+  );
 }
 
 function safeStringArray(raw: string | null | undefined): string[] {
@@ -430,6 +471,8 @@ function safeStringArray(raw: string | null | undefined): string[] {
 /** Reset cache — used by tests and when the flag is toggled off. */
 export function clearFinykSqliteCache(): void {
   cache = { ...EMPTY_CACHE };
+  refreshSeq = 0;
+  publishedSeq = 0;
 }
 
 /**

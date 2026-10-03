@@ -1,7 +1,7 @@
 /**
  * Sergeant Design System — Routine Module Theme Constants
  *
- * Soft & Organic aesthetic with coral accent.
+ * Soft & Organic aesthetic with rose accent.
  * Inspired by: Duolingo gamification, warm friendly feel
  */
 
@@ -9,12 +9,6 @@ export const ROUTINE_THEME = {
   // Text accents
   eyebrow: "text-routine-strong dark:text-routine",
   heroKicker: "text-routine-strong dark:text-routine",
-
-  // Cards & surfaces
-  statCard:
-    "rounded-2xl bg-panel/80 border border-routine-soft-border/60 p-3 text-center shadow-card backdrop-blur-sm",
-  statCardHighlight:
-    "rounded-2xl bg-routine-surface/80 border border-routine-ring/50 dark:border-routine-border-dark/30 p-3 text-center shadow-card",
 
   // Empty state — Wave 1b: `border-routine-soft-border` +
   // `bg-routine-soft` are preset-owned, light/dark pair lives in
@@ -31,8 +25,7 @@ export const ROUTINE_THEME = {
   habitRowDone: "border-l-routine bg-routine-soft/50",
 
   // Icon containers
-  iconBox:
-    "bg-routine-surface dark:bg-routine-surface-dark/10 border-coral-100 dark:border-routine-border-dark/30 text-routine-strong dark:text-routine",
+  iconBox: "bg-routine-soft border-routine-soft-border text-routine-soft-fg",
 
   // Navigation
   navActive: "text-routine-strong dark:text-routine",
@@ -40,7 +33,7 @@ export const ROUTINE_THEME = {
 
   // Chips/pills
   chipOn:
-    "border-routine-ring dark:border-routine-border-dark/40 bg-routine-surface dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine shadow-sm",
+    "border-routine-soft-border bg-routine-soft text-routine-soft-fg shadow-sm",
   chipOff:
     "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors",
 
@@ -50,28 +43,28 @@ export const ROUTINE_THEME = {
 
   // Month selector
   monthSel:
-    "bg-routine-surface dark:bg-routine-surface-dark/15 border-routine-ring dark:border-routine-border-dark/40 ring-1 ring-coral-100/50 dark:ring-routine-border-dark/30",
+    "bg-routine-surface dark:bg-routine-surface-dark/15 border-routine-ring dark:border-routine-border-dark/40 ring-1 ring-rose-100/50 dark:ring-routine-border-dark/30",
 
   // Completion states
-  done: "border-routine/45 bg-routine-surface dark:bg-routine-surface-dark/10 text-routine-strong dark:text-routine",
+  done: "border-routine-soft-border bg-routine-soft text-routine-soft-fg",
   doneCheck: "text-routine-strong dark:text-routine",
 
   // Primary button
   primary:
-    "bg-routine-strong hover:bg-routine-hover text-white border-0 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200 active:scale-[0.98]",
+    "bg-routine-strong hover:bg-routine-hover text-white border-0 shadow-sm transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-base active:scale-[0.98] dark:bg-routine dark:text-bg dark:hover:bg-routine/90",
   primarySoft:
-    "bg-routine-surface hover:bg-coral-100 text-routine-strong dark:text-routine border border-routine-ring/50 transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200",
+    "bg-routine-soft hover:bg-routine-soft-hover text-routine-soft-fg border border-routine-soft-border transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-base",
 
   // Secondary/ghost
   secondary:
-    "bg-panel hover:bg-panelHi text-text border border-line transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-200",
+    "bg-panel hover:bg-panelHi text-text border border-line transition-[background-color,border-color,color,box-shadow,opacity,transform] duration-base",
 
   // Progress ring colors
   progressTrack: "text-routine-soft",
   progressFill: "text-routine-strong dark:text-routine",
 
   // Hero card gradient
-  heroGradient: "bg-hero-coral",
+  heroGradient: "bg-hero-rose",
 
   // Success animation colors
   successPulse: "rgba(249, 112, 102, 0.4)",
@@ -92,4 +85,5 @@ export {
   RECURRENCE_OPTIONS,
   ROUTINE_TIME_MODES,
   WEEKDAY_LABELS,
+  WEEKLY_TARGET_CHOICES,
 } from "@sergeant/routine-domain";

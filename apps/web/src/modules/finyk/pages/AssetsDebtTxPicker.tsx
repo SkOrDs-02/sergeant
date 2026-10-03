@@ -1,0 +1,331 @@
+/**
+ * Last validated: 2026-08-03
+ * Status: Active
+ */
+import { useState, type ReactNode } from "react";
+import { TxRow, type TxRowTx } from "../components/TxRow";
+import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
+import { Money } from "@shared/components/ui/Money";
+import { Sheet } from "@shared/components/ui/Sheet";
+import { Button } from "@shared/components/ui/Button";
+import { cn } from "@shared/lib/ui/cn";
+import {
+  calcDebtRemaining,
+  calcReceivableRemaining,
+  defaultDebtTxRole,
+  defaultReceivableTxRole,
+  describeLinkedTxRole,
+  getDebtEffectiveTotal,
+  getDebtPaid,
+  getLinkedTxRole,
+  getReceivableEffectiveTotal,
+  getReceivablePaid,
+  type Debt,
+  type LinkedTxRole,
+  type Receivable,
+} from "@sergeant/finyk-domain/domain/debtEngine";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import { messages } from "@shared/i18n/uk";
+import { formatNumberUk } from "@sergeant/shared";
+
+const copy = messages.finyk.debtTxLink;
+
+/**
+ * Пояснення ролей у пікері. Ключова відмінність, заради якої вибір узагалі
+ * зʼявився: `source` підтверджує базу без додавання поверх неї й водночас
+ * не дозволяє показати базу, меншу за суму джерел. До 2026-08 роль
+ * виводилася зі знаку, і будь-яка
+ * origin-транзакція мовчки додавалася поверх уже введеної вручну суми.
+ */
+const ROLE_HINT: Record<LinkedTxRole, Record<"debt" | "receivable", string>> = {
+  source: {
+    debt: copy.hints.debtSource,
+    receivable: copy.hints.receivableSource,
+  },
+  increase: {
+    debt: copy.hints.debtIncrease,
+    receivable: copy.hints.receivableIncrease,
+  },
+  payment: {
+    debt: copy.hints.debtPayment,
+    receivable: copy.hints.receivablePayment,
+  },
+};
+
+const ROLE_ORDER: LinkedTxRole[] = ["source", "increase", "payment"];
+
+/**
+ * Тон підпису ролі. Живе тут, а не в домені: колір мусить бути ПАРОЮ
+ * (світлий тир + темний), бо підпис стоїть і на бежевому фоні сторінки,
+ * і на чорнильному. Домен про теми не знає — він віддає роль.
+ *
+ * AI-CONTEXT (рішення власника 2026-08-07, варіант Б на матеріалі
+ * `mockups/product/debt-role-colors.html`): кольорові лише ті дві ролі,
+ * що несуть справжню полярність — рух до нуля й від нуля. `source`
+ * (виникнення боргу) НАВМИСНО нейтральний.
+ *
+ * Виникнення — це факт, з якого запис починається, а не попередження:
+ * воно вже назване підписом, і фарбувати його ще й у бурштин означало б
+ * казати те саме двічі, гучніше. Плюс це знімає давнє розходження
+ * всередині Фініка — у `TxRow` витрата вже нейтральна (`text-text`),
+ * тобто модуль давно вирішив, що витрачати гроші не помилка, а
+ * `debtEngine` цього рішення не знав.
+ *
+ * Якщо колись захочеться повернути третій колір — це продуктове
+ * рішення, не косметика: воно додає тривожний сигнал на екран, де
+ * нічого не зламано. Тест `AssetsDebtTxPicker.roleTone.test.tsx`
+ * тримає межу.
+ */
+const ROLE_TONE: Record<LinkedTxRole, string> = {
+  payment: "text-success-strong dark:text-success",
+  increase: "text-danger-strong dark:text-danger",
+  source: "text-muted",
+};
+
+interface RoleSheetProps {
+  tx: TxRowTx | null;
+  kind: "debt" | "receivable";
+  currentRole: LinkedTxRole | null;
+  onPick: (role: LinkedTxRole) => void;
+  onUnlink: () => void;
+  onClose: () => void;
+}
+
+function RoleSheet({
+  tx,
+  kind,
+  currentRole,
+  onPick,
+  onUnlink,
+  onClose,
+}: RoleSheetProps) {
+  const amount = tx ? Math.abs(tx.amount / 100) : 0;
+  const suggested = tx ? suggestedRole(tx, kind) : null;
+  return (
+    <Sheet
+      open={tx !== null}
+      onClose={onClose}
+      title={copy.roleSheetTitle}
+      description={
+        tx
+          ? `${tx.description || copy.noDescription} · ${formatNumberUk(amount)} ₴`
+          : undefined
+      }
+    >
+      <div className="space-y-2">
+        {ROLE_ORDER.map((role) => {
+          const selected = currentRole === role;
+          return (
+            <button
+              key={role}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onPick(role)}
+              className={cn(
+                "w-full touch-target rounded-xl border px-4 py-3 text-left transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk",
+                selected
+                  ? "border-finyk bg-finyk/10"
+                  : "border-line hover:bg-panel",
+              )}
+            >
+              <div className="text-style-label text-text">
+                {describeLinkedTxRole(role, kind).label}
+                {currentRole === null && suggested === role && (
+                  <span className="text-style-caption text-subtle ml-2">
+                    {copy.suggestedHint}
+                  </span>
+                )}
+              </div>
+              <div className="text-style-caption text-subtle mt-0.5">
+                {ROLE_HINT[role][kind]}
+              </div>
+            </button>
+          );
+        })}
+        {currentRole !== null && (
+          <Button variant="ghost" size="sm" onClick={onUnlink} className="mt-1">
+            {copy.unlink}
+          </Button>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+export interface AssetsDebtTxPickerProps {
+  kind: "debt" | "receivable";
+  item: Debt | Receivable;
+  transactions: readonly TxRowTx[];
+  /** Повний набір для розрахунків — не звужений пошуком/періодом. */
+  allTransactions: readonly TxRowTx[];
+  setLinkedTxRole: (
+    id: string,
+    txId: string,
+    type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH?: number,
+  ) => void;
+  showBalance: boolean;
+  customCategories?: readonly CustomCategoryInput[];
+  controls: ReactNode;
+  onBack: () => void;
+}
+
+/**
+ * Привʼязка транзакцій до ручного пасиву або дебіторки. Тап по рядку
+ * відкриває вибір ролі — знак суми лишається лише передвибором, а не
+ * рішенням за користувача.
+ */
+export function AssetsDebtTxPicker({
+  kind,
+  item,
+  transactions,
+  allTransactions,
+  setLinkedTxRole,
+  showBalance,
+  customCategories,
+  controls,
+  onBack,
+}: AssetsDebtTxPickerProps) {
+  const [pending, setPending] = useState<TxRowTx | null>(null);
+  const isDebt = kind === "debt";
+  const linked = item.linkedTxIds || [];
+
+  const paid = isDebt
+    ? getDebtPaid(item as Debt, allTransactions as TxRowTx[])
+    : getReceivablePaid(item as Receivable, allTransactions as TxRowTx[]);
+  const total = isDebt
+    ? getDebtEffectiveTotal(item as Debt, allTransactions as TxRowTx[])
+    : getReceivableEffectiveTotal(
+        item as Receivable,
+        allTransactions as TxRowTx[],
+      );
+  const remaining = isDebt
+    ? calcDebtRemaining(item as Debt, allTransactions as TxRowTx[])
+    : calcReceivableRemaining(item as Receivable, allTransactions as TxRowTx[]);
+
+  const roleOf = (tx: TxRowTx): LinkedTxRole | null =>
+    getLinkedTxRole(item, tx.id, allTransactions as TxRowTx[], kind);
+
+  const commit = (role: LinkedTxRole) => {
+    if (!pending) return;
+    setLinkedTxRole(
+      item.id,
+      pending.id,
+      kind,
+      role,
+      Math.abs(pending.amount / 100),
+    );
+    setPending(null);
+  };
+
+  return (
+    <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-line bg-bg sticky top-0 z-10">
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1 text-style-label text-muted hover:text-text transition-colors"
+        >
+          <Icon name="chevron-left" size="sm" />
+          {copy.back}
+        </button>
+        <span className="text-style-label">
+          {isDebt ? copy.debtHeader : copy.receivableHeader}
+        </span>
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
+          <Card variant="flat" radius="md" className="mb-4">
+            <div className="text-style-caption text-subtle inline-flex items-center gap-1.5">
+              {/* До 2026-08-21 тут стояв `item.emoji` — засіяний дефолт
+                  («💸» для боргу, «👤» для дебіторки), який форма не дає
+                  редагувати. Тобто хардкод емодзі, а не вибір людини. */}
+              <Icon
+                name={isDebt ? "credit-card" : "user"}
+                size="sm"
+                aria-hidden
+              />
+              {item.name}
+            </div>
+            <p className="text-style-caption text-subtle mt-2 leading-relaxed">
+              {copy.intro}
+            </p>
+            <div
+              className={cn(
+                "text-style-headline mt-1",
+                isDebt
+                  ? "text-danger-strong dark:text-danger"
+                  : "text-success-strong dark:text-success",
+              )}
+            >
+              <Money
+                amount={isDebt ? -remaining : remaining}
+                signed
+                tone="inherit"
+              />{" "}
+              {copy.remainingSuffix}
+            </div>
+            <div className="text-style-caption text-subtle mt-1">
+              {/* Символ один раз на пару: «сплачено X з Y ₴». */}
+              {copy.paidPrefix} <Money amount={paid} symbol="" />{" "}
+              {copy.paidJoiner} <Money amount={total ?? 0} />
+            </div>
+          </Card>
+          {controls}
+          {transactions.map((t, i) => {
+            const isLinked = linked.includes(t.id);
+            const role = isLinked ? roleOf(t) : null;
+            const isAuto = isLinked && item.txLinks?.[t.id]?.auto === true;
+            return (
+              <div key={t.id || i}>
+                {isLinked && role && (
+                  <div
+                    className={cn(
+                      "text-style-caption px-1 py-1",
+                      ROLE_TONE[role],
+                    )}
+                  >
+                    {describeLinkedTxRole(role, kind).label}
+                    {isAuto && (
+                      <span className="text-subtle"> · {copy.autoLabel}</span>
+                    )}
+                  </div>
+                )}
+                <TxRow
+                  tx={t}
+                  highlighted={isLinked}
+                  onClick={() => setPending(t)}
+                  hideAmount={!showBalance}
+                  customCategories={customCategories}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <RoleSheet
+        tx={pending}
+        kind={kind}
+        currentRole={pending ? roleOf(pending) : null}
+        onPick={commit}
+        onUnlink={() => {
+          if (!pending) return;
+          setLinkedTxRole(item.id, pending.id, kind, null);
+          setPending(null);
+        }}
+        onClose={() => setPending(null)}
+      />
+    </div>
+  );
+}
+
+/** Роль, яку пікер підсвічує як передвибір для ще не привʼязаної операції. */
+export function suggestedRole(
+  tx: Pick<TxRowTx, "amount">,
+  kind: "debt" | "receivable",
+): LinkedTxRole {
+  return kind === "debt" ? defaultDebtTxRole(tx) : defaultReceivableTxRole(tx);
+}

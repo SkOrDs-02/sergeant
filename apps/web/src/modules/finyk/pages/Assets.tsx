@@ -7,8 +7,15 @@ export function Assets({
   storage,
   showBalance = true,
   initialOpenDebt = false,
+  initialOpenSubscriptions = false,
 }: AssetsProps) {
-  const state = useAssetsState({ mono, storage, showBalance, initialOpenDebt });
+  const state = useAssetsState({
+    mono,
+    storage,
+    showBalance,
+    initialOpenDebt,
+    initialOpenSubscriptions,
+  });
 
   if (state.txPicker) {
     return (
@@ -17,13 +24,16 @@ export function Assets({
         setTxPicker={state.setTxPicker}
         accounts={state.accounts as never}
         transactions={state.transactions}
+        loading={state.loadingTx}
+        error={state.transactionsError}
+        onRetry={state.refetchTransactions}
         monoDebtLinkedTxIds={state.monoDebtLinkedTxIds}
         toggleMonoDebtTx={state.toggleMonoDebtTx}
         subscriptions={state.subscriptions}
         updateSubscription={state.updateSubscription}
         manualDebts={state.manualDebts}
         receivables={state.receivables}
-        toggleLinkedTx={state.toggleLinkedTx}
+        setLinkedTxRole={state.setLinkedTxRole}
         showBalance={state.showBalance}
         customCategories={state.customCategories}
       />

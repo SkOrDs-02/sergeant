@@ -7,7 +7,7 @@ import { act, renderHook } from "@testing-library/react";
  *
  * Перевіряємо, що `usePwaInstall` емітить
  * `PWA_INSTALL_PROMPTED → PWA_INSTALL_{ACCEPTED|DISMISSED} → PWA_INSTALLED`
- * у правильних точках, а також що банер з'являється тільки після
+ * у правильних точках, а також що банер зʼявляється тільки після
  * 30-секундного gate-у + ≥ 2 сесій (як було до PR-07). Перевіряємо
  * `appinstalled` як термінальну подію funnel-у — стріляє НЕЗАЛЕЖНО від того,
  * чи юзер прийшов з банера, чи натиснув native browser-prompt.
@@ -131,7 +131,7 @@ describe("usePwaInstall — install / dismiss telemetry", () => {
     });
   });
 
-  it("dismiss() (натиск на X у банері) → pwa_install_dismissed з via=banner + persist", async () => {
+  it("dismiss() (натиск на X у банері) → pwa_install_dismissed з via=banner + snooze persist", async () => {
     const hook = await readyHook();
     act(() => {
       window.dispatchEvent(makePromptEvent("accepted"));
@@ -146,7 +146,83 @@ describe("usePwaInstall — install / dismiss telemetry", () => {
       surface: "android",
       via: "banner",
     });
-    expect(window.localStorage.getItem("pwa_install_dismissed")).toBe("1");
+    // Founder-ux-review round 2 (O2): dismiss() no longer writes the
+    // permanent flag — it defers via the shared snooze record instead.
+    expect(window.localStorage.getItem("pwa_install_dismissed")).toBeNull();
+    const snoozed = JSON.parse(
+      window.localStorage.getItem("pwa_install_snooze_v1") ?? "null",
+    );
+    expect(snoozed).toEqual({ until: expect.any(Number), count: 1 });
+  });
+});
+
+describe("usePwaInstall — snooze TTL (founder-ux-review round 2, O2)", () => {
+  async function readyHook() {
+    window.localStorage.setItem("pwa_session_count", "1");
+    return renderHook(() => usePwaInstall());
+  }
+
+  it("не показує канінстал знову одразу після dismiss(), навіть з новим prompt-подіями", async () => {
+    const hook = await readyHook();
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    act(() => {
+      hook.result.current.dismiss();
+    });
+    expect(hook.result.current.canInstall).toBe(false);
+
+    // A fresh `beforeinstallprompt` right after dismiss — the snooze gate
+    // must keep `ready` from flipping back to true.
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(hook.result.current.canInstall).toBe(false);
+  });
+
+  it("показує канінстал знову після 30 днів снузу", async () => {
+    const hook = await readyHook();
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    act(() => {
+      hook.result.current.dismiss();
+    });
+
+    // Fake timers mock `Date` too — advance past the 30-day snooze window.
+    act(() => {
+      vi.advanceTimersByTime(30 * 24 * 60 * 60 * 1000 + 1000);
+    });
+
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(hook.result.current.canInstall).toBe(true);
+  });
+
+  it("стара постійна відмітка (pwa_install_dismissed=1) і далі ховає банер (backward-compat)", async () => {
+    window.localStorage.setItem("pwa_session_count", "1");
+    window.localStorage.setItem("pwa_install_dismissed", "1");
+    const { result } = renderHook(() => usePwaInstall());
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(result.current.canInstall).toBe(false);
   });
 });
 
@@ -156,6 +232,148 @@ describe("usePwaInstall — appinstalled event", () => {
     act(() => {
       window.dispatchEvent(new Event("appinstalled"));
     });
-    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {});
+    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {
+      surface: "android",
+      via: "appinstalled",
+    });
+  });
+});
+
+/**
+ * Success-плече для платформ без `appinstalled` (аудит телеметрії 2026-08-16).
+ * До цього `pwa_installed` не спрацював жодного разу за весь час життя
+ * проєкту: подія висіла на Chromium-only event-і, а вся база — iOS Safari.
+ */
+describe("usePwaInstall — standalone detection (iOS success arm)", () => {
+  const originalUserAgent = navigator.userAgent;
+
+  // jsdom не реалізує `matchMedia`, тож `vi.spyOn` тут не працює (нема що
+  // підміняти) — визначаємо властивість напряму й прибираємо після тесту.
+  function stubStandalone(matches: boolean) {
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      writable: true,
+      value: (query: string) =>
+        ({
+          matches: matches && query === "(display-mode: standalone)",
+          media: query,
+          onchange: null,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          dispatchEvent: vi.fn(),
+        }) as unknown as MediaQueryList,
+    });
+  }
+
+  // iOS Safari не підтримує `display-mode: standalone` і має власний
+  // прапорець. Це і є цільова платформа фіксу, тож шлях мусить бути покритий
+  // окремо від media-query-гілки.
+  function stubIosStandalone() {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    });
+    Object.defineProperty(navigator, "standalone", {
+      configurable: true,
+      value: true,
+    });
+  }
+
+  afterEach(() => {
+    delete (window as { matchMedia?: unknown }).matchMedia;
+    delete (navigator as { standalone?: unknown }).standalone;
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: originalUserAgent,
+    });
+  });
+
+  it("не стріляє pwa_installed у звичайній вкладці браузера", () => {
+    stubStandalone(false);
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
+      "pwa_installed",
+    );
+  });
+
+  // Founder-ux-review round 2 (O2): explicit code-level gate, не implicit
+  // browser behaviour — `beforeinstallprompt` не мусить вести до
+  // `canInstall` у standalone, навіть якщо його якимось шляхом усе одно
+  // диспатчнули.
+  it("ігнорує beforeinstallprompt у standalone-режимі (явний isStandalonePWA-гейт)", () => {
+    window.localStorage.setItem("pwa_session_count", "1");
+    stubStandalone(true);
+    const { result } = renderHook(() => usePwaInstall());
+    act(() => {
+      window.dispatchEvent(makePromptEvent("accepted"));
+    });
+    act(() => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(result.current.canInstall).toBe(false);
+  });
+
+  it("зараховує інсталяцію на першому запуску в standalone", () => {
+    stubStandalone(true);
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {
+      surface: "android",
+      via: "standalone_detected",
+    });
+    expect(window.localStorage.getItem("pwa_install_reported")).toBe("1");
+  });
+
+  it("не дублює подію на наступних запусках з іконки", () => {
+    stubStandalone(true);
+    renderHook(() => usePwaInstall());
+    trackEventMock.mockReset();
+    // Другий «запуск» застосунку — той самий storage, новий монтаж хука.
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
+      "pwa_installed",
+    );
+  });
+
+  it("зараховує інсталяцію на iOS через navigator.standalone", () => {
+    // Без media-query взагалі — рівно те, що бачить Safari.
+    stubIosStandalone();
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock).toHaveBeenCalledWith("pwa_installed", {
+      surface: "ios",
+      via: "standalone_detected",
+    });
+  });
+
+  it("не зараховує інсталяцію на iOS у звичайній вкладці Safari", () => {
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6 Mobile/15E148 Safari/604.1",
+    });
+    Object.defineProperty(navigator, "standalone", {
+      configurable: true,
+      value: false,
+    });
+    renderHook(() => usePwaInstall());
+    expect(trackEventMock.mock.calls.map(([n]) => n)).not.toContain(
+      "pwa_installed",
+    );
+  });
+
+  it("не дублює, коли слідом за standalone-стартом приходить appinstalled", () => {
+    stubStandalone(true);
+    renderHook(() => usePwaInstall());
+    const before = trackEventMock.mock.calls.filter(
+      ([n]) => n === "pwa_installed",
+    ).length;
+    act(() => {
+      window.dispatchEvent(new Event("appinstalled"));
+    });
+    expect(
+      trackEventMock.mock.calls.filter(([n]) => n === "pwa_installed"),
+    ).toHaveLength(before);
   });
 });

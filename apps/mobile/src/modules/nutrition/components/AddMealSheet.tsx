@@ -5,7 +5,7 @@
  *  Step "source" — вручну, штрихкод, фото (галерея/камера → analyze-photo).
  *  Step "fill"   — форма; для фото — опційно refine (порція + відповіді на питання).
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react"; // useEffect kept for scan-prefill handler registration below
 import {
   ActivityIndicator,
   Pressable,
@@ -29,7 +29,10 @@ import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { setNutritionScanPrefillHandler } from "../lib/nutritionScanBridge";
 import { formatPhotoApiError } from "../lib/photoErrorFormatting";
-import { mapPhotoResultToMealForm } from "../lib/photoResultToMealForm";
+import {
+  mapPhotoResultToMealForm,
+  notFoodMessage,
+} from "../lib/photoResultToMealForm";
 import {
   captureResizeAndReadBase64Jpeg,
   pickResizeAndReadBase64Jpeg,
@@ -113,31 +116,36 @@ export function AddMealSheet({
     setRefineAnswers({});
   }, []);
 
-  useEffect(() => {
-    if (!open) return;
-    if (initialMeal?.id) {
-      const mac = initialMeal.macros || {};
-      setForm({
-        name: String(initialMeal.name || ""),
-        mealType: initialMeal.mealType || "breakfast",
-        time: initialMeal.time || currentTime(),
-        kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
-        protein_g:
-          mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
-        fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
-        carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
-        err: "",
-      });
-      setMacroSource("manual");
-      setStep("fill");
-      resetPhotoRefine();
-    } else {
-      setForm(emptyForm(null));
-      setMacroSource("manual");
-      setStep("source");
-      resetPhotoRefine();
+  // Render-time form reset on open transition — avoids
+  // `react-hooks/set-state-in-effect` (initiative 0021).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      if (initialMeal?.id) {
+        const mac = initialMeal.macros || {};
+        setForm({
+          name: String(initialMeal.name || ""),
+          mealType: initialMeal.mealType || "breakfast",
+          time: initialMeal.time || currentTime(),
+          kcal: mac.kcal != null ? String(Math.round(mac.kcal)) : "",
+          protein_g:
+            mac.protein_g != null ? String(Math.round(mac.protein_g)) : "",
+          fat_g: mac.fat_g != null ? String(Math.round(mac.fat_g)) : "",
+          carbs_g: mac.carbs_g != null ? String(Math.round(mac.carbs_g)) : "",
+          err: "",
+        });
+        setMacroSource("manual");
+        setStep("fill");
+        resetPhotoRefine();
+      } else {
+        setForm(emptyForm(null));
+        setMacroSource("manual");
+        setStep("source");
+        resetPhotoRefine();
+      }
     }
-  }, [open, initialMeal, resetPhotoRefine]);
+  }
 
   useEffect(() => {
     if (!open) {
@@ -172,7 +180,7 @@ export function AddMealSheet({
   function handleSave() {
     const name = form.name.trim();
     if (!name) {
-      setForm((s) => ({ ...s, err: "Введіть назву страви." }));
+      setForm((s) => ({ ...s, err: "Введи назву страви." }));
       return;
     }
     const kcal = form.kcal === "" ? null : Number(form.kcal);
@@ -193,9 +201,7 @@ export function AddMealSheet({
     const contentSource: MealSource =
       macroSource === "photoAI" ? "photo" : "manual";
     onSave({
-      id:
-        initialMeal?.id ||
-        `meal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      id: initialMeal?.id || `meal_${Date.now()}_${crypto.randomUUID()}`,
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,
@@ -260,6 +266,16 @@ export function AddMealSheet({
           }));
           return;
         }
+        // Не-їжа не переводить на крок «fill»: інакше форма прийому їжі
+        // заповнилась би назвою того, що на фото («Кіт»), і порожніми КБЖВ —
+        // рівно те, що web-картка показувала до серверного прапорця.
+        if (r.isFood === false) {
+          setForm((s) => ({
+            ...s,
+            err: notFoodMessage(r.dishName, r.notFoodKind),
+          }));
+          return;
+        }
         applyPhotoAnalyzeSuccess(picked.base64, picked.mimeType, r);
       } catch (e) {
         const msg = formatPhotoApiError(e, "Помилка аналізу фото");
@@ -298,6 +314,13 @@ export function AddMealSheet({
         setForm((s) => ({ ...s, err: "Порожня відповідь (refine)." }));
         return;
       }
+      if (r.isFood === false) {
+        setForm((s) => ({
+          ...s,
+          err: notFoodMessage(r.dishName, r.notFoodKind),
+        }));
+        return;
+      }
       setForm((s) => ({ ...s, ...mapPhotoResultToMealForm(r) }));
       setPhotoSession((ps) => (ps ? { ...ps, prior: r } : null));
       const g2 = r.portion?.gramsApprox;
@@ -325,8 +348,8 @@ export function AddMealSheet({
       {step === "source" ? (
         <View>
           <Text className="text-xs text-fg-subtle mb-4">
-            Оберіть джерело нижче. Макроси, назву й час відредагуєте на
-            наступному кроці.
+            Обери джерело нижче. Макроси, назву й час відредагуєш на наступному
+            кроці.
           </Text>
 
           <Button
@@ -376,7 +399,7 @@ export function AddMealSheet({
           <View className="items-center my-3">
             <View className="flex-row items-center gap-3">
               <View className="flex-1 h-px bg-cream-300" />
-              {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- divider text */}
+
               <Text className="text-[10px] text-fg-subtle uppercase tracking-wider">
                 або
               </Text>
@@ -436,7 +459,7 @@ export function AddMealSheet({
                 Уточнення AI
               </Text>
               <Text className="text-xs text-fg-muted mb-2">
-                Можна вказати вагу порції та відповіді на питання — перерахунок
+                Можна вказати вагу порції та відповіді на питання, перерахунок
                 КБЖВ через сервер.
               </Text>
               <Text className="text-xs text-fg-muted mb-0.5">Порція, г</Text>

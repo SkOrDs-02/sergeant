@@ -1,8 +1,8 @@
 ---
 name: sergeant-deliver-squad
-description: Use when implementing a Sergeant feature across 2+ surfaces with contract dependencies (DB + server + api-client + web/mobile) — sequential subagent handoffs prevent bigint and triplet gaps; UA: фіча через 2+ surfaces.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+description: "Use when implementing a Sergeant feature across 2+ surfaces with contract dependencies (DB + server + api-client + web/mobile) — sequential subagent handoffs prevent bigint and triplet gaps; UA: фіча через 2+ surfaces."
+lang: uk
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Deliver squad для крос-surface фіч
@@ -41,25 +41,38 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 2. Звіт попереднього агента (що вже зроблено?)
 3. Своє завдання (що конкретно зробити на цій surface?)
 
-Запускай subagent через `Task` tool (або як Agent Team teammate). **Не запускай наступний subagent до отримання звіту попереднього** — за винятком паралельного web/mobile кроку.
+Запускай subagent через subagent-механізм твого харнесу (Claude Code: `Agent` tool; або як Agent Team teammate). **Не запускай наступний subagent до отримання звіту попереднього** — за винятком паралельного web/mobile кроку.
+
+## Stage 5 — фінальна верифікація (обов'язкова, не опційна)
+
+Ланцюжок **не завершено** після того, як web/mobile-агенти відзвітували. Per-stage `pnpm typecheck` доводить лише те, що кожна поверхня компілюється окремо — а сенс цього squad-у саме в крос-поверхневій інтеграції, яку жоден із цих typecheck-ів не перевіряє. Тому після stage 4:
+
+1. **`sergeant-qa-squad`** — 4 паралельні runner-и; `qa-packages` тут критичний: він виконує contract-тести `api-client`, тобто рантайм-доказ, що триплет Hard Rule #3 справді зійшовся.
+2. **`sergeant-verify-before-done`** — фінальний гейт перед заявою «готово»: свіжий повний `pnpm check`, повний scope, цитований exit code.
+
+Пропуск stage 5 — найчастіший спосіб віддати «готову» фічу з розсинхроненим контрактом: кожна поверхня зелена окремо, разом — ні.
 
 ## Завжди покривай
 
-- `pnpm typecheck` після кожного surface-агента
+- `pnpm typecheck` після кожного surface-агента (проміжна перевірка, **не** заміна stage 5)
 - Якщо migration-agent повідомив про нові `bigint` колонки — переконайся, що server-agent їх coerce-ить із `Number()`
 - api-client-agent отримує фінальний serializer від server-agent, а не draft
-- Якщо фіча торкається HubChat — після web/mobile додай `sergeant-hubchat` skill для tool def і executor
+- Якщо фіча торкається HubChat — після web/mobile додай `sergeant-module-ai` skill для tool def і executor
+- Звіти самих агентів (їхні секції «Report to …») — канонічне джерело handoff-даних; цей skill задає **порядок** і межі, не переказує зміст звітів
 
 ## Червоні прапорці
 
+- «Фіча в одній теці модуля, хай і на 2-3 його поверхнях» → не squad-кейс: віддай module-owner агенту (`finyk-owner` тощо) через відповідний `sergeant-module-*` скіл. Squad — коли зʼявляється **нова контрактна залежність** server↔client через `packages/api-client` (межа — `docs/start/agents/agent-workflows.md` § 0)
 - «Запущу web-agent до завершення api-client-agent» → типи ще не готові, web-agent напише проти stale interface
 - «Пропущу migration-agent, зроблю ALTER TABLE в коді» → порушення Hard Rule #4, немає sequential migration файлу
 - «api-client-agent не потрібен, web-agent прочитає типи з server прямо» → заборонено, cross-app imports порушують monorepo boundaries
 - «Всі агенти запущу паралельно» → migration → server → api-client є sequential chain; тільки web + mobile можуть бути паралельними
+- «Кожна поверхня зелена — фіча готова» → per-stage typecheck не перевіряє контракт між поверхнями; без stage 5 (qa-squad + verify-before-done) це не «готово», а «скомпілювалось»
+- «Фіча торкається landing» → landing не має власного stage-агента; веди зміну через web-agent і переконайся, що `qa-web` покрив обидва застосунки
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/run-squad-deliver.md`](../../../docs/00-start/playbooks/run-squad-deliver.md) — step-by-step рецепт
-- [`docs/00-start/playbooks/add-api-endpoint.md`](../../../docs/00-start/playbooks/add-api-endpoint.md) — reference для single-surface server endpoint
-- [`docs/00-start/playbooks/add-sql-migration.md`](../../../docs/00-start/playbooks/add-sql-migration.md) — reference для migration rules
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/start/instructions/run-squad-deliver.md`](../../../docs/start/instructions/run-squad-deliver.md) — step-by-step рецепт
+- [`docs/start/instructions/add-api-endpoint.md`](../../../docs/start/instructions/add-api-endpoint.md) — reference для single-surface server endpoint
+- [`docs/start/instructions/add-sql-migration.md`](../../../docs/start/instructions/add-sql-migration.md) — reference для migration rules
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — каталог всіх skills

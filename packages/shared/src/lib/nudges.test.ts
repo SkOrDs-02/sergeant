@@ -5,6 +5,7 @@ import { createMemoryKVStore } from "../test-utils";
 import {
   getActiveNudge,
   dismissNudge,
+  isNudgeDismissed,
   snoozeNudge,
   recordLastActiveDate,
   getDaysInactive,
@@ -55,6 +56,15 @@ describe("getActiveNudge", () => {
     expect(second === null || second.id !== first!.id).toBe(true);
   });
 
+  it("reports namespaced engagement items as dismissed", () => {
+    const store = createMemoryKVStore();
+    const id = "finyk:goal-completed:g-1";
+
+    expect(isNudgeDismissed(store, id)).toBe(false);
+    dismissNudge(store, id);
+    expect(isNudgeDismissed(store, id)).toBe(true);
+  });
+
   it("skips routine nudge if routine not in picks", () => {
     const store = createMemoryKVStore();
     const nudge = getActiveNudge(store, 2, { picks: ["finyk"] });
@@ -84,6 +94,39 @@ describe("getActiveNudge", () => {
     store.setString("hub_nudge_snooze_v1", raw);
     const third = getActiveNudge(store, 3, { picks: ["finyk"] });
     expect(third?.id).toBe(first!.id);
+  });
+
+  it("surfaces the cross-module nudge when exactly one module has entries", () => {
+    const store = createMemoryKVStore();
+    const nudge = getActiveNudge(store, 2, {
+      picks: ["finyk", "fizruk"],
+      modulesWithEntries: new Set(["finyk"]),
+    });
+    expect(nudge?.id).toBe("day2_cross_module");
+  });
+
+  it("hides the cross-module nudge unless exactly one module is active", () => {
+    const store = createMemoryKVStore();
+    // Zero active modules — nothing to cross-pollinate from yet.
+    expect(
+      getActiveNudge(store, 2, {
+        picks: ["finyk"],
+        modulesWithEntries: new Set(),
+      })?.id,
+    ).not.toBe("day2_cross_module");
+    // Two active modules — the cross-module promise already landed.
+    expect(
+      getActiveNudge(store, 2, {
+        picks: ["finyk"],
+        modulesWithEntries: new Set(["finyk", "fizruk"]),
+      })?.id,
+    ).not.toBe("day2_cross_module");
+  });
+
+  it("never surfaces the cross-module nudge without a modulesWithEntries set (fail-closed)", () => {
+    const store = createMemoryKVStore();
+    const nudge = getActiveNudge(store, 2, { picks: ["finyk"] });
+    expect(nudge === null || nudge.id !== "day2_cross_module").toBe(true);
   });
 });
 
@@ -146,7 +189,7 @@ describe("re-engagement audit-guard (S6.9)", () => {
   it("REENGAGEMENT_INACTIVE_DAYS is the 2-day early-loop threshold", () => {
     // Audit-guard: changing this constant is a product decision
     // (re-engagement window). If you bump it, also update
-    // `docs/launch/ftux-sprint-plan.md` S6.9 row and re-run baseline.
+    // `docs/work/specs/launch/ftux-sprint-plan.md` S6.9 row and re-run baseline.
     expect(REENGAGEMENT_INACTIVE_DAYS).toBe(2);
   });
 

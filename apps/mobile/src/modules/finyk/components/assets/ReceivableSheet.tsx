@@ -6,7 +6,7 @@
  * so only the field mapping differs.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import type { AssetsReceivable } from "@sergeant/finyk-domain/domain";
@@ -59,13 +59,16 @@ export function ReceivableSheet({
   const [draft, setDraft] = useState<DraftState>(() => toDraft(receivable));
   const [nameError, setNameError] = useState(false);
   const [amountError, setAmountError] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setDraft(toDraft(receivable));
-    setNameError(false);
-    setAmountError(false);
-  }, [open, receivable]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(toDraft(receivable));
+      setNameError(false);
+      setAmountError(false);
+    }
+  }
 
   const isEditing = !!receivable;
 
@@ -141,7 +144,7 @@ export function ReceivableSheet({
         <View>
           <Text className="text-xs font-medium text-fg mb-1">Хто винен</Text>
           <Input
-            placeholder="Ім'я або назва"
+            placeholder="Імʼя або назва"
             value={draft.name}
             onChangeText={(t) => setDraft((d) => ({ ...d, name: t }))}
             error={nameError}
@@ -173,7 +176,7 @@ export function ReceivableSheet({
         <View>
           <Text className="text-xs font-medium text-fg mb-1">Нотатка</Text>
           <Input
-            placeholder="Необов'язково"
+            placeholder="Необовʼязково"
             value={draft.note}
             onChangeText={(t) => setDraft((d) => ({ ...d, note: t }))}
             testID={testID ? `${testID}-note` : undefined}

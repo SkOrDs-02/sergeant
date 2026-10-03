@@ -38,8 +38,8 @@ function SwipeToActionImpl({
   children,
   onSwipeLeft,
   onSwipeRight,
-  leftLabel = "✓",
-  rightLabel = "🗑",
+  leftLabel = <Icon name="check" size={18} aria-hidden />,
+  rightLabel = <Icon name="trash" size={18} aria-hidden />,
   leftColor = "bg-success",
   rightColor = "bg-danger",
   disabled = false,
@@ -98,9 +98,11 @@ function SwipeToActionImpl({
       // Multi-touch (pinch-zoom, two-finger scroll) should never be
       // interpreted as a horizontal swipe — ignore entirely.
       if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      if (!touch) return;
       setCommitted(false);
-      startX.current = e.touches[0]!.clientX;
-      startY.current = e.touches[0]!.clientY;
+      startX.current = touch.clientX;
+      startY.current = touch.clientY;
       isHorizontal.current = null;
       setIsDragging(true);
     },
@@ -111,8 +113,17 @@ function SwipeToActionImpl({
     (e: TouchEvent<HTMLDivElement>) => {
       if (!isDragging || startX.current === null || startY.current === null)
         return;
-      const dx = e.touches[0]!.clientX - startX.current;
-      const dy = e.touches[0]!.clientY - startY.current;
+      if (e.touches.length !== 1) {
+        reset();
+        return;
+      }
+      const touch = e.touches[0];
+      if (!touch) {
+        reset();
+        return;
+      }
+      const dx = touch.clientX - startX.current;
+      const dy = touch.clientY - startY.current;
 
       if (isHorizontal.current === null) {
         if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
@@ -130,7 +141,7 @@ function SwipeToActionImpl({
       if (clamped > 0 && !onSwipeRight) return;
       setOffset(clamped);
     },
-    [isDragging, onSwipeLeft, onSwipeRight],
+    [isDragging, onSwipeLeft, onSwipeRight, reset],
   );
 
   const onTouchEnd = useCallback(() => {
@@ -185,13 +196,13 @@ function SwipeToActionImpl({
         <div
           className={cn(
             "absolute inset-x-0 -top-8 z-10 flex items-center justify-center gap-1.5",
-            "text-xs text-muted",
+            "text-style-caption text-muted",
             "motion-safe:animate-fade-in",
           )}
         >
           <Icon
             name="arrow-left"
-            size={12}
+            size="xs"
             className="motion-safe:animate-pulse"
           />
           <span>{hintText || defaultHintText}</span>
@@ -236,10 +247,13 @@ function SwipeToActionImpl({
         </div>
       )}
       <div
+        data-no-swipe
         style={{
           transform: `translateX(${committed ? (offset < 0 ? -MAX_SWIPE * 2 : MAX_SWIPE * 2) : offset}px)`,
           transition:
-            isDragging && !committed ? "none" : "transform 0.2s ease-out",
+            isDragging && !committed
+              ? "none"
+              : "transform var(--motion-duration-base) var(--motion-ease-standard)",
           willChange: "transform",
         }}
         onTouchStart={onTouchStart}

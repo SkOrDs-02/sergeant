@@ -5,7 +5,7 @@
  * flow: it opens the auth URL in a browser tab (WebBrowser.openAuthSessionAsync)
  * and consumes the redirected `sergeant://auth/callback?token=…` URL
  * inside its own `Linking` handler, writing the session token into
- * `expo-secure-store`. See `src/auth/authClient.ts` and `docs/mobile/overview.md`.
+ * `expo-secure-store`. See `src/auth/authClient.ts` and `docs/engineering/mobile/overview.md`.
  *
  * However, if the OS ever cold-launches the app directly into this
  * route (for example: user taps a reset-password email link after
@@ -46,7 +46,7 @@ export default function AuthCallbackScreen() {
       <Stack.Screen options={{ title: "Авторизація", headerShown: false }} />
       <View style={styles.container}>
         <ActivityIndicator color={colors.accent} />
-        <Text style={styles.title}>Завершуємо вхід…</Text>
+        <Text style={styles.title}>Завершую вхід…</Text>
         {token ? (
           <Text
             style={styles.hint}

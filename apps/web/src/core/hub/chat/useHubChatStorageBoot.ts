@@ -21,12 +21,23 @@
  *    silently disable the finyk module's own dual-write if HubChat
  *    unmounts after registering. App-wide single registration is the
  *    intended shape.
+ *  - routine dual-write registration — те саме, але id береться з
+ *    `useLocalUserId` (як у `useRoutineDualWriteBoot`), тож анонімні
+ *    відвідувачі теж реєструються. Без цього HubChat-тул, що створює або
+ *    відмічає звичку поза маршрутом /routine, писав би в LS без
+ *    dual-write-контексту, і запис губився б на reload. Імпорт
+ *    ДИНАМІЧНИЙ: `dualWriteBoot` тягне `vendor-sqlite` (drizzle), якого
+ *    не має бути в eager-бандлі. Реєстрація — стек
+ *    (`registerRoutineDualWriteContext`): teardown знімає лише власний
+ *    контекст, але ми його все одно не викликаємо (див. finyk вище).
  */
 
 import { useEffect, useRef } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { useFinykSqliteReadBoot } from "../../../modules/finyk/hooks/useFinykSqliteReadBoot";
 import { useSqliteReadBoot } from "../../../modules/routine/hooks/useSqliteReadBoot";
+import { useLocalUserId } from "../../auth/useLocalUserId";
+import { logger } from "@shared/lib";
 import { bootFinykDualWrite } from "../../../modules/finyk/lib/dualWriteBoot";
 
 export function useHubChatStorageBoot(): void {
@@ -40,7 +51,9 @@ export function useHubChatStorageBoot(): void {
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const userIdRef = useRef<string | null>(userId);
-  userIdRef.current = userId;
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
   const registered = useRef(false);
 
   useEffect(() => {
@@ -49,4 +62,27 @@ export function useHubChatStorageBoot(): void {
     // Persist for the session — see file header on the teardown hazard.
     bootFinykDualWrite({ getUserId: () => userIdRef.current });
   }, [userId]);
+
+  // Routine write path — див. шапку файлу.
+  const routineUserId = useLocalUserId();
+  const routineUserIdRef = useRef<string | null>(routineUserId);
+  useEffect(() => {
+    routineUserIdRef.current = routineUserId;
+  }, [routineUserId]);
+  const routineRegistered = useRef(false);
+
+  useEffect(() => {
+    if (routineRegistered.current || !routineUserId) return;
+    routineRegistered.current = true;
+    void import("../../../modules/routine/lib/dualWriteBoot.js")
+      .then((mod) => {
+        mod.bootRoutineDualWrite({
+          getUserId: () => routineUserIdRef.current,
+        });
+      })
+      .catch((err: unknown) => {
+        routineRegistered.current = false;
+        logger.warn("[hubchat] routine dual-write boot chunk failed", err);
+      });
+  }, [routineUserId]);
 }

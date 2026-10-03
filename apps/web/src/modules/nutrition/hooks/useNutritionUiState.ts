@@ -4,6 +4,8 @@
  */
 import { useState, type Dispatch, type SetStateAction } from "react";
 
+import { useNutritionPlanState } from "./useNutritionPlanState";
+
 // Recipes/week-plan/day-plan payloads come from LLM responses. Their
 // exact shape is validated at the consumer (`RecipesCard`, `DailyPlanCard`,
 // `useNutritionRemoteActions`), so the UI-state hook just stores them
@@ -57,16 +59,13 @@ export interface UseNutritionUiStateResult {
 
   dayPlan: NutritionDayPlan | null;
   setDayPlan: Dispatch<SetStateAction<NutritionDayPlan | null>>;
+  /** Час генерації денного плану (unix ms) — підпис свіжості в картці. */
+  dayPlanSavedAt: number | null;
   dayPlanBusy: boolean;
   setDayPlanBusy: Dispatch<SetStateAction<boolean>>;
 
   shoppingBusy: boolean;
   setShoppingBusy: Dispatch<SetStateAction<boolean>>;
-
-  dayHintText: string;
-  setDayHintText: Dispatch<SetStateAction<string>>;
-  dayHintBusy: boolean;
-  setDayHintBusy: Dispatch<SetStateAction<boolean>>;
 
   cloudBackupBusy: boolean;
   setCloudBackupBusy: Dispatch<SetStateAction<boolean>>;
@@ -90,17 +89,23 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
   const [recipesTried, setRecipesTried] = useState(false);
   const [recipesRaw, setRecipesRaw] = useState("");
 
-  const [weekPlan, setWeekPlan] = useState<NutritionWeekPlan | null>(null);
-  const [weekPlanRaw, setWeekPlanRaw] = useState("");
+  // Самі плани переживають розмонтування модуля і закриття застосунку —
+  // сховище й обґрунтування живуть у `useNutritionPlanState`. Busy-прапорці
+  // лишаються тут: вони описують поточний запит, а не результат.
+  const {
+    weekPlan,
+    setWeekPlan,
+    weekPlanRaw,
+    setWeekPlanRaw,
+    dayPlan,
+    setDayPlan,
+    dayPlanSavedAt,
+  } = useNutritionPlanState();
   const [weekPlanBusy, setWeekPlanBusy] = useState(false);
 
-  const [dayPlan, setDayPlan] = useState<NutritionDayPlan | null>(null);
   const [dayPlanBusy, setDayPlanBusy] = useState(false);
 
   const [shoppingBusy, setShoppingBusy] = useState(false);
-
-  const [dayHintText, setDayHintText] = useState("");
-  const [dayHintBusy, setDayHintBusy] = useState(false);
 
   const [cloudBackupBusy, setCloudBackupBusy] = useState(false);
   const [backupPasswordDialog, setBackupPasswordDialog] =
@@ -128,14 +133,11 @@ export function useNutritionUiState(): UseNutritionUiStateResult {
     setWeekPlanBusy,
     dayPlan,
     setDayPlan,
+    dayPlanSavedAt,
     dayPlanBusy,
     setDayPlanBusy,
     shoppingBusy,
     setShoppingBusy,
-    dayHintText,
-    setDayHintText,
-    dayHintBusy,
-    setDayHintBusy,
     cloudBackupBusy,
     setCloudBackupBusy,
     backupPasswordDialog,

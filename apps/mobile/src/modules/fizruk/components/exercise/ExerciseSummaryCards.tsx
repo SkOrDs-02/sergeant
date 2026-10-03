@@ -95,7 +95,7 @@ const ExerciseSummaryCardsImpl = function ExerciseSummaryCards({
           <Text className="text-xs text-fg-muted mt-1">
             {suggestedNext
               ? `× ${suggestedNext.reps} повт.`
-              : "Заповни сети, щоб з'явилась рекомендація"}
+              : "Заповни сети, щоб зʼявилась рекомендація"}
           </Text>
           {suggestedNext?.altWeightKg != null &&
           suggestedNext.altReps != null ? (

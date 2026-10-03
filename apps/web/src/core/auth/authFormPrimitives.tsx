@@ -19,7 +19,7 @@ export function PasswordStrengthBar({ password }: { password: string }) {
   const labelColors = [
     "text-danger-strong dark:text-danger",
     "text-amber-500",
-    "text-brand-strong dark:text-brand",
+    "text-brand-strong",
   ];
 
   return (
@@ -27,13 +27,13 @@ export function PasswordStrengthBar({ password }: { password: string }) {
       <div className="h-1 rounded-full bg-line overflow-hidden">
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-300",
+            "h-full rounded-full transition-all duration-slow",
             widths[level],
             colors[level],
           )}
         />
       </div>
-      <p className={cn("text-meta font-medium", labelColors[level])}>
+      <p className={cn("text-style-caption font-medium", labelColors[level])}>
         {labels[level]}
       </p>
     </div>
@@ -75,7 +75,7 @@ export function FieldError({ id, message }: FieldErrorProps) {
   return (
     <p
       id={id}
-      className="mt-1.5 text-meta text-danger-strong dark:text-danger"
+      className="mt-1.5 text-style-caption text-danger-strong dark:text-danger"
       role="alert"
     >
       {message}

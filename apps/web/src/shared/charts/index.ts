@@ -9,8 +9,24 @@
  * Prefer importing from `@shared/charts` instead of deep paths so renames
  * stay cheap and IDE autocomplete surfaces the full API:
  *
- *   import { chartSeries, chartAxis, THEME_HEX } from "@shared/charts";
+ *   import { chartSeries, chartAxis } from "@shared/charts";
  */
+
+export {
+  seriesExtent,
+  pointStep,
+  xAt,
+  fractionX,
+  linearY,
+  linearSpan,
+  clampToDomain,
+  buildLinePath,
+  buildAreaPath,
+  buildPolylinePoints,
+  buildAreaPolygonPoints,
+  type ChartPoint,
+  type SeriesExtent,
+} from "./chartMath";
 
 export {
   brandColors,
@@ -21,6 +37,7 @@ export {
   chartPalette,
   chartPaletteList,
   chartSeries,
+  chartStatusSeries,
   chartTick,
   moduleColors,
   statusColors,

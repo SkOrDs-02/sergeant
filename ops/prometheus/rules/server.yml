@@ -1,0 +1,20 @@
+groups:
+  - name: sergeant-server
+    rules:
+      - alert: ServerDown
+        expr: up{job="sergeant-server"} == 0
+        for: 5m
+        labels:
+          severity: page
+        annotations:
+          summary: "Sergeant server metrics target is down"
+          description: "Prometheus cannot scrape sergeant-server /metrics for 5 minutes."
+
+      - alert: ServerHighMemory
+        expr: process_resident_memory_bytes{job="sergeant-server"} > 512 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Sergeant server memory above 512 MB"
+          description: "Server RSS memory has been above 512 MB for 10 minutes."

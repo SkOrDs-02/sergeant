@@ -12,6 +12,7 @@ import { OVERVIEW_FLOW_COLOR } from "@sergeant/finyk-domain/domain";
 import type { PlannedFlow } from "@sergeant/finyk-domain/domain";
 
 import { cn } from "./cn";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface FlowRowProps {
   flow: PlannedFlow;
@@ -20,7 +21,7 @@ export interface FlowRowProps {
 }
 
 function format(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 export const FlowRow = memo(function FlowRow({

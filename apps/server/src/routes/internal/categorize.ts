@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { asyncHandler } from "../../http/index.js";
-import { anthropicMessages } from "../../lib/anthropic.js";
+import { z } from "zod";
+import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { lookupMccCategory } from "../../lib/mcc/mccMap.js";
 import { maskPii } from "../../lib/pii-mask.js";
 import { monoMccMatchTotal } from "../../obs/metrics.js";
@@ -22,6 +22,17 @@ export const CATEGORIES = [
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
+
+/**
+ * Wire-схема `POST /api/internal/categorize`. `description` обмежений 500
+ * символами: без стелі 128 КБ тіла (~32k токенів) йшли в LLM за один виклик
+ * (аудит ai-pipeline B27). Непорожність — після trim (див. handler).
+ */
+export const CategorizeBodySchema = z.object({
+  description: z.string().trim().min(1).max(500),
+  amount: z.number().finite().nullish(),
+  mcc: z.number().int().min(0).max(9999).nullish(),
+});
 
 export interface CategorizeArgs {
   description: string;
@@ -63,6 +74,59 @@ export function parseCategory(raw: string): CategorizeResult {
 }
 
 /**
+ * AI-CONTEXT: правила нижче — не косметика, кожне закриває виміряний режим
+ * відмови стенду (`pnpm eval:models --pipeline=classify`).
+ *
+ *  * «ветеринарія ≠ health» — всі пʼять перевірених моделей клали ветклініку
+ *    в `health` з упевненістю 0.9–1.0. Таксономія додатка розуміє health як
+ *    здоровʼя ЛЮДИНИ, і жоден рядок промпта цього не казав.
+ *  * «опис важливіший за MCC» — українські термінали регулярно шлють код не
+ *    свого профілю (аптека під 5169 «оптова хімія»).
+ *  * калібрування впевненості — `parseCategory` фейл-софтить у `{other, 0}`,
+ *    тож упевнене вгадування на нерозбірливому дескрипторі ззовні не
+ *    відрізняється від чесної відмови, але мовчки псує статистику назавжди.
+ */
+export const CATEGORY_RULES = `Rules:
+- The merchant description outranks the MCC. Terminals are misconfigured often: a pharmacy stays health even when the MCC says wholesale chemicals.
+- health is HUMAN health only — pharmacies, clinics, labs, dentists, medical tests. Veterinary clinics, pet food and pet supplies are NOT health; use other.
+- A positive amount is income, never transfer. transfer means a move between the user's own accounts or a P2P card payment (the description carries a masked card number such as 44**7788).
+- confidence is not politeness, it is how much the description actually tells you. An opaque descriptor (PAYMENT*XJ4471, a bare code, a numeric string) tells you nothing: answer other with confidence 0.3 or below. A confident guess there silently corrupts the user's statistics and nothing downstream can undo it.`;
+
+export const CATEGORIZE_SYSTEM_PROMPT = `You are a transaction categorizer for a Ukrainian personal finance app.
+Categorize the transaction into exactly one of: ${CATEGORIES.join(", ")}.
+Respond with JSON only: {"category": "<value>", "confidence": 0.0-1.0}
+
+${CATEGORY_RULES}`;
+
+/**
+ * Промпт per-row категоризації — рівно той, що йде в прод.
+ *
+ * AI-CONTEXT: винесено з `categorizeTransaction`, щоб стенд
+ * (`scripts/eval/pipelines.finance.ts`) міряв прод-промпт, а не свою копію.
+ * Копія в стенді гарантовано розходиться — саме через це попередня ітерація
+ * бенчмарку міряла однорядкову вигадку замість справжнього промпта.
+ */
+export function buildCategorizePrompt(args: CategorizeArgs): {
+  system: string;
+  user: string;
+} {
+  const safeDescription = maskPii(args.description.trim());
+  const amountUah =
+    args.amount != null ? Math.abs(Number(args.amount) / 100) : null;
+
+  return {
+    system: CATEGORIZE_SYSTEM_PROMPT,
+    user: [
+      `Transaction: ${safeDescription}`,
+      amountUah != null ? `Amount: ${amountUah.toFixed(2)} UAH` : null,
+      args.mcc != null ? `MCC: ${args.mcc}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+/**
  * Pure helper — викликає Anthropic, повертає `CategorizeResult`. Винесено з
  * route-handler-а, щоб mono enrichment-worker (`modules/mono/enrichmentWorker.ts`)
  * міг переиспользувати ту саму prompt + parsing-логіку без round-trip через HTTP.
@@ -92,77 +156,55 @@ export async function categorizeTransaction(
   }
   monoMccMatchTotal.inc({ outcome: "unknown" });
 
-  const safeDescription = maskPii(description);
-  const amountUah =
-    args.amount != null ? Math.abs(Number(args.amount) / 100) : null;
+  const prompt = buildCategorizePrompt({ ...args, description });
 
-  const userContent = [
-    `Transaction: ${safeDescription}`,
-    amountUah != null ? `Amount: ${amountUah.toFixed(2)} UAH` : null,
-    args.mcc != null ? `MCC: ${args.mcc}` : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  const provider = getLLMProvider({
+    provider: env.LLM_READONLY_PROVIDER,
+    anthropicApiKey: apiKey,
+    openrouterModel: env.OPENROUTER_READONLY_MODEL,
+  });
+  const result = await invokeLLM(provider, {
+    model: env.CLASSIFY_MODEL,
+    maxTokens: 120,
+    system: prompt.system,
+    messages: [{ role: "user", content: prompt.user }],
+    endpoint: "internal/categorize",
+    timeoutMs: 15_000,
+  });
 
-  const { response, data } = await anthropicMessages(
-    apiKey,
-    {
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 120,
-      system:
-        "You are a transaction categorizer for a Ukrainian personal finance app. " +
-        "Categorize the transaction into exactly one of: groceries, transport, dining, " +
-        "entertainment, utilities, health, shopping, education, subscriptions, income, " +
-        'transfer, other. Respond with JSON only: {"category": "<value>", "confidence": 0.0-1.0}',
-      messages: [{ role: "user", content: userContent }],
-    },
-    { endpoint: "internal/categorize", timeoutMs: 15_000 },
-  );
-
-  if (!response?.ok) {
-    const status = response?.status ?? 0;
+  if (!result.ok) {
     throw new Error(
-      `categorizeTransaction: upstream not ok (status=${status})`,
+      `categorizeTransaction: upstream not ok (status=${result.status ?? 0})`,
     );
   }
 
-  const text =
-    (
-      data as {
-        content?: Array<{ type: string; text?: string }>;
-      }
-    ).content?.[0]?.text ?? "";
-
-  return parseCategory(text);
+  return parseCategory(result.text);
 }
 
 export function createCategorizeInternalRouter(): Router {
   const r = Router();
 
-  r.post(
-    "/api/internal/categorize",
-    asyncHandler(async (req, res) => {
-      const body = req.body as CategorizeArgs;
-      // `.trim()`-перевірка дзеркалить інваріант `categorizeTransaction`
-      // (якщо description порожній після trim — функція throw-ить, який
-      // catch-блок нижче прикриє як 502 "AI service error"). Робимо це
-      // тут, щоб whitespace-only payload отримав 400, а не misleading 502.
-      if (!body?.description?.trim()) {
-        res.status(400).json({ error: "description is required" });
-        return;
-      }
-      try {
-        const result = await categorizeTransaction({
-          description: body.description,
-          amount: body.amount,
-          mcc: body.mcc,
-        });
-        res.json(result);
-      } catch {
-        res.status(502).json({ error: "AI service error" });
-      }
-    }),
-  );
+  r.post("/api/internal/categorize", async (req, res) => {
+    // Zod замість `req.body as CategorizeArgs`. Trim-перевірка дзеркалить
+    // інваріант `categorizeTransaction` (порожній після trim → throw → 502),
+    // тож whitespace-only payload отримує 400, а не misleading 502.
+    const parsed = CategorizeBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "description is required" });
+      return;
+    }
+    const body: CategorizeArgs = parsed.data;
+    try {
+      const result = await categorizeTransaction({
+        description: body.description,
+        amount: body.amount,
+        mcc: body.mcc,
+      });
+      res.json(result);
+    } catch {
+      res.status(502).json({ error: "AI service error" });
+    }
+  });
 
   return r;
 }

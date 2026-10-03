@@ -11,11 +11,19 @@
  *
  * INCIDENT 2026-05-16: `applyStrictModeToAll` (PR 830c1342) обгортав весь
  * масив у Anthropic Strict tool use. Anthropic API має жорсткий ліміт
- * **20 strict tools на запит**, а в нас 66 — тож кожен `/api/chat` падав
- * із 400 `Too many strict tools (66)`. Unit-тести верифікували `strict: true`
- * на кожному tool, але не били реальний Anthropic — регресія пройшла повз.
- * Strict-режим знятий до того моменту, як ми переробимо стратегію
- * (opt-in per-tool на ≤20 high-value tools, або waivers від Anthropic).
+ * **20 strict tools на запит**, а в масиві на той момент було 66 — тож кожен
+ * `/api/chat` падав із 400 `Too many strict tools (66)`. Unit-тести
+ * верифікували `strict: true` на кожному tool, але не били реальний
+ * Anthropic — регресія пройшла повз. Обидві «66» тут історичні (друга — цитата
+ * помилки API); реєстр відтоді виріс, актуальний розмір — довжина
+ * `ALL_HUBCHAT_TOOL_NAMES` у `@sergeant/shared`.
+ *
+ * ПОТОЧНА СТРАТЕГІЯ (opt-in ≤20): strict вмикається per-tool через `strict: true`
+ * у domain-defs (`toolDefs/*.ts`) лише на high-value write-tools (гроші/вага/
+ * звички/харчування) — зараз 19, під cap-ом 20. `validateToolRegistry` кидає на
+ * старті, якщо strict-tools >20. У payload strict-прапор проходить лише коли
+ * `CHAT_STRICT_TOOLS=true` (default); `false` — миттєвий kill-switch у
+ * `promptCache.ts` без редеплою. Non-strict tools завжди йдуть без прапора.
  */
 
 export type { AnthropicTool } from "./toolDefs/types.js";
@@ -32,6 +40,8 @@ import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
 import { UTILITY_TOOLS } from "./toolDefs/utility.js";
 import { MEMORY_TOOLS } from "./toolDefs/memory.js";
 import { normalizeStrictTools } from "./toolDefs/strict.js";
+import { DASHBOARD_MODULE_IDS, type DashboardModuleId } from "@sergeant/shared";
+import { logger } from "../../obs/logger.js";
 
 import type { AnthropicTool } from "./toolDefs/types.js";
 
@@ -48,6 +58,106 @@ export const TOOLS: AnthropicTool[] = normalizeStrictTools([
   ...UTILITY_TOOLS,
   ...MEMORY_TOOLS,
 ]);
+
+/**
+ * Доменні tools у розрізі модулів дашборда — основа для звуження реєстру
+ * під конкретного користувача (`filterToolsByActiveModules`).
+ *
+ * Тут ЛИШЕ доменні набори. `CROSS_MODULE_TOOLS`, `UTILITY_TOOLS` і
+ * `MEMORY_TOOLS` навмисно поза мапою: вони або обслуговують кілька модулів
+ * одразу, або взагалі не про модулі, і різати їх за цією ознакою означало б
+ * ламати чат людині, яка просто не додала модуль на дашборд.
+ */
+const TOOL_NAMES_BY_MODULE: Record<DashboardModuleId, ReadonlySet<string>> = {
+  finyk: new Set([...FINYK_TOOLS, ...QUERY_FINYK_TOOLS].map((t) => t.name)),
+  fizruk: new Set([...FIZRUK_TOOLS, ...QUERY_FIZRUK_TOOLS].map((t) => t.name)),
+  routine: new Set(
+    [...ROUTINE_TOOLS, ...QUERY_ROUTINE_TOOLS].map((t) => t.name),
+  ),
+  nutrition: new Set(
+    [...NUTRITION_TOOLS, ...QUERY_NUTRITION_TOOLS].map((t) => t.name),
+  ),
+};
+
+/**
+ * Прибирає з реєстру tools модулів, яких людина НЕ увімкнула.
+ *
+ * AI-CONTEXT: вимір 2026-07-25 (шапка `toolSearch.ts`) показав, що весь
+ * реєстр — 43 КБ JSON, і він домінує у вартості запиту. Anthropic tool
+ * search це лікує, але **лише на `claude-*` моделях**, а дефолтні chat-
+ * моделі — gateway-ні (`gemini`, `deepseek`, `glm`), тож там payload тихо
+ * відкочується на повний масив і платиться щоразу. Це звуження працює
+ * незалежно від моделі й від того, чи ввімкнений tool search.
+ *
+ * Консервативно за задумом: ріжемо ТІЛЬКИ коли є непорожній явний вибір
+ * модулів. `null` — «вибору немає» (людина не проходила онбординг, або
+ * колонки ще не існувало), `[]` — «вимкнула все»; в обох випадках повний
+ * реєстр безпечніший за здогад. Ціна помилки асиметрична: зайвий tool у
+ * контексті коштує токенів, відсутній — ламає дію, яку людина просить.
+ */
+export function filterToolsByActiveModules<T extends { name: string }>(
+  tools: readonly T[],
+  activeModules: readonly DashboardModuleId[] | null | undefined,
+): readonly T[] {
+  if (!activeModules || activeModules.length === 0) return tools;
+
+  const active = new Set<string>(activeModules);
+  const off = DASHBOARD_MODULE_IDS.filter((id) => !active.has(id));
+  if (off.length === 0) return tools;
+
+  const dropped = new Set<string>();
+  for (const id of off) {
+    for (const name of TOOL_NAMES_BY_MODULE[id]) dropped.add(name);
+  }
+  return tools.filter((t) => !dropped.has(t.name));
+}
+
+/**
+ * Tools Харчування, що НЕ несуть даних про здоровʼя: комора й список покупок
+ * (запаси продуктів, не «записи про їжу» у сенсі `privacyDocument.ts`).
+ * Решта tools Харчування (журнал, вода, КБЖВ-плани, рецепти з макросами) —
+ * health.
+ */
+const NON_HEALTH_NUTRITION_TOOLS: ReadonlySet<string> = new Set([
+  "add_to_shopping_list",
+  "consume_from_pantry",
+  "clear_pantry",
+]);
+
+/**
+ * Tools, чий ВХІД і ВИХІД — дані про здоровʼя за визначенням: увесь Фізрук
+ * (тренування, вага, заміри, самопочуття), Харчування без комори/покупок і
+ * `weight_chart`. Без `healthDataConsent` вони не потрапляють у payload моделі
+ * (`filterToolsByHealthConsent`), а їхні `tool_result` на round-trip замінює
+ * `healthGate.ts`. Змішані крос-модульні tools (briefing, compare_weeks,
+ * get_daily_series тощо) сюди НЕ входять — їх розбирає `healthGate.ts` за
+ * вхідними параметрами.
+ */
+export const HEALTH_ONLY_TOOL_NAMES: ReadonlySet<string> = new Set([
+  ...TOOL_NAMES_BY_MODULE.fizruk,
+  ...[...TOOL_NAMES_BY_MODULE.nutrition].filter(
+    (n) => !NON_HEALTH_NUTRITION_TOOLS.has(n),
+  ),
+  "weight_chart",
+  // Ціль «схуднути на 5 кг» = вага + калорії + тренування в одному виклику.
+  "set_goal",
+]);
+
+/**
+ * Прибирає з реєстру health-only tools, коли згоди на дані про здоровʼя немає.
+ * `granted === true` → реєстр без змін (той самий референс).
+ *
+ * Це ПЕРШИЙ рубіж: модель навіть не бачить, що такі tools існують, тож не
+ * пропонує їх. Другий рубіж (`healthGate.redactHealthToolResults`) ловить
+ * `tool_use`, який модель відтворила з історії розмови.
+ */
+export function filterToolsByHealthConsent<T extends { name: string }>(
+  tools: readonly T[],
+  granted: boolean,
+): readonly T[] {
+  if (granted) return tools;
+  return tools.filter((t) => !HEALTH_ONLY_TOOL_NAMES.has(t.name));
+}
 
 /**
  * Validate tool registry at startup:
@@ -90,8 +200,9 @@ function validateToolRegistry(tools: AnthropicTool[]): void {
     );
   }
 
-  console.log(
-    `[chat/tools] Registry validated: ${tools.length} tools, ${strictCount} strict`,
+  logger.info(
+    { tools: tools.length, strict: strictCount },
+    "[chat/tools] Registry validated",
   );
 }
 

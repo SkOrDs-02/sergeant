@@ -27,7 +27,7 @@
  * - `pullEmpty` — `since` is ahead of all known ops; `{ ops: [], next_cursor: null }`.
  *
  * Closes contract slice PR-T30 from
- * `docs/testing/2026-05-05-tests-pr-plan.md` (web `/api/v2/sync/*`
+ * `docs/engineering/testing/2026-05-05-tests-pr-plan.md` (web `/api/v2/sync/*`
  * consumer contract).
  */
 
@@ -49,6 +49,8 @@ interface SyncV2OpResult {
 interface SyncV2PushResponseShape {
   accepted: number;
   last_op_id: number;
+  /** Годинник сервера (ISO) — клієнт міряє зсув свого годинника. */
+  server_now?: string;
   results: SyncV2OpResult[];
 }
 
@@ -72,6 +74,7 @@ export const syncV2PushFixtures = {
   pushAllApplied: {
     accepted: 2,
     last_op_id: 1042,
+    server_now: "2026-05-12T09:30:01.000Z",
     results: [
       {
         idempotency_key: "01HZ000000000000000000000A",

@@ -8,8 +8,9 @@
  */
 export const apiQueryKeys = {
   me: {
-    all: ["me"] as const,
     current: () => ["me", "current"] as const,
+    /** Стан 30-денного вікна на скасування видалення акаунта. */
+    deletionStatus: () => ["me", "deletion-status"] as const,
   },
   coach: {
     all: ["coach"] as const,
@@ -19,24 +20,23 @@ export const apiQueryKeys = {
   },
   /** Кеш тижневого дайджеста після генерації. */
   weeklyDigest: {
-    all: ["weekly-digest"] as const,
     byWeek: (weekKey: string) => ["weekly-digest", weekKey] as const,
     history: ["weekly-digest", "history"] as const,
   },
+  // Домен і форма кортежу — ті самі, що в канонічній web-фабриці
+  // (`apps/web/src/shared/lib/api/queryKeys.ts`, Hard Rule #2), щоб один
+  // ключ не інвалідовував/кешував паралельно з іншим (`push`/`vapid`,
+  // `nutrition`/`food-search`).
   push: {
-    all: ["push"] as const,
-    vapidPublic: () => ["push", "vapid-public"] as const,
+    vapidPublic: () => ["push", "vapid"] as const,
   },
   foodSearch: {
-    all: ["food-search"] as const,
-    query: (q: string) => ["food-search", q] as const,
+    query: (q: string) => ["nutrition", "food-search", q] as const,
   },
   barcode: {
-    all: ["barcode"] as const,
     lookup: (barcode: string) => ["barcode", barcode] as const,
   },
   privat: {
-    all: ["privat"] as const,
     balanceFinal: (merchantId: string) =>
       ["privat", "balance-final", merchantId] as const,
   },
@@ -50,13 +50,11 @@ export const apiQueryKeys = {
  */
 export const apiMutationKeys = {
   push: {
-    all: ["push"] as const,
     register: () => ["push", "register"] as const,
     test: () => ["push", "test"] as const,
     unregister: () => ["push", "unregister"] as const,
   },
   nutrition: {
-    all: ["nutrition"] as const,
     /** AI-рекомендації рецептів (`/api/nutrition/recommend-recipes`). */
     recommendRecipes: () => ["nutrition", "recommend-recipes"] as const,
   },

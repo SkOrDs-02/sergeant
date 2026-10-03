@@ -1,8 +1,8 @@
 name: Container image scan (Trivy)
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Сканує зібраний Docker-образ Hub API (`Dockerfile.api`) на CVE через Trivy.
 # Це OS+бібліотечний шар поверх існуючого `pnpm audit` / OSV-Scanner
@@ -10,29 +10,15 @@ name: Container image scan (Trivy)
 # скануються лише lockfile-залежності, тут — реальний runtime-image
 # (alpine layers, transitive npm у рантайм-вузлі тощо).
 #
-# Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470; його окрему
-# Trivy-джобу прибрано разом із ним. Сканування нового OpenClaw Gateway
-# образу (`Dockerfile.openclaw-gateway`) — окремий follow-up.
+# Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470; OpenClaw
+# Gateway (`Dockerfile.openclaw-gateway`) — decommissioned ADR-0075
+# (2026-07-20). Єдиний образ у цьому workflow: `Dockerfile.api`.
 
+# Щотижня і вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  pull_request:
-    paths:
-      - "Dockerfile.api"
-      - ".dockerignore"
-      - "pnpm-lock.yaml"
-      - "apps/server/**"
-      - "packages/shared/**"
-      - "packages/config/**"
-      - "packages/finyk-domain/**"
-      - "patches/**"
-      - ".github/workflows/container-scan.yml"
-  push:
-    branches: [main]
-  schedule:
-    # Daily 04:00 UTC — через годину після nightly-audit, щоб не шарити
-    # runner pool у пік (03:00 UTC).
-    - cron: "0 4 * * *"
   workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
 
 permissions:
   contents: read
@@ -60,7 +46,7 @@ jobs:
           context: .
           file: Dockerfile.api
           # `platforms: linux/amd64` робить платформу образу явною
-          # (closes hardening card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`).
+          # (closes hardening card L13 — `docs/work/specs/security-hardening/L13-docker-platform-pin.md`).
           # Railway runtime — amd64; без явного pin-а локальний build на
           # Apple Silicon видає arm64-image, який не збігається з production,
           # а Trivy сканує те, що зібрав buildx, тож drift проходить
@@ -82,7 +68,7 @@ jobs:
           echo "hub-api:scan platform = ${os}/${arch}"
           if [[ "${os}/${arch}" != "linux/amd64" ]]; then
             echo "::error::hub-api:scan was built for ${os}/${arch}, expected linux/amd64."
-            echo "See docs/04-governance/security/hardening/L13-docker-platform-pin.md."
+            echo "See docs/work/specs/security-hardening/L13-docker-platform-pin.md."
             exit 1
           fi
 
@@ -118,6 +104,29 @@ jobs:
           trivyignores: ./.trivyignore
           vuln-type: "os,library"
           exit-code: "1"
+
+      # SARIF у лог нічого не друкує, тож червона джоба не каже, ЩО саме
+      # знайдено: до цього кроку по CVE доводилось лізти в артефакт або в
+      # Code Scanning. Крок читає той самий SARIF і друкує кожну знахідку
+      # (правило, рівень, текст) і в лог, і в job summary.
+      - name: Print Trivy findings
+        if: ${{ !cancelled() }}
+        run: |
+          if [[ ! -s trivy-image.sarif ]]; then
+            echo "trivy-image.sarif відсутній або порожній"
+            exit 0
+          fi
+          findings="$(jq -r '.runs[].results[]? | "- \(.ruleId) [\(.level)] \(.message.text | split("\n") | map(select(length > 0)) | join(" · "))"' trivy-image.sarif)"
+          if [[ -z "${findings}" ]]; then
+            echo "Trivy: знахідок у SARIF немає"
+            exit 0
+          fi
+          echo "${findings}"
+          {
+            echo "### Trivy findings (CRITICAL/HIGH)"
+            echo
+            echo "${findings}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload SARIF to code-scanning
         if: ${{ !cancelled() }}

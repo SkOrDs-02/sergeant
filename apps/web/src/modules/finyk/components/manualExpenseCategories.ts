@@ -8,6 +8,11 @@
  * no React.
  */
 import type { IconName } from "@shared/components/ui/Icon";
+import {
+  legacyManualCategoryId,
+  MANUAL_EXPENSE_PICKER,
+  MANUAL_EXPENSE_TAXONOMY,
+} from "@sergeant/finyk-domain/lib/manualTaxonomy";
 
 // ─── Category slug system (F5b, 2026-05) ────────────────────────────────────
 //
@@ -30,6 +35,7 @@ export type CategorySlug =
   | "food"
   | "groceries"
   | "cafe"
+  | "restaurant"
   | "transport"
   | "entertainment"
   | "health"
@@ -39,6 +45,15 @@ export type CategorySlug =
   | "subscriptions"
   | "education"
   | "travel"
+  | "sport"
+  | "beauty"
+  | "debt"
+  | "charity"
+  | "telecom"
+  | "home"
+  | "pets"
+  | "gifts"
+  | "p2p_transfer"
   | "other";
 
 export interface CategoryDisplay {
@@ -50,87 +65,58 @@ export interface CategoryDisplay {
 /**
  * Canonical display map: slug → { iconName, label }.
  * Single source of truth for rendering. No emoji — icons only.
+ *
+ * Похідна від `MANUAL_EXPENSE_TAXONOMY` (`@sergeant/finyk-domain`): та
+ * сама таблиця живить підпис у резолверах домену, колірний аліас і
+ * іконку в рядку транзакції. Доки список був продубльований тут, вони
+ * розходились непомітно — `utilities` мала колір, але не мала іконки.
  */
-export const CATEGORY_DISPLAY: Record<CategorySlug, CategoryDisplay> = {
-  food: { iconName: "utensils", label: "Їжа" },
-  groceries: { iconName: "shopping-cart", label: "Продукти" },
-  cafe: { iconName: "coffee", label: "Кафе та ресторани" },
-  transport: { iconName: "truck", label: "Транспорт" },
-  entertainment: { iconName: "sparkles", label: "Розваги" },
-  health: { iconName: "heart", label: "Здоров'я" },
-  shopping: { iconName: "tag", label: "Покупки" },
-  utilities: { iconName: "home", label: "Комунальні" },
-  tech: { iconName: "monitor", label: "Техніка" },
-  subscriptions: { iconName: "repeat", label: "Підписки" },
-  education: { iconName: "book", label: "Навчання" },
-  travel: { iconName: "compass", label: "Подорожі" },
-  other: { iconName: "tag", label: "Інше" },
-};
+export const CATEGORY_DISPLAY: Record<CategorySlug, CategoryDisplay> =
+  Object.fromEntries(
+    MANUAL_EXPENSE_TAXONOMY.map((d) => [
+      d.id,
+      { iconName: d.iconName as IconName, label: d.label },
+    ]),
+  ) as Record<CategorySlug, CategoryDisplay>;
 
 /**
  * The ordered list of slugs used for the category picker.
- * Matches the former CATEGORIES array in display order.
+ *
+ * Свідомо БЕЗ legacy-аліасів (`MANUAL_EXPENSE_PICKER`), на відміну від
+ * `CATEGORY_DISPLAY` вище — той лишається повним. Якби `groceries` зник
+ * і звідти, `isCategorySlug("groceries")` став би `false`, а
+ * `upgradeCategory` звів би вже збережені записи до «Інше» — тобто
+ * рівно та підміна даних, від якої застерігає
+ * `upgradeCategoryAllowingCustom` нижче.
  */
-export const CATEGORY_SLUGS: CategorySlug[] = [
-  "food",
-  "groceries",
-  "cafe",
-  "transport",
-  "entertainment",
-  "health",
-  "shopping",
-  "utilities",
-  "tech",
-  "subscriptions",
-  "education",
-  "travel",
-  "other",
-];
+export const CATEGORY_SLUGS: CategorySlug[] = MANUAL_EXPENSE_PICKER.map(
+  (d) => d.id as CategorySlug,
+);
 
 export const DEFAULT_CATEGORY: CategorySlug = "other";
 
-// Era 1 upgrade map: bare UA label (lower-case) → slug.
-// Covers all the pre-emoji strings that were stored before the emoji era.
-const LEGACY_RAW_TO_SLUG: Record<string, CategorySlug> = {
-  їжа: "food",
-  продукти: "groceries",
-  "кафе та ресторани": "cafe",
-  кафе: "cafe",
-  транспорт: "transport",
-  розваги: "entertainment",
-  "здоров'я": "health",
-  здоров: "health",
-  одяг: "shopping",
-  покупки: "shopping",
-  комунальні: "utilities",
-  техніка: "tech",
-  підписки: "subscriptions",
-  навчання: "education",
-  подорожі: "travel",
-  інше: "other",
-};
-
-// Era 2 upgrade map: stripped UA label from emoji string → slug.
-// Keys are the labels that appear AFTER the emoji prefix (lower-case).
-// Identical to LEGACY_RAW_TO_SLUG — the strip makes them equivalent,
-// so we reuse the same map for both eras.
-const UA_LABEL_TO_SLUG = LEGACY_RAW_TO_SLUG;
-
+// Ери 1–2 (голий і емодзі-префіксований український підпис) резолвить
+// `legacyManualCategoryId` із `@sergeant/finyk-domain`. Раніше та сама
+// мапа стояла тут окремим літералом — пʼятою копією списку категорій, і
+// саме вона розійшлась із доменом: рядок транзакції показував «Інше»
+// там, де форма редагування показувала правильну категорію, бо мапу
+// бачила лише форма.
 /** Returns true if the value is a known slug. */
 export function isCategorySlug(value: string): value is CategorySlug {
   return Object.prototype.hasOwnProperty.call(CATEGORY_DISPLAY, value);
 }
 
-/**
- * Strips leading emoji + space so "🍴 їжа" → "їжа".
- * Accepts any run of non-letter / non-digit grapheme chunks so compound
- * emoji (ZWJ sequences, variation selectors) are all peeled off.
- */
-function stripLeadingEmoji(str: string): string {
-  const s = String(str || "");
-  let i = 0;
-  while (i < s.length && !/[\p{L}\p{N}]/u.test(s[i]!)) i++;
-  return s.slice(i).trim();
+/** Резолвить лише відому вбудовану категорію, без fallback у «Інше». */
+export function resolveKnownCategory(
+  raw: string | null | undefined,
+): CategorySlug | null {
+  if (!raw) return null;
+
+  const trimmed = raw.trim();
+  if (isCategorySlug(trimmed)) return trimmed;
+
+  const fromLabel = legacyManualCategoryId(trimmed);
+  return fromLabel && isCategorySlug(fromLabel) ? fromLabel : null;
 }
 
 /**
@@ -148,19 +134,31 @@ function stripLeadingEmoji(str: string): string {
  * upgradeCategory(null)         // → "other"
  */
 export function upgradeCategory(raw: string | null | undefined): CategorySlug {
-  if (!raw) return DEFAULT_CATEGORY;
+  return resolveKnownCategory(raw) ?? DEFAULT_CATEGORY;
+}
 
-  const trimmed = raw.trim();
-
-  // Era 3: known slug — use directly.
-  if (isCategorySlug(trimmed)) return trimmed;
-
-  // Era 2: emoji-prefixed string — strip emoji then map the UA label.
-  // Era 1: bare UA label — also matched by the stripped path (no-op strip).
-  const stripped = stripLeadingEmoji(trimmed).toLocaleLowerCase("uk-UA");
-  const fromLabel = UA_LABEL_TO_SLUG[stripped];
-  if (fromLabel) return fromLabel;
-
-  // Unknown legacy value — graceful fallback.
-  return DEFAULT_CATEGORY;
+/**
+ * `upgradeCategory`, який не зʼїдає користувацькі категорії.
+ *
+ * `upgradeCategory` нормалізує будь-яке невідоме значення в
+ * `DEFAULT_CATEGORY` — і це правильно для легасі-рядків трьох ер. Але id
+ * власної категорії теж «невідомий» цій таксономії, тож на шляху
+ * збереження ручної витрати він мовчки ставав «Інше»: людина обирала
+ * «Кава з друзями», а в списку зʼявлялось інше слово. Підміна даних без
+ * сліду гірша за відмову — той самий висновок, що й у `parseDecimalInput`.
+ *
+ * Тому власні id перевіряються ПЕРШИМИ і повертаються як є. Колізія з
+ * вбудованим слагом нешкідлива: рядок той самий.
+ *
+ * Повертає `string`, а не `CategorySlug`: власна категорія за визначенням
+ * поза union-ом, і тип тут має про це чесно попереджати, а не вдавати,
+ * що будь-яка категорія витрати — вбудована.
+ */
+export function upgradeCategoryAllowingCustom(
+  raw: string | null | undefined,
+  customIds: ReadonlySet<string>,
+): string {
+  const trimmed = raw?.trim();
+  if (trimmed && customIds.has(trimmed)) return trimmed;
+  return upgradeCategory(raw);
 }

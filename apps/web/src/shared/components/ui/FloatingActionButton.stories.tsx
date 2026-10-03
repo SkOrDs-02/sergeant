@@ -47,7 +47,7 @@ export const Default: Story = {};
 export const FinykVariant: Story = {
   args: {
     variant: "finyk",
-    "aria-label": "Додати транзакцію",
+    "aria-label": "Додати операцію",
   },
 };
 
@@ -59,7 +59,7 @@ export const Large: Story = {
 /** Extended label — текст поряд із іконкою. */
 export const ExtendedLabel: Story = {
   args: {
-    label: "Нова транзакція",
+    label: "Нова операція",
     variant: "finyk",
   },
 };

@@ -7,14 +7,16 @@
  * Amounts in the cache are kopiykas (minor units). They are converted to
  * hryvnia before aggregation so the rendered total matches the web card,
  * which delegates to the shared finyk aggregation that reports whole
- * hryvnia. Display uses `toLocaleString("uk-UA")` on the hryvnia value.
+ * hryvnia. Display goes through `formatNumberUk` (shared) — never
+ * `toLocaleString("uk-UA")` directly: the group separator is normalised to
+ * U+00A0 there, and Intl's own U+202F would not match the web card.
  */
 
 import { useMemo } from "react";
 import { Text, View } from "react-native";
 
 import { safeReadLS } from "@/lib/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 
 import {
   aggregateSpending,
@@ -90,8 +92,8 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
     };
   }, [period, offset]);
 
-  const formattedCurrent = Math.round(cur.total).toLocaleString("uk-UA");
-  const formattedPrev = Math.round(prev.total).toLocaleString("uk-UA");
+  const formattedCurrent = formatNumberUk(Math.round(cur.total));
+  const formattedPrev = formatNumberUk(Math.round(prev.total));
 
   return (
     <ReportCardShell

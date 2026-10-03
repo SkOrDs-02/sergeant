@@ -3,11 +3,12 @@
  * Status: Active
  */
 import { useState, useMemo, type ReactNode } from "react";
-import { GroupedVirtuoso } from "react-virtuoso";
+import { VirtualList } from "@shared/components/ui/VirtualList";
 import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
-import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
+import { Button } from "@shared/components/ui/Button";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
@@ -18,33 +19,122 @@ import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
-import { getOnboardingGoals } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage/storage";
 import type {
   Transaction,
   TxCategoriesMap,
-  TxSplit,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { TxAccount } from "./Transactions";
 
-/** Typical rendered height of one `TxListItem` row, in px. Used only to
- * seed `GroupedVirtuoso`'s `defaultItemHeight` so it skips the zero-height
- * probe render — the real heights are measured once rows mount. */
+/** Typical rendered height of one `TxListItem` row, in px. */
 const ROW_HEIGHT_PX = 64;
 
+/** Typical rendered height of a `TransactionDayHeader` row, in px. */
+const HEADER_HEIGHT_PX = 48;
+
 /**
- * 1px-tall filler returned from `groupContent` / `itemContent` for an
- * index that is briefly out of range (e.g. mid-mutation, before the new
- * `groupCounts` / `flatItems` propagate). Returning `null` here renders a
- * zero-height `data-index` node that react-virtuoso's resize loop measures
- * as `offsetHeight: 0` and logs as a `Zero-sized element` error on every
- * tick. A non-zero, visually-empty filler keeps the measurement valid.
+ * 1px-tall filler returned when a row index is briefly out of range
+ * (e.g. mid-mutation, before the new counts/items propagate). A non-zero,
+ * visually-empty filler keeps the measurement valid.
  */
 function ListPlaceholder() {
   return <div aria-hidden className="h-px" />;
 }
+
+/**
+ * #13 (Hybrid 1) — one virtualized row's slice of a per-day "paper" card.
+ *
+ * The card is border-less: every slice shares the same `bg-panel` surface so
+ * flush neighbours read as one continuous panel, while the transparent
+ * bottom gap (`pb`) on the group's last slice lets the page background show
+ * through and separates days. Only the group's outer corners are rounded —
+ * interior corners sit panel-on-panel and stay invisible, which also sidesteps
+ * the rounded corners `SwipeToAction` paints on every row.
+ *
+ * `inset` draws the hairline divider between rows, indented past the category
+ * icon so it aligns with the description text (replaces the old zebra bands).
+ */
+function DayCardShell({
+  stackPosition,
+  inset = false,
+  children,
+}: {
+  /**
+   * Позиція слайсу в стосі дня — НЕ матеріал краю (Борг 2, інвентар
+   * 2026-08-07). Раніше звалась `edge` і зіткнення з `CardEdge` (проп
+   * `Card`, `"stub" | "rule" | "perf"`) читалось як те саме API, ним не
+   * будучи: тут значення описують МІСЦЕ в стосі, а матеріал (`edge-rule`
+   * / `edge-perf`) із нього лише виводиться нижче.
+   */
+  stackPosition: "top" | "middle" | "bottom" | "single";
+  inset?: boolean;
+  children: ReactNode;
+}) {
+  const groupEnd = stackPosition === "bottom" || stackPosition === "single";
+  const roundTop = stackPosition === "top" || stackPosition === "single";
+  const roundBottom = stackPosition === "bottom" || stackPosition === "single";
+  return (
+    <div className={cn(groupEnd && "pb-2.5")}>
+      {/* AI-CONTEXT: день транзакцій — це чек, і тепер він так і
+          виглядає (П3 «край і зріз», рішення власника 2026-08-06 на
+          `mockups/product/own-material-variants.html`). Замість
+          скруглень: друкарська лінійка там, де день починається, і
+          відривна перфорація там, де закінчується.
+
+          Утиліти РОЗДІЛЕНІ саме заради цього місця. Група дня — це
+          стос із кількох `DayCardShell`; якби лінійка й перфорація
+          були одним класом, кожна операція отримала б обидві, і
+          матеріал став би візерунком.
+
+          AI-DANGER: `overflow-hidden` тут більше НЕ ставиться на
+          перфорованому краю — він обрізав би маску, і зубці зникли б.
+          Замість нього обрізанням займається сама маска.
+
+          Підйому (`edge-lift`) тут навмисно немає — `edge-no-lift`.
+          Чек дня ЛЕЖИТЬ на папері, а не висить над ним: стос операцій
+          читають як один аркуш, і тінь під кожним днем зробила б із
+          нього купку карток — рівно те, від чого матеріал і відводить.
+          Тінь беруть окремі документи поза стосом (шторка операції,
+          тижневий дайджест).
+
+          Чому не проп `Card edge` (борг 1, інвентар 2026-08-07): `edge`
+          у `Card` приймає одне значення, а тут `edge-rule` і `edge-perf`
+          застосовуються НЕЗАЛЕЖНО одне від одного (`roundTop`/
+          `roundBottom`) — пряме переведення без зміни контракту `Card`
+          неможливе. Клас лишається сирим (allowlisted у
+          `edgeMaterial.test.ts`). */}
+      <div
+        className={cn(
+          "bg-panel",
+          roundTop && "edge-rule border-line",
+          roundBottom && "edge-perf",
+          roundTop && !roundBottom && "overflow-hidden",
+        )}
+      >
+        {inset && (
+          <div
+            aria-hidden
+            className="ml-[3.4rem] mr-3 border-t border-line/45"
+          />
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Discriminated union for the flat render list fed to `VirtualList`. */
+type RenderRow =
+  | { kind: "header"; groupIndex: number; key: string; standalone: boolean }
+  | {
+      kind: "item";
+      flatIndex: number;
+      tx: Transaction;
+      firstInGroup: boolean;
+      lastInGroup: boolean;
+    };
 
 export interface TransactionListProps {
   /** Whether the underlying month is still loading (real or history). */
@@ -52,9 +142,19 @@ export interface TransactionListProps {
   /** All-month list (incl. hidden) — used to decide whether to render the
    * skeleton block or the empty state. */
   activeTx: Transaction[];
+  /**
+   * Selected month has no rows, but the user does have transactions in other
+   * months. Switches the empty slot from the first-run onboarding hero to a
+   * month-scoped "цього місяця ще порожньо" state.
+   */
+  hasTransactionsOutsideMonth?: boolean;
+  /** Human month label ("серпень 2026") for the month-scoped empty state. */
+  monthLabel?: string;
+  /** Jump one month back from the month-scoped empty state. */
+  onGoPreviousMonth?: (() => void) | undefined;
   /** Filtered + sorted list of transactions to render in the virtual list. */
   filtered: Transaction[];
-  /** `GroupedVirtuoso` group spec — one entry per visible day. */
+  /** Virtual list group spec — one entry per visible day. */
   groupedByDate: { key: string; items: Transaction[] }[];
   groupCounts: number[];
   flatItems: Transaction[];
@@ -66,17 +166,38 @@ export interface TransactionListProps {
   selectMode: boolean;
   selectedIds: Set<string>;
   hiddenTxIdSet: Set<string>;
+  /**
+   * «Не враховувати у статистиці» (`finyk_excluded_stat_txs`, PR-F4
+   * founder-UX audit 2026-09-13) — окремо від `hiddenTxIdSet`, бо
+   * виключена зі статистики транзакція лишається у звичайному списку,
+   * на відміну від прихованої. Рядок несе видимий маркер через
+   * `TxRowMetaChips`, інакше пакетна дія міняє підсумки Огляду й
+   * Аналітики без жодного сліду в самому списку.
+   */
+  excludedStatTxIdSet: Set<string>;
+  /**
+   * Ноги скасованих платежів («Скасування. …»): рядок несе слово
+   * «скасовано» замість «не в статистиці» (`TxRowMetaChips`).
+   */
+  cancelledTxIdSet?: ReadonlySet<string> | undefined;
+  /** Явні override-и користувача (НЕ ефективна мапа з правилами). */
   txCategories: TxCategoriesMap;
+  /** Правила «Завжди так для цього магазину» — рядок малює їхню категорію. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
+  /** User's own free-text annotation per bank transaction. */
+  txNotes?: Record<string, string | undefined> | undefined;
   accounts: ReadonlyArray<TxAccount> | undefined;
   customCategories: CustomCategoryInput[] | undefined;
+  /** `useFinykReceiptLinks().hasReceipt` — device-local drill-down
+   * indicator (спека § Розгортка). Optional so existing test call-sites
+   * that don't care about receipts keep compiling. */
+  hasReceipt?: ((txId: string) => boolean) | undefined;
   onToggleSelect: (id: string) => void;
   onSwipeHideTx: (id: string) => void;
   onSwipeDeleteManual: (tx: Transaction) => void;
-  onEditManual: (manualId?: string) => void;
-  onHideTx: (id: string) => void;
-  onCatChange: (id: string, catId: string | null) => void;
-  onSplitChange: (id: string, splits: TxSplit[]) => void;
+  /** Row tap opens the canonical editor for either transaction source. */
+  onOpenTransaction: (tx: Transaction) => void;
   /** Bottom-of-list "still loading…" text shown when refreshing a non-
    * empty list. */
   trailing?: ReactNode;
@@ -96,7 +217,7 @@ export interface TransactionListProps {
 
 /**
  * Virtualized transaction list. Owns:
- *   - the scroll-parent attachment for `GroupedVirtuoso`
+ *   - the scroll-parent attachment for `VirtualList`
  *   - skeleton block while the first month load is in flight
  *   - empty state when filters yield zero rows
  *   - day-group headers + the row renderer
@@ -107,6 +228,9 @@ export interface TransactionListProps {
 export function TransactionList({
   loading,
   activeTx,
+  hasTransactionsOutsideMonth = false,
+  monthLabel,
+  onGoPreviousMonth,
   filtered,
   groupedByDate,
   groupCounts,
@@ -118,17 +242,19 @@ export function TransactionList({
   selectMode,
   selectedIds,
   hiddenTxIdSet,
+  excludedStatTxIdSet,
+  cancelledTxIdSet,
   txCategories,
+  merchantRules,
   txSplits,
+  txNotes = {},
   accounts,
   customCategories,
+  hasReceipt,
   onToggleSelect,
   onSwipeHideTx,
   onSwipeDeleteManual,
-  onEditManual,
-  onHideTx,
-  onCatChange,
-  onSplitChange,
+  onOpenTransaction,
   trailing,
   header,
   footer,
@@ -137,7 +263,38 @@ export function TransactionList({
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
   // Read onboarding goals once per render — stable across the session.
-  const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
+
+  // Build a flat render list of alternating headers + item rows.
+  // groupCounts[i] is 0 when the day is collapsed (set by the parent), so
+  // collapsed days contribute only their header row.
+  const renderRows = useMemo<RenderRow[]>(() => {
+    const rows: RenderRow[] = [];
+    let flatIdx = 0;
+    groupedByDate.forEach((group, gi) => {
+      const count = groupCounts[gi] ?? 0;
+      // A collapsed day contributes only its header (count 0) → the header
+      // becomes a self-contained rounded card (#13 Hybrid 1).
+      rows.push({
+        kind: "header",
+        groupIndex: gi,
+        key: group.key,
+        standalone: count === 0,
+      });
+      for (let k = 0; k < count; k++) {
+        const tx = flatItems[flatIdx];
+        if (tx)
+          rows.push({
+            kind: "item",
+            flatIndex: flatIdx,
+            tx,
+            firstInGroup: k === 0,
+            lastInGroup: k === count - 1,
+          });
+        flatIdx++;
+      }
+    });
+    return rows;
+  }, [groupedByDate, groupCounts, flatItems]);
 
   // DataState contract:
   //   - `data === undefined` triggers the skeleton slot. We mark the
@@ -179,24 +336,65 @@ export function TransactionList({
     </div>
   );
 
-  // Two empty surfaces share the same DataState slot:
-  //   • month-empty (`activeTx` itself has no rows) → tier-1 hero with the
-  //     module-tuned copy/illustration via `ModuleEmptyState`. No inline
-  //     action — the global "+ Додати витрату" FAB on `FinykApp` is the
-  //     primary CTA and duplicating it inside the empty-state would be
-  //     the anti-pattern called out in `docs/design/empty-states.md`.
+  // Three empty surfaces share the same DataState slot:
+  //   • no-data-at-all (`activeTx` empty AND nothing in any other month) →
+  //     a list-scoped state, NOT the Overview tier-1 hero. Founder-UX audit
+  //     round 2 (F1) flagged that Overview and Transactions rendered the
+  //     exact same `ModuleEmptyState module="finyk"` hero back to back when
+  //     a brand-new user tapped both tabs — same title, same illustration,
+  //     same "Куди йдуть твої гроші?" pitch twice in a row. Overview answers
+  //     "what does finyk do" (goal-aware hero, kept there); Transactions
+  //     answers "why is this list empty" — short, list-appropriate copy, no
+  //     inline action (the global "+ Додати витрату" FAB on `FinykApp` is
+  //     the primary CTA; duplicating it here is the anti-pattern called out
+  //     in `docs/design/design/empty-states.md`).
+  //   • month-empty (`activeTx` empty but the user HAS transactions in other
+  //     months) → month-scoped state. The first-run hero here read as data
+  //     loss: on 1 серпня, with Monobank connected and a full July history,
+  //     the tab greeted the user with «Куди йдуть твої гроші? Додай першу
+  //     витрату… Підключи Monobank» (founder report 2026-07-31).
   //   • filter-empty (`activeTx` has rows but the user's filter zeroed
   //     `filtered`) → keep the descriptive "Немає транзакцій" state and
   //     just tint the leading icon container with the finyk accent so
   //     the surface still feels owned by the module.
   const emptyFallback =
-    activeTx.length === 0 ? (
-      <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
+    activeTx.length === 0 && hasTransactionsOutsideMonth ? (
+      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+        <EmptyState
+          illustration={<FinykEmptyIllustration size={80} />}
+          title="Цей місяць ще порожній"
+          description={
+            // `monthLabel` is nominative ("серпень 2026 р.") — keep it after
+            // "За", where Ukrainian accusative matches the nominative form for
+            // masculine inanimate nouns, so no declension juggling is needed.
+            monthLabel
+              ? `За ${monthLabel} операцій поки немає. Попередні місяці на місці, гортай назад або додай запис вручну.`
+              : "Операцій за цей місяць поки немає. Попередні місяці на місці, гортай назад або додай запис вручну."
+          }
+          module="finyk"
+          action={
+            onGoPreviousMonth ? (
+              <Button variant="outline" onClick={onGoPreviousMonth}>
+                Попередній місяць
+              </Button>
+            ) : undefined
+          }
+        />
+      </div>
+    ) : activeTx.length === 0 ? (
+      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+        <EmptyState
+          illustration={<FinykEmptyIllustration size={80} />}
+          title="Операцій ще немає"
+          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+          module="finyk"
+        />
+      </div>
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
           illustration={<FinykEmptyIllustration size={80} />}
-          title="Немає транзакцій"
+          title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           module="finyk"
         />
@@ -214,72 +412,90 @@ export function TransactionList({
         isEmpty={(data) => data.length === 0}
       >
         {() => (
-          <div className="rounded-2xl border border-line/40 overflow-hidden -mx-px">
-            <GroupedVirtuoso
-              {...(scrollParent ? { customScrollParent: scrollParent } : {})}
-              groupCounts={groupCounts}
-              // Seed measurement with a typical row height so react-virtuoso
-              // skips its zero-height "probe" render. Without it, the all-
-              // collapsed default state (every `groupCounts` entry is 0) and
-              // the brief post-mutation window (a stale index renders before
-              // the new `groupCounts`/`flatItems` settle) leave the list
-              // region measuring `offsetHeight: 0`, which virtuoso logs as a
-              // repeated `Zero-sized element` console error.
-              defaultItemHeight={ROW_HEIGHT_PX}
-              increaseViewportBy={{ top: 400, bottom: 400 }}
-              groupContent={(groupIndex) => {
-                const group = groupedByDate[groupIndex];
-                if (!group) return <ListPlaceholder />;
-                const key = group.key;
-                const collapsed = collapsedKeys.has(key);
-                const summary = daySummaries[key] ?? {
-                  total: 0,
-                  count: 0,
-                  statCount: 0,
-                };
-                // Коли у день є тільки «не в статистиці» транзакції, сховати
-                // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
-                // перекази у вигляді доходу.
-                const showTotal = showBalance && summary.statCount > 0;
-                return (
-                  <TransactionDayHeader
-                    dayKey={key}
-                    collapsed={collapsed}
-                    summary={summary}
-                    showTotal={showTotal}
-                    onToggle={toggleDay}
-                  />
-                );
+          <div className="-mx-px">
+            <VirtualList
+              items={renderRows}
+              estimateSize={(index) => {
+                const row = renderRows[index];
+                if (!row) return ROW_HEIGHT_PX;
+                // Group-end rows carry the transparent day-gap (`pb`), so
+                // seed the estimate a touch taller to reduce first-paint jump.
+                if (row.kind === "header")
+                  return HEADER_HEIGHT_PX + (row.standalone ? 10 : 0);
+                return ROW_HEIGHT_PX + (row.lastInGroup ? 10 : 0);
               }}
-              itemContent={(index) => {
-                const t = flatItems[index];
+              scrollElement={scrollParent}
+              overscan={8}
+              getItemKey={(_, row) =>
+                row.kind === "header" ? `h-${row.key}` : `i-${row.flatIndex}`
+              }
+            >
+              {(row) => {
+                if (row.kind === "header") {
+                  const group = groupedByDate[row.groupIndex];
+                  if (!group) return <ListPlaceholder />;
+                  const key = group.key;
+                  const collapsed = collapsedKeys.has(key);
+                  const summary = daySummaries[key] ?? {
+                    total: 0,
+                    count: 0,
+                    statCount: 0,
+                  };
+                  // Коли у день є тільки «не в статистиці» транзакції, сховати
+                  // суму — інакше побачимо «0,00₴» або (як раніше) злиплі
+                  // перекази у вигляді доходу.
+                  // #9 — показуємо суму завжди, коли вона є, але за вимкненого
+                  // «ока» (showBalance=false) віддаємо її розмитою, а не ховаємо.
+                  const hasTotal = summary.statCount > 0;
+                  return (
+                    <DayCardShell
+                      stackPosition={row.standalone ? "single" : "top"}
+                    >
+                      <TransactionDayHeader
+                        dayKey={key}
+                        collapsed={collapsed}
+                        summary={summary}
+                        showTotal={hasTotal}
+                        masked={!showBalance}
+                        onToggle={toggleDay}
+                      />
+                    </DayCardShell>
+                  );
+                }
+                // row.kind === "item"
+                const t = row.tx;
                 if (!t) return <ListPlaceholder />;
                 const rowTx = t as TxRowTx;
                 return (
-                  <TxListItem
-                    tx={rowTx}
-                    rowIndex={index}
-                    selectMode={selectMode}
-                    selected={selectMode && selectedIds.has(t.id)}
-                    hidden={hiddenTxIdSet.has(t.id)}
-                    overrideCatId={txCategories[t.id]}
-                    txSplits={txSplits}
-                    accounts={accounts ?? []}
-                    hideAmount={!showBalance}
-                    customCategories={customCategories}
-                    onToggleSelect={onToggleSelect}
-                    onSwipeHideTx={onSwipeHideTx}
-                    onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
-                    onEditManual={onEditManual}
-                    onHideTx={onHideTx}
-                    onCatChange={onCatChange}
-                    onSplitChange={(id, splits) =>
-                      onSplitChange(id, (splits ?? []) as TxSplit[])
-                    }
-                  />
+                  <DayCardShell
+                    stackPosition={row.lastInGroup ? "bottom" : "middle"}
+                    inset={!row.firstInGroup}
+                  >
+                    <TxListItem
+                      tx={rowTx}
+                      rowIndex={row.flatIndex}
+                      selectMode={selectMode}
+                      selected={selectMode && selectedIds.has(t.id)}
+                      hidden={hiddenTxIdSet.has(t.id)}
+                      isExcludedFromStats={excludedStatTxIdSet.has(t.id)}
+                      isCancelled={cancelledTxIdSet?.has(t.id) ?? false}
+                      overrideCatId={txCategories[t.id]}
+                      merchantRules={merchantRules}
+                      txSplits={txSplits}
+                      note={txNotes[t.id]}
+                      accounts={accounts ?? []}
+                      hideAmount={!showBalance}
+                      customCategories={customCategories}
+                      hasReceipt={hasReceipt?.(t.id) ?? false}
+                      onToggleSelect={onToggleSelect}
+                      onSwipeHideTx={onSwipeHideTx}
+                      onSwipeDeleteManual={() => onSwipeDeleteManual(t)}
+                      onOpenDetails={() => onOpenTransaction(t)}
+                    />
+                  </DayCardShell>
                 );
               }}
-            />
+            </VirtualList>
           </div>
         )}
       </DataState>

@@ -82,7 +82,7 @@ function NavTab({
     transform: [{ scaleX: interpolate(progress.value, [0, 1], [0.5, 1]) }],
   }));
 
-  const iconColor = selected ? "#c23a3a" : "#a8a29e";
+  const iconColor = selected ? "#ac4c64" : "#a8a29e";
 
   return (
     <Pressable
@@ -100,9 +100,7 @@ function NavTab({
       />
       <Text
         className={`text-xs ${
-          selected
-            ? "text-coral-700 font-semibold"
-            : "text-fg-muted font-normal"
+          selected ? "text-rose-700 font-semibold" : "text-fg-muted font-normal"
         }`}
       >
         {item.label}
@@ -110,7 +108,7 @@ function NavTab({
       {/* Active indicator dot */}
       <Animated.View
         style={indicatorStyle}
-        className="absolute bottom-1.5 w-1 h-1 rounded-full bg-coral-600"
+        className="absolute bottom-1.5 w-1 h-1 rounded-full bg-rose-600"
       />
     </Pressable>
   );

@@ -3,13 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
+import { finykKeys } from "@shared/lib/api/queryKeys";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 
 // Extends FinykSection.test.tsx with the interaction-heavy branches: custom
 // categories, webhook connect error handling, backfill, disconnect confirm,
@@ -17,6 +18,12 @@ import { MemoryRouter } from "react-router-dom";
 
 const apiState = vi.hoisted(() => ({
   isPro: true,
+}));
+
+// Controllable backfill progress state — allows individual tests to simulate
+// the "running" status without re-hoisting the whole mock.
+const backfillState = vi.hoisted(() => ({
+  status: null as string | null,
 }));
 
 vi.mock("@shared/api", async () => {
@@ -33,6 +40,23 @@ vi.mock("@shared/api", async () => {
       transactions: vi.fn(),
     },
     privatApi: { balanceFinal: vi.fn() },
+    // Silpo card renders alongside Monobank in the same "Фінік" group —
+    // without this mock `useSilpoSyncState` would hit the real (unmocked)
+    // `httpClient` fetch in jsdom.
+    silpoApi: {
+      syncState: vi.fn().mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      }),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+    silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
     // Treat any plain object carrying a `kind` discriminator as an ApiError so
     // the error-branch logic (auth / aborted) can be exercised without
     // constructing real ApiError instances.
@@ -46,8 +70,24 @@ const storageMock = vi.hoisted(() => ({
   addCustomCategory: vi.fn(),
   removeCustomCategory: vi.fn(),
 }));
-vi.mock("../../modules/finyk/hooks/useStorage", () => ({
+vi.mock("@finyk/hooks/useStorage", () => ({
   useStorage: () => storageMock,
+}));
+
+// `SilpoIntegrationSection` calls `useToast()` (sync/disconnect/wipe result
+// toasts) — this suite has no `<ToastProvider>` in its render tree, so
+// stub the hook directly rather than adding an unrelated provider.
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    show: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+  }),
 }));
 
 vi.mock("../billing/usePlan", () => ({
@@ -59,12 +99,22 @@ vi.mock("../billing/usePlan", () => ({
 }));
 
 const removeFinykStorageItem = vi.hoisted(() => vi.fn());
-vi.mock("../../modules/finyk/lib/finykStorage", () => ({
+vi.mock("@finyk/lib/finykStorage", () => ({
   removeItem: removeFinykStorageItem,
 }));
 
-vi.mock("../../modules/finyk/hooks/useMonoBackfillProgress", () => ({
-  useMonoBackfillProgress: () => ({ progress: null }),
+vi.mock("@finyk/hooks/useMonoBackfillProgress", () => ({
+  useMonoBackfillProgress: () => ({
+    progress: backfillState.status
+      ? {
+          status: backfillState.status,
+          accountsProcessed: 1,
+          accountsTotal: 3,
+          transactionsProcessed: 42,
+          lastError: null,
+        }
+      : null,
+  }),
 }));
 
 import { monoWebhookApi } from "@shared/api";
@@ -95,13 +145,14 @@ function renderSection() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const view = renderSettingsSection(
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <FinykSection />
       </MemoryRouter>
     </QueryClientProvider>,
   );
+  return { ...view, client };
 }
 
 describe("FinykSection interactions", () => {
@@ -109,6 +160,7 @@ describe("FinykSection interactions", () => {
     vi.clearAllMocks();
     apiState.isPro = true;
     storageMock.customCategories = [];
+    backfillState.status = null;
     localStorage.clear();
     sessionStorage.clear();
   });
@@ -130,7 +182,7 @@ describe("FinykSection interactions", () => {
   it("adds a custom category via the Додати button", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. 🎨 Хобі");
+    const input = await screen.findByPlaceholderText("Напр. Хобі");
     fireEvent.change(input, { target: { value: "Хобі" } });
     fireEvent.click(screen.getByText("Додати"));
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Хобі");
@@ -140,10 +192,22 @@ describe("FinykSection interactions", () => {
   it("adds a custom category via the Enter key", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const input = await screen.findByPlaceholderText("Напр. 🎨 Хобі");
+    const input = await screen.findByPlaceholderText("Напр. Хобі");
     fireEvent.change(input, { target: { value: "Подорожі" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Подорожі");
+  });
+
+  it("adds an income category to the separate income catalog", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByRole("button", { name: "Надходження" }));
+    const input = screen.getByPlaceholderText("Напр. Підробіток");
+    fireEvent.change(input, { target: { value: "Оренда" } });
+    fireEvent.click(screen.getByText("Додати"));
+    expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Оренда", {
+      kind: "income",
+    });
   });
 
   it("lists and removes existing custom categories", async () => {
@@ -164,17 +228,19 @@ describe("FinykSection interactions", () => {
     expect(mockedConnect).not.toHaveBeenCalled();
   });
 
-  it("opens the paywall on connect when the user is not Pro", async () => {
+  // Регресія навпаки: до 2026-09-02 тут стояв пейволл, і цей тест вимагав
+  // його появи. Канон каже протилежне — «банк-sync Free назавжди»
+  // (product-overview.md, рядок 7), тож перевіряємо, що Free-юзер
+  // підключається без жодної перепони.
+  it("connects for a Free user — bank sync is not gated", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-    expect(mockedConnect).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedConnect).toHaveBeenCalled());
+    expect(mockedConnect).toHaveBeenCalledWith("tok", expect.anything());
   });
 
   it("surfaces a server message when connect throws an auth error", async () => {
@@ -199,7 +265,7 @@ describe("FinykSection interactions", () => {
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
     expect(
-      await screen.findByText("Monobank API не відповідає. Спробуйте пізніше."),
+      await screen.findByText("Monobank API не відповідає. Спробуй пізніше."),
     ).toBeInTheDocument();
   });
 
@@ -226,7 +292,7 @@ describe("FinykSection interactions", () => {
     });
     mockedBackfill.mockResolvedValue(undefined);
     renderSection();
-    const btn = await screen.findByText("Re-sync (backfill)");
+    const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
     await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
   });
@@ -241,9 +307,9 @@ describe("FinykSection interactions", () => {
     });
     mockedDisconnect.mockResolvedValue(undefined);
     renderSection();
-    fireEvent.click(await screen.findByText("Від'єднати"));
+    fireEvent.click(await screen.findByText("Відʼєднати"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Вийти"));
     await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
   });
@@ -251,9 +317,9 @@ describe("FinykSection interactions", () => {
   it("clears the transaction cache through the confirm modal", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("🧹 Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
 
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));
     await waitFor(() =>
       expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
@@ -266,11 +332,184 @@ describe("FinykSection interactions", () => {
   it("refreshes all data on demand", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    const btn = await screen.findByText("🔄 Оновити дані");
+    const btn = await screen.findByText("Оновити дані");
     fireEvent.click(btn);
     // Button flips to the busy label while the invalidations resolve.
     await waitFor(() =>
-      expect(screen.getByText("🔄 Оновити дані")).toBeInTheDocument(),
+      expect(screen.getByText("Оновити дані")).toBeInTheDocument(),
     );
+  });
+
+  // ── Additional branches ────────────────────────────────────────────────────
+
+  it("renders a yellow pending indicator when status=pending", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "pending",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    });
+    renderSection();
+    expect(await screen.findByText("Синхронізація очікує")).toBeInTheDocument();
+    const card = screen
+      .getByText("Синхронізація очікує")
+      .closest("[class*='border-']");
+    expect(card?.className).toContain("border-warning/30");
+  });
+
+  it("renders a red error indicator when status is an unknown/error value", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "error",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    renderSection();
+    expect(
+      await screen.findByText("Синхронізація не працює"),
+    ).toBeInTheDocument();
+    const card = screen
+      .getByText("Синхронізація не працює")
+      .closest("[class*='border-']");
+    expect(card?.className).toContain("border-danger/30");
+  });
+
+  it("shows Re-sync… and disables the button when backfill is running", async () => {
+    backfillState.status = "running";
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    renderSection();
+    const btn = await screen.findByText("Повторна синхронізація…");
+    expect(btn).toBeTruthy();
+    expect((btn.closest("button") as HTMLButtonElement | null)?.disabled).toBe(
+      true,
+    );
+  });
+
+  // Друга половина того самого рішення: backfill — теж частина
+  // безкоштовного банк-синку, не окрема Pro-фіча.
+  it("runs backfill for a Free user — history sync is not gated", async () => {
+    apiState.isPro = false;
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    renderSection();
+    const btn = await screen.findByText("Синхронізувати історію");
+    fireEvent.click(btn);
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalled());
+  });
+
+  it("shows a backfill API error in the connected state and clears it after retry", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    mockedBackfill
+      .mockRejectedValueOnce(new Error("Помилка re-sync"))
+      .mockResolvedValueOnce(undefined);
+    renderSection();
+    const btn = await screen.findByText("Синхронізувати історію");
+    fireEvent.click(btn);
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
+    );
+
+    fireEvent.click(screen.getByText("Синхронізувати історію"));
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole("alert")).toBeNull());
+  });
+
+  it("keeps webhook queries mounted and shows an error when disconnect fails", async () => {
+    const activeState = {
+      status: "active" as const,
+      webhookActive: true,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 1,
+    };
+    mockedSyncState.mockResolvedValue(activeState);
+    mockedDisconnect.mockRejectedValue(new Error("Не вдалося відʼєднатися"));
+    const { client } = renderSection();
+
+    fireEvent.click(await screen.findByText("Відʼєднати"));
+    const removeQueries = vi.spyOn(client, "removeQueries");
+    fireEvent.click(
+      within(await screen.findByRole("alertdialog")).getByText("Вийти"),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося відʼєднатися",
+    );
+    expect(removeQueries).not.toHaveBeenCalled();
+    expect(client.getQueryData(finykKeys.monoSyncState)).toEqual(activeState);
+    expect(screen.getByText("Синхронізація активна")).toBeInTheDocument();
+  });
+
+  it("Enter key in the webhook token input submits the form", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockResolvedValue({ status: "active", accountsCount: 1 });
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok-enter" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() =>
+      expect(mockedConnect).toHaveBeenCalledWith(
+        "tok-enter",
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+  });
+
+  it("shows generic connect error for non-auth, non-aborted failures", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockRejectedValue(new Error("Мережева помилка"));
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows lastEventAt timestamp when webhook is connected and event exists", async () => {
+    const formatDate = vi
+      .spyOn(Date.prototype, "toLocaleString")
+      .mockReturnValue("15 бер., 16:30");
+    mockedSyncState.mockResolvedValue({
+      status: "active",
+      webhookActive: true,
+      lastEventAt: "2024-03-15T14:30:00Z",
+      lastBackfillAt: null,
+      accountsCount: 2,
+    });
+    renderSection();
+    await screen.findByText("Синхронізація активна");
+    const statusSection = screen.getByText(
+      "Синхронізація активна",
+    ).parentElement;
+    expect(statusSection?.textContent).toContain("·");
+    expect(formatDate).toHaveBeenCalledWith(
+      "uk-UA",
+      expect.objectContaining({ timeZone: "Europe/Kyiv" }),
+    );
+    formatDate.mockRestore();
   });
 });

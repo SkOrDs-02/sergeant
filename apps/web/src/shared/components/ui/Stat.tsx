@@ -47,9 +47,9 @@ const variantClass: Record<StatVariant, string> = {
 };
 
 const valueSize: Record<StatSize, string> = {
-  sm: "text-lg font-extrabold tabular-nums",
-  md: "text-2xl font-extrabold tabular-nums",
-  lg: "text-3xl font-black tabular-nums",
+  sm: "text-style-title font-extrabold tabular-nums",
+  md: "text-style-headline font-extrabold tabular-nums",
+  lg: "text-style-headline font-black tabular-nums",
 };
 
 export interface StatProps {
@@ -59,7 +59,13 @@ export interface StatProps {
   /** Colour variant for the value. Defaults to `default` (text-text). */
   variant?: StatVariant;
   size?: StatSize;
-  /** Optional leading icon / emoji rendered left of the value. */
+  /**
+   * Optional leading icon rendered left of the value. Pass an `<Icon />`
+   * from the design-system catalogue — not a raw emoji: emoji render in the
+   * system font, so they carry their own colour and metrics per OS and
+   * ignore the `strokeWidth` the rest of the iconography shares
+   * (`DESIGN.md § Заборонено` — "емодзі як іконки фіч").
+   */
   icon?: ReactNode;
   /** Align contents. Defaults to left. */
   align?: "left" | "center" | "right";
@@ -98,11 +104,14 @@ export function Stat({
         )}
       >
         {icon && (
-          <span className="text-base font-normal leading-none">{icon}</span>
+          /* icon-size, not type */
+          <span className="font-normal leading-none">{icon}</span>
         )}
         <span>{value}</span>
       </div>
-      {sublabel && <div className="text-xs text-subtle mt-1">{sublabel}</div>}
+      {sublabel && (
+        <div className="text-style-caption text-subtle mt-1">{sublabel}</div>
+      )}
     </div>
   );
 }

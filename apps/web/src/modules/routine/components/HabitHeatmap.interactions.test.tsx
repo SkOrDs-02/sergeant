@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 /**
  * Interaction + branch coverage for HabitHeatmap (selection, roving
- * keyboard navigation, the aria-live details region and the legend).
+ * keyboard navigation and the persistent aria-live details region).
  * The label / off-by-year regression is covered separately in
  * HabitHeatmap.test.tsx; this file drives the stateful behaviour.
  *
@@ -30,55 +30,62 @@ describe("HabitHeatmap interactions", () => {
     vi.useRealTimers();
   });
 
-  it("shows the legend by default and the details region after a cell is selected", () => {
+  it("shows today's details by default and selects the cell on click", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
-    // Legend visible until a cell is selected.
-    expect(screen.getByLabelText("Легенда заповнення")).toBeInTheDocument();
+    expect(screen.getByText(/1 з 1 запланованих виконано/)).toBeInTheDocument();
 
-    const todayCell = screen.getByLabelText("2026-06-16: 1 з 1 звички");
+    const todayCell = screen.getByLabelText("2026-06-16: 1 з 1 запланованих");
     fireEvent.click(todayCell);
     expect(todayCell).toHaveAttribute("aria-pressed", "true");
-    // The aria-live region now reports the completion summary.
-    expect(screen.getByText(/1 з 1 звички виконано/)).toBeInTheDocument();
-    // Legend is replaced by the details panel.
-    expect(
-      screen.queryByLabelText("Легенда заповнення"),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText(/1 з 1 запланованих виконано/)).toBeInTheDocument();
   });
 
   it("toggles selection off when the same cell is clicked twice", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
-    const cell = screen.getByLabelText("2026-06-16: 1 з 1 звички");
+    const cell = screen.getByLabelText("2026-06-16: 1 з 1 запланованих");
     fireEvent.click(cell);
     expect(cell).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(cell);
     expect(cell).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByLabelText("Легенда заповнення")).toBeInTheDocument();
+    expect(screen.getByText(/1 з 1 запланованих виконано/)).toBeInTheDocument();
   });
 
-  it("reports 'немає звичок' for a selected cell when there are no habits", () => {
+  it("reports 'нічого не заплановано' for a selected cell when there are no habits", () => {
     render(<HabitHeatmap habits={[]} completions={{}} />);
-    // With zero habits each cell reads "0 з 0 звичок"; select today.
-    const cell = screen.getByLabelText("2026-06-16: 0 з 0 звичок");
+    // Зі знаменником за розкладом порожній день читається як «нічого не
+    // заплановано» — це і є новий стан «день відпочинку».
+    const cell = screen.getByLabelText("2026-06-16: нічого не заплановано");
     fireEvent.click(cell);
-    expect(screen.getByText("немає звичок")).toBeInTheDocument();
+    expect(screen.getByText("нічого не заплановано")).toBeInTheDocument();
   });
 
-  it("moves the roving tab stop with ArrowLeft (one week back)", () => {
+  it("moves the roving tab stop left into the previous week", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
-    const today = screen.getByLabelText("2026-06-16: 1 з 1 звички");
+    const today = screen.getByLabelText("2026-06-16: 1 з 1 запланованих");
     // Today is the default tab stop.
     expect(today).toHaveAttribute("tabindex", "0");
     fireEvent.keyDown(today, { key: "ArrowLeft" });
     // One week back = 2026-06-09; it becomes the focused/roving cell.
-    const prevWeek = screen.getByLabelText("2026-06-09: 0 з 1 звички");
+    const prevWeek = screen.getByLabelText("2026-06-09: 0 з 1 запланованих");
     expect(prevWeek).toHaveAttribute("tabindex", "0");
+    expect(today).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("moves the roving tab stop right into the next week", () => {
+    render(<HabitHeatmap habits={habits} completions={completions} />);
+    const today = screen.getByLabelText("2026-06-16: 1 з 1 запланованих");
+    // Today is the default tab stop.
+    expect(today).toHaveAttribute("tabindex", "0");
+    fireEvent.keyDown(today, { key: "ArrowRight" });
+    // One week forward = 2026-06-23; it becomes the focused/roving cell.
+    const nextWeek = screen.getByLabelText("2026-06-23: 0 з 1 запланованих");
+    expect(nextWeek).toHaveAttribute("tabindex", "0");
     expect(today).toHaveAttribute("tabindex", "-1");
   });
 
   it("ignores non-arrow keydown without changing the roving cell", () => {
     render(<HabitHeatmap habits={habits} completions={completions} />);
-    const today = screen.getByLabelText("2026-06-16: 1 з 1 звички");
+    const today = screen.getByLabelText("2026-06-16: 1 з 1 запланованих");
     fireEvent.keyDown(today, { key: "Enter" });
     expect(today).toHaveAttribute("tabindex", "0");
   });
@@ -95,16 +102,18 @@ describe("HabitHeatmap interactions", () => {
     render(<HabitHeatmap habits={withArchived} completions={comps} />);
     // Only the single active habit counts → "1 з 1", not "2 з 2".
     expect(
-      screen.getByLabelText("2026-06-16: 1 з 1 звички"),
+      screen.getByLabelText("2026-06-16: 1 з 1 запланованих"),
     ).toBeInTheDocument();
   });
 
   it("handles null habits/completions without crashing", () => {
     render(<HabitHeatmap habits={null} completions={null} />);
-    expect(screen.getByText("Активність за рік")).toBeInTheDocument();
-    // No habits → today's cell reads "0 з 0 звичок".
     expect(
-      screen.getByLabelText("2026-06-16: 0 з 0 звичок"),
+      screen.getByText("Активність: сьогодні та історія"),
+    ).toBeInTheDocument();
+    // Без звичок комірка сьогодні читається як «нічого не заплановано».
+    expect(
+      screen.getByLabelText("2026-06-16: нічого не заплановано"),
     ).toBeInTheDocument();
   });
 });

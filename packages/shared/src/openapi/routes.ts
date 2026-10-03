@@ -68,6 +68,363 @@ export const paths: ZodOpenApiPathsObject = {
         "401": unauthorized,
       },
     },
+    delete: {
+      summary: "Попросити видалити акаунт (30-денне вікно на скасування)",
+      description:
+        "НЕ видаляє одразу: позначає акаунт, гасить сесії на всіх пристроях і скасовує підписку. Незворотне видалення виконує добивач через 30 днів; до того дня працює POST /api/me/restore. Повторний виклик ідемпотентний і не зсуває дату.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": { schema: namedSchemas.MeDeleteBody },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Прохання прийняте; `scheduledPurgeAt` — дата видалення.",
+          content: {
+            "application/json": { schema: namedSchemas.MeDeleteResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/deletion-status ──────────────────────
+  // Проходить повз гейт вікна: інакше екран-блокер не мав би чим
+  // намалювати себе.
+  "/api/me/deletion-status": {
+    get: {
+      summary: "Стан вікна на скасування видалення",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Стан акаунта; `pending: false` — активний.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.MeDeletionStatusResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/restore ──────────────────────
+  "/api/me/restore": {
+    post: {
+      summary: "Скасувати прохання видалити акаунт",
+      description:
+        "Знімає позначку, поки вікно не закрилось. Підписку не повертає: її скасовано в день прохання, і потрібне нове оформлення.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Прохання скасоване, акаунт знову активний.",
+          content: {
+            "application/json": { schema: namedSchemas.MeRestoreResponse },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Активного прохання видалити акаунт немає.",
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/profile ──────────────────────
+  // Write-through сховище профілю/біометрії (migration 115) — НЕ oplog-sync.
+  "/api/me/profile": {
+    get: {
+      summary: "Профіль/біометрія користувача (write-through блоб)",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Profile blob; { profile: {}, updatedAt: null } коли рядка ще немає.",
+          content: {
+            "application/json": { schema: namedSchemas.UserProfileResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+    put: {
+      summary: "Перезаписати профіль/біометрію (upsert по user_id)",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        // OpenAPI 3 defaults `requestBody.required` to `false` when omitted
+        // — misleading here since `UserProfilePutBodySchema` requires a
+        // `profile` field with no default; a client generated straight off
+        // the spec could omit the body entirely and only find out it's
+        // mandatory from the 400 (CodeRabbit PR #627 review).
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.UserProfilePutBody },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Оновлений profile blob.",
+          content: {
+            "application/json": { schema: namedSchemas.UserProfileResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/export ──────────────────────
+  "/api/me/export": {
+    get: {
+      summary: "Експорт усіх даних користувача (GDPR)",
+      description:
+        "Свіжа сесія (`requireFreshSession`), ліміт 5/год на людину; один активний експорт на акаунт.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Повний зріз даних користувача.",
+          content: {
+            "application/json": { schema: namedSchemas.MeExportResponse },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "`export_in_flight` — попередній експорт ще готується.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "429": {
+          description: "Перевищено ліміт експортів.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/preferences ──────────────────────
+  "/api/me/preferences": {
+    get: {
+      summary: "Налаштування користувача",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Поточні налаштування (з дефолтами).",
+          content: {
+            "application/json": { schema: namedSchemas.UserPreferences },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+    patch: {
+      summary: "Часткове оновлення налаштувань користувача",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.UserPreferencesPatch },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Оновлені налаштування.",
+          content: {
+            "application/json": { schema: namedSchemas.UserPreferences },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/status ──────────────────────
+  // Публічний, без автентифікації; завжди 200 (HTTP-статус відв'язаний від
+  // `body.status`). Shape — TS-інтерфейс `StatusResponse` у `http/status.ts`,
+  // спільної Zod-схеми немає, тож описано тут inline.
+  "/api/status": {
+    get: {
+      summary: "Публічний статус компонентів (status page)",
+      tags: ["ops"],
+      responses: {
+        "200": {
+          description: "Зведений статус; завжди 200, навіть при `down`.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                status: z.enum(["operational", "degraded", "down"]),
+                timestamp: z.string(),
+                components: z.array(
+                  z.object({
+                    id: z.enum(["server", "database", "n8n"]),
+                    label: z.string(),
+                    status: z.enum(["operational", "degraded", "down"]),
+                  }),
+                ),
+                lastIncident: z
+                  .object({
+                    at: z.string(),
+                    component: z.enum(["server", "database", "n8n"]),
+                  })
+                  .nullable(),
+              }),
+            },
+          },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/sync/audit ──────────────────────
+  "/api/sync/audit": {
+    get: {
+      summary: "Аудит-лог sync (self або admin-перегляд)",
+      description:
+        "Query: `user_id`, `before_id`, `limit`, `op_type`, `outcome`, `module`. Чужий `user_id` — лише для admin (інакше 403). `id` у рядках — number (BIGSERIAL, Hard Rule #1).",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Сторінка рядків аудиту + keyset-курсор.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                ok: z.literal(true),
+                userId: z.string(),
+                isAdminView: z.boolean(),
+                rows: z.array(
+                  z.object({
+                    id: z.number().int(),
+                    userId: z.string(),
+                    opType: z.string(),
+                    module: z.string(),
+                    outcome: z.string(),
+                    conflict: z.boolean(),
+                    payloadSizeBytes: z.number().nullable(),
+                    durationMs: z.number().nullable(),
+                    createdAt: z.string(),
+                  }),
+                ),
+                nextBeforeId: z.number().int().nullable(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "403": {
+          description: "Не admin запитав чужий `user_id`.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── /api/v2/sync/* ──────────────────────
+  // Per-row op-log sync (заміна v1). Заголовок `x-origin-device-id`
+  // (опційно) виключає власні op-и клієнта з pull/stream.
+  "/api/v2/sync/push": {
+    post: {
+      summary: "Надіслати пачку op-ів (insert/update/delete)",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.SyncV2PushRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Результат по кожному op-у (`applied` / `duplicate` / `rejected` + `reason`). `last_op_id` — number; `server_now` — годинник сервера для виміру clock skew.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                accepted: z.number().int(),
+                last_op_id: z.number().int(),
+                results: z.array(
+                  z.object({
+                    idempotency_key: z.string(),
+                    status: z.enum(["applied", "duplicate", "rejected"]),
+                    reason: z.string().optional(),
+                  }),
+                ),
+                server_now: z.string(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/v2/sync/pull": {
+    get: {
+      summary: "Отримати op-и інших пристроїв (cursor по id)",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SyncV2PullQuery },
+      responses: {
+        "200": {
+          description:
+            "Op-и з `id > since`; `next_cursor` = null, коли сторінка неповна.",
+          content: {
+            "application/json": {
+              schema: z.object({
+                ops: z.array(
+                  z.object({
+                    id: z.number().int(),
+                    table: z.string(),
+                    op: z.string(),
+                    row: z.record(z.string(), z.unknown()),
+                    client_ts: z.string(),
+                    server_ts: z.string(),
+                    origin_device_id: z.string().nullable(),
+                  }),
+                ),
+                next_cursor: z.number().int().nullable(),
+              }),
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/v2/sync/stream": {
+    get: {
+      summary: "SSE-стрім op-ів (hello / op / caught_up / heartbeat)",
+      description:
+        "`text/event-stream`. Курсор — `?since=` або `Last-Event-ID` (останній перемагає). Backlog обмежений replay-лімітом: після `caught_up.truncated` клієнт перепідключається з новим `since`.",
+      tags: ["sync"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SyncV2PullQuery },
+      responses: {
+        "200": {
+          description: "Потік SSE-подій.",
+          content: { "text/event-stream": { schema: { type: "string" } } },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
   },
 
   // ────────────────────── /api/chat ──────────────────────
@@ -88,8 +445,108 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/chat/usage": {
+    get: {
+      summary: "Денний Free-tier ліміт AI-чату (PR-42 chat counter)",
+      tags: ["chat"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Плюс/Pro → limit/remaining=null (unlimited); Free → поточний денний рахунок.",
+          content: {
+            "application/json": { schema: namedSchemas.ChatUsageResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
 
   // ────────────────────── /api/ai-memory/* ──────────────────────
+  "/api/ai-memory": {
+    delete: {
+      summary: "Очистити серверну памʼять ШІ поточного користувача.",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Памʼять очищено.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.AiMemoryClearResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/ai-memory/list": {
+    get: {
+      summary: "Список збережених фактів AI-памʼяті поточного користувача.",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "limit",
+          in: "query",
+          required: false,
+          schema: { type: "integer", minimum: 1, maximum: 100, default: 20 },
+          description: "Розмір сторінки.",
+        },
+        {
+          name: "cursor",
+          in: "query",
+          required: false,
+          schema: { type: "integer", minimum: 1 },
+          description:
+            "Keyset-курсор: `nextCursor` попередньої сторінки (повертає рядки з меншим id).",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Сторінка фактів (масив може бути порожнім).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.AiMemoryListResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/ai-memory/{id}": {
+    delete: {
+      summary: "Видалити один факт AI-памʼяті. Назавжди, без відновлення.",
+      tags: ["ai-memory"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`ai_memories.id` з відповіді `/api/ai-memory/list`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description:
+            "Ідемпотентний успіх. `deleted:false` — рядка вже не було.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.AiMemoryDeleteResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
   "/api/ai-memory/recall": {
     post: {
       summary:
@@ -256,21 +713,6 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
-  "/api/nutrition/day-hint": {
-    post: {
-      summary: "Згенерувати hint наступного прийому їжі на день",
-      tags: ["nutrition"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: { "application/json": { schema: namedSchemas.DayHint } },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
   "/api/nutrition/day-plan": {
     post: {
       summary: "Згенерувати/перегенерувати план прийомів їжі на день",
@@ -424,38 +866,6 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
-  "/api/push/subscribe": {
-    post: {
-      summary: "Web-push subscribe (legacy alias для /push/register web)",
-      tags: ["push"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: {
-          "application/json": { schema: namedSchemas.PushSubscribe },
-        },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-    delete: {
-      summary: "Web-push unsubscribe (legacy alias для /push/unregister web)",
-      tags: ["push"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: {
-          "application/json": { schema: namedSchemas.PushUnsubscribe },
-        },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
   "/api/push/send": {
     post: {
       summary: "Internal-only fan-out push (worker → cron job)",
@@ -502,9 +912,14 @@ export const paths: ZodOpenApiPathsObject = {
   // `/api/mono/connect`, `/api/mono/transactions` etc. live in their own
   // OpenAPI section below. The legacy `/api/mono` token-passthrough proxy was
   // removed when the polling pipeline was retired.
+  // Креденшели ПриватБанку живуть зашифрованими в `privat_connection` і
+  // резолвляться за сесією. Раніше вони приходили в заголовках
+  // `X-Privat-Id`/`X-Privat-Token`, через що клієнт мусив тримати
+  // merchant-токен у браузері, а проксі був анонімним — спека
+  // `docs/work/specs/beta-security-readiness.md` (F1/F3).
   "/api/privat": {
     get: {
-      summary: "PrivatBank API proxy",
+      summary: "PrivatBank API proxy (credentials resolved from session)",
       tags: ["banks"],
       security: cookieOrBearer,
       requestParams: { query: namedSchemas.PrivatQuery },
@@ -513,6 +928,48 @@ export const paths: ZodOpenApiPathsObject = {
         "400": validationError,
         "401": unauthorized,
       },
+    },
+  },
+  "/api/privat/connect": {
+    post: {
+      summary: "Store PrivatBank merchant credentials (validated upstream)",
+      tags: ["banks"],
+      security: cookieOrBearer,
+      requestBody: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              merchantId: z.string().describe("Merchant ID з Приват24 Бізнес."),
+              token: z
+                .string()
+                .describe(
+                  "Merchant-токен. Передається рівно один раз; на сервері зберігається під AES-256-GCM і клієнту вже не повертається.",
+                ),
+            }),
+          },
+        },
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/privat/disconnect": {
+    post: {
+      summary: "Delete stored PrivatBank credentials",
+      tags: ["banks"],
+      security: cookieOrBearer,
+      responses: { "200": okEmpty, "401": unauthorized },
+    },
+  },
+  "/api/privat/status": {
+    get: {
+      summary: "PrivatBank connection status (never returns the token)",
+      tags: ["banks"],
+      security: cookieOrBearer,
+      responses: { "200": okEmpty, "401": unauthorized },
     },
   },
 
@@ -612,6 +1069,22 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/mono/jars": {
+    get: {
+      summary: "Список Mono-банок (jars) поточного користувача",
+      tags: ["mono"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Нормалізовані рядки `mono_jar` (bigint → number).",
+          content: {
+            "application/json": { schema: namedSchemas.MonoJarsResponse },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
   "/api/mono/transactions": {
     get: {
       summary: "Cursor-paginated історія Mono-транзакцій",
@@ -665,6 +1138,317 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
 
+  // ────────────────────── Чек-скан v1 (/api/finyk/receipts/*) ───────────────
+  // Спека: `docs/work/specs/receipt-scan.md` § API-контракт.
+  // 413/415 на `/analyze` — НЕ канонічний `ApiError`-envelope (жодного
+  // `error`/`message`/`requestId`) — сервер віддає
+  // `{code, detail, declared_mime?, detected_mime?}` напряму з
+  // `validateImageBase64()` (`apps/server/src/lib/imageMagic.ts`), без
+  // `.parse()` проти shared-схеми. Документуємо як `ApiError` (той самий
+  // placeholder, що вже прийнятий для `/api/transcribe` 413/415, теж
+  // image/audio-magic-byte guard) — точна форма живе в
+  // `@sergeant/api-client` (`ImageValidationErrorBody`, hand-written, не
+  // з shared, саме тому що сервер тут нічого не `.parse()`-ить).
+  "/api/finyk/receipts/lookup": {
+    post: {
+      summary: "QR/ДПС lookup чека — draft БЕЗ запису в БД",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ReceiptLookupRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Чернетка чека, розпізнана ДПС XML.",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptDraftResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "404": {
+          description:
+            "DPS_RECEIPT_NOT_FOUND — чек ще не зʼявився в реєстрі ДПС.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "502": {
+          description: "DPS_UPSTREAM_ERROR | DPS_PARSE_ERROR.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "503": {
+          description: "DPS_TOKEN_MISSING | DPS_AUTH_ERROR.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/finyk/receipts/analyze": {
+    post: {
+      summary: "Vision-fallback аналіз фото чека — draft БЕЗ запису в БД",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ReceiptAnalyzeRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Чернетка чека (source:'vision', fiscalNum:null, confidence 0..1).",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptDraftResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "413": {
+          description:
+            "TOO_LARGE — НЕ канонічний ApiError envelope, див. коментар вище.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "415": {
+          description:
+            "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope, див. коментар вище.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "503": {
+          description:
+            "RECEIPT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/finyk/receipts": {
+    post: {
+      summary: "Зберегти чек (draft + category)",
+      description:
+        "Ідемпотентний: `201` — новий чек, `200` + `alreadyExists:true` — " +
+        "повторний скан (той самий fiscal_num, або той самий `clientScanId` " +
+        "для vision-чеків без fiscal_num).",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ReceiptSaveRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "alreadyExists:true — ідемпотентний повторний скан.",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptSaveResponse },
+          },
+        },
+        "201": {
+          description: "Новий чек створено.",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptSaveResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/finyk/receipts/{id}": {
+    get: {
+      summary: "Чек з позиціями для розгортки транзакції",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`receipts.id`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Чек з items[] + link (mono|manual|null).",
+          content: {
+            "application/json": { schema: namedSchemas.ReceiptGetResponse },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чужий чек АБО неіснуючий id (сервер не розрізняє).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── Масове ведення (/api/finyk/import/*) ──────────────
+  // Спека: `docs/work/specs/receipt-scan.md` § Фаза 2.
+  "/api/finyk/import/screenshot/analyze": {
+    post: {
+      summary: "Vision-розпізнавання скріна банкінгу — draft БЕЗ запису в БД",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: namedSchemas.ImportScreenshotAnalyzeRequest,
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "docType 'bank_screenshot'|'receipt'|'other' + rows[] (rows:[] для receipt/other).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ImportScreenshotAnalyzeResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "413": {
+          description:
+            "TOO_LARGE — НЕ канонічний ApiError envelope (той самий guard, що receipts/analyze).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "415": {
+          description:
+            "INVALID_BASE64 | TRUNCATED | MAGIC_MISMATCH — НЕ канонічний ApiError envelope.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+        "503": {
+          description:
+            "IMPORT_VISION_UNAVAILABLE — жоден vision-провайдер не сконфігурований.",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+  "/api/finyk/import/statement/preview": {
+    post: {
+      summary: "CSV-only парсинг банківської виписки — БЕЗ запису в БД",
+      description:
+        "Discriminated за `needsMapping`: `false` → `profile`+`rows`+`skipped`; " +
+        "`true` → `headers`+`sampleRows` для ручного column-mapper.",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: namedSchemas.ImportStatementPreviewRequest,
+          },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Автопрофіль (mono/privat24/custom) або needsMapping:true.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ImportStatementPreviewResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/finyk/import/commit": {
+    post: {
+      summary: "Commit вибраних rows → журнал import_batches + manual expenses",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ImportCommitRequest },
+        },
+      },
+      responses: {
+        "201": {
+          description:
+            "batchId + created/linked + skipped{monoMatched,duplicate}.",
+          content: {
+            "application/json": { schema: namedSchemas.ImportCommitResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/finyk/import/batches/{id}": {
+    get: {
+      summary: "Статус/підсумок батчу імпорту",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`import_batches.id`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description: "Batch зі статусом completed|undone + лічильники.",
+          content: {
+            "application/json": { schema: namedSchemas.ImportBatchGetResponse },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+    delete: {
+      summary: "Undo батчу — tombstone кожного created row",
+      description:
+        "Ідемпотентний: повторний виклик повертає `tombstoned:0`, той самий `200`.",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      parameters: [
+        {
+          name: "id",
+          in: "path",
+          required: true,
+          schema: { type: "integer", minimum: 1 },
+          description: "`import_batches.id`.",
+        },
+      ],
+      responses: {
+        "200": {
+          description:
+            "Batch зі статусом 'undone' + tombstoned (0 на повторний виклик).",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ImportBatchUndoResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чужий батч АБО неіснуючий id (сервер не розрізняє).",
+          content: { "application/json": { schema: namedSchemas.ApiError } },
+        },
+      },
+    },
+  },
+
   // ────────────────────── Waitlist (Phase 0 monetization) ───────────────────
   // Сервер монтує обидва префікси (`/api/waitlist` + `/api/v1/waitlist`), щоб
   // pricing-page CTA працював незалежно від стадії API-versioning shim-у.
@@ -713,6 +1497,63 @@ export const paths: ZodOpenApiPathsObject = {
             "Submitted (created=true) або уже був у списку (created=false)",
           content: {
             "application/json": { schema: namedSchemas.WaitlistSubmitResponse },
+          },
+        },
+        "400": validationError,
+        "429": {
+          description: "Too many requests — rate-limit перевищено.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+
+  // ────────────────────── In-app feedback ───────────────────────────────────
+  // Головний багрепорт-канал закритої бети. Анонімний, як і waitlist: вимагати
+  // акаунт саме від людини, яка прийшла поскаржитись, — найгірший момент для
+  // барʼєра. Обидва префікси документуємо однаково (сервер монтує обидва).
+  "/api/feedback": {
+    post: {
+      summary: "Надіслати in-app фідбек (анонімний)",
+      tags: ["feedback"],
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.FeedbackSubmit },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Збережено — `id` рядка у `feedback_entries`.",
+          content: {
+            "application/json": { schema: namedSchemas.FeedbackSubmitResponse },
+          },
+        },
+        "400": validationError,
+        "429": {
+          description: "Too many requests — rate-limit перевищено.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/v1/feedback": {
+    post: {
+      summary: "Надіслати in-app фідбек (v1 alias для /api/feedback)",
+      tags: ["feedback"],
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.FeedbackSubmit },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Збережено — `id` рядка у `feedback_entries`.",
+          content: {
+            "application/json": { schema: namedSchemas.FeedbackSubmitResponse },
           },
         },
         "400": validationError,
@@ -809,6 +1650,70 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/billing/providers": {
+    get: {
+      summary: "Payment-провайдери, доступні юзеру (кнопки на /pricing)",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "UA → увімкнені liqpay/plata; інші країни → stripe.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.BillingProvidersResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+  "/api/billing/cancel": {
+    post: {
+      summary:
+        "Скасувати Pro (власна кнопка; LiqPay/Plata без Customer Portal)",
+      description:
+        "Скасовує активну підписку через provider.cancelSubscription " +
+        "(LiqPay unsubscribe / Plata subscription/edit action=cancel). Доступ лишається до " +
+        "кінця оплаченого періоду (cancel_at_period_end; у `/api/billing/status` це " +
+        "`subscription.cancelAtPeriodEnd`). Повторний виклик на вже скасованій підписці " +
+        "ідемпотентний і провайдера не смикає.",
+      tags: ["monetization"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "Скасування підтверджено провайдером або вже було заплановане.",
+          content: {
+            "application/json": { schema: namedSchemas.BillingCancelResponse },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description:
+            "`NO_ACTIVE_SUBSCRIPTION`: жоден провайдер не має що скасовувати " +
+            "(немає підписки, founder-байпас або `provider='manual'`).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description:
+            "`PROVIDER_CANCEL_FAILED`: провайдер відмовив або не відповів; " +
+            "підписка лишається активною, можна повторити.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "Billing env is not configured.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
   "/api/billing/stripe-webhook": {
     post: {
       summary: "Stripe webhook delivery endpoint",
@@ -826,6 +1731,56 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
+  "/api/billing/liqpay-callback": {
+    post: {
+      summary: "LiqPay server callback (form data+signature, sha1)",
+      tags: ["monetization"],
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
+  "/api/billing/plata-charge": {
+    post: {
+      summary: "Plata/monopay charge webhook (JSON, X-Sign ECDSA)",
+      description:
+        "chargeUrl-делівері на кожне списання. Не пише у subscriptions " +
+        "напряму — лише тригерить звірку проти GET subscription/status.",
+      tags: ["monetization"],
+      requestParams: {
+        header: z.object({
+          "x-sign": z
+            .string()
+            .describe("monopay ECDSA signature over the raw request body."),
+        }),
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
+  "/api/billing/plata-status": {
+    post: {
+      summary: "Plata/monopay status webhook (JSON, X-Sign ECDSA)",
+      description:
+        "statusUrl-делівері на зміну стану підписки. Не пише у subscriptions " +
+        "напряму — лише тригерить звірку проти GET subscription/status.",
+      tags: ["monetization"],
+      requestParams: {
+        header: z.object({
+          "x-sign": z
+            .string()
+            .describe("monopay ECDSA signature over the raw request body."),
+        }),
+      },
+      responses: {
+        "200": okEmpty,
+        "400": validationError,
+      },
+    },
+  },
 
   // ────────────────────── Transcribe / Observability ────────────────────────
   "/api/transcribe": {
@@ -834,7 +1789,9 @@ export const paths: ZodOpenApiPathsObject = {
       description:
         "Body — сирий аудіо-блоб (`Content-Type: audio/webm | audio/ogg | audio/mp4 | …`), " +
         "ліміт 10 MB. Query визначає мову (auto-detect якщо порожньо) та prompt для " +
-        "доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше).",
+        "доменних термінів. Потребує активну сесію + сконфігурований GROQ_API_KEY (503 інакше). " +
+        "Query `module` (nutrition | fizruk | …) декларує модуль-виклик: для health-модулів " +
+        "без збереженої згоди на дані про здоровʼя — 403 HEALTH_CONSENT_REQUIRED до Groq і квоти.",
       tags: ["transcribe"],
       security: cookieOrBearer,
       requestParams: { query: namedSchemas.TranscribeQuery },
@@ -865,6 +1822,13 @@ export const paths: ZodOpenApiPathsObject = {
         },
         "400": validationError,
         "401": unauthorized,
+        "403": {
+          description:
+            "HEALTH_CONSENT_REQUIRED: `module=nutrition|fizruk` без згоди на дані про здоровʼя.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
         "413": {
           description: "Payload завеликий (>10 MB).",
           content: {
@@ -904,6 +1868,91 @@ export const paths: ZodOpenApiPathsObject = {
           description:
             "Accepted (завжди 204, незалежно від валідності payload).",
         },
+      },
+    },
+  },
+
+  // ────────────────────── /api/finyk/manual-expenses ──────────────────────
+  "/api/finyk/manual-expenses": {
+    post: {
+      summary: "Створити ручну (не-Mono) витрату",
+      description:
+        "`amount` у копійках; `date` (Kyiv day key) за замовчуванням — сьогодні за Києвом.",
+      tags: ["finyk"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.ManualExpenseCreate },
+        },
+      },
+      responses: {
+        "201": {
+          description: "Створена витрата.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.ManualExpenseCreateResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/csp-report ──────────────────────
+  "/api/csp-report": {
+    post: {
+      summary: "Приймач CSP-порушень від браузера",
+      description:
+        "Анонімний; ліміт 120/хв. Content-Type `application/csp-report`, `application/reports+json` або `application/json`. Відповідає 204.",
+      tags: ["observability"],
+      requestBody: {
+        content: {
+          "application/json": { schema: namedSchemas.CspReportBody },
+        },
+      },
+      responses: {
+        "204": { description: "Прийнято (тіло не повертається)." },
+      },
+    },
+  },
+
+  // ────────────────────── /api/email/unsubscribe ──────────────────────
+  "/api/email/unsubscribe": {
+    get: {
+      summary: "Відписка від листів за HMAC-токеном із футера",
+      description:
+        "Публічний лінк із листа: `?u=<userId>.<hmac>`. Повертає HTML-сторінку (успіх або «недійсне посилання»).",
+      tags: ["email"],
+      requestParams: { query: z.object({ u: z.string() }) },
+      responses: {
+        "200": {
+          description: "HTML-сторінка (успіх або невалідний токен).",
+          content: { "text/html": { schema: { type: "string" } } },
+        },
+        "503": { description: "Секрет підпису не налаштовано." },
+      },
+    },
+  },
+
+  // ────────────────────── /api/telegram/webhook ──────────────────────
+  "/api/telegram/webhook": {
+    post: {
+      summary: "Вебхук Telegram-бота вейтліста бети",
+      description:
+        "Викликає лише Telegram; автентифікація — заголовок `x-telegram-bot-api-secret-token`. Тіло — Telegram Update (не описується тут).",
+      tags: ["integrations"],
+      responses: {
+        "200": {
+          description: "Апдейт прийнято.",
+          content: {
+            "application/json": { schema: z.object({ ok: z.literal(true) }) },
+          },
+        },
+        "401": { description: "Невірний secret-token." },
+        "503": { description: "Вебхук не налаштовано." },
       },
     },
   },
@@ -952,6 +2001,391 @@ export const paths: ZodOpenApiPathsObject = {
             "text/plain": {
               schema: { type: "string" },
             },
+          },
+        },
+      },
+    },
+  },
+  // ────────────────────── Silpo MCP integration (walking-skeleton) ──────────
+  // Spec: `docs/work/specs/silpo-mcp-integration.md`. All routes
+  // gated by `requireSession()` + `SILPO_ENABLED` kill switch (503
+  // `SILPO_DISABLED` when off — shared across every path below).
+  "/api/silpo/connect": {
+    get: {
+      summary: "Розпочати OAuth-підключення до Silpo (302 redirect)",
+      description:
+        "NAVIGATION-ONLY — браузер редіректиться на Silpo consent screen. " +
+        "Не для fetch/XHR-виклику; `@sergeant/api-client` дає " +
+        "`silpoConnectUrl()` для `window.location.href`.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "302": { description: "Redirect до Silpo OAuth authorization URL." },
+        "401": unauthorized,
+        "429": {
+          description: "Rate-limit перевищено (rateLimitExpress).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description:
+            "SILPO_UPSTREAM_ERROR — не вдалося побудувати authorization URL (metadata discovery впав).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description:
+            "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING (redirect URI не сконфігуровано).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/callback": {
+    get: {
+      summary: "OAuth callback від Silpo (302 redirect на /settings)",
+      description:
+        "Server-only — браузер потрапляє сюди після Silpo consent screen, " +
+        "жоден клієнт не викликає цей шлях напряму.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "302": {
+          description:
+            "Redirect на `/settings?silpo=connected|error` (+ `reason` при помилці).",
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/disconnect": {
+    post: {
+      summary: "Відключити Silpo (mono-патерн — чеки/items survive)",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "`silpo_connection` видалено.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.SilpoDisconnectResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/wipe": {
+    post: {
+      summary:
+        "Повне видалення Silpo-даних (чеки → items → finyk_tx_receipt_links)",
+      description:
+        "Підтверджені `finyk_tx_splits` та pantry-events НІКОЛИ не чіпаються.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Видалено; `deletedReceipts` — лічильник.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoWipeResponse },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/sync-state": {
+    get: {
+      summary: "Статус Silpo-інтеграції + лічильники (Settings-картка)",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description:
+            "`status: 'disconnected'` — синтетичний стан (немає рядка `silpo_connection`).",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoSyncState },
+          },
+        },
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/sync": {
+    post: {
+      summary: "«Оновити чеки» — pull + normalize + match до транзакцій",
+      description:
+        "`status` у відповіді — стан ПІСЛЯ спроби синку (може стати " +
+        "`reauth_required`, якщо lazy-refresh відвалився посеред синку).",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Діагностичні лічильники pull/insert/match.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoSyncResult },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато синків поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/receipts": {
+    get: {
+      summary: "Cursor-paginated список чеків Silpo",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestParams: { query: namedSchemas.SilpoReceiptsQuery },
+      responses: {
+        "200": {
+          description: "Сторінка `SilpoReceiptSummaryDto[]` + nextCursor.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoReceiptsPage },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/receipts/{id}": {
+    get: {
+      summary: "Один чек Silpo — summary + line items",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestParams: {
+        path: z.object({
+          id: z.string().describe("`silpo_receipts.receipt_id`."),
+        }),
+      },
+      responses: {
+        "200": {
+          description: "Summary + масив items.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoReceiptDetailDto },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Чек не знайдено (не існує або належить іншому юзеру).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch).",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/cart/preview": {
+    post: {
+      summary: "Пошук товарів для кошика (search-only, не пише в кошик)",
+      description:
+        "Один result на кожен request-item, у порядку запиту (matched " +
+        "back по точному тексту `query`, не по індексу). `matches` — top " +
+        "candidate + до 2 альтернатив; `unmatched: true` — нуль придатних " +
+        "кандидатів. `lagerId` — опаковий токен, клієнт лише зберігає й " +
+        "повертає його в `/cart/apply`, ніколи не парсить.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.SilpoCartPreviewRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "`results[]` — по одному на request-item.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.SilpoCartPreviewResponse,
+            },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато preview-запитів поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/cart/apply": {
+    post: {
+      summary: "Додати вибрані товари в кошик Сільпо (confirm-before-write)",
+      description:
+        "Кожен `lagerId` декодується ДО будь-якого мережевого виклику — " +
+        "зіпсований токен дає 400 VALIDATION, ніколи не 502/503. Пише " +
+        "EXACTLY передані позиції (`addQuantity: false` — replace, не " +
+        "accumulate), відповідь = пост-write стан кошика (форма GET " +
+        "/api/silpo/cart).",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": { schema: namedSchemas.SilpoCartApplyRequest },
+        },
+      },
+      responses: {
+        "200": {
+          description: "Пост-write стан кошика.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoCartDto },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED — забагато apply-запитів поспіль.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+      },
+    },
+  },
+  "/api/silpo/cart": {
+    get: {
+      summary: "Поточний стан кошика Сільпо",
+      description:
+        "Порожній кошик (немає попереднього пошуку/замовлення) деградує до " +
+        "`{items: [], totalKop: 0, cartUrl: null}`, не помилки.",
+      tags: ["silpo"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Поточний кошик.",
+          content: {
+            "application/json": { schema: namedSchemas.SilpoCartDto },
+          },
+        },
+        "401": unauthorized,
+        "409": {
+          description: "SILPO_NOT_CONNECTED або SILPO_REAUTH_REQUIRED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "429": {
+          description: "SILPO_RATE_LIMITED.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "502": {
+          description: "SILPO_UPSTREAM_ERROR або SILPO_SCHEMA_DRIFT.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
+          },
+        },
+        "503": {
+          description: "SILPO_DISABLED (kill switch) або SILPO_CONFIG_MISSING.",
+          content: {
+            "application/json": { schema: namedSchemas.ApiError },
           },
         },
       },

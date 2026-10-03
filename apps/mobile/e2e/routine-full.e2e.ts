@@ -2,7 +2,7 @@
  * Routine — full sign-in → habit toggle → streak +1 → sign-out flow.
  *
  * One of the four "full" Detox suites that close the Exit dashboard
- * (`docs/architecture/platforms.md`). Runs end-to-end through the real
+ * (`docs/engineering/architecture/platforms.md`). Runs end-to-end through the real
  * Better Auth client against the mock fetch interceptor enabled by
  * `EXPO_PUBLIC_E2E_REAL_AUTH=1` (see
  * `apps/mobile/src/auth/e2eAuthMock.ts`).
@@ -42,8 +42,7 @@ async function readStreakText(): Promise<string> {
   const attrs = (await element(
     by.id("routine-calendar-streak-value"),
   ).getAttributes()) as
-    | { text?: string }
-    | { elements: Array<{ text?: string }> };
+    { text?: string } | { elements: Array<{ text?: string }> };
   if ("text" in attrs && typeof attrs.text === "string") return attrs.text;
   if ("elements" in attrs && attrs.elements[0]?.text) {
     return attrs.elements[0].text;

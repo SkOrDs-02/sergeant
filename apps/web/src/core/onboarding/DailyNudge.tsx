@@ -13,6 +13,7 @@ import {
   type NudgeDefinition,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { useHubBannerSlot } from "../hub/bannerBudget";
 
 const SNOOZE_DAYS = 7;
 
@@ -27,12 +28,15 @@ export function DailyNudge({
   onDismiss: () => void;
   onAction?: () => void;
 }) {
+  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 4; аналітика «показано» — лише коли є місце.
+  const hasSlot = useHubBannerSlot("dailyNudge");
   useEffect(() => {
+    if (!hasSlot) return;
     trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_SHOWN, {
       day: sessionDays,
       nudgeId: nudge.id,
     });
-  }, [nudge.id, sessionDays]);
+  }, [nudge.id, sessionDays, hasSlot]);
 
   const handlePrimary = useCallback(() => {
     dismissNudge(webKVStore, nudge.id);
@@ -66,20 +70,24 @@ export function DailyNudge({
     onDismiss();
   }, [nudge.id, sessionDays, onDismiss]);
 
+  if (!hasSlot) return null;
+
   return (
     <section
       className="relative bg-panel border border-brand-500/20 rounded-2xl p-4 shadow-card"
       aria-label="Щоденна порада"
     >
       <div className="flex items-start gap-3">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand flex items-center justify-center">
-          <Icon name="sparkle" size={18} />
+        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
+          <Icon name="sergeant" size={18} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-text leading-relaxed">{nudge.message}</p>
+          <p className="text-style-body text-text leading-relaxed">
+            {nudge.message}
+          </p>
           <div className="flex items-center gap-2 mt-2.5">
             {onAction && (
-              <Button variant="primary" size="xs" onClick={handlePrimary}>
+              <Button variant="solid" size="xs" onClick={handlePrimary}>
                 Спробувати
               </Button>
             )}
@@ -91,13 +99,13 @@ export function DailyNudge({
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   aria-label="Інші дії"
                 >
-                  <Icon name="more-horizontal" size={16} />
+                  <Icon name="more-horizontal" size="md" />
                 </button>
               }
               className="min-w-[200px]"
             >
               <PopoverItem
-                icon={<Icon name="clock" size={14} />}
+                icon={<Icon name="clock" size="sm" />}
                 onClick={handleSnooze}
               >
                 Нагадай за тиждень
@@ -113,7 +121,7 @@ export function DailyNudge({
           aria-label="Закрити"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
-          <Icon name="close" size={14} />
+          <Icon name="close" size="sm" />
         </Button>
       </div>
     </section>

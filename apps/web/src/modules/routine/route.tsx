@@ -10,14 +10,24 @@ const RoutineApp = lazyDefault(() => import("./RoutineApp"));
  * Lazy route entry for `/routine/*` (initiative 0006 Phase 5).
  */
 export function Component() {
-  const { goToHub, goToModuleSettings, openModule, pwaAction, clearPwaAction } =
-    useHubShell();
+  const {
+    goBackOrHub,
+    goToHub,
+    goToModuleSettings,
+    openModule,
+    pwaAction,
+    clearPwaAction,
+  } = useHubShell();
 
   return (
     <ModuleShell moduleId="routine">
-      <SuspenseWithMinDelay fallback={<ModulePageLoader module="routine" />}>
+      <SuspenseWithMinDelay
+        fallback={<ModulePageLoader module="routine" />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <RoutineApp
-          onBackToHub={goToHub}
+          onBackToHub={goBackOrHub}
+          onGoToHub={goToHub}
           onOpenSettings={() => goToModuleSettings("routine")}
           onOpenModule={openModule}
           pwaAction={pwaAction}

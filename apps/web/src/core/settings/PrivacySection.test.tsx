@@ -7,128 +7,578 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
 import type { UserPreferences } from "@shared/api";
-import type { UseAppLockReturn } from "../security/useAppLock";
 
-// --- Mocks -----------------------------------------------------------------
-//
-// The point of this suite is to lock in the audit-F16 fix: PrivacySection
-// must drive PIN state through the *user-scoped* `useAppLockContext` helpers
-// (`hasPin` / `disablePin`), never the bare `lockStorage` functions that
-// default to the `anon` partition. We therefore stub the context and assert
-// the right closures are invoked.
-
-const appLock: UseAppLockReturn = {
-  state: "idle",
-  startSetup: vi.fn(),
-  startChange: vi.fn(),
-  unlock: vi.fn().mockResolvedValue(true),
-  finishSetup: vi.fn(),
-  lock: vi.fn(),
-  savePin: vi.fn().mockResolvedValue(undefined),
-  hasPin: vi.fn().mockResolvedValue(false),
-  disablePin: vi.fn().mockResolvedValue(undefined),
-};
-vi.mock("../security/AppLockContext", () => ({
-  useAppLockContext: () => appLock,
+// --- Моки -------------------------------------------------------------------
+// Дефект #5 (CodeRabbit post-merge review PR #756): за замовчуванням
+// поводиться як реальний `writeMemoryEntries` у щасливому шляху (нічого не
+// кидає) — окремі тести можуть змусити його впасти через
+// `mockImplementationOnce`, щоб перевірити розбіжність "сервер очистив,
+// локальний запис впав".
+const { mockWriteMemoryEntries } = vi.hoisted(() => ({
+  mockWriteMemoryEntries: vi.fn(),
 }));
-
-const { mockUseFlag, mockSetFlag } = vi.hoisted(() => ({
-  mockUseFlag: vi.fn().mockReturnValue(false),
-  mockSetFlag: vi.fn(),
-}));
-vi.mock("../lib/featureFlags", () => ({
-  useFlag: mockUseFlag,
-  setFlag: mockSetFlag,
+vi.mock("../profile/memoryBank", () => ({
+  writeMemoryEntries: (entries: unknown) => mockWriteMemoryEntries(entries),
 }));
 
 vi.mock("@shared/api", () => {
-  // Inlined inside the factory — `vi.mock` is hoisted above module-level
-  // consts, so referencing `DEFAULT_PREFS` here would hit a TDZ error.
+  // Інлайновано прямо у фабриці — `vi.mock` хойститься вище
+  // module-level-констант, тож звернення тут до `DEFAULT_PREFS` впало б у
+  // TDZ-помилку.
   const prefs: UserPreferences = {
     analytics: true,
     aiMemory: true,
     pushNotifications: false,
+    sergeantNudges: false,
+    pushDailyCap: 2,
+    healthDataConsent: false,
+    activeModules: null,
+    hubPrefs: null,
     updatedAt: null,
   };
   return {
     meApi: {
       getPreferences: vi.fn().mockResolvedValue(prefs),
       updatePreferences: vi.fn().mockResolvedValue(prefs),
+      clearAiMemory: vi.fn().mockResolvedValue({ ok: true, deleted: 2 }),
     },
   };
 });
 
-// LegalLinks pulls in router-aware navigation we don't exercise here.
+// LegalLinks тягне router-aware навігацію, яку тут не тестуємо.
 vi.mock("../legal/LegalLinks", () => ({
   LegalLinks: () => null,
 }));
 
-import { PrivacySection } from "./PrivacySection";
+// Обидва вказівники на Профіль (Памʼять і Небезпечна зона) стоять під
+// `{shell ? … : null}`, тож без шелла вони не рендеряться взагалі — і доти
+// жоден тест їх не бачив. Мок дає рівно те, що вони з нього беруть.
+const { mockSetHubView } = vi.hoisted(() => ({ mockSetHubView: vi.fn() }));
+vi.mock("../app/HubShellContext", () => ({
+  useOptionalHubShell: () => ({ ui: { setHubView: mockSetHubView } }),
+}));
+
+// AiMemoryList ганяє власний React Query трафік (`/api/ai-memory/list`).
+// Цей набір — про per-user PIN scoping — монтування реального списку
+// змусило б додавати QueryClientProvider у КОЖЕН `render()` тут і
+// привʼязало б auth-audit regression-тест до неповʼязаної мережевої
+// поверхні. Власна поведінка списку покрита в `AiMemoryList.test.tsx`.
+vi.mock("./AiMemoryList", () => ({
+  AiMemoryList: () => null,
+}));
+
+import { meApi } from "@shared/api";
+import { ApiError } from "@sergeant/api-client";
+import {
+  __resetAnalyticsConsentForTests,
+  getAnalyticsConsent,
+  getAnalyticsDecision,
+} from "../observability/analyticsConsent";
+import { DEFAULT_PREFERENCES, PrivacySection } from "./PrivacySection";
+
+// Огляд 2026-09-04: PIN-блокування живе в `security/AppLockSettings`
+// (тести — `AppLockSettings.test.tsx`), серверна памʼять з очищенням — у
+// `profile/AiMemorySection` (тести там же). Тут лишились згоди.
+
+// PR-S2: до 2026-09-14 будь-яка помилка GET давала «Увійди в акаунт», тож
+// тести нижче обходились `new Error("401")` — рядок був декорацією, код його
+// не читав. Тепер причину розрізняють по `ApiError`, і гостьовий випадок
+// треба будувати чесно: інакше тест перевіряв би гілку `failure`, думаючи, що
+// перевіряє гостя.
+const unauthorized = () =>
+  new ApiError({
+    kind: "http",
+    status: 401,
+    message: "Unauthorized",
+    url: "/api/me/preferences",
+  });
 
 async function openSection() {
   const trigger = await screen.findByRole("button", {
-    name: /Конфіденційність/i,
+    name: /Дані та приватність/i,
   });
   fireEvent.click(trigger);
 }
 
-describe("PrivacySection — audit F16 (per-user PIN scoping)", () => {
+// L-20-фікс притягнув `useQueryClient()` прямо в PrivacySection
+// (інвалідація очищення памʼяті ШІ), тож кожному render-у тепер потрібен
+// справжній предок QueryClientProvider — голий `render(<PrivacySection />)`
+// кидає "No QueryClient set, use QueryClientProvider to set one". Дзеркалить
+// обгортку, яку `AiMemoryList.test.tsx` уже використовує з тієї ж причини.
+function renderSection() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  const utils = render(<PrivacySection />, { wrapper });
+  return { ...utils, queryClient };
+}
+
+describe("PrivacySection — preferences (analytics / aiMemory / healthDataConsent)", () => {
+  const basePrefs: UserPreferences = {
+    analytics: true,
+    aiMemory: true,
+    pushNotifications: false,
+    sergeantNudges: false,
+    pushDailyCap: 2,
+    healthDataConsent: false,
+    activeModules: null,
+    hubPrefs: null,
+    updatedAt: null,
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseFlag.mockReturnValue(false);
-    appLock.hasPin = vi.fn().mockResolvedValue(false);
-    appLock.disablePin = vi.fn().mockResolvedValue(undefined);
-    appLock.startSetup = vi.fn();
+    vi.mocked(meApi.getPreferences).mockResolvedValue({ ...basePrefs });
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({ ...basePrefs });
+    __resetAnalyticsConsentForTests();
+  });
+
+  afterEach(() => {
+    cleanup();
+    __resetAnalyticsConsentForTests();
+  });
+
+  it("loads and displays preferences from the API on mount", async () => {
+    renderSection();
+    await openSection();
+
+    await waitFor(() => expect(meApi.getPreferences).toHaveBeenCalledTimes(1));
+  });
+
+  it("L-3: does not assert a consent state before hydration, and the pre-hydration default is analytics:false", async () => {
+    // ПРИЧИНА: DEFAULT_PREFERENCES.analytics раніше було `true`, хоча
+    // сервер (dataRights.ts DEFAULT_PREFERENCES), analyticsConsent.ts
+    // ("DENY UNTIL HYDRATED") і DB DEFAULT (міграція 111) усі узгоджені на
+    // opt-in (false). Гість/офлайн-юзер, чий getPreferences() ще не
+    // відповів (або ніколи не відповість), бачив тумблер "Аналітика
+    // продукту" одразу ввімкненим — суперечність, яка стверджує згоду,
+    // якої нема. Перевіряємо і сам дефолт (кінцевий стан = false), і те,
+    // що до відповіді сервера немає жодного тумблера — ні ON, ні OFF.
+    //
+    // Finding #4 (2026-08-08 adversarial review): відрендерений тумблер
+    // нижче відображає те, чим викликано `resolveGetPreferences` — тобто
+    // server-мок, а НЕ `DEFAULT_PREFERENCES.analytics`. Loading-гейт
+    // кількома рядками вище означає, що дефолт ніколи не може просочитись
+    // у DOM чи `analyticsConsent` до завершення гідрації, тож константа
+    // перевіряється напряму, а не виводиться з виводу, який лишався б
+    // зеленим навіть якби дефолт відкотився назад у `true`.
+    let resolveGetPreferences!: (value: UserPreferences) => void;
+    const pending = new Promise<UserPreferences>((resolve) => {
+      resolveGetPreferences = resolve;
+    });
+    vi.mocked(meApi.getPreferences).mockReturnValue(pending);
+
+    renderSection();
+    await openSection();
+
+    // До гідрації секція показує явний loading-стан, а не тумблер, що
+    // мовчки бреше про згоду в той чи інший бік.
+    expect(
+      screen.queryByRole("switch", { name: /Аналітика продукту/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/Завантажую налаштування/i)).toBeInTheDocument();
+    expect(DEFAULT_PREFERENCES.analytics).toBe(false);
+
+    resolveGetPreferences({ ...basePrefs, analytics: false });
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    expect(analyticsToggle).not.toBeChecked();
+  });
+
+  it("L-9: shows a visible error banner when saving a preference fails after a successful load", async () => {
+    // ПРИЧИНА: банер помилки рендерився лише під умовою
+    // `!preferencesLoaded && preferencesError` — тобто ДО першого
+    // успішного завантаження. Помилка ЗБЕРЕЖЕННЯ (updatePreference)
+    // стається вже ПІСЛЯ того, як preferencesLoaded стало true, тож умова
+    // гейтила її назавжди: тумблер мовчки відкочувався до старого
+    // значення, а людина не бачила жодного сигналу, що клік не мав
+    // ефекту.
+    vi.mocked(meApi.updatePreferences).mockRejectedValue(new Error("500"));
+    renderSection();
+    await openSection();
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    expect(
+      await screen.findByText(/Не вдалося зберегти налаштування/i),
+    ).toBeInTheDocument();
+  });
+
+  it("finding #7: renders the save-error banner right next to the toggle group, before the AI-memory card", async () => {
+    // ПРИЧИНА: до цього фіксу банер стояв ПІСЛЯ картки AI-памʼяті, за три
+    // блоки від тумблерів, що фактично впали, — сигнал про помилку існував
+    // (L-9), але зорово губився під списком фактів ШІ.
+    vi.mocked(meApi.updatePreferences).mockRejectedValue(new Error("500"));
+    const { container } = renderSection();
+    await openSection();
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+    await screen.findByText(/Не вдалося зберегти налаштування/i);
+
+    // Огляд 2026-09-04: картки AI-памʼяті тут більше немає (переїхала в
+    // Профіль) — банер має стояти одразу ПІСЛЯ останнього тумблера групи
+    // і ПЕРЕД правовими посиланнями/підказкою про Профіль.
+    const text = container.textContent ?? "";
+    const bannerIndex = text.indexOf("Не вдалося зберегти налаштування");
+    // 2026-09-29: тумблер — це згода на передачу даних про здоровʼя в AI
+    // (сервер гейтить чат, коуча, дайджест, фото їжі й памʼять).
+    const lastToggleIndex = text.indexOf("Дані про здоровʼя для Сержанта");
+    expect(bannerIndex).toBeGreaterThan(-1);
+    expect(lastToggleIndex).toBeGreaterThan(-1);
+    expect(bannerIndex).toBeGreaterThan(lastToggleIndex);
+    const banner = screen.getByRole("alert");
+    expect(
+      banner.previousElementSibling?.querySelector('[role="switch"]'),
+    ).not.toBeNull();
+  });
+
+  it("toggles analytics preference and calls updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      analytics: false,
+    });
+    renderSection();
+    await openSection();
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({
+        analytics: false,
+      }),
+    );
+  });
+
+  it("caches the fetched analytics preference into the analyticsConsent module on mount", async () => {
+    vi.mocked(meApi.getPreferences).mockResolvedValue({
+      ...basePrefs,
+      analytics: false,
+    });
+    renderSection();
+    await openSection();
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+  });
+
+  it("updates the cached analytics consent after toggling", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      analytics: false,
+    });
+    renderSection();
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+  });
+
+  it("тумблер aiMemory лише гідрує кеш аналітики з сервера і НЕ записує рішення на пристрої", async () => {
+    renderSection();
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+    // Гідрація з `analytics: true` вже записала «granted»; скидаємо, щоб
+    // перевірити саме шлях зміни ІНШОГО ключа.
+    __resetAnalyticsConsentForTests();
+    expect(getAnalyticsDecision()).toBeNull();
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      aiMemory: false,
+      analytics: false,
+    });
+
+    const aiMemoryToggle = await screen.findByRole("switch", {
+      name: /Памʼять для Сержанта/i,
+    });
+    fireEvent.click(aiMemoryToggle);
+
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(false));
+    // `setAnalyticsConsent` записав би «denied» — банер згоди не повернувся б.
+    expect(getAnalyticsDecision()).toBeNull();
+  });
+
+  it("sets analytics consent optimistically while the update request is still pending, and reverts it on failure (CodeRabbit PR #627)", async () => {
+    let rejectUpdate!: (err: unknown) => void;
+    const pending = new Promise<UserPreferences>((_resolve, reject) => {
+      rejectUpdate = reject;
+    });
+    vi.mocked(meApi.updatePreferences).mockReturnValue(pending);
+
+    renderSection();
+    await openSection();
+    await waitFor(() => expect(getAnalyticsConsent()).toBe(true));
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    // PUT ще летить, але синхронний consent-гейт уже має відображати вибір
+    // юзера — це саме те вікно, в яке може встигнути race-нути dismiss
+    // `InsightCard`.
+    expect(getAnalyticsConsent()).toBe(false);
+    expect(meApi.updatePreferences).toHaveBeenCalledTimes(1);
+
+    // Запит зрештою падає (обрив мережі, 5xx) — оптимістичне значення
+    // consent має відкотитись разом із самим тумблером. Банер
+    // `preferencesError` теж стає видимим у цей момент (див. окремий тест
+    // L-9 вище, що перевіряє це напряму); завдання цього тесту вужче —
+    // під тестом саме відкочений `checked`-стан тумблера і кеш
+    // `analyticsConsent`, так само як і в уже наявному тесті "handles
+    // failure without crashing" вище.
+    rejectUpdate(new Error("500"));
+    await waitFor(() => expect(analyticsToggle).toBeChecked());
+    expect(getAnalyticsConsent()).toBe(true);
+  });
+
+  it("toggles aiMemory preference and calls updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      aiMemory: false,
+    });
+    renderSection();
+    await openSection();
+
+    const aiMemoryToggle = await screen.findByRole("switch", {
+      name: /Памʼять для Сержанта/i,
+    });
+    fireEvent.click(aiMemoryToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({ aiMemory: false }),
+    );
+  });
+
+  it("defaults healthDataConsent off and toggles it via updatePreferences", async () => {
+    vi.mocked(meApi.updatePreferences).mockResolvedValue({
+      ...basePrefs,
+      healthDataConsent: true,
+    });
+    renderSection();
+    await openSection();
+
+    const consentToggle = await screen.findByRole("switch", {
+      name: /Дані про здоровʼя для Сержанта/i,
+    });
+    expect(consentToggle).not.toBeChecked();
+    fireEvent.click(consentToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledWith({
+        healthDataConsent: true,
+      }),
+    );
+  });
+
+  it("does not duplicate the notification toggle from Notifications settings", async () => {
+    renderSection();
+    await openSection();
+    expect(
+      screen.queryByRole("switch", { name: /Системні сповіщення/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText(/окремому розділі/i)).toBeInTheDocument();
+  });
+
+  it("calls updatePreferences and handles failure without crashing", async () => {
+    vi.mocked(meApi.updatePreferences).mockRejectedValue(new Error("500"));
+    renderSection();
+    await openSection();
+
+    const analyticsToggle = await screen.findByRole("switch", {
+      name: /Аналітика продукту/i,
+    });
+    fireEvent.click(analyticsToggle);
+
+    await waitFor(() =>
+      expect(meApi.updatePreferences).toHaveBeenCalledTimes(1),
+    );
+    // Компонент лишається змонтованим після збою (без падіння)
+    expect(analyticsToggle).toBeInTheDocument();
+  });
+
+  it("shows an error when getPreferences API call fails", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(unauthorized());
+    renderSection();
+    await openSection();
+
+    await waitFor(() =>
+      expect(screen.getByText(/Увійди в акаунт/i)).toBeInTheDocument(),
+    );
+  });
+
+  it("finding #9: offers a real retry after a failed initial preferences load", async () => {
+    // ПРИЧИНА: раніше провалене ПЕРШЕ завантаження рендерило порожнечу —
+    // ні тумблерів (коректно, L-3), ні способу вийти з цього стану, крім
+    // виходу зі сторінки Налаштувань і повернення. Тепер поруч із
+    // повідомленням є кнопка, що повторно кличе той самий фетч.
+    vi.mocked(meApi.getPreferences).mockRejectedValueOnce(unauthorized());
+    renderSection();
+    await openSection();
+
+    await screen.findByText(/Увійди в акаунт/i);
+    expect(
+      screen.queryByRole("switch", { name: /Аналітика продукту/i }),
+    ).not.toBeInTheDocument();
+
+    vi.mocked(meApi.getPreferences).mockResolvedValueOnce({ ...basePrefs });
+    fireEvent.click(screen.getByRole("button", { name: "Спробувати ще" }));
+
+    await waitFor(() => expect(meApi.getPreferences).toHaveBeenCalledTimes(2));
+    expect(
+      await screen.findByRole("switch", { name: /Аналітика продукту/i }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+  });
+
+  // PR-S2. Гостю спокійний `role="status"` правильний: для нього це не
+  // поломка, а очікуваний стан (огляд 2026-09-04). Але доти ТА САМА подача
+  // діставалась і офлайну, і 500-ці — тобто справжню поломку показували як
+  // норму, ще й стверджуючи неправду про стан акаунта.
+  it("PR-S2: офлайн читається як поломка, а не як «ти не залогінений»", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(
+      new ApiError({
+        kind: "network",
+        message: "Failed to fetch",
+        url: "/api/me/preferences",
+      }),
+    );
+    renderSection();
+    await openSection();
+
+    const message = await screen.findByRole("alert");
+    expect(message).toHaveTextContent(/Немає звʼязку з сервером/i);
+    expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+    // Вихід зі стану лишається: кнопка повтору не зникла разом зі зміною подачі.
+    expect(
+      screen.getByRole("button", { name: "Спробувати ще" }),
+    ).toBeInTheDocument();
+  });
+
+  it("PR-S2: 500 теж читається як поломка", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        status: 500,
+        message: "Internal Server Error",
+        url: "/api/me/preferences",
+      }),
+    );
+    renderSection();
+    await openSection();
+
+    const message = await screen.findByRole("alert");
+    expect(message).toHaveTextContent(/Не вдалося завантажити налаштування/i);
+    expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+  });
+
+  it("PR-S2: гість лишається спокійним status, а не alert", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(unauthorized());
+    renderSection();
+    await openSection();
+
+    await screen.findByText(/Увійди в акаунт/i);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+// V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
+// §5): «Згода та дані» і вкладений «Що ШІ про тебе памʼятає» переведено на
+// спільний примітив `SettingsSubGroup` замість саморобних `<h3>`/`<h4>`
+// з `text-style-label`. Обидва тепер `<h3 class="text-style-overline">` —
+// heading-order лишається h2→h3→h3 (без розриву рівня), детальне
+// обґрунтування — коментар над `<SettingsSubGroup title="Згода та дані">`
+// у `PrivacySection.tsx`.
+describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
     cleanup();
   });
 
-  it("enabling the lock checks the user-scoped partition (appLock.hasPin), not anon", async () => {
-    render(<PrivacySection />);
+  it("«Згода та дані» рендериться як SettingsSubGroup (h3 + text-style-overline), а не саморобний h3 з text-style-label", async () => {
+    renderSection();
     await openSection();
 
-    const toggle = screen.getByRole("switch", { name: /Блокування додатку/i });
-    fireEvent.click(toggle);
-
-    // hasPin() (scoped to user?.id) drives the setup decision — and with no
-    // PIN on file the setup flow opens.
-    await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(appLock.startSetup).toHaveBeenCalledTimes(1));
-    expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", true);
+    const heading = await screen.findByText("Згода та дані");
+    expect(heading.tagName).toBe("H3");
+    expect(heading).toHaveClass("text-style-overline");
+    expect(heading).not.toHaveClass("text-style-label");
   });
 
-  it("does NOT open setup when the signed-in user already has a PIN", async () => {
-    appLock.hasPin = vi.fn().mockResolvedValue(true);
-    render(<PrivacySection />);
-    await openSection();
+  // PR-S4 (рішення founder-а 2026-09-14). Обидва блоки приїхали з «Резервної
+  // копії»: питання «що ви про мене знаєте і куди воно дівається» людина
+  // носить у приватність, а в резервну копію йде по файл. Доти розділ
+  // приватності відповідав на своє питання наполовину.
+  describe("PR-S4: декларації про дані живуть тут, а не при експорті", () => {
+    it("несе декларацію субпроцесорів разом зі згодами", async () => {
+      renderSection();
+      await openSection();
+      expect(screen.getByText("Куди їдуть дані для AI")).toBeInTheDocument();
+      expect(screen.getByText(/Anthropic/)).toBeInTheDocument();
+      // Фото — саме той виняток, заради якого декларація й потрібна: воно
+      // їде цілим, і замовчати це означало б обіцяти маскування, якого
+      // немає.
+      expect(screen.getByText(/Фото – виняток/)).toBeInTheDocument();
+    });
 
-    fireEvent.click(
-      screen.getByRole("switch", { name: /Блокування додатку/i }),
-    );
+    it("вказує, де видалити акаунт, і НЕ дублює саму дію", async () => {
+      // Рішення founder-а 2026-09-14. Дія існує в `profile/DangerZoneSection`
+      // і лишається там: дублювати незворотну дію в два місця означало б два
+      // шляхи до неї й два місця, де може розʼїхатись підтвердження. Тут —
+      // тільки вказівник, бо шукають її саме на цій поличці.
+      renderSection();
+      await openSection();
 
-    await waitFor(() => expect(appLock.hasPin).toHaveBeenCalledTimes(1));
-    expect(appLock.startSetup).not.toHaveBeenCalled();
-  });
+      expect(
+        screen.getByText(/Видалити акаунт разом з усіма даними/),
+      ).toBeInTheDocument();
+      const open = screen.getByRole("button", { name: /Небезпечна зона/ });
+      fireEvent.click(open);
+      // Вказівник, який нікуди не веде, гірший за його відсутність.
+      expect(mockSetHubView).toHaveBeenCalledWith("profile");
+      // Ключова половина тесту: саме дія сюди НЕ переїхала.
+      expect(
+        screen.queryByRole("button", { name: /^Видалити акаунт$/ }),
+      ).not.toBeInTheDocument();
+    });
 
-  it("disabling the lock clears the user-scoped credential (appLock.disablePin)", async () => {
-    // Flag already on → the toggle renders checked; clicking it disables.
-    mockUseFlag.mockReturnValue(true);
-    render(<PrivacySection />);
-    await openSection();
-
-    fireEvent.click(
-      screen.getByRole("switch", { name: /Блокування додатку/i }),
-    );
-
-    // Confirm the destructive action in the modal.
-    const confirm = await screen.findByRole("button", { name: "Вимкнути" });
-    fireEvent.click(confirm);
-
-    await waitFor(() => expect(appLock.disablePin).toHaveBeenCalledTimes(1));
-    expect(mockSetFlag).toHaveBeenCalledWith("app-lock-enabled", false);
+    it("несе sunset-обіцянку в продукті, а не лише в умовах використання", async () => {
+      // Рішення founder-а #6 — попередження за 30 днів + вікно на експорт.
+      // Обіцянка має жити в продукті: у розділі юридичних текстів її ніхто
+      // не прочитає в момент, коли вона важлива.
+      renderSection();
+      await openSection();
+      expect(
+        screen.getByText(/Якщо Sergeant колись закриється/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/щонайменше за 30 днів/)).toBeInTheDocument();
+      // Друга половина обіцянки — чесне застереження про банк (рішення #2).
+      // Без нього «твої дані твої» обіцяло б більше, ніж продукт виконує.
+      expect(screen.getByText(/не відновить ніхто/)).toBeInTheDocument();
+    });
   });
 });

@@ -9,7 +9,9 @@ import {
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "./Icon";
 import { Button } from "./Button";
-import { useFocusTrap } from "@shared/hooks/useFocusTrap";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { hapticPattern } from "@shared/lib/adapters/haptic";
 import { messages } from "@shared/i18n/uk";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -25,19 +27,10 @@ import { messages } from "@shared/i18n/uk";
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export type CelebrationType =
-  | "achievement"
-  | "goal"
-  | "levelUp"
-  | "streak"
-  | "success"
-  | "confetti";
+  "achievement" | "goal" | "levelUp" | "streak" | "success" | "confetti";
 
 export type ModuleTheme =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "default";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "default";
 
 interface ConfettiParticle {
   id: number;
@@ -51,19 +44,23 @@ interface ConfettiParticle {
 }
 
 const MODULE_COLORS: Record<ModuleTheme, string[]> = {
-  finyk: ["#10B981", "#14B8A6", "#059669", "#34D399"],
+  finyk: ["#0F766E", "#14B8A6", "#0D9488", "#2DD4BF"], // teal family (2026-07: was emerald)
   fizruk: ["#14B8A6", "#0D9488", "#2DD4BF", "#0F766E"],
-  routine: ["#F97066", "#FB923C", "#F59E0B", "#EF4444"],
+  routine: ["#EB7691", "#FB923C", "#F59E0B", "#EF4444"],
   nutrition: ["#84CC16", "#A3E635", "#65A30D", "#BEF264"],
   default: ["#10B981", "#F97066", "#84CC16", "#14B8A6"],
 };
 
 const MODULE_GRADIENTS: Record<ModuleTheme, string> = {
-  finyk: "from-emerald-500/20 to-teal-500/10",
-  fizruk: "from-teal-500/20 to-cyan-500/10",
-  routine: "from-coral-500/20 to-orange-500/10",
+  finyk: "from-teal-600/20 to-teal-400/10",
+  fizruk: "from-cyan-500/20 to-cyan-400/10",
+  routine: "from-rose-500/20 to-orange-500/10",
   nutrition: "from-lime-500/20 to-green-500/10",
-  default: "from-brand-500/20 to-emerald-500/10",
+  // 2026-07: was `from-brand-500/20 to-emerald-500/10`, a stray
+  // migration artefact — after the stone rebrand `brand-500` is a grey,
+  // so it paired a grey→green cross-temperature gradient. Normalised to
+  // a single-hue teal pair, matching every other module row above.
+  default: "from-teal-500/20 to-teal-400/10",
 };
 
 export interface CelebrationModalProps {
@@ -115,7 +112,7 @@ export const CelebrationModal = memo(function CelebrationModal({
   icon,
   progress,
   rewards,
-  actionLabel = "Чудово!",
+  actionLabel = messages.actions.done,
   onAction,
   autoCloseMs,
   confettiIntensity = "medium",
@@ -136,10 +133,10 @@ export const CelebrationModal = memo(function CelebrationModal({
           x: 50 + (Math.random() - 0.5) * 80,
           y: 40 + (Math.random() - 0.5) * 60,
           rotation: Math.random() * 360,
-          color: colors[Math.floor(Math.random() * colors.length)]!,
+          color: colors[Math.floor(Math.random() * colors.length)] ?? "#10B981",
           size: 6 + Math.random() * 10,
           delay: Math.random() * 0.4,
-          shape: shapes[Math.floor(Math.random() * shapes.length)]!,
+          shape: shapes[Math.floor(Math.random() * shapes.length)] ?? "circle",
         });
       }
       return newParticles;
@@ -148,8 +145,9 @@ export const CelebrationModal = memo(function CelebrationModal({
   );
 
   // Generate confetti on open
-  useEffect(() => {
-    if (!open) return;
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
     setIsExiting(false);
 
     const counts = { low: 15, medium: 30, high: 50 };
@@ -161,12 +159,21 @@ export const CelebrationModal = memo(function CelebrationModal({
           : counts.low;
 
     setParticles(generateParticles(count));
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
-    // Haptic feedback
-    if (navigator.vibrate) {
-      navigator.vibrate(type === "confetti" ? [50, 30, 50] : [30]);
+  // Initialized to false so the effect detects the open=true mount as a
+  // transition and fires haptics — matching the original useEffect pattern.
+  const prevOpenForVibrateRef = useRef(false);
+  useEffect(() => {
+    if (open && !prevOpenForVibrateRef.current) {
+      // `hapticPattern` (not raw `navigator.vibrate`) — respects
+      // `prefers-reduced-motion` internally (C6 web-audit).
+      hapticPattern(type === "confetti" ? [50, 30, 50] : [30]);
     }
-  }, [open, type, confettiIntensity, generateParticles]);
+    prevOpenForVibrateRef.current = open;
+  }, [open, type]);
 
   const handleClose = useCallback(() => {
     setIsExiting(true);
@@ -176,11 +183,15 @@ export const CelebrationModal = memo(function CelebrationModal({
     }, 200);
   }, [onClose]);
 
-  // Focus trap for accessibility — traps Tab within modal and handles Escape
-  const modalRef = useFocusTrap<HTMLDivElement>(
-    open && !isExiting,
-    handleClose,
-  );
+  // Focus trap for accessibility — traps Tab within modal, inerts the
+  // background for the screen-reader virtual cursor, and handles Escape.
+  const modalRef = useRef<HTMLDivElement>(null);
+  const trapOpen = open && !isExiting;
+  useDialogFocusTrap(trapOpen, modalRef, {
+    onEscape: handleClose,
+    inertBackground: true,
+  });
+  useBodyScrollLock(trapOpen);
 
   // Auto-close timer. Pauses while focus or hover lives inside the
   // modal — see F18 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`.
@@ -241,11 +252,32 @@ export const CelebrationModal = memo(function CelebrationModal({
   const renderIcon = () => {
     if (icon) return icon;
 
+    /* icon-size, not type */
     const iconMap: Record<CelebrationType, ReactNode> = {
-      achievement: <span className="text-5xl animate-celebration-pop">🏆</span>,
-      goal: <span className="text-5xl animate-celebration-pop">🎯</span>,
-      levelUp: <span className="text-5xl animate-celebration-pop">⬆️</span>,
-      streak: <span className="text-5xl animate-streak-glow">🔥</span>,
+      // 2026-08-03: emoji-гліфи замінені на іконки дизайн-системи в тому
+      // самому кільці, що вже мав `success`. Emoji тут рендерився системним
+      // шрифтом — на Windows «🏆» приходив плоским, на Android іншого
+      // відтінку, і модалка святкування виглядала по-різному на кожній ОС.
+      achievement: (
+        <div className="w-16 h-16 rounded-full bg-warning/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="award" size={32} className="text-warning-strong" />
+        </div>
+      ),
+      goal: (
+        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="target" size={32} className="text-brand-strong" />
+        </div>
+      ),
+      levelUp: (
+        <div className="w-16 h-16 rounded-full bg-info/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="arrow-up" size={32} className="text-info" />
+        </div>
+      ),
+      streak: (
+        <div className="w-16 h-16 rounded-full bg-danger/20 flex items-center justify-center animate-streak-glow">
+          <Icon name="flame" size={32} className="text-danger-strong" />
+        </div>
+      ),
       success: (
         <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center animate-success-ring">
           <Icon
@@ -256,7 +288,12 @@ export const CelebrationModal = memo(function CelebrationModal({
           />
         </div>
       ),
-      confetti: <span className="text-6xl animate-celebration-pop">🎉</span>,
+      /* icon-size, not type */
+      confetti: (
+        <div className="w-16 h-16 rounded-full bg-brand/20 flex items-center justify-center animate-celebration-pop">
+          <Icon name="sparkles" size={32} className="text-brand-strong" />
+        </div>
+      ),
     };
     return iconMap[type];
   };
@@ -266,7 +303,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     return (
       <div className="flex items-baseline justify-center gap-1.5">
-        <span className="text-4xl font-black text-text tabular-nums animate-tick-up">
+        <span className="text-style-display font-black text-text tabular-nums animate-tick-up">
           {value}
         </span>
         {unit && <span className="text-style-title text-muted">{unit}</span>}
@@ -284,10 +321,10 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     return (
       <div className="w-full max-w-[200px] mx-auto">
-        <div className="h-3 bg-panel-hi rounded-full overflow-hidden">
+        <div className="h-3 bg-panelHi rounded-full overflow-hidden">
           <div
             className={cn(
-              "h-full rounded-full transition-all duration-700 ease-out",
+              "h-full rounded-full transition-all duration-slowest ease-standard",
               theme === "finyk" && "bg-finyk",
               theme === "fizruk" && "bg-fizruk",
               theme === "routine" && "bg-routine",
@@ -297,7 +334,7 @@ export const CelebrationModal = memo(function CelebrationModal({
             style={{ width: `${percent}%` }}
           />
         </div>
-        <p className="text-xs text-muted text-center mt-1.5">
+        <p className="text-style-caption text-muted text-center mt-1.5">
           {progress.current} / {progress.max}
         </p>
       </div>
@@ -314,11 +351,12 @@ export const CelebrationModal = memo(function CelebrationModal({
             key={idx}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-              "bg-panel-hi border border-line",
+              "bg-panelHi border border-line",
               "animate-module-card",
             )}
             style={{ animationDelay: `${idx * 100 + 200}ms` }}
           >
+            {/* icon-size, not type */}
             <span className="text-lg">{reward.icon}</span>
             <span className="text-style-label text-text">{reward.label}</span>
           </div>
@@ -407,7 +445,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
           {/* Description */}
           {description && (
-            <p className="text-sm text-muted text-center text-pretty max-w-[280px]">
+            <p className="text-style-body text-muted text-center text-pretty max-w-[280px]">
               {description}
             </p>
           )}
@@ -420,7 +458,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
           {/* Action button */}
           <Button
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={handleAction}
             className={cn(
@@ -491,7 +529,7 @@ export function useCelebration() {
         value,
         unit,
         theme,
-        description: "Ціль досягнуто!",
+        description: messages.celebration.goalReached,
         autoCloseMs: 5500,
       });
     },
@@ -506,8 +544,7 @@ export function useCelebration() {
     ) => {
       celebrate({
         type: "levelUp",
-        title: `Рівень ${level}!`,
-        description: "Ти стаєш сильнішим!",
+        title: messages.celebration.levelUp,
         value: level,
         unit: "рівень",
         progress,
@@ -522,10 +559,9 @@ export function useCelebration() {
     (days: number, message?: string) => {
       celebrate({
         type: "streak",
-        title: message || `${days} днів поспіль!`,
+        title: message || messages.celebration.streakDays,
         value: days,
         unit: "днів",
-        description: days >= 30 ? "Ти справжня легенда!" : "Так тримати!",
         autoCloseMs: 5000,
       });
     },
@@ -581,15 +617,24 @@ export interface MiniSuccessProps {
 
 export const MiniSuccess = memo(function MiniSuccess({
   show,
-  message = "Готово!",
+  message = messages.actions.done,
   onComplete,
   duration = 2000,
 }: MiniSuccessProps) {
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
-    if (!show) return;
+  // Initialized to false so the render-phase check correctly detects the
+  // initial show=true case and sets visible=true synchronously.
+  const [prevShow, setPrevShow] = useState(false);
+  if (show && !prevShow) {
+    setPrevShow(true);
     setVisible(true);
+  } else if (!show && prevShow) {
+    setPrevShow(false);
+  }
+
+  useEffect(() => {
+    if (!visible) return;
 
     const timer = setTimeout(() => {
       setVisible(false);
@@ -597,7 +642,7 @@ export const MiniSuccess = memo(function MiniSuccess({
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [show, duration, onComplete]);
+  }, [visible, duration, onComplete]);
 
   if (!visible) return null;
 
@@ -618,7 +663,7 @@ export const MiniSuccess = memo(function MiniSuccess({
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/20 animate-success-ring">
           <Icon
             name="check"
-            size={12}
+            size="xs"
             strokeWidth={3}
             className="animate-check-draw"
           />

@@ -1,7 +1,7 @@
 /**
  * React hook that boots the SQLite read path for mobile Фізрук.
  *
- * PR #029a of `docs/planning/storage-roadmap.md` (mobile parity for
+ * PR #029a of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (mobile parity for
  * web PR #029). When the `feature.fizruk.sqlite_v2.read_sqlite` flag
  * is on, this hook runs `bootFizrukSqliteReadPath()` once after mount
  * so subsequent reads in `useFizrukWorkouts` / `useExerciseCatalog` /

@@ -118,6 +118,54 @@ describe("WorkoutTemplatesSection", () => {
     expect(screen.getByText(/Порядок \(1\)/)).toBeInTheDocument();
   });
 
+  it("saves edits to an existing template", () => {
+    const templates = [
+      { id: "t1", name: "Edit Me", exerciseIds: ["bench"], groups: [] },
+    ] as unknown as WorkoutTemplate[];
+    const props = baseProps(templates);
+    render(wrap(<WorkoutTemplatesSection {...props} />));
+
+    fireEvent.click(screen.getByText("Змінити"));
+    fireEvent.change(screen.getByLabelText("Назва шаблону"), {
+      target: { value: "Edited" },
+    });
+    fireEvent.click(screen.getByText("Зберегти"));
+
+    expect(props.updateTemplate).toHaveBeenCalledWith("t1", {
+      name: "Edited",
+      exerciseIds: ["bench"],
+      groups: [],
+    });
+  });
+
+  it("uses the default template name when a new template name is blank", () => {
+    const props = baseProps();
+    render(wrap(<WorkoutTemplatesSection {...props} />));
+
+    fireEvent.click(screen.getByText("+ Новий шаблон"));
+    fireEvent.click(screen.getByText("Жим лежачи"));
+    fireEvent.click(screen.getByText("Зберегти"));
+
+    expect(props.addTemplate).toHaveBeenCalledWith("Мій шаблон", ["bench"], {
+      groups: [],
+    });
+  });
+
+  it("does not add the same exercise twice and shows the empty pick-list state", () => {
+    const props = baseProps();
+    render(wrap(<WorkoutTemplatesSection {...props} />));
+
+    fireEvent.click(screen.getByText("+ Новий шаблон"));
+    fireEvent.click(screen.getByText("Жим лежачи"));
+    fireEvent.click(screen.getAllByText("Жим лежачи")[0]!);
+    expect(screen.getByText(/Порядок \(1\)/)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Пошук вправи для шаблону"), {
+      target: { value: "немає збігу" },
+    });
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
+  });
+
   it("reorders and removes exercises in the editor", () => {
     const props = baseProps();
     render(wrap(<WorkoutTemplatesSection {...props} />));
@@ -139,7 +187,7 @@ describe("WorkoutTemplatesSection", () => {
     fireEvent.click(screen.getByText("Жим лежачи"));
     fireEvent.click(screen.getByText("Присідання"));
     // Enter superset select mode.
-    fireEvent.click(screen.getByText("⊕ Суперсет"));
+    fireEvent.click(screen.getByText("Суперсет"));
     // Select both items.
     const checkboxes = screen
       .getAllByRole("button")
@@ -150,6 +198,28 @@ describe("WorkoutTemplatesSection", () => {
     fireEvent.click(screen.getByText(/Суперсет \(2\/3\)/));
     // Superset pills ("СС") appear on the grouped order-list items.
     expect(screen.getAllByText("СС").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("creates and removes a circuit group from selected exercises", () => {
+    const props = baseProps();
+    render(wrap(<WorkoutTemplatesSection {...props} />));
+    fireEvent.click(screen.getByText("+ Новий шаблон"));
+    fireEvent.click(screen.getByText("Жим лежачи"));
+    fireEvent.click(screen.getByText("Присідання"));
+    fireEvent.click(screen.getByText("Суперсет"));
+    const checkboxes = screen
+      .getAllByRole("button")
+      .filter((b) => b.className.includes("w-5 h-5"));
+    fireEvent.click(checkboxes[0]!);
+    fireEvent.click(checkboxes[1]!);
+
+    fireEvent.click(screen.getByText(/Коло \(2\/3\)/));
+    expect(screen.getAllByText("Коло").length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Прибрати з групи" })[0]!,
+    );
+    expect(screen.queryByText("Коло")).not.toBeInTheDocument();
   });
 
   it("cancels the editor", () => {
@@ -166,13 +236,27 @@ describe("WorkoutTemplatesSection", () => {
     ] as unknown as WorkoutTemplate[];
     const props = baseProps(templates);
     render(wrap(<WorkoutTemplatesSection {...props} />));
-    // The danger ✕ delete button on the template row.
-    const deleteBtn = screen
-      .getAllByRole("button")
-      .find((b) => b.textContent === "✕")!;
+    const deleteBtn = screen.getByRole("button", {
+      name: "Видалити шаблон Bye",
+    });
     fireEvent.click(deleteBtn);
     // ConfirmDialog appears.
     fireEvent.click(screen.getByText("Видалити"));
     expect(props.removeTemplate).toHaveBeenCalledWith("t1");
+  });
+
+  it("cancels template deletion without removing it", () => {
+    const templates = [
+      { id: "t1", name: "Keep", exerciseIds: ["bench"], groups: [] },
+    ] as unknown as WorkoutTemplate[];
+    const props = baseProps(templates);
+    render(wrap(<WorkoutTemplatesSection {...props} />));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Видалити шаблон Keep" }),
+    );
+    fireEvent.click(screen.getByText("Скасувати"));
+
+    expect(props.removeTemplate).not.toHaveBeenCalled();
   });
 });

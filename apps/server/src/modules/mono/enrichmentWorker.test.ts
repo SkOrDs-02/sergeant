@@ -372,7 +372,41 @@ describe("runEnrichmentTick — SQL invariants", () => {
     expect(pickSql).toMatch(/FOR UPDATE SKIP LOCKED/);
     expect(pickSql).toMatch(/available_at <= NOW\(\)/);
     expect(pickSql).toMatch(/status IN \('pending', 'failed'\)/);
-    expect(pool!.query.mock.calls[0]![1]).toEqual([7]);
+    // Reaper-гілка: застряглі processing-row-и старші за stale-поріг ($2).
+    expect(pickSql).toMatch(/status = 'processing'/);
+    expect(pickSql).toMatch(/updated_at < NOW\(\)/);
+    // Дефолтний поріг без MCC-буфера — 15 хв.
+    expect(pool!.query.mock.calls[0]![1]).toEqual([7, 15 * 60 * 1000]);
+  });
+
+  it("staleProcessingMs override передається у PICK-параметри", async () => {
+    const pool = makePool() as unknown as MockPool;
+    pool.query.mockResolvedValueOnce({ rows: [] });
+
+    await runEnrichmentTick(pool as unknown as Pool, {
+      batchSize: 5,
+      staleProcessingMs: 60_000,
+    });
+
+    expect(pool!.query.mock.calls[0]![1]).toEqual([5, 60_000]);
+  });
+
+  it("при MCC_BATCH_HOURLY_ENABLED дефолтний stale-поріг = 4 × MCC_BATCH_INTERVAL_MS (буферні row-и легітимно сидять у processing до 3 batch-тіків)", async () => {
+    const envFlags = env as unknown as { MCC_BATCH_INTERVAL_MS: number };
+    env.MCC_BATCH_HOURLY_ENABLED = true;
+    const prevInterval = envFlags.MCC_BATCH_INTERVAL_MS;
+    envFlags.MCC_BATCH_INTERVAL_MS = 3_600_000;
+    try {
+      const pool = makePool() as unknown as MockPool;
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      await runEnrichmentTick(pool as unknown as Pool, { batchSize: 5 });
+
+      expect(pool!.query.mock.calls[0]![1]).toEqual([5, 4 * 3_600_000]);
+    } finally {
+      env.MCC_BATCH_HOURLY_ENABLED = false;
+      envFlags.MCC_BATCH_INTERVAL_MS = prevInterval;
+    }
   });
 });
 
@@ -482,6 +516,23 @@ describe("startMonoEnrichmentWorker — non-overlapping ticks + graceful stop", 
 
     vi.useRealTimers();
   });
+
+  it("clears scheduled tick and sample timers when stopped while idle", async () => {
+    const pool = makePool() as unknown as MockPool;
+    pool.query.mockResolvedValue({ rows: [] });
+
+    const worker = startMonoEnrichmentWorker(pool as unknown as Pool, {
+      intervalMs: 1_000,
+    });
+
+    await vi.advanceTimersByTimeAsync(0);
+    await worker.stop();
+
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(pool.query).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
 });
 
 // ── PR-18: hourly batch fallback enqueue branch ────────────────────
@@ -584,5 +635,44 @@ describe("runEnrichmentTick — MCC_BATCH_HOURLY_ENABLED enqueue branch", () => 
     expect(result.ok).toBe(1);
     expect(categorize).toHaveBeenCalledTimes(1);
     expect(currentBufferSize()).toBe(0);
+  });
+
+  it("при переповненому buffer — drops enqueue і fallback-иться на legacy categorize", async () => {
+    env.MCC_BATCH_HOURLY_ENABLED = true;
+    env.MCC_BATCH_MAX_SIZE = 0;
+    try {
+      const pool = makePool() as unknown as MockPool;
+      pool.query.mockResolvedValueOnce({
+        rows: [
+          { id: 1, user_id: "u1", mono_tx_id: "tx_overflow", attempts: 0 },
+        ],
+      });
+      pool.query.mockResolvedValueOnce({
+        rows: [{ description: "overflow shop", amount: -100, mcc: 1234 }],
+      });
+      pool.query.mockResolvedValueOnce({ rowCount: 1 });
+      pool.query.mockResolvedValueOnce({ rowCount: 1 });
+
+      categorize.mockResolvedValueOnce({
+        category: "other",
+        confidence: 0.2,
+      });
+
+      const result = await runEnrichmentTick(pool as unknown as Pool, {
+        categorize,
+      });
+
+      expect(result.buffered).toBe(0);
+      expect(result.ok).toBe(1);
+      expect(categorize).toHaveBeenCalledWith({
+        description: "overflow shop",
+        amount: -100,
+        mcc: 1234,
+      });
+      expect(currentBufferSize()).toBe(0);
+    } finally {
+      env.MCC_BATCH_HOURLY_ENABLED = false;
+      env.MCC_BATCH_MAX_SIZE = 100;
+    }
   });
 });

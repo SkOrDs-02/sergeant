@@ -2,10 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: прямо з `uk.privacy`, а не з `uk` — `AppLock` це eager-поверхня
+// (замок мусить бути на екрані до будь-якого роуту), і через один
+// `messages.privacy.lock` вона тягнула весь каталог. Гейт —
+// `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
+import { privacyMessages } from "@shared/i18n/uk.privacy";
 import { type LockState } from "./useAppLock";
 
-const m = messages.privacy.lock;
+const m = privacyMessages.lock;
 
 // PIN length constraints
 const PIN_MIN = 4;
@@ -99,7 +104,7 @@ function PinPad({
       {error && (
         <p
           role="alert"
-          className="text-sm text-danger-strong dark:text-danger text-center mt-2"
+          className="text-style-body text-danger-strong dark:text-danger text-center mt-2"
         >
           {error}
         </p>
@@ -145,7 +150,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
   if (step === "enter") {
     return (
       <div className="flex flex-col items-center gap-2 w-full">
-        <p className="text-sm text-muted">{m.setupSubtitle}</p>
+        <p className="text-style-body text-muted">{m.setupSubtitle}</p>
         <PinPad
           value={first}
           onChange={setFirst}
@@ -154,7 +159,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
           focusOnMount
         />
         <Button
-          variant="primary"
+          variant="solid"
           size="md"
           className="w-full mt-2"
           disabled={first.length < PIN_MIN}
@@ -171,7 +176,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
-      <p className="text-sm text-muted">{m.confirmSubtitle}</p>
+      <p className="text-style-body text-muted">{m.confirmSubtitle}</p>
       <PinPad
         value={second}
         onChange={setSecond}
@@ -180,7 +185,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
         focusOnMount
       />
       <Button
-        variant="primary"
+        variant="solid"
         size="md"
         className="w-full mt-2"
         disabled={second.length < PIN_MIN}
@@ -198,6 +203,13 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
         }}
       >
         {m.back}
+      </Button>
+      {/* Audit finding L-6/#5: the confirm step used to have no touch
+          route out — "Confirm" or "Back" only, so a user two taps into
+          setup/change had to go Back-then-Cancel, or reach for Escape
+          (keyboard-only, unavailable on touch). */}
+      <Button variant="ghost" size="sm" onClick={onCancel}>
+        {messages.actions.cancel}
       </Button>
     </div>
   );
@@ -235,7 +247,7 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
 
   return (
     <div className="flex flex-col items-center gap-2 w-full">
-      <p className="text-sm text-muted">{m.unlockSubtitle}</p>
+      <p className="text-style-body text-muted">{m.unlockSubtitle}</p>
       <PinPad
         value={pin}
         onChange={handlePinChange}
@@ -244,7 +256,7 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
         focusOnMount
       />
       <Button
-        variant="primary"
+        variant="solid"
         size="md"
         className="w-full mt-2"
         disabled={pin.length < PIN_MIN || busy}
@@ -252,7 +264,9 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
       >
         {m.open}
       </Button>
-      <p className="text-xs text-subtle text-center mt-2">{m.recoveryHint}</p>
+      <p className="text-style-caption text-subtle text-center mt-2">
+        {m.recoveryHint}
+      </p>
     </div>
   );
 }
@@ -263,7 +277,17 @@ export interface AppLockProps {
   state: LockState;
   onUnlock: (pin: string) => Promise<boolean>;
   onSetupDone: () => void;
+  /** Cancel the initial (lock-not-yet-enabled) setup flow. */
   onSetupCancel: () => void;
+  /**
+   * Cancel the "change PIN" flow. MUST be a distinct handler from
+   * `onSetupCancel` (audit L-6): the old PIN is still valid in storage and
+   * the lock is already enabled, so cancelling a change is just "close the
+   * dialog" — routing it through `onSetupCancel` used to also disable the
+   * lock, leaving the user thinking nothing changed while protection had
+   * actually turned off.
+   */
+  onChangeCancel: () => void;
   /** Persist a new PIN, scoped to the current user (audit F16). */
   onSavePin: (pin: string) => Promise<void>;
 }
@@ -273,14 +297,19 @@ export function AppLock({
   onUnlock,
   onSetupDone,
   onSetupCancel,
+  onChangeCancel,
   onSavePin,
 }: AppLockProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const visible = state === "locked" || state === "setup" || state === "change";
+  // "change" і "setup" скасовуються по-різному (audit L-6) — change лишає
+  // блокування увімкненим і стару PIN недоторканою, setup-скасування вимикає
+  // блокування, бо його ще не було. Обираємо правильний handler один раз.
+  const cancelHandler = state === "change" ? onChangeCancel : onSetupCancel;
 
   // ESC intentionally disabled on locked — user cannot bypass with keyboard.
   useDialogFocusTrap(visible, panelRef, {
-    onEscape: state === "locked" ? undefined : onSetupCancel,
+    onEscape: state === "locked" ? undefined : cancelHandler,
     inertBackground: true,
   });
 
@@ -295,7 +324,7 @@ export function AppLock({
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
+      className="fixed inset-0 z-modal flex items-center justify-center p-6 bg-bg/95 backdrop-blur-md motion-safe:animate-fade-in"
       role="presentation"
     >
       <div
@@ -321,7 +350,7 @@ export function AppLock({
         ) : (
           <PinSetupFlow
             onDone={onSetupDone}
-            onCancel={onSetupCancel}
+            onCancel={cancelHandler}
             onSave={onSavePin}
           />
         )}

@@ -1,7 +1,9 @@
 import {
+  BillingCancelResponseSchema,
   BillingCheckoutRequestSchema,
   BillingCheckoutResponseSchema,
   BillingPortalResponseSchema,
+  BillingProvidersResponseSchema,
   BillingStatusResponseSchema,
   z,
 } from "@sergeant/shared";
@@ -12,6 +14,9 @@ export const BillingCheckoutRequestBodySchema = BillingCheckoutRequestSchema;
 export const BillingCheckoutResponseBodySchema = BillingCheckoutResponseSchema;
 export const BillingStatusResponseBodySchema = BillingStatusResponseSchema;
 export const BillingPortalResponseBodySchema = BillingPortalResponseSchema;
+export const BillingCancelResponseBodySchema = BillingCancelResponseSchema;
+export const BillingProvidersResponseBodySchema =
+  BillingProvidersResponseSchema;
 
 export type BillingCheckoutRequest = z.infer<
   typeof BillingCheckoutRequestBodySchema
@@ -22,8 +27,16 @@ export type BillingCheckoutResponse = z.infer<
 export type BillingStatusResponse = z.infer<
   typeof BillingStatusResponseBodySchema
 >;
+/** Знімок доступу: стан free/trial/pro/grace, фічі реєстру, тижневі лічильники. */
+export type BillingAccess = BillingStatusResponse["access"];
 export type BillingPortalResponse = z.infer<
   typeof BillingPortalResponseBodySchema
+>;
+export type BillingCancelResponse = z.infer<
+  typeof BillingCancelResponseBodySchema
+>;
+export type BillingProvidersResponse = z.infer<
+  typeof BillingProvidersResponseBodySchema
 >;
 
 export interface BillingEndpoints {
@@ -37,6 +50,12 @@ export interface BillingEndpoints {
   createPortal: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<BillingPortalResponse>;
+  cancel: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingCancelResponse>;
+  providers: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingProvidersResponse>;
 }
 
 export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
@@ -56,6 +75,16 @@ export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
         signal,
       });
       return BillingPortalResponseBodySchema.parse(raw);
+    },
+    cancel: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/billing/cancel", undefined, {
+        signal,
+      });
+      return BillingCancelResponseBodySchema.parse(raw);
+    },
+    providers: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/billing/providers", { signal });
+      return BillingProvidersResponseBodySchema.parse(raw);
     },
   };
 }

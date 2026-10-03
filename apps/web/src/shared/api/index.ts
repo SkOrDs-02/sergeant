@@ -16,6 +16,7 @@ import { createApiClient } from "@sergeant/api-client";
 import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
 import { getBearerToken } from "@shared/lib/api/bearerToken";
 import { publishServerBuildId } from "./serverBuildIdBus";
+import { publishAiTier } from "./aiTierBus";
 
 export const apiClient = createApiClient({
   baseUrl: apiUrl(""),
@@ -32,9 +33,12 @@ export const apiClient = createApiClient({
   // `X-Server-Build-Id`. We forward observations into the SW auto-update
   // controller through `serverBuildIdBus`; the SW controller is the only
   // subscriber today, but the indirection keeps the api-client agnostic.
+  // Model-routing 2026-07 — chat/coach responses also carry `X-AI-Tier`
+  // (Pro tiered degradation); forwarded into `aiTierBus` for `useAiTier()`.
   onResponseHeaders: (headers) => {
     const buildId = headers.get("X-Server-Build-Id");
     if (buildId) publishServerBuildId(buildId);
+    publishAiTier(headers.get("X-AI-Tier"));
   },
 });
 
@@ -47,14 +51,20 @@ export const foodSearchApi = apiClient.foodSearch;
 export const monoWebhookApi = apiClient.monoWebhook;
 export const privatApi = apiClient.privat;
 export const waitlistApi = apiClient.waitlist;
+export const feedbackApi = apiClient.feedback;
 export const billingApi = apiClient.billing;
 export const meApi = apiClient.me;
 export const weeklyDigestApi = apiClient.weeklyDigest;
 export const transcribeApi = apiClient.transcribe;
-export const webVitalsApi = apiClient.webVitals;
+export const silpoApi = apiClient.silpo;
 
 // Errors, types, HTTP primitives
-export { ApiError, isApiError, createHttpClient } from "@sergeant/api-client";
+export {
+  ApiError,
+  isApiError,
+  createHttpClient,
+  silpoConnectUrl,
+} from "@sergeant/api-client";
 export type {
   ApiClient,
   ApiClientConfig,
@@ -84,13 +94,13 @@ export type {
   MonoAccountDto,
   MonoConnectionStatus,
   MonoJar,
+  MonoJarDto,
   MonoSyncState,
   MonoTransactionDto,
   MonoTransactionsPage,
   MonoWebhookEndpoints,
   NutritionBackupDownloadResponse,
   NutritionBackupUploadResponse,
-  NutritionDayHintResponse,
   NutritionDayMeal,
   NutritionDayPlan,
   NutritionDayPlanResponse,
@@ -101,6 +111,7 @@ export type {
   NutritionPhotoIngredient,
   NutritionPhotoPortion,
   NutritionPhotoResponse,
+  NutritionPhotoItem,
   NutritionPhotoResult,
   NutritionRecipe,
   NutritionRecipesResponse,
@@ -126,4 +137,36 @@ export type {
   WeeklyDigestResponse,
   UserPreferences,
   UserPreferencesPatch,
+  UserProfilePayload,
+  UserProfileResponse,
+  SilpoCartApplyRequest,
+  SilpoCartDto,
+  SilpoCartItemDto,
+  SilpoCartMatchDto,
+  SilpoCartPreviewItem,
+  SilpoCartPreviewQueryDto,
+  SilpoCartPreviewRequest,
+  SilpoCartPreviewResponse,
+  SilpoCartSelection,
+  SilpoConnectionStatus,
+  SilpoDisconnectResponse,
+  SilpoEndpoints,
+  SilpoPantryClaimMode,
+  SilpoPantryClaimRequest,
+  SilpoPantryClaimResponse,
+  SilpoPantryReleaseRequest,
+  SilpoPantryReleaseResponse,
+  SilpoReceiptChannel,
+  SilpoReceiptDetailDto,
+  SilpoReceiptItemDto,
+  SilpoReceiptsListParams,
+  SilpoReceiptsPage,
+  SilpoReceiptSummaryDto,
+  SilpoSettingsRequest,
+  SilpoSettingsResponse,
+  SilpoSyncResult,
+  SilpoSyncState,
+  SilpoRelinkResponse,
+  SilpoUnlinkResponse,
+  SilpoWipeResponse,
 } from "@sergeant/api-client";

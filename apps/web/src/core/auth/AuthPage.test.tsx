@@ -14,7 +14,10 @@ import { MemoryRouter } from "react-router-dom";
  *
  * - client-side zod валідація (порожні / невалідні поля → inline помилки)
  * - happy path login → toast "Вхід виконано"
- * - happy path register → celebration achievement
+ * - happy path register → `register()` викликається з правильними значеннями
+ *   (мертвий `useCelebration` тут прибрано аудитом O1 2026-09-11 — тригер
+ *   у `RegisterForm` рендерився в іншому інстансі хука в `AuthPage`, тож
+ *   святкування не показувалось НІКОЛИ)
  * - server-помилка через `authError` (не дублюється form.serverError)
  * - перемикач режиму (login ↔ register) скидає поля
  *
@@ -56,15 +59,6 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
-const achievementMock = vi.fn();
-vi.mock("@shared/components/ui/CelebrationModal", () => ({
-  useCelebration: () => ({
-    achievement: achievementMock,
-    CelebrationComponent: null,
-  }),
-  CelebrationModal: () => null,
-}));
-
 import { AuthPage } from "./AuthPage";
 
 beforeEach(() => {
@@ -75,7 +69,6 @@ beforeEach(() => {
   requestPasswordResetMock.mockReset();
   setAuthErrorMock.mockReset();
   toastSuccessMock.mockReset();
-  achievementMock.mockReset();
   authErrorState = null;
 });
 
@@ -151,7 +144,7 @@ describe("AuthPage — login mode", () => {
 
   it("does NOT toast success when login() returns false", async () => {
     loginMock.mockResolvedValue(false);
-    authErrorState = "Невірний пароль";
+    authErrorState = "Неправильний пароль";
     render(
       <MemoryRouter>
         <AuthPage />
@@ -175,7 +168,7 @@ describe("AuthPage — login mode", () => {
     expect(
       screen
         .getAllByRole("alert")
-        .some((el) => el.textContent?.includes("Невірний пароль")),
+        .some((el) => el.textContent?.includes("Неправильний пароль")),
     ).toBe(true);
   });
 });
@@ -231,9 +224,6 @@ describe("AuthPage — register mode", () => {
         "bob",
       );
     });
-    await waitFor(() => {
-      expect(achievementMock).toHaveBeenCalled();
-    });
   });
 
   it("uses provided name when filled", async () => {
@@ -246,7 +236,7 @@ describe("AuthPage — register mode", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "Боб" },
     });
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -318,7 +308,7 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Немає акаунту/ }));
 
-    const name = screen.getByLabelText("Ім'я") as HTMLInputElement;
+    const name = screen.getByLabelText("Імʼя") as HTMLInputElement;
     const email = screen.getByLabelText("Email") as HTMLInputElement;
     const password = screen.getByLabelText("Пароль") as HTMLInputElement;
 
@@ -347,7 +337,7 @@ describe("AuthPage — UX polish (autoFocus / password toggle / a11y)", () => {
     expect(password.type).toBe("password");
   });
 
-  it("aria-describedby з'являється лише після помилки валідації", async () => {
+  it("aria-describedby зʼявляється лише після помилки валідації", async () => {
     render(
       <MemoryRouter>
         <AuthPage />
@@ -502,5 +492,71 @@ describe("AuthPage — forgot password (UX roast 2026-Q2 A14)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("AuthPage — прапорець соцвходу", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("за замовчуванням показує Google, але не пропонує неналаштований Apple", () => {
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Увійти через Google/ }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeNull();
+  });
+
+  it("показує Apple лише за явного production-прапорця", () => {
+    vi.stubEnv("VITE_APPLE_LOGIN_ENABLED", "true");
+
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeTruthy();
+  });
+
+  it("VITE_SOCIAL_LOGIN_ENABLED=false ховає кнопки разом із роздільником", () => {
+    // Бета живе на власному домені, а `redirect_uri` будується з єдиного
+    // `BETTER_AUTH_URL` — Google повернув би тестера на прод. Роздільник
+    // «або» мусить зникнути разом із кнопками, інакше веде в нікуди.
+    vi.stubEnv("VITE_SOCIAL_LOGIN_ENABLED", "false");
+
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /Увійти через Google/ }),
+    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeNull();
+    expect(screen.queryByText("або")).toBeNull();
+    // Вхід поштою лишається — це весь сенс вправи.
+    expect(screen.queryByRole("button", { name: /^Увійти$/ })).toBeTruthy();
+  });
+
+  it("будь-яке інше значення лишає кнопки — вимикає лише рядок «false»", () => {
+    // Opt-out, а не opt-in: одруківка в конфігу не має мовчки знімати
+    // соцвхід із прода.
+    vi.stubEnv("VITE_SOCIAL_LOGIN_ENABLED", "true");
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.queryByRole("button", { name: /Увійти через Google/ }),
+    ).toBeTruthy();
   });
 });

@@ -227,4 +227,119 @@ describe("useWebScanner", () => {
       ).toHaveBeenCalled(),
     );
   });
+
+  it("falls through to zxing when BarcodeDetector reports no wanted formats", async () => {
+    const stream = makeStream();
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      mediaDevices: { getUserMedia },
+    });
+    // BarcodeDetector only supports QR — no ean/upc/code128 overlap
+    class NoFormatDetector {
+      static getSupportedFormats = vi
+        .fn()
+        .mockResolvedValue(["qr_code", "aztec"]);
+      detect = vi.fn().mockResolvedValue([]);
+    }
+    (window as { BarcodeDetector?: unknown }).BarcodeDetector =
+      NoFormatDetector as unknown;
+    decodeFromStreamMock.mockResolvedValue({ stop: vi.fn() });
+
+    const onDetected = vi.fn();
+    const { result } = renderHook(() =>
+      useWebScanner({ active: true, onDetected }),
+    );
+    act(() => {
+      result.current.videoRef.current = {
+        srcObject: null,
+        readyState: 2,
+        videoWidth: 640,
+        play: vi.fn().mockResolvedValue(undefined),
+      } as unknown as HTMLVideoElement;
+    });
+
+    // Should fall through to zxing when BarcodeDetector lacks product formats
+    await waitFor(() => expect(decodeFromStreamMock).toHaveBeenCalled());
+  });
+
+  it("falls through to zxing when BarcodeDetector.getSupportedFormats throws", async () => {
+    const stream = makeStream();
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      mediaDevices: { getUserMedia },
+    });
+    class ThrowingDetector {
+      static getSupportedFormats = vi
+        .fn()
+        .mockRejectedValue(new Error("not supported"));
+      detect = vi.fn();
+    }
+    (window as { BarcodeDetector?: unknown }).BarcodeDetector =
+      ThrowingDetector as unknown;
+    decodeFromStreamMock.mockResolvedValue({ stop: vi.fn() });
+
+    const onDetected = vi.fn();
+    const { result } = renderHook(() =>
+      useWebScanner({ active: true, onDetected }),
+    );
+    act(() => {
+      result.current.videoRef.current = {
+        srcObject: null,
+        readyState: 2,
+        videoWidth: 640,
+        play: vi.fn().mockResolvedValue(undefined),
+      } as unknown as HTMLVideoElement;
+    });
+
+    await waitFor(() => expect(decodeFromStreamMock).toHaveBeenCalled());
+  });
+
+  it("BarcodeDetector consecutive errors (≥5) fall back to zxing", async () => {
+    const stream = makeStream();
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      mediaDevices: { getUserMedia },
+    });
+
+    const detect = vi.fn().mockImplementation(() => {
+      return Promise.reject(new Error("detect failed"));
+    });
+    class ErrorDetector {
+      static getSupportedFormats = vi.fn().mockResolvedValue(["ean_13"]);
+      detect = detect;
+    }
+    (window as { BarcodeDetector?: unknown }).BarcodeDetector =
+      ErrorDetector as unknown;
+    decodeFromStreamMock.mockResolvedValue({ stop: vi.fn() });
+
+    // Drive rAF synchronously to tick through the error loop
+    let rafCount = 0;
+    vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(
+      (cb: FrameRequestCallback) => {
+        if (rafCount++ < 8) queueMicrotask(() => cb(performance.now()));
+        return rafCount;
+      },
+    );
+    vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
+    // Ensure each tick passes the 150 ms throttle guard
+    vi.spyOn(performance, "now").mockImplementation(() => rafCount * 200);
+
+    const onDetected = vi.fn();
+    const { result } = renderHook(() =>
+      useWebScanner({ active: true, onDetected }),
+    );
+    act(() => {
+      result.current.videoRef.current = {
+        srcObject: null,
+        readyState: 2,
+        videoWidth: 640,
+        play: vi.fn().mockResolvedValue(undefined),
+      } as unknown as HTMLVideoElement;
+    });
+
+    await waitFor(() => expect(decodeFromStreamMock).toHaveBeenCalled());
+  });
 });

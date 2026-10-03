@@ -36,7 +36,7 @@ const UA_WORDS = [
   "вісімдесят",
   "сто",
   "двадцять",
-  "п'ять",
+  "пʼять",
   "тисяча",
   "двісті",
   "сорок",
@@ -151,7 +151,7 @@ describe("shared/utils/speechParsers – property", () => {
   });
 
   it("normalizeUaNumbers: output length is bounded by (and typically shorter than) input", () => {
-    // Word-forms like "сто двадцять п'ять" (15 chars) collapse to "125"
+    // Word-forms like "сто двадцять пʼять" (15 chars) collapse to "125"
     // (3 chars). The output must never be *longer* than the input when
     // measured by character count, because substitution only replaces
     // word runs with shorter digit strings.

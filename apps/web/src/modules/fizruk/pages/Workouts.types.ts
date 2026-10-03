@@ -15,11 +15,12 @@ export type WorkoutsView = "home" | "catalog" | "log" | "templates";
  * passed across both sheets without re-deriving the shape twice.
  */
 export interface FinishFlashState extends WorkoutFinishSummary {
-  step: "wellbeing" | "summary";
+  step: "wellbeing" | "injury" | "summary";
   collapsed: boolean;
   workoutId: string;
   energy: number | null;
   mood: number | null;
+  injurySites: string[];
   savedWellbeing?: { energy?: number | null; mood?: number | null } | null;
 }
 

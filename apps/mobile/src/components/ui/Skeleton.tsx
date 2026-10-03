@@ -30,7 +30,7 @@
  */
 
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -93,7 +93,11 @@ function useReduceMotion(): boolean {
 }
 
 function useShimmer(): Animated.Value {
-  const translateX = useRef(new Animated.Value(-SCREEN_WIDTH)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [translateX] = useState(() => new Animated.Value(-SCREEN_WIDTH));
   const reduceMotion = useReduceMotion();
 
   useEffect(() => {
@@ -118,7 +122,8 @@ function useShimmer(): Animated.Value {
 }
 
 function usePulse(): Animated.AnimatedInterpolation<number> | 1 {
-  const progress = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` — see useShimmer above for rationale.
+  const [progress] = useState(() => new Animated.Value(0));
   const reduceMotion = useReduceMotion();
 
   useEffect(() => {

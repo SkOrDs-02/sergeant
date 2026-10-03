@@ -6,10 +6,8 @@
  * ad-hoc dialogs cleaned up in pr-plan card E2 can reuse one canonical
  * assertion instead of re-implementing the wiring checks per callsite.
  *
- * Companion to the `sergeant-design/no-bare-fixed-inset-modal` ESLint
- * rule (audit `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`
- * § F2): the lint rule guards the *static* `fixed inset-0` className /
- * `role`-attribute heuristic; this helper asserts the *runtime* DOM the
+ * Historical audit context: `docs/audits/2026-05-13-web-frontend-ergonomics-roast.md`
+ * § F2. This helper asserts the *runtime* DOM the
  * dialog actually renders.
  *
  * Asserts, on the passed dialog element:

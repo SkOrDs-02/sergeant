@@ -43,6 +43,7 @@ vi.mock("../hooks/useExerciseCatalog", () => ({
 vi.mock("../hooks/useWorkouts", () => ({
   useWorkouts: vi.fn(() => ({
     workouts: [],
+    loaded: true,
   })),
 }));
 
@@ -58,7 +59,7 @@ afterEach(() => {
 describe("Exercise page — no exerciseId", () => {
   it("renders an error card when exerciseId is empty string", () => {
     render(<Exercise exerciseId="" onNavigate={mockNavigate} />);
-    expect(screen.getByText("Невірний ID вправи")).toBeInTheDocument();
+    expect(screen.getByText("Неправильний ID вправи")).toBeInTheDocument();
   });
 });
 

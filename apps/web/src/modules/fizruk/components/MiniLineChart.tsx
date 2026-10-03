@@ -1,9 +1,35 @@
+import { useRef, useMemo } from "react";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import {
+  seriesExtent,
+  pointStep,
+  xAt,
+  linearY,
+  clampToDomain,
+  buildLinePath,
+  buildAreaPath,
+  type ChartPoint,
+} from "@shared/charts";
+import { useChartScrub } from "@shared/hooks";
+import { ChartScrubOverlay, ChartGoalLine } from "@shared/components/charts";
+// Один форматер на модуль — інакше «Тіло» друкує «82,5 кг», а «Прогрес»
+// «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
+import { fmt, fmtLoose } from "../lib/numberFmt";
 
 export interface MiniLineChartDataPoint {
   value: number | null | undefined;
   label: string;
 }
+
+/**
+ * Which direction of the footer delta counts as an improvement.
+ * Mirrors `TrendDeltaDirection` in `../pages/Body/CollapsibleTrendCard` —
+ * kept as an independent local union (rather than a cross-import from
+ * `pages/` into `components/`) to avoid an upward module dependency; the
+ * two are structurally identical by convention, not by shared type.
+ */
+export type MiniLineChartDeltaDirection =
+  "up-is-good" | "down-is-good" | "neutral";
 
 interface MappedPoint {
   x: number;
@@ -17,6 +43,17 @@ interface MiniLineChartProps {
   unit: string;
   color: string;
   metricLabel?: string;
+  /**
+   * #2 — optional reference/goal value (e.g. target weight, TDEE).
+   * Rendered as a dashed goal line with a "Ціль" label.
+   */
+  goalValue?: number;
+  /**
+   * Direction of improvement for the footer delta colour.
+   * @default "down-is-good" — preserves the chart's original weight-loss-framed
+   * colouring for callers that don't pass this prop (e.g. `Progress.tsx`).
+   */
+  deltaDirection?: MiniLineChartDeltaDirection;
 }
 
 /** SVG line chart for measurement trends (weight, body fat %). */
@@ -25,11 +62,53 @@ export function MiniLineChart({
   unit,
   color,
   metricLabel = "показник",
+  goalValue,
+  deltaDirection = "down-is-good",
 }: MiniLineChartProps) {
   const valid = (data || []).filter(
     (d: MiniLineChartDataPoint) =>
       d.value != null && Number.isFinite(Number(d.value)),
   );
+  const w = 320;
+  const h = 100;
+  /**
+   * #2 fix — the box must never letterbox internally.
+   *
+   * `useChartScrub` maps `clientX` → viewBox space with a simple
+   * `((clientX - rect.left) / rect.width) * viewBoxWidth` formula, which is
+   * only correct when the rendered box's aspect ratio matches the viewBox's
+   * (`w`/`h` = 3.2). With just `w-full h-auto max-h-[160px]`, a wide desktop
+   * container makes the CSS box wider than its aspect-preserving height, the
+   * `height: auto` chain clamps to `max-h` while `width: 100%` stays
+   * unconstrained, and the SVG's default `preserveAspectRatio="xMidYMid
+   * meet"` then letterboxes the 320×100 content inside that now-mismatched
+   * box — shifting every scrub coordinate off by the letterbox margin (the
+   * reported "tooltip misses the cursor on desktop" bug). Pairing `max-h`
+   * with a `max-w` at the *same* aspect ratio (160 * (320/100) = 512)
+   * guarantees the box can never grow wider than its aspect-preserving
+   * height allows, so `meet` never has anything to letterbox and the scrub
+   * hook's rect-based math stays exact at every viewport width.
+   */
+  const padL = 40;
+  const padR = 8;
+  const padT = 10;
+  const padB = 28;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  const n = data.length;
+  const step = pointStep(innerW, n);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const xPositions = useMemo(
+    () => data.map((_, index) => xAt(padL, index, step)),
+    [data, step],
+  );
+  const { activeIndex, scrubX, bind } = useChartScrub({
+    svgRef,
+    pointCount: data.length,
+    xPositions,
+    viewBoxWidth: w,
+  });
+
   if (valid.length === 0) {
     return (
       <EmptyState
@@ -46,35 +125,21 @@ export function MiniLineChart({
         compact
         className="rounded-2xl border border-dashed border-line bg-panelHi/50"
         title="Замало точок для лінії"
-        description={`Потрібні щонайменше два заміри з ${metricLabel}, щоб побудувати тренд.`}
+        description={`Щоб відстежувати ${metricLabel}, потрібні щонайменше два заміри.`}
       />
     );
   }
 
   const vals = valid.map((d: MiniLineChartDataPoint) => Number(d.value));
-  const minVal = Math.min(...vals);
-  const maxVal = Math.max(...vals);
-  const range = maxVal - minVal || 1;
-
-  const w = 320;
-  const h = 100;
-  const padL = 40;
-  const padR = 8;
-  const padT = 10;
-  const padB = 28;
-  const innerW = w - padL - padR;
-  const innerH = h - padT - padB;
-  const n = data.length;
-  const step = innerW / (n - 1 || 1);
+  const { min: minVal, max: maxVal, range } = seriesExtent(vals);
 
   // Map each data point to x,y (null points get x position but no y)
   const points: MappedPoint[] = data.map(
     (d: MiniLineChartDataPoint, i: number) => {
-      const x = padL + i * step;
+      const x = xAt(padL, i, step);
       if (d.value == null || !Number.isFinite(Number(d.value)))
         return { x, y: null, v: null, label: d.label };
-      const pct = (Number(d.value) - minVal) / range;
-      const y = padT + innerH - pct * innerH;
+      const y = linearY(Number(d.value), minVal, range, padT, innerH);
       return { x, y, v: Number(d.value), label: d.label };
     },
   );
@@ -92,25 +157,18 @@ export function MiniLineChart({
   }
   if (segment.length >= 2) lineSegments.push(segment);
 
+  // Сегменти зібрані лише з не-null точок, тож `y` тут завжди number —
+  // каст звужує тип до ChartPoint-сумісного (зайві поля не заважають).
+  const asPlotted = (seg: MappedPoint[]): readonly ChartPoint[] =>
+    seg as Array<MappedPoint & { y: number }>;
   const lineD = lineSegments
-    .map((seg: MappedPoint[]) =>
-      seg
-        .map(
-          (p: MappedPoint, i: number) =>
-            `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${(p.y as number).toFixed(1)}`,
-        )
-        .join(" "),
-    )
+    .map((seg: MappedPoint[]) => buildLinePath(asPlotted(seg)))
     .join(" ");
 
   // Area fill: use first complete segment
   const mainSeg: MappedPoint[] = lineSegments[0] || [];
-  const lastMainSeg = mainSeg[mainSeg.length - 1];
-  const firstMainSeg = mainSeg[0];
   const areaD =
-    mainSeg.length >= 2 && lastMainSeg && firstMainSeg
-      ? `${mainSeg.map((p: MappedPoint, i: number) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${(p.y as number).toFixed(1)}`).join(" ")} L ${lastMainSeg.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstMainSeg.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
-      : "";
+    mainSeg.length >= 2 ? buildAreaPath(asPlotted(mainSeg), padT + innerH) : "";
 
   const yTicks = [0, 0.5, 1].map((fr) => ({
     y: padT + innerH * (1 - fr),
@@ -120,7 +178,14 @@ export function MiniLineChart({
   const lastValid = [...valid].pop() as MiniLineChartDataPoint;
   const firstValid = valid[0] as MiniLineChartDataPoint;
   const delta = Number(lastValid.value) - Number(firstValid.value);
+  const deltaClass =
+    deltaDirection === "neutral"
+      ? "text-subtle"
+      : (deltaDirection === "up-is-good") === delta > 0
+        ? "text-success-strong dark:text-success"
+        : "text-warning-strong dark:text-warning";
   const gradId = `mlcFill${color.replace(/[^a-zA-Z0-9]/g, "")}`;
+  const summaryId = `fizruk-mini-line-${metricLabel.replace(/\s/g, "-")}`;
 
   // Show last few labels (max 4 evenly spread)
   const labelIndices = new Set<number>();
@@ -133,13 +198,32 @@ export function MiniLineChart({
     labelIndices.add(Math.floor((2 * n) / 3));
   }
 
+  const activePoint = activeIndex !== null ? points[activeIndex] : null;
+  const activeDotY = activePoint?.y ?? undefined;
+  const activeVal = activePoint?.v;
+
+  // #2 — goal line y-position (clamp to visible range)
+  const goalY =
+    goalValue !== undefined
+      ? linearY(
+          clampToDomain(goalValue, minVal, maxVal),
+          minVal,
+          range,
+          padT,
+          innerH,
+        )
+      : undefined;
+
   return (
     <div className="w-full">
       <svg
+        ref={svgRef}
         viewBox={`0 0 ${w} ${h}`}
-        className="w-full h-auto max-h-[160px] overflow-visible"
+        className="w-full h-auto max-h-[160px] max-w-[512px] mx-auto overflow-visible touch-pan-y cursor-crosshair"
         role="img"
-        aria-label={`Графік тренду — ${metricLabel}`}
+        aria-label={`Графік тренду: ${metricLabel}`}
+        aria-describedby={summaryId}
+        {...bind}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -172,6 +256,20 @@ export function MiniLineChart({
           </g>
         ))}
 
+        {/* #2 — goal line */}
+        {goalY !== undefined && (
+          <ChartGoalLine
+            y={goalY}
+            x1={padL}
+            x2={w - padR}
+            label="Ціль"
+            color={color}
+            zone="below"
+            zoneTop={padT}
+            gradId={`mlc${color.replace(/[^a-zA-Z0-9]/g, "")}`}
+          />
+        )}
+
         {areaD && <path d={areaD} fill={`url(#${gradId})`} />}
         {lineD && (
           <path
@@ -193,7 +291,10 @@ export function MiniLineChart({
               cy={p.y}
               r="3.5"
               fill={color}
-              stroke="white"
+              /* #4 — "cut-out" halo uses the surface token, not a static
+               * white, so it stays invisible against the dark-theme panel
+               * (`--c-panel` = #2a231f) instead of ringing each dot. */
+              stroke="rgb(var(--c-panel))"
               strokeWidth="2"
             />
           );
@@ -214,18 +315,53 @@ export function MiniLineChart({
             </text>
           );
         })}
+
+        {/* #1 — scrub crosshair + tooltip */}
+        {activePoint != null &&
+          activeDotY !== undefined &&
+          activeVal !== null &&
+          activeVal !== undefined && (
+            <ChartScrubOverlay
+              x={scrubX}
+              top={padT}
+              bottom={padT + innerH}
+              dotY={activeDotY}
+              dotColor={color}
+              label={`${fmt(activeVal, 1)} ${unit}`}
+              subLabel={activePoint.label}
+              viewBoxWidth={w}
+              flipNearEdge={true}
+            />
+          )}
       </svg>
+
+      <div id={summaryId} className="sr-only">
+        <p>
+          Графік показує {metricLabel}. Поточне значення:{" "}
+          {fmtLoose(lastValid.value)} {unit}.
+          {delta !== 0
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
+            : ""}
+        </p>
+        <ul>
+          {valid.map((d, i) => (
+            <li key={i}>
+              {d.label}: {fmtLoose(d.value)} {unit}
+            </li>
+          ))}
+        </ul>
+      </div>
 
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-xl font-extrabold tabular-nums text-text">
-          {lastValid.value} {unit}
+          {activeVal !== null && activeVal !== undefined
+            ? `${fmt(activeVal, 1)} ${unit}`
+            : `${fmtLoose(lastValid.value)} ${unit}`}
         </span>
-        {delta !== 0 && (
-          <span
-            className={`text-style-caption ${delta > 0 ? "text-warning-strong dark:text-warning" : "text-success-strong dark:text-success"}`}
-          >
+        {delta !== 0 && activeIndex === null && (
+          <span className={`text-style-caption ${deltaClass}`}>
             {delta > 0 ? "+" : ""}
-            {delta.toFixed(1)} {unit}
+            {fmt(delta, 1)} {unit}
           </span>
         )}
       </div>
@@ -235,6 +371,6 @@ export function MiniLineChart({
 
 function formatVal(v: number, unit: string): string {
   const n = Number(v) || 0;
-  if (unit === "%" || Math.abs(n) < 100) return n.toFixed(1);
-  return String(Math.round(n));
+  if (unit === "%" || Math.abs(n) < 100) return fmt(n, 1);
+  return fmt(Math.round(n));
 }

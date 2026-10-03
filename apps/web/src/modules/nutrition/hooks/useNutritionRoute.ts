@@ -95,13 +95,25 @@ export function useNutritionRoute(): UseNutritionRouteResult {
   // switches need a back-button entry, same as the previous hash
   // behaviour (`window.location.hash = ...` always pushes a history
   // entry).
+  //
+  // AI-CONTEXT: the same-path no-op guard compares against
+  // `routerLocation.pathname` (raw `useLocation()`), NOT the resolved
+  // `location.pathname` from `useBrowserLocation`. That resolver freezes
+  // a native-event snapshot until the *next* popstate/hashchange and can
+  // briefly disagree with the just-committed React Router location (e.g.
+  // right after a real browser-back, before RR7's startTransition-wrapped
+  // update lands) — a stale snapshot at the guard would silently swallow
+  // a real tap ("сторінка не відкривається одразу" — page-audit
+  // nutrition-overview-01). `routerLocation` is what actually drives
+  // `navigate()`'s target resolution, so comparing against it keeps the
+  // guard correct by construction.
   const navigateToPage = useCallback(
     (page: NutritionPage, subTab?: string) => {
       const target = nutritionRoutePath(page, subTab);
-      if (location.pathname === target) return;
+      if (routerLocation.pathname === target) return;
       navigate(target, { replace: false });
     },
-    [location.pathname, navigate],
+    [routerLocation.pathname, navigate],
   );
 
   // `setActivePage` historically did NOT update the URL — only
@@ -131,10 +143,10 @@ export function useNutritionRoute(): UseNutritionRouteResult {
         sub === "items" ? undefined : sub,
       );
       const target = suffix ? `/nutrition/${suffix}` : "/nutrition";
-      if (location.pathname === target) return;
+      if (routerLocation.pathname === target) return;
       navigate(target, { replace: false });
     },
-    [location.pathname, navigate],
+    [routerLocation.pathname, navigate],
   );
 
   const setMenuSubTab = useCallback(
@@ -144,10 +156,10 @@ export function useNutritionRoute(): UseNutritionRouteResult {
         sub === "plan" ? undefined : sub,
       );
       const target = suffix ? `/nutrition/${suffix}` : "/nutrition";
-      if (location.pathname === target) return;
+      if (routerLocation.pathname === target) return;
       navigate(target, { replace: false });
     },
-    [location.pathname, navigate],
+    [routerLocation.pathname, navigate],
   );
 
   return {

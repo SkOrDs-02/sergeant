@@ -5,7 +5,7 @@
  * У production-збірках Metro інлайнить значення на bundle-time, тож
  * увесь цей модуль перетворюється на dead-code (виклик з
  * `installE2EAuthMock` стає `return false`) і не потрапляє в release
- * binary. Див. `docs/mobile/react-native-migration.md` §13 Q8.
+ * binary. Див. `docs/engineering/mobile/react-native-migration.md` §13 Q8.
  *
  * Що мокаємо:
  *   - `POST /api/auth/sign-in/email` — приймає email/password, що

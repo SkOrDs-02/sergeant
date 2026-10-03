@@ -40,18 +40,14 @@ export type FlagValues = Record<string, boolean>;
  * gates consume the same defaults via `useFlag()`.
  */
 export const EXPERIMENTAL_FLAGS: readonly FlagDefinition[] = [
-  {
-    id: "finyk_subscriptions_category",
-    label: "Категорія «Підписки» у швидкому додаванні",
-    description:
-      "Додає окрему кнопку для підписок у ManualExpenseSheet (раніше вони потрапляли у «інше»).",
-    defaultValue: false,
-  },
+  // `finyk_subscriptions_category` прибрано (дзеркалить web): флаг
+  // рендерився тумблером в «Експериментальних» і не мав жодного читача —
+  // юзер вмикав опцію, яка нічого не робить.
   {
     id: "hub_command_palette",
     label: "Command Palette (Ctrl/⌘+K)",
     description:
-      "Глобальний пошук і дії через клавіатуру. Ранній preview — може не працювати у деяких PWA-кейсах.",
+      "Глобальний пошук і дії через клавіатуру. Ранній preview, може не працювати у деяких PWA-кейсах.",
     defaultValue: false,
   },
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.

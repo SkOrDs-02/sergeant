@@ -33,6 +33,9 @@ describe("extractMarkers", () => {
         line: 1,
         expires: "2026-06-01",
         note: "Auto-migrates finyk_token.",
+        // `context` — нотатка разом із продовженням коментаря під маркером.
+        // Тут продовження немає, тож збігається з `note`.
+        context: "Auto-migrates finyk_token.",
       },
     ]);
   });
@@ -281,5 +284,71 @@ describe("renderHtml", () => {
   it("renders an empty-state row when no findings", () => {
     const html = renderHtml([], { today: "2026-04-30" });
     assert.match(html, /No AI-LEGACY markers found/);
+  });
+});
+
+// ── Власник роботи: issue АБО трекер у docs/ ─────────────────────────────────
+//
+// До 2026-09-19 посилання на власника шукалось лише в ОДНОМУ рядку маркера й
+// приймалось лише у формі `#NNN`. Обидва обмеження розходились із практикою
+// репо: обґрунтування природно переповзає на наступний рядок коментаря, а
+// issue на прострочений маркер відкриває автоматика в момент протермінування,
+// не автор наперед. Через це звіт показував `no-issue-ref: 9` на кожному
+// прогоні — при трьох маркерах, що власника насправді мали.
+describe("extractIssueRef — issue і трекер рівноправні", () => {
+  it("приймає issue-номер", () => {
+    assert.equal(extractIssueRef("#1234 migrate to new SDK"), "#1234");
+  });
+
+  it("приймає GH-форму і шлях issues/NNN", () => {
+    assert.equal(extractIssueRef("GH-77 прибрати"), "GH-77");
+    assert.equal(
+      extractIssueRef("див. https://github.com/x/y/issues/42"),
+      "issues/42",
+    );
+  });
+
+  it("приймає трекер у docs/ як власника", () => {
+    assert.equal(
+      extractIssueRef(
+        "прибрати разом із docs/work/specs/beta-launch/README.md",
+      ),
+      "docs/work/specs/beta-launch/README.md",
+    );
+  });
+
+  it("повертає null, коли власника не названо", () => {
+    assert.equal(extractIssueRef("просто прибрати колись"), null);
+    assert.equal(extractIssueRef(""), null);
+    assert.equal(extractIssueRef(undefined), null);
+  });
+});
+
+describe("markerContext — власник може жити на наступному рядку", () => {
+  it("склеює продовження коментаря з ноткою маркера", () => {
+    const src = [
+      "// AI-LEGACY: expires 2026-10-31 — тимчасова інфраструктура бети;",
+      "// видалити разом із docs/work/specs/beta-launch/ (перелік у README).",
+      "const x = 1;",
+    ].join("\n");
+    const [marker] = extractMarkers(src);
+    assert.match(marker.context, /docs\/work\/specs\/beta-launch/u);
+    // Кінцевий слеш у збіг не входить — для ідентифікації власника це байдуже.
+    assert.equal(
+      extractIssueRef(marker.context),
+      "docs/work/specs/beta-launch",
+    );
+    // Сама нотатка лишається однорядковою — звіт не роздувається.
+    assert.doesNotMatch(marker.note, /beta-launch/u);
+  });
+
+  it("зупиняється на першому рядку, що не є коментарем", () => {
+    const src = [
+      "// AI-LEGACY: expires 2026-10-31 — прибрати.",
+      "const url = 'docs/work/specs/fake.md';",
+    ].join("\n");
+    const [marker] = extractMarkers(src);
+    assert.doesNotMatch(marker.context, /fake\.md/u);
+    assert.equal(extractIssueRef(marker.context), null);
   });
 });

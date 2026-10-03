@@ -1,5 +1,5 @@
 /**
- * Pure-логіка для денного плану харчування — м'які наукові межі
+ * Pure-логіка для денного плану харчування — мʼякі наукові межі
  * для денних цілей (kcal, protein_g, fat_g, carbs_g) і перевірка
  * розходження сум макро з ккал.
  *
@@ -13,7 +13,7 @@
  * `apps/mobile/.../i18n.ts` тощо) — `calcGoalRangeIssues` повертає
  * лише `field`/`kind`, споживач підтягує текст.
  *
- * Джерела м'яких меж:
+ * Джерела мʼяких меж:
  * - Kcal min 800 / max 6000: WHO та American College of Sports
  *   Medicine — мінімум ~1200 ккал (жінки) / ~1500 (чоловіки);
  *   <800 ккал — Very Low Calorie Diet (тільки під наглядом).
@@ -45,6 +45,26 @@ export interface GoalRangeIssue {
 }
 
 /**
+ * Atwater kcal/g — фізичні константи, не продуктове рішення, тож не в
+ * `GOAL_BOUNDS`. unification-modules.md #2.17: п'ять сайтів (план-картка,
+ * банер попередження, смуга відсотків, TDEE, цей файл) рахували те саме
+ * `prot*4 + fat*9 + carb*4` окремими копіями.
+ */
+export const ATWATER_KCAL_PER_G = { protein: 4, fat: 9, carbs: 4 } as const;
+
+export function kcalFromMacros(macros: {
+  protein_g?: number | null;
+  fat_g?: number | null;
+  carbs_g?: number | null;
+}): number {
+  return (
+    (macros.protein_g || 0) * ATWATER_KCAL_PER_G.protein +
+    (macros.fat_g || 0) * ATWATER_KCAL_PER_G.fat +
+    (macros.carbs_g || 0) * ATWATER_KCAL_PER_G.carbs
+  );
+}
+
+/**
  * Перевіряє, чи цільові макро вкладаються в цільові ккал. Якщо ні —
  * повертає {kind: "over"} з різницею; якщо вкладаються, але істотно
  * недотягують — {kind: "under"}; інакше null.
@@ -64,7 +84,9 @@ export function calcMacroKcalMismatch(prefs: NutritionPrefs): {
   const fat = prefs.dailyTargetFat_g ?? 0;
   const carb = prefs.dailyTargetCarbs_g ?? 0;
   if (prot <= 0 && fat <= 0 && carb <= 0) return null;
-  const calc = Math.round(prot * 4 + fat * 9 + carb * 4);
+  const calc = Math.round(
+    kcalFromMacros({ protein_g: prot, fat_g: fat, carbs_g: carb }),
+  );
   const tolerance = Math.round(target * 0.05);
   const diff = calc - target;
   if (diff > tolerance) {

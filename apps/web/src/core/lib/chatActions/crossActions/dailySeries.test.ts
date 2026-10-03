@@ -1,0 +1,559 @@
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type CachedDailyLogEntry,
+} from "../../../../modules/fizruk/lib/sqliteReader";
+import {
+  buildDailySeries,
+  computePairwiseCorrelations,
+  formatDailySeries,
+  getDailySeries,
+  MIN_N,
+  type DailySeries,
+} from "./dailySeries";
+
+function series(
+  metrics: DailySeries["metrics"],
+  raw: DailySeries["raw"],
+  n: number,
+): DailySeries {
+  const days = Array.from(
+    { length: n },
+    (_, i) => `2026-01-${String(i + 1).padStart(2, "0")}`,
+  );
+  return { from: days[0]!, to: days[n - 1]!, days, raw, metrics };
+}
+
+/** Журнал у SQLite-кеші (не LS — ключ tombstoned): дефолти для полів, яких тест не задає. */
+function seedJournal(
+  rows: Array<Partial<CachedDailyLogEntry> & { at: string }>,
+): CachedDailyLogEntry[] {
+  return rows.map((row, i) => ({
+    id: row.id ?? `dl_seed_${i}`,
+    weightKg: null,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+    ...row,
+  }));
+}
+
+describe("computePairwiseCorrelations", () => {
+  it("perfect positive correlation → r ≈ 1", () => {
+    const s = series(
+      ["spending", "income"],
+      {
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+      },
+      10,
+    );
+    const [c] = computePairwiseCorrelations(s);
+    expect(c).toBeDefined();
+    expect(c!.pearson).toBeCloseTo(1, 5);
+    expect(c!.spearman).toBeCloseTo(1, 5);
+    expect(c!.n).toBe(10);
+  });
+
+  it("perfect inverse correlation → r ≈ -1", () => {
+    const s = series(
+      ["weight", "kcal"],
+      {
+        weight: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        kcal: [20, 18, 16, 14, 12, 10, 8, 6, 4, 2],
+      },
+      10,
+    );
+    const [c] = computePairwiseCorrelations(s);
+    expect(c!.pearson).toBeCloseTo(-1, 5);
+  });
+
+  it(`only pairwise-complete days count; skips pairs with < ${MIN_N} common points`, () => {
+    // Common non-undefined indices: 0, 2, 4 → n=3 → below MIN_N, skipped.
+    const s = series(
+      ["spending", "weight"],
+      {
+        spending: [1, 2, 3, undefined, 5],
+        weight: [2, undefined, 6, 8, 10],
+      },
+      5,
+    );
+    expect(computePairwiseCorrelations(s)).toHaveLength(0);
+  });
+
+  it("pairwise-complete filtering: ignores days where either metric is missing", () => {
+    const s = series(
+      ["spending", "income"],
+      {
+        // day 6 spending missing → dropped from the pair, rest perfectly correlated
+        spending: [1, 2, 3, 4, 5, undefined, 7, 8, 9, 10, 11],
+        income: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110],
+      },
+      11,
+    );
+    const [c] = computePairwiseCorrelations(s);
+    expect(c!.n).toBe(10);
+    expect(c!.pearson).toBeCloseTo(1, 5);
+  });
+
+  it("flat metric (zero variance) → NaN, not a crash", () => {
+    const s = series(
+      ["water", "spending"],
+      {
+        water: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+      10,
+    );
+    const [c] = computePairwiseCorrelations(s);
+    expect(Number.isNaN(c!.pearson)).toBe(true);
+  });
+});
+
+describe("formatDailySeries — fill semantics", () => {
+  const s = series(
+    ["spending", "weight"],
+    { spending: [100, undefined, 300], weight: [80, 81, undefined] },
+    3,
+  );
+  const corr = computePairwiseCorrelations(s);
+
+  it("fill=zero renders missing cells as 0", () => {
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("2026-01-02,0,81");
+    expect(out).toContain("2026-01-03,300,0");
+  });
+
+  it("fill=null renders missing cells as empty", () => {
+    const out = formatDailySeries(s, corr, "null");
+    expect(out).toContain("2026-01-02,,81");
+    expect(out).toContain("2026-01-03,300,");
+  });
+});
+
+describe("getDailySeries — executor", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    clearFizrukSqliteCache();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+  });
+  afterEach(async () => {
+    localStorage.clear();
+    clearFizrukSqliteCache();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useRealTimers();
+  });
+
+  it("error: no valid metrics returns guidance", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: { metrics: [] },
+    });
+    expect(out).toContain("Вкажи");
+  });
+
+  it("error: only invalid metric names → guidance", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: { metrics: ["nonsense", "bogus"] },
+    });
+    expect(out).toContain("Вкажи");
+  });
+
+  it("happy: seeded finyk txs correlate spending ↔ income across days", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    const nowSec = Math.floor(Date.now() / 1000);
+    const txs: Array<{ id: string; amount: number; time: number }> = [];
+    // 10 consecutive days, one expense + one (proportional) income each.
+    for (let d = 0; d < 10; d++) {
+      const t = nowSec - d * 86400;
+      txs.push({ id: `e${d}`, amount: -(1000 + d * 100) * 100, time: t });
+      txs.push({ id: `i${d}`, amount: (2000 + d * 200) * 100, time: t });
+    }
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    __setFinykMonoMirrorCacheForTests({ transactions: txs as never[] });
+
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: { metrics: ["spending", "income"] },
+    });
+    expect(out).toContain("Кореляції");
+    expect(out).toContain("spending ↔ income");
+    expect(out).toContain("day,spending,income");
+  });
+
+  it("caps metrics to 6 and dedupes", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: [
+          "spending",
+          "spending",
+          "income",
+          "kcal",
+          "protein",
+          "water",
+          "weight",
+          "wellbeing",
+        ],
+      },
+    });
+    // Header lists at most 6 distinct metrics.
+    const header = out.split("\n").find((l) => l.startsWith("day,"));
+    expect(header).toBeDefined();
+    const cols = header!.replace("day,", "").split(",");
+    expect(cols.length).toBeLessThanOrEqual(6);
+    expect(new Set(cols).size).toBe(cols.length);
+  });
+
+  it("graceful with empty stores: single metric, no data", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: { metrics: ["spending"] },
+    });
+    expect(out).toContain("Підсумки");
+    expect(out).toContain("spending: немає даних");
+  });
+});
+
+describe("buildDailySeries — alignment", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+  });
+  afterEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useRealTimers();
+  });
+
+  it("aligns finyk spending onto the correct Kyiv day and leaves gaps undefined", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    const nowSec = Math.floor(Date.now() / 1000);
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "e0", amount: -5000 * 100, time: nowSec },
+      ] as never[],
+    });
+    const s = buildDailySeries(["spending"], {
+      from: "2026-04-20",
+      to: "2026-04-22",
+    });
+    expect(s.days).toEqual(["2026-04-20", "2026-04-21", "2026-04-22"]);
+    const col = s.raw["spending"]!;
+    // До ПЕРШОГО запису витрат нулів не буває — там ще нічого не було.
+    expect(col[0]).toBeUndefined();
+    expect(col[1]).toBeUndefined();
+    expect(col[2]).toBe(5000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Структурні нулі: «нуль» проти «не записано» (`ABSENCE_MEANS`)
+// ---------------------------------------------------------------------------
+describe("buildDailySeries — структурні нулі", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+  });
+  afterEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useRealTimers();
+  });
+
+  async function seedDailyHabit(completions: string[]): Promise<void> {
+    const { loadRoutineState, saveRoutineState } =
+      await import("../../../../modules/routine/lib/routineStorage");
+    const state = loadRoutineState();
+    saveRoutineState({
+      ...state,
+      habits: [
+        {
+          id: "h1",
+          name: "Вода",
+          emoji: "✓",
+          archived: false,
+          paused: false,
+          recurrence: "daily",
+          startDate: "2026-04-01",
+          weekdays: [0, 1, 2, 3, 4, 5, 6],
+          reminderTimes: [],
+          createdAt: "2026-04-01T00:00:00.000Z",
+        } as never,
+      ],
+      habitOrder: ["h1"],
+      completions: { h1: completions },
+    });
+  }
+
+  it("habit_rate: день без відмітки після першої = 0%, а не пропуск", async () => {
+    // Перша відмітка 19-го, друга 21-го. 20-те — реальний нуль (не виконав),
+    // 18-те — ще до першого запису, тож лишається невиміряним.
+    await seedDailyHabit(["2026-04-19", "2026-04-21"]);
+    const s = buildDailySeries(["habit_rate"], {
+      from: "2026-04-18",
+      to: "2026-04-22",
+    });
+    expect(s.raw["habit_rate"]).toEqual([undefined, 100, 0, 100, 0]);
+  });
+
+  it("weight: пропуск лишається пропуском — це не «важив 0 кг»", () => {
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
+        { at: "2026-04-19T09:00:00.000Z", weightKg: 80 },
+        { at: "2026-04-21T09:00:00.000Z", weightKg: 79 },
+      ]),
+    });
+    const s = buildDailySeries(["weight"], {
+      from: "2026-04-19",
+      to: "2026-04-22",
+    });
+    expect(s.raw["weight"]).toEqual([80, undefined, 79, undefined]);
+  });
+
+  it("spending: дірка всередині покриття = 0, після останнього синку — ні", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    const at = (day: string) =>
+      Math.floor(Date.parse(`${day}T09:00:00Z`) / 1000);
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "e1", amount: -100 * 100, time: at("2026-04-19") },
+        { id: "e2", amount: -300 * 100, time: at("2026-04-21") },
+      ] as never[],
+    });
+    const s = buildDailySeries(["spending"], {
+      from: "2026-04-18",
+      to: "2026-04-22",
+    });
+    // 18-те — до першої транзакції; 20-те — день без витрат усередині
+    // підтвердженого покриття; 22-ге — за останнім синком, нулі не вигадуємо.
+    expect(s.raw["spending"]).toEqual([undefined, 100, 0, 300, undefined]);
+  });
+
+  it("нулі входять У статистику: пара набирає спільні дні, яких без них не було", async () => {
+    await seedDailyHabit([
+      "2026-04-13",
+      "2026-04-15",
+      "2026-04-17",
+      "2026-04-19",
+      "2026-04-21",
+    ]);
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
+        { at: "2026-04-13T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-14T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-15T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-16T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-17T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-18T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-19T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-20T09:00:00.000Z", moodScore: 2 },
+        { at: "2026-04-21T09:00:00.000Z", moodScore: 5 },
+        { at: "2026-04-22T09:00:00.000Z", moodScore: 2 },
+      ]),
+    });
+    const s = buildDailySeries(["habit_rate", "wellbeing"], {
+      from: "2026-04-13",
+      to: "2026-04-22",
+    });
+    const [c] = computePairwiseCorrelations(s);
+    // Без структурних нулів спільними були б лише 5 днів виконання звички
+    // (n=5, пара все одно відкидалась би - нижче MIN_N) - і саме на тих
+    // днях, де звичка виконана, тобто питання ставилось там, де відповідь
+    // уже «так».
+    expect(c).toBeDefined();
+    expect(c!.n).toBe(10);
+    expect(c!.pearson).toBeCloseTo(1, 5);
+  });
+});
+
+describe("getDailySeries — explicit date range + period_days capping", () => {
+  beforeEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-22T12:00:00"));
+  });
+  afterEach(async () => {
+    localStorage.clear();
+    const { clearFinykMonoMirrorCache } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    clearFinykMonoMirrorCache();
+    vi.useRealTimers();
+  });
+
+  it("respects explicit date_from / date_to over period_days", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        date_from: "2026-04-10",
+        date_to: "2026-04-12",
+      },
+    });
+    // Header should reference the explicit range.
+    const header = out.split("\n").find((l) => l.startsWith("Ряди метрик"));
+    expect(header).toContain("2026-04-10");
+    expect(header).toContain("2026-04-12");
+    expect(header).toContain("3 днів");
+  });
+
+  it("caps period_days exceeding MAX_PERIOD_DAYS (365) to 365", () => {
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        // period_days is read at runtime but not yet on the typed contract.
+        period_days: 500,
+      } as import("../types").GetDailySeriesAction["input"] & {
+        period_days?: number;
+      },
+    });
+    const header = out.split("\n").find((l) => l.startsWith("Ряди метрик"));
+    expect(header).toContain("365 днів");
+  });
+
+  it("fill=null surfaces in the table output (empty cells for missing days)", async () => {
+    const { __setFinykMonoMirrorCacheForTests } =
+      await import("../../../../modules/finyk/lib/monoMirrorReader");
+    const nowSec = Math.floor(Date.now() / 1000);
+    // finyk_tx_cache is tombstoned — seed the canonical Mono mirror cache.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "e0", amount: -1000 * 100, time: nowSec },
+      ] as never[],
+    });
+    const out = getDailySeries({
+      name: "get_daily_series",
+      input: {
+        metrics: ["spending"],
+        date_from: "2026-04-20",
+        date_to: "2026-04-22",
+        fill: "null",
+      },
+    });
+    // The 2026-04-20 row should have an empty spending cell.
+    const lines = out.split("\n");
+    const emptyDay = lines.find((l) => l === "2026-04-20,");
+    expect(emptyDay).toBeDefined();
+  });
+});
+
+describe("formatDailySeries — trend arrows", () => {
+  it("renders ↑ when the second half average is higher", () => {
+    const s = series(["spending"], { spending: [1, 1, 5, 5] }, 4);
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("↑");
+  });
+
+  it("renders ↓ when the second half average is lower", () => {
+    const s = series(["spending"], { spending: [5, 5, 1, 1] }, 4);
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("↓");
+  });
+
+  it("renders → when both halves have the same average", () => {
+    const s = series(["spending"], { spending: [3, 3, 3, 3] }, 4);
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain("→");
+  });
+
+  it("renders no trend for fewer than 4 data points", () => {
+    const s = series(["spending"], { spending: [1, 2, 3] }, 3);
+    const out = formatDailySeries(s, [], "zero");
+    // With < 4 points summariseMetric does not append a trend char.
+    expect(out).not.toMatch(/[↑↓→]/u);
+  });
+
+  it("truncates table to last 90 rows when days > 90 and shows row count info", () => {
+    const days = 95;
+    const col: (number | undefined)[] = Array.from(
+      { length: days },
+      (_, i) => i + 1,
+    );
+    const daysList: string[] = Array.from({ length: days }, (_, i) => {
+      const d = new Date("2025-01-01");
+      d.setDate(d.getDate() + i);
+      return d.toISOString().slice(0, 10);
+    });
+    const s: DailySeries = {
+      from: daysList[0]!,
+      to: daysList[days - 1]!,
+      days: daysList,
+      raw: { spending: col },
+      metrics: ["spending"],
+    };
+    const out = formatDailySeries(s, [], "zero");
+    expect(out).toContain(`Таблиця (останні 90 з ${days} днів):`);
+  });
+});
+
+describe("formatDailySeries — correlation strength labels", () => {
+  it("labels a high positive r as сильний прямий", () => {
+    const s = series(
+      ["spending", "income"],
+      {
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [2, 4, 6, 8, 10, 12, 14, 16, 18, 20],
+      },
+      10,
+    );
+    const corr = computePairwiseCorrelations(s);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("сильний прямий");
+  });
+
+  it("labels a strong negative r as сильний зворотній", () => {
+    const s = series(
+      ["weight", "kcal"],
+      {
+        weight: [10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+        kcal: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      },
+      10,
+    );
+    const corr = computePairwiseCorrelations(s);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("сильний зворотній");
+  });
+
+  it("shows недостатньо спільних днів when no pair meets the 4-point threshold", () => {
+    const s = series(
+      ["spending", "income"],
+      { spending: [1, 2, 3], income: [2, 4, 6] },
+      3,
+    );
+    const corr = computePairwiseCorrelations(s);
+    expect(corr).toHaveLength(0);
+    const out = formatDailySeries(s, corr, "zero");
+    expect(out).toContain("недостатньо спільних днів");
+  });
+});

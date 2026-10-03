@@ -63,7 +63,7 @@ async function readUriAsJpegBase64(uri: string): Promise<PickImageJpegResult> {
     return {
       status: "error",
       message:
-        "Фото ще завелике після стиснення. Оберіть знімок меншої роздільної здатності.",
+        "Фото ще завелике після стиснення. Обери знімок меншої роздільної здатності.",
     };
   }
   return { status: "ok", base64: b64, mimeType: "image/jpeg" };
@@ -82,7 +82,7 @@ export async function pickResizeAndReadBase64Jpeg(): Promise<PickImageJpegResult
   if (!perm.granted) {
     return buildPermissionDeniedResult(
       perm.canAskAgain,
-      "Потрібен доступ до фото. Дозвольте додатку відкрити фотогалерею у налаштуваннях.",
+      "Потрібен доступ до фото. Дозволь додатку відкрити фотогалерею у налаштуваннях.",
       "Доступ до фото",
     );
   }
@@ -113,7 +113,7 @@ export async function captureResizeAndReadBase64Jpeg(): Promise<PickImageJpegRes
   if (!perm.granted) {
     return buildPermissionDeniedResult(
       perm.canAskAgain,
-      "Потрібен доступ до камери. Дозвольте додатку використовувати камеру у налаштуваннях.",
+      "Потрібен доступ до камери. Дозволь додатку використовувати камеру у налаштуваннях.",
       "Доступ до камери",
     );
   }

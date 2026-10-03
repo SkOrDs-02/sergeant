@@ -11,7 +11,7 @@ export interface GroqTranscribeOptions {
   model: string;
   /** Аудіо-байти (повний файл — Groq не підтримує streaming upload). */
   audio: Buffer;
-  /** MIME-тип; впливає на ім'я файлу і `Content-Type` form-частини. */
+  /** MIME-тип; впливає на імʼя файлу і `Content-Type` form-частини. */
   mimeType: string;
   /**
    * ISO-код мови (`uk`, `en`, ...). Якщо `null/undefined` — Whisper
@@ -98,7 +98,7 @@ export async function transcribeAudio(
   form.append("response_format", "verbose_json");
   if (language) form.append("language", language);
   if (prompt) form.append("prompt", prompt);
-  // Node 20: `Blob` глобально доступний; FormData приймає Blob із file-ім'ям.
+  // Node 20: `Blob` глобально доступний; FormData приймає Blob із file-імʼям.
   // `Buffer.from(audio).buffer` повертає `ArrayBufferLike` (може бути
   // SharedArrayBuffer), що не сумісне з BlobPart-типом TS — обертаємо у
   // `Uint8Array` зі свіжим ArrayBuffer-копіюванням, щоб тип збігся жорстко.

@@ -4,12 +4,16 @@ import { act, renderHook } from "@testing-library/react";
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
 import { useMonthlyPlan } from "./useMonthlyPlan";
 
+const originalTz = process.env["TZ"];
+
 describe("useMonthlyPlan", () => {
   beforeEach(() => {
     localStorage.clear();
   });
   afterEach(() => {
     vi.useRealTimers();
+    if (originalTz === undefined) delete process.env["TZ"];
+    else process.env["TZ"] = originalTz;
   });
 
   it("starts from defaults", () => {
@@ -47,14 +51,12 @@ describe("useMonthlyPlan", () => {
     expect(result.current.reminderMinute).toBe(30);
   });
 
-  it("setReminderEnabled toggles and persists", () => {
+  it("setReminderEnabled toggles state (SQLite persist covered by integration)", () => {
+    // Teardown Phase 3 — LS write-mirror removed; persistence flows through
+    // the SQLite dual-write pipeline. Unit test asserts hook state only.
     const { result } = renderHook(() => useMonthlyPlan());
     act(() => result.current.setReminderEnabled(false));
     expect(result.current.reminderEnabled).toBe(false);
-    const saved = JSON.parse(
-      localStorage.getItem(MONTHLY_PLAN_STORAGE_KEY) ?? "{}",
-    );
-    expect(saved.reminderEnabled).toBe(false);
   });
 
   it("setDayTemplate sets and clears a day", () => {
@@ -76,15 +78,18 @@ describe("useMonthlyPlan", () => {
     expect(result.current.todayTemplateId).toBe("today-tpl");
   });
 
-  it("reacts to the custom monthly-plan storage event", () => {
+  // Removed (teardown Phase 3): the "fizruk-storage-monthly-plan" custom-event
+  // + storage-listener sync was LS-coupled (loadState read localStorage) and
+  // reset state to defaults once the LS write-mirror was dropped. Cross-instance
+  // sync for the singleton plan now relies on the SQLite overlay tick — there is
+  // no LS event to react to.
+
+  it("getTodayDateKey — доба пристрою, а не Києва (ADR-0078)", () => {
+    process.env["TZ"] = "America/Mexico_City"; // UTC-6
+    vi.useFakeTimers();
+    // 2026-09-02 23:30 local = 2026-09-03 08:30 у Києві.
+    vi.setSystemTime(new Date("2026-09-03T05:30:00Z"));
     const { result } = renderHook(() => useMonthlyPlan());
-    localStorage.setItem(
-      MONTHLY_PLAN_STORAGE_KEY,
-      JSON.stringify({ reminderEnabled: false, days: {} }),
-    );
-    act(() => {
-      window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
-    });
-    expect(result.current.reminderEnabled).toBe(false);
+    expect(result.current.getTodayDateKey()).toBe("2026-09-02");
   });
 });

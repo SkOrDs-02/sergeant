@@ -4,8 +4,17 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { ProgressBar } from "@shared/components/ui";
 
 import type { MonoBackfillProgress } from "@shared/api";
+import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
+
+/** «1 транзакція» / «2 транзакції» / «5 транзакцій» — не бінарна форма. */
+const TRANSACTION_FORMS: UaPluralForms = {
+  one: "операція",
+  few: "операції",
+  many: "операцій",
+};
 
 interface BackfillProgressPillProps {
   progress: MonoBackfillProgress | null;
@@ -25,14 +34,11 @@ interface BackfillProgressPillProps {
  * Visible whenever the underlying query has a non-`idle` snapshot. Hidden
  * for the resting state so the settings panel doesn't grow a permanent pill.
  *
- * - `running`: progress bar (`accountsProcessed / accountsTotal`) +
+ * - `running`: shared `<ProgressBar variant="neutral">` (`accountsProcessed
+ *   / accountsTotal`, exact `%`, ink fill so it stays status-neutral) +
  *   transactions counter + currently-processing account hint.
  * - `completed`: green check + total transactions backfilled.
  * - `failed`: red ! + truncated error message.
- *
- * Per AGENTS.md hard rule #8 we stick to the registered Tailwind opacity
- * scale (10/20/30/…). The progress bar uses an inline `width: <pct>%` so
- * the value is always exact rather than discretised by Tailwind classes.
  */
 export const BackfillProgressPill = memo(function BackfillProgressPill({
   progress,
@@ -75,20 +81,21 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     ? `Завантаження виписки · ${progress.accountsProcessed}/${progress.accountsTotal} рах.`
     : isCompleted
       ? "Завершено"
-      : "Помилка backfill";
+      : "Не вдалося довантажити виписку";
 
   const detail = isRunning
-    ? `${progress.transactionsProcessed.toLocaleString("uk-UA")} тр.`
+    ? `${formatNumberUk(progress.transactionsProcessed)} тр.`
     : isCompleted
-      ? `${progress.transactionsProcessed.toLocaleString("uk-UA")} транзакцій`
-      : (progress.lastError ?? "невідома помилка");
+      ? `${formatNumberUk(progress.transactionsProcessed)} ${pluralUa(progress.transactionsProcessed, TRANSACTION_FORMS)}`
+      : (progress.lastError ??
+        "Спробуй ще раз через «Синхронізувати історію».");
 
   return (
     <div
       className={cn("rounded-xl border px-3 py-2.5 space-y-2", tone, className)}
       role={isRunning ? "status" : undefined}
       aria-live={isRunning ? "polite" : undefined}
-      aria-label={`${headline} — ${detail}`}
+      aria-label={`${headline}: ${detail}`}
     >
       <div className="flex items-center gap-2 text-style-caption">
         <span
@@ -99,21 +106,8 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
         <span className="tabular-nums text-subtle">{detail}</span>
       </div>
       {isRunning && (
-        <div
-          className="h-1.5 rounded-full bg-line/60 overflow-hidden"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={pct}
-        >
-          <div
-            className="h-full bg-primary transition-[width] duration-300 ease-out"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
+        <ProgressBar value={pct} max={100} size="sm" variant="neutral" />
       )}
     </div>
   );
 });
-
-export default BackfillProgressPill;

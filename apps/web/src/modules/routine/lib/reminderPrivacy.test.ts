@@ -37,16 +37,16 @@ describe("getRoutineReminderPrivacy", () => {
 describe("reminderNotificationContent", () => {
   const habit = { name: "Терапія", emoji: "🧠" };
 
-  it("full mode includes the habit emoji + name in the title", () => {
+  it("full mode carries the habit name in the title", () => {
     expect(reminderNotificationContent(habit, "full")).toEqual({
-      title: "🧠 Терапія",
+      title: "Терапія",
       body: "Нагадування про звичку",
     });
   });
 
-  it("full mode falls back to ✓ when the habit has no emoji", () => {
+  it("full mode never prefixes a glyph (slug would leak into push copy)", () => {
     expect(reminderNotificationContent({ name: "Біг" }, "full")).toEqual({
-      title: "✓ Біг",
+      title: "Біг",
       body: "Нагадування про звичку",
     });
   });

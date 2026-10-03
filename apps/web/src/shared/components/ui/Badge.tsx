@@ -42,10 +42,14 @@ const solidVariants: Record<BadgeVariant, string> = {
   warning: "bg-warning-strong text-white border-transparent",
   danger: "bg-danger-strong text-white border-transparent",
   info: "bg-info-strong text-white border-transparent",
-  finyk: "bg-finyk-strong text-white border-transparent",
-  fizruk: "bg-fizruk-strong text-white border-transparent",
-  routine: "bg-routine-strong text-white border-transparent",
-  nutrition: "bg-nutrition-strong text-white border-transparent",
+  finyk:
+    "bg-finyk-strong text-white border-transparent dark:bg-finyk dark:text-bg",
+  fizruk:
+    "bg-fizruk-strong text-white border-transparent dark:bg-fizruk dark:text-bg",
+  routine:
+    "bg-routine-strong text-white border-transparent dark:bg-routine dark:text-bg",
+  nutrition:
+    "bg-nutrition-strong text-white border-transparent dark:bg-nutrition dark:text-bg",
 };
 
 // Wave 1b: the soft-wash variants collapse onto preset-owned tokens
@@ -57,20 +61,16 @@ const solidVariants: Record<BadgeVariant, string> = {
 // a step darker — `-soft-fg` follows the surface per theme. See theme.css.
 const softVariants: Record<BadgeVariant, string> = {
   neutral: "bg-surface-muted text-fg-muted border-line",
-  accent:
-    "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
+  accent: "bg-brand-soft text-brand-strong border-brand-soft-border/60",
   success: "bg-success-soft text-success-soft-fg border-success/30",
   warning: "bg-warning-soft text-warning-soft-fg border-warning/30",
   danger: "bg-danger-soft text-danger-soft-fg border-danger/30",
   info: "bg-info-soft text-info-soft-fg border-info/30",
-  finyk:
-    "bg-finyk-soft text-finyk-strong border-finyk-ring/50 dark:bg-finyk-surface-dark/15 dark:text-finyk dark:border-finyk-border-dark/30",
-  fizruk:
-    "bg-fizruk-soft text-fizruk-strong border-fizruk-ring/50 dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300 dark:border-fizruk-border-dark/30",
-  routine:
-    "bg-routine-surface text-routine-strong border-routine-ring/50 dark:bg-routine-surface-dark/15 dark:text-routine dark:border-routine-border-dark/30",
+  finyk: "bg-finyk-soft text-finyk-soft-fg border-finyk-soft-border",
+  fizruk: "bg-fizruk-soft text-fizruk-soft-fg border-fizruk-soft-border",
+  routine: "bg-routine-soft text-routine-soft-fg border-routine-soft-border",
   nutrition:
-    "bg-nutrition-soft text-nutrition-strong border-nutrition-ring/50 dark:bg-nutrition-surface-dark/15 dark:text-nutrition dark:border-nutrition-border-dark/30",
+    "bg-nutrition-soft text-nutrition-soft-fg border-nutrition-soft-border",
 };
 
 // Outline tones place coloured text directly on the page background.
@@ -92,8 +92,8 @@ const outlineVariants: Record<BadgeVariant, string> = {
 
 const sizes: Record<BadgeSize, string> = {
   xs: "h-5 px-1.5 text-style-caption gap-1 rounded-xl",
-  sm: "h-6 px-2 text-xs gap-1 rounded-xl",
-  md: "h-7 px-2.5 text-xs gap-1.5 rounded-xl",
+  sm: "h-6 px-2 text-style-caption gap-1 rounded-xl",
+  md: "h-7 px-2.5 text-style-caption gap-1.5 rounded-xl",
 };
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {

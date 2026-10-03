@@ -1,0 +1,3 @@
+-- NO_ROLLBACK: the prior deleted_at values are intentionally not reconstructed
+-- because this migration retires sensitive raw transaction memory records;
+-- due: 2026-07-28

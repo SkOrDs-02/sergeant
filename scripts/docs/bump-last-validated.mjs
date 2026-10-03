@@ -35,19 +35,23 @@
 
 import {
   appendFileSync,
-  existsSync,
+  closeSync,
+  ftruncateSync,
+  openSync,
   readFileSync,
-  writeFileSync,
+  writeSync,
 } from "node:fs";
 import { execSync } from "node:child_process";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, isAbsolute, relative, sep } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
 import {
+  cadenceForPath,
   DEFAULT_CONFIG,
   matchesAnyGlob,
   readConfigFile,
+  reviewJitterDays,
 } from "./freshness-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -61,7 +65,7 @@ const HEADER_LINE_LIMIT = 15;
 // (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
 // scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
 // summary shows per-stage breakdown. Best-effort — never block a commit.
-// Contract documented in `docs/02-engineering/development/pre-commit-timing.md`.
+// Contract documented in `docs/engineering/development/pre-commit-timing.md`.
 function emitStageTiming(stage, ms) {
   const log = process.env.SERGEANT_TIMING_LOG;
   if (!log) return;
@@ -146,6 +150,11 @@ export function bumpHeader({
   today,
   handle,
   cadenceDays,
+  // Детермінований розкид дати перегляду, щоб пачка доків, збамплена
+  // одним комітом, не прийшла до перегляду одного дня. Передається як
+  // готове число (а не шлях), бо `bumpHeader` — чиста й нічого не знає
+  // про файлову систему; рахує його викликач через `reviewJitterDays`.
+  spreadDays = 0,
   lineLimit = HEADER_LINE_LIMIT,
 }) {
   const found = findHeaderLine(content, lineLimit);
@@ -158,7 +167,7 @@ export function bumpHeader({
   const newHandle = handle ?? found.handle;
   const newNextReview = sameDate
     ? found.nextReview
-    : addDays(today, cadenceDays);
+    : addDays(today, cadenceDays + spreadDays);
 
   // Migrate the legacy `Last validated:` label to the honest `Last touched:`
   // whenever we rewrite the line — whitespace is preserved.
@@ -180,8 +189,15 @@ export function bumpHeader({
 // ── Side-effectful entry points ──────────────────────────────────────────────
 
 function loadAuthorMap(path = AUTHOR_MAP_PATH) {
-  if (!existsSync(path)) return {};
-  const raw = JSON.parse(readFileSync(path, "utf8"));
+  // Читаємо одразу, без `existsSync`: перевірка й читання — дві операції
+  // над іменем, і між ними файл може зникнути (js/file-system-race).
+  let text;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch {
+    return {};
+  }
+  const raw = JSON.parse(text);
   return Object.fromEntries(
     Object.entries(raw.emailToHandle || {}).map(([k, v]) => [
       k.toLowerCase(),
@@ -206,11 +222,11 @@ function getCommitterEmail() {
 }
 
 function getCadenceDays(filePath, config) {
-  return (
-    config.cadenceOverrides[filePath] ??
-    config.defaultCadenceDays ??
-    DEFAULT_CONFIG.defaultCadenceDays
-  );
+  return cadenceForPath(filePath, {
+    ...config,
+    defaultCadenceDays:
+      config.defaultCadenceDays ?? DEFAULT_CONFIG.defaultCadenceDays,
+  });
 }
 
 /**
@@ -226,34 +242,69 @@ export function bumpFiles({
   log = () => {},
 }) {
   const modified = [];
-  for (const rel of paths) {
+  for (const raw of paths) {
+    // lint-staged передає АБСОЛЮТНІ шляхи. Exclude-глоби, каденція і
+    // `reviewJitterDays` рахуються від repo-relative шляху (як у
+    // `check-freshness`), тож без нормалізації бампер писав іншу дату
+    // перегляду, ніж очікує гейт свіжості, і не бачив exclude-глобів.
+    // `.split(sep).join("/")` обовʼязковий: на Windows `relative()` повертає
+    // `docs\foo.md`, а глоби й каденція записані через `/`. Без нормалізації
+    // жоден exclude-глоб не збігався, тобто бампер мовчки штампував файли,
+    // які мав пропустити - і саме на Windows, де цей хук працює щокоміту.
+    const rel = (isAbsolute(raw) ? relative(rootDir, raw) : raw)
+      .split(sep)
+      .join("/");
     if (matchesAnyGlob(rel, config.excludeGlobs)) {
       log(`  skip (excluded): ${rel}`);
       continue;
     }
     const full = resolve(rootDir, rel);
-    if (!existsSync(full)) continue;
-    const content = readFileSync(full, "utf8");
-    // Auto-generated files own their own freshness header (written by the
-    // generator script). Bumping would diverge them from what --check expects.
-    if (content.includes("<!-- AUTO-GENERATED FILE")) {
-      log(`  skip (auto-generated): ${rel}`);
+    // Один дескриптор на читання І запис. Раніше тут стояли `existsSync`
+    // → `readFileSync(шлях)` → `writeFileSync(шлях)` — три незалежні
+    // операції над ІМЕНЕМ файлу, між якими воно може почати вказувати на
+    // щось інше (CodeQL js/file-system-race). Дескриптор прив'язаний до
+    // самого файлу, тож вікна між перевіркою й використанням немає.
+    //
+    // Свідомо синхронно: `bumpFiles` викликає pre-commit хук, і робити
+    // його async означало б переписати і хук, і його тести заради
+    // операції, яка все одно блокує коміт.
+    let fd;
+    try {
+      fd = openSync(full, "r+");
+    } catch {
+      // Файл зник між `git diff --cached` і цим моментом — нормально.
       continue;
     }
-    const cadenceDays = getCadenceDays(rel, config);
-    const { content: next, changed } = bumpHeader({
-      content,
-      today,
-      handle,
-      cadenceDays,
-    });
-    if (!changed) {
-      log(`  skip (no-op): ${rel}`);
-      continue;
+    try {
+      const content = readFileSync(fd, "utf8");
+      // Auto-generated files own their own freshness header (written by the
+      // generator script). Bumping would diverge them from what --check expects.
+      if (content.includes("<!-- AUTO-GENERATED FILE")) {
+        log(`  skip (auto-generated): ${rel}`);
+        continue;
+      }
+      const cadenceDays = getCadenceDays(rel, config);
+      const spreadDays = reviewJitterDays(rel, cadenceDays);
+      const { content: next, changed } = bumpHeader({
+        content,
+        today,
+        handle,
+        cadenceDays,
+        spreadDays,
+      });
+      if (!changed) {
+        log(`  skip (no-op): ${rel}`);
+        continue;
+      }
+      ftruncateSync(fd, 0);
+      writeSync(fd, next, 0, "utf8");
+      modified.push(rel);
+      log(
+        `  bumped: ${rel} → ${today} (next +${cadenceDays}d +${spreadDays}d)`,
+      );
+    } finally {
+      closeSync(fd);
     }
-    writeFileSync(full, next);
-    modified.push(rel);
-    log(`  bumped: ${rel} → ${today} (next +${cadenceDays}d)`);
   }
   return modified;
 }
@@ -301,5 +352,13 @@ if (isMain) {
     } catch {
       // best-effort; lint-staged will handle it
     }
+
+    // AI-CONTEXT: до 2026-10-01 тут же перегенеровувався і стейджився
+    // `freshness-dashboard.html`. Через це КОЖЕН коміт із `.md` переписував
+    // дашборд, і після кожного мерджу в `main` всі відкриті PR конфліктували
+    // в ньому без жодного змістовного перетину. Дашборд більше не комітиться
+    // (gitignored, генерується на вимогу й CI-артефактом) — не повертай сюди
+    // ні регенерацію, ні `git add`. Див. doc-freshness.md § «Чому дашборд не
+    // комітиться».
   }
 }

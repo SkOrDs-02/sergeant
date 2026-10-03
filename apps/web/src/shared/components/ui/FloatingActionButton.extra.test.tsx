@@ -8,6 +8,10 @@
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  resetVisualKeyboardInsetAdapter,
+  setVisualKeyboardInsetAdapter,
+} from "@sergeant/shared";
+import {
   render,
   screen,
   cleanup,
@@ -26,11 +30,25 @@ vi.mock("@shared/hooks/useBodyScrollLock", () => ({
 import { FloatingActionButton } from "./FloatingActionButton";
 
 afterEach(() => {
+  resetVisualKeyboardInsetAdapter();
   cleanup();
   vi.clearAllMocks();
 });
 
 describe("FloatingActionButton — single action", () => {
+  it("публікує свою нижню смугу в --sgt-fab-inset на <html>, доки видима", () => {
+    // `page-tabbar-pad` бере з цієї змінної запас під FAB, щоб останній
+    // рядок контенту не лягав під кнопку (критика екранів 2026-09-23).
+    const { unmount } = render(<FloatingActionButton onClick={() => {}} />);
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toMatch(/^\d+px$/);
+    unmount();
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toBe("");
+  });
+
   it("fires onClick when there are no actions", () => {
     const onClick = vi.fn();
     render(<FloatingActionButton onClick={onClick} aria-label="Додати" />);
@@ -57,8 +75,16 @@ describe("FloatingActionButton — single action", () => {
       <FloatingActionButton aria-label="V" variant="v2-fizruk" size="lg" />,
     );
     const btn = screen.getByRole("button", { name: "V" });
-    expect(btn.className).toContain("from-cyan-400");
+    expect(btn.className).toContain("bg-fizruk-strong");
+    expect(btn.className).not.toContain("bg-gradient");
     expect(btn.className).toContain("w-16");
+  });
+
+  it("у темній темі бере акцент модуля, як solid-кнопка, а не -strong", () => {
+    render(<FloatingActionButton aria-label="R" variant="routine" />);
+    const btn = screen.getByRole("button", { name: "R" });
+    expect(btn.className).toContain("dark:bg-routine");
+    expect(btn.className).toContain("dark:text-bg");
   });
 
   it("does not advertise a popup when there are no actions", () => {
@@ -143,5 +169,63 @@ describe("FloatingActionButton — scroll-to-hide", () => {
     });
     fireEvent.scroll(window);
     expect(outer.className).not.toContain("translate-y-24");
+  });
+
+  it("ховається й від прокрутки внутрішнього контейнера, не лише вікна", () => {
+    // Їжа гортає власний контейнер сторінок, а `scroll` не спливає до window.
+    render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <FloatingActionButton aria-label="Inner" />
+      </div>,
+    );
+    const outer = screen.getByRole("button", { name: "Inner" }).parentElement!;
+    const scroller = screen.getByTestId("scroller");
+
+    scroller.scrollTop = 200;
+    fireEvent.scroll(scroller);
+    expect(outer.className).toContain("translate-y-24");
+
+    scroller.scrollTop = 120;
+    fireEvent.scroll(scroller);
+    expect(outer.className).not.toContain("translate-y-24");
+  });
+
+  it("лишає резерв під собою, коли ховається від прокрутки", () => {
+    render(<FloatingActionButton aria-label="Keep" />);
+    Object.defineProperty(window, "scrollY", {
+      value: 300,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toMatch(/^\d+px$/);
+  });
+
+  // Перенесено з `RoutineBottomNav.test.tsx`: після уніфікації FAB
+  // (spec fab-and-manual-income §5-6) center-docked кнопка з nav-а переїхала
+  // сюди, а keyboard-hide поїхав разом із нею — `useVisualKeyboardInset` тут,
+  // рядки 132-136. Тести лишались у старому місці й падали, бо рендерили
+  // компонент, який FAB більше не володіє.
+  it("hides itself while the on-screen keyboard is open (spec § design decision 2)", () => {
+    setVisualKeyboardInsetAdapter((active) => (active ? 320 : 0));
+    render(<FloatingActionButton icon="plus" aria-label="Додати звичку" />);
+
+    // `aria-hidden` прибирає кнопку з accessibility-дерева і занулює її
+    // accessible name, тож дістаємось через DOM, а не через getByRole.
+    const fab = document.querySelector('[aria-label="Додати звичку"]')!;
+    const outer = fab.parentElement!;
+    expect(outer).toHaveAttribute("aria-hidden", "true");
+    expect(fab).toHaveAttribute("tabindex", "-1");
+    expect(outer.className).toContain("translate-y-24");
+  });
+
+  it("stays reachable while the keyboard is closed", () => {
+    setVisualKeyboardInsetAdapter(() => 0);
+    render(<FloatingActionButton icon="plus" aria-label="Додати звичку" />);
+
+    const fab = screen.getByRole("button", { name: "Додати звичку" });
+    expect(fab).not.toHaveAttribute("tabindex", "-1");
+    expect(fab.parentElement!.className).not.toContain("translate-y-24");
   });
 });

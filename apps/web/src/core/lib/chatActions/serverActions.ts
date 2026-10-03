@@ -32,6 +32,8 @@ import type {
   RecallMemoryRequest,
   RecallMemoryResponse,
 } from "@sergeant/shared";
+import { formatNumberUk } from "@sergeant/shared";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import type {
   ChatAction,
   ChatActionResult,
@@ -51,7 +53,7 @@ const SOURCE_LABEL_UK: Record<string, string> = {
   chat: "чат",
   finyk: "Фінік",
   fizruk: "Фізрук",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
   routine: "Рутина",
   journal: "журнал",
   digest: "дайджест",
@@ -100,21 +102,41 @@ async function callRecallApi(
       signal: controller.signal,
     });
     if (res.status === 503) {
+      // Сервер розрізняє два стани, і вони вимагають різних дій. Раніше обидва
+      // склеювались у «тимчасово недоступне»: для вимкненої фічі «тимчасово»
+      // означає «почекай, минеться», і чекати можна вічно — вмикається вона
+      // змінною оточення, а не часом. Коди: `recallRoute.ts`.
+      const code = await res
+        .json()
+        .then((b: unknown) => (b as { code?: string } | null)?.code)
+        .catch(() => undefined);
       return {
         error:
-          "AI memory тимчасово недоступне. Спробуй пізніше або перевір налаштування.",
+          code === "AI_MEMORY_DISABLED"
+            ? "Памʼять AI вимкнена на сервері, це не збій, фічу ще не активовано. Чекати марно."
+            : "Памʼять AI тимчасово недоступна: провайдер ембеддингів не відповідає. Спробуй за кілька хвилин.",
       };
     }
     if (res.status === 401) {
-      return { error: "Потрібна авторизація для пошуку памʼяті." };
+      return { error: "Увійди, щоб шукати в памʼяті." };
+    }
+    if (res.status === 402) {
+      // `requirePlan(pro)` на сервері: Free-тариф не має recall. Це не збій,
+      // повтор не допоможе — кажемо як є.
+      return {
+        error:
+          "Пошук у памʼяті асистента доступний у тарифі Premium. На Free він недоступний, повтор не допоможе.",
+      };
     }
     if (!res.ok) {
-      return { error: `Помилка серверу при recall (HTTP ${res.status}).` };
+      return {
+        error: "Не вдалося отримати памʼять асистента. Спробуй ще раз.",
+      };
     }
     return (await res.json()) as RecallMemoryResponse;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      return { error: "Recall таймаут — спробуй простіший запит." };
+      return { error: "Recall таймаут, спробуй простіший запит." };
     }
     return { error: "Не вдалося звʼязатися з сервером для recall." };
   } finally {
@@ -164,7 +186,7 @@ async function handleCreateTransaction(
   const { type, amount, category, description, date } = action.input;
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума транзакції.";
+    return "Некоректна сума операції.";
   }
   // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
   if (type === "income") {
@@ -183,7 +205,8 @@ async function handleCreateTransaction(
     // `category` поруч із канонічним `categoryId`: blob історично тримає
     // shape із `finykActions/transactions.ts#createTransaction`, і його
     // читачі очікують саме його.
-    const isoDate = new Date(`${expense.date}T12:00:00`).toISOString();
+    const isoDate =
+      parseKyivDate(expense.date)?.toISOString() ?? new Date().toISOString();
     const entry: Transaction & { category: string } = {
       id: expense.id,
       amount: Math.abs(amt),
@@ -216,11 +239,11 @@ async function handleCreateTransaction(
       ? resolveExpenseCategoryMeta(category.trim(), getCategories())
       : undefined;
     const label = meta?.label || category?.trim() || "";
-    return `Витрату ${amt} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
+    return `Витрату ${formatNumberUk(amt)} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
   } catch {
     // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
     const local = createTransactionLocal(action);
-    const suffix = " (сервер недоступний — записано лише локально)";
+    const suffix = " (сервер недоступний, записано лише локально)";
     if (typeof local === "string") return local + suffix;
     return { ...local, result: local.result + suffix };
   }

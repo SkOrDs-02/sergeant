@@ -159,3 +159,38 @@ describe("createPushEndpoints.unregister", () => {
     ).rejects.toThrow();
   });
 });
+
+describe("createPushEndpoints.getVapidPublic", () => {
+  it("отримує VAPID public key через версіонований шлях", async () => {
+    const fetchMock = mockFetchOnce({ publicKey: "vapid-public-key" });
+
+    const push = createPushEndpoints(createHttpClient());
+    const res = await push.getVapidPublic();
+
+    expect(res).toEqual({ publicKey: "vapid-public-key" });
+    expect(firstCall(fetchMock)[0]).toBe("/api/v1/push/vapid-public");
+  });
+});
+
+describe("createPushEndpoints.test", () => {
+  it("валідує відповідь `/api/push/test` і прокидає AbortSignal", async () => {
+    const summary = {
+      delivered: { ios: 1, android: 1, web: 0 },
+      cleaned: 1,
+      errors: [],
+    };
+    const fetchMock = mockFetchOnce(summary);
+    const ctrl = new AbortController();
+
+    const push = createPushEndpoints(createHttpClient());
+    const res = await push.test(
+      { title: "Перевірка", body: "Тестовий push" },
+      { signal: ctrl.signal },
+    );
+
+    expect(res).toEqual(summary);
+    expect(firstCall(fetchMock)[0]).toBe("/api/v1/push/test");
+    const init = firstCall(fetchMock)[1] as RequestInit;
+    expect(init.signal).toBe(ctrl.signal);
+  });
+});

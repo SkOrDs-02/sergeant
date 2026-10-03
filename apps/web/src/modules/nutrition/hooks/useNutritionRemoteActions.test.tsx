@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { PANTRY_ONLY_EMPTY_MESSAGE } from "@sergeant/shared";
 import type { UseNutritionRemoteActionsParams } from "./useNutritionRemoteActions";
 
 vi.mock("@shared/api", async () => {
@@ -13,10 +14,24 @@ vi.mock("@shared/api", async () => {
     nutritionApi: {
       recommendRecipes: vi.fn(),
       weekPlan: vi.fn(),
-      dayHint: vi.fn(),
       dayPlan: vi.fn(),
       shoppingList: vi.fn(),
     },
+  };
+});
+
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
   };
 });
 vi.mock("../lib/recipeCache.js", () => ({
@@ -28,7 +43,6 @@ import { nutritionApi } from "@shared/api";
 type MockFn = ReturnType<typeof vi.fn>;
 const apiRecommendRecipes = nutritionApi.recommendRecipes as unknown as MockFn;
 const apiFetchWeekPlan = nutritionApi.weekPlan as unknown as MockFn;
-const apiFetchDayHint = nutritionApi.dayHint as unknown as MockFn;
 const apiFetchDayPlan = nutritionApi.dayPlan as unknown as MockFn;
 const apiFetchShoppingList = nutritionApi.shoppingList as unknown as MockFn;
 
@@ -43,10 +57,22 @@ function makeWrapper() {
   };
 }
 
+const BASE_PREFS: UseNutritionRemoteActionsParams["prefs"] = {
+  goal: "balanced",
+  servings: 2,
+  timeMinutes: 30,
+  exclude: "",
+  dailyTargetKcal: 2000,
+  dailyTargetProtein_g: 120,
+  dailyTargetFat_g: 70,
+  dailyTargetCarbs_g: 200,
+};
+
 function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const setRecipes = vi.fn();
   const setRecipesRaw = vi.fn();
   const setRecipesTried = vi.fn();
@@ -55,8 +81,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setWeekPlanBusy = vi.fn();
   const setDayPlan = vi.fn();
   const setDayPlanBusy = vi.fn();
-  const setDayHintBusy = vi.fn();
-  const setDayHintText = vi.fn();
   const setShoppingBusy = vi.fn();
   const setGeneratedList = vi.fn();
 
@@ -64,19 +88,11 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     pantry: {
       effectiveItems: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
     },
-    prefs: {
-      goal: "balanced",
-      servings: 2,
-      timeMinutes: 30,
-      exclude: "",
-      dailyTargetKcal: 2000,
-      dailyTargetProtein_g: 120,
-      dailyTargetFat_g: 70,
-      dailyTargetCarbs_g: 200,
-    },
+    prefs: BASE_PREFS,
     recipes: [],
     setRecipes,
     setRecipesRaw,
@@ -84,12 +100,11 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     recipeCacheKey: "k",
     weekPlan: null,
     setWeekPlan,
+    weekPlanRaw: "",
     setWeekPlanRaw,
     setWeekPlanBusy,
     setDayPlan,
     setDayPlanBusy,
-    setDayHintBusy,
-    setDayHintText,
     log: {
       nutritionLog: {},
       selectedDate: "2025-01-01",
@@ -123,8 +138,6 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
       setWeekPlanBusy,
       setDayPlan,
       setDayPlanBusy,
-      setDayHintBusy,
-      setDayHintText,
       setShoppingBusy,
       setGeneratedList,
     },
@@ -169,17 +182,33 @@ describe("useNutritionRemoteActions", () => {
       );
     });
 
-    it("throws validation error when pantry is empty", async () => {
-      const { result, spies } = makeHarness({ pantry: { effectiveItems: [] } });
+    it("блокує only, коли комора порожня", async () => {
+      const { result, spies } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
       act(() => {
         result.current.recommendRecipes();
       });
       await waitFor(() => {
-        expect(spies.setErr).toHaveBeenCalledWith(
-          "Дай хоча б 2–3 продукти для рецептів.",
-        );
+        expect(spies.setErr).toHaveBeenCalledWith(PANTRY_ONLY_EMPTY_MESSAGE);
       });
       expect(apiRecommendRecipes).not.toHaveBeenCalled();
+    });
+
+    it("дозволяє prefer без продуктів — комора не є обовʼязковою", async () => {
+      apiRecommendRecipes.mockResolvedValueOnce({ recipes: [] });
+      const { result } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "prefer" },
+      });
+
+      act(() => result.current.recommendRecipes());
+
+      await waitFor(() => expect(apiRecommendRecipes).toHaveBeenCalled());
+      expect(apiRecommendRecipes).toHaveBeenCalledWith(
+        expect.objectContaining({ pantry: [] }),
+      );
     });
   });
 
@@ -199,59 +228,72 @@ describe("useNutritionRemoteActions", () => {
       expect(spies.setWeekPlanRaw).toHaveBeenCalledWith("wk-raw");
     });
 
-    it("throws when pantry is empty", async () => {
+    it("allows generating a plan before the pantry is filled", async () => {
+      apiFetchWeekPlan.mockResolvedValueOnce({
+        plan: { days: [] },
+        rawText: "empty-pantry-plan",
+      });
       const { result, spies } = makeHarness({ pantry: { effectiveItems: [] } });
       act(() => {
         result.current.fetchWeekPlan();
       });
+      await waitFor(() => expect(apiFetchWeekPlan).toHaveBeenCalled());
+      expect(apiFetchWeekPlan).toHaveBeenCalledWith(
+        expect.objectContaining({ pantry: [] }),
+      );
+      expect(spies.setErr).not.toHaveBeenCalledWith("Додай продукти в комору.");
+    });
+
+    it("блокує only на порожній коморі й не викликає API", async () => {
+      const { result, spies } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
+
+      act(() => result.current.fetchWeekPlan());
+
       await waitFor(() =>
-        expect(spies.setErr).toHaveBeenCalledWith("Додай продукти на склад."),
+        expect(spies.setErr).toHaveBeenCalledWith(PANTRY_ONLY_EMPTY_MESSAGE),
       );
       expect(apiFetchWeekPlan).not.toHaveBeenCalled();
     });
-  });
 
-  describe("fetchDayHint", () => {
-    it("skips network and emits synthetic hint when day has no meals", async () => {
-      const { result, spies } = makeHarness();
-      act(() => {
-        result.current.fetchDayHint();
+    it("шле pantryMode і не шле комору, коли обрано «не враховувати»", async () => {
+      // Репорт founder-а: у пікері обрано «не враховувати комору», а тижневий
+      // план усе одно пропонував страви з комори. Причина — тіло запиту
+      // взагалі не мало `pantryMode`, а список комори йшов беззастережно.
+      apiFetchWeekPlan.mockResolvedValueOnce({ plan: { days: [] } });
+      const { result } = makeHarness({
+        prefs: { ...BASE_PREFS, recipePantryMode: "ignore" },
       });
-      await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith(
-          "День порожній. Додай прийом їжі — і я зможу дати підказку.",
-        ),
+      act(() => {
+        result.current.fetchWeekPlan();
+      });
+      await waitFor(() => expect(apiFetchWeekPlan).toHaveBeenCalled());
+      expect(apiFetchWeekPlan).toHaveBeenCalledWith(
+        expect.objectContaining({ pantryMode: "ignore", pantry: [] }),
       );
-      expect(apiFetchDayHint).not.toHaveBeenCalled();
     });
 
-    it("calls API when day has meals and feeds hint to setter", async () => {
-      apiFetchDayHint.mockResolvedValueOnce({ hint: "Додай білка" });
+    it("відкат повертає і структуру, і сирий текст", async () => {
+      // Це два представлення ОДНІЄЇ відповіді LLM. Відкат, що вертає лише
+      // структуру, лишає картку з планом одного покоління і текстом іншого.
+      // Доки стан жив у памʼяті, розбіжність помирала на розмонтуванні;
+      // відколи план пишеться у сховище — переживає перезапуск.
+      apiFetchWeekPlan.mockRejectedValueOnce(new Error("мережа впала"));
       const { result, spies } = makeHarness({
-        log: {
-          nutritionLog: {
-            "2025-01-01": {
-              meals: [
-                {
-                  id: "m1",
-                  mealType: "breakfast",
-                  macros: { kcal: 300, protein_g: 20, fat_g: 10, carbs_g: 30 },
-                  macroSource: "manual",
-                },
-              ],
-            },
-          },
-          selectedDate: "2025-01-01",
-          handleAddMeal: vi.fn(),
-        },
+        weekPlan: { days: [{ day: "Пн" }] },
+        weekPlanRaw: "попередній текст",
       });
       act(() => {
-        result.current.fetchDayHint();
+        result.current.fetchWeekPlan();
       });
       await waitFor(() =>
-        expect(spies.setDayHintText).toHaveBeenCalledWith("Додай білка"),
+        expect(spies.setWeekPlan).toHaveBeenCalledWith({
+          days: [{ day: "Пн" }],
+        }),
       );
-      expect(apiFetchDayHint).toHaveBeenCalled();
+      expect(spies.setWeekPlanRaw).toHaveBeenCalledWith("попередній текст");
     });
   });
 
@@ -279,7 +321,7 @@ describe("useNutritionRemoteActions", () => {
       expect(updater(null)).toEqual(plan);
     });
 
-    it("throws when server returns empty plan", async () => {
+    it("throws with a cause + action when server returns empty plan (prefer/ignore)", async () => {
       apiFetchDayPlan.mockResolvedValueOnce({ plan: null });
       const { result, spies } = makeHarness();
       act(() => {
@@ -287,9 +329,43 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          "Не вдалося отримати план харчування",
+          "Сержант повернув порожній план харчування. Спробуй згенерувати ще раз.",
         ),
       );
+    });
+
+    // UX-1 (аудит 2026-09-01): режим «тільки з наявного» дає окрему причину
+    // (комора не вистачила на страву), а не той самий текст, що prefer/ignore.
+    it("throws with the pantry-specific cause when mode is 'only'", async () => {
+      apiFetchDayPlan.mockResolvedValueOnce({ plan: { meals: [] } });
+      const { result, spies } = makeHarness({
+        pantry: {
+          effectiveItems: [{ name: "Яйця", qty: 10, unit: "шт", notes: null }],
+        },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
+      act(() => {
+        result.current.fetchDayPlan();
+      });
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(
+          "Сержант не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори.",
+        ),
+      );
+    });
+
+    it("блокує only на порожній коморі й не викликає API", async () => {
+      const { result, spies } = makeHarness({
+        pantry: { effectiveItems: [] },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
+
+      act(() => result.current.fetchDayPlan());
+
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(PANTRY_ONLY_EMPTY_MESSAGE),
+      );
+      expect(apiFetchDayPlan).not.toHaveBeenCalled();
     });
 
     it("posts `pantry` (not `items`) and omits regenerateMealType when no regen target", async () => {
@@ -311,6 +387,40 @@ describe("useNutritionRemoteActions", () => {
       );
       expect(body).not.toHaveProperty("items");
       expect(body).not.toHaveProperty("regenerateMealType");
+    });
+
+    it("шле pantryMode і не шле комору, коли обрано «не враховувати»", async () => {
+      // Ядро репорту founder-а: вибір «не враховувати комору» не доїжджав до
+      // денного плану взагалі — у тілі запиту не було ані `pantryMode`, ані
+      // причини не слати повний список продуктів.
+      apiFetchDayPlan.mockResolvedValueOnce({ plan: { meals: [] } });
+      const { result } = makeHarness({
+        prefs: { ...BASE_PREFS, recipePantryMode: "ignore" },
+      });
+      act(() => {
+        result.current.fetchDayPlan();
+      });
+      await waitFor(() => expect(apiFetchDayPlan).toHaveBeenCalled());
+      const body = apiFetchDayPlan.mock.calls.at(-1)?.[0];
+      expect(body).toEqual(
+        expect.objectContaining({ pantryMode: "ignore", pantry: [] }),
+      );
+    });
+
+    it("шле повну комору в режимі prefer (дефолт)", async () => {
+      apiFetchDayPlan.mockResolvedValueOnce({ plan: { meals: [] } });
+      const { result } = makeHarness();
+      act(() => {
+        result.current.fetchDayPlan();
+      });
+      await waitFor(() => expect(apiFetchDayPlan).toHaveBeenCalled());
+      const body = apiFetchDayPlan.mock.calls.at(-1)?.[0];
+      expect(body).toEqual(
+        expect.objectContaining({
+          pantryMode: "prefer",
+          pantry: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
+        }),
+      );
     });
 
     it("includes regenerateMealType when regenerating a specific meal", async () => {
@@ -442,9 +552,58 @@ describe("useNutritionRemoteActions", () => {
       expect(apiFetchShoppingList).not.toHaveBeenCalled();
     });
 
+    // Одна таксономія з коморою (рішення власника 2026-10-01): відповідь моделі
+    // зводиться до категорій комори до того, як потрапить у список.
+    it("зводить старі й невідомі назви категорій відповіді до категорій комори", async () => {
+      apiFetchShoppingList.mockResolvedValueOnce({
+        categories: [
+          {
+            name: "Мʼясо та риба",
+            items: [
+              { name: "Лосось", quantity: "300 г", note: "" },
+              { name: "Куряче філе", quantity: "500 г", note: "" },
+            ],
+          },
+          {
+            name: "Спреди та намазки",
+            items: [{ name: "Паста арахісова", quantity: "1 шт", note: "" }],
+          },
+          {
+            name: "Щось своє",
+            items: [{ name: "Кефір", quantity: "1 л", note: "" }],
+          },
+        ],
+      });
+      const { result, spies } = makeHarness({
+        recipes: [{ id: "r1", name: "Сендвіч" }],
+      });
+      act(() => {
+        result.current.generateShoppingList("recipes");
+      });
+      await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+
+      const generated = spies.setGeneratedList.mock.calls[0]?.[0] as Array<{
+        name: string;
+        items: Array<{ name: string }>;
+      }>;
+      expect(
+        generated.map((c) => [c.name, c.items.map((i) => i.name)]),
+      ).toEqual([
+        ["Риба та морепродукти", ["Лосось"]],
+        ["Мʼясо та птиця", ["Куряче філе"]],
+        ["Спреди та намазки", ["Паста арахісова"]],
+        ["Молочні та яйця", ["Кефір"]],
+      ]);
+    });
+
     it("posts recipes when source fallback and feeds categories to shopping", async () => {
       apiFetchShoppingList.mockResolvedValueOnce({
-        categories: [{ name: "Овочі", items: [] }],
+        categories: [
+          {
+            name: "Овочі",
+            items: [{ name: "Помідори", quantity: "2 шт", note: "" }],
+          },
+        ],
       });
       const { result, spies } = makeHarness({
         recipes: [{ id: "r1", name: "Омлет" }],
@@ -454,9 +613,126 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setGeneratedList).toHaveBeenCalledWith([
-          { name: "Овочі", items: [] },
+          {
+            name: "Овочі",
+            items: [
+              expect.objectContaining({
+                name: "Помідори",
+                quantity: "2 шт",
+                checked: false,
+              }),
+            ],
+          },
         ]),
       );
+    });
+
+    describe("вибір рецептів (збережені + згенеровані)", () => {
+      const OK = {
+        categories: [
+          {
+            name: "Овочі",
+            items: [{ name: "Помідори", quantity: "2 шт", note: "" }],
+          },
+        ],
+      };
+
+      it("шле на сервер лише позначені рецепти, а не все, що в памʼяті", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const { result, spies } = makeHarness({
+          // Згенеровані в памʼяті - їх у запиті бути не має.
+          recipes: [{ id: "g-all", title: "Лишній", ingredients: ["сіль"] }],
+        });
+        act(() => {
+          result.current.generateShoppingList("recipes", [
+            // Збережений рецепт із кроками й макросами: серверу для списку
+            // покупок потрібні лише назва та інгредієнти.
+            {
+              id: "s1",
+              title: "Борщ",
+              ingredients: ["буряк"],
+              steps: ["Зварити"],
+              macros: { kcal: 300 },
+            },
+            { id: "g1", title: "Омлет", ingredients: ["яйця"] },
+          ]);
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        const body = apiFetchShoppingList.mock.calls[0]![0] as {
+          recipes: unknown[];
+          weekPlan?: unknown;
+        };
+        expect(body.recipes).toEqual([
+          { title: "Борщ", ingredients: ["буряк"] },
+          { title: "Омлет", ingredients: ["яйця"] },
+        ]);
+        expect(body.weekPlan).toBeUndefined();
+      });
+
+      it("вкладає запит у стелі схеми: ≤20 рецептів, ≤50 інгредієнтів по ≤200", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const { result, spies } = makeHarness();
+        const many = Array.from({ length: 25 }, (_, i) => ({
+          id: `s${i}`,
+          title: `Рецепт ${i}`,
+          ingredients: Array.from({ length: 70 }, () => "і".repeat(250)),
+        }));
+        act(() => {
+          result.current.generateShoppingList("recipes", many);
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        const body = apiFetchShoppingList.mock.calls[0]![0] as {
+          recipes: Array<{ ingredients: string[] }>;
+        };
+        expect(body.recipes).toHaveLength(20);
+        expect(body.recipes[0]!.ingredients).toHaveLength(50);
+        expect(body.recipes[0]!.ingredients[0]).toHaveLength(200);
+      });
+
+      it("порожній вибір - помилка, а не мовчазний запит із усіма рецептами", async () => {
+        const { result, spies } = makeHarness({
+          recipes: [{ id: "g-all", title: "Лишній" }],
+        });
+        act(() => {
+          result.current.generateShoppingList("recipes", []);
+        });
+        await waitFor(() =>
+          expect(spies.setErr).toHaveBeenCalledWith(
+            "Немає рецептів чи тижневого плану для генерації.",
+          ),
+        );
+        expect(apiFetchShoppingList).not.toHaveBeenCalled();
+      });
+
+      it("без вибору (старі виклики) бере всі рецепти з памʼяті, як і раніше", async () => {
+        apiFetchShoppingList.mockResolvedValueOnce(OK);
+        const recipes = [{ id: "g1", title: "Омлет", ingredients: ["яйця"] }];
+        const { result, spies } = makeHarness({ recipes });
+        act(() => {
+          result.current.generateShoppingList("recipes");
+        });
+        await waitFor(() => expect(spies.setGeneratedList).toHaveBeenCalled());
+        expect(
+          (apiFetchShoppingList.mock.calls[0]![0] as { recipes: unknown[] })
+            .recipes,
+        ).toEqual(recipes);
+      });
+    });
+
+    it("shows an actionable error instead of silently accepting an empty list", async () => {
+      apiFetchShoppingList.mockResolvedValueOnce({ categories: [] });
+      const { result, spies } = makeHarness({
+        recipes: [{ id: "r1", name: "Омлет" }],
+      });
+
+      act(() => result.current.generateShoppingList("recipes"));
+
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(
+          expect.stringContaining("Сержант не повернув жодної покупки"),
+        ),
+      );
+      expect(spies.setGeneratedList).not.toHaveBeenCalled();
     });
   });
 });

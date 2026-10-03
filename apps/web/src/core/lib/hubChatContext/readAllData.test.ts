@@ -1,11 +1,23 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../../modules/finyk/lib/monoMirrorReader";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../modules/finyk/lib/sqliteReader";
 import { readAllData } from "./readAllData";
 
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  clearFinykMonoMirrorCache();
+  clearFinykSqliteCache();
+});
 
 describe("readAllData", () => {
-  it("returns empty defaults when localStorage is empty", () => {
+  it("returns empty defaults when caches are empty", () => {
     const d = readAllData();
     expect(d.transactions).toEqual([]);
     expect(d.accounts).toEqual([]);
@@ -15,47 +27,28 @@ describe("readAllData", () => {
     expect(d.excludedIds.size).toBe(0);
   });
 
-  it("reads tx cache and info cache (flat shape)", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [{ id: "t1", amount: -100 }],
-        timestamp: 1700000000,
-      }),
-    );
-    localStorage.setItem(
-      "finyk_info_cache",
-      JSON.stringify({ accounts: [{ id: "a1", balance: 5 }], name: "Олег" }),
-    );
+  it("reads tx and account slices from the Mono mirror cache", () => {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [{ id: "t1", amount: -100 } as never],
+      accounts: [{ id: "a1", balance: 5 }],
+      refreshedAt: "2026-06-01T00:00:00.000Z",
+    });
     const d = readAllData();
     expect(d.transactions).toHaveLength(1);
     expect(d.accounts).toHaveLength(1);
-    expect(d.clientName).toBe("Олег");
-    expect(d.cacheTime).toBe(1700000000);
-  });
-
-  it("reads info cache wrapped in { info } shape", () => {
-    localStorage.setItem(
-      "finyk_info_cache",
-      JSON.stringify({ info: { accounts: [{ id: "a2" }], name: "Іван" } }),
-    );
-    const d = readAllData();
-    expect(d.clientName).toBe("Іван");
-    expect(d.accounts).toHaveLength(1);
+    expect(d.clientName).toBe("");
+    expect(d.cacheTime).toBe(new Date("2026-06-01T00:00:00.000Z").getTime());
   });
 
   it("computes excludedIds from hidden txs, transfers and receivable links", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          { id: "t1", amount: -100 },
-          { id: "t2", amount: -200 },
-          { id: "t3", amount: -300 },
-          { id: "t4", amount: -400 },
-        ],
-      }),
-    );
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "t1", amount: -100 },
+        { id: "t2", amount: -200 },
+        { id: "t3", amount: -300 },
+        { id: "t4", amount: -400 },
+      ] as never[],
+    });
     localStorage.setItem("finyk_hidden_txs", JSON.stringify(["t1"]));
     localStorage.setItem(
       "finyk_tx_cats",
@@ -72,5 +65,32 @@ describe("readAllData", () => {
     expect(d.excludedIds.has("t2")).toBe(true);
     expect(d.excludedIds.has("t3")).toBe(true);
     expect(d.statTx.map((t) => t.id)).toEqual(["t4"]);
+  });
+
+  it("віддає чат-контексту ефективну мапу категорій: правило мерчанта + явні override-и", () => {
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        { id: "t1", amount: -100, description: "Сільпо №5" },
+        { id: "t2", amount: -200, description: "СІЛЬПО 12" },
+        { id: "t3", amount: -300, description: "АТБ" },
+      ] as never[],
+    });
+    __setFinykSqliteStateCacheForTests({
+      merchantRules: [
+        {
+          id: "mr_1",
+          kind: "expense",
+          merchantKey: "сільпо",
+          categoryId: "transport",
+          label: "Сільпо",
+          createdAt: "2026-10-01T10:00:00.000Z",
+          updatedAt: "2026-10-01T10:00:00.000Z",
+        },
+      ],
+    } as never);
+    localStorage.setItem("finyk_tx_cats", JSON.stringify({ t2: "food" }));
+
+    const d = readAllData();
+    expect(d.txCategories).toEqual({ t1: "transport", t2: "food" });
   });
 });

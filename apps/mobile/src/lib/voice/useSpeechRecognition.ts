@@ -1,5 +1,5 @@
 /**
- * RN port of web's `useVoiceInput` (Phase 8 — `docs/mobile/react-native-migration.md` §6.5).
+ * RN port of web's `useVoiceInput` (Phase 8 — `docs/engineering/mobile/react-native-migration.md` §6.5).
  *
  * Тримаємо публічний API сумісним з web-варіантом
  * (`apps/web/src/shared/components/ui/voice/useVoiceInput.ts`):
@@ -82,26 +82,25 @@ export function useSpeechRecognition({
   onError,
 }: UseSpeechRecognitionOptions = {}): UseSpeechRecognitionReturn {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
+  // Стартова перевірка доступності native розпізнавача — синхронна
+  // і дешева, тому ініціалізуємо lazy useState замість useEffect+setState
+  // (`react-hooks/set-state-in-effect`, initiative 0021).
+  const [supported] = useState<boolean>(() => {
+    try {
+      return Boolean(ExpoSpeechRecognitionModule.isRecognitionAvailable());
+    } catch {
+      return false;
+    }
+  });
 
   // Тримаємо ref-и на колбеки, щоб event-listener-и стабільно бачили
   // свіжі onResult/onError без де-реєстрації на кожному рендері.
   const onResultRef = useRef(onResult);
   const onErrorRef = useRef(onError);
-  onResultRef.current = onResult;
-  onErrorRef.current = onError;
-
-  // Стартова перевірка доступності native розпізнавача. Виконується
-  // 1 раз на mount — `isRecognitionAvailable` синхронний і дешевий.
   useEffect(() => {
-    try {
-      setSupported(
-        Boolean(ExpoSpeechRecognitionModule.isRecognitionAvailable()),
-      );
-    } catch {
-      setSupported(false);
-    }
-  }, []);
+    onResultRef.current = onResult;
+    onErrorRef.current = onError;
+  }, [onResult, onError]);
 
   // Реєструємо native-event-листенери один раз. `addListener` повертає
   // `EventSubscription`, який знімаємо в cleanup-у.

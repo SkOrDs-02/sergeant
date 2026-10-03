@@ -27,14 +27,19 @@ const MUTE_STORAGE_KEY = "sergeant.voice.tts.muted";
  * `cleanTextForSpeech` (`apps/web/src/core/lib/hubChatSpeech.ts`).
  */
 function cleanTextForSpeech(text: string): string {
-  return text
-    .replace(/✅/g, "")
-    .replace(/\[.*?\]/g, "")
-    .replace(/id:\S+/g, "")
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/[_*#~`|]/g, "")
-    .replace(/\s{2,}/g, " ")
-    .trim();
+  return (
+    text
+      // `✓` (U+2713) — статус-маркер tool-call-ів у транскрипті чату;
+      // TTS його не диктує. Раніше тут стояла emoji `✅`, яку 2026-08-21
+      // замінено на типографічний символ (див. `useChatSend`).
+      .replace(/[✓✔✅]/g, "")
+      .replace(/\[.*?\]/g, "")
+      .replace(/id:\S+/g, "")
+      .replace(/https?:\/\/\S+/g, "")
+      .replace(/[_*#~`|]/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
 }
 
 export interface UseTextToSpeechOptions {
@@ -84,7 +89,9 @@ export function useTextToSpeech({
   // Snapshot опцій у ref, щоб `speak()` ловив свіжі значення без зміни
   // identity-callback-а.
   const optionsRef = useRef({ lang, pitch, rate });
-  optionsRef.current = { lang, pitch, rate };
+  useEffect(() => {
+    optionsRef.current = { lang, pitch, rate };
+  }, [lang, pitch, rate]);
 
   const setMuted = useCallback((next: boolean) => {
     setMutedState(next);
@@ -92,7 +99,7 @@ export function useTextToSpeech({
       mobileKVStore.setString(MUTE_STORAGE_KEY, next ? "true" : "false");
     } catch (err) {
       // MMKV може бути недоступний у тестах — лог для observability,
-      // але стан у пам'яті вже виставлено, тому UX не блокується.
+      // але стан у памʼяті вже виставлено, тому UX не блокується.
       console.warn("[useTextToSpeech] persist mute flag failed", err);
     }
     if (next) {

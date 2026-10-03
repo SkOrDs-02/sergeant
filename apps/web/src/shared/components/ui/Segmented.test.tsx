@@ -46,7 +46,7 @@ describe("Segmented", () => {
     expect(onChange).toHaveBeenCalledWith("month");
   });
 
-  it("style='solid' + variant='fizruk' paints the active tab with fizruk-solid palette", () => {
+  it("style='solid' + variant='fizruk' paints the active tab inverted-ink", () => {
     const { getAllByRole } = render(
       <Segmented
         items={ITEMS}
@@ -57,10 +57,50 @@ describe("Segmented", () => {
       />,
     );
     const active = getAllByRole("tab")[0];
-    // `bg-fizruk-strong` (= teal-700) clears 5.47:1 against text-white.
-    // The previous `bg-fizruk` (= teal-500) only cleared ~2.5:1.
-    expect(active!.className!).toContain("bg-fizruk-strong");
-    expect(active!.className!).toContain("text-white");
+    // «Чорнило» v3.1 § 6 — solid active is inverted-ink (bg-ink/text-bg,
+    // theme-aware) instead of a saturated module fill; border keeps the
+    // module accent for continuity with siblings.
+    expect(active!.className!).toContain("bg-ink");
+    expect(active!.className!).toContain("text-bg");
+    expect(active!.className!).toContain("border-fizruk");
+  });
+
+  it("supports roving tabindex: only the active tab is a tab stop", () => {
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={() => {}} />,
+    );
+    const tabs = getAllByRole("tab");
+    expect(tabs[0]!.tabIndex).toBe(-1);
+    expect(tabs[1]!.tabIndex).toBe(0);
+    expect(tabs[2]!.tabIndex).toBe(-1);
+  });
+
+  it("ArrowRight moves focus + selection to the next tab, wrapping at the end", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="month" onChange={onChange} />,
+    );
+    const tabs = getAllByRole("tab");
+    tabs[2]!.focus();
+    fireEvent.keyDown(tabs[2]!, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenCalledWith("day");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
+  it("Home/End jump to the first/last tab", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={onChange} />,
+    );
+    const tabs = getAllByRole("tab");
+    tabs[1]!.focus();
+    fireEvent.keyDown(tabs[1]!, { key: "End" });
+    expect(onChange).toHaveBeenCalledWith("month");
+    expect(document.activeElement).toBe(tabs[2]);
+
+    fireEvent.keyDown(tabs[2]!, { key: "Home" });
+    expect(onChange).toHaveBeenCalledWith("day");
+    expect(document.activeElement).toBe(tabs[0]);
   });
 
   it("style='soft' (default) + variant='routine' paints the active tab with routine-soft palette", () => {
@@ -79,4 +119,51 @@ describe("Segmented", () => {
     // `text-routine-strong` hex that went sub-AA in HC. See VARIANT_SOFT.
     expect(active!.className!).toContain("text-routine-soft-fg");
   });
+
+  it("defaults to the pill layout: rounded chips on a wrapping row", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} />,
+    );
+    expect(getByRole("tablist").className).toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("rounded-xl");
+      expect(tab.className).not.toContain("flex-1");
+    }
+  });
+
+  it("layout='bar' makes one full-width track of equal segments", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} layout="bar" />,
+    );
+    const tablist = getByRole("tablist");
+    expect(tablist.className).toContain("w-full");
+    // A wrapped segment would break the single track the layout promises.
+    expect(tablist.className).not.toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("flex-1");
+      expect(tab.className).toContain("rounded-2xl");
+    }
+  });
+
+  it.each(["finyk", "fizruk", "routine", "nutrition"] as const)(
+    "style='soft' + variant='%s': вибраний піл = тонований фон + контур `-edge` (A4 аудиту контрасту)",
+    (variant) => {
+      // Тихі `{m}-ring` / `{m}-border-dark/40` давали 1.35 (світла) / 2.49
+      // (темна) проти сусіда; для СТАНУ потрібно ≥3:1 (WCAG 1.4.11).
+      const { getAllByRole } = render(
+        <Segmented
+          items={ITEMS}
+          value="day"
+          onChange={() => {}}
+          variant={variant}
+        />,
+      );
+      const [active, idle] = getAllByRole("tab");
+      expect(active!.className).toContain(`border-${variant}-edge`);
+      expect(active!.className).not.toContain(`border-${variant}-ring`);
+      expect(active!.className).not.toContain(`${variant}-border-dark`);
+      // Невибраний піл не змінився: тиха межа картки.
+      expect(idle!.className).toContain("border-line");
+    },
+  );
 });

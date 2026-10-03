@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Unit tests for the shared `sergeant-db` connection introduced in
- * Stage 1 PR #010 (`docs/planning/storage-roadmap.md`).
+ * Stage 1 PR #010 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * The suite covers two orthogonal contracts:
  *
@@ -16,7 +16,7 @@
  *      stores + the two `keyPath` indexes), the dbGet/dbSet/dbDel
  *      wrappers, and the `migrateLegacyDbOnce()` flow.
  *
- * Follow-up to `docs/testing/2026-05-05-tests-pr-plan.md` → PR-T03.
+ * Follow-up to `docs/engineering/testing/2026-05-05-tests-pr-plan.md` → PR-T03.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { IDBFactory } from "fake-indexeddb";

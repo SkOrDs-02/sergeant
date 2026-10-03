@@ -233,6 +233,44 @@ describe("setupAutoUpdate", () => {
     ctrl.dispose();
   });
 
+  // Регресія: сервер ріже `X-Server-Build-Id` до 7 символів
+  // (`apps/server/src/http/buildIdHeader.ts`), а клієнтський `VITE_BUILD_ID` —
+  // це повний `VERCEL_GIT_COMMIT_SHA`. Поки обидві сторони не зводились до
+  // короткої форми, рівність була недосяжна навіть для одного коміту, і
+  // hard-floor піднімав плашку «нова версія» у кожній сесії через годину.
+  it("treats a short server sha and the full client sha of one commit as a match", async () => {
+    installServiceWorkerMock();
+    const events: string[] = [];
+    window.addEventListener("pwa-update-ready", () => events.push("ready"));
+    const ctrl = setupAutoUpdate({
+      clientBuildId: "9f3c1ab7d2e45608b1aa77c3390ef4d5a6b8c012",
+      buildIdMismatchPromptMs: 60 * 60 * 1000,
+    });
+
+    ctrl.reportServerBuildId("9f3c1ab");
+
+    await vi.advanceTimersByTimeAsync(3 * 60 * 60 * 1000);
+    expect(events).toEqual([]);
+    expect(window.__pwaUpdateReady).toBeUndefined();
+    ctrl.dispose();
+  });
+
+  it("still force-prompts when the short shas genuinely differ", async () => {
+    installServiceWorkerMock();
+    const events: string[] = [];
+    window.addEventListener("pwa-update-ready", () => events.push("ready"));
+    const ctrl = setupAutoUpdate({
+      clientBuildId: "9f3c1ab7d2e45608b1aa77c3390ef4d5a6b8c012",
+      buildIdMismatchPromptMs: 60 * 60 * 1000,
+    });
+
+    ctrl.reportServerBuildId("0d42e91");
+
+    await vi.advanceTimersByTimeAsync(60 * 60 * 1000 + 1);
+    expect(events).toEqual(["ready"]);
+    ctrl.dispose();
+  });
+
   it("ignores empty / whitespace-only / nullish server build-id values", () => {
     installServiceWorkerMock();
     const events: string[] = [];

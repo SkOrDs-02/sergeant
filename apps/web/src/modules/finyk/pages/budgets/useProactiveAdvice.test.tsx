@@ -89,7 +89,7 @@ describe("useProactiveAdvice", () => {
 
     expect(result.current.proactiveItems).toHaveLength(1);
     const item = result.current.proactiveItems[0]!;
-    expect(item.categoryId).toBe("food");
+    expect(item.categoryKey).toBe("food");
     expect(item.pct).toBe(90);
     expect(item.remaining).toBe(100);
 

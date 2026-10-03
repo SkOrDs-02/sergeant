@@ -5,7 +5,7 @@ import type { Request, RequestHandler } from "express";
  * middleware, бо читає `req.user` (resolved Better Auth-ом). Якщо
  * `req.user.emailVerified !== true` — повертаємо 403 з code
  * `EMAIL_VERIFICATION_REQUIRED`, фронт показує банер "Підтвердіть email,
- * щоб під'єднати банк".
+ * щоб підʼєднати банк".
  *
  * Чому окремий middleware, а не inline-чек у handler-і `connectHandler`:
  *   - threat model H6 каже про **кожний** sensitive flow (Mono connect,
@@ -35,15 +35,17 @@ export function requireVerifiedEmail(): RequestHandler {
       // `requireSession() → requireVerifiedEmail()` `req.user` вже точно
       // є. Дублюємо 401 на випадок, якщо хтось забуде попередній
       // middleware (та і взагалі сюди не буде попадати без сесії).
-      res
-        .status(401)
-        .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+      res.status(401).json({
+        error: "Потрібна автентифікація",
+        message: "Потрібна автентифікація",
+        code: "UNAUTHORIZED",
+      });
       return;
     }
     if (user.emailVerified !== true) {
       res.status(403).json({
         error:
-          "Підтвердьте email, щоб виконати цю дію. Лист надіслано на адресу при реєстрації.",
+          "Підтверди email, щоб виконати цю дію. Лист надіслано на адресу з реєстрації.",
         code: "EMAIL_VERIFICATION_REQUIRED",
       });
       return;

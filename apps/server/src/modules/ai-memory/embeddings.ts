@@ -30,6 +30,8 @@ import {
 } from "./voyageBudget.js";
 import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
 
+import { maskMachineText } from "../../lib/llmRedaction.js";
+
 const VOYAGE_URL = "https://api.voyageai.com/v1/embeddings";
 
 /**
@@ -38,7 +40,7 @@ const VOYAGE_URL = "https://api.voyageai.com/v1/embeddings";
  *
  * Match-имо по model-prefix через `pickVoyagePricing()` (`startsWith`),
  * щоб майбутні subversions (`-2024xx-yy`) того самого сімейства брали ту
- * саму ціну. Невідома модель → cost-counter не інкрементується (PR-33).
+ * саму ціну. Невідома модель → консервативна ціна `VOYAGE_FALLBACK_PRICE_USD_PER_MTOK` + one-shot warn (B10).
  */
 const VOYAGE_PRICING_USD_PER_MTOK: Record<string, number> = {
   // 2025-line — multilingual, output_dimension up to 1024
@@ -54,6 +56,23 @@ const VOYAGE_PRICING_USD_PER_MTOK: Record<string, number> = {
   "voyage-law-2": 0.12,
   "voyage-2": 0.1,
 };
+
+/**
+ * Консервативна ціна для моделі, якої немає в таблиці (або відповідь Voyage
+ * не назвала модель): найдорожчий тариф таблиці. Завищена оцінка гірша за
+ * нульову лише для дашборда, а для стелі бюджету правильна: невідома модель
+ * не має вимикати ні soft-, ні hard-cap (аудит ai-pipeline-2026-08-05 § B10).
+ */
+export const VOYAGE_FALLBACK_PRICE_USD_PER_MTOK = Math.max(
+  ...Object.values(VOYAGE_PRICING_USD_PER_MTOK),
+);
+
+const warnedUnpricedModels = new Set<string>();
+
+/** Тільки для тестів: скидає дедуп warn-логу про невідому модель. */
+export function __resetVoyageUnpricedWarnings(): void {
+  warnedUnpricedModels.clear();
+}
 
 function pickVoyagePricing(model: string): number | null {
   if (!model || model === "unknown") return null;
@@ -82,22 +101,32 @@ export function recordVoyageUsage(
       { provider: "voyage", model, endpoint, kind: "prompt" },
       tokenCount,
     );
-    const pricePerMTok = pickVoyagePricing(model);
-    if (pricePerMTok != null) {
-      const usd = (tokenCount * pricePerMTok) / 1_000_000;
-      if (usd > 0) {
-        aiCostEstimateUsd.inc({ provider: "voyage", model, endpoint }, usd);
-        // PR-38 — feed in-process daily-budget accumulator. Окремо від
-        // counter-у, бо counter monotonically накопичує since-start, а
-        // soft-gate-у потрібна сума саме за поточну UTC-добу.
-        addVoyageDailyUsageUsd(usd);
-        // Voyage daily cost alert — post-record check для hard threshold
-        // (`error_signature='voyage-daily-budget-hard'`) + monthly projection.
-        // Idempotent: ≤1 alert на (day, tier). Workflow для soft є у
-        // `checkVoyageSoftBudget()` preflight (pre-call); tick тут потрібен,
-        // щоб hard fire-вся навіть коли soft вимкнено (SOFT=0).
-        runVoyageBudgetTick();
+    let pricePerMTok = pickVoyagePricing(model);
+    if (pricePerMTok == null) {
+      // B10: облік бюджету НЕ залежить від наявності моделі в таблиці цін.
+      pricePerMTok = VOYAGE_FALLBACK_PRICE_USD_PER_MTOK;
+      if (!warnedUnpricedModels.has(model)) {
+        warnedUnpricedModels.add(model);
+        logger.warn({
+          msg: "voyage_model_unpriced_using_fallback",
+          model,
+          fallback_usd_per_mtok: pricePerMTok,
+        });
       }
+    }
+    const usd = (tokenCount * pricePerMTok) / 1_000_000;
+    if (usd > 0) {
+      aiCostEstimateUsd.inc({ provider: "voyage", model, endpoint }, usd);
+      // PR-38 — feed in-process daily-budget accumulator. Окремо від
+      // counter-у, бо counter monotonically накопичує since-start, а
+      // soft-gate-у потрібна сума саме за поточну UTC-добу.
+      addVoyageDailyUsageUsd(usd);
+      // Voyage daily cost alert — post-record check для hard threshold
+      // (`error_signature='voyage-daily-budget-hard'`) + monthly projection.
+      // Idempotent: ≤1 alert на (day, tier). Workflow для soft є у
+      // `checkVoyageSoftBudget()` preflight (pre-call); tick тут потрібен,
+      // щоб hard fire-вся навіть коли soft вимкнено (SOFT=0).
+      runVoyageBudgetTick();
     }
   } catch {
     /* metrics must never break a request */
@@ -168,7 +197,7 @@ interface VoyageEmbeddingResponse {
 }
 
 /**
- * Circuit breaker для Voyage. Окремий від Anthropic — embedд'инг і
+ * Circuit breaker для Voyage. Окремий від Anthropic — embedдʼинг і
  * chat — різні провайдери, breaker одного не має псувати breaker
  * іншого.
  */
@@ -226,6 +255,17 @@ export function createVoyageEmbeddings(
     }
     if (texts.length === 0) return [];
 
+    // Маскування перед Voyage (рішення founder-а #10). Voyage — другий
+    // сторонній обробник поряд з Anthropic, і текст факту памʼяті їде до
+    // нього цілим.
+    //
+    // AI-DANGER: маска стоїть саме тут, бо `callVoyage` — спільна дорога
+    // і для **запису** факту, і для **пошукового запиту**. Обидві сторони
+    // мусять бачити однаково замаскований текст, інакше вектори перестають
+    // сходитись і пошук по памʼяті тихо деградує — без жодної помилки в
+    // логах. Перенесеш маску на один із двох шляхів — зламаєш recall.
+    const safeTexts = texts.map((t) => maskMachineText(t));
+
     // PR-38 — soft daily-budget gate. Сам check ідемпотентний
     // (Sentry alert 1× на (day, threshold)); тут лиш вирішуємо,
     // чи виконувати виклик. Critical-виклики (user-facing recall,
@@ -272,7 +312,7 @@ export function createVoyageEmbeddings(
             Authorization: `Bearer ${env.VOYAGE_API_KEY}`,
           },
           body: JSON.stringify({
-            input: texts,
+            input: safeTexts,
             model: env.VOYAGE_EMBEDDING_MODEL,
             input_type: "document",
             output_dimension: env.VOYAGE_EMBEDDING_DIM,

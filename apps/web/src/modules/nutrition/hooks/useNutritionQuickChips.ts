@@ -1,11 +1,11 @@
 /**
  * Last validated: 2026-06-15
  * Status: Active
- * Phase 6.6 — pantry-aware quick-add chips for Nutrition hero.
+ * Phase 6.6 — pantry-aware quick-add chips for the add-meal flow.
  *
  * Returns up to 5 chips representing meals the user habitually logs. Each chip
  * carries a full macro snapshot so the parent can call the existing meal
- * persistence path without going through `AddMealSheet`.
+ * persistence path from the source step inside `AddMealSheet`.
  *
  * Source classification:
  *   - `pantry`      → meal name normalizes to a pantry-item name (currently
@@ -18,19 +18,19 @@
  * lookup — keeps the hook purely synchronous and avoids a render-time IDB
  * round-trip on the dashboard).
  *
- * Returns `[]` when no candidates exist; the parent renders nothing.
+ * Returns `[]` when no candidates exist; the source step renders nothing.
  *
  * @last-validated 2026-05-21
  */
 import { useMemo } from "react";
 import { type NullableMacros } from "@sergeant/shared";
 import {
-  normalizeFoodName,
+  matchFoodName,
+  todayISODate,
   type NutritionLog,
   type PantryItem,
 } from "@sergeant/nutrition-domain";
 import { addDaysISODate } from "../lib/nutritionStorage";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 export interface QuickChipMacros {
   kcal: number;
@@ -70,10 +70,10 @@ function macrosUsable(m: NullableMacros | undefined): m is NullableMacros {
 
 function nullableToChipMacros(m: NullableMacros): QuickChipMacros {
   return {
-    kcal: Math.round(Number(m.kcal) || 0),
-    protein_g: Math.round(Number(m.protein_g) || 0),
-    fat_g: Math.round(Number(m.fat_g) || 0),
-    carbs_g: Math.round(Number(m.carbs_g) || 0),
+    kcal: Math.round((Number(m.kcal) || 0) * 10) / 10,
+    protein_g: Math.round((Number(m.protein_g) || 0) * 10) / 10,
+    fat_g: Math.round((Number(m.fat_g) || 0) * 10) / 10,
+    carbs_g: Math.round((Number(m.carbs_g) || 0) * 10) / 10,
   };
 }
 
@@ -91,7 +91,10 @@ function aggregateRecentMeals(
   log: NutritionLog,
   windowDays: number,
 ): Map<string, Aggregate> {
-  const today = getKyivDayKey();
+  // ADR-0078: чіпи агрегують "останні N днів" ТОГО Ж журналу, що тепер
+  // пишеться під днем пристрою — Kyiv-ключ тут пропускав/хибно виключав би
+  // сьогоднішні записи для не-київських користувачів.
+  const today = todayISODate();
   const cutoff = addDaysISODate(today, -windowDays);
   const out = new Map<string, Aggregate>();
 
@@ -100,8 +103,10 @@ function aggregateRecentMeals(
     const meals = Array.isArray(day?.meals) ? day.meals : [];
     for (const meal of meals) {
       if (!meal) continue;
+      // `norm` — лише ключ агрегації; на чіпі показуємо `label`, тобто
+      // назву страви як її записали.
       const name = String(meal.name || "").trim();
-      const norm = normalizeFoodName(name);
+      const norm = matchFoodName(name);
       if (!name || !norm) continue;
       if (!macrosUsable(meal.macros)) continue;
 
@@ -137,7 +142,7 @@ export function useNutritionQuickChips(
 
     const pantryNorms = new Set(
       (Array.isArray(pantryItems) ? pantryItems : [])
-        .map((it) => normalizeFoodName(it?.name))
+        .map((it) => matchFoodName(it?.name))
         .filter(Boolean),
     );
 

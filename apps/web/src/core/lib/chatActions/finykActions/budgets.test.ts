@@ -20,13 +20,31 @@ import {
 } from "../../../../modules/finyk/lib/sqliteReader";
 import { setBudgetLimit, setMonthlyPlan, updateBudget } from "./budgets";
 import { finykChatWrite } from "./dualWriteBridge";
-import type { UpdateBudgetAction } from "../types";
+import type {
+  ChatActionResult,
+  ChatActionUndoableResult,
+  UpdateBudgetAction,
+} from "../types";
 
 // updateBudget defensively validates inputs the static type forbids
 // (missing fields, unknown scopes); cast through this helper to exercise
 // those runtime guards.
 const ub = (input: Record<string, unknown>): UpdateBudgetAction =>
   ({ name: "update_budget", input }) as unknown as UpdateBudgetAction;
+
+/**
+ * B39: `setBudgetLimit`/`setMonthlyPlan`/`updateBudget` overwrite existing
+ * data, so — per the founder's #8 decision — they're `reversible`, not
+ * `destructive`: no confirm modal, but a working `undo`. Every success
+ * path below now returns `{ result, undo }` instead of a bare string;
+ * this helper asserts the shape and narrows the type for the caller.
+ */
+function assertUndoable(
+  out: ChatActionResult,
+): asserts out is ChatActionUndoableResult {
+  expect(typeof out).toBe("object");
+  expect(typeof (out as ChatActionUndoableResult).undo).toBe("function");
+}
 
 beforeEach(() => {
   localStorage.clear();
@@ -47,7 +65,8 @@ describe("setBudgetLimit", () => {
       name: "set_budget_limit",
       input: { category_id: "food", limit: 5000 },
     });
-    expect(out).toContain("5000 грн");
+    assertUndoable(out);
+    expect(out.result).toContain("5\u00A0000\u202F₴");
     expect(finykChatWrite).toHaveBeenCalledWith(
       "finyk_budgets",
       expect.any(Array),
@@ -72,13 +91,82 @@ describe("setBudgetLimit", () => {
         { id: "b1", type: "limit", categoryId: "food", limit: 1000 },
       ]),
     );
-    setBudgetLimit({
+    const out = setBudgetLimit({
       name: "set_budget_limit",
       input: { category_id: "food", limit: 2000 },
     });
+    assertUndoable(out);
     const saved = writes.get("finyk_budgets") as Array<{ limit: number }>;
     expect(saved).toHaveLength(1);
     expect(saved[0]!.limit).toBe(2000);
+  });
+
+  it("B39: undo restores the previous limit on an existing budget", () => {
+    localStorage.setItem(
+      "finyk_budgets",
+      JSON.stringify([
+        {
+          id: "b1",
+          type: "limit",
+          categoryId: "food",
+          limit: 1000,
+          period: "month",
+        },
+      ]),
+    );
+    const out = setBudgetLimit({
+      name: "set_budget_limit",
+      input: { category_id: "food", limit: 9000 },
+    });
+    assertUndoable(out);
+    expect(
+      (writes.get("finyk_budgets") as Array<{ limit: number }>)[0]!.limit,
+    ).toBe(9000);
+
+    out.undo?.();
+
+    const restored = writes.get("finyk_budgets") as Array<{
+      id: string;
+      limit: number;
+    }>;
+    expect(restored).toHaveLength(1);
+    expect(restored[0]).toMatchObject({ id: "b1", limit: 1000 });
+  });
+
+  it("B39: undo on a NEW limit removes it (no prior entry to restore)", () => {
+    const out = setBudgetLimit({
+      name: "set_budget_limit",
+      input: { category_id: "food", limit: 5000 },
+    });
+    assertUndoable(out);
+    expect(writes.get("finyk_budgets")).toHaveLength(1);
+
+    out.undo?.();
+
+    expect(writes.get("finyk_budgets")).toEqual([]);
+  });
+
+  // W2 audit: the model is untrusted input exactly like the manual form —
+  // `Number(limit)` alone let NaN/negative/oversized values through and
+  // reported success. Every case here asserts BOTH halves: a rejection
+  // string comes back AND `finyk_budgets` is never written.
+  describe("rejects an invalid amount without writing", () => {
+    it.each([
+      ["NaN", Number.NaN],
+      ["negative", -500],
+      ["zero", 0],
+      ["a non-numeric string", "п'ятсот"],
+      ["above the domain ceiling", 5_000_000_000],
+    ])("%s limit", (_label, limit) => {
+      const out = setBudgetLimit({
+        name: "set_budget_limit",
+        input: { category_id: "food", limit },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toMatch(/додатний limit|завелика/);
+      expect(finykChatWrite).not.toHaveBeenCalled();
+      expect(localStorage.getItem("finyk_budgets")).toBeNull();
+    });
   });
 });
 
@@ -88,9 +176,10 @@ describe("setMonthlyPlan", () => {
       name: "set_monthly_plan",
       input: { income: 50000, expense: 30000, savings: 10000 },
     });
-    expect(out).toContain("дохід 50000");
-    expect(out).toContain("витрати 30000");
-    expect(out).toContain("заощадження 10000");
+    assertUndoable(out);
+    expect(out.result).toContain("дохід 50\u00A0000");
+    expect(out.result).toContain("витрати 30\u00A0000");
+    expect(out.result).toContain("заощадження 10\u00A0000");
     const saved = writes.get("finyk_monthly_plan") as {
       income: string;
       expense: string;
@@ -112,8 +201,9 @@ describe("setMonthlyPlan", () => {
       name: "set_monthly_plan",
       input: { savings: 5000 },
     });
-    expect(out).toContain("дохід 40000");
-    expect(out).toContain("заощадження 5000");
+    assertUndoable(out);
+    expect(out.result).toContain("дохід 40\u00A0000");
+    expect(out.result).toContain("заощадження 5\u00A0000");
     const saved = writes.get("finyk_monthly_plan") as Record<string, string>;
     expect(saved["income"]).toBe("40000");
     expect(saved["savings"]).toBe("5000");
@@ -124,8 +214,78 @@ describe("setMonthlyPlan", () => {
       name: "set_monthly_plan",
       input: { income: "" },
     });
+    assertUndoable(out);
     // empty string is skipped, so all three render the "—" fallback.
-    expect(out).toContain("дохід — / витрати — / заощадження —");
+    expect(out.result).toContain("дохід — / витрати — / заощадження —");
+  });
+
+  it("B39: undo restores the previous plan verbatim", () => {
+    localStorage.setItem(
+      "finyk_monthly_plan",
+      JSON.stringify({ income: "40000", expense: "20000" }),
+    );
+    const out = setMonthlyPlan({
+      name: "set_monthly_plan",
+      input: { income: 999999, expense: 999999, savings: 999999 },
+    });
+    assertUndoable(out);
+    expect(writes.get("finyk_monthly_plan")).toEqual({
+      income: "999999",
+      expense: "999999",
+      savings: "999999",
+    });
+
+    out.undo?.();
+
+    expect(writes.get("finyk_monthly_plan")).toEqual({
+      income: "40000",
+      expense: "20000",
+    });
+  });
+
+  it("B39: undo on a first-ever plan restores the empty state", () => {
+    const out = setMonthlyPlan({
+      name: "set_monthly_plan",
+      input: { income: 30000 },
+    });
+    assertUndoable(out);
+    expect(writes.get("finyk_monthly_plan")).toEqual({ income: "30000" });
+
+    out.undo?.();
+
+    expect(writes.get("finyk_monthly_plan")).toEqual({});
+  });
+
+  // W2 audit: each field used to be `String(x)`-ed straight into storage —
+  // NaN/negative/oversized income/expense/savings all "succeeded".
+  describe("rejects an invalid amount without writing", () => {
+    it.each([
+      ["NaN", Number.NaN],
+      ["negative", -1000],
+      ["zero", 0],
+      ["a non-numeric string", "багато"],
+      ["above the domain ceiling", 5_000_000_000],
+    ])("%s income", (_label, income) => {
+      const out = setMonthlyPlan({
+        name: "set_monthly_plan",
+        input: { income },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toMatch(/додатний income|завелика/);
+      expect(finykChatWrite).not.toHaveBeenCalled();
+      expect(localStorage.getItem("finyk_monthly_plan")).toBeNull();
+    });
+
+    it("rejects the whole call when a later field is invalid, writing nothing", () => {
+      const out = setMonthlyPlan({
+        name: "set_monthly_plan",
+        input: { income: 40000, expense: -1 },
+      });
+      expect(typeof out).toBe("string");
+      expect(out as string).toContain("додатний expense");
+      expect(finykChatWrite).not.toHaveBeenCalled();
+      expect(localStorage.getItem("finyk_monthly_plan")).toBeNull();
+    });
   });
 });
 
@@ -142,11 +302,21 @@ describe("updateBudget", () => {
     ).toContain("додатний limit");
   });
 
+  it("rejects scope='limit' with a limit above the domain ceiling", () => {
+    const out = updateBudget(
+      ub({ scope: "limit", category_id: "food", limit: 5_000_000_000 }),
+    );
+    expect(typeof out).toBe("string");
+    expect(out as string).toContain("завелика");
+    expect(localStorage.getItem("finyk_budgets")).toBeNull();
+  });
+
   it("creates a new limit under scope='limit'", () => {
     const out = updateBudget(
       ub({ scope: "limit", category_id: "transport", limit: 1500 }),
     );
-    expect(out).toContain("1500 грн");
+    assertUndoable(out);
+    expect(out.result).toContain("1\u00A0500\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       categoryId: string;
       limit: number;
@@ -166,12 +336,26 @@ describe("updateBudget", () => {
     ).toContain("додатний target_amount");
   });
 
+  it("rejects scope='goal' with a target_amount above the domain ceiling", () => {
+    const out = updateBudget(
+      ub({
+        scope: "goal",
+        name: "Авто",
+        target_amount: 5_000_000_000,
+      }),
+    );
+    expect(typeof out).toBe("string");
+    expect(out as string).toContain("завелика");
+    expect(localStorage.getItem("finyk_budgets")).toBeNull();
+  });
+
   it("creates a goal with default saved=0 when saved_amount omitted", () => {
     const out = updateBudget(
       ub({ scope: "goal", name: "Авто", target_amount: 100000 }),
     );
-    expect(out).toContain('"Авто"');
-    expect(out).toContain("0/100000 грн");
+    assertUndoable(out);
+    expect(out.result).toContain('"Авто"');
+    expect(out.result).toContain("0/100\u00A0000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       type: string;
       name: string;
@@ -184,7 +368,7 @@ describe("updateBudget", () => {
     });
   });
 
-  it("updates an existing goal case-insensitively by name", () => {
+  it("updates an existing goal case-insensitively by name, writing a single AI contribution", () => {
     localStorage.setItem(
       "finyk_budgets",
       JSON.stringify([
@@ -205,16 +389,98 @@ describe("updateBudget", () => {
         saved_amount: 20000,
       }),
     );
-    expect(out).toContain("20000/80000 грн");
+    assertUndoable(out);
+    expect(out.result).toContain("20\u00A0000/80\u00A0000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       targetAmount: number;
-      savedAmount: number;
+      contributions: Array<{ amountUah: number; note?: string }>;
     }>;
     expect(saved).toHaveLength(1);
-    expect(saved[0]).toMatchObject({ targetAmount: 80000, savedAmount: 20000 });
+    expect(saved[0]!.targetAmount).toBe(80000);
+    // Прогрес більше не пишеться в `savedAmount` — AI-екшн замінює лог
+    // поповнень одним записом на всю задану суму (goal-progress-auto-sync).
+    expect(saved[0]!.contributions).toHaveLength(1);
+    expect(saved[0]!.contributions[0]).toMatchObject({
+      amountUah: 20000,
+      note: "Через Сержанта",
+    });
   });
 
   it("rejects an unknown scope", () => {
     expect(updateBudget(ub({ scope: "weird" }))).toContain("Невідомий scope");
+  });
+
+  it("B39: undo (scope='limit') restores the previous limit", () => {
+    localStorage.setItem(
+      "finyk_budgets",
+      JSON.stringify([
+        { id: "b1", type: "limit", categoryId: "food", limit: 3000 },
+      ]),
+    );
+    const out = updateBudget(
+      ub({ scope: "limit", category_id: "food", limit: 8000 }),
+    );
+    assertUndoable(out);
+    expect(
+      (writes.get("finyk_budgets") as Array<{ limit: number }>)[0]!.limit,
+    ).toBe(8000);
+
+    out.undo?.();
+
+    const restored = writes.get("finyk_budgets") as Array<{
+      id: string;
+      limit: number;
+    }>;
+    expect(restored[0]).toMatchObject({ id: "b1", limit: 3000 });
+  });
+
+  it("B39: undo (scope='goal') restores the previous target and contributions", () => {
+    localStorage.setItem(
+      "finyk_budgets",
+      JSON.stringify([
+        {
+          id: "g1",
+          type: "goal",
+          name: "Авто",
+          targetAmount: 50000,
+          savedAmount: 10000,
+          contributions: [],
+        },
+      ]),
+    );
+    const out = updateBudget(
+      ub({
+        scope: "goal",
+        name: "Авто",
+        target_amount: 999999,
+        saved_amount: 999999,
+      }),
+    );
+    assertUndoable(out);
+    expect(
+      (writes.get("finyk_budgets") as Array<{ targetAmount: number }>)[0]!
+        .targetAmount,
+    ).toBe(999999);
+
+    out.undo?.();
+
+    const restored = writes.get("finyk_budgets") as Array<{
+      targetAmount: number;
+      contributions: unknown[];
+    }>;
+    expect(restored[0]!.targetAmount).toBe(50000);
+    expect(restored[0]!.contributions).toEqual([]);
+  });
+
+  it("B39: undo on a brand-new goal removes it", () => {
+    const out = updateBudget(
+      ub({ scope: "goal", name: "Нова ціль", target_amount: 1000 }),
+    );
+    assertUndoable(out);
+    expect(writes.get("finyk_budgets")).toHaveLength(1);
+
+    out.undo?.();
+
+    expect(writes.get("finyk_budgets")).toEqual([]);
   });
 });

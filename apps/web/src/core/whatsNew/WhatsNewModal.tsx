@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Badge } from "@shared/components/ui/Badge";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDateFull } from "@shared/lib/time/formatDate";
 import type {
   WhatsNewItem,
   WhatsNewItemKind,
@@ -12,7 +13,7 @@ import type {
 
 /**
  * `<WhatsNewModal />` — in-product release notes overlay (PR-18 у
- * [FTUX master tracker](docs/launch/product-os/ftux-master-tracker.md) §3.3).
+ * [FTUX master tracker](docs/work/specs/launch/product-os/ftux-master-tracker.md) §3.3).
  *
  * Render-only — стан / persist / analytics керуються `useWhatsNew()`.
  * Викликач передає `release` і два callback-и:
@@ -52,7 +53,9 @@ function ItemRow({ item }: { item: WhatsNewItem }) {
       >
         {KIND_LABELS[item.kind]}
       </Badge>
-      <span className="text-sm text-fg leading-relaxed">{item.text}</span>
+      <span className="text-style-body text-fg leading-relaxed">
+        {item.text}
+      </span>
     </li>
   );
 }
@@ -74,26 +77,22 @@ export function WhatsNewModal({
 
   if (!release) return null;
 
+  const cta = release.cta;
+
   const handleCtaClick = () => {
-    if (!release.cta) return;
+    if (!cta) return;
     onCtaClick();
-    if (isExternalHref(release.cta.href)) {
-      window.open(release.cta.href, "_blank", "noopener,noreferrer");
+    if (isExternalHref(cta.href)) {
+      window.open(cta.href, "_blank", "noopener,noreferrer");
     } else {
-      navigate(release.cta.href);
+      navigate(cta.href);
     }
   };
 
   const formattedDate = (() => {
-    try {
-      return new Intl.DateTimeFormat("uk-UA", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(new Date(release.date));
-    } catch {
-      return release.date;
-    }
+    const parsed = new Date(release.date);
+    if (Number.isNaN(parsed.getTime())) return release.date;
+    return formatDateFull(parsed);
   })();
 
   return (
@@ -115,21 +114,21 @@ export function WhatsNewModal({
         <div
           className={cn(
             "flex flex-wrap gap-2",
-            release.cta ? "justify-end" : "justify-end",
+            cta ? "justify-end" : "justify-end",
           )}
         >
           <Button variant="ghost" onClick={() => onClose("close")}>
             {messages.whatsNew.dismiss}
           </Button>
-          {release.cta && (
-            <Button variant="primary" onClick={handleCtaClick}>
-              {release.cta.label}
+          {cta && (
+            <Button variant="solid" onClick={handleCtaClick}>
+              {cta.label}
             </Button>
           )}
         </div>
       }
     >
-      <p className="text-sm text-fg-muted leading-relaxed mb-4">
+      <p className="text-style-body text-fg-muted leading-relaxed mb-4">
         {release.summary}
       </p>
       <ul className="flex flex-col gap-3">

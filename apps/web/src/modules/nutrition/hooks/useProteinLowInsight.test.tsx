@@ -8,15 +8,19 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getKyivDateParts = vi.fn();
-const getKyivDayKey = vi.fn();
 vi.mock("@shared/lib/time/kyivTime", () => ({
   getKyivDateParts: () => getKyivDateParts(),
-  getKyivDayKey: () => getKyivDayKey(),
 }));
 
-const getDayMacros = vi.fn();
+const todayISODate = vi.fn();
+vi.mock("@sergeant/nutrition-domain", () => ({
+  todayISODate: () => todayISODate(),
+}));
+
+const getDaySummary = vi.fn();
 vi.mock("../lib/nutritionStorage", () => ({
-  getDayMacros: (...a: unknown[]) => getDayMacros(...a),
+  ESTIMATED_KCAL_SHARE_THRESHOLD: 0.5,
+  getDaySummary: (...a: unknown[]) => getDaySummary(...a),
 }));
 
 import { useProteinLowInsight } from "./useProteinLowInsight";
@@ -25,8 +29,8 @@ const log = {} as never;
 
 beforeEach(() => {
   getKyivDateParts.mockReturnValue({ hour: 20 });
-  getKyivDayKey.mockReturnValue("2026-06-23");
-  getDayMacros.mockReturnValue({ protein_g: 20 });
+  todayISODate.mockReturnValue("2026-06-23");
+  getDaySummary.mockReturnValue({ protein_g: 20, estimatedKcalShare: 0 });
 });
 
 afterEach(() => vi.clearAllMocks());
@@ -48,7 +52,7 @@ describe("useProteinLowInsight", () => {
   });
 
   it("returns null when protein is already >= 60% of goal", () => {
-    getDayMacros.mockReturnValue({ protein_g: 80 }); // 80/120 = 67%
+    getDaySummary.mockReturnValue({ protein_g: 80, estimatedKcalShare: 0 }); // 80/120 = 67%
     const { result } = renderHook(() =>
       useProteinLowInsight(log, { dailyTargetProtein_g: 120 } as never),
     );
@@ -56,7 +60,7 @@ describe("useProteinLowInsight", () => {
   });
 
   it("surfaces an insight when protein is low after 18:00", () => {
-    getDayMacros.mockReturnValue({ protein_g: 30 }); // 30/120 = 25%
+    getDaySummary.mockReturnValue({ protein_g: 30, estimatedKcalShare: 0 }); // 30/120 = 25%
     const { result } = renderHook(() =>
       useProteinLowInsight(log, { dailyTargetProtein_g: 120 } as never),
     );
@@ -67,5 +71,15 @@ describe("useProteinLowInsight", () => {
     });
     expect(result.current?.title).toContain("30");
     expect(result.current?.title).toContain("120");
+    expect(result.current?.subtitle).toBe("Час додати джерело білка?");
+  });
+
+  it("softens the subtitle instead of silencing the nudge when the day is mostly photoAI-estimated (nutrition audit E-5)", () => {
+    getDaySummary.mockReturnValue({ protein_g: 30, estimatedKcalShare: 0.6 }); // >50%
+    const { result } = renderHook(() =>
+      useProteinLowInsight(log, { dailyTargetProtein_g: 120 } as never),
+    );
+    expect(result.current?.subtitle).toContain("білка малувато");
+    expect(result.current?.subtitle).not.toBe("Час додати джерело білка?");
   });
 });

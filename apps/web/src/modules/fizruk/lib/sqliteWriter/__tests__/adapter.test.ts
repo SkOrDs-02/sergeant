@@ -1,0 +1,735 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
+import { applyFizrukDualWriteOps } from "../adapter.js";
+import type { FizrukDualWriteOp } from "../diff/index.js";
+import { createTestSqlite, type TestSqliteHandle } from "./testSqlite.js";
+
+let handle: TestSqliteHandle;
+const UID = "user-1";
+const TS1 = "2026-05-01T10:00:00.000Z";
+const TS2 = "2026-05-01T11:00:00.000Z";
+
+beforeEach(async () => {
+  handle = await createTestSqlite();
+});
+afterEach(() => handle.close());
+
+const silentLogger = () => {};
+
+describe("applyFizrukDualWriteOps", () => {
+  it("returns zero counters for empty ops", async () => {
+    const result = await applyFizrukDualWriteOps(handle.client, [], {
+      userId: UID,
+      clientTs: TS1,
+    });
+    expect(result).toEqual({ applied: 0, errored: 0, skipped: 0 });
+  });
+
+  // --- Workout ops ---
+
+  it("upserts a workout with items and sets", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w1",
+          startedAt: "2026-05-01T10:00:00Z",
+          endedAt: null,
+          items: [
+            {
+              id: "i1",
+              exerciseId: "bench-press",
+              nameUk: "Жим лежачи",
+              primaryGroup: "chest",
+              musclesPrimary: ["chest"],
+              musclesSecondary: ["triceps"],
+              type: "strength",
+              sets: [
+                { weightKg: 80, reps: 8 },
+                { weightKg: 85, reps: 6, rpe: 8 },
+              ],
+            },
+          ],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "morning session",
+        },
+      },
+    ];
+
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    // Verify workout row
+    const workouts = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_workouts WHERE id = ?",
+      ["w1"],
+    );
+    expect(workouts).toHaveLength(1);
+    expect(workouts[0]!["user_id"]).toBe(UID);
+    expect(workouts[0]!["note"]).toBe("morning session");
+    expect(workouts[0]!["deleted_at"]).toBeNull();
+
+    // Verify item row
+    const items = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_workout_items WHERE workout_id = ?",
+      ["w1"],
+    );
+    expect(items).toHaveLength(1);
+    expect(items[0]!["exercise_id"]).toBe("bench-press");
+    expect(items[0]!["name_uk"]).toBe("Жим лежачи");
+
+    // Verify set rows
+    const sets = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_workout_sets WHERE workout_item_id = ? ORDER BY sort_order",
+      ["i1"],
+    );
+    expect(sets).toHaveLength(2);
+    expect(sets[0]!["weight_kg"]).toBe(80);
+    expect(sets[0]!["reps"]).toBe(8);
+    expect(sets[1]!["weight_kg"]).toBe(85);
+    expect(sets[1]!["rpe"]).toBe(8);
+  });
+
+  it("soft-deletes a workout and cascades to items/sets", async () => {
+    // First insert a workout
+    const upsertOps: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w1",
+          startedAt: "2026-05-01T10:00:00Z",
+          endedAt: null,
+          items: [
+            {
+              id: "i1",
+              exerciseId: "squat",
+              nameUk: "Присідання",
+              primaryGroup: "legs",
+              musclesPrimary: ["quads"],
+              musclesSecondary: [],
+              type: "strength",
+              sets: [{ weightKg: 100, reps: 5 }],
+            },
+          ],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, upsertOps, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    // Now delete
+    const deleteOps: FizrukDualWriteOp[] = [
+      { kind: "workout-delete", workoutId: "w1" },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, deleteOps, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    // Workout should be soft-deleted
+    const workouts = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_workouts WHERE id = ?",
+      ["w1"],
+    );
+    expect(workouts[0]!["deleted_at"]).toBe(TS2);
+
+    // Items should be soft-deleted too
+    const items = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_workout_items WHERE workout_id = ?",
+      ["w1"],
+    );
+    expect(items[0]!["deleted_at"]).toBe(TS2);
+
+    // Sets should be soft-deleted too
+    const sets = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_workout_sets WHERE workout_item_id = ?",
+      ["i1"],
+    );
+    expect(sets[0]!["deleted_at"]).toBe(TS2);
+  });
+
+  it("LWW guard: stale workout upsert is a no-op", async () => {
+    // Insert with TS2
+    const ops1: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w1",
+          startedAt: "2026-05-01T10:00:00Z",
+          endedAt: "2026-05-01T11:00:00Z",
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "latest",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops1, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    // Try to overwrite with older TS1 — should be skipped by LWW
+    const ops2: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-upsert",
+        workout: {
+          id: "w1",
+          startedAt: "2026-05-01T10:00:00Z",
+          endedAt: null,
+          items: [],
+          groups: [],
+          warmup: null,
+          cooldown: null,
+          note: "stale",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops2, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const workouts = await handle.client.all<Record<string, unknown>>(
+      "SELECT note FROM fizruk_workouts WHERE id = ?",
+      ["w1"],
+    );
+    expect(workouts[0]!["note"]).toBe("latest");
+  });
+
+  // --- Custom exercise ops ---
+
+  it("upserts and soft-deletes a custom exercise", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "custom-exercise-upsert",
+        exercise: { id: "cex1", nameUk: "Моя вправа", primaryGroup: "back" },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_custom_exercises WHERE id = ?",
+      ["cex1"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(JSON.parse(rows[0]!["data_json"] as string)).toMatchObject({
+      id: "cex1",
+      nameUk: "Моя вправа",
+    });
+
+    // Delete
+    const delOps: FizrukDualWriteOp[] = [
+      { kind: "custom-exercise-delete", exerciseId: "cex1" },
+    ];
+    await applyFizrukDualWriteOps(handle.client, delOps, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    const after = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_custom_exercises WHERE id = ?",
+      ["cex1"],
+    );
+    expect(after[0]!["deleted_at"]).toBe(TS2);
+  });
+
+  // --- Measurement ops ---
+
+  it("upserts and soft-deletes a measurement", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "measurement-upsert",
+        measurement: {
+          id: "m1",
+          at: "2026-05-01T08:00:00Z",
+          weightKg: 80,
+          waistCm: 85,
+        },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_measurements WHERE id = ?",
+      ["m1"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!["weight_kg"]).toBe(80);
+    expect(rows[0]!["waist_cm"]).toBe(85);
+
+    // Delete
+    const delOps: FizrukDualWriteOp[] = [
+      { kind: "measurement-delete", measurementId: "m1" },
+    ];
+    await applyFizrukDualWriteOps(handle.client, delOps, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    const after = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_measurements WHERE id = ?",
+      ["m1"],
+    );
+    expect(after[0]!["deleted_at"]).toBe(TS2);
+  });
+
+  it("зберігає дробові заміри без округлення", async () => {
+    // Регресія: писач ганяв ці поля через `toIntOrNull`, тож 81.4 кг ставало
+    // 81, а 7.5 год сну — 8. Обидві колонки — REAL і в Postgres
+    // (`029_fizruk_tables.sql`), і в SQLite-дзеркалі. Наявний тест вище цього
+    // не ловив, бо використовував цілі числа.
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "measurement-upsert",
+        measurement: {
+          id: "m-frac",
+          at: "2026-05-02T08:00:00Z",
+          weightKg: 81.4,
+          waistCm: 85.5,
+          sleepHours: 7.5,
+          energyLevel: 4,
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_measurements WHERE id = ?",
+      ["m-frac"],
+    );
+    expect(rows[0]!["weight_kg"]).toBe(81.4);
+    expect(rows[0]!["waist_cm"]).toBe(85.5);
+    expect(rows[0]!["sleep_hours"]).toBe(7.5);
+    // `energy_level` лишається INTEGER — так само, як у Postgres.
+    expect(rows[0]!["energy_level"]).toBe(4);
+  });
+
+  // --- Error handling ---
+
+  it("counts every applied op in a clean batch", async () => {
+    const warnings: unknown[] = [];
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "measurement-upsert",
+        measurement: { id: "m1", at: "2026-05-01T08:00:00Z" },
+      },
+      {
+        kind: "measurement-upsert",
+        measurement: { id: "m2", at: "2026-05-01T09:00:00Z", weightKg: 75 },
+      },
+    ];
+
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: (_level, msg, meta) => warnings.push({ msg, meta }),
+    });
+    expect(result.applied).toBe(2);
+    expect(result.errored).toBe(0);
+  });
+
+  it("best-effort: a single failing op is isolated and does not abort the rest", async () => {
+    const warnings: Array<{ msg: string; meta?: unknown }> = [];
+    const failingClient: typeof handle.client = {
+      ...handle.client,
+      exec: (sql) => handle.client.exec(sql),
+      all: (sql, params) => handle.client.all(sql, params),
+      run: (sql, params) => {
+        if (Array.isArray(params) && params.includes("m-fail")) {
+          throw new Error("forced failure");
+        }
+        return handle.client.run(sql, params);
+      },
+    };
+
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "measurement-upsert",
+        measurement: { id: "m-ok", at: "2026-05-01T08:00:00Z" },
+      },
+      {
+        kind: "measurement-upsert",
+        measurement: { id: "m-fail", at: "2026-05-01T09:00:00Z" },
+      },
+    ];
+
+    const result = await applyFizrukDualWriteOps(failingClient, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: (_level, msg, meta) => warnings.push({ msg, meta }),
+    });
+
+    // Only the failing op counts as errored; the successful op is applied.
+    expect(result).toEqual({ applied: 1, errored: 1, skipped: 0 });
+    expect(warnings.some((w) => w.msg.includes("dual-write op failed"))).toBe(
+      true,
+    );
+
+    // The successful first op survives — best-effort does not roll back
+    // already-applied ops on a later failure.
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT id FROM fizruk_measurements",
+    );
+    expect(rows).toEqual([{ id: "m-ok" }]);
+  });
+
+  // --- Stage 12 / PR #070f-dualwrite — Daily log ops ---
+
+  it("upserts a daily-log entry with all scalar fields", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "daily-log-upsert",
+        entry: {
+          id: "d1",
+          at: "2026-05-01T07:00:00Z",
+          weightKg: 80.5,
+          sleepHours: 7.5,
+          energyLevel: 7,
+          mood: 4,
+          note: "feeling great",
+        },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_daily_log WHERE id = ?",
+      ["d1"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!["user_id"]).toBe(UID);
+    expect(rows[0]!["entry_at"]).toBe("2026-05-01T07:00:00Z");
+    expect(rows[0]!["weight_kg"]).toBe(80.5);
+    expect(rows[0]!["sleep_hours"]).toBe(7.5);
+    expect(rows[0]!["energy_level"]).toBe(7);
+    expect(rows[0]!["mood"]).toBe(4);
+    expect(rows[0]!["note"]).toBe("feeling great");
+    expect(rows[0]!["deleted_at"]).toBeNull();
+  });
+
+  it("soft-deletes a daily-log entry", async () => {
+    const upsertOps: FizrukDualWriteOp[] = [
+      {
+        kind: "daily-log-upsert",
+        entry: {
+          id: "d1",
+          at: "2026-05-01T07:00:00Z",
+          weightKg: null,
+          sleepHours: null,
+          energyLevel: null,
+          mood: null,
+          note: "",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, upsertOps, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const delOps: FizrukDualWriteOp[] = [
+      { kind: "daily-log-delete", entryId: "d1" },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, delOps, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const after = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_daily_log WHERE id = ?",
+      ["d1"],
+    );
+    expect(after[0]!["deleted_at"]).toBe(TS2);
+  });
+
+  it("LWW guard: stale daily-log upsert does not overwrite newer row", async () => {
+    const newer: FizrukDualWriteOp[] = [
+      {
+        kind: "daily-log-upsert",
+        entry: {
+          id: "d1",
+          at: "2026-05-01T07:00:00Z",
+          weightKg: 80,
+          sleepHours: null,
+          energyLevel: null,
+          mood: null,
+          note: "newer",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, newer, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    const stale: FizrukDualWriteOp[] = [
+      {
+        kind: "daily-log-upsert",
+        entry: {
+          id: "d1",
+          at: "2026-05-01T07:00:00Z",
+          weightKg: 60,
+          sleepHours: null,
+          energyLevel: null,
+          mood: null,
+          note: "stale",
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, stale, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT note, weight_kg FROM fizruk_daily_log WHERE id = ?",
+      ["d1"],
+    );
+    expect(rows[0]!["note"]).toBe("newer");
+    expect(rows[0]!["weight_kg"]).toBe(80);
+  });
+
+  // --- Stage 12 / PR #070f-dualwrite — Monthly plan ops ---
+
+  it("inserts a monthly-plan singleton row on first set", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "monthly-plan-set",
+        monthlyPlan: { dataJson: '{"days":{}}' },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT user_id, data_json, updated_at FROM fizruk_monthly_plan WHERE user_id = ?",
+      [UID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!["data_json"]).toBe('{"days":{}}');
+    expect(rows[0]!["updated_at"]).toBe(TS1);
+  });
+
+  it("updates monthly-plan blob on subsequent sets", async () => {
+    const first: FizrukDualWriteOp[] = [
+      { kind: "monthly-plan-set", monthlyPlan: { dataJson: '{"a":1}' } },
+    ];
+    await applyFizrukDualWriteOps(handle.client, first, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const second: FizrukDualWriteOp[] = [
+      { kind: "monthly-plan-set", monthlyPlan: { dataJson: '{"a":2}' } },
+    ];
+    await applyFizrukDualWriteOps(handle.client, second, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT data_json, updated_at FROM fizruk_monthly_plan WHERE user_id = ?",
+      [UID],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!["data_json"]).toBe('{"a":2}');
+    expect(rows[0]!["updated_at"]).toBe(TS2);
+  });
+
+  it("LWW guard: stale monthly-plan set does not overwrite newer blob", async () => {
+    const newer: FizrukDualWriteOp[] = [
+      { kind: "monthly-plan-set", monthlyPlan: { dataJson: '{"v":"new"}' } },
+    ];
+    await applyFizrukDualWriteOps(handle.client, newer, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    const stale: FizrukDualWriteOp[] = [
+      { kind: "monthly-plan-set", monthlyPlan: { dataJson: '{"v":"stale"}' } },
+    ];
+    await applyFizrukDualWriteOps(handle.client, stale, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT data_json FROM fizruk_monthly_plan WHERE user_id = ?",
+      [UID],
+    );
+    expect(rows[0]!["data_json"]).toBe('{"v":"new"}');
+  });
+
+  // --- Stage 12 / PR #070f-dualwrite — Workout template ops ---
+
+  it("upserts a workout-template with serialized exerciseIds + groups", async () => {
+    const ops: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-template-upsert",
+        template: {
+          id: "t1",
+          name: "Push day",
+          exerciseIds: ["bench-press", "shoulder-press"],
+          groups: [{ id: "g1", itemIds: ["bench-press"] }],
+          updatedAt: TS1,
+          lastUsedAt: null,
+        },
+      },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, ops, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT * FROM fizruk_workout_templates WHERE id = ?",
+      ["t1"],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!["name"]).toBe("Push day");
+    expect(JSON.parse(rows[0]!["exercise_ids_json"] as string)).toEqual([
+      "bench-press",
+      "shoulder-press",
+    ]);
+    expect(JSON.parse(rows[0]!["groups_json"] as string)).toEqual([
+      { id: "g1", itemIds: ["bench-press"] },
+    ]);
+    expect(rows[0]!["last_used_at"]).toBeNull();
+    expect(rows[0]!["deleted_at"]).toBeNull();
+  });
+
+  it("soft-deletes a workout-template", async () => {
+    const upsertOps: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-template-upsert",
+        template: {
+          id: "t1",
+          name: "Pull day",
+          exerciseIds: [],
+          groups: [],
+          updatedAt: TS1,
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, upsertOps, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const delOps: FizrukDualWriteOp[] = [
+      { kind: "workout-template-delete", templateId: "t1" },
+    ];
+    const result = await applyFizrukDualWriteOps(handle.client, delOps, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+    expect(result.applied).toBe(1);
+
+    const after = await handle.client.all<Record<string, unknown>>(
+      "SELECT deleted_at FROM fizruk_workout_templates WHERE id = ?",
+      ["t1"],
+    );
+    expect(after[0]!["deleted_at"]).toBe(TS2);
+  });
+
+  it("LWW guard: stale workout-template upsert is a no-op", async () => {
+    const newer: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-template-upsert",
+        template: {
+          id: "t1",
+          name: "Newer",
+          exerciseIds: [],
+          groups: [],
+          updatedAt: TS2,
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, newer, {
+      userId: UID,
+      clientTs: TS2,
+      logger: silentLogger,
+    });
+
+    const stale: FizrukDualWriteOp[] = [
+      {
+        kind: "workout-template-upsert",
+        template: {
+          id: "t1",
+          name: "Stale",
+          exerciseIds: [],
+          groups: [],
+          updatedAt: TS1,
+        },
+      },
+    ];
+    await applyFizrukDualWriteOps(handle.client, stale, {
+      userId: UID,
+      clientTs: TS1,
+      logger: silentLogger,
+    });
+
+    const rows = await handle.client.all<Record<string, unknown>>(
+      "SELECT name FROM fizruk_workout_templates WHERE id = ?",
+      ["t1"],
+    );
+    expect(rows[0]!["name"]).toBe("Newer");
+  });
+});

@@ -12,10 +12,14 @@ function RouteProbe() {
     <div>
       <span data-testid="page">{page}</span>
       <span data-testid="path">{location.pathname}</span>
+      <span data-testid="search">{location.search}</span>
       <span data-testid="cat">{cat ?? "none"}</span>
       <button onClick={() => navigate("budgets")}>go-budgets</button>
       <button onClick={() => navigate("unknown-page")}>go-unknown</button>
       <button onClick={() => navigate("budgets")}>go-budgets-again</button>
+      <button onClick={() => navigate("assets?section=subscriptions")}>
+        go-subs
+      </button>
     </div>
   );
 }
@@ -52,6 +56,15 @@ describe("useFinykRoute", () => {
     fireEvent.click(screen.getByText("go-budgets"));
     expect(screen.getByTestId("page")).toHaveTextContent("budgets");
     expect(screen.getByTestId("path")).toHaveTextContent("/finyk/budgets");
+  });
+
+  it("navigates to a page section via a canonical query string", () => {
+    renderAt("/finyk");
+    fireEvent.click(screen.getByText("go-subs"));
+    expect(screen.getByTestId("path")).toHaveTextContent("/finyk/assets");
+    expect(screen.getByTestId("search")).toHaveTextContent(
+      "?section=subscriptions",
+    );
   });
 
   it("coerces an unknown navigation target back to overview", () => {

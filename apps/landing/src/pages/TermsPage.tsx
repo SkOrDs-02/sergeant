@@ -1,0 +1,69 @@
+import SiteLayout from "../components/SiteLayout";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { EXPORT_CLAIM } from "../content/exportClaim";
+import UpdatedOn from "../components/UpdatedOn";
+
+export default function TermsPage() {
+  usePageMeta({
+    ...ROUTE_META["/terms"],
+    // Та сама `WebPage`-форма, що й на /privacy (див. коментар там).
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/terms"].title,
+      description: ROUTE_META["/terms"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/terms"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
+
+  const h2 =
+    "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
+  const p = "mt-3 max-w-2xl leading-relaxed text-foreground";
+
+  return (
+    <SiteLayout mainClassName="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
+      <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-4xl">
+        Умови використання
+      </h1>
+      <p className="mt-3 text-sm text-subtle">
+        Оновлено <UpdatedOn iso={ROUTE_META["/terms"].lastmod} />
+      </p>
+
+      <h2 className={h2}>Це бета</h2>
+      <p className={p}>
+        Sergeant у закритій беті: щось може ламатись, змінюватись чи зникати без
+        попередження. Що саме зламано сьогодні – у{" "}
+        <a
+          href="/stan#vidomi-problemy"
+          className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          «Доповіді про стан»
+        </a>
+        . Сервіс надається «як є», без гарантій безперервної роботи.
+      </p>
+
+      <h2 className={h2}>Що обіцяємо</h2>
+      <p className={p}>
+        Ядро (модулі, ручний трекінг і підключення банку) безкоштовне назавжди.
+        Твої дані належать тобі. {EXPORT_CLAIM} Якщо продукт зупинятиметься,
+        попередимо щонайменше за 30 днів, і весь цей час експорт працюватиме:
+        забереш усе.
+      </p>
+
+      <h2 className={h2}>Що не варто робити</h2>
+      <p className={p}>
+        Не ламай сервіс навмисно, не намагайся дістати чужі дані і не
+        використовуй Sergeant для незаконного. За таке доступ закривається без
+        черги.
+      </p>
+
+      <h2 className={h2}>Не порада</h2>
+      <p className={p}>
+        Sergeant показує твої власні цифри і звʼязки між ними. Це не фінансова,
+        не медична і не будь-яка інша професійна порада.
+      </p>
+    </SiteLayout>
+  );
+}

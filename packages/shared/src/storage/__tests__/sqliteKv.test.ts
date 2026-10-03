@@ -1,6 +1,6 @@
 /**
  * Tests for `createSqliteKVStore` — Stage 9 / PR #061 of
- * `docs/planning/storage-roadmap.md`.
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Coverage targets the four invariants the bootstrap module (PR #062)
  * and `webKVStore` impl swap (PR #063) lean on:
@@ -185,6 +185,39 @@ describe("createSqliteKVStore — read path", () => {
       boot: makeBoot({ a: "1", b: "2", c: "3" }),
     });
     expect(store.listKeys().sort()).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("createSqliteKVStore: replaceCache", () => {
+  it("замінює кеш і сповіщає лише про змінені ключі, без запису в SQLite", () => {
+    const { client, calls } = makeSyncSqliteSpy();
+    const boot = makeBoot({ same: "x", changed: "old", gone: "1" });
+    const store = createSqliteKVStore({ sqlite: client, boot });
+    const seen: [string, string | null][] = [];
+    for (const key of ["same", "changed", "gone", "fresh"]) {
+      store.onChange(key, (next) => seen.push([key, next]));
+    }
+
+    store.replaceCache(
+      new Map([
+        ["same", "x"],
+        ["changed", "new"],
+        ["fresh", "2"],
+      ]),
+    );
+
+    expect(Object.fromEntries(boot.warmCache)).toEqual({
+      same: "x",
+      changed: "new",
+      fresh: "2",
+    });
+    expect(seen).toEqual([
+      ["changed", "new"],
+      ["gone", null],
+      ["fresh", "2"],
+    ]);
+    expect(calls.upsert).toEqual([]);
+    expect(calls.remove).toEqual([]);
   });
 });
 

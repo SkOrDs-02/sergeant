@@ -3,6 +3,15 @@
 // shapes are intentionally loose — `buildContext` reads several legacy
 // `localStorage` slices that pre-date the domain packages and only consumes a
 // subset of each field.
+//
+// Виняток: `BudgetGoal` / `Budget` реекспортуються з `../chatActions/types`
+// (share-shape entities finyk chat-action-ів) — щоб не дублювати ідентичне
+// оголошення (aislop `ai-slop/duplicate-type-declaration`). Локальний
+// `BudgetLimit` навмисно вужчий за chatActions-версію (без `period`/`createdAt`),
+// тож лишається тут.
+import type { BudgetGoal, Budget } from "../chatActions/types";
+
+export type { BudgetGoal, Budget };
 
 export interface Transaction {
   id: string;
@@ -16,16 +25,6 @@ export interface Account {
   id?: string;
   balance?: number;
   creditLimit?: number;
-}
-
-export interface InfoCache {
-  accounts?: Account[];
-  name?: string;
-}
-
-export interface TxCache {
-  txs?: Transaction[];
-  timestamp?: number;
 }
 
 export interface Debt {
@@ -53,16 +52,6 @@ export interface BudgetLimit {
   categoryId: string;
   limit: number;
 }
-
-export interface BudgetGoal {
-  id: string;
-  type: "goal";
-  name: string;
-  targetAmount: number;
-  savedAmount?: number;
-}
-
-export type Budget = BudgetLimit | BudgetGoal;
 
 export interface MonthlyPlan {
   income?: string | number;
@@ -94,16 +83,6 @@ export interface AllData {
   excludedIds: Set<string>;
 }
 
-export interface HabitState {
-  habits?: Array<{
-    id: string;
-    name?: string;
-    emoji?: string;
-    archived?: boolean;
-  }>;
-  completions?: Record<string, string[]>;
-}
-
 export interface NutritionMeal {
   name?: string;
   macros?: {
@@ -112,16 +91,6 @@ export interface NutritionMeal {
     fat_g?: number;
     carbs_g?: number;
   };
-}
-
-export interface NutritionDay {
-  meals?: NutritionMeal[];
-}
-
-export interface NutritionPrefs {
-  dailyTargetKcal?: number;
-  dailyTargetProtein_g?: number;
-  dailyTargetProtein?: number;
 }
 
 export interface CategoryDef {

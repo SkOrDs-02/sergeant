@@ -1,5 +1,5 @@
 -- Postgres-backed rate-limit buckets — Stage 1, PR #011 from
--- `docs/planning/storage-roadmap.md`.
+-- `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
 --
 -- Replaces the in-memory per-process fallback in
 -- `apps/server/src/http/rateLimit.ts` with a horizontally-shareable

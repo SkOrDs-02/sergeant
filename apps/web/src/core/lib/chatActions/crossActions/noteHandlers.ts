@@ -1,4 +1,5 @@
 import { ls, lsSet } from "../../hubChatUtils";
+import { formatDateNumeric } from "@shared/lib/time/formatDate";
 import type {
   ChatActionResult,
   ListNotesAction,
@@ -13,7 +14,7 @@ export function saveNote(action: SaveNoteAction): ChatActionResult {
     Array<{ id: string; text: string; tag: string; createdAt: string }>
   >("hub_notes_v1", []);
   const note = {
-    id: `note_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    id: `note_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     text: trimmed.slice(0, 1000),
     tag: (tag || "other").trim().toLowerCase(),
     createdAt: new Date().toISOString(),
@@ -52,7 +53,7 @@ export function listNotes(action: ListNotesAction): string {
   const shown = filtered.slice(0, max);
   const parts: string[] = [`Нотатки (${filtered.length} всього):`];
   for (const n of shown) {
-    const d = new Date(n.createdAt).toLocaleDateString("uk-UA");
+    const d = formatDateNumeric(new Date(n.createdAt));
     parts.push(
       `  [${n.tag}] ${n.text.slice(0, 80)}${n.text.length > 80 ? "\u2026" : ""} (${d})`,
     );

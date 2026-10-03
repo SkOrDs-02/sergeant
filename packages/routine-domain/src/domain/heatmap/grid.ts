@@ -12,8 +12,16 @@
  * aggregation trivially testable.
  */
 
-import { dateKeyFromDate, parseDateKey } from "../../dateKeys.js";
-import type { Habit } from "../../types.js";
+import { dateKeyFromDate } from "../../dateKeys.js";
+import {
+  habitCountsTowardMetrics,
+  habitScheduledOnDate,
+} from "../../schedule.js";
+import type { Habit, HabitSkip } from "../../types.js";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "../../weeklyTarget.js";
 import {
   HEATMAP_DAYS,
   HEATMAP_WEEKS,
@@ -108,52 +116,175 @@ function addDaysAt12(base: Date, days: number): Date {
 }
 
 /**
+ * Which population forms the per-day denominator of a heatmap cell.
+ *
+ *   - `"active"` (default, historical behaviour) — every non-archived
+ *     habit counts on every day, so the denominator is constant across
+ *     the whole grid.
+ *   - `"scheduled"` — only habits actually on the calendar that day
+ *     (`habitScheduledOnDate`: respects `archived`, `paused`,
+ *     `startDate` / `endDate` and the recurrence rule). This is the same
+ *     denominator `completionRateForRange` / `streakForHabit` already
+ *     use, i.e. the mode that makes heatmap and rate agree.
+ */
+export type HeatmapDenominator = "active" | "scheduled";
+
+/** Optional knobs for {@link buildHeatmapGrid}. */
+export interface BuildHeatmapGridOptions {
+  /** Denominator mode. Default `"active"` — the historical behaviour. */
+  denominator?: HeatmapDenominator | undefined;
+  /**
+   * Extra ISO weeks appended *after* the week containing `today`, giving
+   * the grid a look-ahead tail. Default `0`. The history window (and
+   * therefore `startKey`) is unaffected.
+   */
+  futureWeeks?: number | undefined;
+  /**
+   * Заморозити минуле щодо `paused` — ADR-0079 §3.
+   *
+   * AI-CONTEXT: `paused` у моделі звички — недатований булеан, тож
+   * `habitScheduledOnDate` за замовчуванням відсіює за ним УСІ дати. У режимі
+   * `"scheduled"` це означає, що пауза, поставлена сьогодні, вимиває звичку з
+   * минулорічної сітки — рівно те, чого ADR обіцяє не робити. Прапорець
+   * вмикає трактування «пауза діє від сьогодні вперед».
+   *
+   * Дефолт `false` навмисно: разом із перемиканням `denominator` це рухає
+   * число, яке користувач уже бачив, тож їде окремою поставкою з
+   * `metricsVersion`.
+   */
+  freezePausedPast?: boolean | undefined;
+  /**
+   * Пропуски з причиною: `habitId → dateKey → HabitSkip`.
+   *
+   * Канон §5: «не зміг» — не провал, тож така пара (звичка, день) виходить
+   * зі знаменника клітинки — той самий трактування, що вже мають
+   * `completionRateForRange` і per-habit стрік. Без цього заявлений пропуск
+   * фарбував клітинку РІВНО як мовчазний провал: `HabitRangeGrid` (короткі
+   * зрізи) показує «не зміг» окремим сірим станом, а `HabitHeatmap`
+   * (квартал/рік) на тих самих даних — тим самим кольором, що й провал.
+   * Перемикання зрізу Місяць → Квартал безшумно стирало відмінність
+   * (аудит 2026-09, PR-R8).
+   *
+   * Дефолт (не передано) зберігає історичну поведінку: пропуск = провал.
+   */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
+}
+
+/**
  * Build the rendered heatmap grid for the window ending at the week
  * containing `today` and spanning `weeks` ISO weeks back (default
- * `HEATMAP_WEEKS`).
+ * `HEATMAP_WEEKS`), optionally followed by `opts.futureWeeks` look-ahead
+ * weeks.
  *
- * The grid has exactly `weeks × HEATMAP_DAYS` cells, each populated
- * with a pre-computed `intensity` bucket so components can render
- * without re-doing any math. Month markers flag the first week in
- * which a new month starts, in the order they appear inside the grid.
+ * The grid has exactly `(weeks + futureWeeks) × HEATMAP_DAYS` cells,
+ * each populated with a pre-computed `intensity` bucket so components
+ * can render without re-doing any math. Month markers flag the first
+ * week in which a new month starts, in the order they appear inside the
+ * grid.
+ *
+ * `scheduledTotal` / `scheduledCnt` are always populated; `cnt` /
+ * `total` / `ratio` follow `opts.denominator`.
  */
 export function buildHeatmapGrid(
   habits: readonly Habit[] | null | undefined,
   completions: Record<string, readonly string[]> | null | undefined,
   today: Date,
   weeks: number = HEATMAP_WEEKS,
+  opts: BuildHeatmapGridOptions = {},
 ): HeatmapGrid {
-  const totalWeeks = Math.max(1, Math.floor(weeks));
-  const totalActive = activeHabits(habits).length;
-  const cntByDay = countHabitCompletionsByDay(habits, completions);
+  const historyWeeks = Math.max(1, Math.floor(weeks));
+  const futureWeeks = Math.max(0, Math.floor(opts.futureWeeks ?? 0));
+  const gridWeeks = historyWeeks + futureWeeks;
+  const useScheduled = opts.denominator === "scheduled";
+
+  // `once` не входить у heatmap — ні в знаменник, ні в чисельник (канон
+  // §7 п.2, рішення 2026-08-30). Фільтр діє в ОБОХ режимах знаменника:
+  // у легасі-`"active"` разова звичка інакше роздувала б знаменник кожного
+  // дня сітки назавжди після своєї дати.
+  const active = activeHabits(habits).filter(habitCountsTowardMetrics);
+  const totalActive = active.length;
+  const cntByDay = useScheduled
+    ? {}
+    : countHabitCompletionsByDay(active, completions);
+  // Per-habit completion sets: membership lookup for the schedule-aware
+  // numerator, and de-duplication of repeated date-keys in one pass.
+  const completionSets = new Map<string, Set<string>>();
+  for (const h of active) {
+    completionSets.set(h.id, new Set(completions?.[h.id] ?? []));
+  }
 
   const todayAtNoon = new Date(today);
   todayAtNoon.setHours(12, 0, 0, 0);
   const todayKey = dateKeyFromDate(todayAtNoon);
+  // Заморозка минулого (ADR-0079 §3): пауза діє від сьогодні вперед. Без
+  // прапорця опції порожні — предикат поводиться історично.
+  const scheduleOpts = opts.freezePausedPast ? { pausedFrom: todayKey } : {};
 
   const mondayThisWeek = mondayOfWeek(todayAtNoon);
   const startDate = addDaysAt12(
     mondayThisWeek,
-    -(totalWeeks - 1) * HEATMAP_DAYS,
+    -(historyWeeks - 1) * HEATMAP_DAYS,
   );
   const startKey = dateKeyFromDate(startDate);
-  const endDate = addDaysAt12(startDate, totalWeeks * HEATMAP_DAYS - 1);
+  const endDate = addDaysAt12(startDate, gridWeeks * HEATMAP_DAYS - 1);
   const endKey = dateKeyFromDate(endDate);
 
   const weeksOut: HeatmapCell[][] = [];
   const seenMonths = new Set<string>();
   const monthMarkers: HeatmapMonthMarker[] = [];
 
-  for (let w = 0; w < totalWeeks; w++) {
+  for (let w = 0; w < gridWeeks; w++) {
     const week: HeatmapCell[] = [];
     for (let d = 0; d < HEATMAP_DAYS; d++) {
       const dt = addDaysAt12(startDate, w * HEATMAP_DAYS + d);
       const dateKey = dateKeyFromDate(dt);
       const isFuture = dateKey > todayKey;
       const isToday = dateKey === todayKey;
-      const cnt = cntByDay[dateKey] || 0;
-      const total = totalActive;
-      const ratio = total > 0 && !isFuture ? cnt / total : 0;
+
+      let scheduledTotal = 0;
+      let scheduledCnt = 0;
+      let skippedCnt = 0;
+      for (const h of active) {
+        // Гнучка звичка («N разів на тиждень») перестає бути в знаменнику
+        // того дня, коли тиждень уже добрано. Без цього людина з ціллю
+        // «3 рази» отримувала б ЧОТИРИ незафарбовані дні щотижня — сітка
+        // читалась би як «пропустив», хоча вона зробила рівно те, що
+        // планувала. Лічильник виключає сам день, тож день ВИКОНАННЯ
+        // лишається і в знаменнику, і в чисельнику.
+        const weekDone = isFlexibleHabit(h)
+          ? weekDoneCountExcludingDate(completions?.[h.id], dateKey)
+          : undefined;
+        if (
+          !habitScheduledOnDate(h, dateKey, {
+            ...scheduleOpts,
+            weekDoneCount: weekDone,
+          })
+        )
+          continue;
+        const isDone = completionSets.get(h.id)?.has(dateKey) ?? false;
+        // «Не зміг з причиною» виходить зі ЗНАМЕННИКА, а не рахується
+        // провалом — той самий рядок, що вже стоїть у
+        // `completionRateForRange` (`streaks.ts`). До METRICS_VERSION 14
+        // heatmap був єдиним конвеєром, де заявлений пропуск усе ще тягнув
+        // клітинку вниз: людина казала продукту «хворів», а сітка малювала
+        // це провалом. `skippedCnt` лишається — він дозволяє презентації
+        // відрізнити «увесь незакритий залишок дня — заявлені пропуски» від
+        // «мовчазний провал» (PR-R8, аудит 2026-09-13).
+        if (!isDone && opts.skips?.[h.id]?.[dateKey]) {
+          skippedCnt += 1;
+          continue;
+        }
+        scheduledTotal += 1;
+        if (isDone) scheduledCnt += 1;
+      }
+
+      const cnt = useScheduled ? scheduledCnt : cntByDay[dateKey] || 0;
+      const total = useScheduled ? scheduledTotal : totalActive;
+      const raw = total > 0 && !isFuture ? cnt / total : 0;
+      // Clamp only on the schedule-aware path: historical completions
+      // recorded under a previous schedule can outnumber today's
+      // scheduled habits, and a ratio > 1 would mis-colour the cell.
+      const ratio = useScheduled ? Math.min(1, raw) : raw;
       const intensity = heatmapIntensity(ratio, isFuture);
 
       week.push({
@@ -169,6 +300,9 @@ export function buildHeatmapGrid(
         total,
         ratio,
         intensity,
+        scheduledTotal,
+        scheduledCnt,
+        skippedCnt,
       });
 
       const mk = `${dt.getFullYear()}-${dt.getMonth()}`;
@@ -278,12 +412,4 @@ export function findCellByDateKey(
     }
   }
   return null;
-}
-
-/**
- * Re-export helper used by tests to construct a Date from a date-key
- * without re-importing `parseDateKey`.
- */
-export function dateFromHeatmapKey(dateKey: string): Date {
-  return parseDateKey(dateKey);
 }

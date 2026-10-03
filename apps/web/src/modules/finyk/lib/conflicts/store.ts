@@ -1,7 +1,7 @@
 /**
  * In-process typed store for sync-v2 conflicts on `finyk_manual_expenses`.
  *
- * Stage 5 PR #044 (`docs/planning/storage-roadmap.md`). Provides the UI
+ * Stage 5 PR #044 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Provides the UI
  * surface that the eventual sync-v2 client will populate when the
  * server's per-row apply-fn rejects a push with `reason='lww_conflict'`
  * або `reason='tombstoned'` для table=`finyk_manual_expenses`. The
@@ -33,7 +33,7 @@
  *   counter («N конфліктів»), а не повний список, тому FIFO-витискання
  *   не міняє UX.
  *
- * - **No persistence (yet).** Конфлікти живуть лише у пам'яті вкладки.
+ * - **No persistence (yet).** Конфлікти живуть лише у памʼяті вкладки.
  *   Якщо юзер закриє таб до dismiss — конфлікт зникне, наступний push
  *   або pull (PR #044+) їх відновить. Persistence у `localStorage`
  *   додамо коли підключимо реальний sync-v2 client (поза скоупом #044).
@@ -49,9 +49,15 @@ export interface FinykManualExpenseConflict {
   /**
    * Server-reported rejection reason. `lww_conflict` означає, що
    * локальний `clientTs` старіший за серверний `updated_at` —
-   * cloud має свіжішу версію. `tombstoned` означає, що рядок
-   * soft-deleted на сервері, а ми спробували insert/update —
-   * resurrection guard сработав.
+   * cloud має свіжішу версію.
+   *
+   * `tombstoned` ВИВЕДЕНО З ОБІГУ: серверне правило «видалення
+   * остаточне» знято (`guardUuidPkApply` в
+   * `apps/server/src/modules/sync/applySync-helpers.ts`), і новіший запис
+   * тепер воскрешає soft-deleted рядок за звичайним LWW. Значення
+   * лишається в юніоні навмисно — web і server деплояться окремо, тож
+   * старий сервер за проксі ще може його прислати. Нових продюсерів не
+   * додавай.
    */
   readonly reason: FinykManualExpenseConflictReason;
   /**

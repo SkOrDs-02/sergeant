@@ -135,7 +135,6 @@ const BodySummaryCardImpl = function BodySummaryCard({
             {glyph}
           </Text>
         ) : null}
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift -- compact summary-tile label, mirrors web Body.tsx kicker */}
         <Text className="text-[11px] uppercase tracking-wide text-fg-muted">
           {label}
         </Text>

@@ -26,7 +26,13 @@ function epley1rmStrict(
 ): number {
   const wg = Number(weightKg ?? 0);
   const r = Number(reps ?? 0);
-  if (!Number.isFinite(wg) || !Number.isFinite(r) || wg <= 0 || r <= 0) {
+  if (
+    !Number.isFinite(wg) ||
+    !Number.isFinite(r) ||
+    wg <= 0 ||
+    r <= 0 ||
+    r > 10
+  ) {
     return 0;
   }
   return wg * (1 + r / 30);

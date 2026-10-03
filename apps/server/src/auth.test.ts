@@ -6,6 +6,16 @@ import { describe, it, expect, vi } from "vitest";
  * emailAndPassword). DB-pool мокається на рівні модуля, тож
  * `betterAuth({ database: pool })` отримує stub без мережі.
  */
+const { loggerMock } = vi.hoisted(() => ({
+  loggerMock: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn(),
+  },
+}));
+
 vi.mock("./db.js", () => {
   const pool = {
     query: vi.fn(),
@@ -18,7 +28,62 @@ vi.mock("./db.js", () => {
   return { default: pool, pool, query: pool.query, ensureSchema: vi.fn() };
 });
 
+vi.mock("./obs/logger.js", () => ({ logger: loggerMock }));
+
 const { auth } = await import("./auth.js");
+
+type DeleteUserHooks = {
+  options: {
+    user?: {
+      deleteUser?: {
+        enabled?: boolean;
+        beforeDelete?: (
+          user: { id: string; email: string },
+          request?: Request,
+        ) => Promise<void>;
+      };
+    };
+  };
+};
+
+/**
+ * `POST /api/auth/delete-user` мусить лишатись ЗАКРИТИМ.
+ *
+ * До появи 30-денного вікна (спека
+ * `docs/work/specs/user-deletion-grace-window.md`) цей ендпоінт БУВ живим
+ * шляхом видалення: хук `beforeDelete` кликав `deleteUserData`, і акаунт
+ * зникав одразу. З вікном шлях переїхав у `DELETE /api/me`
+ * (`routes/me.ts`) — той лише СТАВИТЬ мітку `deletion_requested_at`, а
+ * незворотну частину через `ACCOUNT_DELETION_GRACE_DAYS` днів виконує
+ * `AccountDeletionPoller`.
+ *
+ * Пін на `enabled: false` — не «тест під код». Доки ендпоінт Better Auth
+ * відкритий, він видаляє акаунт НЕГАЙНО і повз вікно, тобто тихо скасовує
+ * всю фічу: людина, яка передумала, не мала б куди повертатись.
+ *
+ * Другий пін — що хука немає ВЗАГАЛІ. Хук тут не рятує: Better Auth після
+ * `beforeDelete` БЕЗУМОВНО виконує власний `internalAdapter.deleteUser`
+ * (`dist/api/routes/update-user.mjs`), тож єдиним способом зупинити
+ * видалення було б кинути помилку на успішному шляху. Без цього піна
+ * наступний «полагодить» вікно, повернувши хук назад.
+ *
+ * Де перевіряється те, що тримає планку ТЕПЕР (тут не дублюємо):
+ * пароль і свіжість сесії — `routes/me.delete.route.test.ts`
+ * (§ «DELETE /api/me»); мітка й скасування — `modules/me/dataRights.test.ts`;
+ * добивання після вікна — `modules/me/deletionPoller.test.ts`.
+ */
+describe("auth config — user.deleteUser закритий на користь вікна скасування", () => {
+  const hooks = () =>
+    (auth as unknown as DeleteUserHooks).options.user?.deleteUser;
+
+  it("deleteUser вимкнений, тож негайного видалення повз вікно немає", () => {
+    expect(hooks()?.enabled).toBe(false);
+  });
+
+  it("beforeDelete-хука немає — він не здатен зупинити видалення", () => {
+    expect(hooks()?.beforeDelete).toBeUndefined();
+  });
+});
 
 describe("auth config — bearer plugin інтегрований у Better Auth", () => {
   /**
@@ -480,6 +545,23 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
     expect(ctx.body["revokeOtherSessions"]).toBe(true);
   });
 
+  /**
+   * Другий бік тієї ж пари: `/change-password` покриває `hooks.before`
+   * вище, а `/reset-password` — тільки цей прапорець (Better Auth дефолтить
+   * його у `false`). Без нього вкрадена сесія переживає скидання пароля до
+   * кінця 7-денного TTL.
+   */
+  it("emailAndPassword.revokeSessionsOnPasswordReset увімкнений", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          emailAndPassword?: { revokeSessionsOnPasswordReset?: boolean };
+        };
+      }
+    ).options;
+    expect(options.emailAndPassword?.revokeSessionsOnPasswordReset).toBe(true);
+  });
+
   it("H3: hooks.before не чіпає інші endpoint-и", async () => {
     const before = (
       auth as unknown as {
@@ -498,8 +580,183 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
    * PR-48 round-2 — session policy pinned до 7-денного hard-expiry з
    * 1-денним rolling refresh. Якщо хтось випадково повернеться до 30d
    * (старе значення) — тест відстрелить.
-   * Audit-док: `docs/security/better-auth-audit-2026-05.md`. ADR-0017.
+   * Audit-док: `docs/governance/security/better-auth-audit-2026-05.md`. ADR-0017.
    */
+  /**
+   * `ALLOWED_ORIGINS` — comma-separated ops-override для `trustedOrigins`,
+   * додається поверх дефолтного списку (не замінює його, на відміну від
+   * `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES`). Порожні записи між комами
+   * відкидаються, пробіли навколо значення обрізаються.
+   */
+  it("ALLOWED_ORIGINS додає власні origin-и до trustedOrigins, тримуючи пробіли/порожні записи", async () => {
+    vi.resetModules();
+    vi.stubEnv(
+      "ALLOWED_ORIGINS",
+      "https://custom.example.com, https://second.example.com,,",
+    );
+    try {
+      const { auth: authWithAllowed } = await import("./auth.js");
+      const options = (
+        authWithAllowed as unknown as {
+          options: { trustedOrigins?: string[] };
+        }
+      ).options;
+      const origins = options.trustedOrigins ?? [];
+      expect(origins).toContain("https://custom.example.com");
+      expect(origins).toContain("https://second.example.com");
+      // Apple callback-origin і нативні схеми лишаються — ALLOWED_ORIGINS
+      // тільки додає, не замінює.
+      expect(origins).toContain("https://appleid.apple.com");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("без ALLOWED_ORIGINS trustedOrigins не містить сторонніх origin-ів", () => {
+    const options = (
+      auth as unknown as { options: { trustedOrigins?: string[] } }
+    ).options;
+    const origins = options.trustedOrigins ?? [];
+    expect(origins).not.toContain("https://custom.example.com");
+  });
+
+  /**
+   * `getAdvancedCookieOptions()` — SameSite=None/Secure вмикається лише коли
+   * base URL API — HTTPS (типово прод) і `BETTER_AUTH_CROSS_SITE_COOKIES`
+   * не виставлений у `"0"`. Без цього крос-сайтовий фронт (Vercel) не зміг
+   * би тримати сесію: браузер відкидає SameSite=Lax cookie з іншого origin-у.
+   */
+  it("advanced.useSecureCookies вмикається, коли BETTER_AUTH_URL — https", async () => {
+    vi.resetModules();
+    vi.stubEnv("BETTER_AUTH_URL", "https://api.example.com");
+    try {
+      const { auth: authHttps } = await import("./auth.js");
+      const options = (
+        authHttps as unknown as {
+          options: {
+            advanced?: {
+              useSecureCookies?: boolean;
+              defaultCookieAttributes?: { sameSite?: string; secure?: boolean };
+            };
+          };
+        }
+      ).options;
+      expect(options.advanced?.useSecureCookies).toBe(true);
+      expect(options.advanced?.defaultCookieAttributes?.sameSite).toBe("none");
+      expect(options.advanced?.defaultCookieAttributes?.secure).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("advanced відсутній, коли BETTER_AUTH_CROSS_SITE_COOKIES=0 навіть на https base URL", async () => {
+    vi.resetModules();
+    vi.stubEnv("BETTER_AUTH_URL", "https://api.example.com");
+    vi.stubEnv("BETTER_AUTH_CROSS_SITE_COOKIES", "0");
+    try {
+      const { auth: authOptOut } = await import("./auth.js");
+      const options = (
+        authOptOut as unknown as { options: { advanced?: unknown } }
+      ).options;
+      expect(options.advanced).toBeUndefined();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("advanced відсутній для http (локальний dev) base URL", () => {
+    // Default test env (no BETTER_AUTH_URL стаб) резолвиться у
+    // `http://localhost:${PORT}` через getBaseURL() — не https.
+    const options = (auth as unknown as { options: { advanced?: unknown } })
+      .options;
+    expect(options.advanced).toBeUndefined();
+  });
+
+  /**
+   * Регресійний якір. `user.changeEmail` не існував у конфізі взагалі, а
+   * `PersonalInfoSection` уже викликав `POST /api/auth/change-email` — Better
+   * Auth першим рядком хендлера (`update-user.ts`) перевіряє саме цей прапорець
+   * і повертав `400 CHANGE_EMAIL_DISABLED`. Кнопка «Змінити» у профілі не
+   * працювала жодного разу. Юніт-тести профілю це не ловили, бо `changeEmail`
+   * там замоканий — тому контракт стережеться саме тут, на боці сервера.
+   */
+  it("user.changeEmail увімкнений — інакше зміна email у профілі 400-ить", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          user?: {
+            changeEmail?: {
+              enabled?: boolean;
+              updateEmailWithoutVerification?: boolean;
+              sendChangeEmailConfirmation?: unknown;
+            };
+          };
+        };
+      }
+    ).options;
+    expect(options.user?.changeEmail?.enabled).toBe(true);
+    // Без цього прапорця непідтверджений юзер (переважна більшість бази до
+    // H6-sweep) не може змінити адресу взагалі: гілка `canSendConfirmation`
+    // вимагає `emailVerified === true`, і Better Auth падає у
+    // "Verification email isn't enabled".
+    expect(options.user?.changeEmail?.updateEmailWithoutVerification).toBe(
+      true,
+    );
+    // Підтверджений юзер отримує лист на СТАРУ адресу — без цього колбека
+    // Better Auth мовчки пропускає крок підтвердження власника.
+    expect(typeof options.user?.changeEmail?.sendChangeEmailConfirmation).toBe(
+      "function",
+    );
+  });
+
+  /**
+   * `emailVerification.sendVerificationEmail` — єдиний канал, через який
+   * користувач взагалі може підтвердити пошту (H6). Якщо колбек зникне,
+   * `POST /api/auth/send-verification-email` почне віддавати
+   * `VERIFICATION_EMAIL_NOT_ENABLED`, а кнопка «Надіслати» у профілі — тост
+   * помилки.
+   */
+  it("emailVerification: sendOnSignUp + колбек надсилання на місці", () => {
+    const options = (
+      auth as unknown as {
+        options: {
+          emailVerification?: {
+            sendOnSignUp?: boolean;
+            sendVerificationEmail?: unknown;
+          };
+        };
+      }
+    ).options;
+    expect(options.emailVerification?.sendOnSignUp).toBe(true);
+    expect(typeof options.emailVerification?.sendVerificationEmail).toBe(
+      "function",
+    );
+  });
+
+  /**
+   * Web-origin, на який ми самі шлемо `callbackURL` у листах, мусить бути у
+   * `trustedOrigins`: Better Auth проганяє цей параметр через `originCheck` і
+   * 403-ить усе, чого немає у списку. Розʼїзд означав би, що кожен клік у
+   * листі впирається у 403 замість підтвердження.
+   */
+  it("trustedOrigins містять web-origin із WEB_APP_URL", async () => {
+    vi.resetModules();
+    vi.stubEnv("WEB_APP_URL", "https://app.example.com");
+    try {
+      const { auth: scopedAuth } = await import("./auth.js");
+      const options = (
+        scopedAuth as unknown as { options: { trustedOrigins?: string[] } }
+      ).options;
+      expect(options.trustedOrigins ?? []).toContain("https://app.example.com");
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
   it("PR-48: session.expiresIn = 7 діб", () => {
     const options = (
       auth as unknown as {

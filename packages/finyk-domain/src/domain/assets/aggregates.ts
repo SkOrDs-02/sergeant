@@ -12,8 +12,8 @@
  */
 
 import { calcDebtRemaining, calcReceivableRemaining } from "../debtEngine.js";
-import { getMonoTotals, type MonoAccount } from "../../lib/accounts.js";
-import { CURRENCY } from "../../constants.js";
+import { getMonoTotals, filterVisibleAccounts } from "../../lib/accounts.js";
+import { CURRENCY, CURRENCY_SYMBOL } from "../../constants.js";
 import type { Transaction } from "../types.js";
 import type {
   AssetsDebt,
@@ -21,12 +21,18 @@ import type {
   AssetsSummary,
   AssetsSummaryInput,
   ManualAsset,
+  MonoJarLike,
 } from "./types.js";
 
 /**
  * Sum UAH-denominated manual assets. Non-UAH entries are ignored —
  * Assets (and Overview) treat the FX portfolio as out-of-scope for
- * networth until a live FX rate is wired up.
+ * networth until a live FX rate is wired up. Non-UAH assets are a paid
+ * feature (`multi-currency` gate in `AssetsForm.tsx`), so callers that
+ * surface this total to the user must also surface the excluded count —
+ * see `nonUahManualAssetCount` in `useOverviewData.ts` and the Overview
+ * banner in `Overview.tsx` (web), and the `nonUahManualAssetCount` banner
+ * in mobile `AssetsPage.tsx`.
  */
 export function sumManualAssetsUAH(
   manualAssets: readonly ManualAsset[] | null | undefined,
@@ -69,23 +75,28 @@ export function sumReceivablesRemaining(
 }
 
 /**
- * Hide-list-aware filter for Mono accounts. Mirrors
- * `accounts.filter((a) => !hiddenAccounts.includes(a.id))` used on web
- * but accepts both `undefined` ids and read-only inputs.
+ * Sum UAH-denominated Monobank jar ("банка") balances. Mirrors
+ * {@link sumManualAssetsUAH}'s currency-guard semantics — non-UAH jars are
+ * out-of-scope for networth until a live FX rate is wired up. `balance`
+ * is nullable on the DTO (Monobank hasn't reported it yet) and is
+ * treated as `0`; a negative balance (shouldn't happen for a jar, but
+ * defensive) is clamped to `0` so a jar can never *reduce* the total.
  */
-export function filterVisibleAccounts(
-  accounts: readonly MonoAccount[],
-  hiddenAccounts: readonly string[] = [],
-): MonoAccount[] {
-  const hidden = new Set(hiddenAccounts);
-  return accounts.filter((a) => !(a.id !== undefined && hidden.has(a.id)));
+export function sumJarsUAH(
+  jars: readonly MonoJarLike[] | null | undefined,
+): number {
+  if (!jars) return 0;
+  return jars
+    .filter(
+      (j) => (j.currencyCode ?? (CURRENCY.UAH as number)) === CURRENCY.UAH,
+    )
+    .reduce((sum, j) => sum + Math.max(0, j.balance ?? 0) / 100, 0);
 }
 
-const CURRENCY_SYMBOL_BY_CODE: Record<number, string> = {
-  [CURRENCY.UAH as number]: "₴",
-  [CURRENCY.USD as number]: "$",
-  [CURRENCY.EUR as number]: "€",
-};
+// `filterVisibleAccounts` re-exported for callers that already import the
+// Assets rollup helpers from here (§2.22: the canonical body now lives in
+// `../../lib/accounts.js`, which `getMonoTotals` also uses internally).
+export { filterVisibleAccounts };
 
 /**
  * Map an ISO-4217 numeric currency code to its symbol. Defaults to `₴`
@@ -96,7 +107,7 @@ export function getAccountCurrencySymbol(
   currencyCode: number | null | undefined,
 ): string {
   if (currencyCode == null) return "₴";
-  return CURRENCY_SYMBOL_BY_CODE[currencyCode] ?? "₴";
+  return CURRENCY_SYMBOL[currencyCode] ?? "₴";
 }
 
 /**
@@ -125,20 +136,21 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
     manualDebts,
     receivables,
     transactions,
+    jars,
   } = input;
 
   const { balance: monoBalance, debt: monoDebt } = getMonoTotals(
     accounts,
-    // getMonoTotals takes a mutable `string[]` — readonly → string[] is
-    // safe because `getMonoTotals` only reads the array.
-    hiddenAccounts as string[],
+    hiddenAccounts,
   );
 
   const manualAssetTotal = sumManualAssetsUAH(manualAssets);
+  const jarsTotal = sumJarsUAH(jars);
   const manualDebtTotal = sumDebtsRemaining(manualDebts, transactions);
   const receivableTotal = sumReceivablesRemaining(receivables, transactions);
 
-  const totalAssets = monoBalance + manualAssetTotal + receivableTotal;
+  const totalAssets =
+    monoBalance + manualAssetTotal + receivableTotal + jarsTotal;
   const totalLiabilities = monoDebt + manualDebtTotal;
   const networth = totalAssets - totalLiabilities;
 
@@ -146,6 +158,7 @@ export function computeAssetsSummary(input: AssetsSummaryInput): AssetsSummary {
     monoBalance,
     monoDebt,
     manualAssetTotal,
+    jarsTotal,
     manualDebtTotal,
     receivableTotal,
     totalAssets,

@@ -7,18 +7,21 @@ import { Segmented, type SegmentedProps } from "./Segmented";
  * усередині сторінки. Консолідує drift між Fizruk Workouts (solid
  * module-fill tabs) та Routine calendar time-mode chips (soft tinted chips).
  *
- * Two-axis API:
+ * Three-axis API:
  *   - `variant` — accent колір (`brand` за замовчуванням; чотири module-токени
  *                 скоупують активний стан до конкретного модуля).
  *   - `style`   — візуальне трактування активного chip-а:
- *                 - `solid` — фон `bg-{c}-strong` + `text-white` (5.0–7.0:1
- *                   contrast на 12 px → проходить WCAG AA для звичайного
- *                   тексту, не покладаючись на large-text exemption).
+ *                 - `solid` — інвертований ink («Чорнило» v3.1 § 6):
+ *                   `bg-ink text-bg` (theme-aware — dark #e7f0ea/#14100e,
+ *                   light дзеркально), бордер тримає module-акцент.
  *                 - `soft`  — `bg-{c}-soft` + accent-border + `text-{c}-strong`,
  *                   більш subtle treatment для filtering chips.
  *
- * Без сабтабів: `<SubTabs>` залишається окремим повноширинним bar-style
- * варіантом. Hapticи на iOS/Android викликаються через `hapticTap()`
+ *   - `layout`  — геометрія ряду: `pill` (за замовчуванням, чипи по
+ *                 ширині підпису) або `bar` (одна повноширинна доріжка).
+ *
+ * `layout="bar"` не заміняє `<SubTabs>`: той компонент — навігація між
+ * вьюхами сторінки, а це контрол усередині екрана. Hapticи на iOS/Android викликаються через `hapticTap()`
  * adapter тільки при зміні значення (не на повторному кліку).
  */
 const meta: Meta<typeof Segmented> = {
@@ -29,6 +32,7 @@ const meta: Meta<typeof Segmented> = {
   argTypes: {
     style: { control: "select", options: ["solid", "soft"] },
     size: { control: "select", options: ["sm", "md"] },
+    layout: { control: "select", options: ["pill", "bar"] },
     variant: {
       control: "select",
       options: ["brand", "fizruk", "routine", "nutrition", "finyk"],
@@ -37,6 +41,7 @@ const meta: Meta<typeof Segmented> = {
   args: {
     style: "soft",
     size: "md",
+    layout: "pill",
     variant: "brand",
   },
 };
@@ -74,6 +79,21 @@ export const Default: Story = {
 export const Solid: Story = {
   args: { style: "solid" },
   render: (args) => <ControlledDemo {...args} />,
+};
+
+/**
+ * `bar` layout — одна повноширинна доріжка з рівних сегментів. Для короткого
+ * фіксованого набору взаємовиключних опцій, який перемикають часто: ширина
+ * не стрибає від довжини підпису, і ряд читається як ОДИН контрол. Довгий
+ * чи відкритий набір лишається `pill`.
+ */
+export const Bar: Story = {
+  args: { layout: "bar" },
+  render: (args) => (
+    <div className="w-[360px]">
+      <ControlledDemo {...args} />
+    </div>
+  ),
 };
 
 /** `sm` size — менший touch-target (36 px) для compact filters. */

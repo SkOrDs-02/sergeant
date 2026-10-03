@@ -10,7 +10,13 @@ import type { ReactNode } from "react";
 
 import { getSyncEngineWriter } from "../../syncEngine/singleton";
 
-import { SYNC_STATUS_POLL_MS, useSyncStatus } from "./useSyncStatus";
+import { emitSyncOutboxChanged } from "../../syncEngine/outboxChanged";
+
+import {
+  OUTBOX_INVALIDATE_DEBOUNCE_MS,
+  SYNC_STATUS_POLL_MS,
+  useSyncStatus,
+} from "./useSyncStatus";
 
 vi.mock("../../syncEngine/singleton", () => ({
   getSyncEngineWriter: vi.fn(),
@@ -178,7 +184,13 @@ describe("useSyncStatus", () => {
     });
   });
 
-  it("does not schedule background polling when offline", async () => {
+  // Регресія browser-QA 2026-09-02. Раніше цей тест закріплював
+  // ПРОТИЛЕЖНЕ («does not schedule background polling when offline») — і
+  // саме та поведінка була дефектом: `getStatus()` читає локальний SQLite,
+  // тож офлайн — не «нема мережі, нема сенсу питати», а єдиний стан, у
+  // якому черга росте. Лічильник у плашці завмирав на числі, знятому в
+  // мить розриву.
+  it("продовжує опитувати чергу в офлайні — вона саме там і росте", async () => {
     Object.defineProperty(navigator, "onLine", {
       value: false,
       configurable: true,
@@ -200,18 +212,67 @@ describe("useSyncStatus", () => {
     });
     expect(getStatus).toHaveBeenCalledTimes(1);
 
-    // Advance well past two intervals — no new fetch should fire because
-    // `refetchInterval` is `false` when offline.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(SYNC_STATUS_POLL_MS * 2 + 1_000);
     });
 
-    expect(getStatus).toHaveBeenCalledTimes(1);
+    expect(getStatus.mock.calls.length).toBeGreaterThanOrEqual(3);
 
     Object.defineProperty(navigator, "onLine", {
       value: true,
       configurable: true,
     });
+  });
+
+  // Інтервал — стеля затримки; основний тригер — сам аутбокс.
+  it("оновлює лічильник за подією аутбокса, не чекаючи інтервалу", async () => {
+    const getStatus = vi.fn().mockResolvedValue({
+      pending: 0,
+      rejected: 0,
+      dead_letter: 0,
+    });
+    mockedGetSyncEngineWriter.mockReturnValue(makeRuntime(getStatus));
+
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderHook(() => useSyncStatus(), { wrapper: makeWrapper() });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const baseline = getStatus.mock.calls.length;
+
+    await act(async () => {
+      emitSyncOutboxChanged();
+      await vi.advanceTimersByTimeAsync(OUTBOX_INVALIDATE_DEBOUNCE_MS + 10);
+    });
+
+    expect(getStatus.mock.calls.length).toBeGreaterThan(baseline);
+  });
+
+  // Імпорт Strong-CSV ставить у чергу сотні рядків, і кожен шле подію.
+  // Без склеювання це сотні COUNT-ів по SQLite посеред імпорту.
+  it("склеює пачку подій аутбокса в один перезапит", async () => {
+    const getStatus = vi.fn().mockResolvedValue({
+      pending: 0,
+      rejected: 0,
+      dead_letter: 0,
+    });
+    mockedGetSyncEngineWriter.mockReturnValue(makeRuntime(getStatus));
+
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    renderHook(() => useSyncStatus(), { wrapper: makeWrapper() });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    const baseline = getStatus.mock.calls.length;
+
+    await act(async () => {
+      for (let i = 0; i < 50; i += 1) emitSyncOutboxChanged();
+      await vi.advanceTimersByTimeAsync(OUTBOX_INVALIDATE_DEBOUNCE_MS + 10);
+    });
+
+    expect(getStatus.mock.calls.length).toBe(baseline + 1);
   });
 
   it("falls back to empty counts when getStatus() rejects", async () => {

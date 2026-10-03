@@ -19,7 +19,7 @@ import { Tabs, type TabItem, type TabsProps } from "./Tabs";
  */
 const items: TabItem<string>[] = [
   { value: "overview", label: "Огляд" },
-  { value: "transactions", label: "Транзакції", badge: "12" },
+  { value: "transactions", label: "Операції", badge: "12" },
   { value: "budgets", label: "Бюджети" },
   { value: "settings", label: "Налаштування" },
 ];
@@ -102,7 +102,7 @@ export const ModuleVariants: Story = {
 function WithDisabledDemo() {
   const withDisabled: TabItem<string>[] = [
     { value: "overview", label: "Огляд" },
-    { value: "transactions", label: "Транзакції" },
+    { value: "transactions", label: "Операції" },
     { value: "premium", label: "Premium", disabled: true, badge: "PRO" },
   ];
   return <ControlledTabsDemo items={withDisabled} />;

@@ -25,7 +25,7 @@
  *
  * Default weights ([0.4, 0.2, 0.2, 0.2]) keep `outcome` favoured (since it
  * has been the production mainline) while exposing the three alternatives
- * across ~60% of new traffic. Per `docs/launch/posthog-ftux-dashboards.md`,
+ * across ~60% of new traffic. Per `docs/operations/observability/posthog-ftux-dashboards.md`,
  * the winning metric is `wizard_started → wizard_completed` per-arm.
  */
 
@@ -43,10 +43,7 @@ export const ONBOARDING_HERO_COPY_EXPERIMENT: ExperimentDefinition = {
 };
 
 export type OnboardingHeroCopyVariant =
-  | "outcome"
-  | "safe"
-  | "bold"
-  | "disciplined";
+  "outcome" | "safe" | "bold" | "disciplined";
 
 export interface OnboardingHeroCopy {
   /** Hero headline (h2). ≤ 64 chars. */
@@ -62,14 +59,11 @@ export interface OnboardingHeroCopy {
   /** Primary CTA label. Always action-orientated. ≤ 32 chars. */
   primaryCta: string;
   /**
-   * Secondary CTA label (PR-05 — demo mode as first-class). Rendered
-   * directly inside the splash card under the primary CTA so the
-   * "просто подивитись" cohort doesn't have to scan past the wizard
-   * card to reach the demo entry point. Same string for every variant
-   * — copy stays canonical ("Подивитись приклад") so the demo entry
-   * is recognisable across A/B arms and the share-of-traffic SLO
-   * (`DEMO_STARTED { source: "welcome" } / ONBOARDING_STARTED ≥ 15%`)
-   * isn't biased by per-arm copy drift.
+   * Другорядний CTA під основним у splash-картці. До 2026-09-17 ним був
+   * вхід у демо-режим («Подивитись приклад»); режим знято, і поверхні
+   * цей рядок більше не рендерять. Поле лишається в типі, бо його
+   * заповнюють усі варіанти копірайту — прибирати його треба разом із
+   * ревізією A/B-арок, а не мимохідь.
    */
   secondaryCta: string;
 }
@@ -100,10 +94,10 @@ export function getOnboardingHeroCopy(
  * no collision with Zoom™. "cloud-у" replaced with "хмари" — native UA.
  */
 const OUTCOME_COPY: OnboardingHeroCopy = {
-  title: "Один запис — і побачиш, куди йде твоє життя.",
-  subtitle: "Бюджет, тренування, звички, їжа — за 30 секунд, без реєстрації.",
+  title: "Один запис, і побачиш, куди йде твоє життя.",
+  subtitle: "Бюджет, тренування, звички, їжа, за 30 секунд, без реєстрації.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Розпочати — 30 секунд",
+  primaryCta: "Розпочати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
 
@@ -118,7 +112,7 @@ const SAFE_COPY: OnboardingHeroCopy = {
   title: "Один екран замість шести застосунків.",
   subtitle: "Гроші, тренування, звички, їжа. Без акаунта. Без хмари.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Розпочати — 30 секунд",
+  primaryCta: "Розпочати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
 
@@ -132,10 +126,9 @@ const SAFE_COPY: OnboardingHeroCopy = {
  */
 const BOLD_COPY: OnboardingHeroCopy = {
   title: "Не для всіх. Для тих, хто втомився забувати.",
-  subtitle:
-    "Записуй один раз — Sergeant пам'ятає за тебе. Офлайн, без акаунта.",
+  subtitle: "Записуй один раз, Sergeant памʼятає за тебе. Офлайн, без акаунта.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Спробувати — 30 секунд",
+  primaryCta: "Спробувати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };
 
@@ -155,6 +148,6 @@ const DISCIPLINED_COPY: OnboardingHeroCopy = {
   subtitle:
     "Один екран для грошей, тіла, звичок і їжі. Без акаунта. Без хмари.",
   badges: ["Без реєстрації", "Без хмари", "Без реклами"],
-  primaryCta: "Розпочати — 30 секунд",
+  primaryCta: "Розпочати · 30 секунд",
   secondaryCta: "Подивитись приклад",
 };

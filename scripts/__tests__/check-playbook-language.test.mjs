@@ -63,6 +63,47 @@ test("stripNoise removes fenced code blocks", () => {
   assert.doesNotMatch(stripNoise(src), /const/);
 });
 
+// Регресія 2026-08-08: `pnpm docs:gen-pr-backlinks` (вимога pr-ledger)
+// дописує у плейбук таблицю з англомовними заголовками PR-ів прямо з
+// GitHub — і той самий файл одразу падав тут по співвідношенню мов
+// (`rotate-openclaw-credentials.md`: cyrillic=341 latin=530, ratio=0.39).
+// Два гейти суперечили один одному, і жоден не був неправий окремо.
+// Мовний гейт має міряти мову АВТОРА, тож машинні блоки не рахуються.
+test("stripNoise drops AUTO-GENERATED blocks (machine-inserted English)", () => {
+  const src = [
+    "Текст автора українською.",
+    "<!-- AUTO-GENERATED: PR-BACKLINKS-START -->",
+    "## Recent PRs",
+    "| PR | Title | Merged |",
+    "| #508 | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |",
+    "<!-- AUTO-GENERATED: PR-BACKLINKS-END -->",
+    "Ще текст автора.",
+  ].join("\n");
+  const out = stripNoise(src);
+  assert.match(out, /Текст автора/);
+  assert.match(out, /Ще текст автора/);
+  assert.doesNotMatch(out, /reconcile/);
+  assert.doesNotMatch(out, /Recent PRs/);
+});
+
+test("stripNoise leaves a non-matching AUTO-GENERATED marker pair alone", () => {
+  // Захист від жадібності: різні маркери не мають схлопуватись в один
+  // блок і зʼїдати авторський текст між ними.
+  const src = [
+    "<!-- AUTO-GENERATED: ALPHA-START -->",
+    "machine alpha",
+    "<!-- AUTO-GENERATED: ALPHA-END -->",
+    "Авторський текст посередині.",
+    "<!-- AUTO-GENERATED: BETA-START -->",
+    "machine beta",
+    "<!-- AUTO-GENERATED: BETA-END -->",
+  ].join("\n");
+  const out = stripNoise(src);
+  assert.match(out, /Авторський текст посередині/);
+  assert.doesNotMatch(out, /machine alpha/);
+  assert.doesNotMatch(out, /machine beta/);
+});
+
 test("stripNoise removes inline code", () => {
   assert.doesNotMatch(stripNoise("використай `Number(x)` тут"), /Number/);
 });
@@ -119,29 +160,29 @@ test("countAlphabets counts the Ukrainian apostrophe (ʼ U+02BC) as cyrillic", (
 });
 
 test("isSkippablePlaybook skips INDEX, README, _TEMPLATE-*, playbook-catalog, and underscore-prefixed", () => {
-  assert.equal(isSkippablePlaybook("docs/00-start/playbooks/INDEX.md"), true);
-  assert.equal(isSkippablePlaybook("docs/00-start/playbooks/README.md"), true);
+  assert.equal(isSkippablePlaybook("docs/start/instructions/INDEX.md"), true);
+  assert.equal(isSkippablePlaybook("docs/start/instructions/README.md"), true);
   assert.equal(
-    isSkippablePlaybook("docs/00-start/playbooks/_TEMPLATE-decision-tree.md"),
+    isSkippablePlaybook("docs/start/instructions/_TEMPLATE-decision-tree.md"),
     true,
   );
   assert.equal(
-    isSkippablePlaybook("docs/00-start/playbooks/playbook-catalog.md"),
+    isSkippablePlaybook("docs/start/instructions/playbook-catalog.md"),
     true,
   );
   assert.equal(
-    isSkippablePlaybook("docs/00-start/playbooks/_internal-notes.md"),
+    isSkippablePlaybook("docs/start/instructions/_internal-notes.md"),
     true,
   );
   assert.equal(
-    isSkippablePlaybook("docs/00-start/playbooks/add-api-endpoint.md"),
+    isSkippablePlaybook("docs/start/instructions/add-api-endpoint.md"),
     false,
   );
 });
 
 test("analyseFile flags an English-dominant playbook", () => {
   const r = analyseFile(
-    "/repo/docs/00-start/playbooks/foo.md",
+    "/repo/docs/start/instructions/foo.md",
     "# Playbook: Foo\n\nThis is an English playbook with a lot of English text.\n",
   );
   assert.equal(r.flagged, true);
@@ -151,7 +192,7 @@ test("analyseFile flags an English-dominant playbook", () => {
 
 test("analyseFile does NOT flag an English file with `lang: en` frontmatter", () => {
   const r = analyseFile(
-    "/repo/docs/00-start/playbooks/foo.md",
+    "/repo/docs/start/instructions/foo.md",
     "---\nlang: en\n---\n# Playbook: Foo\n\nIntentionally English for on-call shadowing.\n",
   );
   assert.equal(r.flagged, false);
@@ -161,7 +202,7 @@ test("analyseFile does NOT flag an English file with `lang: en` frontmatter", ()
 test("analyseFile does NOT flag a Ukrainian-dominant playbook", () => {
   const ua =
     "# Playbook: Як зробити X\n\nЦей плейбук пояснює, як зробити X. Викликай скрипт `pnpm foo`.\n";
-  const r = analyseFile("/repo/docs/00-start/playbooks/x.md", ua);
+  const r = analyseFile("/repo/docs/start/instructions/x.md", ua);
   assert.equal(r.flagged, false);
   assert.ok(r.ratio >= MIN_CYRILLIC_RATIO);
 });
@@ -174,7 +215,7 @@ test("analyseFile is not fooled by code blocks full of English", () => {
     "Запусти команду:\n\n" +
     "```bash\nnode scripts/foo.mjs --very-long-english-flag --another-english-flag\n```\n\n" +
     "Перевір результат у логах.\n";
-  const r = analyseFile("/repo/docs/00-start/playbooks/test.md", src);
+  const r = analyseFile("/repo/docs/start/instructions/test.md", src);
   assert.equal(r.flagged, false, JSON.stringify(r));
 });
 
@@ -184,7 +225,7 @@ test("analyseFile ignores the freshness header English handle", () => {
     "# Playbook: Огляд\n\n" +
     "> **Last validated:** 2026-04-30 by @longest-english-username-imaginable. **Next review:** 2026-07-29.\n\n" +
     "Цей файл коротко описує, що ми робимо у такому випадку.\n";
-  const r = analyseFile("/repo/docs/00-start/playbooks/oversight.md", src);
+  const r = analyseFile("/repo/docs/start/instructions/oversight.md", src);
   assert.equal(r.flagged, false, JSON.stringify(r));
 });
 
@@ -192,7 +233,7 @@ test("analyseFile ignores the freshness header English handle", () => {
 
 function makeFixtureDirs() {
   const root = mkdtempSync(join(tmpdir(), "playbook-language-test-"));
-  const playbookDir = join(root, "docs/00-start/playbooks");
+  const playbookDir = join(root, "docs/start/instructions");
   const skillsDir = join(root, ".agents/skills/example-skill");
   mkdirSync(playbookDir, { recursive: true });
   mkdirSync(skillsDir, { recursive: true });

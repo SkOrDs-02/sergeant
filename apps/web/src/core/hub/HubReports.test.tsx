@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 // `kvStoreBoot` pulls in `@sergeant/db-schema/sqlite` (WASM — only available
 // when the package is built). Stub it at the boundary so the full import chain
@@ -27,12 +27,6 @@ vi.mock("./NutritionCard", () => ({
   default: () => <div data-testid="hub-reports-nutrition-card" />,
 }));
 
-// `WeeklyDigestCard` reads its own localStorage state and renders an
-// async-narrative surface — out of scope for this smoke test.
-vi.mock("../insights/WeeklyDigestCard", () => ({
-  WeeklyDigestCard: () => <div data-testid="hub-reports-weekly-digest" />,
-}));
-
 // PaywallModal + useFeatureGate side-effects (event listeners, plan probe)
 // are not under test here — stub to keep the surface minimal.
 vi.mock("../billing", () => ({
@@ -41,14 +35,16 @@ vi.mock("../billing", () => ({
     requireAccess: () => true,
     paywallOpen: false,
     closePaywall: () => undefined,
-    paywallSurface: "analytics-export-pdf",
+    paywallSurface: "csv_export",
   }),
 }));
 
-// `exportToPDF` opens a new window — never invoked in this test but stub
-// defensively so a future click-path test does not surprise jsdom.
+// `generatePDFReport` builds the report HTML that HubReports feeds into
+// the in-app `PdfPreviewModal`. Stub it to a deterministic string so the
+// click-path test can assert the section payload without exercising the
+// full HTML template.
 vi.mock("@shared/lib/ui/export", () => ({
-  exportToPDF: vi.fn(),
+  generatePDFReport: vi.fn(() => "<!DOCTYPE html><html></html>"),
 }));
 
 // Stub `generateInsights` so F7 assertions can control the returned copy
@@ -59,7 +55,10 @@ vi.mock("../lib/insightsEngine", () => ({
 }));
 
 import { act } from "@testing-library/react";
+import { setActiveModules } from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { generateInsights } from "../lib/insightsEngine";
+import { generatePDFReport } from "@shared/lib/ui/export";
 
 import { HubReports } from "./HubReports";
 
@@ -73,15 +72,18 @@ describe("HubReports — render smoke (F23)", () => {
     localStorage.clear();
   });
 
-  it("renders the empty-insights copy when there is no source data", () => {
-    // Empty localStorage → `generateInsights()` returns `[]` (see
-    // `apps/web/src/core/lib/insightsEngine.ts`), which routes the
-    // component into the empty-state branch in `HubReports.tsx`.
+  /**
+   * Сторінка має ОДИН порожній стан — картку мовчання у «Звʼязках між
+   * сферами», з реальною найближчою парою і прогресом до порога. Інсайти
+   * свого банера не мають: їхні пороги вищі за пороги звʼязків, тож поки
+   * мовчать звʼязки, інсайтів гарантовано немає, і «Ще збираємо твої дані»
+   * лише повторював те саме слабшими словами.
+   */
+  it("не малює власного порожнього стану для закономірностей", () => {
     render(<HubReports />);
 
-    expect(
-      screen.getByText("Збери більше даних для інсайтів"),
-    ).toBeInTheDocument();
+    expect(screen.queryByText("Ще збираємо твої дані")).not.toBeInTheDocument();
+    expect(screen.queryByText("Закономірності")).not.toBeInTheDocument();
   });
 
   it("renders all four domain card stubs via Suspense", () => {
@@ -95,25 +97,54 @@ describe("HubReports — render smoke (F23)", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the WeeklyDigestCard stub in week mode", () => {
-    render(<HubReports />);
+  describe("картки лише активних модулів", () => {
+    it("не рендерить картку вимкненого модуля", () => {
+      setActiveModules(webKVStore, ["finyk", "routine"]);
+      render(<HubReports />);
 
-    // WeeklyDigestCard is shown in 'week' mode (initial period)
-    expect(screen.getByTestId("hub-reports-weekly-digest")).toBeInTheDocument();
-  });
-
-  it("hides WeeklyDigestCard when switching to month period", async () => {
-    render(<HubReports />);
-
-    // Switch to 'Місяць' — the period selector is a `Segmented` control
-    // (role="tablist" with role="tab" segments), not plain buttons.
-    await act(async () => {
-      screen.getByRole("tab", { name: "Місяць" }).click();
+      expect(
+        screen.getByTestId("hub-reports-expenses-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-routine-card"),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId("hub-reports-fitness-card")).toBeNull();
+      expect(screen.queryByTestId("hub-reports-nutrition-card")).toBeNull();
     });
 
-    expect(
-      screen.queryByTestId("hub-reports-weekly-digest"),
-    ).not.toBeInTheDocument();
+    // Головний інваріант гейта, і саме він ламається найтихіше: порожній
+    // вибір означає «ми не знаємо» (акаунт до візарда, новий пристрій), а
+    // не «вона обрала нічого». Якби тут стояв `getVibePicks`, така людина
+    // отримала б порожню сторінку звітів замість усіх чотирьох карток —
+    // та сама помилка, яку `activeModules.ts` уже описує для хабу.
+    it("показує всі чотири, коли вибору ще немає", () => {
+      setActiveModules(webKVStore, []);
+      render(<HubReports />);
+
+      expect(
+        screen.getByTestId("hub-reports-fitness-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-expenses-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-routine-card"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByTestId("hub-reports-nutrition-card"),
+      ).toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Тижневого дайджесту на вкладці немає (рішення власника 2026-09-03):
+   * він живе лише внизу головної і приходить понеділковою автогенерацією.
+   * Тест пінить відсутність, щоб копія не повернулась «для зручності».
+   */
+  it("не рендерить тижневий дайджест — він живе на головній", () => {
+    render(<HubReports />);
+
+    expect(screen.queryByText("Звіт тижня")).not.toBeInTheDocument();
   });
 
   it("period navigation buttons are present and navigable", async () => {
@@ -143,6 +174,27 @@ describe("HubReports — render smoke (F23)", () => {
     ).toBeInTheDocument();
   });
 
+  it("export PDF sends period and report-state sections to the preview generator", () => {
+    render(<HubReports />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Експортувати PDF/i }));
+
+    expect(generatePDFReport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Sergeant · звіт",
+        sections: expect.arrayContaining([
+          expect.objectContaining({ title: "Період" }),
+          expect.objectContaining({ title: "Закономірності за весь час (0)" }),
+        ]),
+      }),
+    );
+
+    // The in-app preview overlay opens (replaces the old window.open tab).
+    expect(
+      screen.getByRole("dialog", { name: /Перегляд PDF-звіту/i }),
+    ).toBeInTheDocument();
+  });
+
   // ── F4: touch-target floor + aria-labels ──────────────────────────────────
   // The Button primitive auto-applies pointer-coarse:min-h-[44px] / min-w-[44px]
   // for iconOnly / sm / xs variants (see apps/web/src/shared/components/ui/Button.tsx).
@@ -163,10 +215,11 @@ describe("HubReports — render smoke (F23)", () => {
     expect(nextBtn).not.toHaveAttribute("aria-hidden", "true");
   });
 
-  // ── F7: insight text includes period label ────────────────────────────────
-  // The presentation layer (HubReports) appends the active-period label to each
-  // insight title returned by the side-effect-free engine. Mock the engine to
-  // return a plain title and assert the period suffix reaches the DOM.
+  // ── Інсайти не залежать від перемикача періоду ────────────────────
+  // `generateInsights()` не приймає аргументів: вікна зашиті всередині
+  // (≥4 тижні, ≥20 подій, ≥2 місяці). Раніше презентаційний шар дописував до
+  // заголовка «(за тиждень)» / «(за місяць)» — підпис стверджував період, за
+  // який інсайт не рахувався, і той самий текст їхав у PDF-експорт.
   const plainInsight = {
     id: "best_workout_day",
     iconName: "calendar" as const,
@@ -175,17 +228,17 @@ describe("HubReports — render smoke (F23)", () => {
     detail: "5 з 22 тренувань",
   };
 
-  it("F7 — insight title gets the «за тиждень» suffix on the default period", () => {
+  it("заголовок інсайту не дописує період", () => {
     vi.mocked(generateInsights).mockReturnValue([plainInsight]);
 
     render(<HubReports />);
 
     expect(
-      screen.getByText("Найпродуктивніший день для тренувань (за тиждень)"),
+      screen.getByText("Найпродуктивніший день для тренувань"),
     ).toBeInTheDocument();
   });
 
-  it("F7 — insight title suffix switches to «за місяць» when the period changes", () => {
+  it("перемикання періоду заголовок інсайту не чіпає", () => {
     vi.mocked(generateInsights).mockReturnValue([plainInsight]);
 
     render(<HubReports />);
@@ -195,8 +248,27 @@ describe("HubReports — render smoke (F23)", () => {
     });
 
     expect(
-      screen.getByText("Найпродуктивніший день для тренувань (за місяць)"),
+      screen.getByText("Найпродуктивніший день для тренувань"),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/за місяць\)/)).not.toBeInTheDocument();
+  });
+
+  /**
+   * Позиція, а не косметика: секція мусить стояти НАД перемикачем
+   * періоду, інакше читається як блок, що ігнорує контрол просто над ним.
+   */
+  it("секція закономірностей стоїть над перемикачем періоду", () => {
+    vi.mocked(generateInsights).mockReturnValue([plainInsight]);
+
+    render(<HubReports />);
+
+    const heading = screen.getByRole("heading", { name: "Закономірності" });
+    const switcher = screen.getByRole("tab", { name: "Тиждень" });
+
+    expect(
+      heading.compareDocumentPosition(switcher) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   // ── F23-c: period range header updates on offset change ───────────────────

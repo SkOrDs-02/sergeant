@@ -1,4 +1,21 @@
-import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
+import {
+  CATEGORY_RESOLUTION_ORDER,
+  INCOME_CATEGORIES,
+  MCC_CATEGORIES,
+  P2P_TRANSFER_ID,
+  P2P_TRANSFER_MCCS,
+} from "../constants";
+import {
+  findMerchantRule,
+  type MerchantRuleIndex,
+  type MerchantRuleKind,
+  type MerchantRuleTxLike,
+} from "./merchantRules.js";
+import {
+  legacyManualCategoryId,
+  MANUAL_EXPENSE_TAXONOMY,
+  MANUAL_INCOME_TAXONOMY,
+} from "./manualTaxonomy.js";
 
 /**
  * Мінімальний тип кастомної категорії: достатньо для overlay-пошуку
@@ -12,6 +29,42 @@ export interface CategoryLike {
   keywords?: string[];
   color?: string;
   emoji?: string;
+  kind?: "expense" | "income" | undefined;
+}
+
+/**
+ * Канонічні categoryId, записані на самій транзакції, мають перевагу над
+ * повторною евристикою за MCC/описом. Користувацький override лишається
+ * найвищим пріоритетом.
+ */
+export interface CategorizedTransactionLike {
+  description?: string | undefined;
+  mcc?: number | undefined;
+  categoryId?: string | undefined;
+  manual?: boolean | undefined;
+  _manual?: boolean | undefined;
+  source?: string | undefined;
+  time?: string | number | undefined;
+  date?: string | number | undefined;
+}
+
+const DETAILED_CATEGORY_CUTOVER_MS = Date.parse("2026-08-31T21:00:00.000Z");
+
+function preservePreCutoverTechCategory(
+  category: CategoryLike,
+  transaction: CategorizedTransactionLike,
+): CategoryLike {
+  const rawDate = transaction.time ?? transaction.date;
+  if (category.id !== "tech" || rawDate == null) return category;
+  const timestamp =
+    typeof rawDate === "number"
+      ? rawDate > 1e10
+        ? rawDate
+        : rawDate * 1000
+      : new Date(rawDate).getTime();
+  if (!Number.isFinite(timestamp) || timestamp >= DETAILED_CATEGORY_CUTOVER_MS)
+    return category;
+  return resolveExpenseOverride("shopping") ?? category;
 }
 
 /**
@@ -21,6 +74,16 @@ export interface CategoryLike {
  * функцій.
  */
 type CategoryLikeInput = readonly unknown[];
+
+// Ручна форма історично має дещо детальнішу таксономію за MCC-каталог.
+// Ці id уже лежать у persisted blobs, тому їх не можна зводити до `other`
+// або перейменовувати міграцією під час читання. Джерело правди —
+// `manualTaxonomy.ts`; тут лише проєкція «id + підпис».
+const MANUAL_EXPENSE_CATEGORIES: readonly CategoryLike[] =
+  MANUAL_EXPENSE_TAXONOMY.map((d) => ({ id: d.id, label: d.label }));
+
+const MANUAL_INCOME_CATEGORIES: readonly CategoryLike[] =
+  MANUAL_INCOME_TAXONOMY.map((d) => ({ id: d.id, label: d.label }));
 
 function isCategoryLike(v: unknown): v is CategoryLike {
   return (
@@ -37,6 +100,8 @@ function resolveExpenseOverride(
   if (!overrideId) return null;
   const fromMcc = MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
   if (fromMcc) return fromMcc;
+  const fromManual = MANUAL_EXPENSE_CATEGORIES.find((c) => c.id === overrideId);
+  if (fromManual) return fromManual;
   const custom = customCategories
     .filter(isCategoryLike)
     .find((c) => c.id === overrideId);
@@ -62,18 +127,63 @@ export function resolveExpenseCategoryMeta(
 export function getIncomeCategory(
   desc = "",
   overrideId: string | null = null,
+  customCategories: CategoryLikeInput = [],
 ): CategoryLike {
   if (overrideId) {
     const found =
+      MANUAL_INCOME_CATEGORIES.find((c: CategoryLike) => c.id === overrideId) ||
       INCOME_CATEGORIES.find((c: CategoryLike) => c.id === overrideId) ||
       MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
-    if (found) return found;
+    if (found) {
+      const canonicalIncomeIds: Record<string, string> = {
+        in_salary: "salary",
+        in_freelance: "freelance",
+        in_cashback: "cashback",
+        in_pension: "pension",
+        in_debt: "debt-income",
+        in_other: "other-income",
+      };
+      const canonicalId = canonicalIncomeIds[found.id];
+      return canonicalId
+        ? (MANUAL_INCOME_CATEGORIES.find((c) => c.id === canonicalId) ?? found)
+        : found;
+    }
+    const custom = customCategories
+      .filter(isCategoryLike)
+      .find((c) => c.kind === "income" && c.id === overrideId);
+    if (custom)
+      return { id: custom.id, label: custom.label ?? "", keywords: [] };
   }
   const d = desc.toLowerCase();
   for (const cat of INCOME_CATEGORIES as readonly CategoryLike[]) {
-    if ((cat.keywords ?? []).some((k: string) => d.includes(k))) return cat;
+    if ((cat.keywords ?? []).some((k: string) => d.includes(k)))
+      return getIncomeCategory("", cat.id, customCategories);
   }
-  return INCOME_CATEGORIES[INCOME_CATEGORIES.length - 1] as CategoryLike; // in_other
+  return getIncomeCategory("", "in_other", customCategories);
+}
+
+/**
+ * «Поповнення «Назва»» (інколи «Поповнення банки «Назва»») — переказ у банку
+ * Monobank. Те, що стоїть у лапках, — ІМʼЯ банки, яке дала людина (збір, ціль
+ * накопичення), а не опис покупки й не імʼя людини-отримувача.
+ *
+ * AI-CONTEXT (2026-10-01): ключові слова категорій шукалися по всьому опису,
+ * тож «Поповнення «На закриття боргів🙏»» ловило «борг» і їхало в «Борги та
+ * кредити»: імʼя чужої банки (збір) читалось як ознака боргу людини. Тому імʼя
+ * банки не матчиться ключовими словами (`keywordHaystack`), а саме поповнення
+ * чужої банки — це «Перекази людям» (рішення власника 4Б, 2026-10-01; див.
+ * фолбек наприкінці `getCategory`). Пари картка ↔ ВЛАСНА банка окремо закриває
+ * парний матчер переказів (`transferMatching.ts`).
+ */
+const JAR_TOP_UP_RE = /^\s*поповнення\s+(?:банки\s+)?[«"“„]/iu;
+
+/**
+ * Опис у нижньому регістрі, яким можна матчити ключові слова. Для поповнення
+ * банки порожній: імʼя в лапках не є описом покупки. MCC-мапа це не
+ * стосується — вона працює окремо.
+ */
+function keywordHaystack(desc: string): string {
+  return JAR_TOP_UP_RE.test(desc) ? "" : desc.toLowerCase();
 }
 
 export function getCategory(
@@ -88,12 +198,177 @@ export function getCategory(
     const found = MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
     if (found) return found;
   }
-  for (const cat of MCC_CATEGORIES as readonly CategoryLike[]) {
+  const haystack = keywordHaystack(desc);
+  for (const cat of CATEGORY_RESOLUTION_ORDER as readonly CategoryLike[]) {
     if ((cat.mccs ?? []).includes(mcc)) return cat;
-    if (
-      (cat.keywords ?? []).some((k: string) => desc.toLowerCase().includes(k))
-    )
+    if ((cat.keywords ?? []).some((k: string) => haystack.includes(k)))
       return cat;
   }
-  return { id: "other", label: "💳 Інше", mccs: [], keywords: [] };
+  // Слабка підказка в самому кінці: код card-to-card переказу без жодного
+  // іншого доказу (ні MCC каталогу, ні ключового слова) — це «Перекази
+  // людям». Не з `mccs` каталогу: див. AI-DANGER біля `P2P_TRANSFER_MCCS`.
+  // Поповнення чужої банки теж сюди, і незалежно від коду: гроші пішли в
+  // банку іншої людини (рішення 4Б, 2026-10-01). Імʼя банки ключовими словами
+  // не читається (`keywordHaystack`), тож збір «На закриття боргів» не стає
+  // «Боргами»; MCC каталогу, якщо він є, перемагає вище.
+  if (P2P_TRANSFER_MCCS.includes(mcc) || JAR_TOP_UP_RE.test(desc)) {
+    const p2p = MCC_CATEGORIES.find(
+      (c: CategoryLike) => c.id === P2P_TRANSFER_ID,
+    );
+    if (p2p) return p2p;
+  }
+  return { id: "other", label: "Інше", mccs: [], keywords: [] };
+}
+
+/**
+ * Id категорії зі збереженого правила мерчанта — або `null`.
+ *
+ * `null` і тоді, коли правило є, але його категорія вже не існує (власну
+ * категорію видалено): тоді правило мовчки не діє, а операція дістає те, що
+ * мала б без нього, включно із серверним слагом. Підставити «осиротілий» id
+ * означало б зʼїсти слаг, а `getCategory` усе одно не знайшов би за ним
+ * категорії.
+ */
+export function getMerchantRuleCategoryId(
+  transaction: MerchantRuleTxLike,
+  merchantRules: MerchantRuleIndex | null | undefined,
+  kind: MerchantRuleKind,
+  customCategories: CategoryLikeInput = [],
+): string | null {
+  const rule = findMerchantRule(merchantRules, transaction, kind);
+  if (!rule) return null;
+  const known =
+    kind === "income"
+      ? isKnownIncomeCategoryId(rule.categoryId, customCategories)
+      : resolveExpenseOverride(rule.categoryId, customCategories) !== null;
+  return known ? rule.categoryId : null;
+}
+
+/**
+ * Категорія, на яку вказує правило (id + підпис), або `null`, якщо її вже нема
+ * (власну категорію видалили). Для списку правил у Налаштуваннях і для
+ * підписів у тостах: резолвер сам показує категорію операції, а тут потрібна
+ * категорія САМОГО правила, без операції.
+ */
+export function resolveMerchantRuleCategory(
+  kind: MerchantRuleKind,
+  categoryId: string,
+  customCategories: CategoryLikeInput = [],
+): CategoryLike | null {
+  if (kind === "income") {
+    return isKnownIncomeCategoryId(categoryId, customCategories)
+      ? getIncomeCategory("", categoryId, customCategories)
+      : null;
+  }
+  return resolveExpenseOverride(categoryId, customCategories);
+}
+
+function isKnownIncomeCategoryId(
+  id: string,
+  customCategories: CategoryLikeInput,
+): boolean {
+  if (MANUAL_INCOME_CATEGORIES.some((c) => c.id === id)) return true;
+  if (INCOME_CATEGORIES.some((c: CategoryLike) => c.id === id)) return true;
+  return customCategories
+    .filter(isCategoryLike)
+    .some((c) => c.kind === "income" && c.id === id);
+}
+
+/**
+ * Категорія ВИТРАТИ. Порядок джерел (сильніше → слабше):
+ *
+ *   1. `overrideId` — явний вибір людини на цій операції;
+ *   2. правило мерчанта (`merchantRules`, 2026-10-01) — лише для банківських
+ *      витрат; ручні записи несуть власну явну категорію;
+ *   3. `transaction.categoryId` — серверний слаг із MCC;
+ *   4. MCC і ключові слова опису.
+ */
+export function getExpenseCategoryForTransaction(
+  transaction: CategorizedTransactionLike,
+  overrideId: string | null | undefined = null,
+  customCategories: CategoryLikeInput = [],
+  merchantRules?: MerchantRuleIndex | null,
+): CategoryLike {
+  const ruleId = overrideId
+    ? null
+    : getMerchantRuleCategoryId(
+        transaction,
+        merchantRules,
+        "expense",
+        customCategories,
+      );
+  const explicitId = overrideId || ruleId || transaction.categoryId || null;
+  const isManual =
+    transaction.manual === true ||
+    transaction._manual === true ||
+    transaction.source === "manual";
+  if (isManual && explicitId) {
+    const manualCategory = MANUAL_EXPENSE_CATEGORIES.find(
+      (category) => category.id === explicitId,
+    );
+    if (manualCategory)
+      return preservePreCutoverTechCategory(manualCategory, transaction);
+    // Ери 1–2: у сховищі лежить український підпис (`"їжа"`, `"🍴 їжа"`),
+    // а не слаг. Без цієї гілки такий запис не матчив ані ручну
+    // таксономію, ані MCC-каталог, ані ключові слова — і рядок малювався
+    // як «Інше» з нейтральним сірим, хоча форма редагування того ж
+    // запису показувала правильну категорію (`upgradeCategory` живе
+    // лише в ній). Знайдено браузерною перевіркою 2026-08-13.
+    //
+    // Порядок важливий: спершу `resolveExpenseOverride` (MCC → ручні →
+    // ВЛАСНІ), і лише потім легасі-підписи. Інакше власна категорія з
+    // id на кшталт «їжа» була б зʼїдена мапою — та сама підміна даних,
+    // від якої застерігає `upgradeCategoryAllowingCustom`.
+    const fromOverride = resolveExpenseOverride(explicitId, customCategories);
+    if (fromOverride) return fromOverride;
+    const legacySlug = legacyManualCategoryId(explicitId);
+    if (legacySlug) {
+      const upgraded = MANUAL_EXPENSE_CATEGORIES.find(
+        (category) => category.id === legacySlug,
+      );
+      if (upgraded) return upgraded;
+    }
+  }
+  return preservePreCutoverTechCategory(
+    getCategory(
+      transaction.description ?? "",
+      transaction.mcc ?? 0,
+      explicitId,
+      customCategories,
+    ),
+    transaction,
+  );
+}
+
+/** Категорія НАДХОДЖЕННЯ; порядок джерел той самий, що у витрати. */
+export function getIncomeCategoryForTransaction(
+  transaction: CategorizedTransactionLike,
+  overrideId: string | null | undefined = null,
+  customCategories: CategoryLikeInput = [],
+  merchantRules?: MerchantRuleIndex | null,
+): CategoryLike {
+  const ruleId = overrideId
+    ? null
+    : getMerchantRuleCategoryId(
+        transaction,
+        merchantRules,
+        "income",
+        customCategories,
+      );
+  const explicitId = overrideId || ruleId || transaction.categoryId || null;
+  const isManual =
+    transaction.manual === true ||
+    transaction._manual === true ||
+    transaction.source === "manual";
+  if (isManual && explicitId) {
+    const manualCategory = MANUAL_INCOME_CATEGORIES.find(
+      (category) => category.id === explicitId,
+    );
+    if (manualCategory) return manualCategory;
+  }
+  return getIncomeCategory(
+    transaction.description ?? "",
+    explicitId,
+    customCategories,
+  );
 }

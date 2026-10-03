@@ -15,6 +15,10 @@ import { fireEvent, render } from "@testing-library/react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider, apiQueryKeys } from "@sergeant/api-client/react";
 import { createApiClient } from "@sergeant/api-client";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
 
 import { STORAGE_KEYS } from "@sergeant/shared";
 
@@ -22,6 +26,23 @@ import { _getMMKVInstance } from "@/lib/storage";
 import { ToastProvider } from "@/components/ui/Toast";
 
 import { RoutineApp } from "./RoutineApp";
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.error,
+  strict: false,
+});
+
+jest.mock("./hooks/useRoutineDualWriteBoot", () => ({
+  useRoutineDualWriteBoot: jest.fn(),
+}));
+
+jest.mock("./hooks/useRoutineReminders", () => ({
+  useRoutineReminders: jest.fn(),
+}));
+
+jest.mock("./hooks/useRoutineSqliteReadBoot", () => ({
+  useRoutineSqliteReadBoot: jest.fn(),
+}));
 
 // `RoutineApp` mounts `useRoutineDualWriteBoot` which calls
 // `useUser()` from `@sergeant/api-client/react`. That hook needs both

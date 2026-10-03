@@ -20,6 +20,14 @@ import { useCallback, useRef, useState } from "react";
  * conflict with text selection. If a future caller needs pen/mouse swipes
  * we can add a flag.
  */
+/**
+ * Horizontal slack before the gesture counts as a swipe at all. Exported so
+ * the visual layer (`SwipePages`) can subtract it from the reported offset
+ * — otherwise the page jumps by this much the instant the gesture is
+ * recognised instead of growing out of zero.
+ */
+export const SWIPE_DEAD_ZONE_PX = 12;
+
 export interface UseSwipeNavigationOptions {
   /** Called when a left swipe (→ next) crosses the threshold. */
   onSwipeLeft: () => void;
@@ -89,7 +97,7 @@ export function useSwipeNavigation({
 }: UseSwipeNavigationOptions): UseSwipeNavigationResult {
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null);
-  const activeRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [dragDx, setDragDx] = useState(0);
 
   const onTouchStart = useCallback(
@@ -104,7 +112,7 @@ export function useSwipeNavigation({
       if (!t) return;
       startX.current = t.clientX;
       startY.current = t.clientY;
-      activeRef.current = false;
+      setIsDragging(false);
       setDragDx(0);
     },
     [enabled],
@@ -121,9 +129,9 @@ export function useSwipeNavigation({
       // Stay quiet until the gesture is unambiguously horizontal so
       // vertical scrolls inside nested lists never start tugging the
       // page sideways.
-      if (Math.abs(rawDx) < 12) return;
+      if (Math.abs(rawDx) < SWIPE_DEAD_ZONE_PX) return;
       if (Math.abs(rawDx) < Math.abs(rawDy) * 1.5) return;
-      activeRef.current = true;
+      setIsDragging(true);
       // Cancel feedback at the ends of the tab list so the user
       // doesn't get a "fake" drag that goes nowhere.
       if (atStart && rawDx > 0) {
@@ -152,7 +160,7 @@ export function useSwipeNavigation({
       const dy = t ? startY.current - t.clientY : 0;
       startX.current = null;
       startY.current = null;
-      activeRef.current = false;
+      setIsDragging(false);
       setDragDx(0);
 
       // Require a clearly horizontal swipe so vertical scrolls in
@@ -174,6 +182,6 @@ export function useSwipeNavigation({
     onTouchMove,
     onTouchEnd,
     dragDx,
-    isDragging: activeRef.current,
+    isDragging,
   };
 }

@@ -2,7 +2,7 @@
  * Snapshot extraction + cache peek helpers for the mobile Fizruk
  * dual-write pipeline.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * (mobile parity for `apps/web/src/modules/fizruk/lib/fizrukDualWriteState.ts`).
  *
  * `peekFizrukDualWriteState()` returns `null` when no dual-write
@@ -59,7 +59,7 @@ export type ExtractableChecklistLike = {
   readonly label: string;
 };
 
-import { isFizrukDualWriteRegistered } from "./dualWrite/index";
+import { isFizrukDualWriteRegistered } from "./sqliteWriter/index";
 import {
   type FizrukActiveWorkoutSnapshot,
   type FizrukCustomExerciseSnapshot,
@@ -74,7 +74,7 @@ import {
   type FizrukWellbeingSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { getCachedFizrukSqliteState } from "./sqliteReader";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
@@ -511,13 +511,11 @@ function toItemSnapshot(item: ExtractableWorkoutItemLike): FizrukItemSnapshot {
     type: String(item.type ?? "strength"),
   };
   if (Array.isArray(item.sets)) {
-    out.sets = item.sets.map(
-      (s): FizrukSetSnapshot => ({
-        weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
-        reps: typeof s.reps === "number" ? s.reps : 0,
-        ...(typeof s.rpe === "number" ? { rpe: s.rpe } : {}),
-      }),
-    );
+    out.sets = item.sets.map((s): FizrukSetSnapshot => ({
+      weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
+      reps: typeof s.reps === "number" ? s.reps : 0,
+      ...(typeof s.rpe === "number" ? { rpe: s.rpe } : {}),
+    }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
   if (typeof item.distanceM === "number") out.distanceM = item.distanceM;

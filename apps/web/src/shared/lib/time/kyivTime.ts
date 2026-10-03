@@ -19,7 +19,7 @@
  * @see docs/audits/2026-05-13-consolidated-page-audit.md § Theme 1
  */
 
-import { kyivMondayStartMs } from "@sergeant/shared";
+import { kyivMondayStartMs, toKyivISODate } from "@sergeant/shared";
 
 const KYIV_TZ = "Europe/Kyiv";
 
@@ -108,12 +108,17 @@ export function getKyivDateParts(input?: Date | number): KyivDateParts {
  * `YYYY-MM-DD` day key in Kyiv local time. Stable across `toLocaleString`
  * locales (always ISO-8601 calendar shape) and across host clock skew.
  *
+ * Delegates to the monorepo-wide `toKyivISODate` (`@sergeant/shared`) so
+ * web, server and packages share one implementation — the previous local
+ * body re-derived the same string from `getKyivDateParts`. Note the shared
+ * helper returns the `"1970-01-01"` sentinel for unparseable input instead
+ * of throwing.
+ *
  * @example
  *   getKyivDayKey(new Date("2026-05-16T23:00:00Z")); // → "2026-05-17"
  */
 export function getKyivDayKey(input?: Date | number): string {
-  const { year, month, day } = getKyivDateParts(input);
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return toKyivISODate(coerce(input));
 }
 
 /**
@@ -123,6 +128,20 @@ export function getKyivDayKey(input?: Date | number): string {
 export function getKyivShortStamp(input?: Date | number): string {
   const { hour, minute } = getKyivDateParts(input);
   return `${getKyivDayKey(input)} ${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+}
+
+/**
+ * `DD.MM HH:mm` stamp in Kyiv local time — компактніша форма за
+ * {@link getKyivShortStamp} (без року), для UI, де рік не потрібен: історія
+ * чату, дефолтна назва сесії.
+ */
+export function getKyivShortDateStamp(input?: Date | number): string {
+  const { day, month, hour, minute } = getKyivDateParts(input);
+  const dd = String(day).padStart(2, "0");
+  const mm = String(month).padStart(2, "0");
+  const hh = String(hour).padStart(2, "0");
+  const min = String(minute).padStart(2, "0");
+  return `${dd}.${mm} ${hh}:${min}`;
 }
 
 /**
@@ -172,7 +191,25 @@ export function parseKyivDate(key: string): Date | null {
   const localMillisSinceMidnight =
     (probeParts.hour * 60 * 60 + probeParts.minute * 60 + probeParts.second) *
     1000;
-  return new Date(middayUtc - localMillisSinceMidnight);
+  // AI-DANGER: у весняний DST-день локальна доба коротша на годину: проба
+  // опівдні вже в EEST (+3), а опівніч того ж дня ще в EET (+2), тож перше
+  // віднімання перескакує на 23:00 попереднього дня (регресія з CI:
+  // counterexample 3920565600000 → '2094-03-27' замість '2094-03-28').
+  // Другий прохід звіряє guess із фактичними Kyiv-частинами і докручує
+  // до справжньої локальної 00:00 (в Україні перехід о 03:00 local, тому
+  // 00:00 завжди існує).
+  let midnightUtc = middayUtc - localMillisSinceMidnight;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  for (let pass = 0; pass < 2; pass += 1) {
+    const guess = getKyivDateParts(new Date(midnightUtc));
+    const guessLocalMs =
+      (guess.hour * 60 * 60 + guess.minute * 60 + guess.second) * 1000;
+    const onTargetDay =
+      guess.year === year && guess.month === month && guess.day === day;
+    if (onTargetDay && guessLocalMs === 0) break;
+    midnightUtc += onTargetDay ? -guessLocalMs : DAY_MS - guessLocalMs;
+  }
+  return new Date(midnightUtc);
 }
 
 /**

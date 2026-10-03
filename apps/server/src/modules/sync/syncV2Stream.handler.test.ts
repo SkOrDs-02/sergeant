@@ -57,6 +57,7 @@ import {
   SYNC_V2_STREAM_REPLAY_LIMIT,
   type SyncV2StreamOp,
 } from "./syncV2Stream.js";
+import { SYNC_OP_LOG_COMMITTED_WATERMARK_SQL } from "./syncV2-core.js";
 
 const pool = _pool as unknown as { query: Mock };
 
@@ -235,6 +236,11 @@ describe("syncV2Stream handler — handshake & replay", () => {
     const args = pool!.query.mock.calls[0]![1] as unknown[];
     expect(args[1]).toBe(999);
     expect(res.writes[0]).toContain('"since":999');
+    // Replay — такий самий читач курсором, як /pull: без вотермарку
+    // Last-Event-ID перескакує оп-и довгої транзакції (міграція 147).
+    expect(pool!.query.mock.calls[0]![0]).toContain(
+      SYNC_OP_LOG_COMMITTED_WATERMARK_SQL,
+    );
   });
 
   it("ignores malformed Last-Event-ID and falls back to ?since=", async () => {

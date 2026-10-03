@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/docs/generate-playbook-index.mjs
 //
-// Scan `docs/00-start/playbooks/*.md`, extract each playbook's `**Trigger:**` line,
-// and generate `docs/00-start/playbooks/INDEX.md` — a lookup table «phrase → playbook».
+// Scan `docs/start/instructions/*.md`, extract each playbook's `**Trigger:**` line,
+// and generate `docs/start/instructions/INDEX.md` — a lookup table «phrase → playbook».
 //
 // Right now agents and humans have to grep or read `README.md` to figure out
 // which playbook matches a request. An auto-generated index gives O(1) lookup
@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const PLAYBOOKS_DIR = resolve(REPO_ROOT, "docs/00-start/playbooks");
+const PLAYBOOKS_DIR = resolve(REPO_ROOT, "docs/start/instructions");
 const INDEX_PATH = join(PLAYBOOKS_DIR, "INDEX.md");
 
 // Files that are NOT playbooks and should be skipped from the index.
@@ -37,6 +37,7 @@ const RE_TRIGGER_LINE = /^\s*\*\*Trigger:\*\*\s*(.+?)\s*$/m;
 const RE_H1 = /^#\s+(?:Playbook:\s*)?(.+?)\s*$/m;
 const RE_DECISION_TREE_MARK = /🌳/;
 const RE_DEPRECATED_STATUS = /^>\s*\*\*Status:\*\*\s*Deprecated\b/im;
+const RE_RUNTIME_SPECIFIC_YES = /^>\s*\*\*Runtime-specific:\*\*\s*yes\b/im;
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -83,7 +84,11 @@ export function renderIndex(entries, { today = todayISO() } = {}) {
   return [
     "# Playbooks — Trigger Index",
     "",
-    `> **Last validated:** ${today} by @devin-ai. **Next review:** ${addDays(today, 90)}.`,
+    // Author is the generator itself, not a harness: Devin retired (ADR-0088).
+    // `Last validated` stays (legacy label accepted by check-freshness.mjs and
+    // asserted by the generator test); switch to `Last touched` together with
+    // scripts/docs/__tests__/generate-playbook-index.test.mjs.
+    `> **Last validated:** ${today} by docs:gen-playbook-index. **Next review:** ${addDays(today, 90)}.`,
     "> **Status:** Active",
     "",
     "<!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->",
@@ -155,6 +160,8 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
     .filter((f) => !SKIP_FILES.has(f));
 
   const out = [];
+  const runtimeOnly = [];
+  const missingTrigger = [];
   for (const file of files) {
     const content = readFileSync(join(dir, file), "utf8");
     if (RE_DEPRECATED_STATUS.test(content)) {
@@ -162,13 +169,46 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
     }
     const meta = extractPlaybookMeta(content);
     if (!meta) {
-      console.warn(
-        `[WARN] No **Trigger:** line in docs/00-start/playbooks/${file} — skipped`,
-      );
+      // Runtime-runbook без Trigger — це НЕ дрейф, а зафіксований 2026-09-17
+      // виняток (README § Стандарт): такі процедури відкривають за подією чи
+      // розкладом, не за фразою, тож маршрут до них — README, не цей індекс.
+      // Раніше вони сипались сюди як `[WARN] … skipped` разом із реальними
+      // помилками, тобто попередження, яке завжди є, і яке через те ніхто не
+      // читає. Тепер вони рахуються окремо, а FAIL лишається для випадку,
+      // який справді є дрейфом: НЕ-runtime плейбук без Trigger.
+      if (RE_RUNTIME_SPECIFIC_YES.test(content)) {
+        runtimeOnly.push(file);
+      } else {
+        missingTrigger.push(file);
+      }
       continue;
     }
     out.push({ file, ...meta });
   }
+
+  if (missingTrigger.length > 0) {
+    console.error(
+      `\n❌ ${missingTrigger.length} плейбук(и) без \`**Trigger:**\` і без ` +
+        "`Runtime-specific: yes` — вони невидимі для роутингу:",
+    );
+    for (const f of missingTrigger) {
+      console.error(`   docs/start/instructions/${f}`);
+    }
+    console.error(
+      "\n   Додай рядок `**Trigger:**` (README § Стандарт) або, якщо це\n" +
+        "   справді runtime-процедура, познач `> **Runtime-specific:** yes`.\n",
+    );
+    process.exitCode = 1;
+  }
+
+  if (runtimeOnly.length > 0) {
+    console.log(
+      `[runtime] ${runtimeOnly.length} runtime-runbook(ів) поза індексом за ` +
+        "винятком 2026-09-17 (маршрут — README § Runtime-процедури): " +
+        runtimeOnly.join(", "),
+    );
+  }
+
   return out;
 }
 
@@ -182,26 +222,26 @@ function main() {
   if (checkMode) {
     if (!existsSync(INDEX_PATH)) {
       console.error(
-        `❌ docs/00-start/playbooks/INDEX.md does not exist. Run: pnpm docs:gen-playbook-index`,
+        `❌ docs/start/instructions/INDEX.md does not exist. Run: pnpm docs:gen-playbook-index`,
       );
       process.exit(1);
     }
     const existing = readFileSync(INDEX_PATH, "utf8");
     if (normaliseForCompare(existing) !== normaliseForCompare(body)) {
       console.error(
-        `❌ docs/00-start/playbooks/INDEX.md is out of date. Run: pnpm docs:gen-playbook-index`,
+        `❌ docs/start/instructions/INDEX.md is out of date. Run: pnpm docs:gen-playbook-index`,
       );
       process.exit(1);
     }
     console.log(
-      `✅ docs/00-start/playbooks/INDEX.md is up to date (${entries.length} playbooks).`,
+      `✅ docs/start/instructions/INDEX.md is up to date (${entries.length} playbooks).`,
     );
     return;
   }
 
   writeFileSync(INDEX_PATH, body);
   console.log(
-    `✅Wrote docs/00-start/playbooks/INDEX.md (${entries.length} playbooks).`,
+    `✅Wrote docs/start/instructions/INDEX.md (${entries.length} playbooks).`,
   );
 }
 

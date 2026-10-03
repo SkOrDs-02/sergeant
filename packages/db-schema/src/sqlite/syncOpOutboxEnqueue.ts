@@ -2,7 +2,7 @@ import type { SqliteMigrationClient } from "../migrate/adapters/sqlite.js";
 
 /**
  * Durable enqueue helper for PN-counter `op='increment'` envelopes
- * into the client-side `sync_op_outbox` (`docs/planning/storage-roadmap.md`
+ * into the client-side `sync_op_outbox` (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * Stage 5 / PR #042d-builder).
  *
  * Pairs with `buildSyncV2IncrementOp`
@@ -120,8 +120,6 @@ export interface EnqueueOutboxIncrementOk {
   readonly inserted: boolean;
 }
 
-export type EnqueueOutboxIncrementResult = EnqueueOutboxIncrementOk;
-
 /**
  * Durably append an `op='increment'` envelope to the client-side
  * `sync_op_outbox`. Idempotent on `idempotencyKey` — see module
@@ -135,7 +133,7 @@ export type EnqueueOutboxIncrementResult = EnqueueOutboxIncrementOk;
 export async function enqueueOutboxIncrement(
   client: SqliteMigrationClient,
   input: OutboxIncrementInput,
-): Promise<EnqueueOutboxIncrementResult> {
+): Promise<EnqueueOutboxIncrementOk> {
   const { userId, table, row, clientTs, idempotencyKey } = input;
   if (typeof userId !== "string" || userId.length === 0) {
     throw new Error(

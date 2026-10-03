@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { ToastContainer } from "./Toast";
+import { Sheet } from "./Sheet";
 
 /**
  * Тестова обгортка — рендерить `<ToastContainer>` всередині `<ToastProvider>`
@@ -152,6 +153,40 @@ describe("Toast — auto-dismiss pause/resume", () => {
     expect(document.querySelector("[data-toast-id]")).not.toBeNull();
   });
 
+  it("countdown-bar для звичайного toast має duration із API", () => {
+    const { api } = renderHarness();
+    act(() => {
+      api.info("Збережено", 3200);
+    });
+    const bar = getToastRoot().querySelector<HTMLElement>(
+      "[data-toast-countdown]",
+    );
+    expect(bar).not.toBeNull();
+    expect(bar?.style.animationDuration).toBe("3200ms");
+    expect(bar).toHaveClass("animate-toast-countdown");
+  });
+
+  it("persistent toast показує явне «Пізніше» без countdown-bar", () => {
+    const { api } = renderHarness();
+    act(() => {
+      api.info("Доступна нова версія", null, {
+        label: "Оновити",
+        dismissLabel: "Пізніше",
+        onClick: vi.fn(),
+      });
+    });
+
+    expect(screen.getByRole("button", { name: "Пізніше" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Закрити" }),
+    ).not.toBeInTheDocument();
+    expect(getToastRoot().querySelector("[data-toast-countdown]")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Пізніше" }));
+    expect(getToastRoot()).toHaveAttribute("data-toast-id");
+    expect(getToastRoot()).toHaveClass("motion-safe:animate-toast-exit");
+  });
+
   it("countdown-bar для undo-toast має animationDuration=5000ms і paused під час hover", () => {
     const { api } = renderHarness();
     act(() => {
@@ -170,6 +205,46 @@ describe("Toast — auto-dismiss pause/resume", () => {
 
     fireEvent.mouseLeave(row);
     expect(bar?.getAttribute("data-toast-paused")).toBe("false");
+  });
+});
+
+describe("Toast — поверх modal/sheet", () => {
+  it("лишається поза inert-фоном і виконує дію, поки Sheet відкритий", () => {
+    const onAction = vi.fn();
+    const apiRef: { current: ReturnType<typeof useToast> | null } = {
+      current: null,
+    };
+
+    function ApiBridge() {
+      apiRef.current = useToast();
+      return null;
+    }
+
+    render(
+      <ToastProvider>
+        <ApiBridge />
+        <ToastContainer />
+        <Sheet open onClose={vi.fn()} title="Активна модалка">
+          Вміст
+        </Sheet>
+      </ToastProvider>,
+    );
+
+    if (!apiRef.current) throw new Error("ApiBridge not mounted");
+    act(() => {
+      apiRef.current?.success("Прийом додано", 5000, {
+        label: "Скасувати",
+        onClick: onAction,
+      });
+    });
+
+    const tray = screen.getByTestId("toast-tray");
+    expect(tray.parentElement).toBe(document.body);
+    expect(tray.closest("[inert]")).toBeNull();
+    expect(tray).not.toHaveAttribute("aria-hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    expect(onAction).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -199,8 +274,30 @@ describe("Toast — swipe-to-dismiss (touch-only)", () => {
     expect(document.querySelector("[data-toast-id]")).toBeNull();
   });
 
-  it("undo-toast: swipe не викликає onUndo (=consume undo-window)", () => {
+  it("undo-toast: повний swipe (≥128 px) закриває і НЕ викликає onUndo", () => {
     // Це той самий ефект, як expired timeout — snapshot drop, не restore.
+    const onUndo = vi.fn();
+    const { api } = renderHarness();
+    act(() => {
+      showUndoToast(api, { msg: "Видалено", onUndo });
+    });
+    const row = getToastRoot();
+
+    fireEvent.touchStart(row, { touches: touches(200, 50) });
+    fireEvent.touchMove(row, { touches: touches(60, 50) }); // dx = -140
+    fireEvent.touchEnd(row);
+
+    act(() => {
+      vi.advanceTimersByTime(220);
+    });
+    expect(onUndo).not.toHaveBeenCalled();
+    expect(document.querySelector("[data-toast-id]")).toBeNull();
+  });
+
+  it("undo-toast: swipe на 80 px НЕ закриває — вікно undo не спалюється", () => {
+    // 80 px закрило б звичайний тост (поріг 64), але аркуш із дією коштує
+    // дорожче: свайп у голові користувача означає «прибери з очей», а не
+    // «підтверджую видалення», тож поріг для нього подвоєний.
     const onUndo = vi.fn();
     const { api } = renderHarness();
     act(() => {
@@ -215,8 +312,25 @@ describe("Toast — swipe-to-dismiss (touch-only)", () => {
     act(() => {
       vi.advanceTimersByTime(220);
     });
-    expect(onUndo).not.toHaveBeenCalled();
-    expect(document.querySelector("[data-toast-id]")).toBeNull();
+    expect(document.querySelector("[data-toast-id]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Повернути" })).toBeVisible();
+  });
+
+  it("undo-toast: швидкий flick на 40 px не закриває (для звичайного — закрив би)", () => {
+    const { api } = renderHarness();
+    act(() => {
+      showUndoToast(api, { msg: "Видалено", onUndo: vi.fn() });
+    });
+    const row = getToastRoot();
+
+    fireEvent.touchStart(row, { touches: touches(100, 50) });
+    fireEvent.touchMove(row, { touches: touches(60, 50) }); // dx = -40
+    fireEvent.touchEnd(row);
+
+    act(() => {
+      vi.advanceTimersByTime(220);
+    });
+    expect(document.querySelector("[data-toast-id]")).not.toBeNull();
   });
 
   it("короткий swipe < 64 px не dismiss-ить — toast лишається", () => {
@@ -260,5 +374,119 @@ describe("Toast — undo-action", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("Toast — стек і черга", () => {
+  beforeEach(() => {
+    navigator.vibrate = vi.fn();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("рендерить максимум 3 аркуші; 4-й чекає у черзі й зʼявляється після звільнення слота", () => {
+    vi.useFakeTimers();
+    const { api } = renderHarness();
+
+    act(() => {
+      api.info("Перший", 1000);
+      api.info("Другий", 1000);
+      api.info("Третій", 1000);
+      api.info("Четвертий", 1000);
+    });
+
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(3);
+    expect(screen.queryByText("Четвертий")).toBeNull();
+
+    act(() => {
+      vi.advanceTimersByTime(1000 + 220);
+    });
+
+    expect(screen.getByText("Четвертий")).toBeInTheDocument();
+  });
+
+  it("аркуш, що зникає, тримає слот: трей не стає чотирирядковим", () => {
+    vi.useFakeTimers();
+    const { api } = renderHarness();
+
+    act(() => {
+      api.info("Перший", 1000);
+      api.info("Другий", 5000);
+      api.info("Третій", 5000);
+      api.info("Четвертий", 5000);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000 + 50);
+    });
+
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(3);
+    expect(screen.queryByText("Четвертий")).toBeNull();
+  });
+
+  it("однакові actionless-тости зливаються в один аркуш із бейджем ×N", () => {
+    vi.useFakeTimers();
+    const { api } = renderHarness();
+
+    act(() => {
+      api.success("Збережено", 4000);
+      api.success("Збережено", 4000);
+      api.success("Збережено", 4000);
+    });
+
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(1);
+    expect(screen.getByText("×3")).toBeInTheDocument();
+  });
+
+  it("порожній трей лишається у DOM — live-region має існувати до вставки тексту", () => {
+    renderHarness();
+    expect(screen.getByTestId("toast-tray")).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(0);
+  });
+});
+
+describe("Toast — трей над футером відкритого аркуша", () => {
+  function Harness({ open }: { open: boolean }) {
+    return (
+      <ToastProvider>
+        <ToastContainer />
+        <Sheet
+          open={open}
+          onClose={vi.fn()}
+          title="Як ти сьогодні?"
+          footer={<button type="button">Пропустити</button>}
+        >
+          Вміст
+        </Sheet>
+      </ToastProvider>
+    );
+  }
+
+  it("лишається внизу і читає --sgt-sheet-footer-inset, яку аркуш ставить лише поки відкритий", () => {
+    const root = document.documentElement;
+    const { rerender } = render(<Harness open={false} />);
+    const tray = screen.getByTestId("toast-tray");
+    // Рішення власника 2026-09-16 (варіант A): край не змінюється — трей
+    // завжди внизу, «Повернути» лишається під великим пальцем.
+    expect(tray.getAttribute("data-anchor")).toBe("bottom");
+    expect(tray.style.top).toBe("");
+    expect(tray.style.bottom).toContain("--sgt-sheet-footer-inset");
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+
+    rerender(<Harness open />);
+    expect(tray.getAttribute("data-anchor")).toBe("bottom");
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toMatch(
+      /^\d+px$/,
+    );
+
+    rerender(<Harness open={false} />);
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+  });
+
+  it("стоїть на токен-тірі z-toast, а не поза шкалою", () => {
+    render(<Harness open={false} />);
+    const tray = screen.getByTestId("toast-tray");
+    expect(tray).toHaveClass("z-toast");
+    expect(tray.className).not.toMatch(/z-9999|z-\[9999\]/);
   });
 });

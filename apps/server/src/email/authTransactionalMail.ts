@@ -1,19 +1,30 @@
 import { createHash } from "node:crypto";
 
+import * as Sentry from "@sentry/node";
+
 import {
   enqueueAuthMail,
   registerAuthMailDispatcher,
   type AuthMailJobData,
 } from "../lib/jobs/authMail.js";
+import { isDeployedProduction } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 
-function isDeployedProduction(): boolean {
-  return (
-    process.env["NODE_ENV"] === "production" ||
-    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
-    Boolean(process.env["RAILWAY_SERVICE_NAME"])
-  );
-}
+/**
+ * Стеля часу на один виклик Resend API. 10 с — та сама, що й на решті
+ * зовнішніх викликів; повторні спроби робить BullMQ, не цей код.
+ */
+const RESEND_TIMEOUT_MS = 10_000;
+
+/**
+ * Observability: без `RESEND_API_KEY` у проді транзакційні листи
+ * (verify-email / reset / change-email) мовчки НЕ надсилаються, а
+ * викликаючий Better Auth endpoint усе одно віддає `200` — founder не має
+ * сигналу, що доставка зламана (browser-QA 2026-08-06). Один Sentry-alert
+ * на процес (далі лише per-email warn-лог), щоб не флудити подіями на
+ * кожен sign-up при затягнутому мисконфізі.
+ */
+let providerMisconfigAlerted = false;
 
 function emailFingerprint(email: string): string {
   return createHash("sha256")
@@ -67,6 +78,18 @@ async function dispatchAuthTransactionalEmail(
         kind: args.kind,
         emailHash: emailFingerprint(args.to),
       });
+      if (!providerMisconfigAlerted) {
+        providerMisconfigAlerted = true;
+        Sentry.captureMessage(
+          "Auth email provider not configured (RESEND_API_KEY missing) — " +
+            "verification / password-reset / change-email emails are being " +
+            "silently dropped while endpoints still return 200.",
+          {
+            level: "error",
+            tags: { area: "auth-mail", reason: "no_provider" },
+          },
+        );
+      }
     } else {
       logger.info({
         msg: "auth_transactional_email_skipped_dev_no_resend",
@@ -93,6 +116,10 @@ async function dispatchAuthTransactionalEmail(
       text: args.text,
       ...(args.html ? { html: args.html } : {}),
     }),
+    // Без `signal` undici чекає на заголовки до 300 с. Тут це лист
+    // підтвердження/скидання пароля: людина сидить перед формою і бачить
+    // спінер, а BullMQ-job тим часом тримає воркер зайнятим п'ять хвилин.
+    signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
   });
 
   if (!res.ok) {

@@ -1,99 +1,141 @@
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
-import { lazyImport } from "../../core/lib/lazyImport";
-import { useSwipeNavigation } from "@shared/hooks/useSwipeNavigation";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
-import { readRaw } from "./lib/finykStorage";
+import { readRaw, writeRaw } from "./lib/finykStorage";
+import { FINYK_BANK_BANNER_DISMISSED_AT_KEY } from "@sergeant/finyk-domain/storage-keys";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
-import { AIPill } from "@shared/components/ui/AIPill";
-import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
 import {
   MeshBackground,
   ModuleAccentProvider,
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
+  SwipePages,
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
+import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
+import { useBankBannerClock } from "./hooks/useBankBannerClock";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
-import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { formatMoney } from "@sergeant/shared";
+import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { Overview } from "./pages/Overview";
 import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
 
-// Lazy pages. Import the concrete page modules, not the folders: the
-// `pages/{transactions,budgets}/index.ts` barrels were removed as dead
-// code in #3504 (Knip can't see dynamic directory imports), which left
-// these two imports unresolved and broke the Vercel production build.
-const Transactions = lazyImport(
-  () => import("./pages/transactions/Transactions"),
-  "Transactions",
-);
-const Budgets = lazyImport(() => import("./pages/budgets/Budgets"), "Budgets");
-const Assets = lazyImport(() => import("./pages/Assets"), "Assets");
-const Analytics = lazyImport(() => import("./pages/Analytics"), "Analytics");
+import {
+  Analytics,
+  Assets,
+  Budgets,
+  PlanningSubscriptions,
+  Transactions,
+  preloadFinykPage,
+  useWarmFinykPages,
+} from "./pages/lazyPages";
 
 import { ManualExpenseSheet } from "./components/ManualExpenseSheet";
 import { FinykLoginScreen } from "./components/FinykLoginScreen";
+import { FinykScanEntryPoints } from "./components/FinykScanEntryPoints";
 import { NAV_ICONS, NAV_IDS, NAV_ITEMS } from "./components/finykNav";
 import { useFinykRoute, useFinykQueryParam } from "./hooks/useFinykRoute";
 import { useUnifiedFinanceData } from "./hooks/useUnifiedFinanceData";
+import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
+import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
+import { useDebtPaymentSplitSync } from "./hooks/useDebtPaymentSplitSync";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
-import {
-  getSyncTone,
-  SwipeProgressBar,
-  SWIPE_THRESHOLD_PX,
-} from "./components/SyncIndicator";
+import { getSyncTone } from "./components/SyncIndicator";
+import { AuthErrorBanner, FinykHeaderIcon, SyncPill } from "./FinykAppChrome";
 
+// AI-NOTE: інтеграцію ПриватБанку сховано рішенням власника 2026-09-30, поки
+// у Привата немає API-токенів для користувачів. Код і дані не видаляти.
 const PRIVAT_ENABLED = false;
 
 interface FinykAppProps {
   onBackToHub?: () => void;
+  onGoToHub?: () => void;
   onOpenSettings?: () => void;
+  /**
+   * Opens the account sign-in flow from the local-data durability banner
+   * (`Overview`) and the anonymous receipt-scan / bulk-import gate
+   * (`FinykScanEntryPoints`). Required (A1, аудит 2026-09-11 хвиля 2):
+   * раніше опційний пропс давав два call-site-и мовчазний фолбек
+   * (`onOpenAuth ?? (() => navigate("/auth"))` в `Overview`,
+   * `onOpenAuth?.()` no-op в `FinykScanEntryPoints`) — обидва зникають,
+   * коли shell зобов'язаний передати справжній обробник. Канонічне
+   * джерело — `useOpenSignIn()`, підключене через `route.tsx` →
+   * `useHubShell().onOpenAuth`.
+   */
+  onOpenAuth: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
 
+const FINYK_PWA_ACTIONS: ReadonlySet<string> = new Set([
+  "add_expense",
+  "set_budget",
+  "view_analytics",
+  "connect_bank",
+]);
+
 export default function App({
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
+  onOpenAuth,
   pwaAction,
   onPwaActionConsumed,
-}: FinykAppProps = {}) {
+}: FinykAppProps) {
   const mono = useMonobank();
   const privat = usePrivatbank(PRIVAT_ENABLED);
   useMonoTokenMigration(true);
   const toast = useToast();
   const storage = useStorage({ toast });
+  // Device-local чек↔транзакція лінки (спека § Розгортка) — одне джерело
+  // для індикатора в списку транзакцій І для write-through записувача
+  // ReceiptScanSheet/BulkImportSheet (`FinykScanEntryPoints`).
+  const receiptLinks = useFinykReceiptLinks();
   const [page, navigate] = useFinykRoute();
   const focusLimitCategoryId = useFinykQueryParam("cat");
+  const focusAssetSection = useFinykQueryParam("section");
+  const focusTransactionDate = useFinykQueryParam("date");
 
   // First-run state
   const { firstRun: firstRunFinyk, markSeen: markFinykSeen } =
     useModuleFirstRun("finyk");
   const [firstRunFinykSurface, setFirstRunFinykSurface] =
     useState(firstRunFinyk);
-  useEffect(() => {
-    if (firstRunFinyk) setFirstRunFinykSurface(true);
-  }, [firstRunFinyk]);
+  if (firstRunFinyk && !firstRunFinykSurface) {
+    setFirstRunFinykSurface(true);
+  }
   const firstRunFinykActive = firstRunFinykSurface && page === "budgets";
 
   // State
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  // Місяць дрил-дауну з Аналітики (month 1-based); одноразовий, як і категорія.
+  const [categoryMonth, setCategoryMonth] = useState<{
+    year: number;
+    month: number;
+  } | null>(null);
   const showBalance = storage.showBalance;
   const setShowBalance = storage.setShowBalance;
   const [showExpenseSheet, setShowExpenseSheet] = useState(false);
+  // Аркуш масового імпорту живе тут, а не в `FinykScanEntryPoints`: його
+  // відкривають два входи — FAB і плашка нагадування в Огляді.
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [showLoginOverlay, setShowLoginOverlay] = useState(false);
   const loginOverlayRef = useRef<HTMLDivElement>(null);
   useDialogFocusTrap(showLoginOverlay, loginOverlayRef, {
@@ -110,85 +152,137 @@ export default function App({
   const [manualOnly, setManualOnly] = useState(
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
+  // Закриття банера «підключити банк» ховає його на 7 днів, а не назавжди
+  // (рішення власника 2026-09-30); `manualOnly` лишається постійним вибором.
+  const [bankBannerDismissedAt, setBankBannerDismissedAt] = useState<
+    number | null
+  >(() => {
+    const n = Number(readRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, ""));
+    return Number.isFinite(n) && n > 0 ? n : null;
+  });
+  // Комбінований пікер «Запланувати» на Плануванні (founder-UX audit
+  // round 2, F2): `Budgets` і `PlanningSubscriptions` мають КОЖЕН свій
+  // `useAssetsState`-інстанс, тож пункт «Підписка» з пікера в `Budgets` не
+  // може викликати `openSubscriptionForm` з ІНШОГО інстансу напряму.
+  // Лічильник-сигнал — найдешевший міст: інкремент у `Budgets`, ефект у
+  // `PlanningSubscriptions` відкриває форму на кожній зміні значення.
+  const [subscriptionFormSignal, setSubscriptionFormSignal] = useState(0);
 
-  // Mount-only URL sync effect
+  const syncHandledRef = useRef(false);
   useEffect(() => {
+    if (syncHandledRef.current) return;
+    syncHandledRef.current = true;
     if (window.location.search.includes("sync=")) {
-      const ok = storage.loadFromUrl();
-      if (ok) toast.success("Налаштування синхронізовано!");
-      else toast.error("Не вдалось завантажити синк-даних");
+      const loadSync = () => {
+        if (storage.loadFromUrl()) {
+          toast.success("Налаштування синхронізовано.");
+          return;
+        }
+        // Читання з URL чисте — повтор безпечний. Без кнопки користувач,
+        // що прийшов саме по sync-лінку, лишався ні з чим і без підказки.
+        toast.error("Не вдалось завантажити синк-дані", undefined, {
+          label: "Повторити",
+          onClick: loadSync,
+        });
+      };
+      loadSync();
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [storage, toast]);
 
-  // Mount-only first-run navigation
-  useEffect(() => {
-    if (!firstRunFinyk) return;
-    if (pwaAction === "add_expense") return;
-    if (page !== "budgets") navigate("budgets");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // AI-CONTEXT: тут БУВ одноразовий ефект, що з `/finyk` кидав першого
+  // користувача на `/finyk/budgets` (фінплан). Аудит зафіксував це як
+  // розбіжність A2 — канон finyk §8 каже, що bank-connected і manual-only
+  // рівноправні, а редірект навʼязував третій сценарій, якого не обирав
+  // ніхто. Founder ухвалив 2026-07-25: перший вхід — **порожній екран
+  // finyk із ненавʼязливими підказками**, ні budgets-first, ні екран
+  // вибору режиму. Тому редіректу більше немає: користувач лишається на
+  // default-сторінці `overview`, яка при нульових даних показує
+  // `ModuleEmptyState`. Прапорець first-run НЕ видалено — він і далі
+  // живить підказку у Плануванні, коли юзер дійде туди сам.
 
-  // PWA action effect (navigate is stable)
+  // PWA/checklist action: the OS deep-link opens the add-expense sheet; the
+  // Hub checklist steps land on the page where the step is done. Without the
+  // three checklist cases every step opened Огляд, where «Підключити
+  // Monobank» had nothing to tap once the no-bank banner hid itself.
+  const prevPwaActionRef = useRef<string | null | undefined>(null);
   useEffect(() => {
-    if (pwaAction !== "add_expense") return;
-    const prefill = consumePresetPrefill("finyk");
-    navigate("transactions");
-    setEditingManualExpenseId(null);
-    setQuickAddCategory(
-      typeof prefill?.["category"] === "string" ? prefill["category"] : null,
-    );
-    setQuickAddDescription(
-      typeof prefill?.["description"] === "string"
-        ? prefill["description"]
-        : null,
-    );
-    setShowExpenseSheet(true);
-    onPwaActionConsumed?.();
+    if (!pwaAction || !FINYK_PWA_ACTIONS.has(pwaAction)) {
+      prevPwaActionRef.current = pwaAction;
+      return;
+    }
+    if (prevPwaActionRef.current === pwaAction) return;
+    prevPwaActionRef.current = pwaAction;
+
+    void Promise.resolve().then(() => {
+      if (pwaAction !== "add_expense") {
+        if (pwaAction === "connect_bank") setShowLoginOverlay(true);
+        else navigate(pwaAction === "set_budget" ? "budgets" : "analytics");
+        onPwaActionConsumed?.();
+        return;
+      }
+      const prefill = consumePresetPrefill("finyk");
+      navigate("transactions");
+      setEditingManualExpenseId(null);
+      setQuickAddCategory(
+        typeof prefill?.["category"] === "string" ? prefill["category"] : null,
+      );
+      setQuickAddDescription(
+        typeof prefill?.["description"] === "string"
+          ? prefill["description"]
+          : null,
+      );
+      setShowExpenseSheet(true);
+      onPwaActionConsumed?.();
+    });
   }, [
-    navigate,
     pwaAction,
-    onPwaActionConsumed,
+    navigate,
     setEditingManualExpenseId,
     setQuickAddCategory,
     setQuickAddDescription,
     setShowExpenseSheet,
+    onPwaActionConsumed,
   ]);
 
-  const { mergedMono } = useUnifiedFinanceData({ mono, privat });
+  // Warm sibling page chunks at idle (see `pages/lazyPages`).
+  useWarmFinykPages(NAV_IDS);
+
+  const { mergedMono } = useUnifiedFinanceData({
+    mono,
+    privat,
+    hiddenAccountIds: storage.hiddenAccounts,
+  });
+  // Keep the Hub finyk bento card's quick-stats snapshot in sync with real
+  // data (manual expenses + Monobank), not just the onboarding demo seed.
+  useFinykQuickStatsWriter({ mono: mergedMono, storage });
   const { frequentCategories, frequentMerchants } = useFinykPersonalization({
     mono: mergedMono,
     storage,
   });
 
   const { clientInfo, connecting, error, authError, connect } = mono;
+  const hasConnectedProvider = clientInfo != null || privat.connected;
   // Pass `connected` so the pill does not claim "ок" when no bank account
   // has ever been linked — clientInfo is null until the first successful sync.
-  const syncTone = getSyncTone(mergedMono?.syncState, clientInfo != null);
-
-  // Swipe navigation
-  const curPageIdx = NAV_IDS.indexOf(page);
-  const swipe = useSwipeNavigation({
-    onSwipeLeft: () => {
-      const next = NAV_IDS[curPageIdx + 1];
-      if (next !== undefined) navigate(next);
-    },
-    onSwipeRight: () => {
-      const next = NAV_IDS[curPageIdx - 1];
-      if (next !== undefined) navigate(next);
-    },
-    threshold: SWIPE_THRESHOLD_PX,
-    atStart: curPageIdx === 0,
-    atEnd: curPageIdx === NAV_IDS.length - 1,
-  });
-  const swipeDx = swipe.dragDx;
+  const syncTone = getSyncTone(mergedMono?.syncState, hasConnectedProvider);
+  const showSyncPill = hasConnectedProvider;
 
   // Auto-close login overlay on successful connect
-  useEffect(() => {
-    if (clientInfo && showLoginOverlay) {
-      setShowLoginOverlay(false);
-    }
-  }, [clientInfo, showLoginOverlay]);
+  if (clientInfo && showLoginOverlay) {
+    setShowLoginOverlay(false);
+  }
 
-  const showNoBankBanner = !clientInfo && !manualOnly;
+  // Умова живе окремою чистою функцією поруч із самим банером — розбір
+  // чому саме там, і що означає `inDemo`, у її докстрінгу (PR-F5).
+  const bankBannerNow = useBankBannerClock(page, bankBannerDismissedAt);
+  const showNoBankBanner = shouldShowNoBankBanner({
+    hasConnectedProvider,
+    manualOnly,
+    manualExpenseCount: (storage.manualExpenses || []).length,
+    dismissedAt: bankBannerDismissedAt,
+    now: bankBannerNow,
+    page,
+  });
 
   // Page render helpers
   const renderPage = () => {
@@ -202,7 +296,10 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             onNavigate={navigate}
+            onOpenAuth={onOpenAuth}
             showBalance={showBalance}
+            onOpenBulkImport={() => setShowBulkImport(true)}
+            onOpenSettings={onOpenSettings}
           />
         </SectionErrorBoundary>
       );
@@ -217,8 +314,15 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             showBalance={showBalance}
+            receiptLinks={receiptLinks}
             categoryFilter={categoryFilter}
-            onClearCategoryFilter={() => setCategoryFilter(null)}
+            categoryMonth={categoryMonth}
+            onClearCategoryFilter={() => {
+              setCategoryFilter(null);
+              setCategoryMonth(null);
+            }}
+            dayFilter={focusTransactionDate}
+            onClearDayFilter={() => navigate("transactions")}
             onEditManualExpense={(id) => {
               setEditingManualExpenseId(String(id));
               setShowExpenseSheet(true);
@@ -238,6 +342,17 @@ export default function App({
             storage={storage}
             showBalance={showBalance}
             focusLimitCategoryId={focusLimitCategoryId}
+            planningSlot={
+              <PlanningSubscriptions
+                mono={mergedMono}
+                storage={storage}
+                showBalance={showBalance}
+                initialOpen={focusAssetSection === "subscriptions"}
+                initialOpenRecurring={focusAssetSection === "recurring"}
+                openSubscriptionSignal={subscriptionFormSignal}
+              />
+            }
+            onAddSubscription={() => setSubscriptionFormSignal((n) => n + 1)}
             monthlyPlanFirstRunHint={firstRunFinykActive}
             onDismissMonthlyPlanFirstRunHint={() => {
               markFinykSeen();
@@ -253,7 +368,19 @@ export default function App({
           key="page-analytics"
           title="Не вдалось показати «Аналітику»"
         >
-          <Analytics mono={mergedMono} storage={storage} />
+          <Analytics
+            mono={mergedMono}
+            storage={storage}
+            showBalance={showBalance}
+            onSelectCategory={(categoryId, period) => {
+              // Порядок важливий: спершу кладемо категорію, тоді
+              // переходимо. `Transactions` монтується вже з нею й одразу
+              // показує звужений список — інакше був би кадр із повним.
+              setCategoryFilter(categoryId);
+              setCategoryMonth(period);
+              navigate("transactions");
+            }}
+          />
         </SectionErrorBoundary>
       );
     }
@@ -275,14 +402,19 @@ export default function App({
   };
 
   // Show nutrition prompt after save (lines extracted for clarity)
-  const handleExpenseSave = (expense?: { id?: string; category?: string }) => {
+  const handleExpenseSave = (expense?: {
+    id?: string;
+    category?: string;
+    kind?: "expense" | "income";
+  }) => {
+    const isIncome = expense?.kind === "income";
     if (expense?.id) {
       storage.editManualExpense?.(expense.id, expense);
-      toast.success("Витрату оновлено.");
+      toast.success(isIncome ? "Надходження оновлено." : "Витрату оновлено.");
       return "updated";
     }
     storage.addManualExpense(expense ?? {});
-    toast.success("Витрату додано.");
+    toast.success(isIncome ? "Надходження додано." : "Витрату додано.");
     return "added";
   };
 
@@ -302,33 +434,83 @@ export default function App({
     tryShowCrossModulePrompt(toast, {
       id: promptId,
       msg,
-      acceptLabel: "Додати →",
+      acceptLabel: "Додати",
       onAccept: () => openHubModuleWithAction("nutrition", "add_meal"),
     });
   };
 
+  // Запис, який зараз редагується. Піднято з JSX, бо його потребує і
+  // аркуш, і звірка суми привʼязки нижче — а шукати двічі означало б
+  // ризикнути тим, що дві гілки бачать різні записи.
+  const editingManualExpense = editingManualExpenseId
+    ? (storage.manualExpenses || []).find(
+        (e) => String(e.id) === String(editingManualExpenseId),
+      ) || null
+    : null;
+
+  // Рівень 3 для РУЧНОГО запису. Розподіл може змінитись уже ПІСЛЯ
+  // привʼязки платежу — в аркуші ручної витрати такий шлях один
+  // (розбивка за чеком Сільпо), але наслідок той самий, що й на
+  // банківській операції: сума привʼязки лишається знімком і залишок
+  // пасиву розходиться з фактом. Обгортка стоїть тут, бо мутатор сховища
+  // сирої суми запису не бачить.
+  //
+  // **Гривні, не копійки.** `Transactions.tsx` ділить суму на 100, бо
+  // банківська транзакція зберігає копійки; ручний запис зберігає
+  // гривні (`domain-invariants.md` § Money — локальний блоб Фініка).
+  // Поділити тут удруге означало б занизити погашення в сто разів.
+  const splitSync = useDebtPaymentSplitSync(
+    storage.manualDebts,
+    storage.setLinkedTxRole,
+    toast.success,
+  );
+  const handleManualSplitChange = useCallback(
+    (id: string, splits: TxSplit[] | null) => {
+      storage.setSplitTx(id, splits);
+      const amountUAH = Math.abs(Number(editingManualExpense?.amount) || 0);
+      if (String(editingManualExpense?.id ?? "") === id && amountUAH > 0) {
+        splitSync.reconcile(id, splits, amountUAH);
+      }
+    },
+    [storage, splitSync, editingManualExpense],
+  );
+
   // Render
   return (
-    <ModuleAccentProvider module="finyk">
-      <MeshBackground>
+    <ModuleAccentProvider module="finyk" className="contents">
+      {/* `bottom-nav-height-var` — модуль малює власний `ModuleBottomNav`,
+          тож змінну для портальованих `Sheet` має виставити саме він:
+          маршрутна оболонка (`core/app/ModuleShell`) навігації не володіє. */}
+      <MeshBackground className="bottom-nav-height-var">
         <ModuleHeader
           module="finyk"
           left={
             typeof onBackToHub === "function" ? (
-              <ModuleHeaderBackButton onClick={onBackToHub} />
+              <div className="flex items-center gap-1">
+                <ModuleHeaderBackButton onClick={onBackToHub} />
+                {typeof onGoToHub === "function" && (
+                  <ModuleHeaderHubButton onClick={onGoToHub} />
+                )}
+              </div>
             ) : (
               <FinykHeaderIcon />
             )
           }
-          title="ФІНІК"
-          subtitle="Monobank · бюджети"
+          title="Фінік"
+          subtitle="Фінанси"
           right={
-            <div className="flex items-center gap-2">
-              <SyncPill
-                syncTone={syncTone}
-                showBalance={showBalance}
-                setShowBalance={setShowBalance}
-              />
+            <div className="flex items-center gap-2 shrink-0">
+              {showSyncPill ? <SyncPill syncTone={syncTone} /> : null}
+              <button
+                type="button"
+                onClick={() => setShowBalance(!showBalance)}
+                className="focus-ring shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                aria-label={showBalance ? "Приховати суми" : "Показати суми"}
+                title={showBalance ? "Приховати суми" : "Показати суми"}
+              >
+                <Icon name={showBalance ? "eye" : "eye-off"} size="lg" />
+              </button>
+              <ModuleHeaderAssistantButton />
               {onOpenSettings && (
                 <ModuleHeaderSettingsButton onClick={onOpenSettings} />
               )}
@@ -340,51 +522,48 @@ export default function App({
           <NoBankBanner
             onConnect={() => setShowLoginOverlay(true)}
             onContinueManually={() => {
-              enableFinykManualOnly();
-              setManualOnly(true);
+              const now = Date.now();
+              writeRaw(FINYK_BANK_BANNER_DISMISSED_AT_KEY, String(now));
+              setBankBannerDismissedAt(now);
             }}
           />
         )}
 
         <FinykManualExpenseConflictBanner />
 
-        <div
-          className="flex-1 overflow-hidden flex flex-col min-h-0 touch-pan-y relative"
-          onTouchStart={swipe.onTouchStart}
-          onTouchMove={swipe.onTouchMove}
-          onTouchEnd={swipe.onTouchEnd}
+        <SwipePages
+          ids={NAV_IDS}
+          activeId={page}
+          onChange={(next) => {
+            preloadFinykPage(next);
+            navigate(next);
+          }}
         >
-          <SwipeProgressBar swipeDx={swipeDx} threshold={SWIPE_THRESHOLD_PX} />
-          <div
-            key={`page-${page}`}
-            className="flex-1 overflow-hidden flex flex-col min-h-0 motion-safe:animate-fade-in"
-            style={getSwipeStyle(swipeDx)}
-          >
-            <Suspense fallback={<ModulePageLoader module="finyk" />}>
-              {renderPage()}
-            </Suspense>
-          </div>
-        </div>
+          <Suspense fallback={<ModulePageLoader module="finyk" />}>
+            {renderPage()}
+          </Suspense>
+        </SwipePages>
 
-        {!showLoginOverlay &&
-          (page === "overview" ||
-            page === "transactions" ||
-            page === "budgets") && (
-            <FloatingActionButton
-              variant="v2-finyk"
-              icon="plus"
-              onClick={() => {
-                setEditingManualExpenseId(null);
-                setShowExpenseSheet(true);
-              }}
-              aria-label="Додати витрату"
-            />
-          )}
+        {!showLoginOverlay && (
+          <FinykScanEntryPoints
+            onAddExpense={() => {
+              setEditingManualExpenseId(null);
+              setShowExpenseSheet(true);
+            }}
+            storage={storage}
+            onReceiptLinked={receiptLinks.recordReceiptLink}
+            customCategories={storage.customCategories}
+            bulkImportOpen={showBulkImport}
+            onBulkImportOpenChange={setShowBulkImport}
+            onOpenAuth={onOpenAuth}
+          />
+        )}
 
         {mono.authError && (
           <AuthErrorBanner
             authError={mono.authError}
-            onBackToHub={onBackToHub}
+            onOpenSettings={onOpenSettings}
+            onOpenAuth={onOpenAuth}
             setAuthError={mono.setAuthError}
           />
         )}
@@ -397,17 +576,22 @@ export default function App({
             setQuickAddCategory(null);
             setQuickAddDescription(null);
           }}
-          initialExpense={
-            editingManualExpenseId
-              ? (storage.manualExpenses || []).find(
-                  (e) => String(e.id) === String(editingManualExpenseId),
-                ) || null
-              : null
-          }
+          initialExpense={editingManualExpense}
           initialCategory={quickAddCategory}
           initialDescription={quickAddDescription}
+          receiptId={
+            editingManualExpenseId
+              ? receiptLinks.getReceiptId(editingManualExpenseId)
+              : null
+          }
+          txSplits={storage.txSplits}
+          onSplitChange={handleManualSplitChange}
+          manualDebts={storage.manualDebts}
+          setManualDebts={storage.setManualDebts}
+          setLinkedTxRole={storage.setLinkedTxRole}
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
+          customCategories={storage.customCategories}
           onSave={(expense) => {
             handleExpenseSave(expense);
             handlePostSavePrompt(expense);
@@ -420,15 +604,16 @@ export default function App({
             const snapshot = (storage.manualExpenses || []).find(
               (e) => String(e.id) === String(id),
             );
+            const isIncome = snapshot?.kind === "income";
             storage.removeManualExpense(id);
             setEditingManualExpenseId(null);
             if (snapshot) {
               showUndoToast(toast, {
-                msg: "Видалив витрату",
-                onUndo: () => storage.addManualExpense(snapshot),
+                msg: isIncome ? "Надходження видалено" : "Витрату видалено",
+                onUndo: () => storage.restoreManualExpense(snapshot),
               });
             } else {
-              toast.success("Видалив витрату");
+              toast.success("Витрату видалено");
             }
           }}
         />
@@ -437,15 +622,18 @@ export default function App({
           items={NAV_ITEMS.map((item) => ({
             id: item.id,
             label: item.label,
+            // Умовний спред, а не `visibleLabel: item.visibleLabel`:
+            // під `exactOptionalPropertyTypes` явний `undefined` не те саме,
+            // що відсутнє поле.
+            ...(item.visibleLabel ? { visibleLabel: item.visibleLabel } : {}),
             icon: NAV_ICONS[item.id],
           }))}
           activeId={page}
           onChange={navigate}
+          onPrefetch={preloadFinykPage}
           module="finyk"
           ariaLabel={messages.nav.finykSections}
         />
-
-        {!showLoginOverlay && <AIPill module="finyk" />}
 
         {showLoginOverlay && (
           <div
@@ -466,172 +654,35 @@ export default function App({
                 setShowLoginOverlay(false);
               }}
               onBackToHub={() => setShowLoginOverlay(false)}
+              onOpenAuth={onOpenAuth}
               backLabel="Назад"
             />
           </div>
+        )}
+        {/* Рівень 3: частки боргу в розподілі не лишилось. Питаємо, а не
+            відвʼязуємо самі — людина може бути посеред редагування. */}
+        {splitSync.pendingUnlink && (
+          <ConfirmDialog
+            open
+            title={messages.finyk.debtSplitSync.unlinkTitle}
+            description={messages.finyk.debtSplitSync.unlinkQuestion
+              .replace("{debt}", splitSync.pendingUnlink.debtName)
+              .replace(
+                "{amount}",
+                formatMoney(splitSync.pendingUnlink.previousAmountUAH, {
+                  maxFractionDigits: 2,
+                }),
+              )}
+            confirmLabel={messages.finyk.debtSplitSync.unlinkConfirm}
+            cancelLabel={messages.finyk.debtSplitSync.unlinkKeep}
+            onConfirm={splitSync.confirmUnlink}
+            onCancel={splitSync.dismissUnlink}
+          />
         )}
       </MeshBackground>
     </ModuleAccentProvider>
   );
 }
 
-// Extracted components for module accent containment (Rule #12)
-
-function FinykHeaderIcon(): React.ReactElement {
-  return (
-    <div
-      className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
-      aria-hidden
-    >
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <rect x="2" y="5" width="20" height="14" rx="2" />
-        <line x1="2" y1="10" x2="22" y2="10" />
-      </svg>
-    </div>
-  );
-}
-
-interface SyncPillProps {
-  syncTone: { dot: string; text: string; pill: string };
-  showBalance: boolean;
-  setShowBalance: (v: boolean) => void;
-}
-
-function SyncPill({
-  syncTone,
-  showBalance,
-  setShowBalance,
-}: SyncPillProps): React.ReactElement {
-  return (
-    <div
-      className={cn(
-        "flex items-center gap-1.5 select-none",
-        "text-style-caption px-2 py-0.5 rounded-full border",
-        "transition-colors duration-200",
-        syncTone.pill,
-      )}
-      role="status"
-      aria-label={`Стан синхронізації: ${syncTone.text}`}
-    >
-      <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", syncTone.dot)} />
-      <span className="sr-only sm:not-sr-only">{syncTone.text}</span>
-      <button
-        type="button"
-        onClick={() => setShowBalance(!showBalance)}
-        className="focus-ring w-11 h-11 flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
-        aria-label={showBalance ? "Приховати суми" : "Показати суми"}
-        title={showBalance ? "Приховати суми" : "Показати суми"}
-      >
-        {showBalance ? <EyeOpenIcon /> : <EyeClosedIcon />}
-      </button>
-    </div>
-  );
-}
-
-function EyeOpenIcon(): React.ReactElement {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeClosedIcon(): React.ReactElement {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  );
-}
-
-interface AuthErrorBannerProps {
-  authError: string;
-  onBackToHub?: (() => void) | undefined;
-  setAuthError: (msg: string) => void;
-}
-
-function AuthErrorBanner({
-  authError,
-  onBackToHub,
-  setAuthError,
-}: AuthErrorBannerProps): React.ReactElement {
-  // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
-  // row (min-h-[68px], ModuleHeader.tsx) + ~40px ModuleSwitcher row.
-  return (
-    <div
-      role="alert"
-      className="fixed top-[calc(108px+env(safe-area-inset-top,0)+8px)] left-4 right-4 z-50 max-w-lg mx-auto"
-    >
-      <div className="bg-warning/15 border border-warning/40 rounded-2xl px-4 py-3 flex items-start gap-3 shadow-card">
-        <span className="text-lg shrink-0 mt-0.5">⚠️</span>
-        <div className="flex-1 min-w-0">
-          <p className="text-style-label text-text">Токен потребує оновлення</p>
-          <p className="text-xs text-muted mt-0.5">{authError}</p>
-          {onBackToHub && (
-            <button
-              type="button"
-              onClick={onBackToHub}
-              className="focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
-            >
-              Оновити токен у Налаштуваннях Hub
-            </button>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setAuthError("")}
-          className="focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
-          aria-label="Закрити"
-        >
-          ✕
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Swipe transform style helper
-function getSwipeStyle(swipeDx: number): React.CSSProperties {
-  if (swipeDx !== 0) {
-    return {
-      transform: `translate3d(${swipeDx * 0.45}px, 0, 0)`,
-      transition: "none",
-      willChange: "transform",
-    };
-  }
-  return {
-    transform: "translate3d(0, 0, 0)",
-    transition: "transform 200ms cubic-bezier(0.32, 0.72, 0, 1)",
-  };
-}
+// FinykHeaderIcon / SyncPill / AuthErrorBanner extracted to
+// `./FinykAppChrome` (Hard Rule #18 headroom — see that file's docstring).

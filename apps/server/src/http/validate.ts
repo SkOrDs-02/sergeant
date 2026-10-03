@@ -21,7 +21,8 @@ export type ValidationResult<T> = { ok: true; data: T } | { ok: false };
  * клієнта, який хоче підсвітити поля.
  *
  * Цей хелпер історичний — нові handler-и краще писати з `parseBody`
- * (throw-based), бо `asyncHandler` + центральний `errorHandler` віддасть
+ * (throw-based): async-reject із route-хендлера автоматично долітає до
+ * центрального `errorHandler` (нативно в Express 5), тож віддасть
  * однаковий 400 з `code: "VALIDATION"` без ручного `if (!parsed.ok) return`.
  */
 export function validateBody<S extends ZodTypeAny>(
@@ -72,9 +73,9 @@ export function validateQuery<S extends ZodTypeAny>(
 /**
  * Throw-based варіант `validateBody`. Кидає `ValidationError` (status 400,
  * code `VALIDATION`) з payload-ом `{ details: [{ path, message }] }` у
- * `cause`. Працює у тандемі з `asyncHandler` + центральним
- * `errorHandler` — обидва вже знають про `AppError`-ієрархію, тому новий
- * handler стає однорядковим:
+ * `cause`. Async-reject із route-хендлера автоматично долітає (нативно
+ * в Express 5) до центрального `errorHandler` — той уже знає про
+ * `AppError`-ієрархію, тому новий handler стає однорядковим:
  *
  *   const { foo } = parseBody(MySchema, req);
  *   // ...

@@ -61,7 +61,7 @@ function SyncStatusBadgeComponent({
   const label = isLoading
     ? "Синхронізація…"
     : isError
-      ? "Помилка синхронізації"
+      ? "Не вдалося синхронізувати"
       : isPartial
         ? "Часткова синхронізація"
         : isSuccess
@@ -73,7 +73,7 @@ function SyncStatusBadgeComponent({
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-xl px-3 py-2 text-xs border",
+        "flex items-center gap-2 rounded-xl px-3 py-2 text-style-caption border",
         isError
           ? "bg-danger/10 border-danger/30"
           : isPartial
@@ -82,21 +82,23 @@ function SyncStatusBadgeComponent({
       )}
     >
       <span className={cn("w-2 h-2 rounded-full shrink-0", dotClass)} />
-      <span className="text-text font-medium">{label}</span>
+      <span role="status" className="text-text font-medium">
+        {label}
+      </span>
       {ts && <span className="text-subtle ml-auto tabular-nums">{ts}</span>}
       {(isError || isPartial) && typeof onRetry === "function" && (
         <button
           type="button"
           onClick={onRetry}
           disabled={isLoading}
-          className="ml-1 px-2 py-1 rounded-xl bg-panel border border-line text-style-caption text-text hover:bg-panelHi transition-colors disabled:opacity-50"
+          className="ml-1 px-2 py-1 rounded-xl focus-ring bg-panel border border-line text-style-caption text-text hover:bg-panelHi transition-colors disabled:opacity-50"
         >
           {messages.actions.retry}
         </button>
       )}
       {error && !isLoading && (
         <span
-          className="text-danger/80 text-style-caption truncate max-w-[160px]"
+          className="text-danger-strong dark:text-danger text-style-caption truncate max-w-[160px]"
           title={error}
         >
           {error}

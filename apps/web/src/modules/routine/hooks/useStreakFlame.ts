@@ -4,8 +4,9 @@
  * Derives display properties for the `StreakFlame` XS adornment placed in
  * the top-right corner of `RoutineCalendarHero`. Hides the flame for cold
  * streaks (0 days) and strips the glow animation when the user prefers
- * reduced motion (Hard Rule #17 — one AMBIENT slot; motion-safe wrapper
- * moves glow to CSS, this hook gates render-level decisions).
+ * reduced motion (ex-Hard Rule #17, retired ADR-0081 — one AMBIENT slot;
+ * motion-safe wrapper moves glow to CSS, this hook gates render-level
+ * decisions).
  *
  * Intensity tiers:
  *   - 0          → not visible (no cold flame shown)
@@ -35,10 +36,18 @@ export interface UseStreakFlameResult {
   reducedMotion: boolean;
 }
 
+/**
+ * Ступені серії: ті самі числа керують кольором вогника і моментом
+ * «серія досягла ступеня» (ADR-0096). Одне джерело, щоб вогник і рядок
+ * моменту не розійшлись тихо.
+ */
+export const STREAK_MILESTONES = [7, 30, 100] as const;
+
 function resolveIntensity(streakDays: number): StreakFlameIntensity {
-  if (streakDays >= 100) return "max";
-  if (streakDays >= 30) return "strong";
-  if (streakDays >= 7) return "medium";
+  const [medium, strong, max] = STREAK_MILESTONES;
+  if (streakDays >= max) return "max";
+  if (streakDays >= strong) return "strong";
+  if (streakDays >= medium) return "medium";
   return "low";
 }
 

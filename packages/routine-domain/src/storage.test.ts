@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   ROUTINE_SCHEMA_VERSION,
@@ -36,12 +36,13 @@ function state(partial: Partial<RoutineState> = {}): RoutineState {
 
 describe("routine-domain/storage", () => {
   it("generates stable-shape ids with the requested prefix", () => {
-    vi.spyOn(Date, "now").mockReturnValue(1_700_000_000_000);
-    vi.spyOn(Math, "random").mockReturnValue(0.123456789);
+    const first = routineUid("habit");
+    const second = routineUid("habit");
 
-    expect(routineUid("habit")).toBe("habit_loyw3v28_4fzzzxj");
-
-    vi.restoreAllMocks();
+    expect(first).toMatch(
+      /^habit_[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(second).not.toBe(first);
   });
 
   it("normalizes reminder times and completion maps", () => {
@@ -149,7 +150,6 @@ describe("routine-domain/storage", () => {
         },
       ],
       completions: { h1: ["2026-01-06", "bad"] },
-      pushupsByDate: null,
       habitOrder: "bad",
       completionNotes: { "h1__2026-01-06": "Good" },
     });
@@ -167,7 +167,6 @@ describe("routine-domain/storage", () => {
       reminderTimes: ["08:00"],
     });
     expect(normalized.completions).toEqual({ h1: ["2026-01-06"] });
-    expect(normalized.pushupsByDate).toEqual({});
     expect(normalized.habitOrder).toEqual([]);
     expect(normalized.completionNotes).toEqual({ "h1__2026-01-06": "Good" });
   });

@@ -75,26 +75,25 @@ export interface ResolveOriginDeviceIdDeps {
   /** Per-platform KVStore adapter — `webKVStore` or `mobileKVStore`. */
   readonly store: Pick<KVStore, "getString" | "setString">;
   /**
-   * Fresh-ID factory. Defaults to `globalThis.crypto?.randomUUID()`
-   * with a string-shape fallback for environments without
-   * `globalThis.crypto` (e.g. very old Safari, server-side rendering).
+   * Fresh-ID factory. Defaults to `globalThis.crypto.randomUUID()` with a
+   * `getRandomValues` UUID fallback when `randomUUID` is unavailable.
    * Injectable so unit tests can pin the value.
    */
   readonly randomUUID?: () => string;
 }
 
 /**
- * Last-ditch ID generator for environments without `globalThis.crypto`.
- * Returns a 36-char `Date.now() + Math.random()` hex string. Not
- * cryptographically random, but sufficient as a stable per-install
- * identifier — entropy concerns are about cross-user collision
- * probability, and `Math.random()` over 18 hex digits at install time
- * is fine for that. This branch is exercised on SSR and old WebViews.
+ * UUID v4 fallback for runtimes that expose Web Crypto but not `randomUUID`.
  */
 export function fallbackRandomId(): string {
-  const lo = Math.floor(Math.random() * 0xffffffff).toString(16);
-  const hi = Math.floor(Math.random() * 0xffffffff).toString(16);
-  return `d${Date.now().toString(16)}-${hi.padStart(8, "0")}${lo.padStart(8, "0")}`;
+  if (!globalThis.crypto?.getRandomValues) {
+    throw new Error("Web Crypto is required to generate an origin device ID");
+  }
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x40;
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
 }
 
 function defaultRandomUUID(): string {

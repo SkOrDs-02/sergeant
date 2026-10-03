@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import type { Database as BetterSqliteDatabase } from "better-sqlite3";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   createSqliteAdapter,
@@ -10,14 +10,14 @@ import { runMigrations } from "../migrate/runner.js";
 import { enqueueOutboxIncrement } from "../sqlite/syncOpOutboxEnqueue.js";
 import { drainSyncOpOutbox } from "../sqlite/syncOpOutboxDrain.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 import { SYNC_OP_OUTBOX_OPS } from "../sqlite/routine.js";
 
 /**
  * Integration tests for `drainSyncOpOutbox` (PR #042e-drain of
- * `docs/planning/storage-roadmap.md`). Runs the full SPIKE +
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the full SPIKE +
  * PR #040 + PR #042d-prep migration stack against a fresh
  * `:memory:` engine and exercises every public branch:
  *
@@ -63,8 +63,8 @@ describe("drainSyncOpOutbox", () => {
     client = syncClient(db);
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
   });
 
@@ -210,6 +210,26 @@ describe("drainSyncOpOutbox", () => {
         now,
       });
       expect(drained.map((r) => r.id)).toEqual([exact.id]);
+    });
+  });
+
+  describe("userId validation (HIGH-#2 of the T3 audit)", () => {
+    it("rejects a missing/empty userId before issuing any query", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      await expect(
+        drainSyncOpOutbox(client, { userId: "", limit: 10, now }),
+      ).rejects.toThrow(/userId is required/);
+    });
+
+    it("rejects a non-string userId", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      await expect(
+        drainSyncOpOutbox(client, {
+          userId: undefined as unknown as string,
+          limit: 10,
+          now,
+        }),
+      ).rejects.toThrow(/userId is required/);
     });
   });
 
@@ -459,6 +479,38 @@ describe("drainSyncOpOutbox", () => {
       expect(events[0]?.reason).toBe("non_object_payload:null");
     });
 
+    it("quarantines a scalar payload without requiring an onQuarantine callback", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        "42",
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-number",
+      );
+
+      const drained = await drainSyncOpOutbox(client, {
+        userId: "u-test",
+        limit: 10,
+        now,
+      });
+
+      expect(drained).toEqual([]);
+      const row = db
+        .prepare(
+          `SELECT status, reject_reason FROM sync_op_outbox WHERE idempotency_key = ?`,
+        )
+        .get("idem-number") as { status: string; reject_reason: string };
+      expect(row).toEqual({
+        status: "quarantined",
+        reject_reason: "non_object_payload:number",
+      });
+    });
+
     it("quarantines a row whose op sits outside SYNC_OP_OUTBOX_OPS", async () => {
       const now = new Date("2026-05-05T12:00:00.000Z");
       // The CHECK constraint blocks an out-of-tuple INSERT, so drop
@@ -528,6 +580,125 @@ describe("drainSyncOpOutbox", () => {
       });
       expect(drained).toHaveLength(1);
       expect(events).toHaveLength(0);
+    });
+
+    it("still reports onQuarantine with a quarantine_failed reason when the UPDATE itself throws", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        "{not-json",
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-broken-2",
+      );
+
+      // Wrap the real client so the quarantine UPDATE (and only that
+      // statement) fails — the SELECT that reads the poison row must
+      // still succeed so we reach the best-effort quarantine path.
+      const failingUpdateClient: SqliteMigrationClient = {
+        exec: client.exec.bind(client),
+        all: client.all.bind(client),
+        run(sql, params) {
+          if (sql.trim().startsWith("UPDATE sync_op_outbox")) {
+            throw new Error("disk I/O error");
+          }
+          return client.run(sql, params);
+        },
+      };
+
+      const events: Array<{ id: number; reason: string }> = [];
+      const drained = await drainSyncOpOutbox(failingUpdateClient, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ id: e.id, reason: e.reason }),
+      });
+
+      expect(drained).toEqual([]);
+      expect(events).toHaveLength(1);
+      expect(events[0]!.reason).toBe("quarantine_failed:disk I/O error");
+
+      // The row's status was NOT actually updated since the UPDATE threw.
+      const row = db
+        .prepare(`SELECT status FROM sync_op_outbox WHERE idempotency_key = ?`)
+        .get("idem-broken-2") as { status: string };
+      expect(row.status).toBe("pending");
+    });
+
+    it("reports a raw-string quarantine UPDATE failure reason", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        "{not-json",
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-broken-string-throw",
+      );
+
+      const failingUpdateClient: SqliteMigrationClient = {
+        exec: client.exec.bind(client),
+        all: client.all.bind(client),
+        run(sql, params) {
+          if (sql.trim().startsWith("UPDATE sync_op_outbox")) {
+            const rawFailure: unknown = "disk full";
+            throw rawFailure;
+          }
+          return client.run(sql, params);
+        },
+      };
+
+      const events: Array<{ reason: string }> = [];
+      const drained = await drainSyncOpOutbox(failingUpdateClient, {
+        userId: "u-test",
+        limit: 10,
+        now,
+        onQuarantine: (e) => events.push({ reason: e.reason }),
+      });
+
+      expect(drained).toEqual([]);
+      expect(events).toEqual([{ reason: "quarantine_failed:disk full" }]);
+    });
+
+    it("reports a raw-string JSON.parse failure reason", async () => {
+      const now = new Date("2026-05-05T12:00:00.000Z");
+      db.prepare(
+        `INSERT INTO sync_op_outbox
+           (user_id, table_name, op, row, client_ts, idempotency_key)
+         VALUES (?, ?, 'increment', ?, ?, ?)`,
+      ).run(
+        "u-test",
+        "routine_streaks",
+        JSON.stringify({ delta: 1 }),
+        "2026-05-05T11:00:00.000+00:00",
+        "idem-raw-parse",
+      );
+      const parseSpy = vi.spyOn(JSON, "parse").mockImplementationOnce(() => {
+        const rawFailure: unknown = "raw parse failure";
+        throw rawFailure;
+      });
+
+      try {
+        const events: Array<{ reason: string }> = [];
+        const drained = await drainSyncOpOutbox(client, {
+          userId: "u-test",
+          limit: 10,
+          now,
+          onQuarantine: (e) => events.push({ reason: e.reason }),
+        });
+
+        expect(drained).toEqual([]);
+        expect(events).toEqual([{ reason: "parse_failed:raw parse failure" }]);
+      } finally {
+        parseSpy.mockRestore();
+      }
     });
 
     it("propagates SQL errors when the table is missing", async () => {

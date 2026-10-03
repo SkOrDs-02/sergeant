@@ -9,11 +9,12 @@
  * modal `open` state, keeping it out of the entry bundle (initiative 0017).
  */
 
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { Icon } from "./Icon";
-import { useFocusTrap } from "../../hooks/useFocusTrap";
+import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
 import {
   ShortcutRegistryContext,
   type KeyboardShortcut,
@@ -34,7 +35,7 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
   },
   {
     keys: ["Cmd", "/"],
-    description: "Відкрити AI-асистента",
+    description: "Відкрити Сержанта",
     category: "Загальні",
   },
 
@@ -53,14 +54,20 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
     category: "Навігація",
   },
 
-  // Actions
+  // Actions — обробники в `useHubKeyboardShortcuts` + `RootLayout`. До
+  // 2026-09-16 `N` і `Cmd+Z` тут стояли без обробників (фантоми аудиту
+  // дизайн-доків); тепер обидва живі, і модалка каже рівно те, що робить.
   {
     keys: ["N"],
-    description: "Нова запис (в контексті модуля)",
+    description: "Новий запис у поточному модулі, на хабі: швидке додавання",
     category: "Дії",
   },
-  { keys: ["Cmd", "S"], description: "Зберегти", category: "Дії" },
-  { keys: ["Cmd", "Z"], description: "Скасувати дію", category: "Дії" },
+  { keys: ["Cmd", "S"], description: "Зберегти форму", category: "Дії" },
+  {
+    keys: ["Cmd", "Z"],
+    description: "Повернути щойно видалене, поки видно тост",
+    category: "Дії",
+  },
 ];
 
 interface KeyboardShortcutsModalProps {
@@ -88,7 +95,12 @@ export function KeyboardShortcutsModal({
   onClose,
   shortcuts = DEFAULT_SHORTCUTS,
 }: KeyboardShortcutsModalProps) {
-  const modalRef = useFocusTrap<HTMLDivElement>(open, onClose);
+  const modalRef = useRef<HTMLDivElement>(null);
+  useDialogFocusTrap(open, modalRef, {
+    onEscape: onClose,
+    inertBackground: true,
+  });
+  useBodyScrollLock(open);
   const registry = useContext(ShortcutRegistryContext);
 
   // Merge base shortcuts with any registered by modules
@@ -119,7 +131,7 @@ export function KeyboardShortcutsModal({
       {/* Backdrop */}
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 cursor-default"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-base cursor-default"
         onClick={onClose}
         aria-label="Закрити модальне вікно"
         tabIndex={-1}
@@ -131,7 +143,7 @@ export function KeyboardShortcutsModal({
         className={cn(
           "relative w-full max-w-lg max-h-[80vh] overflow-y-auto",
           "bg-panel border border-line rounded-2xl shadow-float",
-          "animate-in fade-in zoom-in-95 duration-200",
+          "animate-in fade-in zoom-in-95 duration-base",
         )}
       >
         {/* Header */}
@@ -148,7 +160,7 @@ export function KeyboardShortcutsModal({
             className="p-2 rounded-xl text-muted hover:text-text hover:bg-surface transition-colors"
             aria-label="Закрити"
           >
-            <Icon name="x" size={20} />
+            <Icon name="close" size="lg" />
           </button>
         </div>
 
@@ -163,7 +175,7 @@ export function KeyboardShortcutsModal({
                     key={idx}
                     className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-surface/50 transition-colors"
                   >
-                    <span className="text-sm text-text">
+                    <span className="text-style-body text-text">
                       {shortcut.description}
                     </span>
                     <div className="flex items-center gap-1">
@@ -186,8 +198,8 @@ export function KeyboardShortcutsModal({
 
         {/* Footer hint */}
         <div className="p-4 border-t border-line text-center">
-          <p className="text-xs text-muted">
-            Натисни <KeyBadge>?</KeyBadge> будь-де щоб відкрити цю довідку
+          <p className="text-style-caption text-muted">
+            Натисни <KeyBadge>?</KeyBadge> будь-де, щоб відкрити цю довідку.
           </p>
         </div>
       </div>

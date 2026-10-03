@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { loadSavedRecipes, type SavedRecipe } from "../lib/recipeBookStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -9,15 +9,19 @@ export function useSavedRecipesList(): { recipes: SavedRecipe[] } {
     loadSavedRecipes(),
   );
 
-  // Stage 13 PR #073 of `docs/planning/storage-roadmap.md` — recipes
+  // Stage 13 PR #073 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — recipes
   // live exclusively in the SQLite warm cache after the MMKV-write
   // tombstone. The cache tick is the only re-render signal.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setRecipes(loadSavedRecipes());
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setRecipes(loadSavedRecipes());
+    }
+  }
 
   return { recipes };
 }

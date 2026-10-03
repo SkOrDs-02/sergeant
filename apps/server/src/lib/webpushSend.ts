@@ -21,7 +21,8 @@ import { elapsedMs, sleep } from "./timing.js";
  * Класифікація результату повертається у `WebPushSendResult.outcome`:
  *
  *   ok              — successfull delivery (2xx)
- *   invalid_endpoint — 404/410 → soft-delete підписки (caller вирішує)
+ *   invalid_endpoint — 404/410 або хост поза allowlist-ом push-сервісів
+ *                     → soft-delete підписки (caller вирішує)
  *   rate_limited    — 429
  *   timeout         — AbortController спрацював
  *   circuit_open    — breaker open, запит навіть не відправлявся
@@ -81,7 +82,7 @@ export interface WebPushSendResult {
   outcome: WebPushOutcome;
   /** Upstream HTTP status, якщо відомо. Timeout/circuit — undefined. */
   statusCode?: number | undefined;
-  /** Серіалізоване повідомлення помилки для логування caller-ом. */
+  /** Узагальнена причина, безпечна для показу клієнту. Деталі — у логах. */
   errorMessage?: string | undefined;
   /** Весь час wrapper-а, включно з breaker-check і retry-sleep-ами. */
   durationMs: number;
@@ -107,6 +108,41 @@ function originOf(endpoint: string): string {
     return "unknown";
   }
 }
+
+/**
+ * Хости web-push-сервісів, з якими нам взагалі є про що говорити. `endpoint`
+ * приходить із тіла запиту користувача і зберігається в БД як є, тож без
+ * allowlist-а це прямий SSRF: сервер піде по будь-якому URL, включно з
+ * внутрішньою мережею. Перевірка стоїть тут, а не лише на записі, бо в БД
+ * уже можуть лежати рядки, зареєстровані до неї.
+ */
+const PUSH_ENDPOINT_HOSTS: readonly string[] = [
+  "fcm.googleapis.com",
+  "android.googleapis.com",
+  "web.push.apple.com",
+  "push.services.mozilla.com",
+  "notify.windows.com",
+];
+
+function isAllowedEndpoint(endpoint: string): boolean {
+  let host: string;
+  try {
+    const u = new URL(endpoint);
+    if (u.protocol !== "https:") return false;
+    host = u.hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return PUSH_ENDPOINT_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+}
+
+/**
+ * Те, що бачить клієнт (`/api/push/test` віддає `errors[]` 1-в-1). Сирий
+ * текст мережевої помилки зробив би з ручки сканер: за різницею
+ * «connection refused» / «timeout» видно, які хости живі. Деталі лишаються
+ * у логах.
+ */
+const CLIENT_SAFE_ERROR = "push_upstream_error";
 
 function getBreaker(origin: string): BreakerState {
   let s = state.breakers.get(origin);
@@ -198,6 +234,19 @@ export async function sendWebPush(
   const origin = originOf(subscription.endpoint);
   const start = process.hrtime.bigint();
 
+  if (!isAllowedEndpoint(subscription.endpoint)) {
+    const ms = elapsedMs(start);
+    recordExternalHttp("push", "invalid_endpoint", ms);
+    logger.warn({ msg: "push_endpoint_not_allowed", origin });
+    // `invalid_endpoint`, а не `error`: caller уже вміє прибирати такі
+    // підписки, тож рядки з чужими URL самі вимиваються з БД.
+    return {
+      outcome: "invalid_endpoint",
+      durationMs: ms,
+      attempts: 0,
+    };
+  }
+
   if (isBreakerOpen(origin)) {
     const ms = elapsedMs(start);
     recordExternalHttp("push", "circuit_open", ms);
@@ -268,7 +317,7 @@ export async function sendWebPush(
     return {
       outcome: "timeout",
       durationMs: ms,
-      errorMessage: message,
+      errorMessage: CLIENT_SAFE_ERROR,
       attempts: maxAttempts,
     };
   }
@@ -280,7 +329,7 @@ export async function sendWebPush(
       outcome: "invalid_endpoint",
       statusCode: lastStatus,
       durationMs: ms,
-      errorMessage: message,
+      errorMessage: CLIENT_SAFE_ERROR,
       attempts: maxAttempts,
     };
   }
@@ -297,7 +346,7 @@ export async function sendWebPush(
       outcome: "rate_limited",
       statusCode: lastStatus,
       durationMs: ms,
-      errorMessage: message,
+      errorMessage: CLIENT_SAFE_ERROR,
       attempts: maxAttempts,
     };
   }
@@ -316,7 +365,7 @@ export async function sendWebPush(
     outcome: "error",
     statusCode: lastStatus,
     durationMs: ms,
-    errorMessage: message,
+    errorMessage: CLIENT_SAFE_ERROR,
     attempts: maxAttempts,
   };
 }

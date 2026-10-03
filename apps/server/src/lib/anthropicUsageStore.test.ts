@@ -17,6 +17,9 @@ vi.mock("../db.js", () => ({
   default: { query: queryMock },
   pool: { query: queryMock },
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withSubjectContext: (_subject: string, fn: (db: unknown) => unknown) =>
+    fn({ query: queryMock }),
 }));
 
 vi.mock("../obs/logger.js", () => ({
@@ -44,7 +47,11 @@ describe("recordAnthropicUsageToDb — UPSERT shape", () => {
     expect(queryMock).toHaveBeenCalledTimes(1);
     const [sql, params] = queryMock.mock.calls[0]!;
     expect(sql).toMatch(/INSERT INTO ai_usage_daily/);
-    expect(sql).toMatch(/ON CONFLICT \(subject_key, usage_day, bucket\)/);
+    // Грануляція включає `endpoint` з міграції 091: без нього рядки різних
+    // кроків (перший тур / синтез / digest) зливаються, щойно поділять модель.
+    expect(sql).toMatch(
+      /ON CONFLICT \(subject_key, usage_day, bucket, endpoint\)/,
+    );
     expect(sql).toMatch(/est_cost_usd\s*=\s*ai_usage_daily\.est_cost_usd/);
     expect(params).toEqual([
       ANTHROPIC_PROVIDER_SUBJECT,
@@ -55,6 +62,13 @@ describe("recordAnthropicUsageToDb — UPSERT shape", () => {
       1_500, // total
       // 1000 × $3/MTok + 500 × $15/MTok = $0.003 + $0.0075 = $0.0105
       expect.closeTo(0.0105, 6),
+      // Міграції 104/106: крок, кеш-токени і реально списана сума. Без
+      // ендпоінта рядки різних кроків зливаються, щойно поділять модель.
+      // Sentinel-канон 'legacy' (не 'unknown') — узгоджено з backfill-ом.
+      "legacy",
+      0, // cache_read
+      0, // cache_creation
+      null, // actual_cost_usd — шлюз ціни не повернув
     ]);
   });
 
@@ -89,6 +103,40 @@ describe("recordAnthropicUsageToDb — UPSERT shape", () => {
     expect(params![5]).toBe(600);
     // pricing невідомий → est_cost_usd=0, але tokens усе одно записуємо.
     expect(params![6]).toBe(0);
+  });
+});
+
+describe("recordAnthropicUsageToDb — per-user dual-write", () => {
+  it("пише ДВА рядки (global + u:<userId>) окремими UPSERT-ами коли userId заданий", async () => {
+    await recordAnthropicUsageToDb(
+      "claude-3-5-sonnet-20241022",
+      { input_tokens: 1_000, output_tokens: 500 },
+      "user_abc123",
+    );
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    // Виклик 1 — provider-aggregate.
+    const [, globalParams] = queryMock.mock.calls[0]!;
+    expect(globalParams![0]).toBe(ANTHROPIC_PROVIDER_SUBJECT);
+    // Виклик 2 — per-user, той самий bucket/tokens/cost.
+    const [sql2, userParams] = queryMock.mock.calls[1]!;
+    expect(sql2).toMatch(/INSERT INTO ai_usage_daily/);
+    expect(userParams![0]).toBe("u:user_abc123");
+    expect(userParams![2]).toBe("anthropic:claude-3-5-sonnet-20241022");
+    expect(userParams![3]).toBe(1_000); // input
+    expect(userParams![4]).toBe(500); // output
+    expect(userParams![5]).toBe(1_500); // total
+    expect(userParams![6] as number).toBeCloseTo(0.0105, 6); // cost USD
+  });
+
+  it("пише ЛИШЕ global рядок коли userId порожній/whitespace", async () => {
+    await recordAnthropicUsageToDb(
+      "claude-3-5-sonnet-20241022",
+      { input_tokens: 1_000, output_tokens: 500 },
+      "   ",
+    );
+    expect(queryMock).toHaveBeenCalledTimes(1);
+    const [, params] = queryMock.mock.calls[0]!;
+    expect(params![0]).toBe(ANTHROPIC_PROVIDER_SUBJECT);
   });
 });
 

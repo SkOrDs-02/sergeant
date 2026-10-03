@@ -1,15 +1,18 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-03
  * Status: Active
  */
 import { memo, useState } from "react";
-import { pluralDays } from "@sergeant/shared";
-import { daysUntil, fmtDate } from "../utils";
+import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
+import { Money } from "@shared/components/ui/Money";
+import { fmtDate } from "../utils";
+import { getSubscriptionDueDate } from "../lib/upcomingSchedule";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
+import { Icon } from "@shared/components/ui/Icon";
 import {
   getLastTxForSubscription,
   getSubscriptionAmountMeta,
@@ -42,24 +45,6 @@ interface SubCardProps {
   showBalance?: boolean;
 }
 
-const EMOJI_OPTIONS = [
-  "📱",
-  "🎵",
-  "☁️",
-  "▶️",
-  "🎬",
-  "📧",
-  "📸",
-  "🤖",
-  "🎮",
-  "📚",
-  "🏋️",
-  "💊",
-  "🔒",
-  "🌐",
-  "📡",
-];
-
 // Картка підписки. Всередині тримає лише локальний стан редагування,
 // тож memo уникає перерендеру при змінах інших підписок/сторінки.
 function SubCardComponent({
@@ -83,18 +68,25 @@ function SubCardComponent({
   const { amount, currency } = getSubscriptionAmountMeta(sub, [
     ...transactions,
   ]);
-  const days = daysUntil(Number(sub.billingDay) || 1);
+  const [now] = useState(Date.now);
+  const days = kyivCalendarDaysBetween(
+    getSubscriptionDueDate(
+      Number(sub.billingDay) || 1,
+      new Date(now),
+      lastTx?.time,
+    ).getTime(),
+    now,
+  );
   const veryClose = days <= 1;
   const soon = days <= 3;
 
   const saveEdit = () => {
     if (!form.name || !form.billingDay) return;
-    // The day-of-month input is a free <input type="number">, so the
-    // min/max attributes are only browser hints — keyboard/paste/programmatic
-    // entry bypasses them. Clamp to the calendar range here so we never
-    // persist `0`, `99`, or `NaN` and render nonsense like "Через 18 днів · 0-го".
-    const parsedDay = Math.trunc(Number(form.billingDay));
-    if (!Number.isFinite(parsedDay) || parsedDay < 1 || parsedDay > 31) {
+    // Для вільного <input type="number"> min/max — лише підказки браузера:
+    // клавіатура, вставка й програмний ввід можуть їх оминути. Приймаємо лише
+    // цілі календарні дні, щоб `1.5` не перетворювалося непомітно на день 1.
+    const parsedDay = Number(form.billingDay);
+    if (!Number.isInteger(parsedDay) || parsedDay < 1 || parsedDay > 31) {
       return;
     }
     onEdit?.({
@@ -107,39 +99,32 @@ function SubCardComponent({
     setEditing(false);
   };
 
+  const parsedBillingDay = Number(form.billingDay);
+  const editValid =
+    form.name.trim().length > 0 &&
+    Number.isInteger(parsedBillingDay) &&
+    parsedBillingDay >= 1 &&
+    parsedBillingDay <= 31;
+
   if (editing) {
     return (
       <Card variant="finyk-soft" padding="md" className="mb-3 space-y-3">
-        <div className="flex gap-2 flex-wrap">
-          {EMOJI_OPTIONS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => setForm((f) => ({ ...f, emoji: e }))}
-              aria-label={`Вибрати ${e}`}
-              aria-pressed={form.emoji === e}
-              className={cn(
-                "text-xl w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
-                form.emoji === e
-                  ? "bg-finyk-soft ring-1 ring-finyk-ring/50"
-                  : "hover:bg-panelHi",
-              )}
-            >
-              {e}
-            </button>
-          ))}
-        </div>
         <Input
           placeholder="Назва"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <Input
-          placeholder="Ключове слово з транзакції (якщо без ручної привʼязки)"
+          placeholder="Ключове слово з операції (якщо без ручної привʼязки)"
           value={form.keyword}
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
+        {/* AI-NOTE: caption навмисно — це підказка під полем «Ключове
+            слово», а не текст для читання (density-hierarchy-spec §4). */}
+        <p className="text-style-caption text-subtle">
+          Якщо немає ручної привʼязки, для суми підписки знайду найновішу
+          витратну операцію, опис якої містить це слово.
+        </p>
         <div className="flex gap-2">
           <div className="flex-1">
             <Input
@@ -167,17 +152,22 @@ function SubCardComponent({
             </Select>
           </div>
         </div>
+        {!editValid ? (
+          <p className="text-style-caption text-subtle" role="status">
+            Заповни назву та вкажи день списання від 1 до 31.
+          </p>
+        ) : null}
         <div className="flex gap-2">
           <Button
-            variant="finyk-soft"
             size="md"
             className="flex-1"
             onClick={saveEdit}
+            disabled={!editValid}
           >
             Зберегти
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             size="md"
             className="flex-1"
             onClick={() => {
@@ -198,90 +188,119 @@ function SubCardComponent({
     );
   }
 
+  // Розкладка у два поверхи (звіт власника 2026-09-03: «шумно, обрізано»).
+  // Раніше сума, кнопка «Змінити транзакцію» та дві іконки стояли в одній
+  // правій колонці й забирали в назви половину ширини — назва рубалась
+  // на другому слові, а дата переносилась на два рядки. Тепер права
+  // колонка несе лише суму, а дії живуть окремим рядком під текстом.
   return (
     <Card
       variant="default"
       padding="md"
       className={cn(
-        "mb-3 flex items-center gap-3",
+        "mb-3",
         veryClose ? "border-danger/50" : soon ? "border-warning/40" : null,
       )}
     >
-      <span className="text-2xl shrink-0 leading-none">{sub.emoji}</span>
-      <div className="flex-1 min-w-0">
-        <div className="text-style-label truncate">{sub.name}</div>
-        <div
-          className={cn(
-            "text-xs mt-0.5",
-            veryClose
-              ? "text-danger-strong dark:text-danger"
-              : soon
-                ? "text-warning-strong dark:text-warning"
-                : "text-subtle",
-          )}
-        >
-          {veryClose
-            ? "⚠️ Завтра"
-            : soon
-              ? `⏰ Через ${days} дні`
-              : `📅 Через ${days} ${pluralDays(days)}`}{" "}
-          · {sub.billingDay}-го
-        </div>
-        {sub.linkedTxId && lastTx && (
-          <div className="text-xs text-finyk mt-0.5">
-            Привʼязано до транзакції · оновлює суму та дату
+      <div className="flex items-start gap-3">
+        <Icon
+          name="refresh-cw"
+          size="lg"
+          className="mt-0.5 shrink-0 text-finyk"
+          aria-hidden
+        />
+        <div className="flex-1 min-w-0">
+          <div className="text-style-label truncate">{sub.name}</div>
+          <div
+            className={cn(
+              "text-style-caption mt-0.5",
+              veryClose
+                ? "text-danger-strong dark:text-danger"
+                : soon
+                  ? "text-warning-strong dark:text-warning"
+                  : "text-subtle",
+            )}
+          >
+            <Icon
+              name={veryClose ? "alert-triangle" : soon ? "clock" : "calendar"}
+              size={13}
+              aria-hidden
+            />{" "}
+            {days === 0
+              ? "Сьогодні"
+              : days === 1
+                ? "Завтра"
+                : `Через ${days} ${pluralDays(days)}`}{" "}
+            · {sub.billingDay}-го
           </div>
-        )}
-        {lastTx && lastTx.time != null && (
-          <div className="text-xs text-subtle mt-0.5">
-            Останнє: {fmtDate(lastTx.time)}
+          {sub.linkedTxId && lastTx && (
+            <div className="text-style-caption text-finyk mt-0.5">
+              Привʼязано до операції · оновлює суму та дату
+            </div>
+          )}
+          {lastTx && lastTx.time != null ? (
+            <div className="text-style-caption text-subtle mt-0.5">
+              Останнє: {fmtDate(lastTx.time)}
+            </div>
+          ) : (
+            amount == null && (
+              <div className="text-style-caption text-subtle mt-0.5">
+                Ще не списувалось
+              </div>
+            )
+          )}
+        </div>
+        {amount != null && (
+          <div className="text-style-label tabular-nums shrink-0">
+            {showBalance ? (
+              // `maxFractionDigits` без `minFractionDigits` навмисно: як і
+              // раніше, «500» лишається «500», а «500,5» — «500,5». Копійки
+              // тут не факт, а залишок ділення, і дописувати «,00» до
+              // кожної підписки означало б додати шум у кожен рядок.
+              <Money amount={amount} symbol={currency} maxFractionDigits={2} />
+            ) : (
+              "••••"
+            )}
           </div>
         )}
       </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        {amount != null ? (
-          <div className="text-style-label">
-            {showBalance
-              ? `${amount.toLocaleString("uk-UA", { maximumFractionDigits: 2 })}${currency}`
-              : "••••"}
-          </div>
-        ) : (
-          <div className="text-xs text-subtle">ще не списувалось</div>
+      <div className="mt-2 flex items-center justify-end gap-1">
+        {onLinkTransactions && (
+          <Button
+            variant="ghost"
+            size="xs"
+            // AI-DANGER: `text-xs` — розмір КОНТРОЛА, не роль тексту.
+            // Це `Button` із власним `size="xs"`, якому тут збивають
+            // геометрію (`h-auto`, свій падинг), щоб він сів у ряд дій.
+            // Роль тексту описувала б інше.
+            className="px-1.5 h-auto py-0.5 text-xs text-primary hover:bg-transparent hover:underline hover:text-primary"
+            onClick={onLinkTransactions}
+          >
+            {sub.linkedTxId ? "Змінити операцію" : "Привʼязати операцію"}
+          </Button>
         )}
-        <div className="flex flex-wrap justify-end gap-1.5 mt-1">
-          {onLinkTransactions && (
-            <Button
-              variant="ghost"
-              size="xs"
-              className="px-1.5 h-auto py-0.5 text-xs text-primary hover:bg-transparent hover:underline hover:text-primary"
-              onClick={onLinkTransactions}
-            >
-              {sub.linkedTxId ? "Змінити транзакцію" : "Привʼязати транзакцію"}
-            </Button>
-          )}
-          {onEdit && (
-            <Button
-              variant="ghost"
-              size="xs"
-              iconOnly
-              aria-label="Редагувати підписку"
-              onClick={() => setEditing(true)}
-              className="text-subtle hover:text-primary"
-            >
-              ✏️
-            </Button>
-          )}
+        {onEdit && (
           <Button
             variant="ghost"
             size="xs"
             iconOnly
-            aria-label="Видалити підписку"
-            onClick={onDelete}
-            className="text-subtle hover:text-danger"
+            aria-label="Редагувати підписку"
+            onClick={() => setEditing(true)}
+            className="text-subtle hover:text-primary"
           >
-            🗑
+            <Icon name="edit" size="md" aria-hidden />
           </Button>
-        </div>
+        )}
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
+          aria-label="Видалити підписку"
+          onClick={onDelete}
+          className="text-subtle hover:text-danger"
+        >
+          <Icon name="trash" size="md" aria-hidden />
+        </Button>
       </div>
     </Card>
   );

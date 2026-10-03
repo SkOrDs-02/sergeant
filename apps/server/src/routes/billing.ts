@@ -2,13 +2,14 @@ import { Router } from "express";
 import type { Request, Response } from "express";
 import type { Pool } from "pg";
 import {
+  BillingCancelResponseSchema,
   BillingCheckoutRequestSchema,
   BillingCheckoutResponseSchema,
   BillingPortalResponseSchema,
+  BillingProvidersResponseSchema,
   BillingStatusResponseSchema,
 } from "@sergeant/shared";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireSession,
   setModule,
@@ -17,13 +18,30 @@ import {
 import {
   BillingConfigurationError,
   NoBillingCustomerError,
-  createCheckoutSession,
-  createCustomerPortalSession,
-  getSubscriptionStatus,
-  processStripeWebhook,
+  ProviderNotAvailableError,
+  getEnabledProviders,
+  providerRegistry,
+  resolveProvider,
+  type CancelSubscriptionOutcome,
+  type ProviderId,
+  liqpayProvider,
   verifyStripeSignature,
-} from "../modules/billing/stripe.js";
+  processStripeWebhook,
+  isFounderUser,
+  ensurePlataPubkey,
+  plataProvider,
+} from "../modules/billing/index.js";
+// Напряму, не через барель: знімок тягне `chat/aiQuota`, а барель імпортують
+// роути, яким цей граф не потрібен.
+import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
+import { logger } from "../obs/logger.js";
+import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
+import {
+  AppError,
+  ExternalServiceError,
+  ValidationError,
+} from "../obs/errors.js";
 
 type AuthedRequest = Request & {
   user?: { id: string; email?: string | null };
@@ -35,9 +53,59 @@ function rawBody(req: Request): Buffer {
     : Buffer.from(JSON.stringify(req.body ?? {}), "utf8");
 }
 
+/**
+ * Країна юзера для resolver-а. Sergeant — UA-market, тож дефолт `UA`;
+ * якщо перед сервером стоїть proxy з geo-хедером — беремо з нього.
+ */
+function userCountry(req: Request): string {
+  const header = req.headers["x-vercel-ip-country"];
+  const country = Array.isArray(header) ? header[0] : header;
+  return (country && country.length === 2 ? country : "UA").toUpperCase();
+}
+
+function handleBillingError(err: unknown, res: Response): boolean {
+  if (err instanceof ProviderNotAvailableError) {
+    res.status(400).json({
+      error: `Provider '${err.providerId}' is not available`,
+      code: "PROVIDER_UNAVAILABLE",
+    });
+    return true;
+  }
+  if (err instanceof BillingConfigurationError) {
+    res.status(503).json({
+      error: "Billing is not configured",
+      code: "BILLING_UNAVAILABLE",
+    });
+    return true;
+  }
+  if (err instanceof NoBillingCustomerError) {
+    res.status(409).json({
+      error: "User has no billing customer record",
+      code: "NO_BILLING_CUSTOMER",
+    });
+    return true;
+  }
+  return false;
+}
+
+type CancelAttempt = {
+  id: ProviderId;
+  outcome: CancelSubscriptionOutcome | "failed";
+};
+
 export function createBillingRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.use("/api/billing", setModule("billing"));
+
+  // Список доступних провайдерів для кнопок на /pricing.
+  r.get(
+    "/api/billing/providers",
+    requireSession(),
+    (req: AuthedRequest, res: Response) => {
+      const providers = getEnabledProviders({ country: userCountry(req) });
+      res.json(BillingProvidersResponseSchema.parse({ providers }));
+    },
+  );
 
   r.post(
     "/api/billing/checkout",
@@ -47,43 +115,85 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       limit: 10,
       windowMs: 60 * 60 * 1000,
     }),
-    asyncHandler(async (req: AuthedRequest, res: Response) => {
+    async (req: AuthedRequest, res: Response) => {
       const parsed = parseBody(BillingCheckoutRequestSchema, req);
+      const country = userCountry(req);
 
+      let providerId: ProviderId = "stripe";
       try {
+        // Явний provider → валідуємо; інакше беремо перший enabled для країни.
+        providerId = parsed.provider
+          ? resolveProvider(parsed.provider, { country })
+          : (getEnabledProviders({ country })[0] ??
+            (() => {
+              throw new ProviderNotAvailableError("none");
+            })());
+
         const payload = BillingCheckoutResponseSchema.parse(
-          await createCheckoutSession({
+          await providerRegistry[providerId].createCheckoutSession({
             pool,
-            user: {
-              id: req.user!.id,
-              email: req.user!.email ?? null,
-            },
+            user: { id: req.user!.id, email: req.user!.email ?? null },
             plan: parsed.plan,
           }),
         );
+        billingCheckoutTotal.inc({ provider: providerId, result: "ok" });
+        logger.info({
+          msg: "billing_checkout_created",
+          provider: providerId,
+          plan: parsed.plan,
+          mode: payload.mode,
+        });
         res.json(payload);
       } catch (err) {
-        if (err instanceof BillingConfigurationError) {
-          res.status(503).json({
-            error: "Billing is not configured",
-            code: "BILLING_UNAVAILABLE",
-          });
-          return;
-        }
+        const result =
+          err instanceof ProviderNotAvailableError
+            ? "unavailable"
+            : err instanceof BillingConfigurationError
+              ? "unavailable"
+              : "error";
+        billingCheckoutTotal.inc({
+          provider: parsed.provider ?? providerId,
+          result,
+        });
+        if (handleBillingError(err, res)) return;
         throw err;
       }
-    }),
+    },
   );
 
   r.get(
     "/api/billing/status",
     requireSession(),
-    asyncHandler(async (req: AuthedRequest, res: Response) => {
-      const payload = BillingStatusResponseSchema.parse(
-        await getSubscriptionStatus(pool, req.user!.id),
+    async (req: AuthedRequest, res: Response) => {
+      const userId = req.user!.id;
+      // Founder bypass — same `isFounderUser` check `requirePlan()` gates on,
+      // so a founder never sees a paywall the status read didn't also clear
+      // (round-2 UI audit S1). Інакше рядок підписки читаємо будь-яким
+      // провайдером: усі три віддають ту саму serialize-форму з таблиці.
+      const subscription = isFounderUser(userId)
+        ? {
+            id: null,
+            provider: "manual" as const,
+            plan: "pro" as const,
+            status: "active",
+            active: true,
+            currentPeriodEnd: null,
+            cancelAtPeriodEnd: false,
+          }
+        : (await liqpayProvider.getSubscriptionStatus(pool, userId))
+            .subscription;
+      // Знімок доступу рахується однаково для всіх, включно з founder-ом:
+      // `getUserPlan` усередині віддає йому синтетичний Pro.
+      const access = await buildAccessSnapshot(pool, userId);
+      // `active` дзеркалить стан доступу: сам рядок `trialing` лишається
+      // після кінця trial, і статус без дати казав би `true` вже Free-людині.
+      res.json(
+        BillingStatusResponseSchema.parse({
+          subscription: { ...subscription, active: access.state !== "free" },
+          access,
+        }),
       );
-      res.json(payload);
-    }),
+    },
   );
 
   r.post(
@@ -94,79 +204,220 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       limit: 10,
       windowMs: 60 * 60 * 1000,
     }),
-    asyncHandler(async (req: AuthedRequest, res: Response) => {
+    async (req: AuthedRequest, res: Response) => {
+      // Provider беремо з ВЛАСНОЇ активної підписки юзера (authoritative), а
+      // не з geo — інакше legacy Stripe-підписник у UA потрапив би у no-op
+      // LiqPay-portal і втратив би доступ до оновлення картки/інвойсів.
+      // Fallback на geo лише коли підписки ще нема. `manual` (founder/comp)
+      // не має registry-провайдера → теж fallback на geo.
+      const { rows } = await pool.query<{ provider: string }>(
+        `SELECT provider
+           FROM subscriptions
+          WHERE user_id = $1 AND status IN ('active', 'trialing', 'past_due')
+          ORDER BY updated_at DESC
+          LIMIT 1`,
+        [req.user!.id],
+      );
+      const owned = rows[0]?.provider;
+      const providerId: ProviderId =
+        owned === "stripe" || owned === "liqpay" || owned === "plata"
+          ? owned
+          : (getEnabledProviders({ country: userCountry(req) })[0] ?? "stripe");
       try {
         const payload = BillingPortalResponseSchema.parse(
-          await createCustomerPortalSession({
+          await providerRegistry[providerId].createCustomerPortalSession({
             pool,
-            userId: req.user!.id,
+            user: { id: req.user!.id, email: req.user!.email ?? null },
           }),
         );
         res.json(payload);
       } catch (err) {
-        if (err instanceof BillingConfigurationError) {
-          res.status(503).json({
-            error: "Billing is not configured",
-            code: "BILLING_UNAVAILABLE",
-          });
-          return;
-        }
-        if (err instanceof NoBillingCustomerError) {
-          res.status(409).json({
-            error: "User has no billing customer record",
-            code: "NO_BILLING_CUSTOMER",
-          });
-          return;
-        }
+        if (handleBillingError(err, res)) return;
         throw err;
       }
-    }),
+    },
   );
 
+  // Власна кнопка «Скасувати Pro» (LiqPay/Plata не мають Customer Portal).
   r.post(
-    "/api/billing/stripe-webhook",
-    asyncHandler(async (req: Request, res: Response) => {
-      const raw = rawBody(req);
-      const signature =
-        typeof req.headers["stripe-signature"] === "string"
-          ? req.headers["stripe-signature"]
-          : undefined;
-      if (!verifyStripeSignature(raw, signature)) {
+    "/api/billing/cancel",
+    requireSession(),
+    rateLimitExpress({
+      key: "api:billing:cancel",
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    }),
+    async (req: AuthedRequest, res: Response) => {
+      const userId = req.user!.id;
+      // Питаємо всіх провайдерів (кожен — `none` без своєї підписки).
+      // Per-provider try/catch — щоб транзієнтна помилка одного провайдера
+      // (LiqPay 5xx, Stripe not-configured на UA-деплої) не валила cancel,
+      // який в іншого уже пройшов. Той самий патерн, що dataRights +
+      // internal/billing (ADR-0016).
+      //
+      // Але відповідь роблять РЕЗУЛЬТАТИ, а не відсутність винятків: раніше
+      // роут завжди віддавав `{ok:true}`, тож «Скасувати Premium» виглядало
+      // як no-op і для тих, кому скасовувати нічого (founder, `manual`), і
+      // для тих, кому провайдер відмовив.
+      const attempts = await Promise.all(
+        (["stripe", "liqpay", "plata"] as ProviderId[]).map(
+          async (id): Promise<CancelAttempt> => {
+            try {
+              return {
+                id,
+                outcome: await providerRegistry[id].cancelSubscription(
+                  pool,
+                  userId,
+                ),
+              };
+            } catch (err) {
+              logger.warn({
+                msg: "billing_cancel_provider_failed",
+                provider: id,
+                err: err instanceof Error ? err.message : String(err),
+              });
+              return { id, outcome: "failed" };
+            }
+          },
+        ),
+      );
+
+      const accepted = attempts.find(
+        (a) => a.outcome === "canceled" || a.outcome === "already_canceling",
+      );
+      if (accepted) {
+        logger.info({
+          msg: "billing_cancel_accepted",
+          provider: accepted.id,
+          outcome: accepted.outcome,
+        });
+        res.json(BillingCancelResponseSchema.parse({ ok: true }));
+        return;
+      }
+      // Через errorHandler, а не інлайновий `res.status().json()`: так
+      // клієнт отримує ще й `requestId`, а подія — метрику й структурований
+      // лог (гейт `check-inline-error-responses`).
+      if (attempts.some((a) => a.outcome === "failed")) {
+        throw new ExternalServiceError(
+          "Payment provider did not confirm the cancellation",
+          { code: "PROVIDER_CANCEL_FAILED" },
+        );
+      }
+      throw new AppError("No active subscription to cancel", {
+        status: 409,
+        code: "NO_ACTIVE_SUBSCRIPTION",
+      });
+    },
+  );
+
+  // ── Webhooks (per-provider; raw body — див. bodySizePolicy) ──────────
+  r.post("/api/billing/stripe-webhook", async (req: Request, res: Response) => {
+    const raw = rawBody(req);
+    const signature =
+      typeof req.headers["stripe-signature"] === "string"
+        ? req.headers["stripe-signature"]
+        : undefined;
+    if (!verifyStripeSignature(raw, signature)) {
+      emitSecurityEvent({
+        event: "stripe_webhook_bad_sig",
+        severity: "high",
+        details:
+          signature === undefined
+            ? "stripe signature header missing"
+            : "stripe signature mismatch",
+      });
+      billingWebhookTotal.inc({ provider: "stripe", status: "bad_sig" });
+      throw new ValidationError("Invalid Stripe signature");
+    }
+    billingWebhookTotal.inc({ provider: "stripe", status: "verified" });
+    const event = JSON.parse(raw.toString("utf8")) as {
+      id?: unknown;
+      type?: unknown;
+      data?: unknown;
+    };
+    if (typeof event.id !== "string" || typeof event.type !== "string") {
+      throw new ValidationError("Invalid Stripe event");
+    }
+    const stripeEvent =
+      event.data && typeof event.data === "object"
+        ? {
+            id: event.id,
+            type: event.type,
+            data: event.data as { object?: Record<string, unknown> },
+          }
+        : { id: event.id, type: event.type };
+    const result = await processStripeWebhook(pool, stripeEvent, raw);
+    res.json(result);
+  });
+
+  // LiqPay server callback — form `data` + `signature` (підпис над `data`).
+  r.post(
+    "/api/billing/liqpay-callback",
+    async (req: Request, res: Response) => {
+      const params = new URLSearchParams(rawBody(req).toString("utf8"));
+      const data = params.get("data");
+      const signature = params.get("signature");
+      if (
+        !data ||
+        !signature ||
+        !liqpayProvider.verifyWebhookSignature(data, signature)
+      ) {
         emitSecurityEvent({
-          event: "stripe_webhook_bad_sig",
+          event: "liqpay_webhook_bad_sig",
+          severity: "high",
+          details:
+            !data || !signature
+              ? "liqpay data/signature missing"
+              : "liqpay signature mismatch",
+        });
+        billingWebhookTotal.inc({ provider: "liqpay", status: "bad_sig" });
+        res.status(400).json({ error: "Invalid LiqPay signature" });
+        return;
+      }
+      billingWebhookTotal.inc({ provider: "liqpay", status: "verified" });
+      await liqpayProvider.processWebhook(pool, data);
+      res.json({ ok: true });
+    },
+  );
+
+  // Plata (monopay) webhooks — JSON body, `X-Sign` (ECDSA над сирим тілом).
+  // Два окремих роути (`chargeUrl`/`statusUrl`) роблять те саме
+  // verify-then-enqueue: жоден не пише у `subscriptions` напряму, обидва
+  // лише тригерять звірку проти `subscription/status` (arbiter стану).
+  const plataWebhookHandler =
+    () =>
+    async (req: Request, res: Response): Promise<void> => {
+      const raw = rawBody(req).toString("utf8");
+      const header = req.headers["x-sign"];
+      const signature = Array.isArray(header) ? header[0] : header;
+      // Warm pubkey перед verify; на mismatch — рефетч (rotation) і одна повторна спроба.
+      await ensurePlataPubkey();
+      let ok =
+        typeof signature === "string" &&
+        plataProvider.verifyWebhookSignature(raw, signature);
+      if (!ok && typeof signature === "string") {
+        await ensurePlataPubkey(true);
+        ok = plataProvider.verifyWebhookSignature(raw, signature);
+      }
+      if (!ok) {
+        emitSecurityEvent({
+          event: "plata_webhook_bad_sig",
           severity: "high",
           details:
             signature === undefined
-              ? "stripe signature header missing"
-              : "stripe signature mismatch",
+              ? "plata X-Sign missing"
+              : "plata signature mismatch",
         });
-        res.status(400).json({ error: "Invalid Stripe signature" });
+        billingWebhookTotal.inc({ provider: "plata", status: "bad_sig" });
+        res.status(400).json({ error: "Invalid Plata signature" });
         return;
       }
-
-      const event = JSON.parse(raw.toString("utf8")) as {
-        id?: unknown;
-        type?: unknown;
-        data?: unknown;
-      };
-      if (typeof event.id !== "string" || typeof event.type !== "string") {
-        res.status(400).json({ error: "Invalid Stripe event" });
-        return;
-      }
-
-      const stripeEvent =
-        event.data && typeof event.data === "object"
-          ? {
-              id: event.id,
-              type: event.type,
-              data: event.data as { object?: Record<string, unknown> },
-            }
-          : { id: event.id, type: event.type };
-
-      const result = await processStripeWebhook(pool, stripeEvent, raw);
-      res.json(result);
-    }),
-  );
+      billingWebhookTotal.inc({ provider: "plata", status: "verified" });
+      await plataProvider.processWebhook(pool, raw);
+      res.json({ ok: true });
+    };
+  r.post("/api/billing/plata-charge", plataWebhookHandler());
+  r.post("/api/billing/plata-status", plataWebhookHandler());
 
   return r;
 }

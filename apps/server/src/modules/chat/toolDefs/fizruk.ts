@@ -25,7 +25,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         exercises: {
           type: "array",
           description:
-            "Список вправ. Кожна вправа: name (обов'язково), sets, reps, weight (опційно).",
+            "Список вправ. Кожна вправа: name (обовʼязково), sets, reps, weight (опційно).",
           items: {
             type: "object",
             properties: {
@@ -78,9 +78,14 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
           type: "string",
           description: "Дата YYYY-MM-DD (опційно, default — сьогодні)",
         },
+        // AI-CONTEXT (2026-08-07): «опційно, default — зараз» модель читала
+        // як запрошення підставити правдоподібну годину. О 02:48 вона
+        // писала 09:00 — знала день із контексту й не знала часу. Тепер
+        // контекст несе `[Зараз] HH:MM`, а опис прямо забороняє вгадувати.
         time: {
           type: "string",
-          description: "Час початку HH:MM (опційно, default — зараз)",
+          description:
+            "Час початку HH:MM. Заповнюй ЛИШЕ якщо користувач назвав час явно («почав о 7:30»). Не вгадуй і не бери типову годину — без цього поля виконавець сам поставить поточний час.",
         },
       },
     },
@@ -103,7 +108,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "log_measurement",
     description:
-      "Записати антропометрію у Фізрук/Заміри. Можна передавати лише ті поля, які виміряні. Додає новий запис у журнал замірів (не перезаписує попередні).",
+      "Записати антропометрію у Фізрук/Заміри. Можна передавати лише ті поля, які виміряні. Додає новий запис у журнал замірів (не перезаписує попередні). Якщо передано weight_kg — вага йде в те саме джерело істини ваги тіла, що й log_wellbeing і log_weight, тож КБЖВ-цілі оновляться незалежно від обраного інструмента.",
     input_schema: {
       type: "object",
       properties: {
@@ -155,7 +160,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "log_wellbeing",
     description:
-      "Записати самопочуття у щоденний журнал Фізрука: сон, енергія 1-5, настрій 1-5, вага, нотатка. Можна передавати лише частину полів.",
+      "Записати самопочуття у щоденний журнал Фізрука: сон, енергія 1-5, настрій 1-5, вага, нотатка. Можна передавати лише частину полів. Поле weight_kg пише в те саме джерело істини ваги тіла, що й log_measurement і log_weight — обирай цей інструмент, коли крім ваги є сон/енергія/настрій.",
     input_schema: {
       type: "object",
       properties: {
@@ -170,7 +175,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "log_weight",
     description:
-      "Записати поточну вагу (кг) у щоденний журнал Фізрука. Аналог log_wellbeing, але лише з вагою — швидкий шлях для прокидання ваги.",
+      "Записати поточну вагу (кг) у щоденний журнал Фізрука. Аналог log_wellbeing, але лише з вагою — швидкий шлях для прокидання ваги. Вага йде в те саме джерело істини, що й у log_wellbeing та log_measurement: від вибору інструмента результат для користувача не залежить.",
     strict: true,
     input_schema: {
       type: "object",
@@ -184,14 +189,14 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "suggest_workout",
     description:
-      "Порадити тренування на основі історії: які м'язи давно не тренували, recovery atlas. Відповідай текстом-порадою (без запису), але якщо користувач скаже 'запиши' — використай plan_workout.",
+      "Порадити тренування на основі історії: які мʼязи давно не тренували, recovery atlas. Відповідай текстом-порадою (без запису), але якщо користувач скаже 'запиши' — використай plan_workout.",
     input_schema: {
       type: "object",
       properties: {
         focus: {
           type: "string",
           description:
-            "Бажаний фокус: 'upper', 'lower', 'full', 'push', 'pull', 'cardio' або група м'язів (опційно)",
+            "Бажаний фокус: 'upper', 'lower', 'full', 'push', 'pull', 'cardio' або група мʼязів (опційно)",
         },
       },
     },
@@ -219,7 +224,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
   {
     name: "compare_progress",
     description:
-      "Порівняти прогрес по вправі або м'язовій групі за період. Повертає текстовий аналіз з числами.",
+      "Порівняти прогрес по вправі або мʼязовій групі за період. Повертає текстовий аналіз з числами.",
     input_schema: {
       type: "object",
       properties: {
@@ -229,7 +234,7 @@ export const FIZRUK_TOOLS: AnthropicTool[] = [
         },
         muscle_group: {
           type: "string",
-          description: "Група м'язів (опційно, напр. 'chest', 'biceps')",
+          description: "Група мʼязів (опційно, напр. 'chest', 'biceps')",
         },
         period_days: {
           type: "number",

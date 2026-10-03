@@ -7,7 +7,7 @@ import {
   type SyncV2IncrementPushOp,
 } from "./syncV2.increment.outboxEnqueue";
 
-// PR #042e-mapping (`docs/planning/storage-roadmap.md`).
+// PR #042e-mapping (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // This file pins the field-name mapping between the api-client envelope
 // (`SyncV2PushOp` with `op='increment'`) and the db-schema enqueue input
@@ -20,7 +20,7 @@ import {
 // with the db-schema source, otherwise the assignability checks below
 // fail at compile time, and the runtime asserts fail in CI.
 
-describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
+describe("mapSyncV2IncrementOpToOutboxInput: happy path", () => {
   it("flattens snake_case → camelCase byte-aligned (table, row, client_ts, idempotency_key)", () => {
     const built = buildSyncV2IncrementOp({
       table: "routine_streaks",
@@ -124,7 +124,7 @@ describe("mapSyncV2IncrementOpToOutboxInput — happy path", () => {
   });
 });
 
-describe("mapSyncV2IncrementOpToOutboxInput — runtime assertion", () => {
+describe("mapSyncV2IncrementOpToOutboxInput: runtime assertion", () => {
   it("throws when op.op !== 'increment' (defence against unsafe casts)", () => {
     const lwwOp: SyncV2PushOp = {
       table: "routine_streaks",

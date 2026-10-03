@@ -18,6 +18,7 @@ vi.mock("@shared/api", () => ({
 }));
 
 import { usePlan } from "./usePlan";
+import { accessFixture } from "../../test/helpers/billingAccess";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -56,7 +57,9 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
         status: null,
         active: false,
         currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
       },
+      access: accessFixture("free"),
     });
     const { result } = renderHook(() => usePlan(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -74,7 +77,9 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
         status: "active",
         active: true,
         currentPeriodEnd: "2026-06-01T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
       },
+      access: accessFixture("pro"),
     });
     const { result } = renderHook(() => usePlan(), { wrapper: makeWrapper() });
     await waitFor(() => expect(result.current.isPro).toBe(true));
@@ -93,5 +98,25 @@ describe("usePlan (web billing skeleton — initiative 0010 Phase 4.1)", () => {
     expect(result.current.isPro).toBe(false);
     // retry=false in the hook contract — the mock fires exactly once.
     expect(statusMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads the plan from the server access snapshot: trial counts as Premium", async () => {
+    statusMock.mockResolvedValue({
+      subscription: {
+        id: 7,
+        provider: "stripe",
+        plan: "pro",
+        status: "trialing",
+        active: true,
+        currentPeriodEnd: "2026-07-15T00:00:00.000Z",
+        cancelAtPeriodEnd: false,
+      },
+      access: accessFixture("trial"),
+    });
+    const { result } = renderHook(() => usePlan(), { wrapper: makeWrapper() });
+    await waitFor(() => expect(result.current.isPro).toBe(true));
+    expect(result.current.plan).toBe("pro");
+    expect(result.current.subscription?.status).toBe("trialing");
+    expect(result.current.access?.state).toBe("trial");
   });
 });

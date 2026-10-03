@@ -2,7 +2,7 @@
  * DB helpers for `tg_alert_acks` (ADR-0038, Wave 3 §3.2).
  *
  * Pure functions over a `pg.Pool`. No caching, no singletons. Caller
- * brings its own pool — same pattern as `modules/openclaw/store.ts`.
+ * brings its own pool — same pattern as `modules/topic-archive/store.ts`.
  *
  * Lifecycle (one row per `alert_id`):
  *
@@ -227,8 +227,9 @@ export interface ListPendingAlertsFilters {
 
 /**
  * Returns un-acked alert rows newest-first, with optional filters. Drives
- * both the WF-103 escalation cron AND the `/alerts pending` OpenClaw
- * slash command — different filter combinations yield each use case:
+ * the WF-103 escalation cron (historically also the `/alerts pending`
+ * OpenClaw slash command — gateway removed, ADR-0075) — different filter
+ * combinations yield each use case:
  *
  *   - WF-103: `{ severity: 'P0', olderThanMinutes: 15, notYetEscalated: true }`
  *   - /alerts pending: `{}`

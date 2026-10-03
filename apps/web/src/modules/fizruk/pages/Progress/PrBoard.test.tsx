@@ -45,7 +45,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -60,7 +60,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="chest"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -74,7 +74,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -90,7 +90,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={onPrFilterChange}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
@@ -105,7 +105,7 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{}}
+        primaryGroupsUk={{}}
         onSelect={onSelect}
       />,
     );
@@ -119,7 +119,7 @@ describe("PrBoard", () => {
         prs={[]}
         prFilter="all"
         onPrFilterChange={vi.fn()}
-        musclesUk={{}}
+        primaryGroupsUk={{}}
         onSelect={vi.fn()}
       />,
     );
@@ -132,12 +132,49 @@ describe("PrBoard", () => {
         prs={PRS}
         prFilter="back"
         onPrFilterChange={vi.fn()}
-        musclesUk={{ chest: "Груди", legs: "Ноги" }}
+        primaryGroupsUk={{ chest: "Груди", legs: "Ноги" }}
         onSelect={vi.fn()}
       />,
     );
     expect(
       screen.getByText("Немає PR для цієї групи мʼязів"),
     ).toBeInTheDocument();
+  });
+});
+
+describe("PrBoard — регрес і застарілий рекорд (канон fizruk §6)", () => {
+  it("показує застарілість і просідання проти піка", () => {
+    render(
+      <PrBoard
+        prs={[
+          {
+            ...PRS[0]!,
+            isStale: true,
+            isRegression: true,
+            deltaVsPeakPct: -12,
+          },
+        ]}
+        prFilter="all"
+        onPrFilterChange={vi.fn()}
+        primaryGroupsUk={{}}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/давно не робив/)).toBeTruthy();
+    expect(screen.getByText(/-12%/)).toBeTruthy();
+  });
+
+  it("свіжий рекорд без просідання жодних позначок не отримує", () => {
+    render(
+      <PrBoard
+        prs={[PRS[0]!]}
+        prFilter="all"
+        onPrFilterChange={vi.fn()}
+        primaryGroupsUk={{}}
+        onSelect={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/давно не робив/)).toBeNull();
+    expect(screen.queryByText(/зараз/)).toBeNull();
   });
 });

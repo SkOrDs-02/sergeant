@@ -18,6 +18,25 @@ import {
 } from "@nutrition/lib/sqliteReader";
 import { generateRecommendations } from "./recommendationEngine";
 
+// ── Mirror mock ──────────────────────────────────────────────────────────────
+// Dualwrite-teardown Phase 3: bank transactions are now sourced from the Mono
+// mirror reader. Tests provide transactions via this mock; `setLS` routes
+// "finyk_tx_cache" writes here instead of localStorage.
+const mockMirrorTxsRec: Array<Record<string, unknown>> = [];
+vi.mock("../../modules/finyk/lib/monoMirrorReader", () => {
+  const state = () => ({
+    transactions: mockMirrorTxsRec,
+    accounts: [],
+    refreshedAt: mockMirrorTxsRec.length > 0 ? new Date().toISOString() : null,
+  });
+  // recommendationEngine читає visible-геттер; у моку обидва — один стан.
+  return {
+    getCachedFinykMonoMirrorState: state,
+    getVisibleFinykMonoMirrorState: state,
+  };
+});
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -27,10 +46,24 @@ import { generateRecommendations } from "./recommendationEngine";
 // Route those seeds into the warm caches so the existing fixtures keep working
 // unchanged; every other key (finyk_*) stays real localStorage. Nutrition log +
 // prefs accumulate because the seeder replaces the whole cache on each call.
-let nutritionSeed: { log?: unknown; prefs?: unknown } = {};
+let nutritionSeed: {
+  log?: unknown;
+  prefs?: unknown;
+  goalPeriods?: unknown;
+} = {};
 
 function setLS(key: string, value: unknown) {
   switch (key) {
+    case "finyk_tx_cache": {
+      // Route to mirror mock — supports both { txs: [...] } and bare-array shapes
+      // for backward-compat with test fixtures written before Phase 3.
+      mockMirrorTxsRec.length = 0;
+      const txs = Array.isArray(value)
+        ? value
+        : ((value as { txs?: unknown[] } | null)?.txs ?? []);
+      mockMirrorTxsRec.push(...(txs as Array<Record<string, unknown>>));
+      return;
+    }
     case "hub_routine_v1": {
       const v = (value ?? {}) as {
         habits?: Array<{ id: string }>;
@@ -65,6 +98,27 @@ function setLS(key: string, value: unknown) {
       return;
     case "nutrition_prefs_v1":
       nutritionSeed.prefs = value;
+      nutritionSeed.goalPeriods = (() => {
+        const prefs = value as {
+          dailyTargetKcal?: number | null;
+          dailyTargetProtein_g?: number | null;
+        };
+        if (!(prefs.dailyTargetKcal || prefs.dailyTargetProtein_g)) return [];
+        return [
+          {
+            id: "test-goal",
+            effectiveFrom: "2000-01-01",
+            kcal: prefs.dailyTargetKcal ?? null,
+            proteinG: prefs.dailyTargetProtein_g ?? null,
+            fatG: null,
+            carbsG: null,
+            waterMl: null,
+            origin: "manual",
+            createdAt: "2000-01-01T00:00:00.000Z",
+            deletedAt: null,
+          },
+        ];
+      })();
       __setNutritionSqliteCacheForTests(
         nutritionSeed as unknown as Parameters<
           typeof __setNutritionSqliteCacheForTests
@@ -92,7 +146,7 @@ function clearAll() {
 // Y/M/D), so every time-gated rule — 21:00 streak-at-risk, 13:00
 // no-meals-today, the Monday 07:00–12:00 weekly digest — depends on the
 // host timezone. CI runs in `Europe/Kyiv` (the repo's domain timezone, see
-// docs/02-engineering/architecture/domain-invariants.md), where a UTC `…Z`
+// docs/engineering/architecture/domain-invariants.md), where a UTC `…Z`
 // literal lands +2/+3 h off and trips these gate boundaries (e.g. 22:00Z →
 // 01:00 Kyiv, 09:00Z → 12:00 Kyiv). Anchoring from local components keeps
 // the engine's local-time math identical in any host TZ — a UTC dev box and
@@ -305,6 +359,33 @@ describe("generateRecommendations", () => {
     expect(fitnessRec!.title).toContain("днів без тренування");
   });
 
+  // Regression (browser QA 2026-08-23): «Що зараз важливо» показувало 15 днів
+  // там, де блок інсайтів показував 16 — рушій ділив години на 24 і округляв,
+  // тож вечірнє тренування «зʼїдало» цілий календарний день. Обидві поверхні
+  // тепер міряють `wholeDaysSince` від `endedAt`.
+  it("рахує паузу календарними днями, а не 24-годинними інтервалами", () => {
+    vi.useFakeTimers();
+    // Ранок 2026-04-27, останнє тренування завершилось увечері 2026-04-11:
+    // 16 календарних днів, але лише ~15.5 доби реального часу.
+    vi.setSystemTime(localClock(2026, 4, 27, 9));
+
+    const started = localClock(2026, 4, 11, 21);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: started.toISOString(),
+        endedAt: new Date(started.getTime() + 3600000).toISOString(),
+        items: [],
+      },
+    ]);
+
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_long_break",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.title).toBe("16 днів без тренування");
+  });
+
   it("не показує fizruk_long_break якщо тренувались менше 5 днів тому", () => {
     const recent = new Date();
     recent.setDate(recent.getDate() - 2);
@@ -321,9 +402,14 @@ describe("generateRecommendations", () => {
     expect(recs.find((r) => r.id === "fizruk_long_break")).toBeUndefined();
   });
 
-  it("визначає мʼязові групи за назвою вправи (regex)", () => {
+  it("визначає мʼязові групи за назвою вправи (regex) і згортає їх в ОДНУ картку", () => {
+    // Свіже тренування (2 дні тому) тримає `fizruk_long_break` мовчазним,
+    // тож мʼязовий баланс має право говорити; груди й ноги стали
+    // несвіжими 12 днів тому.
     const old = new Date();
     old.setDate(old.getDate() - 12);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 2);
     setLS("fizruk_workouts_v1", [
       {
         id: "w1",
@@ -331,21 +417,56 @@ describe("generateRecommendations", () => {
         endedAt: new Date(old.getTime() + 3600000).toISOString(),
         items: [{ nameUk: "Жим лежачи" }, { nameUk: "Присідання зі штангою" }],
       },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
     ]);
 
     const recs = generateRecommendations();
-    // 12 days ≥ STALE_DAYS(8) → muscle recs for chest and legs
-    const chestRec = recs.find((r) => r.id === "fizruk_muscle_chest");
-    const legsRec = recs.find((r) => r.id === "fizruk_muscle_legs");
-    expect(chestRec).toBeDefined();
-    expect(chestRec!.title).toContain("Груди");
-    expect(legsRec).toBeDefined();
-    expect(legsRec!.title).toContain("Ноги");
+    const muscleRecs = recs.filter((r) => r.id.startsWith("fizruk_muscle"));
+    expect(muscleRecs).toHaveLength(1);
+    const rec = muscleRecs[0]!;
+    expect(rec.id).toBe("fizruk_muscle_balance");
+    expect(rec.title).toContain("2 групи мʼязів");
+    expect(rec.body).toContain("Груди");
+    expect(rec.body).toContain("Квадрицепс");
+  });
+
+  it("одна несвіжа група → картка називає саме її", () => {
+    const old = new Date();
+    old.setDate(old.getDate() - 12);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 2);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: old.toISOString(),
+        endedAt: new Date(old.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Жим лежачи" }],
+      },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
+    ]);
+
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_muscle_balance",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.title).toBe("Груди не тренували 12 днів");
   });
 
   it("визначає мʼязи через muscleGroups поле вправи", () => {
     const old = new Date();
     old.setDate(old.getDate() - 10);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
     setLS("fizruk_workouts_v1", [
       {
         id: "w1",
@@ -359,11 +480,115 @@ describe("generateRecommendations", () => {
           },
         ],
       },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
+    ]);
+
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_muscle_balance",
+    );
+    expect(rec).toBeDefined();
+    expect(rec!.body).toContain("Сідниці");
+    expect(rec!.body).toContain("Задня поверхня стегна");
+  });
+
+  it("жодної англійської назви мʼяза в тексті картки — навіть для дрібної анатомії з каталогу", () => {
+    // Регресія 2026-08-18: `musclesPrimary` каталогу несе доменні id
+    // (`rhomboids`, `erector_spinae`, `rectus_abdominis`), а рушій мав
+    // власну табличку на 10 рядків. Усе поза нею витікало в UI сирим
+    // англійським id — по картці на кожен мʼяз.
+    const old = new Date();
+    old.setDate(old.getDate() - 10);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: old.toISOString(),
+        endedAt: new Date(old.getTime() + 3600000).toISOString(),
+        items: [
+          {
+            nameUk: "Тяга в нахилі",
+            musclesPrimary: ["rhomboids", "upper_back", "erector_spinae"],
+            musclesSecondary: ["rectus_abdominis", "obliques"],
+          },
+        ],
+      },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
     ]);
 
     const recs = generateRecommendations();
-    expect(recs.find((r) => r.id === "fizruk_muscle_glutes")).toBeDefined();
-    expect(recs.find((r) => r.id === "fizruk_muscle_hamstrings")).toBeDefined();
+    expect(recs.filter((r) => r.id.startsWith("fizruk_muscle"))).toHaveLength(
+      1,
+    );
+    const text = recs
+      .filter((r) => r.module === "fizruk")
+      .map((r) => `${r.title} ${r.body ?? ""}`)
+      .join(" ");
+    expect(text).not.toMatch(/[a-z]+_[a-z]+/);
+    expect(text).not.toContain("rhomboids");
+    // `rhomboids` + `upper_back` — одна атласна група, тож і один пункт.
+    expect(text).toContain("Верх спини");
+  });
+
+  it("під час довгої паузи мовчить про мʼязи — це вже сказала картка про паузу", () => {
+    // Скріншот 2026-08-18: 10 днів без залу → «10 днів без тренування»
+    // ПЛЮС по картці на кожну з 18 груп. Другий блок нічого не додає.
+    const old = new Date();
+    old.setDate(old.getDate() - 10);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: old.toISOString(),
+        endedAt: new Date(old.getTime() + 3600000).toISOString(),
+        items: [
+          {
+            nameUk: "Тяга в нахилі",
+            musclesPrimary: ["rhomboids", "upper_back"],
+            musclesSecondary: ["biceps"],
+          },
+        ],
+      },
+    ]);
+
+    const recs = generateRecommendations();
+    expect(recs.find((r) => r.id === "fizruk_long_break")).toBeDefined();
+    expect(recs.filter((r) => r.id.startsWith("fizruk_muscle"))).toHaveLength(
+      0,
+    );
+  });
+
+  it("група, забута довше за вікно спостереження, не тримає картку вічно", () => {
+    const ancient = new Date();
+    ancient.setDate(ancient.getDate() - 120);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
+    setLS("fizruk_workouts_v1", [
+      {
+        id: "w1",
+        startedAt: ancient.toISOString(),
+        endedAt: new Date(ancient.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Жим лежачи" }],
+      },
+      {
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Підйом на біцепс" }],
+      },
+    ]);
+
+    const recs = generateRecommendations();
+    expect(recs.find((r) => r.id === "fizruk_muscle_balance")).toBeUndefined();
   });
 
   it("не генерує мʼязові рекомендації для нещодавно тренованих мʼязів", () => {
@@ -380,7 +605,7 @@ describe("generateRecommendations", () => {
 
     const recs = generateRecommendations();
     // 3 days < STALE_DAYS(8) → no muscle stale rec
-    expect(recs.find((r) => r.id === "fizruk_muscle_chest")).toBeUndefined();
+    expect(recs.find((r) => r.id === "fizruk_muscle_balance")).toBeUndefined();
   });
 
   it("генерує fizruk_no_week_workout у середині тижня без тренувань", () => {
@@ -593,7 +818,7 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
     expect(eveningRec).toBeDefined();
-    expect(eveningRec!.title).toContain("1 звичок ще не виконано");
+    expect(eveningRec!.title).toContain("1 звичка ще не виконано");
     expect(eveningRec!.priority).toBe(65);
   });
 
@@ -634,7 +859,7 @@ describe("generateRecommendations", () => {
     const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
     expect(atRisk).toBeDefined();
     expect(atRisk!.priority).toBe(95);
-    expect(atRisk!.title).toContain("під загрозою");
+    expect(atRisk!.title).toContain("може перерватись");
   });
 
   it("routine_streak_at_risk використовує правильну форму множини для 1 звички", () => {
@@ -681,9 +906,67 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
     expect(atRisk).toBeDefined();
-    // remaining === 3 → "звичок" (plural)
-    expect(atRisk!.body).toContain("3 звичок");
+    // remaining === 3 → "few" ("звички"), не бінарна англійська "звичок"
+    expect(atRisk!.body).toContain("3 звички");
   });
+
+  // Українська плюралізація — три форми (one/few/many), не бінарна «1 vs
+  // N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("звичок"), 21
+  // повертається до "one" ("звичка").
+  it.each([
+    [1, "звичка"],
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])(
+    "routine_evening_reminder uses the correct plural form for N=%i (%s)",
+    (n, form) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(localClock(2026, 4, 27, 19));
+
+      const habits = Array.from({ length: n }, (_, i) => ({ id: `h${i}` }));
+      setLS("hub_routine_v1", { habits, completions: {} });
+
+      const recs = generateRecommendations();
+      const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
+      expect(eveningRec).toBeDefined();
+      expect(eveningRec!.title).toBe(`${n} ${form} ще не виконано сьогодні`);
+    },
+  );
+
+  it.each([
+    [1, "звичка"],
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])(
+    "routine_streak_at_risk uses the correct plural form for N=%i (%s)",
+    (n, form) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(localClock(2026, 4, 27, 22));
+
+      const habits = Array.from({ length: n }, (_, i) => ({ id: `h${i}` }));
+      const completions: Record<string, string[]> = {};
+      for (const h of habits) {
+        completions[h.id] = [];
+        for (let i = 1; i <= 7; i++) {
+          const d = localClock(2026, 4, 27, 22);
+          d.setDate(d.getDate() - i);
+          const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          completions[h.id]!.push(dk);
+        }
+      }
+
+      setLS("hub_routine_v1", { habits, completions });
+
+      const recs = generateRecommendations();
+      const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
+      expect(atRisk).toBeDefined();
+      expect(atRisk!.body).toContain(`${n} ${form}`);
+    },
+  );
 
   it("НЕ генерує streak_at_risk якщо серія < 7 днів", () => {
     vi.useFakeTimers();
@@ -853,7 +1136,12 @@ describe("generateRecommendations", () => {
     ).toBeUndefined();
   });
 
-  it("використовує fallback значення при відсутності nutrition_prefs", () => {
+  it("мовчить про прогрес до цілі, поки ціль не задана", () => {
+    // Раніше тут очікувався фолбек 2000 ккал / 120 г — і Hub заявляв «Лише
+    // 400 ккал з 2000 ккал цілі» людині, яка жодної цілі не ставила, тимчасом
+    // як екран «Їжа» просив ту ціль спершу встановити (browser QA 2026-08-05,
+    // F-010). Вигадана ціль — це вигадана статистика: без неї сигнали, що
+    // міряють відсоток виконання, не мають про що говорити.
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-27T19:00:00Z"));
 
@@ -863,12 +1151,32 @@ describe("generateRecommendations", () => {
         meals: [{ macros: { kcal: 400, protein_g: 20 } }],
       },
     });
-    // No prefs → fallback to 2000 kcal / 120g protein
+    // Ніяких prefs — цілі не існує.
+
+    const recs = generateRecommendations();
+    expect(recs.find((r) => r.id === "nutrition_kcal_low")).toBeUndefined();
+    expect(recs.find((r) => r.id === "nutrition_protein_low")).toBeUndefined();
+  });
+
+  it("показує прогрес до цілі, щойно ціль задана", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-27T19:00:00Z"));
+
+    const today = "2026-04-27";
+    setLS("nutrition_log_v1", {
+      [today]: {
+        meals: [{ macros: { kcal: 400, protein_g: 20 } }],
+      },
+    });
+    setLS("nutrition_prefs_v1", {
+      dailyTargetKcal: 1800,
+      dailyTargetProtein_g: 100,
+    });
 
     const recs = generateRecommendations();
     const kcalLow = recs.find((r) => r.id === "nutrition_kcal_low");
     expect(kcalLow).toBeDefined();
-    expect(kcalLow!.title).toContain("2000"); // default target
+    expect(kcalLow!.title).toContain("1800");
   });
 
   it("обробляє порожні/null macros", () => {
@@ -990,6 +1298,41 @@ describe("generateRecommendations", () => {
     expect(digest!.body).toContain("звички"); // habits
   });
 
+  /**
+   * Сьомий конвеєр витрат приведено до канону (реєстр метрик, § Гейт).
+   *
+   * До цього блок фільтрував лише `finyk_hidden_txs` і внутрішні перекази,
+   * тож явно виключена зі статистики транзакція протікала в число, яке
+   * дайджест і Hub-Reports уже рахували правильно. Тест пінить саме різницю:
+   * на тих самих даних нагадування має показати 500, а не 700.
+   *
+   * Перевіряє `excluded_stat`, а не готівку, свідомо: ручні витрати живуть у
+   * SQLite-кеші, а не в LS, і мокати їх тут означало б тягнути в цей тест
+   * половину dual-write шару. Готівку покриває parity-тест.
+   */
+  it("витрати минулого тижня поважають finyk_excluded_stat_txs", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(localClock(2026, 4, 27, 9));
+
+    const txTime = Math.floor(
+      new Date("2026-04-22T12:00:00Z").getTime() / 1000,
+    );
+    setLS("finyk_tx_cache", {
+      txs: [
+        { id: "tx1", amount: -50000, time: txTime, description: "Покупки" },
+        { id: "tx2", amount: -20000, time: txTime, description: "Виключена" },
+      ],
+    });
+    setLS("finyk_excluded_stat_txs", ["tx2"]);
+    setLS("hub_routine_v1", { habits: [{ id: "h1" }], completions: {} });
+
+    const recs = generateRecommendations();
+    const digest = recs.find((r) => r.id?.startsWith("weekly_digest_"));
+    expect(digest).toBeDefined();
+    expect(digest!.body).toContain("500");
+    expect(digest!.body).not.toContain("700");
+  });
+
   // -----------------------------------------------------------------------
   // Edge cases — corrupt/partial localStorage
   // -----------------------------------------------------------------------
@@ -1003,7 +1346,7 @@ describe("generateRecommendations", () => {
     expect(Array.isArray(recs)).toBe(true);
   });
 
-  it("обробляє порожній масив транзакцій", () => {
+  it("обробляє порожній масив операцій", () => {
     setLS("finyk_tx_cache", { txs: [] });
     setLS("finyk_budgets", [
       { id: "b1", type: "limit", categoryId: "food", limit: 1000 },
@@ -1016,7 +1359,7 @@ describe("generateRecommendations", () => {
     expect(budgetRecs).toHaveLength(0);
   });
 
-  it("обробляє finyk_tx_cache як масив напряму (не обгорнутий об'єкт)", () => {
+  it("обробляє finyk_tx_cache як масив напряму (не обгорнутий обʼєкт)", () => {
     const ts = Math.floor(Date.now() / 1000);
     // Direct array format
     setLS("finyk_tx_cache", [
@@ -1087,6 +1430,8 @@ describe("generateRecommendations", () => {
   it("мʼязові рекомендації використовують українські назви", () => {
     const oldW = new Date();
     oldW.setDate(oldW.getDate() - 12);
+    const recent = new Date();
+    recent.setDate(recent.getDate() - 1);
     setLS("fizruk_workouts_v1", [
       {
         id: "w1",
@@ -1100,15 +1445,21 @@ describe("generateRecommendations", () => {
           { nameUk: "Розведення гантелей на плечей" },
         ],
       },
+      {
+        // Свіже тренування тримає `fizruk_long_break` мовчазним — інакше
+        // мʼязовий баланс навмисно не говорить (див. тест про паузу).
+        id: "w2",
+        startedAt: recent.toISOString(),
+        endedAt: new Date(recent.getTime() + 3600000).toISOString(),
+        items: [{ nameUk: "Присідання зі штангою" }],
+      },
     ]);
 
-    const recs = generateRecommendations();
-    const labels = recs
-      .filter((r) => r.id.startsWith("fizruk_muscle_"))
-      .map((r) => r.title);
-
-    // Verify Ukrainian labels are used
-    const allLabels = labels.join(" ");
-    expect(allLabels).toMatch(/Спина|Біцепс|Триципс|Прес|Плечі/);
+    const rec = generateRecommendations().find(
+      (r) => r.id === "fizruk_muscle_balance",
+    );
+    expect(rec).toBeDefined();
+    const text = `${rec!.title} ${rec!.body ?? ""}`;
+    expect(text).toMatch(/Верх спини|Біцепс|Трицепс|Прес|Передні дельти/);
   });
 });

@@ -2,7 +2,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -10,10 +9,9 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
-import {
-  computeFloatingPosition,
-  type FloatingPlacement,
-} from "./floatingPosition";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { type FloatingPlacement } from "./floatingPosition";
+import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 
 /**
  * Sergeant Design System — Popover
@@ -101,11 +99,17 @@ export function Popover({
   const panelId = useId();
   const headerId = useId();
   const prevOpenRef = useRef(open);
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
-    null,
-  );
 
   const effectiveRole: PopoverRole = role ?? (header ? "dialog" : "menu");
+
+  const coords = useFloatingPanelPosition({
+    open,
+    triggerRef,
+    panelRef,
+    placement,
+    offset: PANEL_OFFSET,
+    contentKey: `${header ? "h" : ""}${footer ? "f" : ""}`,
+  });
 
   const setOpen = useCallback(
     (next: boolean | ((prev: boolean) => boolean)) => {
@@ -118,21 +122,8 @@ export function Popover({
 
   const close = useCallback(() => setOpen(false), [setOpen]);
 
-  // Outside-click dismiss. Mousedown is intentional: matches existing
-  // contract tests and avoids double-firing when the user releases
-  // over a sibling element.
-  useEffect(() => {
-    if (!open) return;
-    function handleClick(e: MouseEvent) {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (wrapperRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      close();
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [open, close]);
+  // Outside-click dismiss — спільний хук (mousedown-контракт там же).
+  useOutsideClick([wrapperRef, panelRef], close, { enabled: open });
 
   // Focus-trap + Escape via the same hook the rest of the design system
   // uses for dialogs (Modal, Sheet). Tab cycles inside the panel; the
@@ -159,64 +150,6 @@ export function Popover({
     prevOpenRef.current = open;
   }, [open]);
 
-  // Position the panel after layout so the first paint already has
-  // the correct coordinates.
-  useLayoutEffect(() => {
-    if (!open) {
-      setCoords(null);
-      return;
-    }
-    const trig = triggerRef.current;
-    const panel = panelRef.current;
-    if (!trig || !panel) return;
-    const tRect = trig.getBoundingClientRect();
-    const pRect = panel.getBoundingClientRect();
-    const pos = computeFloatingPosition(
-      {
-        top: tRect.top,
-        left: tRect.left,
-        width: tRect.width,
-        height: tRect.height,
-      },
-      { width: pRect.width, height: pRect.height },
-      placement,
-      PANEL_OFFSET,
-    );
-    setCoords({ top: pos.top, left: pos.left });
-  }, [open, placement, children, header, footer]);
-
-  // Track the page reflowing under an open popover (scroll, resize,
-  // soft-keyboard show on iOS). Capture-phase scroll listener catches
-  // scrolls inside any ancestor.
-  useEffect(() => {
-    if (!open) return;
-    const reposition = () => {
-      const trig = triggerRef.current;
-      const panel = panelRef.current;
-      if (!trig || !panel) return;
-      const tRect = trig.getBoundingClientRect();
-      const pRect = panel.getBoundingClientRect();
-      const pos = computeFloatingPosition(
-        {
-          top: tRect.top,
-          left: tRect.left,
-          width: tRect.width,
-          height: tRect.height,
-        },
-        { width: pRect.width, height: pRect.height },
-        placement,
-        PANEL_OFFSET,
-      );
-      setCoords({ top: pos.top, left: pos.left });
-    };
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
-    return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
-    };
-  }, [open, placement]);
-
   const panel = open ? (
     <div
       ref={panelRef}
@@ -239,7 +172,7 @@ export function Popover({
         zIndex: 1000,
       }}
       className={cn(
-        "bg-surface-glass backdrop-blur-md border border-surface-line shadow-nav rounded-r-2xl",
+        "bg-surface-glass backdrop-blur-md border border-surface-line shadow-nav rounded-3xl",
         "motion-safe:animate-fade-in",
         // Default padding only when no header/footer; with slots the
         // sections own their own padding for tighter alignment.
@@ -348,11 +281,11 @@ export function PopoverItem({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-2.5 px-3.5 py-2 text-sm text-left",
-        "transition-colors duration-150 rounded-xl mx-1 outline-none",
+        "flex w-full items-center gap-2.5 px-3.5 py-2 text-style-label text-left",
+        "transition-colors duration-fast rounded-xl mx-1 outline-none",
         "focus-visible:ring-2 focus-visible:ring-accent/60",
         destructive
-          ? "text-danger-strong dark:text-danger hover:bg-danger-soft"
+          ? "text-danger-strong dark:text-danger hover:bg-danger-soft hover:text-danger-soft-fg"
           : "text-text hover:bg-panelHi",
         disabled && "opacity-50 pointer-events-none",
         className,

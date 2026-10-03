@@ -9,6 +9,7 @@
  */
 
 import pool from "../../db.js";
+import { hasAiMemoryConsent, hasHealthDataConsent } from "./consent.js";
 import { createVoyageEmbeddings } from "./embeddings.js";
 import { createPgVectorStore } from "./vectorStore.js";
 import { createAiMemoryService, type AiMemoryService } from "./service.js";
@@ -29,6 +30,8 @@ export function getAiMemory(): AiMemoryService {
     cached = createAiMemoryService({
       embeddings: createVoyageEmbeddings(),
       vectorStore: createPgVectorStore(pool),
+      isConsentEnabled: (userId) => hasAiMemoryConsent(pool, userId),
+      isHealthConsentEnabled: (userId) => hasHealthDataConsent(pool, userId),
     });
   }
   return cached;

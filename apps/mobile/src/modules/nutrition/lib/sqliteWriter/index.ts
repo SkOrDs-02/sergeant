@@ -1,0 +1,162 @@
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+
+import { refreshNutritionSqliteState } from "../sqliteReader";
+import { notifyNutritionSqliteCacheRefresh } from "../sqliteReadGate";
+import {
+  applyNutritionDualWriteOps,
+  type ApplyDualWriteResult,
+  type DualWriteLogger,
+} from "./adapter";
+import {
+  diffNutritionDualWriteOps,
+  type NutritionDualWriteState,
+} from "./diff";
+
+/**
+ * Orchestrator for the Nutrition dual-write layer (mobile mirror of
+ * `apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts`).
+ *
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The MMKV
+ * write layer fires `triggerNutritionDualWrite(prev, next)` after every
+ * successful MMKV write; this module decides whether to mirror to the
+ * local expo-sqlite database based on the registered context.
+ *
+ * Stage 8 PR #056n dropped the
+ * `feature.nutrition.sqlite_v2.dual_write` gate — the SQLite mirror is
+ * now unconditional whenever a dual-write context is registered.
+ *
+ * Decoupling: see the web copy for the rationale (avoids cycles
+ * between MMKV layer ↔ auth ↔ sqlite singleton, keeps tests independent).
+ */
+
+export interface NutritionDualWriteContext {
+  getUserId(): string | null;
+  getMigrationClient(): Promise<SqliteMigrationClient | null>;
+  getNow(): string;
+  logger?: DualWriteLogger;
+}
+
+let registeredContext: NutritionDualWriteContext | null = null;
+
+export function registerNutritionDualWriteContext(
+  ctx: NutritionDualWriteContext,
+): () => void {
+  registeredContext = ctx;
+  return () => {
+    if (registeredContext === ctx) registeredContext = null;
+  };
+}
+
+export function __clearNutritionDualWriteContextForTests(): void {
+  registeredContext = null;
+}
+
+export function isNutritionDualWriteRegistered(): boolean {
+  return registeredContext !== null;
+}
+
+export async function dualWriteNutritionState(
+  prev: NutritionDualWriteState,
+  next: NutritionDualWriteState,
+): Promise<DualWriteOutcome> {
+  const ctx = registeredContext;
+  if (!ctx) return { status: "skipped", reason: "context-unset" };
+
+  const ops = diffNutritionDualWriteOps(prev, next);
+  if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
+
+  const userId = ctx.getUserId();
+  if (!userId) {
+    logSafe(ctx, "warn", "dual-write skipped: user id unavailable", {
+      ops: ops.length,
+    });
+    return { status: "skipped", reason: "user-id-missing" };
+  }
+
+  let client: SqliteMigrationClient | null = null;
+  try {
+    client = await ctx.getMigrationClient();
+  } catch (err) {
+    logSafe(ctx, "warn", "dual-write skipped: sqlite unavailable", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return { status: "skipped", reason: "sqlite-unavailable" };
+  }
+  if (!client) {
+    logSafe(ctx, "warn", "dual-write skipped: sqlite returned null", {});
+    return { status: "skipped", reason: "sqlite-unavailable" };
+  }
+
+  const result = await applyNutritionDualWriteOps(client, ops, {
+    userId,
+    clientTs: ctx.getNow(),
+    logger: ctx.logger,
+  });
+
+  // Stage 8 PR #057n-tombstone: refresh the SQLite warm cache so
+  // subsequent reads (overlay effects in hooks, `peek` in
+  // `dualWriteState`) reflect what we just wrote. Best-effort —
+  // a failed refresh is logged but does not disturb the dual-write
+  // outcome.
+  try {
+    await refreshNutritionSqliteState(client, userId);
+    notifyNutritionSqliteCacheRefresh();
+  } catch (err) {
+    logSafe(ctx, "warn", "dual-write cache-refresh failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return { status: "applied", result };
+}
+
+export function triggerNutritionDualWrite(
+  prev: NutritionDualWriteState,
+  next: NutritionDualWriteState,
+): void {
+  if (!registeredContext) return;
+  // `.catch` обовʼязковий: без нього відхилення дзеркалення — це unhandled
+  // rejection, який у RN не видно ніде, а людина бачить підтвердження в UI,
+  // тоді як SQLite рядка не отримав (аудит 2026-09-15 § 2; веб-писачі
+  // ловлять це з 2026-09). `no-floating-promises` у репо не ввімкнено, тож
+  // цю форму тримає лише огляд.
+  const ctx = registeredContext;
+  void Promise.resolve()
+    .then(() => dualWriteNutritionState(prev, next))
+    .catch((err) => {
+      logSafe(ctx, "warn", "dual-write mirror failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+}
+
+export type DualWriteOutcome =
+  | { status: "applied"; result: ApplyDualWriteResult }
+  | {
+      status: "skipped";
+      reason:
+        "context-unset" | "no-ops" | "user-id-missing" | "sqlite-unavailable";
+    };
+
+function logSafe(
+  ctx: NutritionDualWriteContext,
+  level: "warn" | "info",
+  msg: string,
+  meta: Record<string, unknown>,
+): void {
+  try {
+    if (ctx.logger) ctx.logger(level, msg, meta);
+    else if (level === "warn")
+      console.warn(`[nutrition.dualWrite] ${msg}`, meta);
+  } catch {
+    /* noop — logging must never throw */
+  }
+}
+
+export {
+  applyNutritionDualWriteOps,
+  diffNutritionDualWriteOps,
+  type ApplyDualWriteResult,
+  type DualWriteLogger,
+  type NutritionDualWriteState,
+};

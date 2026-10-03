@@ -19,7 +19,8 @@
  *
  * Exit codes:
  *   0 — all snapshots match (or --update wrote them)
- *   1 — at least one snapshot diverges (or eslint failed)
+ *   1 — at least one snapshot diverges, a fixture file is missing,
+ *       or eslint failed
  */
 
 import { execFileSync } from "node:child_process";
@@ -36,9 +37,13 @@ const SNAPSHOT_DIR = join(
 );
 
 /**
- * Fixture set — one entry per resolvable ESLint surface in the monorepo.
- * Add an entry when introducing a new app/package boundary; remove when a
- * surface is consolidated away.
+ * Fixture set — one entry per resolvable ESLint surface in the monorepo,
+ * ПЛЮС по точці на кожен блок правил, заскоупований на підтеку (див.
+ * `server-copy` нижче). Add an entry when introducing a new app/package
+ * boundary or such a scoped block; remove when a surface is consolidated
+ * away. Інваріант покриття тримає
+ * `scripts/__tests__/eslint-print-config-diff.test.mjs` — від 2026-09-14
+ * він у ланцюжку `pnpm lint:eslint-config-diff`, а не сам по собі.
  *
  * `cwd` is the package directory (repo-relative) that owns a standalone
  * `eslint.config.js` (PR-31 phase 2b). The gate runs `eslint --print-config`
@@ -52,7 +57,43 @@ const SNAPSHOT_DIR = join(
  */
 export const FIXTURES = [
   { surface: "server", path: "apps/server/src/index.ts", cwd: "apps/server" },
+  // Друга точка на тій самій поверхні — і вона тут не для повноти.
+  // `index.ts` не бачить правил, заскоупованих на підтеку: гейт лишався б
+  // зеленим, якби хтось зняв блок `ukrainian-copy` для копійних тек сервера
+  // (`email/**`, `modules/telegram/**`, `routes/email-unsubscribe.ts`,
+  // додано 2026-09-14). Тобто снапшот-гейт на одному файлі з воркспейсу
+  // мовчить саме про ті правила, які вмикають вибірково. Додаєш скоуповане
+  // правило — додавай сюди файл із його скоупу.
+  {
+    surface: "server-copy",
+    path: "apps/server/src/email/ftuxDripCopy.ts",
+    cwd: "apps/server",
+  },
+  // Розширення того ж блоку на `modules/**` і `routes/**` (2026-09-23,
+  // аудит копії вебу §2.4). `--print-config` віддає резолвлені правила, а
+  // не глоби, тож `ftuxDripCopy.ts` про нові теки мовчить. Дві точки, бо
+  // глоби два: одна не помітила б, як зникає інший. Обидва файли названі
+  // в аудиті.
+  {
+    surface: "server-modules-copy",
+    path: "apps/server/src/modules/push/push.ts",
+    cwd: "apps/server",
+  },
+  {
+    surface: "server-routes-copy",
+    path: "apps/server/src/routes/me.ts",
+    cwd: "apps/server",
+  },
   { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
+  // Лендінг дістав власний блок 2026-09-14 (`eslint.landing.js`,
+  // `ukrainian-copy`). До того він був єдиною поверхнею без блоку — і,
+  // відповідно, без точки в цьому списку: гейт не мовчав про дрейф, він
+  // просто не дивився туди. Знімеш блок — цей снапшот почервоніє.
+  {
+    surface: "landing",
+    path: "apps/landing/src/main.tsx",
+    cwd: "apps/landing",
+  },
   {
     surface: "mobile",
     path: "apps/mobile/app/(tabs)/index.tsx",
@@ -93,9 +134,18 @@ export const FIXTURES = [
  * e.g. the `\\b` / `\\d` escapes inside `no-restricted-syntax` regex
  * selectors become `/b` / `/d`, diverging from the POSIX-generated
  * snapshots and making the gate un-passable on a Windows checkout.
+ *
+ * AI-DANGER: розділювач тут НЕ береться з `path.sep`. Так було до
+ * 2026-09-14, і це рівно суперечило обіцянці рядком вище: на POSIX-раннері
+ * `sep` це `/`, тож віндова доріжка `C:\repo\apps\…` не нормалізувалась
+ * узагалі — «Windows-прогін збігається з POSIX» трималось лише в один бік.
+ * Юніт, який це перевіряв, через те падав на кожному Linux-прогоні (і
+ * падав би в CI, якби цей файл тестів був у ланцюжку `pnpm lint` — його там
+ * не було). Тепер конвертація не залежить від платформи раннера.
  */
 export function normaliseConfig(config, repoRoot = REPO_ROOT) {
-  const repoRootForward = repoRoot.split(sep).join("/");
+  const toForwardSlashes = (value) => value.replaceAll("\\", "/");
+  const repoRootForward = toForwardSlashes(repoRoot);
 
   function visit(value) {
     if (value === null || value === undefined) return value;
@@ -110,7 +160,7 @@ export function normaliseConfig(config, repoRoot = REPO_ROOT) {
       return out;
     }
     if (typeof value === "string") {
-      const forward = value.split(sep).join("/");
+      const forward = toForwardSlashes(value);
       if (forward.startsWith(repoRootForward)) {
         return "<repo>" + forward.slice(repoRootForward.length);
       }
@@ -173,6 +223,27 @@ function runEslintPrintConfig(fixture) {
     },
   );
   return JSON.parse(stdout);
+}
+
+/**
+ * Чи валить цей результат гейт.
+ *
+ * `skipped` (fixture-файл зник) рахується провалом нарівні з `diff` / `missing`
+ * / `error`. Інакше видалення чи перейменування одного з фікстур-файлів мовчки
+ * знімало б покриття з поверхні, а гейт лишався б зеленим — рівно той клас
+ * «гейт, чий вхід зник, гейтом не є», проти якого цей скрипт і стоїть. Знята
+ * поверхня має бути правкою списку `FIXTURES`, свідомою і видимою в дифі.
+ *
+ * @param {{ status: string }} result
+ * @returns {boolean}
+ */
+export function isFailingResult(result) {
+  return (
+    result.status === "diff" ||
+    result.status === "missing" ||
+    result.status === "error" ||
+    result.status === "skipped"
+  );
 }
 
 function serialise(config) {
@@ -254,10 +325,7 @@ function main() {
     }
   }
 
-  const failed = results.filter(
-    (r) =>
-      r.status === "diff" || r.status === "missing" || r.status === "error",
-  );
+  const failed = results.filter(isFailingResult);
 
   if (jsonMode) {
     process.stdout.write(
@@ -284,15 +352,49 @@ function main() {
       );
     }
     if (failed.length > 0 && !updateMode) {
-      process.stderr.write(
-        `\n${failed.length} fixture(s) diverged. Run \`pnpm lint:eslint-config-diff -- --update\` to refresh snapshots after intentional config changes.\n`,
-      );
+      // Розбивка за статусами, бо ліки різні: `diff`/`missing` лікуються
+      // `--update`, зниклий fixture — правкою списку FIXTURES, а `error` —
+      // це падіння самого eslint, де `--update` не допоможе взагалі. Спільне
+      // формулювання «diverged» радило б неправильну дію на дві причини з
+      // трьох.
+      const byStatus = { diff: [], missing: [], skipped: [], error: [] };
+      for (const r of failed) byStatus[r.status]?.push(r.surface);
+
+      const lines = [`\n${failed.length} fixture(s) failed:`];
+      if (byStatus.diff.length) {
+        lines.push(
+          `  · ${byStatus.diff.length} diverged from snapshot (${byStatus.diff.join(", ")})`,
+        );
+      }
+      if (byStatus.missing.length) {
+        lines.push(
+          `  · ${byStatus.missing.length} without a committed snapshot (${byStatus.missing.join(", ")})`,
+        );
+      }
+      if (byStatus.skipped.length) {
+        lines.push(
+          `  · ${byStatus.skipped.length} fixture file(s) gone (${byStatus.skipped.join(", ")}) — update the FIXTURES list if the surface was removed on purpose`,
+        );
+      }
+      if (byStatus.error.length) {
+        lines.push(
+          `  · ${byStatus.error.length} eslint execution error(s) (${byStatus.error.join(", ")}) — fix the config or the run, --update will not help`,
+        );
+      }
+      if (byStatus.diff.length || byStatus.missing.length) {
+        lines.push(
+          "\nRun `pnpm lint:eslint-config-diff -- --update` to refresh snapshots after intentional config changes.",
+        );
+      }
+      process.stderr.write(lines.join("\n") + "\n");
     } else if (updateMode) {
       process.stdout.write(
         `\nWrote ${results.filter((r) => r.status === "updated" || r.status === "created").length} snapshot(s).\n`,
       );
     } else {
-      process.stdout.write(`\nAll ${results.length} fixture(s) matched.\n`);
+      process.stdout.write(
+        `\nAll ${results.filter((r) => r.status === "match").length} fixture(s) matched.\n`,
+      );
     }
   }
 

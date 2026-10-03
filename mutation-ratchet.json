@@ -1,0 +1,26 @@
+{
+  "$comment": "Mutation-ratchet baseline («не гірше ніж минулого разу») для Stryker-таргетів. Читається ТІЛЬКИ CI-гейтом scripts/ci/mutation-ratchet.mjs (.github/workflows/mutation-testing.yml :: job mutation-ratchet) — локально Stryker довгий, тому жоден pnpm-скрипт цей гейт не смикає. Потрібен ДОДАТКОВО до статичного thresholds.break: 70 у stryker.*.conf.json: break ловить лише падіння нижче 70, тож таргет із фактичними 95% може тихо повзти до 71% без жодного червоного. Score рахується канонічно: (Killed + Timeout) / (Killed + Timeout + Survived + NoCoverage) * 100; Ignored і CompileError у знаменник не входять. score: null означає «ще не виміряно» — гейт друкує фактичне число і ПРОХОДИТЬ (exit 0), нічого не фейлить. Перший зелений weekly-прогін покаже реальні score у step summary джоби; власник вносить їх сюди руками або локальним `node scripts/ci/mutation-ratchet.mjs --bump` (у CI baseline свідомо НЕ автокомітиться — weekly cron ходить по main). Далі гейт падає, якщо score < baseline − epsilonPp. Поле report — дефолтний шлях до Stryker JSON-звіту відносно кореня репо; у CI він перекривається прапорцем --report <target>=<шлях до розпакованого артефакту>.",
+  "epsilonPp": 0.5,
+  "targets": {
+    "utils": {
+      "label": "shared utils tier-1",
+      "report": "packages/shared/reports/mutation/utils/mutation-report.json",
+      "score": null
+    },
+    "normalizers": {
+      "label": "server normalizers tier-1",
+      "report": "apps/server/reports/mutation/normalizers/mutation-report.json",
+      "score": null
+    },
+    "core": {
+      "label": "finyk-domain core tier-2",
+      "report": "packages/finyk-domain/reports/mutation/core/mutation-report.json",
+      "score": null
+    },
+    "time": {
+      "label": "web kyiv time tier-2",
+      "report": "apps/web/reports/mutation/time/mutation-report.json",
+      "score": null
+    }
+  }
+}

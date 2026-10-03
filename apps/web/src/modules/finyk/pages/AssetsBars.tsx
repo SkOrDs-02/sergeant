@@ -1,5 +1,8 @@
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { formatNumberUk } from "@sergeant/shared";
 
 const TONE_TEXT: Record<"success" | "danger" | "muted" | "finyk", string> = {
   success: "text-success",
@@ -31,12 +34,14 @@ export function AssetsLiabilitiesBar({
   if (total <= 0) return null;
   const assetsPct = Math.round((assets / total) * 100);
   const liabilitiesPct = 100 - assetsPct;
+  const summaryId = "finyk-assets-liabilities-summary";
   return (
     <div className="mt-4">
       <div
         className="relative flex h-2 w-full overflow-hidden rounded-full bg-finyk/10 shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)]"
         role="img"
         aria-label={`Активи ${assetsPct}% · Пасиви ${liabilitiesPct}%`}
+        aria-describedby={summaryId}
       >
         <div
           className="bg-linear-to-r from-finyk to-finyk-strong"
@@ -47,7 +52,7 @@ export function AssetsLiabilitiesBar({
           style={{ width: `${liabilitiesPct}%` }}
         />
       </div>
-      <div className="flex justify-between text-meta text-muted mt-2 tabular-nums">
+      <div className="flex justify-between text-style-caption text-muted mt-2 tabular-nums">
         <span className="inline-flex items-center gap-1.5">
           <span
             className="inline-block h-1.5 w-1.5 rounded-full bg-finyk-strong"
@@ -63,63 +68,78 @@ export function AssetsLiabilitiesBar({
           Пасиви {liabilitiesPct}%
         </span>
       </div>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Співвідношення активів і пасивів. Активи:{" "}
+          {formatNumberUk(assets, { maximumFractionDigits: 0 })} ₴ ({assetsPct}
+          %). Пасиви:{" "}
+          {formatNumberUk(liabilities, { maximumFractionDigits: 0 })} ₴ (
+          {liabilitiesPct}%).
+        </p>
+      </div>
     </div>
   );
 }
 
 export type QuickActionTone = "finyk" | "success" | "danger";
 
-const QUICK_TONE_BORDER: Record<QuickActionTone, string> = {
-  finyk: "hover:border-finyk/40",
-  success: "hover:border-success/40",
-  danger: "hover:border-danger/40",
-};
+export interface QuickActionButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
+  label: string;
+  tone?: QuickActionTone;
+}
 
 /**
- * CTA used in the 3-button quick-action row above the sections. Each
- * button collapses the "expand → scroll → tap +" flow into a single tap
- * that opens the relevant section *and* reveals its inline form.
+ * CTA used in the quick-action rows above the Assets/Liabilities and
+ * Planning sections (row shape varies per page — Assets uses two buttons,
+ * Planning uses one combined "Запланувати" trigger; the "3-button row"
+ * this comment used to describe was removed 2026-09-03, § founder-UX
+ * audit round 2, F2). Each button collapses the "expand → scroll → tap +"
+ * flow into a single tap that opens the relevant section *and* reveals
+ * its inline form.
+ *
+ * Це звичайний `Button variant="soft"`, а не картка з іконкою в тонованому
+ * квадраті: тайл за формою збігався з картками вмісту поруч, і око не
+ * розрізняло «натисни» та «прочитай» (анти-слоп, атрактор icon-in-tinted-
+ * square). Іконки немає навмисно: у трьох колонках підпис і є значенням.
+ *
+ * `forwardRef` + spread решти пропів — щоб кнопка могла бути тригером
+ * `DropdownMenu` («+ Актив» відкриває вибір «актив / мені винні»): меню
+ * клонує тригер і вішає на нього ref, `aria-haspopup` і власний onClick.
  */
-export function QuickActionButton({
-  iconName,
-  label,
-  onClick,
-  tone = "finyk",
-}: {
-  iconName: IconName;
-  label: string;
-  onClick: () => void;
-  tone?: QuickActionTone;
-}) {
+export const QuickActionButton = forwardRef<
+  HTMLButtonElement,
+  QuickActionButtonProps
+>(function QuickActionButton(
+  { label, tone = "finyk", className, ...rest },
+  ref,
+) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "group flex flex-col items-center justify-center gap-1.5 py-3 px-2 text-xs bg-panelHi border border-line rounded-2xl shadow-soft transition-[transform,box-shadow,border-color] hover:shadow-card hover:-translate-y-px active:translate-y-0",
-        QUICK_TONE_BORDER[tone],
-      )}
+    <Button
+      ref={ref}
+      variant="soft"
+      tone={tone}
+      size="md"
+      className={cn("w-full min-w-0 px-1", className)}
+      {...rest}
     >
-      <span
-        className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-xl transition-colors",
-          TONE_BG[tone],
-          TONE_TEXT[tone],
-        )}
-        aria-hidden
-      >
-        <Icon name={iconName} size={16} />
-      </span>
-      <span className="font-medium text-text">+ {label}</span>
-    </button>
+      <span className="truncate">+ {label}</span>
+    </Button>
   );
-}
+});
 
 export type SectionBarProps = {
   title: string;
   iconName: IconName;
   iconTone?: "success" | "danger" | "muted" | "finyk";
-  summary?: string | null;
+  /**
+   * Підсумок секції. `ReactNode`, а не рядок: сюди йде `Money`, а він —
+   * вузли, не текст (анти-слоп П4). Маскований стан («••••») лишається
+   * звичайним рядком і проходить тим самим пропом.
+   */
+  summary?: ReactNode;
   open: boolean;
   onToggle: () => void;
 };
@@ -141,7 +161,11 @@ export function SectionBar({
     <button
       onClick={onToggle}
       aria-expanded={open}
-      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panelHi border border-line rounded-2xl mb-2 text-left shadow-soft transition-[transform,box-shadow,border-color] hover:border-muted/40 hover:shadow-card hover:-translate-y-px active:translate-y-0"
+      // `bg-panel`, а не `bg-panelHi`: бар секції — та сама біла поверхня,
+      // що й рядки карток Monobank під ним. Сірий бар читався як
+      // «підкладка», а не як заголовок рівня з картками (звіт власника
+      // 2026-09-03).
+      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border border-line rounded-2xl mb-2 text-left shadow-soft transition-[transform,box-shadow,border-color] hover:border-muted/40 hover:shadow-card hover:-translate-y-px active:translate-y-0"
     >
       <div className="flex items-center gap-3 min-w-0">
         <span
@@ -157,17 +181,17 @@ export function SectionBar({
         <div className="min-w-0">
           <div className="text-style-label text-text truncate">{title}</div>
           {summary && (
-            <div className="text-xs text-muted mt-0.5 truncate tabular-nums">
+            <div className="text-style-caption text-muted mt-0.5 truncate tabular-nums">
               {summary}
             </div>
           )}
         </div>
       </div>
-      <span className="inline-flex items-center gap-1 text-xs text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
-        <span>{open ? "Згорнути" : "Розкласти"}</span>
+      <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2 group-hover:text-text transition-colors">
+        <span>{open ? "Згорнути" : "Розгорнути"}</span>
         <Icon
           name={open ? "chevron-up" : "chevron-down"}
-          size={14}
+          size="sm"
           aria-hidden
         />
       </span>

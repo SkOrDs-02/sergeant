@@ -16,28 +16,33 @@ export { REST_CATEGORY_LABELS, REST_DEFAULTS, getRestCategory };
 const KEY = STORAGE_KEYS.FIZRUK_REST_SETTINGS;
 
 type MergedSettings = Record<keyof typeof REST_DEFAULTS, number>;
+type PersistedSettings = MergedSettings & {
+  byExercise: Record<string, number>;
+};
 
 /**
  * Hook that provides user-configurable default rest durations per exercise type.
  * Settings are stored in localStorage.
  */
 export function useRestSettings() {
-  const [settings, setSettings] = useState<MergedSettings>(() => {
+  const [settings, setSettings] = useState<PersistedSettings>(() => {
     const parsed = safeReadLSValidated(
       KEY,
       RestSettingsSchema,
       {} as RestSettings,
     );
     const merged = { ...REST_DEFAULTS, ...parsed };
-    return Object.fromEntries(
-      Object.entries(merged).map(([k, v]) => [
+    const categories = Object.fromEntries(
+      Object.keys(REST_DEFAULTS).map((k) => [
         k,
-        v ?? REST_DEFAULTS[k as keyof typeof REST_DEFAULTS],
+        merged[k as keyof typeof REST_DEFAULTS] ??
+          REST_DEFAULTS[k as keyof typeof REST_DEFAULTS],
       ]),
     ) as MergedSettings;
+    return { ...categories, byExercise: parsed.byExercise ?? {} };
   });
 
-  const persist = useCallback((next: MergedSettings) => {
+  const persist = useCallback((next: PersistedSettings) => {
     setSettings(next);
     safeWriteLS(KEY, next);
   }, []);
@@ -57,5 +62,27 @@ export function useRestSettings() {
     [settings],
   );
 
-  return { settings, updateSetting, getDefaultForGroup };
+  const getDefaultForExercise = useCallback(
+    (exerciseId: string, primaryGroup: string) =>
+      settings.byExercise[exerciseId] ?? getDefaultForGroup(primaryGroup),
+    [getDefaultForGroup, settings.byExercise],
+  );
+
+  const setDefaultForExercise = useCallback(
+    (exerciseId: string, sec: number) => {
+      persist({
+        ...settings,
+        byExercise: { ...settings.byExercise, [exerciseId]: Number(sec) },
+      });
+    },
+    [persist, settings],
+  );
+
+  return {
+    settings,
+    updateSetting,
+    getDefaultForGroup,
+    getDefaultForExercise,
+    setDefaultForExercise,
+  };
 }

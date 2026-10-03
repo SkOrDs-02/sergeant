@@ -103,6 +103,87 @@ export const ANTHROPIC_PRICING_USD_PER_MTOK: Record<
     cacheWrite: 18.75,
     cacheRead: 1.5,
   },
+  // ── Моделі чату через OpenRouter (2026-07-30) ──────────────────────────
+  // Запасний шлях: коли шлюз прислав `usage.cost`, ця таблиця не потрібна
+  // (див. `estimateAnthropicCostUsd`). Cache-ціни — за тією ж конвенцією
+  // 1.25×/0.10×. Вимірювання cache-токенів через шлюз суперечливі: ADR-0087
+  // бачив `cache_read` = 0, а спека `ai-cost-ceiling.md` (за ініціативою 0025)
+  // переказує рівні `cache_read` = `cache_creation` = 14 574 при нульовому
+  // `input_tokens`. Сирого payload-у в репо немає, тож НЕ спирайся на ці
+  // cache-ціни для моделей шлюзу: джерелом вартості є `usage.cost`, таблиця
+  // лише запасний шлях.
+  "openai/gpt-5.1": {
+    input: 1.25,
+    output: 10.0,
+    cacheWrite: 1.5625,
+    cacheRead: 0.125,
+  },
+  "google/gemini-2.5-flash-lite": {
+    input: 0.1,
+    output: 0.4,
+    cacheWrite: 0.125,
+    cacheRead: 0.01,
+  },
+  // Standard- і floor-тир КОУЧА з 2026-08-26 (див.
+  // `modules/chat/aiQuotaTierModels.ts::PRO_TIER_MODEL`). Рішення власника за
+  // виміром 2026-08-25: 8/8 на коуч-стенді, нуль порушень голосу, 987 мс —
+  // проти `gemini-2.5-flash-lite`, яка стояла тут раніше.
+  //
+  // Ціни — каталог OpenRouter, знято 2026-08-26 (`/api/v1/models`), а не
+  // виведено з агрегованої вартості прогону. Це втричі дорожче за вхід і
+  // вшестеро за вихід, ніж 2.5-flash-lite — саме звідси $0.16 → $0.64 на 1k
+  // викликів у звіті; два незалежні джерела зійшлись.
+  //
+  // AI-NOTE: `cacheWrite` тут МЕНШИЙ за `input` (0.0833 проти 0.30) і тому
+  // ламає евристику `input × 1.25`, за якою складені сусідні gemini-записи.
+  // Це не помилка перенесення: каталог віддає саме таке число
+  // (`input_cache_write: 0.0000000833…`) — у Google context-caching інша
+  // модель тарифікації, ніж у Anthropic. Не «виправляй» під евристику.
+  "google/gemini-3.5-flash-lite": {
+    input: 0.3,
+    output: 2.5,
+    cacheWrite: 0.0833,
+    cacheRead: 0.03,
+  },
+  // Floor-тир чату з 2026-08-26 (див. `env/chatModels.ts::CHAT_MODEL_DEFAULTS`).
+  "google/gemini-3.7-flash": {
+    input: 0.38,
+    output: 1.88,
+    cacheWrite: 0.475,
+    cacheRead: 0.038,
+  },
+  // ── Chat-дефолти під `CHAT_VIA_OPENROUTER=true` (2026-08-25, B38) ──────
+  // `env/chatModels.ts::CHAT_MODEL_DEFAULTS` реально ганяє основний трафік
+  // чату на ці два id (firstTurn/standard → deepseek, synthesis → glm-5.2),
+  // а таблиця вище про них не знала — `est_cost_usd` для основного трафіку
+  // мовчки виходив 0 (рятував лише `usage.cost` від шлюзу, якщо той його
+  // прислав). Ціни — каталог OpenRouter станом на 2026-08-25.
+  "deepseek/deepseek-v4-flash": {
+    input: 0.04,
+    output: 0.08,
+    cacheWrite: 0.05,
+    cacheRead: 0.004,
+  },
+  "z-ai/glm-5.2": {
+    input: 1.4,
+    output: 4.4,
+    cacheWrite: 1.75,
+    cacheRead: 0.14,
+  },
+  // `env/aiRoutingEnv.ts::OPENROUTER_COACH_MODEL` defaults to this
+  // vendor-prefixed OpenRouter id (fixed 2026-08-25, B37 — was the
+  // proven-broken `openai/gpt-5.1`), and `modules/chat/aiQuotaTierModels.ts`
+  // hardcodes the same id as `PRO_TIER_MODEL.premium.coach`'s fallback.
+  // Same underlying model as the bare `claude-sonnet-4` prefix above
+  // (identical $3/$15 pricing) — needs its own key because OpenRouter ids
+  // are vendor-prefixed (`anthropic/…`) and `startsWith` won't bridge the
+  // two id styles.
+  "anthropic/claude-sonnet-4": {
+    input: 3.0,
+    output: 15.0,
+    cacheWrite: 3.75,
+    cacheRead: 0.3,
+  },
 };
 
 /**
@@ -137,6 +218,10 @@ export interface AnthropicUsageTokens {
   output_tokens?: number | null | undefined;
   cache_creation_input_tokens?: number | null | undefined;
   cache_read_input_tokens?: number | null | undefined;
+  /**
+   * OpenRouter-only: сума в USD, яку шлюз реально списав за цей виклик.
+   */
+  cost?: number | null | undefined;
 }
 
 function toNonNegativeInt(value: unknown): number {
@@ -160,6 +245,20 @@ export function estimateAnthropicCostUsd(
   usage: AnthropicUsageTokens | null | undefined,
 ): number | null {
   if (!usage) return null;
+
+  // WHY факт важливіший за оцінку: OpenRouter рахує вартість сам і повертає
+  // її в `usage.cost` — це вже списані гроші, з урахуванням його націнки й
+  // актуального прайсу моделі. Таблиця нижче апроксимує і застаріває при
+  // кожній зміні цін у вендора, тож лишається лише для Anthropic-direct і
+  // для випадку, коли шлюз `cost` не прислав.
+  if (
+    typeof usage.cost === "number" &&
+    Number.isFinite(usage.cost) &&
+    usage.cost > 0
+  ) {
+    return usage.cost;
+  }
+
   const price = pickAnthropicPricing(model);
   if (!price) return null;
 

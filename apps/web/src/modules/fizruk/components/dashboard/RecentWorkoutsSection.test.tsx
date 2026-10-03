@@ -47,10 +47,16 @@ describe("RecentWorkoutsSection", () => {
     render(<RecentWorkoutsSection recent={recent} onSeeAll={onSeeAll} />);
     expect(screen.getByText("Ноги")).toBeDefined();
     expect(screen.getByText("Спина")).toBeDefined();
-    expect(screen.getByText("850 кг")).toBeDefined();
+    // PR-Z3 (аудит 2026-09-13, хвиля 6): "850 кг" читалось як маса тіла, а
+    // значення — `вага_кг × повторення`; канонічний підпис "кг×повт"
+    // (уніфіковано з `WorkoutSummaryView` / `WorkoutFinishSheets` /
+    // `WeeklyVolumeChart`). Абревіатура до тонн ("1,5 т") знята разом з
+    // неоднозначною одиницею — жодна інша поверхня fizruk так число не
+    // скорочує.
+    expect(screen.getByText("850 кг×повт")).toBeDefined();
     // 90 min → 1 год 30 хв
     expect(screen.getByText(/1 год 30 хв/)).toBeDefined();
-    expect(screen.getByText("1.5 т")).toBeDefined();
+    expect(screen.getByText("1 500 кг×повт")).toBeDefined();
   });
 
   it("uses '—' placeholders when duration or tonnage is zero/invalid", () => {
@@ -61,6 +67,18 @@ describe("RecentWorkoutsSection", () => {
     expect(screen.getByText("—")).toBeDefined();
     // Duration is inside a joined "{date} · —" sentence; match via regex.
     expect(screen.getByText(/·\s*—$/)).toBeDefined();
+  });
+
+  it("labels the tonnage stat consistently with WorkoutSummaryView / WorkoutFinishSheets — 'Обʼєм', not 'тоннаж'", () => {
+    const onSeeAll = vi.fn();
+    render(
+      <RecentWorkoutsSection
+        recent={[row({ tonnageKg: 850 })]}
+        onSeeAll={onSeeAll}
+      />,
+    );
+    expect(screen.getByText("Обʼєм")).toBeDefined();
+    expect(screen.queryByText("тоннаж")).toBeNull();
   });
 
   it("invokes onSeeAll when the 'Усі' pill is clicked", () => {

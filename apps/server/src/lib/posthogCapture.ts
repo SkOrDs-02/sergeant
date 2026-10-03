@@ -34,11 +34,7 @@ import { elapsedMs, isAbortError } from "./timing.js";
  */
 
 export type PostHogCaptureOutcome =
-  | "ok"
-  | "rate_limited"
-  | "timeout"
-  | "skipped"
-  | "error";
+  "ok" | "rate_limited" | "timeout" | "skipped" | "error";
 
 export interface PostHogCaptureResult {
   outcome: PostHogCaptureOutcome;

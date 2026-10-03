@@ -16,7 +16,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const sentryInit = vi.fn();
 const setTag = vi.fn();
 const browserTracingIntegration = vi.fn(() => ({ name: "tracing" }));
-const replayIntegration = vi.fn(() => ({ name: "replay" }));
 const captureException = vi.fn();
 const addBreadcrumb = vi.fn();
 
@@ -24,7 +23,6 @@ vi.mock("@sentry/react", () => ({
   init: sentryInit,
   setTag,
   browserTracingIntegration,
-  replayIntegration,
   captureException,
   addBreadcrumb,
 }));
@@ -49,7 +47,6 @@ beforeEach(() => {
   sentryInit.mockReset();
   setTag.mockReset();
   browserTracingIntegration.mockClear();
-  replayIntegration.mockClear();
   captureException.mockReset();
   addBreadcrumb.mockReset();
   isCapacitorMock.mockReset().mockReturnValue(false);
@@ -142,19 +139,14 @@ describe("initSentry", () => {
     expect(cfg.tracesSampleRate).toBeUndefined();
   });
 
-  it("маскує free-text у Session Replay (audit 2026-05-13 §F3)", async () => {
+  it("не вмикає Session Replay у web bundle (bundle budget follow-up)", async () => {
     const { initSentry } = await import("./sentry");
     await initSentry();
-    expect(replayIntegration).toHaveBeenCalledTimes(1);
-    const callArgs = (replayIntegration.mock.calls[0] ?? []) as unknown[];
-    const opts = (callArgs[0] ?? {}) as {
-      maskAllText?: boolean | undefined;
-      maskAllInputs?: boolean | undefined;
-      blockAllMedia?: boolean | undefined;
-    };
-    expect(opts.maskAllText).toBe(true);
-    expect(opts.maskAllInputs).toBe(true);
-    expect(opts.blockAllMedia).toBe(true);
+    const cfg = sentryInit.mock.calls[0]?.[0];
+    expect(cfg.integrations).toHaveLength(1);
+    expect(cfg.integrations[0]).toBeDefined();
+    expect(cfg.replaysSessionSampleRate).toBeUndefined();
+    expect(cfg.replaysOnErrorSampleRate).toBeUndefined();
   });
 
   it("реєструє beforeSend, який рекурсивно скрабить PII (audit 2026-05-13)", async () => {

@@ -23,10 +23,14 @@ const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
   atlas: "Не вдалось показати «Атлас»",
   workouts: "Не вдалось показати «Тренування»",
   progress: "Не вдалось показати «Прогрес»",
-  measurements: "Не вдалось показати «Виміри»",
+  measurements: "Не вдалось показати «Заміри»",
   programs: "Не вдалось показати «Програми»",
   body: "Не вдалось показати «Склад тіла»",
   exercise: "Не вдалось показати вправу",
+  workout: "Не вдалось показати активне тренування",
+  history: "Не вдалось показати історію тренувань",
+  catalog: "Не вдалось показати каталог вправ",
+  templates: "Не вдалось показати шаблони",
 };
 
 // Per-page lazy chunks. Previously this file eager-imported all nine
@@ -41,6 +45,14 @@ const Dashboard = lazyImport(() => import("../pages/Dashboard"), "Dashboard");
 const Atlas = lazyImport(() => import("../pages/Atlas"), "Atlas");
 const Exercise = lazyImport(() => import("../pages/Exercise"), "Exercise");
 const Workouts = lazyImport(() => import("../pages/Workouts"), "Workouts");
+const ActiveWorkout = lazyImport(
+  () => import("../pages/ActiveWorkout"),
+  "ActiveWorkout",
+);
+const WorkoutHistory = lazyImport(
+  () => import("../pages/WorkoutHistory"),
+  "WorkoutHistory",
+);
 const Progress = lazyImport(() => import("../pages/Progress"), "Progress");
 const Measurements = lazyImport(
   () => import("../pages/Measurements"),
@@ -52,11 +64,25 @@ const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
 export interface FizrukRouterProps {
   page: FizrukPage;
   exerciseId?: string | undefined;
+  workoutId?: string | undefined;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран у сесії. */
+  workoutItemId?: string | undefined;
+  /**
+   * Спека `fizruk-hero-recovery-bars.md` рішення 4 — атласна зона (або
+   * зона травми), яку hero-рядок просить підсвітити на сторінці «Атлас».
+   */
+  atlasMuscleId?: string | undefined;
   activeProgramId: string | null;
   activeProgram: TrainingProgramDef | null;
   activateProgram: (id: string) => void;
   deactivateProgram: () => void;
   todaySession: RouterTodaySession | null;
+  /**
+   * Лічильник запитів «відкрити аркуш „Почати тренування“» (PWA-інтент
+   * `start_workout`, клавіша `N`). Кожен інкремент відкриває аркуш на
+   * домашній «Тренувань»; `0` — нічого не просили.
+   */
+  quickStartRequest?: number | undefined;
   /**
    * Switch the active Fizruk page. Accepts either a typed `FizrukPage`
    * (`onNavigate("workouts")`) or a `<page>/<segment>` deep-link string
@@ -65,26 +91,31 @@ export interface FizrukRouterProps {
    * deep-link without reaching into `window.location.hash`.
    */
   onNavigate: (target: FizrukPage | string) => void;
+  onQuickStart: () => void;
   onStartProgramWorkout: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
   ) => void;
   onOpenModule?:
-    | ((moduleId: string, opts?: { hash?: string }) => void)
-    | undefined;
+    ((moduleId: string, opts?: { hash?: string }) => void) | undefined;
 }
 
 function renderPage(props: FizrukRouterProps) {
   const {
     page,
     exerciseId,
+    workoutId,
+    workoutItemId,
+    atlasMuscleId,
     activeProgramId,
     activeProgram,
     activateProgram,
     deactivateProgram,
     todaySession,
+    quickStartRequest,
     onNavigate,
     onStartProgramWorkout,
+    onQuickStart,
     onOpenModule,
   } = props;
   switch (page) {
@@ -95,12 +126,25 @@ function renderPage(props: FizrukRouterProps) {
           activeProgram={activeProgram}
           todaySession={todaySession}
           onStartProgramWorkout={onStartProgramWorkout}
+          onQuickStart={onQuickStart}
           onNavigate={onNavigate}
         />
       );
     case "atlas":
-      return <Atlas />;
-    case "workouts":
+      return (
+        <Atlas
+          onOpenBody={() => onNavigate("body")}
+          focusMuscleId={atlasMuscleId}
+        />
+      );
+    case "workouts": {
+      // Плитка «За програмою» в аркуші «Почати тренування» — той самий
+      // старт, що й hero-картка Огляду; без активної програми чи без сесії
+      // на сьогодні плитки немає.
+      const programSession =
+        activeProgram && todaySession
+          ? activeProgram.sessions?.[todaySession.sessionKey]
+          : undefined;
       return (
         <Workouts
           onOpenRoutine={
@@ -108,9 +152,34 @@ function renderPage(props: FizrukRouterProps) {
               ? () => onOpenModule("routine", { hash: "calendar" })
               : undefined
           }
-          onOpenPrograms={() => onNavigate("programs")}
+          quickStartRequest={quickStartRequest}
+          onNavigate={onNavigate}
+          programStart={
+            programSession && activeProgram && todaySession
+              ? {
+                  label: todaySession.name,
+                  onStart: () =>
+                    onStartProgramWorkout(programSession, activeProgram),
+                }
+              : undefined
+          }
         />
       );
+    }
+    case "catalog":
+      return <Workouts section="catalog" onNavigate={onNavigate} />;
+    case "templates":
+      return <Workouts section="templates" onNavigate={onNavigate} />;
+    case "workout":
+      return (
+        <ActiveWorkout
+          workoutId={workoutId ?? ""}
+          focusItemId={workoutItemId}
+          onNavigate={onNavigate}
+        />
+      );
+    case "history":
+      return <WorkoutHistory onNavigate={onNavigate} />;
     case "progress":
       return <Progress onNavigate={onNavigate} />;
     case "measurements":
@@ -126,12 +195,7 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "body":
-      return (
-        <Body
-          onOpenMeasurements={() => onNavigate("measurements")}
-          onOpenAtlas={() => onNavigate("atlas")}
-        />
-      );
+      return <Body onOpenAtlas={() => onNavigate("atlas")} />;
     case "exercise":
       return <Exercise exerciseId={exerciseId ?? ""} onNavigate={onNavigate} />;
     default:

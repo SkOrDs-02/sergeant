@@ -14,7 +14,7 @@ import {
 } from "../_shared/primitives";
 
 /**
- * 3-tier motion budget (Hard Rule #17):
+ * 3-tier motion budget (review-only convention after ADR-0081):
  *   Tier 1 — Ambient  : skeleton, spinner, pulse  (background states)
  *   Tier 2 — Response : slide, fade, scale        (user-triggered feedback)
  *   Tier 3 — Celebrate: streak, check, number     (milestone moments only)
@@ -31,11 +31,11 @@ const SAMPLE_USAGE = `// motion-safe gates the animation under prefers-reduced-m
 
 function AmbientTier() {
   return (
-    <Group label="Tier 1 — Ambient (фонові стани)">
+    <Group label="Tier 1: Ambient (фонові стани)">
       <div className="space-y-4">
         <div>
-          <p className="text-xs text-muted mb-2">
-            Skeleton pulse — <code>motion-safe:animate-pulse</code>
+          <p className="text-style-caption text-muted mb-2">
+            Skeleton pulse: <code>motion-safe:animate-pulse</code>
           </p>
           <div className="space-y-2 max-w-xs">
             <Skeleton className="h-5 w-3/4" />
@@ -44,8 +44,8 @@ function AmbientTier() {
           </div>
         </div>
         <div>
-          <p className="text-xs text-muted mb-2">
-            Spinner — <code>motion-safe:animate-spin</code>
+          <p className="text-style-caption text-muted mb-2">
+            Spinner: <code>motion-safe:animate-spin</code>
           </p>
           <div className="flex items-center gap-4">
             <Spinner size="xs" className="text-muted" />
@@ -72,7 +72,7 @@ function ResponseTier() {
   }
 
   return (
-    <Group label="Tier 2 — Response (реакція на дію)">
+    <Group label="Tier 2: Response (реакція на дію)">
       <div className="space-y-4">
         <div className="flex flex-wrap gap-2 mb-3">
           <Button size="sm" variant="secondary" onClick={replay}>
@@ -82,16 +82,16 @@ function ResponseTier() {
         <div className="grid grid-cols-2 gap-3 max-w-sm" key={seq}>
           {visible ? (
             <>
-              <div className="animate-fade-in bg-panel border border-line rounded-xl p-3 text-xs text-center">
+              <div className="animate-fade-in bg-panel border border-line rounded-xl p-3 text-style-caption text-center">
                 <code>animate-fade-in</code>
               </div>
-              <div className="animate-scale-in bg-panel border border-line rounded-xl p-3 text-xs text-center">
+              <div className="animate-scale-in bg-panel border border-line rounded-xl p-3 text-style-caption text-center">
                 <code>animate-scale-in</code>
               </div>
-              <div className="animate-slide-in-up bg-panel border border-line rounded-xl p-3 text-xs text-center">
+              <div className="animate-slide-in-up bg-panel border border-line rounded-xl p-3 text-style-caption text-center">
                 <code>animate-slide-in-up</code>
               </div>
-              <div className="animate-slide-in-right bg-panel border border-line rounded-xl p-3 text-xs text-center">
+              <div className="animate-slide-in-right bg-panel border border-line rounded-xl p-3 text-style-caption text-center">
                 <code>animate-slide-in-right</code>
               </div>
             </>
@@ -116,8 +116,8 @@ function ShakeDemo() {
 
   return (
     <div>
-      <p className="text-xs text-muted mb-2">
-        Shake (помилка валідації) — <code>animate-shake</code>
+      <p className="text-style-caption text-muted mb-2">
+        Shake (помилка валідації): <code>animate-shake</code>
       </p>
       <div className="flex items-center gap-3">
         <input
@@ -125,7 +125,7 @@ function ShakeDemo() {
           readOnly
           value="Некоректне значення"
           aria-label="Приклад input у стані помилки"
-          className={`input-focus px-3 py-2 rounded-xl border border-danger/60 bg-panel text-sm text-text ${
+          className={`input-focus px-3 py-2 rounded-xl border border-danger/60 bg-panel text-style-body text-text ${
             shaking ? "animate-shake" : ""
           }`}
         />
@@ -142,25 +142,25 @@ function CelebrateTier() {
   const [amount, setAmount] = useState(0);
 
   return (
-    <Group label="Tier 3 — Celebrate (досягнення)">
+    <Group label="Tier 3: Celebrate (досягнення)">
       <div className="space-y-6">
         <div>
-          <p className="text-xs text-muted mb-3">
-            StreakFlame — <code>animate-streak-glow</code>
+          <p className="text-style-caption text-muted mb-3">
+            StreakFlame: <code>animate-streak-glow</code>
           </p>
           <div className="flex items-end gap-4 flex-wrap">
             {[1, 7, 14, 30, 90].map((n) => (
               <div key={n} className="flex flex-col items-center gap-1">
                 <StreakFlame streak={n} size="md" showLabel />
-                <span className="text-xs text-muted">{n}д</span>
+                <span className="text-style-caption text-muted">{n}д</span>
               </div>
             ))}
           </div>
         </div>
 
         <div>
-          <p className="text-xs text-muted mb-3">
-            AnimatedCheckbox — <code>animate-check-bounce</code>
+          <p className="text-style-caption text-muted mb-3">
+            AnimatedCheckbox: <code>animate-check-bounce</code>
           </p>
           <div className="flex items-center gap-4 flex-wrap">
             {(
@@ -172,9 +172,9 @@ function CelebrateTier() {
                   onChange={setChecked}
                   variant={variant}
                   size="lg"
-                  aria-label={`Чекбокс — варіант ${variant}`}
+                  aria-label={`Чекбокс: варіант ${variant}`}
                 />
-                <span className="text-xs text-muted">{variant}</span>
+                <span className="text-style-caption text-muted">{variant}</span>
               </div>
             ))}
           </div>
@@ -184,13 +184,13 @@ function CelebrateTier() {
             className="mt-3"
             onClick={() => setChecked((v) => !v)}
           >
-            Toggle ({checked ? "✓" : "○"})
+            Toggle ({checked ? "увімк." : "вимк."})
           </Button>
         </div>
 
         <div>
-          <p className="text-xs text-muted mb-3">
-            AnimatedNumber — <code>animate-tick-up / tick-down</code>
+          <p className="text-style-caption text-muted mb-3">
+            AnimatedNumber: <code>animate-tick-up / tick-down</code>
           </p>
           <div className="flex items-end gap-6 flex-wrap">
             <div className="text-center">
@@ -198,9 +198,9 @@ function CelebrateTier() {
                 value={amount}
                 formatOptions={{ style: "currency", currency: "UAH" }}
                 locale="uk-UA"
-                className="text-style-hero text-text tabular-nums"
+                className="text-style-headline text-text tabular-nums"
               />
-              <p className="text-xs text-muted mt-1">Сума</p>
+              <p className="text-style-caption text-muted mt-1">Сума</p>
             </div>
             <div className="text-center">
               <AnimatedNumber
@@ -208,7 +208,7 @@ function CelebrateTier() {
                 suffix=" ккал"
                 className="text-style-title text-nutrition tabular-nums"
               />
-              <p className="text-xs text-muted mt-1">Калорії</p>
+              <p className="text-style-caption text-muted mt-1">Калорії</p>
             </div>
           </div>
           <div className="flex gap-2 mt-3">
@@ -243,9 +243,10 @@ export function MotionSection() {
       title="Motion"
       intro={
         <>
-          Бюджет — макс. 1 ambient + 1 response одночасно (HR #17). Кожна
-          анімація обгорнута в <code>motion-safe:</code> щоб поважати OS pref
-          <code>prefers-reduced-motion: reduce</code>. Celebrate — тільки на
+          Бюджет: макс. 1 ambient + 1 response одночасно (конвенція, review-only
+          після ADR-0081). Кожна анімація обгорнута в <code>motion-safe:</code>{" "}
+          щоб поважати OS pref
+          <code>prefers-reduced-motion: reduce</code>. Celebrate, тільки на
           milestone-моментах (7 / 30 / 100 / 365 днів).
         </>
       }
@@ -286,7 +287,7 @@ export function MotionSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[{ label: "HR #17", hint: "Animation budget — 3 tiers" }]}
+        hardRules={[]}
         lintRules={[
           {
             label: "motion-safe convention",

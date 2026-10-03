@@ -1,7 +1,7 @@
 /**
  * Mobile Finyk — backup payload helpers.
  *
- * Stage 13 PR #071 of `docs/planning/storage-roadmap.md` — mirror of
+ * Stage 13 PR #071 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — mirror of
  * `apps/web/src/modules/finyk/lib/finykBackup.ts`. After Stage 8 PR
  * #057k-tombstone the Finyk MMKV slots are empty (the residual-import
  * helper drained them into SQLite once and deleted the keys), so the
@@ -17,12 +17,12 @@
 
 import type { FinykBackup } from "@sergeant/finyk-domain/backup";
 
-import { triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./sqliteWriter";
 import {
   EMPTY_FINYK_STATE,
   type FinykDualWriteState,
   type FinykPrefsSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import {
   blobsFromArray,
   idsFromArray,
@@ -30,7 +30,7 @@ import {
   networthHistoryFrom,
   txCatsFromMap,
   txSplitsFromMap,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 import { getCachedFinykSqliteState } from "./sqliteReader";
 
 /**

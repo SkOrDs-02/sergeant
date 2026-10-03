@@ -42,6 +42,41 @@ describe("BarcodeProductSchema", () => {
     expect(parsed.partial).toBe(true);
   });
 
+  it("accepts a Silpo-sourced product (fourth cascade source, connected-user-only)", () => {
+    const parsed = BarcodeProductSchema.parse({
+      name: "Молоко Сільпо 2.5%",
+      brand: "Сільпо",
+      kcal_100g: 60,
+      protein_100g: 3.2,
+      fat_100g: 2.5,
+      carbs_100g: 4.8,
+      servingSize: "900 мл",
+      // "мл" is not a mass unit — the server emits null grams alongside the
+      // raw display string (see apps/server/src/modules/silpo/foodSource.ts).
+      servingGrams: null,
+      source: "silpo",
+    });
+    expect(parsed.source).toBe("silpo");
+    expect(parsed.partial).toBeUndefined();
+  });
+
+  it("accepts a partial Silpo product (name-only, `partial: true` like UPCitemdb)", () => {
+    const parsed = BarcodeProductSchema.parse({
+      name: "Товар без КБЖВ",
+      brand: null,
+      kcal_100g: null,
+      protein_100g: null,
+      fat_100g: null,
+      carbs_100g: null,
+      servingSize: null,
+      servingGrams: null,
+      source: "silpo",
+      partial: true,
+    });
+    expect(parsed.source).toBe("silpo");
+    expect(parsed.partial).toBe(true);
+  });
+
   it("rejects an empty name", () => {
     expect(() =>
       BarcodeProductSchema.parse({
@@ -155,13 +190,25 @@ describe("FoodSearchProductSchema", () => {
     expect(parsed.brand).toBeNull();
   });
 
+  it("accepts a Silpo-sourced row (fourth cascade source, connected-user-only)", () => {
+    const parsed = FoodSearchProductSchema.parse({
+      id: "silpo_4820000000017",
+      name: "Молоко Сільпо 2.5%",
+      brand: "Сільпо",
+      source: "silpo",
+      per100: { kcal: 60, protein_g: 3.2, fat_g: 2.5, carbs_g: 4.8 },
+      defaultGrams: 100,
+    });
+    expect(parsed.source).toBe("silpo");
+  });
+
   it("rejects an empty name", () => {
     expect(() =>
       FoodSearchProductSchema.parse({ ...VALID, name: "" }),
     ).toThrow();
   });
 
-  it("rejects unknown source (`off` / `usda` only)", () => {
+  it("rejects unknown source (`off` / `usda` / `silpo` only)", () => {
     expect(() =>
       FoodSearchProductSchema.parse({ ...VALID, source: "upcitemdb" }),
     ).toThrow();

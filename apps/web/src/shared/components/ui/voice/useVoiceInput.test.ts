@@ -74,6 +74,38 @@ describe("useVoiceInput", () => {
     expect(result.current.supported).toBe(false);
   });
 
+  it("reports unsupported in an iOS standalone PWA even when the object exists", () => {
+    // WebKit 185448/215884 — `webkitSpeechRecognition` присутній, але не
+    // працює у standalone-PWA на iOS. Спуфимо iPhone + standalone.
+    const originalUa = navigator.userAgent;
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(navigator, "userAgent", {
+      value: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      configurable: true,
+    });
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: query.includes("display-mode: standalone"),
+        media: query,
+        onchange: null,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        addListener: () => {},
+        removeListener: () => {},
+        dispatchEvent: () => false,
+      }) as MediaQueryList) as typeof window.matchMedia;
+    try {
+      const { result } = renderHook(() => useVoiceInput());
+      expect(result.current.supported).toBe(false);
+    } finally {
+      Object.defineProperty(navigator, "userAgent", {
+        value: originalUa,
+        configurable: true,
+      });
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
   it("start() begins listening and fires onResult on a transcript", () => {
     const onResult = vi.fn();
     const { result } = renderHook(() => useVoiceInput({ onResult }));

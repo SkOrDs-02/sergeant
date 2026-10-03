@@ -32,22 +32,28 @@ export class SectionErrorBoundary extends Component<
   override render() {
     const { error } = this.state;
     if (error) {
-      const title = this.props.title || "Помилка";
+      // Дефолт у формі, якою користуються ВСІ дванадцять call-site-ів
+      // («Не вдалось показати «X»»), а не голе «Помилка»: §7 гайду
+      // копірайтингу називає його забороненою standalone-конструкцією.
+      // Наразі жоден call-site сюди не доходить — усі передають свій title —
+      // тож це не виправлення видимого тексту, а прибрана пастка для
+      // наступного автора, який `title` не передасть (PR-X3).
+      const title = this.props.title || "Не вдалось показати цю секцію";
       const resetLabel = this.props.resetLabel || "Відновити";
       const onReset = this.props.onReset;
       return (
         <div className="rounded-2xl border border-danger/40 bg-danger/10 p-4 text-text shadow-card">
           <div className="text-style-label">{title}</div>
-          <div className="text-xs text-subtle mt-1">
+          <div className="text-style-body text-subtle mt-1">
             {messages.errors.generic.sectionFailed}
           </div>
-          <pre className="mt-2 text-xs text-danger-strong dark:text-danger whitespace-pre-wrap wrap-break-word max-h-40 overflow-auto">
+          <pre className="mt-2 text-style-caption text-danger-strong dark:text-danger whitespace-pre-wrap wrap-break-word max-h-40 overflow-auto">
             {String(error?.message || error)}
           </pre>
           <div className="mt-3 flex gap-2 flex-wrap">
             <button
               type="button"
-              className="px-4 py-2 rounded-xl border border-line bg-panelHi text-xs font-semibold hover:bg-panel transition-colors"
+              className="px-4 py-2 rounded-xl border border-line bg-panelHi text-style-label font-semibold hover:bg-panel transition-colors"
               onClick={() => {
                 this.setState({ error: null });
                 onReset?.();

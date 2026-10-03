@@ -26,6 +26,7 @@ export interface HubShellValue {
   activeModule: HubModuleId | null;
   openModule: HubNavigation["openModule"];
   goToHub: HubNavigation["goToHub"];
+  goBackOrHub: HubNavigation["goBackOrHub"];
   goToModuleSettings: HubNavigation["goToModuleSettings"];
   moduleAnimClass: HubNavigation["moduleAnimClass"];
 
@@ -49,7 +50,8 @@ export interface HubShellValue {
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
 
   // SW update (from useSWUpdate)
   updateAvailable: boolean;

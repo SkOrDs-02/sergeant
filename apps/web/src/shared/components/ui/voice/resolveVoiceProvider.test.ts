@@ -1,6 +1,6 @@
 /**
- * Tests for `resolveConfiguredProvider` — reads `VITE_VOICE_PROVIDER`
- * and normalises it to a known provider, defaulting to "auto".
+ * Tests for `resolveConfiguredProvider` — always resolves "auto" (the
+ * `VITE_VOICE_PROVIDER` override is unwired in every environment).
  */
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { resolveConfiguredProvider } from "./resolveVoiceProvider";
@@ -15,22 +15,7 @@ describe("resolveConfiguredProvider", () => {
     expect(resolveConfiguredProvider()).toBe("auto");
   });
 
-  it("returns 'groq' when configured", () => {
-    vi.stubEnv("VITE_VOICE_PROVIDER", "groq");
-    expect(resolveConfiguredProvider()).toBe("groq");
-  });
-
-  it("returns 'webspeech' when configured", () => {
-    vi.stubEnv("VITE_VOICE_PROVIDER", "webspeech");
-    expect(resolveConfiguredProvider()).toBe("webspeech");
-  });
-
-  it("normalises case and whitespace", () => {
-    vi.stubEnv("VITE_VOICE_PROVIDER", "  GROQ  ");
-    expect(resolveConfiguredProvider()).toBe("groq");
-  });
-
-  it("falls back to 'auto' for an unrecognised value", () => {
+  it("resolves 'auto' regardless of the env var value", () => {
     vi.stubEnv("VITE_VOICE_PROVIDER", "nonsense");
     expect(resolveConfiguredProvider()).toBe("auto");
   });

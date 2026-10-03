@@ -24,7 +24,7 @@ import {
  * Dynamic Expo config.
  *
  * Замінює `app.json` щоб можна було читати змінні з `process.env` для
- * EAS build (див. `apps/mobile/docs/mobile.md`). Усі поля що раніше
+ * EAS build (див. `apps/mobile/docs/work/specs/tech-debt/mobile.md`). Усі поля що раніше
  * жили в `app.json` перенесені сюди один-в-один.
  */
 const updatesUrl = process.env.EXPO_PUBLIC_EAS_UPDATES_URL;
@@ -40,7 +40,7 @@ const updatesUrl = process.env.EXPO_PUBLIC_EAS_UPDATES_URL;
  *   - `E2E_BUILD=1`        — explicit override for prebuild pipelines
  *     that don't want to leak `EXPO_PUBLIC_*` into the bundled JS.
  *
- * Docs: `docs/mobile/react-native-migration.md` §8 / §13 Q8.
+ * Docs: `docs/engineering/mobile/react-native-migration.md` §8 / §13 Q8.
  */
 const isDetoxBuild =
   process.env.EXPO_PUBLIC_E2E === "1" || process.env.E2E_BUILD === "1";
@@ -66,7 +66,7 @@ const ANDROID_PACKAGE = "com.sergeant.app";
  */
 const UNIVERSAL_LINK_HOSTS = [
   "sergeant.vercel.app",
-  "sergeant.2dmanager.com.ua",
+  "app.sergeant.com.ua",
 ] as const;
 
 /**
@@ -184,7 +184,7 @@ const buildConfig = (): ExpoConfig => ({
     // is mandatory and the host MUST be bare (no scheme, no path).
     // The corresponding AASA `appIDs` entry is
     // `<TEAM_ID>.com.sergeant.app`; the Team ID is filled in at
-    // deploy time (see `docs/mobile/capacitor-deep-links.md`) and
+    // deploy time (see `docs/engineering/mobile/capacitor-deep-links.md`) and
     // intentionally stays as a placeholder in the committed file.
     associatedDomains: UNIVERSAL_LINK_HOSTS.map((h) => `applinks:${h}`),
     infoPlist: {

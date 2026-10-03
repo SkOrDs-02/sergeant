@@ -168,9 +168,9 @@ describe("DraggableHabitList — gesture integration", () => {
   it("renders each habit row with the accessibility-fallback ↑ / ↓ buttons", () => {
     renderList([h("a", "Йога"), h("b", "Біг"), h("c", "Читання")]);
 
-    expect(screen.getByText("✓ Йога")).toBeTruthy();
-    expect(screen.getByText("✓ Біг")).toBeTruthy();
-    expect(screen.getByText("✓ Читання")).toBeTruthy();
+    expect(screen.getByText("Йога")).toBeTruthy();
+    expect(screen.getByText("Біг")).toBeTruthy();
+    expect(screen.getByText("Читання")).toBeTruthy();
     // Every row exposes both arrow buttons so screen-reader users keep
     // a keyboard-accessible reorder path even without the drag gesture.
     expect(screen.getAllByLabelText("Вгору в списку")).toHaveLength(3);

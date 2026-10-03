@@ -1,0 +1,754 @@
+category	code_uniq	docs_uniq	ahead	date	ref	sha	subject
+A-у історії main	0	0	0	2026-09-14	refs/remotes/deadgh-zaebal/claude/product-review-full-8nesir	e6438e83b0fd5abacc7a3a49f8164d87b37974ee	fix(web): 88 px порожнечі під кожною сторінкою, старт із порожнього плану, один вихід замість трьох
+A-у історії main	0	0	0	2026-09-14	refs/remotes/deadgh-zaebal/claude/site-visibility-tasks-fbcsry	b605b1ada5698bd6266590bbfef8703996b60913	fix(config): лендінг не мав жодного блоку лінту, тож ToV-канон там не гейтився
+A-у історії main	0	0	0	2026-09-14	refs/remotes/deadgh-zaebal/claude/text-clarification-x8jxg9	a632101d38f03ef2ac6d1ced43620bd6492b012d	fix(web): sign on the amount and repayment wording in the transfer card
+A-у історії main	0	0	0	2026-09-14	refs/remotes/deadgh-zaebal/main	e5ef664a70a8658eea38e92d5d00a072a18fed82	feat(server): показувати, що синк Сільпо зламаний, а не лише коли він вдався (#1217)
+A-у історії main	0	0	0	2026-08-25	refs/remotes/oldgh/beta	e7196b276e7872a83a6587ec20ac44a0f0e0493d	Merge pull request #853 from SkOrDs-02/claude/green-main-obsolete-snapshot
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/account-switch-isolation	1dfb57a285daf9aac4766b7b187941e6f01e3a47	docs(web): зафіксувати пастку AuthContext × @sergeant/shared
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/ai-factory-ideas-a7svw6	a1d114d4e3582d05dfcea749a3b00a1b106c08e1	docs(docs): regenerate open-work, STATUS and freshness dashboard
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/ai-memory-retrieval-scores	3ab3ba03d77dcd78b13cee66b1fbc14b2f910716	feat(server): метрики якості retrieval-у AI-пам'яті
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/ai-security-abuse-check-76e47c	9817701f2ed563de38a4dd3733d2441d79e6512d	fix(root): закрити зловживання AI-чатом — сесія, огорожа контексту, межа скоупу
+A-у історії main	0	0	0	2026-08-08	refs/remotes/oldgh/claude/ai-slop-design-0d6idv	86a9fe74b3758407d5b154326c151da654c6aef7	refactor(web): burndown атрактора 8, партія 3 — routine (116 → 115)
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/ai-usage-report-http	42defa2e573f772e40b2ba789d4ed5ea7eb630be	fix(server): звіт витрат за довільне вікно — HTTP замість недосяжної бази
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/analytics-page-hang-fix-jmzsnd	16bacb4407287167aa02c55fd27dbbf6611a269e	fix(web): warm nested CategoryPieChart chunk on Finyk analytics preload
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/anonymous-user-profile-permissions-3f1e96	8a19987f7881646fe00857a01e21cf0bdd3194b0	feat(web): підняти банер durability в хаб і просити вхід одразу після запису
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/claude/atlas-body-mockups-review-14ad85	26b16d92f24cef57361d5288e9208979920e81ce	feat(web): sculpted 3D BodyAtlas rendering (design variant 2а)
+A-у історії main	0	0	0	2026-08-08	refs/remotes/oldgh/claude/attractor-8-burndown-core-shared	70e18eb0b93f560600f4e7978a8633a2b3951ff8	refactor(web): burndown атрактора 8, партія 7 — залишки core/shared (92 → 90)
+A-у історії main	0	0	0	2026-08-08	refs/remotes/oldgh/claude/attractor-8-burndown-j4kffw	dc553fdde76e00c555bfcf2a4573c1fe21a3ef60	refactor(web): burndown атрактора 8, партія 4 — finyk (115 → 100)
+A-у історії main	0	0	0	2026-08-08	refs/remotes/oldgh/claude/attractor-8-burndown-routine-final	de237298ad171beb31be1042c3219337d8737799	refactor(web): burndown атрактора 8, партія 8 — фінальний прохід (90 → 87)
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/backlog-product-solutions-73f2f0	377bf230a97d427b1f7f3acb2295354883ac4620	feat(web): поріг публікації для текстового інсайту коуча
+A-у історії main	0	0	0	2026-08-09	refs/remotes/oldgh/claude/beta-browser-testing-50vmaq	4d6175f2ddeddbc02d1d3e472325fbec98386516	Merge remote-tracking branch 'origin/main' into claude/beta-browser-testing-50vmaq
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/claude/beta-input-boundaries-spec	f142a5cba7b288e4ff9265be4dc81204aa0ff151	docs(docs): спека beta-input-boundaries — межові значення форм вводу
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/claude/bot-commands-fix	e4e764df9d97ec357cefc7a31275d88cc88b858f	fix(server): меню команд бота, живі кнопки опитувань і PWA не тільки в Safari
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/browser-testing-2c7622	553ea21c17496aa80b0d2fa29a3be458d0c2f864	fix(web): сторінка 404 більше не їде без заголовка
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/browser-testing-user-profiles-z80l1q	b904d94ef36b4600ce91cdd0deb63180ddd7a617	Merge remote-tracking branch 'origin/main' into claude/browser-testing-user-profiles-z80l1q
+A-у історії main	0	0	0	2026-08-17	refs/remotes/oldgh/claude/calorie-chart-scale-siitfv	d0c9360a3c70f6e5017c218f87a9cd548e398576	fix(mobile): перевести тижневий ккал-графік на спільну модель шкали
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/canonical-metrics-lint	e51531851887624f2acf8251bcbfebd11405eb7e	feat(eslint-plugins): гейт проти ad-hoc підрахунку витрат — стадія 5 Хвилі 1
+A-у історії main	0	0	0	2026-09-02	refs/remotes/oldgh/claude/canvas-claude-design-tmmuma	0bdab8efa6118ad72df97fa3fb7d97243e5b83c1	test(web): зняти гонку рестарту з сервіс-воркером у тесті комори
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/chat-first-turn-deepseek	4a56a2ef3021a54cdee0983d7dbf3886eece7d46	fix(server): прибрати залишений маркер конфлікту в systemPrompt.ts
+A-у історії main	0	0	0	2026-07-11	refs/remotes/oldgh/claude/chornylo-step5-nav	ca5567ae17e45c9cb524422ef42f7bd6b6c3a668	Merge remote-tracking branch 'origin/main' into claude/chornylo-step5-nav
+A-у історії main	0	0	0	2026-07-11	refs/remotes/oldgh/claude/chornylo-step6-light	c49f5f699938b44c2a51e23058d70f24f3561543	feat(web): «Чорнило» § 5 completion — theme-aware module accents + solid surface
+A-у історії main	0	0	0	2026-08-06	refs/remotes/oldgh/claude/ci-failures-5egbod	794f0fadc9aa6cab00b1ff649c7a12416e769357	fix(ci): полагодити червоний main — pact-контракт preferences і два smoke-тести
+A-у історії main	0	0	0	2026-07-25	refs/remotes/oldgh/claude/ci-sanitation-2tqh63	3c3a31e7aea664721abe0ab810ec37c6413e67be	docs(docs): виправити версії стеку apps/landing і залишковий гліф у cycle6-звіті
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/coach-daily-advice	97b2326894f3dc771123d5bceaebe5e82bda231d	fix(web): не перегенеровувати пораду коуча на кожен запис їжі
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/coach-sonnet-via-openrouter	41ceac067badb018bb7cda7b7573a14691acb2e2	fix(server): коуч на Sonnet через шлюз + фолбек перестає мовчати
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/compassionate-elbakyan-e267d0	3df49136401eb1010fd74d5665a4a5ec93f09048	docs(docs): ревізія routine-канону під рішення 2026-08-30 (календар дня лишається)
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/claude/coolify-auto-deploy	7a44486b166d0f5a9f74a7c72d3b56482934e162	ci(root): use GET for Coolify deploy trigger (enables auto-deploy)
+A-у історії main	0	0	0	2026-09-01	refs/remotes/oldgh/claude/coverage-cli-scripts	8076bc615d5768391cd719de0f446b6f46ad77a2	docs(agents): спека запису заняття за тривалістю і витрати калорій
+A-у історії main	0	0	0	2026-08-21	refs/remotes/oldgh/claude/dark-theme-red-gray-text-i5vak2	b29f47aca7f91631db25c8433ea9fbac24f5aabb	fix(design-tokens): підняти контраст червоного і сірого тексту в темній темі
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/datasets-tools-assessment-attgh5	f45bc9eff75ae29c07d394c0263acafa12d1020a	docs(docs): спека покриття евалом — RAG-вимір, реєстр тулів, ін'єкції
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/design-system-audit-jxeumh	ba1b63a9429c82401c8d0d1920c4b692a8d21b9f	fix(web): паритет COOP/COEP між vite preview і продом (smoke E2E)
+A-у історії main	0	0	0	2026-08-22	refs/remotes/oldgh/claude/dictation-shopping-list-zlajff	4a2a9fcfcadb6a9b0668bb00ef32130022c5af25	Merge remote-tracking branch 'origin/main' into claude/dictation-shopping-list-zlajff
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/discipline-skills	0929e0b686f9b3580cd49f4858c02b927bc0f281	fix(docs): прибрати мертвий лінк на DashboardPreview.tsx в аудиті critique-surface
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/docs-audit-update-tznncc	b077c93bd5501606ca428a74bee19d05cb958963	chore(agents): перегенерувати авто-доки після мержу #632 і понизити бамп до minor
+A-у історії main	0	0	0	2026-07-30	refs/remotes/oldgh/claude/docs-generated-marker-fix	c9a8fd09606d98b8437d333d4a69fc7681dc5269	fix(docs): маркер AUTO-GENERATED першим рядком і таблиця метрик
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/claude/docs-status-sync	fe4147a928092709445d36df36413d210838b88a	docs(docs): перегенерувати STATUS.md
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/claude/docs-sync-after-qa	e073cec0d062b8a3abb40b629d67dd11a18d335f	docs(docs): перегенерувати open-work і freshness-dashboard після QA-звіту
+A-у історії main	0	0	0	2026-08-16	refs/remotes/oldgh/claude/donation-description-screen-7dh3da	81d775fb5a7a0200b0c358d4ba4373f12f84b23e	fix(web): gate keyboard focus-scroll on pinch-zoom too
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/ecstatic-golick-9789e6	63d8bc00b58e02afae0725a29fe3ed99f249fb43	fix(web): підняти тестові фікстури crossModuleLink під MIN_N=10
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/eloquent-archimedes-f89a86	5eb54877daede24ee717460acad5f0545cdd1725	docs(docs): регенерація freshness-dashboard після rebase на main
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/enable-openrouter-gateways	75f8d5bd46f5f6c2096535cb325cd83c9684061a	feat(server): увімкнути шлюз OpenRouter для чату й зору за замовчуванням
+A-у історії main	0	0	0	2026-09-03	refs/remotes/oldgh/claude/epic-boyd-dcf3d9	4636f1740a873cf30f2b5ee0c73e5cf8c7af9c28	refactor(web): розділити HabitDetailSheet на секції статистики й календаря
+A-у історії main	0	0	0	2026-08-16	refs/remotes/oldgh/claude/find-fix-text-p703lo	443d80f2bd0fd8acf5575426bee93367a26c1fcc	docs(docs): rule 25 — INDEX.md окремою групою, бо він поза docs:gen-daily
+A-у історії main	0	0	0	2026-08-25	refs/remotes/oldgh/claude/finic-other-bank-transactions-cogi5u	4da8399934f4a27157d636a2f43b2d0ca922f025	fix(server): приймати пробіли навколо `=` в XML-атрибутах XLSX
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/claude/finik-hub-bugs-fixes-5zyatj	402970881210155e165a0339750942c955419d70	docs(docs): зафіксувати в каноні відсутність денного бюджету без плану
+A-у історії main	0	0	0	2026-08-13	refs/remotes/oldgh/claude/finiku-categories-colors-flejm7	72a5ec227baa5aa4649eb2b221b7a6fc9d93dc6a	fix(docs): прибрати решту гонок «перевірив шлях — використав шлях»
+A-у історії main	0	0	0	2026-09-01	refs/remotes/oldgh/claude/finyk-fab-nutrition-recipe-sync	c5dd26f2d23124ea454bc44709a9b165772aaf74	fix(web): синхронізувати збережені рецепти нутриції з SQLite
+A-у історії main	0	0	0	2026-09-01	refs/remotes/oldgh/claude/finyk-manual-transfer-excluded	c649cbf9096dfa794e533c6197ed36b62a38c20b	fix(web): виключати ручний внутрішній переказ зі статистики Фініка
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/finyk-obs-pr2-transfer-quick-action	5d1ad93f2bb181677bdfb44cc0117c0e9716d3b1	"feat(web): add one-tap ""Це переказ"" action to transaction details"
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/finyk-obs-pr3-debt-income-category-v2	718a87b9ee0230d5d7e8d4e9a81e1f27edebca07	Merge remote-tracking branch 'origin/main' into claude/finyk-obs-pr3-debt-income-category-v2
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/finyk-obs-pr5-forecast-v2	ffbe3c9922e31b3065f271a376f0d322a78a1844	feat(web): forecast v2 adds planned flows and caps by available funds
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/finyk-obs-spec-reconcile	b79c61db5389e3b91801b22249c0d15c164487e0	docs(docs): reconcile finyk-observations spec with actual PR outcomes
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/finyk-observations-20260731	6322e101b6a9d6acf25b08d564b24c08fee8c779	docs(docs): spec the open Finyk product questions from the 2026-07-31 review
+A-у історії main	0	0	0	2026-08-22	refs/remotes/oldgh/claude/finyk-routing-test-flake	77dd7e3ffbea3cefbc75f0e3379cc2cf52ca1e59	test(web): усунути флейк routing-тестів FinykApp
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/fix-remember-tool-schema	44810224f581f2fe5390c12f922fa4997f6adc0f	fix(web): полагодити схему remember — «Запамʼятай…» не працював ніколи
+A-у історії main	0	0	0	2026-08-29	refs/remotes/oldgh/claude/fix-server-contract-baseline	bcdfdcd0c55e81a75ca877c51654b0efe8906635	fix(server): підшлях замість бареля finyk-domain, образ знову збирається
+A-у історії main	0	0	0	2026-09-01	refs/remotes/oldgh/claude/fizruk-activity-logging	9d631ae16f8e3133295244896bb9f890a6f86625	Merge origin/main into claude/fizruk-activity-logging
+A-у історії main	0	0	0	2026-09-01	refs/remotes/oldgh/claude/fizruk-photo-viewer-simplify	a8607f81f17497a7f992eaa3479e397d7a231760	fix(web): прибрати зайвий перемикач фаз у перегляді фото
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/fizruk-pushup-ownership	776edfa581de497ec9e60c9539c9b558d95a5568	Merge remote-tracking branch 'origin/main' into HEAD
+A-у історії main	0	0	0	2026-08-17	refs/remotes/oldgh/claude/food-photo-logging-duplicate-lg9tvs	29a53edc45efe21c8f0621f4551cc5bb2a9f4cf6	fix(web): прибрати CTA-картку фотоаналізу з «Огляду» їжі
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/freshness-dashboard-drift	ecee67c674032585294935402aed8bc216e78252	docs(docs): перегенерувати freshness-dashboard після мержу PR #940
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/global-browser-testing-3081ee	8fd42f3db3b6a266e70c169b34289ad43725fe1b	docs(docs): уточнити опис фіксу F-009 у звіті QA
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/global-browser-testing-7tguc7	bd30002950ec6deb761c858065d074ed1c37b270	test(server): очікувати 502 у chatStream на не-429 апстрімі
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/goofy-hawking-4f1df6	8b1cb6337144ca199fc9486b26412c25a9feb962	fix(agents): нормалізувати CRLF у frontmatter-парсері check-agent-graph
+A-у історії main	0	0	0	2026-08-16	refs/remotes/oldgh/claude/google-sheet-bug-review-qtoeqw	509addddd4d55138f2d257af96e2c1f785b08244	fix(web): pair keyboard-pan compensation with keyboard geometry across overlays
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/grafana-cost-per-call	8a4a282f31ae7eae6a6b1898439bad1cd94360f2	feat(docs): панелі «$ за 100 викликів» у дашборді AI-cost
+A-у історії main	0	0	0	2026-08-25	refs/remotes/oldgh/claude/green-main-obsolete-snapshot	c7c08062e06a0f4e5d63a246fb06b6f683d6365c	fix(server): прибрати застарілий снапшот, який тримав main червоним
+A-у історії main	0	0	0	2026-08-13	refs/remotes/oldgh/claude/highlight-menu-item-y81xu1	776ba37d3b9a45c446e1f8a03e596c84361e2f12	test(web): scope nutrition smoke locator to the details summary
+A-у історії main	0	0	0	2026-09-03	refs/remotes/oldgh/claude/hub-contact-page-cleanup-0kbx7x	54f799110d0f0f02b621369edff7538a8c22bb58	feat(web): звіт тижня створює лише автогенерація — кнопку «Згенерувати» прибрано
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/insights-above-period-switch	6608fd13ab9c34300c9399ea161b0e8b7e45a002	test(web): не плутати запис аналітики із записом коуч-кешу
+A-у історії main	0	0	0	2026-08-11	refs/remotes/oldgh/claude/interface-broken-after-photo-qlg1rx	6e2acc78a9c10c15d41d9667153d620396aa3791	fix(web): reset iOS pinch-zoom left over after camera-photo capture
+A-у історії main	0	0	0	2026-09-02	refs/remotes/oldgh/claude/kbju-cutover-pr1	fab31b5fe19fac44f46d7b621090097799e4b917	test(web): довести, що зміна цілі доходить до журналу КБЖВ
+A-у історії main	0	0	0	2026-09-02	refs/remotes/oldgh/claude/kbju-goal-cutover	4ae637879e515081bec28fd589bd59122d881046	docs(docs): відкласти маркер реконструйованої цілі (ADR-0092)
+A-у історії main	0	0	0	2026-08-08	refs/remotes/oldgh/claude/knowledge-graph-codebase-b45f1z	b3eb0a3aa85cd7c3bd074c3aac8910d64694813a	docs(web): виправити дві неточності в коментарях crossModuleLink
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/landing-audit-round2	4cc646680da3eb8d84833ea1ae19436bee9af880	feat(web): секція «Як це виглядає» – справжні екрани бети
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/landing-faq-accordion	877ad3ffc53d8c00287480e8c273121b2207ed77	feat(web): акордеон FAQ на лендінгу
+A-у історії main	0	0	0	2026-08-29	refs/remotes/oldgh/claude/landing-kbzhv-derussify	492aeea156322965bb7f512eedd080a160537e7d	fix(web): дерусифікація копірайту лендінгу, КБЖВ замість КБЖУ
+A-у історії main	0	0	0	2026-08-29	refs/remotes/oldgh/claude/landing-name-origin	7dc8f38bf15850998e38d9557502c2c27d1ddb6c	fix(web): пояснення назви через контраст із трекерами
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/landing-no-em-dash	85d146fca41a3b53c01268ff3d208fae96c3ea37	style(web): прибрати довгі тире з лендінгу
+A-у історії main	0	0	0	2026-08-27	refs/remotes/oldgh/claude/landing-site-relaunch	ae4dc2390b6f7c2fe35f28fc0154e94c3cec4d88	fix(web): докрутка якірних переходів між сторінками + браузерний verify-скрипт
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/mechanical-fixes-product-decisions-m766b0	6a88751df779c8e8e663d528498fc202641ab951	fix(web): overflow огляду їжі, надійна навігація модуля і статус аналізу фото біля кнопки
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/memory-bank-consolidation-spec	de40eadada6c23838b2bb7a4e476f541126957d4	docs(docs): спека консолідації банку памʼяті + рішення в каноні hub-coach
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/mobile-audit-clipped-overflow	f5e8cf4e20616f995d7b680f14ada67b826e22aa	test(web): mobile-аудит ловить контент, обрізаний overflow-x:hidden
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/module-infra-skills-nested-routing	8cdfa3b8c9c42640871064b39775d28cf6ff0145	chore(agents): bump harness version після інфра module-скілів
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/module-owner-product-skills	5a888a016dba7974c98ff76170e545ef4cea47b5	chore(docs): регенерувати auto-доки після додавання спеки і module-скілів
+A-у історії main	0	0	0	2026-08-25	refs/remotes/oldgh/claude/msp-tools-research-2eb9m1	e28d37ab70f105a5cfcafb6157c4b432835f246c	docs(docs): apply prettier formatting to research doc
+A-у історії main	0	0	0	2026-08-25	refs/remotes/oldgh/claude/mutation-testing-cloud-j0febi	432a27e431eb9be25d818b209bcab4a11829ad5e	docs(root): закрити побічну знахідку аудиту і завести борг про невидиме відхилення
+A-у історії main	0	0	0	2026-08-18	refs/remotes/oldgh/claude/new-user-form-path-c77nzm	cbe6897ebef6c70143d94408db381aae3401c795	chore(server): prettier-форматування screenshotAnalyze
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/nutrition-barcode-honesty	6fb3f44a80c5bc9bbc1acd05585f9d1bde6e40e2	Merge branch 'main' into claude/nutrition-barcode-honesty
+A-у історії main	0	0	0	2026-08-03	refs/remotes/oldgh/claude/nutrition-module-ux-issues-isrqph	a3927f53614a163d003a5dd442d7b0579df05462	fix(web): merge nutrition daily-goal presets with the TDEE calculator
+A-у історії main	0	0	0	2026-08-17	refs/remotes/oldgh/claude/operation-page-sum-scroller-g7sjz7	c81984dd31f48ae9cf03e62053053dd980391c4f	refactor(web): прибрати слайдер «Сума» зі сторінки операцій Фініка (#816)
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/photo-analysis-issues-esyiq8	dbb250f111a0ff10b2be794416ef3f67f962711f	fix(server): відмова аналізу фото, коли на кадрі немає їжі
+A-у історії main	0	0	0	2026-08-06	refs/remotes/oldgh/claude/ponytail-audit-8d31e8	a96857b983cecbbfc7e6e762713e0470b08b8536	chore(root): ponytail-аудит — зрізати 14.5k рядків мертвого коду
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/claude/ponytail-audit-status-a4475c	25748db68c6ce88122796fa7bb76604c37029ce2	docs(agents): add ponytail packages/* cleanup spec
+A-у історії main	0	0	0	2026-09-03	refs/remotes/oldgh/claude/practical-bun-b74c3c	5713fb57b7563e61fcfcf2f7301698c38ea8561a	feat(web): навести лад у журналі тренувань Fizruk і входах до нього
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/product-backlog-waves-canons-740461	c31ada1e76aa2958cb44c3b92604393303799314	Merge remote-tracking branch 'origin/main' into claude/product-backlog-waves-canons-740461
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/profile-fill-prompt-s9pf34	553ec45965b9638c0bff9b1e552e5b88aa8a1652	feat(server): звузити поверхню зловживання preset-відром
+A-у історії main	0	0	0	2026-09-02	refs/remotes/oldgh/claude/pryvit-e2c7d8	6810589e16fd6b268792ceb1c250a428d6e9b609	docs(docs): перевести ADR-0091 у статус Accepted
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/pwa-update-button-issue-h05y8h	7b59823f0820ca20b3af674165871135295233a6	docs(web): звузити твердження про controllerchange до воркера-замінника
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/queue-substrate-adr	cffee6a92c29a29c4657d5de3cdc07af25c50e25	docs(docs): job-substrate decision record (outbox vs broker vs timer)
+A-у історії main	0	0	0	2026-09-03	refs/remotes/oldgh/claude/quick-actions-as-buttons	c577b17cfbfff088cb3df5111e006f0069799fbc	refactor(web): тайли швидких дій і пігулки-фільтри стають Button
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/claude/railway-config-cleanup	1d20c958cda30799645ebc66c163693fdacb7a69	chore(root): retire dead Railway ops configs, deprecate ADR-pinned railway.toml
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/recommendation-spending-canon	f0f4eaf8de7847586a021a0dcbb96b4f458e3c08	fix(web): щотижневе нагадування рахує витрати каноном — сьомий конвеєр
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/remember-tool-schema-category	30a17e7f29fceb642c9b172827159350927757df	fix(server): зробити category обовʼязковою в remember
+A-у історії main	0	0	0	2026-08-07	refs/remotes/oldgh/claude/rescue-openrouter-request-metric	994e08220320a483d9e31958526710003ccd7142	fix(server): інкрементити ai_requests_total і на OpenRouter-шляху
+A-у історії main	0	0	0	2026-08-17	refs/remotes/oldgh/claude/routine-bug-1d8b5c	77fac3ba453b0989459f33db72d07b204e1edd0b	fix(web): назвати календарний зріз у героєві рутини й узгодити стрічку з чипами
+A-у історії main	0	0	0	2026-09-02	refs/remotes/oldgh/claude/routine-flexible-weekly	3808060a48e3133226408a226fb7cbca69a61cfe	feat(shared): бампнути METRICS_VERSION до 12 за гнучкими звичками
+A-у історії main	0	0	0	2026-07-30	refs/remotes/oldgh/claude/routine-heatmap-denominator	2175eafd4147cc24c5233307f658b4c34c1b3052	feat(routine-domain): заморозка минулого для paused у розкладі
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/routine-settings-cleanup-c2f0pj	baaf84f37c7a5aa61dd3f2d584b76161c02e6328	fix(docs): regenerate doc artifacts against the merged tree
+A-у історії main	0	0	0	2026-08-17	refs/remotes/oldgh/claude/scho-dumaesh-rfpfkp	2d89a494c89caa1f0577a3c4293404a22ac2896c	docs(agents): перегенерувати freshness-dashboard після оновлення індексів
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/security-audit-1d5302	669a50d067ba068ede295b046608cf70aa8aee47	Merge remote-tracking branch 'origin/main' into claude/security-audit-1d5302
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/security-review-repository-53302b	a634bac5fef706a0e562467934e3c360c8ee6dd5	docs(docs): спека beta-security-readiness + бріф для бета-тестерів
+A-у історії main	0	0	0	2026-08-16	refs/remotes/oldgh/claude/sentry-posthog-analysis-gymyfd	eeb2e0ed26020a87ec89da46c7f2e14f522e89e7	fix(server): drop the superfluous next argument in the readyz test
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/sergeant-ai-testing-audit-huzsv9	abf2f9175c7d028f5dfa1b062fa6ea91c709e6af	Merge remote-tracking branch 'origin/main' into HEAD
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/silpo-msp-sergeant-feature-a8ee93	6d68d879ec79167f84a5371ff75f8dc7635ce672	docs(docs): ratify Silpo MCP spec — founder decisions and unknown unknowns
+A-у історії main	0	0	0	2026-08-29	refs/remotes/oldgh/claude/silpo-receipt-meals	1dc29648168c0bcc6b6f46f013acb02de80b6d65	Merge origin/main into claude/silpo-receipt-meals
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/site-ia-mark-done	40979a0217d084801b656e52a1aae13908862a6b	Merge remote-tracking branch 'origin/main' into claude/site-ia-mark-done
+A-у історії main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/site-ia-zvychky-day-overview	07fba533853c8eadefb256bc66e37a29bd286ac6	Merge remote-tracking branch 'origin/main' into claude/site-ia-zvychky-day-overview
+A-у історії main	0	0	0	2026-08-10	refs/remotes/oldgh/claude/slide-progress-bars-bug-ynp7im	654bc125cf559f17662f3691d47641682f1cc029	Merge pull request #776 from SkOrDs-02/claude/slide-progress-bars-bug-ynp7im
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/slop-file-review-5a971e	d6c6754ad5b299a30ef1434edc3810469fe7dabc	Merge remote-tracking branch 'origin/main' into claude/slop-file-review-5a971e
+A-у історії main	0	0	0	2026-08-22	refs/remotes/oldgh/claude/spaces-every-3-chars-2fb0c2	194fda1f7374ea1e32720a284544bcacee4960d9	Merge remote-tracking branch 'origin/main' into claude/spaces-every-3-chars-2fb0c2
+A-у історії main	0	0	0	2026-09-01	refs/remotes/oldgh/claude/spec-import-external-trackers	80bbe203b4f02caeb97a2497d413dd7adc51944a	docs(docs): спека імпорту з зовнішніх трекерів (спільний шар + Strong)
+A-у історії main	0	0	0	2026-09-03	refs/remotes/oldgh/claude/spec-lint-and-skill	18438f10d2ab050eaad011f0d433b0c2931b4d32	fix(agents): закрити обхід «власник сказав не питати» у скілі спеки
+A-у історії main	0	0	0	2026-08-17	refs/remotes/oldgh/claude/statistics-page-ranges-r5u2pl	a51577ae0872df56c65451ba56a693d7f0cdaeb7	fix(web): підписати чипи стрічки Рутини як фільтр, а не статистику
+A-у історії main	0	0	0	2026-09-02	refs/remotes/oldgh/claude/strong-import	72f9f2adacffc07c1135de2432ccd474006eea4f	chore(docs): злити main (#1013) і перегенерувати freshness-dashboard
+A-у історії main	0	0	0	2026-07-31	refs/remotes/oldgh/claude/suspicious-stonebraker-c5ea61	6441b3ae5ec1ba3a3141b9da0aa6d177773cc3c2	feat(server): розширити Telegram-бота під закриту бету
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/claude/test-coverage-deep-check-kxnoqr	fd1b8f108308af9ce9a60fbf6e90b70cc57ee367	test(server): персистентні моки і cause-діагностика у !ok-тестах chatStream
+A-у історії main	0	0	0	2026-08-05	refs/remotes/oldgh/claude/toasts-review-optimization-1hh6bn	1808d6e479e086d572b262a534b95ec1d13d97b1	fix(web): error-тости отримали вихід, валідація переїхала в поля
+A-у історії main	0	0	0	2026-08-31	refs/remotes/oldgh/claude/tool-eval-gate-and-judge	549db942967ce753947787a9f1441d55976efab3	feat(server): суддя-модель другим шаром над касетою стенду
+A-у історії main	0	0	0	2026-08-06	refs/remotes/oldgh/claude/unpaid-coach-premium-and-tier-badge-r4t8w	740dc655d5c0f29b42e0083ccc3b68ff75bd4f21	fix(server): коуч для Free/анона лишається на premium; бейдж тиру — лише платнику
+A-у історії main	0	0	0	2026-06-28	refs/remotes/oldgh/claude/voice-input-iphone-pwa-n6gyzo	e929fe21fbf33faea695cc376488ca4c09331785	docs(docs): mark GROQ_API_KEY conditionally required for iOS PWA
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/web-chart-kit	5babc438740e731f2c9d9d8b9378e16f5d9be5ee	refactor(web): extract shared chart scale/path math
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/web-select-accent	afd7e1980490bb4ab0310032e506b38a1deb618b	feat(web): add module accent prop to Select and adopt first sites
+A-у історії main	0	0	0	2026-09-04	refs/remotes/oldgh/codex/adr-audit-2026-09-04	5508b10cd073a289237dacdf2a4d3e420782cbaf	docs(docs): reconcile ADR canon and documentation links
+A-у історії main	0	0	0	2026-09-06	refs/remotes/oldgh/codex/documentation-refactor	e78fdc4e6b931990fe1414e3b71fb111a1be7a11	docs(docs): refactor documentation architecture
+A-у історії main	0	0	0	2026-07-17	refs/remotes/oldgh/codex/feedback-regression-fix	e450ad7a46ecc9e48d3b931bc17bff66a47f13e2	fix(web): close founder feedback regressions
+A-у історії main	0	0	0	2026-09-08	refs/remotes/oldgh/codex/finyk-liability-category	a367d04696df464d69c345f0ab60563988b9bc22	fix(finyk-domain): correct liability totals and compact categories
+A-у історії main	0	0	0	2026-07-13	refs/remotes/oldgh/codex/fix-ios-safe-area-auth	2f155e779a3a325ce6c2be0f36a73050c39a4eef	fix(web): close welcome auth gate and safe area
+A-у історії main	0	0	0	2026-09-07	refs/remotes/oldgh/codex/fix-nutrition-meal-sheet-weight	b400d9384c3703a67e7bb84237f9ba97878692d4	fix(web): restore pantry meal portion controls
+A-у історії main	0	0	0	2026-09-08	refs/remotes/oldgh/codex/fix-nutrition-pantry-picker	680664f329c583bc778fa5e2eca7037da6046aeb	test(web): align Finyk smoke with current empty state
+A-у історії main	0	0	0	2026-09-06	refs/remotes/oldgh/codex/founder-ux-polish-20260906	2f0c49afbb3f1629c127254c3d03c95adbc1a4a6	feat(web): polish founder feedback flows
+A-у історії main	0	0	0	2026-09-05	refs/remotes/oldgh/codex/global-qa-findings-audit	cb6abd089d634bc6c6df2f19d679c6662085316b	fix(server): resolve validated global QA findings
+A-у історії main	0	0	0	2026-09-08	refs/remotes/oldgh/codex/non-mobile-coverage	c022115d48bec089ed15cbbb47fb70d83064caf2	test(web): raise non-mobile coverage
+A-у історії main	0	0	0	2026-08-12	refs/remotes/oldgh/codex/nutrition-beta-feedback	d120dfa50a71d687dfe7bf674e5ad48763659931	feat(web): publish nutrition beta update notes
+A-у історії main	0	0	0	2026-08-12	refs/remotes/oldgh/codex/pantry-only-consistency	419b26f52029954386686aca3e78b09d8ffc4dab	fix(web): узгодити генерацію тільки з комори
+A-у історії main	0	0	0	2026-07-18	refs/remotes/oldgh/codex/phone-regression-followup	23102e2a4e6c05aab208b734a3a38e7e9a8eadae	fix(web): close remaining phone regressions
+A-у історії main	0	0	0	2026-07-10	refs/remotes/oldgh/cursor/ci-fix-all-priorities-f588	c960ebc8c20fae5e400ed5875e7a2fd2cb7c9cf8	chore(ci): merge web-build-smoke and tsconfig guard into check job
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov-server-api-2103	fef93cb377dea361b6a3e5c4be92897c048d7f0c	test(server): raise chat/sync/routes coverage
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov-web-finyk-2103	14d8eb9fbde645b227a845418752e22af129828e	test(web): raise finyk module coverage
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov-web-shared-2103	d314248dbc1c3c71eb9a9a08a40f096f9245485b	test(web): raise shared lib/ui coverage
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov3-mobile-routine-2103	ddac12c279f9a39fc4ca6dc420d13f8901f8e66c	test(mobile): raise routine module coverage wave3
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov3-packages-fizruk-2103	7e694ccd9af3a00515862ccba946415c85dd2fbe	test(fizruk-domain): raise package coverage
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov3-server-internal-2103	aedb7dcbd492f8243946205eec35c362d4e64969	test(server): raise internal routes coverage
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov3-web-finyk-pages-2103	0156418b0ec514f01276289c5ad79f42e723f145	test(web): raise finyk pages coverage
+A-у історії main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov3-web-nutrition-ui-2103	e8e3641c829092827d8587f9d228f885fdfbb404	test(web): raise nutrition components coverage
+A-у історії main	0	0	0	2026-07-10	refs/remotes/oldgh/cursor/docs-01-product-freshness-3d8f	3a4d9ac023e51c75c3e93fe20324235f2181e808	docs(docs): sync docs/01-product with ADR-0068 and shipped code
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/docs-drift-reconcile-d52d	2dc7e1b78458ae4f97fdcfe871eeab979a129b62	docs(docs): sync READMEs after fast-forward archive
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/eslint-burndown-batch-31d2	ae5f61d5401c68cf90437052d36b2887d6fb2a57	chore(root): merge main into eslint burndown branch
+A-у історії main	0	0	0	2026-07-10	refs/remotes/oldgh/cursor/exclude-mobile-ci-f588	6209fd32fdfceaf97df138db4355261e4eb3e368	chore(ci): disable detox-android push trigger during web-focus
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/initiatives-reconcile-17cb	8fa98190a852d577e10c5adbe310bfbcfab915a5	docs(docs): reconcile initiatives vs code (LiqPay pivot + cron note)
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/s10-t2-bundle-cuts-f440	5bffd2f1993acd9c014622997254fb511e5b8a62	docs(docs): refresh sprint-9-10 markers after S10-T2
+A-у історії main	0	0	0	2026-07-11	refs/remotes/oldgh/cursor/server-coverage-digest-sync-ab0a	2383395898d3cde978b21918ea5b6ab03f2baa35	chore(docs): fix CI docs drift, broken ADR link, and prettier (#226)
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/stack-pulse-archive-pr25-77b3	f7c32845c76160d8dcd9063b8634fea33ab15a62	feat(mobile-shell): drop shell navigate global shim (PR-29 PR-2)
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/tech-debt-reconcile-31d2	0542f615c1918ab7ebbe9b389b824e491d6a901e	docs(docs): reconcile tech-debt registries with HEAD
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/techdebt-mobile-exhaustive-deps-doc-31d2	96ee668643e980c4b9ff56794d5486bf817802a8	docs(docs): add mobile exhaustive-deps catalog
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/techdebt-post-waves-docs-31d2	37bbbca2db9f48f25c7fab8ddfd9c3f81f5c3107	docs(docs): explain soft large tech-debt items in plain UA
+A-у історії main	0	0	0	2026-07-20	refs/remotes/oldgh/cursor/techdebt-storage-key-why-31d2	b104321ece24005ca61cf3e249857e3b91c002ca	chore(web): document intentional storage-key lint disables
+A-у історії main	0	0	0	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave17-hub-core-5880	b1e30c19d5674f77d4799909c110090c06f58e96	test(web): coverage wave 17 — chat sessions + RootLayout + celebration modal
+A-у історії main	0	0	0	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave22-fizruk-routine-ab0a	1f232d65c171c13c87464316613ae348704cb490	test(web): coverage wave 22 — fizruk + routine branches
+A-у історії main	0	0	0	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave8-restore-ab0a	d45888cc11b1bb083dffc3cc0133be99c27bf056	test(web): coverage wave 8 — onboarding, hub modals, finyk settings, shared hooks
+A-у історії main	0	0	0	2026-07-28	refs/remotes/oldgh/devin/1785228767-hub-finyk-ux-followup	1a0ddbefdf84c06d36e80ed382d6975f3ed6625c	fix(web): reconcile Hub and Finyk UX flows
+A-у історії main	0	0	0	2026-07-28	refs/remotes/oldgh/devin/1785239030-web-unify-ux-followups	3b796aec228d3b02a33385ba5c9f46d0fe667b36	fix(web): repair coverage and text contracts
+A-у історії main	0	0	0	2026-07-29	refs/remotes/oldgh/devin/1785337269-web-finyk-hub-feedback	95c4da6d1254badc25e3f6c52e20f67f8a105791	feat(web): add Finyk daily pulse and transfer suggestions
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/docs/deprecate-premigration-infra	f125a87d5a7488de76bba0679982401864228c5c	@ docs(root): deprecate pre-migration infra docs superseded by ADR-0074
+A-у історії main	0	0	0	2026-08-28	refs/remotes/oldgh/docs/pr-backlinks-895	fb2a5fc3c1354047196e42483f8a6a5c9598ad38	docs(docs): backlinks for #895
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/docs/reconcile-hetzner-drift	e699ccf254009611a6ef7622cba1868b85d4b6ef	@ docs(root): extend Hetzner/Coolify reconciliation — C4 diagrams + pointer refs
+A-у історії main	0	0	0	2026-08-04	refs/remotes/oldgh/fix/ai-advice-failed-telemetry	8b822c3a126e737e4c5f33881a059c9c0947eed6	feat(web): подія ai_advice_failed — провал генерації коуча і тижневого звіту
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/founder-pro-entitlement	85b8742ea36f893e73a598e8b80f4c4b5cac03a5	fix(server): founder accounts get permanent Pro entitlement
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/mobile-audit-cross	c3f2074febc7a2006c8471d84de3f793453ebcb3	fix(web): mobile-audit wave A — cross-cutting UI fixes
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/mobile-audit-finyk	159a728e7351dcab3578c38e57d0a58607a13dc8	test(web): align AddBudgetForm date-label assert with Дата завершення
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/mobile-audit-fizruk	15ec46110cfaca8b018dd09a7eebd4408505394c	fix(web): move fizruk entryEmpty copy to module i18n namespace
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/mobile-audit-nutrition	77b07852fbe8c14181c5b4ad1b02343c3434dbd3	fix(web): mobile-audit B-Nutrition — variant, water, card, tooltip
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/mobile-audit-routine	f51c245b28a2d67eabb22d4f059c82ce18ac40cf	fix(web): mobile-audit B-Routine — remove pushups, day strip, accent
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/server-coolify-prod-detection	ab93493d40932ac11c5699faf43aff79285edbee	fix(server): host-agnostic prod detection + Coolify GIT_SHA release
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/fix/unbreak-main-after-beta-prs	929bedff903592e5cc6fad1ebb6bbcd1bdf74a56	fix(root): розблокувати main після паралельного мержу бета-PR
+A-у історії main	0	0	0	2026-08-01	refs/remotes/oldgh/fix/unbreak-main-schema-and-headings	39c6b227a94e953faec718d185925737e950d19d	docs(docs): перегенерувати freshness-dashboard після bump-у дат
+A-у історії main	0	0	0	2026-07-12	refs/remotes/oldgh/fix/web-legal-liqpay-docs	ebd29c59796e01b8e8077ac565f14d5f6fa553d9	fix(web): legal docs LiqPay + Hetzner subprocessor swap
+A-у історії main	0	0	0	2026-09-14	refs/remotes/oldgh/main	e5ef664a70a8658eea38e92d5d00a072a18fed82	feat(server): показувати, що синк Сільпо зламаний, а не лише коли він вдався (#1217)
+A-у історії main	0	0	0	2026-07-25	refs/remotes/oldgh/v0/mapleravenlucky-8058-21b764a9	5ebdd7708dafc5298c717e94c6a734d797d44408	design(audit): anti-slop — motion loops, Sparkles, emerald→teal, hardcodes (#441)
+A-у історії main	0	0	0	2026-07-25	refs/remotes/oldgh/v0/mapleravenlucky-8058-3b4de5a1	2d07cf4a67720509c40d8d1e61c1cbbeefdfa3d3	docs(docs): regenerate STATUS.md and freshness dashboard after archival
+A-у історії main	0	0	0	2026-07-25	refs/remotes/oldgh/v0/mapleravenlucky-8058-6c37f135	5fbe530a8e11e154dc632417b2860fc955bda18b	docs(docs): зафіксувати ADR-0076 «Готівка на руках» і ескалацію F-MCC6011 (#450)
+A-у історії main	0	0	0	2026-07-25	refs/remotes/oldgh/v0/mapleravenlucky-8058-73d02f46	04cbaa2849b22dfc490ce4ae623024f5aed7be3c	feat(web): 6 UX/UI improvements to the hub (#445)
+A-у історії main	0	0	0	2026-07-25	refs/remotes/oldgh/v0/mapleravenlucky-8058-c928e029	8d6cd27c3530a84eed1ed5969d938e8c84177cab	Enhance BentoCard with trend indicators and interactive effects (#460)
+A-у історії main	0	0	0	2026-07-26	refs/remotes/oldgh/v0/robotwildmoose-3254-22dcd9e2	8212fd873635f1f5a24dc688959985dd82d083af	feat(design): M1 — no-inline-card-surface rule + full <Card> migration (#483)
+A-у історії main	0	0	0	2026-07-26	refs/remotes/oldgh/v0/robotwildmoose-3254-5f3f2587	9ab5486033ebfc187031002dfeedaa3aec51f66b	feat: enhance clipboard hint UX with new icon and rounded button styling
+A-у історії main	0	0	0	2026-07-26	refs/remotes/oldgh/v0/robotwildmoose-3254-acf25228	d2515efd3522c391e6d2012e5bfeda13ce478e16	test(web): align brand/Button tests with neutral stone hub (design-audit M1)
+B-вміст у main	0	0	0	2026-08-30	refs/remotes/oldgh/claude/redos-pantry-names-fix	f47650b7fba38bb21e5ea222fe500194f0477b46	fix(nutrition-domain): прибрано квадратичний ReDoS в обрізанні розділових
+B-вміст у main	0	0	0	2026-08-25	refs/remotes/oldgh/claude/silpo-matcher-sql-hotfix	479cb01fa3e4dcc501741d8b55f712fe8f79556e	fix(server): відновити лапки в SQL кандидатів matcher-а Сільпо
+B-вміст у main	0	0	0	2026-08-28	refs/remotes/oldgh/claude/web-sqlite-gate-factory	48a8d6f0362b522fb33ea7bb6ff91b0c189149bc	refactor(web): extract createSqliteReadGate factory for module read gates
+B-вміст у main	0	0	0	2026-09-07	refs/remotes/oldgh/codex/fix-nutrition-legacy-goal-crash	106cfbe20558b043c5538d57a81967ba1a08c650	fix(web): normalize legacy nutrition goals
+B-вміст у main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov-mobile-finyk-2103	e0fe53898449284c4b6ec0a23f8842750db3c3e1	test(mobile): raise finyk module coverage
+B-вміст у main	0	0	0	2026-07-21	refs/remotes/oldgh/cursor/cov-mobile-fizruk-2103	5c6e1a31405af451acb8f8022540456986dffc47	test(mobile): raise fizruk module coverage
+B-вміст у main	0	0	0	2026-07-31	refs/remotes/oldgh/fix/nutrition-deeplink-first-run	5f0c7c82629c1bfbec8eed96047c8a822a1b0772	fix(web): глибоке посилання в «Їжі» більше не губиться на першому вході
+C-squash-merge	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/docker/ops/grafana-alloy/grafana/alloy-v1.19.2	507931cb9473591b3fba6eba43861a06be7b37d2	chore(deps): bump grafana/alloy in /ops/grafana-alloy
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/chore/root-prettier-drift-fix	12e2eb9aebaa09ed0982077cadb8519da6226ffe	chore(root): fix prettier formatting drift across the repo
+C-squash-merge	0	0	2	2026-07-25	refs/remotes/oldgh/claude/active-projects-archive-28sy59	9a6fe5e970e7059a450237fca1c4e263d4bf8ff0	docs(docs): regenerate STATUS.md and freshness dashboard after archival
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/affectionate-villani-a7ad52	dae05ea5594c02c97cd7f0012f37fec1cf8ca1c2	docs(root): виправити читання Coolify healthcheck у Dockerfile.api і AGENTS.md
+C-squash-merge	0	0	1	2026-07-22	refs/remotes/oldgh/claude/agents-product-canon-rule	d6ab84b68cbeb9dfa69b786bc801e369be967c4e	docs(agents): правило продуктових канонів модулів у AGENTS.md § See also
+C-squash-merge	0	0	1	2026-08-27	refs/remotes/oldgh/claude/agents-surfaces-features-7fdb84	221bd7e2da2c7e20f49e8e4d400e831b7368640b	docs(docs): спека модульного шару агентної системи (module-owner скіли й агенти)
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/claude/analytics-research	0c4439b178c143de43beec9199b359603c0953ee	docs(docs): research аналітики конкурентів і шортлист для Фініка (C6)
+C-squash-merge	0	0	1	2026-08-08	refs/remotes/oldgh/claude/attractor-8-burndown-fizruk	59631cb99fb4143f926699f266458036f64e86dd	refactor(web): burndown атрактора 8, партія 5 — fizruk (100 → 97)
+C-squash-merge	0	0	1	2026-08-08	refs/remotes/oldgh/claude/attractor-8-burndown-nutrition	b07735296ae33484cd0247ad47b0568d80b2c1b4	refactor(web): burndown атрактора 8, партія 6 — nutrition (96 → 92)
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/audit-ai-agent-instructions-d85f39	ad76126ba59dffb3bd3becdf9ee7ef2c87069597	docs(agents): fix audited staleness in AGENTS.md, CLAUDE.md bridges, skills
+C-squash-merge	0	0	2	2026-07-25	refs/remotes/oldgh/claude/backlog-canon-fixes-2tqh63	d5c79101e63ea5c0462e831c1576ad3a7ab05bfc	revert(docs): повернути Skords-01 в open-work-генераторі — це не той самий репо
+C-squash-merge	0	0	2	2026-07-26	refs/remotes/oldgh/claude/backlog-canon-fixes-anon	0248d8abca68c39b06ed24b15df253293116dde5	docs(agents): звести стан хвилі 3 і прибрати дублікати рядків беклогу
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/backlog-canon-fixes-backup	4705d68a8d0df40a8e1354d3ade8c90954eac977	feat(web): попередження «дані лише на цьому пристрої» для незалогінених
+C-squash-merge	0	0	2	2026-07-25	refs/remotes/oldgh/claude/backlog-canon-fixes-reconcile	af3e536ebe84e01dbf0b82f58420db96282c508c	feat(finyk-domain): доменна звірка «транзакції ↔ баланс» (інваріант §6.1)
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/backlog-canon-fixes-risky	19f96724ac03f24c0d1703c3542968533e7d4f41	feat(web): гейт підтвердження перед незворотними діями AI-асистента
+C-squash-merge	0	0	2	2026-08-02	refs/remotes/oldgh/claude/backlog-canonov-n7vkfu	5a2b8e66571801f3410ed4d3e2295fef21c0b1ec	fix(migrations): прибрати дубль 097 і діру на 096
+C-squash-merge	0	0	1	2026-08-02	refs/remotes/oldgh/claude/barcode-database-research-b2fd94	0c6e859fff40e78dfec361576914d33088f0dac7	docs(docs): дослідження баз баркодів для nutrition-модуля
+C-squash-merge	0	0	5	2026-08-07	refs/remotes/oldgh/claude/beta-browser-test-design-5srfmi	a1e52bee7616b37dcc00d8d924714edb9f21dec1	fix(web): звʼязки бачать ручні витрати (F7) + фідбек рецептів і undo журналу
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/beta-email-observability-mono-gate	de5680824fe8cbff1ecc04a7ef1ce69f049ee7d0	fix(server): beta — Sentry-сигнал на дропнутий auth-лист + зняти email-гейт з Mono-connect
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/claude/beta-wave-limit	dca2d5975274d419da9acba6a84394b23a90720b	feat(server): стеля хвилі бети — 35, далі номер у черзі
+C-squash-merge	0	0	2	2026-09-02	refs/remotes/oldgh/claude/biome-migration-linter-prettier-b3sk14	966702062122a53708356231962b435c55a5823c	docs(docs): mark ADR-0067 historical — its own step 1 removed the referenced file
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/budget-guard-db-ledger	69442634bcd6169a3cbc5bc84a0d44baefec9b30	fix(server): денна стеля витрат більше не обнуляється на кожному деплої
+C-squash-merge	0	0	9	2026-08-02	refs/remotes/oldgh/claude/canons-backlog-queue-blockers-zpnl2c	e81e9167ce178b9324e5ce5f21ccf5d6b8f0662c	test(server): покрити серверний прохід нагадувань
+C-squash-merge	0	0	1	2026-08-04	refs/remotes/oldgh/claude/chat-api-provider-options-0e9ecc	a101a4848c549a25773e1271ae153ce3df03a8cc	feat(server): перший тур чату на deepseek-v4-flash під шлюзом
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/chat-card-links	595c40959f0b41b25e34a8fb0e3a6d2d5c0912e4	feat(web): картка чат-інструмента веде у свій модуль
+C-squash-merge	0	0	3	2026-08-06	refs/remotes/oldgh/claude/chat-readability	dc606fe3d2118a12a81bd4f6ac9f2a0d3772ea69	feat(server): дозволити моделі жирний і перелік — SYSTEM_PROMPT v19
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/checklist-new-user-phoenix-46y9c8	6bbd22f0bba55ce8e2d642b5dd52570eb5ae8344	fix(web): derive checklist steps from data and gate FTUX by account age
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/chornylo-post-merge-fixes-spec	37ff9c1bd00e864bb86eeae2a6f4798f594ddd70	docs(docs): add «Чорнило» v3.1 post-merge fixes spec
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/chornylo-step4-cards	12a8052269f1cecd6dc8fc78d8d17e13c664d321	feat(web): «Чорнило» card prominence — hero glow + accent select (step 4)
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/chornylo-step7-components	68f6082d0d149b6535e555f40be23ecd766fa2ec	feat(web): «Чорнило» module Button — accent fill + ink + glow (§ 4)
+C-squash-merge	0	0	3	2026-07-11	refs/remotes/oldgh/claude/chornylo-v3-1-fixes-84f9ea	08e76327312d911170fb59467d55f174ebf1ea32	fix(web): light mesh quiet, Toast hybrid, Segmented invert, hub primary (§4-7)
+C-squash-merge	0	0	1	2026-08-08	refs/remotes/oldgh/claude/clear-pantry-tool	b6b5a93d46e966ba06f25a97cfb3ea4f985bcc6a	feat(shared): clear_pantry — очищення активної комори одним викликом
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/coach-correlations-chat-f72afd	4747a3e33001ac3fbd9b2cec5ac51fd3ddbf50b3	feat(root): surface coach correlations in chat + expand correlation pairs
+C-squash-merge	0	0	1	2026-09-01	refs/remotes/oldgh/claude/codex-harness-parity	eec20fa9479b22d161b585f4195e26fc8d10e7ad	feat(agents): згенерувати Codex-агентів з .claude/agents і закрити дрейф гейтом
+C-squash-merge	0	0	2	2026-08-06	refs/remotes/oldgh/claude/coolify-healthcheck-wget	8b8549b8fc0f9906b4c85621cb648e688cee6602	feat(web): прапорець, що ховає соцвхід на деплої з чужим доменом
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/cors-drop-fizruk	8289ee48e34ea6715e44fc95f02ca6db331b93c4	chore(server): drop legacy fizruk origin from CORS allowlist (stack-pulse PR-25 PR-2)
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/day-hint-cache	8f6f39af6541219ed904cab19b24ba58fb0f76d6	fix(web): підказка дня не перегенеровується на незмінних даних
+C-squash-merge	0	0	2	2026-07-21	refs/remotes/oldgh/claude/dead-code-audit-2ac87b	fb509354ee75d53afac3644a0f7dd10eb6b98e02	chore(mobile): retire dead mono_mirror flag machinery
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/deploy-api-tabular-import	925a267df48394c2b822d78a60b83a4be086cc8e	fix(ci): збирати і деплоїти API з @sergeant/tabular-import
+C-squash-merge	0	0	1	2026-08-27	refs/remotes/oldgh/claude/deps-safe-bumps	d7f0a35f1c7cea391e729f368b37fcf587f78760	chore(deps): закрити body-parser свіжим резолвом замість override-ів
+C-squash-merge	0	0	1	2026-08-04	refs/remotes/oldgh/claude/deps-undici-fast-uri	c61b87c918bf6f3ddacd9252c6e2918f5dfe64f0	chore(deps): undici v8 → ^8.9.0 і ip-address override — full-tree audit gate
+C-squash-merge	0	0	15	2026-07-21	refs/remotes/oldgh/claude/design-audit-prompt-66e708	673934ce654694b4f703567650a93796071673d2	fix(web): ternary-форма emoji-гліфа — код + покриття правилом
+C-squash-merge	0	0	3	2026-07-21	refs/remotes/oldgh/claude/design-audit-reaudit-followup	25084e5965614829c59fef3177e82d8424e87e7b	docs(docs): дизайн-аудит 2026-07 у канон-каталог + уроки в промпт
+C-squash-merge	0	0	1	2026-07-22	refs/remotes/oldgh/claude/design-cycle-3	d119698be72480acc7eddcdd0b0aba06e672b163	feat(web): цикл 3 дизайн-аудиту — знято LandingPage, coral-драбина серії, FTUX-обіцянки
+C-squash-merge	0	0	1	2026-07-22	refs/remotes/oldgh/claude/design-cycle-4	bbbde3ddfdcb79fad2a98487ee8ca4825575aabf	feat(web): цикл 4 — one entry system per page, тем-залежна драбина серії
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/design-cycle6-fixup	b84cde0ab56b71c9785b5f0ee857da2f172a0fb1	refactor(web): цикл 6 фікс-ап — label-lg для CTA, SectionHeading xl → headline
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/design-cycle6-stage2	53e85fd9cc6b901b13f4053a2b6962b98c6316b3	refactor(web): цикл 6 стадія 2 — семантичні типографічні ролі у core/**
+C-squash-merge	0	0	6	2026-07-22	refs/remotes/oldgh/claude/design-light-language	795bb372bbb5bc7c8a2fd58d2524fb384b098fab	feat(web): цикл 3 дизайн-аудиту — знято LandingPage, coral-драбина серії, FTUX-обіцянки
+C-squash-merge	0	0	1	2026-07-22	refs/remotes/oldgh/claude/design-typography-sweep	7188b3aec5b355b36213b4b1a0abac765abae60f	refactor(web): одна типографічна шкала з восьми ролей (D8-sweep)
+C-squash-merge	0	0	1	2026-09-03	refs/remotes/oldgh/claude/desk-and-zone	30ca1db976b1386fed4f61bbba80979d3d60f06a	feat(web): стіл і зона замість mesh-фону
+C-squash-merge	0	0	1	2026-08-30	refs/remotes/oldgh/claude/digest-quota-and-monday-fix	42d895cfb0c03692e4165dcf80418698297ecb75	feat(root): дайджест поза AI-квотою, авто-Пн за завершений тиждень, памʼять тижня оновлюється
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/docs-liqpay-provider	ebd83a3e6f122cd75fbdd101e37aaaa38fe9e87c	docs(root): reconcile revenue docs with LiqPay provider decision
+C-squash-merge	0	0	1	2026-07-13	refs/remotes/oldgh/claude/documentation-audit-rac429	7c30113958761f5cadafa027212398832c8e3a51	docs(docs): fix documentation drift found in 2026-07-13 audit
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/domain-phase-b	666e953cfa7872c44ddb2e4541244c7f8556118f	feat(root): перевести канонічні адреси на sergeant.com.ua
+C-squash-merge	0	0	1	2026-08-27	refs/remotes/oldgh/claude/domain-sergeant-com-ua	1bf22528c99fee66337314e6bc76fd94cb00beba	feat(root): підключити домен sergeant.com.ua на всіх поверхнях
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/dotted-rings-light-theme-9ui14u	b28497c9c3780d7f51127e0396f876668e207eeb	fix(web): показати кільця макросів на nutrition hero у світлій темі
+C-squash-merge	0	0	3	2026-08-02	refs/remotes/oldgh/claude/email-verification-profile-pa1x1e	dff9f56dc8f586b0334fe892d8be2138e64164d9	docs(agents): полагодити посилання на ADR-0083 у канoні Фізрука
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/eval-spec-status	cd16d6f1a7360defdc4c8850877543c045c53ebb	docs(docs): спека покриття евалом позначена Implemented
+C-squash-merge	0	0	3	2026-09-01	refs/remotes/oldgh/claude/eval-tails	df5c84265df27577fa080fa01259c5471562594c	test(server): виключити CLI-точки входу з покриття
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/fab-manual-income-spec-dcbbce	1fb1017c4f06b8e83a64f3006cac03ebf41dbb78	feat(web): ручний дохід у Фінік + уніфікація FAB у 4 модулях
+C-squash-merge	0	0	1	2026-08-11	refs/remotes/oldgh/claude/financial-data-security-kc37s6	76fac47d7425ec4bc3b7f04f0500435c62ceb2bf	fix(server): оцінка КБЖВ обов'язкова, а не альтернатива питанню
+C-squash-merge	0	0	5	2026-08-07	refs/remotes/oldgh/claude/finyk-anon-persistence	96c684f7c670893236f6f81eba9c59612c4afeda	docs(web): зафіксувати пастку AuthContext × @sergeant/shared
+C-squash-merge	0	0	1	2026-07-22	refs/remotes/oldgh/claude/finyk-audit-spec-ae58cf	f7268b9e16bab970fd2cc24120020b7f060c7364	docs(docs): спека продуктового аудиту знань finyk (канон + тріангуляція founder↔docs↔code)
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/finyk-category-dropdown	ae1d47aaa2c8c09e77d631cc343e85b8caf51e2d	feat(web): дропдаун категорій у формі транзакції замість чіпів (D3)
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/finyk-obs-pr1-dedupe-budget-insight	53ecf662281f3d1774e9cc2cdd559a21c7da6e12	fix(web): stop duplicating budget-overrun insight on Finyk Overview
+C-squash-merge	0	0	5	2026-07-22	refs/remotes/oldgh/claude/finyk-product-knowledge-audit-e01a8a	94be7fcda0d6dd90f47fbf8fc5d722dc96d93d82	docs(agents): правило продуктових канонів модулів у AGENTS.md § See also
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/finyk-terminology-web	fc81ce30ac220e006f64294b9a0e9cb9afcf29b0	fix(web): зрозуміла термінологія замість сленгу у Фініку
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/finyk-tx-note	25c3a862a56994cc6e872ff528c1d8c952d3c6ae	feat(web): власна нотатка юзера до банківської транзакції
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/fix-adr0067-dangling-ref	d5a698603caf1c022ddbda996662c4ffe57dfe87	docs(docs): полагодити dangling ref у adr-0067 після переведення в accepted
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/fix-drift-plata-subscription	974f29e21f358c4db7477bb65bc85837e8b72976	fix(root): додати plata_subscription у SQL_ONLY_TABLES drift-чекера
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/fix-floor-chat-model	b5408d95068aac27964b0ac4fc176888c59e6bcf	fix(server): replace retired claude-3-haiku floor model with Haiku 4.5
+C-squash-merge	0	0	1	2026-08-08	refs/remotes/oldgh/claude/fizkruk-time-distance-equipment-6lcu9k	d1572abb7416176b76d4bffe9c4311fd0b2e4af1	fix(web): підпис вкладки «Прогрес» більше не обрізається пігулкою
+C-squash-merge	0	0	1	2026-07-23	refs/remotes/oldgh/claude/fizruk-audit-spec	4a09ff1d5ef8b96a7617e1ed38e56803be40e88e	docs(docs): спека продуктового аудиту знань fizruk (четвертий прогін конвеєра)
+C-squash-merge	0	0	1	2026-08-08	refs/remotes/oldgh/claude/fizruk-e2e-timer-locator	4c177a1bb64728463dfd2b5dbfe85a16b9acdf95	fix(web): critical-flow E2E тримається за testid таймера, не за role
+C-squash-merge	0	0	1	2026-09-01	refs/remotes/oldgh/claude/fizruk-exercise-photo-viewer	c6b17e83074bb93ab6bd456a1e86555cc2b159d5	fix(web): прибрати зайвий перемикач фаз у перегляді фото
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/fizruk-insight-and-chat-error	23be4e2def769148913dc7d181e2c08f03898ff9	fix(web): інсайт і префіл кажуть одне, шлюзовий збій каже, що робити
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/fizruk-product-knowledge-audit-d343e5	664bf146351804fb09faf8fc8328ad55fccf671c	docs(docs): продуктовий аудит знань fizruk — канон + diff-звіт (четвертий прогін конвеєра)
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/fizruk-readiness-e2e-fix	976446a4132dcc537a33cddf3ff4b32cf96fc00d	fix(web): аркуш готовності більше не блокує критичний потік E2E
+C-squash-merge	0	0	1	2026-09-01	refs/remotes/oldgh/claude/fizruk-sync-tables-pin	d7133d52dbcec1805c61faa9e48bf34c3030db0b	fix(server): пін sync-таблиць знає про fizruk_custom_activities
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/claude/fizruk-weight-round-parity	adaecd59e4b74ac930d34672a05bf9bb064a9174	fix(db-schema): не округлювати дробові заміри тіла
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/claude/form-labels-modules	298455fe92a3e1a59b4df2575ace71ded9af6405	fix(web): видимі лейбли форм у fizruk і routine (хвіст B5)
+C-squash-merge	0	0	1	2026-08-06	refs/remotes/oldgh/claude/free-tier-standard-model-k3p9x	27c843a020823aabfb2d43b99e8c2fd6392e3c67	feat(server): Free та анон ідуть standard-моделлю синтезу
+C-squash-merge	0	0	1	2026-08-06	refs/remotes/oldgh/claude/grant-beta-pro-since	148258a581bbd82b786752d32eefff621eddfb60	feat(root): --since у grant-beta-pro — видача Pro за вікном реєстрації
+C-squash-merge	0	0	2	2026-08-31	refs/remotes/oldgh/claude/guides-catalog-grouping	ee5581dd962f65a827f4d2d92e2a316d48c7ec65	fix(web): мобільне меню - групи, Escape і тап повз меню
+C-squash-merge	0	0	1	2026-08-06	refs/remotes/oldgh/claude/hide-social-login-on-beta	ee9f759dee9e9e5bf9a69b846c86b3f5653bd801	feat(web): прапорець, що ховає соцвхід на деплої з чужим доменом
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/hopeful-bun-e86861	408f2d6692d456bed2d30d918cf53fa277114902	fix(server): canonical ApiError envelope for stripe-webhook + web-vitals NUL byte
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/hosting-adr-0074-hetzner	d6864a423658d5a510dcd0a4efc94e8548687889	docs(root): add ADR-0074 backend hosting Hetzner/Coolify, supersede ADR-0009
+C-squash-merge	0	0	1	2026-07-22	refs/remotes/oldgh/claude/hub-coach-audit-spec	08f819cb3902bb0e8fcc66593e079f2d557af7ec	docs(docs): спека продуктового аудиту знань hub-coach (другий прогін пілота)
+C-squash-merge	0	0	1	2026-08-28	refs/remotes/oldgh/claude/i18n-en-stage0	8c98b1609d1626f251f44a8ee4307ddaa3ae4e63	fix(web): make the EN locale resolver stub-proof (Stage 0)
+C-squash-merge	0	0	3	2026-08-21	refs/remotes/oldgh/claude/icons-emoji-audit-xbphk1	c2c40717b5051af8210dd2f5812bc922b087e9d5	docs(agents): розгорнути скорочені шляхи в аудиті іконок
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/claude/import-other-trackers-cu5thh	f7ad490427b8eb573820dc3251df8a328f731eda	docs(docs): add initiative 0022 CSV import and rebase on main
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/infallible-clarke-704bcd	be0baa3a2eaaa2ba7e179059ae9c804651ab2e2f	fix(web): комора більше не вилазить за екран на 375-390px
+C-squash-merge	0	0	3	2026-08-31	refs/remotes/oldgh/claude/insights-ask-ai-chip-exec	e6fcb46b51b2184aac0ef5f4e05988880fd9cccb	fix(finyk-domain): інсайти бачать готівку, а не тільки банк
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/jovial-benz-214a8b	2ab45d264c61bcff6de50fab6fbf2e6bcd231cbc	docs(agents): add demo-mode kvvfs-reseed live-verify recipe to web-ux-cycle
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/kbju-cutover-pr2	ff18ec44ee71ac26189349976091439ae1d9014e	feat(nutrition-domain): ціль тижневого графіка стає рядом по днях
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/kind-clarke-63a066	aa25ec9f9b6a357d8c044e70b1fb8190333d85ea	fix(web): привести тести звʼязків до чинного порога MIN_N=10
+C-squash-merge	0	0	3	2026-08-28	refs/remotes/oldgh/claude/landing-copy-and-live-hero	7b34ee964a8b3c8bb86f295fba0d1a84f0cb74cb	feat(web): живий звʼязок у hero – інтерактивний перемикач тренувань
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/landing-copy-audit	417fb354a96e2f74c6c25797f18504ee51c4eb5a	fix(web): копірайт-аудит лендінгу проти коду і зачистка анти-патернів
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/landing-guides-wave2	c731a0ec90efcc715f733761a3b383913e20fddd	feat(web): гайди про калорії по фото і безпеку банківського доступу
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/landing-prerender-geo	b2a2f244215da8739703ec0153af1470fda26b15	feat(web): пререндер лендінгу в статику, llms.txt і lastmod у sitemap
+C-squash-merge	0	0	1	2026-08-30	refs/remotes/oldgh/claude/landing-promises-section	94d8934af007c6b430e3f65c0019eef6bd812314	feat(web): секція «Що обіцяю» замість статуту
+C-squash-merge	0	0	1	2026-08-28	refs/remotes/oldgh/claude/landing-review-fixes	28057394a69c9bb96de5f35ad33a1f3a2a5454e1	fix(web): правки лендінгу за рецензіями зовнішніх моделей
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/claude/landing-telegram-cta	c0a856d867e7704b6819712138269789df5b8800	feat(web): лендінг на Telegram-конверсію + анти-слоп редизайн
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/laughing-lumiere-1a6f25	191feb9588181620d3e6c89e07ee21e60517527b	fix(web): жива pathname-стаба та realTx у моках FinykApp.extra.test.tsx
+C-squash-merge	0	0	1	2026-08-05	refs/remotes/oldgh/claude/lost-commits-branches-p1evvs	8295507920606dfdfbcd227966a8e4b91110564c	docs(docs): аудит загублених комітів по всіх 416 гілках
+C-squash-merge	0	0	1	2026-08-01	refs/remotes/oldgh/claude/mcp-codebase-memory	e83b7995eb08bfa7c8bbc7433abbe0776e65ef59	chore(config): підняти codebase-memory MCP через репо-конфіг
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/memory-bank-consolidation-exec	c1fd4fbb22b06fb77a6e32faa028fd13501740af	feat(web): один редактор фактів профілю - «Памʼять ШІ» веде в Профіль
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/mobile-coarse-pointer-lane	6737f3d77bc66318a2d078cf3eb6fc6baf8aa148	test(web): add mobile coarse-pointer UI audit lane
+C-squash-merge	0	0	3	2026-08-28	refs/remotes/oldgh/claude/module-owner-agents	157660bad906a9baccb75b55d769ce263725619b	chore(agents): bump harness version після module-owner агентів
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/nav-fixes-v2-bottom-nav	a1db8cc22bef77b60b8ff9f3d58467f976c2dd91	fix(web): bottom-nav solid active fill + hero light border (fix spec v2)
+C-squash-merge	0	0	1	2026-07-23	refs/remotes/oldgh/claude/nutrition-audit-spec	c3f78229bf9db41cb1a35317261371849f62e0ad	docs(docs): спека продуктового аудиту знань nutrition (третій прогін конвеєра)
+C-squash-merge	0	0	1	2026-07-23	refs/remotes/oldgh/claude/nutrition-knowledge-audit-486409	eb6cf1d8e96672b7811d4b12a5e1c683ef6ceaa6	docs(docs): продуктовий аудит знань nutrition — канон + diff-звіт
+C-squash-merge	0	0	4	2026-09-01	refs/remotes/oldgh/claude/nutrition-pantry-and-meal-sheet	4abe8afe764aee5700e86c2070d953d0bdcbc6ce	feat(nutrition-domain): категорія комори з корпусу, каталог 13 → 17
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/openrouter-cost-accounting	aacedc9fb2aae9fcaa96ab2f900474875f875251	fix(server): інкрементити ai_requests_total і на OpenRouter-шляху
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/overview-audit-spec	bf6dbd5c7f4ebf0e4c0eb8501648e9a8ecdc63de	docs(docs): спека парасолькового product-overview (фінальний прогін конвеєра)
+C-squash-merge	0	0	1	2026-08-04	refs/remotes/oldgh/claude/pantry-consume-qty	1632a60b22a771baf5d9468785d13ea795c8b4c9	feat(server): часткове списання з комори через чат — тул отримав qty
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/phase-7-ua-billing-spec-28adb0	94639ce2a986cc7897a70860dcac51b8b5db34d6	feat(server): phase 7 UA billing — LiqPay + Plata providers, Stripe dormant
+C-squash-merge	0	0	1	2026-09-03	refs/remotes/oldgh/claude/photo-items-contract	da187d109f52cdb9423ca1dabfe3708478e29fa4	feat(server): фото-аналіз повертає позиції, підсумок стає їхньою сумою
+C-squash-merge	0	0	1	2026-09-03	refs/remotes/oldgh/claude/photo-items-ui	33c3c70305c4f798ea73c1b7e8bbe65b53ff72cd	feat(web): позиції фото-аналізу можна прибрати й доповнити з каталогу
+C-squash-merge	0	0	1	2026-08-29	refs/remotes/oldgh/claude/pre-deploy-migration-docs	c20695b821aa591ae55a741a5e9661365067adfb	docs(server): зафіксувати, що pre-deploy мігрує зі старого образу
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/privacy-data-rights	8b2806d82805c6914bdb9cc524031e1fd7cf6963	docs(docs): register pending third-party purge tokens for GDPR Art. 17
+C-squash-merge	0	0	1	2026-08-10	refs/remotes/oldgh/claude/privet-sa26el	14383bf9c5a44fdfbc51053a31c00422dbeb427c	fix(ci): анотація не видає мердж за завершений деплой
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/product-brainstorm	d17b3603a5e292b0c6e527f39cbaa5cd51b228e3	docs(docs): продуктовий брейншторм за підсумками knowledge-аудиту — 16 рішень
+C-squash-merge	0	0	1	2026-08-06	refs/remotes/oldgh/claude/product-canons-backlog-54d342	7fbfa70c77cfd79d8964fa346ec804e0197e34d2	docs(docs): звірити канони з main і закрити Free-квоту ADR-0085
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/product-knowledge-audit-2c3941	68eeab0508d4fe51eaca4f6491bb081acfabfc13	docs(docs): парасольковий product-overview канон + diff-звіт (фінал конвеєра)
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/product-knowledge-audit-routine-f9bd6e	675567160fb634238daf58368ffec24656faecf5	docs(docs): продуктовий аудит знань routine — канон + diff-звіт (п'ятий прогін конвеєра)
+C-squash-merge	0	0	1	2026-07-25	refs/remotes/oldgh/claude/product-knowledge-backlog	c5ed3bdcf7fd6a9cae55e16367413983c3124e6a	docs(docs): беклог виправлень knowledge-аудиту — 6 хвиль, ~55 задач
+C-squash-merge	0	0	1	2026-09-03	refs/remotes/oldgh/claude/profile-half-wipe	613599358a456f2f27598018ef6148cc1b4164b6	fix(web): не давати порожній половині профілю стирати серверну
+C-squash-merge	0	0	1	2026-08-26	refs/remotes/oldgh/claude/pryvit-1fb4dc	5d0748a124e24e6ca3ec25ba4ee0180b5dc4a782	docs(docs): другий прохід по інтеграціях — прогалини першого ландшафту
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/rag-eval-live-pacing	cb79505060bf50441ec76e6cff91206c99d30190	fix(server): живий RAG-евал більше не звітує зеленим, коли не відпрацював
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/rag-eval-phase1	02e7c633b042f0c242cdf3d1213a7f1cefa57216	feat(server): реальний RAG-евал — корпус, кешовані ембеддинги, блокувальний гейт
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/claude/railway-hetzner-migration-1e7094	3d78e168c986b9133b3450dac48d23bc433fb859	chore(ci): add ghcr build+push workflow for API (Hetzner/Coolify migration)
+C-squash-merge	0	0	1	2026-08-01	refs/remotes/oldgh/claude/receipt-character-recognition-3b438f	525a9231b45319331d776d9fb5619611dd462426	docs(docs): спека сканування чеків — QR/ДПС + vision, автовитрата з позиціями
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/redis-comments-drift	465f95fd14d365c48a364d4026030176892e4ab3	docs(server): виправити коментарі, які стверджують, що Redis у проді немає
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/claude/regen-repo-maps	17b7b6e2866d8afe301eb9ec4a2a455eb7b628d9	chore(docs): регенерувати repo-map і service-catalog
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/repo-cleanup-organization-asq9nh	0c6bbf38595400bfacd046b647ef4a2c8faf8d80	chore(root): вивести n8n-шар з репо (ADR-0090)
+C-squash-merge	0	0	1	2026-08-23	refs/remotes/oldgh/claude/repo-issues-review-cleanup-s1xu6v	2e5e102208820f640847ff37a3d72888032092d8	fix(ci): закривати alert-issue після відновлення і зробити OSV-гейт ledger-aware
+C-squash-merge	0	0	1	2026-08-05	refs/remotes/oldgh/claude/report-math-mismatch-cms0bi	9efd8b8e4616d1b4bb7e24cb2612c91f3248d96f	fix(shared): захистити чергу синхронізації і закрити FK-індекс
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/route-mono-categorize-gemini	da7aa01c7d8eb640db0287dd44bac207065f14d6	feat(server): route mono MCC batch-enrichment + categorizer to Gemini Lite via provider factory
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/route-nutrition-mono-gemini	d8b3f777ffb743a36a3986295919f42d8ff1596e	feat(server): route text-only nutrition endpoints to Gemini Lite via provider factory
+C-squash-merge	0	0	1	2026-07-24	refs/remotes/oldgh/claude/routine-audit-spec	e870f3203391061bcc1e937c8823790472d05bab	docs(docs): спека продуктового аудиту знань routine (п'ятий прогін конвеєра)
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/claude/routine-heatmap-stage3	89b1a748d2f97923f30d051edd361e0846c56333	feat(web): знаменник heatmap за розкладом
+C-squash-merge	0	0	1	2026-08-17	refs/remotes/oldgh/claude/routine-mode-labels	7d3959cfbe7ce4a7ac78f115a70c3fcd3552aab4	fix(web): назвати календарний зріз у героєві рутини й узгодити стрічку з чипами
+C-squash-merge	0	0	2	2026-08-28	refs/remotes/oldgh/claude/sad-dubinsky-0129e0	ee0ffa2ee5bf9340300f29911a3c38e2ed11e7fb	chore(agents): bump harness to 4.5.0
+C-squash-merge	0	0	1	2026-08-30	refs/remotes/oldgh/claude/sad-saha-647a76	a6d1793763181eeeb4b3a6d38ff671287bfa0fb8	fix(web): останні два КБЖУ замінено на канонічне КБЖВ
+C-squash-merge	0	0	1	2026-08-10	refs/remotes/oldgh/claude/search-auth-field-bug-msgzoz	3ad4411d871c28f9507f530a17ffc331f464fba9	fix(web): не давати менеджеру паролів захоплювати поля пошуку
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/segmented-bar-layout	10d076c7989a306ee28c3435acdc6a1bbacc7515	feat(web): повноширинна планка сегментів у фільтрі місця каталогу
+C-squash-merge	0	0	3	2026-08-28	refs/remotes/oldgh/claude/sergeant-site-redesign-17e51d	c974f9b4120b223d75893390f8a4422454a07a4d	feat(web): живий звʼязок у hero – інтерактивний перемикач тренувань
+C-squash-merge	0	0	3	2026-09-02	refs/remotes/oldgh/claude/server-coverage-and-ci-gate	323e6ef5fb5061c9909a7d129188a9e1ce198895	test(server): розібрати сімейство адрес у normalizeIp
+C-squash-merge	0	0	1	2026-08-16	refs/remotes/oldgh/claude/session-form-date-fields-hgo6iw	d5bf0dbe687a6c71e3ffc3a0b61c8be7e323e509	fix(web): ретро-тренування — поля дат у межах екрана, введений кінець видно на сесії
+C-squash-merge	0	0	1	2026-08-25	refs/remotes/oldgh/claude/silpo-callback-session-fix	e528a118e52daac826531f7e83b36a1985e19073	fix(server): колбек Сільпо не вимагає сесії — власника дає state
+C-squash-merge	0	0	3	2026-08-25	refs/remotes/oldgh/claude/silpo-manual-receipt-linking	bf5454c1608d56dbff19b8d2f811c3fe11bec98c	feat(web): чек Сільпо в деталях ручної витрати
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/silpo-track-f	77ca85f204ff7a510b40839a5b241f25f0617a1a	feat(web): цигарки як другий чековий клас у кореляціях (Silpo трек F)
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/site-guides-routine	27e1d0bf917629200a81e0e64c66e97f33be509b	fix(web): згрупувати каталог гайдів за рідним модулем
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/site-ia-stage1	a203c8c144a383ff1b2448618216bdafa45d28c2	feat(web): чотири сторінки замість секцій головної
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/site-ia-stage2	a203c8c144a383ff1b2448618216bdafa45d28c2	feat(web): чотири сторінки замість секцій головної
+C-squash-merge	0	0	2	2026-07-26	refs/remotes/oldgh/claude/spec-goal-progress	61bd1105ad0d7dea912418c41abed835f4fe00b3	feat(web): автопрогрес цілей — банки Monobank + лог поповнень
+C-squash-merge	0	0	2	2026-09-02	refs/remotes/oldgh/claude/spec-nutrition-adaptive-goal	22ef8189ae69679ef58973d324740c213883a18f	docs(docs): ціль КБЖВ не перефарбовує минуле (ADR-0091)
+C-squash-merge	0	0	1	2026-08-27	refs/remotes/oldgh/claude/spec-rework-open-work	46069f29ddea8dc97a466548e90797c8d363992c	docs(docs): переопрацювати шість відкритих документів через spec-інтервʼю
+C-squash-merge	0	0	2	2026-08-31	refs/remotes/oldgh/claude/spec-status-followups	471b406e6be31b3d9948df6aa0d169333c7b467d	docs(nutrition-domain): плани харчування між пристроями заморожено до тесту користувачів
+C-squash-merge	0	0	2	2026-07-26	refs/remotes/oldgh/claude/spec-transactions-polish	d792c925ad942482694f10b0ccb156ec49663b90	feat(web): чіпси-фільтри, нейтральна кредитка, фіксований мета-рядок (C5)
+C-squash-merge	0	0	4	2026-09-02	refs/remotes/oldgh/claude/specs-from-competitor-research	ecf4a32a86731f5234cdb414bc7e7372be199aea	docs(docs): закрити контракти спеки готовності за рев'ю
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/subagent-delegation-audit-c0cc4b	f6e366cd1864f366af3fd9e829425eeebc1e05bb	docs(agents): close subagent-delegation-audit gaps in routing, squad skills, qa-mobile
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/claude/sync-v1-phase7-removal	dbb6db0d43e4a249c89111d743d26d70c10e58b5	chore(server): remove CloudSync v1 sunset routes (Initiative 0003 Phase 7)
+C-squash-merge	0	0	1	2026-08-06	refs/remotes/oldgh/claude/synthesis-turn-tool-payload-m7q2v	aca1c58e6baa7b1933ec9c31173ef966b8f32033	perf(server): на турі синтезу слати лише згадані в реплеї tool-визначення
+C-squash-merge	0	0	1	2026-09-02	refs/remotes/oldgh/claude/tabular-import-extract	25c1c22c9dd54f8f2b289ecc09674ea9f132a3e6	feat(web): імпорт тренувань зі Strong (#1002)
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/claude/telemetry-env-single-source	68102118056e4ba190fa9b01e227a553c52db174	fix(web): звести environment телеметрії до однієї змінної
+C-squash-merge	0	0	1	2026-07-19	refs/remotes/oldgh/claude/test-coverage-agents-7ww5sj	443fca87a9fe4bf89ddbab4d683b600476286736	docs(root): archive completed audits, plans, and shipped specs
+C-squash-merge	0	0	2	2026-08-31	refs/remotes/oldgh/claude/tool-eval-cassettes	8c0ed2785becd3b74dd6ef1cc6d518abae7b8385	feat(server): суддя-модель другим шаром над касетою стенду
+C-squash-merge	0	0	2	2026-08-31	refs/remotes/oldgh/claude/tool-eval-coverage	b9198309caa0d9ea8af88e157c3ffa77204034a5	feat(server): гейт покриття реєстру інструментів кейсами стенду
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/claude/tool-eval-injections	e0de61677f0f366c88494ce131b0aa87dd124e28	feat(server): адверсарний набір інʼєкцій і прод-обгортка tool_result
+C-squash-merge	0	0	1	2026-08-07	refs/remotes/oldgh/claude/tool-result-echo	7cd8be88f6edfead2af2e4540a03d35ad2f5a9f7	fix(web): не дублювати сирий результат інструмента над карткою
+C-squash-merge	0	0	1	2026-08-28	refs/remotes/oldgh/claude/top-panel-scroll-3bblt2	7fa558b495b79e293633357d5810f01396151751	feat(web): rework settings sticky header into floating island card
+C-squash-merge	0	0	2	2026-07-26	refs/remotes/oldgh/claude/water-history	fd51fc7997b89ec3ae5acf9757d6458c3a914c84	fix(web): відсутній імпорт privacyMessages в uk.ts
+C-squash-merge	0	0	1	2026-08-28	refs/remotes/oldgh/claude/web-outside-click-hook	319fbc6ffa060a40fc6e9f65edfc85c42537779f	refactor(web): extract shared useOutsideClick hook
+C-squash-merge	0	0	6	2026-08-01	refs/remotes/oldgh/claude/web-qa-browser-check-51396e	0eac1412a072551029a55b699358a4f580821a32	docs(docs): звіт браузерної QA перед закритою бетою
+C-squash-merge	0	0	2	2026-09-02	refs/remotes/oldgh/claude/website-audit-wsjxst	07d344c0801abc8e56e6cd33f7b704c6bd4f48fe	fix(web): 404-статус замість soft-404, контраст і технічні правки лендінга
+C-squash-merge	0	0	1	2026-07-13	refs/remotes/oldgh/codex/coverage-drift-fix-20260713	1f2a8b9ab9cbb38f7a4637de2387d99543dc7452	test(root): increase coverage and reconcile planning drift
+C-squash-merge	0	0	1	2026-07-29	refs/remotes/oldgh/codex/docs-work-cleanup	d15f14206f2800ec95a51814c1bd3d1c673a5bb2	fix(docs): reconcile active work queue
+C-squash-merge	0	0	5	2026-09-09	refs/remotes/oldgh/codex/finyk-category-picker-unify	7198c923f48871d7b5719ed5bb7a44aeff28bf7a	fix(server): зберегти підказки категорій надходжень
+C-squash-merge	0	0	1	2026-07-13	refs/remotes/oldgh/codex/fix-ios-standalone-viewport	97e7f4e4e32357a3724e269de583fee9ffc6c4dd	fix(web): fill iOS standalone viewport
+C-squash-merge	0	0	1	2026-07-23	refs/remotes/oldgh/codex/fix-main-checks	fd85b99b7cdbafdd89c909d5b94cbebcc19dea07	fix(root): restore main CI checks
+C-squash-merge	0	0	2	2026-07-13	refs/remotes/oldgh/codex/fix-mobile-viewport-shell	413cc8bd17c4abc5be9501d8e796da1627bd7a6d	fix(web): close welcome auth gate and safe area
+C-squash-merge	0	0	1	2026-09-08	refs/remotes/oldgh/codex/fix-nutrition-pantry-smoke	8a760acbef2a52dfbf2177af2257de71d8b9778b	fix(web): keep sheet flush with mobile viewport
+C-squash-merge	0	0	1	2026-07-28	refs/remotes/oldgh/codex/local-anon-migration	0997d7d73bc6a2d633f473f2b00d370d4637b922	feat(web): migrate anonymous data on first sign-in
+C-squash-merge	0	0	2	2026-08-13	refs/remotes/oldgh/codex/manual-expense-category-fix	06e100867e0d1ac333f588ea60306882536e4e53	fix(web): hide legacy generated manual titles
+C-squash-merge	0	0	1	2026-07-13	refs/remotes/oldgh/codex/openapi-phase2-20260713-v2	b728fdf33ccc7f6f7222b5663cef2f51ed554271	fix(web): stabilize mobile hub navigation and chat layout
+C-squash-merge	0	0	2	2026-07-18	refs/remotes/oldgh/codex/phone-regression-wave	02272c4b859af703bf52c73a3e0b5cda9fbaa4e3	fix(web): link manual transactions and contain date field
+C-squash-merge	0	0	1	2026-09-05	refs/remotes/oldgh/codex/reconcile-product-brainstorm	f49d238987db8a9cb741bf9cf9d6d60f3cb1be74	docs(docs): reconcile brainstorm delivery status
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/codex/repository-simplification	e3d0f4fe935f1055e5d860b4ea893353aad411a5	chore(root): simplify repository automation and history
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/adr-freshness-audit-73bc	6645aed7757e836d668355aacd9acb4de0277e05	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/billing-copy-openapi-phase2-17cb	eccb3310ba0710d899ddefb5bff9c6afb5d30e41	docs(docs): refresh initiatives after m083 + billing hygiene
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov-packages-2103	3b445e2a24f5544ea48e701e7c4b01cd64a7d06b	test(api-client): raise package coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov-web-hub-core-2103	dc7dbb782427d1cef0c34574f505788ba4fa3eac	test(web): raise hub/core coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov-web-nutrition-2103	aac36fd999b9016028c440912571f8ab67c60cf7	test(web): raise nutrition module coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-mobile-nutrition-2103	d47099575618a6d8fed3943171c91decb89e2007	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-mobile-routine-2103	44f56a6c5997fb873f40dcf1f6215e5a049feba4	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-packages-2103	49760861bf4315a8ebf71117272ad589f8f143a9	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-server-platform-2103	c4aed1415777c532e034ff64768ebb788145deb2	test(server): raise http/auth/lib coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-server-sync-tools-2103	7268c0897e1297132d734f3bff9dab002310c7d2	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-web-fizruk-2103	9bec022cf20aa2c809db7cf925c8f4aa47c5b9cc	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-web-routine-2103	1b7eb6131951d2a4202fd7dc910d481e9fb375eb	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov2-web-smoke-2103	d4f172aee2466a5e55b42641f03ade1044c389dd	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-mobile-nutrition-lib-2103	d50d83ee0eb8d715c9c232ec33c30a9545a67581	test(mobile): raise nutrition lib and hooks coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-packages-data-2103	cde4b857d2faeb1a9ffe5e0ce9cef7a5f0898eff	test(db-schema): raise migration helper branch coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-server-modules-2103	d7138be894e8a19781246989da823fcc0bcfb82b	test(server): raise digest and domain module coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-server-tooldefs-2103	4e56d1ac73e8eb3d56c4456413cf7aca3928fa4c	test(server): raise chat toolDefs coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-web-finyk-components-2103	9e355c6fd5d257d79cbd01c34c3d7fc72667271c	test(web): raise finyk components coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-web-nutrition-lib-2103	49dc507901347b7ffe0d3d61ac2ad831b77d79bf	test(web): raise nutrition lib coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-web-shared-lib-2103	e02da5ba6fdd166f84ba5abb235a650491571f1b	test(web): raise shared lib and hooks coverage
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/cov3-web-shared-ui-2103	9026dfeb517efe0d06a263e435edfc0bb0b85394	test(web): raise shared ui coverage
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/docs-02-engineering-audit-83ef	c4958f23c6b273c835afeb5ac0f01c681afe91b4	docs(docs): sync docs/02-engineering with current codebase
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/docs-04-governance-freshness-3d8f	1fc9db00f2aa8f7e22cbf5ead0ed82cd392043fb	docs(docs): sync docs/04-governance with code and ADR index
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/docs-90-work-freshness-3d8f	dbf72ce54de6a639b9ef42b960450d2658403d60	docs(docs): sync docs/90-work with ADR-0068 and shipped code
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/docs-drift-fix-b786	fe7259bc06e4f3107c0309717cdd8e5cb6259c53	fix(docs): reconcile docs drift, broken links, and generator outputs
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/docs-prettier-ci-fix-f588	08ce7928cf795df928f9cfd243b92f8945a1dc2d	chore(docs): fix CI docs drift, broken ADR link, and prettier
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/fix-main-ci-green-8bf4	7d3bc48d39255246e14d8cc63b70affb2fc9b9a3	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	4	2026-07-21	refs/remotes/oldgh/cursor/fix-main-ci-post-364-8bf4	881b42dfb18709b89077b3de3c8a5f9b442ab61e	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/initiatives-refresh-after-m083-17cb	27c17a46837a667aa5c88647823bc1e40bae9aea	docs(docs): refresh initiatives after m083 + billing hygiene
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/planning-docs-reconcile-f440	83b6804bf25172904bf7088cbfbe1cfcbffa9f31	docs(docs): reconcile planning trackers with HEAD code
+C-squash-merge	0	0	3	2026-07-20	refs/remotes/oldgh/cursor/s10-q1-harness-followups-f440	7220dca7342452503418d41c9ff9c9cc4c77ca33	docs(docs): mark S10-Q1 and harness follow-ups done in trackers
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/s9-s1-s9-d1-s10-x1-4db5	81895a0178d1e96df4012a231acc0bcf738162a0	test(web): extend module smoke specs with CTA happy paths (S10-X1)
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/cursor/scripts-dead-code-cleanup-acb1	0f8a076cb85403bfd651d44ed095e0759804ce37	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/server-coverage-nutrition-digest-ab0a	6f6fcc7b3d4c93a34880146f5bd1a65807986040	test(server): coverage wave — nutrition handlers + weekly digest
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/techdebt-bank-body-scrub-31d2	b92389657417f0bb41b78c55cde5b7e59a5b06e3	fix(server): scrub privat upstream error bodies from client responses
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/techdebt-manual-expense-sheet-31d2	cb5f90c2b918c0b3170580c1143c5aaa5ef0f47a	refactor(web): decompose ManualExpenseSheet under max-lines
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/techdebt-mobile-todo-triage-31d2	e17646ab4cfd2a679c6badd105b8d2bc3b9a0bce	feat(mobile): wire NotificationsSection to useMonthlyPlan
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/techdebt-non-null-burndown-31d2	9d6842eabd1cee753c7a77d2fd5a5b66271ed930	fix(web): tighten no-non-null-assertion disables
+C-squash-merge	0	0	1	2026-07-20	refs/remotes/oldgh/cursor/techdebt-txrow-decompose-31d2	5a06eea7170d8759290547e1edd8038bc1566e12	refactor(web): decompose TxRow under max-lines
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave11-finyk-5880	613a1e54beb8fc620666a60c86bfeda677503d18	test(web): coverage wave 11 — RoutineApp + finyk lazy pages
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave12-fizruk-5880	28015bf63382f5c9a3cbfe17d10a8d0093af686d	test(web): coverage wave 12 — FizrukApp branches
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave13-drift-5880	3285f55a84e68590fcc43f0615f913e3ade346f6	test(web): fix legacy vitest drift — AddMealSheet, dialogs, celebration
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave14-nutrition-components-5880	d46514932133a25a9de43f7b01e0f3797d2ceebe	test(web): coverage wave 14 — AddMealSheet + RecipesCard branches
+C-squash-merge	0	0	2	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave15-nutrition-hooks-5880	d26832607efdb20b7d85e37276ab38f7e9efa970	test(web): coverage wave 14 — AddMealSheet + RecipesCard branches
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave16-sync-5880	1d3a5ae80b413876c07064505860884d83b7dda2	test(web): coverage wave 16 — syncEngine applyPullOp + reader branches
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave18-core-app-ab0a	304f245116ed85b628c317d4f44d63714f4e8eb8	test(web): coverage wave 18 — core app + activation shells
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave19-auth-billing-ab0a	3ddc95b8524c29e365bc60fce233ceddabaceab9	test(web): coverage wave 19 — auth + billing branch coverage
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave20-finyk-ab0a	87c3826a5c3885e2d459a0e457e2cb5b8be83574	test(web): coverage wave 20 — finyk module branches
+C-squash-merge	0	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave21-nutrition-ab0a	0729aa4e6bf6331722d83fcacb160b6b75baf3b4	test(web): coverage wave 21 — nutrition module branches
+C-squash-merge	0	0	1	2026-08-31	refs/remotes/oldgh/dependabot/docker/ops/grafana-alloy/grafana/alloy-v1.19.2	ea828b888b2b9664fb0ee3732d98f8275032b10f	chore(deps): bump grafana/alloy in /ops/grafana-alloy
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/deps/sweep-safe-2026-07-11	eeeab2e454d05be8d8dbdd210b088f5a919636a7	chore(deps): sweep safe patch/minor (2026-07-11)
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/design/fizruk-warmup-token-fix	a7743589ef7d2a13603568f74aff40d96a46d6b4	fix(web): tokenize fizruk warmup checklist color (remove raw orange palette)
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/devin/1784637986-docs-lighthouse-runbook	4169e0984ecdd6050ce62c17ed6c4cd93ac7ce80	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	2	2026-07-21	refs/remotes/oldgh/devin/1784637986-mobile-s10f2-celebration	a1871068fc3844cf5a55ec58fe835511bfc4f2b0	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	2	2026-07-21	refs/remotes/oldgh/devin/1784637986-server-barrel-imports	d50425d68f9cfe7c1ad9ae8889a4cac781ce39fd	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/devin/1784637986-web-barrel-imports	386ffbb6869615475a74ea680f7f16d7958931ab	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-21	refs/remotes/oldgh/devin/1784637986-web-pr42-chat-usage	8badd015c842fa413bf220bcc8e961e6c95aedc6	feat(web): add chat usage counter with /api/chat/usage contract (PR-42)
+C-squash-merge	0	0	2	2026-07-21	refs/remotes/oldgh/devin/1784637986-web-s10r1-og-meta	3f47df34ce2e452e1ee103e811f85f9244250b99	chore(ci): ratchet coverage baseline upward
+C-squash-merge	0	0	1	2026-07-29	refs/remotes/oldgh/devin/1785324042-web-finyk-goal-celebration	940906952eedbc551cb69e7f8a90f78f78a35f31	fix(web): keep assistant chat on catalogue route
+C-squash-merge	0	0	1	2026-07-29	refs/remotes/oldgh/devin/1785331785-web-assistant-chat-catalogue	6f8b0c22c774c5bd548216ce4d24f23d7ce2e2e5	fix(web): keep assistant chat on catalogue route
+C-squash-merge	0	0	1	2026-07-29	refs/remotes/oldgh/devin/1785336384-landing-anti-slop-redesign	b0286bc810373b9c031b2aa235bc8927b7c4b0e1	feat(web): redesign landing around connected insights
+C-squash-merge	0	0	1	2026-07-31	refs/remotes/oldgh/devin/1785527000-web-legal-beta	44263c2ec79fad4a37a8091c145c9e29670548ca	feat(web): align legal documents with the real subprocessor stack
+C-squash-merge	0	0	1	2026-07-31	refs/remotes/oldgh/devin/1785528379-docs-launch-reconcile	c35d067aa447e548e34d9babf772c84c0c0a3f33	docs(docs): звірити launch-документацію з кодом
+C-squash-merge	0	0	1	2026-07-28	refs/remotes/oldgh/devin/20260728-hub-finyk-ux-audit	252840d1c2cd0ecefc4310937f3f5c6c22b57fb6	fix(root): complete Hub and Finyk UX audit
+C-squash-merge	0	0	1	2026-08-01	refs/remotes/oldgh/docs/beta-wave-process	e8e4d679fe068748d8fa0b11665ab5adc895e1f4	docs(docs): процес закритої бети — розклад, форми, тексти
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/docs/design-canon-palette-versions	3ebb0a9ce166c11ce00b3a51066ed21007e1fdd9	docs(docs): sync canonical palette to M1 stone rebrand + add version history
+C-squash-merge	0	0	1	2026-07-30	refs/remotes/oldgh/feat/telegram-waitlist-stats	a5d96d1fb2937eb6e8bdf0f88abde150d4328c6e	feat(server): команда /stats у боті вейтліста
+C-squash-merge	0	0	1	2026-07-12	refs/remotes/oldgh/fix/app-dvh-stale	3cacc11f7dd780674a25c3fa91c4a2fb8b5f4547	fix(web): track real visual-viewport height via --app-dvh (stale iOS 100dvh)
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/fix/design-audit-safe-fixes	80e91f40cbe45603320f2d7ef7617534c154535e	fix(design-tokens): clear stone/teal rebrand artefacts + audit report
+C-squash-merge	0	0	1	2026-07-31	refs/remotes/oldgh/fix/design-showcase-icon-i18n	e0cf1c3682a597c8c360dcdfb93a8c13a66a8ced	fix(web): неіснуюче ім'я іконки у showcase-демо фільтрів
+C-squash-merge	0	0	1	2026-08-01	refs/remotes/oldgh/fix/freshness-dashboard-sync	f2a3f90aae756182ea106291bf5eef1acda4a58d	docs(docs): синхронізувати freshness-dashboard із датами в main
+C-squash-merge	0	0	1	2026-08-01	refs/remotes/oldgh/fix/id-generator-test-expectations	f696a0a768568c49d4edb82e35904f0f393d08db	fix(web): звірити тести ID-генераторів із реалізацією
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/fix/phase-7-followup-drift	4da77456c2efeb84f590d0a63eaea59cedf7ce4b	fix(config): drop merged billing barrel from knip ignore + regenerate drifted doc indexes
+C-squash-merge	0	0	1	2026-07-27	refs/remotes/oldgh/fix/telegram-webhook-canonical-path	9a978c50e583563a52a20e8fbff6c16ce6b24a14	fix(server): перенести Telegram-вебхук на канонічний шлях без /v1
+C-squash-merge	0	0	1	2026-07-27	refs/remotes/oldgh/fix/telegram-webhook-csrf-exempt	4a4b0a7f4c8788b91e0de5f37749320901f64eab	fix(server): дозволити Telegram-вебхук без CSRF-хедера
+C-squash-merge	0	0	1	2026-07-11	refs/remotes/oldgh/test/shared-fastcheck-property	7c26edb40eef30924569b1847dca322a23d12768	test(shared): fast-check property tests for Kyiv dates and money round-trip
+C-squash-merge	0	0	1	2026-07-26	refs/remotes/oldgh/v0/sergeant-design-system-audit-b7e89b8b	a7743589ef7d2a13603568f74aff40d96a46d6b4	fix(web): tokenize fizruk warmup checklist color (remove raw orange palette)
+C-squash-merge	0	0	5	2026-07-26	refs/remotes/oldgh/v0/sergeant-m1-sweep-batch-1	c760d82efddd6a223d536fcc2831716d99097f95	feat: replace sections with Card component for consistent UI styling
+D-бот backlink-ів	0	51	1	2026-08-16	refs/remotes/oldgh/docs/pr-backlinks-799	256b44bfd803e4722438f14aa765dacad773868e	docs(docs): backlinks for #799
+D-бот backlink-ів	0	41	1	2026-08-04	refs/remotes/oldgh/docs/pr-backlinks-606	72bd7f12f210515d4d3637595ae312beadd83999	docs(docs): backlinks for #606
+D-бот backlink-ів	0	18	1	2026-08-28	refs/remotes/oldgh/docs/pr-backlinks-904	f042011fd21af150e2ea71593d88ed559cb5d2c8	docs(docs): backlinks for #904
+D-бот backlink-ів	0	17	1	2026-07-21	refs/remotes/oldgh/docs/pr-backlinks-364	cbd0e6924717b22ee412602b799afce64a88a294	docs(docs): backlinks for #364
+D-бот backlink-ів	0	15	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-342	1703e12d3393b51fb7befb11df4c70ba19df9dd8	docs(docs): backlinks for #342
+D-бот backlink-ів	0	15	1	2026-08-04	refs/remotes/oldgh/docs/pr-backlinks-618	d3d40861f60e3d3b3f92d052eecbc99365d5d3d9	docs(docs): backlinks for #618
+D-бот backlink-ів	0	13	1	2026-07-25	refs/remotes/oldgh/docs/pr-backlinks-453	d01e7b1cad754606413067476830c4f6e9103dfe	docs(docs): backlinks for #453
+D-бот backlink-ів	0	8	1	2026-07-25	refs/remotes/oldgh/docs/pr-backlinks-452	75f0b2448951976a840bfb76d43d00fce3d4dbf1	docs(docs): backlinks for #452
+D-бот backlink-ів	0	8	1	2026-07-25	refs/remotes/oldgh/docs/pr-backlinks-464	fb2e1f4f1925bd857f59cee2acfb8e7e19f0d811	docs(docs): backlinks for #464
+D-бот backlink-ів	0	7	1	2026-07-25	refs/remotes/oldgh/docs/pr-backlinks-446	3669e25a436879c7714b89717b7d215f6968f1be	docs(docs): backlinks for #446
+D-бот backlink-ів	0	6	1	2026-07-11	refs/remotes/oldgh/docs/pr-backlinks-250	240c26b061eaadd2815f7e2e5e02daee438d45c4	docs(docs): backlinks for #250
+D-бот backlink-ів	0	6	1	2026-07-13	refs/remotes/oldgh/docs/pr-backlinks-292	db36f679d7c5421f58a0458b8c0987430c9dd682	docs(docs): backlinks for #292
+D-бот backlink-ів	0	6	1	2026-07-25	refs/remotes/oldgh/docs/pr-backlinks-450	88234b7210af2eb53057514a07002ec71888d782	docs(docs): backlinks for #450
+D-бот backlink-ів	0	6	1	2026-07-25	refs/remotes/oldgh/docs/pr-backlinks-451	f562f6ce2c8327a1873887cd72454c87ba70440a	docs(docs): backlinks for #451
+D-бот backlink-ів	0	6	1	2026-07-29	refs/remotes/oldgh/docs/pr-backlinks-507	843a543f18c45d3c0e7cf782703fb3680eb36f69	docs(docs): backlinks for #507
+D-бот backlink-ів	0	6	1	2026-07-29	refs/remotes/oldgh/docs/pr-backlinks-508	060f1481176927149bdcde47c2b9e1af9fd7643d	docs(docs): backlinks for #508
+D-бот backlink-ів	0	6	1	2026-08-08	refs/remotes/oldgh/docs/pr-backlinks-751	ecd3a8f3a0fc480ad985308fa7b2edbeb2d53d11	docs(docs): backlinks for #751
+D-бот backlink-ів	0	5	1	2026-07-12	refs/remotes/oldgh/docs/pr-backlinks-273	a3bf75606d4b9ea18c4c895c3b90cfb49a41e054	docs(docs): backlinks for #273
+D-бот backlink-ів	0	5	1	2026-07-21	refs/remotes/oldgh/docs/pr-backlinks-382	690ad079ba5ead366e6cd8a3e69cb10a4340ec6b	docs(docs): backlinks for #382
+D-бот backlink-ів	0	5	1	2026-07-21	refs/remotes/oldgh/docs/pr-backlinks-384	e21899f98a33d6e2b64e3e38e4fa457dc6ddbe77	docs(docs): backlinks for #384
+D-бот backlink-ів	0	5	1	2026-08-05	refs/remotes/oldgh/docs/pr-backlinks-633	5e8fef9b50d70696e92cfe5e675a2e41ac565b56	docs(docs): backlinks for #633
+D-бот backlink-ів	0	4	1	2026-07-10	refs/remotes/oldgh/docs/pr-backlinks-221	8cc72dc892db7153003d67c2c7e8415919b83682	docs(docs): backlinks for #221
+D-бот backlink-ів	0	4	1	2026-07-15	refs/remotes/oldgh/docs/pr-backlinks-297	5d879d9ca5e3c7246ee96f0556ddcb8519dd0be9	docs(docs): backlinks for #297
+D-бот backlink-ів	0	4	1	2026-07-19	refs/remotes/oldgh/docs/pr-backlinks-312	15c16afe1a4729f5fd73f3154ac47104f8a6adb4	docs(docs): backlinks for #312
+D-бот backlink-ів	0	4	1	2026-07-30	refs/remotes/oldgh/docs/pr-backlinks-514	4566790bc5150df5d27db30ddcf523975b10fd09	docs(docs): backlinks for #514
+D-бот backlink-ів	0	4	1	2026-08-27	refs/remotes/oldgh/docs/pr-backlinks-889	0e15d38bc4fd17c1fc89349b6234dc220cd69193	docs(docs): backlinks for #889
+D-бот backlink-ів	0	4	1	2026-08-27	refs/remotes/oldgh/docs/pr-backlinks-890	5d2c076cba40be048b045449fe238e5d232091f2	docs(docs): backlinks for #890
+D-бот backlink-ів	0	4	1	2026-08-27	refs/remotes/oldgh/docs/pr-backlinks-891	68f7c36bcc2124ede1b1bf86dd2e1e56c907e02d	docs(docs): backlinks for #891
+D-бот backlink-ів	0	4	1	2026-08-27	refs/remotes/oldgh/docs/pr-backlinks-892	f9918d06fb824cd4258d9c14133b778d98c00ac5	docs(docs): backlinks for #892
+D-бот backlink-ів	0	2	1	2026-07-21	refs/remotes/oldgh/docs/pr-backlinks-365	1476647aa2f9e4847838c55344038b0db2023082	docs(docs): backlinks for #365
+D-бот backlink-ів	0	2	1	2026-07-30	refs/remotes/oldgh/docs/pr-backlinks-513	08ddd6ab52a103df253bc736069a58c8fcf4a464	docs(docs): backlinks for #513
+D-бот backlink-ів	0	2	1	2026-08-26	refs/remotes/oldgh/docs/pr-backlinks-869	de7ee65634f8ea7240846e97bed378c5451602fd	docs(docs): backlinks for #869
+D-бот backlink-ів	0	2	1	2026-08-28	refs/remotes/oldgh/docs/pr-backlinks-913	744fe5d4535fe80b06da6c7db60ef0d1270cf9b4	docs(docs): backlinks for #913
+D-бот backlink-ів	0	1	1	2026-07-10	refs/remotes/oldgh/docs/pr-backlinks-214	93320f35e636fc50ffbee4becac7516db0fc2d46	docs(docs): backlinks for #214
+D-бот backlink-ів	0	1	1	2026-07-19	refs/remotes/oldgh/docs/pr-backlinks-313	b963c7fe25aa60fe09df6de21f8a7dac2376d00f	docs(docs): backlinks for #313
+D-бот backlink-ів	0	1	1	2026-07-19	refs/remotes/oldgh/docs/pr-backlinks-320	2f8c34711013ec11bd40a92e8e3ec31385856bdc	docs(docs): backlinks for #320
+D-бот backlink-ів	0	1	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-354	f3aac91156805d6f5b310160d154f7ebdf4f38fa	docs(docs): backlinks for #354
+D-бот backlink-ів	0	1	1	2026-07-21	refs/remotes/oldgh/docs/pr-backlinks-377	ae01d4f4cde8f15237ea60fa8ed634016b41f523	docs(docs): backlinks for #377
+D-бот backlink-ів	0	1	1	2026-07-30	refs/remotes/oldgh/docs/pr-backlinks-521	bbbac1fbd623f6f00e72b39d2566c19e35a6f785	docs(docs): backlinks for #521
+D-бот backlink-ів	0	1	1	2026-07-30	refs/remotes/oldgh/docs/pr-backlinks-528	3e8a21e851ad4474c25a440c36276e164ecd8c6a	docs(docs): backlinks for #528
+D-бот backlink-ів	0	1	1	2026-08-01	refs/remotes/oldgh/docs/pr-backlinks-572	58cc6ec2690b1776012d2e2ac3b9ee565a37f337	docs(docs): backlinks for #572
+D-бот backlink-ів	0	1	1	2026-08-02	refs/remotes/oldgh/docs/pr-backlinks-574	46655beb6a43e0bd8c0bb734cafb5badca0e11e5	docs(docs): backlinks for #574
+D-бот backlink-ів	0	1	1	2026-08-02	refs/remotes/oldgh/docs/pr-backlinks-585	b27171216d8d70f4448bb364d24dfa420027c4e8	docs(docs): backlinks for #585
+D-бот backlink-ів	0	1	1	2026-08-02	refs/remotes/oldgh/docs/pr-backlinks-592	4ddff47e6f5fa25ba098609983e4178478060dc0	docs(docs): backlinks for #592
+D-бот backlink-ів	0	1	1	2026-08-04	refs/remotes/oldgh/docs/pr-backlinks-608	7d8d3f9009aaf79b5a10ea5dbb36e62e646a3f3d	docs(docs): backlinks for #608
+D-бот backlink-ів	0	1	1	2026-08-04	refs/remotes/oldgh/docs/pr-backlinks-619	147ff67a23c24e2884a0441bd41b3d8b64fe7373	docs(docs): backlinks for #619
+D-бот backlink-ів	0	1	1	2026-08-07	refs/remotes/oldgh/docs/pr-backlinks-708	8b6f0b998c7ad14cc47bb69d24a9c6e8bfd0e91c	docs(docs): backlinks for #708
+D-бот backlink-ів	0	1	1	2026-08-08	refs/remotes/oldgh/docs/pr-backlinks-749	31444c709c7648dc283987ba229b277536f4c8ae	docs(docs): backlinks for #749
+D-бот backlink-ів	0	1	1	2026-08-16	refs/remotes/oldgh/docs/pr-backlinks-804	8d3ba3652235bd51859a4bb2cd4bcbd7465d4ca1	docs(docs): backlinks for #804
+D-бот backlink-ів	0	1	1	2026-08-16	refs/remotes/oldgh/docs/pr-backlinks-805	da55920409b5093ba2f3e01889f7f7930ea336f1	docs(docs): backlinks for #805
+D-бот backlink-ів	0	1	1	2026-08-22	refs/remotes/oldgh/docs/pr-backlinks-837	f1c41df6ba75ee59e46ca75c2a6a54d4bf4a2fb3	docs(docs): backlinks for #837
+D-бот backlink-ів	0	1	1	2026-08-25	refs/remotes/oldgh/docs/pr-backlinks-849	34b150ccef9602e5bac6d40345cb22166580b807	docs(docs): backlinks for #849
+D-бот backlink-ів	0	1	1	2026-08-25	refs/remotes/oldgh/docs/pr-backlinks-850	b333cca9eff7c74d59f779d5adbe015071996dcc	docs(docs): backlinks for #850
+D-бот backlink-ів	0	1	1	2026-08-25	refs/remotes/oldgh/docs/pr-backlinks-851	509fc196046d4593e3d9b10c1f8a55b0f5057e15	docs(docs): backlinks for #851
+D-бот backlink-ів	0	1	1	2026-08-26	refs/remotes/oldgh/docs/pr-backlinks-861	d459761f4c4ab359e5597e23808fa8fcb6824b2a	docs(docs): backlinks for #861
+D-бот backlink-ів	0	1	1	2026-08-26	refs/remotes/oldgh/docs/pr-backlinks-862	fc0977eaafa398fc0bd4928177bc73f60af5bccb	docs(docs): backlinks for #862
+D-бот backlink-ів	0	1	1	2026-08-26	refs/remotes/oldgh/docs/pr-backlinks-867	b3856b17c72eebcbac5a84d37afa44f292434fd9	docs(docs): backlinks for #867
+D-бот backlink-ів	0	1	1	2026-08-29	refs/remotes/oldgh/docs/pr-backlinks-936	6682effde4997d75b551adf864060b21b5e740c6	docs(docs): backlinks for #936
+D-бот backlink-ів	0	0	1	2026-07-10	refs/remotes/oldgh/docs/pr-backlinks-209	04a1a1fbd60c26b0d83a8eb4edaf6eda09b102f0	docs(docs): backlinks for #209
+D-бот backlink-ів	0	0	1	2026-07-10	refs/remotes/oldgh/docs/pr-backlinks-222	3267932c6bb4bafc8a158dd0b4ece668459b4c75	docs(docs): backlinks for #222
+D-бот backlink-ів	0	0	1	2026-07-18	refs/remotes/oldgh/docs/pr-backlinks-308	00684e2554fe1a582e3678463772acf57d9b2dc4	docs(docs): backlinks for #308
+D-бот backlink-ів	0	0	1	2026-07-19	refs/remotes/oldgh/docs/pr-backlinks-319	b35dc988bfb8b3fbe7ed42b5916decb2bf067e87	docs(docs): backlinks for #319
+D-бот backlink-ів	0	0	1	2026-07-21	refs/remotes/oldgh/docs/pr-backlinks-334	e894509b907554271b16b524f4d628001863f941	docs(docs): backlinks for #334
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-338	5cb58e30cc784d826172654eedb894c0ac9f9846	docs(docs): backlinks for #338
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-341	9f3d484ac4da219274c181520d12e75afd9e210e	docs(docs): backlinks for #341
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-343	e7992416e6728514a4290549217ddb5ee3026720	docs(docs): backlinks for #343
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-344	5b65be40c90a6d759947f12dce817f0d11221b88	docs(docs): backlinks for #344
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-346	cbeadfb9e8b4bf477dc4584c34d28884ad78a770	docs(docs): backlinks for #346
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-357	4edc49367631d852019e4356d7590654588fae6c	docs(docs): backlinks for #357
+D-бот backlink-ів	0	0	1	2026-07-20	refs/remotes/oldgh/docs/pr-backlinks-360	4bf42072f684c1dfb9a522bde5c373631f0f6a2f	docs(docs): backlinks for #360
+D-бот backlink-ів	0	0	1	2026-07-22	refs/remotes/oldgh/docs/pr-backlinks-417	7a744fad5645a9a48cadf263e65b66fd00b594d5	docs(docs): backlinks for #417
+D-бот backlink-ів	0	0	1	2026-07-24	refs/remotes/oldgh/docs/pr-backlinks-432	196b3e6fef95eef47adb623f7292a0e868a6ab4f	docs(docs): backlinks for #432
+D-бот backlink-ів	0	0	1	2026-07-24	refs/remotes/oldgh/docs/pr-backlinks-434	d72a2053454affab8803802b5495902d86560802	docs(docs): backlinks for #434
+D-бот backlink-ів	0	0	1	2026-07-30	refs/remotes/oldgh/docs/pr-backlinks-526	5862d76ec9cb826a56cc07e22df07f28e0cb84d5	docs(docs): backlinks for #526
+D-бот backlink-ів	0	0	1	2026-07-10	refs/remotes/oldgh/docs/pr-backlinks-54	124e5ace962acdf49cd7ae9f50bfa7de8bbf759e	docs(docs): backlinks for #54
+D-бот backlink-ів	0	0	1	2026-08-01	refs/remotes/oldgh/docs/pr-backlinks-562	e3ce938a7bf3ed0404f2d356ffc41a3df34830ab	docs(docs): backlinks for #562
+D-бот backlink-ів	0	0	1	2026-08-02	refs/remotes/oldgh/docs/pr-backlinks-589	30ba10bfc3c396c7d0d7fa2530833cd512db8ee8	docs(docs): backlinks for #589
+D-бот backlink-ів	0	0	1	2026-08-05	refs/remotes/oldgh/docs/pr-backlinks-632	aa3a9cd1b9e9ce20c82f818639e555f893033e97	docs(docs): backlinks for #632
+D-бот backlink-ів	0	0	1	2026-08-07	refs/remotes/oldgh/docs/pr-backlinks-689	874464d6f7353a1cfc1079c9dbdc3867ae31b48e	docs(docs): backlinks for #689
+D-бот backlink-ів	0	0	1	2026-08-07	refs/remotes/oldgh/docs/pr-backlinks-705	862da62281b1d336dc0a54cbd1056d34bbd00b72	docs(docs): backlinks for #705
+D-бот backlink-ів	0	0	1	2026-08-08	refs/remotes/oldgh/docs/pr-backlinks-756	7a1da3b44abbe22dee7913c2a99daaa4ae28d4d7	docs(docs): backlinks for #756
+D-бот backlink-ів	0	0	1	2026-08-17	refs/remotes/oldgh/docs/pr-backlinks-812	bdc634da64ff29a9d369d22bfa3f34bdd57bf1a9	docs(docs): backlinks for #812
+D-бот backlink-ів	0	0	1	2026-08-17	refs/remotes/oldgh/docs/pr-backlinks-817	9dbe170e635456216613f093b0f97b3ad0ebb87d	docs(docs): backlinks for #817
+D-бот backlink-ів	0	0	1	2026-08-19	refs/remotes/oldgh/docs/pr-backlinks-826	4973c2f55c19ad0ed4d4b48aff639880b998c7a2	docs(docs): backlinks for #826
+D-бот backlink-ів	0	0	1	2026-08-25	refs/remotes/oldgh/docs/pr-backlinks-855	30ae588b8970d1a79f2c988a1f787130ec544fa4	docs(docs): backlinks for #855
+D-бот backlink-ів	0	0	1	2026-08-26	refs/remotes/oldgh/docs/pr-backlinks-863	0d0d0533f16971beff80f73a869a8b072c491cec	docs(docs): backlinks for #863
+D-бот backlink-ів	0	0	1	2026-08-27	refs/remotes/oldgh/docs/pr-backlinks-884	7a189e69729c6728876e359e70b8c8e9b1911d5e	docs(docs): backlinks for #884
+D-бот backlink-ів	0	0	1	2026-08-28	refs/remotes/oldgh/docs/pr-backlinks-908	5cb123629fcfb026ce032bb606a759344e36c993	docs(docs): backlinks for #908
+D-бот backlink-ів	0	0	1	2026-08-30	refs/remotes/oldgh/docs/pr-backlinks-937	e541bd9d8b2ba6efa3d1475e6a0e1d82e34f59d3	docs(docs): backlinks for #937
+E-dependabot	12	0	1	2026-09-02	refs/remotes/oldgh/dependabot/npm_and_yarn/vitest-4.1.11	2b5e1c172c1277173324ca82953e3340ad1cd2cc	chore(deps): bump vitest from 3.2.7 to 4.1.11
+E-dependabot	11	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/types/node-26.5.1	5f5102ee81ac3e99022efc7f15737d4fefd2e979	chore(deps): bump @types/node from 20.19.43 to 26.5.1
+E-dependabot	2	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/github_actions/pnpm/action-setup-6.1.0	271bfd40df00b1fd273e906393b2b35f615403d0	ci(deps): bump pnpm/action-setup from 6.0.8 to 6.1.0
+E-dependabot	1	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/bullmq-6.3.4	214fc08e7f6fd94c074e6dae4166bf44b727fffb	chore(deps): bump bullmq from 5.80.2 to 6.3.4
+E-dependabot	1	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/expo-web-browser-57.0.3	c973d1c153aedf6e66f2c80c5f378ec5aaf0c506	chore(deps): bump expo-web-browser from 14.0.2 to 57.0.3
+E-dependabot	1	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/ioredis-6.0.0	7352ef289e56b74d13a9588136c89163d88a5c52	chore(deps): bump ioredis from 5.11.1 to 6.0.0
+E-dependabot	1	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/pino-loki-3.0.0	88f2b51f099d269e93a7530877ff26180142f660	chore(deps): bump pino-loki from 2.6.0 to 3.0.0
+E-dependabot	1	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/react-native-svg-15.15.5	9e49e020e901149876584d0752ad8d5711b771d6	chore(deps): bump react-native-svg from 15.8.0 to 15.15.5
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/docker/node-26.8-alpine	870a279222e9a80e04a18af7ca1f696f5a653fc8	chore(deps): bump node from 22.16.0-alpine to 26.8-alpine
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/github_actions/actions/deploy-pages-5.0.1	cf1e465dc9a64b3a48173edd7d9f31a1a3e303b1	ci(deps): bump actions/deploy-pages from 4.0.5 to 5.0.1
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/github_actions/actions/github-script-9.0.0	2fd6eedd79d6d5890cbc600b743003d097603b99	ci(deps): bump actions/github-script from 8.0.0 to 9.0.0
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/github_actions/actions/upload-pages-artifact-5.0.0	8a0ff9574c742f8361f063d172c59f60719c9f79	ci(deps): bump actions/upload-pages-artifact from 3.0.1 to 5.0.0
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/github_actions/apple-actions/download-provisioning-profiles-6.1.0	709bd81074e317fe09ebcc8098a8dbf336e02dff	ci(deps): bump apple-actions/download-provisioning-profiles
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/axe-core/playwright-4.13.0	83c5f80074b3e65b2873506f806dc1edc08f7f7c	chore(deps): bump @axe-core/playwright from 4.12.1 to 4.13.0
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/react-router-dom-7.18.3	5731606d4bde98e2036e2c3dac6e0630cee43775	chore(deps): bump react-router-dom from 7.18.2 to 7.18.3
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/vite-8.3.0	76516186835c21042a015c9555d3f9b6735f54a9	chore(deps): bump vite from 7.3.6 to 8.3.0
+E-dependabot	0	0	1	2026-09-14	refs/remotes/deadgh-zaebal/dependabot/npm_and_yarn/vitejs/plugin-react-6.1.1	ff7c6f3b96be42af5fe918c7f36b61fa639bac57	chore(deps): bump @vitejs/plugin-react from 5.2.0 to 6.1.1
+E-dependabot	0	0	1	2026-09-02	refs/remotes/oldgh/dependabot/docker/node-26.8.1-alpine	da80d16a387dafb41a7eb426395b90e66af1bbde	chore(deps): bump node from 22.16.0-alpine to 26.8.1-alpine
+E-dependabot	0	0	1	2026-06-26	refs/remotes/oldgh/dependabot/github_actions/actions/configure-pages-6.0.0	684f44cccf9111fcf438d03f2faefcb2a4d6349b	ci(deps): bump actions/configure-pages from 5.0.0 to 6.0.0
+E-dependabot	0	0	1	2026-06-26	refs/remotes/oldgh/dependabot/github_actions/actions/deploy-pages-5.0.0	9bcacccfb72dc3e39829e81e5e7f9ae93b8c48c1	ci(deps): bump actions/deploy-pages from 4.0.5 to 5.0.0
+E-dependabot	0	0	2	2026-07-21	refs/remotes/oldgh/dependabot/github_actions/actions/setup-node-6	fcf3f1271d2b43c58e029f1ca72929e1af210d02	chore(ci): ratchet coverage baseline upward
+E-dependabot	0	0	1	2026-07-12	refs/remotes/oldgh/dependabot/github_actions/docker/setup-buildx-action-4.2.0	51d1f807929abc28230c691bf4ba5ee2dfba0581	ci(deps): bump docker/setup-buildx-action from 4.1.0 to 4.2.0
+E-dependabot	0	0	1	2026-06-26	refs/remotes/oldgh/dependabot/github_actions/gitleaks/gitleaks-action-3.0.0	8dfb6d74a469b518c36d72040828d47a38cc1acd	ci(deps): bump gitleaks/gitleaks-action from 2.3.9 to 3.0.0
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/better-sqlite3-13.0.3	c7077d90d844a0205bf86fdb2ff6cb4dbb383b5c	chore(deps): bump better-sqlite3 from 12.11.1 to 13.0.3
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/capacitor-mlkit/barcode-scanning-8.1.0	78ca403d81b87b4cefae0526648e976ae9e16c4d	chore(deps): bump @capacitor-mlkit/barcode-scanning from 7.5.0 to 8.1.0
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/expo-secure-store-57.0.1	177be78b241028fda4551493b8078944287d7b81	chore(deps): bump expo-secure-store from 14.0.1 to 57.0.2
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/google-auth-library-11.0.2	4558586e609a9bf920e322a86eb207ca257bae0b	chore(deps): bump google-auth-library from 10.9.0 to 11.0.2
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/helmet-8.3.0	27b68e2c75a70f84b45e2d4fe716ec5ea34ab556	chore(deps): bump helmet from 8.2.0 to 8.3.0
+E-dependabot	0	0	1	2026-09-02	refs/remotes/oldgh/dependabot/npm_and_yarn/playwright-1.62.1	8be0a725fff750a6007dba6e4c4096f097c80a30	chore(deps): bump playwright from 1.61.1 to 1.62.1
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/react-test-renderer-19.2.8	382c6989ef5bb8c368b54e4fbd0c7a9b8003a639	chore(deps): bump react-test-renderer from 18.3.1 to 19.2.8
+E-dependabot	0	0	1	2026-09-02	refs/remotes/oldgh/dependabot/npm_and_yarn/storybook-10.5.10	17235413385272ec9d8e0602cc1714f021c6e994	chore(deps): bump storybook from 10.5.0 to 10.5.10
+E-dependabot	0	0	1	2026-09-01	refs/remotes/oldgh/dependabot/npm_and_yarn/zod-openapi-6.0.1	1243c8b9dc0578d34dccad04b7a09748c6dc611e	chore(deps): bump zod-openapi from 5.4.6 to 6.0.1
+F-УНІКАЛЬНИЙ КОД	17	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave18-core-hub-ab0a	25781ec9cfb741cf67b68f7673a85e73bb3c40c1	test(web): coverage wave 18 — core hub + settings branches
+F-УНІКАЛЬНИЙ КОД	13	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave20-nutrition-ab0a	5414574eccfd172dbaf2ae9e479e5273a5b91546	test(web): coverage wave 20 — nutrition components and hooks
+F-УНІКАЛЬНИЙ КОД	8	0	1	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave19-finyk-ab0a	bd59eb8b887d743694d75c0b0f3a8ab9081f77c7	test(web): coverage wave 19 — finyk lazy pages and hooks
+F-УНІКАЛЬНИЙ КОД	5	1	1	2026-07-10	refs/remotes/oldgh/CMP-74	f6da2548f2f03d4f7690a96bb81c10b41c84b70b	feat(web): trial_day7 paywall surface + A/B feature flag + i18n
+F-УНІКАЛЬНИЙ КОД	4	4	3	2026-08-08	refs/remotes/oldgh/claude/product-economics-e2vkvu	9c3bc7e739852061daa34ed8fd6acddea13dc71d	docs(docs): перегенерувати STATUS.md після додавання канону юніт-економіки
+F-УНІКАЛЬНИЙ КОД	4	3	13	2026-08-27	refs/remotes/oldgh/claude/multiple-categories-single-limit-xdewxe	400c73d4d50086ff0b433fd883d0126e96ce75b7	docs(docs): перегенерувати freshness-dashboard проти злитого дерева
+F-УНІКАЛЬНИЙ КОД	4	2	7	2026-08-06	refs/remotes/oldgh/claude/models-economics-analysis-z8n56d	d02b2e73bd1c77f1cbb3c40b1215b287ba36d988	docs(server): перегенерувати звіт після SYSTEM_PROMPT v19
+F-УНІКАЛЬНИЙ КОД	4	0	7	2026-08-02	refs/remotes/oldgh/claude/mechanical-ui-and-push-fixes	fbe463e6c98d76a520194c562ad1889231fe4982	docs(docs): record what the Sergeant spec got wrong about the codebase
+F-УНІКАЛЬНИЙ КОД	4	0	7	2026-08-02	refs/remotes/oldgh/claude/sergeant-persona-and-proactive-push	2f43831ac059b63b95bd7d14f028173f3fcd3657	docs(docs): record what the Sergeant spec got wrong about the codebase
+F-УНІКАЛЬНИЙ КОД	3	0	1	2026-09-01	refs/remotes/oldgh/claude/app-access-gate	8912bf6206ccd318fa83710c7f79c9bfe37e330d	feat(web): приватний гейт доступу до app.sergeant.com.ua
+F-УНІКАЛЬНИЙ КОД	3	0	2	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave21-fizruk-routine-ab0a	23e834c84a6bb313f1bb9e02f46b607c6b347805	test(web): coverage wave 21 — routine shell branches
+F-УНІКАЛЬНИЙ КОД	2	5	2	2026-07-20	refs/remotes/oldgh/claude/eager-tharp-e24a44	79faf5e9a6d071160671e2dacba43d44e64bd389	merge origin/main into claude/eager-tharp-e24a44
+F-УНІКАЛЬНИЙ КОД	2	4	59	2026-08-25	refs/remotes/oldgh/claude/msp-silpo-spec-experiment-vipt1a	ade67f8349767acd3bc87d0c97f8b51079534dd3	fix(server): перевести фоновий синк Сільпо з n8n на in-process poller
+F-УНІКАЛЬНИЙ КОД	2	3	33	2026-08-18	refs/remotes/oldgh/claude/receipt-scan-impl	9239485f531b72c2c3cc487b42dbe6356d455172	feat(web): клієнтське стиснення фото для чек-скану і кбжв-аналізу
+F-УНІКАЛЬНИЙ КОД	2	0	3	2026-08-02	refs/remotes/oldgh/claude/backlog-waves-queue-jkvuep	b4b1e74ac977e0704a6c8cf72b8eec7b9c2cec9e	fix(migrations): content for the 096_fizruk_injuries revert
+F-УНІКАЛЬНИЙ КОД	2	0	4	2026-07-22	refs/remotes/oldgh/claude/hubchat-routine-dualwrite-registration	89e85f45c8c651729c63e1f19322a5b453ae7a38	Merge branch 'claude/sergeant-anonymous-persistence-33b5da' into claude/hubchat-routine-dualwrite-registration
+F-УНІКАЛЬНИЙ КОД	2	0	3	2026-07-22	refs/remotes/oldgh/claude/sergeant-anonymous-persistence-33b5da	970ece6db1c34d076d7eb979037d0c49b98aed90	fix(web): реєструвати routine dual-write у HubChat — запис із чату гинув (#420)
+F-УНІКАЛЬНИЙ КОД	2	0	1	2026-06-29	refs/remotes/oldgh/spike/pro-monthly-cap	ba38c376e3704d54bd3ef1e7895dd3bccf5ad435	feat(server): add monthly AI usage bucket (spike/pro-monthly-cap)
+F-УНІКАЛЬНИЙ КОД	1	24	3	2026-07-29	refs/remotes/oldgh/codex/docs-00-05-drift	d068c73a2f21881d5c1305544fe99f3ea8be81f4	docs(docs): refresh open-work rollup
+F-УНІКАЛЬНИЙ КОД	1	9	12	2026-08-02	refs/remotes/oldgh/claude/fizkult-module-brainstorm-6772e4	945d6a065650a6dccefd77bb199051b6fd58bc1a	fix(fizruk-domain): adapt post-merge consumers to main's injury/1RM-aging model
+F-УНІКАЛЬНИЙ КОД	1	2	4	2026-08-02	refs/remotes/oldgh/claude/docs-tasks-cleanup-fcfeef	1fe35f7a22b0594764022244b0495625259b29c1	docs(docs): перезібрати portfolio-зріз і зняти прострочені твердження
+F-УНІКАЛЬНИЙ КОД	1	1	1	2026-08-01	refs/remotes/oldgh/claude/docs-cleanup-994e82	106b43d326e9ebdc9a9bfd5b1a2452d74682aea4	fix(web): stop clipping nav and header labels when text scales
+F-УНІКАЛЬНИЙ КОД	1	1	8	2026-08-30	refs/remotes/oldgh/claude/pantry-generic-names-spec	661449a2ea207e02457de8bccb7e8bf29b46748e	fix(nutrition-domain): прибрано квадратичний ReDoS в обрізанні розділових
+F-УНІКАЛЬНИЙ КОД	1	0	3	2026-09-14	refs/remotes/deadgh-zaebal/codex/fix-nutrition-pantry-smoke	dcf9ccd3203527aade7389d01aa8ecc9ef3b9aa7	chore(docs): оновити посилання на доки після рефакторингу дерева
+F-УНІКАЛЬНИЙ КОД	1	0	2	2026-07-21	refs/remotes/oldgh/cursor/cov-mobile-core-smoke-2103	4391c7e2e853d7c629363204ea6cfba710e41f67	test(web): add settings smoke coverage
+F-УНІКАЛЬНИЙ КОД	1	0	10	2026-07-27	refs/remotes/oldgh/v0/product-design-optimization-ed8a944d	2051acc86781d2d89888455cbd86b3f017f89227	feat: implement view transition tests and update CSS for reduced motion support
+G-лише доки	0	53	11	2026-08-30	refs/remotes/oldgh/claude/research-plugins-news-s8xw0m	240ddc52c4cf966ca6b69d23c222f3454c58b969	Merge remote-tracking branch 'origin/main' into HEAD
+G-лише доки	0	46	11	2026-08-04	refs/remotes/oldgh/claude/docs-repo-cleanup-c01v4n	559f03745e420505f765c1588e0f2def12f294d6	Merge remote-tracking branch 'origin/main' into claude/docs-repo-cleanup-c01v4n
+G-лише доки	0	39	3	2026-09-05	refs/remotes/oldgh/codex/repeatable-verification	d1a37e0bed4e403477376eae9ee9a078e4179da8	fix(docs): normalize ADR audit freshness
+G-лише доки	0	23	16	2026-09-02	refs/remotes/oldgh/claude/pantry-parser-audit-fixes	0d23c83238db411f428859860087fe175033415d	test(web): клік-скрипт місць не гониться з навігацією після збереження
+G-лише доки	0	15	10	2026-08-24	refs/remotes/oldgh/claude/comprehensive-browser-testing-cwazc5	1db04612d32c62219fce58bf4d72350f60ddfd32	fix(web): один роздільник у журналі тіла і живий null-шлях у тестах піcинга
+G-лише доки	0	13	4	2026-08-31	refs/remotes/oldgh/claude/docs-currency-audit	e16fe34ebde2fee0b37a3cacaa5190bab6deeb2c	Merge remote-tracking branch 'origin/main' into claude/docs-currency-audit
+G-лише доки	0	11	3	2026-08-28	refs/remotes/oldgh/claude/agent-layer-polish	383feff0b5bae3ed5175e5f7c69e8a1ba19935aa	chore(agents): bump harness version після polish-правок
+G-лише доки	0	11	15	2026-08-31	refs/remotes/oldgh/claude/fizruk-catalog-programs-navigation	0eb0064c171309e541d389574d8270917d76905e	docs(nutrition-domain): плани харчування між пристроями заморожено до тесту користувачів
+G-лише доки	0	8	10	2026-08-27	refs/remotes/oldgh/claude/ai-layer-fixes-b31-b47	1afc9c3e91a1558555ef37c5f6035f329ae26450	fix(server): дозакрити AI-аудит — гейт транспорту, B40–B43, телеметрія tool-ів і ADR тирингу (#863)
+G-лише доки	0	8	17	2026-08-26	refs/remotes/oldgh/claude/ai-layer-leftovers-b40-b43	b009cace4233e666e745837590a8a6afedab999f	feat(server): перевести standard/floor коуча на gemini-3.5-flash-lite
+G-лише доки	0	8	2	2026-07-20	refs/remotes/oldgh/claude/railway-hetzner-observability-sweep	c80e9f4f790b08ababc09ecc5c4e7a052b072115	docs(server): align observability + integrations runbooks to Hetzner+Coolify
+G-лише доки	0	7	1	2026-09-02	refs/remotes/oldgh/claude/ci-gates-green	0133ad656f1e31232addbc02cd45d00c1750b95c	Merge origin/main into claude/ci-gates-green
+G-лише доки	0	7	2	2026-07-30	refs/remotes/oldgh/claude/github-private-repo-setup-uy65sl	44c2fb1e63f863afca8831ecfabad746fc5d7f1b	fix(docs): узгодити link-checker тест і freshness-dashboard після чистки
+G-лише доки	0	7	67	2026-08-05	refs/remotes/oldgh/claude/pre-beta-incomplete-tasks-r1k09f	8cde49553f4cef501604ef5a5c329d7dab3cc20e	docs(docs): полагодити два docs-гейти, що впали після мержу main
+G-лише доки	0	7	7	2026-07-15	refs/remotes/oldgh/codex/des	1aaa447e71b1e37b20a2558fa7d46213e628119c	chore(root): merge main into PR branch
+G-лише доки	0	7	3	2026-07-21	refs/remotes/oldgh/cursor/cov2-server-biz-2103	299ee340ce0cb1176fc62a3760f9d78ffd4fa34d	chore(ci): ratchet coverage baseline upward
+G-лише доки	0	6	5	2026-08-30	refs/remotes/oldgh/claude/close-app-access-allowlist	7e4b16dcdc39bcf396b5c96cb21b5d4b19c3f465	Merge remote-tracking branch 'origin/main' into HEAD
+G-лише доки	0	6	6	2026-09-02	refs/remotes/oldgh/claude/plata-native-subscriptions	2ec8ddc00ab9556f7e78d70861453e6c1e462ddc	Merge remote-tracking branch 'origin/main' into plata-1013
+G-лише доки	0	6	4	2026-07-20	refs/remotes/oldgh/claude/railway-docs-stale-cleanup	7bbaec26c26a83ff05262cf9312feabe6fd87941	refactor(server): rename railway→hetzner infra-cost metric + align Railway→Hetzner docs
+G-лише доки	0	6	6	2026-08-29	refs/remotes/oldgh/claude/sergeant-site-audit-lgdchd	14cfa7fd6166cd908a0e4369dcc633faede1efa4	fix(agents): перегенерувати skills-lock після правок sergeant-module-ai
+G-лише доки	0	6	3	2026-09-02	refs/remotes/oldgh/claude/suspicious-aryabhata-045600	9c7fa18f88fa5cc5ef5b0476be74592c2251fe4c	Merge remote-tracking branch 'origin/main' into claude/suspicious-aryabhata-045600
+G-лише доки	0	6	5	2026-08-30	refs/remotes/oldgh/claude/update-local-main-b4f3b0	faca7166fdc07bbc40adc77b606cd295993f2648	Merge remote-tracking branch 'origin/main' into claude/update-local-main-b4f3b0
+G-лише доки	0	5	6	2026-08-08	refs/remotes/oldgh/claude/recipes-agents-audit-lmnq8m	cd546dbb7b8ace60e5efe4f4f98166aa4e3519ad	fix(docs): harness-версія в planning-доці + Deprecated-виняток у playbook-schema
+G-лише доки	0	5	5	2026-07-30	refs/remotes/oldgh/claude/repo-ci-unblock-cleanup	d8f5851a687a014c709f1e35f848927f9c0f737c	Merge remote-tracking branch 'origin/main' into claude/repo-ci-unblock-cleanup
+G-лише доки	0	5	2	2026-08-26	refs/remotes/oldgh/claude/restore-863-ai-layer-leftovers	ed2b5483156cafe78b5844cf57bc157b5538343f	feat(server): перевести перший хід чату на gemini-3.7-flash
+G-лише доки	0	5	2	2026-08-22	refs/remotes/oldgh/claude/themes-swipe-transitions-519306	04dde8b07ca712a202bff28722b69255ed1cd2eb	Merge remote-tracking branch 'origin/main' into claude/themes-swipe-transitions-519306
+G-лише доки	0	4	7	2026-07-19	refs/remotes/oldgh/claude/documentation-update-dh6w5g	b3c2b5174d1e2935983b1ed5e047a46aef279697	chore(deps): regenerate SBOM after ioredis dedupe override
+G-лише доки	0	4	3	2026-09-02	refs/remotes/oldgh/claude/plata-webhook-audit-and-launch-runbook	12a6dd1327e2436ccdffaca6af1b9ec62e9ef5d8	feat(server): писати Plata-вебхуки в аудит і задокументувати запуск платежів
+G-лише доки	0	4	5	2026-09-02	refs/remotes/oldgh/claude/product-audit-testing-plan-ke9r9f	33d7c5fc8aaf82cfa95ced5e4531a3f4ed3ecbf7	Merge remote-tracking branch 'origin/main' into claude/product-audit-testing-plan-ke9r9f
+G-лише доки	0	4	4	2026-08-05	refs/remotes/oldgh/claude/sergeant-skills-agents-review-nah1c7	8e3b5eaed72af53b5c7357f09976021de28d0900	fix(docs): regenerate dashboards against merged main state
+G-лише доки	0	3	3	2026-08-27	refs/remotes/oldgh/claude/docs-hygiene-sweep	1a9bb1b0517fecf143791c21ae2b92d61aae6085	docs(docs): перегенерувати freshness-dashboard після зміни статусів
+G-лише доки	0	3	5	2026-07-30	refs/remotes/oldgh/claude/landing-drop-dead-proxy	0f62955e05a5cb2cecafde9400fda050cfc1c926	docs(docs): плейбук локального запуску + ручний гейт деплою для бети
+G-лише доки	0	3	6	2026-08-18	refs/remotes/oldgh/claude/muscle-groups-noise-spam-hawsnw	0b6752c99aad7467784863cb55ad4c884f8fb6f4	docs(agents): регенерувати STATUS.md і freshness-dashboard під ініціативу 0024
+G-лише доки	0	3	7	2026-08-27	refs/remotes/oldgh/claude/resolve-open-prs-ly44sx	c48cf3324388810d73cc5f76fa510e9a5218afc2	Merge pull request #873 from SkOrDs-02/claude/ecstatic-curie-95cc69
+G-лише доки	0	3	5	2026-08-31	refs/remotes/oldgh/claude/site-ia-stage4	737fdc8ccf44d8ea1e4ac9a2ca01f78afa4f96b1	Merge remote-tracking branch 'origin/main' into claude/site-ia-stage4
+G-лише доки	0	3	2	2026-07-19	refs/remotes/oldgh/codex/90-work-portfolio-audit	4908307e9d6d6f91e3cc24ec5f20616452202bbf	feat(root): deliver mutation and bundle debt slices (#309)
+G-лише доки	0	3	4	2026-07-19	refs/remotes/oldgh/codex/july-execution-batch	43de4b21ec005e3c3399d7ebaaeab12c275e6725	chore(docs): refresh CI freshness artifacts
+G-лише доки	0	2	3	2026-09-03	refs/remotes/oldgh/claude/exciting-kirch-e16eb8	c19dda51182c4594fadb91e74f37b162f1fe7670	docs(docs): додати замір пропуску білда на Vercel
+G-лише доки	0	2	5	2026-09-01	refs/remotes/oldgh/claude/fizruk-exercise-illustrations	01de6de8d1031d8cf229052dcfb7401729c7bae6	docs(docs): перегенерувати похідні артефакти
+G-лише доки	0	2	3	2026-07-22	refs/remotes/oldgh/claude/hub-coach-product-knowledge-audit	bc56896f1803131bea0ebf3fc4d65d5094a9660a	docs(docs): регенерувати open-work і STATUS після додавання hub-coach-аудиту
+G-лише доки	0	2	3	2026-08-28	refs/remotes/oldgh/claude/imported-expenses-missing-operations-sng0tz	423b9e47bb104e9a1ff3e1949a802882f4713e96	test(server): фікстура дедуп-превʼю тримає сиру ISO-дату, а не нормалізовану
+G-лише доки	0	2	2	2026-08-29	refs/remotes/oldgh/claude/lucid-cray-1d325a	5406f4d14dc2c531fa5879aa1525a326c7034587	chore(agents): bump harness 4.5.0 -> 5.0.0
+G-лише доки	0	2	12	2026-08-23	refs/remotes/oldgh/claude/product-catalog-tier1-k3mq08	f551139d0c5bad7742a5b3cd4978c214bf77ad6a	refactor(web): клієнтський сід читає спільний корпус базової їжі
+G-лише доки	0	2	7	2026-08-25	refs/remotes/oldgh/claude/silpo-manual-expenses-and-undo	8f00d79f5d7382e83bad058fc62682ff8ecc6f90	feat(web): чек Сільпо в деталях ручної витрати
+G-лише доки	0	2	2	2026-07-26	refs/remotes/oldgh/claude/telemetry-observability-audit-05ade4	5b7b991867bc2f94ad6b020aff98b5be8f66a893	docs(docs): reconcile observability docs with verified live state
+G-лише доки	0	1	1	2026-07-20	refs/remotes/oldgh/chore/whats-new-2026-07-20	21a54bed384bb117b82699c1078e191ce9384c8c	docs(web): whats-new draft — 2026-07-20
+G-лише доки	0	1	2	2026-07-27	refs/remotes/oldgh/chore/whats-new-2026-07-27	580825d09c0401c6f300b38109f23b9758619e5f	docs(web): fix mangled list item in whats-new draft
+G-лише доки	0	1	1	2026-08-10	refs/remotes/oldgh/chore/whats-new-2026-08-10	327d27c02c4d19bfd564929b41cee23e3ed968ea	docs(web): whats-new draft — 2026-08-10
+G-лише доки	0	1	2	2026-07-26	refs/remotes/oldgh/claude/backlog-canon-fixes-aimem	4180374d574603c32a416328a4c5902d24104d8d	Merge branch 'main' into claude/backlog-canon-fixes-aimem
+G-лише доки	0	1	2	2026-07-26	refs/remotes/oldgh/claude/backlog-canon-fixes-barcode	ba6cad8f1d288a68ec539638aa27499f95c52d7d	docs(agents): паркування research-рішень штрихкодів і звірки в беклог
+G-лише доки	0	1	3	2026-07-25	refs/remotes/oldgh/claude/backlog-canon-fixes-idzk9r	a0c2f40b3e7e1b221c952d6190950a1efd7f68ce	perf(server): tool search + 1h prompt-cache TTL — префікс /api/chat −84%
+G-лише доки	0	1	3	2026-08-18	refs/remotes/oldgh/claude/bulk-banking-docs-upload-xdnl67	4acef20fd790844fca4d7dd920a0469f4249c965	chore(web): підняти бюджет JS-бандла 1.35 → 1.38 MB
+G-лише доки	0	1	2	2026-07-24	refs/remotes/oldgh/claude/design-cycle6-shared-ui	dc2a0e348b7d519e2094b460fe0402d6036bcb2e	chore(agents): bump harness 1.0.2 -> 2.0.0 (Hard Rule #16 canon — closed 8-role scale)
+G-лише доки	0	1	8	2026-08-30	refs/remotes/oldgh/claude/fix-adr0075-dangling-ref	93501a25fbc2ff76812f01e1a161b86b4306d6e4	test(server): оновити health-workers і роут-снапшот під зміни #928
+G-лише доки	0	1	3	2026-08-29	refs/remotes/oldgh/claude/fix-dangling-doc-links	0f37c4a0f2a4d51f53f3de741e5fbe2c26ad9000	fix(agents): перегенерувати skills-lock після правок sergeant-module-ai
+G-лише доки	0	1	3	2026-09-02	refs/remotes/oldgh/claude/fizruk-readiness-check	64ddf1bdb09fd54d42101913ffcd7f4ba21dc850	fix(web): аркуш готовності більше не блокує критичний потік E2E
+G-лише доки	0	1	13	2026-08-09	refs/remotes/oldgh/claude/fiztuk-module-research-qnuz2j	ecb04259376381f7d6747cd340a1b4d0edbd85a2	fix(web): звести два незалежні фікси однієї axe-знахідки при мерджі main
+G-лише доки	0	1	29	2026-09-03	refs/remotes/oldgh/claude/full-browser-testing-bq0e5l	7be3c4bf877e2536e78ba1f041ecc2fd42e194ec	fix(web): не давати порожній половині профілю стирати серверну
+G-лише доки	0	1	5	2026-08-31	refs/remotes/oldgh/claude/ku-f1b858	69238e1f2fb1516f8b73634d81bd6ebe10b7d96a	Merge remote-tracking branch 'origin/main' into claude/ku-f1b858
+G-лише доки	0	1	2	2026-07-30	refs/remotes/oldgh/claude/local-run-playbook	9da6179323757433510be6cea53f8092275ac586	feat(web): супер-властивість environment у PostHog
+G-лише доки	0	1	3	2026-07-26	refs/remotes/oldgh/claude/next-wave-planning-cbfb1e	0372558e49ec44e585fe79272a9716a825fb4220	docs(docs): спека Telegram-вейтліста
+G-лише доки	0	1	2	2026-09-01	refs/remotes/oldgh/claude/pantry-categorization-corpus	262088a907c1e0bc4688915351cd16787c012bc1	fix(nutrition-domain): кома в числі не ріже назву продукту навпіл
+G-лише доки	0	1	5	2026-08-05	refs/remotes/oldgh/claude/potential-issues-solutions-s44swx	6c6a6d7039f3141b45d8867be317abd188c520d0	docs(root): перегенерувати STATUS.md після мержу main
+G-лише доки	0	1	1	2026-08-31	refs/remotes/oldgh/claude/pushup-ownership-phase-b	48cb7764ad4453b31f7fb5f64e22851e7da985cf	docs(docs): спека fizruk - каталог, програми, навігація
+G-лише доки	0	1	1	2026-08-29	refs/remotes/oldgh/claude/reminder-other-sources-transactions-50e59b	e27c2e0ba3565a365f4e21ca44a46a85015287fd	docs(agents): спека нагадувань про джерела поза Monobank
+G-лише доки	0	1	7	2026-08-05	refs/remotes/oldgh/claude/repo-orphaned-code-audit-a9rzix	5a8441e02aa20f516acb42af91ec0e34c08b69bc	Merge branch 'main' into claude/repo-orphaned-code-audit-a9rzix
+G-лише доки	0	1	8	2026-08-05	refs/remotes/oldgh/claude/sergeant-security-review-h4s302	d28407a833d0beb260305dc2e5d6d0616819e77f	docs(root): знахідка B30 — ai_usage_daily не переживає rollback
+G-лише доки	0	1	3	2026-08-31	refs/remotes/oldgh/claude/site-ia-stage3	81b214ecedebfec1fe18f25d10e3007a9ea836f8	Merge remote-tracking branch 'origin/main' into claude/site-ia-stage3
+G-лише доки	0	1	1	2026-07-24	refs/remotes/oldgh/claude/spec-fab-manual-income	a32658d33f91a33b3ded5facc13e570ff8f9e425	docs(docs): спека ручних надходжень і уніфікації FAB (C2)
+G-лише доки	0	1	1	2026-07-24	refs/remotes/oldgh/claude/spec-keyboard-scroll	2d64b9df66d657f60d52ec054f3306a148c6dda8	docs(docs): спека фікса клавіатури iOS — мертва зона і стрибання шитів (C1)
+G-лише доки	0	1	2	2026-07-24	refs/remotes/oldgh/claude/spec-keyboard-scroll-5676a3	2ea41098c738d6ea3032b307b1a6f7ec57b6e50d	fix(web): стабілізувати клавіатурний inset і сховати bottom-nav під час вводу (iOS)
+G-лише доки	0	1	2	2026-07-26	refs/remotes/oldgh/claude/telegram-bot-backend	16d9225d20f14ba9816b48b2e82617f5f0df45ec	docs(docs): спека Telegram-вейтліста
+G-лише доки	0	1	4	2026-07-24	refs/remotes/oldgh/claude/test-observations-organization-6da9f3	2a36bf708a3b07bc555ddf51d557a17191b4c042	test(finyk-domain): фікстури spending.test незалежні від таймзони
+G-лише доки	0	1	2	2026-08-27	refs/remotes/oldgh/claude/top-positions-review-cab28d	e1a73ee2a8ff46fd3626c1d7e69c4cdba4a3a79d	feat(agents): completeness-перевірки в design-reviewer і скоуп на лендінг
+G-лише доки	0	1	3	2026-08-09	refs/remotes/oldgh/claude/weekly-report-card-transfers-8uktrp	b2a89e8baeacf7af5c0248db14395b437c75f990	docs(docs): регенерувати freshness-dashboard після правки metric-registry
+G-лише доки	0	1	8	2026-07-17	refs/remotes/oldgh/codex/feedback-regression-audit	affa1da01f51743671a5adc53473f769adb7343a	Merge remote-tracking branch 'origin/main' into codex/feedback-regression-audit
+G-лише доки	0	1	3	2026-07-19	refs/remotes/oldgh/codex/post-merge-ci-fixes	d8ba2d97101cb1f3bd9eb9300ec887812ff7a087	docs(docs): refresh validation artifacts
+G-лише доки	0	1	4	2026-07-26	refs/remotes/oldgh/v0/sergeant-design-system-fa4ee4c6	a871358532b75503d0ebe262fb052edb101dc81e	docs(docs): sync canonical palette to M1 stone rebrand + add version history
+H-нічого свого	0	0	1	2026-09-15	refs/remotes/deadgh-zaebal/claude/migrate-owner-mentions	65cfa76f015382aab245fa5896ef8b24887b25ab	chore(ci): перевести згадки власника з @SkOrDs-02 на @zaebal-beep
+H-нічого свого	0	0	2	2026-08-28	refs/remotes/oldgh/claude/agents-library-duplication-check-cx3uch	af4a15f77791663d4ac89dd3c3cca8b0efce82c1	refactor(web): dedupe copied helpers into canonical modules
+H-нічого свого	0	0	3	2026-08-10	refs/remotes/oldgh/claude/animal-photo-analysis-3dodvv	ff06efb4d04093f0f2665b495f22da5cf86d420c	feat(server): у /help лишити єдиний канал — групу бети
+H-нічого свого	0	0	2	2026-07-26	refs/remotes/oldgh/claude/backlog-canon-fixes-export	9731897c7938a220ba68f98bdfefa8c781ab78f5	Merge branch 'main' into claude/backlog-canon-fixes-export
+H-нічого свого	0	0	3	2026-08-01	refs/remotes/oldgh/claude/bold-kilby-36a504	a179b1d425690ae6c62794f54b143ea58150b43b	fix(web): не казати «надіслано», поки фідбек не доставлено
+H-нічого свого	0	0	4	2026-08-07	refs/remotes/oldgh/claude/chat-time-and-memory-copy	beef3bd0736b874f51f94fb697cea28aeb44d240	fix(web): розрізняти вимкнену памʼять ШІ і збій провайдера
+H-нічого свого	0	0	1	2026-09-02	refs/remotes/oldgh/claude/competitor-research-modules-fqu7g9	7a498f9de21a705f8264a5e609625d4e03979d84	fix(web): прибрати залежність smoke-тесту заняття від години прогону
+H-нічого свого	0	0	2	2026-08-27	refs/remotes/oldgh/claude/ecstatic-curie-95cc69	1f1d1b2f9b6c3cc58caf875b11a132b51ef4f69c	docs(docs): рішення по chat-джерелу памʼяті + базова лінія implicit remember
+H-нічого свого	0	0	2	2026-09-03	refs/remotes/oldgh/claude/elated-wright-1b44e5	71014eaa9bef23aa6c9e004fdbddb40cb7814fe1	Merge remote-tracking branch 'origin/main' into claude/elated-wright-1b44e5
+H-нічого свого	0	0	2	2026-07-25	refs/remotes/oldgh/claude/finyk-card-toggle	4059468edc09ca4105a5e36609bb901797485bb2	fix(web): відсутній імпорт setVisualKeyboardInsetAdapter у тесті RoutineBottomNav
+H-нічого свого	0	0	2	2026-07-25	refs/remotes/oldgh/claude/finyk-form-labels	6af2fe13a0f898225038166e9d3c71b194c8181f	test(web): оновити застаріле очікування маскування суми у TxRow
+H-нічого свого	0	0	1	2026-06-28	refs/remotes/oldgh/claude/focused-proskuriakova-1b2353	bf13d0e7994aa48a6d2a273c512e125f9657f7af	fix(web): portal onboarding tour modal so it escapes backdrop-filter ancestor
+H-нічого свого	0	0	7	2026-08-16	refs/remotes/oldgh/claude/food-module-photo-analysis-m1dygw	3c11141e10af3a728715ab4765a7329634150f0a	docs(docs): написання «автозапуск» разом у каноні nutrition
+H-нічого свого	0	0	2	2026-08-28	refs/remotes/oldgh/claude/gdpr-cleanup-poller	f5fbca04c387c41ec8ee1d027435a1243b9e798e	docs(docs): регенерація STATUS.md (гейт docs:check-status червоний на main)
+H-нічого свого	0	0	2	2026-07-20	refs/remotes/oldgh/claude/git-merge-conflicts-gpu211	96c4a88e5e2169e15463addbdeed966b0e473921	docs(docs): address review — cost-total accuracy + Stripe/date consistency
+H-нічого свого	0	0	5	2026-08-07	refs/remotes/oldgh/claude/identity-wipe-rq-cache	cacf58756ea11c94e5f6eb559063c856c6d036f2	fix(web): identity-wipe RQ-кешу при зміні акаунта на пристрої
+H-нічого свого	0	0	1	2026-08-18	refs/remotes/oldgh/claude/keyboard-scroll-categories-8ioflp	815a8f94e73f84d69b18e0feedb669ab3166dc14	fix(web): обірвати петлю «пан ↔ компенсація» — аркуш більше не дрижить
+H-нічого свого	0	0	2	2026-08-31	refs/remotes/oldgh/claude/laughing-lichterman-9dbf6e	3529ebd08ec157bf07dc419eb6008262f3777200	chore(web): порожній коміт для повторного CI-прогону nutrition-pantry-generic-names
+H-нічого свого	0	0	3	2026-08-03	refs/remotes/oldgh/claude/liability-negative-transactions-filter-ixdpro	a1ec61a4649091a6d4badc045673d1886a22acca	fix(deps): бампнути brace-expansion overrides — новий advisory блокував audit-гейт
+H-нічого свого	0	0	2	2026-08-25	refs/remotes/oldgh/claude/manual-product-portion-input-eav857	c901d7959741e85b306a6e953e0a127900419538	Merge branch 'main' into claude/manual-product-portion-input-eav857
+H-нічого свого	0	0	4	2026-08-07	refs/remotes/oldgh/claude/memory-bank-ux	fb295e763f3ae6d18d4df650ae01070eaddf83c7	fix(web): екран пам'яті бачить записи, зроблені з чату
+H-нічого свого	0	0	2	2026-07-30	refs/remotes/oldgh/claude/metrics-version-contract	bdd87eff5923c26a11fbc3ab44b030876bc8fb60	chore(api-client): регенерувати OpenAPI після metricsVersion
+H-нічого свого	0	0	2	2026-07-20	refs/remotes/oldgh/claude/model-routing-benchmark-pro-tier-39b813	cd28ceab5e3d5b1fb153121dd286fa8e3770871c	feat(web): surface Pro AI-tier degradation badge
+H-нічого свого	0	0	4	2026-08-02	refs/remotes/oldgh/claude/nutrition-ux-fixes	2d2a1e1067a5676253b153b97f62a3c9aaba5e09	feat(web): empty state комори, гайд по списку і прев'ю AI-розбору
+H-нічого свого	0	0	1	2026-08-07	refs/remotes/oldgh/claude/omelet-page-width-bug-apa8z0	4de8eb65ee2f79ebe6c6592e268260d753d76752	fix(deps): розблокувати audit-гейт — nanoid патчем, image-size датованим винятком
+H-нічого свого	0	0	1	2026-07-11	refs/remotes/oldgh/claude/phase-7-ua-billing-followup	789ebea05e06a527c361961fe4bd0a0395e433fe	feat(server): phase 7 UA billing follow-up — obs metrics, tests, yearly-price gate
+H-нічого свого	0	0	2	2026-07-20	refs/remotes/oldgh/claude/ponytail-audit-1069e7	f3deb3c1ad8dd8dfc2eaeca6ed6cb4ed9e02153e	fix(mobile): backfill NutritionPrefs recipe fields in nutrition backup builder
+H-нічого свого	0	0	6	2026-08-25	refs/remotes/oldgh/claude/product-database-population-o7dean	cb2cb6efb8aef7f80a480d838191a1b0215d63b3	docs(docs): узгодити заголовок блоку про два виходи з його ж винятком
+H-нічого свого	0	0	3	2026-07-30	refs/remotes/oldgh/claude/product-knowledge-backlog-review-vpqv38	5255994c6ace6380bd13f2605006880aac72aac6	fix(ci): дозволити vercel.json для двох Vercel-проєктів
+H-нічого свого	0	0	10	2026-08-02	refs/remotes/oldgh/claude/push-notifications-system-hexmpj	4875b1b4568c6667d73faba15974237e2e11ec28	fix(api-client): sergeantNudges з дефолтом, щоб клієнт пережив старий сервер
+H-нічого свого	0	0	2	2026-08-07	refs/remotes/oldgh/claude/rescue-pr-ledger-689	9469f94d761b3f9a0ed902fae8d5521e781b4a56	docs(docs): перегенерувати STATUS.md під запис #689 у ledger
+H-нічого свого	0	0	2	2026-08-31	refs/remotes/oldgh/claude/revert-transfer-quick-action	74c69a05a2c3dd6dafa7cea63f6d5836a5160985	test(web): зберегти покриття чіпа переказу після реверту швидкої дії
+H-нічого свого	0	0	4	2026-08-30	refs/remotes/oldgh/claude/sentry-posthog-analytics-vj6682	595df78c6b7c07a2c04715b46ff84d81be63da07	feat(ci): гейт похідних артефактів ловить і правки pr-ledger
+H-нічого свого	0	0	6	2026-08-07	refs/remotes/oldgh/claude/sleepy-knuth-a24636	6dfc8feb9c3fa296c9cbbeb39458cdced07e3c91	Merge pull request #683 from SkOrDs-02/claude/identity-wipe-rq-cache
+H-нічого свого	0	0	10	2026-08-07	refs/remotes/oldgh/claude/tech-debt-review-gfher7	50af0246c80476bc8c5df0a093ed7fb49256451c	test(web): полагодити червоний RecipesCard-тест — стале очікування toast.error
+H-нічого свого	0	0	3	2026-07-20	refs/remotes/oldgh/claude/vigilant-ride-suc051	4cc83b5ed0fba089bcee950463c703df71c5e073	refactor(server): dedup duplicate exported type declarations
+H-нічого свого	0	0	2	2026-07-30	refs/remotes/oldgh/claude/web-interface-review-fixes	a427fe0a22d8bc3d8af24dc567f8c8992837f1bf	fix(web): виставити --bottom-nav-height у Фініку, Їжі та Рутині
+H-нічого свого	0	0	2	2026-08-04	refs/remotes/oldgh/codex/fix-web-ui-regressions	74132fef99ad5fc93e0d0353e30b8e42c219b7ee	fix(web): unify theme-aware soft surfaces
+H-нічого свого	0	0	3	2026-07-10	refs/remotes/oldgh/cursor/a11y-vision-quick-wins-ac9b	f84d01e7c0b0b52f243f3a72a8357644c7752681	feat(web): add chart SR summaries and module page headings
+H-нічого свого	0	0	2	2026-07-10	refs/remotes/oldgh/cursor/ci-followup-f588	0263620451c6d8105fe68110d119e098fcfae93e	fix(web): stabilize deep-module-crud E2E sync/SQLite races
+H-нічого свого	0	0	6	2026-07-10	refs/remotes/oldgh/cursor/coach-integration-fix-f588	f03b41d802bd704a2a2ab347b5121fa56474e353	fix(web): stabilize deep-module-crud E2E sync/SQLite races
+H-нічого свого	0	0	2	2026-07-10	refs/remotes/oldgh/cursor/coach-post-merge-restore-ab0a	4f3c6fe2cf50bb4fc932197ed353e3a4f6f6438c	fix(web): stabilize deep-module-crud E2E sync/SQLite races
+H-нічого свого	0	0	3	2026-07-21	refs/remotes/oldgh/cursor/cov3-insights-smoke-2103	f9c7edc174f9a0460d1aa26a9a94e5b788413738	test(web): expand smoke coverage wave3
+H-нічого свого	0	0	2	2026-07-21	refs/remotes/oldgh/cursor/cov3-mobile-nutrition-ui-2103	cbada02d49569f8bd321167efe720c08097c37ed	test(mobile): raise nutrition ui coverage
+H-нічого свого	0	0	4	2026-07-20	refs/remotes/oldgh/cursor/ui-floating-position-hook-31d2	e7af7ff017a326bc845cf2d42fa98645c1808396	chore(root): merge main into overlay P4 branch
+H-нічого свого	0	0	5	2026-07-10	refs/remotes/oldgh/cursor/web-coverage-wave8-5880	42f9abd67281e28ec5d9fd5387af7084ac603256	test(web): wave-8 shared useOnlineStatus and useReducedMotion
+H-нічого свого	0	0	1	2026-08-01	refs/remotes/oldgh/docs/deploy-gate-cycle	72834e4a3fd9b3a7fd4b9c83a0ddc230f115f54a	docs(docs): перегенерувати freshness-dashboard після bump дат
+H-нічого свого	0	0	1	2026-06-29	refs/remotes/oldgh/feat/nutrition-tiering	637a6f17bb1597fd5c313c088b78719fd02e7745	feat(server): update aiQuota and day-plan for nutrition tiering
+H-нічого свого	0	0	2	2026-07-26	refs/remotes/oldgh/fix/design-audit-radius-button	044a4f51b3037137875f4ac805614f4ccc901b60	feat: update Button component API and add orthogonal variant × tone tests

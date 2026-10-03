@@ -111,22 +111,4 @@ describe("OnboardingWizard — goal-first A/B (PR-13)", () => {
       screen.getByRole("button", { name: /Розпочати/i }),
     ).toBeInTheDocument();
   });
-
-  it("does not enroll tour replay into the goal-first cohort", () => {
-    overrideVariant(
-      webKVStore,
-      ONBOARDING_GOAL_FIRST_EXPERIMENT.id,
-      "goal_first",
-    );
-
-    render(<OnboardingWizard onDone={() => {}} mode="tour" />);
-
-    // Tour replay short-circuits to `control` regardless of stored
-    // assignment, so the legacy welcome must render. The outcome
-    // grid is unreachable from replay.
-    expect(screen.queryByText("Що для тебе зараз важливо?")).toBeNull();
-    expect(
-      screen.getByRole("button", { name: /Закрити/i }),
-    ).toBeInTheDocument();
-  });
 });

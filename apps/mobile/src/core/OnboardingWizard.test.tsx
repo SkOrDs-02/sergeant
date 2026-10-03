@@ -69,7 +69,7 @@ describe("OnboardingWizard", () => {
     // S1.1 + S1.2: outcome variant ships at 100% (`weights: [1, 0, 0]`).
     // Mobile parity must show the same headline/subtitle as the web wizard.
     expect(
-      getByText("Один запис — і побачиш, куди йде твоє життя."),
+      getByText("Один запис, і побачиш, куди йде твоє життя."),
     ).toBeTruthy();
     expect(getByText(/30 секунд, без реєстрації/)).toBeTruthy();
     // Audit-guard: the pre-S1.1 copy must not resurrect.
@@ -98,12 +98,12 @@ describe("OnboardingWizard", () => {
     expect(
       getByTestId("onboarding-module-finyk").props.accessibilityState?.selected,
     ).toBe(false);
-    expect(queryByText(/Без вибору — всі 4 модулі/)).toBeNull();
+    expect(queryByText(/Без вибору: всі 4 модулі/)).toBeNull();
 
     for (const id of ["fizruk", "routine", "nutrition"] as const) {
       fireEvent.press(getByTestId(`onboarding-module-${id}`));
     }
-    expect(getByText(/Без вибору — всі 4 модулі/)).toBeTruthy();
+    expect(getByText(/Без вибору: всі 4 модулі/)).toBeTruthy();
   });
 
   it("persists picks + done flag + first-action markers on finish", () => {
@@ -206,9 +206,9 @@ describe("OnboardingWizard — S6.1 `none` arm (opt-in)", () => {
     // S6.1 hint must show on initial render (picks empty in the
     // `none` arm).
     expect(getByTestId("onboarding-empty-picks-hint")).toBeTruthy();
-    // Audit-guard — the pre-S6.1 «Без вибору — всі 4 модулі» copy
+    // Audit-guard — the pre-S6.1 «Без вибору: всі 4 модулі» copy
     // must not coexist with the new hint.
-    expect(queryByText(/Без вибору — всі 4 модулі/)).toBeNull();
+    expect(queryByText(/Без вибору: всі 4 модулі/)).toBeNull();
   });
 
   it("disables «Далі» until at least one module is picked", () => {

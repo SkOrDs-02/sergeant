@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-07-05
  * Status: Active
  * Web I/O-адаптер для списку покупок.
  *
@@ -8,50 +8,64 @@
  * `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Тут лишаються
  * лише load/persist поверх `createModuleStorage`.
  *
- * Stage 11 / PR #070n-dualwrite — `persistShoppingList` тепер плюс
- * мирорить нормалізований документ у локальний SQLite через
- * `persistNutritionShoppingList`. LS-write залишається як safety-net до
- * наступного `#057n-tombstone`-кроку для shopping-list.
+ * Dual-write teardown Phase 3 — SQLite is the sole source of truth.
+ * `loadShoppingList` reads the SQLite warm cache; `persistShoppingList`
+ * writes only via the dual-write pipeline (`persistNutritionShoppingList`).
+ * The LS mirror (read fallback + write) was removed — no prod users, so an
+ * empty first paint before the cache warms is acceptable (R9).
  */
 import {
   SHOPPING_LIST_KEY,
+  migrateShoppingListCategories,
   normalizeShoppingList,
   type ShoppingList,
 } from "@sergeant/nutrition-domain";
 
-import { nutritionStorage } from "./nutritionStorageInstance";
 import { persistNutritionShoppingList } from "./nutritionStorage.js";
+import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
 export {
   SHOPPING_LIST_KEY,
+  addManualShoppingItem,
   getCheckedItems,
   getTotalCount,
+  mergeGeneratedShoppingList,
+  migrateShoppingListCategories,
   normalizeShoppingList,
   removeCheckedItems,
   toggleShoppingItem,
 } from "@sergeant/nutrition-domain";
 export type {
+  AddShoppingItemInput,
   ShoppingCategory,
   ShoppingItem,
+  ShoppingItemSource,
   ShoppingList,
   ShoppingListLike,
 } from "@sergeant/nutrition-domain";
 
 export function loadShoppingList(
-  key: string = SHOPPING_LIST_KEY,
+  _key: string = SHOPPING_LIST_KEY,
 ): ShoppingList {
-  const parsed = nutritionStorage.readJSON(key, null);
-  return normalizeShoppingList(parsed);
+  const cache = getCachedNutritionSqliteState();
+  // SQLite-only: before the warm cache lands, first paint is an empty list
+  // and the overlay fills in once it warms (R9, no LS fallback).
+  //
+  // `migrateShoppingListCategories` - це `normalizeShoppingList` плюс зведення
+  // категорій до комори: збережені до 2026-10-01 списки несли власні 11 назв
+  // («Мʼясо та риба», «Хлібобулочні вироби»), а список тепер живе в одній
+  // таксономії з коморою. Перший запис (`persistShoppingList`) закріплює міграцію.
+  return migrateShoppingListCategories(
+    cache.refreshedAt !== null ? cache.shoppingList : null,
+  );
 }
 
 export function persistShoppingList(
   list: unknown,
-  key: string = SHOPPING_LIST_KEY,
+  _key: string = SHOPPING_LIST_KEY,
 ): boolean {
   const normalized = normalizeShoppingList(list);
-  const ok = nutritionStorage.writeJSON(key, normalized);
-  // Mirror to SQLite via the dual-write pipeline. Pre-boot / pre-auth
-  // is a no-op inside `persistNutritionShoppingList`.
-  persistNutritionShoppingList(normalized);
-  return ok;
+  // SQLite-only write via the dual-write pipeline. Pre-boot / pre-auth is a
+  // no-op inside `persistNutritionShoppingList`.
+  return persistNutritionShoppingList(normalized);
 }

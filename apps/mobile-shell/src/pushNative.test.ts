@@ -113,7 +113,7 @@ function fireRegistrationError(message: string): void {
   for (const fn of listeners.registrationError) fn({ error: message });
 }
 
-describe("subscribeNativePush — guard layer", () => {
+describe("subscribeNativePush: guard layer", () => {
   it("кидає 'push-native-unavailable' на web-платформі", async () => {
     getPlatform.mockReturnValue("web");
     const { subscribeNativePush } = await import("./pushNative.js");
@@ -140,7 +140,7 @@ describe("subscribeNativePush — guard layer", () => {
   });
 });
 
-describe("subscribeNativePush — registration flow", () => {
+describe("subscribeNativePush: registration flow", () => {
   it("резолвиться токеном від `registration` listener-а і кешує його у Preferences", async () => {
     getPlatform.mockReturnValue("android");
     requestPermissions.mockResolvedValue({ receive: "granted" });

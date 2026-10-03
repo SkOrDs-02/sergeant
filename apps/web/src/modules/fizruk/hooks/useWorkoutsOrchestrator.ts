@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -16,11 +15,19 @@ import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
-import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import type {
+  ExerciseLocation,
+  RawExerciseDef,
+} from "@sergeant/fizruk-domain/data";
+import {
+  ACTIVITY_INTENSITY_MULTIPLIERS,
+  ACTIVITY_MUSCLE_ZONE_MUSCLES,
+  equipmentForLocation,
+  matchesExerciseLocation,
+} from "@sergeant/fizruk-domain/data";
 import type { Workout, WorkoutGroup } from "@sergeant/fizruk-domain";
 import {
   ACTIVE_WORKOUT_KEY,
@@ -31,9 +38,18 @@ import {
   buildGroupedExercises,
   collectLastByExerciseId,
   formatActiveDuration,
-  todayLocalDateString,
 } from "../pages/Workouts.helpers";
+import {
+  peekPendingRetroEnd,
+  setPendingRetroEnd,
+} from "../lib/pendingRetroEnd";
 import type { AddExerciseForm } from "../components/workouts/AddExerciseSheet";
+import type { LogPastWorkoutActivity } from "../components/workouts/LogPastWorkoutSheet";
+import { useQuickLog } from "./useQuickLog";
+import {
+  trackFizrukWorkoutDiscarded,
+  trackFizrukWorkoutStarted,
+} from "../lib/workoutTelemetry";
 
 interface TemplateGroup {
   id: string;
@@ -43,7 +59,15 @@ interface TemplateGroup {
   restSec?: number;
 }
 
-export function useWorkoutsOrchestrator() {
+interface UseWorkoutsOrchestratorOptions {
+  requestedWorkoutId?: string | undefined;
+  initialView?: WorkoutsView | undefined;
+  onWorkoutStarted?: ((workoutId: string) => void) | undefined;
+}
+
+export function useWorkoutsOrchestrator(
+  options: UseWorkoutsOrchestratorOptions = {},
+) {
   const toast = useToast();
   const {
     exercises,
@@ -55,7 +79,6 @@ export function useWorkoutsOrchestrator() {
     addExercise,
     removeExercise,
   } = useExerciseCatalog();
-  const rec = useRecovery();
   const {
     workouts,
     loaded: workoutsLoaded,
@@ -97,24 +120,52 @@ export function useWorkoutsOrchestrator() {
   const templateApi = useWorkoutTemplates();
   const [q, setQ] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState<string[]>([]);
+  // «Зал» — не поточне місце людини, а найширший кошик: після того як
+  // портативне залізо перестало бути прив'язаним до дому, там доступний
+  // увесь каталог. Тому дефолт нічого не ховає, а стану «будь-де» немає.
+  const [locationFilter, setLocationFilter] = useState<ExerciseLocation>("gym");
   const [selected, setSelected] = useState<RawExerciseDef | null>(null);
   const [open, setOpen] = useState<Record<string, boolean>>(() => ({}));
   const [addOpen, setAddOpen] = useState(false);
-  const [view, setView] = useState<WorkoutsView>("home");
+  /** Форма «Внести проведене заняття» — див. `submitPastWorkout` нижче. */
+  const [logPastOpen, setLogPastOpen] = useState(false);
+  /** Сабміт «Швидкого запису» — окремий хук, див. `useQuickLog`. */
+  const quickLog = useQuickLog({ restoreWorkout, toast });
+  // Pulled out of `options` so the start callbacks can depend on the function
+  // itself rather than on the whole options object, which is a fresh literal
+  // on every render of the host page.
+  const { onWorkoutStarted } = options;
+  const [view, setView] = useState<WorkoutsView>(options.initialView ?? "home");
   const mode = view === "templates" || view === "home" ? "catalog" : view;
   const { restTimer, setRestTimer } = useRestTimer();
-  const [activeWorkoutId, setActiveWorkoutId] = useState(() =>
-    safeReadStringLS(ACTIVE_WORKOUT_KEY),
+  const [activeWorkoutId, setActiveWorkoutId] = useState(
+    () => options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
+  // Виклик стоїть ПІСЛЯ `activeWorkoutId` навмисно: поточна сесія
+  // виключається з історії відновлення (див. `UseRecoveryOptions`).
+  const rec = useRecovery({ excludeWorkoutId: activeWorkoutId });
   const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =
     useState<WorkoutTemplate | null>(null);
   const [now, setNow] = useState(() => Date.now());
-  const [retroOpen, setRetroOpen] = useState(false);
-  const [quickStartOpen, setQuickStartOpen] = useState(false);
-  const [retroDate, setRetroDate] = useState(() => todayLocalDateString());
-  const [retroTime, setRetroTime] = useState("18:00");
+  const [pendingWorkoutStart, setPendingWorkoutStart] = useState<
+    (() => void) | null
+  >(null);
+  /**
+   * Кінець ретро-сесії, яку ще заповнюють. Читаємо сховище рівно раз — при
+   * монтуванні, — і далі оновлюємо явно у `submitPastWorkout`. Ефект тут був
+   * би зайвим: перехід на `workout/<id>` монтує цей хук наново, тож ліниве
+   * `useState` покриває і цей випадок. Значення потрібне лише для показу
+   * тривалості; щойно `endedAt` записано, воно перестає впливати на будь-що.
+   */
+  const [pendingRetroEnd, setPendingRetroEndValue] = useState<string | null>(
+    () => {
+      const id =
+        options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY);
+      return id ? peekPendingRetroEnd(id) : null;
+    },
+  );
   const [form, setForm] = useState<AddExerciseForm>(() => ({
     nameUk: "",
     primaryGroup: "chest",
@@ -128,14 +179,78 @@ export function useWorkoutsOrchestrator() {
   const activeWorkout: Workout | null =
     workouts.find((w) => w.id === activeWorkoutId) || null;
 
+  // The route owns which workout is focused, so a `workout/<id>` change has
+  // to win over the pointer this hook already holds. Adjusting during render
+  // (rather than in an effect) keeps the first paint on the new id instead of
+  // flashing the previous one.
+  const [syncedRequestedId, setSyncedRequestedId] = useState(
+    options.requestedWorkoutId,
+  );
+  if (
+    options.requestedWorkoutId &&
+    options.requestedWorkoutId !== syncedRequestedId
+  ) {
+    setSyncedRequestedId(options.requestedWorkoutId);
+    setActiveWorkoutId(options.requestedWorkoutId);
+  }
+
   const activeDuration = useMemo(
     () =>
       formatActiveDuration(
         activeWorkout?.startedAt,
-        activeWorkout?.endedAt,
+        // Показуємо введену тривалість, а не лічильник від учорашнього вечора:
+        // інакше над щойно внесеною сесією цокало б «30:12:05», і це читалось
+        // би як зламаний таймер.
+        activeWorkout?.endedAt ?? pendingRetroEnd,
         now,
       ),
-    [activeWorkout?.startedAt, activeWorkout?.endedAt, now],
+    [activeWorkout?.startedAt, activeWorkout?.endedAt, pendingRetroEnd, now],
+  );
+
+  /**
+   * Правка відкладеного кінця з `WorkoutTimeEditor`. Пишемо в обидва місця
+   * одразу: сховище переживає перехід маршруту й перезавантаження, стан —
+   * тримає шапку («· 50:00») узгодженою з полем без перемонтування.
+   */
+  const updatePendingRetroEnd = useCallback(
+    (iso: string) => {
+      if (!activeWorkoutId) return;
+      setPendingRetroEnd(activeWorkoutId, iso);
+      setPendingRetroEndValue(iso);
+    },
+    [activeWorkoutId],
+  );
+
+  const conflictingWorkout = useMemo(
+    () => workouts.find((workout) => !workout.endedAt) ?? null,
+    [workouts],
+  );
+
+  const requestWorkoutStart = useCallback(
+    (start: () => void) => {
+      if (!conflictingWorkout) {
+        start();
+        return;
+      }
+      setPendingWorkoutStart(() => start);
+    },
+    [conflictingWorkout],
+  );
+
+  const continuePendingWorkoutStart = useCallback(
+    (resolution: "finish" | "discard") => {
+      const start = pendingWorkoutStart;
+      if (!start || !conflictingWorkout) return;
+      if (resolution === "finish") endWorkout(conflictingWorkout.id);
+      else {
+        deleteWorkout(conflictingWorkout.id);
+        trackFizrukWorkoutDiscarded();
+      }
+      setActiveWorkoutId(null);
+      setPendingWorkoutStart(null);
+      start();
+    },
+    [conflictingWorkout, deleteWorkout, endWorkout, pendingWorkoutStart],
   );
 
   useActiveWorkoutIdPersistence(activeWorkoutId);
@@ -144,8 +259,8 @@ export function useWorkoutsOrchestrator() {
     workouts,
     activeWorkoutId,
     setActiveWorkoutId,
+    { routeOwnsWorkoutId: Boolean(options.requestedWorkoutId) },
   );
-  useWorkoutsViewFromSession(setView);
 
   useLiveWorkoutTick(activeWorkout, setNow);
 
@@ -176,7 +291,7 @@ export function useWorkoutsOrchestrator() {
       }
       if (!activeWorkoutId) {
         toast.warning(
-          "Спочатку натисни «+ Нове» у блоці нижче, щоб з'явилось активне тренування.",
+          "Спочатку натисни «Почати тренування», щоб зʼявилось активне тренування.",
         );
         return;
       }
@@ -186,9 +301,22 @@ export function useWorkoutsOrchestrator() {
         );
         return;
       }
+      const conflicts = recoveryConflictsForExercise(ex, rec.by);
+      if (conflicts.injury.blocked) {
+        toast.warning(
+          "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
+        );
+      }
       addExerciseToActive(ex);
     },
-    [mode, activeWorkoutId, activeWorkout?.endedAt, addExerciseToActive, toast],
+    [
+      mode,
+      activeWorkoutId,
+      activeWorkout?.endedAt,
+      addExerciseToActive,
+      rec.by,
+      toast,
+    ],
   );
 
   const executeTemplateStart = useCallback(
@@ -232,9 +360,19 @@ export function useWorkoutsOrchestrator() {
       }
       if (tpl?.id) templateApi.markTemplateUsed(tpl.id);
       setActiveWorkoutId(w.id);
-      setView("log");
+      // Без id — разовий набір з аркуша «Почати тренування», не шаблон.
+      trackFizrukWorkoutStarted(w.id, tpl?.id ? "template" : "quick_start");
+      if (onWorkoutStarted) onWorkoutStarted(w.id);
+      else setView("log");
     },
-    [exercises, createWorkout, addItem, updateWorkout, templateApi],
+    [
+      exercises,
+      createWorkout,
+      addItem,
+      updateWorkout,
+      templateApi,
+      onWorkoutStarted,
+    ],
   );
 
   const startWorkoutFromTemplate = useCallback(
@@ -249,31 +387,16 @@ export function useWorkoutsOrchestrator() {
         return;
       }
       const risky = picks.some(
-        (ex) => recoveryConflictsForExercise(ex, rec.by).hasWarning,
+        (ex) => recoveryConflictsForExercise(ex, rec.by).hasHardBlock,
       );
       if (risky) {
         setRiskyTemplateConfirm(tpl);
         return;
       }
-      executeTemplateStart(tpl);
+      requestWorkoutStart(() => executeTemplateStart(tpl));
     },
-    [exercises, rec.by, executeTemplateStart, toast],
+    [exercises, rec.by, executeTemplateStart, requestWorkoutStart, toast],
   );
-
-  const submitRetroWorkout = useCallback(() => {
-    const parts = retroDate.split("-").map(Number);
-    const kyivNow = getKyivDateParts();
-    const y = parts[0] ?? kyivNow.year;
-    const mo = parts[1] ?? kyivNow.month;
-    const d = parts[2] ?? kyivNow.day;
-    const timeParts = (retroTime || "12:00").split(":").map(Number);
-    const hh = timeParts[0] ?? 12;
-    const mm = timeParts[1] ?? 0;
-    const startedAt = new Date(y, mo - 1, d, hh, mm, 0, 0).toISOString();
-    const w = createWorkoutWithTimes({ startedAt });
-    setActiveWorkoutId(w.id);
-    setRetroOpen(false);
-  }, [retroDate, retroTime, createWorkoutWithTimes]);
 
   const lastByExerciseId = useMemo(
     () => collectLastByExerciseId(workouts, activeWorkoutId),
@@ -281,9 +404,34 @@ export function useWorkoutsOrchestrator() {
   );
 
   const grouped = useMemo(
-    () => buildGroupedExercises(list, equipmentFilter, primaryGroupsUk),
-    [list, equipmentFilter, primaryGroupsUk],
+    () =>
+      buildGroupedExercises(
+        list,
+        equipmentFilter,
+        primaryGroupsUk,
+        locationFilter,
+      ),
+    [list, equipmentFilter, primaryGroupsUk, locationFilter],
   );
+
+  /**
+   * Скільки вправ дає кожен вид обладнання САМ ПО СОБІ в поточній локації.
+   * Незалежно від інших вибраних: фільтр обладнання працює як OR, тож
+   * кумулятивне число («стане, якщо додати») стрибало б від чужого вибору
+   * і читалось як помилка.
+   */
+  const equipmentCounts = useMemo(() => {
+    const inLocation = list.filter((ex) =>
+      matchesExerciseLocation(ex, locationFilter),
+    );
+    const out: Record<string, number> = {};
+    for (const eq of equipmentForLocation(locationFilter)) {
+      out[eq] = inLocation.filter((ex) =>
+        (ex.equipment ?? []).includes(eq),
+      ).length;
+    }
+    return out;
+  }, [list, locationFilter]);
 
   const finishedCount = useMemo(
     () => (workouts || []).filter((w) => w.endedAt).length,
@@ -308,28 +456,123 @@ export function useWorkoutsOrchestrator() {
     isLoading: !workoutsLoaded,
   };
 
-  const handleQuickStartConfirm = useCallback(
-    (picks: RawExerciseDef[]) => {
-      const w = createWorkout();
-      for (const ex of picks) {
-        const isCardio = ex.primaryGroup === "cardio";
-        addItem(w.id, {
-          exerciseId: ex.id,
-          nameUk: ex?.name?.uk || ex?.name?.en || ex.id,
-          primaryGroup: ex.primaryGroup,
-          musclesPrimary: ex?.muscles?.primary || [],
-          musclesSecondary: ex?.muscles?.secondary || [],
-          type: isCardio ? "distance" : "strength",
-          ...(isCardio ? {} : { sets: [{ weightKg: 0, reps: 0 }] }),
-          durationSec: 0,
-          distanceM: 0,
+  const handleQuickStart = useCallback(() => {
+    requestWorkoutStart(() => {
+      const workout = createWorkout();
+      setActiveWorkoutId(workout.id);
+      trackFizrukWorkoutStarted(workout.id, "quick_start");
+      if (onWorkoutStarted) onWorkoutStarted(workout.id);
+      else setView("log");
+    });
+  }, [createWorkout, onWorkoutStarted, requestWorkoutStart]);
+
+  /**
+   * «Внести проведене заняття» — тренування заднім числом.
+   *
+   * **Створюємо НЕзавершеним, хоч кінець уже відомий.** Перша версія ставила
+   * `endedAt` одразу — і тим викидала людину повз увесь післятренувальний
+   * потік: завершене тренування малюється read-only підсумком, тож ні вправ
+   * не додаси, ні оцінки самопочуття та зон болю не пройдеш. Введений кінець
+   * чекає у `pendingRetroEnd` і підставляється в `endWorkout`, коли людина
+   * натисне «Завершити». Тобто ретро — це та сама сесія, просто з іншими
+   * мітками часу, а не окремий беззмістовний режим.
+   *
+   * **Наслідок: слот «одне активне» тепер зайнято**, тому вхід іде через
+   * `requestWorkoutStart` — той самий діалог конфлікту, що й у решти шляхів.
+   * Це плата за повний потік: заповнюване ретро НЕ відрізнити від живої
+   * сесії, тож удавати, що воно нічого не займає, було б неправдою, з якої
+   * виросли б дві «активні» сесії одночасно.
+   */
+  const submitPastWorkout = useCallback(
+    ({
+      startedAt,
+      endedAt,
+      activity,
+    }: {
+      startedAt: string;
+      endedAt: string;
+      activity?: LogPastWorkoutActivity;
+    }) => {
+      setLogPastOpen(false);
+      if (activity) {
+        // Короткий запис нікуди не веде: сесія одразу завершена, слот
+        // «одне активне» не займає, тож і діалог конфлікту тут зайвий.
+        const workout = createWorkoutWithTimes({ startedAt, endedAt });
+        addItem(workout.id, {
+          exerciseId: `activity:${activity.activityId}`,
+          nameUk: activity.nameUk,
+          primaryGroup: "full_body",
+          musclesPrimary: ACTIVITY_MUSCLE_ZONE_MUSCLES[activity.zone],
+          musclesSecondary: [],
+          type: "time",
+          // Інтенсивність множить саме тривалість, що йде у
+          // `loadPointsForItem`: «важко 45 хв» важить як 56. Формулу
+          // навантаження таким чином чіпати не довелось (D4 спеки).
+          durationSec: Math.round(
+            activity.durationSec *
+              ACTIVITY_INTENSITY_MULTIPLIERS[activity.intensity],
+          ),
+          met: activity.met,
+          intensity: activity.intensity,
         });
+        if (activity.kcalBurned != null) {
+          updateWorkout(workout.id, { kcalBurned: activity.kcalBurned });
+        }
+        trackFizrukWorkoutStarted(workout.id, "past");
+        return;
       }
-      setActiveWorkoutId(w.id);
-      setQuickStartOpen(false);
-      setView("log");
+      requestWorkoutStart(() => {
+        const workout = createWorkoutWithTimes({ startedAt });
+        setPendingRetroEnd(workout.id, endedAt);
+        setPendingRetroEndValue(endedAt);
+        setActiveWorkoutId(workout.id);
+        trackFizrukWorkoutStarted(workout.id, "past");
+        if (onWorkoutStarted) onWorkoutStarted(workout.id);
+        else setView("log");
+      });
     },
-    [createWorkout, addItem],
+    [
+      addItem,
+      createWorkoutWithTimes,
+      onWorkoutStarted,
+      requestWorkoutStart,
+      updateWorkout,
+    ],
+  );
+
+  /**
+   * 02-A "Повторити це тренування" — starts a fresh session pre-loaded
+   * with the same exercises as `source` (sets reset, nothing carried
+   * over except the exercise identity). Routed through
+   * `requestWorkoutStart` so it respects the same "one active workout"
+   * invariant/conflict dialog as every other start path.
+   */
+  const repeatWorkout = useCallback(
+    (source: Workout) => {
+      requestWorkoutStart(() => {
+        const w = createWorkout();
+        for (const item of source.items || []) {
+          addItem(w.id, {
+            exerciseId: item.exerciseId,
+            nameUk: item.nameUk,
+            primaryGroup: item.primaryGroup,
+            musclesPrimary: item.musclesPrimary,
+            musclesSecondary: item.musclesSecondary,
+            type: item.type,
+            ...(item.type === "strength"
+              ? { sets: [{ weightKg: 0, reps: 0 }] }
+              : {}),
+            durationSec: 0,
+            distanceM: 0,
+          });
+        }
+        setActiveWorkoutId(w.id);
+        trackFizrukWorkoutStarted(w.id, "repeat");
+        if (onWorkoutStarted) onWorkoutStarted(w.id);
+        else setView("log");
+      });
+    },
+    [createWorkout, addItem, onWorkoutStarted, requestWorkoutStart],
   );
 
   const handleDeleteExerciseConfirm = useCallback(() => {
@@ -350,8 +593,8 @@ export function useWorkoutsOrchestrator() {
     const tpl = riskyTemplateConfirm;
     setRiskyTemplateConfirm(null);
     if (!tpl) return;
-    executeTemplateStart(tpl);
-  }, [riskyTemplateConfirm, executeTemplateStart]);
+    requestWorkoutStart(() => executeTemplateStart(tpl));
+  }, [riskyTemplateConfirm, executeTemplateStart, requestWorkoutStart]);
 
   return {
     toast,
@@ -377,6 +620,9 @@ export function useWorkoutsOrchestrator() {
     setQ,
     equipmentFilter,
     setEquipmentFilter,
+    locationFilter,
+    setLocationFilter,
+    equipmentCounts,
     selected,
     setSelected,
     open,
@@ -397,29 +643,31 @@ export function useWorkoutsOrchestrator() {
     riskyTemplateConfirm,
     setRiskyTemplateConfirm,
     now,
-    retroOpen,
-    setRetroOpen,
-    quickStartOpen,
-    setQuickStartOpen,
-    retroDate,
-    setRetroDate,
-    retroTime,
-    setRetroTime,
+    activeWorkoutConflictOpen: pendingWorkoutStart !== null,
+    finishActiveAndContinue: () => continuePendingWorkoutStart("finish"),
+    discardActiveAndContinue: () => continuePendingWorkoutStart("discard"),
+    cancelPendingWorkoutStart: () => setPendingWorkoutStart(null),
     form,
     setForm,
     activeWorkout,
     activeDuration,
+    pendingRetroEnd,
+    updatePendingRetroEnd,
     addExerciseToActive,
     handleExerciseInListClick,
     startWorkoutFromTemplate,
-    submitRetroWorkout,
+    repeatWorkout,
     lastByExerciseId,
     grouped,
     finishedCount,
     recentWorkouts,
     handlePullRefresh,
     journalQuery,
-    handleQuickStartConfirm,
+    handleQuickStart,
+    logPastOpen,
+    setLogPastOpen,
+    submitPastWorkout,
+    ...quickLog,
     handleDeleteExerciseConfirm,
     handleRiskyTemplateConfirm,
     summarizeWorkoutForFinish,

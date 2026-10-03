@@ -147,20 +147,21 @@ export async function rotateMonoWebhookSecret(
     };
   }
 
-  // Single UPDATE switches both the lookup key (hash) and the cleartext
-  // `webhook_secret` together so a delivery that arrives mid-rotation
-  // either still resolves under the OLD hash (if it landed before this
-  // statement) or under the NEW hash (after). It cannot fall between two
-  // chairs — Postgres UPDATE is atomic on a single row.
+  // Single UPDATE switches the lookup key (hash) so a delivery that arrives
+  // mid-rotation either still resolves under the OLD hash (if it landed
+  // before this statement) or under the NEW hash (after). It cannot fall
+  // between two chairs — Postgres UPDATE is atomic on a single row.
+  // Migration 107 dropped the plaintext `webhook_secret` column entirely —
+  // only the hash is persisted; `newSecret` itself only ever lives in the
+  // outbound webhook URL we just registered with Monobank.
   await query(
     `UPDATE mono_connection
-        SET webhook_secret = $2,
-            webhook_secret_hash = $3,
+        SET webhook_secret_hash = $2,
             webhook_secret_rotated_at = NOW(),
             webhook_registered_at = NOW(),
             updated_at = NOW()
       WHERE user_id = $1`,
-    [userId, newSecret, newSecretHash],
+    [userId, newSecretHash],
     { op: "mono_rotate_update" },
   );
 

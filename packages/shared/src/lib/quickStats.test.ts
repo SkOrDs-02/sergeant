@@ -50,19 +50,18 @@ describe("selectModulePreview — finyk", () => {
     expect(preview.main).toMatch(/₴$/);
     expect(preview.main).toContain("1");
     expect(preview.main).toContain("250");
-    expect(preview.sub).toMatch(/Залишок:/);
+    expect(preview.sub).toMatch(/Залишок плану:/);
     expect(preview.sub).toMatch(/₴$/);
     expect(preview.sub).toContain("7");
     expect(preview.sub).toContain("300");
     expect(preview.progress).toBeUndefined();
   });
 
-  it("renders zeros as null (parity with web truthiness)", () => {
+  it("renders zero spent as live data instead of the onboarding placeholder", () => {
     const raw = JSON.stringify({ todaySpent: 0, budgetLeft: 0 });
-    expect(selectModulePreview("finyk", raw)).toEqual({
-      main: null,
-      sub: null,
-    });
+    const preview = selectModulePreview("finyk", raw);
+    expect(preview.main).toMatch(/^0.*₴$/);
+    expect(preview.sub).toBeNull();
   });
 
   it("coerces non-number values to null", () => {
@@ -90,8 +89,17 @@ describe("selectModulePreview — fizruk", () => {
     const raw = JSON.stringify({ weekWorkouts: 3, streak: 5 });
     expect(selectModulePreview("fizruk", raw)).toEqual({
       main: "3 трен.",
-      sub: "Серія: 5 днів",
+      sub: "Серія: 5 тижнів",
     });
+  });
+
+  // Одиниця стріка мусить збігатися з тією, яку рахує домен Фізрука
+  // (`computeWeeklyStreakWeeks` → ТИЖНІ). Поки тут стояло «днів», хаб і
+  // модуль на одному екрані шляху користувача показували різні речі:
+  // «Серія: 5 днів» проти «0 тижнів» (аудит L-8, 2026-08-07).
+  it("підписує серію тижнями — домен рахує тижні, не дні", () => {
+    const raw = JSON.stringify({ weekWorkouts: 1, streak: 5 });
+    expect(selectModulePreview("fizruk", raw).sub).not.toContain("дн");
   });
 
   it("renders zeros as null", () => {
@@ -100,6 +108,20 @@ describe("selectModulePreview — fizruk", () => {
       main: null,
       sub: null,
     });
+  });
+
+  // Картка хаба після першого ж тренування показувала «Серія: 1 днів»
+  // (browser QA 2026-08-05, F-004): число підставлялося у зашитий множинний
+  // суфікс. Три форми — три перевірки, бо саме межі 1 / 2-4 / 5+ і ламаються.
+  it.each([
+    [1, "Серія: 1 тиждень"],
+    [2, "Серія: 2 тижні"],
+    [5, "Серія: 5 тижнів"],
+    [11, "Серія: 11 тижнів"],
+    [21, "Серія: 21 тиждень"],
+  ])("declines the streak suffix for %i", (streak, expected) => {
+    const raw = JSON.stringify({ weekWorkouts: 1, streak });
+    expect(selectModulePreview("fizruk", raw).sub).toBe(expected);
   });
 
   it("falls back to empty preview on missing data", () => {
@@ -115,7 +137,7 @@ describe("selectModulePreview — routine", () => {
     const raw = JSON.stringify({ todayDone: 3, todayTotal: 6, streak: 4 });
     expect(selectModulePreview("routine", raw)).toEqual({
       main: "3/6",
-      sub: "Серія: 4 днів",
+      sub: "Серія: 4 дні",
       progress: 50,
     });
   });

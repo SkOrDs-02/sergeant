@@ -2,37 +2,40 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { FizrukPage } from "../shell/fizrukRoute";
-import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Icon } from "@shared/components/ui/Icon";
+import { Measure } from "@shared/components/ui/Measure";
+import { Button } from "@shared/components/ui/Button";
+import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useWorkouts } from "../hooks/useWorkouts";
-import { epley1rm, suggestNextSet } from "@sergeant/fizruk-domain";
-import type {
-  Workout,
-  WorkoutItem,
-  WorkoutSet,
+import { useInjuries } from "../hooks/useInjuries";
+import {
+  formatDurShort,
+  latestClearedInjuryAtForExercise,
+  suggestNextSet,
+} from "@sergeant/fizruk-domain";
+import {
+  collectExerciseHistory,
+  computeExerciseBest,
+  computeOneRmAgingForSummary,
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { LoadCalculator } from "../components/LoadCalculator";
+import { fmt, fmtLoose } from "../lib/numberFmt";
+import { ReturnProtocolNotice } from "../components/exercise/ReturnProtocolNotice";
 import {
   ExerciseProgressChart,
   type ProgressPoint,
 } from "../components/ExerciseProgressChart";
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
-import { fmt } from "../lib/numberFmt";
-import { chartSeries, statusColors } from "@shared/charts";
-
-interface HistoryEntry {
-  workout: Workout;
-  item: WorkoutItem;
-}
-// Best/last sets carry an extra `_at` annotation that's not part of the
-// canonical `WorkoutSet`, so we extend the domain type instead of
-// shadowing the global `Set<T>` with `type Set = any`.
-type WorkoutSetWithMeta = WorkoutSet & { _at?: string };
+import { formatShortDate } from "../lib/dateFmt";
+import { formatDateShort } from "@shared/lib/time/formatDate";
+import { chartSeries, chartStatusSeries } from "@shared/charts";
 
 interface ExerciseProps {
   exerciseId: string;
@@ -46,64 +49,49 @@ interface ExerciseProps {
   onNavigate: (page: FizrukPage) => void;
 }
 
+/** Set-history page size for the «Показати ще» affordance (defect #4 —
+ * `history` is unbounded, the old `.slice(0, 20)` silently dropped the
+ * rest with no counter or way to see more). */
+const HISTORY_PAGE_SIZE = 20;
+
 export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
   const { exercises, musclesUk } = useExerciseCatalog();
-  const { workouts } = useWorkouts();
+  // `loaded` mirrors `getCachedFizrukSqliteState().refreshedAt !== null` —
+  // during a cold SQLite-WASM boot `workouts` (and the custom-exercise
+  // overlay in `useExerciseCatalog`) resolve to `[]` before the cache is
+  // warm, which used to read as "Вправу не знайдено" / "Немає силових
+  // сетів" for a flash (defects #2, #3). Gate the whole page on this flag
+  // instead of trusting an empty array as a final answer.
+  const { workouts, loaded } = useWorkouts();
+  const { all: injuryMarks } = useInjuries();
+  const [visibleHistoryCount, setVisibleHistoryCount] =
+    useState(HISTORY_PAGE_SIZE);
 
   const ex = useMemo(
     () => (exercises || []).find((x) => x?.id === exerciseId) || null,
     [exercises, exerciseId],
   );
 
-  const history = useMemo(() => {
-    const out: HistoryEntry[] = [];
-    for (const w of workouts || []) {
-      for (const it of w.items || []) {
-        if (it.exerciseId !== exerciseId) continue;
-        out.push({ workout: w, item: it });
-      }
-    }
-    return out.sort((a, b) =>
-      (b.workout?.startedAt || "").localeCompare(a.workout?.startedAt || ""),
-    );
-  }, [workouts, exerciseId]);
+  // Один агрегат на веб і мобілку: сторінка колись мала власну копію цього
+  // фолду, і саме тому старіння 1RM (канон §6) було нікуди додати.
+  const history = useMemo(
+    () => collectExerciseHistory(workouts, exerciseId),
+    [workouts, exerciseId],
+  );
 
-  const best = useMemo(() => {
-    let best1rm = 0;
-    let bestSet: WorkoutSetWithMeta | null = null;
-    let lastTopSet: WorkoutSetWithMeta | null = null;
-    let lastTopEst = 0;
-    let lastWorkoutId: string | null = null;
-    let lastWorkoutBest1rm = 0;
-    let priorBest1rm = 0;
+  const best = useMemo(() => computeExerciseBest(history), [history]);
 
-    if (history.length > 0) lastWorkoutId = history[0]?.workout?.id ?? null;
-
-    for (const { workout, item } of history) {
-      if (item?.type !== "strength") continue;
-      const isLatest = workout?.id === lastWorkoutId;
-      const sets = item.sets || [];
-      for (const s of sets) {
-        const est = epley1rm(s.weightKg, s.reps);
-        if (est > best1rm) {
-          best1rm = est;
-          bestSet = { ...s, _at: workout?.startedAt };
-        }
-        if (isLatest) {
-          if (est > lastWorkoutBest1rm) lastWorkoutBest1rm = est;
-          if (est > lastTopEst) {
-            lastTopEst = est;
-            lastTopSet = { ...s, _at: workout?.startedAt };
-          }
-        } else {
-          if (est > priorBest1rm) priorBest1rm = est;
-        }
-      }
-    }
-
-    const isNewPR = lastWorkoutBest1rm > 0 && lastWorkoutBest1rm > priorBest1rm;
-    return { best1rm, bestSet, lastTop: lastTopSet, isNewPR };
-  }, [history]);
+  /**
+   * Старіння 1RM + протокол повернення (канон §6). Зняття позначки травми
+   * теж вводить у мʼякий режим — це закриття розриву E-5 з ADR-0083.
+   */
+  const aging = useMemo(
+    () =>
+      computeOneRmAgingForSummary(best, {
+        injuryClearedAt: latestClearedInjuryAtForExercise(ex, injuryMarks),
+      }),
+    [best, ex, injuryMarks],
+  );
 
   const suggestedNext = useMemo(
     () => suggestNextSet(best.lastTop),
@@ -130,10 +118,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
       const distKm = dist / 1000;
       const durMin = dur / 60;
       const paceMinKm = durMin / distKm;
-      const dateLabel = new Date(workout.startedAt).toLocaleDateString(
-        "uk-UA",
-        { day: "numeric", month: "short" },
-      );
+      const dateLabel = formatDateShort(new Date(workout.startedAt));
       pacePoints.push({ value: Math.round(paceMinKm * 10) / 10, dateLabel });
       distPoints.push({ value: Math.round(distKm * 100) / 100, dateLabel });
     }
@@ -152,9 +137,49 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-          <Card radius="lg" padding="lg" className="text-sm text-subtle">
-            Невірний ID вправи
+          <Card radius="lg" padding="lg">
+            <EmptyState
+              title="Неправильний ID вправи"
+              description="Посилання пошкоджене або застаріле. Повернись до журналу тренувань і обери вправу зі списку."
+              action={
+                <Button
+                  variant="solid"
+                  tone="fizruk"
+                  onClick={() => onNavigate("workouts")}
+                >
+                  До журналу
+                </Button>
+              }
+            />
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // Defects #2/#3: `workouts` (and the custom-exercise overlay) resolve to
+  // `[]` during a cold SQLite-WASM boot, before `loaded` flips true. Without
+  // this gate the page briefly rendered its FINAL empty copy ("Вправу не
+  // знайдено", "Немає силових сетів", "Поки немає записів") and then
+  // replaced it with real content once the cache warmed up — a confusing
+  // blink for anyone opening a deep-link to a custom exercise. Show a
+  // skeleton instead and defer every data-dependent branch below until the
+  // cache is actually warm.
+  if (!loaded) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div
+          className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3"
+          role="status"
+          aria-live="polite"
+          aria-label="Завантаження вправи"
+        >
+          <Skeleton className="h-8 w-2/3" />
+          <div className="grid grid-cols-2 gap-3">
+            <Skeleton className="h-24 w-full" variant="card" />
+            <Skeleton className="h-24 w-full" variant="card" />
+          </div>
+          <Skeleton className="h-40 w-full" variant="card" />
         </div>
       </div>
     );
@@ -175,13 +200,13 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               description="Можливо, її видалили з каталогу. Повернись до журналу і обери зі списку."
               action={
                 onNavigate ? (
-                  <button
-                    type="button"
+                  <Button
+                    variant="solid"
+                    tone="fizruk"
                     onClick={() => onNavigate("workouts")}
-                    className="min-h-touch-target inline-flex items-center justify-center rounded-2xl bg-fizruk-strong text-white px-4 text-style-label"
                   >
                     До журналу
-                  </button>
+                  </Button>
                 ) : undefined
               }
             />
@@ -214,67 +239,117 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             </div>
           )}
           {muscleLabels.length === 0 && (
-            <p className="text-xs text-subtle mt-1">Профіль вправи</p>
+            <p className="text-style-caption text-subtle mt-1">
+              Профіль вправи
+            </p>
           )}
         </div>
 
-        {best.isNewPR && (
+        {/*
+          Канон §6: у режимі повернення порівняння з піком ховаємо — і
+          святкування, і констатацію регресу. Людина щойно повернулась;
+          мірятись із власним рекордом тут не час.
+        */}
+        {best.isNewPR && !aging.returnMode && (
           <div className="flex items-center gap-2.5 rounded-2xl border border-warning/40 bg-warning/10 px-4 py-3">
-            <span className="text-xl leading-none">🏆</span>
+            <Icon name="award" size="lg" aria-hidden />
             <div>
               <p className="text-style-label text-warning-strong dark:text-warning">
                 Новий особистий рекорд!
               </p>
-              <p className="text-xs text-warning-strong/80 dark:text-warning/70">
+              <p className="text-style-caption text-warning-strong dark:text-warning">
                 Найкращий результат за всю історію
               </p>
             </div>
           </div>
         )}
 
+        <ReturnProtocolNotice aging={aging} />
+
+        {best.isRegression && !aging.returnMode && (
+          <div className="rounded-2xl border border-line bg-panel px-4 py-3">
+            <p className="text-style-label text-text">
+              {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
+            </p>
+            <p className="text-style-caption text-subtle">
+              {messages.fizruk.oneRmAging.regressionNote}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-3">
           <Card radius="lg">
-            <SectionHeading as="div" size="xs" variant="fizruk">
+            <SectionHeading as="h2" size="xs" variant="fizruk">
               Особистий рекорд
             </SectionHeading>
-            <div className="text-style-hero text-text mt-1 tabular-nums">
-              {best.best1rm ? `${fmt(best.best1rm, 0)} кг` : "—"}
+            <div className="text-style-headline text-text mt-1 tabular-nums">
+              {best.best1rm ? <Measure value={best.best1rm} unit="кг" /> : "—"}
             </div>
-            <div className="text-xs text-subtle mt-1">
-              {best.bestSet
-                ? `${best.bestSet.weightKg ?? 0} × ${best.bestSet.reps ?? 0} повт.`
-                : "Немає силових сетів"}
+            <div className="text-style-caption text-subtle mt-1">
+              {best.bestSet ? (
+                <>
+                  <Measure value={best.bestSet.weightKg ?? 0} unit="кг" /> ×{" "}
+                  <Measure value={best.bestSet.reps ?? 0} unit="повт." />
+                </>
+              ) : (
+                "Немає силових підходів"
+              )}
             </div>
-            {best.bestSet?._at && (
-              <div className="text-style-caption text-subtle/70 mt-1">
-                {new Date(best.bestSet._at).toLocaleDateString("uk-UA", {
-                  day: "numeric",
-                  month: "short",
-                  year: "2-digit",
-                })}
+            {best.bestSet?.at && (
+              <div className="text-style-caption text-subtle mt-1">
+                {formatShortDate(best.bestSet.at)}
+              </div>
+            )}
+            {aging.isStale && (
+              <div className="text-style-caption text-subtle mt-1">
+                {messages.fizruk.prBoard.staleBadge}
               </div>
             )}
           </Card>
           <Card radius="lg">
-            <SectionHeading as="div" size="xs" variant="fizruk">
+            <SectionHeading as="h2" size="xs" variant="fizruk">
               Наступного разу
             </SectionHeading>
-            <div className="text-style-hero text-text mt-1 tabular-nums">
-              {suggestedNext ? `${fmt(suggestedNext.weightKg, 1)} кг` : "—"}
+            <div className="text-style-headline text-text mt-1 tabular-nums">
+              {suggestedNext ? (
+                <Measure
+                  value={suggestedNext.weightKg}
+                  unit="кг"
+                  fractionDigits={1}
+                />
+              ) : (
+                "—"
+              )}
             </div>
-            <div className="text-xs text-subtle mt-1">
-              {suggestedNext
-                ? `× ${suggestedNext.reps} повт.`
-                : "Заповни сети, щоб зʼявилась рекомендація"}
+            <div className="text-style-caption text-subtle mt-1">
+              {suggestedNext ? (
+                <>
+                  × <Measure value={suggestedNext.reps} unit="повт." />
+                </>
+              ) : (
+                "Заповни підходи, щоб зʼявилась рекомендація"
+              )}
             </div>
-            {suggestedNext?.altWeightKg != null && (
-              <div className="text-style-caption text-fizruk mt-1">
-                {`або ${fmt(suggestedNext.altWeightKg, 1)} × ${suggestedNext.altReps} повт.`}
-              </div>
-            )}
+            {/* Обидва поля в гейті, а не одне: `altReps` теж необовʼязкове,
+                і шаблонний рядок до цього виводив би буквальне
+                «undefined повт.». Типізація це показала, бо `Measure`
+                приймає число, а не рядок. */}
+            {suggestedNext?.altWeightKg != null &&
+              suggestedNext.altReps != null && (
+                <div className="text-style-caption text-fizruk mt-1">
+                  або{" "}
+                  <Measure
+                    value={suggestedNext.altWeightKg}
+                    unit="кг"
+                    fractionDigits={1}
+                  />{" "}
+                  × <Measure value={suggestedNext.altReps} unit="повт." />
+                </div>
+              )}
             {suggestedNext && best.lastTop && (
-              <div className="text-style-caption text-subtle/70 mt-1">
-                {`зараз: ${best.lastTop.weightKg ?? 0} × ${best.lastTop.reps ?? 0}`}
+              <div className="text-style-caption text-subtle mt-1">
+                зараз: <Measure value={best.lastTop.weightKg ?? 0} unit="кг" />{" "}
+                × <Measure value={best.lastTop.reps ?? 0} unit="повт." />
               </div>
             )}
           </Card>
@@ -282,145 +357,174 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         {hasStrength && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
               Прогресія 1RM (за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
               points={progressData.rmPoints}
               label="1RM"
               unit="кг"
-              color={statusColors.success}
+              color={chartStatusSeries.success}
             />
           </Card>
         )}
 
         {hasStrength && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
               Обʼєм тренування (кг × повтори, за тижнями)
             </SectionHeading>
             <ExerciseProgressChart
               points={progressData.volPoints}
               label="Обсяг"
               unit="кг"
-              color={chartSeries.fizruk.primary ?? "#14b8a6"}
+              color={chartSeries.fizruk.primary}
             />
           </Card>
         )}
 
         {hasCardio && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
-              Темп (хв/км) — кардіо
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+              Темп (хв/км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
               points={cardioData.pacePoints}
               label="Темп"
               unit="хв/км"
-              color={statusColors.warning}
+              color={chartStatusSeries.warning}
             />
             <div className="text-style-caption text-subtle mt-1">
-              Менше — краще (швидший темп)
+              Менше – краще (швидший темп)
             </div>
           </Card>
         )}
 
         {hasCardio && (
           <Card radius="lg">
-            <SectionHeading as="div" size="sm" className="mb-3">
-              Дистанція (км) — кардіо
+            <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+              Дистанція (км): кардіо
             </SectionHeading>
             <ExerciseProgressChart
               points={cardioData.distPoints}
               label="Дистанція"
               unit="км"
-              color={statusColors.info}
+              color={chartStatusSeries.info}
             />
           </Card>
         )}
 
-        {best.best1rm > 0 && <LoadCalculator oneRM={best.best1rm} />}
+        {/*
+          AI-DANGER: сюди йде `reference1rm`, а НЕ пік. Це число людина кладе
+          на штангу; повернення його до `best.best1rm` знімає рівно той
+          захист, заради якого існує §6 канону.
+        */}
+        {aging.reference1rm > 0 && (
+          <LoadCalculator
+            oneRM={aging.reference1rm}
+            reduced={aging.reductionPct > 0}
+          />
+        )}
 
         <Card radius="lg" padding="lg">
-          <SectionHeading as="div" size="sm" className="mb-3">
-            Історія сетів
+          <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
+            Історія підходів
           </SectionHeading>
           {history.length === 0 ? (
             <EmptyState
               compact
               title="Поки немає записів"
-              description="Заверши хоча б один підхід — історія зʼявиться тут."
+              description="Заверши хоча б один підхід, історія зʼявиться тут."
             />
           ) : (
             <div className="space-y-2">
-              {history.slice(0, 20).map(({ workout, item }) => (
-                <div
-                  key={`${workout.id}_${item.id}`}
-                  className="border border-line rounded-2xl p-3 bg-bg"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs text-subtle">
-                      {workout?.startedAt
-                        ? new Date(workout.startedAt).toLocaleDateString(
-                            "uk-UA",
-                            { month: "short", day: "numeric", year: "2-digit" },
-                          )
-                        : "—"}
+              {history
+                .slice(0, visibleHistoryCount)
+                .map(({ workout, item }) => (
+                  <div
+                    key={`${workout.id}_${item.id}`}
+                    className="border border-line rounded-2xl p-3 bg-bg"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-style-caption text-subtle">
+                        {workout?.startedAt
+                          ? formatShortDate(workout.startedAt)
+                          : "—"}
+                      </div>
+                      <div className="text-style-caption px-2 py-1 rounded-full border border-line text-subtle">
+                        {item.type === "strength"
+                          ? "силова"
+                          : item.type === "distance"
+                            ? "дистанція"
+                            : "час"}
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        "text-style-caption px-2 py-1 rounded-full border",
-                        item.type === "strength"
-                          ? "border-line text-subtle"
-                          : "border-line text-subtle",
-                      )}
-                    >
+                    <div className="text-sm text-text mt-2">
                       {item.type === "strength"
-                        ? "силова"
+                        ? (item.sets || [])
+                            .map(
+                              (s) =>
+                                `${fmtLoose(s.weightKg ?? 0)}×${s.reps ?? 0}`,
+                            )
+                            .join(", ") || "—"
                         : item.type === "distance"
-                          ? "дистанція"
-                          : "час"}
+                          ? (() => {
+                              const dist = Number(item.distanceM) || 0;
+                              const dur = Number(item.durationSec) || 0;
+                              const base = `${dist} м за ${formatDurShort(dur)}`;
+                              if (dist > 0 && dur > 0) {
+                                const distKm = dist / 1000;
+                                const paceMinKm = dur / 60 / distKm;
+                                let pm = Math.floor(paceMinKm);
+                                let ps = Math.round((paceMinKm - pm) * 60);
+                                if (ps >= 60) {
+                                  pm += 1;
+                                  ps = 0;
+                                }
+                                const speed = fmt(distKm / (dur / 3600), 1);
+                                return `${base} · ${pm}:${String(ps).padStart(2, "0")}\u202Fхв/км · ${speed}\u202Fкм/год`;
+                              }
+                              return base;
+                            })()
+                          : formatDurShort(item.durationSec ?? 0)}
                     </div>
                   </div>
-                  <div className="text-sm text-text mt-2">
-                    {item.type === "strength"
-                      ? (item.sets || [])
-                          .map((s) => `${s.weightKg ?? 0}×${s.reps ?? 0}`)
-                          .join(", ") || "—"
-                      : item.type === "distance"
-                        ? (() => {
-                            const dist = Number(item.distanceM) || 0;
-                            const dur = Number(item.durationSec) || 0;
-                            const base = `${dist} м за ${dur} с`;
-                            if (dist > 0 && dur > 0) {
-                              const distKm = dist / 1000;
-                              const paceMinKm = dur / 60 / distKm;
-                              let pm = Math.floor(paceMinKm);
-                              let ps = Math.round((paceMinKm - pm) * 60);
-                              if (ps >= 60) {
-                                pm += 1;
-                                ps = 0;
-                              }
-                              const speed = (distKm / (dur / 3600)).toFixed(1);
-                              return `${base} · ${pm}:${String(ps).padStart(2, "0")} хв/км · ${speed} км/год`;
-                            }
-                            return base;
-                          })()
-                        : `${item.durationSec ?? 0} с`}
-                  </div>
+                ))}
+              {history.length > visibleHistoryCount && (
+                <div className="flex flex-col items-center gap-2 pt-1">
+                  <p className="text-style-caption text-subtle">
+                    {messages.fizruk.exercise.historyShownPrefix}{" "}
+                    {visibleHistoryCount}{" "}
+                    {messages.fizruk.exercise.historyShownOfWord}{" "}
+                    {history.length}
+                  </p>
+                  <Button
+                    variant="soft"
+                    tone="fizruk"
+                    size="sm"
+                    onClick={() =>
+                      setVisibleHistoryCount((prev) =>
+                        Math.min(prev + HISTORY_PAGE_SIZE, history.length),
+                      )
+                    }
+                  >
+                    {messages.fizruk.exercise.showMoreHistory}
+                  </Button>
                 </div>
-              ))}
+              )}
             </div>
           )}
 
           <div className="mt-3">
-            <button
-              type="button"
-              className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white"
+            <Button
+              variant="solid"
+              tone="fizruk"
+              size="lg"
+              className="w-full rounded-full"
               onClick={() => onNavigate("workouts")}
             >
               Перейти до журналу
-            </button>
+            </Button>
           </div>
         </Card>
       </div>

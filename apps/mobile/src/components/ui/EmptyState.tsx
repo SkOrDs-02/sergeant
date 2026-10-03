@@ -16,7 +16,7 @@
 
 import * as Haptics from "expo-haptics";
 import type { LucideIcon } from "lucide-react-native";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -91,63 +91,28 @@ export function EmptyState({
   // `packages/design-tokens/mobile.d.ts`.
   const resolvedIconColor = iconColor ?? colors.textMuted;
 
-  // Pulsing animation for the icon container
-  const pulseScale = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.6)).current;
-
-  useEffect(() => {
-    if (!shouldAnimate || !IconComponent) return;
-
-    // Start subtle pulsing animation after entrance
-    const timeout = setTimeout(() => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1.05,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0.8,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.parallel([
-            Animated.timing(pulseScale, {
-              toValue: 1,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseOpacity, {
-              toValue: 0.6,
-              duration: 1500,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ).start();
-    }, 800);
-
-    return () => clearTimeout(timeout);
-  }, [shouldAnimate, IconComponent, pulseScale, pulseOpacity]);
+  // No persistent pulse loop — static icon reads as more mature/trustworthy.
+  // The entrance animation below already provides the "alive" signal on mount.
 
   // Animation values for staggered entrance
-  const containerOpacity = useRef(
-    new Animated.Value(shouldAnimate ? 0 : 1),
-  ).current;
-  const containerScale = useRef(
-    new Animated.Value(shouldAnimate ? 0.95 : 1),
-  ).current;
-  const iconOpacity = useRef(new Animated.Value(shouldAnimate ? 0 : 1)).current;
-  const iconScale = useRef(new Animated.Value(shouldAnimate ? 0.9 : 1)).current;
-  const actionOpacity = useRef(
-    new Animated.Value(shouldAnimate ? 0 : 1),
-  ).current;
-  const actionTranslateY = useRef(
-    new Animated.Value(shouldAnimate ? 8 : 0),
-  ).current;
+  const [containerOpacity] = useState(
+    () => new Animated.Value(shouldAnimate ? 0 : 1),
+  );
+  const [containerScale] = useState(
+    () => new Animated.Value(shouldAnimate ? 0.95 : 1),
+  );
+  const [iconOpacity] = useState(
+    () => new Animated.Value(shouldAnimate ? 0 : 1),
+  );
+  const [iconScale] = useState(
+    () => new Animated.Value(shouldAnimate ? 0.9 : 1),
+  );
+  const [actionOpacity] = useState(
+    () => new Animated.Value(shouldAnimate ? 0 : 1),
+  );
+  const [actionTranslateY] = useState(
+    () => new Animated.Value(shouldAnimate ? 8 : 0),
+  );
 
   useEffect(() => {
     if (!shouldAnimate) return;
@@ -236,20 +201,6 @@ export function EmptyState({
             transform: [{ scale: iconScale }],
           }}
         >
-          {/* Pulse ring behind icon */}
-          <Animated.View
-            style={{
-              position: "absolute",
-              top: -4,
-              left: -4,
-              right: -4,
-              bottom: -4,
-              borderRadius: 20,
-              backgroundColor: resolvedIconColor,
-              opacity: pulseOpacity,
-              transform: [{ scale: pulseScale }],
-            }}
-          />
           <View
             className={cx(
               "items-center justify-center rounded-2xl bg-surface-muted border border-line",
@@ -326,7 +277,7 @@ export function EmptyState({
  */
 export function NoDataEmptyState({
   title = "Немає даних",
-  description = "Тут поки що порожньо. Додайте перший запис!",
+  description = "Тут поки що порожньо. Додай перший запис.",
   ...props
 }: Omit<EmptyStateProps, "title" | "description"> & {
   title?: string;
@@ -337,7 +288,7 @@ export function NoDataEmptyState({
 
 export function ErrorEmptyState({
   title = "Щось пішло не так",
-  description = "Спробуйте оновити сторінку або повторити пізніше.",
+  description = "Спробуй оновити сторінку або повторити пізніше.",
   onRetry,
   ...props
 }: Omit<EmptyStateProps, "title" | "description" | "action"> & {
@@ -367,11 +318,11 @@ export function SearchEmptyState({
 }) {
   return (
     <EmptyState
-      title="Нічого не знайдено"
+      title="Нічого не знайшов"
       description={
         query
-          ? `За запитом "${query}" нічого не знайдено. Спробуйте інший запит.`
-          : "Спробуйте змінити параметри пошуку."
+          ? `За запитом "${query}" нічого не знайдено. Спробуй інший запит.`
+          : "Спробуй змінити параметри пошуку."
       }
       action={
         onClear

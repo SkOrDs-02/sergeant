@@ -1,5 +1,9 @@
 import type { Request, RequestHandler, Response } from "express";
-import { getSessionUser } from "../auth.js";
+import { ACCOUNT_PENDING_DELETION_CODE } from "@sergeant/shared";
+import { getFreshSessionUser, getSessionUser } from "../auth.js";
+import { pool } from "../db.js";
+import { touchLastSeen } from "../lib/lastSeen.js";
+import { getAccountDeletionStatus } from "../modules/me/dataRights.js";
 import { logger } from "../obs/logger.js";
 import { authSessionLookupFailureTotal } from "../obs/metrics.js";
 
@@ -66,28 +70,114 @@ export const __testingResetSoftFailureCounter = (): void => {
  * embedding-атаки з cross-origin (закриває hardening-карту H8,
  * `docs/security/hardening/H8-corp-per-route.md`).
  */
-export function requireSession(): RequestHandler {
+export interface RequireSessionOptions {
+  /**
+   * Пропустити роут повз гейт вікна видалення. Ставиться рівно двом
+   * роутам: `POST /api/me/restore` і `GET /api/me/deletion-status`, бо
+   * інакше вони заблокували б самі себе і людина не змогла б ані побачити
+   * дату, ані скасувати видалення.
+   */
+  allowPendingDeletion?: boolean;
+}
+
+export function requireSession(
+  options: RequireSessionOptions = {},
+): RequestHandler {
+  return buildRequireSession(
+    (req) => getSessionUser(req),
+    "require",
+    options.allowPendingDeletion ?? false,
+  );
+}
+
+/**
+ * Як `requireSession()`, але сесія резолвиться через `getFreshSessionUser`
+ * — в обхід 5-хвилинного `session.cookieCache`, одним SELECT-ом на запит.
+ * Відкликана (logout з іншого пристрою, revoke після зміни пароля) або
+ * вкрадена сесія перестає проходити **негайно**, а не після кеш-вікна.
+ *
+ * Ціна — DB-lookup на кожен виклик, тому це не заміна `requireSession()`,
+ * а гейт для поверхонь, де вартість 5-хвилинного вікна вища за latency:
+ * повний експорт даних, видалення акаунта, підʼєднання/відʼєднання банку
+ * (аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md` § 7а).
+ *
+ * Семантика відповідей тотожна `requireSession()`: без валідної сесії у
+ * БД — `401 UNAUTHORIZED` (навіть якщо cookie-кеш ще «живий»); lookup
+ * впав — `next(err)` → 500. CORP=same-origin ставиться так само (H8).
+ */
+export function requireFreshSession(
+  options: RequireSessionOptions = {},
+): RequestHandler {
+  return buildRequireSession(
+    (req) => getFreshSessionUser(req),
+    "require_fresh",
+    options.allowPendingDeletion ?? false,
+  );
+}
+
+/**
+ * Резолвер передається як стрілка, а не як сам імпорт (`getSessionUser`):
+ * так binding з `../auth.js` читається лише на запиті, а не в момент
+ * побудови роутера. Це важливо для тестів, які мокають `../auth.js`
+ * частково (`vi.mock` без `getFreshSessionUser`) і викликають `createApp()`,
+ * не торкаючись fresh-роутів — інакше сам `createApp()` падав би на
+ * «No export is defined on the mock».
+ */
+function buildRequireSession(
+  resolve: (req: Request) => Promise<SessionUser>,
+  variant: "require" | "require_fresh",
+  allowPendingDeletion: boolean,
+): RequestHandler {
   return async (req, res, next) => {
     setSameOriginCorp(res);
     try {
-      const user = await getSessionUser(req);
+      const user = await resolve(req);
       if (!user) {
-        res
-          .status(401)
-          .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+        res.status(401).json({
+          error: "Потрібна автентифікація",
+          message: "Потрібна автентифікація",
+          code: "UNAUTHORIZED",
+        });
         return;
       }
+
+      // Гейт вікна видалення (спека user-deletion-grace-window, рішення 3).
+      // Позначений акаунт не пускається у застосунок ЗОВСІМ: інакше людина
+      // місяць вносила б дані в акаунт, приречений на видалення, а sync
+      // возив би їх на сервер. Замість банера — 403 і екран-блокер.
+      //
+      // Ціна — один PK-lookup на автентифікований запит. Свідомо: поки
+      // профілювання не покаже, що це помітно, це дешевше за перенесення
+      // колонки в `user.additionalFields` Better Auth, яке потягло б за
+      // собою Drizzle-схему auth-таблиць.
+      if (!allowPendingDeletion) {
+        const status = await getAccountDeletionStatus(pool, user.id);
+        if (status.pending) {
+          res.status(403).json({
+            error: "Акаунт у процесі видалення",
+            message: "Акаунт у процесі видалення",
+            code: ACCOUNT_PENDING_DELETION_CODE,
+            scheduledPurgeAt: status.scheduledPurgeAt,
+            requestId: (req as Request & { requestId?: string }).requestId,
+          });
+          return;
+        }
+      }
+
       (req as AuthedRequest).user = user;
+      // Throttled fire-and-forget — див. `lib/lastSeen.ts`. Стоїть тут, а не
+      // в кожному хендлері, бо «візит» = будь-який автентифікований запит.
+      touchLastSeen(user.id);
       next();
     } catch (err) {
       // M13 — distinguish "no session" (which is `user === null` above and
       // already returned 401) from "session lookup blew up". The latter
       // propagates to the error-handler as a 500, but we count it here
       // so dashboards see the same signal regardless of variant.
-      authSessionLookupFailureTotal.labels("require", "loud_503").inc();
+      authSessionLookupFailureTotal.labels(variant, "loud_503").inc();
       logger.warn({
         msg: "auth_session_lookup_failed",
-        variant: "require",
+        variant,
         err: err instanceof Error ? err.message : String(err),
       });
       next(err);
@@ -118,7 +208,22 @@ export function requireSessionSoft(): RequestHandler {
 
     if (user) {
       consecutiveSoftFailures = 0;
+      // Той самий гейт вікна видалення, що й у `requireSession`. Без нього
+      // push-роути лишились би єдиною діркою, крізь яку позначений акаунт
+      // ще щось робить на сервері.
+      const status = await getAccountDeletionStatus(pool, user.id);
+      if (status.pending) {
+        res.status(403).json({
+          error: "Акаунт у процесі видалення",
+          message: "Акаунт у процесі видалення",
+          code: ACCOUNT_PENDING_DELETION_CODE,
+          scheduledPurgeAt: status.scheduledPurgeAt,
+          requestId: (req as Request & { requestId?: string }).requestId,
+        });
+        return;
+      }
       (req as AuthedRequest).user = user;
+      touchLastSeen(user.id);
       next();
       return;
     }
@@ -126,9 +231,11 @@ export function requireSessionSoft(): RequestHandler {
     if (lookupError === undefined) {
       // True "no session" — preserve original 401 behaviour and do
       // not touch the failure counter.
-      res
-        .status(401)
-        .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+      res.status(401).json({
+        error: "Потрібна автентифікація",
+        message: "Потрібна автентифікація",
+        code: "UNAUTHORIZED",
+      });
       return;
     }
 
@@ -158,8 +265,10 @@ export function requireSessionSoft(): RequestHandler {
       return;
     }
 
-    res
-      .status(401)
-      .json({ error: "Потрібна автентифікація", code: "UNAUTHORIZED" });
+    res.status(401).json({
+      error: "Потрібна автентифікація",
+      message: "Потрібна автентифікація",
+      code: "UNAUTHORIZED",
+    });
   };
 }

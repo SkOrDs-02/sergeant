@@ -9,6 +9,8 @@
 
 import { memo } from "react";
 import { Pressable, Text, View } from "react-native";
+import { CreditCard } from "lucide-react-native";
+import { moduleColors } from "@sergeant/design-tokens/tokens";
 
 import {
   calcDebtRemaining,
@@ -21,18 +23,21 @@ import {
   type MonoAccount,
   type Transaction,
 } from "@sergeant/finyk-domain/domain";
+import { formatNumberUk } from "@sergeant/shared";
 
 // Mirrors `getAccountShortName` from `apps/web/src/modules/finyk/components/TxRow.tsx`.
 // The label is purely cosmetic — the domain layer treats accounts by id —
 // so we keep it local to the mobile row until the web helper is promoted
 // to the shared domain package.
+// F7 (анти-слоп 2026-09-01): без емодзі-префіксів — веб-хелпер їх не має,
+// а колір картки Mono і так не читається з юнікод-квадратика.
 const ACCOUNT_TYPE_LABEL: Record<string, string> = {
-  white: "⬜ Біла картка",
-  black: "🖤 Кредитна картка",
-  platinum: "💳 Platinum",
-  iron: "🪙 Iron",
-  yellow: "💛 Жовта",
-  fop: "🧾 ФОП",
+  white: "Біла картка",
+  black: "Кредитна картка",
+  platinum: "Platinum",
+  iron: "Iron",
+  yellow: "Жовта",
+  fop: "ФОП",
 };
 
 function getAccountLabel(account: MonoAccount): string {
@@ -44,11 +49,11 @@ function getAccountLabel(account: MonoAccount): string {
 }
 
 function fmtMajor(uah: number): string {
-  return uah.toLocaleString("uk-UA", { maximumFractionDigits: 2 });
+  return formatNumberUk(uah, { maximumFractionDigits: 2 });
 }
 
 function fmtKop(amountKop: number): string {
-  return (amountKop / 100).toLocaleString("uk-UA", {
+  return formatNumberUk(amountKop / 100, {
     minimumFractionDigits: 2,
   });
 }
@@ -72,7 +77,7 @@ export const AccountRow = memo(function AccountRow({
       testID={testID}
     >
       <View className="flex-row items-center gap-3 min-w-0 flex-1">
-        <Text className="text-xl">💳</Text>
+        <CreditCard size={20} color={moduleColors.finyk.primary} />
         <View className="min-w-0 flex-1">
           <Text className="text-sm font-medium text-fg" numberOfLines={1}>
             {getAccountLabel(account)}

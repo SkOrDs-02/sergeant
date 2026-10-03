@@ -1,0 +1,85 @@
+/**
+ * Тижневий стрік Фізрука — pure.
+ *
+ * AI-CONTEXT: канон [`fizruk.md §7`] дослівно: «стрік має бути
+ * тижневим/гнучким», бо щоденна логіка **карає за правильний відпочинок**, а
+ * відпочинок — частина тренувального циклу, не провал. `computeStreakDays`
+ * реалізує саме щоденну логіку: день без тренування розриває серію (крім
+ * однієї доби today-grace), а дата ще й локальна, не київська (за ADR-0078 це
+ * правильний годинник, тож тижневий стрік тепер на ньому ж). Founder називає це прямо помилкою для
+ * фітнесу ([напруга 1](../../../../../docs/work/specs/audits/product-knowledge-fizruk.md)).
+ *
+ * Тут — обіцяна семантика: **N тижнів поспіль із ≥X тренувань**, межі тижня
+ * київські (понеділок-перший, ISO 8601), як і в `computeWeeklyTotals`. Годинник — ПРИСТРОЮ
+ * (ADR-0078, рішення власника 2026-09-29): раніше межі були київські, тож
+ * тренування о 23:30 за пристроєм у UTC падало в інший тиждень, ніж денний
+ * стрік. Для київського пристрою нічого не змінюється.
+ *
+ * `computeStreakDays` лишається поруч для мобілки (поза скоупом за
+ * рішенням власника 2026-07-30) — щоденна логіка там незмінна, але
+ * одиниця та сама: обидві функції рахують лише повноцінні тренування
+ * (`isFullWorkout`, канон §8), інакше веб і мобілка розійшлись би ще й у
+ * тому, ЩО вважати тренуванням, а не лише в тому, як рахувати дні.
+ */
+
+import {
+  computeWeeklyStreakBreakdownFromInstants,
+  type WeeklyStreakBreakdown,
+} from "@sergeant/shared";
+
+import { isFullWorkout } from "../workouts/activityWeight.js";
+import type { DashboardWorkoutInput } from "./types.js";
+
+/**
+ * Скільки завершених тренувань робить тиждень «зарахованим».
+ *
+ * ⚠️ **Інженерний дефолт, не рішення founder-а.** Канон вимагає саме форму
+ * «N тижнів поспіль з ≥X тренувань», але X не називає, і в § «На роздум
+ * власнику» беклогу цього питання немає. Двійка обрана як мінімум, що ще
+ * означає тренувальний тиждень: одне тренування на тиждень — це радше
+ * випадковість, ніж режим, а трійка вже вимагає більшого від новачка.
+ * Ратифікація — окремий крок; зміна числа рухає видиме число і йде разом
+ * із бампом `METRICS_VERSION`.
+ */
+export const DEFAULT_WEEKLY_STREAK_TARGET = 2;
+
+export interface WeeklyStreakOptions {
+  /** Поріг «зарахованого» тижня. Дефолт — {@link DEFAULT_WEEKLY_STREAK_TARGET}. */
+  readonly targetPerWeek?: number | undefined;
+  readonly now?: Date | undefined;
+}
+
+/**
+ * Розібраний тижневий стрік.
+ *
+ * Прохід іде від поточного тижня пристрою назад по фактичних межах
+ * `deviceMondayStart` — не відніманням `7 × 24h`. DST-тиждень триває 167 або
+ * 169 годин, тож арифметика на мілісекундах зʼїхала б на годину і врешті
+ * перекинула б одне тренування в сусідній тиждень.
+ */
+export function computeWeeklyStreakBreakdown(
+  workouts: readonly DashboardWorkoutInput[] | null | undefined,
+  options: WeeklyStreakOptions = {},
+): WeeklyStreakBreakdown {
+  const { targetPerWeek = DEFAULT_WEEKLY_STREAK_TARGET, now = new Date() } =
+    options;
+  // Лише ПОВНОЦІННІ (канон §8, рішення власника 2026-09-15): легка
+  // активність — «+20 відтискань», десять хвилин розтяжки — лишається на дні
+  // в журналі, у відновленні й калоріях, але тиждень нею не «закривається».
+  // Інакше серія вимірювала б наявність будь-якого запису, а не режим.
+  return computeWeeklyStreakBreakdownFromInstants(
+    (Array.isArray(workouts) ? workouts : [])
+      .filter((w) => isFullWorkout(w))
+      .map((w) => w?.endedAt)
+      .filter((endedAt): endedAt is string => typeof endedAt === "string"),
+    { targetPerWeek, now, clock: "device" },
+  );
+}
+
+/** Лише число тижнів — тонка обгортка над {@link computeWeeklyStreakBreakdown}. */
+export function computeWeeklyStreakWeeks(
+  workouts: readonly DashboardWorkoutInput[] | null | undefined,
+  options: WeeklyStreakOptions = {},
+): number {
+  return computeWeeklyStreakBreakdown(workouts, options).weeks;
+}

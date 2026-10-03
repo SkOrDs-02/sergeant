@@ -3,12 +3,12 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
-import { fmtAmt } from "../../utils";
-import { CURRENCY } from "../../constants";
 import {
   formatStickyDayLabel,
   type computeDaySummary,
 } from "./transactionsLib";
+import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
+import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
 
 export interface TransactionDayHeaderProps {
@@ -16,6 +16,12 @@ export interface TransactionDayHeaderProps {
   collapsed: boolean;
   summary: ReturnType<typeof computeDaySummary>;
   showTotal: boolean;
+  /**
+   * Blur the day total behind the #9 privacy mask. The header itself is a
+   * collapse-toggle button, so the total uses the static (non-interactive)
+   * MaskedAmount variant to avoid nesting buttons.
+   */
+  masked?: boolean;
   onToggle: (key: string) => void;
 }
 
@@ -32,6 +38,7 @@ export function TransactionDayHeader({
   collapsed,
   summary,
   showTotal,
+  masked = false,
   onToggle,
 }: TransactionDayHeaderProps) {
   const label = formatStickyDayLabel(dayKey);
@@ -41,12 +48,36 @@ export function TransactionDayHeader({
       onClick={() => onToggle(dayKey)}
       aria-expanded={!collapsed}
       aria-label={`${collapsed ? messages.actions.expand : messages.actions.collapse} ${label}`}
-      className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-bg/95 backdrop-blur-sm border-b border-line text-style-caption text-text tracking-wide hover:bg-panelHi transition-colors"
+      className={cn(
+        "w-full flex items-center justify-between gap-2 px-3 py-2.5",
+        "pointer-coarse:min-h-[44px]",
+        // §4 polish: caption (12px, meta/timestamp role) read as "cheap" for
+        // what is effectively a section header — bumped to the label role
+        // (13–14px) + semibold for real visual weight. `tracking-wide` is
+        // dropped: wide letter-spacing on mixed-case day names (not
+        // uppercase) just looked sparse rather than deliberate.
+        "text-style-label font-semibold text-text transition-colors",
+        // A solid tint on the header band — distinct from the flush
+        // bg-panel rows beneath it — reads as "this label owns these
+        // rows" instead of blending into the first row's meta line.
+        // Суцільний `bg-panelHi`, не `/45`: напівпрозора заливка змішується
+        // з тим, що під нею, і втрачає частину відмінності від рядків. Hover
+        // — `bg-line/40` поверх, бо власний `hover:bg-panelHi` на суцільній
+        // смузі нічого б не міняв (той самий патерн у чипах хаба).
+        "bg-panelHi hover:bg-line/40",
+        // Роздільник під смугою завжди, а не лише в розгорнутому дні (було
+        // `!collapsed && border-b border-line/60`): згорнутий день — це смуга
+        // без власної межі, у світлій темі `panel`/`panelHi` дають їй лише
+        // 1.09 проти столу (`flat` за метрикою `surface`). Той самий
+        // `bg-panelHi border-b border-line`, що в смугах `WorkoutHistoryList`
+        // і `Measurements`; у темній смуга й так `ok` (1.21), лінія її не псує.
+        "border-b border-line",
+      )}
     >
       <span className="flex items-center gap-2 min-w-0">
         <svg
-          width="12"
-          height="12"
+          width="14"
+          height="14"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -54,7 +85,7 @@ export function TransactionDayHeader({
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden
-          className="shrink-0 motion-safe:transition-transform motion-safe:duration-150"
+          className="shrink-0 motion-safe:transition-transform motion-safe:duration-fast"
           style={{
             transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",
           }}
@@ -75,8 +106,20 @@ export function TransactionDayHeader({
               : "text-text",
           )}
         >
-          {/* fmtAmt сам додає `+`/`-` — не дублюємо префікс. */}
-          {fmtAmt(summary.total, CURRENCY.UAH)}
+          {/* `signed` дає `+` для додатних — знак несе сама сума, тож
+              префікс у розмітці не дублюємо (анти-слоп П4). */}
+          <MaskedAmount
+            masked={masked}
+            interactive={false}
+            label={messages.finyk.daySummaryLabel}
+          >
+            <Money
+              amount={summary.total / 100}
+              signed
+              kopecks
+              tone={summary.total > 0 ? "inherit" : "muted"}
+            />
+          </MaskedAmount>
         </span>
       )}
     </button>

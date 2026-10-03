@@ -11,8 +11,9 @@
  * Last validated: 2026-05-19
  */
 
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { formatNumberUk, STORAGE_KEYS } from "@sergeant/shared";
 import { getTxStatAmount } from "../../modules/finyk/utils";
+import { INTERNAL_TRANSFER_ID } from "@finyk/constants";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
@@ -40,7 +41,7 @@ export interface Insight {
   detail: string;
 }
 
-interface Workout {
+export interface Workout {
   startedAt: string;
   endedAt?: string;
 }
@@ -57,7 +58,7 @@ function safeLS<T>(key: string, fallback: T): T {
   return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
-function parseFizrukWorkouts(): Workout[] {
+export function parseFizrukWorkouts(): Workout[] {
   // Canonical workouts — SQLite warm cache (`fizruk_workouts_v1` tombstoned).
   // Cold cache (`refreshedAt === null`) = no data. The insights only read
   // `startedAt` / `endedAt`, so map the domain `Workout` to the loose shape.
@@ -75,7 +76,7 @@ const DOW_UK = [
   "Вівторок",
   "Середа",
   "Четвер",
-  "П'ятниця",
+  "Пʼятниця",
   "Субота",
 ];
 
@@ -95,12 +96,28 @@ const MONTHS_UK = [
 ];
 
 /**
+ * Пороги інсайтів. Експортовані, бо момент «поріг перетнуто» і рядок
+ * наближення (ADR-0096) мусять читати ті самі числа, а не власні копії.
+ */
+export const WORKOUT_INSIGHT_MIN_WORKOUTS = 20;
+export const HABIT_INSIGHT_MIN_COMPLETIONS = 28;
+export const HABIT_INSIGHT_MIN_WEEKS = 4;
+/** Найкращий місяць має з чим порівнюватись лише від двох місяців історії. */
+export const HABIT_INSIGHT_MIN_MONTHS = 2;
+/** Калорії в дні тренувань проти днів відпочинку (інсайт 4). */
+export const KCAL_INSIGHT_MIN_DAYS = 20;
+export const KCAL_INSIGHT_MIN_PER_GROUP = 7;
+export const KCAL_INSIGHT_MIN_DIFF = 50;
+
+/**
  * Insight 1: Best day-of-week for workouts.
  * Requires ≥ 20 completed workouts (satisfies both "4 weeks" and "20+ events").
  */
-function workoutDayInsight(): Insight | null {
-  const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
-  if (workouts.length < 20) return null;
+export function workoutDayInsight(
+  all: Workout[] = parseFizrukWorkouts(),
+): Insight | null {
+  const workouts = all.filter((w) => w.endedAt);
+  if (workouts.length < WORKOUT_INSIGHT_MIN_WORKOUTS) return null;
 
   const dowCount = Array<number>(7).fill(0);
   for (const w of workouts) {
@@ -141,7 +158,7 @@ function activeWeeksSpendingInsight(): Insight | null {
   );
   const transferIds = new Set<string>(
     Object.entries(txCategories)
-      .filter(([, v]) => v === "internal_transfer")
+      .filter(([, v]) => v === INTERNAL_TRANSFER_ID)
       .map(([k]) => k),
   );
   const txSplits = safeLS<Record<string, unknown>>(
@@ -202,7 +219,7 @@ function activeWeeksSpendingInsight(): Insight | null {
       iconName: "lightbulb",
       title: `У тижні з 3+ тренуваннями ти витрачаєш на ${diffPct}% менше`,
       stat: `−${diffPct}%`,
-      detail: `${Math.round(avgActive).toLocaleString("uk-UA")} ₴ vs ${Math.round(avgRest).toLocaleString("uk-UA")} ₴ витрат/тиж.`,
+      detail: `${formatNumberUk(Math.round(avgActive))} ₴ vs ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
     };
   }
 
@@ -212,39 +229,70 @@ function activeWeeksSpendingInsight(): Insight | null {
     iconName: "lightbulb",
     title: `У активні тижні ти витрачаєш на ${morePct}% більше`,
     stat: `+${morePct}%`,
-    detail: `${Math.round(avgActive).toLocaleString("uk-UA")} ₴ vs ${Math.round(avgRest).toLocaleString("uk-UA")} ₴ витрат/тиж.`,
+    detail: `${formatNumberUk(Math.round(avgActive))} ₴ vs ${formatNumberUk(Math.round(avgRest))} ₴ витрат/тиж.`,
   };
+}
+
+/** Накопичення до інсайту про найпослідовніший місяць. */
+export interface HabitInsightProgress {
+  completions: number;
+  weeks: number;
+  monthDone: Record<string, number>;
+}
+
+type RoutineStateSlice = Pick<
+  ReturnType<typeof loadRoutineState>,
+  "habits" | "completions"
+>;
+
+export function habitInsightProgress(
+  state: RoutineStateSlice,
+): HabitInsightProgress {
+  const habits = (state.habits || []).filter((h) => !h.archived);
+  const completions = state.completions || {};
+  const monthDone: Record<string, number> = {};
+  const weekKeys = new Set<string>();
+  let total = 0;
+
+  for (const h of habits) {
+    for (const dk of completions[h.id] || []) {
+      monthDone[dk.slice(0, 7)] = (monthDone[dk.slice(0, 7)] || 0) + 1;
+      total++;
+      const parsed = parseKyivDate(dk);
+      if (parsed) weekKeys.add(getKyivWeekStartKey(parsed));
+    }
+  }
+  return { completions: total, weeks: weekKeys.size, monthDone };
 }
 
 /**
  * Insight 3: Best habit-completion month in history.
  * Requires ≥ 28 total completions (≈ 4 weeks × 1 habit/day minimum)
  * AND ≥ 4 distinct ISO weeks with any completion.
+ *
+ * Стан приймається параметром, щоб момент «поріг перетнуто» міг спитати
+ * рушій про стан до і після запису, а не дублювати його умови.
  */
-function bestHabitMonthInsight(): Insight | null {
-  const state = loadRoutineState();
-
+export function bestHabitMonthInsight(
+  state: RoutineStateSlice = loadRoutineState(),
+): Insight | null {
   const habits = (state.habits || []).filter((h) => !h.archived);
-  const completions = state.completions || {};
   if (habits.length === 0) return null;
 
-  const monthDone: Record<string, number> = {};
-  const weekKeys = new Set<string>();
-  let totalCompletions = 0;
+  const {
+    completions: totalCompletions,
+    weeks,
+    monthDone,
+  } = habitInsightProgress(state);
 
-  for (const h of habits) {
-    for (const dk of completions[h.id] || []) {
-      monthDone[dk.slice(0, 7)] = (monthDone[dk.slice(0, 7)] || 0) + 1;
-      totalCompletions++;
-      const parsed = parseKyivDate(dk);
-      if (parsed) weekKeys.add(getKyivWeekStartKey(parsed));
-    }
-  }
-
-  if (totalCompletions < 28 || weekKeys.size < 4) return null;
+  if (
+    totalCompletions < HABIT_INSIGHT_MIN_COMPLETIONS ||
+    weeks < HABIT_INSIGHT_MIN_WEEKS
+  )
+    return null;
 
   const months = Object.keys(monthDone);
-  if (months.length < 2) return null;
+  if (months.length < HABIT_INSIGHT_MIN_MONTHS) return null;
 
   let bestMk: string | null = null;
   let bestPct = 0;
@@ -280,12 +328,17 @@ function bestHabitMonthInsight(): Insight | null {
  * Requires ≥ 20 total nutrition-logged days (satisfies "20+ events" spec threshold)
  * AND ≥ 7 days in each group (workout / rest).
  */
-function workoutKcalInsight(): Insight | null {
-  const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
-  const log = loadNutritionLog();
+type NutritionLogShape = ReturnType<typeof loadNutritionLog>;
 
+/** Дні з калоріями, розкладені на дні тренувань і дні відпочинку. */
+export function workoutKcalGroups(
+  all: Workout[],
+  log: NutritionLogShape,
+): { kcalWorkout: number[]; kcalRest: number[] } {
   const workoutDays = new Set<string>(
-    workouts.map((w) => getKyivDayKey(new Date(w.startedAt))),
+    all
+      .filter((w) => w.endedAt)
+      .map((w) => getKyivDayKey(new Date(w.startedAt))),
   );
 
   const kcalWorkout: number[] = [];
@@ -301,9 +354,26 @@ function workoutKcalInsight(): Insight | null {
       kcalRest.push(kcal);
     }
   }
+  return { kcalWorkout, kcalRest };
+}
 
-  if (kcalWorkout.length + kcalRest.length < 20) return null;
-  if (kcalWorkout.length < 7 || kcalRest.length < 7) return null;
+/**
+ * Дані приймаються параметрами з тієї ж причини, що й у
+ * `bestHabitMonthInsight`: момент «поріг перетнуто» питає рушій про стан
+ * до і після запису, а запис у сховище доїжджає асинхронно.
+ */
+export function workoutKcalInsight(
+  all: Workout[] = parseFizrukWorkouts(),
+  log: NutritionLogShape = loadNutritionLog(),
+): Insight | null {
+  const { kcalWorkout, kcalRest } = workoutKcalGroups(all, log);
+
+  if (kcalWorkout.length + kcalRest.length < KCAL_INSIGHT_MIN_DAYS) return null;
+  if (
+    kcalWorkout.length < KCAL_INSIGHT_MIN_PER_GROUP ||
+    kcalRest.length < KCAL_INSIGHT_MIN_PER_GROUP
+  )
+    return null;
 
   const avgWorkout = Math.round(
     kcalWorkout.reduce((s, k) => s + k, 0) / kcalWorkout.length,
@@ -313,7 +383,7 @@ function workoutKcalInsight(): Insight | null {
   );
 
   const diff = avgWorkout - avgRest;
-  if (Math.abs(diff) < 50) return null;
+  if (Math.abs(diff) < KCAL_INSIGHT_MIN_DIFF) return null;
 
   const sign = diff > 0 ? "+" : "";
   return {
@@ -321,10 +391,10 @@ function workoutKcalInsight(): Insight | null {
     iconName: "leaf",
     title:
       diff > 0
-        ? `У дні тренувань ти їси на ${diff.toLocaleString("uk-UA")} ккал більше`
-        : `У дні тренувань ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал менше`,
-    stat: `${sign}${diff.toLocaleString("uk-UA")} ккал`,
-    detail: `${avgWorkout.toLocaleString("uk-UA")} vs ${avgRest.toLocaleString("uk-UA")} ккал/день`,
+        ? `У дні тренувань ти їси на ${formatNumberUk(diff)} ккал більше`
+        : `У дні тренувань ти їси на ${formatNumberUk(Math.abs(diff))} ккал менше`,
+    stat: `${sign}${formatNumberUk(diff)} ккал`,
+    detail: `${formatNumberUk(avgWorkout)} vs ${formatNumberUk(avgRest)} ккал/день`,
   };
 }
 
@@ -404,10 +474,10 @@ function habitWeeksKcalInsight(): Insight | null {
     iconName: "activity",
     title:
       diff > 0
-        ? `У тижні з 70%+ звичок ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал більше`
-        : `У тижні з 70%+ звичок ти їси на ${Math.abs(diff).toLocaleString("uk-UA")} ккал менше`,
-    stat: `${sign}${diff.toLocaleString("uk-UA")} ккал`,
-    detail: `${avgKcalHigh.toLocaleString("uk-UA")} vs ${avgKcalLow.toLocaleString("uk-UA")} ккал/день`,
+        ? `У тижні з 70%+ звичок ти їси на ${formatNumberUk(Math.abs(diff))} ккал більше`
+        : `У тижні з 70%+ звичок ти їси на ${formatNumberUk(Math.abs(diff))} ккал менше`,
+    stat: `${sign}${formatNumberUk(diff)} ккал`,
+    detail: `${formatNumberUk(avgKcalHigh)} vs ${formatNumberUk(avgKcalLow)} ккал/день`,
   };
 }
 

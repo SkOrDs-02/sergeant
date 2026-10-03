@@ -6,9 +6,20 @@ vi.mock("../ai-memory/ingestQueue.js", () => ({
   enqueueMemoryIngest: vi.fn(async () => undefined),
 }));
 
+// Гейт згоди на дані про здоровʼя читає БД. За замовчуванням у цьому файлі
+// згода «є» (поведінка до 2026-09-29); сценарії без неї — у окремому
+// `describe` внизу, вони перемикають мок явно.
+const { resolveHealthConsentMock } = vi.hoisted(() => ({
+  resolveHealthConsentMock: vi.fn(),
+}));
+vi.mock("../../lib/healthConsent.js", () => ({
+  resolveHealthConsent: resolveHealthConsentMock,
+}));
+
 import { enqueueMemoryIngest as _enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import defaultHandler, {
   buildTemplateReport,
+  countDigestSignalModules,
   createWeeklyDigestHandler,
 } from "./weekly-digest.js";
 import type { WeeklyDigestHandlerOptions } from "./weekly-digest.js";
@@ -91,8 +102,20 @@ const validReport = {
   overallRecommendations: ["Підвищ дисципліну сну"],
 };
 
+// Модель відповіла з довгим тире в `comment`; до клієнта воно доходить
+// коротким (фільтр `replaceLongDash`, аудит анти-слопу P2-3).
+const deliveredReport = {
+  ...validReport,
+  finyk: {
+    ...validReport.finyk,
+    comment: "Топ-категорія – продукти, але без різких аномалій.",
+  },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
+  resolveHealthConsentMock.mockReset();
+  resolveHealthConsentMock.mockResolvedValue(true);
 });
 
 /**
@@ -136,6 +159,168 @@ describe("weekly-digest handler · validation", () => {
     await expect(handler(req, res)).rejects.toBeInstanceOf(ValidationError);
     expect(provider.calls).toHaveLength(0);
   });
+
+  // Контрактна трійка Hard Rule #3 для `metricsVersion` (ADR-0079 §3-§4):
+  // zod-схема ↔ серверний handler ↔ цей тест.
+  it("приймає metricsVersion і НЕ падає без нього (старіші бандли)", async () => {
+    const section = {
+      // habitCount:1 — реальний сигнал, щоб пройти поріг публікації (§6.2);
+      // habitsTracked/perHabit — легасі-поля поза схемою, тест перевіряє,
+      // що вони мовчки відкидаються, а не ламають парсинг.
+      routine: {
+        habitCount: 1,
+        habitsTracked: 1,
+        overallRate: 100,
+        perHabit: [],
+      },
+    };
+
+    // Зі штампом — так шле поточний бандл.
+    const withVersion = buildHandler();
+    await withVersion.handler(
+      asReq({
+        anthropicKey: "k",
+        body: { weekRange: "2026-W01", metricsVersion: 1, ...section },
+      }),
+      makeRes(),
+    );
+    expect(withVersion.provider.calls).toHaveLength(1);
+
+    // Без штампа — так шле PWA зі старим service-worker-ом. Поле опційне
+    // навмисно: інакше кожен незалогінений апдейт бандла давав би 400.
+    const withoutVersion = buildHandler();
+    await withoutVersion.handler(
+      asReq({
+        anthropicKey: "k",
+        body: { weekRange: "2026-W01", ...section },
+      }),
+      makeRes(),
+    );
+    expect(withoutVersion.provider.calls).toHaveLength(1);
+  });
+
+  it("ValidationError на некоректний metricsVersion", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: {
+        weekRange: "2026-W01",
+        metricsVersion: -1,
+        routine: { habitsTracked: 1, overallRate: 100, perHabit: [] },
+      },
+    });
+
+    await expect(handler(req, makeRes())).rejects.toBeInstanceOf(
+      ValidationError,
+    );
+    expect(provider.calls).toHaveLength(0);
+  });
+});
+
+/**
+ * Поріг публікації для тижневого дайджесту — канон hub-coach §6.2
+ * («краще мовчати, ніж шуміти») + Хвиля 4 / hub-coach § G2.
+ *
+ * До цього гейта `finyk` приїжджав з клієнта ЗАВЖДИ truthy (нулі замість
+ * `null` навіть без жодної транзакції), тож стара структурна перевірка
+ * `!sections.length` ніколи не спрацьовувала — дайджест генерувався навіть
+ * коли за весь тиждень не сталось нічого. Дзеркалить `coachSnapshotSignals`
+ * (`apps/web/src/core/insights/useCoachInsight.ts`), лише на серверному боці.
+ */
+describe("weekly-digest handler · поріг публікації (countDigestSignalModules)", () => {
+  it("нуль сигналів (усі модулі нульові) → ValidationError code=INSUFFICIENT_DATA, LLM не викликається", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: {
+        weekRange: "2026-W01",
+        finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        fizruk: { workoutsCount: 0, totalVolume: 0 },
+        nutrition: { avgKcal: 0, targetKcal: 2000, daysLogged: 0 },
+        routine: { overallRate: 0, habitCount: 0 },
+      },
+    });
+
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+      code: "INSUFFICIENT_DATA",
+    });
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it("жодна секція взагалі не передана → та сама ValidationError, LLM не викликається", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({ anthropicKey: "k", body: { weekRange: "2026-W01" } });
+
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ValidationError",
+      code: "INSUFFICIENT_DATA",
+    });
+    expect(provider.calls).toHaveLength(0);
+  });
+
+  it.each([
+    ["finyk.txCount", { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } }],
+    ["fizruk.workoutsCount", { fizruk: { workoutsCount: 1, totalVolume: 0 } }],
+    [
+      "nutrition.daysLogged",
+      { nutrition: { avgKcal: 0, targetKcal: 2000, daysLogged: 1 } },
+    ],
+    ["routine.habitCount", { routine: { overallRate: 0, habitCount: 1 } }],
+  ])(
+    "рівно один сигнал (%s) — цього достатньо, гейт пропускає",
+    async (_label, section) => {
+      const { handler, provider } = buildHandler();
+      const req = asReq({
+        anthropicKey: "k",
+        body: { weekRange: "2026-W01", ...section },
+      });
+
+      await handler(req, makeRes());
+      expect(provider.calls).toHaveLength(1);
+    },
+  );
+
+  describe("countDigestSignalModules (чиста функція)", () => {
+    it("усі модулі відсутні або нульові → 0", () => {
+      expect(countDigestSignalModules({})).toBe(0);
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+          fizruk: { workoutsCount: 0, totalVolume: 0 },
+          nutrition: { avgKcal: 0, targetKcal: 2000, daysLogged: 0 },
+          routine: { overallRate: 0, habitCount: 0 },
+        }),
+      ).toBe(0);
+    });
+
+    it("finyk рахується за txCount, а не за наявністю обʼєкта", () => {
+      // `finyk` приїжджає truthy завжди (агрегатор повертає нулі навіть
+      // без транзакцій) — перевірка «поле присутнє» дала б хибний сигнал
+      // кожному користувачу без жодної транзакції за тиждень.
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        }),
+      ).toBe(0);
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 0, totalIncome: 0, txCount: 3 },
+        }),
+      ).toBe(1);
+    });
+
+    it("кілька модулів із даними складаються", () => {
+      expect(
+        countDigestSignalModules({
+          finyk: { totalSpent: 100, totalIncome: 0, txCount: 5 },
+          fizruk: { workoutsCount: 2, totalVolume: 1800 },
+          nutrition: { avgKcal: 1900, targetKcal: 2000, daysLogged: 4 },
+          routine: { overallRate: 71, habitCount: 3 },
+        }),
+      ).toBe(4);
+    });
+  });
 });
 
 describe("weekly-digest handler · prompt assembly", () => {
@@ -169,17 +354,31 @@ describe("weekly-digest handler · prompt assembly", () => {
     expect(opts.timeoutMs).toBe(45_000);
     expect(opts.system).toContain("ФІНАНСИ (2026-W01)");
     expect(opts.system).toContain("Витрати: 1200 грн");
-    expect(opts.system).toContain("Місячний бюджет: 8000 грн");
+    expect(opts.system).toContain(
+      "Місячний бюджет: 8000 грн, тижнева частка 1842 грн, у межах",
+    );
     expect(opts.system).toContain("Продукти: 600 грн");
-    expect(opts.system).toContain("Транзакцій: 42");
+    expect(opts.system).toContain("Операцій: 42");
     expect(res.statusCode).toBe(200);
+  });
+
+  it("finyk: витрати понад тижневу частку бюджету — вердикт із сумою перевищення", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 2000, monthlyBudget: 8000, txCount: 3 } },
+    });
+    await handler(req, makeRes());
+    expect(provider.calls[0]!.system).toContain(
+      "тижнева частка 1842 грн, перевищено на 158 грн",
+    );
   });
 
   it("finyk без monthlyBudget — рядок 'не встановлено'; пусті topCategories — 'Немає даних'", async () => {
     const { handler, provider } = buildHandler();
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
     await handler(req, res);
@@ -210,7 +409,7 @@ describe("weekly-digest handler · prompt assembly", () => {
     await handler(req, res);
     const sys = provider.calls[0]!.system!;
     expect(sys).toContain("Тренувань завершено: 4");
-    expect(sys).toContain("Загальний об'єм: 5400 кг");
+    expect(sys).toContain("Загальний обʼєм: 5400 кг");
     expect(sys).toContain("Squat: 2200 кг");
     expect(sys).toContain("Стан відновлення: Помірне");
   });
@@ -221,7 +420,9 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { nutrition: { avgKcal: 1500, targetKcal: 2000 } },
+          body: {
+            nutrition: { avgKcal: 1500, targetKcal: 2000, daysLogged: 4 },
+          },
         }),
         makeRes(),
       );
@@ -232,7 +433,9 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { nutrition: { avgKcal: 2600, targetKcal: 2000 } },
+          body: {
+            nutrition: { avgKcal: 2600, targetKcal: 2000, daysLogged: 4 },
+          },
         }),
         makeRes(),
       );
@@ -243,7 +446,9 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { nutrition: { avgKcal: 2010, targetKcal: 2000 } },
+          body: {
+            nutrition: { avgKcal: 2010, targetKcal: 2000, daysLogged: 4 },
+          },
         }),
         makeRes(),
       );
@@ -257,7 +462,13 @@ describe("weekly-digest handler · prompt assembly", () => {
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { routine: { overallRate: 0, habitCount: 0 } },
+          // routine саме по собі — нуль сигналу (0 активних звичок), тож
+          // додаємо реальну finyk-транзакцію лише щоб пройти поріг
+          // публікації (§6.2) і дійти до перевірки routine-форматування.
+          body: {
+            finyk: { totalSpent: 10, totalIncome: 0, txCount: 1 },
+            routine: { overallRate: 0, habitCount: 0 },
+          },
         }),
         makeRes(),
       );
@@ -287,6 +498,43 @@ describe("weekly-digest handler · prompt assembly", () => {
       expect(sys).toContain("Йога: 60% (3/5 днів)");
     }
   });
+
+  it("рендерить zero/default fallback-и для всіх секцій коли optional поля відсутні", async () => {
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({
+        anthropicKey: "k",
+        body: {
+          finyk: {},
+          fizruk: {},
+          // Один залогований день — єдиний сигнал у запиті, щоб пройти
+          // поріг публікації (§6.2) і дійти до перевірки zero-fallback-ів
+          // усіх ІНШИХ полів nutrition + решти секцій.
+          nutrition: { daysLogged: 1 },
+          routine: {},
+        },
+      }),
+      makeRes(),
+    );
+
+    const sys = provider.calls[0]!.system!;
+    expect(sys).toContain("Витрати: 0 грн | Надходження: 0 грн");
+    expect(sys).toContain("Операцій: 0");
+    expect(sys).toContain("Тренувань завершено: 0");
+    expect(sys).toContain("Загальний обʼєм: 0 кг");
+    expect(sys).toContain("Стан відновлення: Немає даних");
+    // Ціль тижня береться з журналу періодів, тож для тижня без запису в
+    // ньому (усі тижні до міграції 087) вона невідома — і дайджест каже це
+    // прямо, замість підставляти поточну ціль заднім числом. Рішення
+    // власника 2026-09-11, розбір — `2026-09-11-founder-ux-review-round2.md`
+    // § «Стан перевірок».
+    expect(sys).toContain(
+      "Середньодобово: 0 ккал (ціль невідома, без вердикту: історична ціль невідома)",
+    );
+    expect(sys).toContain("Днів із записами: 1 з 7");
+    expect(sys).toContain("Загальний відсоток: 0%");
+    expect(sys).toContain("Активних звичок: 0");
+  });
 });
 
 describe("weekly-digest handler · response & errors (strict mode)", () => {
@@ -296,7 +544,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
       anthropicKey: "k",
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 },
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -305,7 +553,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -318,13 +566,13 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     });
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
     await expect(handler(req, res)).rejects.toMatchObject({
       name: "ExternalServiceError",
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
@@ -338,7 +586,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     });
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -354,7 +602,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     const { handler } = buildHandler(okResult("просто текст без JSON"));
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -369,7 +617,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     const { handler } = buildHandler(okResult('before { "x": 1 '));
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -383,7 +631,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     const { handler } = buildHandler(okResult(""));
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
     await expect(handler(req, res)).rejects.toMatchObject({
@@ -404,7 +652,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -421,7 +669,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
 
@@ -447,11 +695,27 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
     );
     const req = asReq({
       anthropicKey: "k",
-      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
     });
     const res = makeRes();
     await handler(req, res);
     expect(res.statusCode).toBe(200);
+  });
+
+  it("balanced braces with invalid JSON token → ANTHROPIC_PARSE_ERROR", async () => {
+    const { handler } = buildHandler(
+      okResult('prefix { "finyk": { "summary": bad-token } } suffix'),
+    );
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
+    });
+
+    await expect(handler(req, makeRes())).rejects.toMatchObject({
+      name: "ExternalServiceError",
+      status: 502,
+      code: "ANTHROPIC_PARSE_ERROR",
+    });
   });
 });
 
@@ -514,7 +778,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     const body = res.body as { report: { finyk: { summary: string } | null } };
     // Це template-report: специфічна фраза присутня саме у stub-summary.
     expect(body.report.finyk?.summary).toContain("Витрати 100 грн");
-    expect(body.report.finyk?.summary).toContain("3 транзакцій");
+    expect(body.report.finyk?.summary).toContain("3 операцій");
   });
 
   it("fallback-on-error: parse-error з fallbackOnError=true → 200 template-report", async () => {
@@ -579,7 +843,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     await handler(
       asReq({
         anthropicKey: "k",
-        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 } },
+        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 } },
       }),
       makeRes(),
     );
@@ -616,7 +880,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     await handler(
       asReq({
         anthropicKey: "k",
-        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 } },
+        body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 } },
       }),
       makeRes(),
     );
@@ -635,7 +899,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       anthropicKey: "k",
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 },
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -648,7 +912,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
     const req = asReq({
       anthropicKey: "k",
       user: { id: "user_42" },
-      body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 } },
+      body: { finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 } },
     });
     const res = makeRes();
     await handler(req, res);
@@ -662,7 +926,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       user: { id: "user_42" },
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 1, totalIncome: 1, txCount: 0 },
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
         nutrition: { avgKcal: 2000, targetKcal: 2000 },
       },
     });
@@ -683,6 +947,34 @@ describe("weekly-digest handler · memory ingest hook", () => {
     expect(payload.metadata.sections.nutrition).toBe(true);
     expect(payload.metadata.sections.routine).toBe(false);
     expect(payload.metadata.usedFallback).toBe(false);
+  });
+
+  it("W3: weekKey стає sourceRef, generatedAt — dedupeSalt (остання генерація тижня перемагає)", async () => {
+    const { handler } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      user: { id: "user_42" },
+      body: {
+        weekRange: "25 серп. – 31 серп.",
+        weekKey: "2026-08-25",
+        finyk: { totalSpent: 1, totalIncome: 1, txCount: 1 },
+      },
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(enqueueMemoryIngest).toHaveBeenCalledTimes(1);
+    const payload = enqueueMemoryIngest.mock.calls[0]![0];
+    // Канонічний ключ тижня, а не локалізований display-рядок:
+    expect(payload.sourceRef).toBe("2026-08-25");
+    // Кожна генерація — окремий BullMQ-job: без солі jobId-дедуп мовчки
+    // відкидав повторну генерацію, і в памʼяті застигав перший знімок тижня.
+    expect(payload.dedupeSalt).toBe(
+      (res.body as { generatedAt: string }).generatedAt,
+    );
+    // Людський заголовок контенту й metadata лишаються на weekRange.
+    expect(payload.content).toContain("25 серп. – 31 серп.");
+    expect(payload.metadata.weekRange).toBe("25 серп. – 31 серп.");
   });
 
   it("PR-25: на fallback-template memory теж enqueue-иться з usedFallback=true", async () => {
@@ -738,7 +1030,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       user: { id: "u" },
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -760,7 +1052,7 @@ describe("weekly-digest handler · memory ingest hook", () => {
       user: { id: "u" },
       body: {
         weekRange: "2026-W01",
-        finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 },
+        finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 },
       },
     });
     const res = makeRes();
@@ -793,7 +1085,7 @@ const AI_RESPONSE_FIXTURE = `Ось аналіз тижня:
     "recommendations": ["Переглянь підписки", "Збережи профіцит у запасний фонд"]
   },
   "fizruk": {
-    "summary": "4 тренування за тиждень, загальний об'єм 6 500 кг.",
+    "summary": "4 тренування за тиждень, загальний обʼєм 6 500 кг.",
     "comment": "Прогрес стабільний. Відновлення достатнє.",
     "recommendations": ["Додай мобільну розминку", "Зафіксуй рекорди Squat"]
   },
@@ -916,7 +1208,7 @@ describe("buildTemplateReport (PR-25)", () => {
     });
     expect(r.finyk).not.toBeNull();
     expect(r.finyk!.summary).toBe(
-      "Витрати 1500 грн, надходження 3000 грн, 12 транзакцій.",
+      "Витрати 1500 грн, надходження 3000 грн, 12 операцій.",
     );
     expect(r.finyk!.recommendations).toEqual([]);
   });
@@ -951,6 +1243,23 @@ describe("buildTemplateReport (PR-25)", () => {
     expect(r.routine!.summary).toBe("5 звичок, загальний відсоток 92%.");
   });
 
+  it("підставляє нулі у template-report коли секції є, але числа відсутні", () => {
+    const r = buildTemplateReport({
+      finyk: {},
+      fizruk: {},
+      nutrition: {},
+      routine: {},
+    });
+    expect(r.finyk!.summary).toBe(
+      "Витрати 0 грн, надходження 0 грн, 0 операцій.",
+    );
+    expect(r.fizruk!.summary).toBe("0 тренувань, обсяг 0 кг.");
+    expect(r.nutrition!.summary).toBe(
+      "Середньодобово 0 ккал з 0/7 днів записів.",
+    );
+    expect(r.routine!.summary).toBe("0 звичок, загальний відсоток 0%.");
+  });
+
   it("дотримується WeeklyDigestReportSchema (валідний shape)", async () => {
     const { WeeklyDigestReportSchema } = await import("../../http/schemas.js");
     const r = buildTemplateReport({
@@ -981,7 +1290,7 @@ describe("weekly-digest default export", () => {
  * Anthropic failures as ExternalServiceError → errorHandler → 5xx.
  */
 describe("weekly-digest · prod regression — provider failure must not return 200", () => {
-  it("provider error → ExternalServiceError ANTHROPIC_ERROR (safe UA message, status=503)", async () => {
+  it("provider error → ExternalServiceError ANTHROPIC_ERROR (safe UA message, status=502)", async () => {
     const failProvider = makeFakeProvider("anthropic", () => ({
       ok: false as const,
       error: "Your credit balance is too low",
@@ -999,13 +1308,13 @@ describe("weekly-digest · prod regression — provider failure must not return 
       handler(
         asReq({
           anthropicKey: "k",
-          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
         }),
         res,
       ),
     ).rejects.toMatchObject({
       name: "ExternalServiceError",
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
       // Safe UA message — raw provider text must NOT appear in the message
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
@@ -1030,7 +1339,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       handler(
         asReq({
           anthropicKey: "k",
-          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
         }),
         makeRes(),
       ),
@@ -1060,7 +1369,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
       await handler(
         asReq({
           anthropicKey: "k",
-          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 0 } },
+          body: { finyk: { totalSpent: 0, totalIncome: 0, txCount: 1 } },
         }),
         makeRes(),
       );
@@ -1094,7 +1403,80 @@ describe("weekly-digest · prod regression — provider failure must not return 
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+});
+
+describe("weekly-digest handler · гейт згоди на дані про здоровʼя (GDPR Art. 9)", () => {
+  // Рішення власника 2026-09-29: без збереженої `healthDataConsent` секції
+  // Фізрука й Харчування не потрапляють ні в промпт, ні в памʼять AI.
+  const body = {
+    weekKey: "2026-01-05",
+    weekRange: "2026-W01",
+    finyk: { totalSpent: 500, totalIncome: 2000, txCount: 5 },
+    routine: { habitCount: 3, overallRate: 70 },
+    fizruk: { workoutsCount: 4, totalVolume: 9999 },
+    nutrition: { avgKcal: 2345, daysLogged: 5 },
+  };
+
+  it("без згоди: у промпті немає тренувань і калорій, решта є", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+
+    const call = provider.calls[0]!;
+    const prompt = `${call.system ?? ""}\n${JSON.stringify(call.messages)}`;
+    expect(prompt).not.toContain("9999");
+    expect(prompt).not.toContain("2345");
+    expect(prompt).toContain("500");
+  });
+
+  it("без згоди: памʼять AI не отримує health-секцій і прапорця healthData", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+    await vi.waitFor(() => expect(enqueueMemoryIngest).toHaveBeenCalled());
+    const payload = enqueueMemoryIngest.mock.calls[0]![0];
+    expect(payload.metadata.sections.fizruk).toBe(false);
+    expect(payload.metadata.sections.nutrition).toBe(false);
+    expect(payload.healthData).toBe(false);
+  });
+
+  it("зі згодою: health-секції в промпті, як раніше", async () => {
+    const { handler, provider } = buildHandler();
+    await handler(
+      asReq({ anthropicKey: "k", user: { id: "user_42" }, body }),
+      makeRes(),
+    );
+    const call = provider.calls[0]!;
+    const prompt = `${call.system ?? ""}\n${JSON.stringify(call.messages)}`;
+    expect(prompt).toContain("9999");
+    expect(prompt).toContain("2345");
+  });
+
+  it("без згоди, коли health давав рівно той сигнал, якого бракує: 403 із запитом згоди, не «замало даних»", async () => {
+    resolveHealthConsentMock.mockResolvedValue(false);
+    const { handler, provider } = buildHandler();
+    await expect(
+      handler(
+        asReq({
+          anthropicKey: "k",
+          user: { id: "user_42" },
+          body: { weekKey: "2026-01-05", fizruk: { workoutsCount: 4 } },
+        }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      status: 403,
+      code: "HEALTH_CONSENT_REQUIRED",
+    });
+    expect(provider.calls).toHaveLength(0);
   });
 });

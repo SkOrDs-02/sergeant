@@ -5,6 +5,8 @@
 // поруч і додаються до assistant-message як metadata. Якщо tool
 // невідомий мапперу — повертаємо `null`, і UI лишає текстовий fallback.
 
+import { isRiskyTool as isRiskyToolShared } from "@sergeant/shared";
+
 import type { ChatAction } from "./chatActions/types";
 import { moduleFor } from "./hubChatActionCardsHelpers";
 import { iconFor } from "./hubChatActionCardsHelpers";
@@ -12,11 +14,7 @@ import { titleFor } from "./hubChatActionCardsHelpers";
 import { summaryFor } from "./hubChatActionCardsSummary";
 
 export type ChatActionCardModule =
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "hub";
+  "finyk" | "fizruk" | "routine" | "nutrition" | "hub";
 
 export type ChatActionCardStatus = "completed" | "failed";
 
@@ -65,17 +63,6 @@ const QUERY_TOOLS: ReadonlySet<string> = new Set([
   "nutrition_averages",
 ]);
 
-/** Tools, які класифіковані як ризикові за специфікацією §4. */
-const RISKY_TOOLS: ReadonlySet<string> = new Set([
-  "batch_categorize",
-  "delete_transaction",
-  "hide_transaction",
-  "forget",
-  "archive_habit",
-  "import_monobank_range",
-  "delete_workout",
-]);
-
 /**
  * Розширений сабсет tool names, для яких v1 малює картку.
  * Ціль: покрити всі tools з action cards.
@@ -98,6 +85,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "split_transaction",
   "recurring_expense",
   "export_report",
+  "import_monobank_range",
   // Routine
   "mark_habit_done",
   "create_habit",
@@ -116,6 +104,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "add_recipe",
   "add_to_shopping_list",
   "consume_from_pantry",
+  "clear_pantry",
   "set_daily_plan",
   "suggest_meal",
   "copy_meal_from_date",
@@ -128,6 +117,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "log_measurement",
   "log_wellbeing",
   "log_weight",
+  "add_program_day",
   "suggest_workout",
   "copy_workout",
   "compare_progress",
@@ -141,6 +131,7 @@ const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "category_breakdown",
   "detect_anomalies",
   "habit_trend",
+  "get_daily_series",
   // Utility
   "calculate_1rm",
   "convert_units",
@@ -165,13 +156,18 @@ interface CardInput {
   /** Текстовий результат `executeAction` — fallback summary. */
   result: string;
   /**
-   * Ознака помилки: якщо result починається з «Помилка» / «Невідома дія»
-   * — статус failed.
+   * Ознака помилки: якщо result починається з «Помилка» / «Не вдалося» /
+   * «Невідома дія» — статус failed.
    */
   failed?: boolean;
 }
 
-const FAILURE_RE = /^(Помилка|Невідома дія)/;
+const FAILURE_RE = /^(Помилка|Не вдалося|Невідома дія)/;
+
+/** Чи результат виконавця — помилка (для гейта «✓» у `useChatSend`). */
+export function isFailureResult(result: string): boolean {
+  return FAILURE_RE.test(result);
+}
 
 function deriveStatus(
   result: string,
@@ -194,11 +190,11 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   const summary = summaryFor(input.name, inputObj, input.result);
   const module = moduleFor(input.name);
   const icon = iconFor(input.name);
-  const risky = RISKY_TOOLS.has(input.name);
+  const risky = isRiskyToolShared(input.name);
   const data = QUERY_TOOLS.has(input.name);
 
   return {
-    id: `card_${input.name}_${Math.random().toString(36).slice(2, 10)}`,
+    id: `card_${input.name}_${crypto.randomUUID()}`,
     toolName: input.name,
     status,
     title,
@@ -210,8 +206,14 @@ export function buildActionCard(input: CardInput): ChatActionCard | null {
   };
 }
 
+/**
+ * Реекспорт спільного гейта. Локальний набір жив тут із власною копією
+ * списку і встиг розійтися і з каталогом, і з мобільним клієнтом (деталі —
+ * докстрінг `toolRisk.ts`). Тримаємо тонку обгортку, щоб не переписувати
+ * десятки call-site-ів.
+ */
 export function isRiskyTool(name: string): boolean {
-  return RISKY_TOOLS.has(name);
+  return isRiskyToolShared(name);
 }
 
 /**

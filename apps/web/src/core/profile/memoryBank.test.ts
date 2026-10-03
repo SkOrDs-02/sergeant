@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   PROFILE_KEY,
   CATEGORY_META,
@@ -12,6 +12,10 @@ import {
   upsertMemoryFact,
   removeMemoryEntry,
   makeMemoryId,
+  buildMemoryImportPreview,
+  isKnownMemoryCategory,
+  toWritableMemoryCategory,
+  subscribeMemoryEntries,
 } from "./memoryBank";
 import type { MemoryEntry } from "./types";
 
@@ -146,6 +150,47 @@ describe("upsertMemoryFact", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0]!.category).toBe("preference");
   });
+
+  it("зводить невідому категорію в other на запису", () => {
+    const { entry } = upsertMemoryFact([], "Біжить марафон", "спорт");
+    expect(entry.category).toBe("other");
+  });
+
+  it("зберігає всі канонічні категорії як є", () => {
+    for (const category of Object.keys(CATEGORY_META)) {
+      const { entry } = upsertMemoryFact([], `факт ${category}`, category);
+      expect(entry.category).toBe(category);
+    }
+  });
+});
+
+describe("isKnownMemoryCategory", () => {
+  it("канонічний набір = ключі CATEGORY_META", () => {
+    for (const category of Object.keys(CATEGORY_META)) {
+      expect(isKnownMemoryCategory(category)).toBe(true);
+    }
+    expect(isKnownMemoryCategory("спорт")).toBe(false);
+    // Захист від прототипних ключів: `"toString" in CATEGORY_META` було б true.
+    expect(isKnownMemoryCategory("toString")).toBe(false);
+  });
+});
+
+describe("toWritableMemoryCategory", () => {
+  it("нормалізує регістр і пробіли перед звіркою з канонічним набором", () => {
+    expect(toWritableMemoryCategory("  DIET ")).toBe("diet");
+  });
+
+  it("порожнє / відсутнє значення → other", () => {
+    expect(toWritableMemoryCategory()).toBe("other");
+    expect(toWritableMemoryCategory("   ")).toBe("other");
+  });
+
+  // Читання лишається толерантним: легасі-записи з доенумної доби
+  // (`category` була optional) не переписуємо під користувачем.
+  it("не чіпає легасі-категорію на читанні", () => {
+    const entry = normalizeMemoryEntry({ fact: "a", category: "спорт" });
+    expect(entry!.category).toBe("спорт");
+  });
 });
 
 describe("removeMemoryEntry", () => {
@@ -169,6 +214,33 @@ describe("removeMemoryEntry", () => {
   });
 });
 
+describe("buildMemoryImportPreview", () => {
+  it("counts valid, invalid, duplicate and new JSON entries without overwriting", () => {
+    const existing: MemoryEntry[] = [
+      {
+        id: "m1",
+        fact: "Любить каву",
+        category: "preference",
+        createdAt: "x",
+      },
+    ];
+
+    const preview = buildMemoryImportPreview(existing, [
+      { id: "m1", fact: "Інший текст", category: "other" },
+      { id: "m2", fact: "любить каву", category: "other" },
+      { id: "m3", fact: "Хоче бігати", category: "goal" },
+      { id: "m4", fact: "Хоче бігати", category: "goal" },
+      { nope: true },
+    ]);
+
+    expect(preview.validCount).toBe(4);
+    expect(preview.invalidCount).toBe(1);
+    expect(preview.duplicateCount).toBe(3);
+    expect(preview.newEntries).toHaveLength(1);
+    expect(preview.newEntries[0]?.fact).toBe("Хоче бігати");
+  });
+});
+
 describe("makeMemoryId", () => {
   it("produces unique non-empty ids", () => {
     expect(makeMemoryId()).not.toBe(makeMemoryId());
@@ -179,6 +251,48 @@ describe("makeMemoryId", () => {
 describe("CATEGORY_META", () => {
   it("has labels for known categories", () => {
     expect(CATEGORY_META["goal"]?.label).toBe("Цілі");
-    expect(CATEGORY_META["other"]?.emoji).toBe("📝");
+    // 2026-08-03: `emoji` → `icon` з іменем із атласу дизайн-системи.
+    expect(CATEGORY_META["other"]?.icon).toBe("pen");
+  });
+});
+
+/**
+ * Банк пишуть дві незалежні поверхні: екран «Памʼять ШІ» і виконавці
+ * чат-інструментів (`remember` / `forget`). Чат відкривається оверлеєм
+ * ПОВЕРХ екрана, тож екран не перемонтовується — без нотифікації його
+ * `useState`-знімок лишався таким, яким був до розмови. `window.storage`
+ * тут не рятує: у вкладці, яка сама зробила запис, він не спрацьовує.
+ */
+describe("subscribeMemoryEntries", () => {
+  it("сповіщає підписників після успішного запису", () => {
+    const seen: MemoryEntry[][] = [];
+    const off = subscribeMemoryEntries((entries) => seen.push(entries));
+
+    const next = upsertMemoryFact([], "Не любить чорнослив", "preference");
+    writeMemoryEntries(next.entries);
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.[0]?.fact).toBe("Не любить чорнослив");
+    off();
+  });
+
+  it("відписка справді відписує", () => {
+    const fn = vi.fn();
+    subscribeMemoryEntries(fn)();
+    writeMemoryEntries([]);
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it("виняток в одному підписнику не глушить решту й не ховає запис", () => {
+    const ok = vi.fn();
+    const offBad = subscribeMemoryEntries(() => {
+      throw new Error("підписник упав");
+    });
+    const offOk = subscribeMemoryEntries(ok);
+
+    expect(() => writeMemoryEntries([])).not.toThrow();
+    expect(ok).toHaveBeenCalledTimes(1);
+    offBad();
+    offOk();
   });
 });

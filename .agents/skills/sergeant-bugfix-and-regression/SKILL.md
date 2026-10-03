@@ -1,8 +1,8 @@
 ---
 name: sergeant-bugfix-and-regression
-description: Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue — even if the fix seems obvious, always reproduce first; UA: фіксиш баг, регресію, флакі-тест, зламаний деплой.
-lang: en
-lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` (shipped via #1848) so UA-only chat routing still resolves the right SKILL. Tracked under initiative 0009 PR 1.2b.
+description: "Use when fixing a Sergeant bug, regression, flaky test, broken deploy, or production issue — even if the fix seems obvious, always reproduce first; UA: фіксиш баг, регресію, флакі-тест, зламаний деплой."
+lang: uk
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Bugfix і регресії в Sergeant
@@ -63,15 +63,19 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 - регресія серіалізатора чи роута → `sergeant-server-api`
 - schema- або deploy-крах → `sergeant-data-and-migrations`
 - mobile-only поведінка → `sergeant-mobile-expo`
-- chat-tool fail → `sergeant-hubchat`
+- chat-tool fail → `sergeant-module-ai`
 
 ## Verification gate
 
-Перед claim «fixed» або «done» — обовʼязковий Verification gate з [`sergeant-review-and-merge`](../sergeant-review-and-merge/SKILL.md), секція «Verification gate». Без свіжого evidence (command + вивід) completion claim заборонений.
+Перед claim «fixed» або «done» — канонічний гейт [`sergeant-verify-before-done`](../sergeant-verify-before-done/SKILL.md). Без свіжого evidence (command + вивід + exit code) completion claim заборонений.
+
+Для багфіксу вирішальний рядок його таблиці — **«Bug fixed» доводиться повторним запуском початкового симптому**, а не тим, що код змінився; а **«Regression covered» — переходом red→green**: тест має падати ДО фіксу і проходити ПІСЛЯ. Зелений тест, який ніколи не бачили червоним, нічого не доводить.
+
+Коли фікс іде в PR — додатково `sergeant-review-and-merge` § Verification gate (merge-state, evidence у PR-коментарі).
 
 ## Playbooks
 
-- `docs/00-start/playbooks/hotfix-prod-regression.md` — triage і фікс production-регресій.
-- `docs/00-start/playbooks/declare-incident.md` — коли баг доростає до рівня інциденту.
-- `docs/00-start/playbooks/write-postmortem.md` — postmortem постфактум.
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/hotfix-prod-regression.md` — triage і фікс production-регресій.
+- `docs/start/instructions/declare-incident.md` — коли баг доростає до рівня інциденту.
+- `docs/start/instructions/write-postmortem.md` — postmortem постфактум.
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

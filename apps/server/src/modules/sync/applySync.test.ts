@@ -3,21 +3,13 @@ import type { Mock } from "vitest";
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../http/schemas.js";
 import {
-  applyFinykAssets,
-  applyFinykBudgets,
-  applyFinykCustomCategories,
-  applyFinykDebts,
   applyFinykHiddenAccounts,
   applyFinykHiddenTransactions,
-  applyFinykManualExpenses,
-  applyFinykMonoDebtLinks,
   applyFinykNetworthHistory,
+  applyFinykPerRowBlob,
+  applyFinykPerTxJsonbArray,
   applyFinykPrefs,
-  applyFinykReceivables,
-  applyFinykSubscriptions,
   applyFinykTxCategories,
-  applyFinykTxFilters,
-  applyFinykTxSplits,
 } from "./finyk/applySync.js";
 import {
   applyFizrukCustomExercises,
@@ -86,6 +78,28 @@ function sql(client: ClientStub, callIndex = 1): string {
   return String(client.query.mock.calls[callIndex]?.[0] ?? "");
 }
 
+// The sync registry (syncV2.ts) binds these tables to the shared per-row-blob /
+// per-tx-jsonb implementation curried by table name. Test-local bindings keep
+// the assertions below readable without production delegating wrappers.
+const applyFinykBudgets = (c: PoolClient, o: SyncV2Op, u: string, t: Date) =>
+  applyFinykPerRowBlob(c, o, u, t, "finyk_budgets");
+const applyFinykTxSplits = (c: PoolClient, o: SyncV2Op, u: string, t: Date) =>
+  applyFinykPerTxJsonbArray(c, o, u, t, "finyk_tx_splits", "splits_json");
+const applyFinykMonoDebtLinks = (
+  c: PoolClient,
+  o: SyncV2Op,
+  u: string,
+  t: Date,
+) =>
+  applyFinykPerTxJsonbArray(
+    c,
+    o,
+    u,
+    t,
+    "finyk_mono_debt_links",
+    "debt_ids_json",
+  );
+
 describe("finyk applySync", () => {
   it("applies hidden-account inserts after user and LWW validation", async () => {
     const client = makeClient([]);
@@ -152,7 +166,7 @@ describe("finyk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFinykHiddenAccounts(
@@ -233,21 +247,21 @@ describe("finyk applySync", () => {
     expect(sql(updateClient)).toContain("UPDATE finyk_budgets");
   });
 
-  it("routes all finyk per-row blob wrappers through the shared insert path", async () => {
-    const wrappers = [
-      [applyFinykSubscriptions, "finyk_subscriptions"],
-      [applyFinykAssets, "finyk_assets"],
-      [applyFinykDebts, "finyk_debts"],
-      [applyFinykReceivables, "finyk_receivables"],
-      [applyFinykCustomCategories, "finyk_custom_categories"],
-      [applyFinykManualExpenses, "finyk_manual_expenses"],
-      [applyFinykTxFilters, "finyk_tx_filters"],
+  it("routes all finyk per-row blob tables through the shared insert path", async () => {
+    const tables = [
+      "finyk_subscriptions",
+      "finyk_assets",
+      "finyk_debts",
+      "finyk_receivables",
+      "finyk_custom_categories",
+      "finyk_manual_expenses",
+      "finyk_tx_filters",
     ] as const;
 
-    for (const [apply, tableName] of wrappers) {
+    for (const tableName of tables) {
       const client = makeClient([]);
       await expect(
-        apply(
+        applyFinykPerRowBlob(
           client,
           op({
             id: `${tableName}-1`,
@@ -256,6 +270,7 @@ describe("finyk applySync", () => {
           }),
           USER_ID,
           CLIENT_TS,
+          tableName,
         ),
       ).resolves.toEqual({ status: "applied" });
       expect(sql(client)).toContain(`INSERT INTO ${tableName}`);
@@ -315,7 +330,7 @@ describe("finyk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFinykBudgets(
@@ -737,7 +752,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionMeals(
@@ -867,14 +882,28 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
+    // Міграція 129: комора ключується парою `(user_id, id)`, і lookup звужений
+    // по користувачу — чужий рядок із тим самим `id` сюди просто не долітає,
+    // тож `fk_violation` тут більше не буває. Стан «у базі є `pantry-1`
+    // іншого юзера» на боці цього хендлера невідрізнимий від «нічого немає»,
+    // і саме це нам і потрібно: раніше кожен, крім першого власника id `home`,
+    // діставав відмову і лишався без синку (SERGEANT-WEB-T).
+    const foreignIdClient = makeClient([]);
     await expect(
       applyNutritionPantries(
-        makeClient([existing({ user_id: "other-user" })]),
+        foreignIdClient,
         op({ id: "pantry-1", user_id: USER_ID }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(String(foreignIdClient.query.mock.calls[0]?.[0] ?? "")).toContain(
+      "user_id = $2",
+    );
+    expect(foreignIdClient.query.mock.calls[0]?.[1]).toEqual([
+      "pantry-1",
+      USER_ID,
+    ]);
 
     await expect(
       applyNutritionPantries(
@@ -892,7 +921,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionPantries(
@@ -978,14 +1007,26 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "user_id_mismatch" });
 
+    // Міграція 129, дзеркало кейсу для комори вище. Для позицій колізія id
+    // навіть імовірніша: id — це `<pantryId>::<index>::<name>`, тож у двох
+    // користувачів із коморою `home` і однаковим продуктом на тій самій
+    // позиції він збігається посимвольно.
+    const foreignItemClient = makeClient([]);
     await expect(
       applyNutritionPantryItems(
-        makeClient([existing({ user_id: "other-user" })]),
+        foreignItemClient,
         op({ id: "item-1", user_id: USER_ID, pantry_id: "p-1" }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "fk_violation" });
+    ).resolves.toEqual({ status: "applied" });
+    expect(String(foreignItemClient.query.mock.calls[0]?.[0] ?? "")).toContain(
+      "user_id = $2",
+    );
+    expect(foreignItemClient.query.mock.calls[0]?.[1]).toEqual([
+      "item-1",
+      USER_ID,
+    ]);
 
     await expect(
       applyNutritionPantryItems(
@@ -1003,7 +1044,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionPantryItems(
@@ -1068,7 +1109,12 @@ describe("nutrition applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
     expect(sql(client)).toContain("INSERT INTO nutrition_pantry_items");
-    expect(client.query.mock.calls[1]?.[1]?.[7]).toBe(0);
+    // `sort_order` — 9-й параметр INSERT-у: id, pantry_id, user_id, name,
+    // qty, unit, notes, sources, sort_order. Індекс зсунувся на одиницю
+    // разом із колонкою `sources` (міграція 130); додаси ще колонку перед
+    // ним — зсунеться знову.
+    const insertParams = client.query.mock.calls[1]?.[1];
+    expect(insertParams?.[8]).toBe(0);
 
     const updateClient = makeClient([existing()]);
     await expect(
@@ -1191,7 +1237,7 @@ describe("nutrition applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyNutritionRecipes(
@@ -1330,7 +1376,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukWorkouts(
@@ -1481,7 +1527,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukItems(
@@ -1657,7 +1703,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukSets(
@@ -1812,7 +1858,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukCustomExercises(
@@ -1949,7 +1995,7 @@ describe("fizruk applySync", () => {
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "applied" });
 
     await expect(
       applyFizrukMeasurements(
@@ -2122,9 +2168,28 @@ describe("routine applySync", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
     expect(sql(deleteClient)).toContain("SET deleted_at = $1");
+
+    // Воскресіння tombstone-у новішим чекіном (audit E-1): детермінований
+    // PK `habitId:dateKey` робить повторний чекін того самого дня легітимним.
+    const reviveClient = makeClient([existing({ deleted_at: OLD_TS })]);
+    await expect(
+      applyRoutineEntries(
+        reviveClient,
+        op({
+          id: "entry-1",
+          user_id: USER_ID,
+          name: "Drink water",
+          completed_at: CLIENT_TS.toISOString(),
+          deleted_at: null,
+        }),
+        USER_ID,
+        CLIENT_TS,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+    expect(sql(reviveClient)).toContain("deleted_at = $4");
   });
 
-  it("rejects routine entry conflicts, tombstones, and bad dates", async () => {
+  it("rejects routine entry conflicts and bad dates", async () => {
     await expect(
       applyRoutineEntries(
         makeClient([existing({ user_id: "other-user" })]),
@@ -2143,14 +2208,15 @@ describe("routine applySync", () => {
       ),
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
+    // Tombstone + СТАРІШИЙ/рівний clientTs і далі ріжеться LWW-guard-ом.
     await expect(
       applyRoutineEntries(
-        makeClient([existing({ deleted_at: OLD_TS })]),
+        makeClient([existing({ updated_at: NEWER_TS, deleted_at: NEWER_TS })]),
         op({ id: "entry-1", user_id: USER_ID, name: "Walk" }),
         USER_ID,
         CLIENT_TS,
       ),
-    ).resolves.toEqual({ status: "rejected", reason: "tombstoned" });
+    ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
     await expect(
       applyRoutineEntries(
@@ -2220,14 +2286,14 @@ describe("routine applySync", () => {
   it("applies routine streak upsert/delete and rejects stale aggregate writes", async () => {
     await expect(
       applyRoutineStreaks(
-        makeClient([{ max_ts: NEWER_TS }]),
+        makeClient([], [{ max_ts: NEWER_TS }]),
         op({ user_id: USER_ID, current_streak: 3 }),
         USER_ID,
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "rejected", reason: "lww_conflict" });
 
-    const upsertClient = makeClient([{ max_ts: OLD_TS }]);
+    const upsertClient = makeClient([], [{ max_ts: OLD_TS }]);
     await expect(
       applyRoutineStreaks(
         upsertClient,
@@ -2241,15 +2307,18 @@ describe("routine applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(upsertClient)).toContain("INSERT INTO routine_streaks");
-    expect(upsertClient.query.mock.calls[1]?.[1]).toEqual([
+    expect(sql(upsertClient, 2)).toContain("INSERT INTO routine_streaks");
+    expect(upsertClient.query.mock.calls[0]?.[0]).toContain(
+      "pg_advisory_xact_lock",
+    );
+    expect(upsertClient.query.mock.calls[2]?.[1]).toEqual([
       USER_ID,
       3,
       0,
       CLIENT_TS,
     ]);
 
-    const deleteClient = makeClient([{ max_ts: null }]);
+    const deleteClient = makeClient([], [{ max_ts: null }]);
     await expect(
       applyRoutineStreaks(
         deleteClient,
@@ -2258,7 +2327,7 @@ describe("routine applySync", () => {
         CLIENT_TS,
       ),
     ).resolves.toEqual({ status: "applied" });
-    expect(sql(deleteClient)).toContain("DELETE FROM routine_streaks");
+    expect(sql(deleteClient, 2)).toContain("DELETE FROM routine_streaks");
   });
 
   it("validates routine streak ownership and date fields", async () => {
@@ -2277,7 +2346,7 @@ describe("routine applySync", () => {
 
     await expect(
       applyRoutineStreaks(
-        makeClient([{ max_ts: null }]),
+        makeClient([], [{ max_ts: null }]),
         op({ user_id: USER_ID, last_completed_at: "invalid" }),
         USER_ID,
         CLIENT_TS,

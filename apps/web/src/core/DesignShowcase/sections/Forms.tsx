@@ -15,12 +15,12 @@ import {
   Sec,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Inputs use focus-visible only (Hard Rule #14)
+const SAMPLE_USAGE = `// Inputs use focus-visible only (gated by check-design-conventions)
 <FormField label="Email" htmlFor="email">
   <Input id="email" variant="default" size="md" placeholder="hi@example.com" />
 </FormField>
 
-// Submit button defaults to brand-strong + text-white (HR #9)
+// Submit button defaults to brand-strong + text-white (-strong companion)
 <Button size="md" variant="primary">Зберегти</Button>`;
 
 export function FormsSection() {
@@ -30,10 +30,11 @@ export function FormsSection() {
       title="Форми"
       intro={
         <>
-          Кнопки + Input / Textarea / Select / Switch. Контракт фокусу —
-          <code>focus-visible:</code> (HR #14, lint{" "}
-          <code>prefer-focus-visible</code>); цілі ≥44×44 px (HR stays-touchable
-          convention).
+          Кнопки + Input / Textarea / Select / Switch. Контракт фокусу:{" "}
+          <code>focus-visible:</code>, і це гейтить{" "}
+          <code>check-design-conventions</code>. Цілі ≥44×44 px під{" "}
+          <code>pointer: coarse</code>, Playwright-лейн{" "}
+          <code>Mobile UI audit</code> у CI.
         </>
       }
     >
@@ -41,7 +42,7 @@ export function FormsSection() {
         <ButtonsMatrix />
       </Group>
 
-      <Group label="Input — variants × sizes">
+      <Group label="Input: variants × sizes">
         <div className="space-y-3">
           {(["default", "filled", "ghost"] as const).map((variant) => (
             <div key={variant} className="grid grid-cols-3 gap-2">
@@ -59,7 +60,7 @@ export function FormsSection() {
         </div>
       </Group>
 
-      <Group label="Input — стан error / success">
+      <Group label="Input: стан error / success">
         <div className="grid grid-cols-2 gap-2 max-w-sm">
           <Input variant="default" size="md" error placeholder="error" />
           <Input variant="default" size="md" success placeholder="success" />
@@ -81,14 +82,14 @@ export function FormsSection() {
           <FormField
             label="Email"
             htmlFor="email"
-            error="Невірний формат email"
+            error="Неправильний формат email"
           >
             <Input id="email" placeholder="hi@example.com" error />
           </FormField>
         </div>
       </Group>
 
-      <Group label="Switch — стани">
+      <Group label="Switch: стани">
         <SwitchDemo />
       </Group>
 
@@ -121,13 +122,12 @@ export function FormsSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #14", hint: "focus-visible only, no :focus" },
-          { label: "HR #9", hint: "-strong fill behind text-white" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "prefer-focus-visible" },
-          { label: "prefer-data-state" },
+          {
+            label: "check-design-conventions",
+            hint: "`focus:` заборонено, лише focus-visible: / focus-within:",
+          },
         ]}
       />
     </Sec>
@@ -140,9 +140,7 @@ function ButtonsMatrix() {
       {(["primary", "secondary", "ghost", "danger", "success"] as const).map(
         (variant) => (
           <div key={variant} className="flex flex-wrap items-end gap-3">
-            <span className="w-20 text-2xs text-subtle font-mono">
-              {variant}
-            </span>
+            <span className="w-20 text-style-code text-subtle">{variant}</span>
             {(["sm", "md", "lg"] as const).map((size) => (
               <Button key={size} variant={variant} size={size}>
                 {variant}
@@ -166,15 +164,15 @@ function SwitchDemo() {
   const [b, setB] = useState(false);
   return (
     <div className="flex items-center gap-6 flex-wrap">
-      <div className="flex items-center gap-2 text-sm text-text">
+      <div className="flex items-center gap-2 text-style-label text-text">
         <Switch checked={a} onChange={setA} label="Notifications" />
         <span>Notifications</span>
       </div>
-      <div className="flex items-center gap-2 text-sm text-text">
+      <div className="flex items-center gap-2 text-style-label text-text">
         <Switch checked={b} onChange={setB} label="Sound effects" />
         <span>Sound effects</span>
       </div>
-      <div className="flex items-center gap-2 text-sm text-muted">
+      <div className="flex items-center gap-2 text-style-label text-muted">
         <Switch checked={false} onChange={() => {}} disabled label="Disabled" />
         <span>Disabled</span>
       </div>
