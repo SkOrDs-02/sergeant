@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { meApi, type UserPreferences } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
@@ -12,8 +12,10 @@ import {
   ToggleRow,
 } from "./SettingsPrimitives";
 import {
+  getAnalyticsConsent,
   hydrateAnalyticsConsent,
   setAnalyticsConsent,
+  subscribeAnalyticsConsent,
 } from "../observability/analyticsConsent";
 import {
   classifyPreferenceLoadFailure,
@@ -73,6 +75,13 @@ export function PrivacySection() {
   );
   const [savingPreference, setSavingPreference] =
     useState<PreferenceKey | null>(null);
+  // Локальна згода на аналітику — для гостя (див. гілку `loadFailure ===
+  // "auth"` нижче): сервера в нього немає, а рішення живе на пристрої.
+  const localAnalyticsConsent = useSyncExternalStore(
+    subscribeAnalyticsConsent,
+    getAnalyticsConsent,
+    getAnalyticsConsent,
+  );
 
   // L-3: винесено окремо, щоб стан помилки (див. рендер нижче) міг
   // пропонувати справжній retry, а не глухий кут (finding #9).
@@ -97,10 +106,10 @@ export function PrivacySection() {
         const failure = classifyPreferenceLoadFailure(err);
         setPreferencesLoaded(false);
         setLoadFailure(failure);
+        // Гість (`auth`) — не збій: його гілка рендеру нижче без тексту
+        // помилки й без «Спробувати ще».
         setPreferencesError(
-          failure === "auth"
-            ? "Увійди в акаунт, щоб керувати налаштуваннями згоди на сервері."
-            : PREFERENCE_LOAD_FAILURE_COPY[failure],
+          failure === "auth" ? null : PREFERENCE_LOAD_FAILURE_COPY[failure],
         );
       });
     return () => {
@@ -214,28 +223,39 @@ export function PrivacySection() {
               </p>
             ) : null}
           </>
-        ) : preferencesError ? (
-          // Огляд 2026-09-04: для ГОСТЯ це не збій, а очікуваний стан —
-          // «увійди, і зможеш керувати» — тож фарбувати його danger і
-          // оголошувати як alert означало показувати демо зламаним.
-          // Помилка ЗБЕРЕЖЕННЯ (гілка вище) лишається червоною: там
-          // людина щойно щось натиснула, і тумблер відкотився.
-          // Finding #9: справжній retry, а не глухий кут.
-          //
-          // PR-S2 (2026-09-14): спокійна подача правильна саме для гостя, а
-          // не для будь-якого збою. Офлайн чи 500 — це таки поломка, і
-          // людина має почути її як поломку, інакше вона шукатиме проблему
-          // в собі. Тому подача тепер іде за ПРИЧИНОЮ, а не за самим
-          // фактом помилки.
-          <div className="flex flex-col items-start gap-2">
-            <p
-              className={
-                loadFailure === "auth"
-                  ? "text-style-caption text-muted"
-                  : "text-style-caption text-danger-strong"
+        ) : loadFailure === "auth" ? (
+          // priv-18 (аудит 2026-10-01): гість теж дає згоду на аналітику
+          // (крок онбордингу, банер), тож і відкликати її має змогу тут,
+          // «так само легко, як дати» (GDPR ст. 7(3)); крок і банер обіцяють
+          // «Передумати можна в Налаштуваннях». Серверних записів немає:
+          // рішення лишається на пристрої з позначкою `pendingServerSync`, і
+          // після входу `useAnalyticsConsentBoot` віддасть його акаунту.
+          // «Спробувати ще» тут марне — повторний запит дасть той самий 401.
+          <>
+            <ToggleRow
+              label="Аналітика продукту"
+              description="Допомагає бачити, де інтерфейс незручний або ламається. Вибір зберігається на цьому пристрої, а після входу піде в акаунт."
+              checked={localAnalyticsConsent}
+              onChange={(checked) =>
+                setAnalyticsConsent(checked, { pendingServerSync: true })
               }
-              role={loadFailure === "auth" ? "status" : "alert"}
+            />
+            <p
+              className="text-style-body text-subtle leading-relaxed"
+              role="status"
             >
+              Памʼять для Сержанта і дані про здоровʼя зберігаються в акаунті.
+              Керувати ними можна після входу.
+            </p>
+          </>
+        ) : preferencesError ? (
+          // Збій завантаження, що НЕ є «ти гість» (гість — гілка вище): офлайн
+          // чи 500 — це таки поломка, і людина має почути її як поломку (PR-S2,
+          // 2026-09-14: подача іде за ПРИЧИНОЮ). Помилка ЗБЕРЕЖЕННЯ (гілка ще
+          // вище) теж червона: тумблер щойно відкотився.
+          // Finding #9: справжній retry, а не глухий кут.
+          <div className="flex flex-col items-start gap-2">
+            <p className="text-style-caption text-danger-strong" role="alert">
               {preferencesError}
             </p>
             <Button

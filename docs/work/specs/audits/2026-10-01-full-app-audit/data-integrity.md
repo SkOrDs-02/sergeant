@@ -3769,7 +3769,7 @@ Read-only psql: zz_audit_junk містить 3 рядки rejected/table_not_all
 
 ### `data-49` [medium] Рішення про згоду на аналітику не зберігається: банер повертається після кожного перезавантаження, а «Дозволити» гостя не доходить на сервер
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-priv-18-data-49-analytics-consent
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: observability (analyticsConsent)
 - **Де:** apps/web/src/core/observability/analyticsConsent.ts:79,118; apps/web/src/shared/lib/storage/storage.ts:242-318
 - **Першопричина:** analyticsConsent читає рішення один раз при імпорті модуля, ще до bootstrapKvStore(), тобто з LS-фолбека, а persistDecision пише через safeWriteLS у SQLite warm-cache. Ключ у localStorage так і не з'являється, тож після reload рішення не видно.
