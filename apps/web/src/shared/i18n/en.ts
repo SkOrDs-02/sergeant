@@ -459,6 +459,7 @@ export const messagesEn: Partial<{
       changeTitle: "Change PIN",
       confirmTitle: "Confirm PIN",
       confirmSubtitle: "Enter your PIN again to confirm",
+      checking: "Checking app lock…",
       unlockTitle: "Enter PIN",
       unlockSubtitle: "Enter your PIN to unlock",
       pinMismatch: "PINs don't match. Try again.",

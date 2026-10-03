@@ -12,6 +12,7 @@
 // Baseline captured 2026-09-16: 198 findings across 83 files.
 // 2026-09-29: TrialBanner.tsx fixed and dropped (82 files).
 // 2026-09-30: HubInsightsBlock.tsx no longer floats a promise (81 files).
+// 2026-10-03: useAppLock.ts: усі проміси мають .catch (80 files).
 export const floatingPromisesBaseline = [
   "apps/mobile/src/components/ui/ConfirmDialog.tsx",
   "apps/mobile/src/components/ui/SwipeToAction.tsx",
@@ -62,7 +63,6 @@ export const floatingPromisesBaseline = [
   "apps/web/src/core/profile/ProfilePage.tsx",
   "apps/web/src/core/profile/SessionsSection.tsx",
   "apps/web/src/core/security/AppLock.tsx",
-  "apps/web/src/core/security/useAppLock.ts",
   "apps/web/src/core/settings/FinykWebhookServiceSection.tsx",
   "apps/web/src/core/settings/NutritionSection.tsx",
   "apps/web/src/core/settings/PlanSection.tsx",

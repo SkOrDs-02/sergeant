@@ -1,6 +1,6 @@
 # SPEC: локальна база в OPFS через Worker
 
-> **Last touched:** 2026-09-17 by @claude (Status → Implemented: усі стадії 0–3.2 ✅, дефолт перемкнуто 2026-09-15). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (§ 2.2: застаріле «читають після boot-у», priv-03); 2026-09-17 by @claude (Status → Implemented: усі стадії 0–3.2 ✅, дефолт перемкнуто 2026-09-15). **Next review:** 2026-12-16.
 > **Status:** Implemented — доказ у коді: `apps/web/src/core/db/sqliteWorker.ts`, `sqliteWorkerClient.ts`, `opfsProbe.ts` / `opfsProbe.worker.ts` (+ тести поруч: `sqliteWorkerClient.test.ts`, `sqliteWorker.guards.test.ts`, `__tests__/sqlite.workerBackend.test.ts`). Таблиця § Стадії — 12/12 ✅. **Residual:** генератор `bodyWeightBootstrap.ts` солить id значенням `userId` без перевірки на спільну ідентичність (стадія 2.4); прибирання старого kvvfs-сховища після доведеного переїзду (§ «Що вже зроблено», абзац «Борг, що лишається відкритим»).
 
 ## Проблема
@@ -154,7 +154,7 @@ localStorage має жорстку стелю близько 5 МБ у Safari. �
 
 **Причина — прапорець пишеться не туди, звідки читається.**
 
-`hub_flags_v1` лише ВИГЛЯДАЄ як localStorage-ключ. `typedStore` ходить через `webKVStore`, а `resolveStore()` після boot-у віддає SQLite-таблицю `kv_store` (`getActiveSqliteKvStore()`), і лише до boot-у — сирий localStorage. Для будь-якого звичайного прапорця це непомітно: його і пишуть, і читають після boot-у, тобто в одному місці.
+`hub_flags_v1` лише ВИГЛЯДАЄ як localStorage-ключ. `typedStore` ходить через `webKVStore`, а `resolveStore()` після boot-у віддає SQLite-таблицю `kv_store` (`getActiveSqliteKvStore()`), і лише до boot-у — сирий localStorage. Для будь-якого звичайного прапорця це було непомітно, поки читання йшли після boot-у. **Застаріло (priv-03, 2026-10-03):** `mountApp()` стоїть ДО `bootstrapKvStore()`, тож `useFlag` на першому рендері читає ще порожній LS, а `typedStore` колись кешував це читання назавжди (так губився `app-lock-enabled`). Тепер `typedStore` не кешує читання до буту, а `main.tsx` після буту викликає `reloadAllTypedStores()` (перечитування + переприв'язка `onChange`); прапорець, що вирішує поведінку ДО буту, усе одно мусить мати незалежну від нього перевірку (як PIN-блокування — за `hasPinSet`).
 
 `storage_sqlite_worker` — перший прапорець, який вирішує, **яку базу відкривати**. Його читає `openWorkerBackedDb` у момент відкриття, коли бази ще нема за визначенням. Виходить розрив:
 
