@@ -35,7 +35,7 @@ import {
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { titleForPath } from "./appPaths";
+import { STATUS_PATH, isLegalRoutePath, titleForPath } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { useHubNavigation } from "../hooks/useHubNavigation";
@@ -148,12 +148,12 @@ const PendingDeletionScreen = lazy(() =>
 );
 
 /**
- * Ліниво з тієї ж причини: банер потрібен лише під час збою `me`, а в
+ * Ліниво з тієї ж причини: екран потрібен лише під час збою `me`, а в
  * eager-бюджеті кожен кілобайт на рахунку.
  */
-const AuthUnavailableBanner = lazy(() =>
-  import("./AuthUnavailableBanner").then((mod) => ({
-    default: mod.AuthUnavailableBanner,
+const AuthUnavailableScreen = lazy(() =>
+  import("./AuthUnavailableScreen").then((mod) => ({
+    default: mod.AuthUnavailableScreen,
   })),
 );
 
@@ -166,6 +166,7 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // гейтом `requireSession` (403 `account_pending_deletion`).
   const pendingDeletion = usePendingDeletion();
   const { logout, serverUnavailable, refresh } = useAuth();
+  const { pathname } = useLocation();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
   // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
   // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
@@ -206,6 +207,24 @@ function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Збій `me` на пристрої залогіненого користувача: застосунок не рендеримо
+  // взагалі. Банера поверх мало: `useLocalUserId` тут `null` (запис у модулі
+  // мовчки губиться), а App Lock шукає PIN не у слоті власника і не вмикається,
+  // тож модулі показали б дані з persisted-кешу. Див. `AuthUnavailableScreen`.
+  // Публічні сторінки (юридичні тексти, статус) даних не показують і лишаються
+  // доступними.
+  if (
+    serverUnavailable &&
+    !isLegalRoutePath(pathname) &&
+    pathname !== STATUS_PATH
+  ) {
+    return (
+      <Suspense fallback={null}>
+        <AuthUnavailableScreen onRetry={() => void refresh()} />
+      </Suspense>
+    );
+  }
+
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route
@@ -213,11 +232,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
           keyboard/SR users jump straight to the page's <main id="main">.
           Module/Hub shells no longer render their own (would duplicate). */}
       <SkipLink />
-      {serverUnavailable && (
-        <Suspense fallback={null}>
-          <AuthUnavailableBanner onRetry={() => void refresh()} />
-        </Suspense>
-      )}
       <AppLock
         state={appLock.state}
         onUnlock={appLock.unlock}

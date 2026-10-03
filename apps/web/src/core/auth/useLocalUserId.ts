@@ -23,6 +23,13 @@
  * Handing out the anonymous id while the session is still in flight
  * would land an authenticated user's first writes in the anonymous SQLite partition
  * (`sergeant-anon.db`), which `setSqliteUser()` then swaps away from.
+ *
+ * Те саме під час збою `me` на пристрої залогіненого користувача
+ * (`serverUnavailable`): id невідомий, тож `null`. Щоб це не губило записи
+ * мовчки (немає dual-write контексту — `sqliteWriter` робить `if (!ctx)
+ * return`), оболонка в цьому стані не рендерить застосунок взагалі:
+ * `RootLayout` → `AuthUnavailableScreen`. Не знімай той гейт, не підмінивши
+ * тут id власника (і тоді ж перевір App Lock, який шукає PIN за `user?.id`).
  */
 
 import { useAnonymousDataMigrationReady } from "../durability/AnonymousDataMigrationProvider";

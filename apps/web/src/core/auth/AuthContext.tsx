@@ -366,6 +366,10 @@ interface AuthContextValue {
    * залогіненому користувачу: `status` лишається `loading`, нічого не
    * стирається, `me` перезапитується з відступом. Анонімному пристрою тримати
    * нічого, тож там прапорець `false`, а `status` — `unauthenticated`.
+   *
+   * Споживач ОБОВʼЯЗКОВО гейтить застосунок: `user` тут `null`, тож
+   * `useLocalUserId` дає `null` (записи модулів губляться), а App Lock не
+   * знаходить PIN власника. `RootLayout` показує `AuthUnavailableScreen`.
    */
   serverUnavailable: boolean;
   /**

@@ -42,6 +42,8 @@ export const messagesEn: Partial<{
     rateLimited: "Too many attempts. Wait a minute and try again.",
     serverDown: "The server is temporarily unavailable. Try again later.",
     serverUnavailable: "The server is unavailable. Retrying.",
+    serverUnavailableBody:
+      "Your data on this device is safe. The app opens as soon as the server responds.",
     serverUnavailableRetry: "Retry now",
 
     // Round 16 — soft-auth prompt

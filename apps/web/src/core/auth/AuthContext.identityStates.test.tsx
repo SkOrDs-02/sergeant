@@ -93,7 +93,7 @@ describe("AuthContext: стани ідентичності", () => {
     clearPersistedQueryCacheMock.mockClear();
   });
 
-  it("401 → unauthenticated, без банера «сервер недоступний»", () => {
+  it("401 → unauthenticated, без стану «сервер недоступний»", () => {
     failed(http(401, { error: "Unauthorized" }));
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
@@ -161,7 +161,7 @@ describe("AuthContext: стани ідентичності", () => {
     },
   );
 
-  it("збій me на анонімному пристрої не вішає спінер: unauthenticated без банера", () => {
+  it("збій me на анонімному пристрої не вішає спінер: unauthenticated без стану «сервер недоступний»", () => {
     failed(http(500));
     const { Wrapper, clearSpy } = makeWrapper();
     const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });

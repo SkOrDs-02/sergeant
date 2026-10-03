@@ -8,7 +8,9 @@
  *  - logic-01: 403 `account_pending_deletion` на `me` показує екран
  *    відновлення, а «Відновити» впускає в застосунок;
  *  - rel-02: 5xx, 429, обрив мережі й битий JSON на `me` НЕ скидають
- *    ідентичність (без `queryClient.clear`), показують банер і після
+ *    ідентичність (без `queryClient.clear`), показують екран-блокер БЕЗ
+ *    застосунку (модулі не змонтовані: нема UI для запису, який губиться
+ *    без dual-write контексту, і нема даних повз App Lock) і після
  *    відновлення сервера повертають користувача.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -63,7 +65,7 @@ function ShellProbe() {
   );
 }
 
-function renderShell() {
+function renderShell(initialPath = "/") {
   const qc = new QueryClient({
     // `retryDelay: 0`: `me` ретраїть власна `retry`-функція, а її відступи
     // в тесті не предмет.
@@ -73,7 +75,7 @@ function renderShell() {
   render(
     <QueryClientProvider client={qc}>
       <ApiClientProvider client={apiClient}>
-        <MemoryRouter initialEntries={["/"]}>
+        <MemoryRouter initialEntries={[initialPath]}>
           <ToastProvider>
             <CommandPaletteProvider>
               <AuthProvider>
@@ -238,7 +240,7 @@ describe("RootLayout × стани ідентичності", () => {
     ];
 
     it.each(outages)(
-      "%s: без identity-wipe, зі статусом loading і банером; після відновлення me користувач повертається",
+      "%s: без identity-wipe; застосунок за блокером; після відновлення me користувач повертається",
       async (_label, handler) => {
         // Пристрій належить залогіненому користувачу.
         reconcileChatOwnerOnAuthChange(USER_ID);
@@ -246,11 +248,11 @@ describe("RootLayout × стани ідентичності", () => {
         const { clearSpy } = renderShell();
 
         expect(
-          await screen.findByTestId("auth-unavailable-banner"),
+          await screen.findByTestId("auth-unavailable-screen"),
         ).toBeInTheDocument();
-        // Не «вийшов»: ні анонімного хаба, ні скидання кешу.
-        expect(screen.getByTestId("auth-loading")).toHaveTextContent("true");
-        expect(screen.getByTestId("auth-user")).toHaveTextContent("anon");
+        // Не «вийшов»: скидання кешу немає, а застосунок (дані, модулі) під
+        // блокером не змонтований.
+        expect(screen.queryByTestId("child")).toBeNull();
         expect(clearSpy).not.toHaveBeenCalled();
 
         // Сервер ожив: «Повторити зараз» повертає користувача.
@@ -263,13 +265,41 @@ describe("RootLayout × стани ідентичності", () => {
           expect(screen.getByTestId("auth-user")).toHaveTextContent(USER_ID),
         );
         expect(screen.getByTestId("auth-loading")).toHaveTextContent("false");
-        expect(screen.queryByTestId("auth-unavailable-banner")).toBeNull();
+        expect(screen.queryByTestId("auth-unavailable-screen")).toBeNull();
         expect(clearSpy).not.toHaveBeenCalled();
       },
       20_000,
     );
 
-    it("401 лишається виходом: без банера, анонімний стан", async () => {
+    it("збій me на модульному роуті: модуль не рендериться, тож немає ні запису в нікуди, ні даних повз App Lock", async () => {
+      reconcileChatOwnerOnAuthChange(USER_ID);
+      server.use(
+        http.get("*/api/v1/me", () =>
+          HttpResponse.json({ error: "db down" }, { status: 500 }),
+        ),
+      );
+      renderShell("/finyk");
+
+      expect(
+        await screen.findByTestId("auth-unavailable-screen"),
+      ).toBeInTheDocument();
+      expect(screen.queryByTestId("child")).toBeNull();
+    });
+
+    it("збій me не ховає публічні сторінки: юридичні тексти лишаються доступними", async () => {
+      reconcileChatOwnerOnAuthChange(USER_ID);
+      server.use(
+        http.get("*/api/v1/me", () =>
+          HttpResponse.json({ error: "db down" }, { status: 500 }),
+        ),
+      );
+      renderShell("/legal/privacy");
+
+      expect(await screen.findByTestId("child")).toBeInTheDocument();
+      expect(screen.queryByTestId("auth-unavailable-screen")).toBeNull();
+    });
+
+    it("401 лишається виходом: без екрана збою, анонімний стан", async () => {
       server.use(
         http.get("*/api/v1/me", () =>
           HttpResponse.json({ error: "Unauthorized" }, { status: 401 }),
@@ -281,7 +311,7 @@ describe("RootLayout × стани ідентичності", () => {
         expect(screen.getByTestId("auth-loading")).toHaveTextContent("false"),
       );
       expect(screen.getByTestId("auth-user")).toHaveTextContent("anon");
-      expect(screen.queryByTestId("auth-unavailable-banner")).toBeNull();
+      expect(screen.queryByTestId("auth-unavailable-screen")).toBeNull();
     });
   });
 });
