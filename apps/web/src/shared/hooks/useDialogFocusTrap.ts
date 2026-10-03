@@ -110,7 +110,12 @@ export function useDialogFocusTrap(
     // to the panel itself (with a transient `tabindex="-1"`) so that
     // even a content-only dialog keeps focus inside.
     if (!panel.contains(document.activeElement)) {
-      const initial = getFocusable()[0];
+      // `data-autofocus` — явний вибір початкового фокуса (наприклад,
+      // основна CTA пейволу замість «Закрити» у шапці); без нього — перший
+      // фокусований елемент панелі, як і раніше.
+      const initial =
+        panel.querySelector<HTMLElement>("[data-autofocus]:not([disabled])") ??
+        getFocusable()[0];
       if (initial) {
         initial.focus({ preventScroll: true });
       } else {

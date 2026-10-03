@@ -129,9 +129,15 @@ export function ChatInput({
         }
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) =>
-          e.key === "Enter" && !e.shiftKey && online && onSend()
-        }
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" || e.shiftKey || !online) return;
+          // preventDefault обов'язковий: onSend() може синхронно відкрити
+          // діалог (пейвол при вичерпаному ліміті), пастка фокуса перенесе
+          // фокус на кнопку всередині, і keypress того самого Enter її
+          // натисне — діалог закриється, не встигнувши показатись.
+          e.preventDefault();
+          onSend();
+        }}
         disabled={!online}
         aria-label="Повідомлення Сержанту"
       />

@@ -3479,7 +3479,7 @@ vb/06-fs.mjs: GET /api/v1/food-search?q=Гречка повертає 200, се�
 
 ### `data-44` [medium] HubChat: відповідь, що ще стрімиться, записується в іншу бесіду після «Нова» чи вибору бесіди з історії
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-data-44-ux-15-hubchat-session
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** web: HubChat (useChatSessions, useChatSend)
 - **Де:** apps/web/src/core/hub/chat/useChatSessions.ts:74,164-195; apps/web/src/core/hub/chat/useChatSend.ts:342,599-602,768-799; apps/web/src/core/hub/chat/HubChatHeader.tsx:169
 - **Першопричина:** useChatSessions тримає один стан messages на всі бесіди, handleCreateSession і handleSelectSession лише підміняють messages і не скасовують запит у польоті, а send() дописує відповідь функціональним апдейтером в ту бесіду, що активна на момент відповіді; «Нова» не вимкнена під час loading.

@@ -27,6 +27,18 @@ export interface UseChatSessionsResult {
   activeId: string;
   messages: ChatMessage[];
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  /**
+   * Застосувати апдейт повідомлень до бесіди `sessionId`, а не до тієї, що
+   * активна «зараз». Активна бесіда — звичайний `setMessages`; решта —
+   * запис у `sessions` за id з негайною персистенцією. Хід `send()` бере id
+   * бесіди на старті й пише відповідь лише через цю функцію, тож відповідь,
+   * що стрімиться, лишається у своїй бесіді після «Нова» / вибору іншої
+   * (data-44). Бесіду, видалену за цей час, апдейт мовчки пропускає.
+   */
+  updateSessionMessages: (
+    sessionId: string,
+    updater: React.SetStateAction<ChatMessage[]>,
+  ) => void;
   historyOpen: boolean;
   setHistoryOpen: (open: boolean) => void;
   detailsOpen: boolean;
@@ -75,6 +87,16 @@ export function useChatSessions(): UseChatSessionsResult {
     const found = boot.sessions.find((s) => s.id === boot.activeId);
     return normalizeStoredMessages(found?.messages ?? null);
   });
+
+  // Синхронне дзеркало `activeId`. Стан оновиться лише на наступному
+  // рендері, а відповідь, що стрімиться, може прилетіти між кліком
+  // «Нова» і цим рендером — з React-станом вона б потрапила в нову бесіду.
+  // Тому кожне перемикання бесіди виставляє реф одразу (`switchActive`).
+  const activeIdRef = useRef(boot.activeId);
+  const switchActive = useCallback((id: string) => {
+    activeIdRef.current = id;
+    setActiveId(id);
+  }, []);
 
   const lastMessagesRef = useRef(messages);
   useEffect(() => {
@@ -144,6 +166,29 @@ export function useChatSessions(): UseChatSessionsResult {
     saveActiveSessionId(activeId);
   }, [activeId]);
 
+  const updateSessionMessages = useCallback(
+    (sessionId: string, updater: React.SetStateAction<ChatMessage[]>) => {
+      if (activeIdRef.current === sessionId) {
+        setMessages(updater);
+        return;
+      }
+      setSessions((prev) => {
+        const target = prev.find((s) => s.id === sessionId);
+        if (!target) return prev;
+        const nextMessages =
+          typeof updater === "function" ? updater(target.messages) : updater;
+        const updated = upsertSession(prev, {
+          ...target,
+          updatedAt: Date.now(),
+          messages: nextMessages,
+        });
+        saveSessions(updated);
+        return updated;
+      });
+    },
+    [],
+  );
+
   const persistCurrentMessages = useCallback(() => {
     setSessions((prev) => {
       const target = prev.find((s) => s.id === activeId);
@@ -172,10 +217,10 @@ export function useChatSessions(): UseChatSessionsResult {
       saveSessions(updated);
       return updated;
     });
-    setActiveId(fresh.id);
+    switchActive(fresh.id);
     setMessages(fresh.messages);
     setHistoryOpen(false);
-  }, [persistCurrentMessages]);
+  }, [persistCurrentMessages, switchActive]);
 
   const handleSelectSession = useCallback(
     (id: string) => {
@@ -187,11 +232,11 @@ export function useChatSessions(): UseChatSessionsResult {
       persistCurrentMessages();
       const target = sessions.find((s) => s.id === id);
       if (!target) return;
-      setActiveId(target.id);
+      switchActive(target.id);
       setMessages(target.messages);
       setHistoryOpen(false);
     },
-    [activeId, sessions, persistCurrentMessages],
+    [activeId, sessions, persistCurrentMessages, switchActive],
   );
 
   const handleDeleteSession = useCallback(
@@ -215,7 +260,7 @@ export function useChatSessions(): UseChatSessionsResult {
       }
       setSessions(remaining);
       saveSessions(remaining);
-      if (nextActiveId !== activeId) setActiveId(nextActiveId);
+      if (nextActiveId !== activeId) switchActive(nextActiveId);
       if (nextMessages) setMessages(nextMessages);
       showUndoToast(toast, {
         msg: `Видалено бесіду «${removed.title}»`,
@@ -228,7 +273,7 @@ export function useChatSessions(): UseChatSessionsResult {
         },
       });
     },
-    [sessions, activeId, toast],
+    [sessions, activeId, toast, switchActive],
   );
 
   return {
@@ -236,6 +281,7 @@ export function useChatSessions(): UseChatSessionsResult {
     activeId,
     messages,
     setMessages,
+    updateSessionMessages,
     historyOpen,
     setHistoryOpen,
     detailsOpen,
