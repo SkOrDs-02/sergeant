@@ -43,6 +43,7 @@ vi.mock("./rateLimit.js", () => ({
 
 import { applyBodySizePolicy } from "./bodySizePolicy.js";
 import { authAccountRateLimit } from "./authMiddleware.js";
+import { errorHandler } from "./errorHandler.js";
 
 interface SeenRequest {
   url: string;
@@ -69,6 +70,7 @@ function makeApp(seen: SeenRequest[]) {
     },
   };
   app.all("/api/auth/{*splat}", toNodeHandler(fakeAuth));
+  app.use(errorHandler);
   return app;
 }
 
@@ -147,5 +149,66 @@ describe("sec-11 — /api/auth form-urlencoded і per-account ліміт", () =>
       .type("form")
       .send({ email: "a@b.com", password: "x".repeat(20 * 1024) });
     expect(res.status).toBe(413);
+  });
+
+  it("повторений ключ email у form-тілі відхиляється 400, а не обходить бакет", async () => {
+    const seen: SeenRequest[] = [];
+    const app = makeApp(seen);
+    const res = await request(app)
+      .post("/api/auth/sign-in/email")
+      .type("form")
+      .send("email=junk&email=victim%40x.com&password=p");
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("VALIDATION");
+    expect(seen).toHaveLength(0);
+  });
+
+  it.each([
+    "application/jsonx",
+    "application/json-patch+json",
+    "application/json-foo",
+    "text/plain",
+    "multipart/form-data; boundary=x",
+  ])("Content-Type %s на credential-роуті відхиляється 415", async (ct) => {
+    const seen: SeenRequest[] = [];
+    const app = makeApp(seen);
+    const res = await request(app)
+      .post("/api/auth/sign-in/email")
+      .set("Content-Type", ct)
+      .send('{"email":"victim@x.com","password":"p"}');
+    expect(res.status).toBe(415);
+    expect(res.body.code).toBe("UNSUPPORTED_MEDIA_TYPE");
+    expect(seen).toHaveLength(0);
+    expect(counts.size).toBe(0);
+  });
+
+  it("415 і для reset/forget-роутів, але не для OAuth-колбеків", async () => {
+    const app = makeApp([]);
+    for (const path of [
+      "/api/auth/request-password-reset",
+      "/api/auth/forget-password",
+      "/api/auth/reset-password",
+    ]) {
+      const res = await request(app)
+        .post(path)
+        .set("Content-Type", "application/jsonx")
+        .send('{"email":"victim@x.com"}');
+      expect(res.status).toBe(415);
+    }
+    const cb = await request(app)
+      .post("/api/auth/callback/apple")
+      .set("Content-Type", "application/jsonx")
+      .send("x");
+    expect(cb.status).toBe(200);
+  });
+
+  it("Content-Type з charset і в іншому регістрі приймається і рахується", async () => {
+    const app = makeApp([]);
+    const res = await request(app)
+      .post("/api/auth/sign-in/email")
+      .set("Content-Type", "Application/JSON; charset=UTF-8")
+      .send('{"email":"victim@x.com","password":"p"}');
+    expect(res.status).toBe(200);
+    expect(counts.size).toBe(1);
   });
 });
