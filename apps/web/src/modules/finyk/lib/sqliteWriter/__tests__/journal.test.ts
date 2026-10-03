@@ -109,6 +109,38 @@ describe("Finyk dual-write journal (аудит 2026-09-28, D1)", () => {
     expect(pendingDualWrites("finyk", USER_ID)).toHaveLength(1);
   });
 
+  it("keeps the journal entry when the SQL write throws, and applies it on the next boot (data-05)", async () => {
+    // SQLITE_BUSY посеред сесії: адаптер ловить виняток опа, рахує errored і
+    // все одно повертає "applied", тож раніше журнал знімався.
+    registerFinykDualWriteContext(
+      ctx({
+        getMigrationClient: async () => ({
+          ...handle.client,
+          run: () => {
+            throw new Error("SQLITE_BUSY: database is locked");
+          },
+        }),
+      }),
+    );
+    triggerFinykDualWrite(EMPTY_FINYK_STATE, withExpense);
+    await new Promise((r) => setTimeout(r, 100));
+    expect(await expenseRows()).toEqual([]);
+    const pending = pendingDualWrites("finyk", USER_ID);
+    expect(pending).toHaveLength(1);
+    expect(pending[0]?.attempts).toBe(1);
+
+    // Наступний бут зі здоровою базою: той самий запис доїжджає і знімається.
+    __clearFinykDualWriteContextForTests();
+    registerFinykDualWriteContext(ctx());
+    await vi.waitFor(async () => expect(await expenseRows()).toHaveLength(1), {
+      timeout: 10_000,
+    });
+    await vi.waitFor(
+      () => expect(pendingDualWrites("finyk", USER_ID)).toEqual([]),
+      { timeout: 10_000 },
+    );
+  });
+
   it("does not replay another user's pending writes", async () => {
     registerFinykDualWriteContext(
       ctx({ getMigrationClient: () => new Promise(() => {}) }),

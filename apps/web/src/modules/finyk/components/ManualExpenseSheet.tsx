@@ -21,7 +21,7 @@
 import { useState, useId, useMemo, useEffect, useRef } from "react";
 import { useApiForm } from "@shared/forms";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import {
   classifyDateBound,
@@ -88,6 +88,11 @@ export {
 interface ManualExpenseSheetProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * Сховище Фініка ще прогрівається (холодний старт): збереження заблоковане
+   * зі спінером, поки кеш не готовий (аудит 2026-10-01, data-13).
+   */
+  storageLoading?: boolean;
   onSave?: (expense: {
     id?: string;
     description: string;
@@ -167,6 +172,7 @@ interface ManualExpenseSheetProps {
 export function ManualExpenseSheet({
   open,
   onClose,
+  storageLoading = false,
   onSave,
   onDelete,
   initialExpense,
@@ -226,7 +232,7 @@ export function ManualExpenseSheet({
         description: "",
         amount: "",
         category: DEFAULT_CATEGORY,
-        date: toLocalISODate(),
+        date: toKyivISODate(),
       },
       onSubmit: async (values) => {
         const trimmedDesc = values.description.trim();
@@ -265,9 +271,9 @@ export function ManualExpenseSheet({
           // виправлення суми переставляло б час запису на час правки.
           date:
             initialExpense?.date &&
-            toLocalISODate(initialExpense.date) === values.date
+            toKyivISODate(initialExpense.date) === values.date
               ? initialExpense.date
-              : toExpenseInstant(values.date || toLocalISODate()),
+              : toExpenseInstant(values.date || toKyivISODate()),
           kind,
         });
 
@@ -371,7 +377,7 @@ export function ManualExpenseSheet({
         description: "",
         amount: "",
         category: DEFAULT_CATEGORY,
-        date: toLocalISODate(),
+        date: toKyivISODate(),
       });
       void Promise.resolve().then(() => {
         setPrevOpenInitKey("");
@@ -400,8 +406,8 @@ export function ManualExpenseSheet({
                   customIds,
                 ),
           date: initialExpense.date
-            ? toLocalISODate(initialExpense.date)
-            : toLocalISODate(),
+            ? toKyivISODate(initialExpense.date)
+            : toKyivISODate(),
         });
       } else {
         setKind("expense");
@@ -432,7 +438,7 @@ export function ManualExpenseSheet({
             typeof initialDescription === "string" ? initialDescription : "",
           amount: initialAmount != null ? String(initialAmount) : "",
           category: startCategory,
-          date: initialDate || toLocalISODate(),
+          date: initialDate || toKyivISODate(),
         });
       }
       setDescFocused(false);
@@ -636,6 +642,7 @@ export function ManualExpenseSheet({
         <ManualExpenseFooter
           isEditing={isEditing}
           isSubmitting={isSubmitting}
+          storageLoading={storageLoading}
           createLabel={sheetTitle}
           onCancel={onClose}
           onSubmit={handleSubmit}

@@ -25,8 +25,7 @@ import type { QuickChip } from "./useNutritionQuickChips";
 
 /** Мінімальний зріз `useNutritionLog`, потрібний квік-чипу. */
 interface QuickAddMealLog {
-  selectedDate: string;
-  handleAddMeal: (meal: Meal) => void;
+  handleAddMeal: (meal: Meal) => string;
   handleRemoveMeal: (date: string, id: string) => void;
 }
 
@@ -69,8 +68,8 @@ export function useQuickAddMealFromChip({
         amount_g: chip.grams,
         foodId: null,
       };
-      const dateForLog = log.selectedDate;
-      log.handleAddMeal(meal);
+      // День, під яким запис ЛЯГ: `log.selectedDate` міг відстати від годинника.
+      const dateForLog = log.handleAddMeal(meal);
       toast.success(
         `${chip.label} додано · ${chip.macros.kcal} ккал`,
         undefined,

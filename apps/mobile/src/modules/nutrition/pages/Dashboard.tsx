@@ -25,10 +25,11 @@ import {
   getMacrosForDateRange,
   resolveKcalGoalsForDays,
   stripPlacement,
+  todayISODate,
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
-import { hapticTap, toLocalISODate, type Macros } from "@sergeant/shared";
+import { hapticTap, type Macros } from "@sergeant/shared";
 
 import { Card } from "@/components/ui/Card";
 
@@ -173,14 +174,15 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
 
   const handleSave = useCallback(
     (payload: MealSavePayload) => {
-      addMeal(toLocalISODate(new Date()), payload);
+      addMeal(todayISODate(), payload);
       setSheetOpen(false);
       onMealAdded?.();
     },
     [addMeal, onMealAdded],
   );
 
-  const today = toLocalISODate(new Date());
+  // ADR-0078: «сьогодні» — за годинником пристрою (як і вода, і час прийому).
+  const today = todayISODate();
 
   // AI-генерація денного плану. Дзеркало web
   // `useNutritionRemoteActions.dayPlanMutation`: pantry (≤50) + цілі КБЖВ

@@ -1,12 +1,10 @@
-import { useLocation, useNavigate } from "react-router-dom";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import {
   normalizeFinykBackup,
-  normalizeFinykSyncPayload,
   FINYK_BACKUP_VERSION,
   type FinykBackup,
 } from "../lib/finykBackup";
-import { downloadJson, toLocalISODate } from "@sergeant/shared";
+import { downloadJson, toKyivISODate } from "@sergeant/shared";
 import { sanitizeMerchantRules } from "@sergeant/finyk-domain/lib/merchantRules";
 import { reportSilentError } from "./useStorage.persist";
 import type {
@@ -30,8 +28,7 @@ interface BackupToast {
 }
 
 /**
- * Backup / sync helpers: експорт у JSON, імпорт з файлу, коротко-тривалий
- * sync через URL-парам (`?sync=...`). Це окремий шар поверх `slots`, бо
+ * Backup helpers: експорт у JSON та імпорт з файлу. Це окремий шар поверх `slots`, бо
  * усі ці методи зачіпають великий під-сет setter-ів одразу і логічно
  * описують один контракт ("міграція цілого Finyk-стану з/у бекап").
  */
@@ -39,8 +36,6 @@ export function useFinykBackupSync(
   slots: FinykStorageSlots,
   toast: BackupToast | undefined,
 ) {
-  const navigate = useNavigate();
-  const location = useLocation();
   const {
     budgets,
     setBudgets,
@@ -124,7 +119,7 @@ export function useFinykBackupSync(
       dismissedRecurring,
       merchantRules,
     };
-    await downloadJson(`finyk-backup-${toLocalISODate()}.json`, data);
+    await downloadJson(`finyk-backup-${toKyivISODate()}.json`, data);
   };
 
   /** @returns {Promise<boolean>} */
@@ -167,56 +162,9 @@ export function useFinykBackupSync(
       reader.readAsText(file);
     });
 
-  // Sync: без прихованих рахунків/транзакцій (device-specific). v3 — категорії, спліти, борги mono, нетворс.
-  const generateSyncLink = () => {
-    const data = {
-      v: 3,
-      b: budgets,
-      s: subscriptions,
-      a: manualAssets,
-      d: manualDebts,
-      r: receivables,
-      es: excludedStatTxIds,
-      mp: monthlyPlan,
-      tc: txCategories,
-      ts: txSplits,
-      md: monoDebtLinkedTxIds,
-      nh: networthHistory,
-      cc: customCategories,
-      dr: dismissedRecurring,
-    };
-    const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
-    return `${window.location.origin}${location.pathname}?sync=${encoded}`;
-  };
-
-  const loadFromUrl = () => {
-    try {
-      const params = new URLSearchParams(location.search);
-      const encoded = params.get("sync");
-      if (!encoded) return false;
-      const raw = JSON.parse(decodeURIComponent(atob(encoded)));
-      const normalized = normalizeFinykSyncPayload(raw);
-      applyData(normalized);
-      // Clear `?sync=…` із URL через `navigate({ replace: true })`, а не
-      // `history.replaceState` — інакше data-router `createBrowserRouter`
-      // не дізнається про зміну search-string-у і `useLocation()`
-      // консьюмери лишаться зі застарілим URL у памʼяті.
-      navigate(
-        { pathname: location.pathname, search: "", hash: "" },
-        { replace: true },
-      );
-      return true;
-    } catch (err) {
-      reportSilentError("load sync from url", err);
-      return false;
-    }
-  };
-
   return {
     applyData,
     exportData,
     importData,
-    generateSyncLink,
-    loadFromUrl,
   };
 }

@@ -1,6 +1,6 @@
 # CSP monitoring
 
-> **Last touched:** 2026-09-17 by @claude (host `api.sergeant.com.ua`; runbook-URL; alert-правила — design-only, Grafana-managed). **Next review:** 2026-12-16.
+> **Last touched:** 2026-10-03 by @claude (фронтенд віддає лише enforced CSP: Report-Only знято з `vercel.json`; раніше — host `api.sergeant.com.ua`, runbook-URL, alert-правила design-only). **Next review:** 2027-01-01.
 > **Status:** Active
 
 Операційний playbook для моніторингу Content-Security-Policy
@@ -32,7 +32,7 @@ Browser violation
 
 | Layer            | File                                                                                                                  | Purpose                                                             |
 | ---------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Response headers | [`apps/web/vercel.json`](../../../apps/web/vercel.json)                                                               | `Reporting-Endpoints` + CSP-RO with `report-uri` and `report-to`    |
+| Response headers | [`apps/web/vercel.json`](../../../apps/web/vercel.json)                                                               | `Reporting-Endpoints` + enforced CSP з `report-uri` і `report-to`   |
 | Meta fallback    | [`apps/web/index.html`](../../../apps/web/index.html)                                                                 | `<meta>` CSP without `report-uri`/`report-to` (HTML spec exclusion) |
 | Body parser      | [`apps/server/src/http/bodySizePolicy.ts`](../../../apps/server/src/http/bodySizePolicy.ts)                           | 16 KB cap for both legacy and Reporting API content types           |
 | Rate-limit       | [`apps/server/src/routes/csp-report.ts`](../../../apps/server/src/routes/csp-report.ts)                               | 120 req/min per IP (`api:csp-report` bucket)                        |
@@ -158,12 +158,17 @@ groups:
 ```
 
 `CspEnforceViolations` is the real-user-impact alert for enforced policies.
-For the current frontend Phase-1 rollout, `apps/web/vercel.json` still emits
-`Content-Security-Policy-Report-Only`, so frontend violations should arrive
-with `disposition="report"`. If strict/enforce frontend CSP ships in Phase 2
-of [C2 hardening](../../work/specs/security-hardening/C2-frontend-csp.md), this alert becomes
-actionable for the SPA too; if `CSP_REPORT_ONLY=1` is used as rollback for API
-CSP, expect `disposition="report"` instead.
+З 2026-10-03 `apps/web/vercel.json` віддає **лише** enforced
+`Content-Security-Policy`: header `Content-Security-Policy-Report-Only` знято,
+бо він був строго м'якшим за enforced (додатково `'unsafe-inline'` у
+`script-src` і loopback + `wss: ws:` у `connect-src`), тож не міг повідомити
+нічого, чого не повідомляє enforced (деталі — у
+[C2 hardening](../../work/specs/security-hardening/C2-frontend-csp.md)).
+Порушення фронтенду тепер приходять з `disposition="enforce"`, і цей алерт
+для SPA діє. `disposition="report"` з'явиться лише якщо поруч з enforced
+розгорнути тимчасовий Report-Only canary (див.
+[`../deploy/vercel.md`](../deploy/vercel.md)) або якщо `CSP_REPORT_ONLY=1`
+використано як rollback для CSP API.
 
 ## Allowlist (Sentry + PostHog)
 
@@ -211,8 +216,9 @@ When an alert fires:
 
 - **Nonce flow for inline scripts** — separate ADR (Strict CSP, Phase 3
   of C2 hardening).
-- **CSP enforce-mode rollout** — Phase 2 of C2 hardening, gated on a
-  full baseline week of Report-Only metrics.
+- **CSP enforce-mode rollout** — зроблено: Phase 2 of C2 hardening (enforce
+  з 2026-05-24, зайвий Report-Only header знято 2026-10-03). Майбутня
+  суворіша політика спершу йде через тимчасовий Report-Only canary.
 - **Per-route CSP** — current design is one wildcard policy across the
   whole app. Module-scoped CSP is backlog.
 

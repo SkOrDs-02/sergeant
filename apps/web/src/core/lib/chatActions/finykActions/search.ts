@@ -1,11 +1,9 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executors run outside React; storage key strings are used
-   directly here for the write-path (finyk_tx_cats). Manual expenses and
-   per-tx category overrides come from the canonical SQLite warm cache;
-   bank transactions now come from the Mono mirror reader. */
+// Chat-action executors run outside React. Manual expenses and per-tx
+// category overrides come from the canonical SQLite warm cache; bank
+// transactions now come from the Mono mirror reader.
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import { FINYK_COLD_CACHE_MESSAGE, warmFinykCache } from "./warmCache";
 import {
   finykCategoryExists,
   finykTransactionExists,
@@ -196,13 +194,17 @@ function formatTxList(items: FinykSearchTx[]): string {
 export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   const txId = normalizeFinykId(action.input.tx_id);
   const categoryId = normalizeFinykId(action.input.category_id);
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   // Validate before writing: an override keyed by a hallucinated tx id is
   // invisible in every screen, so the model would report a success that
   // never happened.
   if (!finykTransactionExists(txId)) return unknownTransactionMessage(txId);
   if (!finykCategoryExists(categoryId))
     return unknownCategoryMessage(categoryId);
-  const cats = ls<Record<string, string>>("finyk_tx_cats", {});
+  // data-08: база — канонічні override-и з SQLite, а не порожній kv (інакше
+  // undo не знав попереднього override-у й видаляв його замість відновлення).
+  const cats = { ...cache.txCategories } as Record<string, string>;
   // B39: reversible overwrite (canon §8 / founder decision) — snapshot the
   // previous override BEFORE writing. `undefined` means "no override was
   // set" (category came from the base rules), so undo removes the key
@@ -210,13 +212,14 @@ export function changeCategory(action: ChangeCategoryAction): ChatActionResult {
   const prevCategoryId = cats[txId];
   cats[txId] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
-  const customC = getCachedFinykSqliteState().customCategories;
-  const cat = resolveExpenseCategoryMeta(categoryId, customC);
+  const cat = resolveExpenseCategoryMeta(categoryId, cache.customCategories);
   const result = `Категорію операції ${txId} змінено на ${cat?.label || categoryId}`;
   return {
     result,
     undo: () => {
-      const current = ls<Record<string, string>>("finyk_tx_cats", {});
+      const current = {
+        ...(warmFinykCache()?.txCategories ?? {}),
+      } as Record<string, string>;
       if (prevCategoryId === undefined) {
         delete current[txId];
       } else {
@@ -268,6 +271,8 @@ export function batchCategorize(
   const categoryId = normalizeFinykId(input.category_id);
   if (!pattern) return "Для batch_categorize потрібен pattern.";
   if (!categoryId) return "Для batch_categorize потрібен category_id.";
+  const cache = warmFinykCache();
+  if (!cache) return FINYK_COLD_CACHE_MESSAGE;
   if (!finykCategoryExists(categoryId))
     return unknownCategoryMessage(categoryId);
   const amount =
@@ -298,7 +303,7 @@ export function batchCategorize(
   if (input.dry_run !== false) {
     return `Dry-run: ${matches.length} операц. буде перенесено в ${categoryId}: ${preview}`;
   }
-  const cats = ls<Record<string, string>>("finyk_tx_cats", {});
+  const cats = { ...cache.txCategories } as Record<string, string>;
   for (const tx of matches) cats[tx.id] = categoryId;
   finykChatWrite("finyk_tx_cats", cats);
   return `Категорію ${matches.length} операц. змінено на ${categoryId}: ${preview}`;

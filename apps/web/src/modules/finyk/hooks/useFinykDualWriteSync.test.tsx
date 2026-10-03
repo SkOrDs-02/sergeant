@@ -4,8 +4,8 @@ import { renderHook } from "@testing-library/react";
 
 const isRegistered = vi.fn();
 const trigger = vi.fn();
-const extract = vi.fn((..._a: unknown[]) => ({ marker: "next" }));
-const diff = vi.fn((..._a: unknown[]) => [{ op: "upsert" }]);
+const extract = vi.fn((..._a: unknown[]): unknown => ({ marker: "next" }));
+const diff = vi.fn((..._a: unknown[]): unknown[] => [{ op: "upsert" }]);
 const readTick = vi.fn(() => 0);
 
 vi.mock("../lib/sqliteWriter/index.js", () => ({
@@ -21,6 +21,10 @@ vi.mock("../lib/sqliteReadGate.js", () => ({
   useFinykSqliteReadTick: () => readTick(),
 }));
 
+import {
+  diffFinykDualWriteOps as actualDiff,
+  EMPTY_FINYK_STATE as ACTUAL_EMPTY,
+} from "../lib/sqliteWriter/diff.js";
 import { useFinykDualWriteSync } from "./useFinykDualWriteSync";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
 
@@ -84,44 +88,126 @@ describe("useFinykDualWriteSync", () => {
     expect(trigger).not.toHaveBeenCalled();
   });
 
-  it("не пише зміну, поки SQLite-кеш не прогрітий (правила мерчантів ще не завантажені)", () => {
-    // Регресія (CodeRabbit, #1285): до прогріву `merchantRules` у слотах —
-    // `[]`, і тумблер `showBalance` у цей момент давав `prefs-upsert`, що
-    // стирав збережені правила.
-    isRegistered.mockReturnValue(true);
-    const cold = { showBalance: true, storageReady: false };
-    const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
-      initialProps: { s: cold as unknown as FinykStorageSlots },
+  describe("холодний старт: SQLite-кеш ще не прогрітий (data-13)", () => {
+    // Справжній `diffFinykDualWriteOps` замість стаба: тут важить, ЯКІ саме
+    // оп-и лишаються в діфі, а не сам факт виклику.
+    const realDiff = actualDiff as (...a: unknown[]) => unknown[];
+    const prefs = (
+      showBalance: boolean,
+      prefsJson = '{"merchantRules":[]}',
+    ) => ({
+      monthlyPlanJson: "{}",
+      showBalance,
+      excludedStatTxIdsJson: "[]",
+      dismissedRecurringJson: "[]",
+      prefsJson,
     });
-    rerender({
-      s: { ...cold, showBalance: false } as unknown as FinykStorageSlots,
-    });
-    expect(trigger).not.toHaveBeenCalled();
-
-    // Після прогріву (overlay змінює read-tick) — нова база без пушу,
-    // а наступна справжня локальна зміна пишеться як звичайно.
-    readTick.mockReturnValue(1);
-    extract.mockReturnValueOnce({ marker: "hydrated" });
-    rerender({
-      s: {
+    const state = (
+      manualExpenses: Array<{ id: string; dataJson: string }>,
+      showBalance = true,
+    ) => ({ ...ACTUAL_EMPTY, manualExpenses, prefs: prefs(showBalance) });
+    const cold = (tag: string) =>
+      ({
         showBalance: true,
-        storageReady: true,
-      } as unknown as FinykStorageSlots,
-    });
-    expect(trigger).not.toHaveBeenCalled();
+        storageReady: false,
+        tag,
+      }) as unknown as FinykStorageSlots;
 
-    extract.mockReturnValueOnce({ marker: "local-edit" });
-    rerender({
-      s: {
-        showBalance: false,
-        storageReady: true,
-      } as unknown as FinykStorageSlots,
+    beforeEach(() => {
+      isRegistered.mockReturnValue(true);
+      diff.mockImplementation(realDiff);
     });
-    expect(trigger).toHaveBeenCalledTimes(1);
-    expect(trigger).toHaveBeenCalledWith(
-      { marker: "hydrated" },
-      { marker: "local-edit" },
-    );
+
+    it("пише витрату, додану до прогріву, а не відкидає її", () => {
+      // Регресія: гард `storageReady === false` лише зсував `prevRef` і нічого
+      // не писав — запис зникав мовчки, а `FinykApp` показував тост успіху.
+      extract
+        .mockReturnValueOnce(state([]))
+        .mockReturnValueOnce(state([{ id: "e1", dataJson: '{"amount":12}' }]));
+      const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
+        initialProps: { s: cold("first") },
+      });
+      rerender({ s: cold("second") });
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      const [prev, next] = trigger.mock.calls[0] as [
+        { manualExpenses: unknown[] },
+        { manualExpenses: unknown[] },
+      ];
+      expect(prev.manualExpenses).toEqual([]);
+      expect(next.manualExpenses).toEqual([
+        { id: "e1", dataJson: '{"amount":12}' },
+      ]);
+    });
+
+    it("не пише prefs до прогріву: правила мерчантів не перетираються дефолтами", () => {
+      // Причина, заради якої гард з'явився (CodeRabbit, #1285): до прогріву
+      // `merchantRules` у слотах — `[]`, тож тумблер `showBalance` дав би
+      // `prefs-upsert`, що стирав збережені правила.
+      extract
+        .mockReturnValueOnce(state([]))
+        .mockReturnValueOnce(state([], false));
+      const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
+        initialProps: { s: cold("first") },
+      });
+      rerender({ s: cold("second") });
+      expect(trigger).not.toHaveBeenCalled();
+    });
+
+    it("пише рядок, але не prefs, коли до прогріву змінилось і те, і те", () => {
+      extract
+        .mockReturnValueOnce(state([]))
+        .mockReturnValueOnce(
+          state([{ id: "e1", dataJson: '{"amount":12}' }], false),
+        );
+      const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
+        initialProps: { s: cold("first") },
+      });
+      rerender({ s: cold("second") });
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      const [prev, next] = trigger.mock.calls[0] as [
+        { prefs: unknown },
+        { prefs: unknown },
+      ];
+      // prefs-зріз однаковий з обох боків діфу: `prefs-upsert` не виникає.
+      expect(next.prefs).toBe(prev.prefs);
+      const ops = realDiff(prev, next) as Array<{ kind: string }>;
+      expect(ops.map((o) => o.kind)).toEqual(["blob-upsert"]);
+    });
+
+    it("після прогріву нова база без пушу, а наступна локальна зміна пишеться як звичайно", () => {
+      extract
+        .mockReturnValueOnce(state([]))
+        .mockReturnValueOnce(state([{ id: "e1", dataJson: "{}" }]));
+      const { rerender } = renderHook(({ s }) => useFinykDualWriteSync(s), {
+        initialProps: { s: cold("first") },
+      });
+      rerender({ s: cold("second") });
+      expect(trigger).toHaveBeenCalledTimes(1);
+
+      // Overlay після прогріву: read-tick змінився — база без пушу.
+      readTick.mockReturnValue(1);
+      const hydrated = state([{ id: "e1", dataJson: "{}" }]);
+      extract.mockReturnValueOnce(hydrated);
+      rerender({
+        s: {
+          showBalance: true,
+          storageReady: true,
+        } as unknown as FinykStorageSlots,
+      });
+      expect(trigger).toHaveBeenCalledTimes(1);
+
+      extract.mockReturnValueOnce(state([{ id: "e1", dataJson: "{}" }], false));
+      rerender({
+        s: {
+          showBalance: false,
+          storageReady: true,
+        } as unknown as FinykStorageSlots,
+      });
+      expect(trigger).toHaveBeenCalledTimes(2);
+      expect(trigger.mock.calls[1]?.[0]).toBe(hydrated);
+    });
   });
 
   it("SYNC-3: does not re-push a change that arrived via a SQLite cache-overlay tick (pull echo)", () => {

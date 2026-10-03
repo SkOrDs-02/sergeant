@@ -10,7 +10,7 @@ import {
 } from "../../obs/metrics.js";
 import {
   nextWeekStartKyivMs,
-  toLocalISODate,
+  toKyivISODate,
   weekStartKyiv,
   weeklyLimit,
   type FeatureId,
@@ -284,7 +284,7 @@ function subjectFor(sessionUser: SessionUser, req: Request): string {
 
 function today(): string {
   // Europe/Kyiv day boundary (домен-інваріант) для денних tool-відер Pro.
-  return toLocalISODate();
+  return toKyivISODate();
 }
 
 function resetsAtIso(): string {
@@ -720,7 +720,7 @@ export async function resolveProTier(
 
   const subject = subjectFor(sessionUser, req);
   // Tier buckets use the Kyiv civil day (домен-інваріант).
-  const day = toLocalISODate();
+  const day = toKyivISODate();
   const premiumLimit = parseLimit(
     "AI_PRO_PREMIUM_DAILY_LIMIT",
     DEFAULT_PREMIUM_LIMIT,

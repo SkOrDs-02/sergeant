@@ -17,7 +17,7 @@ import {
   unsubscribeNativePush,
 } from "@shared/lib/adapters/pushNative";
 
-const PUSH_SUB_KEY = "hub_push_subscribed";
+import { PUSH_SUB_KEY } from "./pushSubscribedFlag";
 
 // Весь web-push флоу (`urlBase64ToUint8Array` + `pushManager.subscribe/
 // getSubscription`) ізольований у `./usePushNotifications.webpush.ts`

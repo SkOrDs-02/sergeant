@@ -1058,7 +1058,8 @@ node <scratch>/agents/verify-server-static-auth-session/v4-misc.mjs: verify-pass
 
 ### `sec-11` [medium] Per-account ліміт входу обходиться тілом application/x-www-form-urlencoded
 
-- **Стан:** відкрито
+- **Стан:** виправлено в гілці claude/fix-sec-11-rel-04-auth-body-parsing
+- **Фікс:** `express.urlencoded` (16 КБ) для `/api/auth` + fail-closed у `authAccountRateLimit`: на sign-in/forget/request-password-reset/reset-password тіло з типом, відмінним від точного `application/json` / `application/x-www-form-urlencoded` (Better Auth приймає `application/jsonx`, `+json` через `includes`), отримує 415, а `email`, що не є одним рядком (повтор ключа у формі, Better Auth бере останнє значення), — 400. OAuth-колбеки не зачеплено.
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: auth/rate limit
 - **Де:** apps/server/src/http/authMiddleware.ts:71-104; apps/server/src/http/bodySizePolicy.ts; node_modules/better-auth/dist/api/routes/sign-in.mjs:155
 - **Першопричина:** authAccountRateLimit бере email з req.body, а для /api/auth змонтовано лише express.json, тож для form-тіла req.body порожній і middleware пропускає запит, не чіпаючи бакет. Better Auth /sign-in/email сам приймає urlencoded і перевіряє пароль.
