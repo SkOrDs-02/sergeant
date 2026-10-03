@@ -16,7 +16,7 @@
  * helpers in `@sergeant/shared`.
  */
 
-import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
+import { kyivMondayStartMs, toKyivISODate } from "@sergeant/shared";
 import { compareIsoDesc } from "../../lib/workoutStats.js";
 
 import {
@@ -315,7 +315,7 @@ export function computeExerciseWeeklyTrend(
     const t = Date.parse(iso);
     if (!Number.isFinite(t)) continue;
     const weekStart = kyivMondayStartMs(t);
-    const key = toLocalISODate(weekStart);
+    const key = toKyivISODate(weekStart);
     const sets = Array.isArray(item.sets) ? item.sets : [];
     let maxRm = 0;
     let vol = 0;

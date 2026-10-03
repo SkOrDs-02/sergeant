@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FrequentCategory } from "@sergeant/finyk-domain/domain/personalization";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import {
   getFrequentCategorySlugs,
   isExpenseDayPlaceholder,
@@ -44,7 +44,7 @@ describe("toExpenseInstant / isExpenseDayPlaceholder", () => {
   const now = new Date("2026-09-24T01:12:00.000Z");
 
   it("сьогоднішній день зберігає поточну мить", () => {
-    const instant = toExpenseInstant(toLocalISODate(now), now);
+    const instant = toExpenseInstant(toKyivISODate(now), now);
     expect(instant).toBe(now.toISOString());
     expect(isExpenseDayPlaceholder(Date.parse(instant))).toBe(false);
   });

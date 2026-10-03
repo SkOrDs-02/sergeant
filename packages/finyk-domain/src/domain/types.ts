@@ -89,7 +89,7 @@ export interface LimitBudget {
 /**
  * Один запис логу поповнень цілі — ручно додана сума (готівка/інше поверх
  * привʼязаної банки). `date` — межі доби Europe/Kyiv (`YYYY-MM-DD`),
- * див. `toLocalISODate`.
+ * див. `toKyivISODate`.
  */
 export interface GoalContribution {
   id: string;

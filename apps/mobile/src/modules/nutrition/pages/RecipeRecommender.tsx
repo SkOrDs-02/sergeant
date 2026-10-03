@@ -31,7 +31,7 @@ import {
   mealTypeByNow,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
-import { hapticTap, toLocalISODate } from "@sergeant/shared";
+import { hapticTap, toKyivISODate } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -139,7 +139,7 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
       const time = `${String(now.getHours()).padStart(2, "0")}:${String(
         now.getMinutes(),
       ).padStart(2, "0")}`;
-      addMeal(toLocalISODate(now), {
+      addMeal(toKyivISODate(now), {
         time,
         mealType,
         label: labelForMealType(mealType),

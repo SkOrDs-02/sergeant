@@ -36,7 +36,7 @@
  *
  * DOM-free, React-free — чистий TS, як і решта `@sergeant/fizruk-domain`.
  */
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import type { MobileMeasurementEntry } from "../measurements/types.js";
 import {
@@ -143,7 +143,7 @@ function collectInto(
     if (at === null) continue;
     const weightKg = readWeightKg(rec);
     if (weightKg === null) continue;
-    const dayKey = toLocalISODate(at);
+    const dayKey = toKyivISODate(at);
     const sample: BodyWeightSample = {
       id: readString(rec.id) ?? `${source}:${at}`,
       at,

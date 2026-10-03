@@ -1,4 +1,4 @@
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { resolveHabitGlyph } from "@sergeant/routine-domain";
 import { routineStorage } from "@routine/lib/routineStorageInstance";
 import {
@@ -88,7 +88,7 @@ async function applyRoutinePreset(preset: RoutinePreset): Promise<boolean> {
     state = routineStorage.readJSON<RoutineState>(ROUTINE_STATE_KEY, null);
   }
 
-  const today = toLocalISODate();
+  const today = toKyivISODate();
   const habit: RoutineHabit = {
     id: uid("hab"),
     // Explicit false — `hasNonDemoItem` flags anything without `demo:true`

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import { withSubjectContext } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import { transcribeUsdCapEventsTotal } from "../../obs/metrics.js";
@@ -166,7 +166,7 @@ export async function assertTranscribeUsdCap(
   }
 
   const estimate = estimateMicros(audioBytes);
-  const day = toLocalISODate();
+  const day = toKyivISODate();
   const bucket = bucketKey(model);
 
   if (estimate <= 0) return { ok: true, cap_micros: cap };
@@ -334,7 +334,7 @@ export async function recordTranscribeUsdSpend(
   if (reservations.delete(req)) return;
   const subject = subjectFor(req);
   if (!subject) return; // не повинно статись після requireSession()
-  const day = toLocalISODate();
+  const day = toKyivISODate();
   const bucket = bucketKey(model);
   const cost = estimateMicros(audioBytes);
   if (cost <= 0) return;

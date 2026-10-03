@@ -16,7 +16,7 @@ import {
   DATE_INVALID_MESSAGE,
 } from "@shared/lib/time/dateBounds";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
@@ -47,7 +47,7 @@ const DAY_NOON_UTC = "T12:00:00.000Z";
  */
 // eslint-disable-next-line no-restricted-syntax -- тут потрібна саме UTC-мить запису (як `updatedAt`), а не київська межа доби: день уже обрано в `dayKey`.
 export function toExpenseInstant(dayKey: string, now = new Date()): string {
-  if (dayKey === toLocalISODate(now)) return now.toISOString();
+  if (dayKey === toKyivISODate(now)) return now.toISOString();
   return new Date(Date.parse(`${dayKey}${DAY_NOON_UTC}`)).toISOString();
 }
 

@@ -21,7 +21,7 @@ import {
   type Meal,
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
-import { toLocalISODate } from "@sergeant/shared";
+import { toKyivISODate } from "@sergeant/shared";
 
 import { loadNutritionLog, saveNutritionLog } from "../lib/nutritionStore";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
@@ -43,7 +43,7 @@ export function useNutritionLog(): UseNutritionLogResult {
     loadNutritionLog(),
   );
   const [selectedDate, setSelectedDate] = useState<string>(() =>
-    toLocalISODate(new Date()),
+    toKyivISODate(new Date()),
   );
 
   // Тримаємо в ref найсвіжіший стан, щоб обробник підписки MMKV
