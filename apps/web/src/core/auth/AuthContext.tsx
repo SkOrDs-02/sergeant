@@ -30,6 +30,7 @@ import {
 } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
+import { teardownLocalStateAfterSessionLoss } from "./sessionLossTeardown";
 import { SIGN_IN_PATH } from "../app/appPaths";
 // AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
 // тягне з собою десять модульних файлів плюс en-копію: до цієї правки
@@ -577,7 +578,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     clearHubQuickStatsSnapshots();
     if (!prevOwnerWasUser) return;
     queryClient.clear();
-    void clearPersistedQueryCache()
+    // priv-02: user→anon (401: сесія протухла/відкликана) і user→user —
+    // той самий локальний teardown, що й у `logout()`, ДО reload. Сюди не
+    // дійти з `loading` (5xx/мережа) і `pending_deletion`: ефект вище
+    // виходить рано. SQLite-партицію не стираємо — див. AI-DANGER у
+    // `teardownLocalStateAfterSessionLoss`.
+    void teardownLocalStateAfterSessionLoss()
+      .then(() => clearPersistedQueryCache())
       .catch((err) => {
         logger.warn(
           "[auth.identityWipe] persisted RQ snapshot purge failed",
