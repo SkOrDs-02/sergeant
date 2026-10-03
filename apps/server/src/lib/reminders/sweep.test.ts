@@ -1,8 +1,38 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 
 const sendToUserQuietly = vi.hoisted(() => vi.fn());
 vi.mock("../../push/send.js", () => ({ sendToUserQuietly }));
+
+const warn = vi.hoisted(() => vi.fn());
+vi.mock("../../obs/logger.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../obs/logger.js")>();
+  return {
+    ...actual,
+    logger: { info: vi.fn(), debug: vi.fn(), error: vi.fn(), warn },
+  };
+});
+
+// `routineDueNow` обгорнуто спайом: тест ізоляції змушує його кинути для
+// одного користувача, не покладаючись на конкретний «отруєний» рядок БД.
+const routineDueNowSpy = vi.hoisted(() => ({
+  throwForUser: null as string | null,
+}));
+vi.mock("./due.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./due.js")>();
+  return {
+    ...actual,
+    routineDueNow: (input: Parameters<typeof actual.routineDueNow>[0]) => {
+      if (
+        routineDueNowSpy.throwForUser !== null &&
+        input.rows.some((r) => r.userId === routineDueNowSpy.throwForUser)
+      ) {
+        throw new Error("poisoned schedule");
+      }
+      return actual.routineDueNow(input);
+    },
+  };
+});
 
 const { pruneReminderLog, runReminderSweep } = await import("./sweep.js");
 
@@ -294,6 +324,97 @@ describe("runReminderSweep", () => {
 
     expect(result.due).toBe(2);
     expect(claims.map((c) => c.userId).sort()).toEqual(["f1", "n2"]);
+  });
+});
+
+describe("ізоляція користувачів у sweep-і (аудит 2026-10-01, rel-01)", () => {
+  beforeEach(() => {
+    sendToUserQuietly.mockClear();
+    warn.mockClear();
+  });
+  afterEach(() => {
+    routineDueNowSpy.throwForUser = null;
+  });
+
+  it("отруєна звичка, що вже лежить у БД (monthly + start_date '2000'), не глушить нагадування іншим", async () => {
+    // Без фіксу `parseDateKey("2000")` кидав із `habitScheduledOnDate`, і
+    // `runReminderSweep` падав цілком: u_good не отримував нічого.
+    const { pool, claims } = fakePool({
+      routineHabits: [
+        habitDbRow({
+          user_id: "u_bad",
+          id: "hab_bad",
+          recurrence: "monthly",
+          start_date: "2000",
+        }),
+        habitDbRow({ user_id: "u_good", id: "hab_good" }),
+      ],
+    });
+
+    const result = await runReminderSweep(pool, NOW);
+
+    expect(result).toMatchObject({ due: 1, sent: 1 });
+    expect(claims.map((c) => c.userId)).toEqual(["u_good"]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        msg: "reminder_sweep_habit_skipped_invalid_schedule",
+        userId: "u_bad",
+        habitId: "hab_bad",
+      }),
+    );
+  });
+
+  it.each([
+    ["recurrence поза enum", { recurrence: "hourly" }],
+    ["end_date не дата (у майбутньому)", { end_date: "2099-02-31" }],
+    ["start_date порожнього року", { start_date: "2000" }],
+  ])("пропускає звичку: %s", async (_label, over) => {
+    const { pool, claims } = fakePool({
+      routineHabits: [
+        habitDbRow({ user_id: "u_bad", id: "hab_bad", ...over }),
+        habitDbRow({ user_id: "u_good", id: "hab_good" }),
+      ],
+    });
+
+    await runReminderSweep(pool, NOW);
+
+    expect(claims.map((c) => c.userId)).toEqual(["u_good"]);
+  });
+
+  it("не чіпає звичку з порожнім end_date і відсутньою recurrence", async () => {
+    const { pool, claims } = fakePool({
+      routineHabits: [
+        habitDbRow({ recurrence: null, start_date: null, end_date: "" }),
+      ],
+    });
+
+    await runReminderSweep(pool, NOW);
+
+    expect(claims).toHaveLength(1);
+  });
+
+  it("кидок предиката в одного користувача не валить прохід: решта отримує нагадування, userId у warn", async () => {
+    routineDueNowSpy.throwForUser = "u_bad";
+    const { pool, claims } = fakePool({
+      routineHabits: [
+        habitDbRow({ user_id: "u_bad", id: "hab_bad" }),
+        habitDbRow({ user_id: "u_good", id: "hab_good" }),
+      ],
+    });
+
+    const result = await runReminderSweep(pool, NOW);
+
+    expect(result).toMatchObject({ due: 1, sent: 1 });
+    expect(claims.map((c) => c.userId)).toEqual(["u_good"]);
+    const failures = warn.mock.calls.filter(
+      ([arg]) => arg?.msg === "reminder_sweep_user_failed",
+    );
+    // Лог один на людину за прохід, а не на кожну хвилину дня чи ітерацію.
+    expect(failures).toHaveLength(1);
+    expect(failures[0]?.[0]).toMatchObject({
+      module: "routine",
+      userId: "u_bad",
+    });
   });
 });
 

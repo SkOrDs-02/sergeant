@@ -23,7 +23,7 @@
 
 ### `rel-01` [high] Одна звичка з невалідним start_date зупиняє серверні push-нагадування всім користувачам
 
-- **Стан:** відкрито
+- **Стан:** частково виправлено в гілці claude/fix-rel-01-routine-dates-sweep (алерт на reminder_sweep_failed не додано: у репо немає метрики збою sweep, лише лог)
 - **Перевірка:** підтверджено · **Зусилля:** S · **Швидкий виграш** · **Область:** server: reminders / sync routine
 - **Де:** apps/server/src/modules/sync/routine/applySyncFullState.ts:108-111,140-142; apps/server/src/lib/reminders/sweep.ts:136-153,548-566; packages/routine-domain/src/schedule.ts:119-120; packages/routine-domain/src/dateKeys.ts:27-31; apps/server/src/lib/reminders/scheduler.ts:77-81
 - **Першопричина:** applyRoutineHabits пише recurrence, start_date і end_date з sync-пушу як довільні рядки (колонка TEXT без CHECK). Щохвилинний sweep для monthly-звички викликає parseDateKey, а той кидає виняток. reasonsOfDay обходить усіх користувачів одним flatMap без per-user try/catch, тож падає весь прохід.
