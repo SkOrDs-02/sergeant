@@ -90,6 +90,8 @@ describe("applyFizrukItems — рядки з чат-екзекуторів (data
     "приймає item з непорожнім exercise_id: %s",
     async (_label, exerciseId) => {
       const fake = new FakeClient();
+      fake.queueRows([]); // ownership lookup за id позиції
+      fake.queueRows([{ "?column?": 1 }]); // батьківське тренування — власне (data-01)
       const clientTs = new Date("2026-07-21T08:00:00.000Z");
       await expect(
         applyFizrukItems(
