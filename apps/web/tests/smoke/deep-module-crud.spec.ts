@@ -81,6 +81,34 @@ async function waitForSyncQueueIdle(page: Page, timeoutMs = 45_000) {
   );
 }
 
+/**
+ * Повний рестарт сторінки посеред сценарію: барʼєр сервіс-воркера, потім
+ * `goto` з ОДНИМ повтором на `net::ERR_ABORTED`.
+ *
+ * Барʼєр сам по собі абортів не прибрав. На #1304 (2026-10-01) і #1377
+ * (2026-10-03) нога Фініка падала саме на цьому `goto` вже ПІСЛЯ барʼєра,
+ * за ~4 с від старту спроби. Причину не встановлено (див. докстрінг
+ * `tests/utils/serviceWorker.ts`: барʼєр каже `controlling`, а навігація
+ * все одно гине), і таймінг тут навмисно не чіпаємо. Повтор не чекає
+ * «трохи»: він заново просить ту саму навігацію, як `goto` і `reload` у
+ * `tests/utils/liveJourneyHelpers.ts`. Повтор рівно один: два аборти
+ * поспіль уже не гонка, тест має впасти з оригінальною помилкою.
+ *
+ * Чому це важливо саме тут: аборт у спробі 1 не лише валить спробу, а й
+ * лишає на спільному акаунті напівзроблений запис (`apps/web/AGENTS.md`
+ * § E2E smoke, п. 8), і retry стартує вже на ньому. На #1377 retry впав
+ * в іншому місці, тож одна перервана навігація коштувала всієї джоби.
+ */
+async function restartAt(page: Page, route: string) {
+  await waitForServiceWorkerActivated(page);
+  try {
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+  } catch (err) {
+    if (!String(err).includes("ERR_ABORTED")) throw err;
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+  }
+}
+
 async function expandTodayAndExpect(
   page: Page,
   text: string,
@@ -94,9 +122,14 @@ async function expandTodayAndExpect(
     const toggle = page.getByRole("button", {
       name: /(Розгорнути|Згорнути) Сьогодні/,
     });
+    // Власний таймаут на пошук перемикача. Без нього `getAttribute` чекає
+    // без кінця, коли групи «Сьогодні» немає взагалі: перша ж ітерація
+    // `toPass` висить до дедлайну, і звіт каже лише «Timeout … while
+    // waiting on the predicate», без останньої помилки (retry на #1377).
+    // З таймаутом ітерації крутяться далі, а падіння називає локатор.
     const name =
-      (await toggle.getAttribute("aria-label")) ??
-      (await toggle.textContent()) ??
+      (await toggle.getAttribute("aria-label", { timeout: 1500 })) ??
+      (await toggle.textContent({ timeout: 1500 })) ??
       "";
     if (name.includes("Розгорнути")) await toggle.dispatchEvent("click");
     // `exact` — не косметика. «DCRUD кава» є ПРЕФІКСОМ «DCRUD кава
@@ -188,9 +221,8 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // Повторний `goto` — гонка з сервіс-воркером (`apps/web/AGENTS.md`
     // § E2E smoke, п. 7): перехід `installing → activated` посеред навігації
     // абортить її (`net::ERR_ABORTED`, PR #107). Барʼєр прибирає третій
-    // стан, а не «чекає трохи».
-    await waitForServiceWorkerActivated(page);
-    await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
+    // стан, а не «чекає трохи»; аборт ПІСЛЯ барʼєра — див. `restartAt`.
+    await restartAt(page, "/finyk/transactions");
     // Harness correction: після full reload лічильник refresh-ів
     // обнуляється, а список рендериться лише після SQLite boot+refresh —
     // на повільному CI без цього wait день-група ще не існує.
@@ -430,8 +462,7 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // `installing → activated` (`apps/web/AGENTS.md` § E2E smoke, п. 7).
     // На швидкому CI-раннері обидва встигають самі, на повільнішій машині ні.
     await waitForSyncQueueIdle(page);
-    await waitForServiceWorkerActivated(page);
-    await page.goto("/routine", { waitUntil: "domcontentloaded" });
+    await restartAt(page, "/routine");
     // Після повного reload список збирається наново: SQLite-reader і
     // pull синку, а не вже змонтований стан. Дефолтних 5 с на завантаженому
     // CI-раннері замало (#1355, 2026-10-03: перейменована звичка не

@@ -662,6 +662,13 @@
       "canonical_owner": "docs/engineering/development/README.md"
     },
     {
+      "old_path": "docs/engineering/integrations/dependabot-usage.md",
+      "new_path": "docs/engineering/integrations/dependabot-usage.md",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/engineering/integrations/dependabot-usage.md"
+    },
+    {
       "old_path": "docs/engineering/integrations/env-vars.md",
       "new_path": "docs/engineering/integrations/env-vars.md",
       "action": "keep",
@@ -695,13 +702,6 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/engineering/integrations/README.md"
-    },
-    {
-      "old_path": "docs/engineering/integrations/renovate-usage.md",
-      "new_path": "docs/engineering/integrations/renovate-usage.md",
-      "action": "keep",
-      "genre": "reference",
-      "canonical_owner": "docs/engineering/integrations/renovate-usage.md"
     },
     {
       "old_path": "docs/engineering/integrations/voyage-pgvector.md",
@@ -1607,6 +1607,13 @@
       "canonical_owner": "docs/governance/adr/0102-github-actions-ci-and-autodeploy.md"
     },
     {
+      "old_path": "docs/governance/adr/0103-dependabot-only-dependency-updates.md",
+      "new_path": "docs/governance/adr/0103-dependabot-only-dependency-updates.md",
+      "action": "keep",
+      "genre": "adr",
+      "canonical_owner": "docs/governance/adr/0103-dependabot-only-dependency-updates.md"
+    },
+    {
       "old_path": "docs/governance/adr/README.md",
       "new_path": "docs/governance/adr/README.md",
       "action": "keep",
@@ -2438,13 +2445,6 @@
       "action": "keep",
       "genre": "index",
       "canonical_owner": "docs/operations/ops/README.md"
-    },
-    {
-      "old_path": "docs/operations/ops/renovate.md",
-      "new_path": "docs/operations/ops/renovate.md",
-      "action": "keep",
-      "genre": "reference",
-      "canonical_owner": "docs/operations/ops/renovate.md"
     },
     {
       "old_path": "docs/operations/postmortems/INDEX.md",
