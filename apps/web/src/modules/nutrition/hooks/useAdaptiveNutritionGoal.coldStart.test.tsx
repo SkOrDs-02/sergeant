@@ -156,4 +156,17 @@ describe("data-04: новий пристрій — біометрія є, prefs 
     expect(written["mealTemplates"]).toEqual([]);
     expect(written["waterGoalMl"]).toBe(2000);
   });
+
+  it("кеш Їжі НЕ прогрітий (бут упав або ще вантажиться), pull уже завершено: нічого не пишеться", () => {
+    // Прапор pull без прогрітого кешу: `loadNutritionPrefs()` — дефолти, запис
+    // `{...defaults, targets}` стер би шаблони, ручну ціль і нагадування.
+    clearNutritionSqliteCache();
+    markInitialPullComplete("u1", {});
+    const view = render(<Probe prefs={defaultNutritionPrefs()} />);
+    act(() => notifyNutritionSqliteCacheRefresh());
+    view.rerender(<Probe prefs={defaultNutritionPrefs()} />);
+
+    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(prefsOps()).toEqual([]);
+  });
 });

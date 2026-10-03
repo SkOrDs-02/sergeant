@@ -39,6 +39,7 @@ import {
 
 import {
   getNutritionDualWriteUserId,
+  hasPendingNutritionDualWrites,
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
 } from "./sqliteWriter/index.js";
@@ -50,7 +51,10 @@ import type {
   NutritionPantrySnapshot,
   NutritionRecipeSnapshot,
 } from "./sqliteWriter/diff.js";
-import { getCachedNutritionSqliteState } from "./sqliteReader.js";
+import {
+  getCachedNutritionSqliteState,
+  type SqliteNutritionCache,
+} from "./sqliteReader.js";
 import type { SavedRecipe } from "./recipeBook.js";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 
@@ -136,16 +140,52 @@ function isInitialSyncSettled(): boolean {
  * data-04: чи можна писати `nutrition_prefs`. Рядок prefs — один blob на
  * акаунт (шаблони страв, ціль, вода, нагадування), і сервер замінює його
  * цілком за LWW. До гідратації `loadNutritionPrefs()` віддає ДЕФОЛТИ, тож
- * запис із них стирає справжні налаштування на всіх пристроях. Гідратовано,
- * якщо кеш уже має рядок prefs АБО початковий pull завершено.
+ * запис із них стирає справжні налаштування на всіх пристроях.
+ *
+ * Гідратовано, якщо кеш Їжі ПРОГРІТО (`refreshedAt !== null`) І він має рядок
+ * prefs АБО початковий pull завершено. Прапор pull без прогрітого кешу не
+ * годиться: на вже наявному пристрої pull без nutrition-опів кеш не торкається,
+ * а бут кешу міг упасти або ще не довантажитись, тож `loadNutritionPrefs()`
+ * знову дав би дефолти (той самий гейт, що в `isNutritionSingletonWritable`).
  */
 export function isNutritionPrefsHydrated(): boolean {
+  if (!isNutritionCacheWarm()) return false;
   try {
     if (getCachedNutritionSqliteState().prefs != null) return true;
   } catch {
     return false;
   }
   return isInitialSyncSettled();
+}
+
+/**
+ * «Останній записаний prefs»: кеш Їжі оновлюється лише після асинхронного
+ * apply → refresh у черзі dual-write, тож два швидкі патчі підряд (blur поля
+ * і одразу click по тумблеру) бачили б ОДИН і той самий застарілий кеш, і
+ * повний `prefs_json` другого перезаписував би перший. `persistNutritionPrefs`
+ * кладе сюди результат синхронно; він діє, доки кеш не оновився (інший
+ * обʼєкт кешу) і в черзі немає незавершених записів. Тоді кеш знову джерело
+ * правди (і для змін, що прийшли з pull).
+ */
+interface PrefsOverlay {
+  readonly prefs: NutritionPrefs;
+  readonly cacheRef: SqliteNutritionCache;
+}
+let prefsOverlay: PrefsOverlay | null = null;
+
+function getPrefsOverlay(): NutritionPrefs | null {
+  if (prefsOverlay === null) return null;
+  const cache = getCachedNutritionSqliteState();
+  if (prefsOverlay.cacheRef === cache || hasPendingNutritionDualWrites()) {
+    return prefsOverlay.prefs;
+  }
+  prefsOverlay = null;
+  return null;
+}
+
+/** Актуальні prefs для накладання патча: останній запис, інакше кеш. */
+function loadLatestNutritionPrefs(): NutritionPrefs {
+  return getPrefsOverlay() ?? loadNutritionPrefs();
 }
 
 export interface PersistNutritionPrefsOptions {
@@ -202,6 +242,10 @@ export function persistNutritionPrefs(
     },
     goalOrigin: effectiveOrigin,
   };
+  prefsOverlay = {
+    prefs: nextPrefs,
+    cacheRef: getCachedNutritionSqliteState(),
+  };
   triggerNutritionDualWrite(prev, next);
   return true;
 }
@@ -209,8 +253,8 @@ export function persistNutritionPrefs(
 /**
  * Накладає `patch` (лише змінені поля) на АКТУАЛЬНИЙ кеш prefs у момент
  * виклику й пише результат. Непов'язані поля (шаблони страв, вода,
- * нагадування…) беруться з кешу, а не зі стану компонента, який міг
- * застаріти. `false` — prefs ще не гідратовано, нічого не записано.
+ * нагадування…) беруться з останнього запису або кешу, а не зі стану
+ * компонента, який міг застаріти. `false` — prefs ще не гідратовано, нічого не записано.
  */
 export function patchNutritionPrefs(
   patch: Partial<NutritionPrefs>,
@@ -218,7 +262,7 @@ export function patchNutritionPrefs(
 ): boolean {
   if (!isNutritionPrefsHydrated()) return false;
   return persistNutritionPrefs(
-    { ...loadNutritionPrefs(), ...patch },
+    { ...loadLatestNutritionPrefs(), ...patch },
     NUTRITION_PREFS_KEY,
     goalOrigin,
   );
@@ -457,7 +501,7 @@ function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
 function peekNutritionDualWriteState(): NutritionDualWriteState | null {
   try {
     const cache = getCachedNutritionSqliteState();
-    const prefs = cache.prefs ?? defaultNutritionPrefs();
+    const prefs = getPrefsOverlay() ?? cache.prefs ?? defaultNutritionPrefs();
     return {
       meals: extractMealSnapshots(normalizeNutritionLog(cache.log)),
       pantries: extractPantrySnapshots(normalizePantries(cache.pantries)),

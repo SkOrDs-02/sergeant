@@ -51,6 +51,7 @@ import {
 import {
   __setNutritionSqliteCacheForTests,
   clearNutritionSqliteCache,
+  getCachedNutritionSqliteState as getCachedNutritionSqliteStateForTest,
 } from "./sqliteReader";
 import {
   __resetInitialPullStateForTests,
@@ -310,6 +311,8 @@ describe("persistNutritionLog — dual-write only", () => {
 
 describe("persistNutritionPrefs — dual-write only", () => {
   beforeEach(() => {
+    // Гейт гідратації: кеш прогрітий І pull завершено.
+    __setNutritionSqliteCacheForTests({});
     completeInitialPull();
   });
 
@@ -390,6 +393,62 @@ describe("data-04 — гейт гідратації prefs і patchNutritionPrefs
       unregister();
       __clearNutritionDualWriteContextForTests();
     }
+  });
+
+  it("pull завершено, але кеш Їжі НЕ прогрітий (refreshedAt === null): prefs не гідратовано, нічого не пишеться", () => {
+    // Вже наявний пристрій: pull без nutrition-опів кеш не торкається, а бут
+    // кешу впав або ще не довантажився — `loadNutritionPrefs()` дає дефолти.
+    clearNutritionSqliteCache();
+    completeInitialPull();
+    expect(getCachedNutritionSqliteStateForTest().refreshedAt).toBeNull();
+    expect(isNutritionPrefsHydrated()).toBe(false);
+    expect(
+      persistNutritionPrefs({ ...defaultNutritionPrefs(), reminderHour: 8 }),
+    ).toBe(false);
+    expect(patchNutritionPrefs({ dailyTargetKcal: 2740 })).toBe(false);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("два патчі підряд без оновлення кешу: другий містить поля обох", () => {
+    // Blur поля і одразу click по тумблеру: dual-write ще не відпрацював, кеш
+    // старий. Другий патч не має загубити перший.
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+    expect(patchNutritionPrefs({ waterGoalMl: 2500 })).toBe(true);
+    expect(patchNutritionPrefs({ adaptiveGoalEnabled: true })).toBe(true);
+
+    const [, next] = triggerSpy.mock.calls[1]!;
+    const written = JSON.parse(next.prefs.prefsJson as string) as Record<
+      string,
+      unknown
+    >;
+    expect(written["waterGoalMl"]).toBe(2500);
+    expect(written["adaptiveGoalEnabled"]).toBe(true);
+    expect(written["mealTemplates"]).toEqual([template]);
+    // `prev` другого виклику теж бачить перший запис: diff емітить лише різницю.
+    const [prev2] = triggerSpy.mock.calls[1]!;
+    expect(
+      (JSON.parse(prev2.prefs.prefsJson as string) as Record<string, unknown>)[
+        "waterGoalMl"
+      ],
+    ).toBe(2500);
+  });
+
+  it("після оновлення кешу патч знову береться з кешу (зміни з pull не губляться)", () => {
+    __setNutritionSqliteCacheForTests({ prefs: accountPrefs });
+    expect(patchNutritionPrefs({ waterGoalMl: 2500 })).toBe(true);
+    // Refresh приніс інші prefs (наприклад, з іншого пристрою).
+    __setNutritionSqliteCacheForTests({
+      prefs: { ...accountPrefs, waterGoalMl: 3100, reminderHour: 7 },
+    });
+    expect(patchNutritionPrefs({ adaptiveGoalEnabled: true })).toBe(true);
+
+    const [, next] = triggerSpy.mock.calls[1]!;
+    const written = JSON.parse(next.prefs.prefsJson as string) as Record<
+      string,
+      unknown
+    >;
+    expect(written["waterGoalMl"]).toBe(3100);
+    expect(written["reminderHour"]).toBe(7);
   });
 
   it("скидання прапора (logout) знову блокує запис", () => {
