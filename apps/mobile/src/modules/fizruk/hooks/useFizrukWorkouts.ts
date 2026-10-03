@@ -1,7 +1,7 @@
 /**
  * `useFizrukWorkouts` — mobile hook for the Fizruk **Workouts** list.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * The hook reads from the SQLite warm cache populated by
  * `bootFizrukSqliteReadPath` and persists exclusively through the
  * dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
@@ -17,7 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain/domain";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWorkoutSnapshots,
@@ -63,7 +63,7 @@ export interface FizrukWorkout {
 }
 
 function uid(prefix = "id"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**
@@ -139,17 +139,22 @@ export function useFizrukWorkouts(): UseFizrukWorkoutsResult {
   const stateRef = useRef<FizrukWorkout[]>(workouts);
 
   // Stage 8 PR #057f-tombstone: overlay workouts from the local SQLite
-  // cache once it's warm. State is initialised from the cache (empty
-  // until the first refresh) so consumers don't re-render on the first
-  // tick when the cache holds the same data.
+  // cache once it's warm. Render-time update avoids the
+  // `react-hooks/set-state-in-effect` violation (initiative 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.workouts.map(projectWorkout);
-    stateRef.current = overlay;
-    setWorkouts(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setWorkouts(cache.workouts.map(projectWorkout));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = workouts;
+  }, [workouts]);
 
   const persist = useCallback(
     (updater: (prev: FizrukWorkout[]) => FizrukWorkout[]) => {

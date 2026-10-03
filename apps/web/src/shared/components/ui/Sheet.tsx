@@ -7,10 +7,18 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
+import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import {
+  SHEET_FOOTER_INSET_VAR,
+  useBottomInsetVar,
+} from "../../hooks/useBottomInsetVar";
+import { useKeyboardAwareOverlay } from "../../hooks/useKeyboardAwareOverlay";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "../../hooks/useHistoryDismiss";
 import { useSwipeToDismiss } from "../../hooks/useSwipeToDismiss";
 import { useAnnounce } from "./ScreenReaderAnnouncer";
 import { Icon } from "./Icon";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 
 /**
  * Sergeant Design System — Sheet (bottom sheet / modal)
@@ -28,10 +36,11 @@ import { Icon } from "./Icon";
  *   - 44×44 close button (WCAG tap target) with <Button variant="ghost" iconOnly>
  *   - focus trap + Escape via useDialogFocusTrap
  *   - overlay-click dismiss
- *   - animated slide-up with safe-area + bottom-nav margin so the
- *     panel always clears the module bottom tab bar (see ModuleShell's
- *     `--bottom-nav-height` CSS variable) and the iOS home indicator
- *   - keyboard-inset-aware margin if kbInsetPx is supplied
+ *   - animated slide-up with a safe-area inset so the panel always clears
+ *     the iOS home indicator (the module bottom tab bar sits under the
+ *     sheet's own scrim, so no space is reserved for it — see the
+ *     `paddingBottom` note below)
+ *   - keyboard-inset-aware margin through the shared platform adapter
  *
  * Callers are still responsible for their own form state, validation,
  * and action footer — Sheet only owns the shell.
@@ -64,7 +73,22 @@ export interface SheetProps {
    * node so the dialog remains labelled.
    */
   hideHeader?: boolean | undefined;
-  /** Keyboard (visual viewport) inset in px — shifts panel up when an on-screen keyboard is visible. */
+  /**
+   * Розтягнути панель на весь екран замість плаваючого аркуша над
+   * нижньою навігацією.
+   *
+   * Звичайний Sheet навмисно піднімається над навбаром (`marginBottom` =
+   * `--sgt-bottom-nav-inset`) і обмежений `90dvh`: це форма для коротких
+   * форм модулів. Для поверхонь, які є повноцінним екраном (HubChat), та
+   * сама геометрія давала дві вади одразу (звіт власника 2026-09-03):
+   * панель висіла над низом екрана, крізь скло просвічував навбар, а
+   * зверху лишалась смужка сторінки в кілька пікселів — не аркуш і не
+   * екран. У цьому режимі панель займає `100dvh`, сама несе safe-area
+   * зверху й знизу (композер лягає над home-індикатором), а закруглення
+   * й нижній відступ зникають. Клавіатурна геометрія лишається спільною.
+   */
+  fullScreen?: boolean | undefined;
+  /** Optional keyboard inset override. Normally Sheet detects it centrally. */
   kbInsetPx?: number | undefined;
   /** Sheet z-index. Defaults to 50 — raise for nested sheets. */
   zIndex?: number | undefined;
@@ -78,7 +102,7 @@ export interface SheetProps {
    * Sergeant v2 — surface prominence. `default` keeps the legacy
    * opaque `bg-panel` + `shadow-e4` shell; `glass` opts into the v2
    * translucent floating-glass shell (alpha-baked `bg-surface-glass`
-   * + `backdrop-blur-md` + `shadow-nav` + `rounded-t-r-2xl`) so the
+   * + `backdrop-blur-md` + `shadow-nav` + `rounded-t-2xl`) so the
    * mesh / hero gradient underneath reads through. Choose `glass`
    * for any v2 sheet that sits above a `MeshBackground` shell.
    * Default stays `default` so existing call-sites are unchanged.
@@ -96,6 +120,7 @@ export function Sheet({
   headerRight,
   hideHandle = false,
   hideHeader = false,
+  fullScreen = false,
   kbInsetPx,
   zIndex = 50,
   closeLabel = "Закрити",
@@ -104,7 +129,17 @@ export function Sheet({
   variant = "default",
 }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  // Публікує смугу футера на `<html>`, щоб трей тостів (сестра у
+  // `Providers`, до якої локальні змінні не доходять) став над CTA аркуша,
+  // а не на ньому. Виміряно, не пораховано: `innerHeight - rect.top` уже
+  // включає клавіатурний `marginBottom` панелі, тож тост підіймається і над
+  // клавіатурою. Без футера змінна знімається (`active = false`).
+  useBottomInsetVar(footerRef, SHEET_FOOTER_INSET_VAR, open && Boolean(footer));
+  const detectedKbInsetPx = useVisualKeyboardInset(open);
+  const resolvedKbInsetPx = kbInsetPx ?? detectedKbInsetPx;
   useDialogFocusTrap(open, panelRef, {
     onEscape: onClose,
     inertBackground: true,
@@ -119,16 +154,21 @@ export function Sheet({
     onDismiss: onClose,
   });
 
-  // Lock body scroll while sheet is open. Matches the ad-hoc patterns
-  // several existing sheets already implemented inconsistently.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Lock body scroll while sheet is open — iOS-safe (position: fixed),
+  // not just `overflow: hidden` (round-2 UI audit X2).
+  useBodyScrollLock(open);
+
+  // Browser / Android Back closes the sheet instead of leaving the module.
+  useHistoryDismiss(open, onClose);
+
+  // iOS панує visual viewport, щоб підняти сфокусоване поле над
+  // клавіатурою; `position: fixed` привʼязаний до layout viewport, тож
+  // разом із паном їде весь оверлей — аркуш зависає ВИЩЕ клавіатури, а
+  // шапка ховається під статус-бар («підскакує вгору занадто», звіт
+  // тестера 2026-08-16). Хук компенсує пан трансформом і синхронно
+  // підтягує щойно сфокусоване поле у видиму зону, коли клавіатура вже
+  // відкрита. Деталі й межі — у шапці `useKeyboardAwareOverlay`.
+  useKeyboardAwareOverlay(open, overlayRef);
 
   // Announce the sheet title to assistive tech when it opens. The
   // `aria-labelledby` wiring already exposes the title to screen
@@ -146,18 +186,75 @@ export function Sheet({
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
-  // Lift the panel above the module bottom nav (set via the
-  // `--bottom-nav-height` CSS variable on ModuleShell) plus the iOS
-  // home-indicator inset. `kbInsetPx` overrides the offset entirely
-  // when the soft keyboard is visible — we want the sheet to hug the
-  // keyboard, not float above where the nav would be.
+  // Геометрія панелі. The resolved keyboard inset overrides the bottom
+  // padding when the soft keyboard is visible — we want the sheet to hug
+  // the keyboard, not float above where the nav would be.
   const baseStyle: CSSProperties =
-    kbInsetPx && kbInsetPx > 0
-      ? { marginBottom: kbInsetPx }
-      : {
-          marginBottom:
-            "calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px))",
-        };
+    resolvedKbInsetPx > 0
+      ? {
+          marginBottom: resolvedKbInsetPx,
+          // The keyboard occupies part of the layout viewport. Lifting a
+          // 90dvh sheet without shrinking it pushes its header and focused
+          // field above the screen; cap it to the actually visible area so
+          // only the sheet body scrolls.
+          maxHeight: fullScreen
+            ? `calc(100dvh - ${resolvedKbInsetPx}px)`
+            : `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          // Повноекранна панель має бути повною і над клавіатурою: без
+          // `height` flex-панель лишається за вмістом, і короткий чат не
+          // заповнює видиму зону (ревʼю CodeRabbit, PR #1075).
+          ...(fullScreen
+            ? { height: `calc(100dvh - ${resolvedKbInsetPx}px)` }
+            : {}),
+          // Під клавіатурою home-індикатора не видно, тож нижній
+          // safe-area у fullScreen-режимі стає зайвим порожнім рядком.
+          ...(fullScreen
+            ? { paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: 0 }
+            : {}),
+        }
+      : fullScreen
+        ? {
+            marginBottom: 0,
+            // Inline `maxHeight` перекриває класовий `max-h-[90dvh]`, а
+            // `height` тримає панель повною навіть у порожньому чаті.
+            height: "100dvh",
+            maxHeight: "100dvh",
+            paddingTop: "env(safe-area-inset-top, 0px)",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          }
+        : {
+            // Знизу резервуємо РІВНО safe-area, не висоту навігації.
+            //
+            // AI-CONTEXT (звіт власника 2026-09-15: «білий мертвий простір»
+            // під кнопкою аркуша). Тут стояв
+            // `max(--sgt-bottom-nav-inset, --bottom-nav-height + safe-area)`,
+            // тобто ~70-105 px порожнього `bg-panel` під футером кожного
+            // аркуша модуля. Відступ був даниною формі «аркуш плаває НАД
+            // навбаром»; але навбар живе на `z-30`/`z-40`, а оверлей — на
+            // `z-50` зі суцільним скримом `inset-0`, і фокус-трап додатково
+            // робить фон `inert`. Тобто навігація під аркушем і не видима, і
+            // недосяжна — місце під неї резервувалось ні для чого, і воно ж
+            // зʼїдало ті самі пікселі зі стелі `max-h-[90dvh]`.
+            //
+            // Що НЕ змінилось і чому: відступ і далі всередині панелі, а не
+            // `marginBottom`. Марджин відривав панель від низу, під нею
+            // проглядала світла сторінка, і форма візуально скролилась у цей
+            // чужий простір (регресія 2026-09-08) — ця причина нікуди не
+            // поділась, змінилась лише величина.
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          };
+  // Запас прокрутки під останніми полями, поки клавіатура відкрита
+  // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє
+  // рівно стільки, скільки дозволяє `scrollHeight`: для поля в кінці
+  // списку контенту під ним майже нема, тож підняти його над
+  // клавіатурою нічим — центрування, яке рятує середину списку, для
+  // останніх рядків недосяжне в принципі. Резервуємо саме висоту
+  // клавіатури: це найгірший випадок того, наскільки поле може виявитись
+  // під нею. Порожнє місце живе рівно доки відкрита клавіатура.
+  const bodyStyle: CSSProperties | undefined =
+    resolvedKbInsetPx > 0
+      ? { paddingBottom: `calc(1rem + ${resolvedKbInsetPx}px)` }
+      : undefined;
   const panelStyle: CSSProperties = swipe.dragging
     ? {
         ...baseStyle,
@@ -183,6 +280,10 @@ export function Sheet({
   // full root-cause writeup).
   const sheet = (
     <div
+      ref={overlayRef}
+      // `animate-fade-in` — суто opacity-кейфрейми (`fadeIn` у
+      // tailwind-preset), тож інлайновий `transform` від
+      // `useKeyboardAwareOverlay` з анімацією не конфліктує.
       className="fixed inset-0 flex items-end justify-center motion-safe:animate-fade-in"
       style={{ zIndex }}
     >
@@ -205,10 +306,17 @@ export function Sheet({
           // mobile/coarse-pointer counterpart of Modal; they share the
           // same z-modal stacking tier so a Sheet over a popover
           // always reads as the higher surface.
-          "relative w-full max-w-lg flex flex-col max-h-[90vh] motion-safe:animate-slide-up",
+          // `dvh` (not `vh`) so the panel is capped at the *visible* viewport
+          // on iOS — with `vh` the sheet grows behind Safari's dynamic toolbar,
+          // pushing the composer off-screen and making the inner scroll feel
+          // stuck (mobile-audit A2).
+          "relative w-full max-w-lg flex flex-col max-h-[90dvh] motion-safe:animate-slide-up",
           variant === "glass"
-            ? "bg-surface-glass motion-safe:backdrop-blur-md border-t border-surface-line rounded-t-r-2xl shadow-nav"
+            ? "bg-surface-glass motion-safe:backdrop-blur-md border-t border-surface-line rounded-t-2xl shadow-nav"
             : "bg-panel border-t border-line rounded-t-3xl shadow-e4",
+          // Повноекранна панель стоїть на краях вʼюпорта: закруглення й
+          // верхня лінія на межі зі статус-баром читаються як артефакт.
+          fullScreen && "rounded-none border-t-0",
           panelClassName,
         )}
       >
@@ -246,12 +354,14 @@ export function Sheet({
             <div className="min-w-0 flex-1">
               <div
                 id={titleId}
-                className="text-lg font-extrabold text-text leading-tight"
+                className="text-style-title font-extrabold text-text leading-tight"
               >
                 {title}
               </div>
               {description && (
-                <div className="text-xs text-subtle mt-1">{description}</div>
+                <div className="text-style-caption text-subtle mt-1">
+                  {description}
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
@@ -266,25 +376,32 @@ export function Sheet({
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 )}
               >
-                <Icon name="close" size={16} aria-hidden />
+                <Icon name="close" size="md" aria-hidden />
               </button>
             </div>
           </div>
         )}
         <div
+          style={bodyStyle}
           className={cn(
-            // `overscroll-contain` prevents rubber-band scroll from
-            // leaking out to the page under the sheet — on iOS this
-            // would otherwise scroll the body behind the modal while
-            // the sheet is open, which is disorienting.
-            "flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 pb-4",
+            // `overscroll-none` (not `-contain`) — `contain` still lets the
+            // browser paint its own rubber-band/glow effect at this
+            // element's own scroll boundary; `none` suppresses that too
+            // (round-2 UI audit X2: this was the light border/frame seen
+            // on overscroll). Chaining to the page behind the sheet is
+            // additionally blocked by `useBodyScrollLock` above.
+            "flex-1 min-h-0 overflow-y-auto overscroll-none px-5 pb-4",
             bodyClassName,
           )}
         >
           {children}
         </div>
         {footer && (
-          <div className="shrink-0 px-5 pt-3 pb-4 border-t border-line bg-panel">
+          <div
+            ref={footerRef}
+            data-sheet-footer
+            className="shrink-0 px-5 pt-3 pb-4 border-t border-line bg-panel"
+          >
             {footer}
           </div>
         )}

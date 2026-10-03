@@ -110,7 +110,7 @@ function compareSemver(a, b) {
 }
 
 function checkNode() {
-  const expected = readNvmrc(); // e.g. "20.20.2"
+  const expected = readNvmrc(); // e.g. "22.19.0"
   const actual = process.versions.node;
   if (!expected) {
     warn(`Node ${actual} (no .nvmrc — пропускаю version-check)`);
@@ -175,7 +175,7 @@ function checkDocker() {
     }
     fail(
       "Docker не знайдено",
-      "Встанови Docker Desktop / Docker Engine. Або запусти `pnpm bootstrap --skip-db` і підніми Postgres вручну (див. docs/02-engineering/integrations/env-vars.md).",
+      "Встанови Docker Desktop / Docker Engine. Або запусти `pnpm bootstrap --skip-db` і підніми Postgres вручну (див. docs/engineering/integrations/env-vars.md).",
     );
     return false;
   }

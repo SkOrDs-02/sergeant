@@ -2,8 +2,9 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useDebounce } from "@shared/hooks";
 import { foodSearchApi } from "@shared/api";
 import type { FoodSearchProduct } from "@shared/api";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
@@ -13,6 +14,10 @@ import type { FoodProduct } from "../../lib/foodDb/foodDb";
 const LOCAL_DEBOUNCE_MS = 180;
 const OFF_DEBOUNCE_MS = 600;
 const OFF_MIN_LEN = 2;
+
+/** Стиль: помилка закінчується підказкою про дію (style-guide §3). */
+const OFF_SEARCH_FAILED =
+  "Пошук по базі продуктів не відповів. Спробуй ще раз або введи КБЖВ вручну.";
 
 // react-query is a useful fit here: repeated searches for the same query
 // return from cache instantly (important for UX when users backspace and
@@ -38,31 +43,33 @@ async function fetchOpenFoodFacts(
     : [];
 }
 
-// Debounce user input separately from the queries themselves. We don't want
-// react-query to see every keystroke — otherwise it would spin up (and
-// cancel) one request per character.
-function useDebouncedValue<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = window.setTimeout(() => setDebounced(value), delay);
-    return () => window.clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
-
 export interface UseFoodSearchResult {
   foodHits: FoodProduct[];
   offHits: FoodSearchProduct[];
   foodBusy: boolean;
   offBusy: boolean;
+  /**
+   * Обидва джерела відпрацювали САМЕ поточний запит: debounce догнав, і
+   * жоден запит не в польоті.
+   *
+   * Порожній `foodHits` сам собою не означає «нічого не знайдено» — рівно
+   * так само він виглядає в перші 600 мс, поки зовнішній debounce ще не
+   * догнав набране. Тому автоматичний вибір результату (позиція з чека
+   * Сільпо) чекає на цей прапорець: без нього він вирішував би «промах»
+   * ще до того, як пошук почався.
+   */
+  searchSettled: boolean;
   foodErr: string;
   setFoodErr: Dispatch<SetStateAction<string>>;
 }
 
 export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
   const trimmed = foodQuery.trim();
-  const localQuery = useDebouncedValue(trimmed, LOCAL_DEBOUNCE_MS);
-  const offQuery = useDebouncedValue(trimmed, OFF_DEBOUNCE_MS);
+  // Debounce user input separately from the queries themselves. We don't want
+  // react-query to see every keystroke — otherwise it would spin up (and
+  // cancel) one request per character.
+  const localQuery = useDebounce(trimmed, LOCAL_DEBOUNCE_MS);
+  const offQuery = useDebounce(trimmed, OFF_DEBOUNCE_MS);
 
   const local = useQuery<FoodProduct[]>({
     queryKey: nutritionKeys.foodSearchLocal(localQuery),
@@ -79,26 +86,39 @@ export function useFoodSearch(foodQuery: string): UseFoodSearchResult {
   });
 
   // `foodErr` is not owned by the search queries — it's used by
-  // `SaveAsFood` to report "save food" errors into the shared UI area.
+  // the picker to report search errors into the shared UI area.
   // Keep it local state here so the public API of this hook stays stable
   // and consumers don't have to track where it lives.
   const [foodErr, setFoodErr] = useState("");
 
-  // Any pending save-food error is stale the moment the user starts typing
-  // a new search. The pre-react-query implementation did this implicitly on
-  // the fetch-effect; restore it explicitly here.
-  useEffect(() => {
+  const [prevTrimmed, setPrevTrimmed] = useState(trimmed);
+  if (trimmed !== prevTrimmed) {
+    setPrevTrimmed(trimmed);
     if (foodErr) setFoodErr("");
-    // `foodErr` excluded: including it would loop (effect clears it).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trimmed]);
+  }
+
+  // AI-DANGER: помилку запиту до бази продуктів НЕ можна ковтати. До
+  // 2026-09-03 `off.error` не читав ніхто: `offHits` просто ставали
+  // порожніми, і людина бачила «нічого не знайдено» — відповідь про порожню
+  // базу замість відповіді про збій. Найтихіший випадок — завеликий запит:
+  // сервер віддавав 400, а екран казав, що такого продукту не існує
+  // (browser-QA 2026-09-02). Локальний пошук сюди не входить: `searchFoods`
+  // ковтає свої помилки всередині й повертає `[]` за контрактом.
+  const searchErr = off.isError ? OFF_SEARCH_FAILED : "";
 
   return {
     foodHits: trimmed && localQuery === trimmed ? (local.data ?? []) : [],
     offHits: trimmed && offQuery === trimmed ? (off.data ?? []) : [],
     foodBusy: local.isFetching && localQuery.length > 0,
     offBusy: off.isFetching && offQuery.length >= OFF_MIN_LEN,
-    foodErr,
+    searchSettled:
+      localQuery === trimmed &&
+      offQuery === trimmed &&
+      !local.isFetching &&
+      !off.isFetching,
+    // Ручна помилка (штрихкод, чек) має пріоритет: вона стосується дії,
+    // яку людина щойно зробила, а збій пошуку триває фоном.
+    foodErr: foodErr || searchErr,
     setFoodErr,
   };
 }

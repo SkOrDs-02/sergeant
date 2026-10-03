@@ -57,3 +57,7 @@ export function shouldUseRuntimeCache(
     return false;
   return method === "GET";
 }
+
+export function shouldCacheExerciseImage(pathname: string): boolean {
+  return pathname.startsWith("/exercises/");
+}

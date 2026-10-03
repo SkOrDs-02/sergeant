@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  habitScheduledOnDate,
+  flexibleStreakBreakdown,
+} from "@sergeant/routine-domain";
+import {
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
@@ -95,6 +99,31 @@ describe("mark_habit_done", () => {
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
   });
+
+  it("D-005: strips `id:` prefix the model echoes — completion lands under canonical key", () => {
+    seedHabit("hab-xyz", "Вода");
+    const out = call({
+      name: "mark_habit_done",
+      input: { habit_id: "id:hab-xyz" },
+    });
+    expect(out).toContain("Вода");
+    expect(out).toContain("виконану");
+    // Completion must land under the canonical id, not a phantom "id:hab-xyz" key.
+    const state = loadRoutineState();
+    expect(state.completions["hab-xyz"]).toContain("2026-04-22");
+    expect(state.completions["id:hab-xyz"]).toBeUndefined();
+  });
+
+  it("D-005: unknown habit id returns error and writes no phantom completion", () => {
+    const before = loadRoutineState();
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "hab-does-not-exist" },
+    });
+    const result = typeof out === "string" ? out : out?.result;
+    expect(result).toContain("Не знайшов");
+    expect(loadRoutineState().completions).toEqual(before.completions);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -127,6 +156,60 @@ describe("create_habit", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toMatch(/id:/);
+  });
+
+  // Знахідка PR-R9: домен має ШІСТЬ розкладів, цей тул уміє пʼять. Доти
+  // шостий (`flexible`, «N разів на тиждень») мовчки падав у `daily`, і
+  // відповідь рапортувала успіх — людина просила три рази на тиждень і
+  // отримувала щоденну звичку без жодного слова про це.
+  it("PR-R9: says out loud when the asked-for recurrence was not applied", () => {
+    const out = call({
+      name: "create_habit",
+      input: { name: "Басейн", recurrence: "flexible" },
+    });
+    expect(typeof out).toBe("string");
+    // Фолбек лишається (звичка таки створюється), але вже НЕ мовчазний.
+    expect(out).toContain("щодня");
+    expect(out).toContain("«flexible»");
+    expect(out).toContain("Рутина");
+  });
+
+  it("PR-R9: stays silent when the recurrence was applied", () => {
+    const out = call({
+      name: "create_habit",
+      input: { name: "Читання", recurrence: "weekdays" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("по буднях");
+    expect(out).not.toContain("не ставлю");
+  });
+
+  // `once` у цьому тулі ПРИЙМАЄТЬСЯ (на відміну від `edit_habit`) — пін
+  // тримає цю асиметрію видимою, бо опис тулзи доти казав інше.
+  it("PR-R9: accepts 'once' on create", () => {
+    const out = call({
+      name: "create_habit",
+      input: { name: "Візит", recurrence: "once" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("разово");
+    expect(out).not.toContain("не ставлю");
+  });
+
+  // audit routine E-5: weekdays — Mon-first 0..6 (ISO 8601). Executor —
+  // чистий passthrough; anchor задає опис тулзи в
+  // `apps/server/src/modules/chat/toolDefs/routine.ts`. Межовий день
+  // (понеділок/неділя) ловить off-by-one у будь-який бік.
+  it("E-5: weekdays [0] means Monday, not Sunday", () => {
+    call({
+      name: "create_habit",
+      input: { name: "Біг", recurrence: "weekly", weekdays: [0] },
+    });
+
+    const habit = loadRoutineState().habits.find((h) => h.name === "Біг");
+    expect(habit).toBeDefined();
+    expect(habitScheduledOnDate(habit!, "2026-04-27")).toBe(true); // понеділок
+    expect(habitScheduledOnDate(habit!, "2026-05-03")).toBe(false); // неділя
   });
 });
 
@@ -252,7 +335,6 @@ describe("archive_habit", () => {
       name: "archive_habit",
       input: { habit_id: "h1" },
     });
-    expect(typeof out).toBe("string");
     expect(out).toContain("заархівовано");
   });
 
@@ -262,7 +344,6 @@ describe("archive_habit", () => {
       name: "archive_habit",
       input: { habit_id: "h1", archived: false },
     });
-    expect(typeof out).toBe("string");
     expect(out).toContain("повернуто");
   });
 
@@ -371,6 +452,33 @@ describe("edit_habit", () => {
     expect(out).toContain("Немає");
   });
 
+  // Знахідка PR-R9, друга половина. Тут фолбеку не було взагалі: прохання
+  // просто зникало. Перевіряються ОБИДВА шляхи — коли розклад був єдиною
+  // зміною (інакше відповідь «Немає змін» не пояснювала причини) і коли
+  // поруч ішла інша зміна (тоді успіх рапортувався, а прохання гинуло).
+  it("PR-R9: explains an unsupported recurrence when it was the only ask", () => {
+    seedHabit("h1", "Басейн");
+    const out = call({
+      name: "edit_habit",
+      input: { habit_id: "h1", recurrence: "flexible" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("Немає змін");
+    expect(out).toContain("«flexible»");
+  });
+
+  it("PR-R9: explains an unsupported recurrence alongside a change that did apply", () => {
+    seedHabit("h1", "Старе");
+    const out = call({
+      name: "edit_habit",
+      input: { habit_id: "h1", name: "Нове", recurrence: "flexible" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("оновлено");
+    expect(out).toContain("назва");
+    expect(out).toContain("«flexible»");
+  });
+
   it("shape: result is a non-empty string", () => {
     seedHabit("h1", "A");
     const out = call({
@@ -379,6 +487,21 @@ describe("edit_habit", () => {
     });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+
+  // Дзеркало E-5-кейсу з create_habit: weekdays [6] = неділя, не субота.
+  it("E-5: weekdays [6] means Sunday, not Saturday", () => {
+    seedHabit("h1", "Розтяжка");
+    call({
+      name: "edit_habit",
+      input: { habit_id: "h1", recurrence: "weekly", weekdays: [6] },
+    });
+
+    const habit = loadRoutineState().habits.find((h) => h.id === "h1");
+    expect(habit).toBeDefined();
+    expect(habitScheduledOnDate(habit!, "2026-05-03")).toBe(true); // неділя
+    expect(habitScheduledOnDate(habit!, "2026-05-02")).toBe(false); // субота
+    expect(habitScheduledOnDate(habit!, "2026-04-27")).toBe(false); // понеділок
   });
 });
 
@@ -450,7 +573,39 @@ describe("pause_habit", () => {
       input: { habit_id: "h1", paused: false },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("знято з паузи");
+    expect(out).toContain("повернуто з паузи");
+  });
+
+  it("неявний початок паузи = день ПРИСТРОЮ, коли київська доба вже наступна", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    seedHabit("h1", "Вода");
+    const out = call({ name: "pause_habit", input: { habit_id: "h1" } });
+    expect(out).toContain("з 2026-04-22");
+  });
+
+  it("пише датований інтервал, а не недатований прапор", () => {
+    seedHabit("h1", "Вода");
+    const out = call({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+    });
+    expect(out).toContain("2026-08-10 – 2026-08-17");
+    const habit = loadRoutineState().habits.find((h) => h.id === "h1");
+    expect(habit?.pauseIntervals).toEqual([
+      { from: "2026-08-10", to: "2026-08-17" },
+    ]);
+    // Головне: легасі-прапор НЕ вмикається — саме він ретроактивно
+    // вимивав звичку з історії (E-3).
+    expect(habit?.paused).not.toBe(true);
+  });
+
+  it("перевернутий діапазон відхиляється", () => {
+    seedHabit("h1", "Вода");
+    const out = call({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-17", to: "2026-08-10" },
+    });
+    expect(out).toContain("не може бути раніше");
   });
 
   it("error: habit not found returns error", () => {
@@ -462,14 +617,18 @@ describe("pause_habit", () => {
     expect(out).toContain("не знайдено");
   });
 
-  it("shape: already paused returns idempotent message", () => {
-    seedHabit("h1", "X", { paused: true });
+  it("shape: повтор того самого діапазону — ідемпотентне повідомлення", () => {
+    seedHabit("h1", "X");
+    call({
+      name: "pause_habit",
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+    });
     const out = call({
       name: "pause_habit",
-      input: { habit_id: "h1", paused: true },
+      input: { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("вже");
+    expect(out).toContain("уже");
   });
 });
 
@@ -556,6 +715,45 @@ describe("habit_stats", () => {
     expect(out).toContain("Виконано");
     expect(out).toContain("серія");
   });
+
+  // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+  // `habit_stats` рахує серію тим самим гнучким алгоритмом
+  // (`flexibleStreakBreakdown`), що й UI, а не жорсткою реалізацією, яка
+  // обнуляла серію на першому дні без completion незалежно від skip.
+  // Сценарій: сьогодні (04-22) і позавчора (04-20) виконано, а вчора
+  // (04-21) стоїть «не зміг з причиною» — гнучка модель НЕ обриває серію
+  // на skip-дні (канон §4: skip нейтральний, серія переживає, не росте).
+  it("LOG-1: пропуск із причиною не обриває серію — той самий гнучкий алгоритм, що в UI", () => {
+    seedHabit("h1", "Йога");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: {
+        ...seeded.completions,
+        h1: ["2026-04-20", "2026-04-22"],
+      },
+      skips: {
+        h1: { "2026-04-21": { reason: "busy", at: "2026-04-21T08:00:00Z" } },
+      },
+    });
+    const habit = loadRoutineState().habits.find((h) => h.id === "h1")!;
+
+    // Незалежна перевірка тим самим доменним алгоритмом, яким рахує UI —
+    // «чат = UI» на звичці зі skip-днем.
+    const expectedStreak = flexibleStreakBreakdown(
+      habit,
+      loadRoutineState().completions["h1"],
+      "2026-04-22",
+      { skipsForHabit: loadRoutineState().skips?.["h1"] },
+    ).days;
+    expect(expectedStreak).toBe(2); // регресійний якір: 04-20 + 04-22, skip не рахується, не обриває
+
+    const out = call({
+      name: "habit_stats",
+      input: { habit_id: "h1", period_days: 7 },
+    });
+    expect(out).toContain(`Поточна серія: ${expectedStreak} днів`);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -591,6 +789,15 @@ describe("habit_trend", () => {
     expect(out).toContain("не знайдено");
   });
 
+  it("several habits: adds a per-habit breakdown so the model can name the weak one", () => {
+    seedHabit("h1", "Біг");
+    seedHabit("h2", "Читання");
+    const out = call({ name: "habit_trend", input: { period_days: 7 } });
+    expect(out).toContain("По звичках:");
+    expect(out).toMatch(/Біг: \d+\/\d+ \(\d+%\)/);
+    expect(out).toMatch(/Читання: \d+\/\d+ \(\d+%\)/);
+  });
+
   it("shape: result is a non-empty string", () => {
     seedHabit("h1", "X");
     const out = call({ name: "habit_trend", input: { period_days: 14 } });
@@ -619,7 +826,7 @@ describe("create_habit · undo", () => {
     expect(before.habits).toHaveLength(1);
     const createdId = before.habits[0]!.id;
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
     expect(
@@ -646,7 +853,7 @@ describe("create_habit · undo", () => {
       },
     });
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
     expect(after.completions[createdId]).toBeUndefined();
@@ -669,55 +876,117 @@ describe("mark_habit_done · undo", () => {
     seedHabit("h1", "Вода");
     const out = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      // LOG-2 fix: дата має бути в межах розкладу звички.
+      // `seedHabit` дефолтить `startDate: "2026-01-01"`, тож дата ДО
+      // старту (як стара «2024-06-15») тепер коректно no-op-ить.
+      //
+      // PR-R3: і не пізніше «сьогодні». Годинник цього файлу запінено на
+      // 2026-04-22 (`vi.setSystemTime` вище), а дати тут були «2026-06-15»
+      // — тобто майже два місяці в МАЙБУТНЄ відносно пінованого сьогодні.
+      // Тести цього не помічали, бо до заборони майбутньої відмітки дата
+      // ні на що не впливала. Зсунуто в минуле відносно піна; перевіряють
+      // вони, як і раніше, поведінку undo, а не дату.
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     if (typeof out === "string" || out == null) {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
     const before = loadRoutineState();
-    expect(before.completions["h1"]).toContain("2024-06-15");
+    expect(before.completions["h1"]).toContain("2026-04-20");
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
-    expect(after.completions["h1"] ?? []).not.toContain("2024-06-15");
+    expect(after.completions["h1"] ?? []).not.toContain("2026-04-20");
   });
 
-  it("якщо дата вже була виконана — повертає string без undo (no-op)", () => {
+  it("якщо дата вже була виконана — повертає результат БЕЗ undo (no-op)", () => {
     seedHabit("h1", "Вода");
     // Перший виклик — вставляємо completion
     const first = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     expect(typeof first).toBe("object");
 
     // Другий виклик з тією ж датою — completion вже є, undo не потрібен
     const second = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
-    expect(typeof second).toBe("string");
+    // Форма змінилась разом із F-12: no-op теж несе `confirm`, але undo
+    // лишається відсутнім — реверсити нема чого.
+    expect(typeof second === "string" || second?.undo === undefined).toBe(true);
   });
 
   it("undo не зачіпає інші дати того ж habit-а", () => {
     seedHabit("h1", "Вода");
     handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-13" },
+      input: { habit_id: "h1", date: "2026-04-18" },
     });
     const out = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
 
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toContain("2024-06-13");
-    expect(after.completions["h1"]).not.toContain("2024-06-15");
+    expect(after.completions["h1"]).toContain("2026-04-18");
+    expect(after.completions["h1"]).not.toContain("2026-04-20");
+  });
+
+  // LOG-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+  // раніше `mark_habit_done` писав completion незалежно від розкладу
+  // звички (жодного `habitScheduledOnDate`-гейту, той самий пропуск, що
+  // `applyToggleHabitCompletion` закриває). Дата ДО `startDate` звички —
+  // незапланований день, тож tool має бути no-op, як чекбокс в UI.
+  it("дата поза розкладом звички (до startDate) — no-op, без запису", () => {
+    seedHabit("h1", "Вода"); // startDate: 2026-01-01
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "h1", date: "2025-12-31" },
+    });
+    expect(typeof out).toBe("string");
+    expect(loadRoutineState().completions["h1"] ?? []).not.toContain(
+      "2025-12-31",
+    );
+  });
+
+  // LOG-2 — відмітка «зробив» знімає «не зміг з причиною» на ту саму дату
+  // (канон §5: три стани дня взаємовиключні).
+  it("відмітка виконання знімає раніше поставлений skip на ту саму дату", () => {
+    seedHabit("h1", "Вода");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      skips: {
+        h1: { "2026-04-15": { reason: "busy", at: "2026-04-15T08:00:00Z" } },
+      },
+    });
+    expect(loadRoutineState().skips?.["h1"]?.["2026-04-15"]).toBeDefined();
+
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "h1", date: "2026-04-15" },
+    });
+    if (typeof out === "string" || out == null)
+      throw new Error("expected object");
+
+    const after = loadRoutineState();
+    expect(after.completions["h1"]).toContain("2026-04-15");
+    expect(after.skips?.["h1"]?.["2026-04-15"]).toBeUndefined();
+
+    // undo відновлює і completion, і skip.
+    out.undo?.();
+    const reverted = loadRoutineState();
+    expect(reverted.completions["h1"] ?? []).not.toContain("2026-04-15");
+    expect(reverted.skips?.["h1"]?.["2026-04-15"]).toMatchObject({
+      reason: "busy",
+    });
   });
 });
 
@@ -737,7 +1006,7 @@ describe("create_reminder · undo", () => {
     const before = loadRoutineState();
     expect(before.habits[0]!.reminderTimes).toEqual(["08:00"]);
 
-    out.undo();
+    out.undo?.();
     const after = loadRoutineState();
     expect(after.habits[0]!.reminderTimes).toEqual([]);
   });
@@ -757,25 +1026,60 @@ describe("create_reminder · undo", () => {
 // ---------------------------------------------------------------------------
 describe("complete_habit_for_date · undo", () => {
   it("undo на mark-complete видаляє ту дату; інші дати залишаються", () => {
+    seedHabit("h1", "Йога"); // startDate: 2026-01-01
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: { ...seeded.completions, h1: ["2026-01-01"] },
+    });
+    const out = handleRoutineAction({
+      name: "complete_habit_for_date",
+      input: { habit_id: "h1", date: "2026-01-02" },
+    });
+    if (typeof out === "string" || out == null)
+      throw new Error("expected object");
+
+    out.undo?.();
+    const after = loadRoutineState();
+    expect(after.completions["h1"]).toEqual(["2026-01-01"]);
+  });
+
+  // LOG-2 — той самий гейт розкладу, що для `mark_habit_done`.
+  it("дата поза розкладом звички — no-op, без запису", () => {
+    seedHabit("h1", "Йога"); // startDate: 2026-01-01
+    const out = handleRoutineAction({
+      name: "complete_habit_for_date",
+      input: { habit_id: "h1", date: "2025-12-31" },
+    });
+    expect(typeof out).toBe("string");
+    expect(loadRoutineState().completions["h1"] ?? []).not.toContain(
+      "2025-12-31",
+    );
+  });
+
+  // LOG-2 — completed:true знімає «не зміг з причиною» на ту саму дату.
+  it("completed:true знімає раніше поставлений skip на ту саму дату", () => {
     seedHabit("h1", "Йога");
     const seeded = loadRoutineState();
     saveRoutineState({
       ...seeded,
-      completions: { ...seeded.completions, h1: ["2025-01-01"] },
+      skips: {
+        h1: { "2026-04-15": { reason: "sick", at: "2026-04-15T08:00:00Z" } },
+      },
     });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
-      input: { habit_id: "h1", date: "2025-01-02" },
+      input: { habit_id: "h1", date: "2026-04-15" },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toEqual(["2025-01-01"]);
+    expect(after.completions["h1"]).toContain("2026-04-15");
+    expect(after.skips?.["h1"]?.["2026-04-15"]).toBeUndefined();
   });
 
-  it("повторне виставлення дати: вже виконано → return string без undo", () => {
+  it("повторне виставлення дати: вже виконано → результат без undo", () => {
     seedHabit("h1", "H");
     const seeded = loadRoutineState();
     saveRoutineState({
@@ -786,25 +1090,117 @@ describe("complete_habit_for_date · undo", () => {
       name: "complete_habit_for_date",
       input: { habit_id: "h1", date: "2025-01-02" },
     });
-    expect(typeof out).toBe("string");
+    expect(typeof out === "string" || out?.undo === undefined).toBe(true);
   });
 
   it("undo на uncheck (completed:false) повертає дату назад", () => {
-    seedHabit("h1", "H");
+    seedHabit("h1", "H"); // startDate: 2026-01-01
     const seeded = loadRoutineState();
     saveRoutineState({
       ...seeded,
-      completions: { ...seeded.completions, h1: ["2025-01-02"] },
+      completions: { ...seeded.completions, h1: ["2026-01-02"] },
     });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
-      input: { habit_id: "h1", date: "2025-01-02", completed: false },
+      input: { habit_id: "h1", date: "2026-01-02", completed: false },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toContain("2025-01-02");
+    expect(after.completions["h1"]).toContain("2026-01-02");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// archive_habit — undo (рішення founder-а #8: оборотні дії виконуються одразу,
+// але з кнопкою «скасувати»). Без undo друга половина рішення не існує.
+// ---------------------------------------------------------------------------
+describe("archive_habit — undo", () => {
+  it("undo знімає архівацію", () => {
+    seedHabit("h1", "Біг");
+    const out = handleRoutineAction({
+      name: "archive_habit",
+      input: { habit_id: "h1" },
+    } as ChatAction) as { result: string; undo: () => void };
+
+    expect(typeof out).toBe("object");
+    expect(loadRoutineState().habits.find((h) => h.id === "h1")?.archived).toBe(
+      true,
+    );
+    out.undo?.();
+    expect(loadRoutineState().habits.find((h) => h.id === "h1")?.archived).toBe(
+      false,
+    );
+  });
+
+  it("undo не затирає зміни, зроблені між дією і скасуванням", () => {
+    // Замикання на знімок стану замість повторного читання — найтиповіша
+    // помилка undo. Вона проявляється ЛИШЕ коли між дією і undo щось
+    // змінилось, тобто ніколи в наївному тесті.
+    seedHabit("h1", "Біг");
+    seedHabit("h2", "Вода");
+    const out = handleRoutineAction({
+      name: "archive_habit",
+      input: { habit_id: "h1" },
+    } as ChatAction) as { result: string; undo: () => void };
+
+    const mid = loadRoutineState();
+    saveRoutineState({
+      ...mid,
+      habits: mid.habits.map((h) =>
+        h.id === "h2" ? { ...h, name: "Вода 2л" } : h,
+      ),
+    });
+
+    out.undo?.();
+    const after = loadRoutineState();
+    expect(after.habits.find((h) => h.id === "h1")?.archived).toBe(false);
+    expect(after.habits.find((h) => h.id === "h2")?.name).toBe("Вода 2л");
+  });
+
+  it("undo ідемпотентний: звичка зникла — не кидає", () => {
+    seedHabit("h1", "Біг");
+    const out = handleRoutineAction({
+      name: "archive_habit",
+      input: { habit_id: "h1" },
+    } as ChatAction) as { result: string; undo: () => void };
+    const st = loadRoutineState();
+    saveRoutineState({ ...st, habits: [] });
+    expect(() => out.undo?.()).not.toThrow();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Регресія рев'ю #1209: неявна дата `mark_habit_done` мусить бути днем
+// ПРИСТРОЮ, а не київським.
+//
+// Доти там стояв `getKyivDayKey()`, і поки межі майбутнього не існувало,
+// різниця ні на що не впливала. Після PR-R3 вона стала відмовою: у поясі
+// на захід від Києва ввечері київська доба вже наступна, тож неявна ціль
+// потрапляла в «майбутнє», редюсер її відхиляв, і чат відповідав «не
+// заплановано» на звичку, яку людина саме зараз виконала.
+//
+// Годинник тут пінимо в UTC-інстант, де ДВІ доби розходяться: 22:00 UTC =
+// 01:00 наступного дня за Києвом. Прогін іде під TZ=UTC, тож пристрій
+// бачить 2026-04-22, а Київ — уже 2026-04-23.
+// ─────────────────────────────────────────────────────────────────────────
+describe("mark_habit_done · неявна дата біля межі доби", () => {
+  it("відмічає день ПРИСТРОЮ, коли київська доба вже наступна", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    seedHabit("h1", "Вода");
+
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "h1" },
+    });
+
+    // Головне — НЕ відмова. Зі старим `getKyivDayKey()` тут повертався б
+    // рядок «не заплановано на 2026-04-23».
+    expect(typeof out).not.toBe("string");
+    const state = loadRoutineState();
+    expect(state.completions["h1"]).toContain("2026-04-22");
+    expect(state.completions["h1"]).not.toContain("2026-04-23");
   });
 });

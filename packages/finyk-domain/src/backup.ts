@@ -35,11 +35,14 @@ export interface FinykBackup {
   version?: number;
   budgets?: unknown[];
   subscriptions?: unknown[];
+  /** Ручні операції. Див. `FINYK_BACKUP_STORAGE_KEYS.manualExpenses`. */
+  manualExpenses?: unknown[];
   manualAssets?: unknown[];
   manualDebts?: unknown[];
   receivables?: unknown[];
   hiddenAccounts?: unknown[];
   hiddenTxIds?: unknown[];
+  excludedStatTxIds?: unknown[];
   monthlyPlan?: Record<string, unknown>;
   txCategories?: Record<string, unknown>;
   txSplits?: Record<string, unknown>;
@@ -47,6 +50,12 @@ export interface FinykBackup {
   networthHistory?: unknown[];
   customCategories?: unknown[];
   dismissedRecurring?: unknown[];
+  /**
+   * Правила «Завжди так для цього магазину» (`MerchantRule[]`, 2026-10-01).
+   * Необовʼязкове поле: старі файли його не мають і лишають правила на
+   * пристрої як є.
+   */
+  merchantRules?: unknown[];
 }
 
 /**
@@ -68,21 +77,21 @@ function needObj(
 ): Record<string, unknown> | undefined {
   if (v === undefined || v === null) return undefined;
   if (typeof v !== "object" || Array.isArray(v))
-    throw new Error(`Поле «${name}» має бути об'єктом`);
+    throw new Error(`Поле «${name}» має бути обʼєктом`);
   return v as Record<string, unknown>;
 }
 
 /**
- * Перевіряє та нормалізує об'єкт бекапу для застосування в сховище.
+ * Перевіряє та нормалізує обʼєкт бекапу для застосування в сховище.
  * Підтримує version 1 (без категорій/сплітів) і 2 (повний набір).
  */
 export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("Файл має містити JSON-об'єкт");
+    throw new Error("Файл має містити JSON-обʼєкт");
   }
   const obj = parsed as Record<string, unknown>;
   if (Object.keys(obj).length === 0) {
-    throw new Error("Порожній об'єкт у файлі");
+    throw new Error("Порожній обʼєкт у файлі");
   }
 
   const version = typeof obj["version"] === "number" ? obj["version"] : 1;
@@ -92,37 +101,42 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
 
   const out: FinykBackup = {};
 
-  const b = needArr(obj["budgets"], "budgets");
-  if (b) out.budgets = b;
-  const s = needArr(obj["subscriptions"], "subscriptions");
-  if (s) out.subscriptions = s;
-  const ma = needArr(obj["manualAssets"], "manualAssets");
-  if (ma) out.manualAssets = ma;
-  const md = needArr(obj["manualDebts"], "manualDebts");
-  if (md) out.manualDebts = md;
-  const r = needArr(obj["receivables"], "receivables");
-  if (r) out.receivables = r;
-  const ha = needArr(obj["hiddenAccounts"], "hiddenAccounts");
-  if (ha) out.hiddenAccounts = ha;
-  const ht = needArr(obj["hiddenTxIds"], "hiddenTxIds");
-  if (ht) out.hiddenTxIds = ht;
+  const ARRAY_FIELDS = [
+    "budgets",
+    "subscriptions",
+    "manualExpenses",
+    "manualAssets",
+    "manualDebts",
+    "receivables",
+    "hiddenAccounts",
+    "hiddenTxIds",
+    "excludedStatTxIds",
+    "merchantRules",
+  ] as const;
+  for (const field of ARRAY_FIELDS) {
+    const v = needArr(obj[field], field);
+    if (v) out[field] = v;
+  }
 
   if (obj["monthlyPlan"] !== undefined && obj["monthlyPlan"] !== null) {
     if (
       typeof obj["monthlyPlan"] !== "object" ||
       Array.isArray(obj["monthlyPlan"])
     ) {
-      throw new Error("Поле «monthlyPlan» має бути об'єктом");
+      throw new Error("Поле «monthlyPlan» має бути обʼєктом");
     }
     out.monthlyPlan = obj["monthlyPlan"] as Record<string, unknown>;
   }
 
-  const tc = needObj(obj["txCategories"], "txCategories");
-  if (tc) out.txCategories = tc;
-  const ts = needObj(obj["txSplits"], "txSplits");
-  if (ts) out.txSplits = ts;
-  const mdl = needObj(obj["monoDebtLinkedTxIds"], "monoDebtLinkedTxIds");
-  if (mdl) out.monoDebtLinkedTxIds = mdl;
+  const OBJECT_FIELDS = [
+    "txCategories",
+    "txSplits",
+    "monoDebtLinkedTxIds",
+  ] as const;
+  for (const field of OBJECT_FIELDS) {
+    const v = needObj(obj[field], field);
+    if (v) out[field] = v;
+  }
 
   if (obj["networthHistory"] !== undefined && obj["networthHistory"] !== null) {
     const nh = needArr(obj["networthHistory"], "networthHistory");
@@ -190,11 +204,13 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     has("version") ||
     has("budgets") ||
     has("subscriptions") ||
+    has("manualExpenses") ||
     has("manualAssets") ||
     has("manualDebts") ||
     has("receivables") ||
     has("hiddenAccounts") ||
     has("hiddenTxIds") ||
+    has("excludedStatTxIds") ||
     has("monthlyPlan") ||
     has("txCategories") ||
     has("txSplits") ||
@@ -220,6 +236,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
   if (has("d")) full.manualDebts = d["d"] as unknown[];
   if (has("r")) full.receivables = d["r"] as unknown[];
   if (has("h")) full.hiddenAccounts = d["h"] as unknown[];
+  if (has("es")) full.excludedStatTxIds = d["es"] as unknown[];
   if (has("mp")) full.monthlyPlan = d["mp"] as Record<string, unknown>;
   if (has("tc")) full.txCategories = d["tc"] as Record<string, unknown>;
   if (has("ts")) full.txSplits = d["ts"] as Record<string, unknown>;
@@ -227,6 +244,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
   if (has("nh")) full.networthHistory = d["nh"] as unknown[];
   if (has("cc")) full.customCategories = d["cc"] as unknown[];
   if (has("dr")) full.dismissedRecurring = d["dr"] as unknown[];
+  if (has("me")) full.manualExpenses = d["me"] as unknown[];
 
   return normalizeFinykBackup(full);
 }

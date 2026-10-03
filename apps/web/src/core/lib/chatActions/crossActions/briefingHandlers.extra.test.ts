@@ -15,6 +15,10 @@ import {
   __setFizrukSqliteCacheForTests,
   clearFizrukSqliteCache,
 } from "../../../../modules/fizruk/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../../../modules/finyk/lib/monoMirrorReader";
 
 const SYS = new Date("2026-06-15T12:00:00");
 
@@ -32,6 +36,7 @@ function clearAll() {
   clearSqliteCompletionsCache();
   clearNutritionSqliteCache();
   clearFizrukSqliteCache();
+  clearFinykMonoMirrorCache();
 }
 
 beforeEach(() => {
@@ -72,23 +77,21 @@ describe("weeklySummary — habit + spending branches", () => {
     __setRoutineSqliteCompletionsCacheForTests({
       completions: { h1: [todayKey] },
     });
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          {
-            id: "t1",
-            amount: -50000,
-            time: Math.floor(SYS.getTime() / 1000) - 3600,
-          },
-          {
-            id: "t2",
-            amount: 100000,
-            time: Math.floor(SYS.getTime() / 1000) - 3600,
-          },
-        ],
-      }),
-    );
+    // finyk_tx_cache is tombstoned (Phase 3) — seed the canonical mirror cache.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "t1",
+          amount: -50000,
+          time: Math.floor(SYS.getTime() / 1000) - 3600,
+        } as never,
+        {
+          id: "t2",
+          amount: 100000,
+          time: Math.floor(SYS.getTime() / 1000) - 3600,
+        } as never,
+      ],
+    });
     const out = weeklySummary();
     expect(out).toContain("Звички:");
     expect(out).toMatch(/Звички: \d+% \(\d+\/\d+\)/);
@@ -106,6 +109,6 @@ describe("weeklySummary — habit + spending branches", () => {
       } as never,
     });
     const out = weeklySummary();
-    expect(out).toMatch(/Калорії: ~\d+ ккал\/день \(2 днів\)/);
+    expect(out).toContain("Калорії: ~1\u00A0900 ккал/день (2 днів)");
   });
 });

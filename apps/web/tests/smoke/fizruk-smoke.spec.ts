@@ -1,48 +1,28 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
+
+import { seedFTUX } from "../utils/seedFTUX";
+import {
+  collectPageErrors,
+  deferAnonymousMigration,
+  startWorkoutWithFirstExercise,
+  waitForInitialSqliteRefresh,
+} from "./smokeHelpers";
 
 /**
  * Module smoke — ФІЗРУК (fizruk).
  *
- * Audit `2026-05-13-testing-devx-roast.md` §P1-3. Minimal cold-load mount
- * + key-element assert; deep flows live in
- * `apps/web/src/modules/fizruk/__tests__/`.
+ * S10-X1: cold-load mount + workouts empty state → start CTA → sheet open.
  */
 
-const SEEDED_LS: Record<string, string> = {
-  hub_onboarding_done_v1: "1",
-  hub_first_action_done_v1: "1",
-  hub_vibe_picks_v1: JSON.stringify({
-    picks: ["finyk", "fizruk", "nutrition", "routine"],
-    firstActionPending: null,
-    firstActionStartedAt: null,
-    firstRealEntryAt: Date.now(),
-    updatedAt: Date.now(),
-  }),
-  "sergeant.onboarding.module_first_seen.fizruk.v1": "1",
-  "sergeant.whatsNew.lastSeenId.v1": "2026-05-06-cold-start",
-};
-
-async function seedLocalStorage(page: Page) {
-  await page.addInitScript((entries: Record<string, string>) => {
-    try {
-      for (const [k, v] of Object.entries(entries)) {
-        window.localStorage.setItem(k, v);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, SEEDED_LS);
-}
-
 test("@critical fizruk: cold-load mounts module shell", async ({ page }) => {
-  await seedLocalStorage(page);
-
-  const errors: string[] = [];
-  page.on("pageerror", (err) => errors.push(err.message));
+  await seedFTUX(page, "post-ftux");
+  const errors = await collectPageErrors(page);
 
   await page.goto("/?module=fizruk", { waitUntil: "domcontentloaded" });
 
-  await expect(page.getByText("ФІЗРУК", { exact: true })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фізрук" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   await expect(
@@ -50,4 +30,64 @@ test("@critical fizruk: cold-load mounts module shell", async ({ page }) => {
   ).toHaveCount(0);
 
   expect(errors, "Uncaught page errors on fizruk cold load").toEqual([]);
+});
+
+test("@critical fizruk: workouts empty state → «Почати тренування» → підбір вправ → route", async ({
+  page,
+}) => {
+  await seedFTUX(page, "post-ftux");
+  const errors = await collectPageErrors(page);
+
+  await page.goto("/fizruk/workouts", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByText("Немає активного тренування")).toBeVisible({
+    timeout: 10_000,
+  });
+
+  // Одна кнопка старту з вибором усередині (власник 2026-09-16): порожньої
+  // сесії більше немає, таймер стартує після першої обраної вправи.
+  await startWorkoutWithFirstExercise(page);
+  await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
+
+  expect(errors, "Uncaught page errors on fizruk CTA happy path").toEqual([]);
+});
+
+test("@critical fizruk: measurement guide table stays contained on mobile", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await seedFTUX(page, "post-ftux", { theme: "dark" });
+  await deferAnonymousMigration(page);
+
+  await page.goto("/?module=fizruk", { waitUntil: "domcontentloaded" });
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фізрук" }),
+  ).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/fizruk/measurements", {
+    waitUntil: "domcontentloaded",
+  });
+  await waitForInitialSqliteRefresh(page, "fizruk");
+  await page
+    .getByRole("button", { name: /Як правильно робити заміри/ })
+    .click();
+
+  const scroller = page.getByTestId("measurement-guide-table-scroll");
+  await expect(scroller).toBeVisible();
+  const geometry = await scroller.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      viewportWidth: window.innerWidth,
+      clientWidth: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+      pageWidth: document.documentElement.scrollWidth,
+    };
+  });
+
+  expect(geometry.left).toBeGreaterThanOrEqual(0);
+  expect(geometry.right).toBeLessThanOrEqual(geometry.viewportWidth);
+  expect(geometry.scrollWidth).toBeGreaterThan(geometry.clientWidth);
+  expect(geometry.pageWidth).toBeLessThanOrEqual(geometry.viewportWidth);
 });

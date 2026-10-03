@@ -1,5 +1,5 @@
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { getCategory } from "./categories.js";
+import { getExpenseCategoryForTransaction } from "./categories.js";
 
 /**
  * Мінімальна форма транзакції, достатня для spend-селекторів.
@@ -11,6 +11,7 @@ export interface SpendingTxLike {
   amount: number;
   description?: string;
   mcc?: number;
+  categoryId?: string | undefined;
 }
 
 /**
@@ -40,6 +41,19 @@ function readSplits(
 ): readonly SpendingSplitLike[] {
   const v = txSplits[id];
   return Array.isArray(v) ? (v as readonly SpendingSplitLike[]) : [];
+}
+
+/**
+ * `tx.time` seconds-vs-milliseconds coercion. Finyk stores mono/legacy
+ * timestamps as unix seconds, but some sources (import, AI) already hand
+ * back milliseconds. `1e10` (~year 2286 in seconds) is the disambiguation
+ * threshold — a domain decision that used to sit unnamed in nine call
+ * sites across finyk-domain/web/insights (§2.10 audit finding).
+ */
+export function txTimeMs(time: number | null | undefined): number {
+  const raw = time ?? 0;
+  if (!Number.isFinite(raw)) return Number.NaN;
+  return raw > 1e10 ? raw : raw * 1000;
 }
 
 export function getTxStatAmount(
@@ -75,9 +89,8 @@ export function calcCategorySpent(
           );
         }
         if (
-          getCategory(
-            t.description ?? "",
-            t.mcc ?? 0,
+          getExpenseCategoryForTransaction(
+            t,
             txCategories[t.id] ?? null,
             customCategories,
           ).id === categoryId

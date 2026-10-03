@@ -10,7 +10,7 @@ import { apiCorsMiddleware } from "./apiCors.js";
  * `Access-Control-Allow-Headers` entries.
  *
  * Особливо критичні headers:
- *   - `X-Requested-With` — обов'язковий для M10 CSRF guard. Browser не дає
+ *   - `X-Requested-With` — обовʼязковий для M10 CSRF guard. Browser не дає
  *     cross-origin сторінці виставити XRW без preflight; preflight зупиняється
  *     на CORS allowlist + allow-headers. Якщо XRW відсутній у allow-headers —
  *     preflight валиться, і всі state-changing browser fetch-и до `/api/*`
@@ -56,6 +56,18 @@ describe("apiCorsMiddleware()", () => {
       expect(res.headers["access-control-allow-headers"]).toContain(headerName);
     },
   );
+
+  it("allows the sync origin-device header in browser preflights", async () => {
+    const res = await request(makeApp())
+      .options("/api/v2/sync/pull")
+      .set("Origin", "http://127.0.0.1:4173")
+      .set("Access-Control-Request-Method", "GET")
+      .set("Access-Control-Request-Headers", "x-origin-device-id");
+    expect(res.status).toBe(200);
+    expect(res.headers["access-control-allow-headers"]).toContain(
+      "X-Origin-Device-Id",
+    );
+  });
 
   it("дозволені методи покривають state-changing requests", async () => {
     const res = await request(makeApp())

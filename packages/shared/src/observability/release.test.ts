@@ -16,10 +16,10 @@ describe("resolveReleaseSha", () => {
     ).toBe("v1.2.3");
   });
 
-  it("falls back through Railway → Vercel → GitHub SHAs", () => {
+  it("falls back through GIT_SHA → Vercel → GitHub SHAs", () => {
     expect(
       resolveReleaseSha({
-        RAILWAY_GIT_COMMIT_SHA: "abc123",
+        GIT_SHA: "abc123",
         VERCEL_GIT_COMMIT_SHA: "def456",
         GITHUB_SHA: "ghi789",
       }),
@@ -37,7 +37,7 @@ describe("resolveReleaseSha", () => {
     expect(
       resolveReleaseSha({
         SENTRY_RELEASE: "",
-        RAILWAY_GIT_COMMIT_SHA: "   ",
+        GIT_SHA: "   ",
         VERCEL_GIT_COMMIT_SHA: "  real-sha  ",
       }),
     ).toBe("real-sha");
@@ -79,10 +79,10 @@ describe("resolveSentryRelease", () => {
     ).toBe("sergeant@0123456");
   });
 
-  it("is origin-agnostic — Railway and Vercel SHAs format identically", () => {
-    expect(
-      resolveSentryRelease({ RAILWAY_GIT_COMMIT_SHA: "feedface0000000" }),
-    ).toBe("sergeant@feedfac");
+  it("is origin-agnostic — Coolify and Vercel SHAs format identically", () => {
+    expect(resolveSentryRelease({ GIT_SHA: "feedface0000000" })).toBe(
+      "sergeant@feedfac",
+    );
     expect(
       resolveSentryRelease({ VERCEL_GIT_COMMIT_SHA: "feedface0000000" }),
     ).toBe("sergeant@feedfac");

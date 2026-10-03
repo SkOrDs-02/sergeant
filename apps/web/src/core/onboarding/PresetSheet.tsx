@@ -1,7 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { messages } from "@shared/i18n/uk";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 import { applyPreset, type ModuleId, type ModulePreset } from "./presetApply";
@@ -11,7 +12,14 @@ type HubAction = Parameters<typeof openHubModuleWithAction>[1];
 
 interface PresetItem {
   id: string;
-  emoji: string;
+  /**
+   * Гліф плитки — ІМʼЯ з каталогу `Icon`, не емодзі. Раніше тут стояв
+   * сирий `💧`/`📖`: `no-emoji-icon` цей шейп не ловить (емодзі всередині
+   * рядкової мітки, а не в полі `icon`), тому дефект дожив до 2026-07.
+   * З 2026-08-03 гліф самої звички (`data.emoji`) — теж icon-slug із
+   * `ROUTINE_GLYPHS`, тож обидва поля тепер з одного словника.
+   */
+  icon: IconName;
   title: string;
   desc: string;
   data: ModulePreset | Record<string, unknown>;
@@ -45,44 +53,54 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
  * entry: tapping one writes straight to the module's storage, no form,
  * no wizard. The custom-entry row at the bottom of the sheet keeps the
  * escape hatch for users whose first instinct doesn't fit the list.
+ *
+ * Копі — з каталогу (`messages.presets.*`, 2026-09-16, борг
+ * дизайн-контракту онбордингу). Тут лишається лише те, що НЕ копі:
+ * гліфи `Icon`, класи акценту модуля, PWA-екшени і слаги категорій
+ * Фініка. Формулювання правиться в `uk.ts`, не тут.
  */
+const COPY = messages.presets;
+
 const PRESETS: PresetCatalog = {
   routine: {
-    title: "Яку звичку почнемо?",
-    desc: "Одне натискання — і вона у твоєму списку сьогодні.",
-    accent: "text-routine-strong dark:text-routine bg-routine-surface",
+    ...COPY.routine,
+    accent: "text-routine-soft-fg bg-routine-soft",
     moduleIcon: "check",
-    fallback: { action: "add_habit", label: "Своя звичка", icon: "plus" },
+    fallback: {
+      action: "add_habit",
+      label: COPY.routine.fallbackLabel,
+      icon: "plus",
+    },
     items: [
       {
         id: "water",
-        emoji: "💧",
-        title: "Випити воду",
-        desc: "Щодня, будь-коли",
-        data: { name: "Випити воду", emoji: "💧" },
+        icon: "droplet",
+        ...COPY.routine.items.water,
+        data: { name: COPY.routine.items.water.name, emoji: "droplet" },
       },
       {
         id: "walk",
-        emoji: "🚶",
-        title: "Пройти 10 хв",
-        desc: "Короткий вихід після обіду",
-        data: { name: "Пройти 10 хв", emoji: "🚶" },
+        icon: "run",
+        ...COPY.routine.items.walk,
+        data: { name: COPY.routine.items.walk.name, emoji: "run" },
       },
       {
         id: "read",
-        emoji: "📖",
-        title: "Прочитати 10 сторінок",
-        desc: "Вечірня звичка",
-        data: { name: "Прочитати 10 сторінок", emoji: "📖" },
+        icon: "book-open",
+        ...COPY.routine.items.read,
+        data: { name: COPY.routine.items.read.name, emoji: "book-open" },
       },
     ],
   },
   finyk: {
-    title: "На що витратив?",
-    desc: "Тицяй — відкриється форма з назвою. Суму введеш сам.",
-    accent: "text-finyk-strong dark:text-finyk bg-finyk-soft",
+    ...COPY.finyk,
+    accent: "text-finyk-soft-fg bg-finyk-soft",
     moduleIcon: "credit-card",
-    fallback: { action: "add_expense", label: "Своя витрата", icon: "plus" },
+    fallback: {
+      action: "add_expense",
+      label: COPY.finyk.fallbackLabel,
+      icon: "plus",
+    },
     // Presets тут — лише заготовки назви/категорії. Реальну суму
     // вводить користувач у формі модуля. Було: «кава 95 ₴» писалася
     // прямо у ledger, що топило довіру з першої секунди.
@@ -95,33 +113,40 @@ const PRESETS: PresetCatalog = {
     items: [
       {
         id: "coffee",
-        emoji: "☕",
-        title: "Кава",
-        desc: "ранкова звичка — введи свою суму",
-        data: { description: "Кава", category: "їжа" },
+        icon: "coffee",
+        ...COPY.finyk.items.coffee,
+        // `cafe` («Кафе та ресторани»), не «їжа»: остання — Era-1 legacy-мітка,
+        // яку `legacyManualCategoryId()` зводить до слага `food` («Продукти»),
+        // тож ранкова кава падала в продуктовий кошик і не рахувалась проти
+        // ліміту на кафе (репорт finyk-агента 2026-08-23).
+        data: { description: COPY.finyk.items.coffee.name, category: "cafe" },
       },
       {
         id: "ride",
-        emoji: "🚕",
-        title: "Таксі",
-        desc: "дорога на роботу чи додому",
-        data: { description: "Таксі", category: "транспорт" },
+        icon: "truck",
+        ...COPY.finyk.items.ride,
+        data: {
+          description: COPY.finyk.items.ride.name,
+          category: "транспорт",
+        },
       },
       {
         id: "lunch",
-        emoji: "🥗",
-        title: "Обід",
-        desc: "що з'їв — і за скільки",
-        data: { description: "Обід", category: "їжа" },
+        icon: "utensils",
+        ...COPY.finyk.items.lunch,
+        data: { description: COPY.finyk.items.lunch.name, category: "їжа" },
       },
     ],
   },
   nutrition: {
-    title: "Що з'їв зараз?",
-    desc: "Відкрию форму добавляння страви — калорії підтвердиш у модулі.",
-    accent: "text-nutrition-strong dark:text-nutrition bg-nutrition-soft",
+    ...COPY.nutrition,
+    accent: "text-nutrition-soft-fg bg-nutrition-soft",
     moduleIcon: "utensils",
-    fallback: { action: "add_meal", label: "Додати страву", icon: "plus" },
+    fallback: {
+      action: "add_meal",
+      label: COPY.nutrition.fallbackLabel,
+      icon: "plus",
+    },
     // Три плитки (Омлет / Салат / Яблуко) свого часу давали
     // різні дані — але без каналу прокидування `item.data` у
     // `AddMealSheet` усі три тапи відкривали один і той самий порожній
@@ -132,13 +157,12 @@ const PRESETS: PresetCatalog = {
     items: [],
   },
   fizruk: {
-    title: "Швидкий старт",
-    desc: "Відкрию старт тренування — тривалість вкажеш на фініші.",
-    accent: "text-fizruk-strong dark:text-fizruk-300 bg-fizruk-soft",
+    ...COPY.fizruk,
+    accent: "text-fizruk-soft-fg bg-fizruk-soft",
     moduleIcon: "dumbbell",
     fallback: {
       action: "start_workout",
-      label: "Почати тренування",
+      label: COPY.fizruk.fallbackLabel,
       icon: "plus",
     },
     // Те ж саме, що й у nutrition: fizruk не має prefill-каналу для
@@ -194,6 +218,7 @@ export function PresetSheet({
     () => (moduleId ? PRESETS[moduleId] : null),
     [moduleId],
   );
+  const [saveError, setSaveError] = useState(false);
 
   useEffect(() => {
     if (!open || !config || !moduleId) return;
@@ -205,12 +230,13 @@ export function PresetSheet({
 
   if (!config || !moduleId) return null;
 
-  const handlePick = (item: PresetItem) => {
+  const handlePick = async (item: PresetItem) => {
+    setSaveError(false);
     trackEvent(ANALYTICS_EVENTS.FTUX_PRESET_PICKED, {
       module: moduleId,
       presetId: item.id,
     });
-    // Routine preсети пишуться одразу — звичка це «ім'я + ✓», тут
+    // Routine preсети пишуться одразу — звичка це «імʼя + ✓», тут
     // немає метрики, яку можна сфабрикувати. Для finyk (а в перспективі
     // й інших) натомість стешимо `item.data` у sessionStorage і
     // відкриваємо повний add-sheet модуля — без фейкових сум у ledger-і,
@@ -218,8 +244,21 @@ export function PresetSheet({
     // до трьох ідентичних порожніх форм.
     let persisted = false;
     if (moduleId === "routine") {
-      applyPreset(moduleId, item.data as ModulePreset);
-      persisted = true;
+      // Спека `anonymous-local-first-persistence.md` («Похідне правило»):
+      // СТАРТ-блок вважається витраченим лише після ПІДТВЕРДЖЕНОГО durable
+      // write. Раніше тут стояло `persisted = true` одразу після виклику —
+      // а `applyPreset` тоді був fire-and-forget і мовчки не писав нічого,
+      // якщо dual-write контекст не змонтований (типовий стан у FTUX: шит
+      // відкривається з хаба, шел `/routine` ще не бутнувся). Наслідок —
+      // hero-картка згасала назавжди, звичка жила до першого reload.
+      persisted = await applyPreset(moduleId, item.data as ModulePreset);
+      if (!persisted) {
+        // Шит лишається відкритим: єдина дія користувача не має зникати
+        // разом із незбереженим записом, а повторний тап тут-таки — це
+        // найкоротший шлях до retry.
+        setSaveError(true);
+        return;
+      }
     } else if (config.action) {
       writePresetPrefill(moduleId, item.data);
       openHubModuleWithAction(moduleId, config.action);
@@ -254,11 +293,19 @@ export function PresetSheet({
       description={config.desc}
     >
       <div className="px-5 pb-5 space-y-2">
+        {saveError && (
+          <p
+            role="alert"
+            className="rounded-2xl border border-danger bg-danger/10 px-3 py-2 text-style-caption text-text"
+          >
+            {messages.onboarding.presetSaveFailed}
+          </p>
+        )}
         {config.items.map((item: PresetItem) => (
           <button
             key={item.id}
             type="button"
-            onClick={() => handlePick(item)}
+            onClick={() => void handlePick(item)}
             className={cn(
               "w-full text-left px-3 py-3 rounded-2xl border border-line bg-panelHi",
               "hover:border-brand-500/50 hover:bg-brand-500/5 transition-[background-color,border-color,opacity]",
@@ -268,24 +315,24 @@ export function PresetSheet({
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-xl",
+                  "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center",
                   config.accent,
                 )}
                 aria-hidden
               >
-                <span>{item.emoji}</span>
+                <Icon name={item.icon} size="lg" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-sm font-bold text-text truncate">
+                <div className="text-style-title text-text truncate">
                   {item.title}
                 </div>
-                <div className="text-xs text-muted mt-0.5 truncate">
+                <div className="text-style-body text-muted mt-0.5 truncate">
                   {item.desc}
                 </div>
               </div>
               <Icon
                 name="chevron-right"
-                size={16}
+                size="md"
                 className="text-muted shrink-0"
               />
             </div>
@@ -303,7 +350,7 @@ export function PresetSheet({
           )}
         >
           <div className="flex items-center justify-center gap-1.5">
-            <Icon name={fallbackIconName} size={14} />
+            <Icon name={fallbackIconName} size="sm" />
             <span>{config.fallback.label}</span>
           </div>
         </button>

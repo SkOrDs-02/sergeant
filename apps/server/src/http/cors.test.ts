@@ -3,10 +3,13 @@ import { getAllowedOrigins, isOriginAllowed, setCorsHeaders } from "./cors.js";
 
 describe("getAllowedOrigins", () => {
   const prev = process.env["ALLOWED_ORIGINS"];
+  const prevNodeEnv = process.env["NODE_ENV"];
 
   afterEach(() => {
     if (prev === undefined) delete process.env["ALLOWED_ORIGINS"];
     else process.env["ALLOWED_ORIGINS"] = prev;
+    if (prevNodeEnv === undefined) delete process.env["NODE_ENV"];
+    else process.env["NODE_ENV"] = prevNodeEnv;
   });
 
   it("parses comma-separated ALLOWED_ORIGINS", () => {
@@ -16,11 +19,49 @@ describe("getAllowedOrigins", () => {
     expect(origins).toContain("https://b.test");
   });
 
-  it("falls back to defaults when unset", () => {
+  it("falls back to defaults with localhost поза production", () => {
     delete process.env["ALLOWED_ORIGINS"];
+    process.env["NODE_ENV"] = "development";
     const origins = getAllowedOrigins();
+    expect(origins).toContain("https://sergeant.vercel.app");
     expect(origins).toContain("http://localhost:5173");
     expect(origins).toContain("http://127.0.0.1:5173");
+  });
+
+  it("не дає localhost у production defaults", () => {
+    delete process.env["ALLOWED_ORIGINS"];
+    process.env["NODE_ENV"] = "production";
+    const origins = getAllowedOrigins();
+    expect(origins).toContain("https://sergeant.vercel.app");
+    expect(origins).not.toContain("http://localhost:5173");
+    expect(origins).not.toContain("http://127.0.0.1:5173");
+    expect(origins).not.toContain("http://localhost:8081");
+  });
+
+  // sec-01 (аудит 2026-10-01): апекс 2dmanager.com.ua не резолвиться і вільний
+  // для реєстрації; credentialed CORS на ньому = перехоплення сесій.
+  it("не довіряє мертвому домену sergeant.2dmanager.com.ua у production", () => {
+    delete process.env["ALLOWED_ORIGINS"];
+    process.env["NODE_ENV"] = "production";
+    const dead = "https://sergeant.2dmanager.com.ua";
+    expect(getAllowedOrigins()).not.toContain(dead);
+    expect(isOriginAllowed(dead)).toBe(false);
+
+    const headers: Record<string, string> = {};
+    const res = {
+      setHeader(name: string, value: string) {
+        headers[name] = value;
+      },
+    };
+    setCorsHeaders(res as never, { headers: { origin: dead } } as never);
+    expect(headers["Access-Control-Allow-Origin"]).toBeUndefined();
+    expect(headers["Access-Control-Allow-Credentials"]).toBeUndefined();
+  });
+
+  it("дозволяє localhost у production лише через ALLOWED_ORIGINS", () => {
+    process.env["NODE_ENV"] = "production";
+    process.env["ALLOWED_ORIGINS"] = "http://localhost:5173";
+    expect(getAllowedOrigins()).toContain("http://localhost:5173");
   });
 });
 
@@ -39,7 +80,7 @@ describe("setCorsHeaders", () => {
     );
   });
 
-  it("allows browser auth and tracing headers by default", () => {
+  it("allows browser auth, sync, and tracing headers by default", () => {
     const headers: Record<string, string> = {};
     const res = {
       setHeader(name: string, value: string) {
@@ -50,6 +91,9 @@ describe("setCorsHeaders", () => {
     setCorsHeaders(res as never, req as never);
     expect(headers["Access-Control-Allow-Headers"]).toContain(
       "X-Requested-With",
+    );
+    expect(headers["Access-Control-Allow-Headers"]).toContain(
+      "X-Origin-Device-Id",
     );
     expect(headers["Access-Control-Allow-Headers"]).toContain("traceparent");
   });
@@ -103,14 +147,22 @@ describe("isOriginAllowed (ALLOWED_ORIGIN_REGEX)", () => {
     else process.env["ALLOWED_ORIGIN_REGEX"] = prev;
   });
 
-  it("accepts Vercel previews matching the regex", () => {
+  it("accepts Vercel previews matching a team-anchored regex", () => {
     process.env["ALLOWED_ORIGIN_REGEX"] =
-      "^https://(?:sergeant|fizruk)(?:-[a-z0-9-]+)?\\.vercel\\.app$";
-    expect(isOriginAllowed("https://sergeant-git-branch-user.vercel.app")).toBe(
-      true,
-    );
-    expect(isOriginAllowed("https://sergeant.vercel.app")).toBe(true);
+      "^https://sergeant-git-[a-z0-9-]+-myteam\\.vercel\\.app$";
+    expect(
+      isOriginAllowed("https://sergeant-git-branch-myteam.vercel.app"),
+    ).toBe(true);
     expect(isOriginAllowed("https://attacker.vercel.app")).toBe(false);
+  });
+
+  it("широкий `sergeant-*.vercel.app` патерн пускає чужий тенант", () => {
+    // Простір імен проєктів на vercel.app глобальний: без суфікса команди
+    // патерн віддає credentialed CORS будь-кому, хто зареєструє сумісний
+    // піддомен. Тест фіксує, ЧОМУ приклад у doc-коментарі вузький.
+    process.env["ALLOWED_ORIGIN_REGEX"] =
+      "^https://sergeant(?:-[a-z0-9-]+)?\\.vercel\\.app$";
+    expect(isOriginAllowed("https://sergeant-attacker.vercel.app")).toBe(true);
   });
 
   it("ignores invalid regex (fail-closed)", () => {

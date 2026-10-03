@@ -202,6 +202,27 @@ describe("errorHandler → response body shape", () => {
     );
   });
 
+  it("non-operational 4xx (body-parser malformed JSON) → VALIDATION, не INTERNAL", () => {
+    // body-parser кидає http-errors SyntaxError зі status=400 + expose=true на
+    // невалідний JSON (напр. сирий NUL-байт у body). Це client-помилка, не
+    // programmer-bug — має бути чистий 400/VALIDATION, а не 400/INTERNAL з
+    // «Server error».
+    const { req, res } = makeReqRes();
+    const bodyParserErr = Object.assign(
+      new SyntaxError("Unexpected non-whitespace character after JSON"),
+      { status: 400, type: "entity.parse.failed", expose: true },
+    );
+    errorHandler(bodyParserErr, req, res, () => {});
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        code: "VALIDATION",
+        message: "Unexpected non-whitespace character after JSON",
+      }),
+    );
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
   it("НЕ surfaces cause для 5xx (programmer error → cause може містити PII/stack)", () => {
     const { req, res } = makeReqRes();
     // Симулюємо випадок: внутрішня ExternalServiceError-like з 500

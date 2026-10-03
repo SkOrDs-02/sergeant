@@ -23,6 +23,9 @@ export type { ThemeChoice, UseThemeReturn } from "./useTheme";
 
 export { useDebounce } from "./useDebounce";
 
+export { useListSelection } from "./useListSelection";
+export type { UseListSelectionResult } from "./useListSelection";
+
 export { useDialogFocusTrap } from "./useDialogFocusTrap";
 export type { DialogFocusTrapOptions } from "./useDialogFocusTrap";
 
@@ -30,6 +33,12 @@ export { useLocalStorageState } from "./useLocalStorageState";
 export type { UseLocalStorageStateOptions } from "./useLocalStorageState";
 
 export { useOnlineStatus } from "./useOnlineStatus";
+
+export { useOutsideClick } from "./useOutsideClick";
+export type {
+  OutsideClickEventName,
+  UseOutsideClickOptions,
+} from "./useOutsideClick";
 
 export { useCloudPullPending } from "./useCloudPullPending";
 
@@ -75,16 +84,22 @@ export type {
 
 export { useBodyScrollLock } from "./useBodyScrollLock";
 
-export { useFocusTrap } from "./useFocusTrap";
-
 export { useHaptic } from "./useHaptic";
 export type { UseHapticReturn } from "./useHaptic";
 
 export { useReducedMotion } from "./useReducedMotion";
 
+export { useChartScrub } from "./useChartScrub";
+export type {
+  UseChartScrubOptions,
+  UseChartScrubResult,
+} from "./useChartScrub";
+
 export { useShortcutGlyph } from "./useShortcutGlyph";
 
 export { useInView } from "./useInView";
+
+export { useSyncedFromKey } from "./useSyncedFromKey";
 
 export {
   useNotificationPermission,
@@ -95,3 +110,5 @@ export type {
   ModuleReminderTick,
   UseModuleReminderOptions,
 } from "./useModuleReminder";
+
+export { useTweenedValues } from "./useTweenedValues";

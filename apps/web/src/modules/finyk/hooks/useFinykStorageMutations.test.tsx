@@ -37,6 +37,7 @@ function makeSlots(initial: Partial<Record<string, unknown>> = {}) {
     hiddenAccounts: [],
     hiddenTxIds: [],
     txCategories: {},
+    txNotes: {},
     txSplits: {},
     monoDebtLinkedTxIds: {},
     customCategories: [],
@@ -68,9 +69,11 @@ function makeSlots(initial: Partial<Record<string, unknown>> = {}) {
     hiddenTxIds: state["hiddenTxIds"],
     setHiddenTxIds: makeSetter("hiddenTxIds"),
     setTxCategories: makeSetter("txCategories"),
+    setTxNotes: makeSetter("txNotes"),
     setTxSplits: makeSetter("txSplits"),
     setMonoDebtLinkedTxIds: makeSetter("monoDebtLinkedTxIds"),
     setCustomCategories: makeSetter("customCategories"),
+    manualExpenses: state["manualExpenses"],
     setManualExpenses: makeSetter("manualExpenses"),
     setExcludedStatTxIds: makeSetter("excludedStatTxIds"),
     setDismissedRecurring: makeSetter("dismissedRecurring"),
@@ -106,13 +109,13 @@ describe("addManualExpense", () => {
     const entry = result.current.addManualExpense({ amount: 1250 });
 
     expect(entry.amount).toBe(1250);
-    expect(entry.category).toBe("інше");
+    expect(entry.category).toBe("other");
     expect(typeof entry.id).toBe("string");
     expect(state["manualExpenses"]).toHaveLength(1);
     expect(invalidateSpy).toHaveBeenCalled();
     expect(trackEvent).toHaveBeenCalledWith(
       "expense_added",
-      expect.objectContaining({ category: "інше", source: "manual" }),
+      expect.objectContaining({ category: "other", source: "manual" }),
     );
   });
 
@@ -132,6 +135,35 @@ describe("addManualExpense", () => {
       trackEvent as ReturnType<typeof vi.fn>
     ).mock.calls.filter((c) => c[0] === "first_expense_added");
     expect(secondFired).toHaveLength(1);
+  });
+
+  it("не губить дані undo: відновлення отримує НОВИЙ id", () => {
+    // Сервер уже позначив старий рядок видаленим. Повернення під тим самим
+    // id прилітає в тумбстоун і відхиляється — запис є локально й нема на
+    // сервері (`SERGEANT-WEB-Q`). Тому знімок відновлюється як новий запис.
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+
+    const original = result.current.addManualExpense({
+      id: "exp-1",
+      amount: 250,
+      description: "Кава",
+      category: "cafe",
+    });
+    result.current.removeManualExpense("exp-1");
+    expect(state["manualExpenses"]).toHaveLength(0);
+
+    result.current.restoreManualExpense(original);
+
+    const restored = (state["manualExpenses"] as { id: string }[])[0]!;
+    expect(state["manualExpenses"]).toHaveLength(1);
+    expect(restored.id).not.toBe("exp-1");
+    // Для людини нічого не змінилось — той самий запис, інший внутрішній id.
+    expect(restored).toMatchObject({
+      amount: 250,
+      description: "Кава",
+      category: "cafe",
+    });
   });
 
   it("coerces a provided id to string", () => {
@@ -181,6 +213,20 @@ describe("removeManualExpense / editManualExpense", () => {
     expect(arr[0]!["amount"]).toBe(999);
     expect(arr[0]!["date"]).toBe("d1");
   });
+
+  it("normalizes an emptied expense category to the canonical other slug", () => {
+    const { slots, state } = makeSlots({
+      manualExpenses: [
+        { id: "a", date: "d1", description: "", amount: 1, category: "food" },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.editManualExpense("a", { category: "" });
+
+    const arr = state["manualExpenses"] as Array<Record<string, unknown>>;
+    expect(arr[0]!["category"]).toBe("other");
+  });
 });
 
 describe("toggle helpers", () => {
@@ -220,22 +266,133 @@ describe("toggle helpers", () => {
     expect(state["monoDebtLinkedTxIds"]).toEqual({ acc1: [] });
   });
 
-  it("toggleLinkedTx links a tx on a debt and a receivable", () => {
+  it("setLinkedTxRole links a tx with an explicit role and amount snapshot", () => {
     const { slots, state } = makeSlots({
       manualDebts: [{ id: "d1", linkedTxIds: [] }],
       receivables: [{ id: "r1", linkedTxIds: ["keep"] }],
     });
     const { result } = renderMutations(slots);
 
-    result.current.toggleLinkedTx("d1", "tx1", "debt");
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "increase", 250);
     expect((state["manualDebts"] as never[])[0]).toMatchObject({
       linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "increase", amount: 250 } },
     });
 
-    result.current.toggleLinkedTx("r1", "tx2", "receivable");
+    result.current.setLinkedTxRole("r1", "tx2", "receivable", "payment", 80);
     expect((state["receivables"] as never[])[0]).toMatchObject({
       linkedTxIds: ["keep", "tx2"],
+      txLinks: { tx2: { role: "payment", amount: 80 } },
     });
+  });
+
+  it("setLinkedTxRole with role=null unlinks and drops the snapshot", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 10 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+    });
+  });
+
+  it("setLinkedTxRole змінює роль наявної привʼязки без дублювання id", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "source", amount: 100 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "payment", 100);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "payment", amount: 100 } },
+    });
+  });
+
+  it("setLinkedTxRole з meta.auto ставить auto:true на привʼязці (Level 2)", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [{ id: "d1", linkedTxIds: [] }],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "payment", 500, {
+      auto: true,
+    });
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+    });
+  });
+
+  it("відвʼязування auto-привʼязки дописує id у autoLinkDismissedTxIds (anti-resurrection)", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+      autoLinkDismissedTxIds: ["tx1"],
+    });
+  });
+
+  it("відвʼязування РУЧНОЇ привʼязки не чіпає autoLinkDismissedTxIds", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).not.toHaveProperty(
+      "autoLinkDismissedTxIds",
+    );
+  });
+
+  it("відвʼязування auto-привʼязки receivable НЕ пише autoLinkDismissedTxIds (лише debt)", () => {
+    const { slots, state } = makeSlots({
+      receivables: [
+        {
+          id: "r1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("r1", "tx1", "receivable", null);
+    expect((state["receivables"] as never[])[0]).not.toHaveProperty(
+      "autoLinkDismissedTxIds",
+    );
   });
 });
 
@@ -316,6 +473,19 @@ describe("addSubscriptionFromRecurring", () => {
     expect(state["dismissedRecurring"]).toEqual(["spotify"]);
     expect(notifyFinykRoutineCalendarSync).toHaveBeenCalled();
   });
+
+  // Р20: сума з історії одразу, у мінорних одиницях.
+  it("stores the average charge as expectedAmount in minor units", () => {
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+    const sub = result.current.addSubscriptionFromRecurring({
+      key: "netflix",
+      displayName: "Netflix",
+      avgAmount: 199,
+      billingDay: 12,
+    } as never);
+    expect(sub).toMatchObject({ expectedAmount: 19_900, billingDay: 12 });
+  });
 });
 
 describe("updateSubscription", () => {
@@ -347,6 +517,30 @@ describe("overrideCategory", () => {
   });
 });
 
+describe("setTxNote", () => {
+  it("sets, trims, and clears a tx note", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.setTxNote("tx1", "  Оплата за друга  ");
+    expect((state["txNotes"] as Record<string, unknown>)["tx1"]).toBe(
+      "Оплата за друга",
+    );
+    result.current.setTxNote("tx1", "");
+    expect(
+      (state["txNotes"] as Record<string, unknown>)["tx1"],
+    ).toBeUndefined();
+  });
+
+  it("treats a whitespace-only note as empty (no entry)", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.setTxNote("tx1", "   ");
+    expect(
+      (state["txNotes"] as Record<string, unknown>)["tx1"],
+    ).toBeUndefined();
+  });
+});
+
 describe("custom categories", () => {
   it("adds a custom category with optional fields", () => {
     const { slots, state } = makeSlots();
@@ -369,6 +563,21 @@ describe("custom categories", () => {
     result.current.addCustomCategory("Food");
     result.current.addCustomCategory("food"); // case-insensitive dup
     expect(state["customCategories"]).toHaveLength(1);
+  });
+
+  it("keeps expense and income categories separate while preserving legacy expense shape", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.addCustomCategory("Оренда");
+    result.current.addCustomCategory("Оренда", { kind: "income" });
+    result.current.addCustomCategory("оренда", { kind: "income" });
+    const categories = state["customCategories"] as Array<
+      Record<string, unknown>
+    >;
+    expect(categories).toHaveLength(2);
+    expect(categories[0]).toMatchObject({ label: "Оренда" });
+    expect(categories[0]?.["kind"]).toBeUndefined();
+    expect(categories[1]).toMatchObject({ label: "Оренда", kind: "income" });
   });
 
   it("edits an existing custom category", () => {

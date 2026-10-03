@@ -1,81 +1,48 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
-import { z } from "zod";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Label } from "@shared/components/ui/FormField";
-import { Button } from "@shared/components/ui/Button";
-import { cn } from "@shared/lib/ui/cn";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useCallback, useMemo } from "react";
 import { messages } from "@shared/i18n/uk";
+import { InjuryManager } from "../components/InjuryManager";
+import {
+  buildBodyWeightSeries,
+  selectLatestBodyWeight,
+} from "@sergeant/fizruk-domain";
 import { useDailyLog } from "../hooks/useDailyLog";
+import { useMeasurements } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
+import { Measure } from "@shared/components/ui/Measure";
 import { MiniLineChart } from "../components/MiniLineChart";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { BodyEntryForm, type BodyEntryDraft } from "./Body/BodyEntryForm";
 import { CollapsibleTrendCard } from "./Body/CollapsibleTrendCard";
 import { JournalSection } from "./Body/JournalSection";
-import { ENERGY_LABELS, MOOD_LABELS, ScoreButton } from "./Body/ScoreButton";
 import { firstValidValue, lastValidValue } from "./Body/trendUtils";
 import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
-import { statusColors, chartSeries, chartPalette } from "@shared/charts";
+import { chartStatusSeries, chartSeries, chartPalette } from "@shared/charts";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 // Модуль фізичного щоденника: форма запису + графіки динаміки + журнал.
 interface BodyProps {
-  onOpenMeasurements?: () => void;
   /** Navigates the shell to the Atlas silhouette page (passed in by the router to avoid hash coupling). */
   onOpenAtlas?: () => void;
 }
 
-/**
- * Form schema — повторює UX-обмеження інпутів (`min`/`max`/`step`),
- * але дозволяє пусті стрічки для не-заповнених метрик. Ціна порожнього
- * рядка в `weightKg`/`sleepHours` — `null` у persisted entry; саме тому
- * client-side валідація працює на string-полях, а конверсія в number
- * відбувається в `onSubmit`.
- */
-const bodyFormSchema = z.object({
-  weightKg: z
-    .string()
-    .refine(
-      (v) =>
-        v === "" ||
-        (!Number.isNaN(Number(v)) && Number(v) >= 20 && Number(v) <= 300),
-      messages.validation.weightKgRange,
-    ),
-  sleepHours: z
-    .string()
-    .refine(
-      (v) =>
-        v === "" ||
-        (!Number.isNaN(Number(v)) && Number(v) >= 0 && Number(v) <= 24),
-      messages.validation.sleepHoursRange,
-    ),
-  energyLevel: z.number().int().min(1).max(5).nullable(),
-  moodScore: z.number().int().min(1).max(5).nullable(),
-  note: z.string().max(200, messages.validation.noteMax200),
-});
+// Форма запису живе в `./Body/BodyEntryForm` (Hard Rule #18 — сторінка була
+// над лімітом 600 рядків). Re-export лишає стару публічну поверхню модуля.
+export { hasAnyBodyEntryValue } from "./Body/BodyEntryForm";
 
-type BodyFormValues = z.infer<typeof bodyFormSchema>;
+/** Скільки останніх точок показує графік ваги (день = одна точка). */
+const WEIGHT_TREND_POINTS = 30;
 
-const DEFAULT_VALUES: BodyFormValues = {
-  weightKg: "",
-  sleepHours: "",
-  energyLevel: null,
-  moodScore: null,
-  note: "",
-};
-
-export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
+export function Body({ onOpenAtlas }: BodyProps) {
   const { entries, addEntry, deleteEntry, restoreEntry, recentWith } =
     useDailyLog();
+  // W1-WEIGHT-SOT стадія 1: вага живе у ДВОХ сховищах (`fizruk_daily_log` +
+  // `fizruk_measurements`), і екран «Тіло» історично читав лише перше — тому
+  // зважування з екрана «Заміри» тут не зʼявлялося. Читаємо union обох через
+  // доменний селектор; сторінка нічого не пише інакше.
+  const { entries: measurementEntries } = useMeasurements();
   const toast = useToast();
   const handleDeleteJournalEntry = useCallback(
     (id: string) => {
@@ -92,118 +59,28 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
     [entries, deleteEntry, restoreEntry, toast],
   );
 
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const submitSuccessTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+  const handleSubmitEntry = useCallback(
+    (draft: BodyEntryDraft) => {
+      addEntry({
+        weightKg: draft.weightKg,
+        sleepHours: draft.sleepHours,
+        energyLevel: draft.energyLevel,
+        moodScore: draft.moodScore,
+        note: draft.note,
+      });
+    },
+    [addEntry],
   );
 
-  useEffect(() => {
-    return () => {
-      if (submitSuccessTimerRef.current) {
-        clearTimeout(submitSuccessTimerRef.current);
-        submitSuccessTimerRef.current = null;
-      }
-    };
-  }, []);
-
-  const { register, submit, formState, watch, setValue, reset, isSubmitting } =
-    useApiForm<BodyFormValues, void>({
-      schema: bodyFormSchema,
-      defaultValues: DEFAULT_VALUES,
-      onSubmit: async (values) => {
-        addEntry({
-          weightKg: values.weightKg !== "" ? Number(values.weightKg) : null,
-          sleepHours:
-            values.sleepHours !== "" ? Number(values.sleepHours) : null,
-          energyLevel: values.energyLevel,
-          moodScore: values.moodScore,
-          note: values.note.trim(),
-        });
-      },
-      onSuccess: () => {
-        reset(DEFAULT_VALUES);
-        setSubmitSuccess(true);
-        if (submitSuccessTimerRef.current) {
-          clearTimeout(submitSuccessTimerRef.current);
-        }
-        submitSuccessTimerRef.current = setTimeout(() => {
-          setSubmitSuccess(false);
-          submitSuccessTimerRef.current = null;
-        }, 2000);
-      },
-    });
-
-  const energyLevel = watch("energyLevel");
-  const moodScore = watch("moodScore");
-  const weightError = formState.errors.weightKg?.message;
-  const sleepError = formState.errors.sleepHours?.message;
-  const noteError = formState.errors.note?.message;
-
-  /**
-   * Arrow-key navigation for radiogroup score buttons (WCAG 2.1 §4.1.2 /
-   * ARIA authoring practices — roving tabIndex pattern).
-   * ArrowRight / ArrowDown → next value (wraps from 5 → 1).
-   * ArrowLeft / ArrowUp   → prev value (wraps from 1 → 5).
-   * Home → 1, End → 5.
-   * Clicking the same selected value deselects it (toggle to null).
-   */
-  const makeScoreKeyHandler = useCallback(
-    (
-      current: number | null,
-      setter: (v: number | null) => void,
-      groupRef: React.RefObject<HTMLDivElement | null>,
-    ) =>
-      (e: KeyboardEvent<HTMLDivElement>) => {
-        const VALUES = [1, 2, 3, 4, 5] as const;
-        let next: number | null = null;
-        const cur = current ?? 0;
-        const idx = VALUES.indexOf(cur as (typeof VALUES)[number]);
-        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-          e.preventDefault();
-          next = VALUES[(idx + 1) % VALUES.length] ?? 1;
-        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-          e.preventDefault();
-          next = VALUES[(idx - 1 + VALUES.length) % VALUES.length] ?? 5;
-        } else if (e.key === "Home") {
-          e.preventDefault();
-          next = 1;
-        } else if (e.key === "End") {
-          e.preventDefault();
-          next = 5;
-        }
-        if (next !== null) {
-          setter(next);
-          // Move DOM focus to the newly selected button so screen readers
-          // announce it and the roving tabIndex stays coherent.
-          const buttons =
-            groupRef.current?.querySelectorAll<HTMLButtonElement>(
-              '[role="radio"]',
-            );
-          if (buttons) {
-            const target = buttons[next - 1];
-            target?.focus();
-          }
-        }
-      },
-    [],
+  const weightData = useMemo(
+    () =>
+      buildBodyWeightSeries(
+        entries,
+        measurementEntries,
+        WEIGHT_TREND_POINTS,
+      ).map((p) => ({ value: p.value, label: p.label })),
+    [entries, measurementEntries],
   );
-
-  const energyGroupRef = useRef<HTMLDivElement | null>(null);
-  const moodGroupRef = useRef<HTMLDivElement | null>(null);
-
-  const weightData = useMemo(() => {
-    const recent = recentWith("weightKg", 30);
-    return recent
-      .slice()
-      .reverse()
-      .map((e) => ({
-        value: e.weightKg,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
-      }));
-  }, [recentWith]);
 
   const sleepData = useMemo(() => {
     const recent = recentWith("sleepHours", 20);
@@ -212,10 +89,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
       .reverse()
       .map((e) => ({
         value: e.sleepHours,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [recentWith]);
 
@@ -226,10 +100,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
       .reverse()
       .map((e) => ({
         value: e.energyLevel,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [recentWith]);
 
@@ -240,15 +111,11 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
       .reverse()
       .map((e) => ({
         value: e.moodScore,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [recentWith]);
 
   const stats = useMemo(() => {
-    const wEntries = recentWith("weightKg", 7);
     const sEntries = recentWith("sleepHours", 7);
     const eEntries = recentWith("energyLevel", 7);
     const avgSleep =
@@ -261,9 +128,10 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
         ? eEntries.reduce((s, e) => s + (e.energyLevel || 0), 0) /
           eEntries.length
         : null;
-    const latestWeight = wEntries[0]?.weightKg ?? null;
+    const latestWeight =
+      selectLatestBodyWeight(entries, measurementEntries)?.weightKg ?? null;
     return { latestWeight, avgSleep, avgEnergy };
-  }, [recentWith]);
+  }, [recentWith, entries, measurementEntries]);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -273,240 +141,91 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
             <h1 className="text-style-title text-text">
               {messages.fizruk.body.title}
             </h1>
-            <p className="text-xs text-subtle mt-0.5">
+            <p className="text-style-caption text-subtle mt-0.5">
               {messages.fizruk.body.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-center">
-              <div className="text-xs text-subtle">
+              {/* AI-CONTEXT: роль `caption`, а не `label`. Та сама роль,
+                  що дає `SectionHeading size="xs"` у `Stat` і `MacroChip`
+                  для мітки НАД числом — але без смужки-кікера: у тісній
+                  смузі з трьох центрованих колонок вона читалась би як
+                  зайва графіка. Розмір не змінюється (12px → 12px). */}
+              <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.weight}
               </div>
+              {}
               <div className="text-base font-extrabold text-text tabular-nums">
-                {stats.latestWeight != null ? `${stats.latestWeight} кг` : "—"}
+                {stats.latestWeight != null ? (
+                  <Measure
+                    value={stats.latestWeight}
+                    unit={messages.fizruk.body.kgUnit}
+                    fractionDigits={1}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-subtle">
+              <div className="text-style-caption text-subtle">
                 {messages.fizruk.body.sleep}
               </div>
+              {}
               <div className="text-base font-extrabold text-text tabular-nums">
-                {stats.avgSleep != null
-                  ? `${stats.avgSleep.toFixed(1)} год`
-                  : "—"}
+                {/* `toFixed(1)` давав КРАПКУ («7.5 год») посеред
+                    інтерфейсу, де всюди кома. `Measure` бере роздільник
+                    із локалі — та сама дрібниця, з якої складається П4. */}
+                {stats.avgSleep != null ? (
+                  <Measure
+                    value={stats.avgSleep}
+                    unit={messages.fizruk.body.hoursUnit}
+                    fractionDigits={1}
+                  />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
-            {onOpenMeasurements && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onOpenMeasurements}
-                className="text-style-caption text-subtle hover:text-text"
-              >
-                {messages.fizruk.body.measurements}
-              </Button>
-            )}
+            <div className="text-center">
+              <div className="text-style-caption text-subtle">
+                {messages.fizruk.body.energyShort}
+              </div>
+              {}
+              <div className="text-base font-extrabold text-text tabular-nums">
+                {/* Defect #8: computed 7-day average energy already lived
+                    in `stats` but never rendered anywhere on the page —
+                    third column, same treatment as weight/sleep above. */}
+                {stats.avgEnergy != null ? (
+                  <Measure
+                    value={stats.avgEnergy}
+                    unit="/5"
+                    fractionDigits={1}
+                  />
+                ) : (
+                  "—"
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <Card
-          as="section"
-          radius="lg"
-          aria-label={messages.fizruk.body.formAriaLabel}
-        >
-          <SectionHeading as="h2" size="sm" className="mb-3">
-            {messages.fizruk.body.formHeading}
-          </SectionHeading>
-          <form onSubmit={submit} noValidate className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="body-weight">
-                  {messages.fizruk.body.weightLabel}
-                </Label>
-                <input
-                  id="body-weight"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  min="20"
-                  max="300"
-                  className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                  placeholder="70.5"
-                  disabled={isSubmitting}
-                  aria-invalid={weightError ? true : undefined}
-                  aria-describedby={
-                    weightError ? "body-weight-error" : undefined
-                  }
-                  {...register("weightKg")}
-                />
-                {weightError && (
-                  <p
-                    id="body-weight-error"
-                    className="mt-1 text-xs text-danger-strong"
-                    role="alert"
-                  >
-                    {weightError}
-                  </p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="body-sleep">
-                  {messages.fizruk.body.sleepLabel}
-                </Label>
-                <input
-                  id="body-sleep"
-                  type="number"
-                  inputMode="decimal"
-                  step="0.5"
-                  min="0"
-                  max="24"
-                  className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                  placeholder="8.0"
-                  disabled={isSubmitting}
-                  aria-invalid={sleepError ? true : undefined}
-                  aria-describedby={sleepError ? "body-sleep-error" : undefined}
-                  {...register("sleepHours")}
-                />
-                {sleepError && (
-                  <p
-                    id="body-sleep-error"
-                    className="mt-1 text-xs text-danger-strong"
-                    role="alert"
-                  >
-                    {sleepError}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <SectionHeading
-                as="p"
-                size="xs"
-                variant="fizruk"
-                className="mb-2"
-              >
-                {messages.fizruk.body.energyLevel}
-              </SectionHeading>
-              <div
-                ref={energyGroupRef}
-                className="flex gap-1.5"
-                role="radiogroup"
-                tabIndex={-1}
-                aria-label={messages.fizruk.body.energyLevel}
-                onKeyDown={makeScoreKeyHandler(
-                  energyLevel,
-                  (v) => setValue("energyLevel", v, { shouldDirty: true }),
-                  energyGroupRef,
-                )}
-              >
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <ScoreButton
-                    key={v}
-                    value={v}
-                    label={ENERGY_LABELS[v] ?? ""}
-                    selected={energyLevel === v}
-                    tabbable={
-                      energyLevel === v || (energyLevel == null && v === 1)
-                    }
-                    onClick={(val: number) =>
-                      setValue(
-                        "energyLevel",
-                        energyLevel === val ? null : val,
-                        { shouldDirty: true },
-                      )
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <SectionHeading
-                as="p"
-                size="xs"
-                variant="fizruk"
-                className="mb-2"
-              >
-                {messages.fizruk.body.mood}
-              </SectionHeading>
-              <div
-                ref={moodGroupRef}
-                className="flex gap-1.5"
-                role="radiogroup"
-                tabIndex={-1}
-                aria-label={messages.fizruk.body.mood}
-                onKeyDown={makeScoreKeyHandler(
-                  moodScore,
-                  (v) => setValue("moodScore", v, { shouldDirty: true }),
-                  moodGroupRef,
-                )}
-              >
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <ScoreButton
-                    key={v}
-                    value={v}
-                    label={MOOD_LABELS[v] ?? ""}
-                    selected={moodScore === v}
-                    tabbable={moodScore === v || (moodScore == null && v === 1)}
-                    onClick={(val: number) =>
-                      setValue("moodScore", moodScore === val ? null : val, {
-                        shouldDirty: true,
-                      })
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="body-note" optional>
-                {messages.fizruk.body.note}
-              </Label>
-              <input
-                id="body-note"
-                type="text"
-                className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-                placeholder={messages.fizruk.body.notePlaceholder}
-                maxLength={200}
-                disabled={isSubmitting}
-                aria-invalid={noteError ? true : undefined}
-                aria-describedby={noteError ? "body-note-error" : undefined}
-                {...register("note")}
-              />
-              {noteError && (
-                <p
-                  id="body-note-error"
-                  className="mt-1 text-xs text-danger-strong"
-                  role="alert"
-                >
-                  {noteError}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={cn(
-                "focus-ring w-full py-3 rounded-xl text-style-label transition-[background-color,box-shadow,opacity,transform]",
-                // WHY: the resting CTA carries the module accent (fizruk teal)
-                // for module-accent containment (Hard Rule #12) — it was
-                // emerald (`success-strong`), Finyk's accent. The confirmed
-                // state stays green because that green is success semantics
-                // (shared across modules), not a module accent.
-                submitSuccess
-                  ? "bg-success-strong text-white"
-                  : "bg-fizruk-strong text-white hover:bg-teal-800 active:scale-[0.98]",
-                isSubmitting && "opacity-60",
-              )}
-            >
-              {submitSuccess ? "Записано ✓" : "Записати"}
-            </button>
-          </form>
-        </Card>
-
+        {/*
+          V-10 (fizruk deep audit, 2026-08-07): «Відновлення й фокус» — ключова
+          фіча модуля (канон fizruk §4) — раніше рендерилась ПІСЛЯ форми
+          запису і за замовчуванням згорнутою, тож на «своїй» сторінці
+          програвала пріоритет вводу даних. Тепер вона стоїть першою і
+          відкрита одразу (`RecoveryFocusCard` default `open=true`); форма
+          запису лишається розгорнутою нижче — це швидкий щоденний ритуал
+          (вага/сон/енергія за секунди), а не другорядна дія, тож ховати її
+          за додатковим кліком сенсу не має.
+        */}
         {onOpenAtlas && <RecoveryFocusCard onOpenAtlas={onOpenAtlas} />}
+
+        <BodyEntryForm onSubmitEntry={handleSubmitEntry} />
+
+        <InjuryManager />
 
         {(
           [
@@ -516,8 +235,12 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка ваги",
               data: weightData,
               unit: "кг",
-              color: statusColors.success,
+              color: chartStatusSeries.success,
               metricLabel: "вагу",
+              // Fizruk-канон: модуль не задає дефолтну ціль по вазі — ні
+              // зростання, ні зниження саме по собі не «краще». Нейтральний
+              // тон, а не success/warning в будь-який бік.
+              deltaDirection: "neutral",
             },
             {
               storageKey: "sleep",
@@ -527,6 +250,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               unit: "год",
               color: chartSeries.fizruk.primary as string,
               metricLabel: "сон",
+              deltaDirection: "up-is-good",
             },
             {
               storageKey: "energy",
@@ -534,8 +258,9 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               ariaLabel: "Динаміка енергії",
               data: energyData,
               unit: "/5",
-              color: statusColors.warning,
+              color: chartStatusSeries.warning,
               metricLabel: "рівень енергії",
+              deltaDirection: "up-is-good",
             },
             {
               storageKey: "mood",
@@ -545,6 +270,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
               unit: "/5",
               color: chartPalette[8] as string,
               metricLabel: "настрій",
+              deltaDirection: "up-is-good",
             },
           ] as const
         )
@@ -563,12 +289,15 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
                 latestValue={latest}
                 latestUnit={card.unit}
                 delta={delta}
+                deltaSince={card.data.find((p) => p.value != null)?.label}
+                deltaDirection={card.deltaDirection}
               >
                 <MiniLineChart
                   data={card.data}
                   unit={card.unit}
                   color={card.color}
                   metricLabel={card.metricLabel}
+                  deltaDirection={card.deltaDirection}
                 />
               </CollapsibleTrendCard>
             );
@@ -577,15 +306,15 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
         {[weightData, sleepData, energyData, moodData].every(
           (d) => d.length < 2,
         ) && (
-          <Card
-            radius="lg"
-            padding="lg"
-            aria-label={messages.fizruk.body.trendsCollecting}
-          >
+          <Card radius="lg" padding="lg">
+            {/* Defect #5: `aria-label` on a generic `<div>` (no ARIA role)
+                is dropped by AT and flagged by axe (`aria-prohibited-attr`).
+                The label text is already the visible first paragraph below —
+                removing it loses nothing, screen readers read the text. */}
             <p className="text-style-label text-text">
               {messages.fizruk.body.trendsCollecting}
             </p>
-            <p className="text-xs text-subtle mt-1">
+            <p className="text-style-caption text-subtle mt-1">
               {messages.fizruk.body.trendsCollectingDescription}
             </p>
           </Card>
@@ -593,8 +322,7 @@ export function Body({ onOpenMeasurements, onOpenAtlas }: BodyProps) {
 
         {entries.length > 0 && (
           <JournalSection
-            entries={entries.slice(0, 15)}
-            totalCount={entries.length}
+            entries={entries}
             onDelete={handleDeleteJournalEntry}
           />
         )}

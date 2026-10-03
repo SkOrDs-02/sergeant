@@ -43,7 +43,10 @@ describe("SubscriptionForm", () => {
       />,
     );
     expect(
-      screen.getByPlaceholderText("Ключове слово з транзакції"),
+      screen.getByLabelText("Пошук операції за описом"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/знайду найновішу витрату, опис якої містить цей текст/),
     ).toBeInTheDocument();
     expect(
       screen.getByPlaceholderText("День списання (1-31)"),
@@ -52,6 +55,10 @@ describe("SubscriptionForm", () => {
     const buttonLabels = buttons.map((b) => b.textContent?.trim());
     expect(buttonLabels).toContain("Додати");
     expect(buttonLabels).toContain("Скасувати");
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни назву та вкажи день списання від 1 до 31."),
+    ).toBeInTheDocument();
   });
 
   it("rejects out-of-range billing days (0, 99) and saves a valid one", () => {
@@ -141,7 +148,7 @@ describe("SubscriptionForm", () => {
 });
 
 describe("AssetForm", () => {
-  it("renders the form title and currency select", () => {
+  it("renders the form as UAH-only without a currency selector", () => {
     render(
       withQueryClient(
         <AssetForm
@@ -156,6 +163,75 @@ describe("AssetForm", () => {
     );
     expect(screen.getByText("Новий актив")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Сума")).toBeInTheDocument();
+    expect(screen.getByText("UAH")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: /валюта активу/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+  });
+
+  it("calls setShowAssetForm(false) on cancel", () => {
+    const setShowAssetForm = vi.fn();
+    const { container } = render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{ name: "Cash", amount: "100", currency: "UAH", emoji: "" }}
+          setNewAsset={vi.fn()}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={setShowAssetForm}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Скасувати")!,
+    );
+    expect(setShowAssetForm).toHaveBeenCalledWith(false);
+  });
+
+  it("emits name and amount field updates without changing currency", () => {
+    const setNewAsset = vi.fn();
+    render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{ name: "Cash", amount: "100", currency: "USD", emoji: "" }}
+          setNewAsset={setNewAsset}
+          setManualAssets={vi.fn()}
+          setShowAssetForm={vi.fn()}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+        />,
+      ),
+    );
+
+    fireEvent.change(screen.getByLabelText("Назва активу"), {
+      target: { value: "Брокерський рахунок" },
+    });
+    fireEvent.change(screen.getByLabelText("Сума активу"), {
+      target: { value: "2500" },
+    });
+
+    const updaters = setNewAsset.mock.calls.map(
+      ([updater]) =>
+        updater as (asset: {
+          name: string;
+          amount: string;
+          currency: string;
+          emoji: string;
+        }) => {
+          name: string;
+          amount: string;
+          currency: string;
+          emoji: string;
+        },
+    );
+    const base = { name: "Cash", amount: "100", currency: "USD", emoji: "" };
+    expect(updaters[0]!(base)).toMatchObject({ name: expect.any(String) });
+    expect(updaters[1]!(base)).toMatchObject({ amount: expect.any(String) });
+    expect(updaters).toHaveLength(2);
   });
 
   it("rejects non-positive amounts and saves a positive one", () => {
@@ -226,6 +302,42 @@ describe("AssetForm", () => {
     expect(setManualAssets).toHaveBeenCalledTimes(1);
     expect(setShowAssetForm).toHaveBeenCalledWith(false);
   });
+
+  it("updates an existing asset when editingId is present", () => {
+    const onUpdate = vi.fn();
+    const setManualAssets = vi.fn();
+    const { container } = render(
+      withQueryClient(
+        <AssetForm
+          newAsset={{
+            name: "Депозит",
+            amount: "1500",
+            currency: "UAH",
+            emoji: "",
+          }}
+          setNewAsset={vi.fn()}
+          setManualAssets={setManualAssets}
+          setShowAssetForm={vi.fn()}
+          assetFormRef={createRef()}
+          assetNameInputRef={createRef()}
+          editingId="asset-1"
+          onUpdate={onUpdate}
+        />,
+      ),
+    );
+
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Зберегти")!,
+    );
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      "asset-1",
+      expect.objectContaining({ id: "asset-1", name: "Депозит", amount: 1500 }),
+    );
+    expect(setManualAssets).not.toHaveBeenCalled();
+  });
 });
 
 describe("ReceivableForm", () => {
@@ -240,8 +352,38 @@ describe("ReceivableForm", () => {
     );
     expect(screen.getByPlaceholderText("Сума ₴")).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText("Нотатка (необов'язково)"),
+      screen.getByPlaceholderText("Нотатка (необовʼязково)"),
     ).toBeInTheDocument();
+    const dueDate = screen.getByLabelText("Дата повернення");
+    expect(dueDate).toHaveClass("w-full");
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни імʼя та вкажи позитивну суму."),
+    ).toBeInTheDocument();
+  });
+
+  it("calls setShowRecvForm(false) on cancel", () => {
+    const setShowRecvForm = vi.fn();
+    const { container } = render(
+      <ReceivableForm
+        newRecv={{
+          name: "Alice",
+          emoji: "",
+          amount: "100",
+          note: "",
+          dueDate: "",
+        }}
+        setNewRecv={vi.fn()}
+        setReceivables={vi.fn()}
+        setShowRecvForm={setShowRecvForm}
+      />,
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Скасувати")!,
+    );
+    expect(setShowRecvForm).toHaveBeenCalledWith(false);
   });
 
   it("rejects non-positive amounts and saves a positive one", () => {
@@ -306,7 +448,13 @@ describe("DebtForm", () => {
   it("renders the debt form title and inputs", () => {
     render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
         setShowDebtForm={vi.fn()}
@@ -315,14 +463,26 @@ describe("DebtForm", () => {
       />,
     );
     expect(screen.getByText("Новий пасив")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Загальна сума ₴")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Початкова сума ₴")).toBeInTheDocument();
+    const dueDate = screen.getByLabelText("Дата погашення");
+    expect(dueDate).toHaveClass("w-full");
+    expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
+    expect(
+      screen.getByText("Заповни назву та вкажи позитивну суму пасиву."),
+    ).toBeInTheDocument();
   });
 
   it("calls setShowDebtForm(false) on cancel", () => {
     const onCancel = vi.fn();
     const { container } = render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
         setShowDebtForm={onCancel}
@@ -335,5 +495,191 @@ describe("DebtForm", () => {
       .find((b) => b.textContent?.trim() === "Скасувати");
     fireEvent.click(cancelBtn!);
     expect(onCancel).toHaveBeenCalledWith(false);
+  });
+
+  it("emits debt name, amount, and due-date updates", () => {
+    const setNewDebt = vi.fn();
+    render(
+      <DebtForm
+        newDebt={{
+          name: "Кредит",
+          emoji: "",
+          totalAmount: "1000",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
+        setNewDebt={setNewDebt}
+        setManualDebts={vi.fn()}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг)"), {
+      target: { value: "Розстрочка" },
+    });
+    fireEvent.change(screen.getByLabelText("Початкова сума боргу у гривнях"), {
+      target: { value: "25000" },
+    });
+    fireEvent.change(screen.getByLabelText("Дата погашення"), {
+      target: { value: "2026-09-15" },
+    });
+
+    const updaters = setNewDebt.mock.calls.map(
+      ([updater]) =>
+        updater as (debt: {
+          name: string;
+          emoji: string;
+          totalAmount: string;
+          dueDate: string;
+        }) => {
+          name: string;
+          emoji: string;
+          totalAmount: string;
+          dueDate: string;
+        },
+    );
+    const base = {
+      name: "Кредит",
+      emoji: "",
+      totalAmount: "1000",
+      dueDate: "",
+    };
+    expect(updaters[0]!(base)).toMatchObject({ name: expect.any(String) });
+    expect(updaters[1]!(base)).toMatchObject({
+      totalAmount: expect.any(String),
+    });
+    expect(updaters[2]!(base)).toMatchObject({
+      dueDate: expect.any(String),
+    });
+  });
+
+  it("commits a valid debt (name + totalAmount) and closes the form", () => {
+    const setManualDebts = vi.fn();
+    const setShowDebtForm = vi.fn();
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "Кредит",
+          emoji: "\u{1F4B8}",
+          totalAmount: "50000",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={setManualDebts}
+        setShowDebtForm={setShowDebtForm}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+      />,
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setManualDebts).toHaveBeenCalledTimes(1);
+    expect(setShowDebtForm).toHaveBeenCalledWith(false);
+  });
+
+  it("updates an existing debt when editingId is present", () => {
+    const onUpdate = vi.fn();
+    const setManualDebts = vi.fn();
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "Кредит",
+          emoji: "\u{1F4B8}",
+          totalAmount: "50000",
+          dueDate: "2026-10-01",
+          autoLinkKeyword: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={setManualDebts}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+        editingId="debt-1"
+        onUpdate={onUpdate}
+      />,
+    );
+
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Зберегти")!,
+    );
+
+    expect(onUpdate).toHaveBeenCalledWith(
+      "debt-1",
+      expect.objectContaining({
+        id: "debt-1",
+        name: "Кредит",
+        totalAmount: 50000,
+      }),
+    );
+    expect(setManualDebts).not.toHaveBeenCalled();
+  });
+
+  it("пояснює суму пасиву з source та increase без подвійного обліку", () => {
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "Сашка",
+          emoji: "",
+          totalAmount: "721.14",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={vi.fn()}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+        editingId="debt-1"
+        editingDebt={{
+          id: "debt-1",
+          amount: 721.14,
+          totalAmount: 721.14,
+          linkedTxIds: ["source", "increase"],
+          txLinks: {
+            source: { role: "source", amount: 1000 },
+            increase: { role: "increase", amount: 721.14 },
+          },
+        }}
+      />,
+    );
+
+    expect(container).toHaveTextContent("Виникнення за операціями");
+    expect(container).toHaveTextContent("Збільшення боргу");
+    expect(container).toHaveTextContent(/1[\s\u202f]?721,14/);
+    expect(container).toHaveTextContent(/операції виникнення більші/);
+  });
+
+  it("does not commit a debt when name is empty", () => {
+    const setManualDebts = vi.fn();
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "",
+          emoji: "\u{1F4B8}",
+          totalAmount: "50000",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={setManualDebts}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+      />,
+    );
+    fireEvent.click(
+      within(container)
+        .getAllByRole("button")
+        .find((b) => b.textContent?.trim() === "Додати")!,
+    );
+    expect(setManualDebts).not.toHaveBeenCalled();
   });
 });

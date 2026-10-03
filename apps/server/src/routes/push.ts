@@ -1,11 +1,9 @@
 import { Router } from "express";
 import { env } from "../env/env.js";
 import {
-  asyncHandler,
   rateLimitExpress,
   requireApiSecret,
   requireSession,
-  requireSessionSoft,
   setModule,
 } from "../http/index.js";
 import { requireInternalIp } from "../http/requireInternalIp.js";
@@ -14,55 +12,77 @@ import {
   pushTest,
   register as pushRegister,
   sendPush,
-  subscribe as pushSubscribe,
   unregister as pushUnregister,
-  unsubscribe as pushUnsubscribe,
   vapidPublic,
 } from "../modules/push/push.js";
 
 /**
  * `/api/push/vapid-public` свідомо поза rate-limiter-ом: його смикає фронт
- * під час реєстрації сервіс-воркера і він має бути швидким/дешевим. Решта
- * endpoint-ів (subscribe/unsubscribe/send) лімітуються.
+ * під час реєстрації сервіс-воркера і він має бути швидким/дешевим.
  *
- * subscribe/unsubscribe використовують `requireSessionSoft`, а не
- * `requireSession`: service worker смикає ці endpoint-и у фоні, і
- * історично handler трактував будь-яку невдачу `getSessionUser` як 401
- * (а не 500), щоб тимчасовий збій БД не перетворювався на notification
- * "server error" на фронті. `send` — внутрішній API cron/worker-ів,
- * захищений `X-Api-Secret`.
+ * Решта захищених endpoint-ів (register/unregister/test) мають
+ * трирівневий гейт, і порядок навмисний:
+ *   1. Pre-auth IP-лімітер (`api:push:ip`, 150/хв, окремий `preAuthIpRateLimit`)
+ *      — ПЕРЕД `requireSession()`. Сесія на невдачі шле 401 і НЕ кличе
+ *      `next()`, тож без цього гейта безсесійний флуд (відсутня/підроблена
+ *      кука) взагалі не діставався б до per-user бакета нижче — а
+ *      `getSessionUser` усе одно робить lookup у session-store на кожен
+ *      такий запит. Окремий `key` (суфікс `:ip`), ліміт 150/хв = 5×
+ *      per-user 30/хв.
+ *   2. `requireSession()` — резолвить сесію.
+ *   3. Спільний per-user бакет `api:push` (30/хв, `broadRateLimit`),
+ *      застосований ПІСЛЯ сесії навмисно (рецидив знахідки B31, PR-A3 у
+ *      `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+ *      `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+ *      фолбечиться на `ip:<addr>` лише коли сесії немає. Раніше цей бакет
+ *      висів через `r.use("/api/push", …)` ПЕРЕД усіма post/delete-роутами,
+ *      тож `req.user` завжди був unset у момент перевірки і бакет завжди
+ *      фолбечився на IP.
+ *
+ * `send` — єдиний виняток: internal-only endpoint без сесії взагалі
+ * (захист — мережевий allowlist + `X-Api-Secret`), тож його `broadRateLimit`
+ * і так рахується per-IP і окремого pre-auth гейта не потребує.
+ * `test` виняток НЕ становить: те, що `requireSession()` стоїть там першим,
+ * — це і є та сама діра, а не її відсутність, тож pre-auth гейт у нього
+ * такий самий, як у решти.
  */
 export function createPushRouter(): Router {
   const r = Router();
   r.use("/api/push", setModule("push"));
-  r.get("/api/push/vapid-public", asyncHandler(vapidPublic));
-  r.use(
-    "/api/push",
-    rateLimitExpress({ key: "api:push", limit: 30, windowMs: 60_000 }),
-  );
-  r.post(
-    "/api/push/subscribe",
-    requireSessionSoft(),
-    asyncHandler(pushSubscribe),
-  );
-  r.delete(
-    "/api/push/subscribe",
-    requireSessionSoft(),
-    asyncHandler(pushUnsubscribe),
-  );
+  r.get("/api/push/vapid-public", vapidPublic);
+  const broadRateLimit = rateLimitExpress({
+    key: "api:push",
+    limit: 30,
+    windowMs: 60_000,
+  });
+  // Pre-auth IP-бакет — окремий `key` (суфікс `:ip`), інакше ділив би
+  // лічильник із per-user `api:push` вище. 150/хв = 5× per-user ліміт.
+  const preAuthIpRateLimit = rateLimitExpress({
+    key: "api:push:ip",
+    limit: 150,
+    windowMs: 60_000,
+  });
   // `/api/push/register` — уніфікований mobile+web endpoint. Свідомо йде
   // через `requireSession()` (жорсткий 401), а не `requireSessionSoft`:
   // mobile-клієнт має прозорий сигнал "токен протух, треба перелогінитись",
   // а не silently 200 з пустою сесією. Доступний також як `/api/v1/push/register`
   // через `apiVersionRewrite`.
-  r.post("/api/push/register", requireSession(), asyncHandler(pushRegister));
+  r.post(
+    "/api/push/register",
+    preAuthIpRateLimit,
+    requireSession(),
+    broadRateLimit,
+    pushRegister,
+  );
   // `/api/push/unregister` — симетричний анрег. Web шле
   // `{ platform: "web", endpoint }`, native — `{ platform, token }`.
-  // Сесія обов'язкова з тих самих причин, що й у register.
+  // Сесія обовʼязкова з тих самих причин, що й у register.
   r.post(
     "/api/push/unregister",
+    preAuthIpRateLimit,
     requireSession(),
-    asyncHandler(pushUnregister),
+    broadRateLimit,
+    pushUnregister,
   );
   // `/api/push/send` — internal-only fan-out endpoint. Hardening item M14
   // (`docs/security/hardening/M14-internal-push-ip-allowlist.md`) layers
@@ -82,8 +102,12 @@ export function createPushRouter(): Router {
   //      secret with constant-time compare.
   //   3. Per-target-user rate-limit + audit log inside the `sendPush`
   //      handler itself.
+  // No session on this route (internal secret-based auth), so the broad
+  // "api:push" bucket stays IP-keyed here — that's intentional, not the
+  // B31/PR-A3 bug the routes above were fixed for.
   r.post(
     "/api/push/send",
+    broadRateLimit,
     requireInternalIp({
       // P2-1: читаємо з zod-валідованого env (default "" →
       // legacy `?? ""` semantic). Парсинг формату (CIDR, IP, comma/ньюлайн)
@@ -99,7 +123,7 @@ export function createPushRouter(): Router {
       },
     }),
     requireApiSecret("API_SECRET"),
-    asyncHandler(sendPush),
+    sendPush,
   );
   // `/api/v1/push/test` — ручка «пульнути тестовий пуш на мої пристрої».
   // Реєструємо на `/api/push/test`: `apiVersionRewrite` у `app.ts` переписує
@@ -111,9 +135,11 @@ export function createPushRouter(): Router {
   // інакше — in-memory fallback per-process.
   r.post(
     "/api/push/test",
+    preAuthIpRateLimit,
     requireSession(),
+    broadRateLimit,
     rateLimitExpress({ key: "api:push:test", limit: 1, windowMs: 5_000 }),
-    asyncHandler(pushTest),
+    pushTest,
   );
   return r;
 }

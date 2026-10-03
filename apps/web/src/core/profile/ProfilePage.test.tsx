@@ -8,18 +8,13 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigationType } from "react-router-dom";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
+import { expandAllCollapsedSections } from "../../test/helpers/collapsibleSection";
+import { messages } from "@shared/i18n/uk";
+import { meApi } from "@shared/api";
 
 // ── Mocks ────────────────────────────────────────────────────
-
-const navigateMock = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual =
-    await vi.importActual<typeof import("react-router-dom")>(
-      "react-router-dom",
-    );
-  return { ...actual, useNavigate: () => navigateMock };
-});
 
 const updateUserMock =
   vi.fn<
@@ -28,7 +23,14 @@ const updateUserMock =
 const changePasswordMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 const listSessionsMock = vi.fn<() => Promise<{ data: unknown[] }>>();
 const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
-const deleteUserMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
+// DangerZoneSection тепер видаляє акаунт через `DELETE /api/me`
+// (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
+// 30-денне вікно на скасування.
+//
+// `vi.spyOn` замість `vi.mock("@shared/api", …)` (бюджет vi.mock на файл) —
+// решта `@shared/api` лишається СПРАВЖНЬОЮ без ризику затерти сусідні
+// api-групи, якими користується решта профілю.
+const deleteAccountMock = vi.spyOn(meApi, "deleteAccount");
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -38,7 +40,11 @@ updateUserMock.mockResolvedValue({ error: null });
 changePasswordMock.mockResolvedValue({ error: null });
 listSessionsMock.mockResolvedValue({ data: [] });
 revokeSessionMock.mockResolvedValue({ error: null });
-deleteUserMock.mockResolvedValue({ error: null });
+deleteAccountMock.mockResolvedValue({
+  ok: true,
+  deletedAt: "2026-09-20T10:00:00.000Z",
+  scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+});
 signOutMock.mockResolvedValue(undefined);
 sendVerificationEmailMock.mockResolvedValue({ error: null });
 changeEmailMock.mockResolvedValue({ error: null });
@@ -48,7 +54,6 @@ vi.mock("../auth/authClient.js", () => ({
   changePassword: (data: unknown) => changePasswordMock(data),
   listSessions: () => listSessionsMock(),
   revokeSession: (data: unknown) => revokeSessionMock(data),
-  deleteUser: (data: unknown) => deleteUserMock(data),
   signOut: () => signOutMock(),
   sendVerificationEmail: (data: unknown) => sendVerificationEmailMock(data),
   changeEmail: (data: unknown) => changeEmailMock(data),
@@ -57,17 +62,6 @@ vi.mock("../auth/authClient.js", () => ({
 const useOnlineStatusMock = vi.fn(() => true);
 vi.mock("@shared/hooks/useOnlineStatus", () => ({
   useOnlineStatus: () => useOnlineStatusMock(),
-}));
-
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
-const toastShowMock = vi.fn();
-vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({
-    success: toastSuccessMock,
-    error: toastErrorMock,
-    show: toastShowMock,
-  }),
 }));
 
 const mockUser = {
@@ -81,24 +75,78 @@ const mockUser = {
 const refreshMock = vi.fn(async () => undefined);
 const logoutMock = vi.fn(async () => undefined);
 
+const mockAuthValue = {
+  user: mockUser,
+  logout: logoutMock,
+  refresh: refreshMock,
+  isLoading: false,
+  status: "authenticated" as const,
+};
 vi.mock("../auth/AuthContext.jsx", () => ({
-  useAuth: () => ({
-    user: mockUser,
-    logout: logoutMock,
-    refresh: refreshMock,
-    isLoading: false,
-    status: "authenticated",
-  }),
+  useAuth: () => mockAuthValue,
+  // `BiometricsSection` → `useBiometrics` reads the non-throwing variant
+  // (see `useBiometrics.ts`); mirror the same authenticated value here so
+  // this suite still exercises the "signed in" write-through branch.
+  useAuthOptional: () => mockAuthValue,
+}));
+
+// Огляд 2026-09-04: серверна памʼять і PIN-блокування рендеряться в
+// Профілі, але тягнуть React Query і AppLockProvider — власні тести в
+// `AiMemorySection.test.tsx` / `security/AppLockSettings.test.tsx`.
+vi.mock("./AiMemorySection", () => ({
+  AiMemorySection: () => <div data-testid="ai-memory-section" />,
+}));
+vi.mock("../security/AppLockSettings", () => ({
+  AppLockSettings: () => <div data-testid="app-lock-settings" />,
 }));
 
 import { ProfilePage } from "./ProfilePage";
 
+// Замість моків `useNavigate` і `useToast` (vi.mock-кап 5 на файл) —
+// справжні `MemoryRouter` + `ToastProvider` і зонд, що виводить у DOM
+// поточний шлях, тип навігації (REPLACE для `navigate(..., { replace })`)
+// та живі тости з їхніми action-кнопками.
+function Probe() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const { toasts } = useToast();
+  return (
+    <div
+      data-testid="probe"
+      data-path={location.pathname}
+      data-nav={navigationType}
+    >
+      {toasts.map((t) => (
+        <div key={t.id} data-testid={`toast-${t.type}`}>
+          {t.msg}
+          {t.action ? <span>{t.action.label}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function renderPage() {
   return render(
     <MemoryRouter>
-      <ProfilePage />
+      <ToastProvider>
+        <ProfilePage />
+        <Probe />
+      </ToastProvider>
     </MemoryRouter>,
   );
+}
+
+async function expectRedirectedToSignIn() {
+  // `waitFor`, а не синхронна перевірка: тост і `navigate()` стоять поруч
+  // у `handleLogout`, але React 18 батчить оновлення — поява тосту НЕ
+  // означає, що зонд уже перемалювався з новим шляхом. Синхронний варіант
+  // читав старий `/` і падав рівно тому, що встигав першим.
+  await waitFor(() => {
+    const probe = screen.getByTestId("probe");
+    expect(probe).toHaveAttribute("data-path", "/sign-in");
+    expect(probe).toHaveAttribute("data-nav", "REPLACE");
+  });
 }
 
 // ── Tests ────────────────────────────────────────────────────
@@ -112,7 +160,11 @@ describe("ProfilePage", () => {
     changePasswordMock.mockResolvedValue({ error: null });
     listSessionsMock.mockResolvedValue({ data: [] });
     revokeSessionMock.mockResolvedValue({ error: null });
-    deleteUserMock.mockResolvedValue({ error: null });
+    deleteAccountMock.mockResolvedValue({
+      ok: true,
+      deletedAt: "2026-09-20T10:00:00.000Z",
+      scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+    });
     signOutMock.mockResolvedValue(undefined);
     sendVerificationEmailMock.mockResolvedValue({ error: null });
     changeEmailMock.mockResolvedValue({ error: null });
@@ -123,6 +175,13 @@ describe("ProfilePage", () => {
   });
 
   describe("rendering", () => {
+    it("exposes an sr-only page heading for screen readers", () => {
+      renderPage();
+      expect(
+        screen.getByRole("heading", { level: 1, name: "Профіль" }),
+      ).toHaveClass("sr-only");
+    });
+
     it("shows user name and email", () => {
       renderPage();
       expect(screen.getByText("Тест")).toBeInTheDocument();
@@ -172,8 +231,8 @@ describe("ProfilePage", () => {
     it("shows email verification banner when emailVerified is false", () => {
       mockUser.emailVerified = false;
       renderPage();
-      // Banner copy was extended in #1067 to include the suffix
-      // "— перевірте вашу поштову скриньку"; the action button was renamed
+      // Banner copy uses the canonical informal second-person suffix
+      // "перевір свою поштову скриньку"; the action button was renamed
       // from "Надіслати лист" to "Надіслати". Match the prefix via regex.
       expect(screen.getByText(/Email не підтверджено/)).toBeInTheDocument();
       expect(
@@ -212,7 +271,7 @@ describe("ProfilePage", () => {
       renderPage();
       expect(
         screen.getByText(
-          "Ви офлайн — редагування профілю тимчасово недоступне",
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
         ),
       ).toBeInTheDocument();
     });
@@ -222,7 +281,7 @@ describe("ProfilePage", () => {
       renderPage();
       expect(
         screen.queryByText(
-          "Ви офлайн — редагування профілю тимчасово недоступне",
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
         ),
       ).not.toBeInTheDocument();
     });
@@ -236,7 +295,11 @@ describe("ProfilePage", () => {
 
     it("disables change password button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
-      renderPage();
+      const { container } = renderPage();
+      // «Пароль» — один із пʼяти `CollapsibleSection`, згорнутих за
+      // замовчуванням; L-7 фікс ховає їхній вміст через `inert` +
+      // `aria-hidden`, тож кнопку треба спершу розкрити, як зробив би юзер.
+      expandAllCollapsedSections(container);
       const changeBtn = screen.getByRole("button", {
         name: "Змінити пароль",
       });
@@ -245,7 +308,9 @@ describe("ProfilePage", () => {
 
     it("disables delete account button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
-      renderPage();
+      const { container } = renderPage();
+      // «Видалення акаунта» згорнута за замовчуванням — див. коментар вище.
+      expandAllCollapsedSections(container);
       const deleteBtn = screen.getByRole("button", {
         name: "Видалити акаунт",
       });
@@ -276,10 +341,10 @@ describe("ProfilePage", () => {
   });
 
   describe("sessions section", () => {
-    it("calls listSessions on mount when online", () => {
+    it("calls listSessions on mount when online", async () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
-      expect(listSessionsMock).toHaveBeenCalled();
+      await waitFor(() => expect(listSessionsMock).toHaveBeenCalled());
     });
 
     it("does NOT call listSessions when offline", () => {
@@ -290,7 +355,9 @@ describe("ProfilePage", () => {
 
     it("disables refresh button when offline", () => {
       useOnlineStatusMock.mockReturnValue(false);
-      renderPage();
+      const { container } = renderPage();
+      // «Активні сесії» згорнута за замовчуванням — див. коментар вище.
+      expandAllCollapsedSections(container);
       const refreshBtn = screen.getByRole("button", { name: "Оновити" });
       expect(refreshBtn).toBeDisabled();
     });
@@ -300,35 +367,56 @@ describe("ProfilePage", () => {
     it("resets name save loading and shows error when updateUser throws", async () => {
       updateUserMock.mockRejectedValueOnce(new Error("network"));
       renderPage();
-      const nameInput = screen.getByLabelText("Ім'я");
-      fireEvent.change(nameInput, { target: { value: "Нове ім'я" } });
+      const nameInput = screen.getByLabelText("Імʼя");
+      fireEvent.change(nameInput, { target: { value: "Нове імʼя" } });
 
       const saveBtn = screen.getAllByRole("button", { name: "Зберегти" })[0];
       fireEvent.click(saveBtn!);
 
+      // Помилка форми лишається у формі (`useApiForm.serverError`), а не
+      // дублюється тостом — див. коментар у `PersonalInfoSection`.
       await waitFor(() =>
-        expect(toastErrorMock).toHaveBeenCalledWith("Не вдалося оновити ім'я"),
+        expect(screen.getByText("Не вдалося оновити імʼя")).toBeInTheDocument(),
       );
+      expect(screen.queryByTestId("toast-error")).not.toBeInTheDocument();
       expect(saveBtn).not.toBeDisabled();
     });
   });
 
   describe("delete account dialog", () => {
     it("uses accessible labels and closes on Escape", () => {
-      renderPage();
+      const { container } = renderPage();
+      // «Видалення акаунта» згорнута за замовчуванням — див. коментар вище.
+      expandAllCollapsedSections(container);
 
       fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
 
       const dialog = screen.getByRole("dialog", {
-        name: "Видалити акаунт назавжди?",
+        name: "Видалити акаунт?",
       });
       expect(dialog).toHaveAttribute("aria-modal", "true");
-      expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();
+      expect(
+        within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      ).toBeInTheDocument();
 
       fireEvent.keyDown(document, { key: "Escape" });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     });
   });
+
+  /**
+   * Вихід тепер за два кроки: тап по «Вийти» відкриває підтвердження, і лише
+   * його кнопка «Вийти» запускає `logout()`. Тести нижче ходять цим самим
+   * шляхом, а не смикають `handleLogout` в обхід — інакше вони перевіряли б
+   * код, якого користувач не бачить.
+   */
+  async function tapLogoutAndConfirm() {
+    fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+    const gate = await screen.findByRole("alertdialog", {
+      name: "Вийти з акаунта?",
+    });
+    fireEvent.click(within(gate).getByRole("button", { name: "Вийти" }));
+  }
 
   describe("logout", () => {
     it("renders Вийти button at bottom of profile", () => {
@@ -337,27 +425,235 @@ describe("ProfilePage", () => {
       expect(logoutBtn).toBeInTheDocument();
     });
 
+    // Звіт власника 2026-09-13: один тап стирав локальну БД, SW-кеші й
+    // сесію без жодного кроку назад. Діалог «є незбережені записи» нижче
+    // цього не закривав — він спрацьовує лише за недоставленої черги, тож
+    // чистий вихід не питав нічого взагалі.
+    it("не виходить з першого тапу — спершу питає підтвердження", async () => {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const gate = await screen.findByRole("alertdialog", {
+        name: "Вийти з акаунта?",
+      });
+      expect(logoutMock).not.toHaveBeenCalled();
+
+      fireEvent.click(within(gate).getByRole("button", { name: "Залишитись" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+      );
+      expect(logoutMock).not.toHaveBeenCalled();
+      expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
+    });
+
+    // Офлайн вихід не «зворотний із наступним входом»: вхід потребує
+    // мережі, якої немає, а локальна копія стирається одразу. Це інша за
+    // вагою дія, тож і текст інший.
+    it("офлайн попереджає, що ввійти назад не вийде", async () => {
+      useOnlineStatusMock.mockReturnValue(false);
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const gate = await screen.findByRole("alertdialog", {
+        name: "Вийти з акаунта?",
+      });
+      expect(
+        within(gate).getByText(/увійти назад не вийде/),
+      ).toBeInTheDocument();
+    });
+
     it("calls logout, shows toast and redirects to /sign-in on click", async () => {
       renderPage();
-      const logoutBtn = screen.getByRole("button", { name: "Вийти" });
-      fireEvent.click(logoutBtn);
+      await tapLogoutAndConfirm();
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
-      await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Ви вийшли з акаунта"),
-      );
+      await screen.findByText("Ти вийшов з акаунта");
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
-      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+      await expectRedirectedToSignIn();
     });
 
     it("shows error toast when logout throws", async () => {
       logoutMock.mockRejectedValueOnce(new Error("network"));
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
-      await waitFor(() =>
-        expect(toastErrorMock).toHaveBeenCalledWith(
-          "Не вдалося вийти, спробуйте ще раз",
-        ),
+      await tapLogoutAndConfirm();
+      const errorToast = await screen.findByTestId("toast-error");
+      expect(errorToast).toHaveTextContent("Не вдалося вийти");
+      expect(within(errorToast).getByText("Повторити")).toBeInTheDocument();
+    });
+  });
+
+  // §6 аудиту 2026-08-08 («найнебезпечніші дії без тестів»): гейт «є
+  // незбережені записи» на виході — `logout()` бере `confirmUnsyncedLoss`
+  // і чекає на відповідь, перш ніж стерти локальну БД. Мок `logout` тут
+  // імітує РЕАЛЬНУ поведінку `AuthContext.logout()` (`flushPendingSyncOpsBeforeLogout`
+  // → якщо лишилось недоставлене — питає callback і чекає на його Promise),
+  // а не просто резолвиться миттєво — інакше діалог ніколи б не встиг
+  // змонтуватись і тест перевіряв би повітря.
+  describe("unsynced records gate on logout", () => {
+    function mockLogoutAsksForConfirmation(pending = 3) {
+      logoutMock.mockImplementationOnce(
+        async (options?: {
+          confirmUnsyncedLoss?: (pending: number) => Promise<boolean>;
+        }) => {
+          await options?.confirmUnsyncedLoss?.(pending);
+        },
       );
+    }
+
+    it('"Все одно вийти": proceeds with logout — toast + redirect fire, exactly like a clean exit', async () => {
+      mockLogoutAsksForConfirmation(3);
+      renderPage();
+      await tapLogoutAndConfirm();
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      // `^`-анкор — щоб `pending=3` не міг випадково збігтися з рядком, де
+      // "3" є суфіксом іншого числа (напр. "13 записів"). pending=3 бере
+      // форму "few" ("записи"), не бінарну англійську "записів".
+      expect(
+        within(dialog).getByText(/^3 записи ще не збережено на сервері\./),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Все одно вийти" }),
+      );
+
+      await screen.findByText("Ти вийшов з акаунта");
+      await expectRedirectedToSignIn();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    });
+
+    it('"Залишитись": cancels logout — session stays alive, so no toast and no redirect', async () => {
+      mockLogoutAsksForConfirmation(1);
+      renderPage();
+      await tapLogoutAndConfirm();
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      // Однина: pending === 1 бере окрему гілку копірайту. Regex (не
+      // exact-рядок) — опис рендериться трьома сусідніми текстовими
+      // вузлами всередині одного `<div>` (речення + пробіл + друге
+      // речення), тож `getByText` з точним рядком не матчить жоден
+      // окремий вузол — лише конкатенований текст контейнера.
+      expect(
+        within(dialog).getByText(/^1 запис ще не збережено на сервері\./),
+      ).toBeInTheDocument();
+
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: "Залишитись" }),
+      );
+
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+      );
+      // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
+      // редиректу на екран входу. Це саме те, що мало б зламатись, якби
+      // `cancelled` ігнорувався після `await logout(...)`.
+      expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
+      expect(screen.getByTestId("probe")).toHaveAttribute("data-path", "/");
+      // Кнопка "Вийти" повертається в звичайний стан — не залипає у
+      // loading, ніби вихід досі триває.
+      expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();
+    });
+
+    // Українська плюралізація — три форми (one/few/many), не бінарна
+    // «1 vs N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("записів"),
+    // 21 повертається до "one" ("запис").
+    it.each([
+      [1, "запис"],
+      [2, "записи"],
+      [5, "записів"],
+      [11, "записів"],
+      [21, "запис"],
+    ])("uses the correct plural form for N=%i (%s)", async (n, form) => {
+      mockLogoutAsksForConfirmation(n);
+      renderPage();
+      await tapLogoutAndConfirm();
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      expect(
+        within(dialog).getByText(
+          new RegExp(`^${n} ${form} ще не збережено на сервері\\.`),
+        ),
+      ).toBeInTheDocument();
+    });
+  });
+
+  // V-4 / V-10 (deep-module-audit 2026-08-08, §5): Профіль приведено до
+  // сітки Налаштувань (V-10) і виправлено інверсію заголовків секцій
+  // (V-4). Ці тести червоніли на коді ДО фіксу — див. коментарі в
+  // `ProfilePage.tsx`/`MemoryBankSection.tsx` (канонічний) для деталей.
+  describe("section container and header hierarchy (V-4 / V-10 audit 2026-08-08)", () => {
+    it("matches HubSettingsPage's own container shape — no duplicated max-w/px from the hub shell (V-10)", () => {
+      const { container } = renderPage();
+      const root = container.firstElementChild as HTMLElement;
+      // Було: "max-w-lg mx-auto px-5 pb-10 space-y-2 pt-6" — дублювало
+      // max-w/px хабової оболонки (`HubMainContent.tsx`) і мало вдвічі
+      // щільніший ритм за `gap-4` сусідньої вкладки Налаштувань.
+      expect(root.className).not.toContain("max-w-lg");
+      expect(root.className).not.toContain("px-5");
+      expect(root.className).not.toContain("space-y-2");
+      expect(root.className).toContain("gap-4");
+    });
+
+    it("does not render a duplicated card-header title inside expanded sections (V-4)", () => {
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      // До фіксу кожен з цих заголовків рендерився ДВІЧІ: раз як
+      // зовнішній заголовок `CollapsibleSection`, раз — як внутрішня
+      // шапка картки (`COPY.sectionTitle` дослівно збігався з `title`).
+      expect(screen.getAllByText("Активні сесії")).toHaveLength(1);
+      expect(screen.getAllByText("Біометрія")).toHaveLength(1);
+      expect(screen.getAllByText("Пароль")).toHaveLength(1);
+      // MemoryBankSection мала близький, а не дослівний дублікат —
+      // «Памʼять ШІ» замість «Памʼять» — цей текст мав зникнути повністю.
+      expect(screen.queryByText("Памʼять AI")).not.toBeInTheDocument();
+    });
+
+    it("raises the outer section heading to text-style-label so it is never smaller than its inner card header (V-4)", () => {
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      for (const title of [
+        "Активні сесії",
+        "Памʼять",
+        "Біометрія",
+        "Пароль",
+        "Видалення акаунта",
+      ]) {
+        const el = screen.getByText(title);
+        expect(el.className).toContain("text-style-label");
+        expect(el.className).not.toContain("text-style-caption");
+      }
+    });
+
+    it("keeps DangerZoneSection's own non-duplicate heading text intact — it is NOT a literal duplicate of the outer title (V-4)", () => {
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      // «Небезпечна зона» — інша інформація, ніж «Видалення акаунта»
+      // (застереження про розділ, не назва секції), тож текст лишається:
+      // на відміну від чотирьох секцій вище, тут нічого не дублювалось.
+      expect(screen.getByText("Небезпечна зона")).toBeInTheDocument();
+      expect(screen.getByText("Видалення акаунта")).toBeInTheDocument();
+    });
+
+    it("keeps MemoryBankSection's meta info (entry count + storage size) after removing the duplicated title (V-4)", () => {
+      localStorage.setItem(
+        "hub_user_profile_v1",
+        JSON.stringify([
+          {
+            id: "mem_1",
+            fact: "Не їм арахіс",
+            category: "allergy",
+            createdAt: "2026-01-01T00:00:00Z",
+          },
+        ]),
+      );
+      const { container } = renderPage();
+      expandAllCollapsedSections(container);
+      expect(screen.getByText(/1 запис/)).toBeInTheDocument();
     });
   });
 
@@ -381,5 +677,39 @@ describe("ProfilePage", () => {
       fireEvent.click(screen.getByLabelText("Видалити: Не їм арахіс"));
       expect(screen.queryByText("Не їм арахіс")).not.toBeInTheDocument();
     });
+  });
+});
+
+// V-11 (аудит Профілю/Налаштувань, фаза 2 L-8 — 2026-08-09).
+//
+// Знахідка описувала «два входи в «що ШІ про мене знає» з різними назвами».
+// Точніша її форма: ПІДЗАГОЛОВОК профільної секції «Памʼять» був майже
+// дослівним ЗАГОЛОВКОМ секції в Конфіденційності — «Що асистент знає про
+// тебе» проти «Що ШІ про тебе памʼятає». Тобто це не просто схожі рядки, а
+// підпис одного входу, який дорівнює назві іншого; людина, прочитавши
+// будь-який, робила висновок, що це те саме місце.
+//
+// Після дзеркалення фактів у `ai_memories` (фаза 2) стосунок між ними
+// інший: Профіль — ДЖЕРЕЛО (те, що людина розповіла сама і може
+// редагувати), Конфіденційність — ОБСЯГ (усе, що асистент запамʼятав, із
+// чату й модулів теж). Пін нижче не перевіряє конкретний текст (він ще
+// мінятиметься), а тримає саме інваріант: підзаголовок одного входу не
+// повторює назву іншого.
+describe("V-11: два входи в памʼять розрізняються назвами", () => {
+  it("підзаголовок секції «Памʼять» не дублює заголовок списку в Конфіденційності", () => {
+    renderPage();
+    const memoryTrigger = screen.getByText("Памʼять").closest("button");
+    expect(memoryTrigger).not.toBeNull();
+    const subtitle = memoryTrigger?.textContent ?? "";
+    // Позитивний assert ПЕРЕД негативними (CodeRabbit-ревʼю PR #762): самих
+    // лише «не містить X» замало — порожній або зовсім сторонній підзаголовок
+    // проходив би обидві перевірки, і тест зеленів би на регресі, який
+    // просто прибрав текст. Пін на «Твої факти» тримає саме те, що робить
+    // фікс: підзаголовок називає ДЖЕРЕЛО фактів.
+    expect(subtitle).toContain("Твої факти");
+    expect(subtitle).not.toContain(messages.privacy.aiMemory.sectionTitle);
+    // І навпаки — щоб фікс не звівся до перестановки слів: підзаголовок
+    // мусить називати ДЖЕРЕЛО фактів, а не повторювати «що знає ШІ».
+    expect(subtitle).not.toMatch(/знає про тебе|памʼятає про тебе/);
   });
 });

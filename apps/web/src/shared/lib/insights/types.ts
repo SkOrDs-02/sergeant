@@ -2,7 +2,7 @@
  * Sergeant Design System — AI Insight types (PR-7a).
  *
  * @lifecycle experimental (introduced 2026-05; promoted to active after PR-8)
- * @see docs/design/redesign-v2/governance.md § AI surfaces
+ * @see docs/design/design/redesign-v2/governance.md § AI surfaces
  *
  * `Insight` describes a single AI push-notification surface rendered by
  * `<InsightCard>`. Identified by a stable string id so dismissals
@@ -44,6 +44,12 @@ export interface Insight {
   title: string;
   /** Subtitle — рекомендована дія ("Встановити ліміт?"). */
   subtitle: string;
+  /**
+   * Розгорнуте питання з числами правила — префіл чипа «AI»
+   * (`emitHubBus("openChat", { message: askAiPrompt, autoSend: false })`).
+   * Числа детерміновані з даних хука, НЕ парсяться з `title`/`subtitle`.
+   */
+  askAiPrompt: string;
   action: InsightAction;
   /** ms — auto-dismiss після інтервалу. Опціонально. */
   ttl?: number;

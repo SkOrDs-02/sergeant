@@ -3,35 +3,20 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useStoriesAutoplay } from "../hooks/useStoriesAutoplay";
 
-// Helper: drive requestAnimationFrame with a fake clock, advancing in
-// ~16ms frames. jsdom provides `performance.now` already, so we alias
-// `vi.advanceTimersByTime` via the rAF polyfill below.
-// vitest's fake timers already advance `performance.now()`, so the fake
-// rAF just replays queued callbacks at the current (fake) clock value.
-function installFakeRaf() {
-  let id = 0;
-  const callbacks = new Map<number, (t: number) => void>();
-  const originalRaf = globalThis.requestAnimationFrame;
-  const originalCancel = globalThis.cancelAnimationFrame;
-  globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => {
-    id += 1;
-    callbacks.set(id, cb);
-    return id;
-  };
-  globalThis.cancelAnimationFrame = (handle: number) => {
-    callbacks.delete(handle);
-  };
-  const flush = () => {
-    const list = Array.from(callbacks.entries());
-    callbacks.clear();
-    const now = performance.now();
-    for (const [, cb] of list) cb(now);
-  };
-  const restore = () => {
-    globalThis.requestAnimationFrame = originalRaf;
-    globalThis.cancelAnimationFrame = originalCancel;
-  };
-  return { flush, restore };
+// The hook deliberately does NOT use requestAnimationFrame — the progress bar
+// is animated by the compositor, so the timer only has to decide when a slide
+// is over. Stubbing rAF to never fire proves the timer stands on its own.
+const originalRaf = globalThis.requestAnimationFrame;
+const originalCancel = globalThis.cancelAnimationFrame;
+
+function suspendRaf() {
+  globalThis.requestAnimationFrame = () => 1;
+  globalThis.cancelAnimationFrame = () => {};
+}
+
+function restoreRaf() {
+  globalThis.requestAnimationFrame = originalRaf;
+  globalThis.cancelAnimationFrame = originalCancel;
 }
 
 describe("useStoriesAutoplay", () => {
@@ -40,24 +25,13 @@ describe("useStoriesAutoplay", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
-  });
-
-  it("starts at 0 progress", () => {
-    const raf = installFakeRaf();
-    const { result } = renderHook(() =>
-      useStoriesAutoplay({
-        key: 0,
-        durationMs: 1000,
-        paused: false,
-        onAdvance: () => {},
-      }),
-    );
-    expect(result.current).toBe(0);
-    raf.restore();
+    // These must come off even when an assertion throws first — a leaked
+    // getter or rAF stub silently reshapes every later test.
+    restoreRaf();
+    vi.restoreAllMocks();
   });
 
   it("calls onAdvance after durationMs elapses", () => {
-    const raf = installFakeRaf();
     const onAdvance = vi.fn();
     renderHook(() =>
       useStoriesAutoplay({
@@ -69,21 +43,33 @@ describe("useStoriesAutoplay", () => {
     );
     act(() => {
       vi.advanceTimersByTime(500);
-      raf.flush();
     });
     expect(onAdvance).not.toHaveBeenCalled();
     act(() => {
       vi.advanceTimersByTime(600);
-      raf.flush();
     });
     expect(onAdvance).toHaveBeenCalledTimes(1);
-    raf.restore();
   });
 
-  it("does not tick while paused", () => {
-    const raf = installFakeRaf();
+  it("advances only once per slide", () => {
     const onAdvance = vi.fn();
-    const { result, rerender } = renderHook(
+    renderHook(() =>
+      useStoriesAutoplay({
+        key: 0,
+        durationMs: 1000,
+        paused: false,
+        onAdvance,
+      }),
+    );
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(onAdvance).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not tick while paused, and resumes where it left off", () => {
+    const onAdvance = vi.fn();
+    const { rerender } = renderHook(
       ({ paused }: { paused: boolean }) =>
         useStoriesAutoplay({
           key: 0,
@@ -91,49 +77,63 @@ describe("useStoriesAutoplay", () => {
           paused,
           onAdvance,
         }),
-      { initialProps: { paused: true } },
+      { initialProps: { paused: false } },
     );
     act(() => {
-      vi.advanceTimersByTime(2000);
-      raf.flush();
+      vi.advanceTimersByTime(600);
     });
     expect(onAdvance).not.toHaveBeenCalled();
-    expect(result.current).toBe(0);
 
+    rerender({ paused: true });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+    expect(onAdvance).not.toHaveBeenCalled();
+
+    // Only the remaining ~400ms should be needed after resuming.
     rerender({ paused: false });
     act(() => {
-      vi.advanceTimersByTime(1100);
-      raf.flush();
+      vi.advanceTimersByTime(500);
     });
     expect(onAdvance).toHaveBeenCalledTimes(1);
-    raf.restore();
   });
 
-  it("resets progress to 0 when key changes", () => {
-    const raf = installFakeRaf();
-    const { result, rerender } = renderHook(
+  it("restarts the countdown when key changes", () => {
+    const onAdvance = vi.fn();
+    const { rerender } = renderHook(
       ({ key }: { key: number }) =>
         useStoriesAutoplay({
           key,
           durationMs: 1000,
           paused: false,
-          onAdvance: () => {},
+          onAdvance,
         }),
       { initialProps: { key: 0 } },
     );
     act(() => {
-      vi.advanceTimersByTime(500);
-      raf.flush();
+      vi.advanceTimersByTime(900);
     });
-    expect(result.current).toBeGreaterThan(0);
     rerender({ key: 1 });
-    expect(result.current).toBe(0);
-    raf.restore();
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    // The 900ms spent on the previous slide must not carry over.
+    expect(onAdvance).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(onAdvance).toHaveBeenCalledTimes(1);
   });
 
-  it("interval fallback advances even when rAF stops firing", () => {
-    // Install fake rAF but never flush it — simulates iOS dropping rAF.
-    const raf = installFakeRaf();
+  // Regression: an iOS PWA resumed from the background can be left with its
+  // page-visibility state machine stuck — rAF never resumes *and*
+  // `visibilityState` keeps reporting "hidden" while the page is on screen.
+  // The timer used to depend on rAF and to no-op whenever a poll of
+  // `visibilityState` said "hidden", so both drivers died together and slides
+  // stopped advancing while taps still worked.
+  it("advances with rAF suspended and visibilityState stuck hidden", () => {
+    suspendRaf();
+    vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
     const onAdvance = vi.fn();
     renderHook(() =>
       useStoriesAutoplay({
@@ -143,32 +143,43 @@ describe("useStoriesAutoplay", () => {
         onAdvance,
       }),
     );
-    // Only advance timers (fires setInterval callbacks via fake timers)
-    // but do NOT flush rAF — simulates rAF being suspended.
+
+    // Never dispatch a visibilitychange — the page simply never tells us it
+    // came back.
     act(() => {
-      vi.advanceTimersByTime(1300);
+      vi.advanceTimersByTime(1400);
     });
     expect(onAdvance).toHaveBeenCalledTimes(1);
-    raf.restore();
   });
 
-  it("onAdvance is called only once even with both rAF and interval", () => {
-    const raf = installFakeRaf();
+  it("does not credit backgrounded time to the current slide", () => {
     const onAdvance = vi.fn();
     renderHook(() =>
       useStoriesAutoplay({
         key: 0,
-        durationMs: 1000,
+        durationMs: 10_000,
         paused: false,
         onAdvance,
       }),
     );
     act(() => {
-      vi.advanceTimersByTime(1100);
-      raf.flush();
+      vi.advanceTimersByTime(500);
     });
-    // Both rAF and interval had a chance to fire — only one advance.
-    expect(onAdvance).toHaveBeenCalledTimes(1);
-    raf.restore();
+
+    const hidden = vi
+      .spyOn(document, "visibilityState", "get")
+      .mockReturnValue("hidden");
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      vi.advanceTimersByTime(60_000);
+    });
+    hidden.mockRestore();
+    act(() => {
+      document.dispatchEvent(new Event("visibilitychange"));
+      vi.advanceTimersByTime(300);
+    });
+
+    // A minute in the background must not consume the slide.
+    expect(onAdvance).not.toHaveBeenCalled();
   });
 });

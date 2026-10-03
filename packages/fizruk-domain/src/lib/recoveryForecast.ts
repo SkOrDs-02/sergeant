@@ -10,7 +10,7 @@ function localDateKey(ms: number): string {
 }
 
 /**
- * Для кожного м'яза з навантаженням — перша дата (YYYY-MM-DD локальний день), коли статус стане «повністю відновлений» (green).
+ * Для кожного мʼяза з навантаженням — перша дата (YYYY-MM-DD локальний день), коли статус стане «повністю відновлений» (green).
  * Якщо вже green зараз — сьогодні; якщо за MAX_DAYS не досягнуто — null.
  */
 export function forecastFullRecoveryByDate(

@@ -19,6 +19,23 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/**
+ * Write executors reject ids that do not resolve to a stored entity (the
+ * hallucinated-id guard), so happy-path cases must seed the transaction
+ * they act on.
+ */
+function seedTransactions(...ids: string[]): void {
+  __setFinykSqliteStateCacheForTests({
+    manualExpenses: ids.map((id) => ({
+      id,
+      date: "2026-04-22",
+      description: "Тест",
+      amount: 100,
+      category: "food",
+    })),
+  });
+}
+
 function call(action: ChatAction): string {
   const out = handleFinykAction(action);
   if (out == null) {
@@ -32,6 +49,7 @@ function call(action: ChatAction): string {
 // ---------------------------------------------------------------------------
 describe("change_category", () => {
   it("happy: assigns category and returns string", () => {
+    seedTransactions("tx1");
     const out = call({
       name: "change_category",
       input: { tx_id: "tx1", category_id: "food" },
@@ -164,7 +182,7 @@ describe("create_debt", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("Тест");
-    expect(out).toContain("5000");
+    expect(out).toContain("5\u00A0000");
     const debts = JSON.parse(localStorage.getItem("finyk_debts")!);
     expect(debts).toHaveLength(1);
     expect(debts[0].name).toBe("Тест");
@@ -176,7 +194,7 @@ describe("create_debt", () => {
       input: { name: "Борг", amount: "3000" },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("3000");
+    expect(out).toContain("3\u00A0000");
   });
 
   it("shape: result contains debt id", () => {
@@ -199,7 +217,7 @@ describe("create_receivable", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("Петро");
-    expect(out).toContain("1500");
+    expect(out).toContain("1\u00A0500");
   });
 
   it("error: amount as string is coerced", () => {
@@ -224,6 +242,7 @@ describe("create_receivable", () => {
 // ---------------------------------------------------------------------------
 describe("hide_transaction", () => {
   it("happy: hides transaction", () => {
+    seedTransactions("tx99");
     const out = call({
       name: "hide_transaction",
       input: { tx_id: "tx99" },
@@ -266,7 +285,7 @@ describe("set_budget_limit", () => {
       input: { category_id: "food", limit: 5000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("5000");
+    expect(out).toContain("5\u00A0000");
   });
 
   it("error: updates existing limit", () => {
@@ -278,7 +297,7 @@ describe("set_budget_limit", () => {
       name: "set_budget_limit",
       input: { category_id: "food", limit: 7000 },
     });
-    expect(out).toContain("7000");
+    expect(out).toContain("7\u00A0000");
     const budgets = JSON.parse(localStorage.getItem("finyk_budgets")!);
     expect(budgets).toHaveLength(1);
   });
@@ -302,9 +321,9 @@ describe("set_monthly_plan", () => {
       input: { income: 50000, expense: 30000, savings: 20000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("50000");
-    expect(out).toContain("30000");
-    expect(out).toContain("20000");
+    expect(out).toContain("50\u00A0000");
+    expect(out).toContain("30\u00A0000");
+    expect(out).toContain("20\u00A0000");
   });
 
   it("error: empty fields are preserved from current plan", () => {
@@ -422,7 +441,7 @@ describe("update_budget", () => {
       input: { scope: "limit", category_id: "food", limit: 3000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("3000");
+    expect(out).toContain("3\u00A0000");
   });
 
   it("happy: creates budget goal via scope=goal", () => {
@@ -469,7 +488,7 @@ describe("mark_debt_paid", () => {
       input: { debt_id: "d_1", amount: 2000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2000");
+    expect(out).toContain("2\u00A0000");
     expect(out).toContain("Борг");
   });
 
@@ -594,6 +613,7 @@ describe("import_monobank_range", () => {
 // ---------------------------------------------------------------------------
 describe("split_transaction", () => {
   it("happy: splits transaction", () => {
+    seedTransactions("tx1");
     const out = call({
       name: "split_transaction",
       input: {
@@ -625,6 +645,7 @@ describe("split_transaction", () => {
   });
 
   it("error: less than 2 parts returns error", () => {
+    seedTransactions("tx1");
     const out = call({
       name: "split_transaction",
       input: { tx_id: "tx1", parts: [{ category_id: "a", amount: 10 }] },
@@ -727,7 +748,7 @@ describe("export_report", () => {
 // create_transaction · undo
 // ---------------------------------------------------------------------------
 describe("create_transaction · undo", () => {
-  it("повертає {undo} який видаляє щойно створену транзакцію", () => {
+  it("повертає {undo} який видаляє щойно створену операцію", () => {
     const out = handleFinykAction({
       name: "create_transaction",
       input: { amount: 250, description: "кава" },
@@ -741,7 +762,7 @@ describe("create_transaction · undo", () => {
     );
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
 
     const after = JSON.parse(
       localStorage.getItem("finyk_manual_expenses_v1") || "[]",
@@ -749,7 +770,7 @@ describe("create_transaction · undo", () => {
     expect(after).toHaveLength(0);
   });
 
-  it("undo не зачіпає інші транзакції що з'явились пізніше", () => {
+  it("undo не зачіпає інші операції що зʼявились пізніше", () => {
     const first = handleFinykAction({
       name: "create_transaction",
       input: { amount: 50, description: "перша" },
@@ -763,7 +784,7 @@ describe("create_transaction · undo", () => {
       input: { amount: 100, description: "друга" },
     });
 
-    first.undo();
+    first.undo?.();
 
     const after = JSON.parse(
       localStorage.getItem("finyk_manual_expenses_v1") || "[]",
@@ -780,8 +801,8 @@ describe("create_transaction · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
-    expect(() => out.undo()).not.toThrow();
+    out.undo?.();
+    expect(() => out.undo?.()).not.toThrow();
     const after = JSON.parse(
       localStorage.getItem("finyk_manual_expenses_v1") || "[]",
     );
@@ -812,7 +833,7 @@ describe("create_debt · undo", () => {
     const before = JSON.parse(localStorage.getItem("finyk_debts") || "[]");
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("finyk_debts") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -830,7 +851,7 @@ describe("create_receivable · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("finyk_recv") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -851,7 +872,7 @@ describe("add_asset · undo", () => {
     const before = JSON.parse(localStorage.getItem("finyk_assets") || "[]");
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("finyk_assets") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -868,7 +889,7 @@ describe("add_asset · undo", () => {
     if (typeof second === "string" || second == null)
       throw new Error("expected object");
 
-    second.undo();
+    second.undo?.();
 
     const after = JSON.parse(localStorage.getItem("finyk_assets") || "[]");
     expect(after).toHaveLength(1);

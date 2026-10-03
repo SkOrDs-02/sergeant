@@ -1,24 +1,20 @@
 #!/usr/bin/env node
 // scripts/docs/generate-open-work.mjs
 //
-// Scan every tracker directory under `docs/` for markdown files with a
+// Scan the canonical specs catalog for markdown files with a
 // canonical `> **Status:** …` header, classify each Status as
 // `open` / `closed` / `reference`, and generate
 // `docs/open-work.md` — a single-pane index of all *open* work across
 // every tracker, grouped by tracker. Auto-extracts PR mentions
-// (`#NNNN` — 3+ digit numbers in the doc body) into a `PR-згадки` column.
+// (`#NNNN` — 3-5 digit numbers in the doc body, excluding hex colours,
+// anchor fragments and zero-padded labels) into a `PR-згадки` column.
 //
 // Single source of truth for «що в цьому репо зараз НЕ доробленого?»
 // — answers the question without touring 6+ tracker READMEs.
 //
-// Trackers (in display order; configured via `TRACKERS` below):
-//   1. Initiatives                — docs/90-work/initiatives/ (+ stack-pulse-2026-05/)
-//   2. Planning                   — docs/90-work/planning/
-//   3. Launch                     — docs/01-product/launch/business/ + tech/ + product-os/
-//   4. Audits                     — docs/90-work/audits/
-//   5. Security hardening         — docs/04-governance/security/hardening/
-//   6. Tech debt                  — docs/90-work/tech-debt/
-//   7. Superpowers / plans        — docs/90-work/superpowers/plans/
+// The physical source of truth is `docs/work/specs/`. Former tracker genres
+// remain as subdirectories so navigation stays useful without creating
+// parallel lifecycle roots.
 //
 // For each tracker the script emits a markdown table with three columns:
 //   | Документ | Статус | PR-згадки |
@@ -76,10 +72,29 @@ const RE_AGENT_READY =
 const RE_PATH_TOKEN =
   /`([A-Za-z0-9_.@/-]+\/[A-Za-z0-9_.@/*-]+|[A-Za-z0-9_.@/-]+\.(?:tsx?|sql|mjs|json|yml|yaml))`/g;
 // PR mention: `#NNNN` with 3-5 digits, optionally wrapped in `[]()`
-// markdown link or preceded by `PR` / `pull/`. The 3-digit minimum filters
-// out enumerations like `#1`–`#5 у списку`; the 5-digit ceiling avoids
-// treating hex colors like `#171412` as GitHub PR links.
-const RE_PR_NUMBER = /#(\d{3,5})(?!\d)|\/pull\/(\d{3,5})(?!\d)/g;
+// markdown link or preceded by `PR` / `pull/`.
+//
+// Three guards keep non-PR `#`-tokens out of the dashboard. Each exists
+// because a real document tripped over it:
+//
+//   1. `(?<![0-9A-Za-z&#])` — the `#` must not be glued to a preceding word
+//      character. Kills anchor fragments (`…/05-motion-offline-error.md#141-motion-tokens`
+//      used to surface as «PR 141»), HTML entities (`&#8212;`) and
+//      identifiers like `QaProfile#2026`.
+//   2. `[1-9]` first digit — GitHub numbers pull requests from 1 without
+//      zero-padding, so `#0…` is never a GitHub reference. Kills CSS
+//      shorthands (`#000`) and this repo's zero-padded storage-roadmap stage
+//      labels (`PR #012`, `#038`, `#016`), which used to be mislinked to
+//      unrelated real PRs 12 / 38 / 16.
+//   3. `(?![0-9A-Za-z])` — the digits must not be glued to a trailing word
+//      character. This is the hex-colour guard: `#14100e` used to surface as
+//      «PR 14100», `#155e75` as «PR 155», `#92400e` as «PR 92400». It also
+//      drops lettered stage labels (`PR #052b`, `#057r`, `#070f`).
+//
+// The 3-digit minimum still filters enumerations like `#1`–`#5 у списку`;
+// the 5-digit ceiling still rejects all-numeric 6-digit hex (`#171412`).
+const RE_PR_NUMBER =
+  /(?<![0-9A-Za-z&#])#([1-9]\d{2,4})(?![0-9A-Za-z])|\/pull\/([1-9]\d{2,4})(?![0-9A-Za-z])/g;
 
 // ── Tracker configuration ───────────────────────────────────────────────────
 
@@ -98,71 +113,17 @@ const RE_PR_NUMBER = /#(\d{3,5})(?!\d)|\/pull\/(\d{3,5})(?!\d)/g;
  *   - README.md, follow-ups.md, open-work.md
  *   - any path containing `/archive/`
  *   - filenames starting with `_` (completed-prefix convention used in
- *     `docs/90-work/initiatives/`, see initiatives README.md § Completed-prefix)
+ *     `docs/work/specs/initiatives/`, see initiatives README.md § Completed-prefix)
  */
 export const TRACKERS = [
   {
-    id: "initiatives",
-    title: "Ініціативи",
+    id: "specs",
+    title: "Активні спеки",
     blurb:
-      "Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/90-work/initiatives/`](./90-work/initiatives/README.md).",
-    rootDir: "docs/90-work/initiatives",
+      "Єдиний каталог активної роботи; підкаталоги зберігають жанр і предметну область.",
+    rootDir: "docs/work/specs",
     recursive: true,
-    // Phase 2 (Initiative 0015): surface agent-dispatch hints —
-    // `Agent-ready` status + suggested specialist `Skill` + best-fit
-    // `Playbook` columns, and sort rows so `agent-ready: yes` lands first.
-    enrich: true,
-  },
-  {
-    id: "planning",
-    title: "Планування",
-    blurb:
-      "Активні roadmap-и, research, decision-rationale. Source: [`docs/90-work/planning/`](./90-work/planning/README.md).",
-    rootDir: "docs/90-work/planning",
-    recursive: false,
-  },
-  {
-    id: "launch",
-    title: "Launch / запуск",
-    blurb:
-      "GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/01-product/launch/`](./01-product/launch/README.md).",
-    rootDir: "docs/01-product/launch",
-    recursive: true,
-  },
-  {
-    id: "audits",
-    title: "Аудити й прожарки",
-    blurb:
-      "Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).",
-    rootDir: "docs/90-work/audits",
-    recursive: false,
-  },
-  {
-    id: "security-hardening",
-    title: "Security hardening",
-    blurb:
-      "Картки по окремих findings (C/H/M/L/I severity) + sprint plans. Source: [`docs/04-governance/security/hardening/`](./04-governance/security/hardening/README.md).",
-    rootDir: "docs/04-governance/security/hardening",
-    recursive: false,
-  },
-  {
-    id: "tech-debt",
-    title: "Техборг",
-    blurb:
-      "Реєстри боргу по платформах (backend / frontend / mobile). Source: [`docs/90-work/tech-debt/`](./90-work/tech-debt/README.md).",
-    rootDir: "docs/90-work/tech-debt",
-    recursive: false,
-  },
-  {
-    id: "superpowers-plans",
-    title: "Superpowers — плани впровадження",
-    blurb:
-      "Плани впровадження cross-cutting capabilities. Source: [`docs/90-work/superpowers/plans/`](./90-work/superpowers/README.md).",
-    rootDir: "docs/90-work/superpowers/plans",
-    recursive: true,
-    // Plans tables also carry suggested `Skill` + `Playbook` columns
-    // (no `Agent-ready` — that field lives only on numbered initiatives).
-    enrich: true,
+    exclude: ["data/", "TEMPLATE.md", "prompts/"],
   },
 ];
 
@@ -191,6 +152,8 @@ export function classifyStatus(rawStatus) {
   // Reference / informational — work tracked elsewhere or no action needed.
   if (/^frozen\b/i.test(t)) return "reference";
   if (/^reference\b/i.test(t)) return "reference";
+  if (/^deprecated\b/i.test(t)) return "reference";
+  if (/^withdrawn\b/i.test(t)) return "reference";
   if (/^superseded\b/i.test(t)) return "reference";
   if (/^аналіз\b/i.test(t)) return "reference";
   if (/не\s+потребує\s+дій/i.test(lower)) return "reference";
@@ -210,6 +173,10 @@ export function classifyStatus(rawStatus) {
   if (/^scaffolded\b/i.test(t)) return "open";
   if (/^open\b/i.test(t)) return "open";
   if (/^planned\b/i.test(t)) return "open";
+  // Proposed initiatives are open work, but may still be gated on a founder
+  // decision; preserve them in the dashboard instead of classifying them as
+  // unknown.
+  if (/^proposed\b/i.test(t)) return "open";
   // Multi-phase status (`Phase 1 ✅ done; Phase 2 blocked`) — surface as
   // open because at least one phase is unfinished.
   if (/^phase\s*\d/i.test(t)) return "open";
@@ -219,8 +186,10 @@ export function classifyStatus(rawStatus) {
 
 /**
  * Extract a deduped, ascending-sorted list of PR numbers mentioned in
- * `content`. Only `#NNNN` with 3-5 digits is recognised — see
- * `RE_PR_NUMBER` comment for rationale.
+ * `content`. Only a free-standing `#NNNN` with 3-5 digits and no leading
+ * zero is recognised, so hex colours (`#14100e`), anchor fragments
+ * (`file.md#141-motion-tokens`) and zero-padded stage labels (`PR #052b`)
+ * stay out — see the `RE_PR_NUMBER` comment for the per-guard rationale.
  */
 export function extractPRNumbers(content) {
   if (!content) return [];
@@ -456,6 +425,8 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
     for (const abs of files) {
       const relToRoot = relative(repoRoot, abs).split(sep).join("/");
       if (shouldSkipFile(relToRoot)) continue;
+      const relToRootDir = relative(rootAbs, abs).split(sep).join("/");
+      if (matchesTrackerExclude(relToRootDir, tracker.exclude)) continue;
       const doc = parseDocument(abs);
       if (!doc) continue;
       if (doc.status === "closed" || doc.status === "reference") continue;
@@ -491,7 +462,7 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
         // Path relative to the output file's directory (`docs/`), used to
         // build navigation links that work from `docs/open-work.md`.
         linkPath: relative(OUTPUT_DIR, abs).split(sep).join("/"),
-        relToRootDir: relative(rootAbs, abs).split(sep).join("/"),
+        relToRootDir,
         ...doc,
         rawStatus: rewrittenStatus,
         skill,
@@ -502,6 +473,23 @@ export function collectOpenWork(repoRoot = REPO_ROOT, trackers = TRACKERS) {
     result.push({ tracker, entries });
   }
   return result;
+}
+
+/**
+ * Return true when a tracker-local path matches one of the configured
+ * forward-slash substrings. This intentionally stays simpler than glob syntax:
+ * tracker config documents substring semantics and only needs directory or
+ * exact-file exclusions.
+ */
+export function matchesTrackerExclude(relPath, patterns = []) {
+  if (!relPath || !Array.isArray(patterns)) return false;
+  const normalizedPath = String(relPath).split("\\").join("/");
+  return patterns.some((pattern) => {
+    const normalizedPattern = String(pattern).split("\\").join("/");
+    return (
+      normalizedPattern.length > 0 && normalizedPath.includes(normalizedPattern)
+    );
+  });
 }
 
 /**
@@ -553,7 +541,7 @@ export function truncateStatus(status, maxLen = 180) {
  *
  * This avoids broken-link CI errors in `docs/open-work.md` for status
  * fields that contain relative links like `[ftux-master-tracker §3.4](./ftux-master-tracker.md#…)`
- * — the source doc lived under `docs/01-product/launch/product-os/` but the
+ * — the source doc lived under `docs/work/specs/launch/product-os/` but the
  * dashboard lives at `docs/`, so `./ftux-master-tracker.md` no longer
  * resolves.
  */
@@ -678,7 +666,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "Зведений single-pane view усього, що зараз НЕ доробленого у репо — згрупований по 7 трекерах. Source = `> **Status:**` header у кожному документі (Rule #10 lifecycle marker). У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` — виключені.",
+    "Зведений single-pane view усього, що зараз НЕ доробленого у репо. Джерело — єдиний каталог `docs/work/specs/`; жанрові підкаталоги не є окремими tracker-ами. У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Proposed` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` / `Deprecated` / `Withdrawn` — виключені.",
   );
   lines.push("");
   lines.push(
@@ -686,7 +674,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "**Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.",
+    "**Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (3–5 цифр, без провідного нуля, не приклеєні до сусідніх літер/цифр — тож hex-кольори `#14100e`, якорі `file.md#141-…` і zero-padded мітки `PR #052b` сюди не потрапляють; deduped, sorted ascending, перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.",
   );
   lines.push("");
 
@@ -729,7 +717,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   lines.push("## Як додати документ у дашборд");
   lines.push("");
   lines.push(
-    "Документ автоматично з'являється тут, якщо: (1) лежить під одним із трекерів зі списку вище, (2) має `> **Status:**` header з відкритим статусом (Active / Draft / In progress / Scaffolded / Open / Planned / Phase *), (3) не є README.md / follow-ups.md / open-work.md і не лежить під `archive/` (і не починається з `_`).",
+    "Документ автоматично з'являється тут, якщо: (1) лежить під одним із трекерів зі списку вище, (2) має `> **Status:**` header з відкритим статусом (Active / Draft / In progress / Scaffolded / Open / Planned / Proposed / Phase *), (3) не є README.md / follow-ups.md / open-work.md і не починається з `_`. Локальні `archive/` заборонені Hard Rule #23; legacy-фільтр лишився для безпечної обробки старих fixture-ів.",
   );
   lines.push("");
   lines.push("Після зміни статусу:");

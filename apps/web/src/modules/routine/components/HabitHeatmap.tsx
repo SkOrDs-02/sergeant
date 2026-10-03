@@ -3,18 +3,28 @@
  * Status: Active
  */
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
+import { buildHeatmapGrid } from "@sergeant/routine-domain";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
-import { chartHeatmap } from "@shared/charts/chartTheme";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { chartHeatmap } from "@shared/charts";
+import { anchoredTodayDate } from "../lib/dayAnchor";
 import type { Habit, RoutineState } from "../lib/types";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
-const WEEKS = 53;
+const HISTORY_WEEKS = 53;
+const FUTURE_WEEKS = 4;
 const DAYS = 7;
 const DAY_LABELS = ["Пн", "", "Ср", "", "Пт", "", "Нд"];
 const HEATMAP = chartHeatmap.routine;
 
+/**
+ * Presentation view of a `@sergeant/routine-domain` heatmap cell: the
+ * domain cell plus the `Date` instance the Ukrainian date/month labels
+ * are formatted from. All counting math lives in `buildHeatmapGrid` —
+ * this component owns rendering only.
+ */
 interface HeatmapCell {
   key: string;
   dt: Date;
@@ -23,16 +33,13 @@ interface HeatmapCell {
   cnt: number;
   total: number;
   ratio: number;
+  /** Заплановано й не виконано, але позначено «не зміг» (канон §5). */
+  skippedCnt: number;
 }
 
 interface MonthMarker {
   weekIdx: number;
   label: string;
-}
-
-function localDateKey(d: Date): string {
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- formats a Date already built from Kyiv-anchored parts at local noon; pure YYYY-MM-DD shaping, not a host-local "now" read
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function cellBg(ratio: number, isFuture: boolean): string {
@@ -46,95 +53,135 @@ function cellBg(ratio: number, isFuture: boolean): string {
 export interface HabitHeatmapProps {
   habits: Habit[] | null | undefined;
   completions: RoutineState["completions"] | null | undefined;
+  /**
+   * Позначки «не зміг з причиною» (канон §5): `habitId → dateKey → HabitSkip`.
+   *
+   * Без цього пропа клітинка фарбує заявлений пропуск РІВНО як мовчазний
+   * провал — та сама пара «звичка, день», яку `HabitRangeGrid` (коротші
+   * зрізи статистики) уже показує окремим сірим станом. Перемикання
+   * Місяць → Квартал на сторінці статистики безшумно стирало цю
+   * відмінність (аудит 2026-09, PR-R8).
+   *
+   * Проп вмикає НЕ ЛИШЕ візуальну мітку. Заявлений пропуск виходить зі
+   * знаменника клітинки, тобто рухає й `ratio`/`intensity`. Доти, доки
+   * пропа немає, клітинка фарбує пропуск рівно як мовчазний провал — тож
+   * два виклики з ним і без нього дають РІЗНІ числа, а не однакові числа з
+   * різною рамкою.
+   */
+  skips?: RoutineState["skips"];
+  /**
+   * Скільки ISO-тижнів історії малювати. Дефолт — рік (`HISTORY_WEEKS`);
+   * коротші вікна приходять із перемикача діапазону на сторінці статистики
+   * (`lib/statsRanges.ts`).
+   */
+  historyWeeks?: number;
+  /** Скільки тижнів look-ahead малювати після сьогоднішнього. */
+  futureWeeks?: number;
+  /** Як назвати вікно в підказці над сіткою — «рік», «3 місяці». */
+  historyLabel?: string;
+  /**
+   * Підказка над сіткою. Дефолт згадує горизонтальний скрол — правда для
+   * річного вікна, але НЕ для коротших: 13 тижнів вміщаються у ширину екрана
+   * без скролера, і «гортай ліворуч» там просто неправда. Тому короткі вікна
+   * передають свій рядок (`RoutineStatsRange.heatmapCaption`).
+   */
+  caption?: string;
 }
 
-export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
+export function HabitHeatmap({
+  habits,
+  completions,
+  skips,
+  historyWeeks = HISTORY_WEEKS,
+  futureWeeks = FUTURE_WEEKS,
+  historyLabel = "рік",
+  caption,
+}: HabitHeatmapProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
   const cellRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const didInitialScrollRef = useRef(false);
 
-  useEffect(() => {
-    if (!selected) return;
-    function onPointerDown(e: PointerEvent) {
-      if (
-        rootRef.current &&
-        e.target instanceof Node &&
-        !rootRef.current.contains(e.target)
-      ) {
-        setSelected(null);
-      }
-    }
-    document.addEventListener("pointerdown", onPointerDown, { capture: true });
-    return () =>
-      document.removeEventListener("pointerdown", onPointerDown, {
-        capture: true,
-      });
-  }, [selected]);
-
-  const activeHabits = useMemo(
-    () => (habits || []).filter((h) => !h.archived),
-    [habits],
-  );
+  useOutsideClick(rootRef, () => setSelected(null), {
+    enabled: !!selected,
+    events: ["pointerdown"],
+    capture: true,
+  });
 
   const { weeks, monthMarkers } = useMemo(() => {
-    // Anchor "today" on Kyiv local calendar so the heatmap's "today" cell
-    // doesn't drift to a different square when the user roams
-    // (consolidated page-audit § Theme 1 — 09 F3). Construct as local-noon
-    // of Kyiv-Y/M/D so the subsequent local-TZ getters preserve the
-    // calendar day across host TZ.
-    const { year, month, day } = getKyivDateParts();
-    /* eslint-disable sergeant-design/prefer-kyiv-time -- every getter below reads Date objects constructed from the Kyiv-anchored parts above (pinned to local noon); this is pure calendar arithmetic for the year-long grid, not host-local "now" reads */
-    const today = new Date(year, month - 1, day, 12, 0, 0, 0);
-    const todayKey = localDateKey(today);
+    // Той самий анкер доби, що й решта web-routine (`lib/dayAnchor.ts`), не
+    // окрема копія — інакше хітмап знову міг би показати «сьогодні» в
+    // іншій клітинці, ніж решта картки (unification audit 2026-08-31,
+    // finding 2.3).
+    const today = anchoredTodayDate();
 
-    const dow = (today.getDay() + 6) % 7;
-    const mondayThisWeek = new Date(today);
-    mondayThisWeek.setDate(today.getDate() - dow);
+    // AI-CONTEXT: знаменник за розкладом — ADR-0079 §3, стадія 3 Хвилі 1.
+    // Раніше було `"active"`: кожна неархівна звичка рахувалась у знаменник
+    // КОЖНОГО дня, тож звичка «Пн/Ср/Пт», виконана 3/3, давала 43%, а не
+    // 100%. Тепер знаменник — дні, коли звичка була запланована, і хітмап
+    // сходиться з `completionRateForRange` у модулі.
+    //
+    // `freezePausedPast` обовʼязковий у парі: без нього пауза, поставлена
+    // сьогодні, вимила б звичку з усієї історії — ADR §3 прямо цього
+    // забороняє. Вмикати `"scheduled"` без freeze не можна.
+    //
+    // Числа зросли одноразово, тому METRICS_VERSION піднято до 2.
+    const grid = buildHeatmapGrid(habits, completions, today, historyWeeks, {
+      futureWeeks,
+      denominator: "scheduled",
+      freezePausedPast: true,
+      // `skips` рухає і `skippedCnt` (мітка «не зміг»), і `ratio` —
+      // заявлений пропуск виходить зі знаменника (METRICS_VERSION 14).
+      ...(skips ? { skips } : {}),
+    });
 
-    const startDate = new Date(mondayThisWeek);
-    startDate.setDate(mondayThisWeek.getDate() - (WEEKS - 1) * 7);
+    const weeks: HeatmapCell[][] = grid.weeks.map((week) =>
+      week.map((cell) => ({
+        key: cell.key,
+        // Same local-noon instant the grid keyed the cell from, rebuilt
+        // for `toLocaleDateString` labelling.
+        dt: new Date(cell.year, cell.month, cell.day, 12, 0, 0, 0),
+        isFuture: cell.isFuture,
+        isToday: cell.isToday,
+        cnt: cell.cnt,
+        total: cell.total,
+        ratio: cell.ratio,
+        skippedCnt: cell.skippedCnt,
+      })),
+    );
 
-    const cntByDay: Record<string, number> = {};
-    for (const h of activeHabits) {
-      for (const dk of completions?.[h.id] || []) {
-        cntByDay[dk] = (cntByDay[dk] || 0) + 1;
-      }
-    }
-
-    const weeks: HeatmapCell[][] = [];
-    const seenMonths = new Set<string>();
+    // Chronological, oldest→newest left-to-right. Today sits near the right
+    // edge with a ~1-month look-ahead trailing after it, so the grid never
+    // ends on a lone active-day square. The viewport opens scrolled to the
+    // recent end (see the scroll effect below); the user scrolls left to reach
+    // history — a natural timeline direction rather than a reversed jumble.
     const monthMarkers: MonthMarker[] = [];
-
-    for (let w = 0; w < WEEKS; w++) {
-      const week: HeatmapCell[] = [];
-      for (let d = 0; d < DAYS; d++) {
-        const dt = new Date(startDate);
-        dt.setDate(startDate.getDate() + w * 7 + d);
-        dt.setHours(12, 0, 0, 0);
-        const key = localDateKey(dt);
-        const isFuture = key > todayKey;
-        const isToday = key === todayKey;
-        const cnt = cntByDay[key] || 0;
-        const total = activeHabits.length;
-        const ratio = total > 0 && !isFuture ? cnt / total : 0;
-        week.push({ key, dt, isFuture, isToday, cnt, total, ratio });
-
-        const mk = `${dt.getFullYear()}-${dt.getMonth()}`;
-        if (!seenMonths.has(mk)) {
-          seenMonths.add(mk);
-          monthMarkers.push({
-            weekIdx: w,
-            label: dt.toLocaleDateString("uk-UA", { month: "short" }),
-          });
-        }
-      }
-      weeks.push(week);
-    }
-    /* eslint-enable sergeant-design/prefer-kyiv-time */
+    let previousMonth = "";
+    weeks.forEach((week, weekIdx) => {
+      const first = week[0];
+      if (!first) return;
+      // `first.dt` was constructed above from the grid cell's own local
+      // year/month/day (device-local per ADR-0078) — read those same local
+      // getters back, not a Kyiv re-derivation of the instant, or the month
+      // grouping could disagree with the cell it labels near month
+      // boundaries on a device outside Kyiv.
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
+      const cellYear = first.dt.getFullYear();
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+      const cellMonth = first.dt.getMonth();
+      const monthKey = `${cellYear}-${cellMonth + 1}`;
+      if (monthKey === previousMonth) return;
+      previousMonth = monthKey;
+      monthMarkers.push({
+        weekIdx,
+        label: first.dt.toLocaleDateString("uk-UA", { month: "short" }),
+      });
+    });
 
     return { weeks, monthMarkers };
-  }, [activeHabits, completions]);
+  }, [habits, completions, skips, historyWeeks, futureWeeks]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {
@@ -200,30 +247,63 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
     }
     return null;
   }, [selected, weeks]);
+  const todayCell = useMemo(() => {
+    for (const week of weeks) {
+      for (const cell of week) {
+        if (cell.isToday) return cell;
+      }
+    }
+    return null;
+  }, [weeks]);
+  const detailCell = selectedCell ?? todayCell;
+
+  // Open the viewport scrolled to the recent end (today + look-ahead). The
+  // scrollable width appears asynchronously — the grid lives inside a lazily
+  // shown tab — so a plain mount effect races the layout. Watch for the first
+  // non-zero overflow via ResizeObserver and scroll once. The one-time latch
+  // lives in a ref (not a local const) so a `weeks` recompute never re-fires
+  // the jump and yanks the user back from history they scrolled to.
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const scrollToEnd = () => {
+      if (didInitialScrollRef.current || vp.scrollWidth <= vp.clientWidth)
+        return;
+      vp.scrollLeft = vp.scrollWidth;
+      didInitialScrollRef.current = true;
+    };
+    scrollToEnd();
+    if (didInitialScrollRef.current || typeof ResizeObserver !== "function")
+      return;
+    const ro = new ResizeObserver(scrollToEnd);
+    ro.observe(vp);
+    return () => ro.disconnect();
+  }, [weeks]);
 
   return (
     <Card ref={rootRef} radius="lg">
-      <SectionHeading as="p" size="sm" className="mb-3">
-        Активність за рік
+      <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
+        Активність: сьогодні та історія
       </SectionHeading>
 
-      <div className="overflow-x-auto -mx-1 px-1 pb-1">
-        <div style={{ display: "flex", gap: 0, alignItems: "flex-start" }}>
-          <div
-            aria-hidden="true"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              marginRight: 4,
-              paddingTop: 16,
-            }}
-          >
+      <div className="mb-2 text-style-body text-subtle">
+        {caption ??
+          `Відкривається на сьогодні, гортай ліворуч, щоб побачити історію за ${historyLabel}.`}
+      </div>
+
+      <div ref={viewportRef} className="overflow-x-auto -mx-1 px-1 pb-1">
+        <div className="flex items-start">
+          <div aria-hidden="true" className="flex flex-col gap-0.5 mr-1 pt-4">
+            {/* AI-CONTEXT: визнаний виняток — chart axis tick. Row height
+                (12px) mirrors the 12×12 heatmap cell + 2px gap it labels;
+                the 12px typography floor (Hard Rule #16) doesn't apply to
+                axis ticks, and bumping this to text-style-caption's 1.4
+                line-height would overflow the fixed row and desync the
+                weekday labels from their cell rows. */}
             {DAY_LABELS.map((lbl, i) => (
               <div
                 key={i}
-                style={{ height: 12, fontSize: 8, lineHeight: "12px" }}
-                className="text-subtle/70 text-right pr-1 select-none"
+                className="h-3 leading-3 text-2xs text-subtle text-right pr-1 select-none"
               >
                 {lbl}
               </div>
@@ -232,23 +312,15 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
 
           <div
             role="group"
-            aria-label="Теплова карта активності за рік"
-            style={{ display: "flex", gap: 2 }}
+            aria-label={`Теплова карта активності за ${historyLabel}`}
+            className="flex gap-0.5"
           >
             {weeks.map((week, w) => (
-              <div
-                key={w}
-                style={{ display: "flex", flexDirection: "column", gap: 2 }}
-              >
+              <div key={w} className="flex flex-col gap-0.5">
+                {/* AI-CONTEXT: визнаний виняток — chart axis tick, see above. */}
                 <div
                   aria-hidden="true"
-                  style={{
-                    height: 14,
-                    fontSize: 8,
-                    lineHeight: "14px",
-                    whiteSpace: "nowrap",
-                  }}
-                  className="text-subtle/80 select-none"
+                  className="h-3.5 leading-[14px] text-2xs text-subtle whitespace-nowrap select-none"
                 >
                   {monthMarkers.find((m) => m.weekIdx === w)?.label ?? ""}
                 </div>
@@ -271,18 +343,42 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
                     data-cell-key={cell.key}
                     onClick={() => handleClick(cell.key)}
                     onKeyDown={(e) => handleCellKeyDown(e, cell.key)}
-                    aria-label={`${cell.key}: ${cell.cnt} з ${cell.total} ${
-                      cell.total === 1 ? "звички" : "звичок"
-                    }`}
+                    aria-label={
+                      cell.total === 0
+                        ? // Нуль у знаменнику має ДВІ різні причини, і плутати
+                          // їх не можна. Просто день відпочинку — «нічого не
+                          // заплановано». Але з METRICS_VERSION 14 заявлений
+                          // «не зміг» теж виходить зі знаменника, тож день,
+                          // де все заплановане заявлено як «не зміг», теж дає
+                          // нуль — і назвати його «нічого не заплановано»
+                          // означало б стерти те, що людина сама повідомила.
+                          cell.skippedCnt > 0
+                          ? `${cell.key}: не зміг: ${cell.skippedCnt}`
+                          : `${cell.key}: нічого не заплановано`
+                        : `${cell.key}: ${cell.cnt} з ${cell.total} запланованих` +
+                          (cell.skippedCnt > 0
+                            ? `, не зміг: ${cell.skippedCnt}`
+                            : "")
+                    }
                     aria-pressed={cell.key === selected}
+                    data-today={cell.isToday ? "true" : undefined}
                     className={cn(
-                      "rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
+                      "w-3 h-3 shrink-0 rounded-sm transition-opacity focus-visible:outline focus-visible:outline-2",
                       HEATMAP.outline,
                       cellBg(cell.ratio, cell.isFuture),
                       cell.isToday && cn("ring-1", HEATMAP.ring),
                       cell.key === selected && "opacity-60",
+                      // Заявлений пропуск (канон §5) — не провал. Заливка
+                      // це вже враховує: пропуск вийшов зі знаменника
+                      // (METRICS_VERSION 14), тож день не тягне колір униз.
+                      // Рамка потрібна саме ТОМУ: без неї день із пропуском
+                      // не відрізнити від дня, коли нічого не планувалось —
+                      // обидва тепер не псують ratio. Той самий сигнал, що
+                      // сірий стан `HabitRangeGrid` дає на коротших зрізах.
+                      !cell.isFuture &&
+                        cell.skippedCnt > 0 &&
+                        "border border-dashed border-line",
                     )}
-                    style={{ width: 12, height: 12, flexShrink: 0 }}
                   />
                 ))}
               </div>
@@ -291,47 +387,59 @@ export function HabitHeatmap({ habits, completions }: HabitHeatmapProps) {
         </div>
       </div>
 
+      {/* Ключ до колірної шкали. Раніше він стояв ГІЛКОЮ ELSE поряд із
+          деталями клітинки — і був недосяжний: `detailCell` це
+          `selectedCell ?? todayCell`, а `todayCell` не буває null, бо сітка
+          будується навколо `today` (`buildHeatmapGrid` завжди включає
+          сьогодні). Тобто else-гілка не виконувалась ЖОДНОГО разу, і пʼять
+          рівнів заповнення лишались без пояснення (аудит 2026-09-16, WF-10).
+          Тепер ключ постійний, а деталі клітинки живуть у власному
+          aria-live-рядку нижче. */}
+      <div
+        role="group"
+        aria-label="Легенда заповнення"
+        className="mt-3 flex items-center gap-2 text-style-caption text-subtle select-none"
+      >
+        <span>менше</span>
+        {HEATMAP.levels.map((c, i) => (
+          <span
+            key={i}
+            role="img"
+            aria-label={`Рівень ${i + 1}`}
+            className={cn("w-2.5 h-2.5 rounded-sm inline-block shrink-0", c)}
+          />
+        ))}
+        <span>більше</span>
+      </div>
+
       {/* Persistent aria-live region: SR announces when a cell is selected */}
-      <div aria-live="polite" aria-atomic="true" className="mt-3">
-        {selectedCell ? (
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-xs">
+      <div aria-live="polite" aria-atomic="true" className="mt-2">
+        {detailCell ? (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption">
             <span className="text-subtle truncate">
-              {selectedCell.dt.toLocaleDateString("uk-UA", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              {formatUaWeekdayDate(detailCell.dt, { withYear: true })}
+              {detailCell.isToday ? " · сьогодні" : ""}
             </span>
             <span className="font-semibold text-text shrink-0">
-              {selectedCell.isFuture
+              {detailCell.isFuture
                 ? "ще не настало"
-                : selectedCell.total === 0
-                  ? "немає звичок"
-                  : `${selectedCell.cnt} з ${selectedCell.total} ${
-                      selectedCell.total === 1 ? "звички" : "звичок"
-                    } виконано`}
+                : detailCell.total === 0
+                  ? // Зі знаменником за розкладом нуль означає «цього дня
+                    // нічого не було заплановано» — день відпочинку, а не
+                    // відсутність звичок узагалі. Виняток — коли все
+                    // заплановане заявлено як «не зміг» (METRICS_VERSION 14):
+                    // такий день теж має нульовий знаменник, але сказати про
+                    // нього «нічого не заплановано» було б неправдою.
+                    detailCell.skippedCnt > 0
+                    ? `не зміг: ${detailCell.skippedCnt}`
+                    : "нічого не заплановано"
+                  : `${detailCell.cnt} з ${detailCell.total} запланованих виконано` +
+                    (detailCell.skippedCnt > 0
+                      ? ` · не зміг: ${detailCell.skippedCnt}`
+                      : "")}
             </span>
           </div>
-        ) : (
-          <div
-            role="group"
-            aria-label="Легенда заповнення"
-            className="flex items-center gap-2 text-style-caption text-subtle/70 select-none"
-          >
-            <span>менше</span>
-            {HEATMAP.levels.map((c, i) => (
-              <span
-                key={i}
-                role="img"
-                aria-label={`Рівень ${i + 1}`}
-                className={cn("rounded-sm inline-block shrink-0", c)}
-                style={{ width: 10, height: 10 }}
-              />
-            ))}
-            <span>більше</span>
-          </div>
-        )}
+        ) : null}
       </div>
     </Card>
   );

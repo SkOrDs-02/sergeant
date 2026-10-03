@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
         </View>
         <Text style={s.appName}>Sergeant</Text>
         <Text style={s.tagline}>
-          Твій особистий штаб —{"\n"}фінанси, фітнес, харчування, рутина
+          Твій особистий штаб:{"\n"}фінанси, фітнес, харчування, рутина
         </Text>
 
         <View style={s.chips}>

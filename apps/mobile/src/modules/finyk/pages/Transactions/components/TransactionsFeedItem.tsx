@@ -67,7 +67,6 @@ export function TransactionsFeedItem({
           >
             {item.collapsed ? "▸" : "▾"}
           </Text>
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
           <Text className="text-xs font-semibold uppercase tracking-wide text-fg-muted flex-shrink">
             {item.label}
           </Text>

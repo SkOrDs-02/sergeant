@@ -10,7 +10,7 @@ import type { ModuleAccent } from "@sergeant/design-tokens";
  *    `invalidateQueries({ queryKey: xxxKeys.all })` знижував усе дерево.
  *  - Секрети (токени) ніколи не вставляємо в ключ — хешуємо їх через
  *    `hashToken` (перші 8 символів SHA-256) перед використанням.
- *  - Усі keys-об'єкти експортуємо `as const`, щоб TypeScript виводив
+ *  - Усі keys-обʼєкти експортуємо `as const`, щоб TypeScript виводив
  *    літеральні тупли й `setQueryData`/`invalidateQueries` лишались типобезпечними.
  *
  * Якщо додаєш новий `useQuery`/`useMutation` — заведи ключ тут,
@@ -42,38 +42,30 @@ export const nutritionKeys = {
 
   // Barcode lookup (shared between meal-sheet and pantry scan)
   barcode: (code: string) => ["nutrition", "barcode", code] as const,
-
-  // Push subscription status
-  pushStatus: ["nutrition", "push-status"] as const,
 };
 
 // ─── Finyk ────────────────────────────────────────────────────────────────
 export const finykKeys = {
   all: ["finyk"] as const,
 
-  // Proactive AI advice — month-bucketed per budget category
-  proactiveAdvice: (monthKey: string, categoryId: string) =>
-    ["finyk", "proactive-advice", monthKey, categoryId] as const,
+  // Proactive AI advice — month-bucketed per limit-budget category set
+  // (`limitBudgetCategoryKey`: одна категорія — її id, комбо — sorted join "+")
+  proactiveAdvice: (monthKey: string, categoryKey: string) =>
+    ["finyk", "proactive-advice", monthKey, categoryKey] as const,
 
   // Monobank read endpoints
   mono: ["finyk", "mono"] as const,
-  monoClientInfo: (tokenHash: string) =>
-    ["finyk", "mono", "client-info", tokenHash] as const,
-  /** Префікс для всіх statement-ключів — зручно для bulk-invalidate/remove. */
-  monoStatements: ["finyk", "mono", "statement"] as const,
-  monoStatement: (accId: string, from: number, to: number) =>
-    ["finyk", "mono", "statement", accId, from, to] as const,
 
   // DB-backed webhook endpoints (Track B + Track C)
   monoSyncState: ["finyk", "mono", "sync-state"] as const,
   monoBackfillProgress: ["finyk", "mono", "backfill-progress"] as const,
-  monoAccounts: ["finyk", "mono", "accounts"] as const,
   monoTransactionsDb: (
     from: string | undefined,
     to: string | undefined,
     accountId: string | undefined,
   ) => ["finyk", "mono", "transactions-db", from, to, accountId] as const,
   monoWebhookAccounts: ["finyk", "mono", "webhook-accounts"] as const,
+  monoWebhookJars: ["finyk", "mono", "webhook-jars"] as const,
   monoWebhookTransactions: (params?: string) =>
     ["finyk", "mono", "webhook-tx", params ?? "all"] as const,
   /**
@@ -85,10 +77,67 @@ export const finykKeys = {
 
   // Privatbank read endpoints
   privat: ["finyk", "privat"] as const,
-  privatAccounts: (idHash: string) =>
-    ["finyk", "privat", "accounts", idHash] as const,
-  privatStatement: (idHash: string, accId: string, from: string, to: string) =>
-    ["finyk", "privat", "statement", idHash, accId, from, to] as const,
+
+  // Receipt scan (docs/work/specs/receipt-scan.md § Web UI).
+  // `lookupReceipt`/`analyzeReceipt`/`saveReceipt` are mutations (no cache
+  // key needed) — only the by-id GET used for the transaction drill-down
+  // is cached here.
+  receipt: (id: number) => ["finyk", "receipt", id] as const,
+
+  // Bulk import batches (spec § Фаза 2 — Масове ведення). `commitImport`/
+  // `analyzeImportScreenshot`/`previewImportStatement` are mutations;
+  // `getImportBatch` (undo-summary re-read) is the only cached GET.
+  importBatch: (id: number) => ["finyk", "import-batch", id] as const,
+
+  // Дати останніх імпортів по кожному типу документа — джерело фактів для
+  // плашки «залий документи». Інвалідується після успішного commit-у, щоб
+  // плашка зникла без перезавантаження сторінки.
+  importRecent: () => ["finyk", "import-recent"] as const,
+};
+
+// ─── Silpo (MCP receipts integration, walking-skeleton experiment) ────────
+//
+// `SILPO_ENABLED` defaults to `false` server-side — `syncState`/`receipts`
+// then 503 with `{code: "SILPO_DISABLED"}`. Hooks surface that as a
+// synthetic client-side "disabled" state (never invalidated via these
+// keys — it's derived from the error, not cached data).
+export const silpoKeys = {
+  all: ["silpo"] as const,
+  syncState: ["silpo", "sync-state"] as const,
+  /** Cursor-paginated `GET /api/silpo/receipts` list, keyed by params so
+   *  distinct pages/limits don't collide in cache. */
+  receipts: (params?: {
+    limit?: number;
+    cursor?: string;
+    transactionId?: string;
+  }) =>
+    [
+      "silpo",
+      "receipts",
+      params?.limit ?? null,
+      params?.cursor ?? null,
+      params?.transactionId ?? null,
+    ] as const,
+  receiptDetail: (receiptId: string) =>
+    ["silpo", "receipts", "detail", receiptId] as const,
+
+  // ── Cart (Track G — «У кошик Сільпо» зі списку покупок) ────────────────
+  /**
+   * `GET /api/silpo/cart` — поточний стан зовнішнього кошика Сільпо.
+   * Інвалідується після успішного `cartApply()`, щоб наступне читання (якщо
+   * колись зʼявиться вʼювер поточного кошика) не показувало стейл дані.
+   */
+  cart: () => ["silpo", "cart"] as const,
+  /**
+   * `POST /api/silpo/cart/preview` — ключ за ВМІСТОМ запиту (масив
+   * `{name, quantity?}`): preview — чиста функція від набору позицій, тож інший набір позицій
+   * мусить бути іншим кеш-рядком, а той самий набір (повторне відкриття
+   * шіта з тим самим unchecked-списком) — тим самим. React Query серіалізує
+   * ключі детерміновано (`hashKey` сортує поля), тож масив обʼєктів як
+   * останній елемент — безпечний.
+   */
+  cartPreview: (items: { name: string; quantity?: number | undefined }[]) =>
+    ["silpo", "cart", "preview", items] as const,
 };
 
 // ─── Push notifications ───────────────────────────────────────────────────
@@ -98,10 +147,29 @@ export const pushKeys = {
   vapid: ["push", "vapid"] as const,
 };
 
+// ─── Chat (Free-tier daily usage counter — PR-42) ──────────────────────────
+export const chatKeys = {
+  all: ["chat"] as const,
+  usage: ["chat", "usage"] as const,
+};
+
 // ─── Hub (dashboard previews, shared state) ───────────────────────────────
 export const hubKeys = {
   all: ["hub"] as const,
   preview: (module: ModuleAccent) => ["hub", "preview", module] as const,
+  /**
+   * `GET /api/me/profile` write-through row (profile/biometrics; migration
+   * 115, NOT an oplog table). One-shot boot fetch consumed by
+   * `useProfileWriteThroughBoot` (`core/profile/profileWriteThrough.ts`) to
+   * reconcile the local `hub_biometrics_v1` cache against the server on
+   * first authenticated boot — see that module for the LWW contract.
+   *
+   * User-scoped (CodeRabbit PR #627): a static key let a second tab that
+   * switched sessions read user A's cached RQ profile response under user
+   * B — `userId` in the key makes a session switch a cache MISS instead of
+   * a stale hit.
+   */
+  profile: (userId: string) => ["hub", "profile", userId] as const,
 };
 
 // ─── Strategic mode (PR-34 — per-persona weekly goals) ────────────────────
@@ -121,6 +189,8 @@ export const strategicKeys = {
 export const syncKeys = {
   all: ["sync"] as const,
   status: () => ["sync", "status"] as const,
+  /** Список термінально відхилених sync-опів (`SyncRejectedList`). */
+  rejected: () => ["sync", "rejected"] as const,
 };
 
 // ─── Billing (Stripe checkout / subscription status) ──────────────────────
@@ -133,6 +203,21 @@ export const syncKeys = {
 export const billingKeys = {
   all: ["billing"] as const,
   status: ["billing", "status"] as const,
+  // Phase 7 UA billing: список payment-провайдерів, доступних юзеру
+  // (`/api/billing/providers`) — джерело для кнопок на /pricing.
+  providers: ["billing", "providers"] as const,
+};
+
+// ─── AI memory ────────────────────────────────────────────────────────────
+//
+// Екран «Що ШІ про мене памʼятає» (налаштування → Згода та дані).
+// `list` — infinite-query по `GET /api/ai-memory/list`; сторінки
+// склеюються keyset-курсором, тож у ключ параметри пагінації НЕ входять:
+// інакше кожна сторінка мала б власний кеш-рядок і `invalidateQueries`
+// після видалення факту скидав би лише одну з них.
+export const aiMemoryKeys = {
+  all: ["ai-memory"] as const,
+  list: ["ai-memory", "list"] as const,
 };
 
 // ─── Token hashing helper ─────────────────────────────────────────────────

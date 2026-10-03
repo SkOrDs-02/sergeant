@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { act, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -29,15 +30,22 @@ vi.mock("../onboarding/onboardingGate", () => ({
   isDemoActive: () => false,
 }));
 
+const { mockRenderStandaloneRoute } = vi.hoisted(() => ({
+  mockRenderStandaloneRoute: vi.fn<(args: unknown) => ReactNode>(() => null),
+}));
 vi.mock("./StandaloneRoutes", () => ({
-  renderStandaloneRoute: () => null,
+  renderStandaloneRoute: (args: unknown) => mockRenderStandaloneRoute(args),
 }));
 
 vi.mock("./HubHomeView", () => ({
   HubHomeView: () => <div data-testid="hub-home">hub</div>,
 }));
 
-const mockShell: { activeModule: string | null } = { activeModule: null };
+const mockShell: {
+  activeModule: string | null;
+  user: { id: string } | null;
+  authLoading: boolean;
+} = { activeModule: null, user: null, authLoading: false };
 vi.mock("./HubShellContext", () => ({
   useHubShell: () => mockShell,
 }));
@@ -49,12 +57,37 @@ import {
   markStorageReady,
 } from "../db/storageReady";
 
-function renderHubAtRoot() {
+function renderHubAtEntry(entry = "/") {
   return render(
-    <MemoryRouter initialEntries={["/"]}>
+    <MemoryRouter initialEntries={[entry]}>
       <HubPage />
     </MemoryRouter>,
   );
+}
+
+/**
+ * Рендер із НЕПОРОЖНЬОЮ історією: перший запис отримує `key === "default"`,
+ * решта — власні ключі, і саме за цим `onAssistantClose` відрізняє прихід
+ * із застосунку від прямого лінка.
+ */
+function renderHubWithHistory(entries: string[]) {
+  return render(
+    <MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}>
+      <HubPage />
+    </MemoryRouter>,
+  );
+}
+
+/** `onAssistantClose`, переданий у реєстр standalone-маршрутів. */
+function assistantClose(): () => void {
+  const args = mockRenderStandaloneRoute.mock.calls.at(-1)?.[0] as {
+    onAssistantClose: () => void;
+  };
+  return args.onAssistantClose;
+}
+
+function renderHubAtRoot() {
+  return renderHubAtEntry("/");
 }
 
 describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
@@ -62,7 +95,11 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
     mockNavigate.mockClear();
     mockShouldShowOnboarding.mockClear();
     mockShouldShowOnboarding.mockReturnValue(false);
+    mockRenderStandaloneRoute.mockClear();
+    mockRenderStandaloneRoute.mockReturnValue(null);
     mockShell.activeModule = null;
+    mockShell.user = null;
+    mockShell.authLoading = false;
     __resetStorageReadyForTests();
   });
   afterEach(() => {
@@ -103,6 +140,83 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
     expect(screen.getByTestId("hub-home")).toBeTruthy();
     expect(mockNavigate).not.toHaveBeenCalledWith("/welcome", {
       replace: true,
+    });
+  });
+
+  it("never bounces an AUTHENTICATED user to /welcome, even with the gate open", () => {
+    // Аудит 2026-08-04, знахідка 5: `shouldShowOnboarding()` бачить лише
+    // локальний стан. Користувач, який щойно увійшов на чистому пристрої
+    // (дані на сервері, sync-pull ще не приїхав), отримував анонімний
+    // splash «Це приклад» із кнопкою «У мене вже є акаунт».
+    mockShouldShowOnboarding.mockReturnValue(true);
+    mockShell.user = { id: "u1" };
+
+    renderHubAtRoot();
+
+    expect(screen.getByTestId("hub-home")).toBeTruthy();
+    expect(mockNavigate).not.toHaveBeenCalledWith("/welcome", {
+      replace: true,
+    });
+  });
+
+  it("defers the onboarding decision until the session settles", () => {
+    // Поки `authLoading` не осів, `user` порожній не тому що його немає, а
+    // тому що `me` ще в польоті — редиректити на цій підставі не можна.
+    mockShouldShowOnboarding.mockReturnValue(true);
+    mockShell.authLoading = true;
+
+    renderHubAtRoot();
+
+    expect(screen.queryByTestId("hub-home")).toBeNull();
+    expect(screen.getByRole("status")).toBeTruthy();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  it("redirects legacy ?module URLs to the active path while preserving hash", async () => {
+    mockShell.activeModule = "finyk";
+    renderHubAtEntry("/?module=legacy#cashflow");
+
+    await waitFor(() =>
+      expect(mockNavigate).toHaveBeenCalledWith("/finyk#cashflow", {
+        replace: true,
+      }),
+    );
+    expect(mockRenderStandaloneRoute).not.toHaveBeenCalled();
+  });
+
+  it("renders standalone route output before onboarding checks", () => {
+    mockRenderStandaloneRoute.mockReturnValue(
+      <div data-testid="standalone-route">standalone</div>,
+    );
+
+    renderHubAtEntry("/pricing");
+
+    expect(screen.getByTestId("standalone-route")).toBeInTheDocument();
+    expect(mockRenderStandaloneRoute).toHaveBeenCalledWith(
+      expect.objectContaining({ pathname: "/pricing" }),
+    );
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  // Звіт власника 2026-09-15: стрілка «Назад» у каталозі вела на хаб
+  // незалежно від того, звідки прийшли, — тобто робила не те саме, що
+  // свайп назад тим самим жестом історії.
+  describe("onAssistantClose — крок назад, а не завжди хаб", () => {
+    it("робить крок назад по історії, коли є куди", () => {
+      renderHubWithHistory(["/", "/assistant"]);
+
+      act(() => assistantClose()());
+
+      expect(mockNavigate).toHaveBeenCalledWith(-1);
+    });
+
+    it("веде на хаб лише з прямого лінка, у якого історії немає", () => {
+      renderHubAtEntry("/assistant");
+
+      act(() => assistantClose()());
+
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
     });
   });
 });

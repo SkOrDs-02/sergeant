@@ -29,7 +29,7 @@ import {
   screen,
   cleanup,
 } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { RestTimerProvider } from "./RestTimerProvider";
 import { useRestTimer } from "./RestTimerContext";
 import { RestTimerOverlay } from "../components/workouts/RestTimerOverlay";
@@ -63,12 +63,9 @@ function WorkoutsPageSimulator({
   onMount: (api: ReturnType<typeof useRestTimer>) => void;
 }) {
   const api = useRestTimer();
-  // Single fire on mount to hand the API to the test.
-  const firedRef = { current: false };
-  if (!firedRef.current) {
-    firedRef.current = true;
+  useEffect(() => {
     onMount(api);
-  }
+  }, [api, onMount]);
   return null;
 }
 
@@ -277,9 +274,11 @@ describe("RestTimerProvider", () => {
     });
 
     expect(screen.getByRole("timer")).toBeTruthy();
-    // remaining should now be ~30 (60 - 30).
-    const label = screen.getByRole("timer").getAttribute("aria-label") ?? "";
-    expect(label).toContain("30");
+    // Remaining should now be ~30 (60 − 30). Asserted on the VISIBLE clock,
+    // not on `aria-label`: the label is deliberately static ("Таймер
+    // відпочинку") since a per-second label on `role="timer"` made screen
+    // readers announce every tick for the whole rest period.
+    expect(screen.getByRole("timer").textContent).toContain("00:30");
   });
 
   // -------------------------------------------------------------------------

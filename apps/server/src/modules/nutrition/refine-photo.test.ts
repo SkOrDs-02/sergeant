@@ -8,7 +8,11 @@ import {
 vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
-import handler from "./refine-photo.js";
+import {
+  REFINE_PRIOR_RESULT_MAX_BYTES,
+  RefinePhotoSchema,
+} from "@sergeant/shared";
+import handler, { buildRefinePhotoPrompt } from "./refine-photo.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
@@ -85,10 +89,22 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
     const body = asRecord(res.body);
     expect(body["rawText"]).toBe(rawText);
     expect(body["result"]).toEqual({
+      isFood: true,
+      notFoodKind: null,
       dishName: "Плов з куркою",
       confidence: 0.91,
       portion: { label: "порція", gramsApprox: 300 },
       ingredients: [{ name: "Рис", notes: null }],
+      // Стара форма відповіді без `items` — нормалізатор синтезує одну
+      // позицію (ініціатива 0023, PR-1).
+      items: [
+        {
+          name: "Плов з куркою",
+          macros: { kcal: 520, protein_g: 22, fat_g: 18, carbs_g: 64 },
+          gramsApprox: 300,
+          confidence: 0.91,
+        },
+      ],
       macros: { kcal: 520, protein_g: 22, fat_g: 18, carbs_g: 64 },
       questions: [],
     });
@@ -158,6 +174,26 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
     expect(anthropicMessages).not.toHaveBeenCalled();
   });
 
+  it("B25: prior_result понад 16 KB → ValidationError (400), Anthropic не викликається", async () => {
+    const huge = { dishName: "x".repeat(REFINE_PRIOR_RESULT_MAX_BYTES + 1) };
+    await expect(
+      handler(makeReq(baseReq({ prior_result: huge })), makeRes()),
+    ).rejects.toMatchObject({ name: "ValidationError" });
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
+  it("B25: ліміт рахується в UTF-8 байтах, не в UTF-16 юнітах", () => {
+    // 9000 кирилічних літер = 9000 юнітів (< 16384), але ≈18 KB байтів.
+    const cyr = { dishName: "ж".repeat(9000) };
+    expect(
+      RefinePhotoSchema.safeParse({
+        ...(baseReq() as object),
+        prior_result: cyr,
+      }).success,
+    ).toBe(false);
+    expect(RefinePhotoSchema.safeParse(baseReq()).success).toBe(true);
+  });
+
   it("throws ExternalServiceError when Anthropic returns a non-ok response", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: false, status: 503 },
@@ -167,8 +203,43 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
     await expect(handler(makeReq(baseReq()), makeRes())).rejects.toMatchObject({
       name: "ExternalServiceError",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
-      status: 503,
+      status: 502,
       code: "ANTHROPIC_ERROR",
     });
+  });
+});
+
+/**
+ * Дзеркало правил `analyze-photo`. Уточнення — це другий шанс на ту саму
+ * страву, і без цих рядків він був марним: `prior_result` із нулями якорив
+ * модель, і повторний прогін віддавав ті самі нулі (репорт тестера
+ * 2026-08-11 — «давала відповіді на питання, все одно не допомогло»).
+ */
+describe("nutrition refine-photo — правила промпта", () => {
+  const { system } = buildRefinePhotoPrompt({
+    prior_result: { dishName: "Плов" },
+    locale: "uk-UA",
+  });
+
+  it("не дозволяє повторювати нулі з попереднього результату", () => {
+    expect(system).toMatch(/Попередній результат – чернетка, а не істина/);
+    expect(system).toMatch(/оціни заново/);
+  });
+
+  it("вміє етикетку так само, як analyze-photo", () => {
+    expect(system).toMatch(/етикетка, цінник або упаковка/);
+    expect(system).toMatch(/вага порції \/ 100/);
+    expect(system).toMatch(/назва страви вже достатня підстава/);
+  });
+
+  it("забороняє нуль замість «не знаю»", () => {
+    expect(system).toMatch(/Нуль і «не знаю» – різні речі/);
+  });
+
+  // Дзеркало analyze-photo.test.ts — та сама прод-регресія 2026-08-11:
+  // питання не мають бути альтернативою оцінці.
+  it("явно каже: оцінка обовʼязкова, питання її не замінюють", () => {
+    expect(system).toMatch(/Оцінка КБЖВ ОБОВʼЯЗКОВА для будь-якої/);
+    expect(system).toMatch(/ДОПОВНЮЮТЬ оцінку, а не замінюють її/);
   });
 });

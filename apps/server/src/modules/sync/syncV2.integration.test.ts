@@ -161,9 +161,10 @@ beforeEach(async () => {
   // ізолює тести між собою.
   await testPool.query(
     `TRUNCATE sync_op_log, sync_audit_log,
-              routine_entries, routine_streaks,
+              routine_entries, routine_streaks, routine_completion_events,
               fizruk_workout_sets, fizruk_workout_items, fizruk_workouts,
               fizruk_custom_exercises, fizruk_measurements,
+              nutrition_pantry_events, nutrition_goal_periods,
               nutrition_pantry_items, nutrition_pantries,
               nutrition_meals, nutrition_prefs, nutrition_recipes,
               finyk_hidden_accounts, finyk_hidden_transactions,
@@ -834,13 +835,612 @@ describe("syncV2Push / syncV2Pull integration", () => {
 });
 
 // ---------------------------------------------------------------------
+// W1-ROUTINE-APPEND, СТАДІЯ 1 — append-only журнал відміток.
+//
+// Тест ганяє ТУ САМУ форму op-а, яку клієнтський write-path кладе в
+// `sync_op_outbox` (`appendCompletionEvent` у
+// `apps/{web,mobile}/.../sqliteWriter/adapter.completionEvents.ts`):
+// детермінований TEXT-`id`, `state`, сирі `occurred_at` / `tz_offset_min`
+// / `day_anchor`. Тобто перевіряється весь шлях push → OP_LOG_TABLE_REGISTRY
+// → apply → рядок у PG → pull на інший пристрій, а не «хендлер викликався».
+//
+// ЧЕСНЕ ОБМЕЖЕННЯ: реальний drain клієнтського outbox сюди не входить —
+// він живе у web/mobile і в цьому лейні недосяжний. Якщо drain мовчить
+// (відома знахідка по finyk: 4 операції висять у черзі), цей тест усе одно
+// зелений, а події до сервера не доїдуть. Мультидевайсна збіжність журналу
+// потребує окремої ЖИВОЇ перевірки, а не лише цього лейну.
+// ---------------------------------------------------------------------
+describe("syncV2Push: routine_completion_events (W1-ROUTINE-APPEND стадія 1)", () => {
+  const EVENT_ID = "hab_x1|2026-07-20|2026-07-20T09:00:00.000Z|done|device-A";
+
+  function clientShapedRow(
+    overrides: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    return {
+      id: EVENT_ID,
+      user_id: "u-events",
+      habit_id: "hab_x1",
+      date_key: "2026-07-20",
+      state: "done",
+      occurred_at: "2026-07-20T09:00:00.000Z",
+      tz_offset_min: 180,
+      day_anchor: "device-local",
+      source: "ui",
+      device_id: "device-A",
+      created_at: "2026-07-20T09:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it(
+    "insert проходить push → apply → PG-рядок → pull на іншому пристрої",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-events");
+
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-events",
+          body: {
+            ops: [
+              {
+                table: "routine_completion_events",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "evt-1",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        pushRes,
+      );
+
+      expect(pushRes.statusCode).toBe(200);
+      expect(
+        (pushRes.body as { results: Array<{ status: string }> }).results[0]!
+          .status,
+      ).toBe("applied");
+
+      // Рядок реально лежить у PG з тим самим TEXT-id (не UUID!).
+      const rows = await testPool.query(
+        `SELECT id, habit_id, date_key, state, tz_offset_min, day_anchor,
+                source, device_id
+           FROM routine_completion_events WHERE user_id = $1`,
+        ["u-events"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]).toMatchObject({
+        id: EVENT_ID,
+        habit_id: "hab_x1",
+        date_key: "2026-07-20",
+        state: "done",
+        tz_offset_min: 180,
+        day_anchor: "device-local",
+        source: "ui",
+        device_id: "device-A",
+      });
+
+      // Інший пристрій бачить подію у pull.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-events",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "device-B" },
+        }),
+        pullRes,
+      );
+      const pulled = (
+        pullRes.body as {
+          ops: Array<{ table: string; row: Record<string, unknown> }>;
+        }
+      ).ops;
+      expect(pulled).toHaveLength(1);
+      expect(pulled[0]!.table).toBe("routine_completion_events");
+      expect(pulled[0]!.row["id"]).toBe(EVENT_ID);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "повторний push тієї самої події (новий idempotency_key) не дублює рядок",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-events");
+
+      for (const key of ["evt-dup-1", "evt-dup-2"]) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-events",
+            body: {
+              ops: [
+                {
+                  table: "routine_completion_events",
+                  op: "insert" as const,
+                  row: clientShapedRow(),
+                  client_ts: isoNow(),
+                  idempotency_key: key,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        expect(
+          (res.body as { results: Array<{ status: string }> }).results[0]!
+            .status,
+        ).toBe("applied");
+      }
+
+      const count = await testPool.query(
+        `SELECT COUNT(*)::int AS n FROM routine_completion_events
+          WHERE user_id = $1`,
+        ["u-events"],
+      );
+      expect(count.rows[0]!.n).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "update / delete відхиляються з append_only_violation і не міняють рядок",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-events");
+
+      const seed = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-events",
+          body: {
+            ops: [
+              {
+                table: "routine_completion_events",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "evt-seed",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        seed,
+      );
+
+      for (const [i, mutating] of (["update", "delete"] as const).entries()) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-events",
+            body: {
+              ops: [
+                {
+                  table: "routine_completion_events",
+                  op: mutating,
+                  row: clientShapedRow({ state: "undone" }),
+                  client_ts: isoNow(1000 + i),
+                  idempotency_key: `evt-mutate-${mutating}`,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        const result = (
+          res.body as {
+            results: Array<{ status: string; reason?: string }>;
+          }
+        ).results[0]!;
+        expect(result.status).toBe("rejected");
+        expect(result.reason).toBe("append_only_violation");
+      }
+
+      const rows = await testPool.query(
+        `SELECT state FROM routine_completion_events WHERE user_id = $1`,
+        ["u-events"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]!.state).toBe("done");
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
+// nutrition_pantry_events — append-only ledger комори
+// (W1-PANTRY-APPEND, СТАДІЯ 1).
+//
+// Що доводить цей лейн: новий op проходить увесь серверний шлях —
+// push → registry → apply → рядок у PG → pull на іншому пристрої, з
+// КЛІЄНТСЬКИМИ id-рядками (`home`, `home::0::молоко`), а не з
+// синтетичними UUID-ами. Саме на UUID-ах маскується баг PK-типу, через
+// який реальний push комори падає на 22P02.
+//
+// Тут же — кейс E-7: consume з телефону і replenish з десктопу в тому
+// самому вікні. За старим шляхом (`applyNutritionPantryItems`, per-row
+// LWW по `qty`) одна з операцій отримувала `lww_conflict` і гинула. Тут
+// обидві мусять бути `applied`.
+//
+// ЧЕСНЕ ОБМЕЖЕННЯ (те саме, що в routine-лейні вище): реальний drain
+// клієнтського outbox сюди НЕ входить — він живе у web/mobile. Відома
+// знахідка по finyk (клієнт не шле жодного запиту, 4 операції висять у
+// черзі) стосується СПІЛЬНОГО рушія, тож цей тест лишається зеленим
+// навіть якщо на клієнті push мовчить. Отже: цей PR доводить, що СЕРВЕР
+// готовий прийняти події; він НЕ доводить, що E-7 полагоджено для
+// користувача. Це станеться лише коли (а) стадія 2 навчить клієнт
+// емітити події і (б) drain outbox буде підтверджено живим.
+// ---------------------------------------------------------------------
+describe("syncV2Push: nutrition_pantry_events (W1-PANTRY-APPEND стадія 1)", () => {
+  // Клієнтські id, а не UUID — саме вони ламають стару таблицю комори.
+  const PANTRY_ID = "home";
+  const ITEM_ID = "home::0::молоко";
+  const EVENT_ID = `${ITEM_ID}|consume|2026-07-25T07:00:00.000Z`;
+
+  function clientShapedRow(
+    overrides: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    return {
+      id: EVENT_ID,
+      user_id: "u-pantry-events",
+      pantry_id: PANTRY_ID,
+      item_id: ITEM_ID,
+      item_key: "молоко",
+      kind: "consume",
+      delta_qty: -250,
+      abs_qty: null,
+      unit: "г",
+      source: "meal_log",
+      meal_id: null,
+      occurred_at: "2026-07-25T07:00:00.000Z",
+      created_at: "2026-07-25T07:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it(
+    "insert проходить push → apply → PG-рядок → pull на іншому пристрої",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pantry-events");
+
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pantry-events",
+          body: {
+            ops: [
+              {
+                table: "nutrition_pantry_events",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "pantry-evt-1",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        pushRes,
+      );
+
+      expect(pushRes.statusCode).toBe(200);
+      expect(
+        (pushRes.body as { results: Array<{ status: string }> }).results[0]!
+          .status,
+      ).toBe("applied");
+
+      // Рядок лежить у PG з клієнтськими TEXT-id (не UUID!).
+      const rows = await testPool.query(
+        `SELECT id, pantry_id, item_id, item_key, kind, delta_qty, abs_qty,
+                unit, source, deleted_at
+           FROM nutrition_pantry_events WHERE user_id = $1`,
+        ["u-pantry-events"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]).toMatchObject({
+        id: EVENT_ID,
+        pantry_id: PANTRY_ID,
+        item_id: ITEM_ID,
+        item_key: "молоко",
+        kind: "consume",
+        delta_qty: -250,
+        abs_qty: null,
+        unit: "г",
+        source: "meal_log",
+        deleted_at: null,
+      });
+
+      // Інший пристрій бачить подію у pull.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-pantry-events",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "device-B" },
+        }),
+        pullRes,
+      );
+      const pulled = (
+        pullRes.body as {
+          ops: Array<{ table: string; row: Record<string, unknown> }>;
+        }
+      ).ops;
+      expect(pulled).toHaveLength(1);
+      expect(pulled[0]!.table).toBe("nutrition_pantry_events");
+      expect(pulled[0]!.row["id"]).toBe(EVENT_ID);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "E-7: consume з телефону і replenish з десктопу — обидві applied, без lww_conflict",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pantry-events");
+
+      const devices = [
+        {
+          device: "device-phone",
+          row: clientShapedRow({
+            id: `${ITEM_ID}|consume|phone`,
+            kind: "consume",
+            delta_qty: -250,
+            source: "meal_log",
+          }),
+        },
+        {
+          device: "device-desktop",
+          row: clientShapedRow({
+            id: `${ITEM_ID}|replenish|desktop`,
+            kind: "replenish",
+            delta_qty: 1000,
+            source: "parse_pantry",
+          }),
+        },
+      ];
+
+      for (const [i, { device, row }] of devices.entries()) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-pantry-events",
+            body: {
+              ops: [
+                {
+                  table: "nutrition_pantry_events",
+                  op: "insert" as const,
+                  // Той самий client_ts на обох пристроях — на старому
+                  // LWW-шляху це і був сценарій втрати операції.
+                  row,
+                  client_ts: isoNow(i),
+                  idempotency_key: `pantry-e7-${device}`,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": device },
+          }),
+          res,
+        );
+        const result = (
+          res.body as { results: Array<{ status: string; reason?: string }> }
+        ).results[0]!;
+        expect(result.status).toBe("applied");
+        expect(result.reason).toBeUndefined();
+      }
+
+      // Обидві події живі; згортка (derivePantryQty) дала б -250 + 1000.
+      const rows = await testPool.query<{ kind: string; delta_qty: number }>(
+        `SELECT kind, delta_qty FROM nutrition_pantry_events
+          WHERE user_id = $1 AND deleted_at IS NULL
+          ORDER BY delta_qty`,
+        ["u-pantry-events"],
+      );
+      expect(rows.rows.map((r) => r.kind)).toEqual(["consume", "replenish"]);
+      const sum = rows.rows.reduce((acc, r) => acc + Number(r.delta_qty), 0);
+      expect(sum).toBe(750);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "повторний push тієї самої події (новий idempotency_key) не дублює списання",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pantry-events");
+
+      for (const key of ["pantry-dup-1", "pantry-dup-2"]) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-pantry-events",
+            body: {
+              ops: [
+                {
+                  table: "nutrition_pantry_events",
+                  op: "insert" as const,
+                  row: clientShapedRow(),
+                  client_ts: isoNow(),
+                  idempotency_key: key,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        expect(
+          (res.body as { results: Array<{ status: string }> }).results[0]!
+            .status,
+        ).toBe("applied");
+      }
+
+      const count = await testPool.query<{ n: number }>(
+        `SELECT COUNT(*)::int AS n FROM nutrition_pantry_events
+          WHERE user_id = $1`,
+        ["u-pantry-events"],
+      );
+      expect(count.rows[0]!.n).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "update відхиляється; delete лише ретрагує (тіло події не переписується)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pantry-events");
+
+      const seed = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pantry-events",
+          body: {
+            ops: [
+              {
+                table: "nutrition_pantry_events",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "pantry-seed",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        seed,
+      );
+
+      // update — переписування історії, заборонено.
+      const updateRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pantry-events",
+          body: {
+            ops: [
+              {
+                table: "nutrition_pantry_events",
+                op: "update" as const,
+                row: clientShapedRow({ delta_qty: -999 }),
+                client_ts: isoNow(1000),
+                idempotency_key: "pantry-update",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        updateRes,
+      );
+      const updateResult = (
+        updateRes.body as {
+          results: Array<{ status: string; reason?: string }>;
+        }
+      ).results[0]!;
+      expect(updateResult.status).toBe("rejected");
+      expect(updateResult.reason).toBe("append_only_violation");
+
+      // delete — ретракція: рядок лишається, змінюється лише deleted_at.
+      const deleteRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pantry-events",
+          body: {
+            ops: [
+              {
+                table: "nutrition_pantry_events",
+                op: "delete" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(2000),
+                idempotency_key: "pantry-retract",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        deleteRes,
+      );
+      expect(
+        (deleteRes.body as { results: Array<{ status: string }> }).results[0]!
+          .status,
+      ).toBe("applied");
+
+      const rows = await testPool.query<{
+        delta_qty: number;
+        deleted_at: Date | null;
+      }>(
+        `SELECT delta_qty, deleted_at FROM nutrition_pantry_events
+          WHERE user_id = $1`,
+        ["u-pantry-events"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      // Тіло НЕ переписане `update`-ом, і рядок НЕ видалений `delete`-ом.
+      expect(Number(rows.rows[0]!.delta_qty)).toBe(-250);
+      expect(rows.rows[0]!.deleted_at).not.toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "подія без delta_qty і без abs_qty у журнал не потрапляє",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-pantry-events");
+
+      const res = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-pantry-events",
+          body: {
+            ops: [
+              {
+                table: "nutrition_pantry_events",
+                op: "insert" as const,
+                row: clientShapedRow({
+                  id: `${ITEM_ID}|broken`,
+                  delta_qty: null,
+                  abs_qty: null,
+                }),
+                client_ts: isoNow(),
+                idempotency_key: "pantry-broken",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        res,
+      );
+
+      const result = (
+        res.body as { results: Array<{ status: string; reason?: string }> }
+      ).results[0]!;
+      expect(result.status).toBe("rejected");
+      expect(result.reason).toBe("missing_delta_or_abs");
+
+      const count = await testPool.query<{ n: number }>(
+        `SELECT COUNT(*)::int AS n FROM nutrition_pantry_events
+          WHERE user_id = $1`,
+        ["u-pantry-events"],
+      );
+      expect(count.rows[0]!.n).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
 // Fizruk apply-функції — Stage 4 PR #029.
 //
 // Покриваємо найважливіші інваріанти:
 //   1. Per-row UPSERT для `fizruk_workouts` працює (insert → update).
 //   2. LWW guard на `fizruk_workouts` — старіший client_ts відкидається.
 //   3. Soft-delete (op="delete") пише `deleted_at` замість DELETE row-у.
-//   4. FK-зв'язок `fizruk_workout_items.workout_id` коректно застосовує
+//   4. FK-звʼязок `fizruk_workout_items.workout_id` коректно застосовує
 //      child після parent (один батч, один push).
 //   5. `applyFizrukMeasurements` — валідує `measured_at` як required.
 //
@@ -848,7 +1448,7 @@ describe("syncV2Push / syncV2Pull integration", () => {
 // shape — UUID PK, user-ownership, LWW, soft-delete — тому окремі
 // e2e не потрібні: при регресії `fizruk_workouts` тести впадуть першими.
 // ---------------------------------------------------------------------
-describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
+describe("syncV2Push: fizruk apply-функції (PR #029)", () => {
   it(
     "fizruk_workouts: insert → update (новіший client_ts перезаписує)",
     async (ctx) => {
@@ -1213,7 +1813,7 @@ describe("syncV2Push — fizruk apply-функції (PR #029)", () => {
 //   4. nutrition_prefs: singleton upsert, delete rejected.
 //   5. nutrition_recipes: insert → soft-delete.
 // ---------------------------------------------------------------------
-describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
+describe("syncV2Push: nutrition apply-функції (PR #031)", () => {
   it(
     "nutrition_meals: insert → update (новіший client_ts перезаписує)",
     async (ctx) => {
@@ -1464,7 +2064,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
   // delete-у не воскрешає ряд. Покриває multi-device race: offline-edit на
   // одному девайсі НЕ повинен перевизначити delete з іншого девайсу.
   it(
-    "nutrition_meals: G-set — після soft-delete update із новішим client_ts відхилено як tombstoned",
+    "nutrition_meals: G-set — після soft-delete update із новішим client_ts воскрешає рядок",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-nm-gset-tombstoned");
@@ -1548,10 +2148,10 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(r3Body.accepted).toBe(0);
-      expect(r3Body!.results[0]!.reason).toBe("tombstoned");
+      expect(r3Body.accepted).toBe(1);
+      expect(r3Body!.results[0]!.status).toBe("applied");
 
-      // Стан у БД: ряд лишається soft-deleted, ім'я НЕ перезаписане.
+      // Стан у БД: мітку видалення знято, поля перезаписані вхідним рядком.
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         name: string;
@@ -1559,9 +2159,9 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
       }>(`SELECT deleted_at, name, kcal FROM nutrition_meals WHERE id = $1`, [
         mealId,
       ]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("before-delete");
-      expect(finalRow!.rows[0]!.kcal).toBe(100);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+      expect(finalRow!.rows[0]!.kcal).toBe(999);
     },
     TIMEOUT_MS,
   );
@@ -1618,7 +2218,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
       );
 
       // Другий delete із новішим client_ts. Idempotency-ключ інший
-      // (з іншого девайсу), тому це не duplicate; ряд уже tombstoned,
+      // (з іншого девайсу), тому це не duplicate; ряд уже soft-deleted,
       // але delete-шлях має пройти й оновити deleted_at.
       const r3 = makeRes();
       await syncV2Push(
@@ -1654,7 +2254,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
   );
 
   it(
-    "nutrition_meals: G-set — конкурентні insert-и з різними id з обох девайсів об'єднуються",
+    "nutrition_meals: G-set — конкурентні insert-и з різними id з обох девайсів обʼєднуються",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-nm-gset-merge");
@@ -1977,7 +2577,7 @@ describe("syncV2Push — nutrition apply-функції (PR #031)", () => {
 // повторюванні стандартної LWW-перевірки (її вже покривають nutrition
 // інтеграційні тести вище — apply-фн поділяє ту саму інфраструктуру).
 // ---------------------------------------------------------------------
-describe("syncV2Push — finyk apply-функції (PR #035)", () => {
+describe("syncV2Push: finyk apply-функції (PR #035)", () => {
   it(
     "finyk_hidden_accounts: insert → soft-delete (composite-PK tombstone shape)",
     async (ctx) => {
@@ -2407,19 +3007,24 @@ describe("syncV2Push — finyk apply-функції (PR #035)", () => {
 });
 
 // ---------------------------------------------------------------------
-// Tombstone-resurrection guard — Stage 5 follow-up до PR #043 (G-set
-// CRDT для `nutrition_meals`). Той самий інваріант поширюється на
-// інші soft-delete apply-шляхи: routine_entries + 5 fizruk_* таблиць.
+// Tombstone resurrection — семантика ПІСЛЯ зняття правила `tombstoned`
+// (регресія SERGEANT-WEB-T). Стосується таблиць з ВИПАДКОВИМ UUID-PK:
+// 5 fizruk_* таблиць + nutrition_meals.
 //
 // Кожен тест проганяє послідовність insert(t1) → delete(t2) →
-// update(t3, t3 > t2). Без guard-а raw LWW дозволив би update
-// перезаписати рядок (deleted_at скинеться у null із payload-у), що
-// фактично воскрешає видалений ряд. З guard-ом — update reject-нуто
-// з `reason='tombstoned'`, ряд лишається soft-deleted.
+// update(t3, t3 > t2). Раніше третій крок відхилявся з
+// `reason='tombstoned'`; тепер він проходить за звичайним LWW і знімає
+// мітку видалення — саме так undo після видалення доїжджає на сервер.
+// Повне обґрунтування — в `guardUuidPkApply` (`applySync-helpers.ts`).
+//
+// Захист НЕ послаблено: запис, СТАРІШИЙ за видалення, усе одно програє —
+// просто вже на LWW-перевірці (`lww_conflict`), і це кодифікує окремий
+// stale-тест нижче. `routine_entries` (audit E-1) з детермінованим PK
+// поводився так завжди — тепер решта таблиць має ту саму семантику.
 // ---------------------------------------------------------------------
-describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
+describe("syncV2Push: tombstone resurrection — новіший запис виграє (LWW)", () => {
   it(
-    "routine_entries: update після soft-delete із новішим client_ts відхилено як tombstoned",
+    "routine_entries: update після soft-delete із новішим client_ts воскрешає рядок",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-rt-tomb");
@@ -2484,6 +3089,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
                   user_id: "u-rt-tomb",
                   name: "resurrected",
                   completed_at: t3,
+                  deleted_at: null,
                 },
                 client_ts: t3,
                 idempotency_key: "rt-tomb-resurrect",
@@ -2497,8 +3103,102 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
+
+      const finalRow = await testPool.query<{
+        deleted_at: Date | null;
+        name: string;
+      }>(`SELECT deleted_at, name FROM routine_entries WHERE id = $1`, [id]);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+    },
+    TIMEOUT_MS,
+  );
+
+  // Контр-кейс: stale-edit проти tombstone-у і далі ріжеться LWW-guard-ом.
+  it(
+    "routine_entries: update після soft-delete зі СТАРІШИМ client_ts відхилено як lww_conflict",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-rt-stale");
+
+      const id = "30000000-0000-4000-8000-000000000002";
+      const t1 = isoNow(-10_000);
+      const t2 = isoNow();
+      const tStale = isoNow(-5_000);
+
+      await syncV2Push(
+        makeReq({
+          userId: "u-rt-stale",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id,
+                  user_id: "u-rt-stale",
+                  name: "before-delete",
+                  completed_at: t1,
+                },
+                client_ts: t1,
+                idempotency_key: "rt-stale-insert",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      await syncV2Push(
+        makeReq({
+          userId: "u-rt-stale",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "delete" as const,
+                row: { id, user_id: "u-rt-stale" },
+                client_ts: t2,
+                idempotency_key: "rt-stale-delete",
+              },
+            ],
+          },
+        }),
+        makeRes(),
+      );
+
+      const rStale = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-rt-stale",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "update" as const,
+                row: {
+                  id,
+                  user_id: "u-rt-stale",
+                  name: "stale-edit",
+                  completed_at: tStale,
+                  deleted_at: null,
+                },
+                client_ts: tStale,
+                idempotency_key: "rt-stale-resurrect",
+              },
+            ],
+          },
+        }),
+        rStale,
+      );
+      const staleBody = rStale.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(staleBody.accepted).toBe(0);
+      expect(staleBody!.results[0]!.reason).toBe("lww_conflict");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2511,7 +3211,7 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
   );
 
   it(
-    "fizruk_workouts: update після soft-delete відхилено як tombstoned",
+    "fizruk_workouts: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-w-tomb");
@@ -2589,21 +3289,21 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         note: string;
       }>(`SELECT deleted_at, note FROM fizruk_workouts WHERE id = $1`, [id]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.note).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.note).toBe("resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_workout_items: update після soft-delete відхилено як tombstoned",
+    "fizruk_workout_items: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-i-tomb");
@@ -2701,8 +3401,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2710,14 +3410,14 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
       }>(`SELECT deleted_at, name_uk FROM fizruk_workout_items WHERE id = $1`, [
         itemId,
       ]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name_uk).toBe("Присідання");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name_uk).toBe("Resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_workout_sets: update після soft-delete відхилено як tombstoned",
+    "fizruk_workout_sets: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-s-tomb");
@@ -2828,8 +3528,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2838,14 +3538,14 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, weight_kg FROM fizruk_workout_sets WHERE id = $1`,
         [setId],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(80);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(999);
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_custom_exercises: update після soft-delete відхилено як tombstoned",
+    "fizruk_custom_exercises: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-ce-tomb");
@@ -2921,8 +3621,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -2931,14 +3631,14 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, data_json FROM fizruk_custom_exercises WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.data_json.name).toBe("before-delete");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.data_json.name).toBe("resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "fizruk_measurements: update після soft-delete відхилено як tombstoned",
+    "fizruk_measurements: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fz-m-tomb");
@@ -3016,8 +3716,8 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3026,26 +3726,26 @@ describe("syncV2Push — tombstone resurrection guard (Stage 5)", () => {
         `SELECT deleted_at, weight_kg FROM fizruk_measurements WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(80);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(Number(finalRow!.rows[0]!.weight_kg)).toBe(120);
     },
     TIMEOUT_MS,
   );
 });
 
 // ---------------------------------------------------------------------
-// Stage 5 — tombstone-resurrection guard для nutrition non-meals + finyk
-// soft-delete shapes. Дзеркалить інваріант з PR #043 (`applyNutritionMeals`)
-// та PR-A (routine + fizruk) на 3 nutrition apply-фн і 2 finyk хелпери,
-// які покривають усі 10 finyk soft-delete таблиць (`applyFinykTombstone` —
-// 2 composite-PK, `applyFinykPerRowBlob` — 8 per-row+JSONB).
+// Tombstone resurrection для nutrition non-meals + finyk soft-delete
+// shapes. Дзеркалить семантику з блоку вище на 3 nutrition apply-фн і 2
+// finyk хелпери, які покривають усі 10 finyk soft-delete таблиць
+// (`applyFinykTombstone` — 2 composite-PK, `applyFinykPerRowBlob` — 8
+// per-row+JSONB).
 // Інваріант: після soft-delete `op='insert'/'update'` із новішим
-// `client_ts` відхиляється з `reason='tombstoned'`. `op='delete'`
+// `client_ts` ВОСКРЕШАЄ рядок (`deleted_at` знято). `op='delete'`
 // лишається ідемпотентним (re-stamp).
 // ---------------------------------------------------------------------
-describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5)", () => {
+describe("syncV2Push: nutrition + finyk tombstone resurrection (LWW)", () => {
   it(
-    "nutrition_pantries: update після soft-delete із новішим client_ts відхилено як tombstoned",
+    "nutrition_pantries: update після soft-delete із новішим client_ts воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-np-tomb");
@@ -3123,8 +3823,8 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3134,15 +3834,15 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         `SELECT deleted_at, name, text FROM nutrition_pantries WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("before-delete");
-      expect(finalRow!.rows[0]!.text).toBe("v1");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+      expect(finalRow!.rows[0]!.text).toBe("v2");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "nutrition_pantry_items: update після soft-delete відхилено як tombstoned",
+    "nutrition_pantry_items: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-npi-tomb");
@@ -3247,8 +3947,8 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3256,14 +3956,14 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
       }>(`SELECT deleted_at, name FROM nutrition_pantry_items WHERE id = $1`, [
         itemId,
       ]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("milk");
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
     },
     TIMEOUT_MS,
   );
 
   it(
-    "nutrition_recipes: update після soft-delete відхилено як tombstoned",
+    "nutrition_recipes: update після soft-delete воскрешає рядок (LWW)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-nr-tomb");
@@ -3341,8 +4041,8 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3352,15 +4052,15 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         `SELECT deleted_at, name, data_json FROM nutrition_recipes WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.name).toBe("Борщ");
-      expect(finalRow!.rows[0]!.data_json.servings).toBe(4);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.name).toBe("resurrected");
+      expect(finalRow!.rows[0]!.data_json.servings).toBe(8);
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_hidden_accounts: update після soft-delete відхилено як tombstoned (applyFinykTombstone shape)",
+    "finyk_hidden_accounts: update після soft-delete воскрешає рядок (LWW) (applyFinykTombstone shape)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fha-tomb");
@@ -3428,21 +4128,21 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM finyk_hidden_accounts
            WHERE user_id = $1 AND account_id = $2`,
         ["u-fha-tomb", accountId],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_hidden_transactions: update після soft-delete відхилено як tombstoned (applyFinykTombstone shape)",
+    "finyk_hidden_transactions: update після soft-delete воскрешає рядок (LWW) (applyFinykTombstone shape)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fht-tomb");
@@ -3519,21 +4219,21 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{ deleted_at: Date | null }>(
         `SELECT deleted_at FROM finyk_hidden_transactions
            WHERE user_id = $1 AND transaction_id = $2`,
         ["u-fht-tomb", txId],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_budgets: update після soft-delete відхилено як tombstoned (applyFinykPerRowBlob shape)",
+    "finyk_budgets: update після soft-delete воскрешає рядок (LWW) (applyFinykPerRowBlob shape)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fb-tomb");
@@ -3609,21 +4309,21 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
         data_json: { limit: number };
       }>(`SELECT deleted_at, data_json FROM finyk_budgets WHERE id = $1`, [id]);
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.data_json.limit).toBe(1000);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.data_json.limit).toBe(9999);
     },
     TIMEOUT_MS,
   );
 
   it(
-    "finyk_subscriptions: update після soft-delete відхилено як tombstoned (applyFinykPerRowBlob shape, інша таблиця)",
+    "finyk_subscriptions: update після soft-delete воскрешає рядок (LWW) (applyFinykPerRowBlob shape, інша таблиця)",
     async (ctx) => {
       if (!dockerAvailable || !testPool) return ctx.skip();
       await ensureUser("u-fs-tomb");
@@ -3699,8 +4399,8 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         accepted: number;
         results: Array<{ status: string; reason?: string }>;
       };
-      expect(body.accepted).toBe(0);
-      expect(body!.results[0]!.reason).toBe("tombstoned");
+      expect(body.accepted).toBe(1);
+      expect(body!.results[0]!.status).toBe("applied");
 
       const finalRow = await testPool.query<{
         deleted_at: Date | null;
@@ -3709,14 +4409,14 @@ describe("syncV2Push — nutrition + finyk tombstone resurrection guard (Stage 5
         `SELECT deleted_at, data_json FROM finyk_subscriptions WHERE id = $1`,
         [id],
       );
-      expect(finalRow!.rows[0]!.deleted_at).not.toBeNull();
-      expect(finalRow!.rows[0]!.data_json.monthly).toBe(199);
+      expect(finalRow!.rows[0]!.deleted_at).toBeNull();
+      expect(finalRow!.rows[0]!.data_json.monthly).toBe(999);
     },
     TIMEOUT_MS,
   );
 });
 
-describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
+describe("syncV2Push: op='increment' engine-level gate (PR #042a)", () => {
   // Stage 5 / PR #042a: engine-level gate відхиляє `op='increment'` для
   // таблиць поза `INCREMENT_OP_SUPPORTED_TABLES` із
   // `reason='op_not_supported'` ще до apply-fn-у. PR #042b опт-інив
@@ -3863,7 +4563,7 @@ describe("syncV2Push — op='increment' engine-level gate (PR #042a)", () => {
   );
 });
 
-describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => {
+describe("syncV2Push: routine_streaks PN-counter apply-fn (PR #042b)", () => {
   // Stage 5 / PR #042b: `routine_streaks` опт-іниться у
   // `INCREMENT_OP_SUPPORTED_TABLES`, apply-fn консумує `delta`-payload
   // через атомарний `INSERT … ON CONFLICT DO UPDATE SET current_streak
@@ -4282,6 +4982,607 @@ describe("syncV2Push — routine_streaks PN-counter apply-fn (PR #042b)", () => 
       };
       expect(body.accepted).toBe(0);
       expect(body!.results[0]!.reason).toBe("user_id_mismatch");
+    },
+    TIMEOUT_MS,
+  );
+});
+
+describe("cross-user isolation — PR-T07", () => {
+  it(
+    "user B pull (since=0) does NOT return user A's ops",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-isol-a");
+      await ensureUser("u-cu-isol-b");
+
+      const ts = isoNow();
+      // User A pushes a routine_entry.
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-cu-isol-a",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id: "c0000001-0001-0001-0001-000000000001",
+                  user_id: "u-cu-isol-a",
+                  name: "user A exclusive habit",
+                  completed_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "cu-isol-a-push-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+      expect((pushRes.body as { accepted: number }).accepted).toBe(1);
+
+      // User B pulls from the beginning — must see zero ops.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({ userId: "u-cu-isol-b", query: { since: 0 } }),
+        pullRes,
+      );
+
+      expect(pullRes.statusCode).toBe(200);
+      const pullBody = pullRes.body as {
+        ops: unknown[];
+        next_cursor: number | null;
+      };
+      expect(pullBody.ops).toHaveLength(0);
+      expect(pullBody.next_cursor).toBeNull();
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "two devices same user — push device1, pull device2 sees ops",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-twodev");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-cu-twodev",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id: "c0000002-0002-0002-0002-000000000002",
+                  user_id: "u-cu-twodev",
+                  name: "cross-device habit",
+                  completed_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "cu-twodev-push-1",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "dev-alpha" },
+        }),
+        pushRes,
+      );
+      expect((pushRes.body as { accepted: number }).accepted).toBe(1);
+
+      // Pull from a different device — ops from dev-alpha must be visible.
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-cu-twodev",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "dev-beta" },
+        }),
+        pullRes,
+      );
+
+      expect(pullRes.statusCode).toBe(200);
+      const pullBody = pullRes.body as {
+        ops: Array<{ id: number; row: { name: string } }>;
+        next_cursor: number | null;
+      };
+      expect(pullBody.ops).toHaveLength(1);
+      expect(pullBody.ops[0]!.row.name).toBe("cross-device habit");
+      // Hard Rule #1 — bigint coerced to number.
+      expect(typeof pullBody.ops[0]!.id).toBe("number");
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "replay after truncate op-log only — LWW guard prevents duplicate row even without idempotency state",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-replay");
+
+      const ts = isoNow();
+      const op = {
+        table: "routine_entries",
+        op: "insert" as const,
+        row: {
+          id: "c0000003-0003-0003-0003-000000000003",
+          user_id: "u-cu-replay",
+          name: "replay test habit",
+          completed_at: ts,
+        },
+        client_ts: ts,
+        idempotency_key: "cu-replay-key-1",
+      };
+
+      // First push — must apply cleanly.
+      const r1 = makeRes();
+      await syncV2Push(
+        makeReq({ userId: "u-cu-replay", body: { ops: [op] } }),
+        r1,
+      );
+      expect((r1.body as { accepted: number }).accepted).toBe(1);
+
+      // Confirm the routine_entry row exists.
+      const before = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
+        ["u-cu-replay"],
+      );
+      expect(Number(before!.rows[0]!.c)).toBe(1);
+
+      // Simulate op-log loss (e.g. manual TRUNCATE or disaster recovery).
+      // routine_entries is intentionally NOT truncated — only the op-log.
+      await testPool.query(
+        `TRUNCATE sync_op_log, sync_audit_log RESTART IDENTITY CASCADE`,
+      );
+
+      // Replay: same op, same client_ts. The idempotency_key is no longer in
+      // the log, so the engine proceeds to applyFn. applyFn finds the existing
+      // row with updated_at == clientTs → LWW guard rejects with lww_conflict.
+      const r2 = makeRes();
+      await syncV2Push(
+        makeReq({ userId: "u-cu-replay", body: { ops: [op] } }),
+        r2,
+      );
+      const r2Body = r2.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(r2Body.accepted).toBe(0);
+      expect(r2Body!.results[0]!.reason).toBe("lww_conflict");
+
+      // Data is intact — still exactly one row, no phantom duplicate.
+      const after = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
+        ["u-cu-replay"],
+      );
+      expect(Number(after!.rows[0]!.c)).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "push op with row.user_id ≠ session user → rejected for routine_entries (not only increment)",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-cu-xuser-sess");
+      await ensureUser("u-cu-xuser-other");
+
+      const ts = isoNow();
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-cu-xuser-sess",
+          body: {
+            ops: [
+              {
+                table: "routine_entries",
+                op: "insert" as const,
+                row: {
+                  id: "c0000004-0004-0004-0004-000000000004",
+                  user_id: "u-cu-xuser-other",
+                  name: "should be rejected",
+                  completed_at: ts,
+                },
+                client_ts: ts,
+                idempotency_key: "cu-xuser-1",
+              },
+            ],
+          },
+        }),
+        pushRes,
+      );
+
+      const body = pushRes.body as {
+        accepted: number;
+        results: Array<{ status: string; reason?: string }>;
+      };
+      expect(body.accepted).toBe(0);
+      expect(body!.results[0]!.status).toBe("rejected");
+      expect(body!.results[0]!.reason).toBe("user_id_mismatch");
+
+      // Confirm no phantom row was written for the other user.
+      const count = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM routine_entries WHERE user_id = $1`,
+        ["u-cu-xuser-other"],
+      );
+      expect(Number(count!.rows[0]!.c)).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ---------------------------------------------------------------------
+// nutrition_goal_periods — append-only журнал цілей КБЖВ
+// (W1-KBJU-APPEND, СТАДІЯ 1).
+//
+// Що доводить цей лейн: `goal-period-insert` реально проходить УВЕСЬ
+// серверний шлях — push → OP_LOG_TABLE_REGISTRY → apply → рядок у PG →
+// pull на іншому пристрої. Не «хендлер викликається», а «сходинка
+// доїжджає». Плюс два інваріанти, які легко втратити рефакторингом:
+// повторна доставка не подвоює сходинку, а дві зміни цілі з двох
+// пристроїв дають ДВІ сходинки, а не «останній виграв».
+//
+// ЧЕСНЕ ОБМЕЖЕННЯ (те саме, що в routine- і pantry-лейнах вище): drain
+// клієнтського outbox сюди НЕ входить — він живе у web/mobile. Відома
+// знахідка по finyk (клієнт не шле жодного запиту, 4 операції висять у
+// черзі) стосується СПІЛЬНОГО рушія, тож цей тест лишається зеленим,
+// навіть якщо на клієнті push мовчить. Отже: цей PR доводить, що СЕРВЕР
+// готовий приймати сходинки; він НЕ доводить, що крос-девайсова
+// збіжність історії цілей уже працює у користувача.
+//
+// Стадія 1 від цього не залежить за побудовою: клієнт пише в локальний
+// SQLite і читає звідти, серверна таблиця — дзеркало для крос-девайсу і
+// бекапу, а цілі на екранах і далі беруться з `nutrition_prefs`.
+// ---------------------------------------------------------------------
+describe("syncV2Push: nutrition_goal_periods (W1-KBJU-APPEND стадія 1)", () => {
+  // Детермінований клієнтський id — не UUID. Саме він робить повторну
+  // доставку no-op-ом замість другої сходинки з тими самими числами.
+  const PERIOD_ID = "gp::2026-07-25::1800:140:55:180:2500::device-A";
+
+  function clientShapedRow(
+    overrides: Record<string, unknown> = {},
+  ): Record<string, unknown> {
+    return {
+      id: PERIOD_ID,
+      user_id: "u-goal-periods",
+      effective_from: "2026-07-25",
+      kcal: 1800,
+      protein_g: 140,
+      fat_g: 55,
+      carbs_g: 180,
+      water_ml: 2500,
+      origin: "manual",
+      created_at: "2026-07-25T07:00:00.000Z",
+      ...overrides,
+    };
+  }
+
+  it(
+    "insert проходить push → apply → PG-рядок → pull на іншому пристрої",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-goal-periods");
+
+      const pushRes = makeRes();
+      await syncV2Push(
+        makeReq({
+          userId: "u-goal-periods",
+          body: {
+            ops: [
+              {
+                table: "nutrition_goal_periods",
+                op: "insert" as const,
+                row: clientShapedRow(),
+                client_ts: isoNow(),
+                idempotency_key: "goal-period-1",
+              },
+            ],
+          },
+          headers: { "x-origin-device-id": "device-A" },
+        }),
+        pushRes,
+      );
+
+      expect(pushRes.statusCode).toBe(200);
+      expect(
+        (pushRes.body as { results: Array<{ status: string }> }).results[0]!
+          .status,
+      ).toBe("applied");
+
+      const rows = await testPool.query(
+        `SELECT id, effective_from, kcal, protein_g, fat_g, carbs_g,
+                water_ml, origin, deleted_at
+           FROM nutrition_goal_periods WHERE user_id = $1`,
+        ["u-goal-periods"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]).toMatchObject({
+        id: PERIOD_ID,
+        effective_from: "2026-07-25",
+        kcal: 1800,
+        water_ml: 2500,
+        origin: "manual",
+        deleted_at: null,
+      });
+      // Hard Rule #1: INTEGER/REAL приїжджають як `number`, не як рядок.
+      expect(typeof rows.rows[0]!.kcal).toBe("number");
+      expect(typeof rows.rows[0]!.protein_g).toBe("number");
+
+      const pullRes = makeRes();
+      await syncV2Pull(
+        makeReq({
+          userId: "u-goal-periods",
+          query: { since: 0 },
+          headers: { "x-origin-device-id": "device-B" },
+        }),
+        pullRes,
+      );
+      const pulled = (
+        pullRes.body as {
+          ops: Array<{ table: string; row: Record<string, unknown> }>;
+        }
+      ).ops;
+      expect(pulled).toHaveLength(1);
+      expect(pulled[0]!.table).toBe("nutrition_goal_periods");
+      expect(pulled[0]!.row["id"]).toBe(PERIOD_ID);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "дві зміни цілі з двох пристроїв дають ДВІ сходинки, не lww_conflict",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-goal-periods");
+
+      // Телефон у вівторок 2200, ноутбук у четвер 1800 — це історія, а
+      // не конфлікт. Сусідній `nutrition_prefs` тут залишив би одну.
+      const devices = [
+        {
+          device: "device-phone",
+          row: clientShapedRow({
+            id: "gp::2026-07-21::2200",
+            effective_from: "2026-07-21",
+            kcal: 2200,
+          }),
+        },
+        {
+          device: "device-desktop",
+          row: clientShapedRow({
+            id: "gp::2026-07-23::1800",
+            effective_from: "2026-07-23",
+            kcal: 1800,
+          }),
+        },
+      ];
+
+      for (const [i, d] of devices.entries()) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-goal-periods",
+            body: {
+              ops: [
+                {
+                  table: "nutrition_goal_periods",
+                  op: "insert" as const,
+                  row: d.row,
+                  client_ts: isoNow(),
+                  idempotency_key: `goal-race-${i}`,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": d.device },
+          }),
+          res,
+        );
+        const result = (
+          res.body as { results: Array<{ status: string; reason?: string }> }
+        ).results[0]!;
+        expect(result.status).toBe("applied");
+        expect(result.reason).toBeUndefined();
+      }
+
+      const rows = await testPool.query<{ effective_from: string }>(
+        `SELECT effective_from FROM nutrition_goal_periods
+          WHERE user_id = $1 ORDER BY effective_from`,
+        ["u-goal-periods"],
+      );
+      expect(rows.rows.map((r) => r.effective_from)).toEqual([
+        "2026-07-21",
+        "2026-07-23",
+      ]);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "повторна доставка того самого push-а НЕ подвоює сходинку",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-goal-periods");
+
+      for (const key of ["goal-dup-a", "goal-dup-b"]) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-goal-periods",
+            body: {
+              ops: [
+                {
+                  table: "nutrition_goal_periods",
+                  op: "insert" as const,
+                  row: clientShapedRow(),
+                  client_ts: isoNow(),
+                  // РІЗНІ idempotency-ключі: дедуплікацію робить саме
+                  // детермінований `id` + ON CONFLICT, а не op-log.
+                  idempotency_key: key,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        expect(
+          (res.body as { results: Array<{ status: string }> }).results[0]!
+            .status,
+        ).toBe("applied");
+      }
+
+      const count = await testPool.query<{ c: string }>(
+        `SELECT COUNT(*)::text AS c FROM nutrition_goal_periods
+          WHERE user_id = $1`,
+        ["u-goal-periods"],
+      );
+      expect(Number(count.rows[0]!.c)).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  it(
+    "op='update' відхиляється, сходинка лишається недоторканою",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-goal-periods");
+
+      const ops: Array<{ op: "insert" | "update"; kcal: number }> = [
+        { op: "insert", kcal: 1800 },
+        { op: "update", kcal: 240 },
+      ];
+      const expected = ["applied", "rejected"];
+
+      for (const [i, o] of ops.entries()) {
+        const res = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-goal-periods",
+            body: {
+              ops: [
+                {
+                  table: "nutrition_goal_periods",
+                  op: o.op,
+                  row: clientShapedRow({ kcal: o.kcal }),
+                  client_ts: isoNow(),
+                  idempotency_key: `goal-append-${i}`,
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          res,
+        );
+        const result = (
+          res.body as { results: Array<{ status: string; reason?: string }> }
+        ).results[0]!;
+        expect(result.status).toBe(expected[i]);
+        if (o.op === "update") {
+          expect(result.reason).toBe("append_only_violation");
+        }
+      }
+
+      // Тіло сходинки не переписане — 1800, а не помилкові 240.
+      const rows = await testPool.query<{ kcal: number }>(
+        `SELECT kcal FROM nutrition_goal_periods WHERE user_id = $1`,
+        ["u-goal-periods"],
+      );
+      expect(rows.rows).toHaveLength(1);
+      expect(rows.rows[0]!.kcal).toBe(1800);
+    },
+    TIMEOUT_MS,
+  );
+});
+
+// ── Вотермарк транзакцій (міграція 147) ─────────────────────────────────────
+//
+// `id` — BIGSERIAL: видається на INSERT, видимий на COMMIT. Довга транзакція
+// (імпорт виписки) бере менший `id`, коротка push-транзакція більший і
+// комітиться першою. Без вотермарку pull віддавав короткий оп, клієнт
+// просував курсор за нього, і оп довгої транзакції після COMMIT під
+// `id > курсор` не потрапляв уже ніколи.
+describe("syncV2Pull — вотермарк транзакцій (міграція 147)", () => {
+  it(
+    "не дає курсору перескочити оп довгої транзакції, закоміченої пізніше",
+    async (ctx) => {
+      if (!dockerAvailable || !testPool) return ctx.skip();
+      await ensureUser("u-watermark");
+
+      const pull = async (since: number) => {
+        const res = makeRes();
+        await syncV2Pull(
+          makeReq({
+            userId: "u-watermark",
+            query: { since },
+            headers: { "x-origin-device-id": "device-B" },
+          }),
+          res,
+        );
+        expect(res.statusCode).toBe(200);
+        return (res.body as { ops: Array<{ id: number }> }).ops.map(
+          (o) => o.id,
+        );
+      };
+
+      const long = await testPool.connect();
+      try {
+        await long.query("BEGIN");
+        const inserted = await long.query<{ id: string }>(
+          `INSERT INTO sync_op_log
+             (user_id, idempotency_key, table_name, op, row, client_ts,
+              status, origin_device_id)
+           VALUES ('u-watermark', 'import-1', 'routine_entries', 'insert',
+                   '{}'::jsonb, NOW(), 'applied', 'server')
+           RETURNING id`,
+        );
+        const longId = Number(inserted.rows[0]!.id);
+
+        const ts = isoNow();
+        const pushRes = makeRes();
+        await syncV2Push(
+          makeReq({
+            userId: "u-watermark",
+            body: {
+              ops: [
+                {
+                  table: "routine_entries",
+                  op: "insert" as const,
+                  row: {
+                    id: "44444444-4444-4444-4444-444444444444",
+                    user_id: "u-watermark",
+                    name: "phone push",
+                    completed_at: ts,
+                  },
+                  client_ts: ts,
+                  idempotency_key: "phone-1",
+                },
+              ],
+            },
+            headers: { "x-origin-device-id": "device-A" },
+          }),
+          pushRes,
+        );
+        expect(pushRes.statusCode).toBe(200);
+        const shortId = (pushRes.body as { last_op_id: number }).last_op_id;
+        expect(shortId).toBeGreaterThan(longId);
+
+        // Довга транзакція ще відкрита: короткий оп вже закомічений, але
+        // pull його не віддає, бо він новіший за найстарішу активну.
+        const first = await pull(0);
+        expect(first).not.toContain(shortId);
+        const cursor = Math.max(0, ...first);
+
+        await long.query("COMMIT");
+
+        // Клієнт тягне від свого курсора, як справжній: мусить отримати обидва.
+        const second = await pull(cursor);
+        expect(second).toEqual([longId, shortId]);
+      } finally {
+        await long.query("ROLLBACK").catch(() => {});
+        long.release();
+      }
     },
     TIMEOUT_MS,
   );

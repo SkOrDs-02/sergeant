@@ -178,7 +178,9 @@ async function scheduleHabit(h: Habit): Promise<string[]> {
   if (routineWeekdays.length === 0) return [];
 
   const out: string[] = [];
-  const title = `${h.emoji || "✓"} ${h.name}`;
+  // Гліф звички — icon-slug (`@sergeant/routine-domain` → `glyphs.ts`),
+  // а не emoji: у заголовку пуша він читався б як «droplet Пити воду».
+  const title = h.name;
 
   for (const rw of routineWeekdays) {
     for (const hm of times) {
@@ -240,13 +242,18 @@ export function useRoutineReminders(
 ): UseRoutineRemindersApi {
   const [permission, setPermission] =
     useState<RoutineReminderPermission>("undetermined");
+  const applyPermission = useCallback((next: RoutineReminderPermission) => {
+    void Promise.resolve().then(() => setPermission(next));
+  }, []);
   const routineRef = useRef<RoutineState>(routine);
   const permissionRef = useRef<RoutineReminderPermission>(permission);
   const rescheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rescheduleInFlightRef = useRef<Promise<void> | null>(null);
 
-  routineRef.current = routine;
-  permissionRef.current = permission;
+  useEffect(() => {
+    routineRef.current = routine;
+    permissionRef.current = permission;
+  }, [routine, permission]);
 
   // --- perform the real schedule/cancel work -----------------------------
   const performReschedule = useCallback(async (): Promise<void> => {
@@ -300,19 +307,19 @@ export function useRoutineReminders(
   const refreshPermission =
     useCallback(async (): Promise<RoutineReminderPermission> => {
       if (!hasNotificationsModule()) {
-        setPermission("undetermined");
+        applyPermission("undetermined");
         return "undetermined";
       }
       try {
         const perm = await Notifications.getPermissionsAsync();
         const next = toPermission(perm);
-        setPermission(next);
+        applyPermission(next);
         return next;
       } catch {
-        setPermission("undetermined");
+        applyPermission("undetermined");
         return "undetermined";
       }
-    }, []);
+    }, [applyPermission]);
 
   const requestPermission = useCallback(async (): Promise<void> => {
     if (!hasNotificationsModule()) return;
@@ -322,22 +329,22 @@ export function useRoutineReminders(
       if (next !== "granted") {
         if (typeof Notifications.requestPermissionsAsync !== "function") {
           // No-op in non-Expo environments (Phase 5 requirement).
-          setPermission(next);
+          applyPermission(next);
           return;
         }
         const asked = await Notifications.requestPermissionsAsync();
         next = toPermission(asked);
       }
-      setPermission(next);
+      applyPermission(next);
       // Rescheduling is driven by the `[permission, routine.habits]`
       // effect below — flipping `permission` to "granted" triggers
       // a debounced reschedule without us calling it synchronously
       // here. Keeping the two paths in a single place makes it easier
       // to reason about "at most one in-flight reschedule per change".
     } catch {
-      setPermission("undetermined");
+      applyPermission("undetermined");
     }
-  }, []);
+  }, [applyPermission]);
 
   // --- initial mount: read current permission --------------------------
   //

@@ -14,7 +14,7 @@
  * identical empty forms would be a mini-deception); they show only the
  * fallback CTA, which routes into the module add-flow.
  *
- * The catalog copy/emojis are copied verbatim from the web `PRESETS`
+ * The catalog copy/glyphs are copied verbatim from the web `PRESETS`
  * map so the two surfaces cannot drift.
  */
 
@@ -27,6 +27,7 @@ import { Sheet } from "@/components/ui/Sheet";
 
 import { applyPreset, type ModuleId, type ModulePreset } from "./presetApply";
 import { writePresetPrefill } from "./presetPrefill";
+import { HabitGlyph } from "@/modules/routine/components/HabitGlyph";
 
 /**
  * Add-flow actions a preset can deep-link into. Mirrors the web
@@ -34,10 +35,7 @@ import { writePresetPrefill } from "./presetPrefill";
  * card maps each to an Expo-Router push.
  */
 export type PresetAction =
-  | "add_habit"
-  | "add_expense"
-  | "add_meal"
-  | "start_workout";
+  "add_habit" | "add_expense" | "add_meal" | "start_workout";
 
 interface PresetItem {
   id: string;
@@ -64,7 +62,7 @@ interface PresetModuleConfig {
 type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
 
 /**
- * Per-module "tap-to-log" presets. Copy and emojis mirror the web
+ * Per-module "tap-to-log" presets. Copy and glyphs mirror the web
  * `PRESETS` map verbatim. `routine` = 3 presets written directly;
  * `finyk` = 3 presets that stage a name/category prefill then open the
  * add-expense sheet; `nutrition` / `fizruk` = no presets, fallback CTA
@@ -72,67 +70,67 @@ type PresetCatalog = Record<ModuleId, PresetModuleConfig>;
  */
 const PRESETS: PresetCatalog = {
   routine: {
-    title: "Яку звичку почнемо?",
-    desc: "Одне натискання — і вона у твоєму списку сьогодні.",
-    accentChip: "bg-coral-50 border border-coral-300/60",
+    title: "З якої звички почати?",
+    desc: "Одне натискання, і вона у твоєму списку сьогодні.",
+    accentChip: "bg-rose-50 border border-rose-300/60",
     fallback: { action: "add_habit", label: "Своя звичка" },
     items: [
       {
         id: "water",
-        emoji: "💧",
+        emoji: "droplet",
         title: "Випити воду",
         desc: "Щодня, будь-коли",
-        data: { name: "Випити воду", emoji: "💧" },
+        data: { name: "Випити воду", emoji: "droplet" },
       },
       {
         id: "walk",
-        emoji: "🚶",
+        emoji: "run",
         title: "Пройти 10 хв",
         desc: "Короткий вихід після обіду",
-        data: { name: "Пройти 10 хв", emoji: "🚶" },
+        data: { name: "Пройти 10 хв", emoji: "run" },
       },
       {
         id: "read",
-        emoji: "📖",
+        emoji: "book-open",
         title: "Прочитати 10 сторінок",
         desc: "Вечірня звичка",
-        data: { name: "Прочитати 10 сторінок", emoji: "📖" },
+        data: { name: "Прочитати 10 сторінок", emoji: "book-open" },
       },
     ],
   },
   finyk: {
     title: "На що витратив?",
-    desc: "Тицяй — відкриється форма з назвою. Суму введеш сам.",
+    desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
     accentChip: "bg-brand-50 border border-brand-200/60",
     fallback: { action: "add_expense", label: "Своя витрата" },
     action: "add_expense",
     items: [
       {
         id: "coffee",
-        emoji: "☕",
+        emoji: "coffee",
         title: "Кава",
-        desc: "ранкова звичка — введи свою суму",
+        desc: "ранкова звичка, введи свою суму",
         data: { description: "Кава", category: "їжа" },
       },
       {
         id: "ride",
-        emoji: "🚕",
+        emoji: "truck",
         title: "Таксі",
         desc: "дорога на роботу чи додому",
         data: { description: "Таксі", category: "транспорт" },
       },
       {
         id: "lunch",
-        emoji: "🥗",
+        emoji: "utensils",
         title: "Обід",
-        desc: "що з'їв — і за скільки",
+        desc: "що зʼїв, і за скільки",
         data: { description: "Обід", category: "їжа" },
       },
     ],
   },
   nutrition: {
-    title: "Що з'їв зараз?",
-    desc: "Відкрию форму добавляння страви — калорії підтвердиш у модулі.",
+    title: "Що зʼїв зараз?",
+    desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
     accentChip: "bg-lime-50 border border-lime-200/60",
     fallback: { action: "add_meal", label: "Додати страву" },
     action: "add_meal",
@@ -140,7 +138,7 @@ const PRESETS: PresetCatalog = {
   },
   fizruk: {
     title: "Швидкий старт",
-    desc: "Відкрию старт тренування — тривалість вкажеш на фініші.",
+    desc: "Відкрию старт тренування, тривалість вкажеш на фініші.",
     accentChip: "bg-teal-50 border border-teal-200/60",
     fallback: { action: "start_workout", label: "Почати тренування" },
     action: "start_workout",
@@ -255,7 +253,10 @@ export function PresetStep({
             <View
               className={`h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.accentChip}`}
             >
-              <Text className="text-xl">{item.emoji}</Text>
+              {/* Гліф плитки — icon-slug із `ROUTINE_GLYPHS`
+                  (`@sergeant/routine-domain`), не emoji: RN малював би
+                  emoji системним шрифтом, різним на iOS і Android. */}
+              <HabitGlyph value={item.emoji} size={20} color="#1c1917" />
             </View>
             <View className="min-w-0 flex-1">
               <Text className="text-sm font-bold text-fg" numberOfLines={1}>

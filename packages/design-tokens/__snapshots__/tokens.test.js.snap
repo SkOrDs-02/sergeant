@@ -2,21 +2,21 @@
 
 exports[`@sergeant/design-tokens — mobile.js > mobile.colors matches the canonical web moduleColors + statusColors 1`] = `
 {
-  "accent": "#10b981",
-  "accentStrong": "#047857",
+  "accent": "#0f766e",
+  "accentStrong": "#115e59",
   "bg": "#0b0d10",
   "border": "#1f242c",
   "danger": "#ef4444",
-  "dangerStrong": "#b91c1c",
+  "dangerStrong": "#991b1b",
   "info": "#0ea5e9",
-  "infoStrong": "#0369a1",
+  "infoStrong": "#075985",
   "success": "#10b981",
-  "successStrong": "#047857",
+  "successStrong": "#065f46",
   "surface": "#13161b",
   "text": "#f2f4f7",
   "textMuted": "#8a94a6",
   "warning": "#f59e0b",
-  "warningStrong": "#b45309",
+  "warningStrong": "#92400e",
 }
 `;
 
@@ -40,20 +40,8 @@ exports[`@sergeant/design-tokens — mobile.js > mobile.spacing scale is stable 
 }
 `;
 
-exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/coral/teal/lime/amber/cream scales) 1`] = `
+exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/rose/lime/stone scales) 1`] = `
 {
-  "coral": {
-    "100": "#ffe8e3",
-    "200": "#ffd4cb",
-    "300": "#ffb4a6",
-    "400": "#ff8c78",
-    "50": "#fff5f3",
-    "500": "#f97066",
-    "600": "#e64d4d",
-    "700": "#c23a3a",
-    "800": "#a13333",
-    "900": "#862e2e",
-  },
   "cream": {
     "100": "#fdf9f3",
     "200": "#faf3e8",
@@ -98,6 +86,30 @@ exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (e
     "800": "#466212",
     "900": "#3b5314",
   },
+  "rose": {
+    "100": "#ffe7eb",
+    "200": "#fed3db",
+    "300": "#fcb3c1",
+    "400": "#f68da4",
+    "50": "#fff5f6",
+    "500": "#eb7691",
+    "600": "#d15c7a",
+    "700": "#ac4c64",
+    "800": "#8d4256",
+    "900": "#753949",
+  },
+  "stone": {
+    "100": "#f5f5f4",
+    "200": "#e7e5e4",
+    "300": "#d6d3d1",
+    "400": "#a8a29e",
+    "50": "#fafaf9",
+    "500": "#78716c",
+    "600": "#57534e",
+    "700": "#44403c",
+    "800": "#292524",
+    "900": "#1c1917",
+  },
   "teal": {
     "100": "#ccfbf1",
     "200": "#99f6e4",
@@ -117,7 +129,7 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 {
   "1": "#10b981",
   "2": "#14b8a6",
-  "3": "#f97066",
+  "3": "#eb7691",
   "4": "#92cc17",
   "5": "#60a5fa",
   "6": "#a78bfa",
@@ -130,7 +142,7 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 [
   "#10b981",
   "#14b8a6",
-  "#f97066",
+  "#eb7691",
   "#92cc17",
   "#60a5fa",
   "#a78bfa",
@@ -141,13 +153,11 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
 
 exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList / chartHex keep the same ordered palette 3`] = `
 {
-  "carbs": "#22c55e",
-  "fat": "#eab308",
-  "kcal": "#f97316",
+  "carbs": "#784784",
+  "fat": "#af5504",
   "limit": "#ef4444",
-  "neutral": "#94a3b8",
-  "primary": "#6366f1",
-  "protein": "#3b82f6",
+  "neutral": "#98a49c",
+  "protein": "#436cc8",
 }
 `;
 
@@ -183,8 +193,8 @@ exports[`@sergeant/design-tokens — tokens.js > elevation recipes snapshot — 
 exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snapshot) 1`] = `
 {
   "finyk": {
-    "default": "16 185 129",
-    "strong": "4 120 87",
+    "default": "15 118 110",
+    "strong": "17 94 89",
   },
   "fizruk": {
     "default": "14 116 144",
@@ -195,8 +205,8 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
     "strong": "70 98 18",
   },
   "routine": {
-    "default": "249 112 102",
-    "strong": "194 58 58",
+    "default": "235 118 145",
+    "strong": "141 66 86",
   },
 }
 `;
@@ -204,16 +214,16 @@ exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snap
 exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical finyk/fizruk/routine/nutrition primary+surface 1`] = `
 {
   "finyk": {
-    "primary": "#10b981",
-    "secondary": "#14b8a6",
-    "surface": "#ecfdf5",
-    "surfaceAlt": "#f0fdfa",
+    "primary": "#0f766e",
+    "secondary": "#0d9488",
+    "surface": "#f0fdfa",
+    "surfaceAlt": "#ccfbf1",
   },
   "fizruk": {
     "accent": "#c8f264",
     "primary": "#0e7490",
-    "secondary": "#0d9488",
-    "surface": "#f0fdfa",
+    "secondary": "#0891b2",
+    "surface": "#ecfeff",
   },
   "nutrition": {
     "primary": "#92cc17",
@@ -222,10 +232,10 @@ exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical f
     "surfaceAlt": "#effccb",
   },
   "routine": {
-    "primary": "#f97066",
-    "secondary": "#ff8c78",
-    "surface": "#fff5f3",
-    "surfaceAlt": "#ffe8e3",
+    "primary": "#eb7691",
+    "secondary": "#f68da4",
+    "surface": "#fff5f6",
+    "surfaceAlt": "#ffe7eb",
   },
 }
 `;

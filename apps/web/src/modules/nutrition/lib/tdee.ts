@@ -45,9 +45,23 @@ import {
   type Biometrics,
   type Sex,
 } from "../../../core/profile/biometrics";
+import { ATWATER_KCAL_PER_G } from "@sergeant/nutrition-domain";
 
 export const NUTRITION_GOALS = ["cutting", "maintenance", "bulking"] as const;
 export type NutritionGoalId = (typeof NUTRITION_GOALS)[number];
+
+/**
+ * `NutritionPrefs.goal` existed before the TDEE presets and persisted
+ * `maintain`. Keep the compatibility boundary here: calculations must never
+ * dereference an absent macro split because an old device has not rewritten
+ * its local preferences yet.
+ */
+function normalizeNutritionGoal(goal: string): NutritionGoalId {
+  if (goal === "maintain") return "maintenance";
+  return NUTRITION_GOALS.includes(goal as NutritionGoalId)
+    ? (goal as NutritionGoalId)
+    : "maintenance";
+}
 
 /**
  * Mifflin-St Jeor activity multipliers — re-export so consumers don't
@@ -91,6 +105,14 @@ export interface TdeeInput {
   ageYears: number;
   sex: Sex;
   activityLevel: ActivityLevel;
+  /**
+   * Динамічний режим: норма рахується від `sedentary` плюс фактично
+   * спалене за день, замість статичного множника рівня активності.
+   * Дефолт `false` - див. `countWorkoutsInGoal` у `biometrics.ts`.
+   */
+  countWorkoutsInGoal?: boolean | undefined;
+  /** Сума `kcalBurned` за день. Має значення лише у динамічному режимі. */
+  workoutKcal?: number | undefined;
 }
 
 /**
@@ -111,7 +133,18 @@ export function mifflinStJeorBmr(
  * the goal-adjusted target can be the single rounding step.
  */
 export function computeTdee(input: TdeeInput): number {
-  return mifflinStJeorBmr(input) * ACTIVITY_MULTIPLIERS[input.activityLevel];
+  const bmr = mifflinStJeorBmr(input);
+  if (!input.countWorkoutsInGoal) {
+    return bmr * ACTIVITY_MULTIPLIERS[input.activityLevel];
+  }
+  // Множник опускається до `sedentary` НЕ як «менше активності», а тому
+  // що тренування переїхали з нього у явне доданком. Лишити тут обраний
+  // рівень означало б порахувати їх двічі.
+  const burned = Number(input.workoutKcal);
+  return (
+    bmr * ACTIVITY_MULTIPLIERS.sedentary +
+    (Number.isFinite(burned) && burned > 0 ? burned : 0)
+  );
 }
 
 export interface NutritionTargets {
@@ -127,24 +160,63 @@ export interface NutritionTargets {
  */
 export function computeNutritionTargets(
   input: TdeeInput,
-  goal: NutritionGoalId,
+  goal: NutritionGoalId | string,
 ): NutritionTargets {
+  const normalizedGoal = normalizeNutritionGoal(goal);
   const tdee = computeTdee(input);
   const kcal = Math.max(
     1000,
-    Math.round((tdee + GOAL_KCAL_DELTA[goal]) / 10) * 10,
+    Math.round((tdee + GOAL_KCAL_DELTA[normalizedGoal]) / 10) * 10,
   );
 
-  const split = GOAL_MACRO_SPLIT[goal];
-  const protein_g = Math.round(input.weightKg * split.proteinPerKg);
-  const fat_g = Math.round(input.weightKg * split.fatPerKg);
+  return computeMacrosForKcal(kcal, input.weightKg, normalizedGoal);
+}
 
-  const proteinKcal = protein_g * 4;
-  const fatKcal = fat_g * 9;
-  const remainingKcal = Math.max(0, kcal - proteinKcal - fatKcal);
-  const carbs_g = Math.round(remainingKcal / 4);
+export function computeMacrosForKcal(
+  kcal: number,
+  weightKg: number,
+  goal: NutritionGoalId | string,
+): NutritionTargets {
+  const safeKcal = Math.max(1000, Math.round(kcal / 10) * 10);
+  const split = GOAL_MACRO_SPLIT[normalizeNutritionGoal(goal)];
+  const protein_g = Math.round(weightKg * split.proteinPerKg);
+  const fat_g = Math.round(weightKg * split.fatPerKg);
 
-  return { kcal, protein_g, fat_g, carbs_g };
+  const proteinKcal = protein_g * ATWATER_KCAL_PER_G.protein;
+  const fatKcal = fat_g * ATWATER_KCAL_PER_G.fat;
+  const remainingKcal = Math.max(0, safeKcal - proteinKcal - fatKcal);
+  const carbs_g = Math.round(remainingKcal / ATWATER_KCAL_PER_G.carbs);
+
+  return { kcal: safeKcal, protein_g, fat_g, carbs_g };
+}
+
+/**
+ * W1-WEIGHT-SOT стадія 1: канон fizruk §10 каже «fizruk володіє тілом,
+ * nutrition читає». Тому вага береться з fizruk-селектора
+ * (`selectLatestBodyWeight`, union `fizruk_daily_log` + `fizruk_measurements`),
+ * якщо викликач її передав, і **лише за її відсутності** — зі знімка
+ * `biometrics.weightKg`. Фолбек навмисний: користувач без модуля fizruk
+ * не має втратити КБЖВ-розрахунок (стара поведінка живе далі). Яка
+ * таблиця канонічна і що стається з `hub_biometrics.weightKg` — питання
+ * окремого ADR (стадії 3-4).
+ *
+ * Винесено окремо від {@link computeNutritionTargetsFromBiometrics}, щоб
+ * той самий фолбек міг звірити `missingBiometricsFieldsForTdee` (там
+ * інакше «вага» рахувалась би відсутньою для юзера, чиє єдине джерело —
+ * fizruk-журнал, а не поле в Профілі).
+ *
+ * @param fizrukWeightKg Найсвіжіша вага з fizruk, або `null`/`undefined`,
+ *                       коли fizruk-історії немає.
+ */
+export function resolveEffectiveWeightKg(
+  biometrics: Biometrics,
+  fizrukWeightKg?: number | null,
+): number | null {
+  return fizrukWeightKg != null &&
+    Number.isFinite(fizrukWeightKg) &&
+    fizrukWeightKg > 0
+    ? fizrukWeightKg
+    : biometrics.weightKg;
 }
 
 /**
@@ -153,15 +225,21 @@ export function computeNutritionTargets(
  * or a usable birth-date). The "Розрахувати з профілю" CTA on
  * `DailyPlanCard` uses the `null` to disable the button and steer the
  * user back to Profile → Біометрія.
+ *
+ * @param fizrukWeightKg Найсвіжіша вага з fizruk, або `null`/`undefined`,
+ *                       коли fizruk-історії немає.
  */
 export function computeNutritionTargetsFromBiometrics(
   biometrics: Biometrics,
   goal: NutritionGoalId,
   now: Date = new Date(),
+  fizrukWeightKg?: number | null,
+  workoutKcal?: number | null,
 ): NutritionTargets | null {
   const ageYears = computeAgeYears(biometrics.birthDate, now);
+  const weightKg = resolveEffectiveWeightKg(biometrics, fizrukWeightKg);
   if (
-    biometrics.weightKg == null ||
+    weightKg == null ||
     biometrics.heightCm == null ||
     biometrics.sex == null ||
     biometrics.activityLevel == null ||
@@ -171,11 +249,13 @@ export function computeNutritionTargetsFromBiometrics(
   }
   return computeNutritionTargets(
     {
-      weightKg: biometrics.weightKg,
+      weightKg,
       heightCm: biometrics.heightCm,
       ageYears,
       sex: biometrics.sex,
       activityLevel: biometrics.activityLevel,
+      countWorkoutsInGoal: biometrics.countWorkoutsInGoal,
+      workoutKcal: workoutKcal ?? 0,
     },
     goal,
   );

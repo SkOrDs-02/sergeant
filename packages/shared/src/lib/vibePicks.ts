@@ -15,6 +15,7 @@
 import type { DashboardModuleId } from "./dashboard";
 import { DASHBOARD_MODULE_IDS } from "./dashboard";
 import { readJSON, type KVStore, writeJSON } from "../storage/kv";
+import { deviceDayKey } from "../utils/date";
 
 /** localStorage / MMKV keys used by the onboarding funnel. */
 export const VIBE_PICKS_KEY = "hub_onboarding_vibes_v1";
@@ -32,8 +33,8 @@ export const TTV_MS_KEY = "hub_ftux_ttv_ms_v1";
  *
  * Окремий per-module flag замість одного big-blob — мінімізує race-вікна
  * між модулями (одночасні виклики `markFirstActionCompletedForModule`
- * пишуть у різні KV-keys, тож на кінцевому стані не б'ються) і дозволяє
- * клієнтам читати один модуль без deserialize цілого об'єкта.
+ * пишуть у різні KV-keys, тож на кінцевому стані не бʼються) і дозволяє
+ * клієнтам читати один модуль без deserialize цілого обʼєкта.
  */
 export const FIRST_ACTION_COMPLETED_KEY_PREFIX =
   "hub_first_action_completed_v1:";
@@ -114,6 +115,41 @@ export function isFirstActionCompletedForModule(
   );
 }
 
+/**
+ * Tier 2 — cross-module activation. Distinct modules a user has
+ * completed a first action in count toward the breadth signal that
+ * `activation_v2` (Finyk-only depth) misses. Returns the flagged
+ * modules in `ALL_MODULES` order.
+ */
+export function getModulesWithFirstAction(store: KVStore): DashboardModuleId[] {
+  return ALL_MODULES.filter((moduleId) =>
+    isFirstActionCompletedForModule(store, moduleId),
+  );
+}
+
+/**
+ * Distinct-module count at which a user counts as "multi-module
+ * activated". Two is the smallest count that proves the cross-module
+ * promise landed — the user did not stay inside a single tracker.
+ */
+export const MULTI_MODULE_ACTIVATION_THRESHOLD = 2;
+
+/** Idempotency flag for the once-per-profile `multi_module_activated` event. */
+export const MULTI_MODULE_ACTIVATED_FIRED_KEY = "hub_multi_module_activated_v1";
+
+export function markMultiModuleActivatedFired(store: KVStore): void {
+  store.setString(MULTI_MODULE_ACTIVATED_FIRED_KEY, "1");
+}
+
+export function isMultiModuleActivatedFired(store: KVStore): boolean {
+  return store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY) === "1";
+}
+
+/** Inverse of {@link markMultiModuleActivatedFired} — for tests and the Settings → «Restart onboarding» reset. */
+export function clearMultiModuleActivatedFired(store: KVStore): void {
+  store.remove(MULTI_MODULE_ACTIVATED_FIRED_KEY);
+}
+
 export function isSoftAuthDismissed(store: KVStore): boolean {
   return store.getString(SOFT_AUTH_DISMISSED_KEY) === "1";
 }
@@ -156,13 +192,11 @@ export function getTimeToValueMs(store: KVStore): number | null {
 
 /**
  * Build a calendar-day key (`YYYY-MM-DD`) in the local timezone of the
- * provided `date`. Exposed for tests.
+ * provided `date`. Exposed for tests. Delegate to canonical
+ * {@link deviceDayKey}.
  */
 export function todayKey(date: Date = new Date()): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
+  return deviceDayKey(date);
 }
 
 /**

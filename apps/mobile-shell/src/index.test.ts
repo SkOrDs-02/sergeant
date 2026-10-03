@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SHELL_DEEPLINK_QUEUE_KEY } from "@sergeant/shared";
 
 /**
  * Для `initNativeShell()` ми тестуємо лише композицію: що кожен з чотирьох
@@ -234,27 +235,20 @@ describe("initNativeShell — deep-link listener", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it("без options.navigate і без `window.__sergeantShellNavigate` — буферизує у `window.__sergeantShellDeepLinkQueue`", async () => {
-    // Нова семантика: замість `window.location.assign(path)` (повний
-    // reload, втрата state) shell акуратно штовхає path у чергу і чекає,
-    // поки React-шар виставить bridge. Веб при маунті роутера drain-ить
-    // чергу — див. `apps/web/src/core/app/ShellDeepLinkBridge.tsx`.
+  it("без options.navigate — буферизує у pre-mount queue", async () => {
     const mocks = installCapacitorMocks();
     const w = window as Window & {
-      __sergeantShellNavigate?: (path: string) => void;
-      __sergeantShellDeepLinkQueue?: string[];
+      [SHELL_DEEPLINK_QUEUE_KEY]?: string[];
     };
-    delete w.__sergeantShellNavigate;
-    delete w.__sergeantShellDeepLinkQueue;
+    delete w[SHELL_DEEPLINK_QUEUE_KEY];
 
     try {
       const cb = await captureUrlOpenCallback(mocks);
       cb({ url: "com.sergeant.shell://welcome" });
 
-      expect(w.__sergeantShellDeepLinkQueue).toEqual(["/welcome"]);
+      expect(w[SHELL_DEEPLINK_QUEUE_KEY]).toEqual(["/welcome"]);
     } finally {
-      delete w.__sergeantShellNavigate;
-      delete w.__sergeantShellDeepLinkQueue;
+      delete w[SHELL_DEEPLINK_QUEUE_KEY];
     }
   });
 });

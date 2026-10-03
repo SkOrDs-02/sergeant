@@ -26,9 +26,16 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { logger } from "@shared/lib";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import { useVisualKeyboardInset } from "@sergeant/shared";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
+import { openHubSearch } from "@shared/lib/modules/hubNav";
 import { Icon } from "./Icon";
+import { SectionHeading } from "./SectionHeading";
 import {
   CommandPaletteContext,
   type PaletteCommand,
@@ -36,29 +43,54 @@ import {
 
 const SEARCH_DEBOUNCE_MS = 80;
 
+/**
+ * Синтетична команда-хвіст: поки в полі є текст, останнім рядком стоїть
+ * «Шукати „…“ у Sergeant», який передає запит у пошук хаба. Так пошук стає
+ * режимом палітри, а не її конкурентом за `Cmd+K` (рішення власника
+ * 2026-09-16). Не з реєстру, тож у «Нещодавні» не потрапляє.
+ */
+export const SEARCH_FALLBACK_COMMAND_ID = "search.query";
+
+function searchFallbackCommand(query: string): PaletteCommand {
+  return {
+    id: SEARCH_FALLBACK_COMMAND_ID,
+    title: `Шукати «${query}» у Sergeant`,
+    description: "Записи всіх модулів, налаштування, підказки від Сержанта",
+    group: "Пошук",
+    keywords: [],
+    run: () => openHubSearch(query),
+  };
+}
+
 export function CommandPaletteUI() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- CommandPaletteUI is always rendered inside CommandPalette provider
   const ctx = useContext(CommandPaletteContext)!;
-  const { open, closePalette, recents, markRecent, revision } = ctx;
+  const { open, closePalette, recents, markRecent, getAll } = ctx;
   const titleId = useId();
   const listId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setRawQuery("");
+    setQuery("");
+    setActiveIndex(0);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   useDialogFocusTrap(open, panelRef, {
     onEscape: closePalette,
     inertBackground: true,
   });
 
-  // Reset state and focus on each open.
   useEffect(() => {
     if (!open) return;
-    setRawQuery("");
-    setQuery("");
-    setActiveIndex(0);
     const handle = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(handle);
   }, [open]);
@@ -72,42 +104,35 @@ export function CommandPaletteUI() {
     return () => window.clearTimeout(t);
   }, [rawQuery]);
 
-  // Lock body scroll while open.
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open]);
+  // Lock body scroll while open. `useBodyScrollLock` (not a bare
+  // `overflow: hidden` toggle) — the toggle alone doesn't stop rubber-band
+  // scrolling on iOS (C3 web-audit).
+  useBodyScrollLock(open);
 
-  const allCommands = useMemo(
-    () => ctx.getAll(),
-    // `revision` ticks when commands are registered / unregistered.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ctx, revision],
-  );
+  // Поле пошуку тут вгорі екрана (`pt-[10vh]`), тож під клавіатуру воно
+  // не потрапляє і пану зазвичай не буде — компенсація стоїть як
+  // страховка. Реальну користь дає інсет: без нього список результатів
+  // (`max-h-[70vh]` від 10vh) наполовину ховається за клавіатурою.
+  const kbInsetPx = useVisualKeyboardInset(open);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open, overlayRef);
+
+  const allCommands = getAll();
 
   const groups = useMemo(
     () => buildGroups(allCommands, recents, query),
     [allCommands, recents, query],
   );
   const flat = useMemo(() => groups.flatMap((g) => g.commands), [groups]);
+  const safeActiveIndex =
+    flat.length === 0 ? 0 : Math.min(activeIndex, flat.length - 1);
 
-  // Clamp activeIndex when the visible list shrinks.
-  useEffect(() => {
-    setActiveIndex((i) =>
-      flat.length === 0 ? 0 : Math.min(i, flat.length - 1),
-    );
-  }, [flat.length]);
-
-  const activeId = flat[activeIndex]?.id;
+  const activeId = flat[safeActiveIndex]?.id;
 
   const activate = useCallback(
     (command: PaletteCommand) => {
       if (command.disabled) return;
-      markRecent(command.id);
+      if (command.id !== SEARCH_FALLBACK_COMMAND_ID) markRecent(command.id);
       // Close before invoking so `command.run` can dispatch focus moves
       // (e.g. navigate to a route) without fighting the trap.
       closePalette();
@@ -147,18 +172,20 @@ export function CommandPaletteUI() {
       }
       if (key === "Enter") {
         event.preventDefault();
-        const cmd = flat[activeIndex];
+        const cmd = flat[safeActiveIndex];
         if (cmd) activate(cmd);
       }
     },
-    [activate, activeIndex, flat],
+    [activate, flat, safeActiveIndex],
   );
 
   if (!open) return null;
 
   return createPortal(
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-200 flex items-start justify-center p-4 pt-[10vh]"
+      style={kbStyles.container}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
@@ -172,6 +199,9 @@ export function CommandPaletteUI() {
       />
       <div
         ref={panelRef}
+        // Під клавіатурою `70vh` завеликі — інлайн ріже панель до
+        // видимої смуги, список усередині вже свій скрол має.
+        style={kbStyles.panel}
         className={cn(
           "relative w-full max-w-xl max-h-[70vh] flex flex-col overflow-hidden",
           "bg-panel border border-line rounded-3xl shadow-float",
@@ -186,16 +216,23 @@ export function CommandPaletteUI() {
           <input
             ref={inputRef}
             type="text"
+            // Сире поле без `name` і `autocomplete` — рівно той стан, у
+            // якому Chrome бере інпут за кандидата в логін і підставляє
+            // збережений акаунт (розбір — у `searchFieldProps.ts`).
+            {...searchFieldProps("command-palette-query")}
             value={rawQuery}
             onChange={(e) => {
               setRawQuery(e.target.value);
               setActiveIndex(0);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Знайди команду…"
+            placeholder="Знайди команду"
+            // Явне доступне імʼя: плейсхолдер ним не є, тож поле досі
+            // приходило до скрінрідера безіменним.
+            aria-label="Пошук команд"
             className={cn(
               "flex-1 bg-transparent outline-none border-none",
-              "text-sm text-text placeholder:text-subtle",
+              "text-style-body text-text placeholder:text-subtle",
               "focus-visible:outline-none",
             )}
             aria-autocomplete="list"
@@ -219,8 +256,8 @@ export function CommandPaletteUI() {
           className="flex-1 overflow-y-auto py-2"
         >
           {flat.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted">
-              Нічого не знайдено
+            <div className="px-4 py-8 text-center text-style-body text-muted">
+              Команд поки немає
             </div>
           ) : (
             groups.map((group) => (
@@ -287,6 +324,13 @@ function buildGroups(
     for (const [label, commands] of byGroup) {
       out.push({ id: `g-${label}`, label, commands });
     }
+    // Хвіст завжди, не лише коли команд не знайшлось: набране слово може
+    // збігтись із командою і водночас бути записом, який шукали.
+    out.push({
+      id: "g-search",
+      label: "Пошук",
+      commands: [searchFallbackCommand(query)],
+    });
     return out;
   }
 
@@ -342,12 +386,11 @@ function CommandGroup({
 }: CommandGroupProps) {
   return (
     <div role="group" aria-label={group.label} className="mb-1.5">
-      <div
-        // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- intentional palette group-header eyebrow; SectionHeading is overkill for inline list.
-        className="px-4 pt-1 pb-1 text-style-caption uppercase tracking-wide font-semibold text-subtle"
-      >
+      {/* Груповий заголовок палітри — той самий кікер, що й у секціях,
+          тож набирає його примітив, а не ручний набір класів. */}
+      <SectionHeading as="div" size="xs" variant="subtle" className="px-4 py-1">
         {group.label}
-      </div>
+      </SectionHeading>
       <ul role="presentation" className="px-1.5 space-y-0.5">
         {group.commands.map((cmd) => (
           <li key={cmd.id} role="presentation">
@@ -362,7 +405,7 @@ function CommandGroup({
               onClick={() => onActivate(cmd)}
               className={cn(
                 "flex w-full items-center gap-3 px-2.5 py-2 text-left rounded-xl",
-                "transition-colors duration-150",
+                "transition-colors duration-fast",
                 "outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 "focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
                 activeId === cmd.id && !cmd.disabled && "bg-panelHi",
@@ -377,11 +420,11 @@ function CommandGroup({
                 <span className="shrink-0 w-5 h-5" aria-hidden="true" />
               )}
               <span className="flex-1 min-w-0">
-                <span className="block text-sm text-text truncate">
+                <span className="block text-style-label text-text truncate">
                   {cmd.title}
                 </span>
                 {cmd.description ? (
-                  <span className="block text-xs text-muted truncate">
+                  <span className="block text-style-caption text-muted truncate">
                     {cmd.description}
                   </span>
                 ) : null}

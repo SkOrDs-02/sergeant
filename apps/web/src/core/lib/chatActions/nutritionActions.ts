@@ -1,7 +1,12 @@
 import { logger } from "@shared/lib";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
+import {
+  buildPlacedItems,
+  canonicalFoodKey,
+  todayISODate,
+} from "@sergeant/nutrition-domain";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
-import { mirrorWeightToBiometrics } from "../../profile/biometrics";
+import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
   persistFizrukDailyLog,
   readFizrukDailyLog,
@@ -14,7 +19,7 @@ import {
 // the module UI and mirrored to SQLite for cross-device sync.
 import {
   addLogEntry,
-  loadActivePantryId,
+  appendNutritionPantryEvent,
   loadNutritionLog,
   loadNutritionPrefs,
   loadPantries,
@@ -47,6 +52,13 @@ import type {
   ChatActionResult,
 } from "./types";
 
+/** «1 позицію / 2 позиції / 5 позицій» у підсумку очищення комори. */
+const PANTRY_ITEM_FORMS: UaPluralForms = {
+  one: "позицію",
+  few: "позиції",
+  many: "позицій",
+};
+
 export function handleNutritionAction(
   action: ChatAction,
 ): ChatActionResult | undefined {
@@ -55,7 +67,7 @@ export function handleNutritionAction(
       const { name, kcal, protein_g, fat_g, carbs_g } = (
         action as LogMealAction
       ).input;
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       const mealId = `m_${Date.now()}`;
       // `addLogEntry` runs the entry through `normalizeMeal`, filling the
       // canonical Meal shape (mealType/source/macroSource/…) the chat input
@@ -73,7 +85,7 @@ export function handleNutritionAction(
           },
         }),
       );
-      const result = `Прийом їжі "${name || "Без назви"}" записано: ${Math.round(Number(kcal) || 0)} ккал`;
+      const result = `Прийом їжі "${name || "Без назви"}" записано: ${formatNumberUk(Math.round(Number(kcal) || 0))} ккал`;
       return {
         result,
         // `removeLogEntry` is idempotent (filters by id, drops the day when it
@@ -92,7 +104,7 @@ export function handleNutritionAction(
       if (!Number.isFinite(ml) || ml <= 0) {
         return "Некоректна кількість води.";
       }
-      const today = getKyivDayKey();
+      const today = todayISODate();
       const dateKey =
         waterDate && /^\d{4}-\d{2}-\d{2}$/.test(waterDate) ? waterDate : today;
       const log = loadWaterLog();
@@ -100,7 +112,7 @@ export function handleNutritionAction(
       const total = prev + ml;
       saveWaterLog({ ...log, [dateKey]: total });
       return {
-        result: `Додано ${ml} мл води (разом за ${dateKey}: ${total} мл)`,
+        result: `Додано ${formatNumberUk(ml)} мл води (разом за ${dateKey}: ${formatNumberUk(total)} мл)`,
         // Undo віднімає рівно свої ml від поточного значення, а не
         // відновлює prev — інакше паралельні +log_water між додаванням
         // і undo втратилися б. Якщо після віднімання лишился 0 — чистимо key.
@@ -208,7 +220,7 @@ export function handleNutritionAction(
         };
         action_msg = "оновлено";
       } else {
-        createdId = `si_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        createdId = `si_${Date.now()}_${crypto.randomUUID()}`;
         items.push({
           id: createdId,
           name: itemName,
@@ -250,27 +262,118 @@ export function handleNutritionAction(
       const { name } = (action as ConsumeFromPantryAction).input;
       const rawName = (name || "").trim();
       if (!rawName) return "Потрібна назва продукту.";
-      const activeId = loadActivePantryId();
+      // Шукаємо в УСІХ місцях, не в «активному»: активної комори більше
+      // немає, і пошук в одній полиці означав би «не знайдено» для всього,
+      // що лежить у холодильнику чи морозилці.
       const pantries = loadPantries();
-      const idx = pantries.findIndex((p) => p.id === activeId);
-      const pantry = idx >= 0 ? pantries[idx] : undefined;
-      if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
       const lower = rawName.toLowerCase();
-      const items = Array.isArray(pantry.items) ? pantry.items : [];
-      const before = items.length;
-      const nextItems = items.filter(
+      const placed = buildPlacedItems(pantries).find(
         (it) =>
           String(it.name || "")
             .trim()
-            .toLowerCase() !== lower,
+            .toLowerCase() === lower,
       );
-      if (nextItems.length === before) {
+      if (!placed) {
         return `Продукт "${rawName}" у коморі не знайдено.`;
       }
+      const activeId = placed.pantryId;
+      const idx = pantries.findIndex((p) => p.id === activeId);
+      const pantry = pantries[idx];
+      if (!pantry) return `Продукт "${rawName}" у коморі не знайдено.`;
+      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      const itemIdx = placed.localIdx;
+      // `placed` прийшов саме з цього масиву, тож індекс валідний; сама
+      // позиція — те, що ми вже знайшли.
+      const item = placed;
+      const stock = Number(item.qty);
+      const hasStock = Number.isFinite(stock) && stock > 0;
+
+      // W1-PANTRY-APPEND стадія 2, ADR-0077 §6 (E-2). `qty` в інпуті опційна:
+      // без неї (продукт закінчився / кількість невідома) позиція йде цілком,
+      // як було до розширення контракту. Запит на кількість, що дорівнює
+      // залишку або перевищує його, теж прибирає позицію — лишати нуль-рядок
+      // у коморі гірше, ніж прибрати: він виглядає як наявний продукт.
+      const askedRaw = (action as ConsumeFromPantryAction).input.qty;
+      const asked = askedRaw == null ? NaN : Number(askedRaw);
+      const partial =
+        hasStock && Number.isFinite(asked) && asked > 0 && asked < stock;
+
+      const consumed = partial ? asked : hasStock ? stock : 0;
       const next = [...pantries];
-      next[idx] = { ...pantry, items: nextItems };
+      if (partial) {
+        const nextItems = items.map((it, i) =>
+          i === itemIdx ? { ...it, qty: stock - asked } : it,
+        );
+        next[idx] = { ...pantry, items: nextItems };
+      } else {
+        next[idx] = { ...pantry, items: items.filter((_, i) => i !== itemIdx) };
+      }
       persistPantries(undefined, undefined, next, activeId);
+
+      // Дельта — рівно те, що фактично зникло з `qty`, а не те, що попросили:
+      // якщо просили більше за наявне, журнал має записати наявне. Без
+      // відомого залишку (наприклад «сіль» без кількості) подія не несе
+      // сенсу — не емітимо.
+      if (consumed > 0) {
+        appendNutritionPantryEvent({
+          id: null,
+          pantryId: activeId,
+          itemId: null,
+          itemKey: canonicalFoodKey(rawName),
+          kind: "consume",
+          deltaQty: -consumed,
+          absQty: null,
+          unit: item.unit ?? null,
+          source: "chat_tool",
+          mealId: null,
+        });
+      }
+
+      if (partial) {
+        const left = stock - asked;
+        const unit = item.unit ? ` ${item.unit}` : "";
+        return `Списано ${formatNumberUk(asked)}${unit} «${rawName}», лишилось ${formatNumberUk(left)}${unit} у коморі "${pantry.name}"`;
+      }
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
+    }
+    case "clear_pantry": {
+      // «Очистити комору» очищає ВСІ місця: комора одна, місця це її
+      // полиці, і лишити холодильник повним після цієї команди означало б
+      // збрехати про виконану дію.
+      const pantries = loadPantries();
+      const items = buildPlacedItems(pantries);
+      if (items.length === 0) {
+        return "Комора і так порожня.";
+      }
+
+      persistPantries(
+        undefined,
+        undefined,
+        pantries.map((p) => ({ ...p, items: [] })),
+        null,
+      );
+
+      // Подія на позицію — `adjust` з `absQty: 0`, а не `consume` з дельтою.
+      // Чекпойнт каже «тепер нуль» і не потребує знати попередній залишок:
+      // у коморі бувають позиції без кількості («сіль»), для яких дельта
+      // просто не існує, а журнал усе одно має зійтися (ADR-0077).
+      for (const item of items) {
+        appendNutritionPantryEvent({
+          id: null,
+          pantryId: item.pantryId,
+          itemId: null,
+          itemKey: canonicalFoodKey(String(item.name || "")),
+          kind: "adjust",
+          deltaQty: null,
+          absQty: 0,
+          unit: item.unit ?? null,
+          source: "chat_tool",
+          mealId: null,
+        });
+      }
+
+      const n = items.length;
+      return `Комору очищено: прибрано ${n} ${pluralUa(n, PANTRY_ITEM_FORMS)}`;
     }
     case "set_daily_plan": {
       const { kcal, protein_g, fat_g, carbs_g, water_ml } = (
@@ -287,27 +390,27 @@ export function handleNutritionAction(
       const kcalN = num(kcal);
       if (kcalN !== null) {
         next.dailyTargetKcal = kcalN;
-        parts.push(`ккал ${kcalN}`);
+        parts.push(`ккал ${formatNumberUk(kcalN)}`);
       }
       const proteinN = num(protein_g);
       if (proteinN !== null) {
         next.dailyTargetProtein_g = proteinN;
-        parts.push(`білок ${proteinN} г`);
+        parts.push(`білок ${formatNumberUk(proteinN)} г`);
       }
       const fatN = num(fat_g);
       if (fatN !== null) {
         next.dailyTargetFat_g = fatN;
-        parts.push(`жири ${fatN} г`);
+        parts.push(`жири ${formatNumberUk(fatN)} г`);
       }
       const carbsN = num(carbs_g);
       if (carbsN !== null) {
         next.dailyTargetCarbs_g = carbsN;
-        parts.push(`вуглеводи ${carbsN} г`);
+        parts.push(`вуглеводи ${formatNumberUk(carbsN)} г`);
       }
       const waterN = num(water_ml);
       if (waterN !== null) {
         next.waterGoalMl = waterN;
-        parts.push(`вода ${waterN} мл`);
+        parts.push(`вода ${formatNumberUk(waterN)} мл`);
       }
       if (parts.length === 0) return "Немає полів для оновлення плану.";
       persistNutritionPrefs(next);
@@ -319,7 +422,7 @@ export function handleNutritionAction(
       if (!Number.isFinite(n) || n <= 0)
         return "Вага має бути додатним числом (кг).";
       const entry = {
-        id: `dl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+        id: `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`,
         at: new Date().toISOString(),
         weightKg: n,
         sleepHours: null,
@@ -329,16 +432,17 @@ export function handleNutritionAction(
       };
       // Weight is a Fizruk daily-log entry: persist through the shared helper
       // so it dual-writes to SQLite and mirrors to Profile/Nutrition biometrics.
+      // W1-WEIGHT-SOT стадія 2: дзеркалення — через спільний funnel.
       persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
-      mirrorWeightToBiometrics(n, entry.at);
-      return `Вагу записано: ${n} кг`;
+      recordBodyWeight({ weightKg: n, at: entry.at });
+      return `Вагу записано: ${formatNumberUk(n)} кг`;
     }
     // ── Фізрук v2 ──────────────────────────────────────────────
     case "suggest_meal": {
       const { focus, meal_type } = (action as SuggestMealAction).input || {};
       const nutritionLog = loadNutritionLog();
       const nutritionPrefs = loadNutritionPrefs();
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       const todayData = nutritionLog[todayKey];
       const meals = Array.isArray(todayData?.meals) ? todayData.meals : [];
       const eaten = {
@@ -356,8 +460,8 @@ export function handleNutritionAction(
         protein: Math.max(0, target.protein - eaten.protein),
       };
       const parts: string[] = [
-        `З'їдено сьогодні: ${Math.round(eaten.kcal)} ккал, ${Math.round(eaten.protein)}г білка`,
-        `Залишилось: ${Math.round(remaining.kcal)} ккал, ${Math.round(remaining.protein)}г білка`,
+        `Зʼїдено сьогодні: ${formatNumberUk(Math.round(eaten.kcal))} ккал, ${formatNumberUk(Math.round(eaten.protein))}г білка`,
+        `Залишилось: ${formatNumberUk(Math.round(remaining.kcal))} ккал, ${formatNumberUk(Math.round(remaining.protein))}г білка`,
       ];
       if (focus) parts.push(`Фокус: ${focus}`);
       if (meal_type) parts.push(`Тип прийому: ${meal_type}`);
@@ -378,7 +482,7 @@ export function handleNutritionAction(
         sourceDay.meals.length === 0
       )
         return `За ${source_date} немає записів їжі.`;
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       let copied: Meal[];
       if (meal_index != null && meal_index !== "") {
         const idx = Number(meal_index);
@@ -393,12 +497,12 @@ export function handleNutritionAction(
       for (const m of copied) {
         nextLog = addLogEntry(nextLog, todayKey, {
           ...m,
-          id: `m_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          id: `m_${Date.now()}_${crypto.randomUUID()}`,
         });
       }
       persistNutritionLog(nextLog);
       const totalKcal = copied.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
-      return `Скопійовано ${copied.length} прийом(ів) з ${source_date} (${Math.round(totalKcal)} ккал)`;
+      return `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${formatNumberUk(Math.round(totalKcal))} ккал)`;
     }
     case "plan_meals_for_day": {
       const { target_kcal, meals_count, preferences } =
@@ -408,12 +512,14 @@ export function handleNutritionAction(
         Number(target_kcal) || nutritionPrefs.dailyTargetKcal || 2000;
       const count = Number(meals_count) || 3;
       const parts: string[] = [
-        `Планую ${count} прийомів на ${targetKcal} ккал/день`,
-        `Приблизно ${Math.round(targetKcal / count)} ккал на прийом`,
+        `Планую ${count} прийомів на ${formatNumberUk(targetKcal)} ккал/день`,
+        `Приблизно ${formatNumberUk(Math.round(targetKcal / count))} ккал на прийом`,
       ];
       if (preferences) parts.push(`Побажання: ${preferences}`);
       if (nutritionPrefs.dailyTargetProtein_g) {
-        parts.push(`Ціль білка: ${nutritionPrefs.dailyTargetProtein_g}г/день`);
+        parts.push(
+          `Ціль білка: ${formatNumberUk(nutritionPrefs.dailyTargetProtein_g)}г/день`,
+        );
       }
       return (
         parts.join(". ") + ". Рекомендацію сформовано на основі цих даних."

@@ -16,26 +16,29 @@
 //    Aspirational / planning / tracker doc trees describe planned, historical,
 //    or target-state file structures whose refs naturally drift as code lands
 //    or is decomposed. Their dangling refs are reported as WARNINGS only:
-//      - docs/01-product/launch/                          (launch plans)
-//      - docs/90-work/planning/                        (sprint plans)
-//      - docs/90-work/audits/*-deep-dive/              (deep-dive recommendations)
-//      - docs/02-engineering/integrations/*-roadmap.md        (integration roadmaps)
-//      - docs/90-work/audits/*-implementation-roadmap.md (audit roadmaps)
-//      - docs/90-work/initiatives/                     (multi-phase initiative trackers)
-//      - docs/04-governance/security/hardening/              (PR-bound hardening cards)
-//      - docs/03-operations/runbooks/                        (operations runbooks; refs may
+//      - docs/work/specs/launch/                          (launch plans)
+//      - docs/work/specs/planning/                        (sprint plans)
+//      - docs/work/specs/audits/*-deep-dive/              (deep-dive recommendations)
+//      - docs/engineering/integrations/*-roadmap.md        (integration roadmaps)
+//      - docs/work/specs/audits/*-implementation-roadmap.md (audit roadmaps)
+//      - docs/work/specs/initiatives/                     (multi-phase initiative trackers)
+//      - docs/work/specs/security-hardening/              (PR-bound hardening cards)
+//      - docs/start/instructions/                        (operations runbooks; refs may
 //                                               describe target scripts)
-//      - docs/02-engineering/architecture/diagrams/           (flow diagrams; refs name
+//      - docs/engineering/architecture/diagrams/           (flow diagrams; refs name
 //                                               components that may rename)
-//      - docs/00-start/playbooks/                       (recipes referencing template
+//      - docs/start/instructions/                       (recipes referencing template
 //                                               paths and example structures)
-//      - docs/05-design/i18n/                            (i18n migration roadmap; refs
+//      - docs/design/i18n/                            (i18n migration roadmap; refs
 //                                               include planned target catalogs)
-//      - docs/02-engineering/notes/spikes/                    (exploratory spike walkthroughs;
+//      - docs/engineering/notes/spikes/                    (exploratory spike walkthroughs;
 //                                               file refs may describe imagined
 //                                               module shape pre-refactor)
-//    Files in ADRs with Status: proposed are exempt (future refs OK).
-//    All other dangling refs are reported as ERRORS (Hard Rule #15 — docs
+//    Files in ADRs with Status: proposed or Status: Superseded (case-
+//    insensitive) are exempt — future or historical decision records.
+//    ADRs with `- **Note:** Historical` / `- **Note:** Історичн…` in the
+//    header (first ~30 lines) are also exempt. All other dangling refs are
+//    reported as ERRORS (Hard Rule #15 — docs
 //    that describe current behaviour must move with code).
 //
 // Usage:
@@ -73,7 +76,7 @@ function ok(msg) {
 // Compact rules table parser (post-0009 PR 3.2 canonical AGENTS.md format).
 // Mirrors `scripts/check-hard-rules-registry.mjs` so both gates agree on what
 // "the AGENTS.md rule list" means.
-function parseAgentsTableRules(text) {
+export function parseAgentsTableRules(text) {
   const out = new Map();
   for (const line of text.split("\n")) {
     const trimmed = line.trim();
@@ -120,9 +123,18 @@ function checkHardRulesSync() {
     }
   }
 
-  // Extract rule numbers from CONTRIBUTING.md (N. **...**)
+  // Extract rule numbers from CONTRIBUTING.md. Canonical form is the same
+  // compact table as AGENTS.md; the legacy `N. **...**` ordered list is still
+  // accepted.
+  //
+  // AI-CONTEXT: ordered lists cannot carry the canonical numbering any more.
+  // ADR-0081 retired rules #8/#9/#11–#14/#16/#17/#24, so the live set has gaps
+  // (…7, 10, 15, 18…). Prettier normalises ordered-list markers and collapses
+  // those gaps to 1..N, which silently renumbered every rule past the first gap
+  // and made this check report the tail as "missing". A table has no such
+  // markers, so the numbers survive `pnpm format`.
+  const contribRules = new Set(parseAgentsTableRules(contribContent).keys());
   const contribRuleRe = /^(\d+)\.\s+\*\*(.+?)\*\*/gm;
-  const contribRules = new Set();
   let match;
   while ((match = contribRuleRe.exec(contribContent)) !== null) {
     contribRules.add(parseInt(match[1], 10));
@@ -160,7 +172,7 @@ function checkStatusBadges() {
 
     // Skip ADRs — they use their own Status format
     if (
-      relPath.startsWith("docs/04-governance/adr/") &&
+      relPath.startsWith("docs/governance/adr/") &&
       !relPath.endsWith("README.md")
     ) {
       continue;
@@ -217,13 +229,7 @@ function checkDanglingRefs() {
     const rel = relative(ROOT, f).replace(/\\/g, "/");
     return (
       rel.startsWith("docs/") ||
-      [
-        "AGENTS.md",
-        "CONTRIBUTING.md",
-        "CLAUDE.md",
-        "DEVIN.md",
-        "README.md",
-      ].includes(rel)
+      ["AGENTS.md", "CONTRIBUTING.md", "CLAUDE.md", "README.md"].includes(rel)
     );
   });
 
@@ -238,122 +244,143 @@ function checkDanglingRefs() {
   // `apps/server/src/migrations/NNN_*.sql`.
   const PLACEHOLDER_CHARS = /[*?<>[\]{}]/;
 
+  // Точковий виняток для ПОСИЛАННЯ, а не для документа.
+  //
+  // Частина живих доків навмисно називає видалений файл — і саме в цьому
+  // їхня цінність: «генерацію типів прибрано», «`obs/spans.ts` видалено
+  // #679», «wrapper retired». Такий рядок ПРАВИЛЬНИЙ; ламається не
+  // документація, а перевірка, яка не відрізняє «ось де лежить код» від
+  // «ось що ми видалили».
+  //
+  // Doc-рівневий прапорець тут не годиться: він звільнив би від перевірки
+  // цілий документ, у якому решта посилань — живі контракти. Тому маркер
+  // діє рівно на свій рядок, і його видно в диффі — на відміну від
+  // allowlist-у, схованого в скрипті.
+  //
+  //     | `apps/server/src/obs/spans.ts` <!-- removed --> | … |
+  const REMOVED_MARKER = "<!-- removed -->";
+
   // Aspirational/roadmap doc trees: dangling refs describe planned/future
   // implementation, not current code. Report as warnings, not errors.
   function isAspirational(relPath) {
-    if (relPath.startsWith("docs/01-product/launch/")) return true;
-    if (relPath.startsWith("docs/90-work/planning/")) return true;
-    // Deep-dive directories under `docs/90-work/audits/*-deep-dive/` (formerly
+    if (relPath.startsWith("docs/work/specs/")) return true;
+    if (relPath.startsWith("docs/work/specs/launch/")) return true;
+    if (relPath.startsWith("docs/work/specs/planning/")) return true;
+    // Deep-dive directories under `docs/work/specs/audits/*-deep-dive/` (formerly
     // `docs/diagnostics/`, merged 2026-05-05) describe recommendations —
     // refs to suggested-but-not-yet-created files (`scripts/<new>.mjs`,
     // `apps/web/tests/integration/<new>.test.ts`, etc.) are part of the
     // recommendation surface, not Hard Rule #15 violations. Deep-dives
-    // graduate into trackers in `docs/90-work/audits/*-implementation-roadmap.md` /
-    // `docs/90-work/tech-debt/` once accepted.
-    if (/^docs\/90-work\/audits\/[^/]+-deep-dive\//.test(relPath)) return true;
-    // `docs/90-work/initiatives/` track multi-phase work; refs may describe
+    // graduate into trackers in `docs/work/specs/audits/*-implementation-roadmap.md` /
+    // `docs/work/specs/tech-debt/` once accepted.
+    if (/^docs\/work\/audits\/[^/]+-deep-dive\//.test(relPath)) return true;
+    // `docs/work/specs/initiatives/` track multi-phase work; refs may describe
     // pre-decomposition structure (e.g., `agent.ts` before being split),
     // upcoming-phase target files, or historical "before" state. The
     // initiative status badge + PR-link table is the source of truth for
     // shipped state, not inline file refs.
-    if (relPath.startsWith("docs/90-work/initiatives/")) return true;
-    // `docs/04-governance/security/hardening/` are PR-bound hardening cards — they
+    if (relPath.startsWith("docs/work/specs/initiatives/")) return true;
+    // `docs/work/specs/security-hardening/` are PR-bound hardening cards — they
     // describe the target file layout for each card. The card's status
     // badge and "PRs landed" section is the truth; inline path refs are
     // a description, not a contract.
-    if (relPath.startsWith("docs/04-governance/security/hardening/"))
-      return true;
-    // `docs/03-operations/runbooks/` describe operations including target scripts that
+    if (relPath.startsWith("docs/work/specs/security-hardening/")) return true;
+    // `docs/start/instructions/` describe operations including target scripts that
     // may not be created until the runbook is exercised in incident.
-    if (relPath.startsWith("docs/03-operations/runbooks/")) return true;
-    // `docs/02-engineering/architecture/diagrams/` document flows by naming components;
+    if (relPath.startsWith("docs/start/instructions/")) return true;
+    // `docs/engineering/architecture/diagrams/` document flows by naming components;
     // a component rename should not break the diagram doc until the
     // diagram is regenerated.
-    if (relPath.startsWith("docs/02-engineering/architecture/diagrams/"))
+    if (relPath.startsWith("docs/engineering/architecture/diagrams/"))
       return true;
-    // `docs/00-start/playbooks/` are recipes; refs are template/example paths
+    // `docs/start/instructions/` are recipes; refs are template/example paths
     // (e.g., `apps/web/src/App.tsx` as an illustrative anchor) and may
     // describe target structures rather than current code.
-    if (relPath.startsWith("docs/00-start/playbooks/")) return true;
-    // `docs/05-design/i18n/` describes the i18n migration roadmap; refs include
+    if (relPath.startsWith("docs/start/instructions/")) return true;
+    // `docs/design/i18n/` describes the i18n migration roadmap; refs include
     // planned target catalogs (e.g., `apps/web/src/shared/i18n/en.ts`)
     // that don't exist until the corresponding migration phase lands.
-    if (relPath.startsWith("docs/05-design/i18n/")) return true;
-    // `docs/00-start/agents/<topic>-roadmap.md` are forward-looking initiative
+    if (relPath.startsWith("docs/design/i18n/")) return true;
+    // `docs/start/agents/<topic>-roadmap.md` are forward-looking initiative
     // roadmaps describing scripts/files that will be created in upcoming
     // PRs. Treat refs as planned, not current.
-    if (/^docs\/00-start\/agents\/[^/]+-roadmap\.md$/.test(relPath))
-      return true;
-    // `docs/02-engineering/notes/spikes/` are exploratory spike walkthroughs (PR-04
+    if (/^docs\/start\/agents\/[^/]+-roadmap\.md$/.test(relPath)) return true;
+    // `docs/engineering/notes/spikes/` are exploratory spike walkthroughs (PR-04
     // bus-factor knowledge transfer). Inline file refs describe the
     // module structure as the spike author imagined / mapped it; if
     // a refactor moved a file, the spike note should not block CI.
     // Once a spike graduates to canonical architecture, the doc moves
-    // to `docs/02-engineering/architecture/` (non-aspirational) and refs become
+    // to `docs/engineering/architecture/` (non-aspirational) and refs become
     // contracts. Until then, treat as warnings.
-    if (relPath.startsWith("docs/02-engineering/notes/spikes/")) return true;
-    // `docs/02-engineering/testing/<date>-tests-pr-plan.md` and
-    // `docs/02-engineering/testing/<date>-tests-review.md` are dated test-PR plans and
-    // analyses — same shape as `docs/90-work/planning/`: refs describe upcoming
+    if (relPath.startsWith("docs/engineering/notes/spikes/")) return true;
+    // `docs/engineering/testing/<date>-tests-pr-plan.md` and
+    // `docs/engineering/testing/<date>-tests-review.md` are dated test-PR plans and
+    // analyses — same shape as `docs/work/specs/planning/`: refs describe upcoming
     // test files (`apps/server/src/.../foo.test.ts`,
     // `apps/web/tests/smoke/<flow>.spec.ts`) that the PRs they plan will
     // create. The README + mutation.md in the same directory describe
     // current behaviour and remain non-aspirational.
     if (
-      /^docs\/02-engineering\/testing\/\d{4}-\d{2}-\d{2}-tests-(pr-plan|review)\.md$/.test(
+      /^docs\/engineering\/testing\/\d{4}-\d{2}-\d{2}-tests-(pr-plan|review)\.md$/.test(
         relPath,
       )
     )
       return true;
     if (
-      relPath.startsWith("docs/02-engineering/integrations/") &&
+      relPath.startsWith("docs/engineering/integrations/") &&
       relPath.endsWith("-roadmap.md")
     )
       return true;
     if (
-      relPath.startsWith("docs/90-work/audits/") &&
+      relPath.startsWith("docs/work/specs/audits/") &&
       relPath.endsWith("-implementation-roadmap.md")
     )
       return true;
-    // `docs/90-work/audits/<date>-<slug>-pr-plan.md` are PR-by-PR plans attached to
+    // `docs/work/specs/audits/<date>-<slug>-pr-plan.md` are PR-by-PR plans attached to
     // a `<date>-<slug>.md` audit. Refs describe target file layouts for PRs
     // that have not landed yet (e.g. `apps/web/src/core/security/AppLock.tsx`
     // before PR-1a). The plan's PR-link / status table is the source of
     // truth for shipped work; concrete refs are part of the roadmap surface.
     if (
-      relPath.startsWith("docs/90-work/audits/") &&
+      relPath.startsWith("docs/work/specs/audits/") &&
       relPath.endsWith("-pr-plan.md")
     )
       return true;
-    // `docs/90-work/audits/<date>-<slug>-roast.md` are themed audit reports that
+    // `docs/work/specs/audits/<date>-<slug>-roast.md` are themed audit reports that
     // identify gaps and recommend remediations. Refs include target file
     // layouts the audit recommends creating (e.g. new ESLint rule paths,
     // new test files, refactor targets) — these become real once follow-up
     // PRs land. Treat as planned, same shape as `*-pr-plan.md`.
     if (
-      relPath.startsWith("docs/90-work/audits/") &&
+      relPath.startsWith("docs/work/specs/audits/") &&
       relPath.endsWith("-roast.md")
     )
       return true;
-    // `docs/90-work/audits/<date>-page-audit-*.md` and `*-consolidated-page-audit.md`
+    // `docs/work/specs/audits/<date>-page-audit-*.md` and `*-consolidated-page-audit.md`
     // are dated static-analysis audit reports — same shape as `-roast.md`.
     // Refs describe code state at audit time; renames/decompositions after
     // the audit shouldn't fail CI on historical diagnostic notes.
     if (
-      relPath.startsWith("docs/90-work/audits/") &&
+      relPath.startsWith("docs/work/specs/audits/") &&
       /(?:^|\/)\d{4}-\d{2}-\d{2}-(consolidated-)?page-audit-?/.test(relPath)
     )
       return true;
-    // `docs/90-work/audits/README.md` is the audit index — refs may point at
+    // `docs/work/specs/audits/README.md` is the audit index — refs may point at
     // historical audit subjects.
-    if (relPath === "docs/90-work/audits/README.md") return true;
+    if (relPath === "docs/work/specs/audits/README.md") return true;
+    // `docs/work/specs/audits/archive/` holds superseded/completed audits — they
+    // document a point-in-time snapshot (dead code found, links then-broken),
+    // so their concrete refs are historical by design and must not gate
+    // Rule #15 on current source (e.g. a file the audit flagged as dead and
+    // that has since been deleted).
+    if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
     // Tracker-shaped surfaces (planning, multi-phase rollout). Same
-    // semantics as `docs/90-work/initiatives/` — status badge + PR-link table is
+    // semantics as `docs/work/specs/initiatives/` — status badge + PR-link table is
     // the source of truth, inline file refs are descriptive.
-    if (relPath.startsWith("docs/90-work/tech-debt/")) return true;
-    if (relPath.startsWith("docs/01-product/marketing/")) return true;
-    if (relPath.startsWith("docs/03-operations/observability/")) return true;
-    if (relPath.startsWith("docs/05-design/design/redesign-v2/")) return true;
+    if (relPath.startsWith("docs/work/specs/tech-debt/")) return true;
+    if (relPath.startsWith("docs/product/marketing/")) return true;
+    if (relPath.startsWith("docs/operations/observability/")) return true;
+    if (relPath.startsWith("docs/design/design/redesign-v2/")) return true;
     return false;
   }
 
@@ -367,31 +394,19 @@ function checkDanglingRefs() {
     const relPath = relative(ROOT, file).replace(/\\/g, "/");
     const content = readFileSync(file, "utf-8");
 
-    // Check if this is a "proposed" ADR (future refs are OK)
-    if (
-      relPath.startsWith("docs/04-governance/adr/") &&
-      /Status:\*?\*?\s*proposed/i.test(content)
-    ) {
+    // Proposed / superseded / header-flagged historical ADRs: inline file
+    // refs describe future or legacy layout, not current code contracts.
+    if (isAdrExemptFromDanglingRefCheck(content, relPath)) {
       continue;
-    }
-    // Historical ADRs explicitly flagged with a `- **Note:**`
-    // metadata line in the front-of-file ADR header (first ~30 lines)
-    // indicating supersession describe legacy file paths. Same
-    // semantics as a proposed ADR — refs are descriptive, not
-    // contractual. Scoped to the header so a body-level narrative
-    // mention of "Note: ... historical" can't accidentally exempt
-    // the whole document (CodeRabbit feedback on PR #3026).
-    if (relPath.startsWith("docs/04-governance/adr/")) {
-      const adrHeader = content.split("\n").slice(0, 30).join("\n");
-      if (
-        /^-\s+\*\*Note:\*\*\s*(?:[Іі]сторичн|[Hh]istorical)/m.test(adrHeader)
-      ) {
-        continue;
-      }
     }
 
     // Check if this is the RN migration tracker (target-state refs are OK)
     if (relPath.includes("react-native-migration")) continue;
+
+    // Матрицю генерує tools/matrix.py приватного репо competitor-research
+    // (D:/competitor-research), і шляхи `apps/<пакет>/frames/*` вказують у той
+    // репо. Маркер `<!-- removed -->` тут не годиться: перегенерація його зітре.
+    if (relPath === "docs/work/research/competitor-matrix.md") continue;
 
     const aspirational = isAspirational(relPath);
 
@@ -399,6 +414,15 @@ function checkDanglingRefs() {
     while ((refMatch = refRe.exec(content)) !== null) {
       const refPath = refMatch[1];
       if (PLACEHOLDER_CHARS.test(refPath)) continue;
+      // Область дії маркера — РЯДОК, не окреме посилання. У рядку таблиці
+      // з двома шляхами він звільнить обидва, тож ставити його можна лише
+      // там, де мертві всі. Точніша прив'язка вимагала б синтаксису на
+      // кшталт `<!-- removed: path -->`, а це ціна, якої поки нема за що
+      // платити: усі шість наявних місць мають рівно одне посилання.
+      const lineStart = content.lastIndexOf("\n", refMatch.index) + 1;
+      const lineEndRaw = content.indexOf("\n", refMatch.index);
+      const lineEnd = lineEndRaw === -1 ? content.length : lineEndRaw;
+      if (content.slice(lineStart, lineEnd).includes(REMOVED_MARKER)) continue;
       totalRefs++;
       const absRef = resolve(ROOT, refPath);
       if (!existsSync(absRef)) {
@@ -438,12 +462,35 @@ function checkDanglingRefs() {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/** @param {string} content @param {string} relPath */
+export function isAdrExemptFromDanglingRefCheck(content, relPath) {
+  if (!relPath.startsWith("docs/governance/adr/")) return false;
+  if (/Status:\*?\*?\s*proposed/i.test(content)) return true;
+  if (/Status:\*?\*?\s*Superseded/i.test(content)) return true;
+  const adrHeader = content.split("\n").slice(0, 30).join("\n");
+  if (/^-\s+\*\*Note:\*\*\s*(?:[Іі]сторичн|[Hh]istorical)/m.test(adrHeader)) {
+    return true;
+  }
+  return false;
+}
+
 function findMdFiles(dir) {
   const results = [];
   const entries = readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
+    if (
+      entry.name === "node_modules" ||
+      entry.name === ".git" ||
+      entry.name.startsWith("..wt-")
+    )
+      continue;
+    // `.claude/worktrees/` — робочі дерева запущених агентів, тобто повні
+    // копії репо. Без цього пропуску кожен док рахувався б стільки разів,
+    // скільки агентів працює: локальний прогін давав 462 «помилки» при
+    // нулі справжніх, і гейт ставав непридатним саме тоді, коли він
+    // найпотрібніший. У CI воркдерев немає, тож розбіжність тиха.
+    if (entry.name === "worktrees" && dir.endsWith(".claude")) continue;
     if (entry.isDirectory()) {
       results.push(...findMdFiles(fullPath));
     } else if (entry.name.endsWith(".md")) {

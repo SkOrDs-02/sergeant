@@ -5,9 +5,15 @@ import {
   getKyivMondayIndex,
   parseKyivDate,
 } from "@shared/lib/time/kyivTime";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { ls } from "../hubChatUtils";
+import { clampDays, normalizeText, round } from "./queryArgs";
 import { readFizrukWorkouts } from "./fizrukActions/shared";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
+import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * Read-only "talk to your data" виконавці для Рутини (PR3 talk-to-your-data).
@@ -65,9 +71,11 @@ interface RoutineHabit {
 /**
  * Read-only routine snapshot from the canonical SQLite-backed state.
  *
- * Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it is
- * deleted on boot after the one-time SQLite import (`residualImport.ts`) and
- * `saveRoutineState()` (used by the routine write tools) no longer writes it.
+ * Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it
+ * used to be deleted on boot after a one-time SQLite import
+ * (`residualImport.ts`, removed 2026-08 once no pre-beta testers were left
+ * with pre-SQLite LS data to migrate) and `saveRoutineState()` (used by the
+ * routine write tools) no longer writes it.
  * Reading that key here returned an empty journal in production, so
  * `query_habits` / `habit_correlation` answered "Немає звичок" even for users
  * with habits, and a habit just created via the `create_habit` write tool
@@ -91,22 +99,6 @@ function readRoutine(): {
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
-function clampDays(value: unknown, fallback: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return fallback;
-  return Math.min(365, Math.floor(n));
-}
-
-function round(n: number): number {
-  return Math.round(n);
-}
 
 /** Mon-first weekday index (0=Пн … 6=Нд) for a `YYYY-MM-DD` day key. */
 function mondayIndexOfDayKey(dayKey: string): number {
@@ -139,9 +131,16 @@ function lastDayKeys(days: number): string[] {
   return keys;
 }
 
+/**
+ * Підпис звички для тексту в чаті.
+ *
+ * До 2026-08-21 сюди клеївся `h.emoji`. Після переходу Рутини на
+ * icon-slug-и (2026-08-03) це поле несе імʼя гліфа, а не емодзі, тож
+ * асистент писав «droplet Пити воду». Гліф у текст не клеїться взагалі —
+ * у чаті його нема чим намалювати.
+ */
 function habitLabel(h: RoutineHabit): string {
-  const name = (h.name || h.id).trim();
-  return h.emoji ? `${h.emoji} ${name}` : name;
+  return (h.name || h.id).trim();
 }
 
 /** Human scope label: single habit by name, else an active-habit count. */
@@ -204,15 +203,19 @@ export function queryHabits(action: QueryHabitsAction): ChatActionResult {
 
   const lines = [
     `Статистика ${scope} за ${days} днів:`,
-    `Виконано: ${doneTotal}/${possible} (${pct}%)`,
+    `Виконано: ${doneTotal}/${possible} (${formatNumberUk(pct)}%)`,
   ];
   if (best && worst) {
     lines.push(
-      `Найкращий день: ${best.label} (${round(best.rate * 100)}%), найгірший: ${worst.label} (${round(worst.rate * 100)}%)`,
+      `Найкращий день: ${best.label} (${formatNumberUk(round(best.rate * 100))}%), найгірший: ${worst.label} (${formatNumberUk(round(worst.rate * 100))}%)`,
     );
   }
   if (missedDays.length > 0) {
-    lines.push(`Дні без жодного виконання: ${missedDays.join(", ")}`);
+    const today = getKyivDayKey();
+    const labels = missedDays.map((d) =>
+      formatDayKeyUk(d, { todayKey: today }),
+    );
+    lines.push(`Дні без жодного виконання: ${labels.join(", ")}`);
   }
   return lines.join("\n");
 }
@@ -225,24 +228,34 @@ function normalizeMetric(value: unknown): CorrelationMetric {
   return "spending";
 }
 
-/** Per-Kyiv-day expense total (грн) from the bank tx cache. */
+/** Per-Kyiv-day expense total (грн) from the Mono mirror cache. */
 function spendingByDay(days: number): Map<string, number> {
-  const cache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key -- chat-action executors run outside React, so the finyk `useStorage` hooks are unavailable; the `STORAGE_KEYS.FINYK_*` constants are themselves banned for direct access (no-restricted-syntax, PR #039). Read-only mirror of `queryFinykActions.ts`.
-  } | null>("finyk_tx_cache", null);
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- see finyk_tx_cache note above; read-only correlation source.
+  // Всесвіт витрат — банк + РУЧНІ записи, як вимагає канон finyk §5
+  // («банк і ручний світ рівні»).
+  //
+  // AI-DANGER: до 2026-08-24 тут читалось лише Mono-дзеркало, і для
+  // користувача без підключеного банку `habit_correlation` завжди бачив
+  // нуль витрат в ОБОХ групах днів. Тул не мовчав — він упевнено відповідав
+  // «0 грн/день зі звичкою проти 0 грн/день без неї», модель переказувала це
+  // як «звʼязку немає», хоча курований графік на тих самих даних показував
+  // r=-0.99 (браузерний QA 2026-08-24, F-10/F-11). Той самий баг уже ловили
+  // у `crossActions/dailySeries.ts` (F7 репетиції бета-прогону 2026-08-07) —
+  // цей виконавець тоді лишився зі старим всесвітом.
+  const txs = buildFinykSpendingUniverse({
+    bankTxs: getVisibleFinykMonoMirrorState().transactions,
+    manualExpenses: getCachedFinykSqliteState().manualExpenses,
+  }).transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+  }>;
+  const hidden = getCachedFinykSqliteState().hiddenTransactions;
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- tx splits are a per-tx user annotation; no SQLite canon yet.
   const txSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
   const byDay = new Map<string, number>();
   const cutoffTs = (Date.now() - days * DAY_MS) / 1000;
-  if (!cache?.txs) return byDay;
-  for (const t of cache.txs) {
+  for (const t of txs) {
+    if (hidden.includes(t.id || "")) continue;
     if ((t.time || 0) < cutoffTs) continue;
     if (t.amount >= 0) continue; // expenses only (negative amounts)
     const dk = getKyivDayKey((t.time || 0) * 1000);
@@ -306,10 +319,18 @@ export function habitCorrelation(
   }
 
   if (withCount === 0) {
-    return `Немає днів із виконанням звички за останні ${days} днів — нема що корелювати.`;
+    return `Немає днів із виконанням звички за останні ${days} днів, нема що корелювати.`;
   }
   if (withoutCount === 0) {
-    return `Звичка виконувалась усі ${days} днів — нема днів без неї для порівняння.`;
+    return `Звичка виконувалась усі ${days} днів, нема днів без неї для порівняння.`;
+  }
+
+  // Порожній всесвіт метрики — це «нема даних», а не «різниці нема». Без
+  // цієї гілки тул повертав «0 грн/день проти 0 грн/день, різниця 0%», і
+  // модель переказувала це як упевнене «звʼязку немає» (QA F-10).
+  if (withSum === 0 && withoutSum === 0) {
+    const what = metric === "workouts" ? "тренування" : "витрати";
+    return `Немає даних про ${what} за останні ${days} днів, порівнювати нема що.`;
   }
 
   const withAvg = withSum / withCount;
@@ -323,9 +344,9 @@ export function habitCorrelation(
 
   return [
     `${metricTitle} ↔ ${scope} за ${days} днів:`,
-    `Дні зі звичкою (${withCount}): ${round(withAvg)} ${unit}`,
-    `Дні без неї (${withoutCount}): ${round(withoutAvg)} ${unit}`,
-    `Різниця: ${sign(delta)}${round(delta)} ${unit} (${sign(pct)}${pct.toFixed(1)}%)`,
+    `Дні зі звичкою (${withCount}): ${formatNumberUk(round(withAvg))} ${unit}`,
+    `Дні без неї (${withoutCount}): ${formatNumberUk(round(withoutAvg))} ${unit}`,
+    `Різниця: ${sign(delta)}${formatNumberUk(round(delta))} ${unit} (${sign(pct)}${formatNumberUk(pct, { maximumFractionDigits: 1 })}%)`,
   ].join("\n");
 }
 

@@ -1,5 +1,6 @@
 import type {
   MonoAccountDto as SharedMonoAccountDto,
+  MonoJarDto as SharedMonoJarDto,
   MonoTransactionDto as SharedMonoTransactionDto,
   MonoTransactionsPage as SharedMonoTransactionsPage,
   MonoSyncState as SharedMonoSyncState,
@@ -32,6 +33,7 @@ export type MonoCashbackType = "" | "None" | "UAH" | "Miles" | string;
 
 export type MonoConnectionStatus = SharedMonoConnectionStatus;
 export type MonoAccountDto = SharedMonoAccountDto;
+export type MonoJarDto = SharedMonoJarDto;
 export type MonoTransactionDto = SharedMonoTransactionDto;
 export type MonoSyncState = SharedMonoSyncState;
 export type MonoTransactionsPage = SharedMonoTransactionsPage;
@@ -86,6 +88,7 @@ export interface MonoWebhookEndpoints {
   }) => Promise<MonoDisconnectResponse>;
   syncState: (opts?: { signal?: AbortSignal }) => Promise<MonoSyncState>;
   accounts: (opts?: { signal?: AbortSignal }) => Promise<MonoAccountDto[]>;
+  jars: (opts?: { signal?: AbortSignal }) => Promise<MonoJarDto[]>;
   transactions: (
     params: {
       from?: string;
@@ -122,6 +125,10 @@ export function createMonoWebhookEndpoints(
       }),
     accounts: (opts) =>
       http.get<MonoAccountDto[]>("/api/mono/accounts", {
+        signal: opts?.signal,
+      }),
+    jars: (opts) =>
+      http.get<MonoJarDto[]>("/api/mono/jars", {
         signal: opts?.signal,
       }),
     transactions: (params, opts) =>

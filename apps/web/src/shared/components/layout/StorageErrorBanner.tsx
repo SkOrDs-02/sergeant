@@ -31,8 +31,9 @@ interface StorageErrorEventDetail {
   message?: string;
 }
 
-const DEFAULT_FORMAT = (reason: string) =>
-  `Не вдалося зберегти дані (${reason}). Можливо, браузер переповнив сховище — експортуй бекап або звільни місце.`;
+// Причина (`reason`) лишається в події для телеметрії; людині один рядок
+// каталогу без технічного хвоста (аудит копі 2026-09-23 §2.5).
+const DEFAULT_FORMAT = () => messages.errors.generic.storageSaveFailed;
 
 export function StorageErrorBanner({
   eventName,
@@ -66,7 +67,7 @@ export function StorageErrorBanner({
       <button
         type="button"
         onClick={() => setReason(null)}
-        className="shrink-0 text-xs font-semibold text-danger-strong/80 dark:text-danger/80 hover:text-danger-strong dark:hover:text-danger"
+        className="shrink-0 text-style-caption font-semibold text-danger-strong dark:text-danger hover:text-danger-strong dark:hover:text-danger"
         aria-label={dismissLabel}
       >
         {messages.actions.close}

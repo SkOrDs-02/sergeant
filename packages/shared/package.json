@@ -10,13 +10,15 @@
     "./schemas": "./src/schemas/index.ts",
     "./utils": "./src/utils/index.ts",
     "./types": "./src/types/index.ts",
+    "./data/genericFoods": "./src/data/genericFoods.ts",
+    "./data/pantryCategories": "./src/data/pantryCategories.ts",
     "./openapi": "./src/openapi/index.ts",
     "./test-utils": "./src/test-utils.ts",
     "./lib/pii": "./src/lib/pii.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint": "eslint --cache \"src/**/*.{ts,tsx}\"",
     "test": "cross-env TZ=Europe/Kyiv vitest run",
     "test:watch": "cross-env TZ=Europe/Kyiv vitest",
     "test:coverage": "cross-env TZ=Europe/Kyiv vitest run --coverage",
@@ -32,9 +34,10 @@
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "^20.19.41",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "cross-env": "^10.1.0",
+    "fast-check": "^3.23.2",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   }
 }

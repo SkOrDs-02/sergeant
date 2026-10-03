@@ -44,7 +44,9 @@ vi.mock("../pages/Dashboard", () => ({
   ),
 }));
 vi.mock("../pages/Atlas", () => ({
-  Atlas: () => <div data-testid="page-atlas" />,
+  Atlas: (p: { focusMuscleId?: string }) => (
+    <div data-testid="page-atlas">{p.focusMuscleId ?? ""}</div>
+  ),
 }));
 vi.mock("../pages/Exercise", () => ({
   Exercise: (p: { exerciseId: string }) => (
@@ -52,12 +54,11 @@ vi.mock("../pages/Exercise", () => ({
   ),
 }));
 vi.mock("../pages/Workouts", () => ({
-  Workouts: (p: { onOpenRoutine?: () => void; onOpenPrograms: () => void }) => (
+  Workouts: (p: { onOpenRoutine?: () => void }) => (
     <div data-testid="page-workouts">
       <button disabled={!p.onOpenRoutine} onClick={() => p.onOpenRoutine?.()}>
         wk-open-routine
       </button>
-      <button onClick={p.onOpenPrograms}>wk-open-programs</button>
     </div>
   ),
 }));
@@ -72,9 +73,8 @@ vi.mock("../pages/Measurements", () => ({
   Measurements: () => <div data-testid="page-measurements" />,
 }));
 vi.mock("../pages/Body", () => ({
-  Body: (p: { onOpenMeasurements: () => void; onOpenAtlas: () => void }) => (
+  Body: (p: { onOpenAtlas: () => void }) => (
     <div data-testid="page-body">
-      <button onClick={p.onOpenMeasurements}>body-open-meas</button>
       <button onClick={p.onOpenAtlas}>body-open-atlas</button>
     </div>
   ),
@@ -82,6 +82,13 @@ vi.mock("../pages/Body", () => ({
 vi.mock("../pages/Programs", () => ({
   Programs: (p: { activeProgramId: string | null }) => (
     <div data-testid="page-programs">{p.activeProgramId ?? "none"}</div>
+  ),
+}));
+vi.mock("../pages/WorkoutHistory", () => ({
+  WorkoutHistory: (p: { onNavigate: (t: string) => void }) => (
+    <div data-testid="page-history">
+      <button onClick={() => p.onNavigate("workouts")}>hist-back</button>
+    </div>
   ),
 }));
 
@@ -96,6 +103,7 @@ function baseProps(over: Partial<FizrukRouterProps> = {}): FizrukRouterProps {
     todaySession: null,
     onNavigate: vi.fn(),
     onStartProgramWorkout: vi.fn(),
+    onQuickStart: vi.fn(),
     onOpenModule: undefined,
     ...over,
   };
@@ -120,6 +128,7 @@ describe("FizrukRouter — page switch", () => {
     ["programs", "page-programs"],
     ["body", "page-body"],
     ["exercise", "page-exercise"],
+    ["history", "page-history"],
   ] as const)("renders the %s page", async (page, testid) => {
     render(<FizrukRouter {...baseProps({ page })} />);
     expect(await screen.findByTestId(testid)).toBeInTheDocument();
@@ -164,13 +173,6 @@ describe("FizrukRouter — prop wiring", () => {
     expect(onOpenModule).toHaveBeenCalledWith("routine", { hash: "calendar" });
   });
 
-  it("workouts onOpenPrograms navigates to programs", async () => {
-    const onNavigate = vi.fn();
-    render(<FizrukRouter {...baseProps({ page: "workouts", onNavigate })} />);
-    fireEvent.click(await screen.findByText("wk-open-programs"));
-    expect(onNavigate).toHaveBeenCalledWith("programs");
-  });
-
   it("progress onNavigate routes through props", async () => {
     const onNavigate = vi.fn();
     render(<FizrukRouter {...baseProps({ page: "progress", onNavigate })} />);
@@ -178,13 +180,21 @@ describe("FizrukRouter — prop wiring", () => {
     expect(onNavigate).toHaveBeenCalledWith("dashboard");
   });
 
-  it("body onOpenMeasurements / onOpenAtlas map to navigate targets", async () => {
+  it("body onOpenAtlas maps to the atlas navigate target", async () => {
     const onNavigate = vi.fn();
     render(<FizrukRouter {...baseProps({ page: "body", onNavigate })} />);
-    fireEvent.click(await screen.findByText("body-open-meas"));
-    expect(onNavigate).toHaveBeenCalledWith("measurements");
-    fireEvent.click(screen.getByText("body-open-atlas"));
+    fireEvent.click(await screen.findByText("body-open-atlas"));
     expect(onNavigate).toHaveBeenCalledWith("atlas");
+  });
+
+  // Спека `fizruk-hero-recovery-bars.md` рішення 4.
+  it("atlas forwards atlasMuscleId as focusMuscleId", async () => {
+    render(
+      <FizrukRouter
+        {...baseProps({ page: "atlas", atlasMuscleId: "chest" })}
+      />,
+    );
+    expect(await screen.findByTestId("page-atlas")).toHaveTextContent("chest");
   });
 
   it("exercise forwards the exerciseId (and falls back to empty string)", async () => {
@@ -204,6 +214,13 @@ describe("FizrukRouter — prop wiring", () => {
     );
     const node = await screen.findByTestId("page-exercise");
     expect(node).toHaveTextContent("");
+  });
+
+  it("history onNavigate routes through props", async () => {
+    const onNavigate = vi.fn();
+    render(<FizrukRouter {...baseProps({ page: "history", onNavigate })} />);
+    fireEvent.click(await screen.findByText("hist-back"));
+    expect(onNavigate).toHaveBeenCalledWith("workouts");
   });
 
   it("programs receives the active program id", async () => {

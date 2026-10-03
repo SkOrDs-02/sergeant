@@ -124,4 +124,14 @@ describe("useActivationV2Boot", () => {
       expect(useActivationV2Mock.mock.calls.length).toBeGreaterThan(before),
     );
   });
+
+  it("forwards hook options to useActivationV2", () => {
+    authState.user = { createdAt: "2026-06-23T00:00:00.000Z" };
+    renderHook(() => useActivationV2Boot({ variant: "goal_first" }), {
+      wrapper: makeWrapper(qc),
+    });
+    expect(useActivationV2Mock).toHaveBeenCalledWith(expect.any(Object), {
+      variant: "goal_first",
+    });
+  });
 });

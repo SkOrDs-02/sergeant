@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
  * on SQLite for both surfaces — web (sqlite-wasm via OPFS-SAH) and mobile
  * (`expo-sqlite`).
  *
- * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Differences from Postgres:
  * - `id` is TEXT (UUID stored as a string — SQLite has no native UUID).
@@ -110,6 +110,8 @@ export const nutritionPantryItems = sqliteTable(
     qty: real(),
     unit: text(),
     notes: text(),
+    /** Дзеркало PG-колонки з міграції 130 — див. `pg/nutrition.ts`. */
+    sources: text(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: text("created_at")
       .notNull()
@@ -125,6 +127,70 @@ export const nutritionPantryItems = sqliteTable(
       table.sortOrder,
     ),
     index("nutrition_pantry_items_user_active_idx_lite")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for the `nutrition_pantry_events` table.
+ *
+ * Дзеркало `086_nutrition_pantry_events.sql` / `pg/nutrition.ts`. Клієнтський
+ * DDL живе у `NUTRITION_004_PANTRY_EVENTS_SQL`
+ * (`sqlite/migrations/index.ts`).
+ *
+ * Append-only журнал руху продуктів у коморі (W1-PANTRY-APPEND, стадія 1).
+ * На цій стадії у нього ніхто не пише і з нього ніхто не читає.
+ *
+ * Відмінності від Postgres — лише звичні для цього пакета: TIMESTAMPTZ → TEXT
+ * (ISO-8601). Типи id тут ЗБІГАЮТЬСЯ з PG (обидва TEXT) — на відміну від
+ * `nutritionPantryItems`, де PG-сторона помилково `uuid`, а клієнт шле
+ * `<pantryId>::<idx>::<name>`. Див. AI-CONTEXT у `pg/nutrition.ts`.
+ *
+ * CHECK-констрейнти (`kind IN (…)`, `qty_shape`) живуть лише у сирому DDL:
+ * drizzle-таблиця описує форму рядка, а не валідацію — валідація дублюється
+ * у `derivePantryQty` і в серверному apply-шляху.
+ */
+export const nutritionPantryEvents = sqliteTable(
+  "nutrition_pantry_events",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    pantryId: text("pantry_id").notNull(),
+    itemId: text("item_id"),
+    itemKey: text("item_key").notNull(),
+    kind: text().notNull(),
+    deltaQty: real("delta_qty"),
+    absQty: real("abs_qty"),
+    unit: text(),
+    source: text().notNull().default("manual"),
+    mealId: text("meal_id"),
+    occurredAt: text("occurred_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    /**
+     * Client timezone offset (minutes) at event time — client migration
+     * `006_nutrition_events_tz_offset.sql`, mirrors PG migration 109
+     * (pre-beta schema-debt audit 2026-08-04). Nullable: NULL for
+     * pre-006 rows / clients not yet sending it.
+     */
+    tzOffsetMin: integer("tz_offset_min"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("nutrition_pantry_events_user_item_idx_lite").on(
+      table.userId,
+      table.pantryId,
+      table.itemKey,
+      table.occurredAt,
+    ),
+    index("nutrition_pantry_events_user_active_idx_lite")
       .on(table.userId, table.deletedAt)
       .where(sql`${table.deletedAt} IS NULL`),
   ],
@@ -148,6 +214,62 @@ export const nutritionPrefs = sqliteTable("nutrition_prefs", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+/**
+ * SQLite schema for the `nutrition_goal_periods` table.
+ *
+ * Дзеркало `087_nutrition_goal_periods.sql` / `pg/nutrition.ts`. Клієнтський
+ * DDL живе у `NUTRITION_005_GOAL_PERIODS_SQL` (`sqlite/migrations/index.ts`).
+ *
+ * Append-only журнал цілей КБЖВ (W1-KBJU-APPEND, стадія 1). На цій стадії у
+ * нього ПИШУТЬ (дуал-райт паралельно до `prefs-upsert`), але з нього ніхто
+ * НЕ ЧИТАЄ: цілі на екранах і далі беруться з `nutritionPrefs.prefsJson`.
+ *
+ * Відмінності від Postgres — лише звичні для цього пакета: TIMESTAMPTZ → TEXT
+ * (ISO-8601). Тип `id` тут ЗБІГАЄТЬСЯ з PG (обидва TEXT) — клієнтський id
+ * детермінований і не є UUID, див. AI-CONTEXT у `pg/nutrition.ts`.
+ *
+ * CHECK-констрейнти (`origin IN (…)`, форма `effective_from`) живуть лише в
+ * сирому DDL: drizzle-таблиця описує форму рядка, а не валідацію — валідація
+ * дублюється в серверному apply-шляху і в резолвері.
+ */
+export const nutritionGoalPeriods = sqliteTable(
+  "nutrition_goal_periods",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    effectiveFrom: text("effective_from").notNull(),
+    kcal: integer(),
+    proteinG: real("protein_g"),
+    fatG: real("fat_g"),
+    carbsG: real("carbs_g"),
+    waterMl: integer("water_ml"),
+    origin: text().notNull().default("manual"),
+    /**
+     * Client timezone offset (minutes) at the moment the goal step was
+     * recorded — client migration `006_nutrition_events_tz_offset.sql`,
+     * mirrors PG migration 109 (pre-beta schema-debt audit 2026-08-04).
+     */
+    tzOffsetMin: integer("tz_offset_min"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("nutrition_goal_periods_user_effective_idx_lite").on(
+      table.userId,
+      table.effectiveFrom,
+      table.createdAt,
+    ),
+    index("nutrition_goal_periods_user_active_idx_lite")
+      .on(table.userId, table.deletedAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
 
 /**
  * SQLite schema for the `nutrition_recipes` table.
@@ -188,8 +310,8 @@ export const nutritionRecipes = sqliteTable(
 /**
  * SQLite schema for the `nutrition_water_log` table.
  *
- * Один рядок на (user, date) — мілілітри води за день. Дзеркалить
- * `routine_pushups` за формою. Day key — `YYYY-MM-DD` у локальному
+ * Один рядок на (user, date) — мілілітри води за день (таку ж форму мав
+ * знятий лічильник віджимань). Day key — `YYYY-MM-DD` у локальному
  * часовому поясі користувача (як уже працює `WaterLog` blob у
  * `packages/nutrition-domain/src/waterLog.ts`).
  *
@@ -202,6 +324,9 @@ export const nutritionWaterLog = sqliteTable(
     userId: text("user_id").notNull(),
     dateKey: text("date_key").notNull(),
     volumeMl: integer("volume_ml").notNull().default(0),
+    // ADR-0073 Крок 0.5а: nullable до Кроку 2 — SQLite ADD COLUMN не
+    // приймає неконстантний DEFAULT, адаптери колонку ще не пишуть.
+    createdAt: text("created_at"),
     updatedAt: text("updated_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -221,6 +346,8 @@ export const nutritionWaterLog = sqliteTable(
 export const nutritionShoppingList = sqliteTable("nutrition_shopping_list", {
   userId: text("user_id").primaryKey(),
   dataJson: text("data_json").notNull().default('{"categories":[]}'),
+  // ADR-0073 Крок 0.5а: nullable до Кроку 2 (див. nutritionWaterLog).
+  createdAt: text("created_at"),
   updatedAt: text("updated_at")
     .notNull()
     .default(sql`(datetime('now'))`),

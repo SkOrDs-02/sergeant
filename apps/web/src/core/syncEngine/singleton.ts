@@ -1,8 +1,9 @@
 import {
   resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
+  SYNC_V2_PULL_MAX_LIMIT,
 } from "@sergeant/shared";
-import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -13,14 +14,93 @@ import { webKVStore } from "@shared/lib/storage/storage";
 // entry — у Vercel-збірці це падало TDZ-крахом (`r is not a function`) і
 // валило весь рендер у проді.
 import { getSession } from "../auth/authClient";
+import {
+  claimDbOwnership,
+  readDbOwnership,
+  subscribeDbOwnership,
+} from "../db/dbOwnership";
 
+import { type ClockSkewReport, createClockSkewMonitor } from "./clockSkew";
 import { classifyOutboxBootOutcome } from "./outboxBoot";
+import { emitSyncOutboxChanged } from "./outboxChanged";
+import { setOutboxEnqueueNudge } from "./outboxNudge";
 import {
   createSyncEngineWriterRuntime,
   type SyncEngineWriterRuntime,
 } from "./syncEngineWriter";
+import {
+  createSyncEngineReaderRuntime,
+  type SyncEngineReaderRuntime,
+} from "./syncEngineReader";
+import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
+type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
+
+/**
+ * `lww_conflict` — штатний результат last-write-wins: сервер уже має свіжішу
+ * версію рядка, локальна операція просто програла. Решта термінальних причин
+ * означає, що дані НЕ доїхали і самі не доїдуть.
+ */
+const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set(["lww_conflict"]);
+
+/**
+ * Термінальний reject у outbox довго був повністю німим: рядок отримував
+ * `status='rejected'` у локальному SQLite і на цьому все — ні логу, ні Sentry.
+ * Саме через це розлад типів PK у Рутині (`hab_<uuid>` проти `uuid`-колонки)
+ * прожив від 2026-07-24 до 2026-08-01: сервер сумлінно писав
+ * `sync_v2_apply_failed` і крутив `sync_op_log_apply_total`, а на клієнті
+ * ніхто нічого не бачив. Див. `docs/work/specs/audits/web-qa-pre-beta.md`.
+ *
+ * `syncV2.pushLoop` навмисно лишається без обсервабіліті (це переносний
+ * примітив), тож звітуємо тут — у місці, де рантайм збирається для вебу.
+ */
+function reportTerminalRejection(
+  id: number,
+  reason: string,
+  meta?: { readonly table: string; readonly op: string },
+  clock?: { readonly skewMs: number | null },
+): void {
+  // `lww_conflict` benign лише доки годинник пристрою в нормі: при
+  // виміряному зсуві це вже не «сервер мав свіжіше», а «цей пристрій
+  // програє все» — див. `clockSkew.ts`.
+  if (BENIGN_REJECT_REASONS.has(reason) && clock === undefined) return;
+  void (async () => {
+    try {
+      const { logger } = await import("@shared/lib");
+      logger.warn("[sync] outbox op rejected terminally", {
+        id,
+        reason,
+        table: meta?.table,
+        op: meta?.op,
+        clockSkewMs: clock?.skewMs,
+      });
+      const { captureException } = await import("../observability/sentry");
+      // Таблиця й тип операції — в ЗАГОЛОВОК помилки, не лише в теги:
+      // Sentry групує issue за текстом, тож без цього відхилення різних
+      // сутностей злипаються в одну issue, і в ній видно причину без
+      // предмета. Саме так `SERGEANT-WEB-Q` («tombstoned», 25 юзерів)
+      // мовчав про те, що йдеться про finyk і про undo.
+      //
+      // `row` (payload) не логуємо й не шлемо: там суми, назви й нотатки
+      // користувача (Hard Rule #21).
+      const subject = meta ? `${meta.table}.${meta.op}` : "unknown";
+      captureException(
+        new Error(`sync outbox op rejected: ${reason} (${subject})`),
+        {
+          tags: {
+            area: "sync",
+            reject_reason: reason,
+            sync_table: meta?.table ?? "unknown",
+            sync_op: meta?.op ?? "unknown",
+          },
+        },
+      );
+    } catch {
+      /* обсервабіліті ніколи не має ламати шлях запису */
+    }
+  })();
+}
 
 export interface BootSyncEngineWriterOptions {
   readonly createRuntime?: RuntimeFactory;
@@ -46,10 +126,26 @@ export function bootSyncEngineWriter(
   const createRuntime = options.createRuntime ?? createDefaultRuntime;
   const captureException = options.captureException;
 
-  inFlight = createRuntime()
+  // Синк у вкладці-послідовнику не має куди писати: персистентний стор
+  // тримає лідер, а тут база памʼятєва й одноразова. Заміряно в проді
+  // 2026-09-22 (SERGEANT-WEB-1A): така вкладка тягнула операції з сервера
+  // й відхиляла їх усі - 12 подій за 4 секунди, 77 за добу, усі з тегом
+  // `sqlite.vfs: memory`. Дані від цього не псувались (`markRejected`
+  // пише лише в локальну базу), але це чистий шум, трафік і батарея.
+  inFlight = claimDbOwnership()
+    .then((owner) => (owner === "follower" ? null : createRuntime()))
     .then((created) => {
+      if (!created) return null;
       runtime = created;
       runtime.start();
+      // Лідерство можна віддати кнопкою «Працювати тут» уже після старту.
+      // Тоді база закривається під рантаймом, тож його треба зупинити, а не
+      // лишати тікати в порожнечу.
+      stopWhenFollower(created);
+      // Аутбокс-нудж: свіжий enqueue штовхає push негайно замість
+      // очікування ~30-секундного тіку. Реєструємо ПІСЛЯ `start()`, щоб
+      // нудж ніколи не прилетів у неармований scheduler.
+      setOutboxEnqueueNudge(() => created.notifyEnqueued());
       return runtime;
     })
     .catch((error: unknown) => {
@@ -63,13 +159,140 @@ export function bootSyncEngineWriter(
   return inFlight;
 }
 
+/** Те саме для reader-а: він тримає власний інтервал догону. */
+function stopReaderWhenFollower(created: SyncEngineReaderRuntime): void {
+  const unsubscribe = subscribeDbOwnership(() => {
+    if (readDbOwnership() !== "follower") return;
+    unsubscribe();
+    readerRuntime = null;
+    created.stop();
+  });
+}
+
+/** Зупиняє рантайм, щойно ця вкладка перестала бути власником бази. */
+function stopWhenFollower(created: SyncEngineWriterRuntime): void {
+  const unsubscribe = subscribeDbOwnership(() => {
+    if (readDbOwnership() !== "follower") return;
+    unsubscribe();
+    runtime = null;
+    setOutboxEnqueueNudge(null);
+    created.stop();
+  });
+}
+
 export function __resetSyncEngineWriterForTests(): void {
   runtime?.stop();
   runtime = null;
   inFlight = null;
+  setOutboxEnqueueNudge(null);
+  readerRuntime?.stop();
+  readerRuntime = null;
+  readerInFlight = null;
 }
 
-async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
+export interface BootSyncEngineReaderOptions {
+  readonly createRuntime?: ReaderRuntimeFactory;
+  readonly captureException?: (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) => void;
+}
+
+let readerRuntime: SyncEngineReaderRuntime | null = null;
+let readerInFlight: Promise<SyncEngineReaderRuntime | null> | null = null;
+
+export function getSyncEngineReader(): SyncEngineReaderRuntime | null {
+  return readerRuntime;
+}
+
+export function bootSyncEngineReader(
+  options: BootSyncEngineReaderOptions = {},
+): Promise<SyncEngineReaderRuntime | null> {
+  if (readerRuntime) return Promise.resolve(readerRuntime);
+  if (readerInFlight) return readerInFlight;
+
+  const createRuntime = options.createRuntime ?? createDefaultReaderRuntime;
+  const captureException = options.captureException;
+
+  // Та сама причина, що й для writer-а нижче: у вкладці-послідовнику база
+  // памʼятєва, і догін курсора тягне туди весь оп-лог, щоб усе відхилити.
+  // Саме reader робить `/api/v2/sync/pull` - заміряно 2026-09-23 на
+  // планшеті: 51 запит за 80 секунд із вкладки, яка нічого не показує.
+  readerInFlight = claimDbOwnership()
+    .then((owner) => (owner === "follower" ? null : createRuntime()))
+    .then((created) => {
+      if (!created) return null;
+      readerRuntime = created;
+      readerRuntime.start();
+      stopReaderWhenFollower(created);
+      return readerRuntime;
+    })
+    .catch((error: unknown) => {
+      captureException?.(error, { scope: "sync-v2-reader-boot" });
+      return null;
+    })
+    .finally(() => {
+      readerInFlight = null;
+    });
+
+  return readerInFlight;
+}
+
+async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
+  const shared = await createSyncSharedContext();
+  const pullIntervalMs = randomizeIntervalMs(60_000, 0.2);
+
+  return createSyncEngineReaderRuntime({
+    pull: (since, opts) =>
+      shared.apiClient.syncV2.pullV2(since, {
+        limit: opts.limit,
+        originDeviceId: opts.originDeviceId,
+      }),
+    resolveClient: shared.resolveClient,
+    resolveUserId: shared.resolveUserId,
+    originDeviceId: shared.originDeviceId,
+    setInterval: (handler, ms) => window.setInterval(handler, ms),
+    clearInterval: (handle) => window.clearInterval(handle as number),
+    eventTarget: window,
+    intervalMs: pullIntervalMs,
+    // Стеля роуту (`SYNC_V2_PULL_MAX_LIMIT`), а не дефолт схеми.
+    //
+    // AI-CONTEXT: на сотні по 100 догін порожнього курсора коштує стільки
+    // запитів, скільки в акаунті операцій, поділити на сто. Прод
+    // 2026-09-21: `sync_op_log` на 46 тисяч рядків = ~460 запитів проти
+    // бюджету 60/хв, тобто 429 гарантовано — і крок `pull-before`
+    // анонімної міграції падав щоразу. Пʼятсот дає ~92 запити на той
+    // самий догін. Рейт-ліміт це не скасовує (`rateLimitWaitMs` у
+    // `syncEngineReader.ts` доводить прохід до кінця), але вкорочує його
+    // вп'ятеро.
+    limit: SYNC_V2_PULL_MAX_LIMIT,
+    captureException: shared.captureException,
+  });
+}
+
+interface SyncSharedContext {
+  readonly resolveClient: () => Promise<SqliteMigrationClient>;
+  readonly resolveUserId: () => Promise<string | null>;
+  readonly originDeviceId: string;
+  readonly apiClient: typeof import("@shared/api").apiClient;
+  readonly dbSchema: typeof import("@sergeant/db-schema/sqlite");
+  readonly captureException: (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) => void;
+  readonly addBreadcrumb: (
+    breadcrumb: import("./syncEngineWriter.js").SentryBreadcrumb,
+  ) => void;
+  readonly onOutboxQuarantine: (event: {
+    readonly id: number;
+    readonly tableName: string;
+    readonly op: string;
+    readonly reason: string;
+  }) => void;
+  readonly writerIntervalMs: number;
+}
+
+async function createSyncSharedContext(): Promise<SyncSharedContext> {
   if (typeof window === "undefined") {
     throw new Error("sync v2 writer boot requires a browser window");
   }
@@ -214,7 +437,15 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     // maintenance failure never blocks the writer boot; a non-zero purge
     // emits a `sync_op_outbox.retention` breadcrumb for the Grafana
     // counter (same pattern as the quarantine breadcrumb below).
-    await sweepStaleTerminalOutbox({
+    //
+    // PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the purge
+    // used to be entirely invisible to the user — `deadLetter`/`rejected`
+    // pills in `SyncStatusSheet` simply dropped to zero along with the
+    // rows they counted. `recordOutboxPurgeNotice` durably records the
+    // count so the sheet can surface "N old records were removed" the
+    // next time it renders, even though this sweep itself runs long
+    // before any UI mounts.
+    const purgedCount = await sweepStaleTerminalOutbox({
       purge: () =>
         dbSchema.purgeStaleTerminalOutbox(client, {
           olderThanDays: dbSchema.SYNC_OP_OUTBOX_STALE_TTL_DAYS,
@@ -226,6 +457,7 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
           context !== undefined ? { extra: context } : undefined,
         ),
     });
+    recordOutboxPurgeNotice(purgedCount);
 
     return client;
   };
@@ -271,20 +503,8 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   const originDeviceId = resolveOriginDeviceId({ store: webKVStore });
   sentry.setSentryTag("sync.origin_device_id_present", "true");
 
-  // Per-install ±20% interval randomization. After a fleet-wide outage
-  // every client resumes its periodic drain on the same wall-clock
-  // grid (30s base), which produces a synchronized thundering herd at
-  // each boundary. Picking the period once at boot from `[24s, 36s]`
-  // desynchronizes the fleet without changing average throughput per
-  // device (T3 audit MEDIUM finding; pairs with `jitterMs` below).
-  const intervalMs = randomizeIntervalMs(30_000, 0.2);
+  const writerIntervalMs = randomizeIntervalMs(30_000, 0.2);
 
-  // T3 audit HIGH#3: surface every poison-row quarantine via Sentry
-  // so SRE has visibility on the corruption class that was previously
-  // a silent head-of-line stall. The breadcrumb is enough — we do NOT
-  // captureException because a single corrupt row in an otherwise
-  // healthy outbox is not an "error" to alert on; the alerting layer
-  // builds a Grafana counter off these breadcrumbs.
   const onOutboxQuarantine = (event: {
     readonly id: number;
     readonly tableName: string;
@@ -296,51 +516,186 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       level: "warning",
       message: `sync_op_outbox.quarantine id=${event.id} table=${event.tableName} op=${event.op} reason=${event.reason}`,
     });
+    // Breadcrumb-а МАЛО: він спливає у Sentry лише разом із якоюсь
+    // іншою захопленою подією, а карантин нічого не кидає — тому
+    // де-факто ми про нього не дізнавались ніколи. А це втрата запису
+    // користувача: карантинний рядок не показує банер (`SyncStatusCounts`
+    // знає лише pending/rejected/dead_letter) і не бере `recoverDeadLetter`.
+    //
+    // Аудит шару даних 2026-08-05, рішення власника: спершу почати ЦЕ
+    // БАЧИТИ, і вже за даними вирішувати, чи потрібен UI відновлення.
+    // Тому окрема подія, а не лише хлібна крихта. Разом із нею
+    // `SYNC_OP_OUTBOX_PURGEABLE_STATUSES` більше не дає TTL-замітачу
+    // стирати карантин, тож рядок лишається на диску для розслідування.
+    //
+    // Шуму не боїмось: карантин — це нерозбірливий payload, подія
+    // структурно рідкісна. Якщо виявиться, що вона часта, це і є та
+    // відповідь, заради якої логування додано.
+    sentry.captureException(
+      new Error(`sync_op_outbox quarantined: ${event.reason}`),
+      {
+        extra: {
+          outboxRowId: event.id,
+          tableName: event.tableName,
+          op: event.op,
+          reason: event.reason,
+        },
+      },
+    );
   };
+
+  const captureException = (
+    error: unknown,
+    context?: Record<string, unknown>,
+  ) =>
+    sentry.captureException(
+      error,
+      context !== undefined ? { extra: context } : undefined,
+    );
+
+  return {
+    resolveClient,
+    resolveUserId,
+    originDeviceId,
+    apiClient,
+    dbSchema,
+    captureException,
+    addBreadcrumb: sentry.addSentryBreadcrumb,
+    onOutboxQuarantine,
+    writerIntervalMs,
+  };
+}
+
+/**
+ * Один звіт за сесію на кожен сигнал `clockSkew.ts`: warn у лог + Sentry
+ * issue з передметом у заголовку (за тим самим правилом групування, що й у
+ * `reportTerminalRejection`). Payload-ів тут немає — лише числа.
+ */
+function reportClockSkew(report: ClockSkewReport): void {
+  void (async () => {
+    try {
+      const { logger } = await import("@shared/lib");
+      logger.warn("[sync] device clock skew signal", {
+        kind: report.kind,
+        skewMs: report.skewMs,
+        streak: report.streak,
+      });
+      const { captureException } = await import("../observability/sentry");
+      const subject =
+        report.kind === "skew"
+          ? `device clock skew ${Math.round((report.skewMs ?? 0) / 60_000)} min`
+          : `lww_conflict streak ${report.streak}`;
+      captureException(new Error(`sync clock: ${subject}`), {
+        tags: { area: "sync", reason: report.kind },
+      });
+    } catch {
+      /* observability must never break sync */
+    }
+  })();
+}
+
+async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
+  const shared = await createSyncSharedContext();
+  const clock = createClockSkewMonitor({ report: reportClockSkew });
 
   return createSyncEngineWriterRuntime({
     pushDeps: {
       drain: async (options) => {
-        const userId = await resolveUserId();
+        const userId = await shared.resolveUserId();
         if (!userId) return [];
-        return dbSchema.drainSyncOpOutbox(await resolveClient(), {
+        return shared.dbSchema.drainSyncOpOutbox(await shared.resolveClient(), {
           ...options,
           userId,
-          onQuarantine: onOutboxQuarantine,
+          onQuarantine: shared.onOutboxQuarantine,
         });
       },
-      push: (ops, options) => apiClient.syncV2.pushV2(ops, options),
-      markSuccess: async (id) =>
-        dbSchema.markOutboxSuccess(await resolveClient(), id),
+      push: async (ops, options) => {
+        const response = await shared.apiClient.syncV2.pushV2(ops, options);
+        clock.noteServerNow(response.server_now);
+        return response;
+      },
+      markSuccess: async (id) => {
+        clock.noteOutcome(null);
+        return shared.dbSchema.markOutboxSuccess(
+          await shared.resolveClient(),
+          id,
+        );
+      },
       markRetry: async (id, plan) =>
-        dbSchema.markOutboxRetry(await resolveClient(), id, plan),
-      markRejected: async (id, reason) =>
-        dbSchema.markOutboxRejected(await resolveClient(), id, reason),
-      planRetry: dbSchema.planRetry,
+        shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
+      markRejected: async (id, reason, meta) => {
+        clock.noteOutcome(reason);
+        reportTerminalRejection(
+          id,
+          reason,
+          meta,
+          clock.isSkewed() ? { skewMs: clock.skewMs() } : undefined,
+        );
+        return shared.dbSchema.markOutboxRejected(
+          await shared.resolveClient(),
+          id,
+          reason,
+        );
+      },
+      planRetry: shared.dbSchema.planRetry,
       now: () => new Date(),
-      // Retry jitter on transient batch failures. Spreads each row's
-      // `next_retry_at` across `[0, SYNC_OP_JITTER_WINDOW_MS]` so a
-      // batch that fails together does not retry together. Called once
-      // per `planRetry` invocation within a tick (per-row, not
-      // per-batch) — the caching boundary is the `now` value pinned at
-      // the tick start, NOT the jitter sample.
-      jitterMs: () => Math.random() * dbSchema.SYNC_OP_JITTER_WINDOW_MS,
+      jitterMs: () => Math.random() * shared.dbSchema.SYNC_OP_JITTER_WINDOW_MS,
+      // Без цього тик у режимі польоту / метро палить спробу кожному
+      // рядку черги, і за 10-15 хвилин уся черга стає `dead_letter`,
+      // яку оживляє лише ручний тап. Контракт і межі довіри до
+      // `navigator.onLine` — у докстрінгу `isOnline` (`syncV2.pushLoop.ts`).
+      isOnline: () => navigator.onLine,
     },
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
     eventTarget: window,
-    getStatus: async () => dbSchema.countOutboxByStatus(await resolveClient()),
-    recoverDeadLetter: async (selector: RecoverDeadLetterSelector) =>
-      dbSchema.recoverDeadLetter(await resolveClient(), selector),
-    addBreadcrumb: sentry.addSentryBreadcrumb,
-    captureException: (error, context) =>
-      sentry.captureException(
-        error,
-        context !== undefined ? { extra: context } : undefined,
-      ),
-    intervalMs,
+    // `rejected` у лічильнику і в списку — ОДНА множина: `lww_conflict`
+    // виключено з обох тим самим списком, що й у `reportTerminalRejection`
+    // (це не втрата даних, людині його показувати нема за що). Інакше пілюля
+    // казала б «2 записи не прийнято» над порожнім `SyncRejectedList`.
+    getStatus: async () => {
+      const client = await shared.resolveClient();
+      const counts = await shared.dbSchema.countOutboxByStatus(client);
+      const rejected = await shared.dbSchema.countRejectedOutbox(client, {
+        excludeReasons: [...BENIGN_REJECT_REASONS],
+      });
+      return { ...counts, rejected };
+    },
+    listRejected: async () =>
+      shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
+        excludeReasons: [...BENIGN_REJECT_REASONS],
+      }),
+    // Скоуп власника домішуємо тут, бо тільки цей шар знає сесію. Без
+    // нього `{ all: true }` оживляв dead-letter-рядки ВСІХ локальних
+    // акаунтів: на kvvfs-фолбеку партиції ділять один фізичний файл.
+    // Немає користувача — немає чого оживляти (той самий контракт, що в
+    // `drain` вище).
+    recoverDeadLetter: async (target: RecoverDeadLetterTarget) => {
+      const userId = await shared.resolveUserId();
+      if (!userId) return { recovered: [], skipped: [] };
+      const client = await shared.resolveClient();
+      return shared.dbSchema.recoverDeadLetter(
+        client,
+        target.all === true
+          ? { all: true, userId }
+          : { ids: target.ids, userId },
+      );
+    },
+    addBreadcrumb: shared.addBreadcrumb,
+    captureException: shared.captureException,
+    intervalMs: shared.writerIntervalMs,
     limit: 100,
-    originDeviceId,
+    originDeviceId: shared.originDeviceId,
+    onTickComplete: (result) => {
+      // Тік міг спорожнити чергу — без цього плашка «Синхронізація · N»
+      // висіла до наступного 30-секундного опитування.
+      emitSyncOutboxChanged();
+      if (result.pushed > 0) {
+        void bootSyncEngineReader().then((reader) => {
+          void reader?.pullOnce();
+        });
+      }
+    },
   });
 }
 

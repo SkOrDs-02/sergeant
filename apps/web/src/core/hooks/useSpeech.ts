@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { logger } from "@shared/lib";
 
 type SpeechRecognitionResultLike = {
@@ -30,7 +30,7 @@ type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
 
 // Web Speech API не входить у lib.dom — типи держимо локально і
 // читаємо `window` через приватну window-shape без `declare global`,
-// щоб не нав'язувати єдину сигнатуру іншим call-сайтам (наприклад,
+// щоб не навʼязувати єдину сигнатуру іншим call-сайтам (наприклад,
 // `VoiceMicButton.tsx` має власну сумісну форму, ширшу для тестів).
 type WindowWithSpeech = typeof window & {
   SpeechRecognition?: SpeechRecognitionCtor;
@@ -49,7 +49,9 @@ export function useSpeech(
   const [listening, setListening] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const cbRef = useRef(onResult);
-  cbRef.current = onResult;
+  useEffect(() => {
+    cbRef.current = onResult;
+  }, [onResult]);
 
   const supported =
     typeof window !== "undefined" &&

@@ -1,13 +1,13 @@
 ---
 name: sergeant-e2e-testing
-description: Use when writing, reviewing, or debugging Playwright E2E tests in apps/web; for auth fixtures, network mocking, trace debugging, or CI retry config; UA: Playwright, E2E тести, e2e, smoke test.
+description: "Use when writing, reviewing, or debugging Playwright E2E tests in apps/web; for auth fixtures, network mocking, trace debugging, or CI retry config; UA: Playwright, E2E тести, e2e, smoke test."
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` so UA-only chat routing still resolves the right SKILL.
 ---
 
 # E2E Testing (Playwright) у Sergeant
 
-Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/` split into `tests/smoke/` (auth and critical path) and `tests/a11y/` (axe-core accessibility snapshots). Config: `apps/web/playwright.config.ts`.
+Playwright tests in Sergeant run against a preview build (`vite build && vite preview`). The test suite lives in `apps/web/tests/`, split into 7 dirs: `smoke/` (auth and critical path), `a11y/` (axe-core accessibility snapshots), `fixtures/` (shared seed data — not a spec lane), `ledger/` (Finyk ledger flows), `mobile/` (44px touch-target audit, `pnpm --filter @sergeant/web e2e:mobile` — local-only, **not** wired into CI), `profiles/` (user-profile flows), and `utils/` (shared helpers — not a spec lane). Each spec lane has its own Playwright config: `playwright.config.ts` (base — a11y, self-managed build+preview `webServer`), `playwright.smoke.config.ts` (boots Postgres + server + build + preview via `tests/smoke/start-smoke-webserver.mjs`), `playwright.ledger.config.ts`, `playwright.mobile.config.ts`, `playwright.profiles.config.ts`, `playwright.pwa-regression.config.ts`, and `playwright.visual.config.ts` — 7 config files total.
 
 ## 8 Golden Rules
 
@@ -31,13 +31,19 @@ For deeper guidance on specific scenarios:
 
 ## Running tests
 
+Both configs boot their own web server — do not start `pnpm build && pnpm preview` manually.
+
 ```bash
-cd apps/web
-pnpm build && pnpm preview &           # start preview server (required)
-pnpm playwright test tests/smoke/      # smoke suite
-pnpm playwright test tests/a11y/       # accessibility suite
-pnpm playwright test --ui              # interactive UI mode (local debug)
-pnpm playwright test --trace on        # force-enable traces locally
+pnpm --filter @sergeant/web e2e            # smoke lane (playwright.smoke.config.ts, --grep @critical)
+pnpm --filter @sergeant/web e2e:auth       # auth lane (playwright.smoke.config.ts, --grep @auth)
+pnpm --filter @sergeant/web e2e:mobile     # 44px touch-target audit (playwright.mobile.config.ts, local-only)
+pnpm --filter @sergeant/web e2e:profiles   # profiles lane (playwright.profiles.config.ts)
+pnpm --filter @sergeant/web test:a11y      # accessibility suite (playwright.config.ts, base config)
+pnpm --filter @sergeant/web test:visual    # visual regression (playwright.visual.config.ts, Argos)
+pnpm --filter @sergeant/web exec playwright test --config playwright.ledger.config.ts          # ledger lane (no dedicated script)
+pnpm --filter @sergeant/web exec playwright test --config playwright.pwa-regression.config.ts   # PWA regression lane (no dedicated script)
+pnpm --filter @sergeant/web exec playwright test --ui        # interactive UI mode (local debug)
+pnpm --filter @sergeant/web exec playwright test --trace on  # force-enable traces locally
 ```
 
 ## What NOT to do
@@ -51,6 +57,6 @@ pnpm playwright test --trace on        # force-enable traces locally
 
 ## Playbooks
 
-- `docs/00-start/playbooks/write-e2e-test.md` — execution order for writing or debugging an E2E/a11y test (seedFTUX, web-first assertions, preview run, trace debug).
-- `docs/00-start/playbooks/stabilize-flaky-test.md` — when a test becomes flaky in CI.
-- Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/write-e2e-test.md` — execution order for writing or debugging an E2E/a11y test (seedFTUX, web-first assertions, preview run, trace debug).
+- `docs/start/instructions/stabilize-flaky-test.md` — when a test becomes flaky in CI.
+- Skill catalog: `docs/start/agents/agent-skills-catalog.md`.

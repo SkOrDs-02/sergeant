@@ -10,15 +10,14 @@ import type { LegalDocument } from "./legalDocumentTypes";
 
 interface LegalDocumentViewProps {
   readonly document: LegalDocument;
-  readonly lastUpdated: string;
 }
 
-export function LegalDocumentView({
-  document,
-  lastUpdated,
-}: LegalDocumentViewProps) {
+export function LegalDocumentView({ document }: LegalDocumentViewProps) {
   return (
-    <MeshBackground className="min-h-screen overflow-y-auto px-5 py-8 sm:py-12">
+    <MeshBackground
+      className="h-app-dvh min-h-0 overflow-y-auto overscroll-contain px-5 py-8 sm:py-12"
+      data-testid="legal-scroll-container"
+    >
       <main
         id="main"
         tabIndex={-1}
@@ -41,12 +40,12 @@ export function LegalDocumentView({
               {document.intro}
             </p>
           </div>
-          <div className="rounded-3xl border border-warning-soft bg-warning-soft/40 p-4 text-left text-style-body-sm text-text">
+          <div className="rounded-3xl border border-warning-soft bg-warning-soft/40 p-4 text-left text-style-label text-text">
             <strong>Founder/lawyer review gate:</strong>{" "}
             {messages.legal.reviewGateNotice}
           </div>
           <p className="text-style-caption text-subtle">
-            {messages.legal.lastUpdatedPrefix} {lastUpdated}
+            {messages.legal.lastUpdatedPrefix} {document.lastUpdated}
           </p>
         </header>
 
@@ -57,7 +56,7 @@ export function LegalDocumentView({
               className="rounded-3xl border border-line bg-panel p-5 sm:p-6"
             >
               <h2 className="text-style-headline text-text">{section.title}</h2>
-              <div className="mt-3 space-y-3 text-style-body-sm text-muted">
+              <div className="mt-3 space-y-3 text-style-label text-muted">
                 {section.body.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
                 ))}
@@ -68,7 +67,7 @@ export function LegalDocumentView({
 
         <footer className="space-y-4 text-center">
           <LegalLinks />
-          <div className="flex flex-wrap items-center justify-center gap-3 text-style-body-sm">
+          <div className="flex flex-wrap items-center justify-center gap-3 text-style-label">
             <Link
               to={PRICING_PATH}
               className="inline-flex min-h-11 items-center px-1 text-brand-strong underline-offset-4 hover:underline focus-visible:outline-none focus-visible:underline"

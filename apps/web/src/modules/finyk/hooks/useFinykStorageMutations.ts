@@ -1,10 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import { hubKeys } from "@shared/lib/api/queryKeys";
+import { stripCategoryEmoji } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
+import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
 import {
   safeReadStringLS,
   safeWriteLS,
@@ -15,10 +17,15 @@ import type {
   CustomCategory,
   ManualExpense,
   TxCategoriesMap,
+  TxNotesMap,
   TxSplit,
   TxSplitsMap,
 } from "./useStorage.types";
 import type { FinykStorageSlots } from "./useFinykStorageSlots";
+import type {
+  LinkedTxMeta,
+  LinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 
 /**
  * Усі мутаційні методи Finyk-storage. Чисті по відношенню до React-стану:
@@ -40,9 +47,11 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     setHiddenAccounts,
     setHiddenTxIds,
     setTxCategories,
+    setTxNotes,
     setTxSplits,
     setMonoDebtLinkedTxIds,
     setCustomCategories,
+    manualExpenses,
     setManualExpenses,
     setExcludedStatTxIds,
     setDismissedRecurring,
@@ -59,28 +68,41 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
   const addManualExpense = (
     expense: Partial<ManualExpense> & { id?: unknown },
   ) => {
+    const isIncome = expense.kind === "income";
     const entry: ManualExpense = {
       id: expense?.id != null ? String(expense.id) : Date.now().toString(),
+      // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback for a missing entry date, not a Kyiv day-boundary computation.
       date: expense.date || new Date().toISOString(),
       description: expense.description || "",
       amount: Number(expense.amount) || 0,
-      category: expense.category || "інше",
+      category: expense.category || (isIncome ? "other-income" : "other"),
+      kind: isIncome ? "income" : "expense",
     };
     setManualExpenses((prev) => [entry, ...prev]);
     invalidateFinykPreview();
     // Product analytics: payload intentionally minimal (category + flag
     // whether a custom description was provided) — no amounts, no text.
-    trackEvent(ANALYTICS_EVENTS.EXPENSE_ADDED, {
-      category: entry.category,
-      hasDescription: Boolean(entry.description),
-      source: "manual",
-    });
+    //
+    // Хвиля 2: подія НЕ перейменовується і не дублюється новою — до неї лише
+    // дописані поля атрибуції петлі (`after_signal` / `ms_since_signal` /
+    // `signal`). Ренейм зламав би наявні дашборди й обірвав історію
+    // (`.telemetry/tracking-plan.yaml` § naming_convention).
+    trackEvent(
+      isIncome ? ANALYTICS_EVENTS.INCOME_ADDED : ANALYTICS_EVENTS.EXPENSE_ADDED,
+      {
+        category: entry.category,
+        hasDescription: Boolean(entry.description),
+        source: "manual",
+        ...readSignalContext("finyk"),
+      },
+    );
     // Activation funnel: fire once for the user's first-ever manual
-    // expense, keyed by a localStorage flag so seeded demo data doesn't
-    // count and so re-adds don't re-fire. `safeReadStringLS`/`safeWriteLS`
-    // swallow storage errors (locked-down private modes, quota), so we
-    // do not need a wrapping try/catch.
-    if (!safeReadStringLS("finyk_first_expense_seen_v1")) {
+    // EXPENSE (income intentionally excluded — it's a distinct activation
+    // hypothesis with no funnel defined yet), keyed by a localStorage flag
+    // so seeded demo data doesn't count and re-adds don't re-fire.
+    // `safeReadStringLS`/`safeWriteLS` swallow storage errors (locked-down
+    // private modes, quota), so we do not need a wrapping try/catch.
+    if (!isIncome && !safeReadStringLS("finyk_first_expense_seen_v1")) {
       safeWriteLS("finyk_first_expense_seen_v1", "1");
       trackEvent(ANALYTICS_EVENTS.FIRST_EXPENSE_ADDED, {
         category: entry.category,
@@ -89,10 +111,42 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     return entry;
   };
 
+  /**
+   * Повернути щойно видалену витрату після «Скасувати» в тості.
+   *
+   * Свідомо НЕ `addManualExpense(snapshot)`: знімок несе старий `id`, і
+   * `addManualExpense` без нього згенерує новий. Так undo доїжджає на
+   * сервер як звичайний новий запис. У Sentry — `SERGEANT-WEB-Q`.
+   *
+   * AI-CONTEXT: історично це був обхід серверного правила «видалення
+   * остаточне» — операція з тим самим id відхилялась із
+   * `reason: "tombstoned"`, тож запис повертався локально й НЕ повертався
+   * на сервері. Правило знято (див. `guardUuidPkApply` в
+   * `apps/server/src/modules/sync/applySync-helpers.ts`): тепер новіший
+   * запис воскрешає рядок за звичайним LWW, і старий id теж доїхав би.
+   *
+   * Новий id лишаємо навмисно — міняти його назад немає причини: для
+   * користувача нічого не змінюється (та сама сума, назва, дата й місце в
+   * списку), а поведінка не залежить від того, який сервер за проксі —
+   * web і server деплояться окремо, тож старий сервер із чинним правилом
+   * ще може відповідати цьому клієнту.
+   */
+  const restoreManualExpense = (snapshot: Partial<ManualExpense>) => {
+    const { id: _discardedId, ...withoutId } = snapshot;
+    void _discardedId;
+    addManualExpense(withoutId);
+  };
+
   const removeManualExpense = (id: string) => {
+    const removed = manualExpenses.find((e) => e.id === id);
     setManualExpenses((prev) => prev.filter((e) => e.id !== id));
     invalidateFinykPreview();
-    trackEvent(ANALYTICS_EVENTS.EXPENSE_DELETED, { source: "manual" });
+    trackEvent(
+      removed?.kind === "income"
+        ? ANALYTICS_EVENTS.INCOME_DELETED
+        : ANALYTICS_EVENTS.EXPENSE_DELETED,
+      { source: "manual" },
+    );
   };
 
   const editManualExpense = (
@@ -108,8 +162,10 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         if (patch?.description != null)
           next.description = String(patch.description || "");
         if (patch?.category != null)
-          next.category = String(patch.category || "інше");
+          next.category = String(patch.category || "other");
         if (patch?.amount != null) next.amount = Number(patch.amount) || 0;
+        if (patch?.kind === "income" || patch?.kind === "expense")
+          next.kind = patch.kind;
         return next;
       }),
     );
@@ -133,37 +189,76 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     });
   };
 
-  const toggleLinkedTx = (
+  /**
+   * Привʼязати транзакцію з **явною роллю** або зняти привʼязку
+   * (`role: null`).
+   *
+   * AI-CONTEXT: роль і сума зберігаються знімком у `txLinks`, бо (а) роль
+   * більше не виводиться зі знаку — це рішення користувача, і (б) сума не
+   * має залежати від того, чи потрапила транзакція у поточне вікно
+   * завантаження. Деталі семантики — `debtEngine.LinkedTxRole`.
+   *
+   * `meta.auto` (Level 2, 2026-09-11) позначає привʼязку, яку створило
+   * авто-правило (`debtAutoLink.ts`), не рука користувача. Відвʼязування
+   * такої привʼязки для `type === "debt"` дописує id у
+   * `autoLinkDismissedTxIds` — інакше матчер привʼязав би ту саму
+   * транзакцію назад на наступному проході (той самий клас бага, що
+   * tombstone-resurrection у звичках routine). Відвʼязування ручної
+   * привʼязки лишає поведінку без змін.
+   */
+  const setLinkedTxRole = (
     id: string,
     txId: string,
     type: "debt" | "receivable",
+    role: LinkedTxRole | null,
+    amountUAH = 0,
+    meta?: { auto?: boolean },
   ) => {
+    const apply = <T extends { id: string } & Record<string, unknown>>(
+      item: T,
+    ): T => {
+      if (item.id !== id) return item;
+      const linked = (item["linkedTxIds"] as string[] | undefined) || [];
+      const txLinks = {
+        ...((item["txLinks"] as Record<string, LinkedTxMeta> | undefined) ??
+          {}),
+      };
+      if (role === null) {
+        const wasAuto = txLinks[txId]?.auto === true;
+        delete txLinks[txId];
+        const next: T = {
+          ...item,
+          linkedTxIds: linked.filter((x) => x !== txId),
+          txLinks,
+        };
+        if (type === "debt" && wasAuto) {
+          const dismissed =
+            (item["autoLinkDismissedTxIds"] as string[] | undefined) || [];
+          if (!dismissed.includes(txId)) {
+            (next as Record<string, unknown>)["autoLinkDismissedTxIds"] = [
+              ...dismissed,
+              txId,
+            ];
+          }
+        }
+        return next;
+      }
+      txLinks[txId] = {
+        role,
+        amount: Math.abs(amountUAH),
+        ...(meta?.auto ? { auto: true } : {}),
+      };
+      return {
+        ...item,
+        linkedTxIds: linked.includes(txId) ? linked : [...linked, txId],
+        txLinks,
+      };
+    };
+
     if (type === "debt") {
-      setManualDebts((items) =>
-        items.map((d) => {
-          if (d.id !== id) return d;
-          const linked = d.linkedTxIds || [];
-          return {
-            ...d,
-            linkedTxIds: linked.includes(txId)
-              ? linked.filter((x) => x !== txId)
-              : [...linked, txId],
-          };
-        }),
-      );
+      setManualDebts((items) => items.map(apply));
     } else {
-      setReceivables((items) =>
-        items.map((r) => {
-          if (r.id !== id) return r;
-          const linked = r.linkedTxIds || [];
-          return {
-            ...r,
-            linkedTxIds: linked.includes(txId)
-              ? linked.filter((x) => x !== txId)
-              : [...linked, txId],
-          };
-        }),
-      );
+      setReceivables((items) => items.map(apply));
     }
   };
 
@@ -209,7 +304,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     candidate: RecurringCandidate | null | undefined,
   ) => {
     if (!candidate || !candidate.key) return null;
-    const id = `auto_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+    const id = `auto_${Date.now().toString(36)}_${crypto.randomUUID()}`;
     const sub: {
       id: string;
       name: string;
@@ -218,16 +313,22 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       billingDay: number;
       currency: string;
       linkedTxId?: string;
+      expectedAmount?: number;
     } = {
       id,
       name: candidate.displayName || candidate.key,
-      emoji: "🔄",
+      emoji: "",
       keyword: candidate.key,
       billingDay: candidate.billingDay || 1,
       currency: candidate.currency === "USD" ? "USD" : "UAH",
     };
     if (candidate.sampleTxIds && candidate.sampleTxIds[0]) {
       sub.linkedTxId = candidate.sampleTxIds[0];
+    }
+    // Р20: сума відома з історії одразу, а не «сума невідома» до першого
+    // збігу транзакції.
+    if (candidate.avgAmount && candidate.avgAmount > 0) {
+      sub.expectedAmount = Math.round(candidate.avgAmount * 100);
     }
     setSubscriptions((prev) => [...prev, sub]);
     // Автоматично прибираємо з пропозицій — sub з таким keyword уже його покриває,
@@ -263,28 +364,59 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     );
   };
 
+  /** Порожня нотатка = відсутність нотатки — видаляє запис, не зберігає "". */
+  const setTxNote = (txId: string, note: string | null | undefined) => {
+    const trimmed = String(note ?? "").trim();
+    setTxNotes((prev: TxNotesMap) =>
+      trimmed
+        ? { ...prev, [txId]: trimmed }
+        : Object.fromEntries(Object.entries(prev).filter(([k]) => k !== txId)),
+    );
+  };
+
   const addCustomCategory = (
     label: string,
     {
       color,
       icon,
       parentId,
-    }: { color?: string; icon?: string; parentId?: string } = {},
+      kind = "expense",
+    }: {
+      color?: string;
+      icon?: string;
+      parentId?: string;
+      kind?: "expense" | "income";
+    } = {},
   ) => {
-    const trimmed = String(label || "").trim();
+    // AI-CONTEXT (2026-08-21): підпис нормалізується на ЗАПИСІ, а не на
+    // кожному рендері. Вбудовані категорії втратили емодзі-префікси того
+    // ж дня, тож власна категорія лишалась єдиним джерелом гліфа в
+    // списку — і поверхні розходились: пікер зрізав префікс
+    // (`stripLeadingEmoji`), картка ліміту показувала як є. Зріз на
+    // вході робить це неможливим для НОВИХ записів; уже збережені
+    // нормалізуються на рендері.
+    const trimmed = stripCategoryEmoji(String(label || "").trim());
     if (!trimmed || trimmed.length > 80) return;
     setCustomCategories((prev) => {
       if (prev.length >= 80) return prev;
-      if (prev.some((c) => c.label.toLowerCase() === trimmed.toLowerCase()))
+      if (
+        prev.some(
+          (c) =>
+            (c.kind ?? "expense") === kind &&
+            c.label.toLowerCase() === trimmed.toLowerCase(),
+        )
+      )
         return prev;
-      const id = `cus_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`;
+      const id = `cus_${Date.now().toString(36)}_${crypto.randomUUID()}`;
       const entry: {
         id: string;
         label: string;
         color?: string;
         icon?: string;
         parentId?: string;
+        kind?: "expense" | "income";
       } = { id, label: trimmed };
+      if (kind === "income") entry.kind = kind;
       if (color) entry.color = color;
       if (icon) entry.icon = icon;
       if (parentId) entry.parentId = parentId;
@@ -298,7 +430,8 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         if (c.id !== id) return c;
         const next = { ...c };
         if (patch.label != null)
-          next.label = String(patch.label).trim() || c.label;
+          next.label =
+            stripCategoryEmoji(String(patch.label).trim()) || c.label;
         if (patch.color !== undefined) next.color = patch.color || undefined;
         if (patch.icon !== undefined) next.icon = patch.icon || undefined;
         if (patch.parentId !== undefined)
@@ -340,14 +473,16 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
 
   return {
     addManualExpense,
+    restoreManualExpense,
     removeManualExpense,
     editManualExpense,
     toggleHideAccount,
     toggleMonoDebtTx,
-    toggleLinkedTx,
+    setLinkedTxRole,
     hideTx,
     toggleExcludeFromStats,
     setSplitTx,
+    setTxNote,
     dismissRecurring,
     restoreDismissedRecurring,
     addSubscriptionFromRecurring,

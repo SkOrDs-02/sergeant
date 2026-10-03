@@ -22,20 +22,28 @@ import { Icon } from "./Icon";
  */
 
 export type CheckboxVariant =
-  | "default"
-  | "finyk"
-  | "fizruk"
-  | "routine"
-  | "nutrition";
+  "default" | "finyk" | "fizruk" | "routine" | "nutrition";
 
 export type CheckboxSize = "sm" | "md" | "lg";
 
 const variantStyles: Record<CheckboxVariant, { ring: string; fill: string }> = {
   default: { ring: "ring-brand", fill: "bg-brand-strong text-white" },
-  finyk: { ring: "ring-finyk", fill: "bg-finyk-strong text-white" },
-  fizruk: { ring: "ring-fizruk", fill: "bg-fizruk-strong text-white" },
-  routine: { ring: "ring-routine", fill: "bg-routine-strong text-white" },
-  nutrition: { ring: "ring-nutrition", fill: "bg-nutrition-strong text-white" },
+  finyk: {
+    ring: "ring-finyk",
+    fill: "bg-finyk-strong text-white dark:bg-finyk dark:text-bg",
+  },
+  fizruk: {
+    ring: "ring-fizruk",
+    fill: "bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg",
+  },
+  routine: {
+    ring: "ring-routine",
+    fill: "bg-routine-strong text-white dark:bg-routine dark:text-bg",
+  },
+  nutrition: {
+    ring: "ring-nutrition",
+    fill: "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg",
+  },
 };
 
 const sizeStyles: Record<CheckboxSize, { box: string; icon: number }> = {
@@ -99,7 +107,7 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
       }
 
       if (showConfetti && !prefersReducedMotion) {
-        const colors = ["#10B981", "#F97066", "#84CC16", "#14B8A6", "#F59E0B"];
+        const colors = ["#10B981", "#EB7691", "#84CC16", "#14B8A6", "#F59E0B"];
         const particles = Array.from({ length: 12 }, (_, i) => ({
           id: i,
           x: (Math.random() - 0.5) * 60,
@@ -155,9 +163,9 @@ export const AnimatedCheckbox = memo(function AnimatedCheckbox({
 
   const visualClass = cn(
     "relative inline-flex items-center justify-center rounded-xl",
-    "border-2 transition-all duration-200",
+    "border-2 transition-all duration-base",
     sizes.box,
-    checked ? cn(styles.fill, "border-transparent") : "border-line bg-panel",
+    checked ? cn(styles.fill, "border-transparent") : "border-control bg-panel",
     isAnimating && "motion-safe:animate-check-bounce",
     disabled && "opacity-50",
   );
@@ -240,8 +248,8 @@ export const HabitCheckbox = memo(function HabitCheckbox({
     <label
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors",
-        "hover:bg-panel-hi/50 cursor-pointer",
-        checked && "bg-panel-hi/30",
+        "hover:bg-panelHi/50 cursor-pointer",
+        checked && "bg-panelHi/30",
       )}
     >
       <AnimatedCheckbox
@@ -256,19 +264,21 @@ export const HabitCheckbox = memo(function HabitCheckbox({
       <div className="flex-1 min-w-0">
         <span
           className={cn(
-            "text-style-label text-text transition-all duration-300",
+            "text-style-label text-text transition-all duration-slow",
             checked && "line-through text-muted",
           )}
         >
           {label}
         </span>
         {subtitle && (
-          <p className="text-xs text-muted mt-0.5 truncate">{subtitle}</p>
+          <p className="text-style-caption text-muted mt-0.5 truncate">
+            {subtitle}
+          </p>
         )}
       </div>
       {streak != null && streak > 0 && (
-        <span className="flex items-center gap-1 text-xs font-semibold text-warning-strong dark:text-warning">
-          <Icon name="zap" size={12} />
+        <span className="flex items-center gap-1 text-style-caption font-semibold text-warning-strong dark:text-warning">
+          <Icon name="zap" size="xs" />
           {streak}
         </span>
       )}

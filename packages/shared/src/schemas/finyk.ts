@@ -3,6 +3,7 @@
 // ловити биті дані на read-time замість crash'у пізніше по ланцюжку.
 
 import { z } from "zod";
+import { amountMinorSchema, boundedDayKeySchema } from "./bounds";
 
 export const BudgetTypeSchema = z.enum(["limit", "goal"]);
 
@@ -26,6 +27,9 @@ export const BudgetSchema = z
     type: BudgetTypeSchema.optional(),
     limit: optionalNumberSchema,
     categoryId: z.string().optional(),
+    // Мульти-категорійний ліміт (2026-08-25). Legacy-записи поля не мають;
+    // `categoryId` лишається першою категорією набору для старих читачів.
+    categoryIds: z.array(z.string()).optional(),
     label: z.string().optional(),
     target: optionalNumberSchema,
     current: optionalNumberSchema,
@@ -49,12 +53,9 @@ export type BudgetParsed = z.infer<typeof BudgetSchema>;
 // мовчки ламає streak/денні агрегації на межі доби.
 export const ManualExpenseCreateSchema = z
   .object({
-    amount: z.number().int().positive(),
+    amount: amountMinorSchema,
     category: z.string().min(1).max(120),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, "Дата має бути у форматі YYYY-MM-DD")
-      .optional(),
+    date: boundedDayKeySchema.optional(),
     note: z.string().max(500).optional(),
   })
   .strict();

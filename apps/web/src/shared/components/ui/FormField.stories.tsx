@@ -45,13 +45,13 @@ export const WithHelper: Story = {
 /** Помилка — заміняє helper, додає `aria-invalid` та `role=alert`. */
 export const WithError: Story = {
   render: (args) => (
-    <FormField {...args} error="Сума не може бути від'ємною">
+    <FormField {...args} error="Сума не може бути відʼємною">
       <Input defaultValue="-100" />
     </FormField>
   ),
 };
 
-/** Optional-маркер — додає `· необов'язково` після label-у. */
+/** Optional-маркер — додає `· необовʼязково` після label-у. */
 export const Optional: Story = {
   render: (args) => (
     <FormField {...args} label="Коментар" optional>
@@ -60,15 +60,11 @@ export const Optional: Story = {
   ),
 };
 
-/** Normal-case label — без uppercase-eyebrow стилю (для довгих лейблів). */
-export const NormalCaseLabel: Story = {
+/** Капс-брова — рідкісний випадок: службова позначка, а не питання. */
+export const CapsLabel: Story = {
   render: (args) => (
-    <FormField
-      {...args}
-      label="Як ти хочеш назвати цю транзакцію?"
-      normalCaseLabel
-    >
-      <Input placeholder="Назва" />
+    <FormField {...args} label="Валюта" capsLabel>
+      <Input placeholder="UAH" />
     </FormField>
   ),
 };

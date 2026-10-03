@@ -2,19 +2,55 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { Input } from "@shared/components/ui/Input";
-import { formatMoney } from "@sergeant/shared";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
+import { Label } from "@shared/components/ui/FormField";
+import { Money } from "@shared/components/ui/Money";
 import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
 
 // Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
-// each persisted as the raw `<input type="number">` value (string while
-// editing, number once committed). Defined inline here so the card
-// stays free of a hook import; if a third file ever needs the type,
-// hoist it to a shared module.
+// each persisted as the canonical dot-form value (string while editing,
+// number once committed). Defined inline here so the card stays free of a
+// hook import; if a third file ever needs the type, hoist it to a shared
+// module.
+
+/**
+ * Одне з трьох полів плану.
+ *
+ * Кома тут обовʼязкова так само, як у КБЖВ: «40 000,50» під `type="number"`
+ * доїжджало обробнику порожнім рядком. Порожнє поле лишається порожнім
+ * рядком, а не нулем, інакше план неможливо очистити. Розряди групує
+ * `MoneyInput` — саме на цьому екрані тестер і попросив пробіли.
+ */
+function PlanAmountField({
+  id,
+  label,
+  placeholder,
+  value,
+  onCommit,
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: number | string;
+  onCommit: (next: string) => void;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <MoneyInput
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onValueChange={(next) => onCommit(next == null ? "" : String(next))}
+      />
+    </div>
+  );
+}
+
 export type MonthlyPlan = {
   income: number | string;
   expense: number | string;
@@ -24,6 +60,15 @@ export type MonthlyPlan = {
 interface MonthlyPlanCardProps {
   monthlyPlan: MonthlyPlan | null | undefined;
   onChangeMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
+  /**
+   * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти цей проп
+   * приходив у `Budgets`, але картка його не приймала й малювала суми
+   * завжди — свайп на Планування залишав приховані на Огляді числа
+   * відкритими. Маскує лише РОЗРАХОВАНІ суми (згорнута шапка, таблиця
+   * План/Факт/Δ, safe-to-spend); поля редагування плану лишаються
+   * видимими — людина саме зараз їх вводить.
+   */
+  showBalance?: boolean;
   planIncome: number;
   planExpense: number;
   planSavings: number;
@@ -35,6 +80,11 @@ interface MonthlyPlanCardProps {
   pctExpense: number;
   isOver: boolean;
   daysLeft: number;
+  /**
+   * Прогноз витрат на кінець місяця за поточним темпом
+   * (`projectMonthEndSpend`); `null` у перші два дні місяця.
+   */
+  forecastExpense?: number | null | undefined;
   /**
    * When true, the card auto-opens and auto-enters the edit form on
    * mount and renders a `<FirstRunHintBanner />` framing the inputs as
@@ -55,6 +105,7 @@ interface MonthlyPlanCardProps {
 function MonthlyPlanCardComponent({
   monthlyPlan,
   onChangeMonthlyPlan,
+  showBalance = true,
   planIncome,
   planExpense,
   planSavings,
@@ -66,6 +117,7 @@ function MonthlyPlanCardComponent({
   pctExpense,
   isOver,
   daysLeft,
+  forecastExpense,
   firstRunHint,
   onDismissFirstRunHint,
 }: MonthlyPlanCardProps) {
@@ -78,13 +130,14 @@ function MonthlyPlanCardComponent({
   const [editing, setEditing] = useState<boolean>(() => firstRunHint === true);
   const hasPlan = planIncome > 0 || planExpense > 0 || planSavings > 0;
 
+  const fieldId = useId();
+  const incomeId = `${fieldId}-income`;
+  const expenseId = `${fieldId}-expense`;
+  const savingsId = `${fieldId}-savings`;
+
   const incomeDelta = factIncome - planIncome;
   const expenseDelta = totalExpenseFact - planExpense;
   const savingsDelta = factSavings - planSavings;
-
-  const fmt = (n: number) => formatMoney(n);
-  const fmtSigned = (n: number) =>
-    `${n >= 0 ? "+" : "−"}${formatMoney(Math.abs(n))}`;
 
   return (
     <div
@@ -101,33 +154,44 @@ function MonthlyPlanCardComponent({
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted" aria-hidden>
-            <Icon name="calendar" size={16} />
+            <Icon name="calendar" size="md" />
           </span>
-          <span className="text-style-label text-text">Фінплан на місяць</span>
+          <span className="text-style-label text-text">План на місяць</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasPlan && !open && (
             <span
               className={cn(
-                "text-xs tabular-nums",
+                // Роль + `font-semibold` на одному вузлі — це безпечно:
+                // вага виграє в каскаді (замір і межі застосовності — у
+                // `tailwind-preset.js`, блок «Роль + font-* на ОДНОМУ
+                // вузлі»). Перевитрата лишається важчою за норму, як і
+                // задумано: це єдине число, видне на згорнутій картці.
+                "text-style-caption tabular-nums",
                 isOver
                   ? "text-danger-strong dark:text-danger font-semibold"
                   : "text-muted",
               )}
             >
-              {isOver
-                ? `−${formatMoney(totalExpenseFact - planExpense)}`
-                : planExpense > 0
-                  ? `${pctExpense}% · ${formatMoney(remaining)}`
-                  : `+${formatMoney(planIncome)}`}
+              {!showBalance ? (
+                "••••"
+              ) : isOver ? (
+                <Money amount={planExpense - totalExpenseFact} tone="inherit" />
+              ) : planExpense > 0 ? (
+                <>
+                  {pctExpense}% · <Money amount={remaining} />
+                </>
+              ) : (
+                <Money amount={planIncome} signed />
+              )}
             </span>
           )}
           {!hasPlan && !open && (
-            <span className="text-xs text-subtle">Не заданий</span>
+            <span className="text-style-caption text-subtle">Не заданий</span>
           )}
           <Icon
             name="chevron-down"
-            size={14}
+            size="sm"
             className={cn(
               "transition-transform text-muted",
               open ? "rotate-180" : "",
@@ -139,6 +203,21 @@ function MonthlyPlanCardComponent({
       {open && (
         <div className="px-5 pb-5 pt-1 space-y-3">
           {hasPlan ? (
+            /*
+              AI-CONTEXT: у стовпці Δ стоїть `Money signed`, а НЕ `Delta` —
+              попри те, що `Delta` існує рівно під дельти. Причина в тоні.
+              `Delta` знає два кольори: успіх і небезпека. Тут же недобір
+              доходу навмисно позначений `text-warning`, а не `text-danger`
+              — не дотягнути до плану це не аварія, і продукт про це
+              говорить рівно (той самий вибір, що «констатація, не докір» у
+              борді рекордів Фізрука). Перевести на `Delta` означало б
+              зробити недобір доходу червоним заодно з перевитратою.
+
+              Тож поверхня лишає свою семантику кольору, а від П4 бере те,
+              заради чого він і є — тири суми. `tone="inherit"` віддає
+              знаку, копійкам і символу колір комірки: інакше приглушений
+              сірий тир поруч із зеленим числом розповзається на два тони.
+            */
             <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums items-baseline">
               <div />
               <div className="text-style-caption text-subtle text-right">
@@ -149,12 +228,24 @@ function MonthlyPlanCardComponent({
               </div>
               <div className="text-style-caption text-subtle text-right">Δ</div>
 
-              <div className="text-xs text-muted">Дохід</div>
+              <div className="text-style-caption text-muted">Дохід</div>
               <div className="text-right text-muted">
-                {planIncome > 0 ? fmt(planIncome) : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planIncome > 0 ? (
+                  <Money amount={planIncome} />
+                ) : (
+                  "—"
+                )}
               </div>
               <div className="text-right text-success-strong dark:text-success">
-                {factIncome > 0 ? `+${fmt(factIncome)}` : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : factIncome > 0 ? (
+                  <Money amount={factIncome} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -166,22 +257,40 @@ function MonthlyPlanCardComponent({
                       : "text-warning-strong dark:text-warning",
                 )}
               >
-                {planIncome > 0 ? fmtSigned(incomeDelta) : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planIncome > 0 ? (
+                  <Money amount={incomeDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
 
-              <div className="text-xs text-muted">Витрати</div>
+              <div className="text-style-caption text-muted">Витрати</div>
               <div className="text-right text-muted">
-                {planExpense > 0 ? fmt(planExpense) : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planExpense > 0 ? (
+                  <Money amount={planExpense} />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
                   "text-right",
                   isOver
                     ? "text-danger-strong dark:text-danger font-semibold"
-                    : "text-danger-strong/80 dark:text-danger/80",
+                    : "text-danger-strong dark:text-danger",
                 )}
               >
-                {totalExpenseFact > 0 ? `−${fmt(totalExpenseFact)}` : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : totalExpenseFact > 0 ? (
+                  <Money amount={-totalExpenseFact} tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -193,12 +302,24 @@ function MonthlyPlanCardComponent({
                       : "text-success-strong dark:text-success",
                 )}
               >
-                {planExpense > 0 ? fmtSigned(expenseDelta) : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planExpense > 0 ? (
+                  <Money amount={expenseDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
 
-              <div className="text-xs text-muted">Накопич.</div>
+              <div className="text-style-caption text-muted">Накопич.</div>
               <div className="text-right text-muted">
-                {planSavings > 0 ? fmt(planSavings) : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 ? (
+                  <Money amount={planSavings} />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -208,9 +329,13 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong dark:text-danger",
                 )}
               >
-                {planSavings > 0 || factSavings !== 0
-                  ? fmtSigned(factSavings)
-                  : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 || factSavings !== 0 ? (
+                  <Money amount={factSavings} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -222,29 +347,41 @@ function MonthlyPlanCardComponent({
                       : "text-danger-strong dark:text-danger",
                 )}
               >
-                {planSavings > 0 || factSavings !== 0
-                  ? fmtSigned(savingsDelta)
-                  : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 || factSavings !== 0 ? (
+                  <Money amount={savingsDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
               </div>
             </div>
           ) : (
-            <div className="text-sm text-subtle">
-              Постав план — і побачиш скільки безпечно витрачати на день.
+            <div className="text-style-label text-subtle">
+              Постав план, і побачиш скільки безпечно витрачати на день.
             </div>
           )}
 
           {hasPlan && planExpense > 0 && (
             <div className="space-y-1">
-              <div className="flex justify-between text-xs text-subtle">
+              <div className="flex justify-between text-style-caption text-subtle">
                 <span>{pctExpense}% витрачено</span>
                 {safePerDay > 0 && daysLeft > 0 && !isOver && (
                   <span className="tabular-nums">
-                    {formatMoney(safePerDay)}/день · {daysLeft} дн.
+                    {showBalance ? <Money amount={safePerDay} /> : "••••"}
+                    /день · {daysLeft} дн.
                   </span>
                 )}
                 {isOver && (
                   <span className="text-danger-strong dark:text-danger font-semibold tabular-nums">
-                    −{formatMoney(totalExpenseFact - planExpense)}
+                    {showBalance ? (
+                      <Money
+                        amount={planExpense - totalExpenseFact}
+                        tone="inherit"
+                      />
+                    ) : (
+                      "••••"
+                    )}
                   </span>
                 )}
               </div>
@@ -261,6 +398,14 @@ function MonthlyPlanCardComponent({
                   style={{ width: `${Math.min(100, pctExpense)}%` }}
                 />
               </div>
+              {showBalance &&
+                forecastExpense != null &&
+                forecastExpense > 0 && (
+                  <div className="text-style-caption text-subtle">
+                    За поточним темпом до кінця місяця ~
+                    <Money amount={Math.round(forecastExpense)} />
+                  </div>
+                )}
             </div>
           )}
 
@@ -269,9 +414,9 @@ function MonthlyPlanCardComponent({
               type="button"
               onClick={() => setEditing((v) => !v)}
               aria-expanded={editing}
-              className="text-xs text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
+              className="text-style-caption text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
             >
-              <Icon name="edit" size={12} />
+              <Icon name="edit" size="xs" />
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
             </button>
           </div>
@@ -281,45 +426,36 @@ function MonthlyPlanCardComponent({
               {firstRunHint && (
                 <FirstRunHintBanner
                   variant="finyk"
-                  title="Орієнтовний фінплан — постав і поправиш"
+                  title="Орієнтовний фінплан, постав і поправиш"
                   description="Це чорновик: вкажи орієнтовний дохід, витрати і накопичення на місяць. Сюди ти зможеш повернутись будь-коли, щоб перерахувати."
                   onDismiss={onDismissFirstRunHint ?? (() => {})}
                 />
               )}
-              <Input
-                type="number"
-                aria-label="План доходу"
-                placeholder="План доходу ₴"
+              <PlanAmountField
+                id={incomeId}
+                label="План доходу"
+                placeholder="Напр. 40 000 ₴"
                 value={monthlyPlan?.income ?? ""}
-                onChange={(e) =>
-                  onChangeMonthlyPlan((p) => ({
-                    ...p,
-                    income: e.target.value,
-                  }))
+                onCommit={(income) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, income }))
                 }
               />
-              <Input
-                type="number"
-                aria-label="План витрат"
-                placeholder="План витрат ₴"
+              <PlanAmountField
+                id={expenseId}
+                label="План витрат"
+                placeholder="Напр. 25 000 ₴"
                 value={monthlyPlan?.expense ?? ""}
-                onChange={(e) =>
-                  onChangeMonthlyPlan((p) => ({
-                    ...p,
-                    expense: e.target.value,
-                  }))
+                onCommit={(expense) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, expense }))
                 }
               />
-              <Input
-                type="number"
-                aria-label="План накопичень"
-                placeholder="План накопичень ₴"
+              <PlanAmountField
+                id={savingsId}
+                label="План накопичень"
+                placeholder="Напр. 10 000 ₴"
                 value={monthlyPlan?.savings ?? ""}
-                onChange={(e) =>
-                  onChangeMonthlyPlan((p) => ({
-                    ...p,
-                    savings: e.target.value,
-                  }))
+                onCommit={(savings) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, savings }))
                 }
               />
             </div>

@@ -18,6 +18,8 @@ import {
   HeadersTooLargeError,
   MAX_HEADERS_BYTES,
   MAX_PAYLOAD_BYTES,
+  markWebhookEventFailed,
+  markWebhookEventProcessed,
   PayloadTooLargeError,
   recordWebhookEvent,
   sanitizeHeaders,
@@ -198,5 +200,48 @@ describe("recordWebhookEvent", () => {
         payload: {},
       }),
     ).rejects.toThrow(/returned no rows/);
+  });
+});
+
+describe("markWebhookEventProcessed", () => {
+  it("UPDATEs processed_at and clears error for the given id", async () => {
+    const pool = mockPool([]);
+    await markWebhookEventProcessed(pool, 42);
+    const queryFn = pool.query as ReturnType<typeof vi.fn>;
+    const [sql, params] = queryFn.mock.calls[0] ?? [];
+    expect(sql).toContain("UPDATE n8n_webhook_events");
+    expect(sql).toContain("processed_at = now()");
+    expect(sql).toContain("error = NULL");
+    expect(params).toEqual([42]);
+  });
+});
+
+describe("markWebhookEventFailed", () => {
+  it("UPDATEs the error column with the given message", async () => {
+    const pool = mockPool([]);
+    await markWebhookEventFailed(pool, 7, "boom");
+    const queryFn = pool.query as ReturnType<typeof vi.fn>;
+    const [sql, params] = queryFn.mock.calls[0] ?? [];
+    expect(sql).toContain("UPDATE n8n_webhook_events");
+    expect(sql).toContain("SET error = $2");
+    expect(params).toEqual([7, "boom"]);
+  });
+
+  it("truncates error messages longer than 8 KB", async () => {
+    const pool = mockPool([]);
+    const huge = "x".repeat(8 * 1024 + 100);
+    await markWebhookEventFailed(pool, 7, huge);
+    const queryFn = pool.query as ReturnType<typeof vi.fn>;
+    const params = queryFn.mock.calls[0]?.[1] as [number, string];
+    expect(params[1].length).toBeLessThan(huge.length);
+    expect(params[1].endsWith("…[truncated]")).toBe(true);
+  });
+
+  it("leaves short error messages untouched", async () => {
+    const pool = mockPool([]);
+    await markWebhookEventFailed(pool, 7, "short error");
+    const queryFn = pool.query as ReturnType<typeof vi.fn>;
+    const params = queryFn.mock.calls[0]?.[1] as [number, string];
+    expect(params[1]).toBe("short error");
   });
 });

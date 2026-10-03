@@ -1,10 +1,10 @@
 name: Detox (Android)
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
+# Owner: @klas149 (solo maintainer).
 # Triage: build/prebuild failures stay blocking. Detox app-readiness/test
 # failures soft-pass with a GitHub warning while the Android instrumentation
 # readiness issue is open; use uploaded artifacts/logs for follow-up triage.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Mobile E2E lane for the Android Detox suites in `apps/mobile/e2e/*`.
 # Separate from the main `CI` workflow in `.github/workflows/ci.yml`
@@ -29,62 +29,47 @@ name: Detox (Android)
 # Path trigger covers two failure modes (PR-18, M2):
 #   1. Direct mobile surface changes (`apps/mobile/**`, mobile-facing
 #      packages) — the original trigger set.
-#   2. Server-shape changes that mobile silently depends on:
-#      `apps/server/src/modules/**/*.routes.ts` (route signatures),
-#      `**/serializers/**` (response shape), `apps/server/src/migrations/**`
-#      (schema that often precedes a serializer rename). These three
-#      paths catch the original M2 failure mode where a server-only PR
-#      shipped a renamed response field, `packages/api-client/` lagged
-#      behind, and the bug only surfaced in production. The freshness
-#      gate `pnpm api:check-openapi-types` (root `lint` script) is the
-#      first defence; Detox catches anything the codegen + types miss
-#      (e.g. behavioural drift, route ordering, header changes).
-#   See `docs/90-work/initiatives/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#   2. Server-shape changes that mobile silently depends on — this half of
+#      the PR-18 trigger set (`apps/server/src/modules/**/*.routes.ts`,
+#      `**/serializers/**`, `apps/server/src/migrations/**`) was DROPPED in
+#      the web-focus phase below and is no longer in `paths`. The M2 failure
+#      mode it covered (server-only PR renames a response field,
+#      `packages/api-client/` lags, bug surfaces in production) is now caught
+#      only by the Hard Rule #3 contract tests + `pnpm api:check-openapi`
+#      (root `lint` script). Behavioural drift those cannot see — route
+#      ordering, header changes — needs a manual `workflow_dispatch` run.
+#   See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#
+# Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
+# merge до `main`. PR-тригер лише на прямі зміни mobile-поверхонь.
+#
+# ⛔ ЗАМОРОЖЕНО (web-first, 2026-08-25). Mobile-застосунки запускаємо лише
+# якщо web доведе потребу в продукті, тож цей лейн свідомо тримається
+# non-blocking, а `schedule:` НЕ повертається до розморозки. Обсяг заморозки і
+# порядок розморозки — `docs/work/specs/tech-debt/mobile.md`, блок
+# «Оновлено 2026-08-25». Сьюти в `apps/mobile/e2e/` НЕ видаляємо — вони актив
+# на момент розморозки.
+#
+# DOC-DRIFT FIX 2026-08-25: до цієї правки шапка стверджувала «Nightly schedule
+# + workflow_dispatch лишаються», а нижче стояв абзац про 03:15 UTC — хоча
+# `schedule:` тригера у файлі немає з web-focus фази (2026-07). Дрейф зафіксував
+# аудит покриття 2026-08-04; тепер коментар описує фактичний стан.
+#
+# ⛔ PR-ТРИГЕР ЗНЯТО 2026-09-14 (рішення founder-а, знахідка PR-M1).
+# Доти лейн запускався на кожен PR, що чіпає mobile-поверхні, і ЗАВЖДИ
+# завершувався зеленим: крок прогону ковтав провал через `|| { warning }`
+# плюс `exit 0`, а сам крок стояв ще й під `continue-on-error: true`. Тобто в
+# списку перевірок PR-а стояла зелена галочка «Detox», яка не означала нічого
+# — найгірший зі станів гейта, бо вона не мовчить, а стверджує. Мобільні
+# стеки на паузі з 2026-08-25 (ADR-0094), тож чесний стан під час паузи —
+# ВІДСУТНІЙ гейт, а не гейт, який завжди зелений.
+#
+# Лишається `workflow_dispatch`: прогін руками можливий і тепер каже правду —
+# `exit 0` і `continue-on-error` зняті разом із тригером. Сьюти в
+# `apps/mobile/e2e/` НЕ видалені — вони актив на момент розморозки.
+# Розморозка повертає `pull_request:`-блок разом із рештою мобільного лейну;
+# порядок — `docs/work/specs/tech-debt/mobile.md`.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/mobile/**"
-      - "apps/mobile-shell/**"
-      # Server response-shape sources — a /api/* response shape change in
-      # apps/server/src/routes/** (or a migration that reshapes a Zod
-      # response schema) can silently break mobile consumers if Detox
-      # isn't rerun. Stack-pulse PR-18 (M2): keep these in lockstep with
-      # detox-ios.yml.
-      - "apps/server/src/routes/**"
-      - "apps/server/src/migrations/**"
-      - "packages/finyk-domain/**"
-      - "packages/routine-domain/**"
-      - "packages/api-client/**"
-      - "packages/shared/**"
-      - "apps/server/src/modules/**/*.routes.ts"
-      - "apps/server/src/modules/**/serializers/**"
-      - "apps/server/src/migrations/**"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/detox-android.yml"
-  pull_request:
-    paths:
-      - "apps/mobile/**"
-      - "apps/mobile-shell/**"
-      - "apps/server/src/routes/**"
-      - "apps/server/src/migrations/**"
-      - "packages/finyk-domain/**"
-      - "packages/routine-domain/**"
-      - "packages/api-client/**"
-      - "packages/shared/**"
-      - "apps/server/src/modules/**/*.routes.ts"
-      - "apps/server/src/modules/**/serializers/**"
-      - "apps/server/src/migrations/**"
-      - "pnpm-lock.yaml"
-      - ".github/workflows/detox-android.yml"
-  # Nightly run catches drift on transitive deps that wouldn't fire a
-  # `paths`-scoped trigger — Android SDK image refresh, AGP upgrade via
-  # Renovate, react-native patch bumps, etc. 03:15 UTC ≈ 05:15 Kyiv
-  # — picked to land before the working day and after most US-evening
-  # commit traffic so a flaky AVD boot doesn't fight other jobs for the
-  # `ubuntu-latest` queue.
-  schedule:
-    - cron: "15 3 * * *"
   workflow_dispatch:
 
 permissions:
@@ -217,7 +202,11 @@ jobs:
 
       - name: Run Detox Android suite
         # reactivecircus/android-emulator-runner v2.37.0 (SHA-pinned)
-        continue-on-error: true
+        #
+        # PR-M1: `continue-on-error: true` знято разом із PR-тригером. Лейн
+        # тепер запускається лише руками (`workflow_dispatch`), а прогін,
+        # який запустили навмисно, мусить казати правду про результат —
+        # інакше запускати його немає сенсу.
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
         with:
           api-level: ${{ matrix.api-level }}
@@ -230,10 +219,7 @@ jobs:
           disable-animations: true
           working-directory: apps/mobile
           script: |
-            pnpm e2e:test:android:ci || {
-              echo "::warning::Detox Android suite failed during app readiness/runtime execution; keeping this lane non-blocking until the instrumentation readiness issue is fixed."
-            }
-            exit 0
+            pnpm e2e:test:android:ci
 
       - name: Upload Detox artefacts on failure
         if: always()

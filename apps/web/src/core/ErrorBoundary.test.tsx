@@ -15,6 +15,17 @@ import { ErrorBoundary } from "./ErrorBoundary";
 vi.mock("./observability/sentry", () => ({
   captureException: vi.fn(),
 }));
+const capturePostHogExceptionMock = vi.fn();
+// Спред реального модуля, а не заміна цілком: `ErrorBoundary` сьогодні
+// імпортує звідси лише `capturePostHogException`, але щойно він (чи будь-що
+// в графі цього тесту) візьме ще й `initPostHog` / `capturePostHogEvent` —
+// той біндинг став би `undefined` і впав у момент виклику, вказуючи на
+// компонент, а не на цей мок.
+vi.mock("./observability/posthog", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./observability/posthog")>()),
+  capturePostHogException: (...args: unknown[]) =>
+    capturePostHogExceptionMock(...args),
+}));
 vi.mock("./lib/chunkReload", () => ({
   isChunkLoadError: () => false,
   reloadOnceForChunkError: () => false,
@@ -36,6 +47,25 @@ function Harness() {
     </ErrorBoundary>
   );
 }
+
+describe("ErrorBoundary telemetry forwarding", () => {
+  it("forwards the caught error to PostHog error tracking", () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    capturePostHogExceptionMock.mockClear();
+
+    render(<Harness />);
+
+    expect(capturePostHogExceptionMock).toHaveBeenCalledTimes(1);
+    const [error, properties] = capturePostHogExceptionMock.mock.calls[0]!;
+    expect((error as Error).message).toBe("kaboom");
+    // React render errors never reach `window.onerror`, so the component
+    // stack is the only trace PostHog gets — assert it survives.
+    expect(properties).toMatchObject({
+      componentStack: expect.stringContaining("Bomb") as unknown as string,
+    });
+    consoleSpy.mockRestore();
+  });
+});
 
 describe("ErrorBoundary reset path", () => {
   it("renders the default fallback when a child throws", () => {

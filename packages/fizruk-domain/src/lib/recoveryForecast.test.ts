@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { forecastFullRecoveryByDate } from "./recoveryForecast";
 
 describe("forecastFullRecoveryByDate", () => {
-  it("повертає дату для м'яза після навантаження", () => {
+  it("повертає дату для мʼяза після навантаження", () => {
     const musclesUk = { biceps: "Біцепс" };
     const workouts = [
       {

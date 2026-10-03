@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { useListSelection } from "@shared/hooks/useListSelection";
 import type { useToast } from "@shared/hooks/useToast";
 import type {
   Transaction,
@@ -19,12 +21,8 @@ const OPS_FORMS: Record<OpsCase, readonly [string, string, string]> = {
   gen: ["операції", "операцій", "операцій"],
 };
 function pluralizeOps(n: number, c: OpsCase = "acc"): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
   const [one, few, many] = OPS_FORMS[c];
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 >= 14)) return few;
-  return many;
+  return pluralUa(n, { one, few, many });
 }
 
 export interface UseTransactionSelectionParams {
@@ -34,9 +32,10 @@ export interface UseTransactionSelectionParams {
   hideTx: (id: string) => void;
   toggleExcludeFromStats: (id: string) => void;
   overrideCategory: (id: string, catId: string | null) => void;
-  setSplitTx: (id: string, splits: TxSplit[]) => void;
+  setSplitTx: (id: string, splits: TxSplit[] | null) => void;
+  setTxNote: (id: string, note: string | null) => void;
   removeManualExpense: ((id: string) => void) | undefined;
-  addManualExpense: ((expense: ManualExpense) => void) | undefined;
+  addManualExpense: ((expense: Omit<ManualExpense, "id">) => void) | undefined;
   onEditManualExpense: ((id: string) => void) | undefined;
   toast: ReturnType<typeof useToast>;
 }
@@ -63,7 +62,9 @@ export interface UseTransactionSelectionResult {
   /** Stable handler: TxRow → category override picker. */
   stableOverrideCategory: (id: string, catId: string | null) => void;
   /** Stable handler: TxRow → split editor confirm. */
-  stableSetSplitTx: (id: string, splits: TxSplit[]) => void;
+  stableSetSplitTx: (id: string, splits: TxSplit[] | null) => void;
+  /** Stable handler: TxRow → note edit. */
+  stableSetTxNote: (id: string, note: string | null) => void;
 }
 
 /**
@@ -83,13 +84,24 @@ export function useTransactionSelection({
   toggleExcludeFromStats,
   overrideCategory,
   setSplitTx,
+  setTxNote,
   removeManualExpense,
   addManualExpense,
   onEditManualExpense,
   toast,
 }: UseTransactionSelectionParams): UseTransactionSelectionResult {
-  const [selectMode, setSelectMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  // R2-UX-12 · Generic select-mode/`selectedIds`/`toggleSelect` core now
+  // lives in the shared `useListSelection` hook so other modules (Їжа,
+  // Фізрук, Рутина) can adopt the same batch pattern. This hook keeps only
+  // the Finyk-specific batch *actions* (category/hide/exclude with undo)
+  // and the stable row-handler wrappers.
+  const {
+    selectMode,
+    setSelectMode,
+    selectedIds,
+    toggleSelect,
+    exitSelectMode: clearSelection,
+  } = useListSelection<string>();
   const [batchCatPicker, setBatchCatPicker] = useState(false);
 
   // Stable refs for handlers used by memoized row — avoids re-rendering all
@@ -98,8 +110,10 @@ export function useTransactionSelection({
   // only when one of the source handlers actually changes identity (F22).
   const handlersRef = useRef({
     hideTx,
+    hiddenTxIds,
     overrideCategory,
     setSplitTx,
+    setTxNote,
     removeManualExpense,
     addManualExpense,
     onEditManualExpense,
@@ -108,8 +122,10 @@ export function useTransactionSelection({
   useEffect(() => {
     handlersRef.current = {
       hideTx,
+      hiddenTxIds,
       overrideCategory,
       setSplitTx,
+      setTxNote,
       removeManualExpense,
       addManualExpense,
       onEditManualExpense,
@@ -117,48 +133,61 @@ export function useTransactionSelection({
     };
   }, [
     hideTx,
+    hiddenTxIds,
     overrideCategory,
     setSplitTx,
+    setTxNote,
     removeManualExpense,
     addManualExpense,
     onEditManualExpense,
     toast,
   ]);
 
-  // useCallback — `toggleSelect` передається у кожен рядок вибору.
-  // Сталий reference спільно з React.memo(TxRow)/обгорткою чекбокса дає
-  // змогу дочірнім елементам не перерендерюватись при оновленні батька.
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const stableHideTx = useCallback((id: string) => {
+    const {
+      hideTx: toggle,
+      hiddenTxIds: hidden,
+      toast: currentToast,
+    } = handlersRef.current;
+    const wasHidden = hidden.includes(id);
+    toggle(id);
+    showUndoToast(currentToast, {
+      msg: wasHidden ? "Операцію повернуто" : "Операцію приховано",
+      onUndo: () => toggle(id),
     });
   }, []);
-
-  const stableHideTx = useCallback(
-    (id: string) => handlersRef.current.hideTx(id),
-    [],
-  );
   const stableOverrideCategory = useCallback(
     (id: string, catId: string | null) =>
       handlersRef.current.overrideCategory(id, catId),
     [],
   );
   const stableSetSplitTx = useCallback(
-    (id: string, splits: TxSplit[]) =>
+    (id: string, splits: TxSplit[] | null) =>
       handlersRef.current.setSplitTx?.(id, splits),
+    [],
+  );
+  const stableSetTxNote = useCallback(
+    (id: string, note: string | null) =>
+      handlersRef.current.setTxNote?.(id, note),
     [],
   );
   const stableOnEditManual = useCallback((manualId?: string) => {
     const fn = handlersRef.current.onEditManualExpense;
     if (typeof fn === "function" && typeof manualId === "string") fn(manualId);
   }, []);
-  const stableSwipeHideTx = useCallback(
-    (id: string) => handlersRef.current.hideTx(id),
-    [],
-  );
+  const stableSwipeHideTx = useCallback((id: string) => {
+    const {
+      hideTx: toggle,
+      hiddenTxIds: hidden,
+      toast: currentToast,
+    } = handlersRef.current;
+    const wasHidden = hidden.includes(id);
+    toggle(id);
+    showUndoToast(currentToast, {
+      msg: wasHidden ? "Операцію повернуто" : "Операцію приховано",
+      onUndo: () => toggle(id),
+    });
+  }, []);
   const stableSwipeDeleteManual = useCallback((tx: Transaction) => {
     const { removeManualExpense, addManualExpense, toast } =
       handlersRef.current;
@@ -170,27 +199,40 @@ export function useTransactionSelection({
     // the canonical `Transaction` interface but the runtime payload may
     // still carry it — read it through an unknown cast for the snapshot.
     const legacyCategory = (tx as { _category?: unknown })._category;
-    const snapshot: ManualExpense = {
-      id: String(manualId),
+    // Sign is the single source of truth for kind (manualExpenseToTransaction
+    // makes income positive, expense negative) — deriving it here means undo
+    // resurrects the record under its original kind instead of silently
+    // defaulting back to expense.
+    const isIncome = Number(tx.amount || 0) > 0;
+    // Без `id` навмисно: знімок існує лише заради undo, а `addManualExpense`
+    // без нього згенерує НОВИЙ ідентифікатор. Історично зі старим id
+    // операція відхилялась на сервері як `tombstoned` — те саме, що лікує
+    // `restoreManualExpense` для другого шляху undo (повний розбір там).
+    // Серверне правило знято, старий id теж доїхав би, але тримати новий
+    // дешевше й безпечніше на старому сервері за проксі.
+    const snapshot: Omit<ManualExpense, "id"> = {
       date: tx.time
         ? new Date(tx.time * 1000).toISOString()
-        : new Date().toISOString(),
+        : // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock fallback when tx.time is missing, not a day-boundary calc.
+          new Date().toISOString(),
       description: String(tx.description || ""),
       amount: Math.abs(Number(tx.amount || 0) / 100),
-      category: String(legacyCategory || "інше"),
+      category: String(legacyCategory || tx.categoryId || "інше"),
+      kind: isIncome ? "income" : "expense",
     };
     removeManualExpense(String(manualId));
     showUndoToast(toast, {
-      msg: "Витрату видалено",
+      msg: isIncome ? "Надходження видалено" : "Витрату видалено",
       onUndo: () => addManualExpense(snapshot),
     });
   }, []);
 
+  // Wrap the shared `clear` (which resets selectMode + selectedIds) with
+  // the Finyk-only concern of closing the batch category picker.
   const exitSelectMode = useCallback(() => {
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    clearSelection();
     setBatchCatPicker(false);
-  }, []);
+  }, [clearSelection]);
 
   // useCallback — використовується у batch-панелі; стабільний handler
   // дозволяє безпечно мемоїзувати toolbar у майбутньому.
@@ -285,5 +327,6 @@ export function useTransactionSelection({
     stableHideTx,
     stableOverrideCategory,
     stableSetSplitTx,
+    stableSetTxNote,
   };
 }

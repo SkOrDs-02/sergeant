@@ -16,7 +16,7 @@
  * - Dark mode support via semantic tokens
  */
 
-import { Component, type ReactNode, useState, useEffect, useRef } from "react";
+import { Component, type ReactNode, useState, useEffect } from "react";
 import {
   Animated,
   Pressable,
@@ -64,8 +64,12 @@ function ErrorFallbackUI({
   onBack: () => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [scaleAnim] = useState(() => new Animated.Value(0.95));
 
   useEffect(() => {
     // Entrance animation
@@ -86,8 +90,8 @@ function ErrorFallbackUI({
     // Announce error to screen readers
     AccessibilityInfo.announceForAccessibility(
       moduleName
-        ? `Помилка в модулі ${moduleName}. Спробуйте ще раз або поверніться до головної.`
-        : "Виникла помилка. Спробуйте ще раз або поверніться до головної.",
+        ? `Помилка в модулі ${moduleName}. Спробуй ще раз або повернись до головної.`
+        : "Виникла помилка. Спробуй ще раз або повернись до головної.",
     );
   }, [fadeAnim, scaleAnim, moduleName]);
 
@@ -136,8 +140,8 @@ function ErrorFallbackUI({
 
           {/* Description */}
           <Text className="text-sm text-fg-muted text-center mb-4 leading-relaxed">
-            Не хвилюйтесь, ваші дані в безпеці. Спробуйте оновити сторінку або
-            поверніться до головного екрану.
+            Дані в безпеці. Спробуй оновити сторінку або повернись до головного
+            екрана.
           </Text>
 
           {/* Error Details Collapsible */}
@@ -209,7 +213,7 @@ function ErrorFallbackUI({
 
         {/* Support hint */}
         <Text className="text-xs text-fg-subtle text-center mt-4">
-          Якщо проблема повторюється, зверніться до підтримки
+          Якщо проблема повторюється, звернись до підтримки
         </Text>
       </Animated.View>
     </View>

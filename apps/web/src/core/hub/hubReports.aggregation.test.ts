@@ -31,13 +31,27 @@ import {
   datesInRange,
   getPeriodRange,
   localDateKey,
+  reportWindows,
 } from "./hubReports.aggregation";
+import type { Habit } from "@sergeant/routine-domain/types";
 
 // ── Helper: фіксуємо `now` для детермінованих тестів ─────────────────────────
 //
 // Середа, 2025-04-09, 14:30 — посередині тижня (понеділок 2025-04-07,
 // неділя 2025-04-13) і посередині місяця (квітень 2025: 1–30).
 const NOW_WED = new Date(2025, 3, 9, 14, 30, 0);
+
+// Стадія 4: `aggregateHabits` рахує знаменник за розкладом, тож фікстура мусить
+// бути повноцінною доменною звичкою, а не зрізом `{id}`. Щоденний розклад лишає
+// всі числа цих кейсів такими, якими вони були до cutover-у.
+const habit = (id: string, extra: Partial<Habit> = {}): Habit =>
+  ({
+    id,
+    name: id,
+    recurrence: "daily",
+    startDate: "2025-01-01",
+    ...extra,
+  }) as Habit;
 
 // ── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -269,7 +283,7 @@ describe("aggregateSpending", () => {
     });
   });
 
-  it("excludedTxIds вилучає транзакцію зі статистики", () => {
+  it("excludedTxIds вилучає операцію зі статистики", () => {
     const inputs = {
       txList: [
         tx("food", -250, new Date(2025, 3, 8, 12, 0).getTime()),
@@ -340,7 +354,7 @@ describe("aggregateHabits", () => {
 
   it("усі архівовані → 0/0 (effectively empty)", () => {
     const state = {
-      habits: [{ id: "h1", archived: true }],
+      habits: [habit("h1", { archived: true })],
       completions: { h1: dates },
     };
     expect(aggregateHabits(state, dates)).toEqual({ pct: 0, daily: {} });
@@ -348,7 +362,7 @@ describe("aggregateHabits", () => {
 
   it("100% виконання: 2 звички × 3 дні = всі 6 виконано", () => {
     const state = {
-      habits: [{ id: "h1" }, { id: "h2" }],
+      habits: [habit("h1"), habit("h2")],
       completions: { h1: dates, h2: dates },
     };
     expect(aggregateHabits(state, dates)).toMatchInlineSnapshot(`
@@ -365,7 +379,7 @@ describe("aggregateHabits", () => {
 
   it("частково: 2 звички × 3 дні; h1 виконано двічі, h2 один раз → pct = round(3/6*100) = 50", () => {
     const state = {
-      habits: [{ id: "h1" }, { id: "h2" }],
+      habits: [habit("h1"), habit("h2")],
       completions: {
         h1: ["2025-04-07", "2025-04-09"], // 2 з 3
         h2: ["2025-04-08"], // 1 з 3
@@ -385,7 +399,7 @@ describe("aggregateHabits", () => {
 
   it("daily-pct округлюється: 1 з 3 → 33%, 2 з 3 → 67%", () => {
     const state = {
-      habits: [{ id: "h1" }, { id: "h2" }, { id: "h3" }],
+      habits: [habit("h1"), habit("h2"), habit("h3")],
       completions: {
         h1: ["2025-04-07"],
         h2: ["2025-04-08", "2025-04-09"],
@@ -403,8 +417,8 @@ describe("aggregateHabits", () => {
   it("архівована звичка не зменшує знаменник", () => {
     const state = {
       habits: [
-        { id: "h1" },
-        { id: "h2", archived: true }, // не рахується
+        habit("h1"),
+        habit("h2", { archived: true }), // не рахується
       ],
       completions: {
         h1: dates, // 100% активних
@@ -469,7 +483,10 @@ describe("aggregateKcal", () => {
     };
     expect(aggregateKcal(log, dates)).toEqual({
       total: 300,
-      avg: 150, // 2 ключі (один з 0, інший з 300) → avg = 300/2 = 150
+      // Стадія 4: знаменник — дні з ≥1 прийомом, тож 300/1. Раніше було
+      // 300/2 = 150, бо день зі зламаним `meals` мав ключ і сидів у
+      // знаменнику нулем — саме та розбіжність із каноном nutrition.md §5.2.
+      avg: 300,
       daily: {
         "2025-04-07": 0,
         "2025-04-08": 300,
@@ -517,7 +534,7 @@ describe("aggregateReport — cross-module snapshot", () => {
         txSplits: {},
       },
       routineState: {
-        habits: [{ id: "h1" }, { id: "h2" }],
+        habits: [habit("h1"), habit("h2")],
         completions: {
           h1: ["2025-04-07", "2025-04-08", "2025-04-09"],
           h2: ["2025-04-07"],
@@ -558,22 +575,14 @@ describe("aggregateReport — cross-module snapshot", () => {
               "2025-04-07": 100,
               "2025-04-08": 50,
               "2025-04-09": 50,
-              "2025-04-10": 0,
-              "2025-04-11": 0,
-              "2025-04-12": 0,
-              "2025-04-13": 0,
             },
-            "pct": 29,
+            "pct": 67,
           },
           "prev": {
             "daily": {
               "2025-03-31": 0,
               "2025-04-01": 0,
               "2025-04-02": 0,
-              "2025-04-03": 0,
-              "2025-04-04": 0,
-              "2025-04-05": 0,
-              "2025-04-06": 0,
             },
             "pct": 0,
           },
@@ -623,7 +632,7 @@ describe("aggregateReport — cross-module snapshot", () => {
     `);
   });
 
-  it("прев-період має правильні (пн-нд минулого тижня) дати", () => {
+  it("прев-період бере ті ж дні минулого тижня (пн 03-31 і далі)", () => {
     const inputs = {
       rawFizrukWorkouts: JSON.stringify([
         // тренування у попередньому тижні
@@ -680,5 +689,64 @@ describe("aggregateReport — cross-module snapshot", () => {
     expect(report.period.dates).toHaveLength(30);
     expect(report.period.dates[0]).toBe("2025-04-01");
     expect(report.period.dates[29]).toBe("2025-04-30");
+  });
+});
+
+describe("reportWindows — дельта незавершеного періоду", () => {
+  it("середа: поточний тиждень до сьогодні, попередній за ті ж три дні", () => {
+    const w = reportWindows("week", 0, NOW_WED);
+    expect(w.dates).toHaveLength(7);
+    expect(w.cur).toEqual(["2025-04-07", "2025-04-08", "2025-04-09"]);
+    expect(w.prev).toEqual(["2025-03-31", "2025-04-01", "2025-04-02"]);
+    expect(w.partial).toBe(true);
+  });
+
+  it("завершений тиждень порівнюється з попереднім повністю", () => {
+    const w = reportWindows("week", -1, NOW_WED);
+    expect(w.cur).toEqual(w.dates);
+    expect(w.prev).toHaveLength(7);
+    expect(w.partial).toBe(false);
+  });
+
+  it("місяць: 9 днів квітня проти перших 9 днів березня", () => {
+    const w = reportWindows("month", 0, NOW_WED);
+    expect(w.cur).toHaveLength(9);
+    expect(w.prev[0]).toBe("2025-03-01");
+    expect(w.prev.at(-1)).toBe("2025-03-09");
+  });
+
+  it("завершений короткий місяць не обрізає довгий попередній", () => {
+    // Лютий 2025 (28 днів) проти січня (31): обидва завершені.
+    const w = reportWindows("month", -2, NOW_WED);
+    expect(w.cur).toHaveLength(28);
+    expect(w.prev).toHaveLength(31);
+    expect(w.partial).toBe(false);
+  });
+
+  it("сума за три дні проти повного тижня більше не дає фальшивий мінус", () => {
+    // Однаковий темп: по тренуванню в пн і вт обох тижнів.
+    const at = (m: number, d: number) => ({
+      startedAt: new Date(2025, m, d, 10).getTime(),
+      endedAt: new Date(2025, m, d, 11).getTime(),
+    });
+    const report = aggregateReport(
+      "week",
+      0,
+      {
+        rawFizrukWorkouts: JSON.stringify([
+          at(2, 31),
+          at(3, 1),
+          at(3, 4), // пт минулого тижня: після «тих самих днів»
+          at(3, 7),
+          at(3, 8),
+        ]),
+        finyk: { txList: [], excludedTxIds: [], txSplits: {} },
+        routineState: null,
+        nutritionLog: {},
+      },
+      NOW_WED,
+    );
+    expect(report.workouts.cur.count).toBe(2);
+    expect(report.workouts.prev.count).toBe(2);
   });
 });

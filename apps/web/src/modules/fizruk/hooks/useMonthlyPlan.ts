@@ -1,14 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 
 import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import { deviceDayKey } from "@sergeant/shared";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractMonthlyPlanSnapshot } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractMonthlyPlanSnapshot,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+  type FizrukIntendedSliceRef,
+} from "../lib/fizrukDualWriteIntent";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
 const STORAGE_KEY = MONTHLY_PLAN_STORAGE_KEY;
 
@@ -24,8 +29,9 @@ interface MonthlyPlanState {
 }
 
 function todayKey() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // Device day key (ADR-0078, рішення власника 2026-09-29): "сьогодні" плану —
+  // та сама доба, що бачить користувач на телефоні.
+  return deviceDayKey();
 }
 
 const DEFAULT_STATE: MonthlyPlanState = {
@@ -48,60 +54,79 @@ function loadState(): MonthlyPlanState {
   };
 }
 
-function saveState(s: MonthlyPlanState): void {
-  safeWriteLS(STORAGE_KEY, s);
-  // Stage 12 / PR #070f-dualwrite — mirror the singleton monthly-plan
-  // doc into SQLite via the dual-write pipeline. Fire-and-forget; the
-  // trigger is a no-op when no dual-write context is registered.
-  const prevDualWrite =
-    peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-  const nextDualWrite = {
-    ...prevDualWrite,
-    monthlyPlan: extractMonthlyPlanSnapshot(s),
-  };
+/**
+ * Cache-first initial state: prefer the SQLite cache (warm on repeat
+ * boots) over the LS blob. Teardown Phase 3 removed the LS write-mirror;
+ * `loadState()` remains only as a pre-warm fallback for whatever this
+ * device's LS blob already held. The boot-time drain that used to
+ * refresh this blob from residual LS data (`residualImport.ts`) was
+ * removed 2026-08 — no pre-beta testers were left with pre-SQLite LS
+ * state to migrate — so on a fresh install this fallback simply misses
+ * and `loadState()` returns `DEFAULT_STATE`.
+ */
+function loadInitialState(): MonthlyPlanState {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt !== null && cache.monthlyPlan) return cache.monthlyPlan;
+  return loadState();
+}
+
+function saveState(
+  s: MonthlyPlanState,
+  intended: FizrukIntendedSliceRef<"monthlyPlan">,
+): void {
+  // Teardown Phase 3 — SQLite-only write via the dual-write pipeline; the
+  // LS mirror was removed. Fire-and-forget; the trigger is a no-op when no
+  // dual-write context is registered.
+  const transition = fizrukDualWriteTransition(
+    "monthlyPlan",
+    intended,
+    extractMonthlyPlanSnapshot(s),
+  );
   try {
-    triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+    triggerFizrukDualWrite(transition.prev, transition.next);
   } catch {
     /* trigger is fire-and-forget — never propagate */
   }
-  window.dispatchEvent(new CustomEvent("fizruk-storage-monthly-plan"));
 }
 
 export function useMonthlyPlan() {
-  const [state, setState] = useState(loadState);
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const intended = useFizrukIntendedSlice<"monthlyPlan">(sqliteCacheTick);
+  const [state, setState] = useSqliteTickOverlay<MonthlyPlanState>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      if (cache.refreshedAt === null || !cache.monthlyPlan) return undefined;
+      return cache.monthlyPlan;
+    },
+    loadInitialState,
+  );
 
-  useEffect(() => {
-    const sync = () => setState(loadState());
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY || e.key === null) sync();
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("fizruk-storage-monthly-plan", sync);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("fizruk-storage-monthly-plan", sync);
-    };
-  }, []);
+  const setReminder = useCallback(
+    (hour: number, minute: number) => {
+      setState((prev) => {
+        const next = {
+          ...prev,
+          reminderHour: Math.max(0, Math.min(23, hour)),
+          reminderMinute: Math.max(0, Math.min(59, minute)),
+        };
+        saveState(next, intended);
+        return next;
+      });
+    },
+    [intended, setState],
+  );
 
-  const setReminder = useCallback((hour: number, minute: number) => {
-    setState((prev) => {
-      const next = {
-        ...prev,
-        reminderHour: Math.max(0, Math.min(23, hour)),
-        reminderMinute: Math.max(0, Math.min(59, minute)),
-      };
-      saveState(next);
-      return next;
-    });
-  }, []);
-
-  const setReminderEnabled = useCallback((enabled: boolean) => {
-    setState((prev) => {
-      const next = { ...prev, reminderEnabled: !!enabled };
-      saveState(next);
-      return next;
-    });
-  }, []);
+  const setReminderEnabled = useCallback(
+    (enabled: boolean) => {
+      setState((prev) => {
+        const next = { ...prev, reminderEnabled: !!enabled };
+        saveState(next, intended);
+        return next;
+      });
+    },
+    [intended, setState],
+  );
 
   const setDayTemplate = useCallback(
     (dateKey: string, templateId: string | null) => {
@@ -113,11 +138,11 @@ export function useMonthlyPlan() {
           days[dateKey] = { templateId };
         }
         const next = { ...prev, days };
-        saveState(next);
+        saveState(next, intended);
         return next;
       });
     },
-    [],
+    [intended, setState],
   );
 
   const getTemplateForDate = useCallback(

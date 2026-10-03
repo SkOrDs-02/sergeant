@@ -9,19 +9,34 @@
  *     під час виконання,
  *   - затримку readiness-проба пропорційну часу міграції.
  *
- * Правильна модель — Release-stage: цей скрипт запускається окремим job-ом
- * (на Railway це pre-deploy command, на Replit — вручну), перед тим як нові
- * інстанси server-а почнуть приймати трафік. Web-процес на старті більше
- * НЕ виконує міграції.
+ * Правильна модель — окремий процес перед стартом веб-сервера. Web-процес на
+ * старті міграції НЕ виконує: йому потрібен `statement_timeout`, пулер і
+ * швидка readiness, а release-stage — рівно протилежне (див. три налаштування
+ * нижче). Спільний процес не може дати обидва набори.
+ *
+ * Запускається з ENTRYPOINT образу:
+ * `sh -c "node dist-server/migrate.js && exec node dist-server/index.js"`
+ * (`Dockerfile.api`, форму стереже
+ * `scripts/__tests__/dockerfile-api-migrate-entrypoint.test.mjs`). Локально —
+ * вручну через `pnpm db:migrate`.
+ *
+ * Чому НЕ Coolify `pre_deployment_command` (так було до 2026-09-21): Coolify
+ * виконує його через `docker exec` у контейнері, що ЩЕ ПРАЦЮЄ на попередньому
+ * образі. Цей скрипт тоді читає СТАРІ `.sql`, нової міграції не бачить і
+ * чесно рапортує `migrate_ok` — тобто кожна міграція застосовувалась на один
+ * деплой пізніше за код, який на неї розраховує (знахідка 2026-08-28). На
+ * Railway та сама модель була справною: `preDeployCommand` піднімав свіжий
+ * контейнер з нового образу, тож поле перенесли за іменем, а не за поведінкою.
  *
  * Вибір URL-а:
  *   `MIGRATE_DATABASE_URL` (якщо виставлений) має пріоритет над `DATABASE_URL`.
- *   Сенс: на Railway internal DNS `postgres.railway.internal` не резолвиться
- *   у Pre-Deploy контейнері (він ще не в runtime-мережі), тому runtime-значення
- *   `DATABASE_URL` там непридатне. Виставляєш `MIGRATE_DATABASE_URL` на
- *   публічний proxy-URL Postgres (`${{ Postgres.DATABASE_PUBLIC_URL }}`), а
- *   web-процес продовжує ходити в БД через швидший internal DNS. На Replit,
- *   docker-compose, CI/local — достатньо одного `DATABASE_URL`.
+ *   Історично це був спадок Railway, де pre-deploy виконувався ПОЗА runtime-
+ *   мережею й потребував публічного URL. Відколи міграції їдуть з ENTRYPOINT
+ *   того самого контейнера, обидва URL показують на одну базу, і на Coolify
+ *   це буквально одне значення. Змінна лишається як шов: дає розвести
+ *   міграційне й рантаймове підключення (окремий користувач з DDL-правами,
+ *   інший хост) не чіпаючи код. На docker-compose, CI/local достатньо
+ *   одного `DATABASE_URL`.
  *
  * Вихідні коди: 0 — все ок, 1 — будь-яка помилка (URL відсутній, міграція
  * впала, pg недоступний тощо).
@@ -35,12 +50,48 @@ if (migrateUrl) {
   process.env.DATABASE_URL = migrateUrl;
 }
 
+// AI-DANGER: три налаштування нижче виставляються ДО імпорту `db.ts` і
+// кожне закриває окремий спосіб мовчки заклинити деплой. Не «оптимізуй»
+// їх назад до runtime-значень — runtime і release-stage тут мають
+// протилежні потреби.
+//
+// 1. `DATABASE_URL_POOL` мусить зникнути. Рядком вище ми перевизначили
+//    `DATABASE_URL`, але `db.ts` бере
+//    `env.DATABASE_URL_POOL || env.DATABASE_URL` — тобто варто зʼявитись
+//    pgBouncer-URL-у, і `MIGRATE_DATABASE_URL` мовчки скасовується, а
+//    міграції їдуть через пулер у transaction-mode. Там
+//    `pg_advisory_lock` не тримається між запитами, отже захист від двох
+//    одночасних деплоїв зникає рівно тоді, коли він потрібен найбільше.
+//    Міграції тепер їдуть у тому самому контейнері, що й рантайм, тобто з
+//    тим самим набором env — розраховувати на «там його не буде» не можна
+//    тим паче.
+//    Раннбук `docs/start/instructions/database-connection-pooling.md`
+//    обіцяє саме таку поведінку — цей рядок робить обіцянку правдою.
+//
+// 2. `statement_timeout` мусить зникнути. `migrate.mjs` імпортує той
+//    самий пул, що обслуговує запити, а той створюється з
+//    `statement_timeout = PG_STATEMENT_TIMEOUT_MS` (дефолт 30 с). Тобто
+//    перша ж міграція, довша за 30 секунд — CREATE INDEX на вирослій
+//    таблиці, backfill, ALTER COLUMN TYPE — обривається з 57014,
+//    відкочується, і деплой падає. Ретрай дає той самий результат.
+//    Перевірено: міграція з `pg_sleep(35)` падає рівно на 30-й секунді з
+//    «canceling statement due to statement timeout». Для release-stage
+//    правильна стеля — відсутня: краще довга міграція, ніж напівстан.
+//
+// 3. `lock_timeout` навпаки — мусить зʼявитись. Без нього ALTER TABLE,
+//    що став у чергу за довгим читачем, блокує КОЖЕН наступний запит до
+//    тієї таблиці на весь час очікування. Краще швидко впасти й
+//    повторити деплой, ніж покласти прод чергою блокувань.
+process.env.PG_STATEMENT_TIMEOUT_MS = "0";
+process.env.PG_LOCK_TIMEOUT_MS = process.env.PG_LOCK_TIMEOUT_MS ?? "10000";
+delete process.env.DATABASE_URL_POOL;
+
 if (!process.env.DATABASE_URL) {
   console.error(
     JSON.stringify({
       level: "error",
       msg: "migrate_database_url_missing",
-      hint: "Set MIGRATE_DATABASE_URL (preferred for Railway pre-deploy, points to Postgres public URL) or DATABASE_URL.",
+      hint: "Set DATABASE_URL (or MIGRATE_DATABASE_URL to route migrations at a separate Postgres user/host). Container ENTRYPOINT runs this before the web server, so an unset URL stops the boot.",
     }),
   );
   process.exit(1);
@@ -75,7 +126,7 @@ async function main() {
     );
     process.exitCode = 1;
   } finally {
-    // `pool.end()` обов'язковий: без нього процес Node триматиме pg-з'єднання
+    // `pool.end()` обовʼязковий: без нього процес Node триматиме pg-зʼєднання
     // відкритим і не вийде, а release-job зависне по timeout-у.
     try {
       await pool.end();

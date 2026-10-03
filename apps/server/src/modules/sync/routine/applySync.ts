@@ -6,6 +6,7 @@ import {
   toNonNegativeInt,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+import { applyIfNewer } from "../applySync-helpers.js";
 
 /**
  * Apply-шлях для `routine_entries`. Кожна операція — повний UPSERT за
@@ -18,12 +19,23 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * `updated_at = clientTs`. Жорстке видалення не використовується для
  * Routine, бо клієнт може потім повернути виконання.
  *
- * Tombstone-resurrection guard (Stage 5, дзеркалить PR #043 для
- * `nutrition_meals`): після soft-delete `op='insert'`/`op='update'`
- * проти tombstoned-у ряд відхиляється з `reason='tombstoned'`. Інакше
- * stale offline-edit на одному девайсі скасовував би delete на іншому.
- * `op='delete'` лишається ідемпотентним — re-stamp-ить `deleted_at`
- * новішим `client_ts`.
+ * Воскресіння tombstone-у ДОЗВОЛЕНЕ (audit E-1). `op='delete'`
+ * лишається ідемпотентним — re-stamp-ить `deleted_at` новішим
+ * `client_ts`; але `insert`/`update` зі СТРОГО новішим `client_ts`
+ * скидає `deleted_at` назад у `null` через звичайну UPDATE-гілку.
+ *
+ * AI-CONTEXT: `routine_entries` має ДЕТЕРМІНОВАНИЙ PK
+ * `habitId:dateKey` (`apps/web/src/modules/routine/lib/sqliteWriter/diff.ts`
+ * → `buildCompletionRowId`), тому повторний чекін тієї самої звички за той
+ * самий день бʼє в ТОЙ САМИЙ рядок. G-set-інваріант `nutrition_meals`
+ * (випадковий UUID на кожен запис, PR #043) тут НЕ застосовний: там
+ * повторний insert створює новий рядок, тут — переписує tombstone.
+ * Tombstone-resurrection guard, скопійований звідти, ріже легітимний
+ * цикл toggle→untoggle→toggle і НАЗАВЖДИ губить чекін (reject
+ * термінальний в outbox). НЕ «відновлюй симетрію» з nutrition.
+ * Від stale offline-edit-у захищає LWW-guard нижче
+ * (`updated_at >= clientTs` → `lww_conflict`) — до DML доходять лише
+ * строго новіші ops. Канон: `docs/product/modules/routine.md` §2, §12.
  */
 export async function applyRoutineEntries(
   client: PoolClient,
@@ -60,23 +72,19 @@ export async function applyRoutineEntries(
     if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
       return { status: "rejected", reason: "lww_conflict" };
     }
-    // Tombstone-resurrection guard — див. док-стрінг.
-    if (existing!.rows[0]!.deleted_at !== null && op.op !== "delete") {
-      return { status: "rejected", reason: "tombstoned" };
-    }
   }
 
   if (op.op === "delete") {
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_entries
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : null;
@@ -111,13 +119,14 @@ export async function applyRoutineEntries(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_entries
          SET name = $1,
              completed_at = $2,
              updated_at = $3,
              deleted_at = $4
-       WHERE id = $5 AND user_id = $6`,
+       WHERE id = $5 AND user_id = $6 AND updated_at < $3`,
       [name, completedAt ?? null, clientTs, deletedAt ?? null, id, userId],
     );
   }
@@ -125,6 +134,13 @@ export async function applyRoutineEntries(
 }
 
 /**
+ * AI-DANGER: імʼя таблиці фантомне (audit E-4). `current_streak` /
+ * `longest_streak` — це НЕ derived день-стрік, а net-лічильник кліків
+ * «відмітив/зняв» по ВСІХ звичках разом. Одиниця виміру — кліки, не
+ * послідовні дні. НЕ читай їх тут (і ніде) для UI / push / digest:
+ * справжній стрік рахується client-side (`streakForHabit`) з
+ * `routine_entries`/completions. Канон: `docs/product/modules/routine.md` §4.
+ *
  * Apply-шлях для `routine_streaks` (per-user aggregate). PK = user_id,
  * один рядок на юзера; історичного `updated_at` нема. LWW-guard
  * робимо проти `MAX(client_ts)` із `sync_op_log` для (user_id,
@@ -198,6 +214,17 @@ export async function applyRoutineStreaks(
     return { status: "applied" };
   }
 
+  // AI-DANGER: `routine_streaks` не має `updated_at`, тож LWW іде проти
+  // `sync_op_log`, а цей рядок журналу пише пуш лише ПІСЛЯ apply у тій самій
+  // транзакції. Без блокування старіший паралельний пуш не бачить
+  // незакоміченого новішого і перезаписує його. Advisory lock на
+  // (routine_streaks, user) до кінця транзакції серіалізує такі пуші: після
+  // коміту сусіда наступний оператор бачить його рядок журналу (READ
+  // COMMITTED). Increment вище лок не бере, він атомарний сам.
+  await client.query(
+    `SELECT pg_advisory_xact_lock(hashtext('routine_streaks'), hashtext($1))`,
+    [userId],
+  );
   const lwwGuard = await client.query<{ max_ts: Date | null }>(
     `SELECT MAX(client_ts) AS max_ts
        FROM sync_op_log

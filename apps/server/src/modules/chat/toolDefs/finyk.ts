@@ -4,13 +4,13 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   {
     name: "change_category",
     description:
-      "Змінити категорію транзакції. Використовуй коли користувач просить перенести транзакцію в іншу категорію.",
+      "Змінити категорію операції. Використовуй коли користувач просить перенести операцію в іншу категорію.",
     input_schema: {
       type: "object",
       properties: {
         tx_id: {
           type: "string",
-          description: "ID транзакції з блоку [Останні операції]",
+          description: "ID операції з блоку [Останні операції]",
         },
         category_id: {
           type: "string",
@@ -23,14 +23,14 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   {
     name: "find_transaction",
     description:
-      "Знайти транзакції у Фініку за описом/мерчантом, сумою або датою. Використовуй перед категоризацією, коли користувач каже 'знайди покупку в АТБ' або 'транзакція на 450 грн позавчора'. Не змінює дані.",
+      "Знайти операції у Фініку за описом/мерчантом, сумою або датою. Використовуй перед категоризацією, коли користувач каже 'знайди покупку в АТБ' або 'операція на 450 грн позавчора'. Не змінює дані.",
     input_schema: {
       type: "object",
       properties: {
         query: {
           type: "string",
           description:
-            "Текст для пошуку в описі, мерчанті, категорії або id транзакції",
+            "Текст для пошуку в описі, мерчанті, категорії або id операції",
         },
         amount: {
           type: "number",
@@ -59,7 +59,7 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   {
     name: "batch_categorize",
     description:
-      "Масово змінити категорію транзакцій за текстовим патерном і фільтрами. За замовчуванням dry_run=true — спершу показує preview без запису. Виконуй з dry_run=false тільки коли користувач підтвердив застосування.",
+      "Масово змінити категорію операцій за текстовим патерном і фільтрами. За замовчуванням dry_run=true — спершу показує preview без запису. Виконуй з dry_run=false тільки коли користувач підтвердив застосування.",
     input_schema: {
       type: "object",
       properties: {
@@ -96,8 +96,7 @@ export const FINYK_TOOLS: AnthropicTool[] = [
         },
         limit: {
           type: "number",
-          description:
-            "Максимум транзакцій для preview/apply, 1-50 (default 20)",
+          description: "Максимум операцій для preview/apply, 1-50 (default 20)",
         },
       },
       required: ["pattern", "category_id"],
@@ -117,7 +116,8 @@ export const FINYK_TOOLS: AnthropicTool[] = [
         },
         emoji: {
           type: "string",
-          description: "Емодзі (опціонально, за замовчуванням 💸)",
+          description:
+            "Іконка боргу (опціонально). Не передавай emoji — клієнт малює іконки дизайн-системи.",
         },
       },
       required: ["name", "amount"],
@@ -137,11 +137,11 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   },
   {
     name: "hide_transaction",
-    description: "Приховати транзакцію зі статистики.",
+    description: "Приховати операцію зі статистики.",
     input_schema: {
       type: "object",
       properties: {
-        tx_id: { type: "string", description: "ID транзакції" },
+        tx_id: { type: "string", description: "ID операції" },
       },
       required: ["tx_id"],
     },
@@ -154,9 +154,14 @@ export const FINYK_TOOLS: AnthropicTool[] = [
       type: "object",
       properties: {
         category_id: { type: "string", description: "ID категорії" },
-        limit: { type: "number", description: "Ліміт в грн на місяць" },
+        limit: { type: "number", description: "Сума ліміту в грн" },
+        period: {
+          type: "string",
+          enum: ["month", "week", "one_time"],
+          description: "Період: місяць, тиждень або одноразово",
+        },
       },
-      required: ["category_id", "limit"],
+      required: ["category_id", "limit", "period"],
     },
   },
   {
@@ -218,15 +223,13 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   {
     name: "delete_transaction",
     description:
-      "Видалити ручну транзакцію з Фініка. Приймає id ручної транзакції (починається з 'm_') — такий, як у блоці [Останні операції]. Монобанк-транзакції видалити не можна — для них використовуй hide_transaction. Ідемпотентно: якщо транзакції немає — повертає відповідне повідомлення.",
+      "Видалити ручну операцію з Фініка. Приймає id ручної операції (починається з 'm_') — такий, як у блоці [Останні операції]. Монобанк-операції видалити не можна — для них використовуй hide_transaction. Ідемпотентно: якщо операції немає — повертає відповідне повідомлення.",
     input_schema: {
       type: "object",
       properties: {
         tx_id: {
           type: "string",
-          description:
-            // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- pattern syntax for the LLM (m_<suffix> placeholder), not user-facing copy
-            "ID ручної транзакції (формат 'm_...'). Напр. 'm_abc123'",
+          description: "ID ручної операції (формат 'm_...'). Напр. 'm_abc123'",
         },
       },
       required: ["tx_id"],
@@ -277,7 +280,6 @@ export const FINYK_TOOLS: AnthropicTool[] = [
       properties: {
         debt_id: {
           type: "string",
-          // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- pattern syntax for the LLM (d_<suffix> placeholder), not user-facing copy
           description: "ID боргу (формат 'd_...')",
         },
         amount: {
@@ -287,7 +289,7 @@ export const FINYK_TOOLS: AnthropicTool[] = [
         },
         note: {
           type: "string",
-          description: "Короткий опис транзакції (опційно)",
+          description: "Короткий опис операції (опційно)",
         },
       },
       required: ["debt_id"],
@@ -313,7 +315,7 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   {
     name: "import_monobank_range",
     description:
-      "Попросити Фінік перезавантажити транзакції з Монобанку за період YYYY-MM-DD..YYYY-MM-DD. Очищує кеш відповідних місяців і диспатчить подію, на яку реагує модуль Фінік. Сам імпорт виконується коли користувач відкриє Фінік (потрібен токен).",
+      "Попросити Фінік перезавантажити операції з Монобанку за період YYYY-MM-DD..YYYY-MM-DD. Очищує кеш відповідних місяців і диспатчить подію, на яку реагує модуль Фінік. Сам імпорт виконується коли користувач відкриє Фінік (потрібен токен).",
     input_schema: {
       type: "object",
       properties: {
@@ -326,11 +328,12 @@ export const FINYK_TOOLS: AnthropicTool[] = [
   {
     name: "split_transaction",
     description:
-      "Розділити транзакцію на кілька частин по категоріях. Наприклад: покупка в супермаркеті — 200 грн їжа, 100 грн побут.",
+      "Розділити операцію на кілька частин по категоріях. Наприклад: покупка в супермаркеті — 200 грн їжа, 100 грн побут.",
+    strict: true,
     input_schema: {
       type: "object",
       properties: {
-        tx_id: { type: "string", description: "ID транзакції для розділення" },
+        tx_id: { type: "string", description: "ID операції для розділення" },
         parts: {
           type: "array",
           description: "Частини: кожна має category_id та amount",

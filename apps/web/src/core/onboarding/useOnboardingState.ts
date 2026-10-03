@@ -24,7 +24,7 @@
  *     to re-couple to it here.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   resolveOnboardingHero,
@@ -51,11 +51,19 @@ export const SOFT_AUTH_SESSION_DAYS_THRESHOLD = 3;
 /**
  * Minimum session-days the *post-first-entry* user must have before
  * the soft-auth nag fires. The lower threshold (vs. cold users) is
- * intentional — engaged users tolerate the nag earlier — but it is
- * still ≥ 2 so we never collide the auth prompt with the celebration
- * modal that fires on the first-entry session itself.
+ * intentional and now sits at the floor: a visitor who has created a
+ * real entry has something to lose, and until they sign in it lives in
+ * a single unsynced copy on this device. Waiting a second calendar day
+ * to say so only widens the window in which that copy can vanish.
+ *
+ * A cold visitor keeps the higher bar — nothing of theirs is at risk,
+ * so the prompt would be a barrier with no argument behind it.
+ *
+ * This does NOT collide with the first-entry celebration: the hero slot
+ * has a single winner and `first-action` outranks `soft-auth`, so the
+ * nag can only take the slot once the FTUX card has stood down.
  */
-export const SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS = 2;
+export const SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS = 1;
 
 export interface UseOnboardingStateOptions {
   /** Current user record (or `null`/`undefined` if anonymous). When
@@ -78,6 +86,20 @@ export interface UseOnboardingStateOptions {
    *  when this is missing — the card is useless without a way to
    *  open the modal it nags toward. */
   onShowAuth?: (() => void) | undefined;
+  /**
+   * `true` while `LocalOnlyDataBanner` is visible for this session (PR-H4,
+   * design-audit 2026-09-13). Both cards ask for the exact same thing —
+   * "sign in before this disappears" — and the banner budget
+   * (`hub/bannerBudget.tsx`) only caps banner COUNT, not repeated intent:
+   * with just these two competing, both fit under the budget of two and
+   * both render, so an anonymous user with a real entry sees "Увійти" from
+   * the banner AND from the hero card at once. Suppressing the soft-auth
+   * candidate here (rather than the banner) is deliberate — the banner
+   * carries the durability warning, which is the higher-stakes message.
+   * Caller mirrors this to the banner's own visibility gate; see
+   * `useHubDashboardState.ts`.
+   */
+  localOnlyBannerVisible?: boolean;
 }
 
 export interface UseOnboardingStateResult {
@@ -123,11 +145,13 @@ function computeSoftAuthEligible(
   softAuthDismissed: boolean,
   hasRealEntry: boolean,
   sessionDays: number,
+  localOnlyBannerVisible: boolean,
   onShowAuth?: () => void,
 ): boolean {
   return (
     !user &&
     !softAuthDismissed &&
+    !localOnlyBannerVisible &&
     typeof onShowAuth === "function" &&
     ((hasRealEntry && sessionDays >= SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS) ||
       sessionDays >= SOFT_AUTH_SESSION_DAYS_THRESHOLD)
@@ -162,6 +186,7 @@ export function useOnboardingState(
     todayFocusAvailable,
     reengagementEligible,
     onShowAuth,
+    localOnlyBannerVisible = false,
   } = options;
 
   // Lazy initialisers: storage reads run once on mount, not on every
@@ -173,18 +198,25 @@ export function useOnboardingState(
   const [softAuthDismissed, setSoftAuthDismissed] = useState(() =>
     storage.isSoftAuthDismissed(),
   );
+  const effectiveFirstActionVisible = firstActionVisible && !hasRealEntry;
+
+  useEffect(() => {
+    if (!hasRealEntry || !firstActionVisible) return;
+    storage.clearFirstActionPending();
+  }, [firstActionVisible, hasRealEntry, storage]);
 
   const softAuthEligible = computeSoftAuthEligible(
     user,
     softAuthDismissed,
     hasRealEntry,
     sessionDays,
+    localOnlyBannerVisible,
     onShowAuth,
   );
 
   const resolution = resolveOnboardingHero({
     reengagementEligible,
-    firstActionVisible,
+    firstActionVisible: effectiveFirstActionVisible,
     softAuthEligible,
     todayFocusAvailable,
   });

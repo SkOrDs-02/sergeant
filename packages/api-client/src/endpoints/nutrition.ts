@@ -1,4 +1,5 @@
 import type { HttpClient } from "../httpClient";
+import type { MealTypeId, NullableMacros } from "@sergeant/shared";
 
 // ---------------------------------------------------------------------------
 // Response shapes returned by `apps/server/src/modules/nutrition/*`.
@@ -7,12 +8,9 @@ import type { HttpClient } from "../httpClient";
 // normalizers in individual handlers.
 // ---------------------------------------------------------------------------
 
-export interface NutritionMacros {
-  kcal: number | null;
-  protein_g: number | null;
-  fat_g: number | null;
-  carbs_g: number | null;
-}
+// unification-modules.md #2.27: канон — `NullableMacros` у
+// `@sergeant/shared/utils/macros`.
+export type NutritionMacros = NullableMacros;
 
 // analyze-photo / refine-photo
 export interface NutritionPhotoPortion {
@@ -25,11 +23,53 @@ export interface NutritionPhotoIngredient {
   notes: string | null;
 }
 
+/**
+ * Що в кадрі замість їжі. Заповнене ТІЛЬКИ при `isFood: false` — і саме воно
+ * задає тон відмови на екрані (тваринку пропонуємо погладити, а не «обрати
+ * інше фото»). Джерело правди — `resolveNotFoodKind` на сервері.
+ */
+export type NutritionNotFoodKind = "animal" | "person" | "other";
+
+/**
+ * Одна позиція на кадрі — страва, як її назве людина, а не інгредієнт.
+ * «Рис з овочами» — одна позиція; що саме в ній, описує `ingredients`
+ * верхнього рівня. Сервер віддає не більше 5 і гарантує щонайменше одну
+ * при `isFood: true`, тож споживач завжди має що показати рядком.
+ */
+export interface NutritionPhotoItem {
+  name: string;
+  macros: NutritionMacros;
+  gramsApprox: number | null;
+  confidence: number;
+  /**
+   * Client-set only — сервер це поле НІКОЛИ не повертає (модель не знає
+   * про каталог продуктів). Заповнюється, коли позицію замінено через
+   * пошук у `PhotoAddItemPicker` (ініціатива 0023, PR-3): відрізняє
+   * рядок журналу `macroSource: "productDb"` від вгаданого моделлю
+   * `"photoAI"` без окремого поля для того самого факту.
+   */
+  foodId?: string | null;
+}
+
 export interface NutritionPhotoResult {
+  /**
+   * `false` — на фото немає їжі. Сервер у цьому разі гарантує порожні `macros`
+   * і `questions`; споживач не має пропонувати ні збереження в журнал, ні
+   * уточнення порції. Джерело правди — `normalizePhotoResult` на сервері.
+   */
+  isFood: boolean;
+  /** Непорожнє лише при `isFood: false`; при `true` сервер шле `null`. */
+  notFoodKind: NutritionNotFoodKind | null;
   dishName: string;
   confidence: number;
   portion: NutritionPhotoPortion | null;
   ingredients: NutritionPhotoIngredient[];
+  /**
+   * Позиції кадру. `macros` верхнього рівня — їхня сума, порахована
+   * сервером через `sumMacrosNullable`; клієнт після видалення рядка
+   * перераховує підсумок тією ж функцією, щоб числа не розійшлися.
+   */
+  items: NutritionPhotoItem[];
   macros: NutritionMacros;
   questions: string[];
 }
@@ -73,7 +113,9 @@ export interface NutritionWeekPlanResponse {
 }
 
 // day-plan
-export type NutritionMealType = "breakfast" | "lunch" | "dinner" | "snack";
+// unification-modules.md #2.25: канон — `MealTypeIdSchema` у
+// `@sergeant/shared/schemas`; nutrition-domain реекспортує той самий тип.
+export type NutritionMealType = MealTypeId;
 
 export interface NutritionDayMeal {
   type: NutritionMealType;
@@ -99,11 +141,6 @@ export interface NutritionDayPlan {
 export interface NutritionDayPlanResponse {
   plan: NutritionDayPlan;
   rawText?: string | null;
-}
-
-// day-hint
-export interface NutritionDayHintResponse {
-  hint: string;
 }
 
 // shopping-list
@@ -148,13 +185,11 @@ export interface NutritionBackupDownloadResponse {
 }
 
 export interface NutritionEndpoints {
-  postJson: <T = unknown>(url: string, body: unknown) => Promise<T>;
   analyzePhoto: (body: unknown) => Promise<NutritionPhotoResponse>;
   refinePhoto: (body: unknown) => Promise<NutritionPhotoResponse>;
   recommendRecipes: (body: unknown) => Promise<NutritionRecipesResponse>;
   weekPlan: (body: unknown) => Promise<NutritionWeekPlanResponse>;
   dayPlan: (body: unknown) => Promise<NutritionDayPlanResponse>;
-  dayHint: (body: unknown) => Promise<NutritionDayHintResponse>;
   shoppingList: (body: unknown) => Promise<NutritionShoppingListResponse>;
   parsePantry: (body: unknown) => Promise<NutritionParsePantryResponse>;
   backupUpload: (body: {
@@ -169,8 +204,6 @@ export function createNutritionEndpoints(http: HttpClient): NutritionEndpoints {
   }
 
   return {
-    postJson: <T = unknown>(url: string, body: unknown) =>
-      postNutrition<T>(url, body),
     analyzePhoto: (body) =>
       postNutrition<NutritionPhotoResponse>(
         "/api/nutrition/analyze-photo",
@@ -193,8 +226,6 @@ export function createNutritionEndpoints(http: HttpClient): NutritionEndpoints {
       ),
     dayPlan: (body) =>
       postNutrition<NutritionDayPlanResponse>("/api/nutrition/day-plan", body),
-    dayHint: (body) =>
-      postNutrition<NutritionDayHintResponse>("/api/nutrition/day-hint", body),
     shoppingList: (body) =>
       postNutrition<NutritionShoppingListResponse>(
         "/api/nutrition/shopping-list",

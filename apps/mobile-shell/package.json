@@ -23,7 +23,7 @@
     "build:web": "pnpm --filter @sergeant/web build:capacitor",
     "build:android": "pnpm build:web && pnpm sync android",
     "build:ios": "pnpm build:web && pnpm sync ios",
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run && pnpm test:scripts",
     "test:scripts": "node --test scripts/__tests__/*.test.mjs",
@@ -47,10 +47,10 @@
   "devDependencies": {
     "@capacitor/cli": "^7.6.7",
     "@sergeant/config": "workspace:*",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "jsdom": "^29.1.1",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": "22.x"

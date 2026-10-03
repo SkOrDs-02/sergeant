@@ -3,10 +3,14 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 import {
   BIOMETRICS_DEFAULT,
   BiometricsSchema,
+  HEIGHT_CM_RANGE,
+  WEIGHT_KG_RANGE,
   computeAgeYears,
   isBiometricsCompleteForTdee,
   mirrorWeightToBiometrics,
   readBiometrics,
+  readBiometricsOwnerId,
+  setBiometricsOwner,
   writeBiometrics,
   writeBiometricsPatch,
   type Biometrics,
@@ -56,6 +60,7 @@ describe("BiometricsSchema", () => {
       activityLevel: "moderate",
       weightKg: 75.5,
       weightUpdatedAt: "2026-01-01T08:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-01-01T08:00:00.000Z",
     };
     expect(BiometricsSchema.safeParse(valid).success).toBe(true);
@@ -74,6 +79,70 @@ describe("BiometricsSchema", () => {
   it("rejects malformed birthDate", () => {
     const invalid = { ...BIOMETRICS_DEFAULT, birthDate: "12/05/1990" };
     expect(BiometricsSchema.safeParse(invalid).success).toBe(false);
+  });
+
+  // D5 (adversarial review, P2): the schema's height/weight `min`/`max`
+  // used to be inline numbers, duplicating (and drifting from)
+  // `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` — the constants `BiometricsSection`
+  // uses for its `<Input min max>` attributes. That drift is the worst
+  // kind: `readBiometrics()` reads through `safeReadLSValidated`, which
+  // falls back to `BIOMETRICS_DEFAULT` on ANY schema failure — a stored
+  // value inside the UI's (widened) range but outside the schema's
+  // (stale) range would silently wipe the ENTIRE record, not just the
+  // one field. Pin the schema bounds to the exact same constants the UI
+  // reads, at both edges.
+  it("height bounds match HEIGHT_CM_RANGE exactly (schema ↔ UI constant)", () => {
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.min - 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.min,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.max,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        heightCm: HEIGHT_CM_RANGE.max + 1,
+      }).success,
+    ).toBe(false);
+  });
+
+  it("weight bounds match WEIGHT_KG_RANGE exactly (schema ↔ UI constant)", () => {
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.min - 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.min,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.max,
+      }).success,
+    ).toBe(true);
+    expect(
+      BiometricsSchema.safeParse({
+        ...BIOMETRICS_DEFAULT,
+        weightKg: WEIGHT_KG_RANGE.max + 1,
+      }).success,
+    ).toBe(false);
   });
 });
 
@@ -96,6 +165,53 @@ describe("readBiometrics / writeBiometrics", () => {
   it("falls back to default when stored blob is malformed", () => {
     memoryStore.set(STORAGE_KEYS.HUB_BIOMETRICS, "{not json");
     expect(readBiometrics()).toEqual(BIOMETRICS_DEFAULT);
+  });
+});
+
+// CodeRabbit PR #627 — cross-account biometrics upload guard scaffolding.
+describe("setBiometricsOwner / readBiometricsOwnerId", () => {
+  afterEach(() => {
+    setBiometricsOwner(null);
+  });
+
+  it("defaults to null (unknown owner) when nothing has been written", () => {
+    expect(readBiometricsOwnerId()).toBeNull();
+  });
+
+  it("stamps the current owner onto every write, invisible on readBiometrics()", () => {
+    setBiometricsOwner("user-a");
+    const record: Biometrics = {
+      ...BIOMETRICS_DEFAULT,
+      heightCm: 178,
+      updatedAt: "2026-02-02T00:00:00.000Z",
+    };
+    writeBiometrics(record);
+
+    expect(readBiometricsOwnerId()).toBe("user-a");
+    // Public reader never leaks the owner tag into the typed shape.
+    expect(readBiometrics()).toEqual(record);
+  });
+
+  it("re-stamps on every subsequent write once the owner changes", () => {
+    setBiometricsOwner("user-a");
+    writeBiometrics({
+      ...BIOMETRICS_DEFAULT,
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(readBiometricsOwnerId()).toBe("user-a");
+
+    setBiometricsOwner("user-b");
+    writeBiometricsPatch({ heightCm: 190 }, "2026-01-02T00:00:00.000Z");
+    expect(readBiometricsOwnerId()).toBe("user-b");
+  });
+
+  it("treats a legacy blob with no ownerId field as unknown (null)", () => {
+    // Simulates data written before this field existed.
+    memoryStore.set(
+      STORAGE_KEYS.HUB_BIOMETRICS,
+      JSON.stringify({ ...BIOMETRICS_DEFAULT, heightCm: 178 }),
+    );
+    expect(readBiometricsOwnerId()).toBeNull();
   });
 });
 
@@ -188,6 +304,7 @@ describe("writeBiometricsPatch", () => {
       ...BIOMETRICS_DEFAULT,
       weightKg: 70,
       weightUpdatedAt: "2026-05-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-05-01T00:00:00.000Z",
     });
     writeBiometricsPatch(
@@ -205,6 +322,7 @@ describe("writeBiometricsPatch", () => {
       ...BIOMETRICS_DEFAULT,
       weightKg: 70,
       weightUpdatedAt: "2026-05-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-05-01T00:00:00.000Z",
     });
     writeBiometricsPatch({ weightKg: null }, "2026-06-01T00:00:00.000Z");
@@ -229,6 +347,7 @@ describe("isBiometricsCompleteForTdee", () => {
     activityLevel: "moderate",
     weightKg: 80,
     weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+    countWorkoutsInGoal: false,
     updatedAt: "2026-01-01T00:00:00.000Z",
   };
 

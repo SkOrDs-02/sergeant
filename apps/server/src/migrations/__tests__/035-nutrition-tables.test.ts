@@ -1,5 +1,5 @@
 // Migration 035 — focused round-trip for the Nutrition tables
-// (Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`).
+// (Stage 4 / PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // Complements `rollback-sanity.test.ts` (which round-trips every
 // migration generically) with a pointed check that:
@@ -226,7 +226,10 @@ describe("035_nutrition_tables migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // 095_nutrition_pk_text.sql widened id uuid -> text: the client
+      // sends legacy-fallback ids like `meal_mig_<ts>_<idx>_<uuid>`, not
+      // bare UUIDs, so the original `uuid` column type 22P02'd every push.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["user_id"]!.nullable).toBe("NO");
@@ -331,8 +334,28 @@ describe("035_nutrition_tables migration", () => {
         prefs: await listColumns(pool, "nutrition_prefs"),
       };
 
+      // Пізніші міграції нашаровуються на ці таблиці, тож перед тим, як
+      // 035's down.sql їх дропне, шари треба зняти у зворотному порядку — і
+      // повернути після того, як 035's up.sql відтворить таблиці свіжими.
+      // Інакше `after` розійдеться з `before`, знятим на повністю
+      // змігрованій схемі.
+      //
+      // 095_nutrition_pk_text.sql розширює id/pantry_id/active_pantry_id
+      // uuid -> text (його ALTER TABLE не мав би цілей після 035's down.sql).
+      //
+      // 129_nutrition_pantry_pk_per_user.sql переводить PK комори й позицій
+      // на композитний `(user_id, id)` і ЗНІМАЄ FK
+      // `nutrition_pantry_items_pantry_id_fkey`. Саме тому він розкручується
+      // ПЕРШИМ: `095_nutrition_pk_text.down.sql` починається з
+      // `DROP CONSTRAINT nutrition_pantry_items_pantry_id_fkey` без
+      // `IF EXISTS`, тож на схемі після 129 він падав би
+      // `constraint ... does not exist`.
+      await execSqlFile(pool, "129_nutrition_pantry_pk_per_user.down.sql");
+      await execSqlFile(pool, "095_nutrition_pk_text.down.sql");
       await execSqlFile(pool, "035_nutrition_tables.down.sql");
       await execSqlFile(pool, "035_nutrition_tables.sql");
+      await execSqlFile(pool, "095_nutrition_pk_text.sql");
+      await execSqlFile(pool, "129_nutrition_pantry_pk_per_user.sql");
 
       const after = {
         tables: await listOwnTables(pool),

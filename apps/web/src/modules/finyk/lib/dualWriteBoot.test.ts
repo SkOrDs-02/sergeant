@@ -13,7 +13,7 @@ vi.mock("../../../core/db/sqlite.js", () => ({
 vi.mock("./clientMigrate.js", () => ({
   migrateFinyk: (...a: unknown[]) => migrateFinyk(...a),
 }));
-vi.mock("./dualWrite/index.js", () => ({
+vi.mock("./sqliteWriter/index.js", () => ({
   registerFinykDualWriteContext: (...a: unknown[]) =>
     registerFinykDualWriteContext(...a),
 }));

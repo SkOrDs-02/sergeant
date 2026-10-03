@@ -80,7 +80,7 @@ export default function SignUpScreen() {
 
         <Input
           testID="auth-sign-up-name"
-          placeholder="Твоє ім'я"
+          placeholder="Твоє імʼя"
           value={name}
           onChangeText={setName}
           autoCapitalize="words"

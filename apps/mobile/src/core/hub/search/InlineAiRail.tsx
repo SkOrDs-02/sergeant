@@ -13,7 +13,13 @@
  *    Phase-2 PR).
  */
 
-import { AlertCircle, RefreshCw, Sparkles, X } from "lucide-react-native";
+import {
+  AlertCircle,
+  ArrowUpRight,
+  MessageCircle,
+  RefreshCw,
+  X,
+} from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
 
 import { Card } from "@/components/ui/Card";
@@ -37,7 +43,7 @@ export interface InlineAiRailProps {
 const STATUS_LABEL: Record<InlineAiState["status"], string> = {
   idle: "",
   loading: "AI шукає відповідь",
-  success: "Відповідь асистента",
+  success: "Відповідь Сержанта",
   aborted: "Запит скасовано",
   error: "Помилка асистента",
 };
@@ -74,7 +80,7 @@ export function InlineAiRail({
               {isError ? (
                 <AlertCircle size={16} color={colors.danger} />
               ) : (
-                <Sparkles size={16} color={colors.accent} />
+                <MessageCircle size={16} color={colors.accent} />
               )}
             </View>
             <View className="min-w-0 flex-1">
@@ -126,7 +132,7 @@ export function InlineAiRail({
                 accessibilityLabel="Відкрити в чаті"
                 className="flex-row items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5"
               >
-                <Sparkles size={14} color={colors.accent} />
+                <ArrowUpRight size={14} color={colors.accent} />
                 <Text className="text-brand-strong text-sm">
                   Відкрити в чаті
                 </Text>
@@ -138,7 +144,7 @@ export function InlineAiRail({
               )}
               {state.truncated && !state.hasToolCalls && (
                 <Text className="text-xs text-fg-muted">
-                  Повна відповідь — у чаті
+                  Повна відповідь – у чаті
                 </Text>
               )}
               <Pressable
@@ -158,7 +164,7 @@ export function InlineAiRail({
         {state.status === "aborted" && (
           <View className="flex-row items-center justify-between gap-3">
             <Text className="text-sm text-fg-muted flex-1">
-              Запит скасовано — спробуй ще раз.
+              Запит скасовано, спробуй ще раз.
             </Text>
             <Pressable
               onPress={() => onRetry(state.question)}
@@ -188,7 +194,7 @@ export function InlineAiRail({
                 accessibilityRole="button"
                 className="flex-row items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5"
               >
-                <Sparkles size={14} color={colors.accent} />
+                <ArrowUpRight size={14} color={colors.accent} />
                 <Text className="text-brand-strong text-sm">
                   Відкрити в чаті
                 </Text>

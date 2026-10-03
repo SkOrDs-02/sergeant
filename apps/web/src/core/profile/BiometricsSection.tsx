@@ -15,18 +15,24 @@
  * lives in `biometrics.ts` so this component only orchestrates the
  * form — no cross-module knowledge leaks into the JSX.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
+import { DateField } from "@shared/components/ui/DateField";
+import { normalizeAmountInput } from "@shared/lib/format/amount";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { Select } from "@shared/components/ui/Select";
+import { Switch } from "@shared/components/ui/Switch";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { useDailyLog } from "../../modules/fizruk/hooks/useDailyLog";
 import {
   ACTIVITY_LEVELS,
+  HEIGHT_CM_RANGE,
   SEX_VALUES,
+  WEIGHT_KG_RANGE,
   computeAgeYears,
   isBiometricsCompleteForTdee,
   type ActivityLevel,
@@ -76,6 +82,7 @@ interface FormState {
   sex: Sex | "";
   activityLevel: ActivityLevel | "";
   weightKg: string;
+  countWorkoutsInGoal: boolean;
 }
 
 function biometricsToForm(b: Biometrics): FormState {
@@ -85,14 +92,53 @@ function biometricsToForm(b: Biometrics): FormState {
     sex: b.sex ?? "",
     activityLevel: b.activityLevel ?? "",
     weightKg: b.weightKg == null ? "" : String(b.weightKg),
+    countWorkoutsInGoal: b.countWorkoutsInGoal,
   };
 }
 
-function parseNumberOrNull(raw: string): number | null {
+/**
+ * `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` (imported from `./biometrics`) feed
+ * BOTH the `<Input min max>` attributes below AND `BiometricsSchema`'s
+ * bounds — one constant, not three copies (audit finding D5, see the
+ * comment above their declaration in `biometrics.ts`). Browser `min`/`max`
+ * are only a hint — paste or a programmatic submit bypasses them (the
+ * same gate as `Measurements`) — so this is PII in a profile: out-of-range
+ * input is rejected outright, never clamped. A guessed-for-the-user
+ * height is worse than an error.
+ *
+ * L-4: "reject" means "don't patch this field" — not "treat as empty".
+ * `parseInRangeOrNull` used to map invalid → `null` the same as an empty
+ * field, so `diff` saw `null !== 175` and wiped the saved height instead
+ * of just ignoring the bad input. See {@link parseRangedField}.
+ */
+
+/** Дата народження має власне вікно — жорстке вікно календаря (з 1970-го)
+ *  відрізало б усіх, хто народився раніше. */
+const BIRTH_DATE_MIN = "1900-01-01";
+
+/**
+ * Три стани замість колишнього `number | null` — L-4. `empty` (поле
+ * порожнє) — навмисне очищення, дозволений `null`-патч. `invalid`
+ * (сміття або поза `[min; max]`) — НЕ патчимо це поле взагалі, лише
+ * показуємо помилку біля нього. `value` — валідне число, патчимо як є.
+ * Раніше `empty` і `invalid` конфлювали в один `null`, тож diff не міг
+ * відрізнити «користувач очистив поле» від «користувач ввів сміття» —
+ * і трактував друге як перше, стираючи збережене значення.
+ */
+type RangedFieldParse =
+  { kind: "empty" } | { kind: "invalid" } | { kind: "value"; value: number };
+
+function parseRangedField(
+  raw: string,
+  { min, max }: { min: number; max: number },
+): RangedFieldParse {
   const trimmed = raw.trim();
-  if (trimmed === "") return null;
-  const value = Number(trimmed.replace(",", "."));
-  return Number.isFinite(value) ? value : null;
+  if (trimmed === "") return { kind: "empty" };
+  const value = Number(normalizeAmountInput(trimmed));
+  if (!Number.isFinite(value) || value < min || value > max) {
+    return { kind: "invalid" };
+  }
+  return { kind: "value", value };
 }
 
 /**
@@ -113,10 +159,18 @@ function diffFormAgainst(
   const patch: Partial<Omit<Biometrics, "updatedAt" | "weightUpdatedAt">> = {};
   let changed = false;
 
-  const formHeight = parseNumberOrNull(form.heightCm);
-  if (formHeight !== source.heightCm) {
-    patch.heightCm = formHeight;
-    changed = true;
+  // L-4: `invalid` навмисно НЕ потрапляє у diff — це і є фікс. Раніше
+  // out-of-range мапилось у `null`, `null !== 175` рахувалось за зміну,
+  // і Save стирав збережений зріст. Тепер invalid просто не бере участі
+  // в diff-порівнянні: ні зміни, ні патча, ні "dirty".
+  const heightParsed = parseRangedField(form.heightCm, HEIGHT_CM_RANGE);
+  if (heightParsed.kind !== "invalid") {
+    const formHeight =
+      heightParsed.kind === "value" ? heightParsed.value : null;
+    if (formHeight !== source.heightCm) {
+      patch.heightCm = formHeight;
+      changed = true;
+    }
   }
 
   const formBirthDate = form.birthDate.trim() === "" ? null : form.birthDate;
@@ -138,9 +192,18 @@ function diffFormAgainst(
     changed = true;
   }
 
-  const formWeight = parseNumberOrNull(form.weightKg);
-  if (formWeight !== source.weightKg) {
-    patch.weightKg = formWeight;
+  const weightParsed = parseRangedField(form.weightKg, WEIGHT_KG_RANGE);
+  if (weightParsed.kind !== "invalid") {
+    const formWeight =
+      weightParsed.kind === "value" ? weightParsed.value : null;
+    if (formWeight !== source.weightKg) {
+      patch.weightKg = formWeight;
+      changed = true;
+    }
+  }
+
+  if (form.countWorkoutsInGoal !== source.countWorkoutsInGoal) {
+    patch.countWorkoutsInGoal = form.countWorkoutsInGoal;
     changed = true;
   }
 
@@ -150,7 +213,7 @@ function diffFormAgainst(
 
 export interface BiometricsSectionProps {
   /**
-   * Reflects the page-level "Ви офлайн" banner — biometrics is a pure
+   * Reflects the page-level "Офлайн" banner — biometrics is a pure
    * client-side store so editing works offline, but the disabled state
    * mirrors the rest of Profile for visual consistency.
    */
@@ -172,21 +235,60 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
   const [form, setForm] = useState<FormState>(() =>
     biometricsToForm(biometrics),
   );
-
-  // Whenever the persisted record changes from outside the form (Fizruk
-  // weigh-in, cross-tab sync, CloudSync pull) reset the form to the new
-  // source-of-truth. Editing a single field doesn't lose the user's
-  // input either: the dependency array is the persisted record, not the
-  // form state, so typing into "heightCm" doesn't re-trigger the reset.
-  useEffect(() => {
+  const [prevBiometrics, setPrevBiometrics] = useState(biometrics);
+  // D4 (adversarial review): чи вже "чіпав" (blur-нув) користувач це поле.
+  // Гейтить лише ВІЗУАЛЬНИЙ показ помилки (див. `heightShowError` нижче) —
+  // не саму валідацію: без гейту кожен проміжний символ мобільного набору
+  // ("1" -> "17" -> "175") на секунду підсвічувався як невалідний,
+  // `role="alert"` спрацьовував на кожен префікс, а для ваги помилка ще й
+  // витісняла `weightSyncHint`, тож і текст, і `role` під полем мигали на
+  // кожне натискання.
+  const [heightTouched, setHeightTouched] = useState(false);
+  const [weightTouched, setWeightTouched] = useState(false);
+  if (biometrics !== prevBiometrics) {
+    setPrevBiometrics(biometrics);
     setForm(biometricsToForm(biometrics));
-  }, [biometrics]);
+    setHeightTouched(false);
+    setWeightTouched(false);
+  }
 
   const diff = useMemo(
     () => diffFormAgainst(form, biometrics),
     [form, biometrics],
   );
-  const dirty = diff !== null;
+
+  // L-4: обчислюємо invalid незалежно від "dirty" — користувач мусить
+  // бачити, ЧОМУ введене не приймається, навіть якщо через це саме поле
+  // кнопка "Зберегти" лишається вимкненою (нема що патчити).
+  const heightParsed = useMemo(
+    () => parseRangedField(form.heightCm, HEIGHT_CM_RANGE),
+    [form.heightCm],
+  );
+  const weightParsed = useMemo(
+    () => parseRangedField(form.weightKg, WEIGHT_KG_RANGE),
+    [form.weightKg],
+  );
+  const heightInvalid = heightParsed.kind === "invalid";
+  const weightInvalid = weightParsed.kind === "invalid";
+  // D4: показ (червона рамка + helper-text + role="alert") гейтиться
+  // blur-ом; `heightInvalid`/`weightInvalid` самі лишаються live (не
+  // гейтяться) — вони й далі керують Save-гейтом нижче (D1), бо
+  // блокувати збереження треба навіть ДО того, як поле втратило фокус.
+  const heightShowError = heightInvalid && heightTouched;
+  const weightShowError = weightInvalid && weightTouched;
+
+  // D1 (adversarial review, P1): раніше `dirty` (з `diff`) єдиний керував
+  // Save-гейтом, а `diff` навмисно ІГНОРУЄ invalid-поля (L-4 вище). Тож
+  // "є невалідне поле" саме по собі НЕ блокувало Save — блокувало лише
+  // "нема жодної валідної зміни". Сценарій дефекту: збережено зріст 175;
+  // юзер набирає 1750 (invalid, не патчиться) І міняє стать (valid, diff
+  // непорожній) -> кнопка активна -> клік зберігає стать, зріст мовчки
+  // відкидається, toast.success все одно "Збережено". Мінімум-фікс з
+  // ревʼю: явно блокувати Save, доки БУДЬ-ЯКЕ поле invalid — replaced
+  // "мовчки відкинуто" на "видимо заблоковано", а не намагаємось описати
+  // часткове збереження в тості.
+  const hasInvalidField = heightInvalid || weightInvalid;
+  const dirty = diff !== null && !hasInvalidField;
 
   const ageYears = useMemo(
     () => computeAgeYears(biometrics.birthDate),
@@ -196,45 +298,83 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
 
   const handleSave = () => {
     if (!diff) return;
-    const { changed: _changed, weightKg, ...rest } = diff;
+    // `weightKg` НЕ виймаємо з `rest`: `hasOwnProperty` — рантайм-перевірка,
+    // яку TS не вміє звужувати, тож зібраний назад патч мав тип
+    // `number | null | undefined` і під `exactOptionalPropertyTypes: true`
+    // не проходив у `saveBiometrics`. Лишаючи ключ у `rest`, ми зберігаємо
+    // рівно ту саму семантику («вага їде в патч тоді й лише тоді, коли вона
+    // була в diff»), але без ручного перезбирання обʼєкта і без ризику
+    // підсунути `undefined` замість «не чіпати поле».
+    const { changed: _changed, ...rest } = diff;
     void _changed;
     const weightInPatch = Object.prototype.hasOwnProperty.call(
       diff,
       "weightKg",
     );
+    const weightKg = diff.weightKg;
+    // D7 (adversarial review, P3): `writeBiometricsPatch` НЕ ідемпотентний
+    // — щоразу, коли `weightKg` присутній у патчі, він перебиває
+    // `weightUpdatedAt` СВОЇМ "зараз" (`biometrics.ts`, `writeBiometricsPatch`).
+    // Коли вагу вже задзеркалено нижче через `addDailyLogEntry` (той самий
+    // писач, що й будь-яке інше зважування — `recordBodyWeight`),
+    // `weightUpdatedAt` МАЄ дорівнювати часу цього запису в журналі — його
+    // як `at` сідованого заміру читає `bodyWeightBootstrap.ts`. Тому
+    // `weightKg` явно виключається з другого (нижче) патча саме в цьому
+    // випадку — інакше `saveBiometrics` переписав би LWW-маркер часом
+    // кліку по «Зберегти», а не часом самого зважування.
+    const mirroredWeight = weightInPatch && weightKg != null;
+    const { weightKg: _mirroredWeightKg, ...nonWeightRest } = rest;
+    void _mirroredWeightKg;
+    const savePatch = mirroredWeight ? nonWeightRest : rest;
     try {
       // Weight first: addEntry mirrors back into biometrics with its
       // own `at` timestamp, so we want that write to land before the
-      // non-weight save (which preserves `weightUpdatedAt`). When the
-      // user clears the weight to `null` we still want the rest of the
-      // form to persist, but we don't write a `null` daily-log entry
-      // (Profile "clear" is a snapshot edit, not a journal deletion).
-      if (weightInPatch && weightKg != null) {
-        addDailyLogEntry({ weightKg });
+      // non-weight save. When the user clears the weight to `null` we
+      // still want the rest of the form to persist, but we don't write
+      // a `null` daily-log entry (Profile "clear" is a snapshot edit,
+      // not a journal deletion) — that path keeps `weightKg: null` in
+      // `savePatch` (see `mirroredWeight` above) so `saveBiometrics`
+      // still bumps `weightUpdatedAt` for the explicit clear.
+      if (mirroredWeight) {
+        addDailyLogEntry({ weightKg: weightKg as number });
       }
-      if (Object.keys(rest).length > 0 || (weightInPatch && weightKg == null)) {
-        // Pass the weight clear through so `weightKg: null` and
-        // `weightUpdatedAt` get bumped; otherwise just the non-weight
-        // fields go to biometrics.
-        const patch =
-          weightInPatch && weightKg == null
-            ? { ...rest, weightKg: null }
-            : rest;
-        saveBiometrics(patch);
-      }
+      // L-17: `saveBiometrics` кличеться БЕЗУМОВНО, доки є валідний
+      // `diff` — навіть коли `savePatch` порожній (тільки-вага-змінилась
+      // кейс, D8) — бо саме тут (`useBiometrics.ts`) живе write-through у
+      // `pushBiometricsToServer`. Раніше стояв гейт
+      // `if (Object.keys(rest).length > 0)`, який після появи `changed`-
+      // деструктуризації був мертвим кодом (`rest` завжди мав хоч один
+      // ключ, доки diff не null) — тепер, коли `savePatch` дійсно може
+      // стати порожнім через виключення вище, той самий гейт зробив би
+      // регресію: локально-порожній патч усе одно мусить дійти до пуша
+      // на сервер, інакше "змінили тільки вагу" знов ніколи не пушиться.
+      saveBiometrics(savePatch);
       toast.success(COPY.saveSuccess);
     } catch {
-      toast.error(COPY.saveError);
+      // Значення лишились у полях форми, тож повтор шле рівно те саме.
+      toast.error(COPY.saveError, undefined, {
+        label: "Повторити",
+        onClick: () => void handleSave(),
+      });
     }
   };
 
   const editingDisabled = !online;
 
   return (
-    <Card radius="lg" padding="none" className="overflow-hidden">
+    <Card
+      radius="lg"
+      padding="none"
+      className="min-w-0 max-w-full overflow-hidden"
+    >
+      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
+          (канонічний коментар там): `COPY.sectionTitle` тут дослівно
+          збігався з зовнішнім заголовком «Біометрія» в `ProfilePage.tsx`
+          і малювався `text-style-label`, більшим за `xs`-кікер
+          `CollapsibleSection`. Прибрано; іконка й статус готовності TDEE
+          (мета-інформація) лишились. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
         <Icon name="activity" size={18} className="text-muted" />
-        <span className="text-style-label text-text">{COPY.sectionTitle}</span>
         <span className="ml-auto text-style-caption text-muted">
           {tdeeReady ? COPY.statusReady : COPY.statusIncomplete}
         </span>
@@ -252,15 +392,19 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             id="biometrics-height"
             type="number"
             inputMode="numeric"
-            min={80}
-            max={260}
+            min={HEIGHT_CM_RANGE.min}
+            max={HEIGHT_CM_RANGE.max}
             step={1}
             value={form.heightCm}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, heightCm: e.target.value }))
             }
+            onBlur={() => setHeightTouched(true)}
             placeholder="175"
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
+            error={heightShowError}
+            helperText={heightShowError ? COPY.heightRangeError : undefined}
           />
         </div>
 
@@ -271,14 +415,20 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
           >
             {COPY.birthDateLabel}
           </label>
-          <Input
+          <DateField
             id="biometrics-birth-date"
-            type="date"
+            emptyLabel={COPY.birthDateLabel}
+            // Власне вікно замість спільного календарного: народитись до
+            // 1970-го — норма, а от у майбутньому — ні.
+            bounded={false}
+            min={BIRTH_DATE_MIN}
+            max={getKyivDayKey()}
             value={form.birthDate}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, birthDate: e.target.value }))
             }
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
             helperText={
               ageYears != null
                 ? `${COPY.ageLabel}: ${ageYears} ${COPY.ageYearsSuffix}`
@@ -304,6 +454,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
               }))
             }
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
           >
             <option value="">{COPY.sexPlaceholder}</option>
             {SEX_VALUES.map((value) => (
@@ -331,6 +482,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
               }))
             }
             disabled={editingDisabled}
+            className="min-w-0 max-w-full"
           >
             <option value="">{COPY.activityPlaceholder}</option>
             {ACTIVITY_LEVELS.map((value) => (
@@ -340,10 +492,26 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             ))}
           </Select>
           {form.activityLevel !== "" && (
-            <p className="text-xs text-muted">
+            <p className="text-style-caption text-muted">
               {ACTIVITY_META[form.activityLevel].hint}
             </p>
           )}
+        </div>
+
+        {/* Тумблер стоїть саме тут, поруч із рівнем активності, бо він про
+            ту саму модель розрахунку: увімкнений, він забирає тренування з
+            множника і повертає їх явним доданком. У Фізруку йому не місце -
+            це налаштування норми, а не тренувань. */}
+        <div className="px-4 py-4 space-y-2">
+          <Switch
+            checked={form.countWorkoutsInGoal}
+            onChange={(checked) =>
+              setForm((prev) => ({ ...prev, countWorkoutsInGoal: checked }))
+            }
+            disabled={editingDisabled}
+            label={COPY.countWorkoutsLabel}
+            description={COPY.countWorkoutsHint}
+          />
         </div>
 
         <div className="px-4 py-4 space-y-2">
@@ -357,22 +525,27 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
             id="biometrics-weight"
             type="number"
             inputMode="decimal"
-            min={20}
-            max={400}
+            min={WEIGHT_KG_RANGE.min}
+            max={WEIGHT_KG_RANGE.max}
             step={0.1}
             value={form.weightKg}
             onChange={(e) =>
               setForm((prev) => ({ ...prev, weightKg: e.target.value }))
             }
+            onBlur={() => setWeightTouched(true)}
             placeholder="75.5"
             disabled={editingDisabled}
-            helperText={COPY.weightSyncHint}
+            className="min-w-0 max-w-full"
+            error={weightShowError}
+            helperText={
+              weightShowError ? COPY.weightRangeError : COPY.weightSyncHint
+            }
           />
         </div>
 
         <div className="px-4 py-4 flex items-center justify-end gap-2">
           <Button
-            variant="primary"
+            variant="solid"
             size="sm"
             disabled={!dirty || editingDisabled}
             onClick={handleSave}

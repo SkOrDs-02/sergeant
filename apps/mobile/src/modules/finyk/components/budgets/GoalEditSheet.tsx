@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import type { GoalBudget } from "@sergeant/finyk-domain/domain";
@@ -26,20 +26,31 @@ export function GoalEditSheet({
   onDelete,
   testID,
 }: GoalEditSheetProps) {
-  const [saved, setSaved] = useState("");
-  const [target, setTarget] = useState("");
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
+  const [saved, setSaved] = useState(() =>
+    open && budget ? String(budget.savedAmount ?? "") : "",
+  );
+  const [target, setTarget] = useState(() =>
+    open && budget ? String(budget.targetAmount ?? "") : "",
+  );
+  const [name, setName] = useState(() =>
+    open && budget ? (budget.name ?? "") : "",
+  );
+  const [date, setDate] = useState(() =>
+    open && budget ? (budget.targetDate ?? "") : "",
+  );
   const [error, setError] = useState<string | null>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open || !budget) return;
-    setSaved(String(budget.savedAmount ?? ""));
-    setTarget(String(budget.targetAmount ?? ""));
-    setName(budget.name ?? "");
-    setDate(budget.targetDate ?? "");
-    setError(null);
-  }, [open, budget]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open && budget) {
+      setSaved(String(budget.savedAmount ?? ""));
+      setTarget(String(budget.targetAmount ?? ""));
+      setName(budget.name ?? "");
+      setDate(budget.targetDate ?? "");
+      setError(null);
+    }
+  }
 
   if (!budget) return null;
 
@@ -47,15 +58,15 @@ export function GoalEditSheet({
     const t = Number(target);
     const s = Number(saved || 0);
     if (!name.trim()) {
-      setError("Вкажіть назву цілі");
+      setError("Вкажи назву цілі");
       return;
     }
     if (!target || Number.isNaN(t) || t <= 0) {
-      setError("Вкажіть суму цілі більше 0");
+      setError("Вкажи суму цілі більше 0");
       return;
     }
     if (s < 0) {
-      setError("Відкладена сума не може бути від'ємною");
+      setError("Відкладена сума не може бути відʼємною");
       return;
     }
     onSubmit({
@@ -114,7 +125,7 @@ export function GoalEditSheet({
           <Input
             value={name}
             onChangeText={setName}
-            placeholder="Накопичити на…"
+            placeholder="Накопичити на"
           />
         </View>
         <View className="mb-3">

@@ -2,12 +2,13 @@ import { useState } from "react";
 import { z } from "zod";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 
 const tokenSchema = z.object({
-  token: z.string().trim().min(1, "Введіть токен Monobank API"),
+  token: z.string().trim().min(1, "Введи токен Monobank API"),
 });
 type TokenValues = z.infer<typeof tokenSchema>;
 
@@ -20,6 +21,8 @@ export interface FinykLoginScreenProps {
   onConnect: (token: string) => void;
   onContinueWithoutBank: () => void;
   onBackToHub?: () => void;
+  /** Opens sign-in when the connect failed only because there is no account. */
+  onOpenAuth?: () => void;
   /** Override the back-button label. Defaults to "Назад до хабу" (top-level use). */
   backLabel?: string;
 }
@@ -45,6 +48,7 @@ export function FinykLoginScreen({
   onConnect,
   onContinueWithoutBank,
   onBackToHub,
+  onOpenAuth,
   backLabel = "Назад до хабу",
 }: FinykLoginScreenProps) {
   const [showTokenVisible, setShowTokenVisible] = useState(false);
@@ -78,9 +82,9 @@ export function FinykLoginScreen({
           <div
             className={cn(
               "w-20 h-20 mx-auto rounded-3xl flex items-center justify-center mb-4",
-              "bg-linear-to-br from-brand-100 to-brand-200",
-              "dark:from-brand-900/40 dark:to-brand-800/30",
-              "border border-brand-soft-border/60",
+              // Акцент Фініка, а не нейтральний бренд хабу: екран живе
+              // всередині модуля й має нести його колір.
+              "bg-finyk/10 border border-finyk/25",
               "shadow-card",
             )}
           >
@@ -93,7 +97,7 @@ export function FinykLoginScreen({
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-strong dark:text-brand"
+              className="text-finyk-strong dark:text-finyk"
               aria-hidden
             >
               <rect x="3" y="8" width="18" height="12" rx="2" />
@@ -101,8 +105,8 @@ export function FinykLoginScreen({
               <line x1="3" y1="12" x2="21" y2="12" />
             </svg>
           </div>
-          <h1 className="text-style-hero text-text">ФІНІК</h1>
-          <p className="text-sm text-muted mt-1">
+          <h1 className="text-style-headline text-text">ФІНІК</h1>
+          <p className="text-style-label text-muted mt-1">
             Персональний фінансовий менеджер
           </p>
         </div>
@@ -116,20 +120,20 @@ export function FinykLoginScreen({
           )}
         >
           <label
-            className="text-sm text-muted mb-2 block"
+            className="text-style-label text-muted mb-2 block"
             htmlFor="finyk-mono-token"
           >
             API токен Monobank
           </label>
-          <p className="text-xs text-subtle mb-2">
+          <p className="text-style-caption text-subtle mb-2">
             Mono → Налаштування → Інші → API
           </p>
           <div className="relative mt-1">
             <Input
               id="finyk-mono-token"
-              className="pr-20"
+              className="pr-24"
               type={showTokenVisible ? "text" : "password"}
-              placeholder="Вставте токен Mono API"
+              placeholder="Встав токен Mono API"
               autoComplete="off"
               aria-invalid={!!formState.errors.token}
               aria-describedby={
@@ -137,55 +141,33 @@ export function FinykLoginScreen({
               }
               {...register("token")}
             />
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="absolute right-10 top-1/2 -translate-y-1/2 h-8 w-8 p-0 border-0"
-              aria-label="Вставити з буфера обміну"
-              title="Вставити з буфера"
-              onClick={async () => {
-                try {
-                  const text = (await navigator.clipboard.readText()).trim();
-                  // Use RHF setValue so the form's internal state + validation
-                  // are updated alongside the DOM input value.
-                  setValue("token", text, {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                    shouldValidate: true,
-                  });
-                } catch {
-                  // Clipboard read can fail on permissions or in test envs.
-                  // The user can still paste manually.
-                }
-              }}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
+            {/* Обидві кнопки в одному flex-ряду: на coarse-pointer `Button`
+                росте до 44px, і два абсолютні блоки з фіксованими `right-*`
+                накладались один на одного й на текст поля. */}
+            <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 border-0"
+                aria-label="Вставити з буфера обміну"
+                title="Вставити з буфера"
+                onClick={async () => {
+                  try {
+                    const text = (await navigator.clipboard.readText()).trim();
+                    // Use RHF setValue so the form's internal state + validation
+                    // are updated alongside the DOM input value.
+                    setValue("token", text, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    });
+                  } catch {
+                    // Clipboard read can fail on permissions or in test envs.
+                    // The user can still paste manually.
+                  }
+                }}
               >
-                <rect x="9" y="9" width="13" height="13" rx="2" />
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-              </svg>
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 border-0"
-              aria-label={
-                showTokenVisible ? "Приховати токен" : "Показати токен"
-              }
-              onClick={() => setShowTokenVisible((v) => !v)}
-            >
-              {showTokenVisible ? (
                 <svg
                   width="16"
                   height="16"
@@ -197,57 +179,104 @@ export function FinykLoginScreen({
                   strokeLinejoin="round"
                   aria-hidden
                 >
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
-              ) : (
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              )}
-            </Button>
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 border-0"
+                aria-label={
+                  showTokenVisible ? "Приховати токен" : "Показати токен"
+                }
+                onClick={() => setShowTokenVisible((v) => !v)}
+              >
+                {showTokenVisible ? (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                  </svg>
+                ) : (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                )}
+              </Button>
+            </div>
           </div>
 
           {formState.errors.token && (
             <p
               id="finyk-token-error"
-              className="mt-1.5 text-xs text-danger-strong"
+              className="mt-1.5 text-style-caption text-danger-strong"
               role="alert"
             >
               {formState.errors.token.message}
             </p>
           )}
 
-          <p className="text-xs text-subtle mt-2">
+          {/* AI-NOTE: підказка під полем токена — кегль узгоджений з рядком
+              помилки того самого поля вище, який теж caption. Різні кеглі на
+              двох рядках, що належать одному інпуту, читались би як два різні
+              за важливістю повідомлення. */}
+          <p className="text-style-caption text-subtle mt-2">
             Токен відправляється на сервер і не зберігається у браузері.
           </p>
 
-          {authError && (
-            <div className="mt-3 text-sm bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
-              <p className="font-semibold text-text">
-                Токен потребує оновлення
-              </p>
-              <p className="text-xs text-muted">{authError}</p>
-              <p className="text-xs text-muted">
-                Отримайте новий токен: Monobank → Налаштування → API
-              </p>
-            </div>
-          )}
+          {authError &&
+            (authError === messages.finyk.monoConnectErrors.accountRequired ? (
+              <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+                <p className="font-semibold text-text">Потрібен вхід</p>
+                <p className="text-style-caption text-muted">{authError}</p>
+                {onOpenAuth && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1"
+                    onClick={onOpenAuth}
+                  >
+                    Увійти
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="mt-3 text-style-label bg-warning/15 border border-warning/40 rounded-xl px-3 py-2.5 space-y-1">
+                <p className="font-semibold text-text">
+                  Токен потребує оновлення
+                </p>
+                <p className="text-style-caption text-muted">{authError}</p>
+                <p className="text-style-caption text-muted">
+                  Отримай новий токен: Monobank → Налаштування → API
+                </p>
+              </div>
+            ))}
           {/* Server-level error (from useApiForm) or parent-provided error */}
           {(serverError || (error && !authError)) && (
             <p
-              className="mt-3 text-sm text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2"
+              className="mt-3 text-style-label text-danger-strong dark:text-danger bg-danger/10 rounded-xl px-3 py-2"
               role="alert"
             >
               {serverError ?? error}
@@ -258,11 +287,11 @@ export function FinykLoginScreen({
             type="submit"
             className={cn(
               "mt-4 w-full h-12 min-h-[48px] text-base border-0",
-              "bg-linear-to-r from-brand-600 to-brand-700",
-              "hover:from-brand-700 hover:to-brand-800",
+              "bg-linear-to-r from-brand-strong to-brand-800",
+              "hover:from-brand-800 hover:to-brand-800",
               "text-white font-semibold",
               "shadow-md hover:shadow-glow",
-              "transition-[background-color,box-shadow,opacity,transform] duration-200",
+              "transition-[background-color,box-shadow,opacity,transform] duration-base",
               "active:scale-[0.98]",
             )}
             disabled={connecting || isSubmitting || !tokenValue.trim()}
@@ -272,34 +301,36 @@ export function FinykLoginScreen({
               : "Підключити Monobank"}
           </Button>
 
-          {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-              "або" divider row — structurally a delimiter
-              between two bg-line spans, not a heading. */}
-          <div className="my-4 flex items-center gap-3 text-xs text-muted uppercase tracking-wider">
+          <div className="my-4 flex items-center gap-3 text-style-caption text-muted">
             <span className="flex-1 h-px bg-line" />
             або
             <span className="flex-1 h-px bg-line" />
           </div>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="w-full min-h-[48px]"
             onClick={onContinueWithoutBank}
           >
             Почати без банку
           </Button>
-          <p className="mt-2 text-center text-xs text-subtle">
-            Ручні витрати, бюджети та аналітика — без API-токена. Monobank можна
+          {/* AI-NOTE: пояснення висить на кнопці над ним, а не стоїть саме
+              по собі. Той самий прецедент, що й опис під слайдером щільності
+              та підписи двох кнопок експорту в Налаштуваннях (прохід
+              2026-09-02): рядок, привʼязаний до контрола, лишається дрібним. */}
+          <p className="mt-2 text-center text-style-caption text-subtle">
+            Ручні витрати, бюджети та аналітика – без API-токена. Monobank можна
             підключити пізніше.
           </p>
           {typeof onBackToHub === "function" && (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >
-              ← {backLabel}
+              <Icon name="chevron-left" size="sm" />
+              {backLabel}
             </Button>
           )}
         </form>

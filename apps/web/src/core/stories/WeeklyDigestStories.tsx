@@ -50,7 +50,7 @@ export function WeeklyDigestStories({
 
   const pause = useStoriesPause();
 
-  const progress = useStoriesAutoplay({
+  useStoriesAutoplay({
     key: nav.index,
     durationMs: SLIDE_MS,
     paused: pause.isPaused,
@@ -102,14 +102,14 @@ export function WeeklyDigestStories({
       <div className="absolute inset-0 bg-black/90" />
       <div
         ref={surfaceRef}
-        className="absolute inset-0 transition-[transform,opacity] duration-150 ease-out touch-none"
+        className="absolute inset-0 transition-[transform,opacity] duration-fast ease-standard touch-none"
         {...gestures}
       >
         {renderSlide(slide)}
         <StoriesProgressHeader
           slides={slides}
           currentIndex={nav.index}
-          progress={progress}
+          durationMs={SLIDE_MS}
           paused={pause.isPaused}
           activeLabel={slide.label}
           weekRange={weekRange}

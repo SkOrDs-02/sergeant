@@ -3,7 +3,7 @@
  * Extra coverage for ManualExpenseSheet — exercises the interactive surfaces
  * the primary spec leaves uncovered: amount-suggestion chips (personal +
  * default), merchant suggestions + the silent AI-category application + badge
- * dismiss, the category picker (pick + expand/collapse), the amount hero
+ * dismiss, the category dropdown (pick + frequency ordering), the amount hero
  * preview, the "change date" reveal, and edit-mode optimistic delete.
  *
  * Money is integer kopiykas / hryvnia number; jsdom supplies no Web Speech so
@@ -11,6 +11,7 @@
  */
 import { describe, it, expect, vi, afterEach, beforeAll } from "vitest";
 import {
+  act,
   render,
   screen,
   fireEvent,
@@ -35,6 +36,15 @@ afterEach(() => {
   cleanup();
 });
 
+function categoryDialog() {
+  fireEvent.click(screen.getByLabelText("Категорія"));
+  return within(screen.getByRole("dialog", { name: "Категорія" }));
+}
+
+function chooseCategory(label: string) {
+  fireEvent.click(categoryDialog().getByRole("button", { name: label }));
+}
+
 const merchants: FrequentMerchant[] = [
   {
     key: "silpo",
@@ -52,6 +62,15 @@ const merchants: FrequentMerchant[] = [
 ];
 
 describe("ManualExpenseSheet — interactive surfaces", () => {
+  it("uses an income-specific description placeholder", () => {
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
+    expect(
+      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток"),
+    ).toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Кава, продукти, таксі")).toBeNull();
+  });
+
   it("renders the amount hero preview when an amount is set", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
@@ -69,7 +88,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const group = screen.getByRole("group", { name: "Швидкі суми" });
     // default chips are 50/100/200/500
     fireEvent.click(within(group).getByText("100 ₴"));
-    expect(screen.getByLabelText("Сума ₴")).toHaveValue(100);
+    expect(screen.getByLabelText("Сума ₴")).toHaveValue("100");
   });
 
   it("merges personal amount suggestions from frequent merchants", () => {
@@ -84,7 +103,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     const group = screen.getByRole("group", { name: "Швидкі суми" });
     // Сільпо avg = 1600/8 = 200 → personal chip labelled as a часта сума
     expect(
-      within(group).getByLabelText("200 ₴ — часта сума"),
+      within(group).getByLabelText("200 ₴ · часта сума"),
     ).toBeInTheDocument();
   });
 
@@ -97,11 +116,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentMerchants={merchants}
       />,
     );
-    const hints = screen.getByRole("group", { name: "Нещодавні мерчанти" });
+    const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
     // description set + AI badge surfaces the auto-applied "food" category
     expect(screen.getByPlaceholderText(/Кава, продукти/)).toHaveValue("Сільпо");
-    expect(screen.getByText(/AI ·/)).toBeInTheDocument();
+    expect(screen.getByText(/Сержант ·/)).toBeInTheDocument();
   });
 
   it("dismisses the AI-applied category badge", () => {
@@ -113,35 +132,83 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentMerchants={merchants}
       />,
     );
-    const hints = screen.getByRole("group", { name: "Нещодавні мерчанти" });
+    const hints = screen.getByRole("group", { name: "Нещодавні продавці" });
     fireEvent.click(within(hints).getByText("Сільпо"));
-    fireEvent.click(screen.getByLabelText("Сховати AI-підказку"));
-    expect(screen.queryByText(/AI ·/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Сховати підказку Сержанта"));
+    expect(screen.queryByText(/Сержант ·/)).not.toBeInTheDocument();
   });
 
-  it("selects a category from the picker", () => {
+  it("selects a category from the shared picker", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const group = screen.getByRole("group", { name: "Категорія" });
-    // pick a non-default category chip
-    const transport = within(group).getByText("Транспорт");
-    fireEvent.click(transport);
-    // its button now reflects the active styling — assert it's still present
-    expect(transport).toBeInTheDocument();
+    chooseCategory("Транспорт");
+    expect(screen.getByLabelText("Категорія")).toHaveTextContent("Транспорт");
   });
 
-  it("expands and collapses the hidden categories", () => {
+  it("lists every expense category in the shared picker", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const more = screen.getByRole("button", { name: /Більше/ });
-    fireEvent.click(more);
-    expect(screen.getByRole("button", { name: /Менше/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Менше/ }));
-    expect(screen.getByRole("button", { name: /Більше/ })).toBeInTheDocument();
+    const dialog = categoryDialog();
+    const allSection = dialog.getByText("Усі категорії").closest("section");
+    expect(allSection).not.toBeNull();
+    const optionLabels = within(allSection!)
+      .getAllByRole("button")
+      .map((button) => button.textContent?.trim());
+    expect(optionLabels).toEqual([
+      // 2026-08-13: «Їжа» (`food`) і «Продукти» (`groceries`) були двома
+      // чипами на ОДИН канонічний кошик `food`, який MCC-каталог зве
+      // «Продукти». Лишився один — `food` під канонічним підписом;
+      // `groceries` резолвиться далі (persisted-дані), але не пропонується.
+      "Продукти",
+      "Кафе та ресторани",
+      "Транспорт",
+      "Розваги",
+      "Здоровʼя",
+      "Покупки",
+      // 2026-08-25: цигарки й алкоголь стали окремими кошиками — доти
+      // спліт за чеком Сільпо не мав куди їх покласти й зсипав у
+      // «Продукти».
+      "Цигарки",
+      "Алкоголь",
+      "Комунальні",
+      "Техніка",
+      "Підписки",
+      "Навчання",
+      "Подорожі",
+      "Спорт",
+      "Краса",
+      "Борги та кредити",
+      "Благодійність",
+      // 2026-10-01 (рішення власника «c1»): пʼять базових категорій, яких
+      // не вистачало даним власника («lifecell» падав в «Інше», переказ
+      // людині — більша частина самого «Інше»).
+      "Звʼязок та інтернет",
+      "Дім і ремонт",
+      "Тварини",
+      "Подарунки",
+      "Перекази людям",
+      "Інше",
+    ]);
   });
 
-  it("reveals the date field via 'Не сьогодні'", () => {
+  // Дата — один дефолт: стрічка днів видима одразу, без кроку «Не сьогодні?».
+  it("показує стрічку днів і фолбек «Інша дата» без додаткового кроку", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    fireEvent.click(screen.getByText(/Не сьогодні/));
+    expect(
+      screen.getByRole("radiogroup", { name: "Дата запису" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Інша дата")).toBeInTheDocument();
     expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+  });
+
+  it("тримає поле дати в межах аркуша — жодного intrinsic-розпирання", () => {
+    // Той самий клас багів, що й у `LogPastWorkoutSheet`: нативний
+    // `input[type=date]` має власний intrinsic inline-size, і поле ставало
+    // ширшим за екран. Пін на спільний примітив `DateField`, який цей
+    // контракт несе; сирий `<Input type="date">` його НЕ дає.
+    // Рецепт — docs/start/instructions/fix-mobile-horizontal-overflow.md.
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    expect(screen.getByLabelText("Дата").className).toContain(
+      "[min-inline-size:0]",
+    );
   });
 
   it("orders categories by frequency for frequent-category stats", () => {
@@ -160,8 +227,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт ranks first → its chip exists in the collapsed row
-    expect(screen.getByText("Транспорт")).toBeInTheDocument();
+    const dialog = categoryDialog();
+    const frequentSection = dialog.getByText("Часті").closest("section");
+    expect(frequentSection).not.toBeNull();
+    expect(within(frequentSection!).getAllByRole("button")).toHaveLength(1);
+    expect(within(frequentSection!).getByText("Транспорт")).toBeInTheDocument();
   });
 
   describe("edit mode", () => {
@@ -173,7 +243,7 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       date: "2026-05-20",
     };
 
-    it("prefills the form and shows the 'Зберегти' label", () => {
+    it("prefills the form and shows the 'Зберегти' label", async () => {
       render(
         <ManualExpenseSheet
           open
@@ -182,12 +252,17 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
           initialExpense={initialExpense}
         />,
       );
-      expect(screen.getByLabelText("Сума ₴")).toHaveValue(175);
+      await act(async () => {});
+      expect(screen.getByLabelText("Сума ₴")).toHaveValue("175");
       expect(
         screen.getByRole("button", { name: "Зберегти" }),
       ).toBeInTheDocument();
-      // edited entry has a non-today date → the date field is visible
+      // Дата запису (2026-05-20) лежить поза вікном стрічки, тож фолбек
+      // «Інша дата» розкритий одразу — інакше стрічка стояла б без вибору.
       expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+      expect(screen.getByText("Інша дата").closest("details")).toHaveAttribute(
+        "open",
+      );
     });
 
     it("deletes immediately via onDelete + closes (undo lives in the toast)", async () => {

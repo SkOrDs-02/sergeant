@@ -8,6 +8,10 @@ import {
   syncPayloadBytes,
 } from "../../obs/metrics.js";
 import type { SyncV2Outcome } from "./syncV2-types.js";
+import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@sergeant/shared";
+
+/** Re-exported so per-table `applySync*.ts` files import bounds from one place. */
+export { NAME_MAX_LEN, NOTE_MAX_LEN };
 
 /**
  * syncV2-core — спільні хелпери, які викликаються з per-module
@@ -20,12 +24,21 @@ export const SYNC_V2_MODULE = "v2";
 export type SyncV2OpKind = "v2_push" | "v2_pull";
 
 /**
- * Maximum tolerated forward clock skew. Клієнти, що надсилають
- * `client_ts > server_ts + 1h`, відхиляються — інакше їхній
- * "майбутній" timestamp перевертатиме LWW і ламатиме реплікацію
- * для нормальних пристроїв.
+ * AI-DANGER: кожен читач `sync_op_log` курсором по `id` мусить нести цей
+ * предикат дослівно (зараз `syncV2Pull` і replay `syncV2Stream`). У SQL він
+ * вписаний текстом, а не через `${…}`: правило M11 (`no-restricted-syntax`)
+ * забороняє шаблонні `pool.query`. Цю константу юніт-тести обох хендлерів
+ * звіряють із текстом запиту, тож копії не розійдуться непомітно.
+ *
+ * `id` — BIGSERIAL, видається на INSERT, а видимим рядок стає на COMMIT.
+ * Без предиката коротка транзакція з більшим `id`, закомічена раніше за
+ * довгу (імпорт виписки), просуває курсор клієнта, і оп-и довгої після
+ * свого COMMIT під `id > курсор` вже не потрапляють ніколи. Предикат не
+ * віддає рядки, новіші за найстарішу активну транзакцію, тож курсор через
+ * неї не перескакує. NULL — рядки до міграції 147, давно закомічені.
  */
-export const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
+export const SYNC_OP_LOG_COMMITTED_WATERMARK_SQL =
+  "(tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))";
 
 /**
  * Maximum allowed |delta| in a single `op='increment'` payload. PN-counter
@@ -219,6 +232,48 @@ export function parseOptionalInt(value: unknown): number | null | "invalid" {
 }
 
 /**
+ * Same as `parseOptionalNumber`, but out-of-`[min, max]` also counts as
+ * `"invalid"` — so callers can swap in this helper without changing their
+ * existing `=== "invalid"` reject branch (pre-beta input-boundaries audit:
+ * `curl` bypasses client-side ceilings on macro/goal fields, e.g.
+ * `nutrition_goal_periods.kcal`, which previously had no upper bound at
+ * all). `min` defaults to `0` — every field this is used for is a
+ * non-negative physical quantity (kcal, grams, ml).
+ */
+export function parseOptionalBoundedNumber(
+  value: unknown,
+  bounds: { min?: number; max: number },
+): number | null | "invalid" {
+  const n = parseOptionalNumber(value);
+  if (n === "invalid" || n === null) return n;
+  const min = bounds.min ?? 0;
+  if (n < min || n > bounds.max) return "invalid";
+  return n;
+}
+
+/**
+ * Ціла версія {@link parseOptionalBoundedNumber} для шкал 1–5
+ * (`energy_level`, `mood`).
+ *
+ * Порядок операцій навмисний: спершу floor, потім перевірка меж. Так
+ * зберігається наявна поблажливість `parseOptionalInt` до дробових
+ * (клієнт, що прислав `4.7`, і далі отримає `4`, а не відмову), але
+ * значення поза шкалою — `0`, `7`, `-3` — тепер відхиляються. Якби
+ * межі перевірялись до floor, `5.4` став би `invalid`, і ми б зламали
+ * клієнтів, які раніше працювали.
+ */
+export function parseOptionalBoundedInt(
+  value: unknown,
+  bounds: { min?: number; max: number },
+): number | null | "invalid" {
+  const n = parseOptionalInt(value);
+  if (n === "invalid" || n === null) return n;
+  const min = bounds.min ?? 0;
+  if (n < min || n > bounds.max) return "invalid";
+  return n;
+}
+
+/**
  * Serialize a JSONB-bound value before binding to a `pg` parameter.
  *
  * Why an explicit helper: `pg` will silently coerce a JS object to its
@@ -227,14 +282,119 @@ export function parseOptionalInt(value: unknown): number | null | "invalid" {
  * `JSON.stringify(value)` forces the string path, which Postgres parses
  * as `JSONB`. `null`/`undefined` short-circuit so the column gets a
  * proper SQL NULL.
+ *
+ * Already-serialized payloads: клієнтський sync-адаптер тримає ці blob-и
+ * у локальному SQLite як TEXT і шле їх рядком. Безумовний
+ * `JSON.stringify` загортав такий рядок ще раз, і в `jsonb`-колонку
+ * потрапляв jsonb-STRING замість обʼєкта — усі серверні
+ * `data_json->>'...'` читали NULL (аудит 2026-08-04, знахідка 3;
+ * backfill існуючих рядків — міграція 102). Тому рядок, який сам є
+ * валідним JSON-обʼєктом/масивом, пропускаємо як є. Скалярні рядки
+ * ("hello") далі серіалізуються звичайним шляхом — для них подвійного
+ * загортання ніколи не існувало.
  */
 export function toJsonbParam(value: unknown): string | null {
   if (value == null) return null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+      try {
+        JSON.parse(trimmed);
+        return trimmed;
+      } catch {
+        /* not valid JSON — fall through to plain stringify */
+      }
+    }
+  }
   try {
     return JSON.stringify(value);
   } catch {
     return null;
   }
+}
+
+/**
+ * Real-world UTC offset bounds in minutes, matching the sign convention of
+ * `Date.prototype.getTimezoneOffset()` (west of UTC → positive). UTC-14:00
+ * (Kiribati's Line Islands) to UTC+14:00 is the full range that exists on
+ * Earth today — anything outside it is malformed input, not a legitimate
+ * device clock.
+ */
+export const TZ_OFFSET_MIN_LOWER = -14 * 60;
+export const TZ_OFFSET_MIN_UPPER = 14 * 60;
+
+/**
+ * Parse `tz_offset_min` (migration 109, ADR-0078 device-local day
+ * boundary). Missing or non-integer input silently falls back to `null` —
+ * old clients don't send this field yet, and that absence is not an error.
+ * A PRESENT value outside the real UTC-offset range `[-840, 840]` is
+ * `"invalid"` (rejects the op), not silently nulled or clamped: pre-beta
+ * input-boundaries audit found `curl` could set e.g. `tz_offset_min:
+ * 999999` and it sailed straight through into a nullable-but-unchecked
+ * column.
+ */
+export function parseOptionalTzOffsetMin(
+  value: unknown,
+): number | null | "invalid" {
+  if (value == null) return null;
+  if (typeof value !== "number" || !Number.isInteger(value)) return null;
+  if (value < TZ_OFFSET_MIN_LOWER || value > TZ_OFFSET_MIN_UPPER) {
+    return "invalid";
+  }
+  return value;
+}
+
+/**
+ * Bound check for `fizruk_workout_sets.weight_kg` / `.reps` (W4 — server
+ * observability/boundary audit). Сусідні заміри тіла (`fizruk_measurements`,
+ * `applyMisc.ts` → `MEASUREMENT_BOUNDS`) уже отримали межі в pre-beta
+ * input-boundaries audit; сети тренування лишались на необмежених
+ * `parseOptionalNumber`/`parseOptionalInt` — `curl` міг записати
+ * `weight_kg: -500` чи `reps: 999999999` без жодного захисту.
+ *
+ * Числа дзеркалять клієнтську стелю форми підходу
+ * (`apps/web/src/modules/fizruk/lib/numericBounds.ts` →
+ * `MAX_WEIGHT_KG`/`MAX_REPS` = 1000/1000) — НЕ плутати з
+ * `MEASUREMENT_BOUNDS.weightKg` (20–400): те поле — вага ТІЛА людини,
+ * а тут — вага СНАРЯДУ/тренажера на одному підході, яка фізично може бути
+ * набагато більшою (жим ногами, станова тяга на тренажері). Мінімум `0` —
+ * від'ємна вага чи кількість повторень позбавлена сенсу.
+ *
+ * Оголошено тут (не в `@sergeant/shared`, поруч із `MEASUREMENT_BOUNDS`),
+ * бо задача, яка це виправляла, свідомо обмежена `apps/server/**` — якщо
+ * колись знадобиться той самий канон і клієнту, перенеси разом з
+ * `MEASUREMENT_BOUNDS`-патерном, не дублюй числа окремо вдруге.
+ */
+export const WORKOUT_SET_WEIGHT_KG_BOUNDS: { min: number; max: number } = {
+  min: 0,
+  max: 1000,
+};
+export const WORKOUT_SET_REPS_BOUNDS: { min: number; max: number } = {
+  min: 0,
+  max: 1000,
+};
+
+/**
+ * Bound check for user-supplied name/label/note/text fields (pre-beta
+ * input-boundaries audit, `docs/work/specs/beta-input-
+ * boundaries.md` Фаза 3 — сервер). Client-side bounds
+ * (`apps/web/src/shared/lib/text/limits.ts`) are trivially bypassed via
+ * `curl`, so every per-table applier must re-check server-side. Callers
+ * keep their existing `typeof row["x"] === "string" ? row["x"] : fallback`
+ * line and pass the RESOLVED value through this guard — a non-string input
+ * already fell back to `""`/`null` upstream and passes this check
+ * trivially (empty string is always within bound).
+ *
+ * `maxLen` defaults to `NAME_MAX_LEN` (200) — the shorter bound for
+ * name/label-shaped fields; pass `NOTE_MAX_LEN` (1000) explicitly for
+ * longer free-text fields (notes, pantry `text`).
+ */
+export function isWithinTextBound(
+  value: string | null | undefined,
+  maxLen: number = NAME_MAX_LEN,
+): boolean {
+  if (value == null) return true;
+  return value.length <= maxLen;
 }
 
 export type { PoolClient };

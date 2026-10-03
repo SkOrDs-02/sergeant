@@ -33,13 +33,13 @@ export function ForgotPasswordPanel({
       {forgotState === "sent" ? (
         <div className="space-y-3">
           <p>
-            Якщо такий email зареєстровано — ми відправили лист із посиланням
-            для скидання пароля. Перевір вхідні та папку «Спам». Локальні дані
+            Якщо такий email зареєстровано, лист із посиланням для скидання
+            пароля вже надіслано. Перевір вхідні та папку «Спам». Локальні дані
             на пристрої залишаються без змін.
           </p>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="md"
             onClick={closePanel}
             className="w-full"
@@ -50,8 +50,8 @@ export function ForgotPasswordPanel({
       ) : (
         <>
           <p>
-            Введи email акаунту — пришлемо посилання для скидання пароля.
-            Локальні дані на пристрої залишаються без змін.
+            Введи email акаунту, пришлю посилання для скидання пароля. Локальні
+            дані на пристрої залишаються без змін.
           </p>
           <label
             htmlFor="auth-forgot-email"
@@ -82,7 +82,7 @@ export function ForgotPasswordPanel({
           )}
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="md"
             loading={forgotState === "sending"}
             onClick={handleSubmit}

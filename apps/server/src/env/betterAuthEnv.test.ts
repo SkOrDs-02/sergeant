@@ -38,9 +38,18 @@ describe("assertBetterAuthStartupEnv", () => {
     expect(() => assertBetterAuthStartupEnv()).not.toThrow();
   });
 
-  it("Railway без NODE_ENV=production теж вимагає секрет", async () => {
+  it("не стартує в production без Resend, щоб не підтверджувати неіснуючу доставку листа", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("BETTER_AUTH_SECRET", "a".repeat(32));
+    vi.stubEnv("ALLOWED_ORIGINS", "https://app.example.com");
+    vi.stubEnv("RESEND_API_KEY", "");
+    const { assertBetterAuthStartupEnv } = await import("./betterAuthEnv.js");
+    expect(() => assertBetterAuthStartupEnv()).toThrow(/RESEND_API_KEY/);
+  });
+
+  it("APP_ENV=production без NODE_ENV=production теж вимагає секрет", async () => {
     vi.stubEnv("NODE_ENV", "test");
-    vi.stubEnv("RAILWAY_ENVIRONMENT", "production");
+    vi.stubEnv("APP_ENV", "production");
     vi.stubEnv("BETTER_AUTH_SECRET", "");
     const { assertBetterAuthStartupEnv } = await import("./betterAuthEnv.js");
     expect(() => assertBetterAuthStartupEnv()).toThrow(/BETTER_AUTH_SECRET/);

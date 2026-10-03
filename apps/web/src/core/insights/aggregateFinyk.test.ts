@@ -46,6 +46,7 @@ const EMPTY_CACHE = {
   showBalance: null,
   excludedStatTxIds: null,
   dismissedRecurring: null,
+  merchantRules: null,
   refreshedAt: null,
 };
 

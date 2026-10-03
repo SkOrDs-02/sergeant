@@ -1,6 +1,5 @@
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -8,20 +7,55 @@ import {
   type KeyboardEvent,
   type TouchEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   useToast,
+  MAX_VISIBLE_TOASTS,
   type ToastItem,
   type ToastType,
 } from "@shared/hooks/useToast";
+import {
+  BOTTOM_NAV_INSET_VAR,
+  SHEET_FOOTER_INSET_VAR,
+  WORKOUT_BANNER_INSET_VAR,
+} from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
+// каталог тягне з собою десять модульних файлів плюс en-копію
+// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 
-const VARIANT: Record<ToastType, string> = {
-  success: "bg-brand-700 text-white",
-  error: "bg-danger-strong text-white",
-  warning: "bg-warning-strong text-white",
-  info: "bg-primary text-bg",
+// «Чорнило» v3.1 § 5 — hybrid toast, not a full saturated fill. Base is the
+// same `surface-hi` (#3a302b dark / #f6f5f2 light) + `text-ink` for every
+// type; only the left stripe, icon, and Undo-action carry the semantic
+// colour. Error additionally gets a full-perimeter `danger/35` border
+// instead of the neutral `line/8` hairline. Colour-coding reads from the
+// stripe + icon alone — a saturated fill is no longer needed.
+const BASE = "bg-panelHi text-ink";
+
+const BORDER: Record<ToastType, string> = {
+  success: "border border-line/8",
+  error: "border border-danger/35",
+  warning: "border border-line/8",
+  info: "border border-line/8",
+};
+
+// Semantic accent — light uses the AA `-strong` tier, dark the
+// luminescent tier-400 shade (spec eталон: success #34d399, error
+// #f87171 — Tailwind's own emerald-400/red-400, so no new token needed).
+const ACCENT_TEXT: Record<ToastType, string> = {
+  success: "text-success-strong dark:text-emerald-400",
+  error: "text-danger-strong dark:text-red-400",
+  warning: "text-warning-strong dark:text-amber-400",
+  info: "text-info-strong dark:text-sky-400",
+};
+
+const ACCENT_STRIPE: Record<ToastType, string> = {
+  success: "bg-success-strong dark:bg-emerald-400",
+  error: "bg-danger-strong dark:bg-red-400",
+  warning: "bg-warning-strong dark:bg-amber-400",
+  info: "bg-info-strong dark:bg-sky-400",
 };
 
 const ICON_WRAP: Record<ToastType, string> = {
@@ -39,16 +73,15 @@ const ICON_NAME: Record<ToastType, IconName> = {
 };
 
 /**
- * Countdown progress bar for toasts that own a recoverable side-effect
- * (the undo-pattern). On the `info` variant we use a dark-on-light tint
- * because the surface is `bg-primary text-bg`; on the saturated white-on-X
- * variants we use a translucent-white bar so it remains visible.
+ * Auto-dismiss progress bar. Tints with the same semantic accent as the
+ * stripe/icon, at low opacity, so it reads as part of the same colour signal
+ * rather than a fifth arbitrary tone.
  */
 const COUNTDOWN_BAR_TINT: Record<ToastType, string> = {
-  success: "bg-white/45",
-  error: "bg-white/55",
-  warning: "bg-white/55",
-  info: "bg-bg/35",
+  success: "bg-success-strong/45 dark:bg-emerald-400/45",
+  error: "bg-danger-strong/45 dark:bg-red-400/45",
+  warning: "bg-warning-strong/45 dark:bg-amber-400/45",
+  info: "bg-info-strong/45 dark:bg-sky-400/45",
 };
 
 /**
@@ -84,23 +117,21 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
   const touchStartTimeRef = useRef(0);
 
   const hasAction = !!toast.action?.onClick;
-  // Error toasts and undo-bearing toasts use `assertive` politeness so the
-  // screen-reader interrupts whatever is being read — the user has at most
-  // `toast.duration` ms (5 s for undo) to react, so we can't wait for the
-  // queue to drain naturally.
+  // Error and action-bearing toasts use `assertive` politeness so the
+  // screen-reader announces the available choice immediately. Timed undo
+  // actions especially cannot wait for the polite queue to drain.
   const assertive = toast.type === "error" || hasAction;
 
   const isLeaving = !!toast.leaving;
 
-  useEffect(() => {
-    // Reset any in-flight swipe offset once the row enters exit-animation
-    // so the exit translate doesn't compound with the swipe translate.
-    if (isLeaving) {
-      setDragX(0);
-      setDragging(false);
-      touchStartXRef.current = null;
-    }
-  }, [isLeaving]);
+  const [prevIsLeaving, setPrevIsLeaving] = useState(isLeaving);
+  if (isLeaving && !prevIsLeaving) {
+    setPrevIsLeaving(true);
+    setDragX(0);
+    setDragging(false);
+  } else if (!isLeaving && prevIsLeaving) {
+    setPrevIsLeaving(false);
+  }
 
   const onMouseEnter = useCallback(() => {
     setPaused(true);
@@ -155,10 +186,20 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     const velocity = Math.abs(dx) / dt;
     touchStartXRef.current = null;
     setDragging(false);
+    // Аркуш із дією коштує дорожче за звичайний: змахнувши його, людина
+    // мовчки спалює вікно undo — а свайп у неї в голові означає «прибери
+    // це з очей», а не «підтверджую видалення». Тому для action-тостів
+    // приймаємо лише повний, свідомий свайп: flick-скорочення (32 px на
+    // швидкості) вимкнене, а поріг подвоєний. Випадковий рух пальцем під
+    // час скролу більше не забирає можливість повернути запис.
+    const requiredDistance = hasAction
+      ? SWIPE_DISMISS_DISTANCE_PX * 2
+      : SWIPE_DISMISS_DISTANCE_PX;
     const flick =
+      !hasAction &&
       Math.abs(dx) >= SWIPE_DISMISS_MIN_DISTANCE_FOR_VELOCITY_PX &&
       velocity >= SWIPE_DISMISS_VELOCITY_PX_PER_MS;
-    if (Math.abs(dx) >= SWIPE_DISMISS_DISTANCE_PX || flick) {
+    if (Math.abs(dx) >= requiredDistance || flick) {
       // Treat horizontal swipe-dismiss as a deliberate "I've read this"
       // gesture. For undo-toasts this is equivalent to letting the 5 s
       // timer expire — the snapshot is dropped and `onUndo` never runs.
@@ -168,7 +209,7 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     setDragX(0);
     setPaused(false);
     resume(toast.id);
-  }, [dismiss, dragX, resume, toast.id]);
+  }, [dismiss, dragX, hasAction, resume, toast.id]);
 
   const onKeyDown = useCallback(
     (event: KeyboardEvent<HTMLDivElement>) => {
@@ -189,7 +230,11 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     style.transition = "none";
     // Fade out as the swipe approaches the dismiss threshold so the user
     // gets a clear visual confirmation that release will dismiss.
-    const progress = Math.min(1, Math.abs(dragX) / SWIPE_DISMISS_DISTANCE_PX);
+    const progress = Math.min(
+      1,
+      Math.abs(dragX) /
+        (hasAction ? SWIPE_DISMISS_DISTANCE_PX * 2 : SWIPE_DISMISS_DISTANCE_PX),
+    );
     style.opacity = 1 - progress * 0.5;
   }
 
@@ -197,16 +242,17 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
     <div
       className={cn(
         // Elevation e5 — toast tier. Toasts are the top-most
-        // ephemeral surface; pairing with `z-toast` (300) keeps them
-        // above modals/sheets even when both stacks are visible.
-        "text-style-label pointer-events-auto w-full px-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
+        // ephemeral surface; the tray sits on `z-toast` (300), above
+        // modals/sheets (200) even when both stacks are visible.
+        "text-style-label pointer-events-auto w-full pl-5 pr-4 py-3 rounded-2xl shadow-e5 relative overflow-hidden",
         "flex items-center gap-2.5 outline-none",
-        "focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        "focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         "touch-pan-y", // allow vertical scroll, capture horizontal swipe
         isLeaving
           ? "motion-safe:animate-toast-exit"
           : "motion-safe:animate-toast-enter",
-        VARIANT[toast.type] || VARIANT.info,
+        BASE,
+        BORDER[toast.type],
       )}
       role={assertive ? "alert" : "status"}
       aria-live={assertive ? "assertive" : "polite"}
@@ -226,19 +272,45 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
       data-toast-type={toast.type}
     >
       <span
+        aria-hidden
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-[3px]",
+          ACCENT_STRIPE[toast.type],
+        )}
+      />
+      <span
         className={cn(
           "shrink-0 inline-flex items-center justify-center",
+          ACCENT_TEXT[toast.type],
           ICON_WRAP[toast.type],
         )}
       >
         <Icon
           name={ICON_NAME[toast.type]}
-          size={16}
+          size="md"
           strokeWidth={2.5}
           aria-hidden
         />
       </span>
-      <span className="min-w-0 flex-1 leading-snug">{toast.msg}</span>
+      <span className="min-w-0 flex-1 leading-snug">
+        {toast.msg}
+        {toast.repeat > 1 && (
+          // Та сама подія повторилась, поки тост ще на екрані. Показуємо
+          // лічильник замість другого аркуша — інакше серія однакових дій
+          // (три свайпи, чотири помилки з `Promise.allSettled`) будувала
+          // вежу з ідентичних тостів.
+          <span
+            className={cn(
+              "ml-1.5 inline-block align-middle rounded-full px-1.5 py-px",
+              "text-style-caption font-semibold bg-line/15",
+              ACCENT_TEXT[toast.type],
+            )}
+            data-toast-repeat={toast.repeat}
+          >
+            ×{toast.repeat}
+          </span>
+        )}
+      </span>
       {toast.action?.onClick && (
         <button
           type="button"
@@ -250,31 +322,54 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
             }
           }}
           className={cn(
-            "shrink-0 px-2.5 py-1 rounded-xl bg-white/15 hover:bg-white/25 transition-colors",
-            "outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
+            "shrink-0 px-2.5 py-1 rounded-xl bg-line/10 hover:bg-line/20 transition-colors font-semibold",
+            ACCENT_TEXT[toast.type],
+            "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
           )}
         >
           {toast.action.label || "Дія"}
         </button>
       )}
-      <button
-        type="button"
-        onClick={() => dismiss(toast.id)}
-        className={cn(
-          "shrink-0 opacity-70 hover:opacity-100 transition-opacity touch-target",
-          "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
-        )}
-        aria-label={messages.actions.close}
-      >
-        <Icon name="close" size={14} strokeWidth={2.5} aria-hidden />
-      </button>
-      {hasAction && !isLeaving && (
+      {toast.action?.dismissLabel ? (
+        <button
+          type="button"
+          onClick={() => dismiss(toast.id)}
+          className={cn(
+            "shrink-0 px-2.5 py-1 rounded-xl text-muted hover:text-text hover:bg-line/10 transition-colors font-semibold",
+            "outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent",
+          )}
+        >
+          {toast.action.dismissLabel}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => dismiss(toast.id)}
+          className={cn(
+            "shrink-0 opacity-70 hover:opacity-100 transition-opacity touch-target",
+            "outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent rounded-md",
+          )}
+          aria-label={messages.actions.close}
+        >
+          <Icon name="close" size="sm" strokeWidth={2.5} aria-hidden />
+        </button>
+      )}
+      {!isLeaving && toast.duration !== null && (
         <span
+          // A repeated actionless toast resets its provider timer. Remount the
+          // compositor animation at the same time so the visual countdown and
+          // the real deadline cannot drift apart.
+          key={`${toast.id}-${toast.repeat}`}
           aria-hidden
           className={cn(
             "absolute left-0 bottom-0 h-0.5 w-full origin-left",
             COUNTDOWN_BAR_TINT[toast.type],
-            "motion-safe:animate-toast-countdown motion-reduce:scale-x-0",
+            // This animation is a custom class from animations.css, not a
+            // Tailwind utility. A `motion-safe:` prefix therefore has no CSS
+            // rule and leaves the line full-width and static. Apply the real
+            // class directly; the reduced-motion transform below still hides
+            // it for users who requested less motion.
+            "animate-toast-countdown motion-reduce:scale-x-0",
             paused ? "motion-safe:[animation-play-state:paused]" : "",
           )}
           data-toast-countdown
@@ -290,6 +385,15 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
  * Bottom-anchored toast tray. Positioned above the bottom-nav, optional
  * `ActiveWorkoutBanner`, and iOS safe-area inset; never overlaps with
  * those layers even when several toasts stack up on a 375 px viewport.
+ * While a `Sheet` with a `footer` is open the tray lifts above that footer
+ * (`--sgt-sheet-footer-inset`, published by the sheet itself) instead of
+ * sitting on its CTA — see the AI-CONTEXT inside the component.
+ *
+ * Тримає щонайбільше `MAX_VISIBLE_TOASTS` аркушів; решта чекає у черзі
+ * провайдера й піднімається, щойно звільниться слот. Порожній трей
+ * лишається змонтованим навмисно — live-region, у яку контент
+ * вставляється разом із самим регіоном, частина screen-reader-ів
+ * пропускає.
  *
  * Per-toast politeness — error and undo-bearing toasts get
  * `role="alert" aria-live="assertive"` (the 5 s undo-window can't wait
@@ -308,29 +412,67 @@ function ToastRow({ toast, dismiss, pause, resume }: ToastRowProps) {
  */
 export function ToastContainer() {
   const { toasts, dismiss, pause, resume } = useToast();
+  // AI-CONTEXT: трей завжди внизу, але над футером відкритого аркуша.
+  // Внизу він стояв рівно там, де футер bottom-sheet-а з його CTA, а
+  // наведення ставить авто-закриття на паузу — тож на десктопі тост під
+  // курсором, що завмер після кліку по «Почати», не зникав ніколи, і
+  // «Пропустити» в аркуші готовності лишалось недосяжним (E2E
+  // fizruk-active-workout, PR #64). #73 лікував це переносом трею вгору
+  // на час будь-якого модального діалогу; власник 2026-09-16 обрав інше:
+  // трей лишається внизу (звичне місце, «Повернути» під великим пальцем)
+  // і піднімається на висоту футера, яку `Sheet` публікує у
+  // `--sgt-sheet-footer-inset` тим самим `useBottomInsetVar`, що й
+  // навігація. Аркуш без футера змінну не ставить — CTA має жити у
+  // слоті `footer`, це і є контракт аркуша.
 
-  if (toasts.length === 0) return null;
+  // Показуємо лише видиме вікно — решта чекає у черзі в провайдері й
+  // навіть не має запущеного таймера (див. `MAX_VISIBLE_TOASTS`).
+  // `leaving`-аркуш тримає свій слот до кінця exit-анімації: коли слот
+  // звільнявся одразу, наступний із черги вʼїжджав поруч, і трей на
+  // 200 мс ставав чотирирядковим, а потім знову трирядковим — четвертий
+  // тост блимав.
+  const visible = toasts.slice(0, MAX_VISIBLE_TOASTS);
 
-  return (
+  const tray = (
     <div
-      // Bottom-anchored above (in DOM-stacking sense — visually upward
-      // from) the bottom-nav (`--bottom-nav-height`, 60 px when present),
-      // the optional `ActiveWorkoutBanner` (~84 px above the bottom-nav),
-      // and the iOS home-indicator safe-area. `z-9999` keeps the tray
-      // over the FAB and module shells but still below modal portals
-      // when they are explicitly placed at `z-[10000]`.
+      // Bottom-anchored above the bottom-nav, the optional
+      // `ActiveWorkoutBanner`, the footer of an open `Sheet` and the iOS
+      // home-indicator safe-area.
+      //
+      // AI-DANGER: усі три змінні ставляться на `<html>` хуком
+      // `useBottomInsetVar` і НЕ мають локальних аналогів у цій гілці
+      // дерева. Попередня версія читала `--bottom-nav-height`, яку
+      // виставляє утиліта `bottom-nav-height-var` на корені модуля —
+      // тобто всередині `children` у `Providers`, тоді як цей трей —
+      // їхня СЕСТРА. CSS-змінні успадковуються лише вниз, тож там завжди
+      // спрацьовував fallback `0px`, і тости лягали просто поверх нижньої
+      // навігації. Не повертай `var(--bottom-nav-height)` сюди.
+      //
+      // Обидва inset-и вже включають safe-area (вона всередині
+      // `padding-bottom` навігації), тому `max()`, а не сума: додавати
+      // `env(safe-area-inset-bottom)` зверху означало б порахувати її
+      // двічі. Fallback-гілка `max()` тримає safe-area для екранів без
+      // навігації (auth, onboarding).
+      //
+      // The tray is portalled to <body> below, so this tier is global rather
+      // than trapped inside an app-shell stacking context. `z-toast` (300)
+      // is the canonical top ephemeral tier — Sheet/Modal live on 200.
       className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-9999",
+        "fixed left-1/2 -translate-x-1/2 z-toast",
         "flex flex-col items-center gap-2 pointer-events-none",
         "w-[min(92vw,24rem)]",
       )}
       style={{
-        bottom:
-          "calc(env(safe-area-inset-bottom, 0px) + var(--bottom-nav-height, 0px) + var(--active-workout-banner-offset, 0px) + 1rem)",
+        bottom: `calc(max(env(safe-area-inset-bottom, 0px), var(${BOTTOM_NAV_INSET_VAR}, 0px), var(${WORKOUT_BANNER_INSET_VAR}, 0px), var(${SHEET_FOOTER_INSET_VAR}, 0px)) + 0.75rem)`,
       }}
       data-testid="toast-tray"
+      data-anchor="bottom"
+      // Modal focus-management makes the rest of the page inert. A toast is
+      // a live, top-most status surface and may contain an Undo action, so it
+      // must remain hit-testable while a dialog is open.
+      data-dialog-inert-exempt
     >
-      {toasts.map((t) => (
+      {visible.map((t) => (
         <ToastRow
           key={t.id}
           toast={t}
@@ -341,4 +483,11 @@ export function ToastContainer() {
       ))}
     </div>
   );
+
+  // Sheets and modals are portalled to <body>. Keeping the global toast tray
+  // there too makes its z-index comparable and, together with the explicit
+  // inert exemption above, prevents visible actions from becoming inert.
+  return typeof document === "undefined"
+    ? tray
+    : createPortal(tray, document.body);
 }

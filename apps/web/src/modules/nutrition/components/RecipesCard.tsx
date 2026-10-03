@@ -13,13 +13,18 @@
  * F7 (docs/audits/2026-05-13-page-audit-08-nutrition.md) to comply with
  * Hard Rule #18 (max-lines: 600).
  */
-import { useEffect, useRef, useState } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
-import { toLocalISODate } from "@sergeant/shared";
-import type { Meal, NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import {
+  deviceDayKey,
+  deviceTimeOfDay,
+  type Meal,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import {
   deleteSavedRecipe,
   listSavedRecipes,
@@ -32,13 +37,16 @@ import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 import type { RecipeCacheEntry as StoredRecipeCacheEntry } from "../lib/recipeCache";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
-import { guessMealTypeIdNow, type RecipeLike } from "./RecipesCard.helpers";
+import {
+  guessMealTypeIdNow,
+  parsePortionFactor,
+  type RecipeLike,
+} from "./RecipesCard.helpers";
 import { SavedSection } from "./RecipesCard.SavedSection";
 import { GeneratorCard } from "./RecipesCard.Generator";
 
 interface RecipesCardProps {
   busy?: boolean;
-  activePantry?: Pantry | null;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
   recommendRecipes: () => void | Promise<void>;
@@ -54,7 +62,6 @@ interface RecipesCardProps {
 
 export function RecipesCard({
   busy,
-  activePantry,
   prefs,
   setPrefs,
   recommendRecipes,
@@ -68,53 +75,53 @@ export function RecipesCard({
   selectedDate,
 }: RecipesCardProps) {
   const toast = useToast();
-  const [saved, setSaved] = useState<SavedRecipe[]>([]);
-  const [savedBusy, setSavedBusy] = useState(false);
+  const sqliteCacheTick = useNutritionSqliteReadTick();
+  const [saved, setSaved] = useSqliteTickOverlay(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedNutritionSqliteState();
+      if (cache.refreshedAt === null) return undefined;
+      return cache.recipes;
+    },
+    () => [] as SavedRecipe[],
+  );
+  const [savedBusy, setSavedBusy] = useState(true);
+  const [savedError, setSavedError] = useState(false);
   const [portionById, setPortionById] = useState<Record<string, string>>({});
   const [deleteRecipeConfirm, setDeleteRecipeConfirm] =
     useState<SavedRecipe | null>(null);
   const [openSavedId, setOpenSavedId] = useState<string | null>(null);
   const [savedOpen, setSavedOpen] = useState(false);
-  const prevSavedLen = useRef(0);
-  const sqliteCacheTick = useNutritionSqliteReadTick();
-
   useEffect(() => {
     let cancelled = false;
-    setSavedBusy(true);
-    (async () => {
+    void (async () => {
       const list = await listSavedRecipes(200);
       if (!cancelled) setSaved(list);
     })()
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setSavedError(true);
+      })
       .finally(() => {
         if (!cancelled) setSavedBusy(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setSaved]);
 
-  // Stage 4 PR #033 + Stage 8 PR #057n: overlay saved recipes from
-  // the SQLite cache once it's warm. The IDB read above stays as the
-  // synchronous fallback.
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setSaved(cache.recipes);
-  }, [sqliteCacheTick]);
-
-  // Auto-open when first recipe is saved during this session
-  useEffect(() => {
-    if (saved.length > prevSavedLen.current && prevSavedLen.current === 0) {
-      setSavedOpen(true);
-    }
-    prevSavedLen.current = saved.length;
-  }, [saved.length]);
+  const [prevSavedLen, setPrevSavedLen] = useState(saved.length);
+  if (saved.length > prevSavedLen && prevSavedLen === 0) {
+    setPrevSavedLen(saved.length);
+    setSavedOpen(true);
+  } else if (saved.length !== prevSavedLen) {
+    setPrevSavedLen(saved.length);
+  }
 
   async function refreshSaved() {
     setSavedBusy(true);
     try {
       setSaved(await listSavedRecipes(200));
+      setSavedError(false);
     } finally {
       setSavedBusy(false);
     }
@@ -122,7 +129,20 @@ export function RecipesCard({
 
   async function saveOne(r: RecipeLike) {
     const res = await saveRecipeToBook(r);
-    if (res.ok) await refreshSaved();
+    if (res.ok) {
+      await refreshSaved();
+      // Розгортаємо «Мої рецепти» і кажемо про успіх явно: раніше клік по
+      // «Зберегти» на згенерованому рецепті не давав ЖОДНОГО видимого
+      // фідбеку (секція згорнута, тоста нема, помилка ковталась) і
+      // виглядав як «не працює» (бета-фідбек 2026-08-07).
+      setSavedOpen(true);
+      toast.success(`Рецепт «${res.recipe.title}» збережено`);
+    } else {
+      toast.error(res.error || "Не вдалося зберегти рецепт", undefined, {
+        label: "Повторити",
+        onClick: () => void saveOne(r),
+      });
+    }
   }
 
   async function addRecipeAsMeal(
@@ -131,26 +151,18 @@ export function RecipesCard({
   ): Promise<void> {
     if (typeof addMealToLog !== "function") return;
     const key = String(idKey || r?.id || r?.title || "");
-    const factorRaw = portionById[key];
-    const factor =
-      factorRaw == null || factorRaw === ""
-        ? 1
-        : Number(String(factorRaw).replace(",", "."));
-    const macros = scaleMacros(
-      r?.macros,
-      Number.isFinite(factor) && factor > 0 ? factor : 1,
-    );
+    const macros = scaleMacros(r?.macros, parsePortionFactor(portionById[key]));
     const mealType = guessMealTypeIdNow();
     const label =
       MEAL_TYPES.find((x) => x.id === mealType)?.label || "Прийом їжі";
     // Не пишемо поточний час, якщо журнал відкритий не на сьогодні —
     // інакше "вчора 09:30" виглядає як артефакт. Див. H5 з аудиту.
+    // ADR-0078 / unification-modules.md #1.25: `selectedDate` — device-local
+    // ключ (useNutritionLog), тож порівнюємо і форматуємо час тим самим
+    // годинником пристрою, не Kyiv.
     const now = new Date();
-    const isToday = !selectedDate || selectedDate === toLocalISODate(now);
-    const time = isToday
-      ? // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- display time for meal log uses local wall-clock hours/minutes (cosmetic, not a day-boundary)
-        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
-      : "";
+    const isToday = !selectedDate || selectedDate === deviceDayKey(now);
+    const time = isToday ? deviceTimeOfDay(now) : "";
     await addMealToLog({
       id: newMealId(),
       time,
@@ -176,6 +188,8 @@ export function RecipesCard({
       <SavedSection
         saved={saved}
         savedBusy={savedBusy}
+        savedError={savedError}
+        onRetry={() => void refreshSaved().catch(() => {})}
         savedOpen={savedOpen}
         setSavedOpen={setSavedOpen}
         openSavedId={openSavedId}
@@ -190,7 +204,6 @@ export function RecipesCard({
       {/* ── Генератор рецептів ── */}
       <GeneratorCard
         busy={busy}
-        activePantry={activePantry}
         prefs={prefs}
         setPrefs={setPrefs}
         recommendRecipes={recommendRecipes}

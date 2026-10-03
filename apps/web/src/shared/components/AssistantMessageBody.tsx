@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, useMemo, type ReactNode } from "react";
 
 /**
  * Renders an assistant chat reply as React nodes.
@@ -18,18 +18,31 @@ import { memo, type ReactNode } from "react";
  * `<span>` or `<p>` with the text content directly.
  */
 
+// AI-CONTEXT: три розміри тут ходять РАЗОМ — тіло, `h3`, `h4`. Це єдине
+// місце в застосунку, де верстка багаторівнева, тож заміна тільки тіла
+// (`text-sm` → `text-style-body`, 14 → 15–16px) зламала б ієрархію: `h4`
+// на `text-sm` став би МЕНШИЙ за тіло, а `h3` на `text-base` (16px)
+// зрівнявся б із ним. Тому:
+//   тіло — роль `body`;
+//   `h4` — розміру не задає взагалі, успадковує тіло й відрізняється
+//          лише вагою (600);
+//   `h3` — роль `title` (18–22px), і `font-bold` знято: вагу (600) тепер
+//          несе сама роль, як і в решті застосунку.
 const PROSE_CLASS_NAME =
-  "text-sm leading-relaxed [&_strong]:font-semibold [&_em]:italic " +
+  "text-style-body leading-relaxed [&_strong]:font-semibold [&_em]:italic " +
   "[&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 " +
-  "[&_p]:my-1 [&_li]:my-0.5 [&_a]:text-primary [&_a]:underline " +
-  "[&_h3]:text-base [&_h3]:font-bold [&_h3]:mt-2 [&_h3]:mb-1 " +
-  "[&_h4]:text-sm [&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 " +
+  // my-2, а не my-1: абзац — єдиний візуальний розділювач між темами у
+  // відповіді (VOICE_RULE вимагає «кожну тему з нового абзацу»), і 4 px
+  // читаються як перенос рядка, а не як межа теми.
+  "[&_p]:my-2 [&_li]:my-0.5 [&_a]:text-primary [&_a]:underline " +
+  "[&_h3]:text-style-title [&_h3]:mt-2 [&_h3]:mb-1 " +
+  "[&_h4]:font-semibold [&_h4]:mt-3 [&_h4]:mb-1 " +
   "[&_h4]:text-text " +
   "[&_blockquote]:border-l-2 [&_blockquote]:border-primary " +
   "[&_blockquote]:pl-3 [&_blockquote]:mt-3 [&_blockquote]:text-subtle " +
   "[&_blockquote]:italic " +
   "[&_code]:bg-surface [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded " +
-  "[&_code]:text-xs";
+  "[&_code]:text-style-caption";
 
 export interface AssistantMessageBodyProps {
   text: string;
@@ -38,11 +51,24 @@ export interface AssistantMessageBodyProps {
 /** Allow only safe URL schemes — blocks `javascript:`, `data:`, etc. */
 function isSafeHref(href: string | undefined): boolean {
   if (!href) return false;
-  return /^(https?:\/\/|\/|#)/i.test(href);
+  return HREF_SAFE_RE.test(href);
 }
 
 const INLINE_TOKEN_RE =
   /(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
+// `\/(?![\/\\])` — відносний шлях, але НЕ protocol-relative (`//evil.example`)
+// і не `/\evil.example` (браузер трактує `\` як `/`).
+const HREF_SAFE_RE = /^(https?:\/\/|\/(?![/\\])|#)/i;
+const LINK_TOKEN_RE = /^\[([^\]]+)\]\(([^)]+)\)$/;
+const H4_RE = /^####\s+(.*)$/;
+const H3_RE = /^###\s+(.*)$/;
+const ULIST_RE = /^\s*[-*+]\s+/;
+const ULIST_STRIP_RE = /^\s*[-*+]\s+/;
+const OLIST_RE = /^\s*\d+\.\s+/;
+const OLIST_STRIP_RE = /^\s*\d+\.\s+/;
+const QUOTE_RE = /^\s*>\s?/;
+const QUOTE_STRIP_RE = /^\s*>\s?/;
+const BLOCK_START_RE = /^(#{3,4})\s+|^\s*[-*+]\s+|^\s*\d+\.\s+|^\s*>\s?/;
 
 function renderInline(text: string, keyPrefix: string): ReactNode[] {
   if (!text) return [];
@@ -66,7 +92,7 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
     } else if (tok.startsWith("`") && tok.endsWith("`")) {
       parts.push(<code key={k}>{tok.slice(1, -1)}</code>);
     } else if (tok.startsWith("[")) {
-      const linkMatch = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(tok);
+      const linkMatch = LINK_TOKEN_RE.exec(tok);
       const label = linkMatch?.[1];
       const href = linkMatch?.[2];
       if (linkMatch && label !== undefined && href !== undefined) {
@@ -112,12 +138,7 @@ function withSoftBreaks(lines: string[], keyPrefix: string): ReactNode[] {
 
 interface ParsedBlock {
   type:
-    | "paragraph"
-    | "heading-3"
-    | "heading-4"
-    | "ulist"
-    | "olist"
-    | "blockquote";
+    "paragraph" | "heading-3" | "heading-4" | "ulist" | "olist" | "blockquote";
   lines: string[];
 }
 
@@ -131,40 +152,40 @@ function parseBlocks(text: string): ParsedBlock[] {
       i += 1;
       continue;
     }
-    const h4 = /^####\s+(.*)$/.exec(line);
+    const h4 = H4_RE.exec(line);
     if (h4) {
       blocks.push({ type: "heading-4", lines: [h4[1] ?? ""] });
       i += 1;
       continue;
     }
-    const h3 = /^###\s+(.*)$/.exec(line);
+    const h3 = H3_RE.exec(line);
     if (h3) {
       blocks.push({ type: "heading-3", lines: [h3[1] ?? ""] });
       i += 1;
       continue;
     }
-    if (/^\s*[-*+]\s+/.test(line)) {
+    if (ULIST_RE.test(line)) {
       const items: string[] = [];
-      while (i < rawLines.length && /^\s*[-*+]\s+/.test(rawLines[i] ?? "")) {
-        items.push((rawLines[i] ?? "").replace(/^\s*[-*+]\s+/, ""));
+      while (i < rawLines.length && ULIST_RE.test(rawLines[i] ?? "")) {
+        items.push((rawLines[i] ?? "").replace(ULIST_STRIP_RE, ""));
         i += 1;
       }
       blocks.push({ type: "ulist", lines: items });
       continue;
     }
-    if (/^\s*\d+\.\s+/.test(line)) {
+    if (OLIST_RE.test(line)) {
       const items: string[] = [];
-      while (i < rawLines.length && /^\s*\d+\.\s+/.test(rawLines[i] ?? "")) {
-        items.push((rawLines[i] ?? "").replace(/^\s*\d+\.\s+/, ""));
+      while (i < rawLines.length && OLIST_RE.test(rawLines[i] ?? "")) {
+        items.push((rawLines[i] ?? "").replace(OLIST_STRIP_RE, ""));
         i += 1;
       }
       blocks.push({ type: "olist", lines: items });
       continue;
     }
-    if (/^\s*>\s?/.test(line)) {
+    if (QUOTE_RE.test(line)) {
       const quoted: string[] = [];
-      while (i < rawLines.length && /^\s*>\s?/.test(rawLines[i] ?? "")) {
-        quoted.push((rawLines[i] ?? "").replace(/^\s*>\s?/, ""));
+      while (i < rawLines.length && QUOTE_RE.test(rawLines[i] ?? "")) {
+        quoted.push((rawLines[i] ?? "").replace(QUOTE_STRIP_RE, ""));
         i += 1;
       }
       blocks.push({ type: "blockquote", lines: quoted });
@@ -176,13 +197,7 @@ function parseBlocks(text: string): ParsedBlock[] {
     while (i < rawLines.length) {
       const next = rawLines[i] ?? "";
       if (!next.trim()) break;
-      if (
-        /^(#{3,4})\s+/.test(next) ||
-        /^\s*[-*+]\s+/.test(next) ||
-        /^\s*\d+\.\s+/.test(next) ||
-        /^\s*>\s?/.test(next)
-      )
-        break;
+      if (BLOCK_START_RE.test(next)) break;
       para.push(next);
       i += 1;
     }
@@ -192,7 +207,7 @@ function parseBlocks(text: string): ParsedBlock[] {
 }
 
 function AssistantMessageBodyImpl({ text }: AssistantMessageBodyProps) {
-  const blocks = parseBlocks(text);
+  const blocks = useMemo(() => parseBlocks(text), [text]);
   return (
     <div className={PROSE_CLASS_NAME}>
       {blocks.map((block, idx) => {

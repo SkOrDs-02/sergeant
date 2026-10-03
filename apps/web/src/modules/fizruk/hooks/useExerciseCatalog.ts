@@ -1,18 +1,22 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractCustomExerciseSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractCustomExerciseSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import { foldApostrophes } from "@sergeant/shared";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
 function norm(s: unknown) {
-  return (s || "").toString().trim().toLowerCase();
+  // Апостроф згортаємо (канон §1.10): «мʼяз» і «мʼяз» — те саме слово, і
+  // пошук не має залежати від того, яку форму дала клавіатура.
+  return foldApostrophes((s || "").toString().trim().toLowerCase());
 }
 
 /**
@@ -27,7 +31,14 @@ function norm(s: unknown) {
 export function useExerciseCatalog() {
   const catalogData = FizrukData.EXERCISE_CATALOG;
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [customExercises, setCustomExercises] = useState<RawExerciseDef[]>(
+  const [customExercises, setCustomExercises] = useSqliteTickOverlay<
+    RawExerciseDef[]
+  >(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.customExercises;
+    },
     () => {
       const cache = getCachedFizrukSqliteState();
       return cache.refreshedAt === null ? [] : cache.customExercises;
@@ -39,29 +50,24 @@ export function useExerciseCatalog() {
   const musclesUk = FizrukData.MUSCLES_UK;
   const musclesByPrimaryGroup = FizrukData.MUSCLES_BY_PRIMARY_GROUP;
 
-  // Stage 8 PR #057f-tombstone: overlay the user-added custom
-  // exercises from the SQLite cache once it's warm. Built-in catalogue
-  // entries always come from the static JSON.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setCustomExercises(cache.customExercises);
-  }, [sqliteCacheTick]);
+  const intended = useFizrukIntendedSlice<"customExercises">(sqliteCacheTick);
 
-  const persistCustom = useCallback((next: RawExerciseDef[]) => {
-    setCustomExercises(next);
-    const prevDualWrite =
-      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    const nextDualWrite = {
-      ...prevDualWrite,
-      customExercises: extractCustomExerciseSnapshots(next),
-    };
-    try {
-      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-    } catch {
-      /* trigger is fire-and-forget — never propagate */
-    }
-  }, []);
+  const persistCustom = useCallback(
+    (next: RawExerciseDef[]) => {
+      setCustomExercises(next);
+      const transition = fizrukDualWriteTransition(
+        "customExercises",
+        intended,
+        extractCustomExerciseSnapshots(next),
+      );
+      try {
+        triggerFizrukDualWrite(transition.prev, transition.next);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [intended, setCustomExercises],
+  );
 
   const exercises = useMemo(
     () =>
@@ -80,18 +86,32 @@ export function useExerciseCatalog() {
         const aliases = (ex?.aliases || []).map(norm).join(" ");
         const desc = norm(ex?.description);
         const group = norm(ex?.primaryGroup);
-        const groupUk = norm(ex?.primaryGroupUk);
+        // AI-DANGER: `primaryGroupUk` у вбудованому каталозі НЕ заповнене
+        // (0 із 119 вправ) — українська назва групи живе лише в мапі
+        // `labels.primaryGroupsUk`. Поки шукали тільки по полю запису,
+        // «спина» не знаходила жодної з 13 вправ спини, хоча плейсхолдер
+        // поля пошуку рекламує саме цей запит (браузерне QA 2026-08-23).
+        // Тому лейбл резолвиться через мапу, а не читається з вправи.
+        const groupUk = norm(ex?.primaryGroupUk || primaryGroupsUk[group]);
+        // Мʼязи теж шукані: «спина» має ловити і «Найширший мʼяз спини».
+        const muscles = [
+          ...(ex?.muscles?.primary || []),
+          ...(ex?.muscles?.secondary || []),
+        ]
+          .map((id) => `${norm(id)} ${norm(musclesUk[id])}`)
+          .join(" ");
         return (
           nameUk.includes(q) ||
           nameEn.includes(q) ||
           aliases.includes(q) ||
           desc.includes(q) ||
           group.includes(q) ||
-          groupUk.includes(q)
+          groupUk.includes(q) ||
+          muscles.includes(q)
         );
       });
     },
-    [exercises],
+    [exercises, primaryGroupsUk, musclesUk],
   );
 
   const addExercise = useCallback(

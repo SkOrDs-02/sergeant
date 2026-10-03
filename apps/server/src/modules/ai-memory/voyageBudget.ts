@@ -83,11 +83,12 @@ const state: BudgetState = {
  * парс-фрі шлях; toISOString() гарантовано повертає UTC (не локальний TZ).
  *
  * NOTE: domain-invariant Sergeant-у — `Europe/Kyiv` day-boundary. Тут
- * саме UTC: budget-аналітика прив'язана до Voyage billing-day (UTC),
+ * саме UTC: budget-аналітика привʼязана до Voyage billing-day (UTC),
  * а не до user-facing-дня. Це окремий agreement з SRE — не плутати з
  * за-Kyiv-time finyk-roll-up-ами.
  */
 export function getVoyageUtcDayKey(now: number = Date.now()): string {
+  // AI-NOTE: UTC intentional — vendor billing day boundary
   return new Date(now).toISOString().slice(0, 10);
 }
 
@@ -323,9 +324,7 @@ function maybeFireMonthlyProjectionAlert(
   if (monthly <= 0 || usage <= 0) return;
   const nowDate = new Date(now);
   const daysInMonth = new Date(
-    nowDate.getUTCFullYear(),
-    nowDate.getUTCMonth() + 1,
-    0,
+    Date.UTC(nowDate.getUTCFullYear(), nowDate.getUTCMonth() + 1, 0),
   ).getUTCDate();
   const projected = usage * daysInMonth;
   if (projected < monthly) return;

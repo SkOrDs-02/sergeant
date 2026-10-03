@@ -43,6 +43,58 @@ const TWO_PHASE_DROP_PROBE_RE = /^--[ \t]*TWO-PHASE-DROP:/im;
 
 export const MIN_DEPRECATION_DAYS = 14;
 
+/**
+ * Файли, продубльовані на `main` історично, — виняток із «no duplicates».
+ *
+ * 2026-07-31: PR #540 і #541 були відкриті паралельно, обидва взяли `091`
+ * (на `main` тоді був `090`), і кросбранчевий детектор нижче їх не спіймав —
+ * на момент останнього прогону CI жоден із них ще не був змерджений, тож для
+ * кожного `origin/main` виглядав чистим. Після мержу обох на `main` лежать
+ * `091_privat_connection` і `091_telegram_beta_survey`.
+ *
+ * Чому не перенумеровуємо. Раннер (`packages/db-schema/src/migrate/runner.ts`)
+ * веде реєстр застосованих міграцій **за іменем файлу**, а обидві вже накочені
+ * на прод (деплої 2026-07-31 21:34 і 21:36 UTC). Перейменування зробило б файл
+ * новим для раннера, і він виконав би `CREATE TABLE privat_connection` вдруге —
+ * без `IF NOT EXISTS`, тобто наступний продовий деплой упав би.
+ *
+ * Двозначності це не створює: файли застосовуються в лексикографічному
+ * порядку, а `091_privat_connection` стабільно передує
+ * `091_telegram_beta_survey`.
+ *
+ * 2026-08-04 (аудит pre-beta schema debt): whitelist був **number**-based
+ * (`[91]`), тож БУДЬ-ЯКИЙ третій файл з номером 091 (напр.
+ * `091_ai_usage_endpoint_and_cache.sql`, ніколи не задеплоєний) мовчки
+ * проходив ту саму поблажку — лінтер не міг відрізнити «ще один із двох
+ * відомих застосованих дублів» від «новий, ще не задеплоєний файл, що
+ * випадково взяв зайнятий номер». Замінено на filename-based список:
+ * рахуємо номер N дозволеним історичним дублем, лише коли КОЖЕН файл з цим
+ * номером входить у `APPLIED_DUPLICATE_FILENAMES` — інакше (як у випадку
+ * `091_ai_usage_endpoint_and_cache.sql`) номер лишається `newDuplicates`
+ * violation, і контрибʼютору доводиться перенумерувати замість тихого
+ * проходження. Список НЕ поповнювати для нових колізій — їх ловить
+ * кросбранчева перевірка й вирішує ребейз із перенумеруванням.
+ */
+export const APPLIED_DUPLICATE_FILENAMES = new Set([
+  "091_privat_connection.sql",
+  "091_telegram_beta_survey.sql",
+]);
+
+/**
+ * Backward-compat: номери, похідні від `APPLIED_DUPLICATE_FILENAMES`. Раніше
+ * це був єдиний whitelist (number-based) — деякі тести й зовнішні читачі
+ * досі очікують масив номерів, тож лишаємо похідну версію замість видалення
+ * публічного експорту.
+ */
+export const APPLIED_DUPLICATE_NUMBERS = [
+  ...new Set(
+    [...APPLIED_DUPLICATE_FILENAMES].map((f) => {
+      const m = f.match(MIGRATION_FILE_RE);
+      return m ? Number(m[1]) : null;
+    }),
+  ),
+].filter((n) => n !== null);
+
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
 /** True when the trimmed line is a SQL single-line comment (`-- …`). */
@@ -337,6 +389,46 @@ export function listMigrationsOnRef(migrationsDir, baseRef) {
 }
 
 /**
+ * Парсер `git diff --name-status --diff-filter=R -M` для каталогу міграцій.
+ * Повертає `{ from, to }[]` лише для **up**-міграцій (`NNN_*.sql`, без
+ * `.down.sql`) — прод виконує тільки їх, тож лише їхнє ім'я живе в реєстрі
+ * `schema_migrations`.
+ *
+ * Формат рядка git: `R100 <TAB> old/path <TAB> new/path` (score після `R` варіюється).
+ */
+export function findRenamedMigrations(nameStatusOutput) {
+  const renames = [];
+  for (const line of nameStatusOutput.split("\n")) {
+    const parts = line.split("\t");
+    if (parts.length < 3) continue;
+    if (!/^R\d*$/.test(parts[0].trim())) continue;
+    const from = basename(parts[1]);
+    const to = basename(parts[2]);
+    if (!MIGRATION_FILE_RE.test(from) || DOWN_FILE_RE.test(from)) continue;
+    renames.push({ from, to });
+  }
+  return renames;
+}
+
+/**
+ * Перейменування up-міграцій між `origin/<baseRef>` і робочим деревом.
+ * Порожній масив, коли ref недосяжний: як і решта крос-гілкових перевірок,
+ * відсутній remote деградує лінтер до локальних перевірок, а не валить його.
+ */
+export function listRenamedMigrations(migrationsDir, baseRef) {
+  try {
+    const out = execSync(
+      `git diff --name-status --diff-filter=R -M origin/${baseRef} -- "${migrationsDir}"`,
+      { encoding: "utf8" },
+    ).trim();
+    if (!out) return [];
+    return findRenamedMigrations(out);
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Given a list of files changed in the PR (from `git diff --diff-filter=A`),
  * keep only the migration files (basenames look like `NNN_*.sql`) and
  * exclude `.down.sql` companions — only the "up" file owns the number.
@@ -352,6 +444,7 @@ export function run({
   changedFiles = null,
   newFiles = null,
   mainFiles = null,
+  renamedFiles = null,
 } = {}) {
   const baseRef = process.env.BASE_REF || "main";
   const errors = [];
@@ -405,6 +498,15 @@ export function run({
 
     if (DOWN_FILE_RE.test(name)) continue;
 
+    // `changedFiles` приходить із `git diff -- <migrationsDir>`, а в цьому
+    // каталозі живуть НЕ лише міграції: поруч є `__tests__/*.test.ts`, які
+    // ЦИТУЮТЬ SQL із міграцій (напр. `expect(down).toMatch(/DROP TABLE …/)`).
+    // Без цього фільтра тест міграції, що перевіряє власний `.down.sql`,
+    // валив лінтер вимогою TWO-PHASE-DROP-заголовка у .ts-файлі —
+    // діагностика, яку неможливо задовольнити. Fallback-гілка вище (readdir)
+    // фільтрувала за `MIGRATION_FILE_RE` завжди; git-гілка — ні.
+    if (!MIGRATION_FILE_RE.test(name)) continue;
+
     let content;
     try {
       content = readFileSync(filePath, "utf8");
@@ -429,7 +531,7 @@ export function run({
           [
             `❌ ${filePath}: TWO-PHASE-DROP header validation failed.`,
             `   ${reason}.`,
-            `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
+            `   Hard Rule #4: see docs/start/instructions/operations-runbook.md § 8.2.`,
           ].join("\n"),
         );
       }
@@ -442,7 +544,7 @@ export function run({
           `   ${parsedTwoPhase.reason}.`,
           `   Expected (single line, single comment):`,
           `     -- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD`,
-          `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
+          `   Hard Rule #4: see docs/start/instructions/operations-runbook.md § 8.2.`,
         ].join("\n"),
       );
       continue;
@@ -458,7 +560,7 @@ export function run({
     errors.push(
       [
         `❌ Migration ${name} contains destructive DROP without two-phase header.`,
-        `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
+        `   Hard Rule #4: see docs/start/instructions/operations-runbook.md § 8.2.`,
         ``,
         `   First non-comment DROP line: ${filePath}:${dropLines[0].lineNumber}:`,
         `     ${dropLines[0].text.trim()}`,
@@ -473,7 +575,7 @@ export function run({
   }
 
   // 2b. Empty-rollback check for new/changed `.down.sql` files.
-  //     Closes PR-T38 from `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`
+  //     Closes PR-T38 from `docs/engineering/testing/2026-05-05-tests-pr-plan.md`
   //     ("migration rollback за замовчуванням") — the plop generator
   //     emits a `-- TODO: write your DOWN` placeholder which contributors
   //     historically leave in place, defeating the two-phase DROP
@@ -506,7 +608,7 @@ export function run({
         `      impossible (irreversible data write, dropping an obsolete`,
         `      table, etc.):`,
         `        -- NO_ROLLBACK: <reason> (due: YYYY-MM-DD)`,
-        `   Ref: https://github.com/Skords-01/Sergeant/blob/main/docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+        `   Ref: https://github.com/Skords-01/Sergeant/blob/main/docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
       ].join("\n"),
     );
   }
@@ -533,15 +635,58 @@ export function run({
           `   These migration numbers already exist on \`${baseRef}\`. Another PR`,
           `   merged a migration with the same number while your branch was open.`,
           ``,
-          `   Fix: rebase onto \`${baseRef}\` and renumber your migration to`,
+          `   Fix: rebase onto \`${baseRef}\` and renumber YOUR migration to`,
           `   max(${baseRef}) + 1, then re-push. The two-phase DROP rule still`,
           `   applies to the renumbered file.`,
           ``,
-          `   Ref: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
-          `        (Phase 1 PR 1.2 — closes PR #1652 type-incident)`,
+          `   Перенумеровують ЛИШЕ свій, ще не змерджений файл. Файл, який уже`,
+          `   є на \`${baseRef}\`, не чіпають: раннер трекає міграції за іменем,`,
+          `   тож перейменування виконає його SQL у проді вдруге (див. 2c).`,
+          ``,
+          `   Ref: docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+          `        (ініціативу 0011 закрито й заархівовано — розбір у git history)`,
         ].join("\n"),
       );
     }
+  }
+
+  // 2c. Rename check: перейменування міграції, що ВЖЕ лежить на `main`.
+  //     Раннер (`packages/db-schema/src/migrate/runner.ts`) веде реєстр
+  //     застосованих міграцій ЗА ІМЕНЕМ ФАЙЛУ, тож нове ім'я для нього — нова
+  //     міграція, і той самий SQL виконується в проді вдруге. Це вже сталося
+  //     тричі (047→048 `tg_topic_archive`, 096↔097 finyk/fizruk) і лишило три
+  //     сироти в `schema_migrations`; пронесло тільки тому, що повторений SQL
+  //     випадково витримав другий прогін.
+  //
+  //     Ловить саме ту дію, яку радить фікс колізії номерів вище: поки файл не
+  //     змерджений — перенумеровуй вільно (git бачить його як `A`, не `R`);
+  //     коли вже на `main` — ім'я недоторкане.
+  if (renamedFiles === null) {
+    renamedFiles = listRenamedMigrations(migrationsDir, baseRef);
+  }
+  if (renamedFiles.length > 0 && process.env.ALLOW_MIGRATION_RENAME !== "1") {
+    const list = renamedFiles
+      .map((r) => `     • ${r.from} → ${r.to}`)
+      .join("\n");
+    errors.push(
+      [
+        `❌ Migration renamed although it already exists on origin/${baseRef}:`,
+        list,
+        ``,
+        `   Раннер трекає застосовані міграції за іменем файлу, тож під новим`,
+        `   іменем той самий SQL виконається в проді ВДРУГЕ, а старий запис`,
+        `   лишиться сиротою в \`schema_migrations\`.`,
+        ``,
+        `   Fix: поверни попереднє ім'я. Якщо перейменування розв'язувало`,
+        `   колізію номерів — колізію лишають як є, а обидва файли додають до`,
+        `   \`APPLIED_DUPLICATE_FILENAMES\` у цьому скрипті.`,
+        ``,
+        `   Якщо міграція точно ніколи не деплоїлась (рідко — \`main\``,
+        `   деплоїться автоматично): ALLOW_MIGRATION_RENAME=1.`,
+        ``,
+        `   Ref: docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+      ].join("\n"),
+    );
   }
 
   // 3. Check sequential numbering across ALL migration files
@@ -556,8 +701,34 @@ export function run({
     );
   }
 
-  if (duplicates.length > 0) {
-    const padded = duplicates.map((n) => String(n).padStart(3, "0")).join(", ");
+  // Historically-allowed duplicates are filename-based (see
+  // `APPLIED_DUPLICATE_FILENAMES` above), not number-based: a duplicate
+  // number N is excused ONLY when every file sharing N is one of the
+  // exact, already-applied-to-prod filenames. A brand-new file that reuses
+  // an excused number (e.g. a fresh `091_*.sql`) is NOT covered — it still
+  // trips `newDuplicates`, because it is not itself in the whitelist.
+  const filenamesByNumber = new Map();
+  for (const f of allFiles) {
+    if (DOWN_FILE_RE.test(f)) continue;
+    const m = f.match(MIGRATION_FILE_RE);
+    if (!m) continue;
+    const n = Number(m[1]);
+    if (!filenamesByNumber.has(n)) filenamesByNumber.set(n, []);
+    filenamesByNumber.get(n).push(f);
+  }
+
+  const newDuplicates = duplicates.filter((n) => {
+    const names = filenamesByNumber.get(n) ?? [];
+    const allKnownApplied =
+      names.length > 0 &&
+      names.every((name) => APPLIED_DUPLICATE_FILENAMES.has(name));
+    return !allKnownApplied;
+  });
+
+  if (newDuplicates.length > 0) {
+    const padded = newDuplicates
+      .map((n) => String(n).padStart(3, "0"))
+      .join(", ");
     errors.push(
       `❌ Duplicate migration numbers: ${padded}.\n` +
         `   AGENTS.md rule #4: no duplicates.`,

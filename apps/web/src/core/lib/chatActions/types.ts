@@ -66,6 +66,7 @@ import type {
   LogWaterAction,
   AddRecipeAction,
   AddToShoppingListAction,
+  ClearPantryAction,
   ConsumeFromPantryAction,
   SetDailyPlanAction,
   SuggestMealAction,
@@ -79,6 +80,7 @@ import type {
   SpendingTrendAction,
   WeightChartAction,
   CategoryBreakdownAction,
+  GetDailySeriesAction,
   DetectAnomaliesAction,
   CompareWeeksAction,
   ConvertUnitsAction,
@@ -120,6 +122,7 @@ export type {
   // Domain entities
   BudgetLimit,
   BudgetGoal,
+  GoalContribution,
   Budget,
   Debt,
   Receivable,
@@ -160,8 +163,6 @@ export type {
   SetHabitScheduleAction,
   PauseHabitAction,
   HabitTrendAction,
-  // Domain entities
-  HabitState,
 } from "./types.routine";
 
 export type {
@@ -170,6 +171,7 @@ export type {
   LogWaterAction,
   AddRecipeAction,
   AddToShoppingListAction,
+  ClearPantryAction,
   ConsumeFromPantryAction,
   SetDailyPlanAction,
   SuggestMealAction,
@@ -187,6 +189,7 @@ export type {
   SpendingTrendAction,
   WeightChartAction,
   CategoryBreakdownAction,
+  GetDailySeriesAction,
   DetectAnomaliesAction,
   CompareWeeksAction,
   CompareWeeksModule,
@@ -256,6 +259,7 @@ export type ChatAction =
   | LogWaterAction
   | AddRecipeAction
   | AddToShoppingListAction
+  | ClearPantryAction
   | ConsumeFromPantryAction
   | SetDailyPlanAction
   | SuggestMealAction
@@ -268,6 +272,7 @@ export type ChatAction =
   | SpendingTrendAction
   | WeightChartAction
   | CategoryBreakdownAction
+  | GetDailySeriesAction
   | DetectAnomaliesAction
   | CompareWeeksAction
   | ConvertUnitsAction

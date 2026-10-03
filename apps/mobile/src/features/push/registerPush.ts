@@ -18,14 +18,14 @@ type NativePushPlatform = "ios" | "android";
  *    для dev-build / standalone. В Expo Go нативний канал недоступний,
  *    тому fallback — `getExpoPushTokenAsync()` (лише для dev-дебагу, для
  *    прод-пушів сервер має говорити з APNs/FCM напряму, див.
- *    `docs/mobile/overview.md`).
+ *    `docs/engineering/mobile/overview.md`).
  * 3. Шлемо `api.push.register({ platform, token })` — не прямий `fetch`.
  * 4. На успіх кладемо токен в `AsyncStorage` під ключем, що містить
  *    `userId` (`push:lastToken:<userId>`), щоб не шарашити сервер
  *    повторно на кожен старт — і водночас гарантовано перереєструвати
  *    токен, якщо на тому самому пристрої залогінився інший користувач
  *    (native push токени пер-девайс, а не пер-юзер — без userId-scope
- *    сервер би так і залишив токен прив’язаним до попереднього акаунта).
+ *    сервер би так і залишив токен привʼязаним до попереднього акаунта).
  */
 const STORAGE_KEY_PREFIX = "push:lastToken:";
 

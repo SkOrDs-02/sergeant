@@ -4,7 +4,10 @@ import {
   normalizeTransaction,
   normalizeTransactions,
   manualExpenseToTransaction,
+  resolveManualExpenseKind,
+  filterStatTransactions,
   dedupeAndSortTransactions,
+  withManualExpenses,
 } from "./transactions.js";
 import { INTERNAL_TRANSFER_ID } from "../constants.js";
 
@@ -56,7 +59,7 @@ describe("normalizeTransaction — канонічні поля", () => {
     expect(tx.id.length).toBeGreaterThan(0);
   });
 
-  it("type='expense' для від'ємного amount без явної категорії", () => {
+  it("type='expense' для відʼємного amount без явної категорії", () => {
     const tx = normalizeTransaction({ id: "x", amount: -500 });
     expect(tx.type).toBe("expense");
   });
@@ -164,6 +167,19 @@ describe("normalizeTransaction — back-compat поля", () => {
     expect(tx.description).toBe("АТБ");
     expect(tx.mcc).toBe(5411);
   });
+
+  it("нормалізує биті date/mcc і бере category з raw", () => {
+    const tx = normalizeTransaction({
+      id: "x",
+      amount: 1,
+      date: "not-a-date",
+      mcc: "not-a-number",
+      raw: { category: "food" },
+    });
+    expect(tx.mcc).toBe(0);
+    expect(tx.categoryId).toBe("food");
+    expect(Number.isFinite(tx.time)).toBe(true);
+  });
 });
 
 describe("normalizeTransactions / dedupeAndSortTransactions", () => {
@@ -185,7 +201,7 @@ describe("normalizeTransactions / dedupeAndSortTransactions", () => {
     expect(result.map((t) => t.id)).toEqual(["b", "a"]);
   });
 
-  it("толерує null/undefined/не-об'єкти у вхідному списку", () => {
+  it("толерує null/undefined/не-обʼєкти у вхідному списку", () => {
     const result = dedupeAndSortTransactions([
       null,
       undefined,
@@ -201,6 +217,18 @@ describe("normalizeTransactions / dedupeAndSortTransactions", () => {
     expect(dedupeAndSortTransactions(null)).toEqual([]);
     expect(dedupeAndSortTransactions(undefined)).toEqual([]);
     expect(dedupeAndSortTransactions({} as never)).toEqual([]);
+  });
+
+  it("фільтрує статистичні виключення через Set або iterable", () => {
+    const tx = normalizeTransactions([
+      { id: "a", time: 1, amount: 1 },
+      { id: "b", time: 2, amount: 2 },
+    ]);
+    expect(filterStatTransactions(tx, new Set(["a"])).map((x) => x.id)).toEqual(
+      ["b"],
+    );
+    expect(filterStatTransactions(tx, ["b"])).toEqual([tx[0]]);
+    expect(filterStatTransactions(null, null)).toEqual([]);
   });
 });
 
@@ -228,5 +256,86 @@ describe("manualExpenseToTransaction", () => {
       date: "2024-06-15T12:00:00.000Z",
     });
     expect(tx.amount).toBe(0);
+  });
+
+  it("kind: income → конвертує гривні в копійки зі знаком надходження", () => {
+    const tx = manualExpenseToTransaction({
+      id: "3",
+      date: "2024-06-15T12:00:00.000Z",
+      description: "Зарплата",
+      amount: 5000,
+      category: "salary",
+      kind: "income",
+    });
+    expect(tx.amount).toBe(500000);
+    expect(tx.type).toBe("income");
+  });
+
+  it("запис без kind (старі дані) лишається expense — без міграції", () => {
+    const tx = manualExpenseToTransaction({
+      id: "4",
+      date: "2024-06-15T12:00:00.000Z",
+      amount: 100,
+    });
+    expect(tx.amount).toBe(-10000);
+  });
+
+  it("легасі поле type: income (HubChat-записи до появи kind) читається як income", () => {
+    const tx = manualExpenseToTransaction({
+      id: "5",
+      date: "2024-06-15T12:00:00.000Z",
+      amount: 5000,
+      type: "income",
+    });
+    expect(tx.amount).toBe(500000);
+  });
+});
+
+describe("resolveManualExpenseKind", () => {
+  it("kind має пріоритет над type", () => {
+    expect(resolveManualExpenseKind({ kind: "expense", type: "income" })).toBe(
+      "expense",
+    );
+  });
+
+  it("type: income — fallback, коли kind відсутній", () => {
+    expect(resolveManualExpenseKind({ type: "income" })).toBe("income");
+  });
+
+  it("без kind і type — за замовчуванням expense", () => {
+    expect(resolveManualExpenseKind({})).toBe("expense");
+    expect(resolveManualExpenseKind(null)).toBe("expense");
+    expect(resolveManualExpenseKind(undefined)).toBe("expense");
+  });
+});
+
+describe("withManualExpenses", () => {
+  const bank = [
+    { id: "bank-1", time: 1_750_000_000, amount: -12345, description: "АТБ" },
+  ] as never[];
+
+  it("повертає банківський потік без змін, коли ручних витрат немає", () => {
+    expect(withManualExpenses(bank, []).map((t) => t.id)).toEqual(["bank-1"]);
+    expect(withManualExpenses(bank, null).map((t) => t.id)).toEqual(["bank-1"]);
+  });
+
+  it("домержує ручні витрати як операції", () => {
+    const merged = withManualExpenses(bank, [
+      { id: "cash-1", amount: 42, kind: "expense", category: "food" },
+    ] as never[]);
+    expect(merged.map((t) => t.id)).toEqual(["bank-1", "manual_cash-1"]);
+    // Витрата лишається відʼємною, як і в решті потоку.
+    expect(merged[1]?.amount).toBe(-4200);
+  });
+
+  it("не звужує вікно — минулі місяці лишаються у списку", () => {
+    const merged = withManualExpenses([], [
+      { id: "old", amount: 10, kind: "expense", date: "2020-01-01" },
+    ] as never[]);
+    expect(merged).toHaveLength(1);
+  });
+
+  it("витримує null замість потоку операцій", () => {
+    expect(withManualExpenses(null, null)).toEqual([]);
   });
 });

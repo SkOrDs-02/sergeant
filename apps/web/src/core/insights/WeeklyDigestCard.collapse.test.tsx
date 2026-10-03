@@ -17,6 +17,9 @@ vi.mock("./useWeeklyDigest", () => ({
   }),
   useDigestHistory: () => ({ data: [] }),
   getWeekKey: () => "2025-W46",
+  // Картка читає coverage окремо від тіла звіту (аудит nutrition § E-4):
+  // `summary` пише модель, а «залоговано N/7» мусить лишитись фактом.
+  aggregateNutrition: () => null,
 }));
 
 vi.mock("./WeeklyDigestStories", () => ({

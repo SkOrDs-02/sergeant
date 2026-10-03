@@ -1,61 +1,131 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
-import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
+import { useCommandPaletteControls } from "@shared/components/ui/CommandPalette";
 import { SkipLink } from "@shared/components/ui/SkipLink";
+import { useToast } from "@shared/hooks/useToast";
+import { useModalDialogOpen } from "@shared/hooks/useDialogFocusTrap";
+import {
+  HUB_OPEN_SEARCH_EVENT,
+  openHubModuleWithAction,
+  type HubOpenSearchDetail,
+} from "@shared/lib/modules/hubNav";
+import { MODULE_PRIMARY_ACTION } from "@shared/lib/modules/moduleQuickActions";
 import { useAuth } from "../auth/AuthContext";
+import { useOpenSignIn } from "../auth/useOpenSignIn";
 import { useActivationV2Boot } from "../activation";
+import { NpsSurveyGate } from "../feedback/useNpsSurveyTrigger";
+import { AnalyticsConsentGate } from "../observability/AnalyticsConsentGate";
 import { AppLock } from "../security/AppLock";
+import { usePendingDeletion } from "../profile/usePendingDeletion";
 import { useAppLockContext } from "../security/AppLockContext";
 import { setFlag, useFlag } from "../lib/featureFlags";
 import { useDemoCommands } from "./useDemoCommands";
 import { HubChatOverlay } from "../hub/HubChatOverlay";
-import { DemoModeBadge } from "../onboarding/DemoModeBadge";
 import {
   HubChatOverlayProvider,
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { SIGN_IN_PATH, titleForPath } from "./appPaths";
+import { titleForPath } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useHubUIState } from "../hooks/useHubUIState";
 import { usePwaActions } from "../hooks/usePwaActions";
 import { useAppEffects } from "./useAppEffects";
+import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
 import { useIosInstallBanner } from "./useIosInstallBanner";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
-import { useNutritionDualWriteBoot } from "../../modules/nutrition/hooks/useNutritionDualWriteBoot";
-import { useNutritionSqliteReadBoot } from "../../modules/nutrition/hooks/useNutritionSqliteReadBoot";
-import { useFinykDualWriteBoot } from "../../modules/finyk/hooks/useFinykDualWriteBoot";
+// AI-CONTEXT: чотири модульні boot-кластери — ЛІНИВІ, і це не
+// оптимізація «про всяк випадок». Вони самі по собі невидимі
+// (рендерять `null`, працюють лише під автентифікованою чи demo-сесією),
+// тож на них ніщо не чекає очима. Але статично вони дотягувались до
+// `core/db/sqlite.ts` і `@sergeant/db-schema/sqlite`, а ті імпортують
+// `drizzle-orm` — який `manualChunks` склеює в ОДИН чанк `vendor-sqlite`.
+// Через це рівно одне eager-ребро звідси клало ~69 kB brotli на критичний
+// шлях. Розбір: `docs/work/specs/tech-debt/frontend.md` § eager-бюджет.
+const NutritionBootCluster = lazy(
+  () => import("../../modules/nutrition/hooks/NutritionBootCluster"),
+);
+const FinykBootCluster = lazy(
+  () => import("../../modules/finyk/hooks/FinykBootCluster"),
+);
+const FizrukBootCluster = lazy(
+  () => import("../../modules/fizruk/hooks/FizrukBootCluster"),
+);
+const RoutineBootCluster = lazy(
+  () => import("../../modules/routine/hooks/RoutineBootCluster"),
+);
+import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
+import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
+import { useActiveModulesSync } from "../hub/useActiveModulesSync";
+import { useHubPrefsSync } from "../settings/useHubPrefsSync";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
+import { ErrorBoundary } from "../ErrorBoundary";
 
-// Side-effect-only child rendered exclusively for authenticated users.
-function AuthenticatedNutritionBoot() {
-  useNutritionDualWriteBoot();
-  useNutritionSqliteReadBoot();
-  return null;
-}
+// Side-effect-only children rendered for EVERY session — автентизованої,
+// демо й анонімної. Всі вкладені boot-хуки резолвлять свій storage-id через
+// `useLocalUserId`, а він покриває всі три випадки (auth-id, синтетичний
+// `demo-local`, `LOCAL_ANON_USER_ID`), тож монтування прогріває SQLite
+// read-кеш, на який спираються екрани модуля — і транзитивно картки Hub
+// Reports, що читають той самий кеш, не відкриваючи модуль.
+//
+// Fizruk and Routine previously only booted their SQLite read path inside
+// their own module shell (`FizrukApp.tsx`, `useRoutineAppState.ts`), so the
+// Hub Reports "Тренування" / "Звички" cards — which read the same warm
+// cache directly — stayed empty until the user opened that module at least
+// once. Finyk's read/mirror boots likewise rebuild the derived Hub
+// quick-stats snapshot after login.
+//
+// Each cluster renders `null` and is gated behind `<Suspense fallback={null}>`,
+// so the extra async hop costs no visible render — only a short delay before
+// the warm cache starts filling.
+// Each cluster gets its own Suspense boundary so a chunk that fails to load
+// only costs that module its warm cache, not all four.
+// Гейта по auth тут свідомо НЕМАЄ, і це не недогляд.
+//
+// Донедавна тут стояло власне дзеркало того, що `useLocalUserId` умів на
+// момент написання. Спека `anonymous-local-first-persistence.md` додала
+// `LOCAL_ANON_USER_ID`, оновила резолвер — і лишила дзеркало. Два місця з
+// одним предикатом розійшлись, як і мали.
+//
+// Ціна розходження: анонімний відвідувач не монтував жодного boot-хука, тож
+// dual-write контекст не реєструвався, і FTUX-пресет на хабі («Яку звичку
+// почнемо?») ДЕТЕРМІНОВАНО падав у «Не вдалося зберегти» — головна кнопка
+// першого досвіду не мала куди писати. Знахідка founder-а 2026-08-10.
+//
+// Дублювати предикат не треба взагалі: кожен із семи хуків усередині
+// кластерів уже виходить на `!userId`, а `useLocalUserId` віддає `null`
+// рівно поки сесія в польоті. Тобто «не бутити, доки не знаємо id» тримає
+// сам резолвер — на один рівень нижче, де його неможливо забути оновити.
+function BootGate({ children }: { children: ReactNode }) {
+  /*
+    AI-DANGER: `Suspense` тут НЕ досить, і це поширена хиба. Він ловить
+    лише ОЧІКУВАННЯ лінивого імпорту; ВІДХИЛЕНИЙ `React.lazy` кидає далі
+    вгору — тобто збій одного чанка дійшов би до зовнішнього boundary й
+    міг знести всю оболонку. А кластер тут невидимий: ціна його падіння
+    мусить бути «цей модуль не прогрів кеш», не «застосунок зник».
 
-function NutritionBootGate() {
-  const { user } = useAuth();
-  return user ? <AuthenticatedNutritionBoot /> : null;
-}
-
-// Installs the Finyk dual-write CONTEXT app-wide (not just on the Finyk
-// screen) so the hub AI assistant's chat-action mutators can mirror writes
-// into the canonical SQLite store from anywhere. The Finyk SQLite read
-// overlay + Mono mirror stay screen-scoped inside `useStorage`.
-function AuthenticatedFinykBoot() {
-  useFinykDualWriteBoot();
-  return null;
-}
-
-function FinykBootGate() {
-  const { user } = useAuth();
-  return user ? <AuthenticatedFinykBoot /> : null;
+    `ErrorBoundary` заразом дає stale-bundle recovery: після деплою старий
+    таб має старі хеші чанків, і `isChunkLoadError` вмикає одноразовий
+    `location.reload()` з cooldown-ом. Тобто найчастіший випадок збою
+    лікується сам, а не тихо лишає модуль без кешу.
+  */
+  return (
+    <ErrorBoundary fallback={null}>
+      <Suspense fallback={null}>{children}</Suspense>
+    </ErrorBoundary>
+  );
 }
 
 /**
@@ -65,8 +135,57 @@ function FinykBootGate() {
  * state is shared with `RootLayout`'s own consumers — see that component's
  * docstring.
  */
+/**
+ * Ліниво: екран-блокер вікна видалення потрібен рідкісному стану, а
+ * `RootLayout` сидить на критичному шляху, стеля якого гейтиться окремо
+ * (`size:eager`). Статичний імпорт звідси затягнув би його до першого
+ * кадру всім.
+ */
+const PendingDeletionScreen = lazy(() =>
+  import("../profile/PendingDeletionScreen").then((mod) => ({
+    default: mod.PendingDeletionScreen,
+  })),
+);
+
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
+  // Вікно на скасування видалення (рішення 3 спеки
+  // docs/work/specs/user-deletion-grace-window.md). Стоїть ПЕРЕД
+  // boot-кластерами і контентом: позначений акаунт не має ані писати
+  // локально, ані синхронізуватись, бо сервер для нього однаково закритий
+  // гейтом `requireSession` (403 `account_pending_deletion`).
+  const pendingDeletion = usePendingDeletion();
+  const { logout } = useAuth();
+  // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
+  // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
+  // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
+  // просто нема з чим звірятись на сервері. Модульні boot-кластери нижче
+  // тепер тримаються того самого принципу: гейт живе всередині, а не
+  // дублюється предикатом зовні (див. коментар над `BootGate`).
+  useProfileWriteThroughBoot();
+  // Hydrates the synchronous `analyticsConsent` gate from the server as
+  // soon as possible after an authenticated boot (CodeRabbit PR #627) —
+  // see `useAnalyticsConsentBoot`'s doc comment for the race it closes.
+  useAnalyticsConsentBoot();
+  // Зводить вибір модулів між акаунтом і пристроєм (аудит 2026-08-05,
+  // знахідка B2): без цього той самий акаунт на новому пристрої бачив
+  // хаб із дефолтом «усі чотири» замість власного вибору.
+  useActiveModulesSync();
+  // PR-S13: налаштування вигляду хаба їдуть між пристроями тим самим
+  // write-through каналом, що й вибір модулів рядком вище.
+  useHubPrefsSync();
+
+  if (pendingDeletion.isPending && pendingDeletion.scheduledPurgeAt) {
+    return (
+      <Suspense fallback={null}>
+        <PendingDeletionScreen
+          scheduledPurgeAt={pendingDeletion.scheduledPurgeAt}
+          onLogout={() => logout()}
+        />
+      </Suspense>
+    );
+  }
+
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route
@@ -83,10 +202,26 @@ function AppShell({ children }: { children: React.ReactNode }) {
           setFlag("app-lock-enabled", false);
           appLock.finishSetup();
         }}
+        // Скасування "change PIN" не повинно чіпати вмикач блокування —
+        // стара PIN лишається в сховищі валідною, тож просто закриваємо
+        // діалог (audit L-6: раніше обидва режими ділили один хендлер, і
+        // скасування зміни PIN тихо гасило захист повністю).
+        onChangeCancel={appLock.finishSetup}
       />
-      <NutritionBootGate />
-      <FinykBootGate />
-      <DemoModeBadge />
+      <BootGate>
+        <NutritionBootCluster />
+      </BootGate>
+      <BootGate>
+        <FinykBootCluster />
+      </BootGate>
+      <BootGate>
+        <FizrukBootCluster />
+      </BootGate>
+      <BootGate>
+        <RoutineBootCluster />
+      </BootGate>
+      <NpsSurveyGate />
+      <AnalyticsConsentGate />
       {children}
       <HubChatOverlay />
     </>
@@ -141,6 +276,7 @@ function RootLayoutInner() {
     activeModule,
     openModule,
     goToHub,
+    goBackOrHub,
     goToModuleSettings,
     moduleAnimClass,
   } = navigation;
@@ -157,6 +293,11 @@ function RootLayoutInner() {
   // Global side effects
   useTheme();
   useActivationV2Boot();
+  // Скидання pinch-zoom після нативної шторки камери переїхало звідси до
+  // самих полів вибору фото (`PhotoAnalyzeCard`, `PersonalInfoSection`):
+  // глобальний слухач розтискав сторінку на КОЖНОМУ поверненні в
+  // застосунок, включно зі свідомим зумом користувача. Механіка WebKit і
+  // причина ARM-моделі — у докстрінгу `useResetPinchZoomAfterCameraCapture`.
 
   // Keep the tab title pinned per route on every navigation. The static
   // <title> in index.html is set once at load; some sub-routes (e.g.
@@ -175,11 +316,19 @@ function RootLayoutInner() {
   useKeyboardShortcutsModal();
   const { openChat: openAssistantChat } = useHubChatOverlay();
   const { canInstall, install, dismiss } = usePwaInstall();
-  const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
+  const {
+    visible: iosVisible,
+    dismissForever: iosDismissForever,
+    snooze: iosSnooze,
+  } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
 
   // App-level effects (idle prefetch, SW messages, hub bus, etc.)
+  // Оболонка лишається на місці навмисно: навігація і шапка мають працювати,
+  // щоб людина дійшла до аркуша «Синхронізація» й побачила, що сталось.
+  const dbBusyElsewhere = useDbIsBusyElsewhere();
+
   useAppEffects({
     user,
     authLoading,
@@ -190,18 +339,38 @@ function RootLayoutInner() {
     validActions,
   });
 
-  // Auth callback
-  const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
+  // Auth callback — `useOpenSignIn()` — єдина точка входу (A1, аудит
+  // 2026-09-11 хвиля 2): решта поверхонь (Overview, PhotoStep,
+  // FinykScanEntryPoints через `onOpenAuth`) ходять через той самий хук.
+  const openAuth = useOpenSignIn();
 
   // Keyboard shortcuts (work on all routes — hub + modules)
-  const openSearchFromShortcut = useCallback(() => {
-    if (activeModule) {
-      goToHub();
-      requestAnimationFrame(() => ui.setSearchOpen(true));
-      return;
-    }
-    ui.setSearchOpen(true);
-  }, [activeModule, goToHub, ui]);
+  const { openSearch: openHubSearchUI } = ui;
+  const openSearchFromShortcut = useCallback(
+    (query: string = "") => {
+      if (activeModule) {
+        goToHub();
+        requestAnimationFrame(() => openHubSearchUI(query));
+        return;
+      }
+      openHubSearchUI(query);
+    },
+    [activeModule, goToHub, openHubSearchUI],
+  );
+
+  // Палітра команд просить відкрити пошук хаба з готовим запитом через
+  // подієвий канал (`openHubSearch`), бо сама живе у shared і про стан хаба
+  // не знає. Слухач тут, а не в `useAppEffects`, бо робить рівно те, що й
+  // `Cmd+K` без палітри — з модуля спершу повертає на хаб.
+  useEffect(() => {
+    const onOpenSearch = (ev: Event) => {
+      const detail = (ev as CustomEvent<HubOpenSearchDetail>).detail;
+      openSearchFromShortcut(detail?.query ?? "");
+    };
+    window.addEventListener(HUB_OPEN_SEARCH_EVENT, onOpenSearch);
+    return () =>
+      window.removeEventListener(HUB_OPEN_SEARCH_EVENT, onOpenSearch);
+  }, [openSearchFromShortcut]);
 
   const handleNavigateChord = useCallback(
     (target: import("../hooks/useHubKeyboardShortcuts").NavChordTarget) => {
@@ -214,23 +383,77 @@ function RootLayoutInner() {
     [goToHub, openModule],
   );
 
+  // AI-CONTEXT: `Cmd+K` має рівно одного власника — цей хук (рішення
+  // власника 2026-09-16, варіант A). До того `useCommandPaletteHotkey` вішав
+  // другий слухач на `window`, і з увімкненим `hub_command_palette` одна
+  // клавіша відкривала і пошук хаба, і палітру. Тепер прапорець лише
+  // перемикає, ЩО відкривається; пошук хаба з увімкненою палітрою — один із
+  // її режимів (команда «Глобальний пошук» + рядок «Шукати „…“»).
+  const paletteEnabled = useFlag("hub_command_palette");
+  const palette = useCommandPaletteControls();
+  const { open: openPalette } = palette;
+  const handleOpenSearchShortcut = useCallback(() => {
+    if (paletteEnabled) {
+      openPalette();
+      return;
+    }
+    openSearchFromShortcut();
+  }, [paletteEnabled, openPalette, openSearchFromShortcut]);
+
+  // `N` — «створити» в поточному контексті: первинна дія модуля через той
+  // самий PWA-інтент, що й FAB / чекліст / PWA-ярлик; на хабі — пошук із
+  // порожнім запитом, який і є швидким додаванням (чотири дії зверху).
+  // Поверх відкритого діалогу не спрацьовує: другий аркуш поверх першого
+  // ніхто не просив.
+  const modalOpen = useModalDialogOpen();
+  const handleCreateShortcut = useCallback(() => {
+    if (modalOpen) return;
+    if (activeModule) {
+      openHubModuleWithAction(
+        activeModule,
+        MODULE_PRIMARY_ACTION[activeModule].action,
+      );
+      return;
+    }
+    openHubSearchUI("");
+  }, [activeModule, modalOpen, openHubSearchUI]);
+
+  // `Cmd+Z` — «Повернути» з наймолодшого видимого undo-тоста. Стеку немає
+  // навмисно: вікно скасування у продукті і є тост (5 с, поки видно), і
+  // клавіша лише повторює його кнопку. Нічого скасовувати — повертаємо
+  // false, і браузер робить свій undo (у полях вводу ми сюди не доходимо).
+  const { toasts, dismiss: dismissToast } = useToast();
+  const handleUndoShortcut = useCallback((): boolean => {
+    const target = [...toasts]
+      .reverse()
+      .find((t) => !t.leaving && t.action?.kind === "undo");
+    if (!target?.action) return false;
+    try {
+      target.action.onClick();
+    } finally {
+      dismissToast(target.id);
+    }
+    return true;
+  }, [toasts, dismissToast]);
+
   useHubKeyboardShortcuts({
-    onOpenSearch: openSearchFromShortcut,
+    onOpenSearch: handleOpenSearchShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenAssistant: openAssistantChat,
+    assistantPageActive: location.pathname === "/chat",
     onNavigate: handleNavigateChord,
+    onCreate: handleCreateShortcut,
+    onUndo: handleUndoShortcut,
   });
 
-  // Command palette (⌘K)
-  const paletteEnabled = useFlag("hub_command_palette");
-  useCommandPaletteHotkey(paletteEnabled);
-  useDemoCommands();
+  useDemoCommands({ openSearch: openSearchFromShortcut });
 
   // Build the context value for child routes
   const hubShellValue: HubShellValue = {
     activeModule,
     openModule,
     goToHub,
+    goBackOrHub,
     goToModuleSettings,
     moduleAnimClass,
     ui,
@@ -244,7 +467,8 @@ function RootLayoutInner() {
     onInstall: install,
     onDismissInstall: dismiss,
     iosVisible,
-    onDismissIos: iosDismiss,
+    onDismissIosForever: iosDismissForever,
+    onSnoozeIos: iosSnooze,
     updateAvailable,
     onApplyUpdate: applyUpdate,
     openAssistantChat,
@@ -253,9 +477,7 @@ function RootLayoutInner() {
 
   return (
     <HubShellProvider value={hubShellValue}>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <AppShell>{dbBusyElsewhere ? <DbBusyScreen /> : <Outlet />}</AppShell>
     </HubShellProvider>
   );
 }

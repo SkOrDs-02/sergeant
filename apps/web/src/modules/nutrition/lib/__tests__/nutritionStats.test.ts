@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  summarizeRows,
-  avgFromSummary,
-  topMeals,
-  mealTypeBreakdown,
-  type RowsSummary,
-} from "../nutritionStats";
+import { summarizeRows, topMeals, mealTypeBreakdown } from "../nutritionStats";
 import type { DaySummary, NutritionLog } from "../nutritionStorage";
 
 /**
@@ -26,6 +20,7 @@ function row(partial: Partial<DaySummary>): DaySummary {
     fat_g: 0,
     carbs_g: 0,
     mealCount: 0,
+    loggedMealTypesCount: 0,
     hasMeals: false,
     hasAnyMacros: false,
     ...partial,
@@ -69,40 +64,8 @@ describe("summarizeRows", () => {
   });
 });
 
-describe("avgFromSummary", () => {
-  it("averages over days-with-macros, not the full window", () => {
-    const sum: RowsSummary = {
-      days: 7,
-      kcal: 1400,
-      protein_g: 140,
-      fat_g: 70,
-      carbs_g: 210,
-      daysWithMeals: 4,
-      daysWithAnyMacros: 2,
-      nonEmptyDays: 4,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.denom).toBe(2);
-    expect(avg.kcal).toBe(700);
-    expect(avg.protein_g).toBe(70);
-  });
-
-  it("guards against divide-by-zero when no day had macros", () => {
-    const sum: RowsSummary = {
-      days: 3,
-      kcal: 0,
-      protein_g: 0,
-      fat_g: 0,
-      carbs_g: 0,
-      daysWithMeals: 0,
-      daysWithAnyMacros: 0,
-      nonEmptyDays: 0,
-    };
-    const avg = avgFromSummary(sum);
-    expect(avg.denom).toBe(1);
-    expect(avg.kcal).toBe(0);
-  });
-});
+// avgFromSummary removed (unification-modules.md #1.12): averages now come
+// from the canon `calcNutritionPeriodAverages` (packages/nutrition-domain).
 
 describe("topMeals", () => {
   const log: NutritionLog = {

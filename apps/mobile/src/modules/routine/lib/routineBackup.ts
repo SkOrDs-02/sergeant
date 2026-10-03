@@ -1,7 +1,7 @@
 /**
  * Mobile Routine — backup payload helpers.
  *
- * Stage 13 PR #071 of `docs/planning/storage-roadmap.md` — mirror of
+ * Stage 13 PR #071 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — mirror of
  * `apps/web/src/modules/routine/lib/routineStorage.ts`'s
  * `buildRoutineBackupPayload()` / `applyRoutineBackupPayload()` so the
  * mobile hub backup can delegate (instead of reaching into the now-empty

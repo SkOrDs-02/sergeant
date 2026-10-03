@@ -9,6 +9,7 @@ import {
   scrubPIIString,
   redactSensitiveQueryParams,
 } from "@sergeant/shared";
+import { resolveSentryEnvironment } from "./deployEnvironment.js";
 
 type SentryModule = typeof import("@sentry/react");
 
@@ -48,7 +49,7 @@ export interface WebBeforeSendEvent {
  * `event.user` до `{ id }`. Усі ці канали (особливо XHR breadcrumbs з
  * `Authorization` header-ом і ручні `Sentry.setExtra('payload', body)`)
  * однаково існують у браузерному SDK, тож контракт PII-handling-у
- * (`docs/security/pii-handling.md`) тримався тільки на сервері.
+ * (`docs/governance/security/pii-handling.md`) тримався тільки на сервері.
  *
  * Сигнатура — `WebBeforeSendEvent` (локальний structural type), щоб
  * не тягнути `@sentry/react` runtime у головний бандл і одночасно
@@ -179,7 +180,7 @@ type WebRouteRule = { readonly match: string; readonly rate: number };
  * SPA route prefixes — longest-prefix-first. Each entry matches the
  * `name` (transaction path) of a `navigation` or `pageload` span.
  * Keep in sync with `apps/web/src/core/app/router.tsx` paths and
- * `docs/observability/sentry-sampling.md`.
+ * `docs/operations/observability/sentry-sampling.md`.
  */
 export const WEB_SENTRY_ROUTE_RULES: readonly WebRouteRule[] = [
   { match: "/onboarding", rate: 1.0 },
@@ -316,26 +317,15 @@ export async function initSentry() {
 
   mod.init({
     dsn,
-    environment:
-      import.meta.env["VITE_SENTRY_ENVIRONMENT"] ||
-      import.meta.env.MODE ||
-      "production",
+    // Середовище резолвиться спільним хелпером — тим самим, що читає
+    // `posthog.ts`, щоб дві системи не могли розійтись у розмітці одного
+    // деплою. Фолбек на `import.meta.env.MODE` прибрано: саме він завів у
+    // проєкті `sergeant-web` сторонній environment `vercel-production`,
+    // невидимий для фільтра по `production`. Деталі й порядок резолву —
+    // `deployEnvironment.ts`.
+    environment: resolveSentryEnvironment(),
     release: import.meta.env["VITE_SENTRY_RELEASE"],
-    integrations: [
-      mod.browserTracingIntegration(),
-      // PII roast 2026-05-13 §F3 (errors-pwa-marketing): Sentry defaults
-      // only mask password/email/tel/number inputs; free-text in <div> /
-      // <input type="text"> / <textarea> (AI-chat composer, Фінік notes,
-      // nutrition diary, onboarding) is captured verbatim. With
-      // `replaysOnErrorSampleRate: 1.0` every error uploads a 30 s window
-      // of plaintext — explicit maskAllText + maskAllInputs + blockAllMedia
-      // close the leak (docs/security/pii-handling.md).
-      mod.replayIntegration({
-        maskAllText: true,
-        maskAllInputs: true,
-        blockAllMedia: true,
-      }),
-    ],
+    integrations: [mod.browserTracingIntegration()],
     // Dynamic per-op + per-route sampler (stack-pulse PR-12 / H6).
     // Fallback rate resolves through `defaultWebSampleRate` — either
     // an explicit `VITE_SENTRY_TRACES_SAMPLE_RATE` (deploy override /
@@ -346,11 +336,6 @@ export async function initSentry() {
     // hub=5%) are applied independent of fallback.
     tracesSampler: (samplingContext) =>
       pickWebTracesSampleRate(samplingContext, defaultWebSampleRate()),
-    replaysSessionSampleRate: parseRate(
-      import.meta.env["VITE_SENTRY_REPLAY_SAMPLE_RATE"],
-      0,
-    ),
-    replaysOnErrorSampleRate: 1.0,
     // PII roast 2026-05-13 §P0-S4: drop noise events from health probes
     // (Capacitor WebView occasionally fires a `/health` request during
     // boot) and `chrome-extension://` injections that crash on

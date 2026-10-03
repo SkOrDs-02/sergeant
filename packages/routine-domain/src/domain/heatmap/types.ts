@@ -48,12 +48,56 @@ export interface HeatmapCell {
   isFuture: boolean;
   /** True when `dateKey === todayKey`. */
   isToday: boolean;
-  /** Raw completion count across all active habits for this day. */
+  /**
+   * Completion count that feeds `ratio` — i.e. the numerator of the
+   * denominator mode the grid was built with (`"active"` → all
+   * non-archived habits, `"scheduled"` → habits on the calendar that
+   * day). Equals `scheduledCnt` in `"scheduled"` mode.
+   */
   cnt: number;
-  /** Number of active (non-archived) habits at build-time. */
+  /**
+   * Denominator this cell was scored against. Depends on the
+   * `denominator` option `buildHeatmapGrid` was called with:
+   *   - `"active"` (default) — number of non-archived habits at
+   *     build-time, identical for every cell in the grid;
+   *   - `"scheduled"` — number of habits actually scheduled on this
+   *     date (`habitScheduledOnDate`), i.e. `scheduledTotal`.
+   */
   total: number;
   /** `cnt / total` clamped to [0..1]; 0 when `total === 0` or future. */
   ratio: number;
+  /**
+   * Number of habits scheduled on this date per `habitScheduledOnDate`
+   * (respects `archived`, `paused`, start/end bounds and the recurrence
+   * rule). Always populated, regardless of the `denominator` mode — the
+   * schedule-aware denominator the routine `rate`/streak already uses.
+   */
+  scheduledTotal: number;
+  /**
+   * Completions counted **only** among the habits scheduled on this date;
+   * de-duplicated per habit, so `scheduledCnt <= scheduledTotal` always.
+   */
+  scheduledCnt: number;
+  /**
+   * Scheduled, not completed, but marked "не зміг" (`RoutineState.skips`) —
+   * canon §5, an acknowledged skip is not a failure.
+   *
+   * **NOT additive — the pair leaves the denominator.** `buildHeatmapGrid`
+   * `continue`s before `scheduledTotal += 1`, so a declared skip moves
+   * `ratio` and `intensity` too. This docstring claimed the opposite until
+   * 2026-09-14: the "purely additive" contract was real, then deliberately
+   * inverted under `METRICS_VERSION` 14 (the bump that moving a
+   * user-visible number requires, ADR-0079 §3-§4) — and the comment was
+   * left behind. Pinned by `grid.test.ts` → "бере заявлений пропуск ЗІ
+   * ЗНАМЕННИКА, лишаючи його в skippedCnt"; that test was green the whole
+   * time this text said otherwise.
+   *
+   * `skippedCnt` survives the change so presentation can still tell a skip
+   * day from a silent miss — the same distinction `HabitRangeGrid` draws
+   * for short ranges. `0` when `opts.skips` was not passed (historical
+   * behaviour, no skip awareness).
+   */
+  skippedCnt: number;
   /** Pre-selected intensity bucket — use this for colour selection. */
   intensity: HeatmapIntensity;
 }

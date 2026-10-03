@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Workout, WorkoutItem } from "../types.js";
 import {
@@ -8,6 +8,7 @@ import {
   computeExerciseCardioTrend,
   computeExerciseWeeklyTrend,
   roundToNearest2_5,
+  suggestExerciseNextSet,
 } from "./exerciseDetail.js";
 
 function w(id: string, startedAt: string, items: WorkoutItem[]): Workout {
@@ -69,6 +70,37 @@ describe("roundToNearest2_5", () => {
   });
 });
 
+describe("suggestExerciseNextSet", () => {
+  it("returns a suggestion for a valid last best set", () => {
+    // Подвійна прогресія: до стелі діапазону росте повторення, не вага.
+    const s = suggestExerciseNextSet({ weightKg: 100, reps: 5 });
+    expect(s).not.toBeNull();
+    expect(s!.weightKg).toBe(100);
+    expect(s!.reps).toBe(6);
+    expect(s!.altWeightKg).toBeGreaterThan(100);
+  });
+
+  it("forwards the catalog hint and the soft-mode flag", () => {
+    const s = suggestExerciseNextSet(
+      { weightKg: 100, reps: 8 },
+      { exercise: { equipment: ["barbell"], primaryGroup: "chest" } },
+    );
+    expect(s!.weightKg).toBe(102.5);
+    expect(s!.reps).toBe(5);
+    expect(s!.softMode).toBe(false);
+  });
+
+  it("returns null for a null/undefined last best set", () => {
+    expect(suggestExerciseNextSet(null)).toBeNull();
+    expect(suggestExerciseNextSet(undefined)).toBeNull();
+  });
+
+  it("returns null when weight or reps are zero", () => {
+    expect(suggestExerciseNextSet({ weightKg: 0, reps: 5 })).toBeNull();
+    expect(suggestExerciseNextSet({ weightKg: 100, reps: 0 })).toBeNull();
+  });
+});
+
 describe("collectExerciseHistory", () => {
   it("keeps only matching items, sorted newest-first", () => {
     const ws: Workout[] = [
@@ -117,6 +149,10 @@ describe("computeExerciseBest", () => {
       bestSet: null,
       lastTop: null,
       isNewPR: false,
+      lastStrengthAt: null,
+      lastWorkoutBest1rm: 0,
+      isRegression: false,
+      deltaVsPeakPct: 0,
     });
   });
 
@@ -170,6 +206,10 @@ describe("computeExerciseBest", () => {
       bestSet: null,
       lastTop: null,
       isNewPR: false,
+      lastStrengthAt: null,
+      lastWorkoutBest1rm: 0,
+      isRegression: false,
+      deltaVsPeakPct: 0,
     });
   });
 });
@@ -301,6 +341,26 @@ describe("computeExerciseCardioTrend", () => {
       pacePoints: [],
       distPoints: [],
     });
+  });
+});
+
+describe("date label fallback (minimal-ICU runtime)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to host-local DD.MM when toLocaleDateString throws", () => {
+    vi.spyOn(Date.prototype, "toLocaleDateString").mockImplementation(() => {
+      throw new Error("no ICU data");
+    });
+    const history = [
+      {
+        workout: w("w1", "2026-04-08T12:00:00Z", []),
+        item: strength("i1", "squat", [{ weightKg: 100, reps: 5 }]),
+      },
+    ];
+    const { rmPoints } = computeExerciseWeeklyTrend(history);
+    expect(rmPoints[0]!.dateLabel).toMatch(/^\d{2}\.\d{2}$/);
   });
 });
 

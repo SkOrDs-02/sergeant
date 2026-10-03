@@ -95,14 +95,10 @@
 }
 
 .hover-glow:hover {
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+  box-shadow: 0 0 0 4px rgb(var(--c-accent) / 0.15);
 }
 
-.hover-glow-teal:hover {
-  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.15);
-}
-
-.hover-glow-coral:hover {
+.hover-glow-rose:hover {
   box-shadow: 0 0 0 4px rgba(249, 112, 102, 0.15);
 }
 
@@ -154,25 +150,29 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   FLOATING ACTION BUTTON — Quick actions
+   REPORTS DOMAIN CARDS — знято 2026-08-07 разом із переходом звітних
+   карток хабу на матеріал «край і зріз» (П3).
+
+   Тут жили `.report-card` та `.report-card-open`: dark-режимний inset-glow
+   плюс accent-glow на розгортанні. Обидва давали глибину СВІТЛОМ, а цей
+   матеріал тримає верхню межу ФАРБОЮ — 2px друкарською лінійкою, — і
+   підіймає поверхню `filter: drop-shadow()` на батьківському вузлі.
+
+   Знімати було обовʼязково, а не охайно: `.dark .report-card` — селектор
+   із двох класів, тобто специфічніший за утиліту `.edge-stub`, тож його
+   `box-shadow` перемагав би `box-shadow: none`. А маска перфорації зрізає
+   будь-яку тінь на своєму вузлі — отже картка МОВЧКИ лишилась би пласкою
+   рівно там, де ми додавали глибину. Єдиними носіями обох класів були
+   чотири картки в `core/hub/`; тепер вони йдуть через `ReportSheet`.
    ═══════════════════════════════════════════════════════════════════════ */
-.fab {
-  @apply fixed z-50 flex items-center justify-center
-         w-14 h-14 rounded-full
-         bg-brand-500 text-white
-         shadow-float
-         transition-interactive;
-  right: max(1rem, env(safe-area-inset-right, 0px));
-}
 
-.fab:hover {
-  @apply bg-brand-600 shadow-glow;
-  transform: scale(1.05);
-}
-
-.fab:active {
-  transform: scale(0.95);
-}
+/* ═══════════════════════════════════════════════════════════════════════
+   FLOATING ACTION BUTTON — `.fab` removed 2026-08 design-audit T11 (zero
+   consumers; also stale — `bg-brand-500` resolved to the neutral hub
+   stone after the 2026-07 design-audit M1 rebrand, not an accent). The
+   live FAB is `FloatingActionButton.tsx`, styled via the `shadow-fab` /
+   `bg-gradient-to-br from-{module}-400 to-{module}-700` utilities.
+   ═══════════════════════════════════════════════════════════════════════ */
 
 /* ═══════════════════════════════════════════════════════════════════════
    PROGRESS RING ENHANCEMENTS — Duolingo-style
@@ -225,4 +225,49 @@
   @apply opacity-100;
   visibility: visible;
   transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CATEGORY CHIP — забарвлення категорій витрат Фініка
+
+   Колір приходить із даних (id категорії), тож Tailwind-класу під нього
+   не існує. `catChipVars()` публікує чотири CSS-змінні з токенів
+   `categoryColors`, а перемикання світла/темрява — тут: інлайн-стиль
+   темної теми не вміє.
+
+   `.cat-chip` — суцільна плашка (обрана категорія, лейбл у строці).
+   `.cat-dot`  — 6px крапка для НЕобраних чипів у пікері: колір є, але
+                 плями немає. Саме про це просив тестер — «щоб вони не
+                 були плямами, але підсилювали швидке зчитування».
+   ═══════════════════════════════════════════════════════════════════════ */
+.cat-chip {
+  background-color: var(--cat-tint);
+  border-color: var(--cat-border);
+  color: var(--cat-ink);
+}
+
+/* Межа в темній збігається з фоном чипа навмисно: `--cat-ink-dark` на
+   хайрлайні дав би яскравий контур навколо кожної категорії — рівно та
+   «пляма», якої просили уникнути. Заливка L≈0.275 на поверхні
+   «Чорнила» (#2a231f) читається й без обведення. */
+.dark .cat-chip {
+  background-color: var(--cat-tint-dark);
+  border-color: var(--cat-tint-dark);
+  color: var(--cat-ink-dark);
+}
+
+.cat-ink {
+  color: var(--cat-ink);
+}
+
+.dark .cat-ink {
+  color: var(--cat-ink-dark);
+}
+
+.cat-dot {
+  background-color: var(--cat-ink);
+}
+
+.dark .cat-dot {
+  background-color: var(--cat-ink-dark);
 }

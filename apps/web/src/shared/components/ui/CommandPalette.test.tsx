@@ -1,18 +1,11 @@
 /** @vitest-environment jsdom */
 import { describe, it, expect, afterEach } from "vitest";
-import {
-  render,
-  screen,
-  fireEvent,
-  cleanup,
-  act,
-} from "@testing-library/react";
+import { render, cleanup, act } from "@testing-library/react";
 import { renderHook } from "@testing-library/react";
 import {
   CommandPaletteProvider,
   useCommandPalette,
   useCommandPaletteControls,
-  useCommandPaletteHotkey,
   useRegisterCommand,
 } from "./CommandPalette";
 import { RECENTS_STORE, RECENTS_MAX } from "./CommandPalette.context";
@@ -134,64 +127,6 @@ describe("markRecent / recents", () => {
     act(() => result.current?.markRecent("c5"));
     expect(result.current?.recents[0]).toBe("c5");
     expect(result.current?.recents.length).toBe(RECENTS_MAX);
-  });
-});
-
-describe("useCommandPaletteHotkey", () => {
-  it("Cmd/Ctrl+K toggles the palette when enabled", () => {
-    function Probe() {
-      useCommandPaletteHotkey(true);
-      const { isOpen } = useCommandPaletteControls();
-      return <div data-testid="state">{isOpen ? "open" : "closed"}</div>;
-    }
-    render(
-      <CommandPaletteProvider>
-        <Probe />
-      </CommandPaletteProvider>,
-    );
-    expect(screen.getByTestId("state").textContent).toBe("closed");
-    act(() => {
-      fireEvent.keyDown(window, { key: "k", metaKey: true });
-    });
-    expect(screen.getByTestId("state").textContent).toBe("open");
-    act(() => {
-      fireEvent.keyDown(window, { key: "k", ctrlKey: true });
-    });
-    expect(screen.getByTestId("state").textContent).toBe("closed");
-  });
-
-  it("ignores plain 'k' without a modifier", () => {
-    function Probe() {
-      useCommandPaletteHotkey(true);
-      const { isOpen } = useCommandPaletteControls();
-      return <div data-testid="state">{isOpen ? "open" : "closed"}</div>;
-    }
-    render(
-      <CommandPaletteProvider>
-        <Probe />
-      </CommandPaletteProvider>,
-    );
-    act(() => {
-      fireEvent.keyDown(window, { key: "k" });
-    });
-    expect(screen.getByTestId("state").textContent).toBe("closed");
-  });
-
-  it("does nothing when disabled", () => {
-    function Probe() {
-      useCommandPaletteHotkey(false);
-      const { isOpen } = useCommandPaletteControls();
-      return <div data-testid="state">{isOpen ? "open" : "closed"}</div>;
-    }
-    render(
-      <CommandPaletteProvider>
-        <Probe />
-      </CommandPaletteProvider>,
-    );
-    act(() => {
-      fireEvent.keyDown(window, { key: "k", metaKey: true });
-    });
-    expect(screen.getByTestId("state").textContent).toBe("closed");
   });
 });
 

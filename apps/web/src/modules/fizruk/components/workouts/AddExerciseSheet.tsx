@@ -1,11 +1,17 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useId,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
-import { useVisualKeyboardInset } from "@sergeant/shared";
 import { useToast } from "@shared/hooks/useToast";
 
 const EQUIPMENT_OPTIONS = [
@@ -65,8 +71,9 @@ export function AddExerciseSheet({
   musclesByPrimaryGroup,
   addExercise,
 }: AddExerciseSheetProps) {
-  const kbInsetPx = useVisualKeyboardInset(open);
   const toast = useToast();
+  const nameId = useId();
+  const descriptionId = useId();
   // Inline validation message shown below «Назва (укр)» when the user
   // taps «Зберегти» with the field empty. Without it the click was
   // silently swallowed (just `if (!nameUk) return;`) and the user was
@@ -92,14 +99,15 @@ export function AddExerciseSheet({
       title="Додати вправу"
       description="Збережеться локально на цьому пристрої"
       closeLabel="Закрити форму"
-      kbInsetPx={kbInsetPx}
       panelClassName="fizruk-sheet"
       zIndex={100}
     >
       <div className="space-y-3">
         <div>
+          <Label htmlFor={nameId}>Назва (укр) *</Label>
           <Input
-            placeholder="Назва (укр) *"
+            id={nameId}
+            placeholder="Напр. Присідання зі штангою"
             value={form.nameUk}
             onChange={(e) => {
               setForm((f) => ({ ...f, nameUk: e.target.value }));
@@ -143,7 +151,7 @@ export function AddExerciseSheet({
                 musclesSecondary: [],
               }))
             }
-            aria-label="Основна група м'язів"
+            aria-label="Основна група мʼязів"
           >
             {Object.keys(primaryGroupsUk).map((id) => (
               <option key={id} value={id}>
@@ -171,9 +179,13 @@ export function AddExerciseSheet({
                     }))
                   }
                   className={cn(
-                    "text-xs px-3 py-2.5 min-h-[44px] rounded-full border transition-colors",
+                    // Той самий active-стан, що в чіпах фільтра обладнання
+                    // каталогу (`WorkoutCatalogSection`) — fizruk-soft
+                    // токени замість інверсного «чорнила», щоб обидві
+                    // поверхні вибору обладнання виглядали однаково.
+                    "text-xs px-3 py-2.5 min-h-[44px] rounded-xl border transition-colors",
                     active
-                      ? "bg-text text-bg border-text"
+                      ? "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg font-semibold shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
                       : "border-line bg-bg text-muted hover:border-muted hover:text-text",
                   )}
                   aria-pressed={active}
@@ -195,7 +207,7 @@ export function AddExerciseSheet({
                 key={id}
                 type="button"
                 className={cn(
-                  "text-xs px-3 py-2 min-h-[44px] rounded-full border transition-colors",
+                  "text-xs px-3 py-2 min-h-[44px] rounded-xl border transition-colors",
                   (form.musclesPrimary || []).includes(id)
                     ? "bg-primary border-primary text-bg"
                     : "border-line bg-bg text-muted hover:border-muted hover:text-text",
@@ -223,7 +235,7 @@ export function AddExerciseSheet({
                 key={id}
                 type="button"
                 className={cn(
-                  "text-xs px-3 py-2 min-h-[44px] rounded-full border transition-colors",
+                  "text-xs px-3 py-2 min-h-[44px] rounded-xl border transition-colors",
                   (form.musclesSecondary || []).includes(id)
                     ? "bg-text/80 border-text/80 text-white"
                     : "border-line bg-bg text-muted hover:border-muted hover:text-text",
@@ -241,24 +253,32 @@ export function AddExerciseSheet({
           </div>
         </div>
 
-        <Input
-          placeholder="Опис"
-          value={form.description}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, description: e.target.value }))
-          }
-        />
+        <div>
+          <Label htmlFor={descriptionId} optional>
+            Опис
+          </Label>
+          <Input
+            id={descriptionId}
+            placeholder="Напр. Тримай спину рівною, коліна не виходять за носки"
+            value={form.description}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
+          />
+        </div>
       </div>
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="h-12 min-h-[44px]"
           onClick={() => {
             const nameUk = (form.nameUk || "").trim();
             if (!nameUk) {
               setNameError(
-                "Вкажи назву українською — без неї вправу не збережемо.",
+                "Вкажи назву українською, без неї вправа не збережеться.",
               );
               return;
             }
@@ -297,7 +317,7 @@ export function AddExerciseSheet({
           Зберегти
         </Button>
         <Button
-          variant="secondary"
+          variant="outline"
           className="h-12 min-h-[44px]"
           onClick={handleClose}
         >

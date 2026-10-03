@@ -132,9 +132,10 @@
       "enabled": false
     },
     {
-      "description": "Auto-merge dev-only patch updates after CI passes",
+      "description": "Auto-merge dev-only patch updates after CI passes. minimumReleaseAge дає вікно на відкликання компрометованого релізу — auto-merge тут іде в main із секретами CI, тож нульова затримка = нульовий шанс помітити. Security-бампи цієї затримки не мають (vulnerabilityAlerts: 0 days).",
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch", "pin", "digest"],
+      "minimumReleaseAge": "3 days",
       "automerge": true,
       "automergeType": "pr",
       "platformAutomerge": true
@@ -156,7 +157,7 @@
       "labels": ["dependencies", "infra-pin"]
     },
     {
-      "description": "OpenClaw runtime — weekly PR з manual review (Locked decision #2 у docs/90-work/planning/openclaw-migration-plan.md). Pinned у Dockerfile.openclaw-gateway через `npm install -g openclaw@<pin>`; auto-merge заборонено — кожен апгрейд має проходити Phase 6.5 parity-window observation.",
+      "description": "OpenClaw runtime — weekly PR з manual review (Locked decision #2 у docs/work/specs/planning/openclaw-migration-plan.md). Pinned у Dockerfile.openclaw-gateway через `npm install -g openclaw@<pin>`; auto-merge заборонено — кожен апгрейд має проходити Phase 6.5 parity-window observation.",
       "matchManagers": ["custom.regex"],
       "matchPackageNames": ["openclaw"],
       "groupName": "openclaw",

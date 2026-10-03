@@ -47,12 +47,14 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [cacheTick, setCacheTick] = useState(0);
+  const [evaluatedAt, setEvaluatedAt] = useState(() => Date.now());
   const tickTimerRef = useRef<number | null>(null);
 
   const scheduleCacheTick = useCallback((): void => {
     if (tickTimerRef.current !== null) return;
     tickTimerRef.current = window.setTimeout(() => {
       tickTimerRef.current = null;
+      setEvaluatedAt(Date.now());
       setCacheTick((t) => t + 1);
     }, 0);
   }, []);
@@ -105,6 +107,7 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
   }, [scheduleCacheTick]);
 
   const input = useMemo<ActivationInput | null>(() => {
+    void cacheTick; // external cache invalidation tick
     if (!user) return null;
     const signedUpAt = parseSignedUpAt(user.createdAt);
     if (signedUpAt === null) return null;
@@ -121,17 +124,12 @@ export function useActivationV2Boot(options: UseActivationV2Options = {}) {
 
     return {
       signedUpAt,
-      evaluatedAt: Date.now(),
+      evaluatedAt,
       monoAccountsConnected,
       categorizedTransactions,
       budgetsCreated,
     };
-    // `cacheTick` is the dependency that forces a recompute on cache
-    // changes — the actual values come from `queryClient.getQueryData`
-    // inside the memo body. Listing it explicitly keeps the lint rule
-    // honest about what triggers the re-evaluation.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional `cacheTick` trigger; see comment above
-  }, [user, queryClient, cacheTick]);
+  }, [user, queryClient, cacheTick, evaluatedAt]);
 
   return useActivationV2(input, options);
 }

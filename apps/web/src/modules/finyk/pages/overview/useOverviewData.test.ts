@@ -12,6 +12,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import { useOverviewData } from "./useOverviewData";
 import type { UseOverviewDataParams } from "./useOverviewData";
 
@@ -221,6 +222,44 @@ describe("useOverviewData", () => {
     });
   });
 
+  describe("today summary", () => {
+    it("uses the Kyiv day, excludes transfers, and derives the daily plan", () => {
+      const todayTime = Math.floor(
+        new Date("2026-06-04T08:00:00Z").getTime() / 1000,
+      );
+      const yesterdayTime = Math.floor(
+        new Date("2026-06-03T08:00:00Z").getTime() / 1000,
+      );
+      const realTx = [
+        mkTx("today-expense", -10_000, { time: todayTime }),
+        mkTx("today-income", 20_000, { time: todayTime }),
+        mkTx("transfer", -70_000, { time: todayTime }),
+        mkTx("yesterday", -90_000, { time: yesterdayTime }),
+      ] as UseOverviewDataParams["mono"]["realTx"];
+
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({ realTx }),
+          storage: buildStorage({
+            excludedTxIds: new Set(["transfer"]),
+            monthlyPlan: { income: 0, expense: 3000, savings: 0 },
+          }),
+        }),
+      );
+
+      expect(result.current.todaySpent).toBe(100);
+      expect(result.current.todayIncome).toBe(200);
+      expect(result.current.dailyPlan).toBe(100);
+    });
+
+    it("returns no daily plan when the monthly plan is absent", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: buildMono(), storage: buildStorage() }),
+      );
+      expect(result.current.dailyPlan).toBeNull();
+    });
+  });
+
   describe("budget alerts", () => {
     it("budgetAlerts is empty when no limit budgets are defined", () => {
       const { result } = renderHook(() =>
@@ -230,6 +269,87 @@ describe("useOverviewData", () => {
         }),
       );
       expect(result.current.budgetAlerts).toHaveLength(0);
+    });
+
+    describe("правила «Завжди так для цього магазину»", () => {
+      // Функція, а не константа: `mkTx` читає `Date.now()`, а фейковий час
+      // ставить `beforeEach` — константа на рівні describe взяла б реальну дату.
+      const silpoTx = () => ({
+        ...mkTx("t-silpo", -150_000),
+        description: "Сільпо №5",
+        source: "mono",
+        _source: "mono",
+      });
+      const TRANSPORT_LIMIT = {
+        id: "b1",
+        type: "limit",
+        categoryId: "transport",
+        limit: 1000,
+      };
+      const RULES = buildMerchantRuleIndex([
+        {
+          id: "mr_1",
+          kind: "expense",
+          merchantKey: "сільпо",
+          categoryId: "transport",
+          label: "Сільпо",
+          createdAt: "2026-10-01T10:00:00.000Z",
+          updatedAt: "2026-10-01T10:00:00.000Z",
+        },
+      ]);
+
+      it("без правил витрата Сільпо не будить ліміт «Транспорт»", () => {
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [silpoTx()] as never }),
+            storage: buildStorage({ budgets: [TRANSPORT_LIMIT] as never }),
+          }),
+        );
+        expect(result.current.budgetAlerts).toHaveLength(0);
+      });
+
+      it("з правилом 1500 ₴ у «Транспорт» перевищують ліміт 1000 ₴", () => {
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [silpoTx()] as never }),
+            storage: buildStorage({
+              budgets: [TRANSPORT_LIMIT] as never,
+              merchantRuleIndex: RULES,
+            }),
+          }),
+        );
+        expect(result.current.budgetAlerts).toHaveLength(1);
+        // Споживачі Огляду (BudgetAlertsList, інсайти) беруть ту саму мапу.
+        expect(result.current.txCategories).toEqual({
+          "t-silpo": "transport",
+        });
+      });
+
+      it("явний override операції сильніший за правило", () => {
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono({ realTx: [silpoTx()] as never }),
+            storage: buildStorage({
+              budgets: [TRANSPORT_LIMIT] as never,
+              merchantRuleIndex: RULES,
+              txCategories: { "t-silpo": "food" },
+            }),
+          }),
+        );
+        expect(result.current.budgetAlerts).toHaveLength(0);
+        expect(result.current.txCategories).toEqual({ "t-silpo": "food" });
+      });
+
+      it("без правил віддає ТІ САМІ явні override-и (ідентичність мапи не міняється)", () => {
+        const explicit = { x: "food" };
+        const { result } = renderHook(() =>
+          useOverviewData({
+            mono: buildMono(),
+            storage: buildStorage({ txCategories: explicit }),
+          }),
+        );
+        expect(result.current.txCategories).toBe(explicit);
+      });
     });
   });
 
@@ -249,7 +369,7 @@ describe("useOverviewData", () => {
         {
           id: "tx-spotify",
           amount: -19900,
-          time: new Date(2026, 4, 10, 12, 0).getTime(),
+          time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
           date: "2026-05-10",
           description: "spotify premium",
           categoryId: "subscriptions",
@@ -332,6 +452,117 @@ describe("useOverviewData", () => {
     });
   });
 
+  // PR-5 (Фаза 2, детермінована частина): прогноз враховує заплановані
+  // потоки місяця і обрізається доступними коштами.
+  describe("projected spend v2 (Фаза 2, PR-5)", () => {
+    it("is deterministic across repeated renders on unchanged data", () => {
+      const mono = buildMono({
+        realTx: [
+          mkTx("spend-1", -10_000, {
+            time: Math.floor(new Date("2026-06-02T09:00:00Z").getTime() / 1000),
+          }),
+        ] as UseOverviewDataParams["mono"]["realTx"],
+      });
+      const storage = buildStorage();
+
+      const first = renderHook(() => useOverviewData({ mono, storage }));
+      const second = renderHook(() => useOverviewData({ mono, storage }));
+
+      expect(second.result.current.projectedSpend).toBe(
+        first.result.current.projectedSpend,
+      );
+    });
+
+    it("adds recurring planned outflows to the raw forecast when funds allow", () => {
+      const storage = buildStorage({
+        subscriptions: [
+          {
+            id: "sub-spotify",
+            emoji: "S",
+            name: "Spotify",
+            billingDay: 6,
+            keyword: "spotify",
+            currency: "UAH",
+          },
+        ],
+      });
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            // Величезний залишок: стеля точно не заважає цьому тесту.
+            accounts: [
+              mkMonoAccount("a1", 100_000_000),
+            ] as UseOverviewDataParams["mono"]["accounts"],
+            realTx: [
+              mkTx("spend-1", -10_000, {
+                time: Math.floor(
+                  new Date("2026-06-02T09:00:00Z").getTime() / 1000,
+                ),
+              }),
+            ] as UseOverviewDataParams["mono"]["realTx"],
+            // `getSubscriptionAmountMeta` виводить суму підписки з минулого
+            // збігу за ключовим словом (окреме поле від `realTx`).
+            transactions: [
+              {
+                id: "tx-spotify",
+                amount: -19900,
+                time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
+                date: "2026-05-10",
+                description: "spotify premium",
+                categoryId: "subscriptions",
+                type: "expense",
+                source: "monobank",
+                accountId: null,
+                manual: false,
+                _source: "monobank",
+                _accountId: null,
+                _manual: false,
+                currencyCode: 980,
+              },
+            ] as unknown as UseOverviewDataParams["mono"]["transactions"],
+          }),
+          storage,
+        }),
+      );
+
+      // daysPassed=4, daysInMonth=30, spent=100 → лінійний прогноз 750 ₴.
+      // Spotify (billingDay=6) ще попереду в цьому місяці → +199 ₴.
+      expect(result.current.recurringOutThisMonth).toBeGreaterThan(0);
+      expect(result.current.projectedSpendCapped).toBe(false);
+      expect(result.current.projectedSpend).toBeCloseTo(
+        (100 / 4) * 30 + result.current.recurringOutThisMonth,
+        5,
+      );
+    });
+
+    it("caps the forecast at available funds and flags it as capped", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            // Залишок у кілька гривень, навмисно менший за лінійний прогноз.
+            accounts: [
+              mkMonoAccount("a1", 500),
+            ] as UseOverviewDataParams["mono"]["accounts"],
+            realTx: [
+              mkTx("spend-1", -10_000, {
+                time: Math.floor(
+                  new Date("2026-06-02T09:00:00Z").getTime() / 1000,
+                ),
+              }),
+            ] as UseOverviewDataParams["mono"]["realTx"],
+          }),
+          storage: buildStorage(),
+        }),
+      );
+
+      // Лінійний прогноз (750 ₴) набагато більший за залишок (5 ₴): прогноз
+      // не має обіцяти тисячі витрат, коли грошей на них нема.
+      expect(result.current.monoTotal).toBe(5);
+      expect(result.current.projectedSpendCapped).toBe(true);
+      expect(result.current.projectedSpend).toBe(5);
+    });
+  });
+
   describe("first-insight banner", () => {
     it("showFirstInsight is true when the seen-key is absent from localStorage", () => {
       localStorage.removeItem("finyk_first_insight_seen_v1");
@@ -342,6 +573,23 @@ describe("useOverviewData", () => {
         }),
       );
       expect(result.current.showFirstInsight).toBe(true);
+    });
+
+    it("showFirstInsight is false when budgets already exist", () => {
+      // Підказка кличе поставити бюджет; людині з бюджетами вона лише
+      // відсуває першу цифру огляду вниз.
+      localStorage.removeItem("finyk_first_insight_seen_v1");
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono(),
+          storage: buildStorage({
+            budgets: [
+              { id: "b1", type: "limit", categoryId: "food", limit: 5000 },
+            ] as UseOverviewDataParams["storage"]["budgets"],
+          }),
+        }),
+      );
+      expect(result.current.showFirstInsight).toBe(false);
     });
 
     it("showFirstInsight is false when the seen-key is present", () => {
@@ -414,6 +662,90 @@ describe("useOverviewData", () => {
     });
   });
 
+  // Regression: founder report 2026-07-31 — «Статистику на серпень вже велику
+  // пише, хоча він тільки почався» + «124 686 ₴/день можна сьогодні».
+  describe("current-month clamp and day budget (regression 2026-07-31)", () => {
+    /**
+     * `realTx` is NOT guaranteed to be current-month-only: the read overlay in
+     * `useMonobankWebhook` substitutes the full SQLite mirror whenever the
+     * current-month network slice comes back empty — which is exactly the
+     * state on day 1 of a new month.
+     */
+    function monthMixMono() {
+      const kyiv = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+      return buildMono({
+        realTx: [
+          // Previous month (липень) — must NOT count toward "цього місяця".
+          mkTx("prev-1", -1_000_00, { time: kyiv("2026-07-15T09:00:00Z") }),
+          mkTx("prev-2", 5_000_00, { time: kyiv("2026-07-20T09:00:00Z") }),
+          // Current month (серпень).
+          mkTx("cur-1", -250_00, { time: kyiv("2026-08-01T09:00:00Z") }),
+          mkTx("cur-2", 700_00, { time: kyiv("2026-08-01T10:00:00Z") }),
+        ],
+      } as Partial<UseOverviewDataParams["mono"]>);
+    }
+
+    beforeEach(() => {
+      // 2026-08-01 01:47 Kyiv (EEST, UTC+3) → 2026-07-31T22:47Z. The Kyiv day
+      // boundary must win over the host/UTC one: this instant is 1 серпня.
+      vi.setSystemTime(new Date("2026-07-31T22:47:00Z"));
+    });
+
+    it("counts only current-Kyiv-month transactions in spent/income", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: monthMixMono(), storage: buildStorage() }),
+      );
+      // 250 ₴ spent and 700 ₴ received in серпень; липень's 1 000 / 5 000 are
+      // outside the window and must not leak into the "Місяць" card.
+      expect(result.current.spent).toBe(250);
+      expect(result.current.income).toBe(700);
+    });
+
+    it("keeps the mirror's older months out of the month aggregates entirely", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: monthMixMono(), storage: buildStorage() }),
+      );
+      expect(result.current.statTx.map((t) => t.id)).toEqual([
+        "cur-1",
+        "cur-2",
+      ]);
+    });
+
+    it("returns dayBudget = null when no monthly plan is set", () => {
+      // Previously this fell back to `projectedSpend`, which is itself derived
+      // from `spent` — the number collapsed to ≈ spent · 30/31, i.e. "ти можеш
+      // витратити сьогодні стільки, скільки вже витратив".
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: monthMixMono(), storage: buildStorage() }),
+      );
+      expect(result.current.hasExpensePlan).toBe(false);
+      expect(result.current.dayBudget).toBeNull();
+    });
+
+    it("computes dayBudget from the user's plan when one is set", () => {
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: monthMixMono(),
+          storage: buildStorage({
+            monthlyPlan: { income: 0, expense: 31_000, savings: 0 },
+          } as Partial<UseOverviewDataParams["storage"]>),
+        }),
+      );
+      // План 31 000 поділити на 31 день, що лишився (`daysInMonth −
+      // daysPassed + 1` — сьогодні входить у решту).
+      //
+      // Очікування змінено на PR #1025 разом із виправленням формули, і це
+      // не підгін під новий код: у цій фікстурі `cur-1` (250 ₴) датований
+      // 1 серпня, тобто це витрата САМЕ сьогодні. Старий чисельник
+      // `31 000 − 250` амортизував її по всіх 31 дні, а `todayRemaining =
+      // dayBudget − todaySpent` віднімав ще раз повністю — 250 ₴ вилітали
+      // двічі. Тепер знаменник рахується на витратах до сьогодні (тут 0),
+      // тож норма дня — рівно 1 000, а залишок на сьогодні — 750.
+      expect(result.current.dayBudget).toBeCloseTo(31_000 / 31, 5);
+      expect(result.current.todayRemaining).toBeCloseTo(31_000 / 31 - 250, 5);
+    });
+  });
+
   describe("projection and plan", () => {
     it("hasExpensePlan is false when no monthlyPlan is set", () => {
       const { result } = renderHook(() =>
@@ -475,7 +807,8 @@ describe("useOverviewData", () => {
       expect(keys).toContain("showFirstInsight");
       expect(keys).toContain("hasAnyData");
       expect(keys).toContain("dayBudget");
-      expect(keys).toContain("forecastBarClass");
+      expect(keys).toContain("projectedSpend");
+      expect(keys).toContain("projectedSpendCapped");
     });
 
     it("dateLabel is a non-empty string", () => {
@@ -488,17 +821,109 @@ describe("useOverviewData", () => {
       expect(typeof result.current.dateLabel).toBe("string");
       expect(result.current.dateLabel.length).toBeGreaterThan(0);
     });
+  });
+  // Спека finyk-hero-month-strip.md § Верифікація вимагає саме цих кейсів:
+  // `todayRemaining` з планом і без, межа `over120` і порожній місяць.
+  describe("hero month strip (todayRemaining, dailySpend)", () => {
+    // 2026-08-10 12:00 за Києвом → день 10 із 31, лишається 22 дні
+    // (`remainingDays = 31 − 10 + 1`).
+    const NOW_ISO = "2026-08-10T09:00:00Z";
+    const sec = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
 
-    it("forecastBarClass is one of 'bg-danger', 'bg-warning', 'bg-success'", () => {
+    beforeEach(() => {
+      vi.setSystemTime(new Date(NOW_ISO));
+    });
+
+    function planStorage(expense: number) {
+      return buildStorage({
+        monthlyPlan: { income: 0, expense, savings: 0 },
+      } as Partial<UseOverviewDataParams["storage"]>);
+    }
+
+    it("does not subtract today's spending twice from todayRemaining", () => {
+      // Регресія (знахідка ревʼю на PR #1025). `remainingDays` ВКЛЮЧАЄ
+      // сьогодні, тож із повним місячним `spent` у чисельнику сьогоднішня
+      // витрата вилітала двічі: раз амортизовано в `dayBudget`, раз у
+      // `dayBudget − todaySpent`. Тут: план 22 000 на 22 дні, що лишились,
+      // сьогодні витрачено 500 і більше нічого. Норма дня на ранок — рівно
+      // 1 000, залишок — 500. Стара формула давала 977.27 і 477.27, тобто
+      // витрата 500 ₴ зрізала залишок на 522.73.
       const { result } = renderHook(() =>
         useOverviewData({
-          mono: buildMono(),
+          mono: buildMono({
+            realTx: [mkTx("t1", -500_00, { time: sec(NOW_ISO) })],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: planStorage(22_000),
+        }),
+      );
+      expect(result.current.dayBudget).toBeCloseTo(1_000, 5);
+      expect(result.current.todayRemaining).toBeCloseTo(500, 5);
+    });
+
+    it("keeps todayRemaining null when there is no monthly plan", () => {
+      // `null − 500` у JS дало б −500, тобто без плану hero показав би
+      // «−500 ₴ понад бюджет дня» замість CTA «Постав план».
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [mkTx("t1", -500_00, { time: sec(NOW_ISO) })],
+          } as Partial<UseOverviewDataParams["mono"]>),
           storage: buildStorage(),
         }),
       );
-      expect(["bg-danger", "bg-warning", "bg-success"]).toContain(
-        result.current.forecastBarClass,
+      expect(result.current.dayBudget).toBeNull();
+      expect(result.current.todayRemaining).toBeNull();
+    });
+
+    it("treats exactly 120% of the day budget as not over, and 121% as over", () => {
+      // План 23 200, витрата 1 200 п'ятого серпня, сьогодні нічого:
+      // dayBudget = (23 200 − 1 200) / 22 = 1 000, тобто рівно 120%.
+      const atThreshold = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [
+              mkTx("past", -1_200_00, { time: sec("2026-08-05T09:00:00Z") }),
+            ],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: planStorage(23_200),
+        }),
       );
+      const day5 = atThreshold.result.current.dailySpend.find(
+        (d) => d.dayKey === "2026-08-05",
+      );
+      expect(atThreshold.result.current.dayBudget).toBeCloseTo(1_000, 5);
+      expect(day5?.ratio).toBeCloseTo(1.2, 5);
+      expect(day5?.over120).toBe(false);
+
+      const overThreshold = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [
+              mkTx("past", -1_210_00, { time: sec("2026-08-05T09:00:00Z") }),
+            ],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: planStorage(23_200),
+        }),
+      );
+      const day5Over = overThreshold.result.current.dailySpend.find(
+        (d) => d.dayKey === "2026-08-05",
+      );
+      expect(day5Over?.ratio).toBeGreaterThan(1.2);
+      expect(day5Over?.over120).toBe(true);
+    });
+
+    it("gives every day ratio 0 (never NaN) for an empty month without a plan", () => {
+      // Відносна шкала ділить на максимум місяця; порожній місяць дав би
+      // 0/0 = NaN і бар нульової висоти з `style={{height: "NaN%"}}`.
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: buildMono(), storage: buildStorage() }),
+      );
+      expect(result.current.dailySpend).toHaveLength(31);
+      for (const day of result.current.dailySpend) {
+        expect(day.spent).toBe(0);
+        expect(day.ratio).toBe(0);
+        expect(day.over120).toBe(false);
+      }
     });
   });
 });

@@ -56,24 +56,55 @@ export interface Category {
   color?: string | undefined;
 }
 
-/** Тип бюджету. */
-export type BudgetType = "limit" | "goal";
-
 /**
  * Бюджет-ліміт — стеля витрат на одну категорію за місяць.
  */
 export interface LimitBudget {
   id: string;
   type: "limit";
+  /**
+   * Legacy-поле однієї категорії. Для мульти-категорійного ліміту тримає
+   * ПЕРШУ категорію з `categoryIds`, щоб старі читачі (mobile, insights,
+   * старі снапшоти/бекапи) бачили валідний запис. Пиши через
+   * `normalizeLimitBudget` — він тримає обидва поля синхронними.
+   */
   categoryId: string;
+  /**
+   * Повний набір категорій ліміту (multi-category limit, 2026-08-25).
+   * Legacy-записи поля не мають — `normalizeLimitBudget` добудовує його
+   * як `[categoryId]` на read-time, без міграції даних.
+   */
+  categoryIds?: string[];
+  /** Каталог, у якому створено ліміт. Відсутнє = legacy до розділення tech. */
+  categoryTaxonomyVersion?: 2;
   limit: number;
-  /** Необов'язкова людино-читана назва (UI). */
+  /** Calendar window used to reset/aggregate the limit. Legacy records omit it. */
+  period?: "month" | "week" | "one_time";
+  /** ISO instant from which a one-time limit starts accumulating expenses. */
+  createdAt?: string;
+  /** Необовʼязкова людино-читана назва (UI). */
   label?: string;
+}
+
+/**
+ * Один запис логу поповнень цілі — ручно додана сума (готівка/інше поверх
+ * привʼязаної банки). `date` — межі доби Europe/Kyiv (`YYYY-MM-DD`),
+ * див. `toLocalISODate`.
+ */
+export interface GoalContribution {
+  id: string;
+  amountUah: number;
+  date: string;
+  note?: string | undefined;
 }
 
 /**
  * Бюджет-ціль — накопичення до `targetAmount` (з опційним дедлайном).
  * Поля віддзеркалюють те, що пише `AddBudgetForm` і читає `GoalBudgetCard`.
+ *
+ * Прогрес (`saved`) більше не редагується напряму — рахується як
+ * `баланс привʼязаної банки (linkedJarId) + сума contributions`
+ * (`calculateGoalSavedAmount` у `./budget`).
  */
 export interface GoalBudget {
   id: string;
@@ -81,7 +112,18 @@ export interface GoalBudget {
   name: string;
   emoji?: string;
   targetAmount: number;
+  /**
+   * @deprecated Заморожене значення на момент міграції зі старого
+   * редагованого поля «Відкладено» (goal-progress-auto-sync, 2026-07).
+   * Більше не пишеться/не читається з UI — прогрес рахується через
+   * `contributions`/`linkedJarId`. Лишено лише для сумісності зі старими
+   * снапшотами/бекапами.
+   */
   savedAmount: number;
+  /** Лог ручних поповнень. Мігрований `savedAmount` стає першим записом. */
+  contributions: GoalContribution[];
+  /** ID привʼязаної банки Monobank (`MonoJarDto.monoJarId`), якщо є. */
+  linkedJarId?: string | undefined;
   targetDate?: string;
   label?: string;
 }
@@ -124,7 +166,9 @@ export interface SelectorOptions {
  * Агрегат витрат/доходів за місяць — основний результат analytics-селекторів.
  */
 export interface AnalyticsResult {
+  /** Гривні, округлені для показу. Похідні числа рахуй з `spentMinor`. */
   spent: number;
+  /** Гривні, округлені для показу. Похідні числа рахуй з `incomeMinor`. */
   income: number;
   balance: number;
   txCount: number;
@@ -132,6 +176,16 @@ export interface AnalyticsResult {
   totalExpense: number;
   /** Публічна назва `income` (контракт селекторів). */
   totalIncome: number;
+  /** Точна сума витрат у копійках, без округлення. */
+  spentMinor: number;
+  /** Точна сума надходжень у копійках, без округлення. */
+  incomeMinor: number;
+}
+
+/** Дельта двох сум у копійках; `pct` лише коли попередня сума є базою. */
+export interface AmountDelta {
+  diffMinor: number;
+  pct: number | null;
 }
 
 /** Alias: результат getMonthlySummary. */
@@ -157,11 +211,14 @@ export interface TrendComparison {
   currentSpent: number;
   prevSpent: number;
   diff: number;
+  /** Відсоток з точних сум, не округлений; `null` за правилом `compareAmounts`. */
   diffPct: number | null;
   currentIncome: number;
   prevIncome: number;
   incomeDiff: number;
   incomeDiffPct: number | null;
+  /** 0 = попереднього місяця немає зовсім, порівнювати нема з чим. */
+  prevTxCount: number;
 }
 
 /**
@@ -176,25 +233,14 @@ export interface PeriodComparison extends TrendComparison {
 
 /** Елемент топу мерчантів. */
 export interface MerchantStat {
+  /** Ключ мерчанта (`normalizeMerchantKey`), за ним зводиться дельта. */
+  key: string;
   name: string;
   count: number;
+  /** Гривні, округлені для показу. */
   total: number;
-}
-
-/** Агрегат місячного бюджету. */
-export interface MonthBudgetSummary {
-  totalPlan: number;
-  planIncome: number;
-  totalFact: number;
-  totalRemaining: number;
-  safePerDay: number;
-  isOverall: boolean;
-  daysLeft: number;
-}
-
-/** Результат обчислень calculateRemainingBudget. */
-export interface RemainingBudget {
-  remaining: number;
-  pct: number;
-  isOver: boolean;
+  /** Точна сума, копійки. */
+  totalMinor: number;
+  /** Дельта до минулого місяця (Р17); `null`, коли порівнювати нема з чим. */
+  delta?: AmountDelta | null;
 }

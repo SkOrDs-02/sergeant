@@ -1,15 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { isMonoDebt } from "../utils";
 import {
-  getMonoTotals,
-  isMonoDebt,
-  calcDebtRemaining,
-  calcReceivableRemaining,
-} from "../utils";
-import { filterVisibleAccounts } from "@sergeant/finyk-domain/domain/assets/aggregates";
+  computeAssetsSummary,
+  filterVisibleAccounts,
+} from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
+import { useDebtAutoLink } from "../hooks/useDebtAutoLink";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 
 // AI-NOTE: Props mirror the original Assets component signature from FinykApp.
 // The original component was untyped; we use loose structural types here to
@@ -22,13 +22,14 @@ import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 type StorageSlice = Pick<
   ReturnType<typeof import("../hooks/useStorage").useStorage>,
   | "hiddenAccounts"
+  | "toggleHideAccount"
   | "manualAssets"
   | "setManualAssets"
   | "manualDebts"
   | "setManualDebts"
   | "receivables"
   | "setReceivables"
-  | "toggleLinkedTx"
+  | "setLinkedTxRole"
   | "subscriptions"
   | "setSubscriptions"
   | "updateSubscription"
@@ -39,6 +40,7 @@ type StorageSlice = Pick<
   | "monoDebtLinkedTxIds"
   | "toggleMonoDebtTx"
   | "customCategories"
+  | "manualExpenses"
 >;
 
 type AccountLike = Partial<MonoAccount> & {
@@ -48,11 +50,32 @@ type AccountLike = Partial<MonoAccount> & {
   [extra: string]: unknown;
 };
 
+/** Loose duck-typed jar shape — mirrors `MonoJarDto` fields this hook reads. */
+export type JarLike = {
+  id?: string | undefined;
+  monoJarId?: string | undefined;
+  title?: string | null | undefined;
+  balance?: number | null | undefined;
+  goal?: number | null | undefined;
+  currencyCode?: number | undefined;
+  [extra: string]: unknown;
+};
+
 export type AssetsProps = {
-  mono: { accounts: AccountLike[]; transactions: readonly Transaction[] };
+  mono: {
+    accounts: AccountLike[];
+    transactions: readonly Transaction[];
+    loadingTx?: boolean;
+    error?: unknown;
+    refetchTransactions?: () => void;
+    jars?: readonly JarLike[] | undefined;
+    /** Дотягує банківський діапазон у дзеркало (`useMonobankWebhook`). */
+    fetchRange?: ((from: string, to: string) => Promise<unknown>) | undefined;
+  };
   storage: StorageSlice;
   showBalance?: boolean;
   initialOpenDebt?: boolean;
+  initialOpenSubscriptions?: boolean;
 };
 
 export type SectionOpenState = {
@@ -66,17 +89,26 @@ export function useAssetsState({
   storage,
   showBalance = true,
   initialOpenDebt = false,
+  initialOpenSubscriptions = false,
 }: AssetsProps) {
-  const { accounts, transactions } = mono;
+  const {
+    accounts,
+    transactions,
+    loadingTx,
+    error,
+    refetchTransactions,
+    jars,
+  } = mono;
   const {
     hiddenAccounts,
+    toggleHideAccount,
     manualAssets,
     setManualAssets,
     manualDebts,
     setManualDebts,
     receivables,
     setReceivables,
-    toggleLinkedTx,
+    setLinkedTxRole,
     subscriptions,
     setSubscriptions,
     updateSubscription,
@@ -87,12 +119,27 @@ export function useAssetsState({
     monoDebtLinkedTxIds,
     toggleMonoDebtTx,
     customCategories,
+    manualExpenses,
   } = storage;
+
+  const linkableTransactions = useMemo(
+    () => withManualExpenses(transactions, manualExpenses),
+    [manualExpenses, transactions],
+  );
+
+  // Level 2 (2026-09-11): застосовує `Debt.autoLinkKeyword` до щойно
+  // завантаженого стану. Тут, а не в `AssetsLiabilitiesSection`, бо саме
+  // тут обидва входи (`manualDebts`, `linkableTransactions`) уже в
+  // пам'яті — нового fetch-у ефект не потребує.
+  useDebtAutoLink(manualDebts, linkableTransactions, setLinkedTxRole);
 
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [showDebtForm, setShowDebtForm] = useState(initialOpenDebt);
   const [showRecvForm, setShowRecvForm] = useState(false);
   const [showSubForm, setShowSubForm] = useState(false);
+  const [editingAssetId, setEditingAssetId] = useState<string | null>(null);
+  const [editingDebtId, setEditingDebtId] = useState<string | null>(null);
+  const [editingRecvId, setEditingRecvId] = useState<string | null>(null);
   const [newAsset, setNewAsset] = useState({
     name: "",
     amount: "",
@@ -104,6 +151,7 @@ export function useAssetsState({
     emoji: "\u{1F4B8}",
     totalAmount: "",
     dueDate: "",
+    autoLinkKeyword: "",
   });
   const [newRecv, setNewRecv] = useState({
     name: "",
@@ -133,7 +181,7 @@ export function useAssetsState({
     | null;
   const [txPicker, setTxPicker] = useState<TxPicker>(null);
   const [open, setOpen] = useState<SectionOpenState>({
-    subscriptions: false,
+    subscriptions: initialOpenSubscriptions,
     assets: false,
     liabilities: initialOpenDebt,
   });
@@ -143,53 +191,94 @@ export function useAssetsState({
   const debtNameInputRef = useRef<HTMLInputElement | null>(null);
 
   const monoAccounts = accounts as MonoAccount[];
-  const { balance: monoTotal, debt: monoTotalDebt } = getMonoTotals(
-    monoAccounts,
+  const assetsSummary = computeAssetsSummary({
+    accounts: monoAccounts,
     hiddenAccounts,
-  );
+    manualAssets: manualAssets.map((asset) => ({
+      id: asset.id,
+      name: asset.name ?? "",
+      amount: asset.amount,
+      currency: asset.currency ?? "",
+      ...(asset.emoji !== undefined ? { emoji: asset.emoji } : {}),
+    })),
+    manualDebts,
+    receivables,
+    transactions,
+    jars: (jars ?? []).map((j) => ({
+      id: j.monoJarId ?? j.id,
+      title: j.title,
+      balance: j.balance,
+      goal: j.goal,
+      currencyCode: j.currencyCode,
+    })),
+  });
+  const {
+    monoBalance: monoTotal,
+    monoDebt: monoTotalDebt,
+    totalLiabilities: totalDebt,
+    receivableTotal: totalReceivable,
+    manualAssetTotal,
+    jarsTotal,
+    networth,
+    totalAssets,
+  } = assetsSummary;
+  // Той самий предикат, що в `sumManualAssetsUAH`: у капітал іде лише
+  // `currency === "UAH"`, решту картка капіталу мусить назвати вголос.
+  const nonUahManualAssetCount = manualAssets.filter(
+    (a) => a.currency !== "UAH",
+  ).length;
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
   ).filter((a) => isMonoDebt(a));
-  const manualDebtTotal = manualDebts.reduce(
-    (s, d) => s + calcDebtRemaining(d, transactions),
-    0,
-  );
-  const totalDebt = monoTotalDebt + manualDebtTotal;
-  const totalReceivable = receivables.reduce(
-    (s, r) => s + calcReceivableRemaining(r, transactions),
-    0,
-  );
-  const manualAssetTotal = manualAssets
-    .filter((a) => a.currency === "UAH")
-    .reduce((s, a) => s + Number(a.amount), 0);
-  const networth = monoTotal + manualAssetTotal + totalReceivable - totalDebt;
-  const totalAssets = monoTotal + manualAssetTotal + totalReceivable;
 
   const [todayStart] = useState<Date>(startOfToday);
 
-  const { urgentLiability } = useMemo(
+  const { urgentLiability, subsMonthly } = useMemo(
     () =>
       computeFinykSchedule({
         subscriptions,
         manualDebts,
         receivables,
-        transactions: [...transactions],
+        // Ручні записи теж: підписку й борг можна привʼязати до них, і
+        // картки нижче вже рахують з цього ж набору.
+        transactions: linkableTransactions,
         todayStart,
       }),
-    [subscriptions, manualDebts, receivables, transactions, todayStart],
+    [subscriptions, manualDebts, receivables, linkableTransactions, todayStart],
   );
 
+  // Єдиний вхід у кожну форму — quick-action-ряд угорі сторінки. Раніше
+  // ті самі кнопки дублювались усередині розгорнутих секцій і кожна з них
+  // скидала стан редагування сама; після зняття дублів (звіт власника
+  // 2026-09-03) скидання живе тут, інакше «+ Актив» після редагування
+  // відкривав би форму з чужими значеннями.
   const openSubscriptionForm = () => {
     setOpen((v) => ({ ...v, subscriptions: true }));
     setShowSubForm(true);
   };
   const openAssetForm = () => {
     setOpen((v) => ({ ...v, assets: true }));
+    setEditingAssetId(null);
+    setNewAsset({ name: "", amount: "", currency: "UAH", emoji: "" });
     setShowAssetForm(true);
+  };
+  const openReceivableForm = () => {
+    setOpen((v) => ({ ...v, assets: true }));
+    setEditingRecvId(null);
+    setNewRecv({ name: "", emoji: "", amount: "", note: "", dueDate: "" });
+    setShowRecvForm(true);
   };
   const openDebtForm = () => {
     setOpen((v) => ({ ...v, liabilities: true }));
+    setEditingDebtId(null);
+    setNewDebt({
+      name: "",
+      emoji: "",
+      totalAmount: "",
+      dueDate: "",
+      autoLinkKeyword: "",
+    });
     setShowDebtForm(true);
   };
 
@@ -228,18 +317,24 @@ export function useAssetsState({
   return {
     // Raw data from props
     accounts,
-    transactions,
+    jars: jars ?? [],
+    jarsTotal,
+    transactions: linkableTransactions,
+    loadingTx: Boolean(loadingTx),
+    transactionsError: error,
+    refetchTransactions,
     showBalance,
 
     // Storage-derived
     hiddenAccounts,
+    toggleHideAccount,
     manualAssets,
     setManualAssets,
     manualDebts,
     setManualDebts,
     receivables,
     setReceivables,
-    toggleLinkedTx,
+    setLinkedTxRole,
     subscriptions,
     setSubscriptions,
     updateSubscription,
@@ -259,9 +354,11 @@ export function useAssetsState({
     totalReceivable,
     manualAssetTotal,
     networth,
+    nonUahManualAssetCount,
     totalAssets,
     todayStart,
     urgentLiability,
+    subsMonthly,
 
     // Section toggle state
     open,
@@ -276,6 +373,12 @@ export function useAssetsState({
     setShowRecvForm,
     showSubForm,
     setShowSubForm,
+    editingAssetId,
+    setEditingAssetId,
+    editingDebtId,
+    setEditingDebtId,
+    editingRecvId,
+    setEditingRecvId,
 
     // Form data
     newAsset,
@@ -300,6 +403,7 @@ export function useAssetsState({
     // Quick-action openers
     openSubscriptionForm,
     openAssetForm,
+    openReceivableForm,
     openDebtForm,
   };
 }

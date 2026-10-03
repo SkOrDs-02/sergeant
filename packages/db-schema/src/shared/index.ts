@@ -12,4 +12,5 @@ export {
   SYNC_OP_LOG_STATUSES,
   type SyncOpLogStatus,
   DEFAULT_WAITLIST_SOURCE,
+  SYNC_OP_CURSOR_PULL_SINCE,
 } from "./constants.js";

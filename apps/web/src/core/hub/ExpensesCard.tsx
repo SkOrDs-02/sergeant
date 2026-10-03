@@ -2,26 +2,32 @@
  * Lazy-loaded per-domain card for finyk/expense data in HubReports.
  * Reads its own localStorage shard and aggregates independently.
  */
+import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
 import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
+import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
-import { safeReadLS } from "@shared/lib/storage/storage";
-import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
-import {
-  getFinykExcludedTxIdsFromStorage,
-  getFinykTxSplitsFromStorage,
-} from "@finyk/utils";
+import { toKyivISODate } from "@sergeant/shared";
+import { readFinykStatsContext } from "@finyk/utils";
+import { compareAmounts } from "@sergeant/finyk-domain/domain/selectors";
+import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
+import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
-  getPeriodRange,
-  datesInRange,
-  localDateKey,
+  reportWindows,
   type Period,
   type SpendingInputs,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import {
+  formatChartLabel,
+  formatChartTooltip,
+  labelStep,
+} from "./reportChartLabels";
 
 // ── Local sub-components ──────────────────────────────────────────────
 
@@ -46,139 +52,115 @@ function BarChart({
 
   if (!hasData) {
     return (
-      <div className="h-24 flex items-center justify-center text-xs text-muted">
+      <div className="h-24 flex items-center justify-center text-style-caption text-muted">
         {messages.hub.reportNoData}
       </div>
     );
   }
 
-  function labelStep(count: number) {
-    if (count <= 7) return 1;
-    if (count <= 15) return 2;
-    return Math.ceil(count / 8);
-  }
   const step = labelStep(dates.length);
+  const formatLabel = (dateStr: string) => formatChartLabel(dateStr, isWeek);
+  const formatTooltip = (dateStr: string, value: number) =>
+    formatChartTooltip(dateStr, value, unit);
 
-  function formatLabel(dateStr: string) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    if (isWeek) {
-      const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[parts.weekday];
-    }
-    return String(parts.day);
-  }
-
-  function formatTooltip(dateStr: string, value: number) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    const day = String(parts.day).padStart(2, "0");
-    const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
-  }
+  const selectedDate = selected !== null ? dates[selected] : undefined;
+  const selectedVal = selected !== null ? vals[selected] : undefined;
 
   return (
     <div>
-      {selected !== null && (
+      {selectedDate !== undefined && selectedVal !== undefined ? (
         <div className="text-style-caption text-center text-text mb-1 h-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-          {formatTooltip(dates[selected]!, vals[selected]!)}
+          {formatTooltip(selectedDate, selectedVal)}
         </div>
+      ) : (
+        <div className="h-4 mb-1" />
       )}
-      {selected === null && <div className="h-4 mb-1" />}
       <div
-        className="flex items-end gap-0.5 h-20"
-        aria-label={messages.hub.reportChartAria}
+        data-testid="report-chart-scroller"
+        className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain"
       >
-        {vals.map((v, i) => {
-          const pct = Math.max(0, Math.min(100, (v / max) * 100));
-          const isToday = dates[i] === localDateKey();
-          const isSelected = selected === i;
-          return (
-            <button
-              key={dates[i]}
-              type="button"
-              aria-label={formatTooltip(dates[i] ?? "", v)}
-              aria-pressed={isSelected}
-              className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
-              onClick={() => setSelected(isSelected ? null : i)}
-            >
-              <div
-                className={cn(
-                  "w-full rounded-t-sm transition-[height,background-color,opacity]",
-                  "motion-safe:animate-bar-grow",
-                  colorClass,
-                  (isToday || isSelected) && "opacity-100",
-                  !isToday && !isSelected && "opacity-60",
-                )}
-                style={{
-                  height: `${pct}%`,
-                  minHeight: v > 0 ? "2px" : "0",
-                  animationDelay: `${Math.min(i * 30, 600)}ms`,
-                }}
-              />
-            </button>
-          );
-        })}
-      </div>
-      <div className="flex gap-0.5 mt-1">
-        {dates.map((d, i) => {
-          const show = i % step === 0 || i === dates.length - 1;
-          return (
-            <span
-              key={d}
-              className={cn(
-                "flex-1 text-center text-style-caption leading-tight",
-                selected === i ? "text-text font-medium" : "text-muted",
-              )}
-            >
-              {show ? formatLabel(d) : ""}
-            </span>
-          );
-        })}
+        <div
+          className="min-w-full"
+          style={{
+            width: dates.length > 14 ? `${dates.length * 24}px` : "100%",
+          }}
+        >
+          <div
+            className="flex items-end gap-0.5 h-20"
+            aria-label={messages.hub.reportChartAria}
+          >
+            {vals.map((v, i) => {
+              const pct = Math.max(0, Math.min(100, (v / max) * 100));
+              // «Сьогодні» для грошей — київське (f6), як і межа доби в агрегаті.
+              const isToday = dates[i] === toKyivISODate();
+              const isSelected = selected === i;
+              return (
+                <button
+                  key={dates[i]}
+                  type="button"
+                  data-compact
+                  aria-label={formatTooltip(dates[i] ?? "", v)}
+                  aria-pressed={isSelected}
+                  className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
+                  onClick={() => setSelected(isSelected ? null : i)}
+                >
+                  <div
+                    className={cn(
+                      "w-full rounded-t-sm transition-[height,background-color,opacity]",
+                      "motion-safe:animate-bar-grow",
+                      colorClass,
+                      (isToday || isSelected) && "opacity-100",
+                      !isToday && !isSelected && "opacity-60",
+                    )}
+                    style={{
+                      height: `${pct}%`,
+                      minHeight: v > 0 ? "2px" : "0",
+                      animationDelay: `${Math.min(i * 30, 600)}ms`,
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-0.5 mt-1">
+            {dates.map((d, i) => {
+              const show = i % step === 0 || i === dates.length - 1;
+              return (
+                <span
+                  key={d}
+                  className={cn(
+                    "flex-1 text-center text-style-caption leading-tight",
+                    selected === i ? "text-text font-medium" : "text-muted",
+                  )}
+                >
+                  {show ? formatLabel(d) : ""}
+                </span>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0) return <span className="text-xs text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
+/**
+ * Чип зміни витрат до попереднього періоду за правилом Р4 (канон finyk,
+ * журнал 2026-09-24): відсоток лише коли попередня сума є базою
+ * (`compareAmounts`: ≥ 10 % поточної), інакше абсолютна дельта в гривнях.
+ * Без цього «+946 %» проти минулого періоду з однією витратою на 75 ₴
+ * читалось як дефект. Агрегат картки — цілі гривні (`calcFinykSpendingByDate`
+ * округлює по днях), тож копійки тут `× 100`: точніших значень картка не має.
+ */
+function SpendingDelta({ cur, prev }: { cur: number; prev: number }) {
+  const { pct } = compareAmounts(Math.round(cur * 100), Math.round(prev * 100));
   return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
+    <DeltaChip
+      cur={cur}
+      prev={prev}
+      higherIsBetter={false}
+      {...(pct === null ? { absoluteUnit: "₴" } : {})}
+    />
   );
 }
 
@@ -199,59 +181,69 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
+  const mirrorTick = useFinykMonoMirrorTick();
+  // CALC-4 (2026-09-01 product audit): `readFinykStatsContext()` reads
+  // `getCachedFinykSqliteState()` — a synchronous snapshot of the Finyk
+  // SQLite warm cache, refreshed by `refreshCachesAfterPull` once a sync
+  // pull lands. That refresh bumps ONLY this tick
+  // (`notifyFinykSqliteCacheRefresh` — no `hubBus("storageUpdated")`
+  // emit), so on a cold deep-link straight to `/?tab=reports` (nothing
+  // else warmed the Finyk cache yet) this card computed its `useMemo`
+  // once against an empty cache and never re-ran: `bump`/`mirrorTick`
+  // never change for a Finyk-only pull. Reached via SPA nav from
+  // `/finyk/*` it looked fine only because that route had already
+  // warmed the same module-level cache before this card ever mounted.
+  const sqliteCacheTick = useFinykSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
-    // eslint-disable-next-line sergeant-design/no-raw-storage-key
-    const raw = safeReadLS("finyk_tx_cache", null) as
-      | { txs?: unknown[] }
-      | unknown[]
-      | null;
-    const txList = Array.isArray(raw)
-      ? raw
-      : Array.isArray((raw as { txs?: unknown[] } | null)?.txs)
-        ? (raw as { txs: unknown[] }).txs
-        : [];
+  const { cur, prev, prevAny, dates, partial } = useMemo(() => {
+    void bump; // storage-write tick
+    void mirrorTick; // Mono mirror refresh tick
+    void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
+    // W1-CANON-AGG стадія 2d: картка більше не збирає всесвіт власноруч із
+    // самого лише mono-mirror — вона бере той самий канонічний контекст, що
+    // й тижневий дайджест і коуч, тож готівкові витрати входять у Звіти.
+    // Раніше та сама людина бачила в дайджесті одне число, а в цій картці —
+    // менше на суму всього ручного світу.
+    const { txs, excludedTxIds, txSplits } = readFinykStatsContext();
 
     const inputs: SpendingInputs = {
-      txList: txList as SpendingInputs["txList"],
-      excludedTxIds: getFinykExcludedTxIdsFromStorage(),
-      txSplits: getFinykTxSplitsFromStorage() as Record<string, unknown[]>,
+      txList: txs as SpendingInputs["txList"],
+      excludedTxIds,
+      txSplits: txSplits as Record<string, unknown[]>,
     };
 
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    // Гроші ріжуться за Києвом (f6): вікна «до сьогодні» — `w.money`, не
+    // `w.cur`, а день транзакції `aggregateSpending` бере київський.
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateSpending(inputs, curDates),
-      prev: aggregateSpending(inputs, prevDates),
-      dates: curDates,
+      cur: aggregateSpending(inputs, w.money.cur),
+      prev: aggregateSpending(inputs, w.money.prev),
+      prevAny: aggregateSpending(inputs, w.prevAll).total > 0,
+      dates: w.dates,
+      partial: w.money.partial,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
-  }, [period, offset, bump]);
+  }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
 
-  const formattedCurrent = cur.total.toLocaleString("uk-UA");
-  const formattedPrev = prev.total.toLocaleString("uk-UA");
+  // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
+  const empty = cur.total === 0 && !prevAny;
 
   return (
-    <div
-      className={cn(
-        "bg-panel border border-line rounded-2xl",
-        collapsed ? "p-3" : "p-4 space-y-3",
-      )}
-    >
+    <ReportSheet collapsed={collapsed}>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
         className={cn(
           "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-colors",
+          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
         )}
       >
-        <span className="text-lg shrink-0" aria-hidden>
-          💳
-        </span>
+        <Icon
+          name="credit-card"
+          size="lg"
+          className="shrink-0 text-finyk"
+          aria-hidden
+        />
         <SectionHeading
           as="span"
           size="xs"
@@ -261,10 +253,17 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-base font-bold text-text">
-              {formattedCurrent} ₴
-            </span>
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            {empty ? (
+              <span className="text-style-body font-bold text-text">–</span>
+            ) : (
+              <>
+                <Money
+                  amount={cur.total}
+                  className="text-style-body font-bold text-text"
+                />
+                <SpendingDelta cur={cur.total} prev={prev.total} />
+              </>
+            )}
           </span>
         )}
         <svg
@@ -285,16 +284,25 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyExpenses}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-style-hero text-text">
-              {formattedCurrent} ₴
-            </span>
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            <Money
+              amount={cur.total}
+              className="text-style-headline text-text"
+            />
+            <SpendingDelta cur={cur.total} prev={prev.total} />
           </div>
-          <p className="text-xs text-muted">
-            {messages.hub.reportPrevious} {formattedPrev} ₴
+          <p className="text-style-caption text-muted">
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            <Money amount={prev.total} />
           </p>
           <BarChart
             key={`${period}-${offset}`}
@@ -305,6 +313,6 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           />
         </>
       )}
-    </div>
+    </ReportSheet>
   );
 }

@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 import type { GoalBudget } from "@sergeant/finyk-domain/domain";
 
 import { Sparkline } from "./Sparkline";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface GoalBudgetRowProps {
   budget: GoalBudget;
@@ -26,7 +27,7 @@ function progressTrend(pct: number): number[] {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 function GoalBudgetRowImpl({
@@ -70,7 +71,7 @@ function GoalBudgetRowImpl({
         <Sparkline values={progressTrend(pct)} tone="positive" height={14} />
       </View>
       <View className="h-2 bg-cream-200 rounded-full overflow-hidden">
-        <View style={{ width: barWidth }} className="h-full bg-emerald-500" />
+        <View style={{ width: barWidth }} className="h-full bg-teal-700" />
       </View>
       {monthlyLabel ? (
         <Text className="text-xs text-fg-muted mt-1.5">{monthlyLabel}</Text>

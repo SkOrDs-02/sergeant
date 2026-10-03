@@ -12,6 +12,10 @@ import {
   useModuleReminder,
 } from "@shared/hooks/useModuleReminder";
 import { habitScheduledOnDate } from "../lib/hubCalendarAggregate";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { normalizeReminderTimes } from "../lib/routineDraftUtils";
 import {
   getRoutineReminderPrivacy,
@@ -40,35 +44,27 @@ export function cleanupStaleRoutineNotifyKeys(maxAgeDays = 45): void {
   }
 }
 
-function sendRoutineStateToSW(routine: RoutineState): void {
-  try {
-    if (!("serviceWorker" in navigator) || !navigator.serviceWorker.controller)
-      return;
-    navigator.serviceWorker.controller.postMessage({
-      type: "ROUTINE_STATE_UPDATE",
-      data: {
-        habits: routine.habits,
-        completions: routine.completions,
-        prefs: routine.prefs,
-      },
-    });
-  } catch (err) {
-    logger.warn("[routine.reminders] sw-state-postmessage-failed", err);
-  }
-}
-
 export function useRoutineReminders(routine: RoutineState): void {
   const enabled = routine.prefs?.routineRemindersEnabled === true;
   const routineRef = useRef<RoutineState>(routine);
-  routineRef.current = routine;
+
+  useEffect(() => {
+    routineRef.current = routine;
+  }, [routine]);
 
   useEffect(() => {
     cleanupStaleRoutineNotifyKeys();
   }, []);
 
-  useEffect(() => {
-    sendRoutineStateToSW(routine);
-  }, [routine]);
+  // AI-CONTEXT: тут раніше стояв `postMessage("ROUTINE_STATE_UPDATE")`, що
+  // живив цикл нагадувань усередині сервіс-воркера. Цикл прибрано — він не
+  // міг спрацювати при закритому застосунку: браузер вбиває неактивний SW
+  // за ~30 секунд, а переданий стан жив у його памʼяті й після перезапуску
+  // був порожній. Нагадування тепер шле сервер
+  // (`apps/server/src/lib/reminders/`), читаючи ті самі `routine_habits` /
+  // `routine_prefs`, які вже синхронізуються. Цей хук лишається швидким
+  // foreground-шляхом для відкритої вкладки; дедуп між ним і сервером
+  // тримається на спільному `storageKey` = `Notification.tag`.
 
   // `onMinuteTick` receives Kyiv-local dayKey + hm from the shared hook —
   // that is the bug fix: fizruk/nutrition previously read host-local time here.
@@ -84,8 +80,15 @@ export function useRoutineReminders(routine: RoutineState): void {
         const times = normalizeReminderTimes(h);
         if (times.length === 0) continue;
         if (!times.includes(hm)) continue;
-        if (!habitScheduledOnDate(h, dk)) continue;
         const completions = r.completions[h.id] || [];
+        // Гнучка звичка («N разів на тиждень») перестає бути запланованою,
+        // щойно тижневу ціль добрано — без `weekDoneCount` предикат завжди
+        // істинний (`schedule.ts`), тож звичка «3 рази на тиждень»,
+        // виконана 3/3, щодня слала б нагадування (аудит 2026-09, PR-R4).
+        const weekDoneCount = isFlexibleHabit(h)
+          ? weekDoneCountExcludingDate(completions, dk)
+          : undefined;
+        if (!habitScheduledOnDate(h, dk, { weekDoneCount })) continue;
         if (completions.includes(dk)) continue;
 
         const storageKey = `${ROUTINE_NOTIFY_PREFIX}${h.id}_${hm}_${dk}`;

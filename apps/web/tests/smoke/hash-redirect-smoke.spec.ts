@@ -25,6 +25,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_vibe_picks_v1: JSON.stringify({
     picks: ["finyk", "fizruk", "nutrition", "routine"],
@@ -63,7 +65,9 @@ test("@critical hash-redirect: legacy `/#fizruk/workouts` lands on `/fizruk/work
 
   // The fizruk module shell mounts at the redirected path — the hub
   // `<nav>` must be gone (we're inside a module, not on the hub home).
-  await expect(page.getByText("ФІЗРУК", { exact: true })).toBeVisible({
+  await expect(
+    page.getByTestId("module-header-title").filter({ hasText: "Фізрук" }),
+  ).toBeVisible({
     timeout: 10_000,
   });
   await expect(

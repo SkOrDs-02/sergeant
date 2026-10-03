@@ -2,13 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
-import type { WorkoutsView } from "../pages/Workouts.types";
 import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useRestTimerCountdown,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 
 describe("useActiveWorkoutIdPersistence", () => {
@@ -50,24 +48,88 @@ describe("useStaleActiveWorkoutCleanup", () => {
     renderHook(() => useStaleActiveWorkoutCleanup(false, [], "x", setId));
     expect(setId).not.toHaveBeenCalled();
   });
-});
 
-describe("useWorkoutsViewFromSession", () => {
-  beforeEach(() => sessionStorage.clear());
+  // 02-A — `routeOwnsWorkoutId` suppresses the two "home" behaviours that
+  // used to fight the route: auto-adopting an unfinished workout, and
+  // clearing the id the moment the routed workout ends (which is exactly
+  // what wiped out the finished-workout summary right after «Завершити»).
+  describe("routeOwnsWorkoutId", () => {
+    it("does NOT clear the id when the routed workout has just ended", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(
+          true,
+          [{ id: "w1", endedAt: "2026-01-01T00:00:00Z" } as Workout],
+          "w1",
+          setId,
+          { routeOwnsWorkoutId: true },
+        ),
+      );
+      expect(setId).not.toHaveBeenCalled();
+    });
 
-  it("consumes a templates flag and clears it", () => {
-    sessionStorage.setItem("fizruk_workouts_mode", "templates");
-    const setView = vi.fn();
-    renderHook(() => useWorkoutsViewFromSession(setView));
-    expect(setView).toHaveBeenCalledWith("templates");
-    expect(sessionStorage.getItem("fizruk_workouts_mode")).toBeNull();
-  });
+    // Було «still clears the id when the routed workout genuinely does not
+    // exist». Виявилось, що «взагалі немає» і «ще не приїхало» тут одне й те
+    // саме: `workoutsLoaded` каже про факт прогріву кеша, не про його вміст.
+    // З базою в OPFS прогрів встигає після монтування маршруту, і занулення
+    // ховало щойно створену сесію назавжди — авто-підхоплення під тим самим
+    // прапорцем вимкнене. Картку «не знайдено» малює `activeWorkout === null`,
+    // тож видалена сесія читається так само; різниця лише в оборотності.
+    it("не забирає id маршруту, якщо сесії ще немає у списку", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(true, [], "ghost", setId, {
+          routeOwnsWorkoutId: true,
+        }),
+      );
+      expect(setId).not.toHaveBeenCalled();
+    });
 
-  it("ignores an unknown flag", () => {
-    sessionStorage.setItem("fizruk_workouts_mode", "bogus");
-    const setView = vi.fn<(v: WorkoutsView) => void>();
-    renderHook(() => useWorkoutsViewFromSession(setView));
-    expect(setView).not.toHaveBeenCalled();
+    it("id маршруту доживає до появи сесії у кеші", () => {
+      const setId = vi.fn();
+      const { rerender } = renderHook(
+        ({ workouts }: { workouts: Workout[] }) =>
+          useStaleActiveWorkoutCleanup(true, workouts, "w1", setId, {
+            routeOwnsWorkoutId: true,
+          }),
+        { initialProps: { workouts: [] as Workout[] } },
+      );
+      rerender({ workouts: [{ id: "w1", endedAt: null } as Workout] });
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("без прапорця неіснуючий id досі чиститься", () => {
+      const setId = vi.fn();
+      renderHook(() => useStaleActiveWorkoutCleanup(true, [], "ghost", setId));
+      expect(setId).toHaveBeenCalledWith(null);
+    });
+
+    it("does not auto-adopt an unfinished workout when no id is selected", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(
+          true,
+          [{ id: "w1", endedAt: null } as Workout],
+          null,
+          setId,
+          { routeOwnsWorkoutId: true },
+        ),
+      );
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("without the flag, still clears an ended workout (home behaviour unchanged)", () => {
+      const setId = vi.fn();
+      renderHook(() =>
+        useStaleActiveWorkoutCleanup(
+          true,
+          [{ id: "w1", endedAt: "2026-01-01T00:00:00Z" } as Workout],
+          "w1",
+          setId,
+        ),
+      );
+      expect(setId).toHaveBeenCalledWith(null);
+    });
   });
 });
 

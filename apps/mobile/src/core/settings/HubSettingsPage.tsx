@@ -38,6 +38,7 @@ import { ExperimentalSection } from "./ExperimentalSection";
 import { FinykSection } from "./FinykSection";
 import { FizrukSection } from "./FizrukSection";
 import { GeneralSection } from "./GeneralSection";
+import { HubModuleStorageBoot } from "./HubModuleStorageBoot";
 import { NotificationsSection } from "./NotificationsSection";
 import { RoutineSection } from "./RoutineSection";
 
@@ -118,6 +119,11 @@ export function HubSettingsPage() {
 
   return (
     <SafeAreaView className="flex-1 bg-bg dark:bg-bg" edges={["top"]}>
+      {/* Boot Finyk + Routine SQLite read-caches and dual-write registrations
+          before any settings section can fire a mutation. No-ops when the
+          module tabs have already been mounted (idempotent boot hooks). */}
+      <HubModuleStorageBoot />
+
       {/* Sticky Category Tabs */}
       <View className="border-b border-line bg-panel dark:bg-cream-900 px-4 py-3">
         <ScrollView

@@ -2,7 +2,7 @@
  * Pure `sergeant://` + HTTPS-Universal-Link deep-link parser + builder.
  *
  * Source of truth for the URL schemes this module supports is
- * `docs/mobile/overview.md` (section "Deep links"). Keep that table and the
+ * `docs/engineering/mobile/overview.md` (section "Deep links"). Keep that table and the
  * `SergeantDeepLink` discriminated union below in lock-step.
  *
  * Intentionally dep-free — runs in any JS environment (node tests,
@@ -31,7 +31,7 @@ export const SERGEANT_SCHEME = "sergeant://";
  */
 export const UNIVERSAL_LINK_HOSTS: readonly string[] = Object.freeze([
   "sergeant.vercel.app",
-  "sergeant.2dmanager.com.ua",
+  "app.sergeant.com.ua",
 ]);
 
 /**

@@ -1,5 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import request from "supertest";
+
+// Windows module reloads for route-level app imports can exceed Vitest's default
+// timeout in large batches; keep assertions strict.
+vi.setConfig({ testTimeout: 60_000 });
 
 /**
  * Route-level contract tests for `/api/v1/finyk/*`.
@@ -7,7 +19,7 @@ import request from "supertest";
  * Mirrors `coach.route.test.ts` (same hoisted `mockPool` / `getSessionUser`
  * mocks, same `loadCreateApp` env-reparse pattern, same passthrough
  * `rateLimitExpress` mock) and asserts the full HTTP wiring:
- * setModule → rateLimit → requireSession → asyncHandler.
+ * setModule → rateLimit → requireSession → handler.
  *
  * Covers:
  *   1. Auth guard: unauthenticated POST → 401.
@@ -33,6 +45,14 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   return { mockPool, queryMock, getSessionUserMock };
 });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
@@ -50,16 +70,25 @@ vi.mock("./../auth.js", () => ({
 // layers; the Postgres-fallback bucket-check would otherwise consume our
 // `queryMock.mockResolvedValueOnce` for the INSERT. Rate-limiting itself has
 // `http/rateLimit.test.ts`; here we test route-wiring + handler-shape.
-vi.mock("./../http/rateLimit.js", async () => {
-  const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
-    "./../http/rateLimit.js",
-  );
+vi.mock("./../http/index.js", async () => {
+  const actual =
+    await vi.importActual<typeof import("./../http/index.js")>(
+      "./../http/index.js",
+    );
   return {
     ...actual,
     rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
       next(),
   };
 });
+
+// Холодний імпорт усього застосунку на слабкій машині триває десятки
+// секунд. Без прогріву перший тест файлу впирався у свої 60 с, а його
+// недороблений імпорт добігав уже під час наступного тесту і з'їдав його
+// `mockResolvedValueOnce`: звідси каскад «випадкових» падінь.
+beforeAll(async () => {
+  await import("./../app.js");
+}, 300_000);
 
 async function loadCreateApp(): Promise<
   (typeof import("./../app.js"))["createApp"]
@@ -211,5 +240,52 @@ describe("finyk routes — POST /manual-expenses validation", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .send(body);
     expect(res.status).toBe(400);
+  });
+});
+
+/**
+ * Чек-скан v1 (`docs/work/specs/receipt-scan.md`) —
+ * route-рівень: guard-ланцюг (setModule → rateLimit → requireSession) +
+ * повний-стек ДПС-503-без-токена. Глибша бізнес-логіка (matcher,
+ * XML-парсинг, vision-нормалізація, ідемпотентність, серіалізація) уже
+ * покрита handler-unit-тестами в `modules/finyk/receipts/*.test.ts` — тут
+ * лише підтвердження, що роутер реально монтує ці handler-и під
+ * правильними guard-ами.
+ */
+describe("finyk routes — чек-скан v1 auth guard", () => {
+  it.each([
+    ["POST", "/api/v1/finyk/receipts/lookup"],
+    ["POST", "/api/v1/finyk/receipts/analyze"],
+    ["POST", "/api/v1/finyk/receipts"],
+    ["GET", "/api/v1/finyk/receipts/1"],
+  ])("%s %s → 401 без сесії", async (method, path) => {
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      [method.toLowerCase() as "get" | "post"](path)
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({});
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("finyk routes — POST /receipts/lookup без DPS_API_TOKEN", () => {
+  it("503 DPS_TOKEN_MISSING на весь стек (роутер → guard → handler → env)", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    vi.stubEnv("DPS_API_TOKEN", "");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/v1/finyk/receipts/lookup")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        fn: "4000123456",
+        id: "RRO001",
+        date: "20260115",
+        time: "143210",
+        sm: "150.00",
+      });
+    expect(res.status).toBe(503);
+    expect(res.body.code).toBe("DPS_TOKEN_MISSING");
   });
 });

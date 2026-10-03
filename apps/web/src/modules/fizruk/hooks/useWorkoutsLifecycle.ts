@@ -1,16 +1,15 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import {
-  safeReadStringSS,
-  safeRemoveLS,
-  safeRemoveSS,
-  safeWriteLS,
-} from "@shared/lib/storage/storage";
+import { safeRemoveLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "./useFizrukRestSound";
-import type { WorkoutsView } from "../pages/Workouts.types";
 
-const VIEW_FROM_SESSION_KEY = "fizruk_workouts_mode";
+// PR-Z8: `useWorkoutsViewFromSession` і ключ `fizruk_workouts_mode` знято.
+// Це був другий, безадресний вхід у «Шаблони»: Огляд писав прапорець у
+// sessionStorage і навігував на `workouts`, а вигляд перемикався вже після
+// монтування. Єдиний писар був один (`Dashboard.openTemplates`) і тепер
+// ходить канонічним маршрутом `templates`, тож механізм лишався б кодом,
+// який ніхто не викликає, але який усе одно читається на кожному вході.
 
 /**
  * Persist `activeWorkoutId` into local storage so a refresh keeps the
@@ -26,6 +25,42 @@ export function useActiveWorkoutIdPersistence(
 }
 
 /**
+ * Options for `useStaleActiveWorkoutCleanup`.
+ */
+export interface StaleActiveWorkoutCleanupOptions {
+  /**
+   * True when the caller is a route that owns a specific workout id
+   * (`/fizruk/workout/<id>` — `Workouts.tsx` rendered with `workoutId`).
+   * Disables the "home" behaviours that don't make sense once the
+   * URL has already picked a workout:
+   *  - auto-adopting the single unfinished workout into `activeWorkoutId`
+   *    when none is selected;
+   *  - clearing `activeWorkoutId` just because the selected workout has
+   *    `endedAt` set.
+   * Without this flag, a route-owned view of a *finished* workout used to
+   * self-clear right after «Завершити» (the effect ran, saw `endedAt`,
+   * and nulled the id) — the route then rendered a generic
+   * "not found" dead-end instead of the read-only summary (02-A).
+   *
+   * Прапорець знімає і ТРЕТЮ поведінку — очищення id, якого ще немає у
+   * списку. «Ще немає» і «немає взагалі» на цьому місці не розрізнити:
+   * `workoutsLoaded` каже лише, що кеш SQLite бодай раз прогрівся, а не
+   * що він уже містить щойно створену сесію. З базою в OPFS прогрів іде
+   * через воркер і встигає ПІСЛЯ монтування маршруту — ефект бачив
+   * `loaded && !selected`, занулював id, і сесія, яка через мить
+   * приїжджала в кеш, уже не мала кому належати: гілка авто-підхоплення
+   * під цим самим прапорцем виходить одразу. Наслідок для людини —
+   * «Почати тренування» веде в «Тренування не знайдено» назавжди
+   * (Playwright `fizruk-active-workout`, 2026-09-15).
+   *
+   * Очищення тут нічого не давало й на вигляд: сторінка малює ту саму
+   * картку «не знайдено» з `activeWorkout === null`, тож видалена сесія
+   * читається так само — тільки тепер оборотно.
+   */
+  routeOwnsWorkoutId?: boolean;
+}
+
+/**
  * Clear a stale `activeWorkoutId` that no longer matches any workout
  * (e.g. the workout was deleted on another device before sync).
  */
@@ -34,33 +69,34 @@ export function useStaleActiveWorkoutCleanup(
   workouts: readonly Workout[],
   activeWorkoutId: string | null,
   setActiveWorkoutId: Dispatch<SetStateAction<string | null>>,
+  options?: StaleActiveWorkoutCleanupOptions,
 ): void {
+  const routeOwnsWorkoutId = options?.routeOwnsWorkoutId ?? false;
   useEffect(() => {
-    if (!workoutsLoaded || !activeWorkoutId) return;
-    if (!workouts.some((w) => w.id === activeWorkoutId)) {
+    if (!workoutsLoaded) return;
+    if (!activeWorkoutId) {
+      if (routeOwnsWorkoutId) return;
+      const unfinished = workouts.find((workout) => !workout.endedAt);
+      if (unfinished) setActiveWorkoutId(unfinished.id);
+      return;
+    }
+    const selected = workouts.find((workout) => workout.id === activeWorkoutId);
+    if (!selected) {
+      // Маршрут володіє id — не забираємо його в кеша, який міг просто не
+      // встигнути. Див. `routeOwnsWorkoutId` вище.
+      if (!routeOwnsWorkoutId) setActiveWorkoutId(null);
+      return;
+    }
+    if (selected.endedAt && !routeOwnsWorkoutId) {
       setActiveWorkoutId(null);
     }
-  }, [workoutsLoaded, activeWorkoutId, workouts, setActiveWorkoutId]);
-}
-
-/**
- * Restore `view` from a one-shot `sessionStorage` flag set by other
- * surfaces ("open Templates" / "open Journal" deep-links). The flag
- * is consumed (cleared) on read so a refresh reverts to "home".
- */
-export function useWorkoutsViewFromSession(
-  setView: (v: WorkoutsView) => void,
-): void {
-  useEffect(() => {
-    // `safeReadStringSS`/`safeRemoveSS` centralise the private-mode-Safari /
-    // disabled-storage guard that used to live as an inline try/catch here.
-    const m = safeReadStringSS(VIEW_FROM_SESSION_KEY);
-    if (m === "templates" || m === "log") {
-      setView(m);
-      safeRemoveSS(VIEW_FROM_SESSION_KEY);
-    }
-    // Mount-only effect: setView is stable
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    workoutsLoaded,
+    activeWorkoutId,
+    workouts,
+    setActiveWorkoutId,
+    routeOwnsWorkoutId,
+  ]);
 }
 
 /**
@@ -103,13 +139,9 @@ export function useLiveWorkoutTick(
   activeWorkout: Workout | null,
   setNow: Dispatch<SetStateAction<number>>,
 ): void {
-  // Mount-only effect: setNow is stable; only id/endedAt changes matter
-  useEffect(
-    () => {
-      if (!activeWorkout || activeWorkout.endedAt) return;
-      const id = setInterval(() => setNow(Date.now()), 1000);
-      return () => clearInterval(id);
-    },
-    [activeWorkout?.id, activeWorkout?.endedAt], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  useEffect(() => {
+    if (!activeWorkout?.id || activeWorkout.endedAt) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [activeWorkout?.id, activeWorkout?.endedAt, setNow]);
 }

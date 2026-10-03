@@ -1,7 +1,7 @@
 /**
  * Boot-time residual-import helper for the mobile Nutrition MMKV keys.
  *
- * Stage 8 PR #057n-tombstone of `docs/planning/storage-roadmap.md`
+ * Stage 8 PR #057n-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * (mobile parity for `apps/web/src/modules/nutrition/lib/residualImport.ts`).
  * Stage 13 PR #073 extended this drain to also cover the saved-recipes
  * MMKV blob (`nutrition_recipe_book_v1`).
@@ -42,14 +42,14 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadLS, safeReadStringLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyNutritionDualWriteOps } from "./dualWrite/adapter";
+import { applyNutritionDualWriteOps } from "./sqliteWriter/adapter";
 import {
   diffNutritionDualWriteOps,
   type NutritionDualWriteState,
   type NutritionMealSnapshot,
   type NutritionPantrySnapshot,
   type NutritionRecipeSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { normalizeSavedRecipe, type SavedRecipe } from "./recipeBookStore";
 
 const STALE_TIMESTAMP = "1970-01-01T00:00:00.000Z";
@@ -274,6 +274,13 @@ function extractPantrySnapshots(
       qty: typeof it.qty === "number" ? it.qty : null,
       unit: typeof it.unit === "string" ? it.unit : null,
       notes: typeof it.notes === "string" ? it.notes : null,
+      // Дзеркало web: варіанти покупок їдуть одним JSON-полем разом зі
+      // своєю позицією (міграція 130). Без цього рядка синк із телефону
+      // затирав би картку продукту, яку щойно записав веб.
+      sources:
+        Array.isArray(it.sources) && it.sources.length > 0
+          ? JSON.stringify(it.sources)
+          : null,
     })),
   }));
 }

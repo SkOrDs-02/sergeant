@@ -37,6 +37,6 @@ LIMIT 20;
 
 ## Sergeant-specific note
 
-Production Postgres runs on Railway (`sergeant-db`). Sort by `total_exec_time` to find the cumulative load drivers (a fast query called millions of times often beats one slow report), and by `mean_exec_time` for individually heavy queries. Once a hot query is identified, confirm the fix locally with `EXPLAIN ANALYZE` (see `query-missing-indexes.md`) before shipping an index in a sequential migration.
+Production Postgres runs on the Hetzner VPS under Coolify (`pgvector/pgvector:pg18` — ADR-0074). Sort by `total_exec_time` to find the cumulative load drivers (a fast query called millions of times often beats one slow report), and by `mean_exec_time` for individually heavy queries. Once a hot query is identified, confirm the fix locally with `EXPLAIN ANALYZE` (see `query-missing-indexes.md`) before shipping an index in a sequential migration.
 
 > Adapted from [supabase/agent-skills](https://github.com/supabase/agent-skills) (MIT).

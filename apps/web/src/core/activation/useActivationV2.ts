@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useRef } from "react";
+// Глибокий імпорт, не барель: `@sergeant/insights` ре-експортує
+// `Recommendations` → finance-рекомендації → `@sergeant/finyk-domain`, і цей
+// boot-хук тягнув ~7 kB brotli у критичний шлях (CI-5, аудит 2026-09).
 import {
   evaluateActivationV2,
   type ActivationInput,
   type ActivationResult,
-} from "@sergeant/insights";
+} from "@sergeant/insights/activation";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
@@ -34,7 +37,10 @@ import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
 
 const FIRED_FLAG_KEY = "sergeant.activation_v2_fired";
 
-export type { ActivationInput, ActivationResult } from "@sergeant/insights";
+export type {
+  ActivationInput,
+  ActivationResult,
+} from "@sergeant/insights/activation";
 
 /**
  * Optional caller-supplied overrides. `variant` is forwarded to the
@@ -78,7 +84,9 @@ export function useActivationV2(
   // changes — variant flips are rare and we want fire-once semantics
   // even when the parent re-renders with a fresh options object.
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   useEffect(() => {
     if (!input || !result) return;

@@ -6,7 +6,7 @@
  * `pool.end()` чекає, поки всі checked-out клієнти повернуться у pool. Якщо
  * якийсь worker (BullMQ-job, AI-стрім, retry-loop) зависає у середині
  * транзакції або тримає row-lock — drain зависає до `SHUTDOWN_HARD_TIMEOUT_MS`
- * у `index.ts`, після чого `process.exit()` обриває pg-з'єднання, клієнти
+ * у `index.ts`, після чого `process.exit()` обриває pg-зʼєднання, клієнти
  * отримують ECONNRESET замість graceful 503, а Sentry-flush і Redis-quit
  * взагалі не встигають виконатися.
  *
@@ -59,6 +59,14 @@ export interface EndPoolOptions {
    * скасовується миттєво.
    */
   externalSignal?: AbortSignal;
+  /**
+   * Опційна мітка пулу, яка додається у кожен лог-рядок як поле `pool`.
+   * Дозволяє дашбордам розрізняти drain primary- і replica-пулів, коли
+   * обидва дренуються в одному shutdown-і. Literal union — щоб typo у мітці
+   * ловився компілятором; новий пул = свідоме розширення union-а.
+   * Якщо не задано — лог-обʼєкти лишаються без поля `pool` (backward-compat).
+   */
+  poolLabel?: "primary" | "replica";
 }
 
 /**
@@ -69,7 +77,10 @@ export async function endPoolWithAbortTimeout(
   pool: Pick<Pool, "end">,
   options: EndPoolOptions,
 ): Promise<EndPoolResult> {
-  const { timeoutMs, logger, externalSignal } = options;
+  const { timeoutMs, logger, externalSignal, poolLabel } = options;
+  // Спред-мітка пулу для логів; порожня, якщо `poolLabel` не заданий, тож
+  // лог-обʼєкти лишаються byte-identical до старої поведінки (backward-compat).
+  const poolField = poolLabel ? { pool: poolLabel } : {};
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -118,16 +129,18 @@ export async function endPoolWithAbortTimeout(
     const result = await Promise.race([endPromise, abortPromise]);
 
     if (result.ok) {
-      logger?.info({ msg: "pg_pool_ended" });
+      logger?.info({ msg: "pg_pool_ended", ...poolField });
     } else if (result.reason === "aborted") {
       logger?.warn({
         msg: "pg_pool_end_timeout",
+        ...poolField,
         timeoutMs,
         abortedAfterMs: result.abortedAfterMs,
       });
     } else {
       logger?.warn({
         msg: "pg_pool_end_error",
+        ...poolField,
         err: serializeError(result.err, { includeStack: false }),
       });
     }

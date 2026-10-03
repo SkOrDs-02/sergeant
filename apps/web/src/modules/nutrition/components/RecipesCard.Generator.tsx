@@ -14,13 +14,13 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
-import type { NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { RecipeCacheEntry } from "../lib/recipeCache";
 import type { RecipeLike } from "./RecipesCard.helpers";
+import { PantryModeSelect } from "./PantryModeSelect";
 
 interface GeneratorProps {
   busy?: boolean | undefined;
-  activePantry?: Pantry | null | undefined;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
   recommendRecipes: () => void | Promise<void>;
@@ -36,7 +36,6 @@ interface GeneratorProps {
 
 export function GeneratorCard({
   busy,
-  activePantry,
   prefs,
   setPrefs,
   recommendRecipes,
@@ -51,15 +50,20 @@ export function GeneratorCard({
 }: GeneratorProps) {
   return (
     <Card className="p-4">
-      <div className="text-style-label text-text">
-        Рецепти ({activePantry?.name || "Склад"})
-      </div>
-      <div className="text-xs text-subtle mt-0.5">
-        Рекомендації на базі продуктів зі складу. Можна вказати час, порції та
+      <div className="text-style-label text-text">Рецепти</div>
+      {/* AI-NOTE: `text-style-caption` тут правильний — це підказка ПІД
+          контролом (named-виняток правила `no-sentence-in-caption`), а не
+          текст, який читають підряд. Анотацію додано при мержі `main` у
+          гілку #1188: `lint-staged` ганяє eslint із `--max-warnings=0` по
+          всіх файлах, які мерж заносить у стейдж, тож попередження, що на
+          `main` живе тихо (CI лінт warning-и пропускає), блокує будь-який
+          мерж-коміт у довгоживучу гілку. Сам текст не змінювався. */}
+      <div className="text-style-caption text-muted mt-0.5">
+        Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.
         {(recipeCacheEntry?.recipes?.length ?? 0) > 0 && (
           <span className="ml-1 text-nutrition-strong dark:text-nutrition">
-            (є кеш сеансу — натисни «Запропонувати» для оновлення)
+            (є кеш сеансу, натисни «Запропонувати рецепти» для оновлення)
           </span>
         )}
       </div>
@@ -67,8 +71,9 @@ export function GeneratorCard({
       <div className="mt-3 grid gap-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <div className="text-xs text-subtle mb-1">Ціль</div>
+            <div className="text-style-caption text-muted mb-1">Ціль</div>
             <select
+              aria-label="Ціль"
               value={prefs.goal}
               onChange={(e) =>
                 setPrefs((p) => ({ ...p, goal: e.target.value }))
@@ -83,7 +88,7 @@ export function GeneratorCard({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="text-xs text-subtle mb-1">Порції</div>
+              <div className="text-style-caption text-muted mb-1">Порції</div>
               <Input
                 value={String(prefs.servings)}
                 onChange={(e) => {
@@ -98,7 +103,7 @@ export function GeneratorCard({
               />
             </div>
             <div>
-              <div className="text-xs text-subtle mb-1">Хвилин</div>
+              <div className="text-style-caption text-muted mb-1">Хвилин</div>
               <Input
                 value={String(prefs.timeMinutes)}
                 onChange={(e) => {
@@ -116,7 +121,7 @@ export function GeneratorCard({
         </div>
 
         <div>
-          <div className="text-xs text-subtle mb-1">
+          <div className="text-style-caption text-muted mb-1">
             Не використовувати / алергени
           </div>
           <Input
@@ -129,13 +134,41 @@ export function GeneratorCard({
           />
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="block">
+            <span className="block text-style-caption text-muted mb-1">
+              Прийом їжі
+            </span>
+            <select
+              aria-label="Прийом їжі"
+              value={prefs.recipeMealType}
+              onChange={(e) =>
+                setPrefs((p) => ({
+                  ...p,
+                  recipeMealType: e.target
+                    .value as NutritionPrefs["recipeMealType"],
+                }))
+              }
+              className="input-focus-nutrition w-full h-11 rounded-2xl bg-panel border border-line px-4 text-sm text-text"
+              disabled={busy}
+            >
+              <option value="any">Будь-який</option>
+              <option value="breakfast">Сніданок</option>
+              <option value="lunch">Обід</option>
+              <option value="dinner">Вечеря</option>
+              <option value="snack">Перекус</option>
+            </select>
+          </label>
+          <PantryModeSelect prefs={prefs} setPrefs={setPrefs} disabled={busy} />
+        </div>
+
         <button
           type="button"
           onClick={recommendRecipes}
           disabled={busy}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           Запропонувати рецепти
@@ -153,15 +186,15 @@ export function GeneratorCard({
                     <div className="text-style-label text-text wrap-break-word">
                       {r.title || `Рецепт ${idx + 1}`}
                     </div>
-                    <div className="text-xs text-subtle mt-1">
+                    <div className="text-style-caption text-muted mt-1">
                       {r.timeMinutes ? `${r.timeMinutes} хв` : "—"} ·{" "}
                       {r.servings ? `${r.servings} порц.` : "—"}
                     </div>
                   </div>
                   {r.macros?.kcal != null && (
-                    <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-xs text-subtle">
-                      <div className="text-style-caption text-subtle">
-                        ≈ ккал
+                    <div className="shrink-0 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption text-muted">
+                      <div className="text-style-caption text-muted">
+                        ≈ ккал / порція
                       </div>
                       <div className="text-style-label text-text">
                         {fmtMacro(r.macros.kcal)}
@@ -171,7 +204,7 @@ export function GeneratorCard({
                   <div className="flex gap-2 flex-wrap basis-full sm:basis-auto">
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() => onSave(r)}
                       disabled={busy}
@@ -180,7 +213,7 @@ export function GeneratorCard({
                     </Button>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() =>
                         onAddToLog(r, r.id || r.title || String(idx))
@@ -193,15 +226,19 @@ export function GeneratorCard({
                 </div>
 
                 {Array.isArray(r.ingredients) && r.ingredients.length > 0 && (
-                  <div className="mt-3 text-sm text-text wrap-break-word">
-                    <div className="text-xs text-subtle mb-1">Інгредієнти</div>
+                  <div className="mt-3 text-style-body text-text wrap-break-word">
+                    <div className="text-style-caption text-muted mb-1">
+                      Інгредієнти
+                    </div>
                     {r.ingredients.join(", ")}
                   </div>
                 )}
 
                 {Array.isArray(r.steps) && r.steps.length > 0 && (
-                  <div className="mt-3 text-sm text-text">
-                    <div className="text-xs text-subtle mb-1">Кроки</div>
+                  <div className="mt-3 text-style-body text-text">
+                    <div className="text-style-caption text-muted mb-1">
+                      Кроки
+                    </div>
                     <ol className="list-decimal pl-5 space-y-1">
                       {r.steps.slice(0, 10).map((s, i) => (
                         <li key={i}>{s}</li>
@@ -211,8 +248,10 @@ export function GeneratorCard({
                 )}
 
                 {Array.isArray(r.tips) && r.tips.length > 0 && (
-                  <div className="mt-3 text-sm text-text">
-                    <div className="text-xs text-subtle mb-1">Поради</div>
+                  <div className="mt-3 text-style-body text-text">
+                    <div className="text-style-caption text-muted mb-1">
+                      Поради
+                    </div>
                     <ul className="list-disc pl-5 space-y-1">
                       {r.tips.slice(0, 6).map((t, i) => (
                         <li key={i}>{t}</li>
@@ -226,15 +265,24 @@ export function GeneratorCard({
         )}
 
         {recipesTried && !busy && recipes.length === 0 && !err && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-sm text-subtle">
+          <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted">
             Рецептів не повернулося. Спробуй натиснути &quot;Розібрати&quot; або
             додати 2–3 базові продукти (яйця/крупа/овочі).
-            {recipesRaw && (
+            {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
+                Це діагностика для розробника: неформатований текст від
+                LLM, який у продакшн-UI не пояснює людині нічого, зате
+                показує їй внутрішню кухню (знахідка PR-N8, аудит
+                2026-09-13). `import.meta.env.DEV` статично `false` у
+                прод-збірці, тож Vite вирізає гілку цілком — це той самий
+                гейт, що в `StandaloneRoutes` для внутрішнього стайлгайду.
+                Повертаєш це людям — роби через прапорець і у вигляді,
+                який можна прочитати, а не `<pre>{raw}</pre>`. */}
+            {import.meta.env.DEV && recipesRaw && (
               <details className="mt-3">
-                <summary className="cursor-pointer text-xs text-muted hover:text-text">
+                <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
                   Показати діагностику (raw відповідь AI)
                 </summary>
-                <pre className="mt-2 whitespace-pre-wrap text-xs leading-snug text-subtle bg-bg border border-line rounded-xl p-3 max-h-64 overflow-auto">
+                <pre className="mt-2 whitespace-pre-wrap text-style-caption leading-snug text-muted bg-bg border border-line rounded-xl p-3 max-h-64 overflow-auto">
                   {recipesRaw}
                 </pre>
               </details>

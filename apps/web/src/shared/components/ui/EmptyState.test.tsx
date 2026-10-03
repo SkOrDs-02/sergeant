@@ -18,7 +18,7 @@ describe("EmptyState — a11y", () => {
     const { container, getByText } = render(
       <EmptyState
         title="Поки немає шаблонів"
-        description="Створи свій перший — кнопка вище."
+        description="Створи свій перший, кнопка вище."
       />,
     );
     const status = container.querySelector('[role="status"]');
@@ -28,7 +28,7 @@ describe("EmptyState — a11y", () => {
     // title + description видимі і живуть всередині live-region.
     expect(status!.contains(getByText("Поки немає шаблонів"))).toBe(true);
     expect(
-      status!.contains(getByText("Створи свій перший — кнопка вище.")),
+      status!.contains(getByText("Створи свій перший, кнопка вище.")),
     ).toBe(true);
   });
 
@@ -61,7 +61,7 @@ describe("EmptyState — a11y", () => {
             <rect width="120" height="120" />
           </svg>
         }
-        title="Жодної транзакції"
+        title="Жодної операції"
       />,
     );
     const illustrationWrapper = container.querySelector(
@@ -109,7 +109,7 @@ describe("EmptyState — a11y", () => {
     const { container } = render(
       <EmptyState
         compact
-        title="Нічого не знайдено"
+        title="Нічого не знайшов"
         description="Спробуй інший запит."
       />,
     );
@@ -118,7 +118,7 @@ describe("EmptyState — a11y", () => {
     expect(status!.getAttribute("aria-live")).toBe("polite");
   });
 
-  it("hint живе у `text-subtle`-токені (не raw text-gray-*)", () => {
+  it("hint живе у `text-muted`-токені (не raw text-gray-*)", () => {
     const { getByText } = render(
       <EmptyState
         title="Готовий до першої цілі?"
@@ -126,7 +126,8 @@ describe("EmptyState — a11y", () => {
       />,
     );
     const hint = getByText("Порада: підключи Monobank — імпорт автоматично.");
-    expect(hint.className).toContain("text-subtle");
+    // muted, не subtle: 12px normal-weight потребує 4.5:1, dark subtle дає 3.33:1
+    expect(hint.className).toContain("text-muted");
     expect(hint.className).not.toMatch(/text-gray-/);
   });
 });
@@ -144,5 +145,103 @@ describe("ModuleEmptyState — dismiss button a11y", () => {
   it("без dismissible-prop dismiss-кнопка не рендериться", () => {
     const { queryByRole } = render(<ModuleEmptyState module="finyk" />);
     expect(queryByRole("button", { name: "Закрити" })).toBeNull();
+  });
+
+  // Founder-UX audit round 2 (F1): `MODULE_EMPTY_CONFIG.finyk.actionLabel`
+  // was dead (no call-site ever passes `onAction` for finyk — see
+  // `Overview.tsx` / `TransactionList.tsx`), removed and made optional on
+  // `ModuleConfig`. This guards the button-label fallback so a future
+  // caller that DOES pass `onAction` for finyk without an explicit
+  // `actionLabel` still gets a labelled, not blank, button.
+  it("falls back to a generic label when onAction is passed for a module with no actionLabel", () => {
+    const { getByRole } = render(
+      <ModuleEmptyState module="finyk" onAction={() => {}} />,
+    );
+    const button = getByRole("button");
+    expect(button.textContent?.trim()).toBe("Додати");
+  });
+
+  it.each([
+    [
+      "finyk",
+      {
+        finykBudget: 12000,
+        fizrukWeeklyGoal: null,
+        routineFirstHabit: null,
+        nutritionGoal: null,
+      },
+      /Встанови бюджет 12\s000₴, додай першу витрату\./,
+    ],
+    [
+      "fizruk",
+      {
+        finykBudget: null,
+        fizrukWeeklyGoal: 3,
+        routineFirstHabit: null,
+        nutritionGoal: null,
+      },
+      "3× на тиждень, починай із першого тренування.",
+    ],
+    [
+      "routine",
+      {
+        finykBudget: null,
+        fizrukWeeklyGoal: null,
+        routineFirstHabit: "reading",
+        nutritionGoal: null,
+      },
+      "Відстеж «Читання», серія днів покаже правду.",
+    ],
+    [
+      "nutrition",
+      {
+        finykBudget: null,
+        fizrukWeeklyGoal: null,
+        routineFirstHabit: null,
+        nutritionGoal: "gain",
+      },
+      "Ціль «набрати масу», залогай перший прийом їжі.",
+    ],
+  ] as const)(
+    "personalises %s empty-state copy from onboarding goals",
+    (module, goalContext, expected) => {
+      const { getByText } = render(
+        <ModuleEmptyState module={module} goalContext={goalContext} />,
+      );
+
+      expect(getByText(expected)).toBeInTheDocument();
+    },
+  );
+
+  it("falls back to generic habit copy for unknown routine presets", () => {
+    const { getByText } = render(
+      <ModuleEmptyState
+        module="routine"
+        goalContext={{
+          finykBudget: null,
+          fizrukWeeklyGoal: null,
+          routineFirstHabit: "stretch",
+          nutritionGoal: null,
+        }}
+      />,
+    );
+
+    expect(
+      getByText("Відстеж свою звичку, серія днів покаже правду."),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("EmptyState — край і зріз (П3) НЕ застосовується", () => {
+  /**
+   * Межа рішення власника 2026-08-07: край — матеріал ЗАПИСІВ І ЗВІТІВ
+   * (тест: чи існує ця річ у житті як аркуш). Порожній стан повідомляє про
+   * ВІДСУТНІСТЬ запису, паперового аналога в нього немає — проп
+   * `surface: "document"` прибрано разом із цим тестом-контрактом.
+   */
+  it("ніколи не носить масковий край чи підйом", () => {
+    const { container } = render(<EmptyState title="Порожньо" />);
+    expect(container.querySelector(".edge-stub")).toBeNull();
+    expect(container.querySelector(".edge-lift")).toBeNull();
   });
 });

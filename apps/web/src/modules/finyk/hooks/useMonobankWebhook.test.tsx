@@ -196,11 +196,15 @@ describe("useMonobankWebhook", () => {
       lastBackfillAt: null,
       accountsCount: 0,
     });
+    // `MONO_TOKEN_INVALID` — те, що сервер реально шле, коли саме Mono
+    // відкинув токен (`modules/mono/connection.ts`). Session-gate 401
+    // приходить без `code` і має вести до іншої копії — див. тест нижче.
     const apiError = new ApiError({
       kind: "http",
       status: 401,
       message: "Unauthorized",
       url: "/api/mono/webhook/connect",
+      body: { error: "Invalid Monobank token", code: "MONO_TOKEN_INVALID" },
     });
     mockedConnect.mockRejectedValue(apiError);
 
@@ -218,6 +222,41 @@ describe("useMonobankWebhook", () => {
 
     expect(result.current.authError).toBe(
       messages.finyk.monoConnectErrors.tokenRejected,
+    );
+    expect(result.current.error).toBe("");
+  });
+
+  it("surfaces accountRequired wording on a session 401 without MONO_TOKEN_INVALID", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "disconnected",
+      webhookActive: false,
+      lastEventAt: null,
+      lastBackfillAt: null,
+      accountsCount: 0,
+    });
+    const apiError = new ApiError({
+      kind: "http",
+      status: 401,
+      message: "Unauthorized",
+      url: "/api/mono/webhook/connect",
+      body: { error: "Потрібна автентифікація" },
+    });
+    mockedConnect.mockRejectedValue(apiError);
+
+    const { result } = renderHook(() => useMonobankWebhook(), {
+      wrapper: makeWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.syncState.status).toBe("idle");
+    });
+
+    await act(async () => {
+      await result.current.connect("perfectly-valid-token");
+    });
+
+    expect(result.current.authError).toBe(
+      messages.finyk.monoConnectErrors.accountRequired,
     );
     expect(result.current.error).toBe("");
   });

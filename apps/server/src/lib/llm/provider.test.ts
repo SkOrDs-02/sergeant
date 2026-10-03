@@ -1,6 +1,14 @@
 /** @status Active */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Леджер — реальний модуль тягне за собою pg-пул і намагається піти в базу
+// на кожен успішний виклик (fail-open, тому тести й проходили — але з
+// живими спробами конекту й шумом у виводі).
+vi.mock("../anthropicUsageStore.js", () => ({
+  ANTHROPIC_PROVIDER_SUBJECT: "provider:anthropic",
+  recordAnthropicUsageToDb: vi.fn(),
+}));
+
 vi.mock("../anthropic.js", () => ({
   anthropicMessages: vi.fn(),
   extractAnthropicText: vi.fn(
@@ -468,6 +476,39 @@ describe("OpenRouterProvider — model precedence", () => {
     await p.generate(opts);
     expect(lastBody?.model).toBe("@preset/sergeant-digest");
   });
+
+  it("reasoning доходить до тіла запиту, а без нього поля немає", async () => {
+    const p = new OpenRouterProvider("or-key", "");
+    await p.generate({ ...opts, reasoning: { effort: "none" } });
+    expect(lastBody).toMatchObject({ reasoning: { effort: "none" } });
+    await p.generate(opts);
+    expect(lastBody).not.toHaveProperty("reasoning");
+  });
+
+  it("HTTP 200 з finish_reason=error (апстрім упав посеред генерації) → ok=false", async () => {
+    global.fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: { content: '{"meals": [{"name": "Йогурт' },
+                finish_reason: "error",
+                error: { code: 429, message: "rate-limited upstream" },
+              },
+            ],
+            usage: { prompt_tokens: 0, completion_tokens: 0 },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    ) as typeof fetch;
+    const r = await new OpenRouterProvider("or-key", "").generate(opts);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("rate_limited");
+      expect(r.status).toBe(429);
+    }
+  });
 });
 
 // ─── FallbackProvider ────────────────────────────────────────────────────
@@ -580,7 +621,7 @@ describe("FallbackProvider", () => {
 });
 
 // ─── getLLMProvider fallback chain ───────────────────────────────────────
-// env об'єкт парситься при import, тому vi.stubEnv не впливає на нього.
+// env обʼєкт парситься при import, тому vi.stubEnv не впливає на нього.
 // Для тестів fallback chain мокаємо env-модуль через vi.mock.
 describe("getLLMProvider — fallback chain", () => {
   const originalEnv = { ...process.env };
@@ -655,5 +696,53 @@ describe("getLLMProvider — fallback chain", () => {
       await importProviderWithEnv({ LLM_FALLBACK_ENABLED: "true" });
     const p = freshGet({ provider: "anthropic", anthropicApiKey: "key" });
     expect(p).toBeInstanceOf(AP);
+  });
+
+  /**
+   * Регресія. `getLLMProvider` створював `FallbackProvider` без `log`, а
+   * дефолт там — `() => undefined`. Підміна провайдера не лишала ані рядка
+   * в логах, ані метрики: `invokeLLM` бачить лише фінальний `ok` і пише його
+   * з моделлю ФОЛБЕКА. Через це коуч девʼять викликів із десяти йшов не тією
+   * моделлю, що в конфігу, і знайшлось це випадково — розкладом витрат по
+   * моделях, а не сигналом.
+   */
+  it("продакшн-обгортка НЕ мовчить: провал первинного йде в лічильник", async () => {
+    const mod = await importProviderWithEnv({
+      OPENROUTER_API_KEY: "or-key",
+      ANTHROPIC_API_KEY: "ant-key",
+      LLM_FALLBACK_ENABLED: "true",
+    });
+    const metrics = await import("../../obs/metrics.js");
+    const spy = vi
+      .spyOn(metrics.llmProviderInvocationsTotal, "inc")
+      .mockImplementation(() => undefined as never);
+
+    // Первинний (шлюз) падає по таймауту, фолбек відповідає.
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockRejectedValueOnce(
+          Object.assign(new Error("aborted"), { name: "AbortError" }),
+        ),
+    );
+
+    const p = mod.getLLMProvider({ provider: "openrouter" });
+    await p.generate({
+      model: "anthropic/claude-sonnet-4.6",
+      maxTokens: 10,
+      messages: [{ role: "user", content: "x" }],
+      endpoint: "coach-insight",
+      timeoutMs: 5,
+    });
+
+    const call = spy.mock.calls.find(
+      (c) => (c[0] as { endpoint?: string })?.endpoint === "coach-insight",
+    );
+    expect(call, "провал шлюзу має потрапити в лічильник").toBeDefined();
+    expect(call?.[0]).toMatchObject({
+      provider: "openrouter",
+      endpoint: "coach-insight",
+    });
   });
 });

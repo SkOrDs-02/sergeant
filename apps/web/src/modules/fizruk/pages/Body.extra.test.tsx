@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
  * Extended Body-page tests covering branches the first wave skipped:
- *  - the stats summary (latest weight / avg sleep) reads from recentWith;
+ *  - the stats summary (avg sleep from recentWith, latest weight from the
+ *    cross-store union selector — W1-WEIGHT-SOT стадія 1);
  *  - the optional Measurements + Atlas CTAs;
  *  - the trend cards render once ≥2 data points exist (and the journal);
  *  - delete-journal-entry fires the undo toast;
@@ -11,6 +12,7 @@
  * trend-card children are stubbed to markers.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { flatMatch } from "@shared/testing/numberText";
 import {
   render,
   screen,
@@ -26,6 +28,7 @@ const recentWith = vi.fn();
 const showUndoToast = vi.fn();
 
 let entries: Array<Record<string, unknown>> = [];
+let measurementEntries: Array<Record<string, unknown>> = [];
 
 vi.mock("../hooks/useDailyLog", () => ({
   useDailyLog: () => ({
@@ -35,6 +38,15 @@ vi.mock("../hooks/useDailyLog", () => ({
     deleteEntry,
     restoreEntry,
     recentWith,
+  }),
+}));
+
+vi.mock("../hooks/useMeasurements", () => ({
+  useMeasurements: () => ({
+    entries: measurementEntries,
+    addEntry: vi.fn(),
+    deleteEntry: vi.fn(),
+    restoreEntry: vi.fn(),
   }),
 }));
 
@@ -71,6 +83,10 @@ vi.mock("./Body/CollapsibleTrendCard", () => ({
   ),
 }));
 
+vi.mock("../components/InjuryManager", () => ({
+  InjuryManager: () => <div data-testid="injury-manager" />,
+}));
+
 vi.mock("../components/RecoveryFocusCard", () => ({
   RecoveryFocusCard: ({ onOpenAtlas }: { onOpenAtlas: () => void }) => (
     <button type="button" onClick={onOpenAtlas}>
@@ -90,6 +106,7 @@ function twoPoints(field: string) {
 
 beforeEach(() => {
   entries = [];
+  measurementEntries = [];
   // Default: every metric has zero history.
   recentWith.mockReturnValue([]);
 });
@@ -100,24 +117,40 @@ afterEach(() => {
 });
 
 describe("Body page — stats + optional CTAs", () => {
-  it("shows the latest weight + avg sleep stats from recentWith", () => {
+  it("shows the latest weight from the cross-store union + avg sleep from recentWith", () => {
+    // W1-WEIGHT-SOT стадія 1: вага більше не читається з `recentWith`, а з
+    // union-селектора над daily_log + measurements.
+    entries = [{ id: "w", at: "2026-06-22T08:00:00Z", weightKg: 81 }];
     recentWith.mockImplementation((field: string) => {
-      if (field === "weightKg")
-        return [{ id: "w", at: "2026-06-22T08:00:00Z", weightKg: 81 }];
       if (field === "sleepHours")
         return [{ id: "s", at: "2026-06-22T08:00:00Z", sleepHours: 7 }];
       return [];
     });
     render(<Body />);
-    expect(screen.getByText("81 кг")).toBeInTheDocument();
-    expect(screen.getByText("7.0 год")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("81,0 кг"))).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("7,0 год"))).toBeInTheDocument();
   });
 
-  it("renders the Measurements CTA and fires onOpenMeasurements", () => {
-    const onOpenMeasurements = vi.fn();
-    render(<Body onOpenMeasurements={onOpenMeasurements} />);
-    fireEvent.click(screen.getByRole("button", { name: "Виміри" }));
-    expect(onOpenMeasurements).toHaveBeenCalledTimes(1);
+  it("shows the 7-day average energy in the header (defect #8 — it was computed but never rendered)", () => {
+    entries = [{ id: "w", at: "2026-06-22T08:00:00Z", weightKg: 81 }];
+    recentWith.mockImplementation((field: string) => {
+      if (field === "energyLevel")
+        return [{ id: "e", at: "2026-06-22T08:00:00Z", energyLevel: 4 }];
+      return [];
+    });
+    render(<Body />);
+    // Matches the fixed 1-decimal treatment already used by the sibling
+    // weight/sleep stat columns above (`Measure fractionDigits={1}`).
+    expect(screen.getByText(flatMatch("4,0 /5"))).toBeInTheDocument();
+  });
+
+  it("бере вагу із «Замірів», коли daily_log порожній (регресія W1-WEIGHT-SOT)", () => {
+    entries = [];
+    measurementEntries = [
+      { id: "m1", at: "2026-06-22T08:00:00Z", weightKg: 77 },
+    ];
+    render(<Body />);
+    expect(screen.getByText(flatMatch("77,0 кг"))).toBeInTheDocument();
   });
 
   it("renders the RecoveryFocusCard only when onOpenAtlas is provided", () => {
@@ -131,9 +164,8 @@ describe("Body page — stats + optional CTAs", () => {
 
 describe("Body page — trends + journal", () => {
   it("renders trend cards once a metric has ≥2 points", () => {
-    recentWith.mockImplementation((field: string) =>
-      field === "weightKg" ? twoPoints("weightKg") : [],
-    );
+    // Вага тепер union-джерело: два різні Kyiv-дні → дві точки графіка.
+    entries = twoPoints("weightKg");
     render(<Body />);
     const cards = screen.getAllByTestId("trend-card");
     expect(cards.length).toBeGreaterThanOrEqual(1);
@@ -196,6 +228,27 @@ describe("Body page — radiogroup keyboard roving", () => {
     const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
     fireEvent.keyDown(group, { key: "Home" });
     fireEvent.keyDown(group, { key: "ArrowLeft" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
+  });
+
+  // Defect #3: from an EMPTY selection (nothing picked yet, not "wrapped
+  // from 1"), the first ArrowLeft/Up press used to land on 4 — the never-
+  // taken `?? 5` fallback masked a modulo bug ((−1 − 1 + 5) % 5 === 3).
+  it("ArrowLeft from an empty selection lands on the last value (5), not 4", () => {
+    render(<Body />);
+    const group = screen.getByRole("radiogroup", { name: "Настрій" });
+    fireEvent.keyDown(group, { key: "ArrowLeft" });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
+    expect(radios[3]!.getAttribute("aria-checked")).toBe("false");
+  });
+
+  // Same edge case via ArrowUp (aliases ArrowLeft in this roving pattern).
+  it("ArrowUp from an empty selection lands on the last value (5), not 4", () => {
+    render(<Body />);
+    const group = screen.getByRole("radiogroup", { name: "Рівень енергії" });
+    fireEvent.keyDown(group, { key: "ArrowUp" });
     const radios = within(group).getAllByRole("radio");
     expect(radios[4]!.getAttribute("aria-checked")).toBe("true");
   });

@@ -7,14 +7,13 @@
 // the maintainer opens in the morning to decide what to give agents.
 //
 // Sections of `today.md`:
-//   1. Top items — up to N (default 5) actionable documents with a
-//      `Phase X next` / `Stage X pending` / `Phase X blocked` / similar
-//      marker in their Status header, sorted by file mtime descending
-//      (most recently touched = freshest context).
+//   1. Top items — up to N actionable documents with `Agent-ready: yes` or a
+//      `Phase X next` / `Stage X pending` / `Phase X blocked` marker, sorted
+//      by readiness and file mtime descending.
 //   2. Overdue review — documents whose `Next review:` date is in the past.
 //   3. WIP warnings — per-tracker count vs limits, surfaced only when at
 //      least one tracker is at soft or hard.
-//   4. Quick links — open-work, freshness dashboard, hard rules.
+//   4. Quick links — open-work, freshness docs, hard rules.
 //
 // Usage:
 //   node scripts/docs/generate-today.mjs            # write `docs/today.md`
@@ -27,7 +26,7 @@
 // Designed to be safe to run from a daily cron — the output is fully
 // deterministic given the same input set, so idempotent commits are easy.
 
-import { readFileSync, writeFileSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -89,41 +88,44 @@ export function extractNextPhase(status) {
 
 /**
  * For a list of open-work entries (already produced by `collectOpenWork`),
- * pull the ones that carry a `Phase/Stage X next/pending/...` marker.
- * Each kept entry is decorated with `{ priorityPhase, priorityKind, mtimeMs }`
+ * pull the ones that carry a `Phase/Stage X next/pending/...` marker or an
+ * explicit `Agent-ready: yes` header.
+ * Each kept entry is decorated with `{ priorityPhase, priorityKind }`
  * for downstream sorting.
  */
-export function pickPriorityItems(report, repoRoot = REPO_ROOT) {
+export function pickPriorityItems(report) {
   const out = [];
   for (const { tracker, entries } of report) {
     for (const e of entries) {
       const sig = extractNextPhase(e.rawStatus);
-      if (!sig) continue;
-      let mtimeMs = 0;
-      try {
-        mtimeMs = statSync(resolve(repoRoot, e.relPath)).mtimeMs;
-      } catch {
-        // file vanished between collect and stat — skip silently
-        continue;
-      }
+      if (!sig && e.agentReady !== "yes") continue;
       out.push({
         tracker,
         ...e,
-        priorityPhase: sig.phase,
-        priorityKind: sig.kind,
-        mtimeMs,
+        priorityPhase: sig?.phase ?? null,
+        priorityKind: sig?.kind ?? "agent-ready",
       });
     }
   }
   // `blocked` sorts above `next/pending/in progress` because unblocking
-  // is usually the constraint. Within the same kind bucket, freshest
-  // file mtime wins (recently touched = warm context).
-  const kindRank = { blocked: 0 };
+  // is usually the constraint. Within the same kind bucket — за шляхом,
+  // алфавітно.
+  //
+  // AI-CONTEXT: тут стояв `mtimeMs` («найсвіжіший файл = теплий контекст»),
+  // і саме він робив гейт `docs:check-today` нездійсненним. У свіжому
+  // клоні mtime — це час, коли `actions/checkout` записав файл, а не час
+  // правки: інформації про свіжість у ньому нуль, зате порядок запису
+  // свій на кожному ранері. Тож автор комітив порядок, згенерований його
+  // локальними mtime, CI генерував інший — і `--check` червонів у обох
+  // напрямках. Перевірено 2026-08-27: під симульованими checkout-mtime
+  // стає stale і файл із цієї гілки, і файл із `main`. Шлях детермінований
+  // і однаковий скрізь; сортувати за чимось поза git тут не можна.
+  const kindRank = { blocked: 0, "agent-ready": 1 };
   out.sort((a, b) => {
-    const ka = kindRank[a.priorityKind] ?? 1;
-    const kb = kindRank[b.priorityKind] ?? 1;
+    const ka = kindRank[a.priorityKind] ?? 2;
+    const kb = kindRank[b.priorityKind] ?? 2;
     if (ka !== kb) return ka - kb;
-    return b.mtimeMs - a.mtimeMs;
+    return a.relPath.localeCompare(b.relPath, "en");
   });
   return out.slice(0, TOP_N);
 }
@@ -169,11 +171,13 @@ function fmtPriorityItem(item) {
   // does not produce nested bold markers (which render as literal `**`
   // in many viewers).
   const phase =
-    item.priorityKind === "in progress"
-      ? `Phase ${item.priorityPhase} в роботі`
-      : item.priorityKind === "blocked"
-        ? `Phase ${item.priorityPhase} blocked 🚧`
-        : `Phase ${item.priorityPhase} — ${item.priorityKind}`;
+    item.priorityKind === "agent-ready"
+      ? "agent-ready"
+      : item.priorityKind === "in progress"
+        ? `Phase ${item.priorityPhase} в роботі`
+        : item.priorityKind === "blocked"
+          ? `Phase ${item.priorityPhase} blocked 🚧`
+          : `Phase ${item.priorityPhase} — ${item.priorityKind}`;
   return `- [\`${item.linkPath}\`](./${item.linkPath}) — ${item.title} → **${phase}** _(${item.tracker.title})_`;
 }
 
@@ -199,7 +203,7 @@ function render({ priority, overdue, wipRows }) {
   lines.push("# Сьогодні в роботі");
   lines.push("");
   lines.push(
-    `> **Last validated:** ${TODAY} by docs:gen-today. **Next review:** ${NEXT_REVIEW}.`,
+    `> **Last touched:** ${TODAY} by docs:gen-today. **Next review:** ${NEXT_REVIEW}.`,
   );
   lines.push(`> **Status:** Reference`);
   lines.push("");
@@ -217,11 +221,11 @@ function render({ priority, overdue, wipRows }) {
   lines.push("");
   if (priority.length === 0) {
     lines.push(
-      "_Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._",
+      "_Нема items з `Agent-ready: yes` або `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або metadata потребує уточнення (Rule #10)._",
     );
   } else {
     lines.push(
-      "Sorted: `blocked` items first, потім за `mtime` desc (свіже = warm context).",
+      "Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).",
     );
     lines.push("");
     for (const item of priority) lines.push(fmtPriorityItem(item));
@@ -245,7 +249,7 @@ function render({ priority, overdue, wipRows }) {
     if (overdue.length > TOP_OVERDUE) {
       lines.push("");
       lines.push(
-        `_… ще ${overdue.length - TOP_OVERDUE} — див. [freshness dashboard](./04-governance/governance/freshness-dashboard.html)._`,
+        `_… ще ${overdue.length - TOP_OVERDUE} — повний список: \`pnpm docs:freshness-dashboard\` (див. [doc-freshness.md](./governance/governance/doc-freshness.md))._`,
       );
     }
   }
@@ -257,8 +261,12 @@ function render({ priority, overdue, wipRows }) {
     : wipRows.some((r) => r.severity === "warn")
       ? "warn"
       : "ok";
+  // `warn` — це `count >= soft`, тобто ліміт ДОСЯГНУТО (контракт
+  // `check-wip-limits.mjs`: ok — count < soft; warn — soft ≤ count < hard).
+  // Тому підпис каже «досягнуто», а не «перевищено»: рядок «Активних 28,
+  // soft 28» під старим формулюванням стверджував неправду.
   lines.push(
-    `## WIP load — ${worst === "ok" ? "🟢 healthy" : worst === "warn" ? "🟡 over soft" : "🔴 OVER HARD"}`,
+    `## WIP load — ${worst === "ok" ? "🟢 healthy" : worst === "warn" ? "🟡 soft-ліміт досягнуто" : "🔴 OVER HARD"}`,
   );
   lines.push("");
   if (worst === "ok") {
@@ -267,7 +275,7 @@ function render({ priority, overdue, wipRows }) {
     );
   } else {
     lines.push(
-      "Принаймні один tracker перевищив soft або hard. Подумай чи закрити старе перед відкриттям нового.",
+      "Принаймні один tracker досяг soft-ліміту або перевищив hard. Подумай чи закрити старе перед відкриттям нового.",
     );
     lines.push("");
     lines.push("| Severity | Tracker | Active | Soft / Hard |");
@@ -283,10 +291,10 @@ function render({ priority, overdue, wipRows }) {
   lines.push("## Quick links");
   lines.push("");
   lines.push(
-    "- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers",
+    `- [\`open-work.md\`](./open-work.md) — повний rollup усіх ${TRACKERS.length} tracker${TRACKERS.length === 1 ? "" : "s"}`,
   );
   lines.push(
-    "- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — повний freshness огляд",
+    "- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; повний огляд: `pnpm docs:freshness-dashboard` або CI-артефакт `docs-freshness-dashboard`",
   );
   lines.push(
     "- [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing",

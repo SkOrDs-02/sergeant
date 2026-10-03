@@ -1,109 +1,100 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface Options {
-  // Resetting `key` (typically the current slide index) restarts progress.
+  // Resetting `key` (typically the current slide index) restarts the timer.
   key: number | string;
   durationMs: number;
   paused: boolean;
   onAdvance: () => void;
 }
 
+// How often elapsed time is accumulated. Only needs to be fine enough that
+// `onAdvance` lands close to the deadline — the progress bar is animated by
+// the compositor now, not by this loop, so there is no per-frame work here.
+const TICK_MS = 100;
+
+// Upper bound on the time credited to a single tick. The timer can go silent
+// for minutes (backgrounded app, suspended page); without a clamp the first
+// tick after a resume would blow through the whole slide. With it, a resume
+// costs at most one clamp window regardless of how long the gap was, so
+// correctness does not depend on the page telling us truthfully when it left.
+const MAX_TICK_MS = 500;
+
 /**
- * rAF-driven progress (0–100). Resets to 0 whenever `key` changes, halts
- * while `paused` is true, and calls `onAdvance` at 100%.
+ * Pause-aware slide timer: calls `onAdvance` once `durationMs` of un-paused,
+ * foreground time has elapsed for the current `key`.
  *
- * Uses requestAnimationFrame with wall-clock deltas so the progress bar
- * stays in sync with real time across frame drops. A secondary
- * `setInterval` guard advances progress on platforms where the browser
- * throttles or pauses rAF callbacks (iOS Safari standalone-PWA, low
- * power mode, WKWebView in Capacitor). When the tab is hidden the
- * browser stops calling rAF entirely, so we rebase the start time on
- * `visibilitychange` and re-schedule a rAF — preventing the progress
- * bar from jumping or stalling on resume.
+ * AI-CONTEXT: this used to drive a 0–100 progress number through React state
+ * on every `requestAnimationFrame`, which the progress bar rendered as an
+ * inline `width`. Two things were wrong with that. First, an iOS PWA resumed
+ * from the background can be left with its page-visibility state machine
+ * stuck — rAF never resumes *and* `document.visibilityState` keeps reporting
+ * `"hidden"` while the page is on screen and repainting — and the interval
+ * fallback used to poll that value and no-op, so both drivers died together
+ * and slides stopped advancing entirely. Second, even once the interval kept
+ * the timer alive, the *bar* still moved only when rAF did: on a device where
+ * rAF is dead or throttled it advanced in visible chunks, and re-rendering the
+ * whole overlay ~70×/s (rAF + interval) fought the main thread for the paint.
+ *
+ * So the bar no longer comes from here at all — `StoriesProgressHeader`
+ * animates it with a single CSS transform transition the compositor owns,
+ * which needs neither rAF nor a free main thread. This hook is left with the
+ * one job it can do reliably: decide when the slide is over.
  */
 export function useStoriesAutoplay({
   key,
   durationMs,
   paused,
   onAdvance,
-}: Options): number {
-  const [progress, setProgress] = useState(0);
-  // Keep `onAdvance` behind a ref so the animation loop doesn't need to
-  // restart every time a parent re-renders with a new callback identity.
+}: Options): void {
+  const elapsedRef = useRef(0);
+  const activeKeyRef = useRef(key);
+  // Keep `onAdvance` behind a ref so the loop doesn't need to restart every
+  // time a parent re-renders with a new callback identity.
   const onAdvanceRef = useRef(onAdvance);
   useEffect(() => {
     onAdvanceRef.current = onAdvance;
   }, [onAdvance]);
 
   useEffect(() => {
-    setProgress(0);
     if (paused) return;
-    if (typeof window === "undefined" || typeof performance === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
-    let rafId: number | null = null;
     let cancelled = false;
     let advanced = false;
-    // Mutable so visibilitychange can rebase without restarting the loop.
-    const state = { startTs: performance.now(), lastProgress: 0 };
+    // Only a `visibilitychange` to "hidden" sets this — never a poll of
+    // `document.visibilityState`, which is the value we cannot trust.
+    let hidden = false;
 
-    const doAdvance = () => {
-      if (advanced || cancelled) return;
-      advanced = true;
-      setProgress(100);
-      onAdvanceRef.current();
-    };
+    if (activeKeyRef.current !== key) {
+      activeKeyRef.current = key;
+      elapsedRef.current = 0;
+    }
 
-    const update = (now: number) => {
-      if (cancelled || advanced) return;
-      const pct = Math.min(100, ((now - state.startTs) / durationMs) * 100);
-      state.lastProgress = pct;
-      setProgress(pct);
-      if (pct >= 100) {
-        doAdvance();
-      }
-    };
+    let lastTs = Date.now();
 
-    const tick = (now: number) => {
-      if (cancelled || advanced) return;
-      update(now);
-      if (!cancelled && !advanced) {
-        rafId = window.requestAnimationFrame(tick);
-      }
-    };
-    rafId = window.requestAnimationFrame(tick);
-
-    // Fallback: setInterval catches platforms where rAF silently stops
-    // (iOS Safari PWA, WKWebView, low-power mode). Runs at ~250ms — not
-    // visually smooth, but enough to keep the progress bar moving and
-    // guarantee the slide advances on time.
     const intervalId = window.setInterval(() => {
-      if (document.visibilityState === "hidden") return;
-      update(performance.now());
-    }, 250);
+      if (hidden || cancelled || advanced) return;
+      const now = Date.now();
+      elapsedRef.current += Math.min(Math.max(now - lastTs, 0), MAX_TICK_MS);
+      lastTs = now;
+      if (elapsedRef.current >= durationMs) {
+        advanced = true;
+        onAdvanceRef.current();
+      }
+    }, TICK_MS);
 
     const onVisibility = () => {
-      if (document.visibilityState === "visible" && !cancelled && !advanced) {
-        // Rebase startTs so we resume from the last observed progress
-        // rather than crediting hidden-tab time to the current slide.
-        state.startTs =
-          performance.now() - (state.lastProgress / 100) * durationMs;
-        // Re-kick rAF — some browsers drop the pending callback when the
-        // page was hidden; the interval guard covers the gap in between.
-        if (rafId !== null) window.cancelAnimationFrame(rafId);
-        rafId = window.requestAnimationFrame(tick);
-      }
+      hidden = document.visibilityState === "hidden";
+      // Coming back: drop the gap that accrued while we were away.
+      if (!hidden) lastTs = Date.now();
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       cancelled = true;
-      if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [key, durationMs, paused]);
-
-  return progress;
 }

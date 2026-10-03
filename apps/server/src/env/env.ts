@@ -1,536 +1,230 @@
 import { z } from "zod";
+
+import { aiRoutingEnvShape } from "./aiRoutingEnv.js";
+import { CHAT_VIA_OPENROUTER_DEFAULT, defaultChatModel } from "./chatModels.js";
 import { parseKeyRing } from "../lib/keyRing.js";
-
-/**
- * Центральна валідація та документація всіх env-змінних серверу.
- *
- * Запускається при першому імпорті (startup). У production-середовищі кидає
- * помилку, якщо відсутні критичні змінні (`DATABASE_URL`). У dev — логує
- * попередження. Кожна змінна задокументована коментарем і має тип + дефолт.
- *
- * Використання:
- *   import { env } from "../env/env.js";
- *   const pool = new Pool({ connectionString: env.DATABASE_URL });
- *
- * Після уніфікації з PR-01 (stack-pulse-2026-05) цей файл — єдине джерело
- * істини для всіх server-side env-змінних. `apps/server/src/env.ts` є
- * тонким re-export-ом поверх цього файлу; CI-гард
- * `scripts/check-env-single-source.mjs` блокує появу нових `process.env`-
- * доступів поза цим файлом (з винятками для scripts/, env/betterAuthEnv.ts
- * та декількох lifecycle-bootstrap-файлів).
- *
- * Better-Auth-specific assertions живуть окремо у `betterAuthEnv.ts`,
- * бо вони викликаються окремо в lifecycle-і (див. `index.ts`); вони реад-онли
- * читають `process.env` і не дублюють env-варів.
- */
-
-const coerceInt = z.coerce.number().int();
-
-/**
- * Безпечний int-fallback — береже бекяп ризику production-startup-fail-у
- * від некоректно виставленої env-змінної (legacy-семантика `parseIntEnv`):
- * `"foo"` → default, порожнє/`undefined` → default. Для суворої валідації
- * (fail-fast) окремих полів використовуйте `coerceInt.default(...)`.
- */
-const intFromEnv = (defaultValue: number) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === undefined || v === "") return defaultValue;
-      const n = Number.parseInt(v, 10);
-      return Number.isNaN(n) ? defaultValue : n;
-    });
-
-/**
- * `parseFloatEnv`-семантика — NaN guard критичний бо `prom-client` Gauge.set(NaN)
- * кидає (див. `RAILWAY_MONTHLY_COST_USD` та інші cost-метрики).
- */
-const floatFromEnv = (defaultValue: number) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === undefined || v === "") return defaultValue;
-      const n = Number.parseFloat(v);
-      return Number.isFinite(n) ? n : defaultValue;
-    });
-
-/**
- * `parseBoolEnv`-семантика: `"true"|"1"` → true, `"false"|"0"` → false,
- * інакше — default. НЕ використовуй `z.coerce.boolean()`: вона трактує
- * будь-який non-empty string як `true` (включно зі стрічкою `"false"`).
- */
-const boolFromEnv = (defaultValue: boolean) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => {
-      if (v === undefined) return defaultValue;
-      const lower = v.toLowerCase();
-      if (lower === "true" || lower === "1") return true;
-      if (lower === "false" || lower === "0") return false;
-      return defaultValue;
-    });
-
-/** Без transform-у: використовується де env-вар живе як-є string fallback на "". */
-const stringWithDefault = (defaultValue: string) =>
-  z
-    .string()
-    .optional()
-    .transform((v) => v ?? defaultValue);
-
-/**
- * URL-валідне поле, що толерує `undefined` / порожній рядок як «не задано».
- * Емуляція legacy `process.env["FOO"] || ""` семантики: коли рядок є —
- * валідуємо як URL, інакше повертаємо `""`. Тести нерідко передають
- * пустий рядок щоб перевірити fallback-логіку — `.url()` сам по собі
- * це не пропускає.
- */
-const optionalUrl = () =>
-  z
-    .string()
-    .optional()
-    .transform((v) => v ?? "")
-    .refine(
-      (v) => {
-        if (v === "") return true;
-        try {
-          new URL(v);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      { message: "Invalid URL" },
-    );
+// Хелпери винесені в `./envHelpers.js` цією гілкою; main паралельно
+// забрав LLM_*-ключі у `aiRoutingEnvShape` (PR #634), тож
+// `llmProviderEnum` тут більше не потрібен — `aiRoutingEnv.ts` тримає
+// власну копію.
+import {
+  boolFromEnv,
+  coerceInt,
+  floatFromEnv,
+  intFromEnv,
+  founderIdsFromEnv,
+  optionalUrl,
+  strictBoolFromEnv,
+  stringWithDefault,
+} from "./envHelpers.js";
+import { pgEnvShape } from "./pgEnv.js";
+import { telegramEnvShape } from "./telegramEnv.js";
 
 const envSchema = z.object({
-  // ── Core ────────────────────────────────────────────────────────────
+  ...aiRoutingEnvShape,
+
   NODE_ENV: z
     .enum(["production", "development", "test"])
     .default("development"),
-  /** HTTP-порт. Railway інжектить автоматично. */
+
+  APP_ENV: z.string().optional(),
+
   PORT: coerceInt.default(3000),
-  /**
-   * **M2** Trust-proxy override для Express `app.set('trust proxy', …)`.
-   *
-   * Формати (див. `apps/server/src/lib/trustProxy.ts`):
-   *   - `1` (default Railway) — довіряти 1 hop назад у X-Forwarded-For.
-   *   - `2` — Cloudflare + Railway scenario.
-   *   - `10.0.0.0/8,192.168.0.0/16` — explicit CIDR allowlist.
-   *   - `loopback,uniquelocal` — express keyword shortcuts.
-   *   - `false` — вимкнути XFF-парсинг повністю.
-   *   - `true` — **ЗАБОРОНЕНО**, відхиляється `parseTrustProxy`.
-   *
-   * Якщо порожнє — fallback до Railway-1.
-   */
+
   TRUST_PROXY: z.string().optional(),
 
-  /**
-   * Hostname binding для HTTP-сервера. `0.0.0.0` слухає на всіх інтерфейсах
-   * (потрібно у containerized deploy-і); `127.0.0.1` — лише loopback.
-   */
-  HOST: stringWithDefault("0.0.0.0"),
-  /** Global request timeout in ms. 0 = disabled. */
   REQUEST_TIMEOUT_MS: intFromEnv(120_000),
-  /** Enable response compression (gzip/br). */
+
   COMPRESSION_ENABLED: boolFromEnv(true),
 
-  // ── Database ────────────────────────────────────────────────────────
-  /**
-   * Postgres connection string. Обов'язкова для всього, окрім health-check.
-   * Порожнє значення трактується як "не сконфігуровано" (`assertStartupEnv`
-   * кидає помилку у production).
-   */
-  DATABASE_URL: optionalUrl(),
-  /**
-   * Pooled Postgres URL (pgBouncer / Supavisor / Neon proxy). PR #046.
-   *
-   * Якщо заданий — runtime pool (`apps/server/src/db.ts`) ходить через
-   * pooler, а `DATABASE_URL` лишається direct-connection і
-   * використовується тільки для міграцій (`MIGRATE_DATABASE_URL`
-   * fallback) та сесійних воркерів, які ламаються в pgBouncer
-   * transaction-mode (advisory locks, `LISTEN/NOTIFY`, named prepared
-   * statements). Без `DATABASE_URL_POOL` поведінка не змінюється —
-   * pool ходить напряму через `DATABASE_URL`. Деталі деплою — у
-   * `docs/runbooks/database-connection-pooling.md`.
-   */
-  DATABASE_URL_POOL: optionalUrl(),
-  /**
-   * Read-replica Postgres URL (PR #047 — analytics offload).
-   *
-   * Якщо заданий — opt-in caller-и через `apps/server/src/dbReplica.ts`
-   * (зараз `growth_*` / `seo_*` analytics SELECT-и) ходять у replica
-   * pool. Writes, транзакції і будь-що з read-after-write semantic-ою
-   * лишаються на primary pool. Без `DATABASE_URL_REPLICA` replica
-   * helper-и прозоро fallback-ять на primary, тому існуючі деплоїменти
-   * без replica працюють так, як і раніше. Acceptable replication lag
-   * target: < 5s p99. Деталі — `docs/runbooks/postgres-read-replica.md`.
-   */
-  DATABASE_URL_REPLICA: optionalUrl(),
-  /**
-   * Максимум з'єднань у pg Pool.
-   *
-   * Default 20 (stack-pulse PR-13). Старий default був 10, але
-   * peak-навантаження з 5–15 active HTTP-запитів + 3–5 BullMQ AI ingest
-   * jobs + auth-mail/push воркерів регулярно тиснуло у 12–25
-   * concurrent connections — `pool.connect()` тоді вистоював у черзі і
-   * виглядав як latency-spikes на `/api/*` без явної причини.
-   *
-   * 20 співмірно з pgBouncer `DEFAULT_POOL_SIZE=20` + Postgres
-   * `max_connections=100` (Railway default) ÷ ~2 replicas з headroom під
-   * migrations/superuser. Sizing rationale:
-   * `docs/observability/pg-pool-sizing.md`.
-   */
-  PG_POOL_SIZE: intFromEnv(20),
-  /** PG connect timeout (мс). */
-  PG_CONNECTION_TIMEOUT_MS: intFromEnv(5_000),
-  /**
-   * Поріг "повільного" `pool.connect()` (мс). Якщо checkout
-   * connection-у з пулу займає більше — пишемо Pino warn,
-   * Sentry breadcrumb (`category: db.pool.slow_connect`) і інкрементимо
-   * `db_slow_pool_connects_total`. Default 500 — достатньо щоб не
-   * шуміти у dev (TLS handshake до Railway Postgres сам по собі ~50–
-   * 200 мс), але ловити реальні pool-saturation episodes до того, як
-   * `db_pool_waiting > 0` сидить 5хв і трігерить
-   * `DbPoolWaitingSustained`.
-   */
-  PG_SLOW_CONNECT_MS: intFromEnv(500),
-  /** PG idle timeout (мс). */
-  PG_IDLE_TIMEOUT_MS: intFromEnv(30_000),
-  /** PG statement timeout (мс) — захист від runaway queries. */
-  PG_STATEMENT_TIMEOUT_MS: intFromEnv(30_000),
-  /** Max retries для transient DB errors. */
-  DB_MAX_RETRIES: intFromEnv(3),
-  /** Поріг повільного запиту (мс) для логування та метрики. */
-  DB_SLOW_MS: coerceInt.positive().default(200),
-  /** Slow query threshold for `db.ts` (legacy alias of DB_SLOW_MS). */
-  SLOW_QUERY_THRESHOLD_MS: intFromEnv(100),
-  /** Toggle slow-query logging (>SLOW_QUERY_THRESHOLD_MS). */
-  LOG_SLOW_QUERIES: boolFromEnv(true),
+  ...pgEnvShape,
 
-  // ── Redis ───────────────────────────────────────────────────────────
-  /** Redis URL для глобального rate-limit. Fallback — in-memory per-process. */
   REDIS_URL: stringWithDefault(""),
-  /** Max reconnect attempts before giving up. */
+
   REDIS_MAX_RETRIES: intFromEnv(10),
-  /** Initial reconnect delay (мс). */
+
   REDIS_RECONNECT_DELAY_MS: intFromEnv(100),
-  /** Max reconnect delay (мс) — exponential backoff cap. */
+
   REDIS_MAX_RECONNECT_DELAY_MS: intFromEnv(3_000),
 
-  // ── Rate limit ──────────────────────────────────────────────────────
-  /**
-   * Fail-mode для rate-limit middleware на security-sensitive ендпоінтах
-   * (`/api/auth/*`). При відмові і Redis, **і** Postgres (тобто fallback
-   * виявився в per-process in-memory limiter), middleware повертає 503
-   * замість того, щоб пускати запит через локальний bucket.
-   *
-   * Чому: in-memory bucket — це per-replica state. На Railway з 3 replicas
-   * атакер ефективно отримує `3×limit` запитів/вікно. Для credential-stuffing
-   * це прискорює атаку у 3×. Fail-closed для `/api/auth/*` зупиняє цю
-   * деградацію — користувач бачить 503 + Retry-After, а атакер не може
-   * накручувати спроби, поки backend не відновиться.
-   *
-   * Default `true`. Можна вимкнути у разі неочікуваних 503-issues у
-   * production (наприклад, Redis-blip-и трактуватимуться як fail-closed).
-   * Інші маршрути (`/api/health`, public read APIs) лишаються fail-open
-   * незалежно від цього flag-а — для них cost-of-blocking вищий за ризик.
-   */
   RATE_LIMIT_FAIL_CLOSED_AUTH: z
     .enum(["true", "false", "1", "0", ""])
     .default("true")
     .transform((v) => v === "" || v === "true" || v === "1"),
 
-  // ── Auth (Better Auth) ──────────────────────────────────────────────
   BETTER_AUTH_URL: z.string().url().optional(),
   BETTER_AUTH_SECRET: z.string().optional(),
-  /** `"0"` — вимкнути SameSite=None cookies (для single-origin deploys). */
+
+  /**
+   * Origin веб-застосунку (Vercel у проді, Vite локально). Використовується
+   * як `callbackURL` у транзакційних листах Better Auth — куди повертається
+   * користувач після кліку «Підтвердити email».
+   *
+   * Окремий від `BETTER_AUTH_URL`: фронт і API живуть на різних хостах
+   * (Vercel ↔ Coolify), а API не роздає SPA (`config.servesFrontend === false`),
+   * тож редирект на API-домен дає 404.
+   *
+   * Необовʼязковий: без нього `getWebAppOrigin()` бере перший http(s)-запис
+   * із `ALLOWED_ORIGINS` — у проді там уже стоїть домен Vercel. Задавай явно
+   * лише тоді, коли перший allowed-origin не є основним доменом застосунку.
+   * Значення автоматично потрапляє у `trustedOrigins` (див. `auth.ts`).
+   */
+  WEB_APP_URL: z.string().url().optional(),
+
   BETTER_AUTH_CROSS_SITE_COOKIES: z.string().optional(),
-  /**
-   * 32-byte hex (64 hex chars) ключ для AES-256-GCM шифрування OAuth-токенів
-   * (`accessToken` / `refreshToken` / `idToken` у таблиці `account`) — фікс
-   * C1 із security-review. Без ключа адаптер записує plaintext (legacy
-   * поведінка). У production обов'язковий — `assertStartupEnv` кидає
-   * помилку, якщо не заданий разом із `DATABASE_URL`.
-   *
-   * **H4** (2026-05-04): тепер це fallback для legacy single-key deployments.
-   * Multi-key rotation реалізовано через `BETTER_AUTH_TOKEN_ENC_KEYS` +
-   * `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` (див. нижче).
-   */
+
   BETTER_AUTH_TOKEN_ENC_KEY: z.string().optional(),
-  /**
-   * **H4** Multi-key key-ring для AES-256-GCM шифрування OAuth-токенів.
-   * Формат: `v1:<64-hex>,v2:<64-hex>,...` — CSV пар `vN:<32-byte-hex>`.
-   *
-   * Якщо задане, перевизначає legacy `BETTER_AUTH_TOKEN_ENC_KEY`. Версія,
-   * яка використовується для **запису** нових ciphertext-ів, обирається
-   * через `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION`. Версія, яка
-   * розшифровує конкретний рядок, читається з префіксу `enc:v2:k<N>:...`
-   * або (для legacy `enc:v1:`) трактується як v1.
-   *
-   * Rotation flow (див. `docs/runbooks/encryption-key-rotation.md`):
-   *   1. додати `v2:hex` до `_KEYS` (deploy)
-   *   2. бампнути `_CURRENT_VERSION=v2` (deploy) — нові записи йдуть під v2
-   *   3. через retention-window (≥30d) прибрати `v1:` із `_KEYS`
-   *      (всі активні рядки вже re-encrypted на refresh)
-   */
+
   BETTER_AUTH_TOKEN_ENC_KEYS: z.string().optional(),
-  /**
-   * **H4** Поточна версія ключа для запису ciphertext-ів. Формат — `vN`,
-   * де N — позитивне ціле, присутнє у `BETTER_AUTH_TOKEN_ENC_KEYS`. Якщо
-   * порожнє, використовується найвища версія у key-ring-у. Якщо
-   * посилається на версію, якої нема у `_KEYS`, `parseKeyRing` кидає
-   * помилку при першому використанні.
-   */
+
   BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
   MIN_PASSWORD_LENGTH: coerceInt.positive().default(10),
-  /**
-   * Hard-capped at 256 as DoS-defence against pathologically long passwords —
-   * **not** a bcrypt 72-byte mitigation. Better Auth (`@better-auth/utils`) hashes
-   * passwords with **scrypt** (`N=16384, r=16, p=1, dkLen=64`), which has no
-   * 72-byte input limit; arbitrary-length input contributes uniquely to the
-   * derived key. The cap exists purely to bound CPU/memory of a single hash
-   * call so a malicious client cannot trigger a multi-second scrypt with, e.g.,
-   * a 10 MB "password". 256 chars covers any realistic passphrase / dice-ware
-   * passphrase use-case while keeping per-request work bounded. See ADR-0042.
-   */
+
   MAX_PASSWORD_LENGTH: coerceInt.positive().max(256).default(256),
-  /**
-   * H6 — soft kill-switch for Better Auth's `requireEmailVerification`.
-   *
-   * Default `false` (deliberate): existing accounts created before H6
-   * shipped have `email_verified=false` and would all be locked out of
-   * sign-in instantly if we flipped this to `true` repo-wide. Ops flips
-   * this `true` after a soft-gate / re-verification sweep is run on
-   * legacy users. The verification email is **always** sent on sign-up
-   * regardless of this flag (`auth.ts → emailVerification.sendOnSignUp`),
-   * so newly created accounts will always have a working verification
-   * path.
-   *
-   * Independent of this flag, sensitive endpoints (currently
-   * `POST /api/mono/connect`) gate on `req.user.emailVerified` via the
-   * `requireVerifiedEmail()` middleware. Closes the most exploitable
-   * vector of the H6 card (account-squatting → bank-statement leak)
-   * without waiting for the global flip.
-   */
+
   REQUIRE_EMAIL_VERIFICATION: z
     .enum(["true", "false", "1", "0", ""])
     .default("false")
     .transform((v) => v === "true" || v === "1"),
 
-  // ── CORS / Origins ──────────────────────────────────────────────────
-  /** Comma-separated allowed origins (e.g. `https://app.example.com`). */
   ALLOWED_ORIGINS: z.string().optional(),
-  /** Regex pattern для динамічних origins (Vercel preview deploys тощо). */
+
   ALLOWED_ORIGIN_REGEX: z.string().optional(),
 
-  // ── Railway ─────────────────────────────────────────────────────────
-  RAILWAY_ENVIRONMENT: z.string().optional(),
-  RAILWAY_SERVICE_NAME: z.string().optional(),
-  RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
-  /** Generic CI commit SHA fallback (GitHub Actions, GitLab, тощо). */
+  GIT_SHA: z.string().optional(),
+
   GIT_COMMIT: z.string().optional(),
-  /** Vercel build commit SHA — fallback для Sentry / app_build_info. */
+
   VERCEL_GIT_COMMIT_SHA: z.string().optional(),
-  /**
-   * GitHub Actions commit SHA — використовується як fallback у
-   * `obs/tracing.ts` `resolveServiceVersion()` коли інші Git-SHA env-vars
-   * не виставлені (зазвичай у CI-build пайплайнах, перед production
-   * promotion). У prod-runtime (Railway/Vercel) RAILWAY_GIT_COMMIT_SHA /
-   * VERCEL_GIT_COMMIT_SHA мають пріоритет.
-   */
+
   GITHUB_SHA: z.string().optional(),
-  /** Версія пакета (npm/pnpm проставляють під час `pnpm run`-у). */
+
   npm_package_version: z.string().optional(),
 
-  // ── AI (Anthropic) ─────────────────────────────────────────────────
-  /** API-ключ для Anthropic Claude. Без нього /api/chat повертає 500. */
   ANTHROPIC_API_KEY: stringWithDefault(""),
+
+  CHAT_MODEL_FIRST_TURN: stringWithDefault(defaultChatModel("firstTurn")),
+
+  CHAT_MODEL_SYNTHESIS: stringWithDefault(defaultChatModel("synthesis")),
+
+  // Транспорт чату: `true` (дефолт з 2026-08-05) — шлюз OpenRouter, `false` —
+  // прямий Anthropic. Лише `/api/chat`. Виміри й умова відкату — в
+  // `env/chatModels.ts`; без `OPENROUTER_API_KEY` прапорець не діє.
+  //
+  // Дефолт береться з `CHAT_VIA_OPENROUTER_DEFAULT`, а не з літерала: цю ж
+  // константу читає ран-таймний `chatViaOpenRouter()`, і коли число стояло
+  // тут окремо, воно розійшлося з ран-таймом (схема ON, ран-тайм OFF).
+  CHAT_VIA_OPENROUTER: boolFromEnv(CHAT_VIA_OPENROUTER_DEFAULT),
+
+  CHAT_STRICT_TOOLS: boolFromEnv(true),
+
+  CHAT_TOOL_SEARCH: boolFromEnv(true),
+
   /**
-   * Модель першого туру `/api/chat` — швидкий роутер: повертає або direct-text,
-   * або tool_use-пропозиції. За замовчуванням Haiku (~4× дешевший за Sonnet:
-   * $1 vs $3 /1M input, $5 vs $15 /1M output) — на цьому турі немає важких
-   * звітів, тож якості вистачає. Env-kerований, щоб ops міг ре-тирити (напр.
-   * штовхнути синтез теж на Haiku) без редеплою. Має лишатись Anthropic-model-id,
-   * бо chat-шлях прибитий до Anthropic streaming + tool-use + prompt-caching.
-   */
-  CHAT_MODEL_FIRST_TURN: stringWithDefault("claude-haiku-4-5-20251001"),
-  /**
-   * Модель туру синтезу tool-result (фінальний текст для юзера після того, як
-   * модель отримала дані з tool_result: брифінги, підсумки бюджету). За
-   * замовчуванням Sonnet — тут важлива якість складних markdown-звітів. Той
-   * самий payload використовується і для stream, і для non-stream відповіді.
-   */
-  CHAT_MODEL_SYNTHESIS: stringWithDefault("claude-sonnet-4-6"),
-  /**
-   * PR-23 — pluggable LLM provider. `anthropic` (default) використовує
-   * `AnthropicProvider`; `stub` повертає hardcoded JSON для read-only
-   * OpenClaw paths-у / e2e-тестів / Anthropic-incident-recovery; `openrouter`
-   * зарезервовано під майбутню імплементацію (поки що деградує у stub).
-   * Wire-up call-sites — окремі PR-24/25.
-   */
-  LLM_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
-  /**
-   * PR-24 — окремий provider для read-only OpenClaw paths (зараз: `before_dispatch`
-   * classify; пізніше — інші read-only flows). Дозволяє перемкнути саме classifier
-   * у `stub`-mode (повертає plausible default `{"class":"chat"}`) НЕ зачіпаючи
-   * головний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+   * Слати на турі синтезу лише ті tool-визначення, які згадані у
+   * відтвореному `tool_calls_raw`, замість усього реєстру.
    *
-   * Use-cases:
-   * - Anthropic-incident: `LLM_READONLY_PROVIDER=stub` тимчасово; chat-flow
-   *   обслуговується головним provider-ом окремо (weekly-digest має власний
-   *   `LLM_DIGEST_PROVIDER` toggle, налаштовується незалежно).
-   * - Local-dev без `ANTHROPIC_API_KEY` — class-detection деградує у `chat`,
-   *   решта endpoints працює як раніше.
-   * - E2E-тести — детермінований шлях без витрат токенів.
+   * Діє лише там, де tool search недоступний (шлюз OpenRouter) — на Anthropic
+   * payload лишається старим, щоб не фрагментувати спільний prompt-cache.
+   * Обґрунтування й вимір — у `chat/promptCache.ts::buildSynthesisToolsPayload`.
+   * `false` — миттєвий відкат без редеплою.
    */
-  LLM_READONLY_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
+  CHAT_SYNTHESIS_TRIM_TOOLS: boolFromEnv(true),
+
   /**
-   * PR-25 — окремий provider для weekly-digest (`POST /api/weekly-digest`,
-   * WF-08 ingest). Дозволяє перемкнути digest-генерацію у `stub`-mode, який
-   * повертає template-based звіт із raw-метрик секцій (без LLM-рекомендацій),
-   * НЕ зачіпаючи ні chat/coach/nutrition (`LLM_PROVIDER`), ні OpenClaw
-   * classify (`LLM_READONLY_PROVIDER`).
-   *
-   * Use-cases:
-   * - Anthropic-incident: `LLM_DIGEST_PROVIDER=stub` — користувач бачить
-   *   digest із числами, без AI-коментарів. Краще, ніж 502.
-   * - Local-dev без `ANTHROPIC_API_KEY` — endpoint не падає.
-   * - E2E-тести — детермінований template-вихід без витрат токенів.
+   * Тіньовий Jev-детектор інʼєкцій у `tool_result` (`chat/injectionShadowJev.ts`):
+   * лише метрика, нічого не блокує. Без `OPENROUTER_API_KEY` не діє.
+   * Увімкнений за замовчуванням (явне рішення власника 2026-09-23): змінна
+   * потрібна лише як аварійний вимикач `false`.
+   * Умова зняття - `docs/work/specs/planning/jev-injection-shadow.md`.
    */
-  LLM_DIGEST_PROVIDER: z
-    .enum(["anthropic", "openrouter", "stub"])
-    .default("anthropic"),
-  /**
-   * Provider fallback chain. Коли `true` і primary provider = `openrouter`,
-   * `getLLMProvider()` обгортає результат у `FallbackProvider`, який при
-   * помилці OpenRouter (5xx, rate-limit, timeout) автоматично пробує
-   * Anthropic. Забезпечує надійність без ручного втручання — користувач
-   * не бачить помилку навіть при OpenRouter outage.
-   *
-   * Default `true` — fallback активний. Вимикаємо тільки для:
-   *   - E2E-тестів де потрібно точно знати який provider відповів;
-   *   - Incident-recovery коли хочемо жорстко форсувати конкретний provider.
-   *
-   * Fallback спрацьовує ТІЛЬКИ коли primary = openrouter І
-   * `ANTHROPIC_API_KEY` задано. Якщо Anthropic key відсутній —
-   * OpenRouter працює без fallback (як раніше).
-   */
-  LLM_FALLBACK_ENABLED: boolFromEnv(true),
-  /**
-   * PR-25 — fail-soft toggle для weekly-digest. Коли `true` (default), Anthropic-
-   * помилки (5xx / rate-limit / timeout) ловляться у handler-і й digest
-   * повертається з template-репорту замість 502. Sentry breadcrumb level=warning
-   * + Prom-counter `llm_provider_invocations_total{outcome!=ok}` дають видимість.
-   * Коли `false` — strict-mode як раніше (handler кидає `ExternalServiceError`).
-   */
-  LLM_DIGEST_FALLBACK_ON_ERROR: boolFromEnv(true),
-  /** AI request timeout (мс). */
-  AI_TIMEOUT_MS: intFromEnv(180_000),
-  /** Max AI retries on transient errors. */
-  AI_MAX_RETRIES: intFromEnv(2),
-  /** Max auto-continuation loops before stopping mid-stream (див. AGENTS.md). */
+  CHAT_INJECTION_JEV_SHADOW: boolFromEnv(true),
+
+  CHAT_CACHE_TTL_1H: boolFromEnv(true),
+
+  CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),
+
+  CHAT_RESPONSE_CACHE_MAX_ENTRIES: intFromEnv(500),
+
   CHAT_MAX_TEXT_CONTINUATIONS: intFromEnv(3),
-  /** Anthropic circuit breaker: failures before opening. */
+
   AI_CIRCUIT_BREAKER_THRESHOLD: intFromEnv(5),
-  /** Anthropic circuit breaker: half-open test interval (мс). */
+
   AI_CIRCUIT_BREAKER_RESET_MS: intFromEnv(30_000),
-  /** AI-quota DB-circuit-breaker: errors threshold. */
+
   AI_QUOTA_CIRCUIT_THRESHOLD: intFromEnv(5),
-  /** AI-quota DB-error sliding window (мс). */
+
   AI_QUOTA_CIRCUIT_WINDOW_MS: intFromEnv(60_000),
-  /** AI-quota breaker open duration (мс). */
+
   AI_QUOTA_CIRCUIT_OPEN_MS: intFromEnv(300_000),
-  /**
-   * API-ключ Groq для голосової транскрипції (`/api/transcribe`).
-   * Без нього endpoint повертає 503; фронт автоматично відкочується
-   * на Web Speech API (бачить це з `GET /api/transcribe/health`).
-   */
+
   GROQ_API_KEY: z.string().optional(),
-  /**
-   * Whisper-модель Groq для транскрипції. За замовчуванням
-   * `whisper-large-v3-turbo` — найдешевший варіант з адекватною
-   * якістю українською. Альтернатива: `whisper-large-v3`.
-   *
-   * **M4** — code-side allowlist. Розширення enum-у потребує PR-ревʼю,
-   * замість прихованої env-зміни. Дублюється у
-   * `apps/server/src/modules/transcribe/transcribe.ts` (boot-time
-   * fail-fast). Див.
-   * `docs/security/hardening/M4-groq-model-allowlist.md`.
-   */
+
   GROQ_TRANSCRIBE_MODEL: z.preprocess(
-    // Treat empty-string env (`GROQ_TRANSCRIBE_MODEL=""`) as "unset" so the
-    // `.default()` applies — matches the legacy `process.env[…] || default`
-    // semantics that lived in transcribe.ts before HR-2. An unknown model
-    // still fails the enum → boot fail-fast at env parse (M4 allowlist).
     (v) => (v === "" ? undefined : v),
     z
       .enum(["whisper-large-v3-turbo", "whisper-large-v3"])
       .default("whisper-large-v3-turbo"),
   ),
-  /**
-   * Killer-switch для AI-квоти: при `true` `assertAiQuota()` стає no-op і всі
-   * AI-роути проходять без декременту лічильника `ai_usage_daily`. Призначений
-   * **виключно** для CI/test середовищ, де e2e ганяють реальний Anthropic API
-   * без burning-у user-quota (див. `.github/workflows/extended-e2e.yml`).
-   *
-   * У production цей flag є fail-open kill-switch для billing-а: якщо випадково
-   * виставити `1` у Railway env (copy-paste зі staging, або помилка у helm-у),
-   * жоден per-user / per-IP ліміт більше не працює — користувачі можуть
-   * burn-нути unlimited Anthropic budget. Тому `assertStartupEnv()` хард-блокує
-   * production-startup, якщо одночасно `NODE_ENV=production` (або Railway env)
-   * і цей flag truthy.
-   *
-   * Default: `false`. Приймається як `true|false|1|0`.
-   */
+
   AI_QUOTA_DISABLED: z
     .enum(["true", "false", "1", "0", ""])
     .default("false")
     .transform((v) => v === "true" || v === "1"),
-  /** Денний ліміт AI-запитів для автентифікованого юзера. */
-  AI_DAILY_USER_LIMIT: coerceInt.nonnegative().optional(),
-  /** Денний ліміт AI-запитів для анонімного юзера. */
-  AI_DAILY_ANON_LIMIT: coerceInt.nonnegative().optional(),
-  /** Вартість tool-call у одиницях квоти (default 3). */
+
+  // `AI_DAILY_ANON_LIMIT` прибрано: анонімної гілки квоти більше немає —
+  // `/api/chat` та решта AI-роутів стоять за `requireSession()` (A1,
+  // `docs/work/specs/audits/ai-abuse-2026-08-05.md`), тож дожити до квоти без
+  // сесії неможливо. Схема не `.strict()`, тому змінна, що ще лишилась в
+  // ops-конфігу, просто ігнорується.
+
   AI_QUOTA_TOOL_COST: coerceInt.nonnegative().optional(),
-  /** JSON `{"tool_name": maxPerDay}` для per-tool лімітів. */
+
   AI_QUOTA_TOOL_LIMITS: z.string().optional(),
-  /** Дефолтний ліміт tool-call на день, якщо tool не в AI_QUOTA_TOOL_LIMITS. */
+
   AI_QUOTA_TOOL_DEFAULT_LIMIT: coerceInt.nonnegative().optional(),
+
+  AI_QUOTA_FOUNDER_IDS: founderIdsFromEnv("AI_QUOTA_FOUNDER_IDS"),
+
+  // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети;
+  // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
+  // Кома-розділений список `userId`, яким дозволено входити; порожнє
+  // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
+  ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),
+
+  AI_TIERED_PRO_ENABLED: boolFromEnv(true),
+
   /**
-   * Comma-separated Better-Auth user IDs that bypass the AI daily quota
-   * entirely (founder / internal team — plan-agnostic unlimited). Read
-   * directly via `process.env` in `modules/chat/aiQuota.ts`; declared here so
-   * the validated-env surface stays the single inventory of `AI_QUOTA_*`.
+   * Повернути Free/анона на premium-модель синтезу (стан до 2026-08-06).
+   *
+   * Default `false`: неоплачений трафік іде standard-тиром. Читає його
+   * `aiQuota.ts::freeOnPremiumEnabled()` напряму з `process.env` (як решта
+   * прапорців того модуля); тут — щоб змінна була видима в єдиному реєстрі env.
    */
-  AI_QUOTA_FOUNDER_IDS: z.string().optional(),
-  /** Інтервал SSE heartbeat (мс). Тримає з'єднання живим через проксі. */
+  AI_FREE_ON_PREMIUM: boolFromEnv(false),
+
+  AI_PRO_PREMIUM_DAILY_LIMIT: coerceInt.nonnegative().default(20),
+
+  AI_PRO_STANDARD_DAILY_LIMIT: coerceInt.nonnegative().default(80),
+
+  AI_PRO_STANDARD_CHAT_MODEL: stringWithDefault(defaultChatModel("standard")),
+
+  AI_PRO_FLOOR_CHAT_MODEL: stringWithDefault(defaultChatModel("floor")),
+
+  AI_PRO_STANDARD_COACH_MODEL: stringWithDefault(
+    "google/gemini-2.5-flash-lite",
+  ),
+
+  AI_PRO_FLOOR_COACH_MODEL: stringWithDefault("google/gemini-2.5-flash-lite"),
+
   SSE_HEARTBEAT_MS: coerceInt.positive().default(15_000),
 
-  // ── Push Notifications ─────────────────────────────────────────────
-  /** VAPID public key (URL-safe base64). Без нього `/api/push/*` → 503. */
   VAPID_PUBLIC_KEY: z.string().optional(),
-  /** VAPID private key (URL-safe base64). Парний до публічного. */
+
   VAPID_PRIVATE_KEY: z.string().optional(),
-  /**
-   * Контакт-email для `webpush.setVapidDetails`. У production без нього
-   * `resolveVapidEmail()` повертає `null` і кидає `vapid_email_missing` —
-   * push-сервіси відмовляються від запитів без routable контакту.
-   * У dev/test fallback `mailto:admin@example.com`.
-   */
+
   VAPID_EMAIL: z.string().optional(),
-  /**
-   * **M14** — per-target rate-limit для `/api/push/send`. Default 10/хв/recipient
-   * відповідає
-   * [`docs/security/hardening/M14-internal-push-ip-allowlist.md`](../../../../docs/security/hardening/M14-internal-push-ip-allowlist.md).
-   * Невалідне / `0` / відʼємне значення → silent fallback на default (legacy-семантика).
-   */
+
   PUSH_SEND_TARGET_LIMIT: z
     .string()
     .optional()
@@ -539,10 +233,7 @@ const envSchema = z.object({
       const n = Number.parseInt(v, 10);
       return Number.isFinite(n) && n > 0 ? n : 10;
     }),
-  /**
-   * **M14** — sliding window для `PUSH_SEND_TARGET_LIMIT` (мс). Default 60_000.
-   * Невалідне / `0` / відʼємне значення → silent fallback на default.
-   */
+
   PUSH_SEND_TARGET_WINDOW_MS: z
     .string()
     .optional()
@@ -551,193 +242,126 @@ const envSchema = z.object({
       const n = Number.parseInt(v, 10);
       return Number.isFinite(n) && n > 0 ? n : 60_000;
     }),
-  /**
-   * **M14** — allowlist для `/api/push/send` (internal-only fan-out).
-   * Comma- / newline-separated CIDR-и та IP-и. На Railway типово
-   * `100.64.0.0/10` + явні IPv4/IPv6 n8n-worker-ів. Loopback завжди
-   * implicit (loopback dev-доступ). Порожньо → fail-open у non-prod,
-   * fail-closed (503) у production. Деталі — `requireInternalIp`.
-   */
+
   PUSH_INTERNAL_ALLOWED_IPS: stringWithDefault(""),
-  /** Base64-encoded APNs .p8 key file content. */
+
+  // Опційний IP-allowlist для ВСЬОГО `/api/internal/*` (аудит ai-pipeline B27).
+  // Порожньо = перевірка не монтується (навіть у production): легітимні
+  // викликачі (n8n/Coolify-крони, scripts/replay-*.mjs) приходять з адрес,
+  // які треба спершу інвентаризувати, інакше fail-closed 503 зламає їх усіх.
+  INTERNAL_ALLOWED_IPS: stringWithDefault(""),
+
   APNS_P8_KEY: z.string().optional(),
   APNS_KEY_ID: z.string().optional(),
   APNS_TEAM_ID: z.string().optional(),
   APNS_BUNDLE_ID: z.string().optional(),
-  /** `"true"` — APNs production gateway, інакше sandbox. */
+
   APNS_PRODUCTION: z.string().optional(),
-  /** JSON string of FCM service account credentials. */
+
   FCM_SERVICE_ACCOUNT_JSON: z.string().optional(),
 
-  // ── Email ──────────────────────────────────────────────────────────
-  /** Resend API key. Без нього email (password reset, verification) скіпається. */
+  /**
+   * Стеля часу на ОДИН HTTP-виклик до FCM v1 (`messages:send`).
+   *
+   * AI-DANGER: без явного `signal` undici бере власний `headersTimeout`
+   * у 300 с. Помножити на `MAX_ATTEMPTS = 3` у `push/send.ts` — і один
+   * завислий пуш тримає задачу до 15 хвилин. У слот нагадувань
+   * (09:00/12:00/20:00) такі зависання накопичуються паралельно й з'їдають
+   * пам'ять 4 ГБ VPS. 10 с — це «FCM або відповів, або його вже нема»:
+   * той самий порядок, що й `webpushSend` (`timeoutMs: 10_000`).
+   */
+  PUSH_FCM_TIMEOUT_MS: coerceInt.positive().default(10_000),
+
+  /**
+   * Стеля часу на один запит до APNs у `@parse/node-apn`.
+   *
+   * Тут проблеми зависання НЕ було: бібліотека має власний дефолт
+   * `requestTimeout: 5000` (`node_modules/@parse/node-apn/lib/config.js`).
+   * Виставляємо те саме значення ЯВНО, щоб стеля була нашим рішенням, а не
+   * успадкованим дефолтом, який мовчки поміняє наступний bump залежності.
+   * Дефолт навмисно 5_000, а не 10_000 як у FCM — щоб не погіршити
+   * поточну поведінку.
+   */
+  PUSH_APNS_REQUEST_TIMEOUT_MS: coerceInt.positive().default(5_000),
+
   RESEND_API_KEY: stringWithDefault(""),
-  /** Адреса відправника (default: Sergeant <onboarding@resend.dev>). */
+
   RESEND_FROM: z.string().optional(),
 
-  // ── Observability ──────────────────────────────────────────────────
-  /** Sentry DSN. Без нього Sentry вимкнений (Noop SDK). */
   SENTRY_DSN: stringWithDefault(""),
   SENTRY_ENVIRONMENT: z.string().optional(),
   SENTRY_RELEASE: z.string().optional(),
-  /** `0.0`–`1.0` sampling rate для Sentry performance traces. */
+
   SENTRY_TRACES_SAMPLE_RATE: z.string().optional(),
-  /**
-   * Sentry sampling preset — switches the *fallback* rate (per-route rules
-   * stay fixed). `minimal` (0.01) для quota-mitigation, `prod` (0.05) —
-   * default, `aggressive` (0.2) — canary / pre-release visibility. Override
-   * via numeric `SENTRY_TRACES_SAMPLE_RATE` if needed.
-   */
+
   SENTRY_SAMPLE_PROFILE: z.enum(["minimal", "prod", "aggressive"]).optional(),
-  /**
-   * Pino log level. Use /debug-window CLI to temporarily lower without restart.
-   * Optional (no schema default) — logger.ts applies its own dev-vs-prod
-   * default logic: `debug` in development when unset, `info` in production.
-   */
+
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .optional(),
-  /** `"1"` — human-readable pino-pretty output. */
+
   LOG_PRETTY: z.string().optional(),
-  /** Bearer token для захисту `GET /metrics`. */
+
   METRICS_TOKEN: z.string().optional(),
 
-  // ── Grafana Cloud / Loki log sink ──────────────────────────────────
-  /**
-   * Base URL Grafana Cloud Loki-інстансу
-   * (e.g. `https://logs-prod-025.grafana.net`).
-   * Без нього Loki-транспорт не ініціалізується (clean no-op).
-   * Всі три `GRAFANA_CLOUD_LOKI_*` мають бути задані разом — часткова
-   * конфігурація ігнорується без помилки.
-   */
   GRAFANA_CLOUD_LOKI_URL: optionalUrl(),
-  /** Числовий Loki instance id (username для basic auth). */
+
   GRAFANA_CLOUD_LOKI_USERNAME: z.string().optional(),
-  /** Grafana Cloud API token (`glc_…`); basic auth password. */
+
   GRAFANA_CLOUD_LOKI_TOKEN: z.string().optional(),
 
-  // ── OpenTelemetry (Phase 2 з ініціативи 0004) ──────────────────────
-  /**
-   * OTLP/HTTP collector endpoint (e.g. `https://api.honeycomb.io:443/v1/traces`,
-   * `https://otlp-gateway-prod-eu-north-0.grafana.net/otlp/v1/traces`,
-   * `http://tempo:4318/v1/traces`). Без нього OTel SDK НЕ ініціалізується —
-   * `aiSpan`/`dbSpan` стають NoopTracer-обгортками, auto-instrumentation
-   * не реєструється. Sentry tracing продовжує працювати окремо. Деталі:
-   * `apps/server/src/obs/tracing.ts` + `docs/observability/runbook.md`.
-   */
-  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().optional(),
-  /** Endpoint лише для traces (overrides `OTEL_EXPORTER_OTLP_ENDPOINT`). */
-  OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: z.string().optional(),
-  /**
-   * Headers (e.g. `x-honeycomb-team=<key>`). Формат — comma-separated
-   * `k=v,k=v`. SECRET-значення (API keys) ходять через `secrets`,
-   * НЕ комітимо в `.env.example`.
-   */
-  OTEL_EXPORTER_OTLP_HEADERS: z.string().optional(),
-  OTEL_EXPORTER_OTLP_TRACES_HEADERS: z.string().optional(),
-  /** `service.name` resource attribute. Default: `sergeant-api`. */
-  OTEL_SERVICE_NAME: z.string().optional(),
-  /** Override service.version (default — береться з SENTRY_RELEASE / Git SHA). */
-  OTEL_SERVICE_VERSION: z.string().optional(),
-  /** Default sample rate для GET-запитів. 0.0–1.0; default 0.1 (10%). */
-  OTEL_TRACES_SAMPLE_RATE: z.string().optional(),
-  /**
-   * Personal API key для server-side PostHog cleanup (ADR-0016 ADR-6.3).
-   * Має project-level scope із write-доступом до `persons`. БЕЗ нього
-   * `deletePostHogPerson()` повертає `outcome: "skipped"` — GDPR worker
-   * markує row як completed (no-op).
-   */
   POSTHOG_API_KEY: z.string().optional(),
-  /** Числовий ID PostHog-проєкту (Settings → Project → ID). */
+
   POSTHOG_PROJECT_ID: z.string().optional(),
-  /**
-   * Server-side host для PostHog API. EU Cloud: `https://eu.i.posthog.com`
-   * (default), US: `https://us.i.posthog.com`, self-hosted: власна URL.
-   * Парний до клієнтського `VITE_POSTHOG_HOST`.
-   */
+
   POSTHOG_HOST: z.string().optional(),
-  /**
-   * Project ingestion key (`phc_…`) для server-side event capture з webhook-
-   * ів / background workers (PR-09 — `subscription_started` зі Stripe).
-   * Той самий public key, що `VITE_POSTHOG_KEY` у браузері; розведено в
-   * окремий env-var лише щоб НЕ змішувати scope-и (server side має своє
-   * fail-open behaviour і не deploy-ить frontend bundle).
-   *
-   * БЕЗ нього `capturePostHogEvent()` повертає `outcome: "skipped"` — caller
-   * (webhook handler) успішно завершує процесинг, аналітика — best-effort.
-   */
+
   POSTHOG_PROJECT_API_KEY: z.string().optional(),
 
-  // ── Security ───────────────────────────────────────────────────────
-  // M1 (2026-05-04) — CSP_DISABLE видалено. Якщо потрібно швидко вимкнути
-  // CSP — використовуй CSP_REPORT_ONLY=1 (header переходить у Report-Only,
-  // не блокуючи браузер). Постійне вимкнення робиться лише через explicit
-  // PR (revert apiHelmetMiddleware).
-  /** `"1"` — CSP у report-only mode. */
+  // Ініціатива 0025 (PostHog AI Observability). Project ingestion key
+  // (`phc_…`) для `$ai_generation` з `lib/anthropic.ts` через `posthog-node`.
+  // Задано → увімкнено; не задано → AI-івенти не шлються взагалі (dev/test).
+  // Окремий від `POSTHOG_PROJECT_API_KEY` навмисно — це незалежний тумблер
+  // AI-шару (реєстр: docs/engineering/architecture/feature-flags.md § 3.3).
+  // Умова зняття: Фаза 2 закрита і дашборд/алерти живі — тоді ключ стає
+  // обовʼязковим у проді.
+  POSTHOG_AI_OBSERVABILITY_KEY: z.string().optional(),
+
   CSP_REPORT_ONLY: z.string().optional(),
-  /**
-   * `"1"` — mute Telegram push for security events without removing call
-   * sites. Useful during load-test windows to suppress alert spam.
-   * Читається у `obs/securityEventsRoom.ts` (I7 bridge). Default off.
-   */
+
   SECURITY_EVENTS_MUTED: boolFromEnv(false),
-  // ── Monobank webhook ─────────────────────────────────────────────────
-  /** Feature flag: увімкнути webhook-based Monobank інтеграцію. */
+
   MONO_WEBHOOK_ENABLED: z
     .enum(["true", "false", "1", "0", ""])
     .optional()
     .transform((v) => v === "true" || v === "1"),
-  /**
-   * 32-byte hex ключ для AES-256-GCM шифрування Monobank токенів.
-   *
-   * **H4 Phase 2** (2026-06-01): тепер це legacy single-key fallback. Multi-key
-   * rotation реалізовано через `MONO_TOKEN_ENC_KEYS` +
-   * `MONO_TOKEN_ENC_KEY_CURRENT_VERSION` (нижче), що мапить цей ключ на версію
-   * v1. Існуючий ciphertext (з `token_key_version` = NULL) читається як v1.
-   */
+
   MONO_TOKEN_ENC_KEY: z.string().optional(),
-  /**
-   * **H4 Phase 2** Multi-key key-ring для AES-256-GCM шифрування Mono OAuth-
-   * токенів. Формат: `v1:<64-hex>,v2:<64-hex>,...` — CSV пар `vN:<32-byte-hex>`.
-   *
-   * Якщо задане, перевизначає legacy `MONO_TOKEN_ENC_KEY`. Версія для **запису**
-   * нових ciphertext-ів обирається через `MONO_TOKEN_ENC_KEY_CURRENT_VERSION`
-   * і персиститься в `mono_connection.token_key_version`. Версія для
-   * розшифрування конкретного рядка читається з того ж стовпця (NULL → v1).
-   *
-   * Rotation flow (`docs/runbooks/encryption-key-rotation.md`):
-   *   1. додати `v2:hex` до `_KEYS` (deploy)
-   *   2. бампнути `_CURRENT_VERSION=v2` (deploy) — нові записи + lazy re-encrypt
-   *      йдуть під v2
-   *   3. через retention-window (≥30d, моніторити `mono_token_lazy_reencrypt_total`)
-   *      прибрати `v1:` із `_KEYS`
-   */
+
   MONO_TOKEN_ENC_KEYS: z.string().optional(),
-  /**
-   * **H4 Phase 2** Поточна версія Mono-ключа для запису ciphertext-ів. Формат
-   * `vN`, де N — позитивне ціле, присутнє у `MONO_TOKEN_ENC_KEYS`. Якщо
-   * порожнє — найвища версія у key-ring-у.
-   */
+
   MONO_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
-  /** Публічна базова URL API (Railway) для реєстрації webhook у Monobank. */
+
   PUBLIC_API_BASE_URL: z.string().optional(),
 
-  // ── Stripe billing ─────────────────────────────────────────────────
-  // P0-7 (docs/audits/2026-05-13-revenue-monetization-roast.md): Stripe
-  // price IDs were read directly via `process.env[…]` inside
-  // `apps/server/src/modules/billing/stripe.ts`, so a misspelled or
-  // missing value only surfaced when a user clicked "Upgrade" — and
-  // even then with a generic 503. Pull the price IDs (plus the
-  // related secrets) into the Zod schema so the format is validated
-  // up-front (`price_*`) and `assertStartupEnv` can hard-fail at boot
-  // whenever billing is wired but a price ID is absent.
-  /**
-   * Stripe secret key. `sk_test_*` for test mode (dev / preview) і
-   * `sk_live_*` для production. Відсутність = billing вимкнено
-   * (`/api/billing/checkout` повертає 503 BILLING_UNAVAILABLE). Якщо
-   * виставлено у production — `STRIPE_WEBHOOK_SECRET` стає обов'язковим
-   * (див. assertStartupEnv finding #1).
-   */
+  // ─── Silpo MCP integration (walking-skeleton experiment, 2026-08-17) ────
+  // Spec: docs/work/specs/silpo-mcp-integration.md § Експеримент.
+  // Exact parity with the MONO_TOKEN_ENC_KEY* triplet above — same KeyRing
+  // helper (`parseKeyRing`), same validation shape below. Default `false`:
+  // merging this experiment must never turn the integration on by itself
+  // (offer/ToS gate is still open — see spec § Відкриті гейти).
+  SILPO_ENABLED: boolFromEnv(false),
+
+  SILPO_MCP_URL: stringWithDefault("https://mcp.silpo.ua/mcp"),
+
+  SILPO_OAUTH_CLIENT_ID: z.string().optional(),
+
+  SILPO_TOKEN_ENC_KEY: z.string().optional(),
+
+  SILPO_TOKEN_ENC_KEYS: z.string().optional(),
+
+  SILPO_TOKEN_ENC_KEY_CURRENT_VERSION: z.string().optional(),
+
   STRIPE_SECRET_KEY: z
     .string()
     .regex(
@@ -745,13 +369,7 @@ const envSchema = z.object({
       "STRIPE_SECRET_KEY must start with sk_test_ or sk_live_",
     )
     .optional(),
-  /**
-   * Webhook signing secret from Stripe Dashboard → Developers → Webhooks.
-   * `whsec_*` format. Required in production whenever
-   * `STRIPE_SECRET_KEY` is set — without it `verifyStripeSignature`
-   * always returns `false` and the webhook endpoint cannot mutate
-   * billing state (intentional fail-closed behaviour per T2 audit #1).
-   */
+
   STRIPE_WEBHOOK_SECRET: z
     .string()
     .regex(
@@ -759,25 +377,9 @@ const envSchema = z.object({
       "STRIPE_WEBHOOK_SECRET must start with whsec_",
     )
     .optional(),
-  /**
-   * Replay-window tolerance for Stripe webhook timestamps (seconds).
-   * Default 300s matches `stripe-node` `constructEvent`. Values
-   * `<= 0` disable the check — NOT recommended.
-   */
+
   STRIPE_WEBHOOK_TOLERANCE_SECONDS: intFromEnv(300),
-  /**
-   * Stripe Price ID for the Pro plan (monthly billing). Must match
-   * the `price_*` format Stripe Dashboard issues. Required at boot
-   * in production whenever `STRIPE_SECRET_KEY` is set —
-   * `assertStartupEnv` hard-fails so a misconfigured deploy can't
-   * silently send users to a 503 BILLING_UNAVAILABLE error after they
-   * click "Upgrade".
-   *
-   * Canonical name aligns with the ADR-0051 / monetization-architecture
-   * docs (`STRIPE_PRICE_ID_PRO_MONTHLY`). Earlier code used the
-   * `STRIPE_PRICE_PRO_MONTHLY` spelling without `_ID_` — migrated in
-   * the same PR; Railway env must be updated accordingly.
-   */
+
   STRIPE_PRICE_ID_PRO_MONTHLY: z
     .string()
     .regex(
@@ -785,14 +387,7 @@ const envSchema = z.object({
       "STRIPE_PRICE_ID_PRO_MONTHLY must match Stripe `price_*` format",
     )
     .optional(),
-  /**
-   * Master-фліп paywall-enforcement-у: коли `true`, `requirePlan` повертає
-   * 402 на gated-роутах для free-користувачів; коли `false` (default) —
-   * пропускає всіх. Audit 2026-06-11 ws-08: раніше це був raw
-   * `process.env`-read поза схемою — будь-який typo («TRUE», пробіл)
-   * мовчки вимикав монетизацію без жодного сигналу. Тут парс СТРОГИЙ:
-   * значення поза true/false/1/0 валить boot, а не тихо дефолтиться.
-   */
+
   STRIPE_ENABLED: z
     .string()
     .optional()
@@ -808,462 +403,288 @@ const envSchema = z.object({
       });
       return z.NEVER;
     }),
-  // ── LiqPay billing (0010 PR-8 scaffold) ─────────────────────────────
-  /**
-   * Feature-flag для LiqPay як другого payment-provider-а (UA-ринок).
-   * Default `false` — scaffold-only до Phase 7. Коли `true`,
-   * `getProviderForCountry({ country: "UA" })` повертає `liqpay` замість
-   * `stripe`. Поки live LiqPay не реалізовано, вмикати лише у dev для
-   * тестування resolver-а — production checkout кине NotImplementedError.
-   */
+
   LIQPAY_ENABLED: boolFromEnv(false),
 
-  // ── Nutrition backups ──────────────────────────────────────────────
   /**
-   * Серверний секрет для HMAC-SHA256, що формує ім'я файлу
-   * nutrition-backup на диску. Без секрету `safeBackupKeyFromToken`
-   * кидає помилку, тому `/api/nutrition/backup-{upload,download}`
-   * повертають 503 і не торкаються файлової системи.
-   *
-   * У production обов'язковий — інакше ключ можна перебрати, як це
-   * було з 32-bit FNV-1a (IDOR). Згенеруй: `openssl rand -hex 32`.
+   * Reverse trial 7 днів Premium для нових акаунтів
+   * (`modules/billing/reverseTrial.ts`). Дефолт false: AI-квоти діють і без
+   * білінгу, тож trial до запуску Premium означав би зміну витрат. Зняти,
+   * коли Premium запущено і trial став постійною політикою.
    */
+  BILLING_REVERSE_TRIAL_ENABLED: boolFromEnv(false),
+
+  LIQPAY_PUBLIC_KEY: z.string().optional(),
+  LIQPAY_PRIVATE_KEY: z.string().optional(),
+
+  PLATA_ENABLED: boolFromEnv(false),
+
+  PLATA_TOKEN: z.string().optional(),
+
+  PLATA_MODE: z.enum(["test", "live"]).default("test"),
+
+  PRO_MONTHLY_UAH_KOPIYKAS: coerceInt.positive().default(19900),
+
   NUTRITION_BACKUP_KEY_SECRET: z.string().optional(),
 
-  // ── External APIs ──────────────────────────────────────────────────
-  /** USDA FoodData Central API key. Fallback: `DEMO_KEY`. */
   USDA_API_KEY: z.string().optional(),
+  /**
+   * UPCitemdb — третє (останнє) джерело каскаду штрихкодів.
+   *
+   * AI-DANGER: до 2026-07-25 endpoint був **захардкоджений** на
+   * `prod/trial` — 100 запитів на добу **на весь продукт**, не на
+   * користувача, і без жодного способу це змінити без релізу. Ризик не був
+   * задокументований ніде (на відміну від USDA `DEMO_KEY`, який хоча б
+   * згаданий в `env-vars.md`). Дефолт лишається тріальним — щоб нічого не
+   * зламати, — але тепер його видно і його можна замінити змінною оточення.
+   *
+   * Дослідження джерел і рекомендована послідовність дій:
+   * `docs/work/research/2026-07-25-barcode-sources-and-moderation.md`.
+   */
+  UPCITEMDB_BASE_URL: stringWithDefault("https://api.upcitemdb.com/prod/trial"),
 
-  // ── Shutdown ───────────────────────────────────────────────────────
-  /** Grace-period (мс) для завершення in-flight запитів при SIGTERM. */
-  SHUTDOWN_GRACE_MS: coerceInt.nonnegative().default(15_000),
-  /** Hard-timeout (мс) — process.exit якщо shutdown зависне. */
-  SHUTDOWN_HARD_TIMEOUT_MS: coerceInt.nonnegative().default(25_000),
+  UPCITEMDB_API_KEY: z.string().optional(),
 
-  // ── Internal / machine-to-machine ──────────────────────────────────
-  /** Bearer token for `/api/internal/*` (n8n workflows). */
+  /**
+   * Скільки чекаємо на завершення in-flight HTTP-запитів після SIGTERM.
+   *
+   * AI-DANGER: стеля прив'язана до stop-grace платформи, а не до наших
+   * побажань. До 2026-09-16 тут стояло 15_000 із коментарем про Railway
+   * (grace ~30 с). Railway виведено з експлуатації (ADR-0074); зараз
+   * Coolify/Docker, а `docker stop` за замовчуванням дає **10 секунд** до
+   * SIGKILL. Тобто 15-секундний grace не встигав НІКОЛИ — процес помирав
+   * посеред drain-у, і весь graceful-код був декорацією.
+   *
+   * 5_000 обрано так, щоб увесь graceful-шлях вліз у ці 10 с БЕЗ ручного
+   * налаштування поза репо. Піднімати це значення можна лише разом зі
+   * `stop_grace_period` у Coolify — див. шапку `index.ts`.
+   */
+  SHUTDOWN_GRACE_MS: coerceInt.nonnegative().default(5_000),
+
+  /**
+   * Абсолютний запасний вихід: після цього часу процес виходить сам,
+   * незалежно від того, що ще не додренувалось.
+   *
+   * 9_000 — на секунду менше за дефолтні 10 с `docker stop`, щоб вийти
+   * САМИМ із правильним кодом, а не отримати SIGKILL. Бюджет фаз рахується
+   * від цього числа мінус `SHUTDOWN_TAIL_MARGIN_MS` (`index.ts`), тож
+   * hard-таймер спрацьовує лише на справжньому зависанні.
+   */
+  SHUTDOWN_HARD_TIMEOUT_MS: coerceInt.nonnegative().default(9_000),
+
   INTERNAL_API_KEY: stringWithDefault(""),
-  /**
-   * HMAC-SHA256 shared secret for `/api/internal/*` webhook signing
-   * (PR-48 follow-up). n8n side computes
-   * `hex(hmac_sha256(secret, "<timestamp>.<rawBody>"))` and sends it in
-   * the `X-Signature` header alongside `X-Timestamp` (UNIX seconds).
-   * Server verifies both. Empty string disables the feature (bearer-only).
-   */
+
   WEBHOOK_HMAC_SECRET: stringWithDefault(""),
+
   /**
-   * Enforce HMAC signatures on `/api/internal/*`. Default `false` ships a
-   * 30-day grace window: server logs `webhook_hmac_mismatch` (warn) but
-   * still accepts the request, so n8n workflows can be rolled out one at
-   * a time. Flip to `true` once the manifest reports `hmac_signed: true`
-   * for all 17 wired workflows.
+   * Чи відхиляти непідписані запити на `/api/internal/*` (401), а не лише
+   * логувати розбіжність. Дефолт `true` з 2026-09-16 (рішення власника).
+   *
+   * AI-CONTEXT: дефолт був `false` як grace-вікно на час поетапної міграції
+   * 25 n8n-воркфлоу на підпис. n8n виведено з експлуатації ADR-0090, тож
+   * grace-вікно лишилось без предмета — єдині внутрішні caller-и тепер
+   * CI/admin-тулінг, який ми контролюємо.
+   *
+   * AI-DANGER: `true` тут НЕ вмикає перевірку сам по собі. `verifyWebhookRequest`
+   * виходить із `{ ok: true }`, коли `WEBHOOK_HMAC_SECRET` порожній, тож без
+   * секрета цей прапорець не робить нічого. `assertStartupEnv` попереджає про
+   * таку конфігурацію при старті — див. warning `WEBHOOK_HMAC_REQUIRED=true`.
    */
-  WEBHOOK_HMAC_REQUIRED: boolFromEnv(false),
-  /**
-   * Replay-window in seconds — requests with `X-Timestamp` older than
-   * (now - WEBHOOK_HMAC_TS_TOLERANCE_SEC) or further in the future
-   * than that window are rejected when WEBHOOK_HMAC_REQUIRED=true (and
-   * warn-logged otherwise). 5min is the OWASP-recommended default and
-   * matches Stripe / GitHub / Slack webhook signatures.
-   */
+  WEBHOOK_HMAC_REQUIRED: boolFromEnv(true),
+
   WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
-  /** Monobank user-token (legacy single-tenant integration; webhook prefers `/api/mono/connect`). */
-  MONO_TOKEN: stringWithDefault(""),
 
-  // ── Rate limiting (global, non-auth) ────────────────────────────────
-  /** Global rate limit: requests per window. */
-  RATE_LIMIT_MAX: intFromEnv(100),
-  /** Global rate limit: window size in seconds. */
-  RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
   /**
-   * Auth rate limit (sign-in / sign-up / forget-password / reset-password):
-   * attempts per IP per window. Default 5 spec-ed у `docs/security/better-auth-audit-2026-05.md`
-   * — closely matches OWASP ASVS V11.1.3 (5–10 за хвилину для credential flow).
-   * Реєстр `config/rateLimit.ts` бере цей default; ops може дополнити через env
-   * без redeploy-у.
+   * Персональний токен ДПС (Електронний кабінет → «Токени публічної
+   * частини») для `GET /ws/api_public/rro/chkAll` — чек-скан v1, QR/ДПС-шлях
+   * (`docs/work/specs/receipt-scan.md`). Один спільний токен
+   * founder-а на всіх користувачів — дані чека публічні. Відсутність —
+   * толерантний стан: `POST /api/finyk/receipts/lookup` віддає 503 з
+   * людським повідомленням; vision-шлях (`/analyze`) від цього не залежить.
    */
+  DPS_API_TOKEN: stringWithDefault(""),
+
   AUTH_RATE_LIMIT_MAX: intFromEnv(5),
-  /** Auth rate limit: window size in seconds (default 60). */
-  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
-  /**
-   * Secondary per-IP rate limit for authenticated routes (M9 fix).
-   * Caps the total request rate from a single IP across all authenticated
-   * accounts, preventing linear abuse scaling via N free accounts.
-   *
-   * Conservative default (200 r/min) accommodates legitimate users behind
-   * NAT/CGNAT: an office or household may share one IP across several
-   * accounts; 200 r/min (~3.3 r/s) is comfortable for interactive use but
-   * clamps scripted multi-account abuse.
-   *
-   * Set per-route via `rateLimitExpress({ ipLimit: env.RATE_LIMIT_IP_MAX })`.
-   * Set `RATE_LIMIT_IP_MAX=0` to disable the secondary bucket globally
-   * (not recommended for production).
-   */
-  RATE_LIMIT_IP_MAX: intFromEnv(200),
 
-  // ── Sync audit (PR #005 / Stage 0) ─────────────────────────────────
-  /** Comma-separated allow-list of `user.id` для cross-user `/api/sync/audit` запитів. */
+  AUTH_RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
+
+  // Per-account credential bucket (F2). Keyed on the targeted email, not the
+  // caller's IP, so renting more IPs does not buy more guesses. 10 per 15 min
+  // is deliberately looser than the per-IP 5/60s: it must not fire during
+  // ordinary "I mistyped my password four times" use, only against sustained
+  // guessing. Window, not permanent lockout — a permanent one would let an
+  // attacker lock any account out of its own login.
+  AUTH_ACCOUNT_RATE_LIMIT_MAX: intFromEnv(10),
+
+  AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
+
   SYNC_AUDIT_ADMIN_USER_IDS: stringWithDefault(""),
 
-  // ── Mono AI enrichment worker ──────────────────────────────────────
-  /** Запускати polling-консьюмера `mono_ai_enrichment_queue` у тому ж процесі що API. */
   MONO_ENRICHMENT_WORKER_ENABLED: boolFromEnv(false),
-  /** Скільки row-ів забирати за один tick. */
+
   MONO_ENRICHMENT_BATCH_SIZE: intFromEnv(5),
-  /** Інтервал між тиками polling-loop (мс). */
+
   MONO_ENRICHMENT_INTERVAL_MS: intFromEnv(5_000),
-  /** Максимум спроб до того, як queue.row.status='failed'. */
+
   MONO_ENRICHMENT_MAX_ATTEMPTS: intFromEnv(5),
 
-  // ── Mono MCC hourly batch fallback (PR-18 of pr-plan-2026-05) ──────
-  // Коли увімкнено, unknown-MCC tx-и (ті, що не зматчились у
-  // `apps/server/src/lib/mcc/mccMap.ts`) буферяться у пам'яті і батчуються
-  // в один Anthropic-виклик раз на годину замість per-row. Це різко
-  // зменшує AI-витрати; latency категоризації не критичний.
-  // Default off — щоб увімкнути потрібен явний opt-in у Railway env.
-  /** Вмикає hourly batch flow для unknown-MCC tx у enrichment-worker-і. */
+  /**
+   * Трекінг останнього візиту (`lib/lastSeen.ts`).
+   *
+   * Дефолт `true`: без нього прохід підштовхувань не має за чим відрізнити
+   * відсутнього юзера від присутнього і мовчить. Прапорець існує як
+   * рубильник (зайвий UPDATE на юзера щогодини) і щоб глушити фонову
+   * телеметрію у тестах: маршрутні тести мокають пул чергою одноразових
+   * відповідей, і будь-який позаплановий запит її зʼїдає.
+   */
+  LAST_SEEN_TRACKING_ENABLED: boolFromEnv(true),
+
+  /**
+   * Хвилинний прохід нагадувань (`lib/reminders/scheduler.ts`).
+   *
+   * Дефолт `true`: без нього нагадування про звички / їжу / тренування не
+   * доходять при закритому застосунку взагалі — локальні таймери у
+   * сервіс-воркері помирають разом із ним. Прапорець існує як аварійний
+   * рубильник (раптовий потік дублів, деградація БД) і щоб глушити
+   * планувальник у тестах та скриптах, які піднімають увесь app.
+   */
+  REMINDER_SWEEP_ENABLED: boolFromEnv(true),
+
   MCC_BATCH_HOURLY_ENABLED: boolFromEnv(false),
-  /** Максимум tx-ів у одному batch-Anthropic-виклику. */
+
   MCC_BATCH_MAX_SIZE: intFromEnv(100),
-  /** Інтервал між batch-tick-ами (мс). За замовч. 1 година. */
+
   MCC_BATCH_INTERVAL_MS: intFromEnv(3_600_000),
 
-  // ── AI memory (pgvector + Voyage embeddings, ADR-0028) ─────────────
-  /** Майстер-вимикач AI memory pipeline. */
   AI_MEMORY_ENABLED: boolFromEnv(false),
-  /** Voyage AI API key. */
-  VOYAGE_API_KEY: stringWithDefault(""),
-  /** Voyage embedding model. `voyage-3.5-lite` — 1024-d default. */
-  VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
-  /** Розмірність embedding-вектора (має співпадати з HALFVEC у міграції 025). */
-  VOYAGE_EMBEDDING_DIM: intFromEnv(1024),
-  /** Internal semver embedding-схеми (зміна → re-embed існуючих row-ів). */
-  AI_MEMORY_EMBEDDING_VERSION: stringWithDefault("1"),
-  /** Voyage HTTP timeout (мс). */
-  VOYAGE_TIMEOUT_MS: intFromEnv(15_000),
-  /** Voyage max retries on transient errors. */
-  VOYAGE_MAX_RETRIES: intFromEnv(2),
-  /** Voyage batch size (≤128, sweet-spot 32). */
-  VOYAGE_BATCH_SIZE: intFromEnv(32),
-  /** HNSW search-time `ef_search` для ANN-запитів. */
-  AI_MEMORY_HNSW_EF_SEARCH: intFromEnv(40),
-  /** Default top-K для retrieval. */
-  AI_MEMORY_TOP_K: intFromEnv(8),
-  /** Top-K для автоматичного RAG-injection у `/api/chat`. 0 → RAG вимкнений. */
-  AI_MEMORY_RAG_TOP_K: intFromEnv(4),
-  /** Hard timeout for the RAG Voyage + pgvector round-trip (мс). */
-  AI_MEMORY_RAG_TIMEOUT_MS: intFromEnv(1_500),
-  /** Concurrent worker-jobs для AI memory ingestion. */
-  AI_MEMORY_INGEST_CONCURRENCY: intFromEnv(4),
-  /** Max content-length у `MemoryIngestPayload.content` (символи). */
-  AI_MEMORY_INGEST_MAX_CONTENT_LEN: intFromEnv(4_000),
-  /** Per-job BullMQ-attempt count для AI memory ingestion. */
-  AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
-  /**
-   * Per-source kill-switch для AI memory ingestion з Mono webhook
-   * (`source=finyk`). Default `true` — при активації master-flag
-   * `AI_MEMORY_ENABLED=true` finyk-ingest починає працювати без
-   * додаткового toggle-а. Виставити `false` щоб селективно вимкнути
-   * Mono-ingestion (Voyage rate-limit / Mono back-fill) без зачіпання
-   * digest/chat producer-ів.
-   *
-   * Subordinate до `AI_MEMORY_ENABLED` — якщо master `false`, цей flag
-   * ігнорується. Інші source-и (`digest`, `chat`, `fizruk`, `nutrition`,
-   * `routine`, `journal`) не gate-нуті цим flag-ом — вони контролюються
-   * виключно master-вимикачем.
-   *
-   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
-   * Decision-point Day 30: якщо `ai_memories < 100 rows` за 7 днів після
-   * активації — kill module (див. `docs/observability/runbook.md`
-   * § "AI memory activation & Day-30 decision-point").
-   */
-  MONO_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
-  /**
-   * Operator-toggle для n8n WF-30 `30-ai-memory-daily-digest.json`
-   * (cron 09:05 Kyiv → SELECT з `ai_memories` → Telegram #digest). PR-21
-   * додає його як **canonical-source** для статусу digest-workflow: значення
-   * читає оператор у self-hosted n8n Railway env (виставляє `true` для
-   * активації workflow toggle-у у n8n UI). Default `false` — workflow
-   * лишається off-by-default навіть якщо `pnpm ops:n8n:apply` deploy-нув
-   * JSON у n8n. Server-side digest-hook поки що відсутній (PR-21 — n8n-only
-   * activation), але змінна вже парситься тут для парності з
-   * `MONO_AI_MEMORY_INGEST_ENABLED` і майбутніх server-side метрик
-   * (наприклад emit `ai_memory_digest_sent_total` із n8n callback-у).
-   *
-   * Subordinate до `AI_MEMORY_ENABLED` — без master-flag-у `ai_memories`
-   * порожня, digest буде слати «За добу нічого не записано» graceful-message
-   * (workflow handle-ає empty result).
-   *
-   * Activation runbook: [`docs/launch/tech/ai-memory-activation.md`].
-   * Monitoring: [`docs/observability/runbook.md` § "WF-30 AI memory daily
-   * digest (PR-21)"].
-   */
-  MONO_AI_MEMORY_DIGEST_ENABLED: boolFromEnv(false),
 
-  // ── OpenClaw v0 — Telegram-only co-founder bot (ADR-0031) ──────────
-  /** Better Auth user.id founder-а. */
-  OPENCLAW_FOUNDER_USER_ID: stringWithDefault(""),
-  /** Денний USD cap на Anthropic-token-и через OpenClaw (string — NUMERIC у БД). */
-  OPENCLAW_DAILY_USD_BUDGET: stringWithDefault("5"),
-  /** Hard cap на Plan→Act→Reflect ітерації у одному виклику. */
-  OPENCLAW_MAX_ITERATIONS: intFromEnv(8),
-  /** Daily ritual schedule (`HH:MM TZ`). */
-  OPENCLAW_DAILY_MORNING_AT: stringWithDefault("08:30 Europe/Kyiv"),
-  /** Weekly review schedule (`DOW HH:MM TZ`). */
-  OPENCLAW_WEEKLY_REVIEW_AT: stringWithDefault("Fri 18:00 Europe/Kyiv"),
-  /** Monthly OKR schedule (`D HH:MM TZ`). */
-  OPENCLAW_MONTHLY_OKR_AT: stringWithDefault("1 09:00 Europe/Kyiv"),
-  /** Broadcast policy: `dm` | `digest` | `all`. */
-  OPENCLAW_BROADCAST_MODE: z
-    .string()
-    .optional()
-    .transform((v) => (v ?? "digest").toLowerCase() as "dm" | "digest" | "all"),
-  /** Feature flag for the GitHub App auth-flow (PR-06 Phase 2). */
-  OPENCLAW_USE_GITHUB_APP: boolFromEnv(true),
-  /** GitHub App ID (numeric, stored as string). */
-  OPENCLAW_GITHUB_APP_ID: stringWithDefault(""),
-  /** GitHub App private key (PEM, may be `\\n`-escaped). */
-  OPENCLAW_GITHUB_APP_PRIVATE_KEY: stringWithDefault(""),
-  /** GitHub App installation id (numeric, stored as string). */
-  OPENCLAW_GITHUB_APP_INSTALLATION_ID: stringWithDefault(""),
-  /** Repo target для decision PR-ів. */
-  OPENCLAW_GITHUB_REPO: stringWithDefault("Skords-01/Sergeant"),
-  /**
-   * Comma-separated allowlist of `owner/repo` strings that OpenClaw
-   * read/write GitHub tools may target. Empty (default) collapses to
-   * just `OPENCLAW_GITHUB_REPO`, so the default config is the
-   * single-repo behaviour callers expect. T2 audit finding #3 — the
-   * console used to pass through whatever `repo` the LLM picked.
-   */
-  OPENCLAW_GITHUB_REPO_ALLOWLIST: stringWithDefault(""),
-  /** Default branch у repo (для decision PR-ів). */
-  OPENCLAW_GITHUB_BASE_BRANCH: stringWithDefault("main"),
-  /**
-   * n8n REST API base URL (e.g. `https://n8n.example.com`). Empty disables
-   * the n8n delegation surface (`n8n_list/describe/trigger/activate`,
-   * `refresh_business_snapshot`); server returns `notConfigured: true` and
-   * the tools surface a friendly "not configured" message.
-   */
-  N8N_API_URL: stringWithDefault(""),
-  /** n8n personal API key sent as `X-N8N-API-KEY` header. */
-  N8N_API_KEY: stringWithDefault(""),
-  /**
-   * Base URL n8n-інстансу для webhook-replay-у (PR-29). Replay-CLI /
-   * admin-API формує `${N8N_WEBHOOK_BASE_URL}/webhook/{path}` коли
-   * re-POST-ить збережений payload з `n8n_webhook_events`. Окрема env
-   * від `N8N_API_URL` бо n8n cloud-tier-и часом виставляють webhook-и
-   * на окремому домені (`webhook-{tenant}.n8n.cloud` vs
-   * `api-{tenant}.n8n.cloud`). Empty → replay-API повертає 503
-   * `not_configured`. Trailing-slash optional (helper-strip-ить).
-   */
+  VOYAGE_API_KEY: stringWithDefault(""),
+
+  VOYAGE_EMBEDDING_MODEL: stringWithDefault("voyage-3.5-lite"),
+
+  VOYAGE_EMBEDDING_DIM: intFromEnv(1024),
+
+  AI_MEMORY_EMBEDDING_VERSION: stringWithDefault("1"),
+
+  VOYAGE_TIMEOUT_MS: intFromEnv(15_000),
+
+  VOYAGE_MAX_RETRIES: intFromEnv(2),
+
+  VOYAGE_BATCH_SIZE: intFromEnv(32),
+
+  AI_MEMORY_HNSW_EF_SEARCH: intFromEnv(40),
+
+  AI_MEMORY_TOP_K: intFromEnv(8),
+
+  AI_MEMORY_RAG_TOP_K: intFromEnv(4),
+
+  AI_MEMORY_RAG_TIMEOUT_MS: intFromEnv(1_500),
+
+  AI_MEMORY_DEDUP_THRESHOLD: floatFromEnv(0.97),
+
+  AI_MEMORY_INGEST_CONCURRENCY: intFromEnv(4),
+
+  AI_MEMORY_INGEST_MAX_CONTENT_LEN: intFromEnv(4_000),
+
+  AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
+
+  DIGEST_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
+
   N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
-  // ── PR-C1b — SEO env-stubs (graceful fallback) ─────────────────────
-  /** Google PageSpeed Insights API key. Empty → seo_psi_audit повертає `not_configured`. */
-  OPENCLAW_PSI_API_KEY: stringWithDefault(""),
-  /** Google Search Console API key (read-only). Empty → seo_gsc_query → `not_configured`. */
-  OPENCLAW_GSC_API_KEY: stringWithDefault(""),
-  /** GSC site URL (наприклад `sc-domain:sergeant.app`). Empty → `not_configured`. */
-  OPENCLAW_GSC_SITE_URL: stringWithDefault(""),
-  /** SerpAPI key (читай-only SERP-snapshots). Empty → seo_serp_lookup → `not_configured`. */
-  OPENCLAW_SERP_API_KEY: stringWithDefault(""),
-
-  // ── PR-35 — read_telegram_topic_history (Pain P8) ──────────────────
-  /**
-   * Maximum messages returned by `read_telegram_topic_history` per call.
-   * Clamped 1..100 by the route-side Zod schema; this env var sets the
-   * **default** when the tool caller omits `limit`. Default 100 keeps
-   * historical reads bounded for the LLM context budget.
-   */
-  TELEGRAM_TOPIC_HISTORY_LIMIT: intFromEnv(100),
-  /**
-   * Opt-in flag for merging live `Bot API getUpdates` payloads into
-   * `read_telegram_topic_history` (PR-35). Must be left `false`
-   * (default) when the bot is in long-poll mode — a parallel
-   * `getUpdates` call would steal updates from the running consumer.
-   * Safe to enable for webhook-mode bots.
-   */
-  OPENCLAW_TELEGRAM_FETCH_UPDATES: boolFromEnv(false),
-  /**
-   * Bot API token used by `read_telegram_topic_history` for the
-   * `getChat` access probe and (when `OPENCLAW_TELEGRAM_FETCH_UPDATES`
-   * is on) for `getUpdates`. Shares the same token as `postToTopic`
-   * write-tool. Empty → skip the Bot API probe entirely.
-   */
   SERGEANT_ALERT_BOT_TOKEN: stringWithDefault(""),
-  /** Supergroup chat id for the Sergeant Ops chat (negative integer). */
+
   SERGEANT_OPS_CHAT_ID: stringWithDefault(""),
-  /** Forum-topic message_thread_id mappings (PR-35 / write-tools.ts). */
-  TELEGRAM_TOPIC_OPS: stringWithDefault(""),
-  TELEGRAM_TOPIC_ENGINEERING: stringWithDefault(""),
-  TELEGRAM_TOPIC_GROWTH: stringWithDefault(""),
 
-  // ── PR-C1b — Reminder cron-poller (in-process) ─────────────────────
-  /** Інтервал в мілісекундах для poll-а `openclaw_reminders` (default 60s; 0 → off). */
-  OPENCLAW_REMINDER_POLL_INTERVAL_MS: intFromEnv(60_000),
-  /** Max attempts перед позначенням reminder як `failed`. */
-  OPENCLAW_REMINDER_MAX_ATTEMPTS: intFromEnv(3),
-  /** Скільки reminder-ів брати за один poll (batch). */
-  OPENCLAW_REMINDER_POLL_BATCH: intFromEnv(20),
+  // Telegram waitlist/beta-invite fields — moved to `telegramEnv.ts` purely
+  // to shave lines off this file (Hard Rule #18). Spread keeps the merged
+  // shape (and therefore `Env`/`env.TELEGRAM_*`) byte-identical.
+  ...telegramEnvShape,
 
-  // ── PR-28 — n8n_webhook_events retention ───────────────────────────
-  /**
-   * Скільки днів зберігати рядки в `n8n_webhook_events` перед `DELETE`.
-   * Default 30. 0 → retention-poller не запускається (зберігаємо все
-   * назавжди — корисно у dev / тестах).
-   */
   WEBHOOK_EVENTS_RETENTION_DAYS: intFromEnv(30),
-  /** Інтервал в мілісекундах для retention-cleanup tick-у. Default 1h; 0 → off. */
+
   WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
 
-  // ── Log retention archive (`apps/server/src/modules/logRetention`) ──
-  /**
-   * Opt-in master switch для GCS-архіватора `openclaw_invocations` /
-   * `tg_alert_acks` / `n8n_webhook_events`. Default `false`, тож existing
-   * deploy-и не вмикаються автоматично — для увімкнення треба явно
-   * `LOG_ARCHIVE_ENABLED=true` + сетити `GCS_LOG_ARCHIVE_BUCKET`.
-   */
+  // In-process полер `gdpr_cleanup_queue` (modules/gdpr/cleanupPoller.ts).
+  // Та сама філософія, що WEBHOOK_EVENTS_RETENTION_POLL_INTERVAL_MS:
+  // default — година, 0 → off. Default УВІМКНЕНО: без полера черга не
+  // дренується взагалі (Railway/n8n cron-и мертві — ADR-0074).
+  GDPR_CLEANUP_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
+
+  // Добивач акаунтів, у яких минуло вікно на скасування видалення
+  // (modules/me/deletionPoller.ts). Default година, 0 означає off.
+  // Увімкнено за замовчуванням: без добивача позначені акаунти висять
+  // вічно, тобто ми не дотримуємо власної обіцянки видалити дані.
+  ACCOUNT_DELETION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
+
   LOG_ARCHIVE_ENABLED: boolFromEnv(false),
-  /**
-   * Скільки днів зберігати audit-rows у live DB перед archive+DELETE.
-   * Default 30. 0 → archiver не виконує ніяких DELETE-ів (зберігаємо
-   * все назавжди — корисно для compliance freeze).
-   */
+
   LOG_RETENTION_DAYS: intFromEnv(30),
-  /** Інтервал в мілісекундах. Default 1h; 0 → off. */
+
   LOG_ARCHIVE_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
-  /** Скільки рядків брати у батч на таблицю на tick. Default 1000. */
+
   LOG_ARCHIVE_BATCH_SIZE: intFromEnv(1000),
-  /**
-   * Цільовий GCS-бакет. Пусто → poller лоґує warning і пропускає
-   * batches (rows залишаються в DB).
-   */
+
   GCS_LOG_ARCHIVE_BUCKET: stringWithDefault(""),
 
-  // ── PR-33 — Cost monitoring dashboard ──────────────────────────────
-  /** Railway infra subscription monthly cost (USD). 0/empty → не репортимо. */
-  RAILWAY_MONTHLY_COST_USD: floatFromEnv(0),
-  /** Railway plan tier label (`hobby` | `pro` | `team` | `enterprise`). */
-  RAILWAY_PLAN: stringWithDefault("hobby"),
-  /** Vercel hosting monthly cost (USD). */
+  HETZNER_MONTHLY_COST_USD: floatFromEnv(0),
+
+  HETZNER_PLAN: stringWithDefault("cx23"),
+
   VERCEL_MONTHLY_COST_USD: floatFromEnv(0),
-  /** Vercel plan tier (`hobby` | `pro` | `enterprise`). */
+
   VERCEL_PLAN: stringWithDefault("hobby"),
-  /** PostHog analytics monthly cost (USD). */
+
   POSTHOG_MONTHLY_COST_USD: floatFromEnv(0),
-  /** PostHog plan tier (`free` | `pay-as-you-go` | `scale` | `enterprise`). */
+
   POSTHOG_PLAN: stringWithDefault("free"),
-  /** Sentry monthly cost (USD). */
+
   SENTRY_MONTHLY_COST_USD: floatFromEnv(0),
-  /** Sentry plan tier (`developer` | `team` | `business` | `enterprise`). */
+
   SENTRY_PLAN: stringWithDefault("developer"),
-  /** Anthropic monthly budget envelope (USD) — target, не bill. */
+
   ANTHROPIC_MONTHLY_BUDGET_USD: floatFromEnv(0),
-  /** Anthropic billing tier (`usage` для pay-as-you-go). */
+
   ANTHROPIC_PLAN: stringWithDefault("usage"),
-  /** Voyage AI monthly budget envelope (USD). */
+
   VOYAGE_MONTHLY_BUDGET_USD: floatFromEnv(0),
-  /** Voyage billing tier. */
+
   VOYAGE_PLAN: stringWithDefault("usage"),
-  /**
-   * Voyage soft daily budget threshold (USD). PR-38 (48-plan): коли
-   * `increase(ai_cost_estimate_usd_total{provider="voyage"}[24h])`
-   * перевищує цей поріг — Prometheus rule `VoyageDailyBudget*Breach`
-   * фейрить (warn @ 80%, page @ 100%). Default `0` → правило не
-   * активне (gauge не публікується, alert expr включає
-   * `voyage_daily_budget_usd > 0` як guard).
-   */
+
   VOYAGE_DAILY_BUDGET_USD: floatFromEnv(0),
-  /**
-   * PR-14 (48-plan) — Anthropic daily budget alert thresholds (USD).
-   *
-   * Soft (`ANTHROPIC_BUDGET_SOFT_USD`, default `3`) — warning у Sentry +
-   * Telegram-фоллоап через існуючий alert-pipeline (Sentry → n8n WF-22).
-   * Hard (`ANTHROPIC_BUDGET_HARD_USD`, default `5`) — `level=error`
-   * captureMessage + взводить in-process throttle-flag для не-критичних
-   * шляхів (`isAnthropicBudgetHardExceeded()`). Сам hard alert НЕ зупиняє
-   * AI-роути — це лише сигнал для batch worker-ів (mono enrichment,
-   * AI-memory ingestion) самозатягнути горло.
-   *
-   * Sentry `level=warning|error` повний контракт + Telegram routing
-   * описаний у `apps/server/src/obs/anthropicBudgetGuard.ts` JSDoc.
-   *
-   * `0` для будь-якого порога вимикає відповідний alert (kill-switch).
-   */
+
   ANTHROPIC_BUDGET_SOFT_USD: floatFromEnv(3),
   ANTHROPIC_BUDGET_HARD_USD: floatFromEnv(5),
-  /**
-   * Період polling-у Anthropic budget guard (мс). Default 5 хв — достатньо
-   * щоб зловити breach у межах 1 deploy cycle, але не спамити Sentry.
-   */
+
   ANTHROPIC_BUDGET_CHECK_INTERVAL_MS: intFromEnv(300_000),
-  /**
-   * Kill-switch для daily budget alert loop. У `false` scheduler не
-   * стартує (Prometheus counter все одно інкрементується, але алертів
-   * не буде). Призначений для CI / staging, де не хочемо palaving-у.
-   * Default `true`.
-   */
-  ANTHROPIC_BUDGET_ALERT_ENABLED: boolFromEnv(true),
-  /**
-   * Voyage soft daily-usage cap (USD), enforced in-process (PR-38).
-   * Track-имо USD-витрати за поточну UTC-добу у in-memory лічильнику
-   * (`modules/ai-memory/voyageBudget.ts`); коли sum > cap — emit
-   * idempotent Sentry warning (1× на day+threshold) і опційно skip
-   * non-critical embeddings (RAG digests, background-цикли).
-   *
-   * Дефолт `1` USD — захищає від випадкового runaway loop у dev/staging,
-   * де `VOYAGE_DAILY_BUDGET_USD` (Prometheus-rule guard) часто не задано.
-   * У production підняти до бюджету фінансового плану (наприклад `5`).
-   * Set `0` щоб повністю вимкнути soft-gate (тоді тільки Prometheus-side
-   * alert лишиться).
-   */
+
+  ANTHROPIC_BUDGET_ALERT_ENABLED: strictBoolFromEnv(
+    "ANTHROPIC_BUDGET_ALERT_ENABLED",
+    true,
+  ),
+
+  ANTHROPIC_BUDGET_HARD_DEGRADE_ALL: strictBoolFromEnv(
+    "ANTHROPIC_BUDGET_HARD_DEGRADE_ALL",
+    false,
+  ),
+
   VOYAGE_DAILY_BUDGET_USD_SOFT: floatFromEnv(1),
-  /**
-   * Voyage **hard** daily-usage cap (USD). Аналогічний `ANTHROPIC_BUDGET_HARD_USD`
-   * (PR-14): коли today-spend ≥ cap — emit Sentry **error**-level alert
-   * (`error_signature='voyage-daily-budget-hard'`) і взводимо in-process
-   * прапор `isVoyageBudgetHardExceeded()`. Не-критичні шляхи (`remember()`
-   * background ingestion) самозатягують горло — skip embed-call ще до
-   * `embedBatch()`, бо повторно генерувати soft-warning + витрачати
-   * Voyage-квоту після hard-breach-у вже немає сенсу.
-   *
-   * Soft (`VOYAGE_DAILY_BUDGET_USD_SOFT`) лишається первинним сигналом
-   * (warning + skip non-critical у `embeddings.ts`). Hard — додатковий
-   * сигнал (error + pause-ingestion гейт у `service.ts::remember`).
-   *
-   * Default `5` USD — same ratio як Anthropic ($3 soft / $5 hard).
-   * Set `0` щоб вимкнути hard-gate (тоді тільки soft).
-   */
+
   VOYAGE_DAILY_BUDGET_USD_HARD: floatFromEnv(5),
 
-  // ── AI (OpenRouter) ─────────────────────────────────────────────────────
-  /**
-   * API key for openrouter.ai. Required when any of `LLM_PROVIDER`,
-   * `LLM_READONLY_PROVIDER`, or `LLM_DIGEST_PROVIDER` is set to `openrouter`.
-   * Without it those paths degrade to `StubProvider` (same behaviour as when
-   * the key is missing for Anthropic). Get a key at openrouter.ai/settings/keys.
-   */
-  OPENROUTER_API_KEY: stringWithDefault(""),
-  /**
-   * Optional model override for all OpenRouter calls. When set, replaces the
-   * model the call-site requests with this value (e.g. `google/gemini-flash-2.5:free`
-   * for digest, `moonshotai/kimi-k2.6:free` for classify). When empty the
-   * call-site's own model ID is forwarded as-is to OpenRouter — useful for
-   * routing Anthropic models through OpenRouter for resilience without changing
-   * model IDs. Free models available at openrouter.ai/models?order=pricing-asc.
-   */
-  OPENROUTER_MODEL: stringWithDefault(""),
-  /**
-   * Per-path model overrides — точніший за глобальний `OPENROUTER_MODEL`.
-   * Кожен openrouter-шлях може мати власну модель: classify (тривіальна
-   * класифікація) → дешева/free, digest (user-facing) → дешева-якісна. Якщо
-   * per-path порожній, fallback на `OPENROUTER_MODEL`, далі на model самого
-   * call-site-а. Значення може бути або model-id (`openai/gpt-4o-mini`,
-   * `google/gemma-4-31b-it:free`), або `@preset/<slug>` — тоді модель і
-   * fallback-ланцюг керуються пресетом у дашборді OpenRouter (без редеплою).
-   */
-  OPENROUTER_READONLY_MODEL: stringWithDefault(""),
-  OPENROUTER_DIGEST_MODEL: stringWithDefault(""),
+  // Модель, яку коуч шле в Anthropic (прямий провайдер або fallback під
+  // OpenRouter-ом). WHY окрема змінна: раніше тут стояв
+  // `CHAT_MODEL_SYNTHESIS`, а він тепер може нести OpenRouter-only id —
+  // Anthropic на такий відповість 404 і зніме коучу останню сітку безпеки.
+  COACH_MODEL_ANTHROPIC: stringWithDefault("claude-sonnet-4-6"),
+
+  NUTRITION_MODEL: stringWithDefault("claude-sonnet-4-6"),
+
+  DIGEST_MODEL: stringWithDefault("claude-sonnet-4-6"),
+
+  CLASSIFY_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
+
+  MONO_ENRICHMENT_MODEL: stringWithDefault("claude-haiku-4-5-20251001"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -1276,24 +697,21 @@ function parseEnv(): Env {
       .join("\n");
     throw new Error(`Invalid environment variables:\n${formatted}`);
   }
-  // Не використовуємо Object.freeze — тести в `apps/server/src` патчать
-  // окремі поля через `Object.defineProperty` / direct assignment між
-  // it-блоками. Type-level immutability забезпечує `Readonly<Env>` (через
-  // `z.output<typeof envSchema>`), runtime-level — конвенція + ESLint.
   return result.data;
 }
 
 export const env: Env = parseEnv();
 
-/**
- * Startup assertions для production. Виклик у `index.ts` після імпорту.
- * Не дублює `betterAuthEnv.ts` — лише перевіряє змінні поза auth-скоупом.
- */
+export function isDeployedProduction(
+  procEnv: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return (
+    procEnv["NODE_ENV"] === "production" || procEnv["APP_ENV"] === "production"
+  );
+}
+
 export function assertStartupEnv(): void {
-  const isProduction =
-    env.NODE_ENV === "production" ||
-    Boolean(env.RAILWAY_ENVIRONMENT) ||
-    Boolean(env.RAILWAY_SERVICE_NAME);
+  const isProduction = isDeployedProduction();
 
   const warnings: string[] = [];
 
@@ -1308,9 +726,20 @@ export function assertStartupEnv(): void {
     );
   }
 
-  if (!env.ANTHROPIC_API_KEY) {
+  // Дефолтна конфігурація — gateway-only (усі LLM_*_PROVIDER=openrouter,
+  // CHAT/VISION_VIA_OPENROUTER=true), тож відсутній Anthropic-ключ сам по
+  // собі нічого не ламає — він лише вимикає FallbackProvider і прямий
+  // транспорт. До 2026-08-29 warning тут погрожував 500-ками на chat/coach/
+  // nutrition — неправда з часів до-OpenRouter, яка вела ops додавати ключ,
+  // що ніде не використовується. Жорстке попередження лишається рівно для
+  // конфігурації без ЖОДНОГО upstream-ключа.
+  if (!env.ANTHROPIC_API_KEY && !env.OPENROUTER_API_KEY) {
     warnings.push(
-      "ANTHROPIC_API_KEY is not set — AI chat/coach/nutrition endpoints will return 500.",
+      "Neither OPENROUTER_API_KEY nor ANTHROPIC_API_KEY is set — every AI endpoint will 503 (or serve StubProvider text).",
+    );
+  } else if (!env.ANTHROPIC_API_KEY) {
+    warnings.push(
+      "ANTHROPIC_API_KEY is not set — direct-Anthropic fallback is disabled; AI runs gateway-only via OpenRouter.",
     );
   }
 
@@ -1318,10 +747,36 @@ export function assertStartupEnv(): void {
     env.LLM_PROVIDER,
     env.LLM_READONLY_PROVIDER,
     env.LLM_DIGEST_PROVIDER,
+    env.LLM_COACH_PROVIDER,
+    env.LLM_NUTRITION_PROVIDER,
+    env.LLM_MONO_PROVIDER,
+    env.LLM_RECEIPT_PROVIDER,
   ];
   if (openrouterProviders.includes("openrouter") && !env.OPENROUTER_API_KEY) {
     warnings.push(
       "OPENROUTER_API_KEY is not set but LLM_*_PROVIDER=openrouter — those paths will degrade to StubProvider.",
+    );
+  }
+
+  if (!env.DPS_API_TOKEN) {
+    warnings.push(
+      "DPS_API_TOKEN is not set — POST /api/finyk/receipts/lookup returns 503; /analyze (vision) is unaffected.",
+    );
+  }
+
+  // Відкат тут повний (`chatViaOpenRouter()` вимагає ключа, тож і транспорт,
+  // і model-id повертаються на Anthropic разом), тому чат лишається робочим.
+  // Але прапорець виставили не просто так — мовчати про те, що він не подіяв,
+  // означає лишити ops у переконанні, що міграція відбулась.
+  if (env.CHAT_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "CHAT_VIA_OPENROUTER is on (now the default) but OPENROUTER_API_KEY is not set — chat stays on direct Anthropic with Anthropic model ids. Set the key to activate the gateway, or CHAT_VIA_OPENROUTER=false to silence this.",
+    );
+  }
+
+  if (env.VISION_VIA_OPENROUTER && !env.OPENROUTER_API_KEY) {
+    warnings.push(
+      "VISION_VIA_OPENROUTER is on (now the default) but OPENROUTER_API_KEY is not set — analyze-photo/refine-photo stay on direct Anthropic with NUTRITION_MODEL. Set the key to activate the gateway, or VISION_VIA_OPENROUTER=false to silence this.",
     );
   }
 
@@ -1331,15 +786,6 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // T2 audit finding #4 — `/metrics` exposure. Without `METRICS_TOKEN`
-  // the endpoint is publicly reachable AND the `@opentelemetry/exporter-
-  // prometheus` stack has a HIGH-severity advisory ("process crash via
-  // malformed HTTP") — an unauthenticated attacker can therefore both
-  // scrape the full Prometheus registry (route latencies, queue depth,
-  // circuit-breaker state, AI cost histograms) and remotely crash the
-  // Node process. Hard-fail at boot in production so the misconfig
-  // surfaces immediately instead of silently shipping with the legacy
-  // warning. Dev/staging still accept the missing token (warning only).
   if (isProduction && !env.METRICS_TOKEN) {
     throw new Error(
       "METRICS_TOKEN is required in production. Without it `GET /metrics` is publicly reachable, leaking route latency, AI cost, and circuit-breaker telemetry — and the OTel Prometheus exporter has a HIGH-severity crash advisory exploitable from the same surface. Generate one with `openssl rand -hex 32` and set it on the deployment.",
@@ -1350,16 +796,12 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // T2 audit finding #6 — `BETTER_AUTH_URL` / `PUBLIC_API_BASE_URL`
-  // scheme is never validated as HTTPS in production. Better Auth only
-  // sets the `Secure` cookie flag + `SameSite=None` when the base URL
-  // `startsWith('https://')`, so a misconfigured deploy
-  // (`http://api.example.com`, a copy-paste from staging, a local
-  // tunnel URL) silently drops the Secure flag and ships session cookies
-  // over plaintext HTTP — exposing them to passive sniffers on the
-  // path and breaking the cross-site-cookie contract. Hard-fail at boot
-  // so the misconfig surfaces immediately. Localhost stays exempt
-  // (the schema accepts http://localhost for dev parity).
+  if (isProduction && !env.BETTER_AUTH_URL) {
+    throw new Error(
+      "BETTER_AUTH_URL is required in production. Without it Better Auth falls back to `http://localhost:$PORT`, and `getAdvancedCookieOptions()` in auth.ts silently drops Secure / SameSite=None from the session cookie — sessions ship over plaintext and cross-site login stops working. Set it to the public HTTPS API URL.",
+    );
+  }
+
   if (isProduction) {
     const insecureUrls: string[] = [];
     if (env.BETTER_AUTH_URL && !env.BETTER_AUTH_URL.startsWith("https://")) {
@@ -1370,6 +812,12 @@ export function assertStartupEnv(): void {
       !env.PUBLIC_API_BASE_URL.startsWith("https://")
     ) {
       insecureUrls.push(`PUBLIC_API_BASE_URL=${env.PUBLIC_API_BASE_URL}`);
+    }
+    // `WEB_APP_URL` їде у листи як `callbackURL` і додається у
+    // `trustedOrigins`. http-значення у проді означало б, що ми самі
+    // надсилаємо користувачам посилання на незахищений origin.
+    if (env.WEB_APP_URL && !env.WEB_APP_URL.startsWith("https://")) {
+      insecureUrls.push(`WEB_APP_URL=${env.WEB_APP_URL}`);
     }
     if (insecureUrls.length > 0) {
       throw new Error(
@@ -1390,11 +838,6 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // backend-perf PR-01 — VAPID keypair enforcement. Without both keys
-  // `/api/push/*` silently degrades to 503 at request time (a misconfigured
-  // prod deploy looks healthy until a push is attempted). Hard-fail at boot
-  // in production so the misconfiguration surfaces before traffic; warn-only
-  // outside production so local dev without push keys still boots.
   if (isProduction && (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY)) {
     throw new Error(
       "VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY are required in production. Without them /api/push/* silently returns 503. Generate a keypair with `npx web-push generate-vapid-keys`.",
@@ -1405,26 +848,6 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // T2 audit finding #1 — Stripe webhook secret enforcement. If billing is
-  // wired (STRIPE_SECRET_KEY is set) then STRIPE_WEBHOOK_SECRET MUST also
-  // be set in production; otherwise `verifyStripeSignature` had no secret
-  // to compare against and the legacy non-prod fall-back was returning
-  // `true` (accept-all) — every staging / preview deploy was effectively
-  // an open billing-state write endpoint. Hard-fail at boot so the
-  // misconfig surfaces immediately instead of silently mutating
-  // subscription rows weeks later.
-  //
-  // P0-7 (2026-05-13 revenue-monetization roast) — same lifecycle for
-  // `STRIPE_PRICE_ID_PRO_MONTHLY`. Without the price ID the checkout
-  // route fails with a runtime `BillingConfigurationError → 503`
-  // after the user clicks Upgrade. Fail at boot so the misconfig
-  // surfaces in deploy logs instead of in the funnel. The zod schema
-  // already enforces the `price_*` format on parse — this branch
-  // only catches the `missing` case for prod-with-billing.
-  // Audit 2026-06-11 ws-08 — paywall-фліп без платіжних ключів означає,
-  // що free-користувачі почнуть отримувати 402 на gated-роутах, а шлях
-  // апгрейду (checkout) при цьому мертвий (503). Конфігураційно
-  // суперечливий стан — fail-loud на boot.
   if (isProduction && env.STRIPE_ENABLED && !env.STRIPE_SECRET_KEY) {
     throw new Error(
       "STRIPE_ENABLED=true requires STRIPE_SECRET_KEY in production. With enforcement on and no Stripe wiring, gated routes return 402 while /api/billing/checkout returns 503 — users would be locked out with no way to upgrade. Set the key or flip STRIPE_ENABLED off.",
@@ -1442,13 +865,6 @@ export function assertStartupEnv(): void {
         "STRIPE_PRICE_ID_PRO_MONTHLY is required in production when STRIPE_SECRET_KEY is set. Without it `/api/billing/checkout` throws BillingConfigurationError → 503 the first time a user clicks Upgrade. Copy the value from Stripe Dashboard → Products → Pro → Pricing (must match `price_*` format).",
       );
     }
-    // Security Engineer council finding: replay-window guard. `verifyStripeSignature`
-    // в `apps/server/src/modules/billing/stripe.ts` пропускає timestamp check якщо
-    // tolerance <= 0 (Stripe `constructEvent` semantics). Це означає що unattended
-    // staging/preview config з `STRIPE_WEBHOOK_TOLERANCE_SECONDS=0` перетворює
-    // captured signed webhook payload в unbounded replay primitive проти billing
-    // endpoint — атакуючий може повторити стару `checkout.session.completed` подію
-    // через дні/тижні і mutate-нути subscription state.
     if (env.STRIPE_WEBHOOK_TOLERANCE_SECONDS <= 0) {
       throw new Error(
         "STRIPE_WEBHOOK_TOLERANCE_SECONDS must be > 0 in production when STRIPE_SECRET_KEY is set. A value of 0 (or negative) disables the timestamp replay-window check entirely, turning any captured signed webhook payload into an unbounded replay primitive against the billing endpoint. Default 300s; only set explicitly if your platform has unusual clock skew, and never set <= 0 in production. See https://stripe.com/docs/webhooks/signatures § 'Preventing replay attacks'.",
@@ -1456,18 +872,45 @@ export function assertStartupEnv(): void {
     }
   }
 
-  // D3 (2026-05-15 deep-audit): mirror the Stripe wired-without-secret
-  // guard for AI memory. Якщо master `AI_MEMORY_ENABLED=true`, але
-  // `VOYAGE_API_KEY=""` — embedding-провайдер кидає `MissingVoyageApiKeyError`
-  // на першому виклику (→ HTTP 503 у recall / BullMQ-skip у ingest). Це
-  // silent failure для оператора: фічу вмикнули, але юзер бачить 503
-  // тільки після першого запиту. Hard-fail у production переносить
-  // помилку у boot-логи; у dev/staging — warning, щоб локальний
-  // toggle-тест без key не зривав сервер.
+  if (
+    env.LIQPAY_ENABLED &&
+    (!env.LIQPAY_PUBLIC_KEY || !env.LIQPAY_PRIVATE_KEY)
+  ) {
+    throw new Error(
+      "LIQPAY_ENABLED=true requires LIQPAY_PUBLIC_KEY and LIQPAY_PRIVATE_KEY. Without them /api/billing/checkout throws BillingConfigurationError → 503 the first time a UA user picks LiqPay. Set both from the LiqPay merchant cabinet (ФОП), or flip LIQPAY_ENABLED off.",
+    );
+  }
+  if (env.PLATA_ENABLED && !env.PLATA_TOKEN) {
+    throw new Error(
+      "PLATA_ENABLED=true requires PLATA_TOKEN (monopay merchant X-Token). Without it /api/billing/checkout and the Plata recurring scheduler fail. Set it from the monobank acquiring cabinet (ФОП), or flip PLATA_ENABLED off.",
+    );
+  }
+
+  // Три асерти вище ловлять «провайдер увімкнений, але недоналаштований».
+  // Протилежна конфігурація — жоден провайдер не ввімкнений у ПРОДІ —
+  // мовчки стартувала, і саме вона найдорожча: `requirePlan` тоді
+  // пропускає всіх, тобто весь Pro роздається безкоштовно, а ті, хто
+  // заплатив, платять за відкрите. Симптомів у логах немає, бо з погляду
+  // коду все «працює».
+  //
+  // Warning, а не throw: зупиняти прод через конфігурацію білінгу — гірше
+  // за саму проблему (сервіс лежить замість того, щоб працювати зі
+  // знятими гейтами). Але мовчати про це не можна.
+  if (
+    isProduction &&
+    !env.STRIPE_ENABLED &&
+    !env.LIQPAY_ENABLED &&
+    !env.PLATA_ENABLED
+  ) {
+    warnings.push(
+      "No billing provider is enabled in production (STRIPE_ENABLED, LIQPAY_ENABLED, PLATA_ENABLED all false). `requirePlan` therefore enforces nothing and every Pro-gated route is open to free users. Enable the provider you actually sell through, or accept that paid gates are off.",
+    );
+  }
+
   if (env.AI_MEMORY_ENABLED && !env.VOYAGE_API_KEY) {
     if (isProduction) {
       throw new Error(
-        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/launch/tech/ai-memory-activation.md.",
+        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/work/specs/launch/tech/ai-memory-activation.md.",
       );
     }
     warnings.push(
@@ -1475,28 +918,12 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // H9: AI_QUOTA_DISABLED is a billing kill-switch — fine in CI/test where e2e
-  // hammers real Anthropic without burning user quota, catastrophic in
-  // production where it disables every per-user / per-IP cap. The advisory
-  // module-load `logger.warn` in aiQuota.ts was easy to miss; this fail-fast
-  // check refuses to start the server at all so the misconfig is caught at
-  // boot instead of at the next billing cycle.
   if (isProduction && env.AI_QUOTA_DISABLED) {
     throw new Error(
-      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / RAILWAY_ENVIRONMENT for that run, document the reason in the runbook, and remove the override immediately after.",
+      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / APP_ENV for that run, document the reason in the runbook, and remove the override immediately after.",
     );
   }
 
-  // Hard Rule #20 (stack-pulse-2026-05 PR-06 Phase 2): OpenClaw must
-  // authenticate to GitHub via the GitHub App-flow only. The legacy PAT
-  // (`OPENCLAW_GITHUB_PAT`) and its `Git_PAT` fallback have been removed
-  // from the env schema, but a stale value in Railway / Vercel
-  // environment storage still leaks into `process.env`. We hard-block
-  // production startup if either is present so the misconfig is caught
-  // at boot — and so the operator is forced to scrub the secret-store
-  // instead of leaving a long-lived token sitting around. Read raw
-  // `process.env` (not the zod-typed `env`) precisely because the
-  // schema dropped these keys; we need to spot the leftover regardless.
   if (isProduction) {
     const leftoverPats: string[] = [];
     if (process.env["OPENCLAW_GITHUB_PAT"]) {
@@ -1507,16 +934,12 @@ export function assertStartupEnv(): void {
     }
     if (leftoverPats.length > 0) {
       throw new Error(
-        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. OpenClaw must authenticate via the GitHub App-flow only — set OPENCLAW_GITHUB_APP_{ID,PRIVATE_KEY,INSTALLATION_ID} and remove the legacy PAT(s) from the secret-store. See docs/playbooks/rotate-openclaw-credentials.md.`,
+        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. Remove the legacy PAT(s) from the secret-store — the OpenClaw Gateway is decommissioned and no component authenticates with these tokens. See docs/start/instructions/rotate-secrets.md.`,
       );
     }
   }
 
   if (env.MONO_WEBHOOK_ENABLED) {
-    // H4 Phase 2: accept either the multi-key ring (`MONO_TOKEN_ENC_KEYS` +
-    // `_CURRENT_VERSION`) or the legacy single-key (`MONO_TOKEN_ENC_KEY`).
-    // Validate via `parseKeyRing` so a malformed CSV / unknown current
-    // version fails fast at boot, not on first `/api/mono/connect`.
     if (!env.MONO_TOKEN_ENC_KEYS && !env.MONO_TOKEN_ENC_KEY) {
       throw new Error(
         "MONO_TOKEN_ENC_KEY (or MONO_TOKEN_ENC_KEYS) is required when MONO_WEBHOOK_ENABLED=true. Must be 32-byte hex (64 chars).",
@@ -1540,15 +963,35 @@ export function assertStartupEnv(): void {
     }
   }
 
-  // C1: encrypt OAuth tokens at rest. In production we hard-fail without
-  // the key — running plaintext-tokens-in-prod is exactly the regression
-  // we shipped this code to prevent. In dev/test we only warn so existing
-  // local dev environments don't break overnight.
-  //
-  // H4: accept either the new multi-key form (`*_KEYS` + `*_CURRENT_VERSION`)
-  // or the legacy single-key (`BETTER_AUTH_TOKEN_ENC_KEY`). Validate via
-  // `parseKeyRing` so configuration errors fail fast at boot, not on first
-  // sign-in.
+  if (env.SILPO_ENABLED) {
+    if (!env.SILPO_TOKEN_ENC_KEYS && !env.SILPO_TOKEN_ENC_KEY) {
+      throw new Error(
+        "SILPO_TOKEN_ENC_KEY (or SILPO_TOKEN_ENC_KEYS) is required when SILPO_ENABLED=true. Must be 32-byte hex (64 chars).",
+      );
+    }
+    try {
+      parseKeyRing({
+        keysCsv: env.SILPO_TOKEN_ENC_KEYS,
+        currentVersion: env.SILPO_TOKEN_ENC_KEY_CURRENT_VERSION,
+        legacyKey: env.SILPO_TOKEN_ENC_KEY,
+        envName: "SILPO_TOKEN_ENC_KEY",
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      throw new Error(`SILPO_TOKEN_ENC_KEY[S] is invalid: ${detail}`);
+    }
+    if (!env.SILPO_OAUTH_CLIENT_ID) {
+      throw new Error(
+        "SILPO_OAUTH_CLIENT_ID is required when SILPO_ENABLED=true (one-time Dynamic Client Registration output — see docs/engineering/integrations/env-vars.md § Silpo MCP).",
+      );
+    }
+    if (!env.PUBLIC_API_BASE_URL) {
+      throw new Error(
+        "PUBLIC_API_BASE_URL is required when SILPO_ENABLED=true (OAuth callback URL).",
+      );
+    }
+  }
+
   const hasKeyRing = Boolean(
     env.BETTER_AUTH_TOKEN_ENC_KEYS || env.BETTER_AUTH_TOKEN_ENC_KEY,
   );
@@ -1574,26 +1017,32 @@ export function assertStartupEnv(): void {
     );
   }
 
-  // Independent audit 2026-06-11 (ws-06) — SENTRY_DSN enforcement. Sentry is
-  // the head of the app-exception alert chain (Sentry webhook → n8n WF-03 →
-  // Telegram): a production deploy without the DSN silently disables the
-  // operator's primary error signal while `/health` stays green. Hard-fail at
-  // boot — mirroring METRICS_TOKEN / VAPID — instead of the legacy warning.
-  // Deliberately the LAST production gate in this function: earlier gates keep
-  // emitting their own specific errors when several misconfigs coexist.
+  // Прапорець обіцяє «непідписане відхиляємо», але сам верифікатор — no-op
+  // без секрета (`verifyWebhookRequest` → `if (!opts.secret) return ok`).
+  // Без цього попередження конфігурація `WEBHOOK_HMAC_REQUIRED=true` +
+  // порожній `WEBHOOK_HMAC_SECRET` виглядає захищеною і мовчить — рівно та
+  // форма «гейт, якого насправді немає», через яку в цьому репо вже двічі
+  // тихо ріс борг. Warn, а не throw: `/api/internal/*` і без HMAC лишається
+  // за fail-closed bearer-гейтом, тож валити старт було б непропорційно.
+  if (
+    env.WEBHOOK_HMAC_REQUIRED &&
+    env.INTERNAL_API_KEY &&
+    !env.WEBHOOK_HMAC_SECRET
+  ) {
+    warnings.push(
+      "WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty — signature checking is OFF (the verifier no-ops without a secret). /api/internal/* is protected by the bearer token alone. Set WEBHOOK_HMAC_SECRET to make the flag mean anything.",
+    );
+  }
+
   if (isProduction && !env.SENTRY_DSN) {
     throw new Error(
-      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/RAILWAY_ENVIRONMENT for that run and document the reason in the runbook.",
+      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/APP_ENV for that run and document the reason in the runbook.",
     );
   } else if (!env.SENTRY_DSN) {
     warnings.push("SENTRY_DSN is not set — error tracking is disabled.");
   }
 
   if (warnings.length > 0) {
-    // Use console.warn here — env.ts must not import logger (circular dep:
-    // logger.ts → env/env.ts; logger would not yet be initialised at this point).
-    // assertStartupEnv() is called from index.ts after all modules are loaded,
-    // so these warnings reach stdout reliably.
     for (const w of warnings) console.warn(`[env_warning] ${w}`);
   }
 }

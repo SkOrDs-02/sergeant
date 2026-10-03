@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { Breadcrumb, ErrorEvent } from "@sentry/node";
+import type { Breadcrumb, ErrorEvent, Event } from "@sentry/node";
 import {
   applyBeforeBreadcrumb,
   applyBeforeSend,
+  applyBeforeSendTransaction,
   resolveSentryRelease,
   scrubPII,
   SENTRY_DENY_URLS,
@@ -25,17 +26,17 @@ describe("resolveSentryRelease (L9)", () => {
     ).toBe("v1.2.3");
   });
 
-  it("віддає перевагу Railway SHA коли немає явного `SENTRY_RELEASE`", () => {
+  it("віддає перевагу GIT_SHA (Coolify/ghcr) коли немає явного `SENTRY_RELEASE`", () => {
     expect(
       resolveSentryRelease({
-        RAILWAY_GIT_COMMIT_SHA: "abc123",
+        GIT_SHA: "abc123",
         VERCEL_GIT_COMMIT_SHA: "def456",
         GITHUB_SHA: "ghi789",
       }),
     ).toBe("abc123");
   });
 
-  it("падає на Vercel SHA коли немає Railway", () => {
+  it("падає на Vercel SHA коли немає GIT_SHA", () => {
     expect(
       resolveSentryRelease({
         VERCEL_GIT_COMMIT_SHA: "def456",
@@ -56,7 +57,7 @@ describe("resolveSentryRelease (L9)", () => {
     expect(
       resolveSentryRelease({
         SENTRY_RELEASE: "",
-        RAILWAY_GIT_COMMIT_SHA: "   ",
+        GIT_SHA: "   ",
         VERCEL_GIT_COMMIT_SHA: "real-sha",
       }),
     ).toBe("real-sha");
@@ -98,7 +99,7 @@ describe("scrubPII", () => {
     expect(ev["X-CSRF-Token"]).toBe("[redacted]");
   });
 
-  it("ходить рекурсивно у nested об'єкти (event.contexts/extra сценарій)", () => {
+  it("ходить рекурсивно у nested обʼєкти (event.contexts/extra сценарій)", () => {
     const ev = {
       contexts: {
         runtime: { name: "node", version: "20" },
@@ -155,7 +156,7 @@ describe("scrubPII", () => {
     expect(arr[1]!["keep"]).toBe("ok");
   });
 
-  it("маскує об'єктні значення на null (зберігає shape для Sentry UI)", () => {
+  it("маскує обʼєктні значення на null (зберігає shape для Sentry UI)", () => {
     const ev = {
       // У Sentry SDK може бути { authorization: { Bearer: "..." } }
       authorization: { Bearer: "xxx" },
@@ -402,6 +403,161 @@ describe("applyBeforeSend (PII roast: string scrubbing)", () => {
   });
 });
 
+// F6 — transaction/span-події не проходять `beforeSend`, а Telegram тримає
+// bot-токен у path вихідного URL, тож без окремого хука він летів у Sentry
+// сирим у `request.url`, `transaction`, span-description і span-атрибутах.
+describe("applyBeforeSendTransaction", () => {
+  const botToken = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  it("маскує bot-токен у URL транзакції, span-description і span-атрибутах", () => {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const ev = {
+      type: "transaction",
+      transaction: url,
+      request: { url },
+      spans: [
+        {
+          span_id: "s1",
+          trace_id: "t1",
+          start_timestamp: 0,
+          description: `POST ${url}`,
+          data: { "http.url": url, apiKey: "leak" },
+        },
+      ],
+    } as unknown as Event;
+
+    const out = applyBeforeSendTransaction(ev);
+
+    expect(JSON.stringify(out)).not.toContain(botToken);
+    expect(out.request?.url).toBe(
+      "https://api.telegram.org/bot[redacted]/sendMessage",
+    );
+    expect(out.spans?.[0]?.data?.["apiKey"]).toBe("[redacted]");
+  });
+
+  it("скрабить extra/contexts і не падає на порожній транзакції", () => {
+    const ev = {
+      type: "transaction",
+      extra: { debug: { connectionString: "postgres://x", keep: "ok" } },
+    } as unknown as Event;
+
+    const out = applyBeforeSendTransaction(ev);
+    const debug = (out.extra as { debug: Record<string, unknown> }).debug;
+    expect(debug["connectionString"]).toBe("[redacted]");
+    expect(debug["keep"]).toBe("ok");
+    expect(() =>
+      applyBeforeSendTransaction({ type: "transaction" } as unknown as Event),
+    ).not.toThrow();
+  });
+});
+
+// priv-01 / priv-07 (аудит 2026-10-01): transaction-події несли сире тіло
+// запиту, розпарсені cookies, query_string і URL скидання пароля.
+describe("applyBeforeSendTransaction (priv-01, priv-07)", () => {
+  const resetToken = "RESETTOKEN0123456789abcdef";
+  const resetUrl = `https://api.example.com/api/auth/reset-password/${resetToken}?callbackURL=%2F&token=${resetToken}`;
+
+  function makeEvent(): Event {
+    return {
+      type: "transaction",
+      transaction: "POST /api/auth/sign-in/email",
+      request: {
+        url: resetUrl,
+        data: '{"email":"victim@example.com","password":"Hunter2-SuperSecret"}',
+        cookies: {
+          "__Secure-better-auth.session_token": "SESSIONTOKEN123.sig",
+        },
+        query_string: `token=${resetToken}`,
+        headers: {
+          cookie: "__Secure-better-auth.session_token=SESSIONTOKEN123.sig",
+          authorization: "Bearer abc",
+          "x-telegram-bot-api-secret-token": "TGSECRET",
+        },
+      },
+      contexts: {
+        trace: {
+          trace_id: "t",
+          span_id: "s",
+          data: {
+            "http.url": resetUrl,
+            "http.target": `/api/auth/reset-password/${resetToken}?token=${resetToken}`,
+            "url.full": resetUrl,
+            "http.query": `?token=${resetToken}`,
+            "url.query": `token=${resetToken}`,
+            "url.path": `/api/auth/reset-password/${resetToken}`,
+          },
+        },
+      },
+      spans: [
+        {
+          span_id: "s2",
+          trace_id: "t",
+          start_timestamp: 0,
+          data: {
+            "http.query": `?token=${resetToken}`,
+            "url.query": `token=${resetToken}`,
+          },
+        },
+      ],
+    } as unknown as Event;
+  }
+
+  it("прибирає тіло, cookies і query_string та маскує секрети в заголовках", () => {
+    const out = applyBeforeSendTransaction(makeEvent());
+    const json = JSON.stringify(out);
+    expect(out.request?.data).toBeUndefined();
+    expect(out.request?.cookies).toBeUndefined();
+    expect(out.request?.query_string).toBeUndefined();
+    expect(json).not.toContain("Hunter2-SuperSecret");
+    expect(json).not.toContain("SESSIONTOKEN123");
+    expect(json).not.toContain("TGSECRET");
+  });
+
+  it("маскує токен скидання пароля в url, contexts.trace.data і span-атрибутах", () => {
+    const out = applyBeforeSendTransaction(makeEvent());
+    expect(JSON.stringify(out)).not.toContain(resetToken);
+  });
+});
+
+describe("applyBeforeSend (priv-01, priv-07)", () => {
+  it("прибирає query_string, маскує trace.data і Telegram-секрет", () => {
+    const ev = {
+      request: {
+        url: "https://x/api/auth/reset-password/RESETTOKEN0123?token=RESETTOKEN0123",
+        query_string: "token=RESETTOKEN0123",
+        headers: { "x-telegram-bot-api-secret-token": "TGSECRET" },
+      },
+      contexts: {
+        trace: {
+          data: {
+            "http.target":
+              "/api/auth/reset-password/RESETTOKEN0123?token=RESETTOKEN0123",
+          },
+        },
+      },
+    } as unknown as ErrorEvent;
+    const json = JSON.stringify(applyBeforeSend(ev));
+    expect(json).not.toContain("RESETTOKEN0123");
+    expect(json).not.toContain("TGSECRET");
+    expect(ev.request?.query_string).toBeUndefined();
+  });
+});
+
+describe("applyBeforeBreadcrumb (priv-07)", () => {
+  it("маскує http.query / url.query", () => {
+    const bc = {
+      category: "http",
+      data: {
+        url: "https://x/y",
+        "http.query": "?token=ABC123SECRET",
+        "url.query": "token=ABC123SECRET",
+      },
+    } as unknown as Breadcrumb;
+    const out = applyBeforeBreadcrumb(bc);
+    expect(JSON.stringify(out)).not.toContain("ABC123SECRET");
+  });
+});
+
 describe("SENTRY_DENY_URLS", () => {
   it("блокує health-probe URL-и (uptime monitor 502 noise)", () => {
     // String match is substring per Sentry SDK contract.
@@ -409,8 +565,7 @@ describe("SENTRY_DENY_URLS", () => {
     expect(SENTRY_DENY_URLS).toContain("/health");
     // favicon noise — regex.
     const faviconRe = SENTRY_DENY_URLS.find((r) => r instanceof RegExp) as
-      | RegExp
-      | undefined;
+      RegExp | undefined;
     expect(faviconRe).toBeDefined();
     expect(faviconRe!.test("https://example.com/favicon.ico")).toBe(true);
   });

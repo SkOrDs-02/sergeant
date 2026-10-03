@@ -4,7 +4,7 @@
 // > **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
 // > **Status:** Active
 //
-// CI gate that every playbook in `docs/00-start/playbooks/` declares its required
+// CI gate that every playbook in `docs/start/instructions/` declares its required
 // metadata. Without this, playbooks drift into informal recipes — the
 // `INDEX.md` generator already requires a `**Trigger:**` line, but freshness
 // (`Last validated:`) and lifecycle (`Status:`) are also part of Hard Rule
@@ -27,10 +27,16 @@
 // some don't). Items 5 and 6 live below H2 cutoffs; their presence is checked
 // via H2 section detection over the full file, not the preamble.
 //
+// `Status: Deprecated` files are exempt from items 4-6 (Trigger/Owner
+// surface/Verification) — see ADR-0075 §Immutable-ADR link-graph: some
+// docs are kept in-place (not deleted) purely as redirect stubs so
+// immutable-ADR links and the internal link-checker stay green. Items
+// 1-3 (H1, freshness header, Status marker) still apply.
+//
 // Skipped files (treated as non-playbooks):
-//   - docs/00-start/playbooks/INDEX.md       (auto-generated lookup)
-//   - docs/00-start/playbooks/README.md      (overview)
-//   - docs/00-start/playbooks/_TEMPLATE*.md  (templates start with `_`)
+//   - docs/start/instructions/INDEX.md       (auto-generated lookup)
+//   - docs/start/instructions/README.md      (overview)
+//   - docs/start/instructions/_TEMPLATE*.md  (templates start with `_`)
 //
 // Run:
 //   node scripts/docs/check-playbook-schema.mjs        # exit 1 on first violation
@@ -42,7 +48,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..", "..");
-const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs", "00-start", "playbooks");
+const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs", "start", "instructions");
 
 // Source of truth: AGENTS.md § Hard Rule #10 → "Docs: status badge under the
 // freshness marker". Keep this enum in sync with the documented status set
@@ -57,7 +63,7 @@ const ALLOWED_STATUSES = new Set([
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
-/** Files in docs/00-start/playbooks/ that are NOT playbooks and must be skipped. */
+/** Files in docs/start/instructions/ that are NOT playbooks and must be skipped. */
 export function isSkippableFile(name) {
   if (
     name === "INDEX.md" ||
@@ -141,6 +147,7 @@ export function validatePlaybook(content, opts = {}) {
 
   // 3. Status
   const statusLine = preamble.find((l) => /^>\s*\*\*Status:\*\*/.test(l));
+  let status = null;
   if (!statusLine) {
     errors.push(
       "missing lifecycle marker (`> **Status:** " +
@@ -155,14 +162,26 @@ export function validatePlaybook(content, opts = {}) {
       errors.push(
         `unknown status '${m[1]}'; allowed: ${[...ALLOWED_STATUSES].join(", ")}`,
       );
+    } else {
+      status = m[1];
     }
+  }
+
+  // `Deprecated` redirect stubs (ADR-0075 §Immutable-ADR link-graph: some
+  // docs must stay in-place — not deleted — so immutable-ADR links and the
+  // internal link-checker stay green) aren't actionable playbooks anymore.
+  // Requiring Trigger/Owner surface/Verification on them would force fake
+  // content on a file whose only job is to redirect. H1, freshness, and
+  // Status stay mandatory (checks 1-3 above); skip 4-6 below.
+  if (status === "Deprecated") {
+    return errors;
   }
 
   // 4. Trigger
   const triggerLine = preamble.find((l) => /^\*\*Trigger:\*\*/.test(l));
   if (!triggerLine) {
     errors.push(
-      "missing `**Trigger:**` line (required by docs/00-start/playbooks/INDEX.md generator)",
+      "missing `**Trigger:**` line (required by docs/start/instructions/INDEX.md generator)",
     );
   } else {
     const body = triggerLine.replace(/^\*\*Trigger:\*\*/, "").trim();
@@ -249,7 +268,7 @@ export function sliceH2Section(lines, headingRegex) {
 /** Trigger length cap (chars of body, after `**Trigger:**`). */
 export const MAX_TRIGGER_LENGTH = 240;
 
-/** Walk docs/00-start/playbooks/ for .md files that are real playbooks. */
+/** Walk docs/start/instructions/ for .md files that are real playbooks. */
 export function collectPlaybooks(dir = PLAYBOOK_DIR) {
   const out = [];
   for (const name of readdirSync(dir)) {
@@ -257,6 +276,7 @@ export function collectPlaybooks(dir = PLAYBOOK_DIR) {
     if (!statSync(p).isFile()) continue;
     if (!name.endsWith(".md")) continue;
     if (isSkippableFile(name)) continue;
+    if (!/^# Playbook:/mu.test(readFileSync(p, "utf8"))) continue;
     out.push(p);
   }
   return out;
@@ -268,9 +288,22 @@ function main() {
   const args = new Set(process.argv.slice(2));
   const jsonMode = args.has("--json");
   const files = collectPlaybooks();
+  const instructionFiles = readdirSync(PLAYBOOK_DIR)
+    .filter((name) => name.endsWith(".md") && !isSkippableFile(name))
+    .map((name) => join(PLAYBOOK_DIR, name));
 
   const results = [];
   let totalErrors = 0;
+  for (const file of instructionFiles) {
+    const content = readFileSync(file, "utf8");
+    if (!/^> \*\*Runtime-specific:\*\* (yes|no)$/mu.test(content)) {
+      totalErrors += 1;
+      results.push({
+        file: file.replace(REPO_ROOT + "/", ""),
+        errors: ["missing `> **Runtime-specific:** yes|no` metadata"],
+      });
+    }
+  }
   for (const file of files) {
     const content = readFileSync(file, "utf-8");
     const errors = validatePlaybook(content);
@@ -294,7 +327,7 @@ function main() {
     );
   } else if (totalErrors === 0) {
     console.log(
-      `✅Playbook schema OK — ${files.length} playbook(s) in docs/00-start/playbooks/.`,
+      `✅Playbook schema OK — ${files.length} playbook(s) in docs/start/instructions/.`,
     );
   } else {
     console.error(
@@ -305,7 +338,7 @@ function main() {
       for (const e of errors) console.error(`    - ${e}`);
     }
     console.error(
-      "\nFix: update the offending playbook(s) so each one has an H1 'Playbook: <title>', a freshness header, a `> **Status:**` line, a `**Trigger:**` line (≤ 240 chars), an `## Owner surface` section with a `Governing skill:` entry, and an `## Verification` section with at least one checkbox. See docs/00-start/playbooks/_TEMPLATE-decision-tree.md or any well-formed playbook for the exact shape.",
+      "\nFix: update the offending playbook(s) so each one has an H1 'Playbook: <title>', a freshness header, a `> **Status:**` line, a `**Trigger:**` line (≤ 240 chars), an `## Owner surface` section with a `Governing skill:` entry, and an `## Verification` section with at least one checkbox. See docs/start/instructions/_TEMPLATE-decision-tree.md or any well-formed playbook for the exact shape.",
     );
   }
 

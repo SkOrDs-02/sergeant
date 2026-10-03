@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // scripts/docs/generate-service-catalog.mjs
 //
-// Build a machine-readable mirror of `docs/02-engineering/architecture/service-catalog.md`
+// Build a machine-readable mirror of `docs/engineering/architecture/service-catalog.md`
 // by enumerating production surfaces from:
-//   - Dockerfile.api / Dockerfile.openclaw / Dockerfile.openclaw-gateway
-//   - railway.toml / railway.openclaw.toml / railway.openclaw-gateway.toml
-//   - workspace folders (apps/web / apps/mobile / apps/mobile-shell)
+//   - Dockerfile.api
+//   - deploy artifacts (Dockerfile.api → Coolify via deploy-api.yml)
+//   - workspace folders (apps/web / apps/landing / apps/mobile / apps/mobile-shell)
 //
-// Output: `docs/04-governance/governance/service-catalog.auto.json`.
+// Output: `docs/governance/governance/service-catalog.auto.json`.
 //
 // Acts as a **drift detector**: the markdown view stays hand-maintained
 // (editorial runbook / rollback / data-sensitivity columns). This
@@ -37,11 +37,11 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 const OUT_JSON = resolve(
   REPO_ROOT,
-  "docs/04-governance/governance/service-catalog.auto.json",
+  "docs/governance/governance/service-catalog.auto.json",
 );
 const VIEW_MD = resolve(
   REPO_ROOT,
-  "docs/02-engineering/architecture/service-catalog.md",
+  "docs/engineering/architecture/service-catalog.md",
 );
 const CODEOWNERS_PATH = resolve(REPO_ROOT, ".github/CODEOWNERS");
 
@@ -95,17 +95,6 @@ function ownerFor(workspaceRel, rules) {
   return candidates[0]?.handle || null;
 }
 
-/**
- * Read the comment block from a railway.*.toml and try to extract a
- * `Service name: <slug>` declaration. We don't ship a TOML parser; the
- * comment convention is enforced by review.
- */
-function railwayServiceName(tomlPath) {
-  const text = readSafe(tomlPath);
-  const m = text.match(/Service\s+name:\s*([\w-]+)/i);
-  return m?.[1] || null;
-}
-
 function dockerfileExists(name) {
   return existsSync(resolve(REPO_ROOT, name));
 }
@@ -118,10 +107,6 @@ function detectHealthcheckPath(workspaceRel) {
     const routesIndex = resolve(REPO_ROOT, "apps/server/src/routes/index.ts");
     const text = readSafe(routesIndex);
     if (text.includes("/health")) return "/health";
-  }
-  // OpenClaw Gateway uses `/healthz` per railway.openclaw-gateway.toml conventions.
-  if (workspaceRel === "ops/openclaw" || workspaceRel === "tools/openclaw") {
-    return "/healthz";
   }
   return null;
 }
@@ -154,6 +139,20 @@ export function buildServiceCatalog() {
     });
   }
 
+  // Standalone marketing landing
+  if (existsSync(resolve(REPO_ROOT, "apps/landing/package.json"))) {
+    surfaces.push({
+      id: "marketing-landing",
+      title: "Marketing landing",
+      workspace: "apps/landing",
+      deployTarget: "vercel",
+      deployArtifact: "vercel.json",
+      railwayService: null,
+      healthcheckPath: null,
+      owner: ownerFor("apps/landing", owners),
+    });
+  }
+
   // API
   if (
     existsSync(resolve(REPO_ROOT, "apps/server/package.json")) &&
@@ -163,9 +162,9 @@ export function buildServiceCatalog() {
       id: "api",
       title: "API (apps/server)",
       workspace: "apps/server",
-      deployTarget: "railway",
+      deployTarget: "coolify",
       deployArtifact: "Dockerfile.api",
-      railwayService: railwayServiceName(resolve(REPO_ROOT, "railway.toml")),
+      railwayService: null,
       healthcheckPath: detectHealthcheckPath("apps/server"),
       owner: ownerFor("apps/server", owners),
     });
@@ -196,57 +195,6 @@ export function buildServiceCatalog() {
       railwayService: null,
       healthcheckPath: null,
       owner: ownerFor("apps/mobile-shell", owners),
-    });
-  }
-
-  // OpenClaw (legacy Telegram bot)
-  if (
-    existsSync(resolve(REPO_ROOT, "tools/openclaw/package.json")) &&
-    dockerfileExists("Dockerfile.openclaw")
-  ) {
-    surfaces.push({
-      id: "openclaw",
-      title: "OpenClaw (Telegram bot)",
-      workspace: "tools/openclaw",
-      deployTarget: "railway",
-      deployArtifact: "Dockerfile.openclaw",
-      railwayService: railwayServiceName(
-        resolve(REPO_ROOT, "railway.openclaw.toml"),
-      ),
-      healthcheckPath: null,
-      owner: ownerFor("tools/openclaw", owners),
-    });
-  }
-
-  // OpenClaw Gateway (Phase 7 cutover — ADR-0055)
-  if (dockerfileExists("Dockerfile.openclaw-gateway")) {
-    surfaces.push({
-      id: "openclaw-gateway",
-      title: "OpenClaw Gateway",
-      workspace: existsSync(resolve(REPO_ROOT, "ops/openclaw"))
-        ? "ops/openclaw"
-        : null,
-      deployTarget: "railway",
-      deployArtifact: "Dockerfile.openclaw-gateway",
-      railwayService: railwayServiceName(
-        resolve(REPO_ROOT, "railway.openclaw-gateway.toml"),
-      ),
-      healthcheckPath: detectHealthcheckPath("ops/openclaw"),
-      owner: ownerFor("ops/openclaw", owners),
-    });
-  }
-
-  // n8n workflows (operate as ops surface, no Dockerfile)
-  if (existsSync(resolve(REPO_ROOT, "ops/n8n-workflows"))) {
-    surfaces.push({
-      id: "n8n-workflows",
-      title: "n8n workflows",
-      workspace: null,
-      deployTarget: "n8n-runtime",
-      deployArtifact: "ops/n8n-workflows/",
-      railwayService: null,
-      healthcheckPath: null,
-      owner: ownerFor("ops/n8n-workflows", owners),
     });
   }
 
@@ -300,7 +248,20 @@ function main() {
   if (wantsCheck) {
     const current = readSafe(OUT_JSON);
     let mismatch = false;
-    if (current !== nextJson) {
+
+    // `generated_at` is a clock value: a byte-exact compare would flag every
+    // committed artifact as stale the day after it was generated (breaking any
+    // PR that outlives midnight). Neutralize the stamp on both sides before
+    // comparing — only real content drift fails. Mirrors the precedent in
+    // scripts/agent/build-retrieval-index.mjs.
+    const stripGeneratedAt = (s) =>
+      s === null
+        ? null
+        : s
+            .replace(/"generated_at":\s*"[^"]*"/g, '"generated_at":""')
+            .replace(/\(\d{4}-\d{2}-\d{2}\)/g, "(<date>)")
+            .replace(/Generated \d{4}-\d{2}-\d{2}/g, "Generated <date>");
+    if (stripGeneratedAt(current) !== stripGeneratedAt(nextJson)) {
       console.error(
         `${relPath(OUT_JSON)} is out of date. Run \`pnpm docs:gen-service-catalog\` and commit.`,
       );

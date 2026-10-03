@@ -22,7 +22,6 @@ import request from "supertest";
  *       aiMemoryIngest: { enabled, started, fallbackMode, concurrency,
  *                         attempts, jobCounts, error? },
  *       monoEnrichment: { enabled, intervalMs, queueDepth, error? },
- *       backgroundQueue: { status, size, processing, isShuttingDown },
  *     },
  *   }
  *
@@ -116,13 +115,6 @@ describe("GET /health/workers — happy path (no Redis, mono queue empty)", () =
             total: 0,
           },
         },
-        backgroundQueue: {
-          status: expect.stringMatching(/^(healthy|shutting_down)$/),
-          queued: expect.any(Number),
-          running: expect.any(Number),
-          concurrency: expect.any(Number),
-          isShuttingDown: expect.any(Boolean),
-        },
       },
     });
     // ISO 8601 timestamp.
@@ -161,26 +153,46 @@ describe("GET /health/workers — degraded paths", () => {
     vi.resetModules();
   });
 
-  it("returns 503 + queueDepth=null when Postgres rejects mono-enrichment query", async () => {
+  it("returns 503 + queueDepth=null, і НЕ віддає текст помилки БД", async () => {
+    // Раніше тут очікувався `error: /ECONNREFUSED/` — тобто тест закріплював
+    // витік: `/health/workers` змонтований без auth і без rate-limit, а
+    // `pg`/`ioredis` кладуть у `err.message` внутрішній хост, порт і імʼя
+    // DB-користувача (`password authentication failed for user
+    // "sergeant_app"`). Анонім отримував внутрішню топологію.
+    //
+    // Тепер клієнту йде лише КЛАС помилки (`errorCode`, allowlist
+    // `^[A-Za-z0-9_]{1,40}$` — див. `obs/errorCode.ts`), а повний текст
+    // лишається в `logger.error`. Перевіряємо обидві половини: код є, а
+    // подробиць немає.
     queryMock.mockRejectedValue(new Error("ECONNREFUSED 127.0.0.1:5432"));
     const app = createApp();
     const res = await request(app).get("/health/workers");
     expect(res.status).toBe(503);
     expect(res.body.status).toBe("unhealthy");
     expect(res.body.workers.monoEnrichment.queueDepth).toBeNull();
-    expect(res.body.workers.monoEnrichment.error).toMatch(/ECONNREFUSED/);
-    // Без stack trace в response body — лише `message`. Це L7 invariant
+    expect(res.body.workers.monoEnrichment.errorCode).toBeTruthy();
+    expect(res.body.workers.monoEnrichment).not.toHaveProperty("error");
+
+    // Ні хоста, ні порту, ні тексту драйвера в тілі відповіді.
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain("ECONNREFUSED");
+    expect(body).not.toContain("127.0.0.1");
+    expect(body).not.toContain("5432");
+
+    // Без stack trace в response body. Це L7 invariant
     // (не leak-аємо file paths / dependency versions через error string).
     expect(res.body.workers.monoEnrichment).not.toHaveProperty("stack");
   });
 
-  it("reflects MONO_ENRICHMENT_WORKER_ENABLED + ANTHROPIC_API_KEY env flags", async () => {
-    // HR-3: env.ANTHROPIC_API_KEY is read from the Zod-validated env singleton
-    // (fixed at module-eval time), so we must use the canonical vi.stubEnv +
-    // vi.resetModules() + dynamic import() pattern — plain process.env mutation
-    // after the module was already loaded is a no-op for the guard.
+  it("reflects MONO_ENRICHMENT_WORKER_ENABLED + provider-key env flags", async () => {
+    // Гейт воркера з 2026-08-29 (#928) питає ключ РЕАЛЬНОГО провайдера
+    // категоризації — providerUpstreamReady("readonly"), дефолт
+    // LLM_READONLY_PROVIDER=openrouter → потрібен OPENROUTER_API_KEY
+    // (Anthropic-ключ цим шляхом більше не вимагається).
+    // HR-3: env читається з Zod-singleton-а (fixed at module-eval time), тож
+    // канонічний патерн vi.stubEnv + vi.resetModules() + dynamic import().
     vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "true");
-    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-test");
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
     queryMock.mockResolvedValue({ rows: [] });
     vi.resetModules();
     const { createApp: freshCreateApp } = await import("../app.js");
@@ -190,10 +202,11 @@ describe("GET /health/workers — degraded paths", () => {
     expect(res.body.workers.monoEnrichment.enabled).toBe(true);
   });
 
-  it("reports monoEnrichment.enabled=false when API key missing", async () => {
+  it("reports monoEnrichment.enabled=false when provider key missing", async () => {
     process.env["MONO_ENRICHMENT_WORKER_ENABLED"] = "true";
-    // env.ANTHROPIC_API_KEY defaults to "" (stringWithDefault("") in env schema)
-    // when the key is absent at module-eval time — no re-import needed here.
+    // Без OPENROUTER_API_KEY (і без ANTHROPIC_API_KEY як fallback-гілки
+    // предиката) readonly-провайдер недосяжний → enabled=false. Обидва
+    // дефолтяться у "" в env-схемі — re-import не потрібен.
     queryMock.mockResolvedValue({ rows: [] });
     const app = createApp();
     const res = await request(app).get("/health/workers");

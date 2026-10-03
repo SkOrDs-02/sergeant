@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last validated:** 2026-06-21 by docs:gen-today. **Next review:** 2026-06-28.
+> **Last touched:** 2026-09-30 by docs:gen-today. **Next review:** 2026-10-07.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -9,7 +9,10 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 
 ## Топ-7 на сьогодні
 
-_Нема items з `Phase X next` / `Stage X IN PROGRESS` / `Phase X blocked` маркерами. Або все закрито, або status headers потребують уточнення (Rule #10)._
+Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).
+
+- [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
+- [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
 
 ## Прострочений review (0)
 
@@ -21,7 +24,7 @@ _Жодного документа не пропустило `Next review:` да
 
 ## Quick links
 
-- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers
-- [`governance/freshness-dashboard.html`](./04-governance/governance/freshness-dashboard.html) — повний freshness огляд
+- [`open-work.md`](./open-work.md) — повний rollup усіх 1 tracker
+- [`governance/doc-freshness.md`](./governance/governance/doc-freshness.md) — свіжість доків; повний огляд: `pnpm docs:freshness-dashboard` або CI-артефакт `docs-freshness-dashboard`
 - [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing
 - [`README.md`](./README.md) — docs index (genre-grouped)

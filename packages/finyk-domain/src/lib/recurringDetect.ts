@@ -1,23 +1,24 @@
 /**
- * Автодетекція регулярних витрат (підписок) із історії транзакцій.
+ * Автодетекція регулярних платежів із історії транзакцій.
  *
- * Групує expense-транзакції за нормалізованим merchant-ключем, шукає
- * регулярні інтервали (тижневі / двотижневі / місячні / квартальні /
- * річні) зі стабільною сумою та повертає кандидатів, які користувач може
- * одним кліком перетворити на підписку.
+ * Групує транзакції за нормалізованим merchant-ключем, шукає регулярні
+ * інтервали (тижневі / двотижневі / місячні / квартальні / річні) зі
+ * стабільною сумою та повертає кандидатів.
  *
- * Чистий модуль без залежностей від localStorage/DOM — інтегрується через
- * `RecurringSuggestions.jsx`.
+ * Працює в обидва боки — див. `DetectOptions.flow`:
+ *   - `expense` (default) — підписки, комуналка; кандидати йдуть у
+ *     `RecurringSuggestions`, де їх можна одним кліком зробити підпискою;
+ *   - `income` — зарплата, оренда, стипендія; використовується гребенем
+ *     місяця (`MonthOutflowComb`), щоб показати, коли гроші приходять,
+ *     а не лише коли йдуть.
+ *
+ * Чистий модуль без залежностей від localStorage/DOM.
  */
 
 const DAY_SECONDS = 86_400;
 
 export type RecurringCadence =
-  | "weekly"
-  | "biweekly"
-  | "monthly"
-  | "quarterly"
-  | "yearly";
+  "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
 
 export type RecurringConfidence = "high" | "medium" | "low";
 
@@ -47,6 +48,18 @@ const MAX_AMOUNT_CV = 0.25;
 /** Мінімум 2 повторення — 2 транзакції достатньо для гіпотези. */
 const MIN_OCCURRENCES = 2;
 
+/**
+ * Фіксоване вікно історії для детекції, днів.
+ *
+ * AI-CONTEXT: до 2026-10-01 рушій їв усе, що дали на вхід, а входом був
+ * `mono.transactions`: до відповіді мережі це ВСЕ SQLite-дзеркало, після —
+ * лише поточний київський місяць. Кандидати зʼявлялись і зникали хвилями
+ * залежно від стану завантаження, а не від даних. 120 днів покривають
+ * щомісячні (3 списання) і щоквартальні (2) платежі; щорічні (355+ днів)
+ * вікно відсікає — з дзеркала, яке веб тримає, їх і так не було чим ловити.
+ */
+export const RECURRING_LOOKBACK_DAYS = 120;
+
 export interface RecurringTx {
   id: string;
   /** Unix seconds. */
@@ -69,7 +82,7 @@ export interface RecurringSubscription {
 export interface RecurringCandidate {
   /** Нормалізований merchant-ключ (унікальний для групи). */
   key: string;
-  /** Найкраще ім'я з транзакцій (для відображення). */
+  /** Найкраще імʼя з транзакцій (для відображення). */
   displayName: string;
   /** Середня сума у одиницях (грн/долар), додатня. */
   avgAmount: number;
@@ -107,7 +120,32 @@ export interface DetectOptions {
    * Default: 45 днів (поріг трошки більший за місяць).
    */
   maxAgeDays?: number;
+  /**
+   * Скільки днів історії брати до уваги: транзакції старші за
+   * `nowSec - lookbackDays` ігноруються, хоч би що передав виклик.
+   * Default: {@link RECURRING_LOOKBACK_DAYS}. `Infinity` або `<= 0`
+   * вимикають вікно (усе, що дали на вхід).
+   */
+  lookbackDays?: number;
+  /**
+   * Який бік грошового потоку шукати.
+   *
+   * AI-CONTEXT: до 2026-08-06 рушій умів лише `expense` — і не за
+   * задумом, а тому що фільтр `tx.amount >= 0` стояв прямо в циклі
+   * групування. Уся решта механіки (каденція, стабільність суми,
+   * впевненість, `billingDay`) уже працювала на `Math.abs`, тобто до
+   * знака байдужа. Тому це опція, а не друга копія рушія.
+   *
+   * Default `expense` — щоб жоден наявний виклик не змінив поведінки.
+   */
+  flow?: RecurringFlow;
 }
+
+/**
+ * `expense` — регулярні витрати (підписки, комуналка).
+ * `income` — регулярні надходження (зарплата, оренда, стипендія).
+ */
+export type RecurringFlow = "expense" | "income";
 
 // ---------- helpers ----------
 
@@ -218,21 +256,37 @@ export function detectRecurring(
     excludedTxIds = [],
     nowSec = Math.floor(Date.now() / 1000),
     maxAgeDays = 45,
+    lookbackDays = RECURRING_LOOKBACK_DAYS,
+    flow = "expense",
   } = options;
 
   if (!transactions || !transactions.length) return [];
 
   const excluded = new Set(excludedTxIds);
   const dismissed = new Set(dismissedKeys);
+  const windowStartSec =
+    Number.isFinite(lookbackDays) && lookbackDays > 0
+      ? nowSec - lookbackDays * DAY_SECONDS
+      : null;
 
   // Групування за нормалізованим merchant-ключем.
   const groups = new Map<string, RecurringTx[]>();
+  // Усі id мерчанта, включно з тими, що старші за вікно: вікно обмежує лише
+  // розрахунок ритму, а підписка з `linkedTxId` на давнє списання мусить і
+  // далі гасити кандидата (інакше її пропонують удруге).
+  const allIdsByKey = new Map<string, Set<string>>();
   for (const tx of transactions) {
-    if (!tx || typeof tx.amount !== "number" || tx.amount >= 0) continue;
+    if (!tx || typeof tx.amount !== "number") continue;
+    // Нуль не належить жодному боку: він не витрата й не надходження.
+    if (flow === "expense" ? tx.amount >= 0 : tx.amount <= 0) continue;
     if (!tx.id || excluded.has(tx.id)) continue;
     const key = normalizeMerchantKey(tx.description);
     if (!key) continue;
     if (dismissed.has(key)) continue;
+    const ids = allIdsByKey.get(key);
+    if (ids) ids.add(tx.id);
+    else allIdsByKey.set(key, new Set([tx.id]));
+    if (windowStartSec !== null && (tx.time || 0) < windowStartSec) continue;
     const bucket = groups.get(key);
     if (bucket) bucket.push(tx);
     else groups.set(key, [tx]);
@@ -279,7 +333,7 @@ export function detectRecurring(
     if (ageDays > maxAgeDays) continue;
 
     // Пропустити, якщо вже є підписка, що покриває цей ключ.
-    const groupIds = new Set(sorted.map((t) => t.id));
+    const groupIds = allIdsByKey.get(key) ?? new Set(sorted.map((t) => t.id));
     if (
       subscriptions.some((sub) => subscriptionCoversKey(sub, key, groupIds))
     ) {

@@ -25,7 +25,7 @@
  * key (`packages/shared/src/lib/storageKeys.ts`, so CloudSync picks the
  * same slot), and engages `expo-keep-awake` while a workout is active
  * so the screen stays on during a training session — per
- * `docs/mobile/react-native-migration.md` §6.10.
+ * `docs/engineering/mobile/react-native-migration.md` §6.10.
  *
  * Scope note (Phase 6 · PR-B): this hook owns **only** activeWorkoutId
  * + timers. Workout CRUD (sets / items / groups) still lives in the
@@ -39,7 +39,7 @@ import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { safeReadStringLS, safeRemoveLS, safeWriteLS } from "@/lib/storage";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractActiveWorkoutSnapshot,
@@ -122,24 +122,30 @@ export function useElapsedSeconds(
   /** Override for unit tests. */
   now: () => number = Date.now,
 ): number | null {
-  const [value, setValue] = useState<number | null>(() => {
-    if (!startedAt) return null;
-    const start = Date.parse(startedAt);
+  const computeValue = (at: string | null | undefined): number | null => {
+    if (!at) return null;
+    const start = Date.parse(at);
     if (!Number.isFinite(start)) return null;
     return Math.max(0, Math.floor((now() - start) / 1000));
-  });
+  };
+
+  const [value, setValue] = useState<number | null>(() =>
+    computeValue(startedAt),
+  );
+
+  // Render-time update when `startedAt` changes — avoids the direct
+  // `setValue(null)` calls inside useEffect (`react-hooks/set-state-in-effect`,
+  // initiative 0021). The interval still lives in an effect (genuine timer side-effect).
+  const [prevStartedAt, setPrevStartedAt] = useState(startedAt);
+  if (startedAt !== prevStartedAt) {
+    setPrevStartedAt(startedAt);
+    setValue(computeValue(startedAt));
+  }
 
   useEffect(() => {
-    if (!startedAt) {
-      setValue(null);
-      return undefined;
-    }
+    if (!startedAt) return undefined;
     const start = Date.parse(startedAt);
-    if (!Number.isFinite(start)) {
-      setValue(null);
-      return undefined;
-    }
-    setValue(Math.max(0, Math.floor((now() - start) / 1000)));
+    if (!Number.isFinite(start)) return undefined;
     const id = setInterval(() => {
       setValue(Math.max(0, Math.floor((now() - start) / 1000)));
     }, 1000);

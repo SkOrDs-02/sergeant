@@ -108,8 +108,8 @@ const SKIP_FILES = new Set([
 // the syntax with deliberately-stale example dates that should never trigger
 // the scanner.
 const SKIP_FILE_PREFIXES = [
-  "docs/00-start/playbooks/",
-  "docs/90-work/planning/",
+  "docs/start/instructions/",
+  "docs/work/specs/planning/",
 ];
 
 // Marker regex — anchored to the canonical syntax enforced by the ESLint rule.
@@ -167,13 +167,52 @@ export function extractMarkers(content) {
   const markers = [];
   RX_MARKER.lastIndex = 0;
   let match;
+  const lines = content.split("\n");
   while ((match = RX_MARKER.exec(content)) !== null) {
     const [, expires, rawNote = ""] = match;
     const offset = match.index;
     const line = content.slice(0, offset).split("\n").length;
-    markers.push({ line, expires, note: rawNote.trim() });
+    markers.push({
+      line,
+      expires,
+      note: rawNote.trim(),
+      context: markerContext(lines, line, rawNote),
+    });
   }
   return markers;
+}
+
+/**
+ * Скільки рядків продовження коментаря читати услід за маркером.
+ * Чотири — бо стільки вистачає на обґрунтування з посиланням і не вистачає,
+ * щоб зачепити наступний, не пов'язаний коментар.
+ */
+const MARKER_CONTEXT_LINES = 4;
+
+/**
+ * Текст маркера РАЗОМ із продовженням коментаря під ним.
+ *
+ * Навіщо. `note` із `RX_MARKER` — це рівно один рядок, а обґрунтування
+ * природно переповзає на наступні: `scripts/telegram/broadcast-waitlist.mjs`
+ * називає свій трекер саме на другому рядку. Доти посилання на власника
+ * шукалось лише в першому рядку, тож маркер із чесним трекером усе одно
+ * рахувався «без власника». Це і давало звіт `no-issue-ref: 9` при трьох
+ * маркерах, що власника насправді мали.
+ */
+export function markerContext(lines, line, rawNote = "") {
+  const out = [rawNote];
+  for (
+    let i = line;
+    i < Math.min(lines.length, line + MARKER_CONTEXT_LINES);
+    i++
+  ) {
+    const raw = lines[i] ?? "";
+    const trimmed = raw.trim();
+    // Лише продовження того самого коментарного блоку.
+    if (!/^(?:\/\/|\*|\/\*)/u.test(trimmed)) break;
+    out.push(trimmed.replace(/^(?:\/\/|\*\/|\/\*|\*)\s?/u, ""));
+  }
+  return out.join(" ").trim();
 }
 
 /** Detect malformed `AI-LEGACY` markers (no `expires YYYY-MM-DD`). */
@@ -291,7 +330,7 @@ export function gatherMarkers({
         line: m.line,
         expires: m.expires,
         note: m.note,
-        issueRef: extractIssueRef(m.note),
+        issueRef: extractIssueRef(m.context ?? m.note),
         status,
         daysUntilExpiry: daysBetween(today, m.expires),
       });
@@ -482,27 +521,42 @@ async function createIssue(finding, daysExpired) {
   });
 }
 
-// ── Issue-reference validation ───────────────────────────────────────────────
+// ── Owner-reference validation ───────────────────────────────────────────────
 
-// Recognises any of:
-//   #123              bare issue number
-//   GH-123            GitHub shorthand
-//   issues/123        path fragment (full URL also matches)
+// Маркер мусить називати ВЛАСНИКА роботи — того, хто про неї згадає, коли
+// дата спливе. Приймається два роди посилань:
+//
+//   #123 / GH-123 / issues/123   GitHub-issue
+//   docs/…/файл.md               трекер у репо (спека, README теки, аудит)
+//
+// Чому не лише issue. У цьому репо issue на прострочений маркер відкриває
+// АВТОМАТИКА (`.github/workflows/ai-legacy-scan.yml`) — і робить це в момент
+// протермінування, не наперед. Вимагати номер issue заздалегідь означало б
+// вимагати те, чого за дизайном ще немає: усі дев'ять чинних маркерів
+// «порушували» цю вимогу, звіт показував `no-issue-ref: 9` на кожному
+// прогоні, і попередження, яке є завжди, перестало щось означати. Водночас
+// частина маркерів уже несла чесне посилання на трекер
+// (`scripts/telegram/broadcast-waitlist.mjs` — на `docs/work/specs/beta-launch/`),
+// тобто практика репо саме така. Знахідка звірки 2026-09-19, PR-5 спеки
+// `docs/work/specs/docs-code-drift-2026-09-19.md`.
 const RX_ISSUE_REF = /#\d+|GH-\d+|issues\/\d+/i;
+const RX_TRACKER_REF = /docs\/[\w.-]+(?:\/[\w.-]+)*(?:\.md)?/i;
 
 /**
- * Returns the issue reference found in the marker's rationale note, or
- * `null` if none is present.
+ * Повертає посилання на власника роботи з тексту маркера, або `null`.
  *
- * Hard Rule #10 requires every `AI-LEGACY` marker to include a tracking
- * issue so the work is never invisible. Example:
+ * Hard Rule #10 вимагає, щоб кожен `AI-LEGACY` мав власника — інакше, коли
+ * дата спливе, нікому не прилетить. Приклади:
  *
  *     // AI-LEGACY: expires 2026-09-01 #1234 migrate to new SDK
+ *     // AI-LEGACY: expires 2026-10-31 — див. docs/work/specs/beta-launch/README.md
  */
 export function extractIssueRef(note) {
   if (!note) return null;
-  const m = RX_ISSUE_REF.exec(note);
-  return m ? m[0] : null;
+  const issue = RX_ISSUE_REF.exec(note);
+  if (issue) return issue[0];
+  const tracker = RX_TRACKER_REF.exec(note);
+  return tracker ? tracker[0] : null;
 }
 
 // ── CLI ──────────────────────────────────────────────────────────────────────

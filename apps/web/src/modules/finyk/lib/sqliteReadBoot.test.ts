@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 const migrateFinyk = vi.fn(async (..._a: unknown[]) => {});
-const importFinykResidualFromLs = vi.fn(async (..._a: unknown[]) => ({
-  imported: false,
-  cleaned: false,
-}));
 const refreshFinykSqliteState = vi.fn(async (..._a: unknown[]) => {});
 const recordReadFallback = vi.fn();
 const migrationClient = { run: vi.fn() };
@@ -17,10 +13,6 @@ vi.mock("../../../core/db/sqlite.js", () => ({
 }));
 vi.mock("./clientMigrate.js", () => ({
   migrateFinyk: (...a: unknown[]) => migrateFinyk(...a),
-}));
-vi.mock("./residualImport.js", () => ({
-  importFinykResidualFromLs: (...a: unknown[]) =>
-    importFinykResidualFromLs(...a),
 }));
 vi.mock("./sqliteReader.js", () => ({
   refreshFinykSqliteState: (...a: unknown[]) => refreshFinykSqliteState(...a),
@@ -46,14 +38,10 @@ describe("bootFinykSqliteReadPath", () => {
     expect(getSqliteDb).not.toHaveBeenCalled();
   });
 
-  it("migrates, drains LS residuals, warms the cache and returns true", async () => {
+  it("migrates, warms the cache and returns true", async () => {
     const ok = await bootFinykSqliteReadPath("u1");
     expect(ok).toBe(true);
     expect(migrateFinyk).toHaveBeenCalledWith(migrationClient);
-    expect(importFinykResidualFromLs).toHaveBeenCalledWith(
-      migrationClient,
-      "u1",
-    );
     expect(refreshFinykSqliteState).toHaveBeenCalledWith(migrationClient, "u1");
   });
 

@@ -21,6 +21,9 @@ import { ModuleAccentsSection } from "./sections/ModuleAccents";
 import { MenusSection } from "./sections/Menus";
 import { PrimitivesSection } from "./sections/Primitives";
 import { EmptyStatesSection } from "./sections/EmptyStates";
+import { ProposalsUISection } from "./sections/ProposalsUI";
+import { ProposalsUXSection } from "./sections/ProposalsUX";
+import { ProposalsVisualSection } from "./sections/ProposalsVisual";
 
 /**
  * DesignShowcase 2.0 — navigable internal styleguide.
@@ -74,10 +77,14 @@ function ShowcaseShell() {
         reducedMotion === "force" ? "true" : "false"
       }
       className={cn(
-        "min-h-dvh bg-bg text-text",
+        // The app shell locks `#root` to `overflow: hidden` (PWA no-bounce
+        // shell), so a plain `min-h-dvh` styleguide gets clipped with no way
+        // to scroll. Own the scroll here: a fixed-height, independently
+        // scrollable container that works regardless of the locked ancestors.
+        "h-dvh overflow-y-auto overscroll-contain bg-bg text-text",
         // Density modifier: compact tightens vertical rhythm without
         // changing the underlying spacing scale shown in the Spacing
-        // section. Hard Rule #16 is unaffected — only paddings shrink.
+        // section. The 12px type floor is unaffected — only paddings shrink.
         "data-[showcase-density=compact]:[&_section]:space-y-6",
       )}
     >
@@ -89,10 +96,10 @@ function ShowcaseShell() {
         )}
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6 h-14 flex items-center gap-3 flex-wrap">
-          <h1 className="font-extrabold text-text text-sm shrink-0">
+          <h1 className="font-extrabold text-text text-style-label shrink-0">
             Design System 2.0
           </h1>
-          <span className="text-2xs text-subtle font-mono shrink-0 hidden sm:inline">
+          <span className="text-style-caption text-subtle shrink-0 hidden sm:inline">
             internal styleguide · navigable · token-only
           </span>
           <div className="ml-auto">
@@ -123,6 +130,9 @@ function ShowcaseShell() {
           <MenusSection />
           <PrimitivesSection />
           <EmptyStatesSection />
+          <ProposalsUISection />
+          <ProposalsUXSection />
+          <ProposalsVisualSection />
         </main>
       </div>
     </div>

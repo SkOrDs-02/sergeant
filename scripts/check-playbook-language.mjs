@@ -5,7 +5,7 @@
 // Ukrainian (Hard Rule #15: «Internal docs I touched are in Ukrainian»).
 //
 // Targets:
-//   - docs/00-start/playbooks/*.md     (skipping INDEX.md, README.md, _TEMPLATE-*.md,
+//   - docs/start/instructions/*.md     (skipping INDEX.md, README.md, _TEMPLATE-*.md,
 //                              underscore-prefixed, and playbook-catalog.md)
 //   - .agents/skills/*/SKILL.md (skipping the locked SKILL files that are
 //                                explicitly tagged `lang: en` in frontmatter)
@@ -39,7 +39,7 @@
 //                    that will be translated in a follow-up commit.
 //   --json         — emit machine-readable JSON instead of human output.
 //
-// Linked initiative: docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.2).
+// Linked initiative: https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.2).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, basename } from "node:path";
@@ -47,13 +47,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
-const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs/00-start/playbooks");
+const PLAYBOOK_DIR = resolve(REPO_ROOT, "docs/start/instructions");
 const SKILLS_DIR = resolve(REPO_ROOT, ".agents/skills");
 
 /** Ratio threshold below which a file is considered "English-dominant". */
 export const MIN_CYRILLIC_RATIO = 0.4;
 
-/** Files inside docs/00-start/playbooks/ that are not real playbooks. */
+/** Files inside docs/start/instructions/ that are not real playbooks. */
 const SKIP_PLAYBOOK_BASENAMES = new Set([
   "INDEX.md",
   "README.md",
@@ -147,6 +147,18 @@ export function parseFrontmatter(source) {
  */
 export function stripNoise(body) {
   let s = body;
+  // AUTO-GENERATED-блоки. Їхній вміст пише генератор, а не автор доку:
+  // `PR-BACKLINKS` тягне заголовки PR-ів прямо з GitHub, тобто латиницю,
+  // якої автор не писав і не може перекласти, не зламавши backlink.
+  // Без цього два гейти суперечать один одному: `pnpm docs:gen-pr-backlinks`
+  // (вимога pr-ledger) дописує англомовну таблицю, і той самий файл одразу
+  // падає тут по співвідношенню — рівно це сталось на
+  // `rotate-openclaw-credentials.md` (cyrillic=341 latin=530, ratio=0.39,
+  // 2026-08-08). Мовний гейт має міряти мову АВТОРА, а не машинну вставку.
+  s = s.replace(
+    /<!--\s*AUTO-GENERATED:\s*([A-Z-]+)-START\s*-->[\s\S]*?<!--\s*AUTO-GENERATED:\s*\1-END\s*-->/g,
+    " ",
+  );
   // Fenced code blocks (``` ... ``` or ~~~).
   s = s.replace(/```[\s\S]*?```/g, " ");
   s = s.replace(/~~~[\s\S]*?~~~/g, " ");

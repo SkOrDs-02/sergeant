@@ -41,11 +41,19 @@ export interface HubHeroBlockProps {
   activeModules: readonly string[];
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
+  /**
+   * Вісь дії (спека `hub-action-axis.md`): замість однієї картки «Зараз»
+   * hero-слот займає ціла купа «Зараз» (`NowPile`). Резолвер одного hero
+   * не змінюється — FirstAction / SoftAuth / re-engagement перемагають так
+   * само; купа стає лише на місце `TodayFocusCard`.
+   */
+  nowPile?: React.ReactNode | undefined;
 }
 
 export function HubHeroBlock({
   onOpenModule,
   onShowAuth,
+  user,
   hasRealEntry,
   sessionDays,
   entryCount,
@@ -61,6 +69,7 @@ export function HubHeroBlock({
   activeModules,
   goals,
   hasValueBar,
+  nowPile,
 }: HubHeroBlockProps) {
   const reengagementIsHero = reengagement.show;
   const outcomeCardEnabled = useFlag("ftux_outcome_card_v1");
@@ -79,6 +88,8 @@ export function HubHeroBlock({
         sessionDays={sessionDays}
       />
     );
+  } else if (nowPile) {
+    hero = nowPile;
   } else {
     hero = (
       <TodayFocusCard
@@ -90,6 +101,11 @@ export function HubHeroBlock({
   }
 
   if (reengagementIsHero) {
+    // AI-CONTEXT (H1, 2026-09-13): `ReEngagementCard` не бере участь у
+    // бюджеті банерів (`bannerBudget.tsx`) — вона ЗАМІНЮЄ hero, а не
+    // додається до сторінки, тож не має конкурувати за слоти з
+    // `localOnlyData`/`privacyLock` над нею. Раніше конкурувала — і при
+    // насиченому бюджеті рендерила `null`, лишаючи hero-смугу порожньою.
     return (
       <div className="space-y-4">
         <ReEngagementCard
@@ -110,7 +126,17 @@ export function HubHeroBlock({
       {showChecklist && primaryModule && (
         <ModuleChecklist
           moduleId={primaryModule}
+          accountCreatedAt={user?.createdAt ?? null}
           onAction={(action) => {
+            // AI-DANGER: тут НЕ МОЖНА ставити відмітку «крок виконано».
+            // Був саме такий рядок для `view_analytics`, і він брехав:
+            // тап лише відкриває модуль (`FinykApp` веде дію на її
+            // сторінку), а людина може піти звідти, нічого не зробивши.
+            // Відмітка ж ставилась постійно, тобто чекліст зараховував
+            // крок, якого не сталося, рівно той дефект, що його F3 і
+            // закривав (знахідка рев'ю до PR #1106). Тап - це чиста
+            // навігація; відмітку ставить САМ екран аналітики на маунті
+            // (`modules/finyk/pages/Analytics.tsx`).
             openHubModuleWithAction(
               primaryModule as Parameters<typeof openHubModuleWithAction>[0],
               action as Parameters<typeof openHubModuleWithAction>[1],

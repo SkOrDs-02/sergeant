@@ -9,10 +9,13 @@
  */
 
 import { fireEvent, render } from "@testing-library/react-native";
+import { Animated } from "react-native";
 
 import {
+  ANALYTICS_EVENTS,
   FIRST_ACTION_PENDING_KEY,
   FIRST_REAL_ENTRY_KEY,
+  FIRST_REAL_ENTRY_SOURCES,
   SOFT_AUTH_DISMISSED_KEY,
 } from "@sergeant/shared";
 
@@ -23,6 +26,48 @@ import { ToastProvider } from "@/components/ui/Toast";
 jest.mock("expo-router", () => ({
   router: { push: jest.fn() },
 }));
+
+// --- HubModuleStorageBoot hook mocks ---
+// Mock the seven boot hooks so HubDashboard tests don't need real SQLite infra.
+const mockUseFinykDualWriteBoot = jest.fn();
+const mockUseRoutineDualWriteBoot = jest.fn();
+const mockUseFinykSqliteReadBoot = jest.fn();
+const mockUseFinykMonoMirrorBoot = jest.fn();
+const mockUseRoutineSqliteReadBoot = jest.fn();
+const mockUseFizrukSqliteReadBoot = jest.fn();
+const mockUseNutritionSqliteReadBoot = jest.fn();
+
+jest.mock("@/modules/finyk/hooks/useFinykDualWriteBoot", () => ({
+  useFinykDualWriteBoot: () => mockUseFinykDualWriteBoot(),
+}));
+jest.mock("@/modules/routine/hooks/useRoutineDualWriteBoot", () => ({
+  useRoutineDualWriteBoot: () => mockUseRoutineDualWriteBoot(),
+}));
+jest.mock("@/modules/finyk/hooks/useFinykSqliteReadBoot", () => ({
+  useFinykSqliteReadBoot: () => mockUseFinykSqliteReadBoot(),
+}));
+jest.mock("@/modules/finyk/hooks/useFinykMonoMirrorBoot", () => ({
+  useFinykMonoMirrorBoot: () => mockUseFinykMonoMirrorBoot(),
+}));
+jest.mock("@/modules/routine/hooks/useRoutineSqliteReadBoot", () => ({
+  useRoutineSqliteReadBoot: () => mockUseRoutineSqliteReadBoot(),
+}));
+jest.mock("@/modules/fizruk/hooks/useFizrukSqliteReadBoot", () => ({
+  useFizrukSqliteReadBoot: () => mockUseFizrukSqliteReadBoot(),
+}));
+jest.mock("@/modules/nutrition/hooks/useNutritionSqliteReadBoot", () => ({
+  useNutritionSqliteReadBoot: () => mockUseNutritionSqliteReadBoot(),
+}));
+
+jest.mock("@/lib/analytics", () => {
+  const { ANALYTICS_EVENTS } = jest.requireActual("@sergeant/shared") as {
+    ANALYTICS_EVENTS: Record<string, string>;
+  };
+  return {
+    ANALYTICS_EVENTS,
+    trackEvent: jest.fn(),
+  };
+});
 
 jest.mock("react-native-safe-area-context", () => {
   const RN = jest.requireActual("react-native");
@@ -54,17 +99,29 @@ jest.mock("./useWeeklyDigest", () => ({
   }),
 }));
 
+// Аргумент хука ЗАПИСУЄМО, а не ковтаємо: `enabled` тут вирішує, чи піде
+// запит у `api.coach.postInsight`, тобто чи спалиться денна AI-квота
+// Free-плану. Доти мок ігнорував аргумент, і саме тому дрейф `enabled:
+// signedIn` жив непоміченим (знахідка PR-A1).
+const mockUseCoachInsight = jest.fn((_options: { enabled: boolean }) => ({
+  insight: null,
+  loading: false,
+  error: null,
+  refresh: jest.fn(),
+}));
 jest.mock("./useCoachInsight", () => ({
-  useCoachInsight: () => ({
-    insight: null,
-    loading: false,
-    error: null,
-    refresh: jest.fn(),
-  }),
+  useCoachInsight: (options: { enabled: boolean }) =>
+    mockUseCoachInsight(options),
+}));
+
+jest.mock("../hints/useHints", () => ({
+  useHints: jest.fn(),
 }));
 
 function resetStore() {
-  _getMMKVInstance().clearAll();
+  const mmkv = _getMMKVInstance();
+  mmkv.clearAll();
+  mmkv.set("dashboard_drag_coach_seen", JSON.stringify(true));
 }
 
 function renderDashboard() {
@@ -75,10 +132,34 @@ function renderDashboard() {
   );
 }
 
+function stubDashboardAnimation() {
+  jest.spyOn(Animated, "loop").mockImplementation(
+    () =>
+      ({
+        reset: jest.fn(),
+        start: jest.fn(),
+        stop: jest.fn(),
+      }) as never,
+  );
+}
+
 describe("HubDashboard one-hero rule", () => {
   beforeEach(() => {
+    stubDashboardAnimation();
     resetStore();
     mockUserData.data = { user: null };
+    mockUseFinykDualWriteBoot.mockReset();
+    mockUseRoutineDualWriteBoot.mockReset();
+    mockUseFinykSqliteReadBoot.mockReset();
+    mockUseFinykMonoMirrorBoot.mockReset();
+    mockUseRoutineSqliteReadBoot.mockReset();
+    mockUseFizrukSqliteReadBoot.mockReset();
+    mockUseNutritionSqliteReadBoot.mockReset();
+    mockUseCoachInsight.mockClear();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   it("shows only FirstActionHeroCard when the FTUX flag is pending", () => {
@@ -123,6 +204,50 @@ describe("HubDashboard one-hero rule", () => {
     expect(queryByTestId("today-focus-empty")).toBeNull();
   });
 
+  // PR-A1: запит поради коуча йде в `api.coach.postInsight` і палить денну
+  // AI-квоту Free-плану. Текст рендериться ЛИШЕ в третій гілці hero
+  // (`TodayFocusCard`).
+  //
+  // Break-test (відкат компонента) уточнив, який саме кейс був дефектом, і
+  // це вужче, ніж здавалося: зі старим `enabled: signedIn` падає **лише
+  // FTUX-гілка** — залогінений користувач із незавершеним first-action
+  // платив квотою за текст, якого не бачив. Гілка soft-auth вимагає
+  // `!signedIn`, тож туди запит і так не йшов.
+  //
+  // Тест на soft-auth лишається СВІДОМО, але пінує інваріант на майбутнє,
+  // а не цей дефект: якщо колись умову гілки послаблять і вона стане
+  // досяжною для залогіненого, запит не має ожити мовчки.
+  const enabledArg = () => mockUseCoachInsight.mock.calls[0]?.[0]?.enabled;
+
+  it("PR-A1: does not request the coach insight while the FTUX hero is up", () => {
+    _getMMKVInstance().set(FIRST_ACTION_PENDING_KEY, "1");
+    mockUserData.data = { user: { name: "Test" } };
+
+    renderDashboard();
+
+    expect(mockUseCoachInsight).toHaveBeenCalled();
+    expect(enabledArg()).toBe(false);
+  });
+
+  it("PR-A1: does not request the coach insight behind the soft-auth hero", () => {
+    _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
+
+    renderDashboard();
+
+    expect(mockUseCoachInsight).toHaveBeenCalled();
+    expect(enabledArg()).toBe(false);
+  });
+
+  it("PR-A1: requests the coach insight only where the text can render", () => {
+    _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
+    mockUserData.data = { user: { name: "Test" } };
+
+    renderDashboard();
+
+    expect(mockUseCoachInsight).toHaveBeenCalled();
+    expect(enabledArg()).toBe(true);
+  });
+
   it("respects a previous soft-auth dismissal", () => {
     const mmkv = _getMMKVInstance();
     mmkv.set(FIRST_REAL_ENTRY_KEY, "1");
@@ -138,6 +263,48 @@ describe("HubDashboard one-hero rule", () => {
     const { getByTestId } = renderDashboard();
 
     expect(getByTestId("dashboard-module-row-nutrition")).toBeTruthy();
+  });
+
+  it("mounts HubModuleStorageBoot — all seven storage boot hooks are called", () => {
+    renderDashboard();
+
+    // Dashboard-first boot guarantee: all SQLite read-caches and dual-write
+    // registrations must be active when the Hub dashboard renders so
+    // coachSnapshot / weeklyDigestAggregates / searchSources see fresh data
+    // even before the user visits any module tab.
+    expect(mockUseFinykDualWriteBoot).toHaveBeenCalled();
+    expect(mockUseRoutineDualWriteBoot).toHaveBeenCalled();
+    expect(mockUseFinykSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseFinykMonoMirrorBoot).toHaveBeenCalled();
+    expect(mockUseRoutineSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseFizrukSqliteReadBoot).toHaveBeenCalled();
+    expect(mockUseNutritionSqliteReadBoot).toHaveBeenCalled();
+  });
+
+  it("fires first_action_completed when a module gains its first real entry", () => {
+    const mmkv = _getMMKVInstance();
+    mmkv.set(
+      FIRST_REAL_ENTRY_SOURCES.ROUTINE,
+      JSON.stringify({ habits: [{ id: "h1", title: "Вода" }] }),
+    );
+
+    renderDashboard();
+
+    const { trackEvent } = jest.requireMock("@/lib/analytics") as {
+      trackEvent: jest.Mock;
+    };
+    expect(trackEvent).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      { module: "routine" },
+    );
+
+    // Second render must not re-fire — the per-module flag is persisted.
+    trackEvent.mockClear();
+    renderDashboard();
+    expect(trackEvent).not.toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.FIRST_ACTION_COMPLETED,
+      expect.anything(),
+    );
   });
 
   it("navigates to sign-in when SoftAuthPromptCard CTA is tapped", () => {

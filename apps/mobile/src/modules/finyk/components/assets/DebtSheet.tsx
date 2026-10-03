@@ -7,7 +7,7 @@
  * (`calcDebtRemaining`, `getDebtEffectiveTotal`) read consistent data.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import type { AssetsDebt } from "@sergeant/finyk-domain/domain";
@@ -60,13 +60,16 @@ export function DebtSheet({
   const [draft, setDraft] = useState<DraftState>(() => toDraft(debt));
   const [nameError, setNameError] = useState(false);
   const [amountError, setAmountError] = useState(false);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setDraft(toDraft(debt));
-    setNameError(false);
-    setAmountError(false);
-  }, [open, debt]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(toDraft(debt));
+      setNameError(false);
+      setAmountError(false);
+    }
+  }
 
   const isEditing = !!debt;
 
@@ -106,7 +109,7 @@ export function DebtSheet({
       open={open}
       onClose={onClose}
       title={isEditing ? "Редагувати борг" : "Новий борг"}
-      description="Скільки ти винен — повна сума."
+      description="Скільки ти винен, повна сума."
       footer={
         <View className="flex-row gap-2">
           {isEditing && onDelete ? (
@@ -175,7 +178,7 @@ export function DebtSheet({
         <View>
           <Text className="text-xs font-medium text-fg mb-1">Нотатка</Text>
           <Input
-            placeholder="Необов'язково"
+            placeholder="Необовʼязково"
             value={draft.note}
             onChangeText={(t) => setDraft((d) => ({ ...d, note: t }))}
             testID={testID ? `${testID}-note` : undefined}

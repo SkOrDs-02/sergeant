@@ -17,18 +17,23 @@
  * adding a new behaviour means editing the matching shard above.
  */
 
-import { AIPill } from "@shared/components/ui/AIPill";
 import {
   MeshBackground,
   ModuleAccentProvider,
+  SwipePages,
 } from "@shared/components/layout";
+import { ROUTINE_TAB_IDS } from "./components/RoutineBottomNav";
 import { RoutineActions } from "./RoutineActions";
 import { RoutineHeader } from "./RoutineHeader";
 import { RoutineTimeline } from "./RoutineTimeline";
 import { useRoutineAppState } from "./useRoutineAppState";
+import { useRoutineQuickStatsWriter } from "./hooks/useRoutineQuickStatsWriter";
+import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
+import { messages } from "@shared/i18n/uk";
 
 export interface RoutineAppProps {
   onBackToHub?: () => void;
+  onGoToHub?: () => void;
   onOpenSettings?: () => void;
   onOpenModule?: (moduleId: string, opts?: { hash?: string }) => void;
   pwaAction?: string | null;
@@ -37,6 +42,7 @@ export interface RoutineAppProps {
 
 export default function RoutineApp({
   onBackToHub,
+  onGoToHub,
   onOpenSettings,
   onOpenModule,
   pwaAction,
@@ -52,8 +58,6 @@ export default function RoutineApp({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
-    quickAddFirstRunHint,
-    dismissQuickAddFirstRunHint,
     openQuickAddHabit,
     closeQuickAddHabit,
     streakMax,
@@ -63,30 +67,73 @@ export default function RoutineApp({
     handlePullRefreshError,
   } = useRoutineAppState({ pwaAction, onPwaActionConsumed, onOpenModule });
 
+  // Віха серії — тиха плашка (O1). Сидить на `streakMax`, а не в
+  // `onToggleHabit`, і це навмисно: стрік перетинає поріг і з «відмітити
+  // всі» (`onBulkMarkDay`), і після sync із сусіднього пристрою. Хук на
+  // похідному значенні ловить усі шляхи разом; обробник ловив би один.
+  useStreakMilestoneCelebration(
+    "routine",
+    streakMax,
+    messages.routine.streakMilestone.toast,
+  );
+
+  // Keep the Hub routine bento card's quick-stats snapshot in sync with real
+  // habits/completions, not just the onboarding demo seed.
+  useRoutineQuickStatsWriter({
+    habits: routine.habits,
+    completions: routine.completions,
+    skips: routine.skips,
+  });
+
   return (
     // Sergeant v2 redesign (2026-05, PR-6) — Routine shell wraps content
     // in MeshBackground (shell-root role). ModuleAccentProvider drops
     // asShellRoot so MeshBackground owns h-dvh + bg-mesh; Provider stays
     // as transparent accent context (Hard Rule #12).
-    <ModuleAccentProvider module="routine">
-      <MeshBackground>
-        <RoutineHeader
-          onBackToHub={onBackToHub}
-          onOpenSettings={onOpenSettings}
-        />
+    <ModuleAccentProvider module="routine" className="contents">
+      {/* `bottom-nav-height-var` — див. FinykApp: навігацію малює модуль,
+          тож і змінну висоти для `Sheet` виставляє він. */}
+      <MeshBackground className="bottom-nav-height-var">
+        {/* `<header>` тут, бо саме Рутина — єдиний модуль, чия шапка
+            лежить поза будь-яким landmark-ом. `ModuleShell` загортає
+            модуль у `<main>`, АЛЕ для routine свідомо підставляє `<div>`
+            (Рутина рендерить власний `<main id="routine-main">` нижче, і
+            два `<main>` були б порушенням). Наслідок: у фініка, фізрука й
+            їжі шапка потрапляє всередину `<main>`, а тут — нікуди, тож
+            «Рутина» і «Звички й події» висіли поза landmark-ами на всіх
+            трьох сторінках модуля (axe `region`, свіп 2026-09-16).
 
-        <RoutineTimeline
-          storageErrorMsg={storageErrorMsg}
-          onDismissStorageError={() => setStorageErrorMsg(null)}
-          calendarData={calendarData}
-          calendarActions={calendarActions}
-          isHabitPending={isHabitPending}
-          mainTab={mainTab}
-          routine={routine}
-          streakMax={streakMax}
-          onPullRefresh={handlePullRefresh}
-          onPullRefreshError={handlePullRefreshError}
-        />
+            `<header>` не вкладений у main/article/section, тож дає роль
+            `banner` — єдиний banner на сторінці (перевірено: ані
+            `RootLayout`, ані `ModuleShell` свого не мають). */}
+        <header>
+          <RoutineHeader
+            onBackToHub={onBackToHub}
+            onGoToHub={onGoToHub}
+            onOpenSettings={onOpenSettings}
+          />
+        </header>
+
+        <SwipePages
+          ids={ROUTINE_TAB_IDS}
+          activeId={mainTab}
+          onChange={setMainTab}
+        >
+          <RoutineTimeline
+            storageErrorMsg={storageErrorMsg}
+            setRoutine={setRoutine}
+            onOpenCalendarTab={() => setMainTab("calendar")}
+            onDismissStorageError={() => setStorageErrorMsg(null)}
+            calendarData={calendarData}
+            calendarActions={calendarActions}
+            isHabitPending={isHabitPending}
+            mainTab={mainTab}
+            routine={routine}
+            streakMax={streakMax}
+            onPullRefresh={handlePullRefresh}
+            onPullRefreshError={handlePullRefreshError}
+          />
+        </SwipePages>
 
         <RoutineActions
           mainTab={mainTab}
@@ -95,14 +142,9 @@ export default function RoutineApp({
           setRoutine={setRoutine}
           quickAddHabitOpen={quickAddHabitOpen}
           quickAddFocusTick={quickAddFocusTick}
-          quickAddFirstRunHint={quickAddFirstRunHint}
-          onDismissQuickAddFirstRunHint={dismissQuickAddFirstRunHint}
           onOpenQuickAddHabit={openQuickAddHabit}
           onCloseQuickAddHabit={closeQuickAddHabit}
         />
-
-        {/* Sergeant v2 (2026-05, PR-7b) — persistent AI affordance. */}
-        <AIPill module="routine" />
       </MeshBackground>
     </ModuleAccentProvider>
   );

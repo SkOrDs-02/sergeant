@@ -11,6 +11,38 @@ import type { Habit } from "@sergeant/routine-domain";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import type { NutritionLog } from "@sergeant/nutrition-domain";
 import { handleCrossAction } from "./crossActions";
+
+// `readFinykStatsContext` now reads bank transactions from the SQLite Mono
+// mirror cache instead of `finyk_tx_cache` localStorage. Bridge the two so
+// existing test code that seeds LS still flows through to `aggregateFinyk`.
+vi.mock("../../../modules/finyk/lib/monoMirrorReader", () => {
+  const readMockMirrorState = () => {
+    const raw = localStorage.getItem("finyk_tx_cache");
+    if (!raw) return { transactions: [], accounts: [], refreshedAt: null };
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      const txs = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray((parsed as { txs?: unknown[] })?.txs)
+          ? (parsed as { txs: unknown[] }).txs
+          : [];
+      return {
+        transactions: txs,
+        accounts: [],
+        refreshedAt: new Date().toISOString(),
+      };
+    } catch {
+      return { transactions: [], accounts: [], refreshedAt: null };
+    }
+  };
+  return {
+    getCachedFinykMonoMirrorState: vi.fn(readMockMirrorState),
+    // Chat-actions читають visible-геттер (без прихованих карток); у моку
+    // обидва — один і той самий фейк.
+    getVisibleFinykMonoMirrorState: vi.fn(readMockMirrorState),
+    clearFinykMonoMirrorCache: vi.fn(),
+  };
+});
 import {
   __setRoutineSqliteStateCacheForTests,
   __setRoutineSqliteCompletionsCacheForTests,
@@ -161,7 +193,7 @@ describe("compare_weeks — параметри", () => {
     expect(out).toContain("Фінік:");
     expect(out).toContain("Фізрук:");
     expect(out).toContain("Рутина:");
-    expect(out).toContain("Харчування:");
+    expect(out).toContain("Їжа:");
   });
 
   it("modules=['finyk'] — інші модулі не показуються", () => {
@@ -173,7 +205,7 @@ describe("compare_weeks — параметри", () => {
     expect(out).toContain("Фінік:");
     expect(out).not.toContain("Фізрук:");
     expect(out).not.toContain("Рутина:");
-    expect(out).not.toContain("Харчування:");
+    expect(out).not.toContain("Їжа:");
   });
 
   it("невалідні значення в modules ігноруються", () => {
@@ -226,7 +258,7 @@ describe("compare_weeks — Фінік diff", () => {
     // Витрати W17 = 500, W16 = 150 → діфф +350
     expect(out).toMatch(/Витрати:.*500.*150.*\+350/);
     // Транзакцій W17 = 2, W16 = 1 → діфф +1
-    expect(out).toMatch(/Транзакцій:.*2.*1.*\+1/);
+    expect(out).toMatch(/Операцій:.*2.*1.*\+1/);
   });
 
   it("працює коли в одному тижні нема даних", () => {
@@ -290,7 +322,7 @@ describe("compare_weeks — Рутина diff", () => {
   });
 });
 
-describe("compare_weeks — Харчування diff", () => {
+describe("compare_weeks — Їжа diff", () => {
   it("обчислює середні калорії за два тижні", () => {
     seedNutrition({
       "2026-04-21": { meals: [{ macros: { kcal: 2000 } }] },
@@ -302,9 +334,11 @@ describe("compare_weeks — Харчування diff", () => {
       week_b: "2026-W16",
       modules: ["nutrition"],
     });
-    expect(out).toContain("Харчування:");
+    expect(out).toContain("Їжа:");
     // W17 avg = (2000 + 2200) / 2 = 2100; W16 avg = 1800 → +300
-    expect(out).toMatch(/Калорії\/день:.*2100.*1800.*\+300/);
+    expect(out).toContain(
+      "Калорії/день: 2\u00A0100 ккал vs 1\u00A0800 ккал (+300 ккал)",
+    );
     expect(out).toContain("Днів залоговано: 2 vs 1");
   });
 
@@ -314,13 +348,13 @@ describe("compare_weeks — Харчування diff", () => {
       week_b: "2026-W16",
       modules: ["nutrition"],
     });
-    expect(out).toContain("Харчування:");
+    expect(out).toContain("Їжа:");
     expect(out).toContain("Немає логів їжі");
   });
 });
 
 describe("compare_weeks — Фізрук diff", () => {
-  it("показує count і об'єм за два тижні", () => {
+  it("показує count і обʼєм за два тижні", () => {
     seedFizruk([
       {
         startedAt: "2026-04-21T10:00:00Z",
@@ -355,6 +389,6 @@ describe("compare_weeks — Фізрук diff", () => {
     // W17: 2 workouts; volume = 100*5 + 100*5 + 80*8 = 1640
     // W16: 1 workout; volume = 500
     expect(out).toMatch(/Тренувань:.*2.*1/);
-    expect(out).toMatch(/Об'єм:.*1640.*500/);
+    expect(out).toContain("Обʼєм: 1\u00A0640 кг·повт vs 500 кг·повт");
   });
 });

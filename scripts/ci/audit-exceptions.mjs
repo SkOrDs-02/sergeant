@@ -4,7 +4,7 @@
 // Ledger-backed `pnpm audit` gate. Replaces the blunt `audit-exception`
 // PR-label (which suppressed *every* high-severity advisory at once) with
 // a per-advisory allowlist read from
-// `docs/04-governance/security/audit-exceptions.md`:
+// `docs/governance/security/audit-exceptions.md`:
 //
 //   - A `high`/`moderate` advisory passes only if the ledger names its
 //     GHSA/CVE id AND the exception's due date has not passed.
@@ -27,7 +27,7 @@ import path from "node:path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LEDGER_PATH = path.resolve(
   __dirname,
-  "../../docs/04-governance/security/audit-exceptions.md",
+  "../../docs/governance/security/audit-exceptions.md",
 );
 
 // Severities that the gate treats as blocking unless waived. `critical`
@@ -128,9 +128,9 @@ export function parseAuditJson(json) {
   try {
     parsed = JSON.parse(json);
   } catch {
-    // pnpm prints a non-JSON banner when the registry is unreachable; treat
-    // an unparseable report as "no advisories" so a registry blip doesn't
-    // masquerade as a clean audit — the caller still sees the raw stderr.
+    // pnpm prints a non-JSON banner when the registry is unreachable. Pure
+    // parser stays lenient; the CLI gate treats unparseable output as a
+    // hard failure (see main) so a registry blip cannot pass as "clean".
     return [];
   }
   const advisories = parsed.advisories ?? {};
@@ -193,14 +193,28 @@ function todayIso() {
 
 function main() {
   const prod = process.argv.includes("--prod");
-  const args = ["audit", "--json"];
+  // `--audit-level high` звужує і JSON-звіт, і сам обхід графа залежностей
+  // усередині pnpm до critical/high — рівно те, що evaluateAudit взагалі
+  // враховує (BLOCKING_SEVERITIES = critical, high). На великому монорепо
+  // (17 workspaces) саме побудова vulnerable-path даних для moderate/low
+  // advisories, які гейт однаково ігнорує, і роздмухувала heap процесу
+  // `pnpm audit` до OOM у CI.
+  const args = ["audit", "--json", "--audit-level", "high"];
   if (prod) args.push("--prod");
 
   let json = "";
   try {
     json = execFileSync("pnpm", args, {
       encoding: "utf8",
-      maxBuffer: 32 * 1024 * 1024,
+      maxBuffer: 64 * 1024 * 1024,
+      env: {
+        ...process.env,
+        // Дублює heap-запас з CI job env (див. ci.yml) на випадок
+        // локального прогону без NODE_OPTIONS — pnpm сам є Node-процесом
+        // і успадковує цю змінну.
+        NODE_OPTIONS:
+          `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=6144`.trim(),
+      },
       // Windows resolves `pnpm` to `pnpm.cmd` only through a shell; the
       // args are fixed literals so there is no injection surface.
       shell: process.platform === "win32",
@@ -216,6 +230,18 @@ function main() {
       );
       process.exit(1);
     }
+  }
+
+  // Без розпарсеного звіту гейт нічого не перевірив — це «невідомо», а не
+  // «чисто», тож валимо збірку замість тихого зеленого.
+  try {
+    JSON.parse(json);
+  } catch {
+    console.error(
+      "audit-exceptions: pnpm audit produced non-JSON output — cannot verify advisories.\n",
+      json.slice(0, 2000),
+    );
+    process.exit(1);
   }
 
   const advisories = parseAuditJson(json);
@@ -248,7 +274,7 @@ function main() {
   }
   console.error(
     "\nFix the dependency, or add a dated exception to " +
-      "docs/04-governance/security/audit-exceptions.md (high/moderate only).",
+      "docs/governance/security/audit-exceptions.md (high/moderate only).",
   );
   process.exit(1);
 }

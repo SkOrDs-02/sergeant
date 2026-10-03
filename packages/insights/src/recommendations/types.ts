@@ -16,11 +16,7 @@ import type { ModuleAccent, StatusColor } from "@sergeant/design-tokens";
  * правди є цей пакет, `hubNav.ts` реекспортує звідси.
  */
 export type HubModuleAction =
-  | "add_expense"
-  | "start_workout"
-  | "add_meal"
-  | "add_meal_photo"
-  | "add_habit";
+  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
 
 export type Module = ModuleAccent | "hub";
 export type RecSeverity = StatusColor;
@@ -33,10 +29,14 @@ export interface Rec {
   icon: string;
   title: string;
   body: string;
-  // Навігаційна дія (модуль або "reports"). Залишаємо як fallback — колись
-  // просто відкривала розділ. Нове поле `pwaAction` вмикає імперативний
-  // CTA ("Додати витрату", "Почати тренування"), який виконується одним
-  // тапом без додаткового кроку «Відкрити модуль».
+  // Навігаційна дія: id модуля ("finyk" | "fizruk" | "routine" | "nutrition")
+  // або `WEEK_REPORT_ACTION` («Звіт тижня» на хабі). Інших значень хаб не
+  // вміє виконати: «Відкрити» йде через `openModule`, який мовчки ігнорує все,
+  // що не є id модуля (колишнє `"reports"` робило кнопку мертвою). Паритет
+  // стереже `apps/web/src/core/hub/now/recActionParity.test.ts`. Нове поле
+  // `pwaAction` вмикає імперативний CTA ("Додати витрату", "Почати
+  // тренування"), який виконується одним тапом без додаткового кроку
+  // «Відкрити модуль».
   action: string;
   /**
    * Опційний hash-фрагмент усередині модуля (без `#`). Дозволяє інсайту

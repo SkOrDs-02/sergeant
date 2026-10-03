@@ -323,11 +323,11 @@ function main() {
         "[check-info-plist] iOS App Transport Security audit FAILED.",
         "  The Capacitor shell mandates ATS-enforced HTTPS (see",
         "  apps/mobile-shell/capacitor.config.ts `cleartext: false` and",
-        "  docs/security/hardening/L12-ios-app-transport-security.md).",
+        "  docs/work/specs/security-hardening/README.md — картка L12).",
         "  Remove the offending key(s) from Info.plist or — if a cleartext",
         "  exception is unavoidable — switch to a per-domain entry under",
         "  NSExceptionDomains and document it in",
-        "  docs/security/audit-exceptions.md.",
+        "  docs/governance/security/audit-exceptions.md.",
       ].join("\n") + "\n",
     );
     return 1;

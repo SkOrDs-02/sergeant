@@ -82,7 +82,7 @@ export function HeroCard({
               {formatElapsed(elapsedSec)}
             </Text>
             <Text className="text-sm text-teal-100">
-              Повернись у сесію — сети й таймер лишилися там, де ти їх залишив.
+              Повернись у сесію, сети й таймер лишилися там, де ти їх залишив.
             </Text>
           </View>
           <Button
@@ -165,7 +165,7 @@ export function HeroCard({
             План поки порожній
           </Text>
           <Text className="text-sm text-teal-800/80 leading-snug">
-            Заплануй тренування у «Плані» — або почни довільну сесію з каталогу.
+            Заплануй тренування у «Плані», або почни довільну сесію з каталогу.
           </Text>
         </View>
         <Button

@@ -1,10 +1,15 @@
 import type { NextFunction, Request, Response } from "express";
 import { createHash } from "crypto";
 import { rateLimitExpress } from "./rateLimit.js";
-import { policyOptions } from "../config/rateLimit.js";
+import {
+  AUTH_ACCOUNT_RATE_LIMIT,
+  AUTH_SENSITIVE_RATE_LIMIT,
+} from "../config/rateLimit.js";
 import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
+import { ipPrefix } from "../auth/sessionFingerprint.js";
+import { normaliseUserAgent } from "../lib/uaNormalise.js";
 
 /**
  * Жорсткіший ліміт на sign-in / sign-up / reset (POST).
@@ -34,14 +39,68 @@ export function authSensitiveRateLimit(
     next();
     return;
   }
-  rateLimitExpress(
-    policyOptions("api:auth:sensitive", {
-      // Env var — runtime kill-switch (set `RATE_LIMIT_FAIL_CLOSED_AUTH=false`
-      // щоб revert у open-mode без redeploy-у). Реєстр тримає `failMode:
-      // "closed"` як safe default; override-ить тільки якщо явно вимкнено.
-      failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
-    }),
-  )(req, res, next);
+  rateLimitExpress({
+    ...AUTH_SENSITIVE_RATE_LIMIT,
+    // Env var — runtime kill-switch (set `RATE_LIMIT_FAIL_CLOSED_AUTH=false`
+    // щоб revert у open-mode без redeploy-у). `AUTH_SENSITIVE_RATE_LIMIT`
+    // тримає `failMode: "closed"` як safe default; override-ить тільки
+    // якщо явно вимкнено.
+    failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
+  })(req, res, next);
+}
+
+/**
+ * Другий, per-account бакет поверх `authSensitiveRateLimit` (F2).
+ *
+ * `authSensitiveRateLimit` ключується на IP (сесії до автентифікації ще
+ * немає), тому розподілена атака масштабується лінійно з кількістю
+ * орендованих адрес: 100 IP = 100× спроб по одному акаунту, і кожен
+ * окремий бакет при цьому зелений. Цей middleware ключує бакет на
+ * **цільовому email-і**, тож стеля перестає залежати від мережі атакера.
+ *
+ * Свідомі обмеження:
+ *   - Тільки sign-in і password-reset. Sign-up сюди НЕ входить: там email
+ *     ще нікому не належить, і бакет по ньому не захищає акаунт, зате дає
+ *     стороннім спосіб зайняти адресу.
+ *   - Немає email у тілі (напр. `reset-password` з токеном) — пропускаємо:
+ *     ключувати нічим, а мовчазний відкат на IP злив би два різні ліміти
+ *     в один бакет.
+ *   - Вікно, а не постійний lockout — інакше будь-хто замикав би чужий
+ *     акаунт кількома невдалими спробами.
+ */
+export function authAccountRateLimit(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  const url = req.originalUrl || "";
+  const targeted =
+    req.method === "POST" &&
+    (url.includes("/sign-in") ||
+      url.includes("forget-password") ||
+      url.includes("request-password-reset") ||
+      url.includes("reset-password"));
+  if (!targeted) {
+    next();
+    return;
+  }
+
+  const body = (req.body ?? {}) as { email?: unknown };
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  if (!email) {
+    next();
+    return;
+  }
+
+  rateLimitExpress({
+    ...AUTH_ACCOUNT_RATE_LIMIT,
+    failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
+    // Повний SHA-256, не 12-символьний лог-фінгерпринт: той призначений
+    // для кореляції в логах, де колізія лише зашумить тріаж, а тут вона
+    // склеїла б ліміти двох різних акаунтів.
+    subject: () =>
+      `a:${createHash("sha256").update(email.toLowerCase()).digest("hex")}`,
+  })(req, res, next);
 }
 
 /**
@@ -61,18 +120,69 @@ function emailFingerprint(raw: unknown): string | undefined {
 /**
  * Класифікує auth-ендпоінти better-auth і після відповіді інкрементує
  * `authAttemptsTotal{op,outcome}` + пише structured `auth_event` лог
- * з `emailHash` / `ip` для brute-force тріажу. Ставити ПЕРЕД
+ * з `emailHash` / мережевим походженням для brute-force тріажу.
+ *
+ * Скільки саме походження логувати — вирішує РЕЗУЛЬТАТ, див.
+ * `networkOriginFor()` нижче. Ставити ПЕРЕД
  * `authSensitiveRateLimit` (і ДО `toNodeHandler(auth)`): `res.on("finish")`
  * спрацьовує, навіть коли rate-limiter короткозамикає пайплайн без
  * `next()`, тому реєстрація listener-а мусить відбутись раніше за сам
  * limiter, щоб 429 ловились.
  */
 type AuthOp =
-  | "sign_in"
-  | "sign_up"
-  | "forget_password"
-  | "reset_password"
-  | "signout";
+  "sign_in" | "sign_up" | "forget_password" | "reset_password" | "signout";
+
+type AuthOutcome =
+  "ok" | "bad_credentials" | "rate_limited" | "invalid" | "error";
+
+/**
+ * Скільки мережевого походження класти в `auth_event` — залежно від
+ * результату спроби.
+ *
+ * Політика репо (`docs/governance/security/pii-handling.md`, Class C)
+ * класифікує IP як identifier за GDPR Art. 4(1) і формулює компроміс так:
+ * «логуємо для security events; уникаємо у звичайних info». Успішний вхід —
+ * це НЕ security event: він іде рівнем `info`, трапляється щодня в кожного
+ * користувача і разом із `emailHash` у тому ж рядку дає готовий журнал
+ * «хто звідки заходив» із багатоденним ретеншном. Саме такий журнал ми і
+ * не збираємось вести.
+ *
+ * Невдала спроба — навпаки, рівно той випадок, заради якого виняток і
+ * зроблено: щоб заблокувати джерело credential-stuffing-у, потрібна ТОЧНА
+ * адреса, а не мережа, — по /24 бан зачепить сусідів по провайдеру.
+ *
+ * Тому:
+ *   - `bad_credentials` / `rate_limited` / `invalid` — повний `ip` (плюс
+ *     `ipPrefix`, щоб запити по мережі працювали однаково на обох гілках);
+ *   - `ok` / `error` — лише `/24` (IPv6 — `/64`) через наявний `ipPrefix()`
+ *     із `auth/sessionFingerprint.ts`. Для brute-force-тріажу мережі
+ *     достатньо: розподілена атака все одно міняє хости всередині /24.
+ *
+ * UA завжди йде через `normaliseUserAgent()` — сирий `User-Agent` давав
+ * >300 унікальних значень на добу і де-факто реідентифікував окремих людей
+ * (та сама знахідка M12, що й для `/api/metrics/web-vitals`); канонічна
+ * форма («chrome 121») лишає сигнал про клієнта без квазі-ідентифікатора.
+ */
+function networkOriginFor(
+  outcome: AuthOutcome,
+  req: Request,
+): {
+  ip?: string | undefined;
+  ipPrefix?: string | undefined;
+  ua_family: string;
+} {
+  const prefix = ipPrefix(req.ip) ?? undefined;
+  const ua_family = normaliseUserAgent(req.get("user-agent"));
+  const isSecurityEvent =
+    outcome === "bad_credentials" ||
+    outcome === "rate_limited" ||
+    outcome === "invalid";
+
+  if (isSecurityEvent) {
+    return { ip: req.ip, ipPrefix: prefix, ua_family };
+  }
+  return { ipPrefix: prefix, ua_family };
+}
 
 export function authMetricsMiddleware(
   req: Request,
@@ -146,8 +256,7 @@ export function authMetricsMiddleware(
         outcome,
         status: s,
         emailHash,
-        ip: req.ip,
-        ua: req.get("user-agent") || undefined,
+        ...networkOriginFor(outcome, req),
       });
     } catch {
       /* logging must never break a response */

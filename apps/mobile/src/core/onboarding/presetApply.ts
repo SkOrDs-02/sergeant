@@ -23,7 +23,7 @@
  * the same "instantly real" guarantee the web direct write provides.
  */
 
-import { applyCreateHabit } from "@sergeant/routine-domain";
+import { applyCreateHabit, resolveHabitGlyph } from "@sergeant/routine-domain";
 
 import {
   loadRoutineState,
@@ -43,14 +43,12 @@ export type FinykPreset = {
 export type ModuleId = "routine" | "finyk" | "nutrition" | "fizruk";
 
 export type ModulePreset =
-  | RoutinePreset
-  | FinykPreset
-  | Record<string, unknown>;
+  RoutinePreset | FinykPreset | Record<string, unknown>;
 
 function applyRoutinePreset(preset: RoutinePreset): void {
   const next = applyCreateHabit(loadRoutineState(), {
     name: preset.name,
-    emoji: preset.emoji || "✓",
+    emoji: resolveHabitGlyph(preset.emoji),
   });
   saveRoutineState(next);
 }

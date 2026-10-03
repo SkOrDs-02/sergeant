@@ -2,7 +2,7 @@
 // scripts/docs/check-freshness.mjs
 //
 // Nightly CI script. For every tracked markdown file with a canonical
-// `> **Last validated:**` header, parses the "Last validated" / "Next review"
+// `> **Last touched:**` header, parses the "Last touched" / "Next review"
 // dates and opens a GitHub issue for every overdue document.
 //
 // Tracking is **auto-discovered** by `freshness-config.mjs`: any `*.md` under
@@ -15,7 +15,7 @@
 // already exists, the script skips that path.
 //
 // Supports two header formats:
-//   1. Canonical:  `> **Last validated:** YYYY-MM-DD by @user. **Next review:** YYYY-MM-DD.`
+//   1. Canonical:  `> **Last touched:** YYYY-MM-DD by @user. **Next review:** YYYY-MM-DD.`
 //   2. Legacy:     `> Last reviewed: YYYY-MM-DD. Reviewer: @user`
 //      (legacy has no explicit Next review — the script uses cadenceDays from
 //      the config / legacy allowlist)
@@ -30,10 +30,11 @@
 //
 // Environment:
 //   GITHUB_TOKEN          — required (unless DRY_RUN / --check-coverage)
-//   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions; defaults to Skords-01/Sergeant)
+//   GITHUB_REPOSITORY     — "owner/repo" (auto-set by Actions). Обов'язковий для
+//                           будь-якого запису в issue — див. writableRepoSlug().
 //   DRY_RUN               — if truthy, skip issue creation
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -42,6 +43,7 @@ import {
   computeCoverageGaps,
   listTrackedMarkdown,
   readConfigFile,
+  reviewJitterDays,
 } from "./freshness-config.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -57,7 +59,7 @@ const LABELS = ["documentation", "freshness-overdue"];
 // ── Header regexes ───────────────────────────────────────────────────────────
 //
 // Canonical format (preferred):
-//   > **Last validated:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
+//   > **Last touched:** 2026-04-27 by @Skords-01. **Next review:** 2026-07-26.
 //
 // Legacy format (AGENTS.md-style, before PR-11.A):
 //   > Last reviewed: 2026-04-27. Reviewer: @Skords-01
@@ -110,11 +112,23 @@ export function addDays(isoDate, days) {
   return d.toISOString().slice(0, 10);
 }
 
-/** Compute the effective next-review date from the header + allowlist cadence. */
-export function effectiveNextReview(header, cadenceDays) {
+/**
+ * Compute the effective next-review date from the header + cadence.
+ *
+ * Коли дата перегляду в заголовку є — вона й виграє: це те, що людина
+ * (або бампер) реально записала у файл.
+ *
+ * Коли її немає — рахуємо так само, як її записав би бампер: каденція
+ * ПЛЮС детермінований розкид від шляху. Без розкиду тут гейт і бампер
+ * розходились: док без явної дати ставав простроченим на день X, а
+ * після першого ж коміту стрибав на X+jitter. `path` необов'язковий
+ * лише заради старих викликів у тестах — без нього розкид нульовий.
+ */
+export function effectiveNextReview(header, cadenceDays, path = null) {
   if (header.nextReview) return header.nextReview;
-  if (header.lastValidated) return addDays(header.lastValidated, cadenceDays);
-  return null;
+  if (!header.lastValidated) return null;
+  const spread = path ? reviewJitterDays(path, cadenceDays) : 0;
+  return addDays(header.lastValidated, cadenceDays + spread);
 }
 
 /** Return true if `nextReview` is strictly before `todayISO`. */
@@ -151,13 +165,13 @@ export function issueBody(filePath, lastValidated, nextReview, daysOverdue) {
     marker,
     "",
     `**File:** [\`${filePath}\`](https://github.com/${repoSlug()}/blob/main/${filePath})`,
-    `**Last validated:** ${lastValidated || "unknown"}`,
+    `**Last touched:** ${lastValidated || "unknown"}`,
     `**Next review was:** ${nextReview}`,
     `**Days overdue:** ${daysOverdue}`,
     "",
     "Please review and update the freshness header:",
     "```",
-    `> **Last validated:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`,
+    `> **Last touched:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`,
     "```",
     "",
     "Then close this issue.",
@@ -168,6 +182,26 @@ export function issueBody(filePath, lastValidated, nextReview, daysOverdue) {
 
 function repoSlug() {
   return process.env.GITHUB_REPOSITORY || "Skords-01/Sergeant";
+}
+
+/**
+ * Slug для операцій, що ПИШУТЬ у GitHub (створення й закриття issue).
+ *
+ * AI-DANGER: дефолт `repoSlug()` історичний (`Skords-01/Sergeant`) і не
+ * збігається з поточним remote (`SkOrDs-02/sergeant`). Поки скрипт лише
+ * читав і створював issue, промах був неприємним; відколи він ще й ЗАКРИВАЄ
+ * їх (2026-08-23), писати навмання не можна. В Actions `GITHUB_REPOSITORY`
+ * виставлений завжди — тож ця перевірка ловить рівно ручний запуск без env.
+ */
+function writableRepoSlug() {
+  const slug = process.env.GITHUB_REPOSITORY;
+  if (!slug) {
+    throw new Error(
+      "GITHUB_REPOSITORY is required for issue writes — refusing to guess the repo. " +
+        "Запусти з DRY_RUN=1 або виставте GITHUB_REPOSITORY=owner/repo.",
+    );
+  }
+  return slug;
 }
 
 async function githubFetch(path, opts = {}) {
@@ -203,7 +237,7 @@ export async function findExistingIssue(filePath) {
 
 /** Ensure labels exist (create if missing). */
 async function ensureLabels() {
-  const slug = repoSlug();
+  const slug = writableRepoSlug();
   for (const label of LABELS) {
     try {
       await githubFetch(`/repos/${slug}/labels/${encodeURIComponent(label)}`);
@@ -223,6 +257,81 @@ async function ensureLabels() {
   }
 }
 
+/**
+ * Витягнути шлях до доку з marker-коментаря в тілі issue.
+ *
+ * @param {string|null|undefined} body
+ * @returns {string|null}
+ */
+export function markerPath(body) {
+  const m = /<!--\s*doc-freshness:(.+?)\s*-->/.exec(body ?? "");
+  return m ? m[1].trim() : null;
+}
+
+/**
+ * Які з відкритих freshness-issue вже не мають підстав бути відкритими.
+ *
+ * Резолвнутим вважається issue, чий док (а) більше не прострочений, або
+ * (б) взагалі зник із репозиторію (видалений / переїхав в архів). Issue без
+ * розпізнаваного marker-а НЕ чіпаємо — його міг завести руками хтось живий.
+ *
+ * @param {object} args
+ * @param {{ number: number, body?: string|null }[]} args.issues
+ * @param {Set<string>} args.overduePaths шляхи, які цей прогін визнав простроченими
+ * @returns {{ number: number, path: string }[]}
+ */
+export function selectResolvedIssues({ issues, overduePaths }) {
+  const out = [];
+  for (const issue of issues ?? []) {
+    const path = markerPath(issue.body);
+    if (!path) continue;
+    if (overduePaths.has(path)) continue;
+    out.push({ number: issue.number, path });
+  }
+  return out;
+}
+
+/**
+ * Усі відкриті issue з лейблом freshness-overdue.
+ *
+ * Читання, але через `writableRepoSlug()` навмисно: результат живить
+ * закриття, і список із «не того» репо означав би спробу закрити чужі
+ * номери в цьому.
+ */
+export async function listOpenFreshnessIssues() {
+  const slug = writableRepoSlug();
+  const out = [];
+  // Пагінація: беклог freshness-issue легко переростає одну сторінку.
+  for (let page = 1; page <= 10; page += 1) {
+    const data = await githubFetch(
+      `/repos/${slug}/issues?state=open&labels=freshness-overdue&per_page=100&page=${page}`,
+    );
+    if (!Array.isArray(data) || data.length === 0) break;
+    // `/issues` віддає і pull request-и — вони мають поле `pull_request`.
+    out.push(...data.filter((i) => !i.pull_request));
+    if (data.length < 100) break;
+  }
+  return out;
+}
+
+/** Закрити resolved freshness-issue з поясненням. */
+export async function closeResolvedIssue(number, filePath) {
+  const slug = writableRepoSlug();
+  await githubFetch(`/repos/${slug}/issues/${number}/comments`, {
+    method: "POST",
+    body: JSON.stringify({
+      body:
+        `Закрито автоматично \`check-freshness.mjs\`: \`${filePath}\` більше не ` +
+        "прострочений (заголовок оновлено, файл видалено/заархівовано, або шлях " +
+        "виключено з трекінгу). Якщо док знову протухне — workflow заведе новий issue.",
+    }),
+  });
+  return githubFetch(`/repos/${slug}/issues/${number}`, {
+    method: "PATCH",
+    body: JSON.stringify({ state: "closed", state_reason: "completed" }),
+  });
+}
+
 /** Create a GitHub issue for an overdue doc. */
 export async function createIssue(
   filePath,
@@ -230,7 +339,7 @@ export async function createIssue(
   nextReview,
   daysOverdue,
 ) {
-  const slug = repoSlug();
+  const slug = writableRepoSlug();
   return githubFetch(`/repos/${slug}/issues`, {
     method: "POST",
     body: JSON.stringify({
@@ -274,7 +383,7 @@ export async function run() {
       continue;
     }
 
-    const nextReview = effectiveNextReview(header, cadence);
+    const nextReview = effectiveNextReview(header, cadence, entry.path);
     if (!nextReview) {
       results.push({ path: filePath, status: "no-next-review" });
       continue;
@@ -325,7 +434,56 @@ export async function run() {
     });
   }
 
+  if (!dryRun) {
+    await reconcileResolvedIssues(results);
+  }
+
   return results;
+}
+
+/**
+ * Закрити freshness-issue, чиї доки вже не прострочені.
+ *
+ * AI-CONTEXT: до 2026-08-23 цей скрипт умів лише ВІДКРИВАТИ issue. Односторонній
+ * храповик: оновив заголовок — issue висить; видалив док — issue висить і
+ * вказує в нікуди. Так у беклозі накопичилось 9 відкритих freshness-issue,
+ * з яких 8 посилались на файли, яких у репо вже немає, а 9-й (`docs/today.md`)
+ * стосувався авто-генерованого артефакту. Жоден не ніс сигналу.
+ *
+ * Безпечно запускати лише поза `pull_request`: інакше PR, який оновлює
+ * заголовок, закрив би issue ще до мержу, і при відкоченому PR issue лишився б
+ * закритим. `docs-freshness.yml` уже викликає цей скрипт тільки на
+ * `github.event_name != 'pull_request'` — не послаблюй цю умову.
+ */
+async function reconcileResolvedIssues(results) {
+  const overduePaths = new Set(
+    results
+      .filter((r) => String(r.status).startsWith("overdue"))
+      .map((r) => r.path),
+  );
+
+  let open;
+  try {
+    open = await listOpenFreshnessIssues();
+  } catch (err) {
+    // Прибирання — не критичний шлях: не валимо прогін, який щойно коректно
+    // завів issue для реально прострочених доків.
+    console.warn(`[WARN] Could not list freshness issues: ${err.message}`);
+    return;
+  }
+
+  const resolved = selectResolvedIssues({ issues: open, overduePaths });
+  for (const { number, path } of resolved) {
+    try {
+      await closeResolvedIssue(number, path);
+      console.log(`  ↳ Closed resolved issue #${number} (${path})`);
+    } catch (err) {
+      console.warn(`[WARN] Could not close issue #${number}: ${err.message}`);
+    }
+  }
+  if (resolved.length === 0) {
+    console.log("No resolved freshness issues to close.");
+  }
 }
 
 /**
@@ -338,7 +496,13 @@ export function runCoverage({ rootDir = REPO_ROOT } = {}) {
   const candidates = listTrackedMarkdown(rootDir);
   const readFile = (path) => {
     const full = resolve(rootDir, path);
-    return existsSync(full) ? readFileSync(full, "utf8") : null;
+    // Без `existsSync`: перевірка й читання — дві операції над іменем
+    // файлу, і між ними воно може перестати існувати (js/file-system-race).
+    try {
+      return readFileSync(full, "utf8");
+    } catch {
+      return null;
+    }
   };
   const gaps = computeCoverageGaps({ candidates, config, readFile });
   return gaps;
@@ -353,7 +517,11 @@ export function evaluateFreshnessCadence({ tracked, readFile, today }) {
     const header = parseHeader(content);
     if (!header.lastValidated) continue;
 
-    const nextReview = effectiveNextReview(header, entry.cadenceDays);
+    const nextReview = effectiveNextReview(
+      header,
+      entry.cadenceDays,
+      entry.path,
+    );
     if (!nextReview) {
       failures.push({
         path: entry.path,
@@ -387,7 +555,13 @@ export function runCadenceCheck({
   const { tracked } = loadConfig({ rootDir });
   const readFile = (path) => {
     const full = resolve(rootDir, path);
-    return existsSync(full) ? readFileSync(full, "utf8") : null;
+    // Без `existsSync`: перевірка й читання — дві операції над іменем
+    // файлу, і між ними воно може перестати існувати (js/file-system-race).
+    try {
+      return readFileSync(full, "utf8");
+    } catch {
+      return null;
+    }
   };
   return evaluateFreshnessCadence({ tracked, readFile, today });
 }
@@ -425,7 +599,7 @@ if (isMain) {
       );
       for (const g of gaps) console.error(`  - ${g}`);
       console.error(
-        "\nAdd `> **Last validated:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`",
+        "\nAdd `> **Last touched:** YYYY-MM-DD by @you. **Next review:** YYYY-MM-DD.`",
       );
       console.error(
         "or list the path in `scripts/docs/freshness-config.json` → `explicitExclude` if it should be opted out.",

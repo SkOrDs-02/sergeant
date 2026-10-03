@@ -3,7 +3,11 @@ import { TranscribeQuerySchema } from "@sergeant/shared";
 import { parseQuery } from "../../http/validate.js";
 import { transcribeAudio, GroqTranscribeError } from "../../lib/groq.js";
 import { logger } from "../../obs/logger.js";
-import { assertTranscribeUsdCap, recordTranscribeUsdSpend } from "./usdCap.js";
+import {
+  assertTranscribeUsdCap,
+  recordTranscribeUsdSpend,
+  releaseTranscribeUsdReservation,
+} from "./usdCap.js";
 import { env } from "../../env/env.js";
 
 type WithGroqKey = Request & { groqKey?: string };
@@ -101,7 +105,7 @@ export default async function transcribeHandler(
   if (!mimeType) {
     res.status(415).json({
       error:
-        "Непідтримуваний Content-Type — очікую audio/webm, audio/mp4, audio/ogg тощо",
+        "Непідтримуваний Content-Type, очікую audio/webm, audio/mp4, audio/ogg тощо",
       code: "UNSUPPORTED_MEDIA_TYPE",
     });
     return;
@@ -111,7 +115,7 @@ export default async function transcribeHandler(
   const body = req.body as unknown;
   if (!Buffer.isBuffer(body) || body.length === 0) {
     res.status(400).json({
-      error: "Порожнє тіло запиту — очікую аудіо-блоб",
+      error: "Порожнє тіло запиту, очікую аудіо-блоб",
       code: "EMPTY_BODY",
     });
     return;
@@ -167,6 +171,8 @@ export default async function transcribeHandler(
       model,
     });
   } catch (err) {
+    // B26: провал апстріму (чи abort) не тарифікується — повертаємо резерв.
+    await releaseTranscribeUsdReservation(req);
     if (err instanceof GroqTranscribeError) {
       logger.warn({
         msg: "transcribe_upstream_failed",

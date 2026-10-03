@@ -3,11 +3,15 @@ import {
   BarcodeLookupSuccessSchema,
   type BarcodeProduct,
 } from "@sergeant/shared/schemas";
+import { env } from "../../env.js";
 import { recordExternalHttp } from "../../lib/externalHttp.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { BarcodeQuerySchema } from "../../http/schemas.js";
 import { parseQuery } from "../../http/validate.js";
+import { getSessionUser } from "../../auth.js";
 import { barcodeLookupsTotal } from "../../obs/metrics.js";
+import { logger } from "../../obs/logger.js";
+import { lookupInCatalog, upsertIntoCatalog } from "./productCatalog.js";
 import {
   normalizeOFFBarcode,
   normalizeUPCitemdb,
@@ -16,6 +20,26 @@ import {
   type UPCitemdbResponse,
   type USDAFood,
 } from "../../lib/normalizers/index.js";
+import {
+  isSilpoConnectedUser,
+  lookupSilpoBarcode,
+} from "../silpo/foodSource.js";
+
+/**
+ * Best-effort session peek. `/api/barcode` is deliberately session-less
+ * (open, cached, PERF-007 scan flow) — this must NEVER turn it into an
+ * auth-gated route. `getSessionUser` throws on a lookup failure (see its
+ * docstring in `auth.ts`); catching here keeps that failure mode identical
+ * to "no session" instead of a 500 on an endpoint that never required auth.
+ */
+async function resolveOptionalUserId(req: Request): Promise<string | null> {
+  try {
+    const user = await getSessionUser(req);
+    return user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
 
 // SSOT for the barcode response shape lives in `@sergeant/shared/schemas`
 // (AGENTS.md Hard Rule #3). The server derives its internal type via
@@ -171,6 +195,24 @@ function recordLookup(source: string, outcome: string, ms: number): void {
   recordExternalHttp(source, outcome, ms);
 }
 
+/**
+ * Те саме для власного каталогу — але БЕЗ `recordExternalHttp`.
+ *
+ * `external_http_requests_total` описує виходи за периметр до третіх
+ * сторін; запит до власного Postgres туди не належить і зіпсував би і
+ * сенс метрики, і її кардинальність. Домену ж `barcode_lookups_total`
+ * джерело `catalog` потрібне — саме воно дає hit-rate по ярусах, який
+ * дослідження назвало метрикою для рішення «чи потрібен платний API»
+ * (docs/work/specs/planning/barcode-database-research.md § 4).
+ */
+function recordCatalogLookup(outcome: "hit" | "miss" | "error"): void {
+  try {
+    barcodeLookupsTotal.inc({ source: "catalog", outcome });
+  } catch {
+    /* ignore */
+  }
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Source 1: Open Food Facts (no key, 100 req/min, global crowdsourced DB)
 // ──────────────────────────────────────────────────────────────────────────────
@@ -190,10 +232,9 @@ async function lookupOFF(barcode: string): Promise<NormalizedProduct | null> {
   try {
     const r = await fetch(url, {
       headers: {
-        "User-Agent":
-          "Sergeant-NutritionApp/1.0 (https://sergeant.2dmanager.com.ua)",
+        "User-Agent": "Sergeant-NutritionApp/1.0 (https://sergeant.com.ua)",
       },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(4000),
     });
     if (!r.ok) {
       recordLookup("off", nonOkOutcome(r.status), elapsedMs(start));
@@ -235,14 +276,17 @@ function normalizeUSDA(
 }
 
 async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
-  const key = process.env["USDA_FDC_API_KEY"] || "DEMO_KEY";
+  const key =
+    process.env["USDA_FDC_API_KEY"] ||
+    process.env["USDA_API_KEY"] ||
+    "DEMO_KEY";
   // Search Branded Foods by GTIN/UPC (barcode is stored in gtinUpc field)
   const url = `${FDC_BASE}/foods/search?query=${encodeURIComponent(barcode)}&dataType=Branded&pageSize=5&api_key=${key}`;
   const start = process.hrtime.bigint();
   try {
     const r = await fetch(url, {
       headers: { "User-Agent": "Sergeant-NutritionApp/1.0" },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(4000),
     });
     if (!r.ok) {
       recordLookup("usda", nonOkOutcome(r.status), elapsedMs(start));
@@ -280,19 +324,33 @@ async function lookupUSDA(barcode: string): Promise<NormalizedProduct | null> {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Source 3: UPCitemdb (no key, 100 req/day, 694M+ barcodes)
+// Source 3: UPCitemdb (694M+ barcodes)
 // Returns product name/brand but rarely has nutrition data for food items.
 // We mark partial: true so the frontend can prompt the user to fill in macros.
+//
+// AI-DANGER: дефолтний endpoint — `prod/trial`, тобто **100 запитів на добу
+// на весь продукт**, а не на користувача. Перший же день із десятком людей
+// вимикає третє джерело каскаду. До 2026-07-25 URL був захардкоджений і
+// змінити його без релізу було неможливо; тепер він в `UPCITEMDB_BASE_URL`.
+// Заміна тріалу на платний план або на інше джерело — крок 2 у
+// `docs/work/research/2026-07-25-barcode-sources-and-moderation.md`.
 // ──────────────────────────────────────────────────────────────────────────────
 async function lookupUPCitemdb(
   barcode: string,
 ): Promise<NormalizedProduct | null> {
-  const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(barcode)}`;
+  const base = env.UPCITEMDB_BASE_URL.replace(/\/+$/, "");
+  const url = `${base}/lookup?upc=${encodeURIComponent(barcode)}`;
   const start = process.hrtime.bigint();
   try {
     const r = await fetch(url, {
-      headers: { "User-Agent": "Sergeant-NutritionApp/1.0" },
-      signal: AbortSignal.timeout(6000),
+      headers: {
+        "User-Agent": "Sergeant-NutritionApp/1.0",
+        // Платні плани UPCitemdb автентифікуються заголовком `user_key`;
+        // тріал його ігнорує, тож заголовок додається лише за наявності
+        // ключа — інакше тріальний запит отримав би зайвий заголовок.
+        ...(env.UPCITEMDB_API_KEY ? { user_key: env.UPCITEMDB_API_KEY } : {}),
+      },
+      signal: AbortSignal.timeout(3000),
     });
     if (!r.ok) {
       recordLookup("upcitemdb", nonOkOutcome(r.status), elapsedMs(start));
@@ -325,9 +383,27 @@ async function lookupUPCitemdb(
 // Handler
 // ──────────────────────────────────────────────────────────────────────────────
 /**
- * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA → UPCitemdb.
- * Middleware-и роутера (`setModule`, `rateLimitExpress`) забезпечують
- * module-tag і rate-limit; тут лише бізнес-логіка.
+ * GET /api/barcode?barcode=... — каскадний lookup через OFF → USDA →
+ * UPCitemdb → Silpo (четверте джерело, лише для юзера зі звʼязаним акаунтом
+ * — `modules/silpo/foodSource.ts`). Middleware-и роутера (`setModule`,
+ * `rateLimitExpress`) забезпечують module-tag і rate-limit; тут лише
+ * бізнес-логіка.
+ *
+ * Кроки послідовні (не паралельні) навмисно — hit на ранньому джерелі не
+ * повинен витрачати квоту наступних (особливо UPCitemdb: 100 req/day trial).
+ * Тому per-source timeout тримаємо невеликим (4с/4с/3с = 11с worst-case),
+ * а не 7с/7с/6с — повний miss-cascade інакше тягнеться до ~20с. Silpo не має
+ * per-source HTTP-timeout тут — `mcpClient.ts` вже несе власний
+ * `SILPO_MCP_TIMEOUT_MS` + retry/backoff.
+ *
+ * KNOWN LIMITATION (acceptable for the narrowed, experimental track D): a
+ * miss-sentinel cached by an EARLIER, non-connected caller (OFF/USDA/
+ * UPCitemdb all missed) short-circuits below WITHOUT ever trying Silpo for
+ * a LATER connected caller on the same barcode, until the 30-min miss TTL
+ * expires. Fixing this would require bypassing the shared cache whenever
+ * `silpoConnected`, which adds meaningful complexity for a walking-skeleton
+ * source — deferred, not a correctness/security issue (worst case: a
+ * connected user occasionally sees "not found" for up to 30 minutes).
  */
 export default async function handler(
   req: Request,
@@ -338,12 +414,18 @@ export default async function handler(
     "",
   );
   if (!/^\d{8,14}$/.test(barcode)) {
-    res.status(400).json({ error: "Невірний штрихкод (8–14 цифр)" });
+    res
+      .status(400)
+      .json({ error: "Неправильний штрихкод: потрібно 8–14 цифр." });
     return;
   }
 
   // Cache hit short-circuits the cascade entirely. Miss-sentinel returns the
-  // same 404 без чергового round-trip-у на upstream-и.
+  // same 404 без чергового round-trip-у на upstream-и. Safe regardless of
+  // Silpo connection status — Silpo-sourced hits are NEVER written to this
+  // shared cache (see the `product.source === "silpo"` guard around
+  // `cacheSet` below), so anything found here is public OFF/USDA/UPCitemdb
+  // data, not scoped to any one user.
   const cached = cacheGet(barcode);
   if (cached) {
     if (cached.product) {
@@ -356,8 +438,57 @@ export default async function handler(
     return;
   }
 
+  // ── Tier-1: власний каталог (міграція 123) ────────────────────────────────
+  //
+  // Стоїть ПЕРЕД зовнішніми джерелами. Сенс не в латентності, а в квотах:
+  // USDA на DEMO_KEY дає 40 запитів/год НА ВЕСЬ ПРОДУКТ, UPCitemdb trial —
+  // 100/добу. Каталог перетворює це з «ліміт на кожен скан» на «ліміт на
+  // кожен НОВИЙ товар».
+  //
+  // Помилка БД тут НЕ фатальна: каталог — прискорювач, а не єдине джерело
+  // істини. Якщо Postgres недоступний, скан має працювати через upstream-и
+  // рівно як до цієї зміни, а не падати.
   try {
-    // Cascade: OFF → USDA → UPCitemdb
+    const fromCatalog = await lookupInCatalog(barcode);
+    if (fromCatalog) {
+      // Валідація СТРОГО перед кешуванням. Якщо в каталозі колись
+      // опиниться рядок, що не лягає в контракт (напр. джерело, ще не
+      // заведене в `BarcodeProductSchema.source`), `parse` кидає — і ми
+      // мусимо піти в upstream, а не покласти биту відповідь у кеш.
+      // Зворотний порядок був би підступним: сам запит віддав би 200, а
+      // НАСТУПНИЙ ліг би на тій самій валідації вже в cache-hit-гілці, де
+      // її ніхто не ловить, тобто 500 на ровному місці.
+      const payload = BarcodeLookupSuccessSchema.parse({
+        product: fromCatalog,
+      });
+      recordCatalogLookup("hit");
+      cacheSet(barcode, fromCatalog);
+      res.status(200).json(payload);
+      return;
+    }
+    recordCatalogLookup("miss");
+  } catch (e) {
+    recordCatalogLookup("error");
+    logger.warn(
+      { err: e instanceof Error ? e.message : String(e), barcode },
+      "product_catalog lookup failed, falling through to upstreams",
+    );
+  }
+
+  // Cheap guard (single indexed SELECT, zero cost for the anonymous
+  // majority) — decides whether to try Silpo as the last cascade step AND
+  // whether a Silpo-sourced hit below must skip the shared cache / public
+  // `Cache-Control`. Gated on the kill switch FIRST: with `SILPO_ENABLED`
+  // off (the default) this session-less endpoint must not pay a per-request
+  // session lookup for a source that can never activate.
+  //
+  // Стоїть ПІСЛЯ каталогу навмисно: хіт у власному каталозі повертається
+  // одразу, тож найдешевший шлях узагалі не платить за резолв сесії.
+  const userId = env.SILPO_ENABLED ? await resolveOptionalUserId(req) : null;
+  const silpoConnected = userId ? await isSilpoConnectedUser(userId) : false;
+
+  try {
+    // Cascade: OFF → USDA → UPCitemdb → Silpo
     let product: NormalizedProduct | null = null;
     let upstreamThrew = false;
 
@@ -380,18 +511,58 @@ export default async function handler(
         upstreamThrew = true;
       }
     }
+    if (!product && silpoConnected) {
+      // `lookupSilpoBarcode` never throws (see its docstring) — Silpo is a
+      // best-effort bonus source, so its failure must NEVER set
+      // `upstreamThrew` (that flag exists to distinguish "genuinely not in
+      // any database" from "an authoritative source didn't respond", and
+      // Silpo is neither authoritative nor required).
+      product = await lookupSilpoBarcode(userId, barcode);
+    }
 
     if (!product) {
-      // Кешуємо miss тільки якщо жоден upstream НЕ кинув: інакше це не
-      // справжній miss, а transient failure — повторний запит має пройти
-      // cascade знову.
-      if (!upstreamThrew) cacheSet(barcode, null);
+      // AI-CONTEXT (аудит nutrition § G5): «немає в базі» і «база лежить» —
+      // це РІЗНІ відповіді, і плутати їх не можна. Прапорець `upstreamThrew`
+      // існував і раніше, але впливав лише на кешування: користувач в обох
+      // випадках бачив 404 «Продукт не знайдено» і не мав як зрозуміти, що
+      // продукт, можливо, у базі є, а просто не відповіло джерело. Наслідок —
+      // людина вручну заводить те, що система вміє знайти, або вважає скан
+      // зламаним.
+      if (upstreamThrew) {
+        // 503, а не 404: відповідь неавторитетна. Не кешуємо — повторний
+        // запит має пройти cascade знову. (504 поруч лишається за
+        // таймаутом, піднятим ПОЗА per-source try/catch.)
+        res.status(503).json({
+          error:
+            "Бази продуктів зараз не відповідають, це не означає, що продукту немає. Спробуй ще раз за хвилину або введи вручну.",
+        });
+        return;
+      }
+      // Справжній all-miss: усі джерела відповіли, і в жодного немає такого
+      // штрихкоду. Лише це кешуємо як miss-sentinel.
+      cacheSet(barcode, null);
       res.status(404).json({ error: "Продукт не знайдено" });
       return;
     }
 
-    cacheSet(barcode, product);
+    if (product.source === "silpo") {
+      // Never share a Silpo-sourced hit — it was resolved via THIS user's
+      // linked account, not a global public catalog lookup all callers are
+      // equally entitled to. Skip the shared in-process cache AND override
+      // the router's public `Cache-Control` (PERF-007) for this response.
+      res.setHeader(
+        "Cache-Control",
+        "private, no-store, no-cache, must-revalidate",
+      );
+    } else {
+      cacheSet(barcode, product);
+    }
     res.status(200).json(BarcodeLookupSuccessSchema.parse({ product }));
+
+    // Write-through ПІСЛЯ відповіді: користувач не має чекати на наш запис.
+    // `upsertIntoCatalog` сам ковтає власні помилки, тож `void` тут не ховає
+    // необроблений reject — він лише знімає await.
+    void upsertIntoCatalog(barcode, product);
   } catch (e: unknown) {
     if (hasErrorName(e, "TimeoutError") || hasErrorName(e, "AbortError")) {
       res

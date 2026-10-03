@@ -1,15 +1,32 @@
 import {
+  MeDeleteBodySchema,
   MeDeleteResponseSchema,
+  MeDeletionStatusResponseSchema,
+  MeRestoreResponseSchema,
+  AiMemoryClearResponseSchema,
+  AiMemoryDeleteResponseSchema,
+  AiMemoryListResponseSchema,
   MeExportResponseSchema,
   MeResponseSchema,
   UserPreferencesPatchSchema,
   UserPreferencesSchema,
+  UserProfilePutBodySchema,
+  UserProfileResponseSchema,
+  type MeDeleteBody,
   type MeDeleteResponse,
+  type MeDeletionStatusResponse,
+  type MeRestoreResponse,
+  type AiMemoryClearResponse,
+  type AiMemoryDeleteResponse,
+  type AiMemoryListItem,
+  type AiMemoryListResponse,
   type MeExportResponse,
   type MeResponse,
   type User,
   type UserPreferences,
   type UserPreferencesPatch,
+  type UserProfilePayload,
+  type UserProfileResponse,
 } from "@sergeant/shared";
 import type { HttpClient } from "../httpClient";
 import type { RequestOptions } from "../types";
@@ -31,9 +48,67 @@ export interface MeEndpoints {
     patch: UserPreferencesPatch,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<UserPreferences>;
+  /**
+   * `GET /api/me/profile` — write-through профіль/біометрія (migration 115,
+   * НЕ oplog-sync). "Defaults, not 404": `{ profile: {}, updatedAt: null }`
+   * коли рядка ще немає (новий юзер до першого запису).
+   */
+  getProfile: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<UserProfileResponse>;
+  /**
+   * `PUT /api/me/profile` — повний upsert профілю по `user_id`. Валідує
+   * `profile` через `UserProfilePutBodySchema` (та сама схема, що і
+   * сервер) ДО мережевого запиту — розмір (≤16КБ serialized) і глибина
+   * вкладеності (≤3 рівні object property nesting) ловляться клієнтом
+   * симетрично серверу, тож UI отримує помилку без round-trip.
+   */
+  updateProfile: (
+    profile: UserProfilePayload,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<UserProfileResponse>;
+  /**
+   * `DELETE /api/me` — прохання видалити акаунт. НЕ видаляє одразу:
+   * ставить мітку, гасить сесії на всіх пристроях і повертає
+   * `scheduledPurgeAt`, після якого акаунт зникне (30 днів,
+   * `ACCOUNT_DELETION_GRACE_DAYS`).
+   */
   deleteAccount: (
+    body?: MeDeleteBody,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<MeDeleteResponse>;
+  /** `GET /api/me/deletion-status` — чим малює себе екран-блокер. */
+  deletionStatus: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<MeDeletionStatusResponse>;
+  /**
+   * `POST /api/me/restore` — скасування прохання. 404, якщо активного
+   * прохання немає. Підписку не повертає: її скасували в день прохання.
+   */
+  restoreAccount: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<MeRestoreResponse>;
+  clearAiMemory: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<AiMemoryClearResponse>;
+  /**
+   * `GET /api/ai-memory/list` — сторінка фактів, які асистент про тебе
+   * запамʼятав. `cursor` — `nextCursor` попередньої сторінки.
+   *
+   * AI-CONTEXT: живе в `me`-групі поруч із `clearAiMemory`, хоч шлях і
+   * `/api/ai-memory/*`. Це свідомо: всі три виклики обслуговують один
+   * екран «Згода та дані» в налаштуваннях, і розводити їх по двох
+   * групах заради збігу з URL-префіксом — гірше для call-site-ів.
+   */
+  listAiMemory: (
+    params?: { limit?: number; cursor?: number },
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<AiMemoryListResponse>;
+  /** `DELETE /api/ai-memory/:id` — стерти один факт. Назавжди. */
+  deleteAiMemory: (
+    id: number,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<AiMemoryDeleteResponse>;
 }
 
 export function createMeEndpoints(http: HttpClient): MeEndpoints {
@@ -57,18 +132,73 @@ export function createMeEndpoints(http: HttpClient): MeEndpoints {
       });
       return UserPreferencesSchema.parse(raw);
     },
-    deleteAccount: async ({ signal } = {}) => {
-      const raw = await http.del<unknown>("/api/me", undefined, { signal });
+    getProfile: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/me/profile", { signal });
+      return UserProfileResponseSchema.parse(raw);
+    },
+    updateProfile: async (profile, { signal } = {}) => {
+      const body = UserProfilePutBodySchema.parse({ profile });
+      const raw = await http.put<unknown>("/api/me/profile", body, {
+        signal,
+      });
+      return UserProfileResponseSchema.parse(raw);
+    },
+    deleteAccount: async (body = {}, { signal } = {}) => {
+      const raw = await http.del<unknown>(
+        "/api/me",
+        MeDeleteBodySchema.parse(body),
+        { signal },
+      );
       return MeDeleteResponseSchema.parse(raw);
+    },
+    deletionStatus: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/me/deletion-status", {
+        signal,
+      });
+      return MeDeletionStatusResponseSchema.parse(raw);
+    },
+    restoreAccount: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/me/restore", undefined, {
+        signal,
+      });
+      return MeRestoreResponseSchema.parse(raw);
+    },
+    clearAiMemory: async ({ signal } = {}) => {
+      const raw = await http.del<unknown>("/api/ai-memory", undefined, {
+        signal,
+      });
+      return AiMemoryClearResponseSchema.parse(raw);
+    },
+    listAiMemory: async (params = {}, { signal } = {}) => {
+      const qs = new URLSearchParams();
+      if (params.limit !== undefined) qs.set("limit", String(params.limit));
+      if (params.cursor !== undefined) qs.set("cursor", String(params.cursor));
+      const suffix = qs.size > 0 ? `?${qs.toString()}` : "";
+      const raw = await http.get<unknown>(`/api/ai-memory/list${suffix}`, {
+        signal,
+      });
+      return AiMemoryListResponseSchema.parse(raw);
+    },
+    deleteAiMemory: async (id, { signal } = {}) => {
+      const raw = await http.del<unknown>(`/api/ai-memory/${id}`, undefined, {
+        signal,
+      });
+      return AiMemoryDeleteResponseSchema.parse(raw);
     },
   };
 }
 
 export type {
   MeDeleteResponse,
+  AiMemoryClearResponse,
+  AiMemoryDeleteResponse,
+  AiMemoryListItem,
+  AiMemoryListResponse,
   MeExportResponse,
   MeResponse,
   User,
   UserPreferences,
   UserPreferencesPatch,
+  UserProfilePayload,
+  UserProfileResponse,
 };

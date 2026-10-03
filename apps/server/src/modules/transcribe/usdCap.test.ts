@@ -25,6 +25,9 @@ vi.mock("../../db.js", () => ({
   default: { query: queryMock },
   pool: { query: queryMock },
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withSubjectContext: (_subject: string, fn: (db: unknown) => unknown) =>
+    fn({ query: queryMock }),
 }));
 
 vi.mock("../../obs/logger.js", () => ({
@@ -38,6 +41,7 @@ vi.mock("../../obs/metrics.js", () => ({
 import {
   assertTranscribeUsdCap,
   recordTranscribeUsdSpend,
+  releaseTranscribeUsdReservation,
   __testing,
 } from "./usdCap.js";
 
@@ -108,12 +112,27 @@ describe("H9 estimateMicros (linear tariff)", () => {
 });
 
 describe("H9 dailyCapMicros (env override)", () => {
-  it("default = $1.00 / day", () => {
-    expect(__testing.dailyCapMicros()).toBe(__testing.MICROS_PER_USD);
-    expect(__testing.dailyCapMicros()).toBe(1_000_000);
+  // Знижено з $1.00 2026-09-13 (V1). Число тут навмисно дубльоване
+  // літералом, а не виведене з `MICROS_PER_USD / 10`: сенс тесту — щоб
+  // зміна дефолту вимагала свідомо переписати очікування, а не тихо
+  // проїхала разом із формулою.
+  it("default = $0.10 / day", () => {
+    expect(__testing.dailyCapMicros()).toBe(100_000);
+    expect(__testing.DEFAULT_DAILY_CAP_MICROS).toBe(100_000);
   });
 
-  it("env-override приймається коли ціле невід'ємне", () => {
+  // $0.10 ≈ 25 МБ аудіо ≈ понад 40 хвилин мовлення на добу. Тест тримає
+  // не саме число, а те, що воно лишається придатним для людини: стеля,
+  // за якої не влазить і десять хвилин, була б не обмеженням зловживань,
+  // а поломкою фічі.
+  it("дефолтна стеля лишає простір щонайменше на 20 хвилин мовлення", () => {
+    const tenMbMicros = __testing.estimateMicros(10 * 1024 * 1024);
+    const tenMbMinutes = 10; // ~10 МБ webm/opus ≈ ~10 хв мовлення
+    const minutes = (__testing.dailyCapMicros() / tenMbMicros) * tenMbMinutes;
+    expect(minutes).toBeGreaterThanOrEqual(20);
+  });
+
+  it("env-override приймається коли ціле невідʼємне", () => {
     process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "5000000";
     expect(__testing.dailyCapMicros()).toBe(5_000_000);
   });
@@ -132,41 +151,59 @@ describe("H9 dailyCapMicros (env override)", () => {
   });
 });
 
-describe("H9 assertTranscribeUsdCap — happy path", () => {
-  it("пропускає виклик, що в межах cap-у; коерсить bigint→number", async () => {
-    queryMock.mockResolvedValueOnce({
-      rows: [{ usd_micros: "100000" }], // 0.10 USD з раніших викликів
-    });
+describe("H9/B26 assertTranscribeUsdCap — happy path (атомарне резервування)", () => {
+  it("резервує оцінку одним умовним UPSERT; коерсить bigint→number", async () => {
+    // RETURNING usd_micros ПІСЛЯ резерву: 20_000 було + 40_000 estimate.
+    queryMock.mockResolvedValueOnce({ rows: [{ usd_micros: "60000" }] });
     const req = makeReq("user-123");
     const res = makeRes();
     const r = await assertTranscribeUsdCap(req, res, TEN_MB, MODEL);
     expect(r.ok).toBe(true);
-    expect(r.spent_micros).toBe(100_000);
+    expect(r.spent_micros).toBe(60_000);
     expect(res.statusCode).toBe(200);
     expect(res.body).toBeUndefined();
-    // SELECT параметризований subject_key, day, bucket
     expect(queryMock).toHaveBeenCalledOnce();
-    const sqlArgs = queryMock!.mock.calls[0]![1];
+    const [sql, sqlArgs] = queryMock.mock.calls[0]!;
+    expect(sql).toContain("ON CONFLICT");
+    expect(sql).toContain("WHERE t.usd_micros + EXCLUDED.usd_micros <= $6");
     expect(sqlArgs[0]).toBe("u:user-123");
     expect(sqlArgs[2]).toBe(`transcribe:${MODEL}`);
+    expect(sqlArgs[4]).toBe(__testing.GROQ_WHISPER_USD_MICROS_PER_10MB);
+    expect(sqlArgs[5]).toBe(100_000);
   });
 
-  it("без записів сьогодні → spent=0, ok=true", async () => {
+  it("recordTranscribeUsdSpend після резерву НЕ списує вдруге", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ usd_micros: "40000" }] });
+    const req = makeReq("u-once");
+    await assertTranscribeUsdCap(req, makeRes(), TEN_MB, MODEL);
+    await recordTranscribeUsdSpend(req, TEN_MB, MODEL);
+    expect(queryMock).toHaveBeenCalledOnce();
+  });
+
+  it("releaseTranscribeUsdReservation повертає резерв (і ідемпотентний)", async () => {
+    queryMock.mockResolvedValueOnce({ rows: [{ usd_micros: "40000" }] });
+    const req = makeReq("u-refund");
+    await assertTranscribeUsdCap(req, makeRes(), TEN_MB, MODEL);
     queryMock.mockResolvedValueOnce({ rows: [] });
-    const req = makeReq("user-fresh");
-    const res = makeRes();
-    const r = await assertTranscribeUsdCap(req, res, 1024, MODEL);
-    expect(r.ok).toBe(true);
-    expect(res.body).toBeUndefined();
+    await releaseTranscribeUsdReservation(req);
+    await releaseTranscribeUsdReservation(req);
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    const [sql, args] = queryMock.mock.calls[1]!;
+    expect(sql).toContain("GREATEST(0, usd_micros - $5)");
+    expect(args[4]).toBe(__testing.GROQ_WHISPER_USD_MICROS_PER_10MB);
+  });
+
+  it("release без резерву — no-op", async () => {
+    await releaseTranscribeUsdReservation(makeReq("u-none"));
+    expect(queryMock).not.toHaveBeenCalled();
   });
 });
 
-describe("H9 assertTranscribeUsdCap — cap-hit (402)", () => {
-  it("spent + estimate > cap → 402 TRANSCRIBE_USD_CAP, без SELECT-у Groq-a", async () => {
-    // 0.99 USD витрачено → ще один 10 MB ($0.04) переб'є $1.00 cap.
-    queryMock.mockResolvedValueOnce({
-      rows: [{ usd_micros: "990000" }],
-    });
+describe("H9/B26 assertTranscribeUsdCap — cap-hit (402)", () => {
+  it("UPSERT не повернув рядка → 402 TRANSCRIBE_USD_CAP, spent з SELECT", async () => {
+    // 0.09 USD витрачено → ще один 10 MB ($0.04) перебʼє $0.10 cap.
+    queryMock.mockResolvedValueOnce({ rows: [] }); // умовний UPSERT: блок
+    queryMock.mockResolvedValueOnce({ rows: [{ usd_micros: "90000" }] });
     const req = makeReq("user-spammer");
     const res = makeRes();
     const r = await assertTranscribeUsdCap(req, res, TEN_MB, MODEL);
@@ -174,32 +211,76 @@ describe("H9 assertTranscribeUsdCap — cap-hit (402)", () => {
     expect(r.reason).toBe("cap_hit");
     expect(res.statusCode).toBe(402);
     expect((res.body as { code?: string }).code).toBe("TRANSCRIBE_USD_CAP");
-    expect((res.body as { cap_usd?: number }).cap_usd).toBe(1);
-    expect((res.body as { spent_usd?: number }).spent_usd).toBeCloseTo(0.99);
+    expect((res.body as { cap_usd?: number }).cap_usd).toBeCloseTo(0.1);
+    expect((res.body as { spent_usd?: number }).spent_usd).toBeCloseTo(0.09);
     expect(capCounterIncMock).toHaveBeenCalledWith({ outcome: "cap_hit" });
-    // Структурований лог для алертингу (Sentry hook).
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({
         msg: "transcribe.usd_cap_hit",
         subject: "u:user-spammer",
-        cap_micros: 1_000_000,
+        cap_micros: 100_000,
       }),
     );
+    // Заблокований запит не лишає резерву → release нічого не пише.
+    queryMock.mockClear();
+    await releaseTranscribeUsdReservation(req);
+    expect(queryMock).not.toHaveBeenCalled();
   });
 
-  it("граничний кейс: spent + estimate = cap → пропускає (off-by-one)", async () => {
-    // 0.96 USD spent + $0.04 estimate = $1.00 cap. > порівнюється
-    // строго, тож запит має пройти.
-    queryMock.mockResolvedValueOnce({
-      rows: [{ usd_micros: "960000" }],
-    });
+  it("estimate > cap → 402 без UPSERT (INSERT-гілка не має WHERE)", async () => {
+    process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "1000";
+    queryMock.mockResolvedValueOnce({ rows: [] }); // лише SELECT spent
+    const res = makeRes();
     const r = await assertTranscribeUsdCap(
-      makeReq("u-edge"),
-      makeRes(),
+      makeReq("u-big"),
+      res,
       TEN_MB,
       MODEL,
     );
-    expect(r.ok).toBe(true);
+    expect(r.ok).toBe(false);
+    expect(res.statusCode).toBe(402);
+    expect(queryMock).toHaveBeenCalledOnce();
+    expect(queryMock.mock.calls[0]![0]).toContain("SELECT usd_micros");
+  });
+});
+
+describe("B26 паралельні виклики: сумарно ≤ cap", () => {
+  /**
+   * Мок імітує семантику умовного UPSERT одного рядка ledger-а
+   * (перевірка+інкремент в одному кроці — так Postgres виконує
+   * INSERT … ON CONFLICT DO UPDATE … WHERE під row-lock-ом). Це юніт на
+   * логіку виклику, а не доказ атомарності самого Postgres: реальний PG —
+   * `transcribe-usd-cap.e2e.test.ts` (Testcontainers).
+   */
+  it("10 одночасних 10 MB-викликів при cap $0.10 → рівно 2 проходять", async () => {
+    let ledger: number | null = null;
+    queryMock.mockImplementation(async (sql: string, args: unknown[]) => {
+      if (sql.includes("INSERT INTO ai_usage_daily AS t")) {
+        // Уступаємо event loop, щоб виклики справді перемежовувались.
+        await Promise.resolve();
+        const est = args[4] as number;
+        const cap = args[5] as number;
+        if (ledger === null) {
+          ledger = est;
+          return { rows: [{ usd_micros: String(ledger) }] };
+        }
+        if (ledger + est <= cap) {
+          ledger += est;
+          return { rows: [{ usd_micros: String(ledger) }] };
+        }
+        return { rows: [] };
+      }
+      return { rows: ledger === null ? [] : [{ usd_micros: String(ledger) }] };
+    });
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        assertTranscribeUsdCap(makeReq("u-race"), makeRes(), TEN_MB, MODEL),
+      ),
+    );
+    const passed = results.filter((r) => r.ok).length;
+    expect(passed).toBe(2); // floor(100_000 / 40_000)
+    expect(ledger).toBeLessThanOrEqual(100_000);
+    expect(ledger).toBe(passed * 40_000);
   });
 });
 
@@ -264,7 +345,10 @@ describe("H9 recordTranscribeUsdSpend — UPSERT", () => {
     expect(sql).toContain("usd_micros = ai_usage_daily.usd_micros + EXCLUDED");
     expect(args[0]).toBe("u:u-paid");
     expect(args[2]).toBe(`transcribe:${MODEL}`);
-    expect(args[3]).toBe(__testing.GROQ_WHISPER_USD_MICROS_PER_10MB);
+    // Міграції 104/106: `endpoint` тепер NOT NULL / частина PK — фіксоване
+    // значення 'transcribe' для цього модуля.
+    expect(args[3]).toBe(__testing.TRANSCRIBE_ENDPOINT);
+    expect(args[4]).toBe(__testing.GROQ_WHISPER_USD_MICROS_PER_10MB);
   });
 
   it("0 байт → НЕ викликає DB (нема чого записувати)", async () => {

@@ -9,9 +9,9 @@ export {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineHabitSkips,
   syncOpOutbox,
   syncOpCursor,
   SYNC_OP_OUTBOX_OPS,
@@ -35,7 +35,6 @@ export {
   enqueueOutboxIncrement,
   type OutboxIncrementInput,
   type EnqueueOutboxIncrementOk,
-  type EnqueueOutboxIncrementResult,
 } from "./syncOpOutboxEnqueue.js";
 export {
   drainSyncOpOutbox,
@@ -52,9 +51,16 @@ export {
   type SyncOpOutboxStatusCounts,
 } from "./syncOpOutboxStatus.js";
 export {
+  countRejectedOutbox,
+  listRejectedOutbox,
+  type ListRejectedOutboxOptions,
+  type RejectedOutboxRow,
+} from "./syncOpOutboxRejected.js";
+export {
   recoverDeadLetter,
   type RecoverDeadLetterResult,
   type RecoverDeadLetterSelector,
+  type RecoverDeadLetterTarget,
 } from "./syncOpOutboxRecover.js";
 export {
   repairPartialOutboxMigration,
@@ -66,14 +72,13 @@ export {
   purgeStaleTerminalOutbox,
   SYNC_OP_OUTBOX_STALE_TTL_DAYS,
   SYNC_OP_OUTBOX_TERMINAL_STATUSES,
+  SYNC_OP_OUTBOX_PURGEABLE_STATUSES,
   type PurgeStaleTerminalOutboxOptions,
   type PurgeStaleTerminalOutboxResult,
 } from "./syncOpOutboxPurgeStale.js";
 export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
   FIZRUK_CLIENT_MIGRATIONS,
   FIZRUK_MIGRATIONS_TABLE,
   NUTRITION_CLIENT_MIGRATIONS,
@@ -88,6 +93,7 @@ export {
   fizrukWorkoutItems,
   fizrukWorkoutSets,
   fizrukCustomExercises,
+  fizrukCustomActivities,
   fizrukMeasurements,
   fizrukDailyLog,
   fizrukMonthlyPlan,
@@ -95,6 +101,7 @@ export {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
+  fizrukInjuries,
 } from "./fizruk.js";
 export {
   nutritionMeals,

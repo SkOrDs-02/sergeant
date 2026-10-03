@@ -1,5 +1,5 @@
 /**
- * Stage 13 PR #073 of `docs/planning/storage-roadmap.md` — recipes
+ * Stage 13 PR #073 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — recipes
  * read from the SQLite warm cache and `saveRecipeBook` dual-writes
  * via `triggerNutritionDualWrite` without MMKV.
  */
@@ -13,7 +13,7 @@ jest.mock("@/lib/storage", () => ({
 const mockTriggerDualWrite = jest.fn();
 const mockIsRegistered = jest.fn();
 
-jest.mock("../dualWrite", () => ({
+jest.mock("../sqliteWriter", () => ({
   triggerNutritionDualWrite: (...args: unknown[]) =>
     mockTriggerDualWrite(...args),
   isNutritionDualWriteRegistered: () => mockIsRegistered(),

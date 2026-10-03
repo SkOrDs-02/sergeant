@@ -16,7 +16,7 @@
  * `onStartTemplate` callback so the parent owns the active-workout
  * wiring (see `pages/Workouts.tsx`).
  *
- * Stage 12 of `docs/planning/storage-roadmap.md` PR #070f-mobile-dualwrite
+ * Stage 12 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` PR #070f-mobile-dualwrite
  * already routes the hook through the SQLite dual-write pipeline, so no
  * MMKV-specific code is needed here.
  */
@@ -134,7 +134,7 @@ export function WorkoutTemplatesSheet({
         : "Шаблони тренувань";
   const description =
     editor.kind === "list"
-      ? "Збережені послідовності вправ — натисни «Почати», щоб одразу зайти у тренування з ними."
+      ? "Збережені послідовності вправ, натисни «Почати», щоб одразу зайти у тренування з ними."
       : undefined;
 
   return (
@@ -212,7 +212,7 @@ function ListView({
             Поки немає шаблонів
           </Text>
           <Text className="text-xs text-fg-muted mt-1">
-            Збережи послідовність вправ як шаблон — наступного разу запустиш
+            Збережи послідовність вправ як шаблон, наступного разу запустиш
             тренування одним натиском.
           </Text>
         </View>

@@ -1,11 +1,11 @@
 name: Storybook deploy
 
-# Owner: @Skords-01 (solo maintainer per .github/CODEOWNERS).
-# Initiative: docs/90-work/initiatives/archive/_0007-design-system-tooling.md (Phase 5).
+# Owner: @klas149 (solo maintainer).
+# Initiative: https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0007-design-system-tooling.md (Phase 5).
 #
 # Builds the @sergeant/web Storybook on every push to `main` and publishes
 # the static output to GitHub Pages so reviewers + designers always have a
-# canonical playground at https://skords-01.github.io/Sergeant/.
+# canonical playground at https://skords-02.github.io/sergeant/.
 #
 # PR builds run the same `pnpm build-storybook` step (no deploy) — that
 # way a broken story is caught at PR time, not after merge. PR builds
@@ -14,27 +14,16 @@ name: Storybook deploy
 #
 # Repo prerequisite: GitHub Pages must be enabled (Settings → Pages →
 # Source = "GitHub Actions") for the deploy job to succeed. The first
-# successful run will provision `https://skords-01.github.io/Sergeant/`.
+# successful run will provision `https://skords-02.github.io/sergeant/`.
 #
 # Triage: if the deploy fails, the GitHub Pages site keeps the previous
 # build. False-positive runs → close the auto-issue with a comment;
 # repeated failure (> 2x/week) → reopen and pair with the round-N
 # initiative author.
 
+# Лише вручну з 2026-09-30 (ADR-0102): на PR і push у main біжить тільки ci.yml.
 on:
-  push:
-    branches: [main]
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
-      - ".github/workflows/storybook-deploy.yml"
-      - "mockups/**"
-  pull_request:
-    paths:
-      - "apps/web/**"
-      - "packages/design-tokens/**"
-      - ".github/workflows/storybook-deploy.yml"
-      - "mockups/**"
+  workflow_dispatch:
 
 permissions:
   contents: read

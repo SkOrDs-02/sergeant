@@ -35,8 +35,8 @@ export const TRUST_BADGE_DATE = /_оновлено \d{4}-\d{2}-\d{2} via /g;
 // Daily relative counter rendered by generate-today.mjs:
 // `… _(due 2026-06-09, **2d overdue**)_` — the day count ticks every
 // midnight, the meaningful state (which doc, which due date) stays in the
-// comparison. Mirrors the freshness-dashboard precedent of ignoring daily
-// relative counters in --check mode.
+// comparison. Same idea as the former freshness-dashboard `--check` (removed
+// 2026-10-01 together with the committed dashboard).
 export const RELATIVE_OVERDUE_COUNTER = /\*\*\d+d overdue\*\*/g;
 
 const PLACEHOLDER = "<volatile-date-stamp>";

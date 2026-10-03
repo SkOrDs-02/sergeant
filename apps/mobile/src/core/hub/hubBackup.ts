@@ -1,7 +1,7 @@
 /**
  * Mobile hub backup — build / apply a cross-platform JSON payload.
  *
- * Stage 13 PR #071 of `docs/planning/storage-roadmap.md` rewrote this
+ * Stage 13 PR #071 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` rewrote this
  * module to mirror the web pattern (`apps/web/src/core/hub/hubBackup.ts`):
  * each module's reads come from its SQLite warm cache via the
  * canonical `loadXxxState` / `buildXxxBackupPayload` helpers, and each

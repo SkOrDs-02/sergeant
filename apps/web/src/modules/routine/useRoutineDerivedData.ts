@@ -23,8 +23,16 @@ import {
   parseDateKey,
 } from "./lib/hubCalendarAggregate";
 import { FINYK_SUB_GROUP_LABEL } from "./lib/finykSubscriptionCalendar";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
-import { completionRateForRange, maxActiveStreak } from "./lib/streaks";
+import {
+  calcRoutineDayProgress,
+  completionRateForRange,
+  flexibleMaxActiveStreak,
+} from "./lib/streaks";
 import {
   groupEventsForList,
   monthBounds,
@@ -38,6 +46,8 @@ import type {
 } from "./context/RoutineCalendarContext";
 import type { HubCalendarEvent, RoutineState } from "./lib/types";
 import type { TimeState } from "./useRoutineTimeState";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 
 export interface UseRoutineDerivedDataParams {
   routine: RoutineState;
@@ -60,6 +70,13 @@ export interface RoutineDerivedData {
   rangeLabel: string;
   headlineDate: string;
   todayKey: string;
+  /**
+   * День, за який рахується `dayProgress` — обраний день для однодневних
+   * режимів (today/tomorrow/day), інакше сьогодні (тиждень/місяць не мають
+   * одного «дня прогресу»). Той самий день має показувати денний звіт —
+   * інакше кільце і аркуш під ним говорять про різні дні (PR-R6).
+   */
+  progressDayKey: string;
   streakMax: number;
   completionRateVal: RoutineCompletionRate;
   dayProgress: RoutineDayProgress;
@@ -71,11 +88,7 @@ export interface RoutineDerivedData {
 }
 
 function fmtUk(key: string): string {
-  return parseDateKey(key).toLocaleDateString("uk-UA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  return formatUaWeekdayDate(parseDateKey(key));
 }
 
 export function useRoutineDerivedData({
@@ -108,15 +121,13 @@ export function useRoutineDerivedData({
     return monthBounds(monthCursor.y, monthCursor.m);
   }, [timeMode, monthCursor.y, monthCursor.m, selectedDay]);
 
-  const events = useMemo(
-    () =>
-      buildHubCalendarEvents(routine, range, {
-        showFizruk: routine.prefs.showFizrukInCalendar !== false,
-        showFinykSubs: routine.prefs.showFinykSubscriptionsInCalendar !== false,
-      }),
-    /* finykCalendarTick лишаємо: оновлення подій Фініка без зміни routine */
-    [routine, range, finykCalendarTick], // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const events = useMemo(() => {
+    void finykCalendarTick; // Finyk mirror tick without mutating `routine`
+    return buildHubCalendarEvents(routine, range, {
+      showFizruk: routine.prefs.showFizrukInCalendar !== false,
+      showFinykSubs: routine.prefs.showFinykSubscriptionsInCalendar !== false,
+    });
+  }, [routine, range, finykCalendarTick]);
 
   const filtered = useMemo(() => {
     let ev: HubCalendarEvent[] = events;
@@ -136,16 +147,22 @@ export function useRoutineDerivedData({
     return ev;
   }, [events, tagFilter, listQuery]);
 
+  // AI-CONTEXT: атрактор №7 анти-слоп-стратегії §3.2 (chip-scroller без
+  // стелі). Раніше сет безумовно вливав УСІ `routine.tags` незалежно від
+  // видимого періоду — стеля відсутня, і чип для тега без подій у поточному
+  // діапазоні все одно рендерився та вів у порожній стан. Тепер чип існує
+  // лише для тегів, реально представлених подіями видимого періоду; хвіст
+  // (теги поза чипами) покриває поле пошуку в `RoutineCalendarPanel`, яке
+  // матчить `tagLabels` так само, як і чипи.
   const tagChips = useMemo<string[]>(() => {
     const set = new Set<string>();
-    for (const t of routine.tags) set.add(t.name);
     for (const e of events) {
       for (const x of e.tagLabels) {
         if (x !== FIZRUK_GROUP_LABEL && x !== FINYK_SUB_GROUP_LABEL) set.add(x);
       }
     }
     return [...set].sort((a, b) => a.localeCompare(b, "uk"));
-  }, [routine.tags, events]);
+  }, [events]);
 
   const listEvents = useMemo(() => {
     if (timeMode === "month")
@@ -157,14 +174,7 @@ export function useRoutineDerivedData({
 
   const dayCounts = useMemo(() => countEventsByDate(events), [events]);
 
-  const monthTitle = new Date(
-    monthCursor.y,
-    monthCursor.m,
-    1,
-  ).toLocaleDateString("uk-UA", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthTitle = formatMonthYear(new Date(monthCursor.y, monthCursor.m, 1));
 
   const { cells } = monthGrid(monthCursor.y, monthCursor.m);
 
@@ -172,11 +182,7 @@ export function useRoutineDerivedData({
     if (timeMode === "today") return "Сьогодні";
     if (timeMode === "tomorrow") return "Завтра";
     if (timeMode === "day") {
-      return parseDateKey(selectedDay).toLocaleDateString("uk-UA", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      });
+      return formatUaWeekdayDate(parseDateKey(selectedDay));
     }
     if (timeMode === "week") return "Цей тиждень";
     return monthTitle;
@@ -188,22 +194,43 @@ export function useRoutineDerivedData({
     if (timeMode === "day") return fmtUk(selectedDay);
     if (timeMode === "today") return fmtUk(tk);
     if (timeMode === "tomorrow") return fmtUk(dateKeyFromDate(addDays(t0, 1)));
-    if (timeMode === "week") {
+    // AI-CONTEXT: місяць показує СВІЙ діапазон, як і тиждень. Раніше тут було
+    // `fmtUk(selectedDay)`, а `applyMode("month")` ставить `selectedDay` на
+    // сьогодні — тож герой у режимі місяця показував рівно сьогоднішню дату і
+    // був не відрізнити від режиму «Сьогодні» (репорт власника 2026-08-17).
+    // Межі місяця вже лежать у `range` (`monthBounds`), лишалось їх узяти.
+    if (timeMode === "week" || timeMode === "month") {
       const a = fmtUk(range.startKey);
       const b = fmtUk(range.endKey);
-      return range.startKey === range.endKey ? a : `${a} — ${b}`;
+      return range.startKey === range.endKey ? a : `${a} – ${b}`;
     }
-    if (timeMode === "month") return fmtUk(selectedDay);
     return fmtUk(tk);
   }, [timeMode, selectedDay, range.startKey, range.endKey]);
 
   const todayKey = dateKeyFromDate(todayDate());
 
+  // AI-CONTEXT: гнучкий стрік (Хвиля 4, канон §4). Жорсткий `maxActiveStreak`
+  // ламався на першому порожньому дні — включно з СЬОГОДНІШНІМ, тож щоранку
+  // до першої відмітки герой показував «серія обірвалась». Гнучкий поважає
+  // датовані паузи, пропуски з причиною й grace-бюджет. Число рухається
+  // вгору — саме тому цей cutover іде разом із бампом METRICS_VERSION.
   const streakMax = useMemo(
-    () => maxActiveStreak(routine.habits, routine.completions, todayKey),
-    [routine.habits, routine.completions, todayKey],
+    () =>
+      flexibleMaxActiveStreak(
+        routine.habits,
+        routine.completions,
+        todayKey,
+        routine.skips ?? {},
+      ),
+    [routine.habits, routine.completions, routine.skips, todayKey],
   );
 
+  // AI-CONTEXT: `pausedFrom: todayKey` — заморозка минулого (ADR-0079 §2).
+  // `paused` — недатований булеан, тож без цього параметра пауза, поставлена
+  // сьогодні, ретроактивно вимиває звичку з усього діапазону: людина ставить
+  // паузу і бачить, як її минулий місяць переписується. Те саме трактування
+  // вже діє в heatmap (`freezePausedPast`), тут воно доводить rate до тієї ж
+  // семантики.
   const completionRateVal = useMemo(
     () =>
       completionRateForRange(
@@ -211,31 +238,86 @@ export function useRoutineDerivedData({
         routine.completions,
         range.startKey,
         range.endKey,
+        { pausedFrom: todayKey, skips: routine.skips ?? {} },
       ),
-    [routine.habits, routine.completions, range.startKey, range.endKey],
+    [
+      routine.habits,
+      routine.completions,
+      routine.skips,
+      range.startKey,
+      range.endKey,
+      todayKey,
+    ],
   );
 
+  // Лічильник дня мусить рахувати ТОЙ день, який на екрані.
+  //
+  // AI-CONTEXT: раніше тут стояв жорсткий `todayKey..todayKey`, тож на
+  // вкладці «Завтра» (і на будь-якому обраному дні) герой показував
+  // сьогоднішні цифри поруч із завтрашнім заголовком і завтрашнім
+  // списком — «0 з 3» під днем, у якому заплановано зовсім інше. Беремо
+  // однодневний діапазон, коли він однодневний; для тижня/місяця
+  // «прогрес дня» не визначений, тож лишається сьогодні.
+  //
+  // `pausedFrom: todayKey` не рухаємо: це заморозка минулого (ADR-0079
+  // §2), вона привʼязана до «сьогодні», а не до показуваного дня.
+  const progressDayKey =
+    range.startKey === range.endKey ? range.startKey : todayKey;
+  // Спільний селектор денного прогресу — `calcRoutineDayProgress`
+  // (routine-domain), не інлайн-виклик: та сама функція, яку має
+  // перейняти mobile-календар, щоб «N з M» не рахувалось двома різними
+  // способами на двох платформах (unification audit 2026-08-31, finding
+  // 1.19). `includeOnce` усередині: це лічильник чек-листа, не метрика —
+  // список дня разову подію показує, тож і «N з M» мусить (канон §7 п.2).
   const dayProgress = useMemo(
     () =>
-      completionRateForRange(
+      calcRoutineDayProgress(
         routine.habits,
         routine.completions,
+        progressDayKey,
         todayKey,
-        todayKey,
+        routine.skips ?? {},
       ),
-    [routine.habits, routine.completions, todayKey],
+    [
+      routine.habits,
+      routine.completions,
+      routine.skips,
+      progressDayKey,
+      todayKey,
+    ],
   );
 
   const canBulkMark = useMemo(() => {
     if (range.startKey !== range.endKey) return false;
     const dk = range.startKey;
+    // Майбутній день домен не позначає (PR-R3), тож без цього рядка кнопка
+    // «Відмітити всі» лишалась би на зрізі «Завтра» і не робила б НІЧОГО —
+    // рівно та мертва кнопка, яку цей же аудит ловив у Фініку (PR-F1).
+    // `todayKey` тут — device-local (`anchoredTodayKey`), той самий ключ,
+    // яким домен рахує межу.
+    if (dk > todayKey) return false;
     for (const h of routine.habits) {
       if (h.archived) continue;
-      if (!habitScheduledOnDate(h, dk)) continue;
-      if (!(routine.completions[h.id] || []).includes(dk)) return true;
+      const completionsForHabit = routine.completions[h.id] || [];
+      if (completionsForHabit.includes(dk)) continue;
+      // Гнучка звичка перестає бути запланованою, щойно тижневу ціль
+      // добрано — без `weekDoneCount` предикат завжди істинний
+      // (`schedule.ts`), тож кнопка «Відмітити всі» лишалась би активною
+      // навіть коли добирати вже нічого (аудит 2026-09, PR-R4).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(completionsForHabit, dk)
+        : undefined;
+      if (!habitScheduledOnDate(h, dk, { weekDoneCount })) continue;
+      return true;
     }
     return false;
-  }, [range.startKey, range.endKey, routine.habits, routine.completions]);
+  }, [
+    range.startKey,
+    range.endKey,
+    routine.habits,
+    routine.completions,
+    todayKey,
+  ]);
 
   const activeHabitsCount = routine.habits.filter((h) => !h.archived).length;
   const hasNoHabits = activeHabitsCount === 0;
@@ -255,6 +337,7 @@ export function useRoutineDerivedData({
     rangeLabel,
     headlineDate,
     todayKey,
+    progressDayKey,
     streakMax,
     completionRateVal,
     dayProgress,

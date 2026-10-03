@@ -3,8 +3,20 @@ import {
   STANDALONE_ROUTE_PATHS,
   renderStandaloneRoute,
 } from "./StandaloneRoutes";
+import type { StandaloneRouteArgs } from "./StandaloneRoutes";
 import { KNOWN_PATHS } from "./routes";
 import type { useAuth } from "../auth/AuthContext";
+import {
+  SIGN_IN_PATH,
+  SIGN_IN_ALIAS_PATHS,
+  RESET_PASSWORD_PATH,
+  PROFILE_PATH,
+  PRICING_PATH,
+  STATUS_PATH,
+  ASSISTANT_PATH,
+  CHAT_PATH,
+  WELCOME_PATH,
+} from "./appPaths";
 
 type AuthUser = ReturnType<typeof useAuth>["user"];
 
@@ -12,8 +24,10 @@ type AuthUser = ReturnType<typeof useAuth>["user"];
 // to the Hub. Per-test overrides via `mockShouldShowOnboarding.mockReturnValueOnce`
 // flip the gate for the fresh-visitor branch.
 const mockShouldShowOnboarding = vi.fn<() => boolean>(() => false);
+const mockMarkOnboardingDone = vi.fn();
 vi.mock("../onboarding/onboardingGate", () => ({
   shouldShowOnboarding: () => mockShouldShowOnboarding(),
+  markOnboardingDone: () => mockMarkOnboardingDone(),
 }));
 
 const noop = () => {};
@@ -53,22 +67,24 @@ describe("renderStandaloneRoute()", () => {
     expect(callRoute("/", authedUser)).toBeNull();
   });
 
-  it("renders the landing surface for a fresh non-auth visitor at `/`", () => {
-    // Fresh visitor: no session, no local-first data → marketing
-    // landing must render so SEO / paid-acquisition traffic lands on a
-    // CTA-bearing surface instead of the Hub shell.
+  it("returns `null` for `/` even for a fresh non-auth visitor (landing знято)", () => {
+    // Маркетинговий лендинг прибрано в циклі 3 дизайн-аудиту: на
+    // prod-збірці з живим API його бачили 0 із 5 свіжих візитерів.
+    // Тепер коренем безумовно володіє `HubPage`, а робота лендинга
+    // лишилась за `/welcome`.
     mockShouldShowOnboarding.mockReturnValueOnce(true);
-    expect(callRoute("/")).not.toBeNull();
+    expect(callRoute("/")).toBeNull();
   });
 
-  it("renders a splash for `/` while the persistent store is still booting (cold-boot race)", () => {
-    // Returning local-first user mid hard-reload: the SQLite warm-cache is
-    // empty, so `shouldShowOnboarding()` would misread them as a fresh visitor
-    // and ambush them with the marketing landing. Until storage settles we must
-    // render a loader and NOT consult the onboarding gate.
+  it("`/` не консультує onboarding-гейт і не залежить від auth (гонка знята)", () => {
+    // Регресійний гард на першопричину недосяжного лендинга: цей запис
+    // чекав на `authLoading`, а редирект на `/welcome` у `HubPage` — ні,
+    // тож локальний стор осідав раніше й редирект завжди вигравав.
+    // Тепер рішення про корінь ухвалює РІВНО ОДНА умова (`storageReady`
+    // у `HubPage`), а цей запис не читає ні auth, ні гейт.
     mockShouldShowOnboarding.mockClear();
-    const result = callRoute("/", null, /* storageReady */ false);
-    expect(result).not.toBeNull();
+    expect(callRoute("/", null, /* storageReady */ false)).toBeNull();
+    expect(callRoute("/", null, /* storageReady */ true)).toBeNull();
     expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
   });
 
@@ -122,6 +138,14 @@ describe("renderStandaloneRoute()", () => {
     expect(callRoute("/legal/terms")).not.toBeNull();
     expect(callRoute("/legal/cookies")).not.toBeNull();
     expect(callRoute("/legal/offer")).not.toBeNull();
+  });
+
+  it("renders /offline without auth (an offline visitor may have no session)", () => {
+    expect(callRoute("/offline")).not.toBeNull();
+  });
+
+  it("renders /500 without auth", () => {
+    expect(callRoute("/500")).not.toBeNull();
   });
 });
 
@@ -183,5 +207,161 @@ describe("STANDALONE_ROUTE_PATHS ↔ KNOWN_PATHS exhaustiveness (Web deep-dive �
     expect(KNOWN_PATHS.has("/nutrition")).toBe(false);
     expect(KNOWN_PATHS.has("/fizruk")).toBe(false);
     expect(KNOWN_PATHS.has("/routine")).toBe(false);
+  });
+});
+
+// ─── Per-route render behaviour ────────────────────────────────────────────
+
+function callRouteArgs(
+  overrides: Partial<StandaloneRouteArgs> & { pathname: string },
+): ReturnType<typeof renderStandaloneRoute> {
+  return renderStandaloneRoute({
+    user: null,
+    authLoading: false,
+    storageReady: true,
+    onLeaveAuth: noop,
+    onLeaveWelcome: noop,
+    onOpenAuth: noop,
+    onAssistantClose: noop,
+    ...overrides,
+  });
+}
+
+describe("renderStandaloneRoute() — /sign-in", () => {
+  it("renders AuthPage for an unauthenticated visitor", () => {
+    expect(callRouteArgs({ pathname: SIGN_IN_PATH })).not.toBeNull();
+  });
+
+  it("returns a redirect for an already-authenticated user and closes the onboarding gate", () => {
+    mockMarkOnboardingDone.mockClear();
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    // Non-null because it returns <RedirectTo> not the auth page
+    expect(
+      callRouteArgs({ pathname: SIGN_IN_PATH, user: authedUser }),
+    ).not.toBeNull();
+    // PR-H7 (design-audit 2026-09-13): the gate closes exactly here — once
+    // a session is confirmed — not the instant "У мене вже є акаунт" is
+    // tapped on `/welcome` (see `WelcomeScreen.tsx`'s `handleOpenAuth`).
+    expect(mockMarkOnboardingDone).toHaveBeenCalledTimes(1);
+  });
+
+  it("does NOT close the onboarding gate for an unauthenticated visitor", () => {
+    mockMarkOnboardingDone.mockClear();
+    callRouteArgs({ pathname: SIGN_IN_PATH });
+    expect(mockMarkOnboardingDone).not.toHaveBeenCalled();
+  });
+
+  it("returns non-null during auth loading (shows AuthPage, not redirect)", () => {
+    // When authLoading=true + user=null we still render the form, not a redirect
+    expect(
+      callRouteArgs({ pathname: SIGN_IN_PATH, authLoading: true }),
+    ).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — sign-in alias paths", () => {
+  it.each(SIGN_IN_ALIAS_PATHS)("redirects %s to SIGN_IN_PATH", (alias) => {
+    expect(callRouteArgs({ pathname: alias })).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — /reset-password", () => {
+  it("renders without auth", () => {
+    expect(callRouteArgs({ pathname: RESET_PASSWORD_PATH })).not.toBeNull();
+  });
+
+  it("renders even when authenticated (recovery flow for different account)", () => {
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    expect(
+      callRouteArgs({ pathname: RESET_PASSWORD_PATH, user: authedUser }),
+    ).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — /profile", () => {
+  it("renders a loader while auth is still loading", () => {
+    expect(
+      callRouteArgs({ pathname: PROFILE_PATH, authLoading: true }),
+    ).not.toBeNull();
+  });
+
+  it("redirects to sign-in when not authenticated", () => {
+    // No user + not loading → redirect
+    expect(callRouteArgs({ pathname: PROFILE_PATH })).not.toBeNull();
+  });
+
+  it("redirects to hub /?tab=profile when authenticated", () => {
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    expect(
+      callRouteArgs({ pathname: PROFILE_PATH, user: authedUser }),
+    ).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — public utility pages", () => {
+  it("renders the pricing page", () => {
+    expect(callRouteArgs({ pathname: PRICING_PATH })).not.toBeNull();
+  });
+
+  it("renders the status page", () => {
+    expect(callRouteArgs({ pathname: STATUS_PATH })).not.toBeNull();
+  });
+
+  it("renders the assistant catalogue page", () => {
+    expect(callRouteArgs({ pathname: ASSISTANT_PATH })).not.toBeNull();
+  });
+
+  it("renders the hub chat page", () => {
+    expect(callRouteArgs({ pathname: CHAT_PATH })).not.toBeNull();
+  });
+});
+
+describe("renderStandaloneRoute() — /welcome", () => {
+  it("renders WelcomeScreen for a genuine first-time visitor", () => {
+    mockShouldShowOnboarding.mockReturnValueOnce(true);
+    expect(
+      callRouteArgs({ pathname: WELCOME_PATH, storageReady: true }),
+    ).not.toBeNull();
+  });
+
+  it("returns a redirect for a returning user who deep-links /welcome", () => {
+    // storageReady=true, shouldShowOnboarding=false → returning user
+    expect(
+      callRouteArgs({ pathname: WELCOME_PATH, storageReady: true }),
+    ).not.toBeNull();
+  });
+
+  it("redirects an authenticated user away without consulting the onboarding gate", () => {
+    // Аудит 2026-08-04, знахідка 5: `shouldShowOnboarding()` бачить лише
+    // локальний стан, тож користувач, який щойно увійшов на чистому пристрої
+    // (дані на сервері, локально ще порожньо), потрапляв на анонімний splash
+    // із кнопкою «У мене вже є акаунт». Гейт для залогіненого не має навіть
+    // опитуватись — рішення ухвалює сесія.
+    mockShouldShowOnboarding.mockClear();
+    mockShouldShowOnboarding.mockReturnValue(true);
+    const authedUser = { id: "u1", email: "u@example.com" } as AuthUser;
+    expect(
+      callRouteArgs({
+        pathname: WELCOME_PATH,
+        user: authedUser,
+        storageReady: true,
+      }),
+    ).not.toBeNull();
+    expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  it("still renders the splash while the session is loading (no premature bounce)", () => {
+    // `authLoading` ще не осів — не женемо генуїнного візитера геть із
+    // splash-у на підставі порожнього `user`.
+    mockShouldShowOnboarding.mockClear();
+    mockShouldShowOnboarding.mockReturnValue(true);
+    expect(
+      callRouteArgs({
+        pathname: WELCOME_PATH,
+        authLoading: true,
+        storageReady: true,
+      }),
+    ).not.toBeNull();
+    expect(mockShouldShowOnboarding).toHaveBeenCalled();
   });
 });

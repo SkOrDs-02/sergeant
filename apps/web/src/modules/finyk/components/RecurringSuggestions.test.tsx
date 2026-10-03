@@ -48,7 +48,7 @@ describe("RecurringSuggestions", () => {
   it("renders a collapsed header with the candidate count", () => {
     render(<RecurringSuggestions transactions={recurringTxs} />);
     expect(screen.getByText("Можливі підписки")).toBeInTheDocument();
-    expect(screen.getByText(/Розкласти/)).toBeInTheDocument();
+    expect(screen.getByText(/Розгорнути/)).toBeInTheDocument();
   });
 
   it("expands the list and fires onAdd / onDismiss", () => {

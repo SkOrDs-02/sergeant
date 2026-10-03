@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 
@@ -9,26 +9,34 @@ import { hapticTap } from "@shared/lib/adapters/haptic";
  * Consolidates the drift between Fizruk Workouts (solid module-fill tabs)
  * and Routine calendar time-mode chips (soft tinted chips).
  *
- * Not intended to replace `<SubTabs>` (full-width bar-style) — that
- * pattern is a separate variant kept in its own component for now.
+ * `layout="bar"` is full-width but still NOT `<SubTabs>`: that one is
+ * page-level navigation between views, this stays a control inside one
+ * screen that filters or switches a mode.
  *
- * Two-axis API (see `docs/design/COMPONENT_API.md`):
+ * Three-axis API (see `docs/design/COMPONENT_API.md`):
  *   - `variant` — accent colour (`brand` for the default chrome; the four
  *                 module tokens scope the active state to a module).
  *   - `style`   — visual treatment of the active chip.
  *                 `solid` — filled accent background (Fizruk Workouts).
  *                 `soft`  (default) — tinted surface + accent border
  *                                       + accent text (Routine chips).
+ *   - `layout`  — geometry of the row.
+ *                 `pill` (default) — chips sized by their label, wrapping.
+ *                 `bar`  — one full-width track of equal segments.
+ *
+ * `bar` exists for a short, fixed set of mutually exclusive options that
+ * a person switches often: equal segments stop the row from reflowing as
+ * labels change length, and the track reads as ONE control instead of
+ * separate buttons that happen to sit together. With a long or open-ended
+ * set the segments squeeze past legibility — those stay `pill`, and a
+ * multi-select filter is not this component at all.
  */
 
 export type SegmentedVariant =
-  | "brand"
-  | "fizruk"
-  | "routine"
-  | "nutrition"
-  | "finyk";
+  "brand" | "fizruk" | "routine" | "nutrition" | "finyk";
 export type SegmentedStyle = "solid" | "soft";
 export type SegmentedSize = "sm" | "md";
+export type SegmentedLayout = "pill" | "bar";
 
 export interface SegmentedItem<V extends string = string> {
   value: V;
@@ -49,21 +57,24 @@ export interface SegmentedProps<V extends string = string> {
   size?: SegmentedSize;
   /** Accent colour token. Defaults to `brand`. */
   variant?: SegmentedVariant;
+  /** Row geometry. Defaults to `pill` (label-sized, wrapping chips). */
+  layout?: SegmentedLayout;
   /** Accessible label for the underlying role="tablist". */
   ariaLabel?: string;
   className?: string;
 }
 
-// Solid mode pairs `bg-{c}-strong text-white` (5.0–7.0:1) so the active
-// segment label stays readable at 12 px. Border keeps the brand `*-500`
-// for visual continuity with siblings; borders aren't text. See
-// docs/design/archive/brand-palette-wcag-aa-proposal.md § 2.2.
+// Solid mode active chip is inverted-ink («Чорнило» v3.1 § 6): dark —
+// `bg-ink` (#e7f0ea) + `text-bg` (#14100e, fg-as-bg); light — the mirror
+// inversion (`bg-ink` #17201b + `text-bg` #ecebe7). Both tokens are
+// already theme-aware CSS vars, so one pair covers both themes. Border
+// keeps the module accent for visual continuity with siblings.
 const VARIANT_SOLID: Record<SegmentedVariant, string> = {
-  brand: "bg-brand-strong text-white border-brand",
-  fizruk: "bg-fizruk-strong text-white border-fizruk",
-  routine: "bg-routine-strong text-white border-routine",
-  nutrition: "bg-nutrition-strong text-white border-nutrition",
-  finyk: "bg-finyk-strong text-white border-finyk",
+  brand: "bg-ink text-bg border-brand",
+  fizruk: "bg-ink text-bg border-fizruk",
+  routine: "bg-ink text-bg border-routine",
+  nutrition: "bg-ink text-bg border-nutrition",
+  finyk: "bg-ink text-bg border-finyk",
 };
 
 // Soft mode active label uses the theme-aware `text-{c}-soft-fg` token
@@ -72,23 +83,42 @@ const VARIANT_SOLID: Record<SegmentedVariant, string> = {
 // the fixed `-strong` hex went sub-AA once HC bumped the `-soft` surface a
 // step darker. Module variants keep their dark surface/border tint.
 const VARIANT_SOFT: Record<SegmentedVariant, string> = {
-  brand: "border-brand-soft-border bg-brand-soft text-brand-soft-fg shadow-sm",
+  // `border-control` (а не тихий `brand-soft-border` 1.1-1.5:1): вибраний стан
+  // мусить відрізнятись від сусіда ≥3:1 (WCAG 1.4.11, аудит 2026-10-01, A4).
+  brand: "border-control bg-brand-soft text-brand-soft-fg shadow-sm",
+  // Модульні варіанти (A4, рішення власника 2026-10-01): тонований фон модуля
+  // + контур `{m}-edge` (світла -800, темна -400, ≥3:1 проти сусіда). Тихі
+  // `{m}-ring` / `{m}-border-dark/40` давали 1.35 (світла) / 2.49 (темна).
   fizruk:
-    "border-fizruk-ring bg-fizruk-surface text-fizruk-soft-fg shadow-sm dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15",
+    "border-fizruk-edge bg-fizruk-surface text-fizruk-soft-fg shadow-sm dark:bg-fizruk-surface-dark/15",
   routine:
-    "border-routine-ring bg-routine-surface text-routine-soft-fg shadow-sm dark:border-routine-border-dark/40 dark:bg-routine-surface-dark/15",
+    "border-routine-edge bg-routine-surface text-routine-soft-fg shadow-sm dark:bg-routine-surface-dark/15",
   nutrition:
-    "border-nutrition-ring bg-nutrition-surface text-nutrition-soft-fg shadow-sm dark:border-nutrition-border-dark/40 dark:bg-nutrition-surface-dark/15",
+    "border-nutrition-edge bg-nutrition-surface text-nutrition-soft-fg shadow-sm dark:bg-nutrition-surface-dark/15",
   finyk:
-    "border-finyk-ring bg-finyk-surface text-finyk-soft-fg shadow-sm dark:border-finyk-border-dark/40 dark:bg-finyk-surface-dark/15",
+    "border-finyk-edge bg-finyk-surface text-finyk-soft-fg shadow-sm dark:bg-finyk-surface-dark/15",
 };
 
 const INACTIVE =
   "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors";
 
+// `bar` drops `flex-wrap` on purpose: a wrapped segment breaks the single
+// track the layout promises. Обидва layout-и тримають кути форм-контролів
+// (`rounded-xl` / `rounded-2xl`), а не капсулу: овальні чіпи поруч із
+// прямокутними полями й кнопками читались як чужий віджет (звіт 2026-09-03).
+const LAYOUT_ROW: Record<SegmentedLayout, string> = {
+  pill: "flex flex-wrap items-center gap-3",
+  bar: "flex w-full items-stretch gap-1.5",
+};
+
+const LAYOUT_ITEM: Record<SegmentedLayout, string> = {
+  pill: "rounded-xl",
+  bar: "flex-1 min-w-0 rounded-2xl",
+};
+
 const SIZE: Record<SegmentedSize, string> = {
-  sm: "px-3 py-2 text-xs min-h-[36px]",
-  md: "px-3 py-2.5 text-xs min-h-[44px]",
+  sm: "px-3 py-2 text-style-label min-h-[36px]",
+  md: "px-3 py-2.5 text-style-label min-h-[44px]",
 };
 
 export function Segmented<V extends string = string>({
@@ -97,18 +127,60 @@ export function Segmented<V extends string = string>({
   onChange,
   style = "soft",
   size = "md",
+  layout = "pill",
   variant = "brand",
   ariaLabel,
   className,
 }: SegmentedProps<V>) {
   const activeClass =
     style === "solid" ? VARIANT_SOLID[variant] : VARIANT_SOFT[variant];
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  // Roving tabindex — one tab stop per tablist, ArrowLeft/ArrowRight/Home/End
+  // move focus AND selection, mirroring `ModuleBottomNav`'s tablist mode.
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const tabs = Array.from(
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ??
+        [],
+    );
+    if (tabs.length === 0) return;
+
+    event.preventDefault();
+    const focusedIndex = tabs.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    const activeIndex = Math.max(
+      0,
+      items.findIndex((item) => item.value === value),
+    );
+    const fromIndex = focusedIndex >= 0 ? focusedIndex : activeIndex;
+    const targetIndex =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? tabs.length - 1
+          : event.key === "ArrowRight"
+            ? (fromIndex + 1) % tabs.length
+            : (fromIndex - 1 + tabs.length) % tabs.length;
+    const target = tabs[targetIndex];
+    const item = items[targetIndex];
+    if (!target || !item) return;
+    target.focus();
+    if (item.value !== value) {
+      hapticTap();
+      onChange(item.value);
+    }
+  };
 
   return (
     <div
+      ref={tablistRef}
       role="tablist"
       aria-label={ariaLabel}
-      className={cn("flex flex-wrap items-center gap-1.5", className)}
+      className={cn(LAYOUT_ROW[layout], className)}
     >
       {items.map((item) => {
         const isActive = item.value === value;
@@ -120,6 +192,8 @@ export function Segmented<V extends string = string>({
             aria-selected={isActive}
             aria-label={item.ariaLabel}
             title={item.title}
+            tabIndex={isActive ? 0 : -1}
+            onKeyDown={handleKeyDown}
             onClick={() => {
               if (item.value !== value) {
                 hapticTap();
@@ -127,7 +201,8 @@ export function Segmented<V extends string = string>({
               }
             }}
             className={cn(
-              "rounded-full border font-semibold transition-[background-color,border-color,color,box-shadow,opacity]",
+              "border font-semibold transition-[background-color,border-color,color,box-shadow,opacity]",
+              LAYOUT_ITEM[layout],
               SIZE[size],
               isActive ? activeClass : INACTIVE,
             )}

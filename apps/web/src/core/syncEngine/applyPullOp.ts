@@ -1,0 +1,496 @@
+import type { SyncV2PullOp } from "@sergeant/api-client";
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
+
+import { applyNutritionGoalPeriodsPull } from "./applyPullGoalPeriods.js";
+
+export type ApplyPullOutcome = "applied" | "skipped" | "rejected";
+
+/** Mirrors `SYNC_V2_SUPPORTED_TABLES` on the server (`syncV2.ts`). */
+export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
+  "routine_entries",
+  "routine_streaks",
+  "routine_habits",
+  "routine_tags",
+  "routine_categories",
+  "routine_prefs",
+  "routine_habit_order",
+  "routine_completion_notes",
+  "routine_habit_skips",
+  // W1-ROUTINE-APPEND стадія 1 — append-only журнал відміток.
+  "routine_completion_events",
+  "fizruk_workouts",
+  "fizruk_workout_items",
+  "fizruk_workout_sets",
+  "fizruk_custom_exercises",
+  // Свої заняття для короткого запису (міграція 132). Без цього рядка
+  // заняття, заведене на телефоні, мовчки не доїхало б у веб.
+  "fizruk_custom_activities",
+  "fizruk_measurements",
+  "fizruk_daily_log",
+  "fizruk_monthly_plan",
+  "fizruk_plan_templates",
+  "fizruk_programs",
+  "fizruk_wellbeing",
+  "fizruk_workout_templates",
+  // Модель «не можна» (ADR-0083). Без цього рядка позначки травм із іншого
+  // пристрою мовчки відкидаються на pull — тобто травма, позначена на
+  // телефоні, не блокує вправи у вебі.
+  "fizruk_injuries",
+  "nutrition_meals",
+  "nutrition_pantries",
+  "nutrition_pantry_items",
+  // W1-PANTRY-APPEND стадія 1 — append-only журнал руху продуктів комори.
+  // Без цього рядка pull-опи мовчки відкидаються.
+  "nutrition_pantry_events",
+  // W1-KBJU-APPEND стадія 1 — append-only журнал цілей КБЖВ.
+  "nutrition_goal_periods",
+  "nutrition_prefs",
+  "nutrition_recipes",
+  "nutrition_water_log",
+  "nutrition_shopping_list",
+  "finyk_hidden_accounts",
+  "finyk_hidden_transactions",
+  "finyk_budgets",
+  "finyk_subscriptions",
+  "finyk_assets",
+  "finyk_debts",
+  "finyk_receivables",
+  "finyk_custom_categories",
+  "finyk_manual_expenses",
+  "finyk_tx_filters",
+  "finyk_tx_categories",
+  "finyk_tx_splits",
+  "finyk_mono_debt_links",
+  "finyk_networth_history",
+  "finyk_prefs",
+]);
+
+/**
+ * Той самий allowlist, але як ЗНАЧЕННЯ-літерали, а не як членство.
+ *
+ * Ім'я таблиці приїжджає з мережі (`op.table`) і їде в SQL через
+ * інтерполяцію — тут це неминуче, бо ідентифікатор не можна підставити
+ * плейсхолдером. Перевірка `CLIENT_PULL_SUPPORTED_TABLES.has(...)` захищає
+ * рантайм, але НЕ міняє походження рядка: у SQL усе одно летить те, що
+ * прийшло ззовні. Лукап у цій мапі повертає рівно літерал із неї, тож далі
+ * по коду — константа з нашого коду, а не значення з відповіді сервера.
+ *
+ * Той самий прийом на сервері: `OP_LOG_TABLE_REGISTRY` у `syncV2.ts`
+ * резолвиться в літерал, а не в прокинутий рядок.
+ */
+const SAFE_TABLE_SQL: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(
+    [...CLIENT_PULL_SUPPORTED_TABLES].map((name) => [name, name]),
+  ),
+);
+
+const columnCache = new Map<string, string[]>();
+const pkCache = new Map<string, string[]>();
+
+function clientTsMs(op: SyncV2PullOp): number {
+  return new Date(op.client_ts).getTime();
+}
+
+function isStaleLocal(updatedAt: string | null, incomingMs: number): boolean {
+  if (updatedAt === null) return false;
+  const localMs = new Date(updatedAt).getTime();
+  if (!Number.isFinite(localMs)) return false;
+  return localMs >= incomingMs;
+}
+
+async function getTableColumns(
+  client: SqliteMigrationClient,
+  table: string,
+): Promise<string[]> {
+  const cached = columnCache.get(table);
+  if (cached) return cached;
+  const info = await client.all<{ name: string }>(
+    `SELECT name FROM pragma_table_info(?)`,
+    [table],
+  );
+  const cols = info.map((row) => row.name);
+  columnCache.set(table, cols);
+  return cols;
+}
+
+async function getPrimaryKeyColumns(
+  client: SqliteMigrationClient,
+  table: string,
+): Promise<string[]> {
+  const cached = pkCache.get(table);
+  if (cached) return cached;
+  const info = await client.all<{ name: string; pk: number }>(
+    `SELECT name, pk FROM pragma_table_info(?)`,
+    [table],
+  );
+  const pk = info
+    .filter((row) => row.pk > 0)
+    .sort((a, b) => a.pk - b.pk)
+    .map((row) => row.name);
+  pkCache.set(table, pk);
+  return pk;
+}
+
+function coerceSqliteValue(value: unknown): string | number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+async function applyRoutineEntries(
+  client: SqliteMigrationClient,
+  op: SyncV2PullOp,
+  userId: string,
+): Promise<ApplyPullOutcome> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id || row["user_id"] !== userId) return "rejected";
+
+  const incomingMs = clientTsMs(op);
+  const existing = await client.all<{
+    updated_at: string;
+    deleted_at: string | null;
+  }>(
+    `SELECT updated_at, deleted_at FROM routine_entries WHERE id = ? AND user_id = ?`,
+    [id, userId],
+  );
+  const local = existing[0];
+  // AI-CONTEXT: локальний tombstone НЕ блокує non-delete op (audit E-1).
+  // PK `routine_entries` детермінований (`habitId:dateKey`), тож повторний
+  // чекін того самого дня приходить у той самий рядок і мусить його
+  // воскресити. Захист від stale-edit-у — `isStaleLocal` вище.
+  // Generic-гілка нижче обслуговує інші таблиці — там guard лишається.
+  if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
+
+  if (op.op === "delete") {
+    if (!local) return "skipped";
+    await client.run(
+      `UPDATE routine_entries
+          SET deleted_at = ?, updated_at = ?
+        WHERE id = ? AND user_id = ?`,
+      [op.client_ts, op.client_ts, id, userId],
+    );
+    return "applied";
+  }
+
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const completedAt =
+    typeof row["completed_at"] === "string" ? row["completed_at"] : null;
+  const createdAt =
+    typeof row["created_at"] === "string" ? row["created_at"] : op.client_ts;
+  const deletedAt =
+    typeof row["deleted_at"] === "string" ? row["deleted_at"] : null;
+
+  await client.run(
+    `INSERT INTO routine_entries
+       (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       name = excluded.name,
+       completed_at = excluded.completed_at,
+       updated_at = excluded.updated_at,
+       deleted_at = excluded.deleted_at`,
+    [id, userId, name, completedAt, createdAt, op.client_ts, deletedAt],
+  );
+  return "applied";
+}
+
+async function applyRoutineStreaks(
+  client: SqliteMigrationClient,
+  op: SyncV2PullOp,
+  userId: string,
+): Promise<ApplyPullOutcome> {
+  const row = op.row;
+  if (row["user_id"] !== userId) return "rejected";
+
+  if (op.op === "increment") {
+    const delta = row["delta"];
+    if (typeof delta !== "number" || !Number.isInteger(delta))
+      return "rejected";
+    const seed = Math.max(0, delta);
+    await client.run(
+      `INSERT INTO routine_streaks
+         (user_id, current_streak, longest_streak, last_completed_at)
+       VALUES (?, ?, ?, NULL)
+       ON CONFLICT(user_id) DO UPDATE SET
+         current_streak = MAX(0, current_streak + ?),
+         longest_streak = MAX(
+           longest_streak,
+           MAX(0, current_streak + ?)
+         )`,
+      [userId, seed, seed, delta, delta],
+    );
+    return "applied";
+  }
+
+  if (op.op === "delete") {
+    await client.run(`DELETE FROM routine_streaks WHERE user_id = ?`, [userId]);
+    return "applied";
+  }
+
+  const current =
+    typeof row["current_streak"] === "number" ? row["current_streak"] : 0;
+  const longest =
+    typeof row["longest_streak"] === "number" ? row["longest_streak"] : 0;
+  const lastCompleted =
+    typeof row["last_completed_at"] === "string"
+      ? row["last_completed_at"]
+      : null;
+
+  await client.run(
+    `INSERT INTO routine_streaks
+       (user_id, current_streak, longest_streak, last_completed_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       current_streak = excluded.current_streak,
+       longest_streak = excluded.longest_streak,
+       last_completed_at = excluded.last_completed_at`,
+    [userId, current, longest, lastCompleted],
+  );
+  return "applied";
+}
+
+async function applyGenericRegistryRow(
+  client: SqliteMigrationClient,
+  table: string,
+  op: SyncV2PullOp,
+  userId: string,
+): Promise<ApplyPullOutcome> {
+  const row = op.row;
+  if (row["user_id"] !== userId) return "rejected";
+
+  // Далі в цій функції — тільки `safeTable`. `table` лишається для
+  // повідомлень і порівнянь, у SQL він не потрапляє (див. SAFE_TABLE_SQL).
+  const safeTable = SAFE_TABLE_SQL[table];
+  if (safeTable === undefined) return "rejected";
+
+  const columns = await getTableColumns(client, safeTable);
+  const pkColumns = await getPrimaryKeyColumns(client, safeTable);
+  if (pkColumns.length === 0) return "rejected";
+
+  const pkValues = pkColumns.map((col) => {
+    const value = row[col];
+    return typeof value === "string" || typeof value === "number"
+      ? value
+      : null;
+  });
+  if (pkValues.some((value) => value === null)) return "rejected";
+
+  const incomingMs = clientTsMs(op);
+  const whereClause = pkColumns.map((col) => `${col} = ?`).join(" AND ");
+  const hasUpdatedAt = columns.includes("updated_at");
+  const hasDeletedAt = columns.includes("deleted_at");
+  // Most module tables key on `id` alone, so the LWW lookup below can land
+  // on a row belonging to a DIFFERENT partition. That is not theoretical:
+  // on the kvvfs fallback (every Chrome main-thread session — the
+  // OPFS-SAH pool needs `createSyncAccessHandle`, which is worker-only)
+  // all partitions share one physical store. The anonymous→profile
+  // handoff re-keys a row to the same `id` under a new `user_id`, so an
+  // unscoped lookup found the source row, read an equal `updated_at`,
+  // and returned "skipped" — then the handoff's cleanup deleted that same
+  // row and the data existed only on the server (measured 2026-08-06).
+  const scopeByUser = columns.includes("user_id");
+  const lookupWhere = scopeByUser
+    ? `${whereClause} AND user_id = ?`
+    : whereClause;
+  const lookupValues = scopeByUser ? [...pkValues, userId] : pkValues;
+
+  if (hasUpdatedAt) {
+    // `deleted_at` тут більше не читається (див. AI-DANGER нижче), тож і не
+    // селектиться: у вибірці лишається рівно те, на чому стоїть рішення.
+    const existing = await client.all<{ updated_at: string }>(
+      `SELECT updated_at FROM ${safeTable} WHERE ${lookupWhere}`,
+      lookupValues,
+    );
+    const local = existing[0];
+    // AI-DANGER: тут НЕМАЄ і не має бути перевірки
+    // `deleted_at !== null && op.op !== "delete" → skipped`. Вона тут була і
+    // її знято свідомо — не «загублено» при рефакторингу. Не повертай.
+    //
+    // Це дзеркало серверного `guardUuidPkApply` (`applySync-helpers.ts`), де
+    // те саме правило знято після регресії `SERGEANT-WEB-T`. Клієнт тримав
+    // його ще довше, і розʼїзд двох моделей давав рівно ту тишу, яку правило
+    // мало б запобігати: пристрій A видаляє бюджет (T1), людина тисне
+    // «Скасувати» в тості → рядок повертається з `updated_at = T2 > T1`,
+    // сервер приймає його за чистим LWW, пристрій B тягне оп — і скіпає.
+    // Курсор при цьому їде далі, тож другої спроби не буде ніколи, а
+    // `deleted_at` на B уже не скинеться, тож скіпаються і ВСІ наступні
+    // правки цього рядка. Бюджет живий усюди, крім B. Мовчки.
+    //
+    // Захист від stale-правки дає `isStaleLocal` вище — той самий аргумент,
+    // що й на сервері: запис, старіший за видалення, відсіюється ним, а
+    // новіший за LWW має вигравати. Воскресіння окремої гілки не потребує,
+    // але upsert нижче МУСИТЬ явно скидати `deleted_at`: writer-и кладуть в
+    // outbox insert-рядок БЕЗ ключа `deleted_at`, сервер віддає його як є, а
+    // upsert, зібраний лише з присутніх колонок, лишав локальний tombstone
+    // (data-02: «Повернути» губило запис на інших і нових пристроях). Тому
+    // для не-delete опа `deleted_at = row.deleted_at ?? NULL` пишеться завжди.
+    if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
+  }
+
+  if (op.op === "delete") {
+    if (!hasDeletedAt) return "rejected";
+    await client.run(
+      `UPDATE ${safeTable}
+          SET deleted_at = ?, updated_at = ?
+        WHERE ${lookupWhere}`,
+      [op.client_ts, op.client_ts, ...lookupValues],
+    );
+    return "applied";
+  }
+
+  const payload: Record<string, unknown> = { ...row, updated_at: op.client_ts };
+  // Не-delete оп = «рядок живий», якщо рядок сам не несе tombstone. Без
+  // явного `deleted_at` у payload колонка випадала з `ON CONFLICT DO UPDATE`
+  // і локальний tombstone не скидався (див. AI-DANGER вище).
+  if (hasDeletedAt) payload["deleted_at"] = row["deleted_at"] ?? null;
+  const insertCols = columns.filter((col) => payload[col] !== undefined);
+  if (!insertCols.includes("updated_at") && hasUpdatedAt) {
+    insertCols.push("updated_at");
+    payload["updated_at"] = op.client_ts;
+  }
+
+  const placeholders = insertCols.map(() => "?").join(", ");
+  const values = insertCols.map((col) => coerceSqliteValue(payload[col]));
+  const nonPkAssignments = insertCols
+    .filter((col) => !pkColumns.includes(col))
+    .map((col) => `${col} = excluded.${col}`)
+    .join(", ");
+
+  if (nonPkAssignments.length === 0) return "skipped";
+
+  await client.run(
+    `INSERT INTO ${safeTable} (${insertCols.join(", ")})
+     VALUES (${placeholders})
+     ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}`,
+    values,
+  );
+  return "applied";
+}
+
+/**
+ * Append-only pull-шлях журналу відміток (W1-ROUTINE-APPEND, стадія 1).
+ *
+ * INSERT-ONLY і нічого більше. Свідомо НЕМАЄ:
+ *
+ *   - update-гілки — подія незмінна;
+ *   - delete-гілки — у таблиці нема `deleted_at`, а прибирати рядок
+ *     журналу означало б переписувати історію;
+ *   - LWW-guard-у — нема `updated_at`, і порівнювати нема з чим.
+ *
+ * Дублікат (той самий `id`, що вже застосований) — це `skipped`, а не
+ * помилка: `id` детермінований, тож повторна доставка нормальна.
+ * `op='update'|'delete'` від сервера сюди дійти не може (серверний
+ * apply-шлях відхиляє їх із `append_only_violation`), але якщо дійде —
+ * `rejected`, щоб розбіжність було видно, а не проковтнуто.
+ */
+async function applyRoutineCompletionEvents(
+  client: SqliteMigrationClient,
+  op: SyncV2PullOp,
+  userId: string,
+): Promise<ApplyPullOutcome> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id || row["user_id"] !== userId) return "rejected";
+  if (op.op !== "insert") return "rejected";
+
+  const habitId = typeof row["habit_id"] === "string" ? row["habit_id"] : null;
+  const dateKey = typeof row["date_key"] === "string" ? row["date_key"] : null;
+  if (!habitId || !dateKey) return "rejected";
+
+  const state = row["state"] === "undone" ? "undone" : "done";
+  const occurredAt =
+    typeof row["occurred_at"] === "string" ? row["occurred_at"] : op.client_ts;
+  const tzOffsetMin =
+    typeof row["tz_offset_min"] === "number" &&
+    Number.isInteger(row["tz_offset_min"])
+      ? row["tz_offset_min"]
+      : null;
+  const dayAnchor =
+    typeof row["day_anchor"] === "string" ? row["day_anchor"] : "unknown";
+  const source = typeof row["source"] === "string" ? row["source"] : "ui";
+  const deviceId =
+    typeof row["device_id"] === "string" ? row["device_id"] : null;
+  const createdAt =
+    typeof row["created_at"] === "string" ? row["created_at"] : op.client_ts;
+
+  const existing = await client.all<{ id: string }>(
+    `SELECT id FROM routine_completion_events WHERE id = ? AND user_id = ?`,
+    [id, userId],
+  );
+  if (existing.length > 0) return "skipped";
+
+  await client.run(
+    `INSERT OR IGNORE INTO routine_completion_events
+       (id, user_id, habit_id, date_key, state, occurred_at,
+        tz_offset_min, day_anchor, source, device_id, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      userId,
+      habitId,
+      dateKey,
+      state,
+      occurredAt,
+      tzOffsetMin,
+      dayAnchor,
+      source,
+      deviceId,
+      createdAt,
+    ],
+  );
+  return "applied";
+}
+
+const SPECIAL_HANDLERS: Record<
+  string,
+  (
+    client: SqliteMigrationClient,
+    op: SyncV2PullOp,
+    userId: string,
+  ) => Promise<ApplyPullOutcome>
+> = {
+  routine_entries: applyRoutineEntries,
+  routine_streaks: applyRoutineStreaks,
+  routine_completion_events: applyRoutineCompletionEvents,
+  // W1-KBJU-APPEND стадія 1. Генеричний шлях робить `ON CONFLICT DO UPDATE`
+  // і переписав би тіло вже записаної сходинки — для журналу намірів це
+  // стирання історії. Див. `applyPullGoalPeriods.ts`.
+  nutrition_goal_periods: applyNutritionGoalPeriodsPull,
+};
+
+/**
+ * Apply one server-side op into the local SQLite module tables.
+ * LWW-guard uses strict `>` semantics (ADR-0004 / R1).
+ */
+export async function applyPullOp(
+  client: SqliteMigrationClient,
+  op: SyncV2PullOp,
+  userId: string,
+  localDeviceId: string,
+): Promise<ApplyPullOutcome> {
+  if (op.origin_device_id !== null && op.origin_device_id === localDeviceId) {
+    return "skipped";
+  }
+
+  if (!CLIENT_PULL_SUPPORTED_TABLES.has(op.table)) {
+    return "rejected";
+  }
+
+  const special = SPECIAL_HANDLERS[op.table];
+  if (special) {
+    return special(client, op, userId);
+  }
+  return applyGenericRegistryRow(client, op.table, op, userId);
+}
+
+/** Test-only: clear pragma caches between cases. */
+export function __resetApplyPullOpCachesForTests(): void {
+  columnCache.clear();
+  pkCache.clear();
+}

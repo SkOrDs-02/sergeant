@@ -12,10 +12,9 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
-import {
-  computeFloatingPosition,
-  type FloatingPlacementInput,
-} from "./floatingPosition";
+import { useOutsideClick } from "../../hooks/useOutsideClick";
+import { type FloatingPlacementInput } from "./floatingPosition";
+import { useFloatingPanelPosition } from "./useFloatingPanelPosition";
 
 /**
  * Sergeant Design System — Tooltip
@@ -23,11 +22,19 @@ import {
  * Accessible, controlled-ish tooltip that replaces the drift-prone
  * `title="..."` native-HTML tooltip pattern.
  *
- * - Opens on `mouseenter` / `focusin` (focus-visible) of the trigger
- *   after a short `openDelay` (defaults to 150 ms — long enough to
- *   avoid flicker when moving through a toolbar, short enough to
- *   feel responsive).
- * - Closes on `mouseleave` / `focusout` / `Escape` / outside-click.
+ * - Opens on pointer hover of the trigger (**mouse only** — a touch tap
+ *   is not a hover) or on keyboard focus (`:focus-visible` only), after a
+ *   short `openDelay` (defaults to 150 ms — long enough to avoid flicker
+ *   when moving through a toolbar, short enough to feel responsive).
+ * - Closes on `pointerleave` / `focusout` / `Escape` / outside-click, and
+ *   immediately on `pointerdown` on the trigger (a press is an action, not
+ *   a request for help).
+ * - Why not `mouseenter` / plain `focusin`: on touch, iOS Safari emits the
+ *   compat `mouseenter` on tap and never `mouseleave`, so the pill stuck
+ *   (and, portaled above the modal layer, hovered over the chat sheet);
+ *   and closing a sheet restores focus to the trigger, which re-opened it.
+ *   Programmatic focus after a pointer press is not `:focus-visible`, so
+ *   the focus-visible gate covers that too.
  * - Aria-wired: the floating panel owns `role="tooltip"` + a stable
  *   `id`; the trigger receives `aria-describedby` pointing to that id.
  * - `motion-safe:` on the fade-in respects
@@ -39,8 +46,8 @@ import {
  * API:
  * - `content` — the tooltip body (string or JSX).
  * - `children` — a **single** React element that becomes the trigger.
- *   Must forward `onMouseEnter` / `onMouseLeave` / `onFocus` / `onBlur`
- *   / `aria-describedby` handlers through to its rendered DOM node.
+ *   Must render a DOM node that receives pointer / focus events and
+ *   forwards `aria-describedby`.
  *   Native `<button>`, `<a>`, and Sergeant primitives (Button,
  *   IconButton, Badge) all satisfy this out of the box.
  * - `placement` — 12-direction grid: `top|right|bottom|left` +
@@ -87,6 +94,21 @@ interface TriggerExtraProps {
   onKeyDown?: (e: ReactKeyboardEvent) => void;
 }
 
+/**
+ * Чи показує браузер фокус-кільце для цього елемента (клавіатурний фокус).
+ * Тап/клік мишею по кнопці і програмне повернення фокуса після нього — не
+ * `:focus-visible`. Рушії без підтримки селектора кидають SyntaxError —
+ * тоді вважаємо фокус клавіатурним, щоб підказка не зникла для клавіатури.
+ */
+function isKeyboardFocus(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return true;
+  try {
+    return target.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 export function Tooltip({
   content,
   children,
@@ -99,12 +121,18 @@ export function Tooltip({
 }: TooltipProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number } | null>(
-    null,
-  );
   const wrapperRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLSpanElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openRef = useRef(open);
+
+  const coords = useFloatingPanelPosition({
+    open,
+    triggerRef: wrapperRef,
+    panelRef,
+    placement,
+    contentKey: content,
+  });
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -114,6 +142,10 @@ export function Tooltip({
   }, []);
 
   useEffect(() => clearTimer, [clearTimer]);
+
+  useEffect(() => {
+    if (!open) clearTimer();
+  }, [open, clearTimer]);
 
   const scheduleOpen = useCallback(() => {
     if (disabled) return;
@@ -126,104 +158,72 @@ export function Tooltip({
     setOpen(false);
   }, [clearTimer]);
 
-  // Measure trigger + panel and place the panel after layout. We use
-  // a layout effect so the user never sees a one-frame flash at (0,0)
-  // before reposition.
-  useLayoutEffect(() => {
-    if (!open) {
-      setCoords(null);
-      return;
-    }
-    const trigger = wrapperRef.current;
-    const panel = panelRef.current;
-    if (!trigger || !panel) return;
-    const tRect = trigger.getBoundingClientRect();
-    const pRect = panel.getBoundingClientRect();
-    const pos = computeFloatingPosition(
-      {
-        top: tRect.top,
-        left: tRect.left,
-        width: tRect.width,
-        height: tRect.height,
-      },
-      { width: pRect.width, height: pRect.height },
-      placement,
-    );
-    setCoords({ top: pos.top, left: pos.left });
-  }, [open, placement, content]);
-
-  // Reposition on scroll / resize so the tooltip tracks its trigger
-  // when the page reflows underneath an open tooltip.
   useEffect(() => {
-    if (!open) return;
-    const reposition = () => {
-      const trigger = wrapperRef.current;
-      const panel = panelRef.current;
-      if (!trigger || !panel) return;
-      const tRect = trigger.getBoundingClientRect();
-      const pRect = panel.getBoundingClientRect();
-      const pos = computeFloatingPosition(
-        {
-          top: tRect.top,
-          left: tRect.left,
-          width: tRect.width,
-          height: tRect.height,
-        },
-        { width: pRect.width, height: pRect.height },
-        placement,
-      );
-      setCoords({ top: pos.top, left: pos.left });
+    openRef.current = open;
+  }, [open]);
+
+  // Wire open/close handlers on the cloned trigger DOM node. Handlers
+  // cannot live on `cloneElement` props — react-hooks/refs flags any
+  // callback passed there that closes over timer refs (see DropdownMenu
+  // for the same data-attribute + layout-effect pattern).
+  useLayoutEffect(() => {
+    const triggerEl = wrapperRef.current
+      ?.firstElementChild as HTMLElement | null;
+    if (!triggerEl) return;
+
+    // Hover лише для миші: тап дає pointerenter з pointerType "touch"/"pen",
+    // а iOS ще й сумісний mouseenter без mouseleave — підказка застрягала.
+    const onPointerEnter = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      scheduleOpen();
     };
-    window.addEventListener("scroll", reposition, true);
-    window.addEventListener("resize", reposition);
+    const onPointerLeave = () => {
+      closeNow();
+    };
+    // Натискання закриває підказку одразу й скасовує відкладене відкриття.
+    const onPointerDown = () => {
+      closeNow();
+    };
+    const onFocusIn = (e: FocusEvent) => {
+      if (!isKeyboardFocus(e.target)) return;
+      scheduleOpen();
+    };
+    const onFocusOut = () => {
+      closeNow();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openRef.current) {
+        closeNow();
+      }
+    };
+
+    triggerEl.addEventListener("pointerenter", onPointerEnter);
+    triggerEl.addEventListener("pointerleave", onPointerLeave);
+    triggerEl.addEventListener("pointerdown", onPointerDown);
+    triggerEl.addEventListener("focusin", onFocusIn);
+    triggerEl.addEventListener("focusout", onFocusOut);
+    triggerEl.addEventListener("keydown", onKeyDown);
+
     return () => {
-      window.removeEventListener("scroll", reposition, true);
-      window.removeEventListener("resize", reposition);
+      triggerEl.removeEventListener("pointerenter", onPointerEnter);
+      triggerEl.removeEventListener("pointerleave", onPointerLeave);
+      triggerEl.removeEventListener("pointerdown", onPointerDown);
+      triggerEl.removeEventListener("focusin", onFocusIn);
+      triggerEl.removeEventListener("focusout", onFocusOut);
+      triggerEl.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, placement]);
+  }, [children, scheduleOpen, closeNow]);
 
   // Outside-click closes the tooltip — guards against a tap on the
   // trigger that briefly held focus and then lost it without
   // triggering blur (some touch keyboards on iOS).
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const t = e.target as Node | null;
-      if (!t) return;
-      if (wrapperRef.current?.contains(t)) return;
-      if (panelRef.current?.contains(t)) return;
-      closeNow();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open, closeNow]);
+  useOutsideClick([wrapperRef, panelRef], closeNow, { enabled: open });
 
   const triggerProps = children.props as TriggerExtraProps;
 
   const trigger = cloneElement(children, {
     "aria-describedby": open ? id : triggerProps["aria-describedby"],
-    onMouseEnter: (e: React.MouseEvent) => {
-      triggerProps.onMouseEnter?.(e);
-      scheduleOpen();
-    },
-    onMouseLeave: (e: React.MouseEvent) => {
-      triggerProps.onMouseLeave?.(e);
-      closeNow();
-    },
-    onFocus: (e: React.FocusEvent) => {
-      triggerProps.onFocus?.(e);
-      scheduleOpen();
-    },
-    onBlur: (e: React.FocusEvent) => {
-      triggerProps.onBlur?.(e);
-      closeNow();
-    },
-    onKeyDown: (e: ReactKeyboardEvent) => {
-      triggerProps.onKeyDown?.(e);
-      if (e.key === "Escape" && open) {
-        closeNow();
-      }
-    },
+    "data-tooltip-trigger": id,
   } as TriggerExtraProps);
 
   // Render the panel into document.body so any transformed /

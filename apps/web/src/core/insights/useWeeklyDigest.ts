@@ -1,68 +1,67 @@
 import { useCallback } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { logger } from "@shared/lib";
-import { coachApi, weeklyDigestApi } from "@shared/api";
+import { coachApi, isApiError, weeklyDigestApi } from "@shared/api";
 import type { WeeklyDigestReport } from "@shared/api";
-import { STORAGE_KEYS, getWeekKey as sharedGetWeekKey } from "@sergeant/shared";
+import {
+  METRICS_VERSION,
+  STORAGE_KEYS,
+  deviceMondayStart,
+  getWeekKey as sharedGetWeekKey,
+} from "@sergeant/shared";
 import {
   safeListLSKeys,
   safeReadLS,
   safeWriteLS,
 } from "@shared/lib/storage/storage";
 import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigestStorage";
+import {
+  buildCrossModuleSeries,
+  correlationsFromPairs,
+  notablePairsFromSeries,
+} from "./digestCorrelations";
+import { recordWeeklyChecks } from "./crossModuleLinkHistory";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
-import { MCC_CATEGORIES, INCOME_CATEGORIES } from "@finyk/constants";
+import { trackAdviceFailed } from "../observability/adviceTelemetry";
+import { finykExpenseCategoryLabel } from "./finykCategoryLabel";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
+import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
+import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
+import {
+  averageKcalGoalForDays,
+  calcNutritionPeriodAverages,
+} from "@sergeant/nutrition-domain";
+import { itemTonnageKg, workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
 
-const ALL_CATS = [...MCC_CATEGORIES, ...INCOME_CATEGORIES];
+// Device-local day key (ADR-0078) — делегат до канонічного `dateKeyFromDate`
+// з `@sergeant/routine-domain` замість колишньої інлайн-копії.
+const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
-interface Category {
-  id?: string;
-  label?: string;
-  name?: string;
-  mccs?: number[];
-}
-
-function resolveCatLabel(
-  catIdOrMcc: string | number,
-  customCategories: Category[] = [],
-): string {
-  if (!catIdOrMcc || catIdOrMcc === "other") return "Інше";
-  const byId = [...ALL_CATS, ...customCategories].find(
-    (c) => c.id === catIdOrMcc,
-  );
-  if (byId)
-    return (
-      (byId as { label?: string; name?: string }).label ??
-      (byId as { name?: string }).name ??
-      String(catIdOrMcc)
-    );
-  const mcc = Number(catIdOrMcc);
-  if (!Number.isNaN(mcc) && mcc > 0) {
-    const byMcc = MCC_CATEGORIES.find(
-      (c) => Array.isArray(c.mccs) && c.mccs.includes(mcc),
-    );
-    if (byMcc) return byMcc.label;
-    return `MCC ${mcc}`;
-  }
-  return String(catIdOrMcc);
-}
-
-function localDateKey(d = new Date()): string {
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/**
+ * Межі `weekKey` (device-local Monday-ключ від `getWeekKey`) — через
+ * канонічний `deviceMondayStart`, а не наївний `new Date(`${weekKey}T00:00:00`)`.
+ * `weekKey` уже позначає понеділок, тож виклик ідемпотентний; важливо саме
+ * те, що межі рахує ТА САМА функція, що й сам ключ (audit
+ * unification-modules §1.2), а не окремий рядковий парсер.
+ */
+function weekKeyToDeviceMondayMs(weekKey: string): number {
+  const [y, m, d] = weekKey.split("-").map(Number);
+  return deviceMondayStart(new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1));
 }
 
 // `getWeekKey` lives in `@sergeant/shared` now (DOM-free, reused by
@@ -72,15 +71,11 @@ function localDateKey(d = new Date()): string {
 export const getWeekKey = sharedGetWeekKey;
 
 export function getWeekRange(d = new Date()): string {
-  const monday = new Date(d);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  const sunday = new Date(monday);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-  sunday.setDate(monday.getDate() + 6);
-  const fmt = (dt: Date) =>
-    dt.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
-  return `${fmt(monday)} — ${fmt(sunday)}`;
+  const monday = new Date(deviceMondayStart(d));
+  const sunday = addDays(monday, 6);
+  return formatDayRangeUk(localDateKey(monday), localDateKey(sunday), {
+    relative: false,
+  });
 }
 
 export interface WeeklyDigest {
@@ -132,25 +127,31 @@ export function aggregateFinyk(weekKey: string): FinykAggregate {
   const { txs, excludedTxIds, txSplits, txCategories, customCategories } =
     readFinykStatsContext();
 
-  const monday = new Date(`${weekKey}T00:00:00`).getTime();
-  const sunday = monday + 7 * 86_400_000;
+  // Тиждень дайджесту названо ключем-понеділком ПРИСТРОЮ (він спільний зі
+  // звичками, їжею й тренуваннями, які пишуться за годинником телефона,
+  // ADR-0078), а гроші до цих семи дат відносить КИЇВСЬКИЙ день транзакції:
+  // пн–нд за Києвом, вікно `[пн 00:00, наступний пн 00:00)` (рішення власника
+  // 2026-10-01, `METRICS_VERSION` 17). Для київського пристрою це те саме
+  // вікно, що було; поза Києвом біля опівночі транзакція лягає в той самий
+  // тиждень, що й у Звітах і Аналітиці Фініка, а не в сусідній.
+  const { startMs: monday, endMs: sunday } = weekWindowByMondayKey(weekKey);
 
   // AI-NOTE: Раніше aggregateFinyk парсив `finyk_tx_cache`/`finyk_hidden_txs`/
   // `finyk_tx_cats` напряму і виключав лише hidden + internal_transfer. Тепер
   // делегуємо у `@sergeant/finyk-domain` (calcFinykPeriodAggregate) і
   // використовуємо канонічний excluded-set Фініка (hidden + transfers + recv +
   // finyk_excluded_stat_txs) — той самий, що Overview/Reports. byCategory
-  // ключуємо за «label після resolveCatLabel», як і раніше, щоб мерджити
-  // різні id-шники, що мапляться в одну UI-категорію.
+  // ключуємо за label-ом категорії, щоб мерджити різні id-шники, що
+  // мапляться в одну UI-категорію.
   const aggregate = calcFinykPeriodAggregate(txs, {
     start: monday,
     end: sunday,
     excludedTxIds,
     txSplits,
-    categoryKey: (tx) => {
-      const raw = txCategories[tx.id] ?? tx.mcc ?? "other";
-      return resolveCatLabel(raw, customCategories as Category[]);
-    },
+    // Резолв підпису — спільний із коучем (`finykExpenseCategoryLabel`):
+    // оверрайд → категорія ручного запису → MCC / ключові слова → «Інше».
+    categoryKey: (tx) =>
+      finykExpenseCategoryLabel(tx, txCategories, customCategories),
   });
 
   const topCategories = Object.entries(aggregate.byCategory)
@@ -208,9 +209,9 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
   const workouts = fizruk.workouts;
   if (workouts.length === 0) return null;
 
-  const monday = new Date(`${weekKey}T00:00:00`);
+  const monday = new Date(weekKeyToDeviceMondayMs(weekKey));
   const sunday = new Date(monday);
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for the tombstone read-side fix
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: workouts are the personal day, device-local by design; monday itself already came from the canonical deviceMondayStart above.
   sunday.setDate(monday.getDate() + 7);
 
   const weekWorkouts = workouts.filter((w) => {
@@ -219,16 +220,20 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
     return d >= monday && d < sunday;
   });
 
-  let totalVolume = 0;
+  const totalVolume = weekWorkouts.reduce(
+    (sum, w) => sum + workoutTonnageKg(w),
+    0,
+  );
   const exerciseVolumes: Record<string, number> = {};
 
   for (const w of weekWorkouts) {
     for (const item of w.items) {
-      const vol = (item.sets ?? []).reduce(
-        (s, set) => s + set.weightKg * set.reps,
-        0,
-      );
-      totalVolume += vol;
+      // Гейт саме по ТИПУ, не по нулю: силова вправа без підходів має
+      // лишити запис із нулем, як було до зведення на канон. `vol === 0`
+      // тут виглядав рівнозначним, але мовчки викидав такий запис із
+      // `exerciseVolumes`, а отже й із топ-3 дайджесту.
+      if (item.type !== "strength") continue;
+      const vol = itemTonnageKg(item);
       if (item.nameUk) {
         exerciseVolumes[item.nameUk] =
           (exerciseVolumes[item.nameUk] ?? 0) + vol;
@@ -270,49 +275,50 @@ export interface NutritionAggregate {
   avgCarbs: number;
   targetKcal: number;
   daysLogged: number;
+  /**
+   * Скільки днів у періоді всього (для тижня — 7).
+   *
+   * AI-CONTEXT: знаменник coverage. Середні свідомо рахуються лише по
+   * залогованих днях (канон nutrition §5.2 — «неповний день це неповні
+   * дані, а не дефіцит»), але без цього числа поруч «середнє 1950, 95%
+   * цілі» за ДВА залоговані дні читається як чудовий тиждень. Аудит
+   * nutrition § E-4 називає це success theater: інструмент ховає власний
+   * провал від єдиної людини, яка його оцінює.
+   */
+  daysInPeriod: number;
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
-  // Canonical log + prefs — SQLite warm cache (`nutrition_log_v1` /
-  // `nutrition_prefs_v1` tombstoned).
+  // Canonical log + append-only goal history from the SQLite warm cache.
   const log = loadNutritionLog();
-  const prefs = loadNutritionPrefs();
-  const targetKcal = prefs.dailyTargetKcal ?? 2000;
+  const goalPeriods = loadNutritionGoalPeriods();
 
   const monday = new Date(`${weekKey}T00:00:00`);
-  let totalKcal = 0,
-    totalProtein = 0,
-    totalFat = 0,
-    totalCarbs = 0,
-    daysLogged = 0;
-
+  const weekDays: string[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
     // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
     d.setDate(monday.getDate() + i);
-    const dk = localDateKey(d);
-    const dayData = log?.[dk];
-    const meals = Array.isArray(dayData?.meals) ? dayData.meals : [];
-    if (meals.length > 0) {
-      daysLogged++;
-      for (const m of meals) {
-        totalKcal += m?.macros?.kcal ?? 0;
-        totalProtein += m?.macros?.protein_g ?? 0;
-        totalFat += m?.macros?.fat_g ?? 0;
-        totalCarbs += m?.macros?.carbs_g ?? 0;
-      }
-    }
+    weekDays.push(localDateKey(d));
   }
+  const targetKcal = averageKcalGoalForDays(goalPeriods, weekDays) ?? 0;
 
-  if (daysLogged === 0) return null;
+  // AI-CONTEXT: W1-CANON-AGG стадія 4 — числа не рухаються (дайджест уже
+  // рахував за канонічною семантикою «дні з ≥1 прийомом»), рухається лише
+  // джерело коду: inline-копія замінена викликом канону. Збіг, який тримався
+  // на дисципліні, тепер тримається на спільній функції.
+  const period = calcNutritionPeriodAverages(log, weekDays);
+
+  if (period.daysLogged === 0) return null;
 
   return {
-    avgKcal: Math.round(totalKcal / daysLogged),
-    avgProtein: Math.round(totalProtein / daysLogged),
-    avgFat: Math.round(totalFat / daysLogged),
-    avgCarbs: Math.round(totalCarbs / daysLogged),
+    avgKcal: period.avgKcal,
+    avgProtein: period.avgProtein,
+    avgFat: period.avgFat,
+    avgCarbs: period.avgCarbs,
     targetKcal,
-    daysLogged,
+    daysLogged: period.daysLogged,
+    daysInPeriod: period.daysInPeriod,
   };
 }
 
@@ -331,12 +337,14 @@ export interface RoutineAggregate {
 
 export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   // Stage 8 PR #057r-tombstone retired the legacy `hub_routine_v1` LS key — it
-  // is deleted on boot after the one-time SQLite import (`residualImport.ts`)
-  // and `saveRoutineState()` no longer writes it. Reading that key here
-  // returned `null` in production, so the weekly digest (and the `compare_weeks`
-  // chat tool, which calls this) reported zero habits even for users who had
-  // them. Read `loadRoutineState()` — the canonical SQLite-backed source the
-  // Routine UI and `queryRoutineActions` use — so digest and module UI agree.
+  // used to be deleted on boot after a one-time SQLite import
+  // (`residualImport.ts`, removed 2026-08 once no pre-beta testers were left
+  // with pre-SQLite LS data to migrate) and `saveRoutineState()` no longer
+  // writes it. Reading that key here returned `null` in production, so the
+  // weekly digest (and the `compare_weeks` chat tool, which calls this)
+  // reported zero habits even for users who had them. Read
+  // `loadRoutineState()` — the canonical SQLite-backed source the Routine UI
+  // and `queryRoutineActions` use — so digest and module UI agree.
   const state = loadRoutineState();
 
   const habits = state.habits.filter((h) => !h.archived);
@@ -345,32 +353,43 @@ export function aggregateRoutine(weekKey: string): RoutineAggregate | null {
   const completions = state.completions;
   const monday = new Date(`${weekKey}T00:00:00`);
 
-  const habitStats: HabitStat[] = habits.map((h) => {
-    let done = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(monday);
-      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
-      d.setDate(monday.getDate() + i);
-      const dk = localDateKey(d);
-      const dayList = completions[h.id];
-      if (Array.isArray(dayList) && dayList.includes(dk)) {
-        done++;
-      }
-    }
-    return {
-      name: h.name || "Звичка",
-      done,
-      total: 7,
-      completionRate: Math.round((done / 7) * 100),
-    };
+  const weekDays: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- pre-existing kyiv-time burndown (Theme 1), out of scope for this routine-source fix
+    d.setDate(monday.getDate() + i);
+    weekDays.push(localDateKey(d));
+  }
+
+  // AI-CONTEXT: W1-CANON-AGG стадія 4 — знаменник більше не «7 днів на
+  // звичку». Локальний підрахунок замінено делегуванням у канонічну
+  // `calcRoutinePeriodCompletion`, тож дайджест, Hub-Reports і модуль Звички
+  // читають один і той самий код. `total` у `HabitStat` тепер означає
+  // «скільки днів звичка була запланована», а не «7».
+  //
+  // `pausedFrom` — заморозка минулого (ADR-0079 §2). Для дайджеста це
+  // критичніше, ніж будь-де: він рахує ЗАКРИТІ тижні, тож без параметра
+  // пауза, поставлена сьогодні, переписувала б підсумки за минулі тижні —
+  // рівно те, що ADR називає «цифри за минуле перераховуються поточною
+  // конфігурацією».
+  // Host-local, як і `weekDays` вище; київська межа доби — окремий борг
+  // реєстру метрик (стадія 5г).
+  const period = calcRoutinePeriodCompletion(habits, completions, weekDays, {
+    pausedFrom: localDateKey(new Date()),
   });
 
-  const totalDone = habitStats.reduce((s, h) => s + h.done, 0);
-  const totalPossible = habits.length * 7;
-  const overallRate =
-    totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
+  const habitStats: HabitStat[] = period.perHabit.map((h) => ({
+    name: h.name,
+    done: h.done,
+    total: h.scheduled,
+    completionRate: h.completionRate,
+  }));
 
-  return { habitCount: habits.length, overallRate, habits: habitStats };
+  return {
+    habitCount: habits.length,
+    overallRate: period.pct,
+    habits: habitStats,
+  };
 }
 
 async function generateWeeklyDigest(weekKey: string): Promise<{
@@ -391,6 +410,14 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
   // `isApiError(query.error)`.
   const json = await weeklyDigestApi.generate({
     weekRange: currentWeekRange,
+    // Канонічний ключ тижня для ai_memories.source_ref (сервер падає назад
+    // на weekRange лише для старих бандлів без цього поля).
+    weekKey,
+    // AI-CONTEXT: провенанс методики (ADR-0079 §3-§4). Числа вище пораховані
+    // агрегаторами цього бандла, тож дайджест штампується версією, чинною на
+    // момент підрахунку. Без цього штампу коуч, який тримає 8 тижнів,
+    // прочитає майбутній стрибок визначення як зміну поведінки користувача.
+    metricsVersion: METRICS_VERSION,
     finyk,
     fizruk,
     nutrition,
@@ -415,6 +442,20 @@ async function generateWeeklyDigest(weekKey: string): Promise<{
 const weeklyDigestQueryKey = (weekKey: string) => digestKeys.byWeek(weekKey);
 const weeklyDigestHistoryQueryKey = digestKeys.history;
 
+/**
+ * Поріг публікації для тижневого дайджесту (Хвиля 4, hub-coach § G2 / §6.2)
+ * повернув сервер саме цим кодом — `apps/server/src/modules/digest/weekly-digest.ts`
+ * → `countDigestSignalModules`. Розрізняємо цю відповідь від справжніх
+ * помилок (мережа, 5xx, парсинг Anthropic), щоб UI показав чесне «замало
+ * даних», а не порожню картку чи generic error-банер (обидва варіанти
+ * канон § G2 явно забороняє для цього шляху).
+ */
+function isInsufficientDataError(err: unknown): boolean {
+  if (!isApiError(err)) return false;
+  const code = (err.body as { code?: unknown } | undefined)?.code;
+  return code === "INSUFFICIENT_DATA";
+}
+
 export function useDigestHistory() {
   return useQuery({
     queryKey: weeklyDigestHistoryQueryKey,
@@ -430,6 +471,15 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
   const weekKey = selectedWeekKey || currentWeekKey;
   const weekRange = getWeekRange(new Date(weekKey + "T12:00:00"));
   const isCurrentWeek = weekKey === currentWeekKey;
+  // Минулий (щойно завершений) тиждень теж генерується: понеділковий
+  // авто-звіт підбиває САМЕ його, а ручна кнопка дає перегенерувати
+  // неповний недільний знімок повними даними. Старіші тижні лишаються
+  // read-only: їхні локальні дані вже могли поїхати, і звіт брехав би.
+  const previousWeekKey = getWeekKey(
+    new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
+  );
+  const isPreviousWeek = weekKey === previousWeekKey;
+  const canGenerate = isCurrentWeek || isPreviousWeek;
 
   const query = useQuery({
     queryKey: weeklyDigestQueryKey(weekKey),
@@ -458,6 +508,16 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
       queryClient.invalidateQueries({ queryKey: coachKeys.all });
 
       try {
+        // Кореляції рахуються кодом (не LLM) з локальних даних усіх модулів —
+        // коуч отримує «помічені звʼязки» без окремого виклику моделі (WP3).
+        const series = buildCrossModuleSeries();
+        const pairs = notablePairsFromSeries(series);
+        // Генерація звіту - теж тижнева перевірка пар. Без цього рядка
+        // серію накопичував би лише візит на `/insights`, і той, кому звіт
+        // приходить автоматом по понеділках, ніколи не дійшов би до
+        // другого ступеня (`crossModuleLinkHistory.ts`).
+        recordWeeklyChecks(pairs);
+        const correlations = correlationsFromPairs(pairs);
         coachApi
           .postMemory({
             weeklyDigest: {
@@ -465,24 +525,36 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
               weekRange: wr,
               generatedAt,
               ...report,
+              correlations,
             },
           })
           .catch((err: unknown) => {
             // non-fatal, але без логу не було видно серверних збоїв у
             // персоналізованому coach-контексті — digest генерувався, а
-            // пам'ять мовчки не оновлювалася.
+            // памʼять мовчки не оновлювалася.
             logger.warn("[weeklyDigest] coachApi.postMemory failed", err);
           });
       } catch {
         /* non-fatal */
       }
     },
+    // Провал генерації інакше зникає безслідно: `generate` нижче ковтає
+    // помилку в `catch { return null }`, і зовні це не відрізнити від
+    // «звіту ще немає». Емітимо тут, а не в тому catch, щоб не рахувати
+    // двічі — mutateAsync прокидає ту саму помилку далі.
+    onError: (err: unknown) => {
+      trackAdviceFailed({
+        source: "weekly_digest",
+        kind: isApiError(err) ? err.kind : "unknown",
+        status: isApiError(err) && err.kind === "http" ? err.status : null,
+      });
+    },
   });
 
   const { mutateAsync } = mutation;
 
   const generate = useCallback(async () => {
-    if (!isCurrentWeek) return null;
+    if (!canGenerate) return null;
     try {
       const result = await mutateAsync(weekKey);
       return {
@@ -494,17 +566,27 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     } catch {
       return null;
     }
-  }, [weekKey, isCurrentWeek, mutateAsync]);
+  }, [weekKey, canGenerate, mutateAsync]);
+
+  const insufficientData = isInsufficientDataError(mutation.error);
 
   return {
     digest: query.data ?? null,
     loading: mutation.isPending,
-    error: mutation.error
-      ? formatApiError(mutation.error, { fallback: "Помилка генерації звіту" })
-      : null,
+    // `insufficientData` — окрема, чесна відповідь («замало даних»), не
+    // помилка: суперечило б §6.2, якби вона рендерилась як generic
+    // error-банер разом із мережевими/5xx збоями.
+    error:
+      mutation.error && !insufficientData
+        ? formatApiError(mutation.error, {
+            fallback: failedCopy("скласти звіт"),
+          })
+        : null,
+    insufficientData,
     weekKey,
     weekRange,
     generate,
     isCurrentWeek,
+    canGenerate,
   };
 }

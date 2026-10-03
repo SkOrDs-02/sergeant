@@ -8,7 +8,8 @@
 //   1. Локальний ring-buffer (`hub_analytics_log_v1` у localStorage,
 //      max 200 подій) + `console.log("[analytics]", …)` — devtools
 //      і Sentry console-breadcrumbs. Працює завжди.
-//   2. PostHog — якщо виставлений `VITE_POSTHOG_KEY`. Fire-and-forget
+//   2. PostHog — якщо виставлений `VITE_POSTHOG_KEY` І людина дала згоду
+//      (`getAnalyticsConsent()`: крок онбордингу, банер / тумблер). Fire-and-forget
 //      через `posthog.ts` (lazy dynamic import), буферизує події до
 //      завершення init.
 //
@@ -23,7 +24,7 @@
 import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
 import { capturePostHogEvent } from "./posthog";
 import { containsPII } from "./containsPII";
-import { syncEventToMemory } from "./productMemorySync";
+import { getAnalyticsConsent } from "./analyticsConsent";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 export { ANALYTICS_EVENTS };
@@ -171,20 +172,15 @@ export function trackEvent(
   // `import.meta.env` шляхи теоретично можуть зловити edge-кейс — щит
   // тримаємо у викликача, бо ~10 call-sites покладаються на
   // fire-and-forget (див. Devin Review on #972).
+  // Згода (рішення власника 2026-09-29, аудит § 1.3): до явного
+  // «Дозволити» подія лишається тільки в локальному ring-buffer (він нікуди
+  // не йде) і в PostHog не потрапляє — ні напряму, ні через буфер init-у.
+  if (!getAnalyticsConsent()) return;
   try {
     capturePostHogEvent(eventName, event.payload as Record<string, unknown>);
   } catch {
     /* PostHog transport never breaks trackEvent callers */
   }
-  // PR-24 — PostHog → AI memory sync. Дзеркалить allowlist-events до
-  // server-side ingest queue як `source='product'`, щоб `/recall`
-  // мав behavioral context. Fire-and-forget, ніколи не throw-ить.
-  // Server-side allowlist authoritative (`PRODUCT_MEMORY_EVENTS`);
-  // тут — фільтр-shortcut, що пропускає лишні network-trip-и.
-  try {
-    syncEventToMemory(eventName, event.payload as Record<string, unknown>);
-  } catch {
-    /* AI memory sync best-effort — analytics call-site не повинен
-       впасти, якщо fetch() throw-нув на CSP/lock-tab edge-кейсі. */
-  }
+  // PostHog → AI memory дзеркало (PR-24) знято 2026-08-29: продуктові
+  // івенти в ролі «фактів про людину» лише займали місце в RAG top-K.
 }

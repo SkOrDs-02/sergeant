@@ -1,0 +1,199 @@
+name: Deploy API (Coolify)
+
+# Owner: @klas149 (solo maintainer).
+#
+# Автодеплой бекенду `sergeant-api-v2` (Coolify на Hetzner) після зеленого CI.
+# Рішення власника 2026-09-30, ADR-0102.
+#
+# Хто викликає. Основний шлях - джоба `deploy-api` у `ci.yml`: вона стоїть
+# після обовʼязкових джоб (`needs:`) і стартує лише на push у `main`. Тут
+# немає власного `on: push`, і це навмисно: міграції БД їдуть в ENTRYPOINT
+# образу (`node dist-server/migrate.js && exec node dist-server/index.js`),
+# тобто кожен деплой застосовує схему з нового коду на живій базі. Деплой,
+# який не чекає CI, міняв би прод-схему кодом, якого ніхто не перевірив.
+# `workflow_dispatch` лишається для ручного перезапуску з вкладки Actions
+# (лише з `main`), так само як запасний шлях `pnpm deploy:api` з ноутбука.
+#
+# Білд іде на сервері: Coolify сам клонує `main` з GitHub і збирає
+# `Dockerfile.api`. Образу в ghcr.io більше немає, тож і логіна в registry.
+#
+# Секрети: `COOLIFY_URL` (база інстансу, без шляху) і `COOLIFY_TOKEN`
+# (API-токен із правом deploy і читання деплоїв). Коли їх немає, джоба
+# зелена з позначкою «пропущено»: відсутній секрет означає «автодеплой ще
+# не ввімкнено», а не поломку, яка має фарбувати `main` у червоне.
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy sergeant-api-v2
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    # Черга, а не скасування: обірваний посередині деплой лишає Coolify у
+    # стані, який доводиться розбирати руками. Новіший коміт стане в чергу
+    # і, дочекавшись, сам вирішить, чи є що викочувати.
+    concurrency:
+      group: deploy-api
+      cancel-in-progress: false
+    timeout-minutes: 30
+    env:
+      COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+      COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+      APP_UUID: hlyvmjeoqa31w6mewpfg9qgc
+      HEALTH_URL: https://api.sergeant.com.ua/health
+      TARGET_SHA: ${{ github.sha }}
+    steps:
+      - name: Секрети на місці?
+        id: secrets
+        run: |
+          if [ -z "$COOLIFY_URL" ] || [ -z "$COOLIFY_TOKEN" ]; then
+            echo "::notice::COOLIFY_URL або COOLIFY_TOKEN не задані - автодеплой пропущено. Викотити вручну: pnpm deploy:api."
+            echo "Автодеплой **пропущено**: секрети \`COOLIFY_URL\` / \`COOLIFY_TOKEN\` не задані." >> "$GITHUB_STEP_SUMMARY"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # actions/checkout v6.0.2 (SHA-pinned). Повна історія потрібна, щоб
+      # порахувати діф між комітом у проді і цим.
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Чи є що викочувати
+        id: plan
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          BASE="${COOLIFY_URL%/}"
+          skip() {
+            echo "$1"
+            echo "Деплой **пропущено**: $1" >> "$GITHUB_STEP_SUMMARY"
+            echo "deploy=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          # Coolify збирає ГОЛОВУ `main`, а не конкретний коміт. Якщо `main`
+          # уже пішов далі, задеплоїлось би те, чий CI ще не добіг. Новіший
+          # коміт має власний прогін CI, і той деплой замовить сам.
+          HEAD_SHA=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$HEAD_SHA" != "$TARGET_SHA" ]; then
+            skip "main уже на ${HEAD_SHA:0:9}, а цей прогін про ${TARGET_SHA:0:9}; деплой замовить CI новішого коміту."
+          fi
+
+          curl -fsS --max-time 30 -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "$BASE/api/v1/deployments/applications/$APP_UUID" -o /tmp/history.json
+          PROD_SHA=$(jq -r '[(.deployments // [])[] | select(.status == "finished")][0].commit // empty' /tmp/history.json)
+
+          if [ "$PROD_SHA" = "$TARGET_SHA" ]; then
+            skip "прод уже на ${TARGET_SHA:0:9}."
+          fi
+
+          # Ті самі шляхи, що потрапляють в образ (див. COPY у Dockerfile.api).
+          # Діф рахується від коміту, що зараз у проді, а не від попереднього
+          # пуша: так зміна бекенду, що приїхала разом із пропущеним деплоєм,
+          # не загубиться.
+          if [ -n "$PROD_SHA" ] && git cat-file -e "${PROD_SHA}^{commit}" 2>/dev/null; then
+            CHANGED=$(git diff --name-only "$PROD_SHA" "$TARGET_SHA" -- \
+              Dockerfile.api .dockerignore pnpm-lock.yaml pnpm-workspace.yaml package.json patches \
+              apps/server packages/shared packages/config packages/db-schema \
+              packages/finyk-domain packages/routine-domain packages/tabular-import | wc -l)
+            if [ "$CHANGED" -eq 0 ]; then
+              skip "від ${PROD_SHA:0:9} (прод) до ${TARGET_SHA:0:9} бекенд не змінювався."
+            fi
+            echo "Прод на ${PROD_SHA:0:9}, змінено файлів бекенду: $CHANGED."
+          else
+            echo "Коміт у проді невідомий (${PROD_SHA:-порожньо}) - деплоїмо."
+          fi
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Coolify deploy
+        if: steps.plan.outputs.deploy == 'true'
+        # Саме POST: GET на цьому ендпоінті віддає 405 (Coolify перевів його
+        # на POST, а приклади в мережі досі з GET). `-f` не ставимо, щоб
+        # тіло відмови потрапило в лог: Laravel пише в ньому причину.
+        run: |
+          set -uo pipefail
+          BASE="${COOLIFY_URL%/}"
+          CODE=$(curl -sS -X POST -o /tmp/coolify-response.txt -w '%{http_code}' \
+            --max-time 30 -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "$BASE/api/v1/deploy?uuid=$APP_UUID") || CODE="000"
+          case "$CODE" in
+            2??) ;;
+            *)
+              # Тіло - віддалений вхід: префікс `| `, щоб рядок із `::` не
+              # став workflow-командою.
+              head -c 300 /tmp/coolify-response.txt | tr -d '\r' | sed 's/^/| /' || true
+              echo "::error::Coolify відповів HTTP $CODE - деплой НЕ замовлено. 401/403: токен або його права; 000: інстанс недосяжний."
+              exit 1
+              ;;
+          esac
+          jq -r '.deployments[0].deployment_uuid // empty' /tmp/coolify-response.txt > /tmp/coolify-deployment-uuid
+          if [ ! -s /tmp/coolify-deployment-uuid ]; then
+            echo "::error::Coolify прийняв запит (HTTP $CODE), але не повернув deployment_uuid - перевірити результат нічим."
+            exit 1
+          fi
+          echo "Деплой замовлено: $(cat /tmp/coolify-deployment-uuid)."
+
+      - name: Verify Coolify actually deployed
+        if: steps.plan.outputs.deploy == 'true'
+        # AI-DANGER: не робити `continue-on-error` і не вдовольнятись статусом.
+        # Coolify приймає запит, а потім може тихо відкотитись на старий
+        # контейнер (інцидент 2026-09-14), або зібрати не той коміт: деплой,
+        # що закінчився за хвилину, найчастіше означає, що зібрано вже
+        # задеплоєний коміт. Тому звіряється і статус, і КОМІТ, і `/health`.
+        run: |
+          set -uo pipefail
+          BASE="${COOLIFY_URL%/}"
+          UUID=$(cat /tmp/coolify-deployment-uuid)
+          DEADLINE=$(( $(date +%s) + 1500 ))
+          STATUS=""
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            sleep 15
+            CODE=$(curl -sS -o /tmp/history.json -w '%{http_code}' --max-time 30 \
+              -H "Authorization: Bearer $COOLIFY_TOKEN" \
+              "$BASE/api/v1/deployments/applications/$APP_UUID") || CODE="000"
+            case "$CODE" in
+              401|403|404) echo "::error::Статус деплою не прочитано (HTTP $CODE) - токену бракує права читати деплої або застосунку немає."; exit 1 ;;
+              2??) ;;
+              *) continue ;;
+            esac
+            STATUS=$(jq -r --arg u "$UUID" '[(.deployments // [])[] | select(.deployment_uuid == $u)][0].status // empty' /tmp/history.json)
+            case "$STATUS" in
+              finished|failed|cancelled|error) break ;;
+            esac
+          done
+
+          if [ "$STATUS" != "finished" ]; then
+            echo "::error::Деплой $UUID не завершився успішно (статус: ${STATUS:-таймаут}). На сервері лишився попередній контейнер; лог - у Coolify."
+            exit 1
+          fi
+
+          DEPLOYED=$(jq -r --arg u "$UUID" '[(.deployments // [])[] | select(.deployment_uuid == $u)][0].commit // empty' /tmp/history.json)
+          if [ "$DEPLOYED" != "$TARGET_SHA" ]; then
+            echo "::error::Coolify зібрав ${DEPLOYED:-невідомий коміт}, а не ${TARGET_SHA}. Деплой НЕ підтверджено: або main зрушив під час білду, або Coolify дивиться не на ту гілку."
+            exit 1
+          fi
+
+          # /health віддає просто "ok" і версії не знає, тож коміт звірено
+          # вище, а тут доводиться лише, що контейнер піднявся і міграції з
+          # ENTRYPOINT не впали.
+          for _ in 1 2 3 4 5 6; do
+            HCODE=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "$HEALTH_URL") || HCODE="000"
+            [ "$HCODE" = "200" ] && break
+            sleep 10
+          done
+          if [ "$HCODE" != "200" ]; then
+            echo "::error::Деплой $UUID finished на ${TARGET_SHA:0:9}, але $HEALTH_URL віддає $HCODE."
+            exit 1
+          fi
+          echo "Задеплоєно ${TARGET_SHA:0:9} ($UUID), /health 200."
+          echo "Задеплоєно \`${TARGET_SHA:0:9}\`, \`/health\` 200." >> "$GITHUB_STEP_SUMMARY"

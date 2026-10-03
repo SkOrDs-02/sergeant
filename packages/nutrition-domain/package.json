@@ -17,6 +17,7 @@
     "./nutrition-types": "./src/nutritionTypes.ts",
     "./pantry-consume": "./src/pantryConsume.ts",
     "./pantry-text-parser": "./src/pantryTextParser.ts",
+    "./quick-stats": "./src/quickStats.ts",
     "./recipe-ids": "./src/recipeIds.ts",
     "./shopping-list": "./src/shoppingList.ts",
     "./water-log": "./src/waterLog.ts",
@@ -24,7 +25,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint": "eslint --cache \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -35,8 +36,8 @@
   "devDependencies": {
     "@sergeant/config": "workspace:*",
     "@types/node": "^20.19.41",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   }
 }

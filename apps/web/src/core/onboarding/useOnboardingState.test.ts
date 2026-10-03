@@ -98,6 +98,25 @@ describe("useOnboardingState", () => {
     expect(result.current.hero).toBe("today-focus");
   });
 
+  it("clears the first-action slot after the first real entry appears", () => {
+    const storage = makeStorage({
+      isFirstActionPending: vi.fn(() => true),
+    });
+
+    const { result, rerender } = renderHook(
+      (props: UseOnboardingStateOptions) => useOnboardingState(props, storage),
+      { initialProps: { ...BASE, todayFocusAvailable: true } },
+    );
+
+    expect(result.current.showFirstAction).toBe(true);
+
+    rerender({ ...BASE, hasRealEntry: true, todayFocusAvailable: true });
+
+    expect(storage.clearFirstActionPending).toHaveBeenCalledTimes(1);
+    expect(result.current.showFirstAction).toBe(false);
+    expect(result.current.hero).toBe("today-focus");
+  });
+
   it("suppresses soft-auth when user is signed in", () => {
     const { result } = renderHook(() =>
       useOnboardingState(
@@ -187,6 +206,32 @@ describe("useOnboardingState", () => {
     expect(result.current.showSoftAuth).toBe(true);
   });
 
+  // PR-H4 (design-audit 2026-09-13): `LocalOnlyDataBanner` (priority 0) and
+  // the soft-auth hero (priority 2) both fit under the hub's 2-banner
+  // budget at once, so an anonymous user with a real entry saw "Увійти"
+  // twice — once in the banner, once in the hero card — plus the header
+  // icon and the bottom-nav tab, four calls to the same action. The banner
+  // carries the durability warning (higher stakes), so soft-auth backs off
+  // instead.
+  it("suppresses soft-auth while the local-only-data banner is visible", () => {
+    const { result } = renderHook(() =>
+      useOnboardingState(
+        {
+          ...BASE,
+          hasRealEntry: true,
+          sessionDays: SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS,
+          todayFocusAvailable: true,
+          localOnlyBannerVisible: true,
+        },
+        makeStorage(),
+      ),
+    );
+
+    expect(result.current.showSoftAuth).toBe(false);
+    // Falls through to the next candidate instead of leaving a gap.
+    expect(result.current.hero).toBe("today-focus");
+  });
+
   it("dismissSoftAuth clears the slot in-render", () => {
     const { result } = renderHook(() =>
       useOnboardingState(
@@ -230,10 +275,9 @@ describe("useOnboardingState", () => {
 
     expect(result.current.hero).toBe("reengagement");
     expect(result.current.showReengagement).toBe(true);
-    // All four contenders should still be reported.
+    // A completed first real entry clears the first-action candidate.
     expect(result.current.candidates).toEqual([
       "reengagement",
-      "first-action",
       "soft-auth",
       "today-focus",
     ]);

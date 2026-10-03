@@ -52,11 +52,11 @@ export function currentLogLevel(): string {
 
 // Список шляхів, які pino маскуватиме на `[redacted]`, щоб PII та секрети
 // ніколи не просочувались у JSON-логи. Розширюємо консервативно: email і phone
-// — навіть у вкладених user-об'єктах; усі типові варіанти токенів і secret.
+// — навіть у вкладених user-обʼєктах; усі типові варіанти токенів і secret.
 // Якщо треба додати новий шлях — додавай тут, а НЕ робиш `logger.info({...})`
 // з плейнтекстовим email, обходячи редакцію.
 //
-// Контракт (для пов'язаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
+// Контракт (для повʼязаного `Sentry.beforeSend` PII-скрабера в `sentry.ts`
 // і браузерного аналога в `apps/web/src/core/observability/sentry.ts`):
 //   - `redactKeyNames` — імена полів, які потрібно маскувати на будь-якій
 //     глибині. Sentry-скрабер ходить рекурсивно і маскує ці ключі у
@@ -78,6 +78,26 @@ const REDACT_KEY_SET: ReadonlySet<string> = new Set(
 );
 
 /**
+ * W4 (2026-09-16) — `userId`/`user_id` доповнення до редакції. `mixin()`
+ * нижче вже хешує `userId` з ALS-контексту в `userIdHash`, але явні виклики
+ * `logger.info({ userId })` / `{ user_id }` (знайдено у ~11 файлах —
+ * push-делівері, ai-memory, mono, sync-стрім, ftux-drip) обходять `mixin()`
+ * повністю і йдуть у Loki/Railway сирими — власна політика репо вимагає
+ * `userIdHash` завжди.
+ *
+ * Свідомо НЕ додано у `@sergeant/shared` → `REDACT_KEY_NAMES`: той канон
+ * має ОДИН фіксований censor (`"[redacted]"`) на всі поля, а тут потрібен
+ * ДЕТЕРМІНОВАНИЙ хеш (`hashUserId` — той самий sha256-16hex-префікс, що й
+ * `mixin()`), щоб лишити можливість грепати всі події одного користувача
+ * без сирого ID. Тому виняток живе локально, у server-only `logger.ts`
+ * (`hashUserId` не DOM-free-safe для web/mobile-пакетів), і торкається
+ * лише pino/Loki-шляху — Sentry (`event.user.id` через `Sentry.setUser()`)
+ * свідомо лишається поза цим правилом, це вже задокументований L10-компроміс
+ * (`apps/server/src/lib/userIdHash.ts`).
+ */
+const USER_ID_REDACT_KEYS: ReadonlySet<string> = new Set(["userid", "user_id"]);
+
+/**
  * S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
  * рекурсивний non-mutating редактор, що ходить по всіх рівнях лог-обʼєкта
  * і маскує значення ключів з `REDACT_KEY_NAMES` за іменем (case-insensitive).
@@ -92,19 +112,26 @@ const REDACT_KEY_SET: ReadonlySet<string> = new Set(
  *     новий обʼєкт/масив будується тільки коли реально треба замаскувати
  *     поле. Це критично, бо pino передає сюди merged-обʼєкт, який ділить
  *     nested-references із caller-обʼєктами — мутація би пошкодила бізнес-стан.
- *   - Cycle-safe: `WeakSet` ловить self-referencing обʼєкти (`Error.cause`
- *     chains, OTel span attributes), щоб walker не зациклився.
+ *   - `seen` — мемо-кеш, а не cycle-guard: один і той самий обʼєкт може
+ *     трапитись у дереві двічі як aliasing (не цикл), і тоді повторне
+ *     відвідування має віддати вже відредагований результат, а не сире
+ *     значення. Для істинних циклів placeholder кладеться у мапу ДО спуску
+ *     в піддерево, тож рекурсія не зациклюється (`Error.cause` chains,
+ *     OTel span attributes), а pino-стрінгіфаєр домалює `[Circular]`.
  *   - Object-valued sensitive keys мапляться у `null`, щоб не лишати
  *     структуру дочірніх полів (наприклад, `{ password: { hash: ... } }` →
  *     `{ password: null }`); primitive-значення стають `"[redacted]"`.
  */
 export function redactKeysRecursively(
   value: unknown,
-  seen: WeakSet<object> = new WeakSet(),
+  seen: WeakMap<object, unknown> = new WeakMap(),
 ): unknown {
   if (value == null || typeof value !== "object") return value;
-  if (seen.has(value as object)) return value;
-  seen.add(value as object);
+  // У мапі лежать лише обʼєкти (оригінал-placeholder або його копія), тож
+  // `undefined` однозначно означає «ще не відвідували».
+  const memo = seen.get(value as object);
+  if (memo !== undefined) return memo;
+  seen.set(value as object, value);
 
   if (Array.isArray(value)) {
     let mutated = false;
@@ -115,7 +142,9 @@ export function redactKeysRecursively(
       if (redacted !== item) mutated = true;
       next[i] = redacted;
     }
-    return mutated ? next : value;
+    const result = mutated ? next : value;
+    seen.set(value as object, result);
+    return result;
   }
 
   const src = value as Record<string, unknown>;
@@ -123,7 +152,18 @@ export function redactKeysRecursively(
   const next: Record<string, unknown> = {};
   for (const key of Object.keys(src)) {
     const v = src[key];
-    if (REDACT_KEY_SET.has(key.toLowerCase())) {
+    const lowerKey = key.toLowerCase();
+    if (USER_ID_REDACT_KEYS.has(lowerKey)) {
+      // Hash-censor, не `"[redacted]"` — див. doc-comment на
+      // `USER_ID_REDACT_KEYS` вище: кореляція подій одного юзера має
+      // лишитись можливою, а сирий ID — ні.
+      const hashed = typeof v === "string" ? hashUserId(v) : null;
+      next[key] =
+        hashed ?? (v != null && typeof v === "object" ? null : "[redacted]");
+      mutated = true;
+      continue;
+    }
+    if (REDACT_KEY_SET.has(lowerKey)) {
       next[key] = v != null && typeof v === "object" ? null : "[redacted]";
       mutated = true;
       continue;
@@ -132,7 +172,9 @@ export function redactKeysRecursively(
     if (redacted !== v) mutated = true;
     next[key] = redacted;
   }
-  return mutated ? next : value;
+  const result = mutated ? next : value;
+  seen.set(value as object, result);
+  return result;
 }
 
 // Explicit path-based redaction для documented sensitive-полів. Це defense-in-depth
@@ -180,6 +222,7 @@ export const redactPaths = [
   "groqKey",
   "anthropicKey",
   "voyageKey",
+  "openrouterKey",
   // M3 — типові ділянки `req.body` для login/register flows. Зазвичай ми
   // НЕ логуємо body, але якщо хтось зробить `logger.error({ req })` через
   // pino-std-serializer, body буде включений — і ми хочемо його зачистити.
@@ -187,6 +230,22 @@ export const redactPaths = [
   "req.body.token",
   "req.body.currentPassword",
   "req.body.newPassword",
+  // B43 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — тіла AI-запитів.
+  // Досі розмова не текла в логи лише тому, що її НІХТО не логував: політики
+  // не було, був щасливий збіг. Один `logger.error({ req })` на chat-шляху
+  // (а pino-std `req`-серіалізатор тягне body) опублікував би листування
+  // цілком. Імена — з `ChatRequestSchema`/`CoachRequest` (`@sergeant/shared`).
+  //
+  // ЧОМУ САМЕ ШЛЯХИ, А НЕ `content`/`messages`/`context` у `REDACT_KEY_NAMES`:
+  // той список матчить ключ на БУДЬ-ЯКІЙ глибині, а `content` і `context` —
+  // найуживаніші імена полів у діагностиці взагалі (тіла помилок провайдера,
+  // Sentry-extra, конфіги). Глобальний deny на них зробив би логи нечитними
+  // і, як наслідок, спонукав би обходити редакцію — гірше, ніж проблема.
+  // Тут же шлях один і однозначний.
+  "req.body.messages",
+  "req.body.context",
+  "req.body.tool_results",
+  "req.body.tool_calls_raw",
   // M3 — axios `err.config.headers.Authorization` (i.e. упав запит до
   // зовнішнього сервісу). Pino-std `err` serializer прокидає `config`
   // як частину помилки, тож Authorization потрапляв у лог як plaintext.
@@ -223,9 +282,9 @@ const pinoOptions: LoggerOptions = {
   base: {
     service: "sergeant-api",
     env: env.NODE_ENV,
-    ...(env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA
+    ...(env.SENTRY_RELEASE || env.GIT_SHA
       ? {
-          release: env.SENTRY_RELEASE || env.RAILWAY_GIT_COMMIT_SHA,
+          release: env.SENTRY_RELEASE || env.GIT_SHA,
         }
       : {}),
   },
@@ -309,7 +368,7 @@ setInterval(() => {
 }, 5_000).unref();
 
 /**
- * pino-http middleware — додає `req.log` (child logger, прив'язаний до запиту)
+ * pino-http middleware — додає `req.log` (child logger, привʼязаний до запиту)
  * до кожного Request. `autoLogging` вимкнено, бо access-log + Prometheus
  * метрики вже генеруються `requestLogMiddleware`. Мета — тільки `req.log`.
  */
@@ -345,7 +404,7 @@ type ErrorShape = {
 };
 
 /**
- * Розгортає `err.cause` ланцюжком у plain об'єкт, безпечний для JSON/pino.
+ * Розгортає `err.cause` ланцюжком у plain обʼєкт, безпечний для JSON/pino.
  * Корисно в `errorHandler` і process-level hooks, щоб у Loki/Grafana причину
  * бачити без розгортання stack.
  */
@@ -358,9 +417,20 @@ export function serializeError(
     return { message: String(err) };
   }
   const e = err as ErrorShape;
+  // `parseBody` кладе zod-issues у `cause: { details }`; без цього в лозі
+  // лишалось «Некоректні дані запиту: [object Object]» замість поля, що впало.
+  const details = (err as { details?: unknown }).details;
+  const detailsSummary = Array.isArray(details)
+    ? details
+        .map(
+          (d: { path?: unknown; message?: unknown }) =>
+            `${String(d?.path ?? "")}: ${String(d?.message ?? "")}`,
+        )
+        .join("; ")
+    : undefined;
   const out: SerializedError = {
     name: e.name,
-    message: e.message || String(err),
+    message: e.message || detailsSummary || String(err),
   };
   if (e.code !== undefined) out.code = e.code;
   if (e.status !== undefined) out.status = e.status;

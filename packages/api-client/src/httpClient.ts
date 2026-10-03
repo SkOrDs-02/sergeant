@@ -4,10 +4,7 @@ import type { QueryValue, RequestOptions } from "./types";
 const JSON_MIME = "application/json";
 
 export type TokenProvider = () =>
-  | string
-  | null
-  | undefined
-  | Promise<string | null | undefined>;
+  string | null | undefined | Promise<string | null | undefined>;
 
 export interface HttpClientConfig {
   /**

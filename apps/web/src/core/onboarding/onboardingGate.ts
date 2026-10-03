@@ -12,13 +12,15 @@ import {
   buildFinalPicks as sharedBuildFinalPicks,
   hasExistingData as sharedHasExistingData,
   isOnboardingCompletedFired as sharedIsOnboardingCompletedFired,
-  isOnboardingDone as sharedIsOnboardingDone,
   markOnboardingCompletedFired as sharedMarkOnboardingCompletedFired,
-  markOnboardingDone as sharedMarkOnboardingDone,
+  ONBOARDING_DONE_KEY,
   shouldShowOnboarding as sharedShouldShowOnboarding,
 } from "@sergeant/shared";
-import { safeReadStringLS, webKVStore } from "@shared/lib/storage/storage";
-import { DEMO_FLAG_KEY } from "./seedDemoData/keys";
+import {
+  safeReadStringLSDurable,
+  safeWriteStringLSDurable,
+  webKVStore,
+} from "@shared/lib/storage/storage";
 
 /**
  * True when the onboarding splash should render on this cold start.
@@ -26,15 +28,21 @@ import { DEMO_FLAG_KEY } from "./seedDemoData/keys";
  * helper eagerly marks "done" when it finds pre-existing data).
  */
 export function shouldShowOnboarding(): boolean {
-  return sharedShouldShowOnboarding(webKVStore);
+  if (isOnboardingDone()) return false;
+  const shouldShow = sharedShouldShowOnboarding(webKVStore);
+  // `sharedShouldShowOnboarding` also closes the gate when it detects existing
+  // domain data. Mirror that side effect durably so a standalone PWA reload
+  // cannot reopen `/welcome` while the SQLite upsert is still flushing.
+  if (!shouldShow) markOnboardingDone();
+  return shouldShow;
 }
 
 export function markOnboardingDone(): void {
-  sharedMarkOnboardingDone(webKVStore);
+  safeWriteStringLSDurable(ONBOARDING_DONE_KEY, "1");
 }
 
 export function isOnboardingDone(): boolean {
-  return sharedIsOnboardingDone(webKVStore);
+  return safeReadStringLSDurable(ONBOARDING_DONE_KEY) === "1";
 }
 
 export function hasExistingData(): boolean {
@@ -53,20 +61,6 @@ export function markOnboardingCompletedFired(): void {
 
 export function isOnboardingCompletedFired(): boolean {
   return sharedIsOnboardingCompletedFired(webKVStore);
-}
-
-/**
- * True when the local store currently holds a seeded demo payload.
- *
- * Light synchronous flag read (`DEMO_FLAG_KEY` lives in the
- * constants-only `seedDemoData/keys` module) so call-sites on the hub
- * critical path can gate demo-only behaviour without pulling the heavy
- * seeding bundle into the entry chunk — mirrors `maybeRunOnboarding`'s
- * cheap `inDemo` probe. Used to suppress returning-user chrome (e.g. the
- * "What's new" modal) while the visitor is just exploring the example.
- */
-export function isDemoActive(): boolean {
-  return safeReadStringLS(DEMO_FLAG_KEY) === "1";
 }
 
 export { sharedBuildFinalPicks as buildFinalPicks };

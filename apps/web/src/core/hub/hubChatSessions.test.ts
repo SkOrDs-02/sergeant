@@ -2,6 +2,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
   ACTIVE_SESSION_KEY,
+  CHAT_OWNER_KEY,
+  SESSIONS_MIRROR_KEY,
   SESSIONS_STORAGE_KEY,
   createSession,
   deleteSession,
@@ -10,6 +12,7 @@ import {
   findSession,
   loadActiveSessionId,
   loadSessions,
+  reconcileChatOwnerOnAuthChange,
   saveActiveSessionId,
   saveSessions,
   upsertSession,
@@ -21,6 +24,85 @@ beforeEach(() => {
 });
 
 describe("hubChatSessions", () => {
+  // Регресія на SEV1 з browser-QA 2026-09-02: історія чату зникала після
+  // релоаду, бо `safeWriteLS` пише в SQLite fire-and-forget, і сплеск
+  // повідомлень із релоадом за ним втрачав запис. Синхронне дзеркало в
+  // localStorage закриває гонку; арбітраж — за `updatedAt`, щоб жодне
+  // джерело не стало «правдою» назавжди.
+  describe("durable mirror", () => {
+    it("mirrors sessions synchronously on save", () => {
+      const session = createSession([makeUserMsg("привіт")]);
+      saveSessions([session]);
+
+      const mirrored = localStorage.getItem(SESSIONS_MIRROR_KEY);
+      expect(mirrored).toBeTruthy();
+      expect(JSON.parse(mirrored!)).toHaveLength(1);
+    });
+
+    it("recovers history when the primary key lost the async write", () => {
+      const session = createSession([makeUserMsg("не загубись")]);
+      saveSessions([session]);
+      // Імітуємо саму гонку: SQLite-бік не встиг, дзеркало встигло.
+      localStorage.removeItem(SESSIONS_STORAGE_KEY);
+      localStorage.removeItem("hub_chat_history");
+
+      const loaded = loadSessions();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0]!.messages.some((m) => m.text === "не загубись")).toBe(
+        true,
+      );
+    });
+
+    // Рев'ю CodeRabbit на PR #1053: дірка в самому фіксі гонки. Міграція
+    // legacy стояла ПЕРШОЮ і бачила лише основний ключ, тож старий
+    // `hub_chat_history` перехоплював гілку і затирав свіже дзеркало.
+    it("does not let stale legacy history overwrite a fresh mirror", () => {
+      const fresh = createSession([makeUserMsg("свіже з дзеркала")]);
+      saveSessions([fresh]);
+      // Основний запис не долетів; legacy-ключ лишився з давньої розмови.
+      localStorage.removeItem(SESSIONS_STORAGE_KEY);
+      localStorage.setItem(
+        "hub_chat_history",
+        JSON.stringify([makeUserMsg("давня розмова")]),
+      );
+
+      const loaded = loadSessions();
+      const texts = loaded.flatMap((s) => s.messages.map((m) => m.text));
+      expect(texts).toContain("свіже з дзеркала");
+      expect(texts).not.toContain("давня розмова");
+    });
+
+    it("prefers whichever side has the newer updatedAt", () => {
+      const stale = {
+        ...createSession([makeUserMsg("старе")]),
+        updatedAt: 100,
+      };
+      const fresh = { ...createSession([makeUserMsg("нове")]), updatedAt: 900 };
+
+      // Стале дзеркало (напр. запис у localStorage не пройшов через квоту)
+      // не має перебивати свіжий основний ключ.
+      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([fresh]));
+      localStorage.setItem(SESSIONS_MIRROR_KEY, JSON.stringify([stale]));
+      expect(loadSessions()[0]!.updatedAt).toBe(900);
+
+      // І симетрично — свіже дзеркало перебиває старий основний ключ.
+      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([stale]));
+      localStorage.setItem(SESSIONS_MIRROR_KEY, JSON.stringify([fresh]));
+      expect(loadSessions()[0]!.updatedAt).toBe(900);
+    });
+
+    it("wipes the mirror when the account changes (F12 privacy)", () => {
+      reconcileChatOwnerOnAuthChange("user-a");
+      saveSessions([createSession([makeUserMsg("таємниця акаунта A")])]);
+      expect(localStorage.getItem(SESSIONS_MIRROR_KEY)).toBeTruthy();
+
+      reconcileChatOwnerOnAuthChange("user-b");
+
+      expect(localStorage.getItem(SESSIONS_MIRROR_KEY)).toBeNull();
+      expect(loadSessions()).toEqual([]);
+    });
+  });
+
   describe("loadSessions migration", () => {
     it("migrates legacy `hub_chat_history` into a single fresh session", () => {
       const legacy = [
@@ -55,11 +137,78 @@ describe("hubChatSessions", () => {
     });
   });
 
+  describe("reconcileChatOwnerOnAuthChange (F12 privacy)", () => {
+    it("first stamp keeps existing sessions (anonymous → first sign-in)", () => {
+      saveSessions([createSession([makeUserMsg("Анонімний чернетковий чат")])]);
+      expect(reconcileChatOwnerOnAuthChange("user-A")).toEqual({
+        changed: false,
+        prevOwnerWasUser: false,
+      });
+      expect(loadSessions()).toHaveLength(1);
+      expect(localStorage.getItem(CHAT_OWNER_KEY)).toContain("user-A");
+    });
+
+    it("wipes sessions when a different account signs in on the device", () => {
+      reconcileChatOwnerOnAuthChange("user-A");
+      saveSessions([createSession([makeUserMsg("Скільки я витратив?")])]);
+      saveActiveSessionId("some-id");
+
+      // user → user': the ONLY transition that may trigger the heavy
+      // identity-wipe (RQ clear + persisted purge + reload) upstream.
+      expect(reconcileChatOwnerOnAuthChange("user-B")).toEqual({
+        changed: true,
+        prevOwnerWasUser: true,
+      });
+
+      expect(loadSessions()).toEqual([]);
+      expect(loadActiveSessionId()).toBeNull();
+      expect(localStorage.getItem("hub_chat_history")).toBeNull();
+      expect(localStorage.getItem(CHAT_OWNER_KEY)).toContain("user-B");
+    });
+
+    it("wipes sessions on logout (user → anonymous) and is idempotent", () => {
+      reconcileChatOwnerOnAuthChange("user-A");
+      saveSessions([createSession([makeUserMsg("Приватне питання")])]);
+
+      expect(reconcileChatOwnerOnAuthChange(null)).toEqual({
+        changed: true,
+        prevOwnerWasUser: true,
+      });
+      expect(loadSessions()).toEqual([]);
+
+      // Repeat with the same identity — no wipe reported, still empty.
+      expect(reconcileChatOwnerOnAuthChange(null)).toEqual({
+        changed: false,
+        prevOwnerWasUser: false,
+      });
+      expect(loadSessions()).toEqual([]);
+    });
+
+    it("anon-after-logout → user wipes chat but is NOT a user-to-user switch", () => {
+      // logout stamped the anonymous placeholder…
+      reconcileChatOwnerOnAuthChange("user-A");
+      reconcileChatOwnerOnAuthChange(null);
+      saveSessions([createSession([makeUserMsg("Чернетка гостя")])]);
+
+      // …so the next sign-in wipes the guest chat (privacy) but must
+      // NOT report prevOwnerWasUser: the upstream identity-wipe (RQ
+      // teardown + reload) would break the anonymous-data migration.
+      expect(reconcileChatOwnerOnAuthChange("user-B")).toEqual({
+        changed: true,
+        prevOwnerWasUser: false,
+      });
+      expect(loadSessions()).toEqual([]);
+    });
+  });
+
   describe("createSession + deriveSessionTitle", () => {
     it("falls back to date-based title when no user message is present", () => {
       const s = createSession();
       expect(s.title).toMatch(/^Бесіда \d{2}\.\d{2}/);
-      expect(s.messages.length).toBeGreaterThan(0); // assistant intro
+      // PR-A7 regression guard: a brand-new session must NOT get a
+      // synthesized assistant intro — that substitution made
+      // `<ChatEmpty>` (suggestion chips) unreachable forever.
+      expect(s.messages).toHaveLength(0);
     });
 
     it("derives title from first user message and truncates >40 chars", () => {

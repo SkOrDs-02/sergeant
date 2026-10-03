@@ -7,6 +7,8 @@ import {
   MonoConnectResponseSchema,
   MonoConnectionStatusSchema,
   MonoDisconnectResponseSchema,
+  MonoJarDtoSchema,
+  MonoJarsResponseSchema,
   MonoSyncStateSchema,
   MonoTransactionDtoSchema,
   MonoTransactionsPageSchema,
@@ -117,6 +119,66 @@ describe("MonoAccountDtoSchema", () => {
     const { lastSeenAt: _ls, ...rest } = VALID_ACCOUNT;
     void _ls;
     expect(() => MonoAccountDtoSchema.parse(rest)).toThrow();
+  });
+});
+
+const VALID_JAR = {
+  userId: "u1",
+  monoJarId: "jar1",
+  sendId: "abc123",
+  title: "На відпустку",
+  description: "Мрія",
+  currencyCode: 980,
+  balance: 50_000,
+  goal: 200_000,
+  lastSeenAt: "2025-01-01T00:00:00.000Z",
+};
+
+describe("MonoJarDtoSchema", () => {
+  it("accepts a fully-populated row", () => {
+    const parsed = MonoJarDtoSchema.parse(VALID_JAR);
+    expect(parsed.balance).toBe(50_000);
+    expect(parsed.goal).toBe(200_000);
+  });
+
+  it("accepts null for optional Monobank fields (no goal set in-app)", () => {
+    const parsed = MonoJarDtoSchema.parse({
+      ...VALID_JAR,
+      sendId: null,
+      title: null,
+      description: null,
+      balance: null,
+      goal: null,
+    });
+    expect(parsed.goal).toBeNull();
+    expect(parsed.balance).toBeNull();
+  });
+
+  it("rejects a stringified bigint balance (Hard Rule #1 contract)", () => {
+    expect(() =>
+      MonoJarDtoSchema.parse({ ...VALID_JAR, balance: "50000" }),
+    ).toThrow();
+  });
+
+  it("rejects missing lastSeenAt (DB column is NOT NULL)", () => {
+    const { lastSeenAt: _ls, ...rest } = VALID_JAR;
+    void _ls;
+    expect(() => MonoJarDtoSchema.parse(rest)).toThrow();
+  });
+});
+
+describe("MonoJarsResponseSchema", () => {
+  it("accepts an empty array (no jars, or none linked yet)", () => {
+    expect(MonoJarsResponseSchema.parse([])).toEqual([]);
+  });
+
+  it("accepts an array of valid jars", () => {
+    const parsed = MonoJarsResponseSchema.parse([
+      VALID_JAR,
+      { ...VALID_JAR, monoJarId: "jar2", goal: null },
+    ]);
+    expect(parsed).toHaveLength(2);
+    expect(parsed[1]?.goal).toBeNull();
   });
 });
 

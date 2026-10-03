@@ -123,6 +123,57 @@ describe("usePullToRefresh", () => {
     expect(result.current.pullDistance).toBe(0);
   });
 
+  it("resets without refreshing when the browser cancels the gesture", async () => {
+    // Real devices fire `touchcancel` (not `touchend`) when their own
+    // overscroll / native pull-to-refresh takes the gesture over. Before
+    // the handler existed the state stayed frozen mid-pull and the
+    // indicator hung forever.
+    const onRefresh = vi.fn().mockResolvedValue(undefined);
+    const { result } = setup({ onRefresh, pullThreshold: 80 });
+    act(() => el.dispatchEvent(makeTouchEvent("touchstart", 100)));
+    act(() => el.dispatchEvent(makeTouchEvent("touchmove", 220)));
+    expect(result.current.canRefresh).toBe(true);
+    await act(async () => {
+      el.dispatchEvent(new Event("touchcancel"));
+    });
+    expect(onRefresh).not.toHaveBeenCalled();
+    expect(result.current).toEqual({
+      isPulling: false,
+      isRefreshing: false,
+      pullDistance: 0,
+      pullProgress: 0,
+      canRefresh: false,
+    });
+  });
+
+  it("force-resets via the failsafe when onRefresh never settles", async () => {
+    vi.useFakeTimers();
+    try {
+      // A consumer whose promise hangs forever (stalled invalidateQueries /
+      // dead network). Without the failsafe the spinner would spin forever.
+      const onRefresh = vi.fn(() => new Promise<void>(() => {}));
+      const { result } = setup({
+        onRefresh,
+        pullThreshold: 80,
+        refreshFailsafeMs: 5000,
+      });
+      act(() => el.dispatchEvent(makeTouchEvent("touchstart", 100)));
+      act(() => el.dispatchEvent(makeTouchEvent("touchmove", 220)));
+      await act(async () => {
+        el.dispatchEvent(new Event("touchend"));
+      });
+      expect(result.current.isRefreshing).toBe(true);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(result.current.isRefreshing).toBe(false);
+      expect(result.current.pullDistance).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("ignores the gesture when not at the top of the scroll container", () => {
     setScrollTop(el, 50);
     const { result } = setup();

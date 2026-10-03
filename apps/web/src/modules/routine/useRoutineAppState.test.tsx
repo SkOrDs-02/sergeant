@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useRoutineAppState } from "./useRoutineAppState";
 
@@ -12,7 +12,6 @@ const routineAppMocks = vi.hoisted(() => ({
   reactNavigate: vi.fn(),
   setPersistedTab: vi.fn(),
   markSeen: vi.fn(),
-  useRoutineDualWriteBoot: vi.fn(),
   useSqliteReadBoot: vi.fn(),
   useRoutineReminders: vi.fn(),
   setTimeMode: vi.fn(),
@@ -112,9 +111,6 @@ vi.mock("./lib/routineStorage", () => ({
     bulkMarked: dateKey,
   }),
 }));
-vi.mock("./hooks/useRoutineDualWriteBoot", () => ({
-  useRoutineDualWriteBoot: routineAppMocks.useRoutineDualWriteBoot,
-}));
 vi.mock("./hooks/useSqliteReadBoot", () => ({
   useSqliteReadBoot: routineAppMocks.useSqliteReadBoot,
 }));
@@ -166,7 +162,6 @@ describe("useRoutineAppState", () => {
     const { result } = renderHook(() => useRoutineAppState({ onOpenModule }));
 
     expect(routineAppMocks.useSqliteReadBoot).toHaveBeenCalledOnce();
-    expect(routineAppMocks.useRoutineDualWriteBoot).toHaveBeenCalledOnce();
     expect(routineAppMocks.useRoutineReminders).toHaveBeenCalledOnce();
     expect(result.current.mainTab).toBe("calendar");
     expect(result.current.streakMax).toBe(3);
@@ -195,15 +190,33 @@ describe("useRoutineAppState", () => {
 
   it("handles pwa add_habit, storage errors, tab changes, and pull refresh errors", async () => {
     const onConsumed = vi.fn();
-    const { result } = renderHook(() =>
-      useRoutineAppState({
-        pwaAction: "add_habit",
-        onPwaActionConsumed: onConsumed,
-      }),
+    const { result, rerender } = renderHook(
+      ({
+        action,
+        onPwaActionConsumed,
+      }: {
+        action: string | null;
+        onPwaActionConsumed: () => void;
+      }) =>
+        useRoutineAppState({
+          pwaAction: action,
+          onPwaActionConsumed,
+        }),
+      {
+        initialProps: {
+          action: null as string | null,
+          onPwaActionConsumed: onConsumed,
+        },
+      },
     );
 
-    expect(result.current.quickAddHabitOpen).toBe(true);
-    expect(onConsumed).toHaveBeenCalledOnce();
+    rerender({ action: "add_habit", onPwaActionConsumed: onConsumed });
+    await waitFor(() => {
+      expect(result.current.quickAddHabitOpen).toBe(true);
+    });
+    await waitFor(() => {
+      expect(onConsumed).toHaveBeenCalledOnce();
+    });
 
     act(() => {
       window.dispatchEvent(
@@ -229,14 +242,15 @@ describe("useRoutineAppState", () => {
     );
   });
 
-  it("opens first-run quick add and consumes valid routineDay deep links", () => {
+  it("does not auto-open first-run quick add and consumes valid routineDay deep links", async () => {
     routineAppMocks.firstRun.firstRun = true;
     routineAppMocks.location.search = "?routineDay=2026-06-20&keep=1";
     const { result } = renderHook(() => useRoutineAppState({}));
 
-    expect(result.current.quickAddHabitOpen).toBe(true);
-    expect(result.current.quickAddFirstRunHint).toBe(true);
-    expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
+    expect(result.current.quickAddHabitOpen).toBe(false);
+    await waitFor(() => {
+      expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
+    });
     expect(routineAppMocks.deepLinkDay).toHaveBeenCalledWith("2026-06-20");
     expect(routineAppMocks.reactNavigate).toHaveBeenCalledWith(
       {
@@ -246,8 +260,5 @@ describe("useRoutineAppState", () => {
       },
       { replace: true },
     );
-
-    act(() => result.current.dismissQuickAddFirstRunHint());
-    expect(result.current.quickAddFirstRunHint).toBe(false);
   });
 });

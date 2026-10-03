@@ -8,7 +8,7 @@ import {
 vi.mock("../../lib/anthropic.js", () => createAnthropicMockHandle());
 
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
-import handler from "./analyze-photo.js";
+import handler, { buildAnalyzePhotoPrompt } from "./analyze-photo.js";
 
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
@@ -86,12 +86,25 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
     const body = asRecord(res.body);
     expect(body["rawText"]).toBe(rawText);
     expect(body["result"]).toEqual({
+      isFood: true,
+      notFoodKind: null,
       dishName: "Борщ",
       confidence: 0.82,
       portion: { label: "тарілка", gramsApprox: 350 },
       ingredients: [
         { name: "Буряк", notes: "варений" },
         { name: "Капуста", notes: null },
+      ],
+      // Модель відповіла без `items` (стара форма) — нормалізатор синтезує
+      // одну позицію з `dishName`, щоб екран мав що показати рядком, і сума
+      // лишається тим самим числом. Ініціатива 0023, PR-1.
+      items: [
+        {
+          name: "Борщ",
+          macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
+          gramsApprox: 350,
+          confidence: 0.82,
+        },
       ],
       macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
       questions: ["Зі сметаною?"],
@@ -212,5 +225,51 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
       status: 502,
       code: "ANTHROPIC_ERROR",
     });
+  });
+});
+
+/**
+ * Правила з репорту тестера 2026-08-11 (фото цінника Сільпо: назва + вага,
+ * таблиці харчової цінності немає — модель віддавала нулі).
+ *
+ * Пін саме на промпті, а не на відповіді моделі: сам фікс тут — текст
+ * інструкції, і без цих перевірок його можна тихо викинути при наступному
+ * редагуванні, а тести все одно лишились би зеленими.
+ */
+describe("nutrition analyze-photo — правила промпта", () => {
+  const { system } = buildAnalyzePhotoPrompt({ locale: "uk-UA" });
+
+  it("забороняє нуль замість «не знаю»", () => {
+    expect(system).toMatch(/Нуль і «не знаю» – різні речі/);
+    expect(system).toMatch(/"null" лишай ТІЛЬКИ/);
+  });
+
+  it("вчить читати етикетку: назва, вага в грамах, таблиця на 100 г", () => {
+    expect(system).toMatch(/Етикетка, цінник чи упаковка продукту – це ЇЖА/);
+    expect(system).toMatch(/portion\.gramsApprox/);
+    expect(system).toMatch(/вага порції \/ 100/);
+  });
+
+  it("вимагає оцінку за назвою, коли таблиці харчової цінності немає", () => {
+    expect(system).toMatch(
+      /таблиці немає – назва страви вже достатня підстава/,
+    );
+  });
+
+  // Прод-регресія 2026-08-11 (друга хвиля): реальний прогін на фото
+  // цінника без таблиці харчової цінності отримав ПОПЕРЕДНЮ версію цього
+  // промпту («усе одно ОЦІНИ КБЖВ...») і все одно повернув самі нулі +
+  // питання про фото таблиці — модель прочитала «постав питання» як
+  // альтернативу оцінці, не доповнення. Ці два тести пінять саме те
+  // формулювання, що мало закрити цю прогалину.
+  it("явно каже: оцінка обовʼязкова, питання її не замінюють", () => {
+    expect(system).toMatch(/Оцінка КБЖВ ОБОВʼЯЗКОВА для будь-якої/);
+    expect(system).toMatch(/питання ДОПОВНЮЮТЬ оцінку, а не замінюють її/);
+  });
+
+  it("звужує null до нерозпізнаної страви, не до відсутності таблиці", () => {
+    expect(system).toMatch(
+      /а не тому, що\s+бракує точних даних або таблиці харчової цінності/,
+    );
   });
 });

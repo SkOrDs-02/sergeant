@@ -14,6 +14,11 @@
  *     cache is warm before the first overlay read.
  *
  * Idempotent — calling it twice is a no-op.
+ *
+ * Між 2026-08 і 2026-09 тут стояв ще один крок — місток демо-сіду
+ * (`importFinykDemoMonoTransactions`), який під демо-прапорцем доносив
+ * засіяні mono-транзакції до цього мірора. Демо-режим знято 2026-09-17
+ * разом із ним.
  */
 
 import { logger } from "@shared/lib";
@@ -40,6 +45,7 @@ export async function bootFinykMonoMirror(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateFinyk(client);
+
     await refreshFinykMonoMirrorState(client, userId);
 
     booted = true;

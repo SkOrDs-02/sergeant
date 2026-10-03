@@ -18,7 +18,13 @@
 
 import { describe, expect, it } from "vitest";
 import preset from "./tailwind-preset.js";
-import { brandColors, zTier } from "./tokens.js";
+import {
+  accentInkHex,
+  accentStrongHex,
+  brandColors,
+  statusStrongHex,
+  zTier,
+} from "./tokens.js";
 
 describe("@sergeant/design-tokens — tailwind-preset.js", () => {
   it("exports a theme.extend-only preset with no baked-in content globs", () => {
@@ -37,28 +43,75 @@ describe("@sergeant/design-tokens — tailwind-preset.js", () => {
     }
   });
 
-  describe("colors — derived brand scale stays in lockstep with brandColors", () => {
+  describe("colors — hub brand is the neutral stone ramp (design-audit M1)", () => {
     const { brand } = preset.theme.extend.colors;
 
-    it("brand.DEFAULT === emerald-500", () => {
-      expect(brand.DEFAULT).toBe(brandColors.emerald[500]);
+    // The hub/shell `brand` token is deliberately NEUTRAL (warm stone) so it
+    // carries no module hue and never reads as a fifth accent. Previously it
+    // aliased teal/emerald, making the hub indistinguishable from finyk.
+    it("brand.DEFAULT === stone-700", () => {
+      expect(brand.DEFAULT).toBe(brandColors.stone[700]);
     });
 
-    it("brand.light/dark/subtle map to emerald 400/600/50", () => {
-      expect(brand.light).toBe(brandColors.emerald[400]);
-      expect(brand.dark).toBe(brandColors.emerald[600]);
-      expect(brand.subtle).toBe(brandColors.emerald[50]);
+    it("brand.light/dark/subtle map to stone 500/800/100", () => {
+      expect(brand.light).toBe(brandColors.stone[500]);
+      expect(brand.dark).toBe(brandColors.stone[800]);
+      expect(brand.subtle).toBe(brandColors.stone[100]);
     });
 
-    it("brand.strong === emerald-700 (WCAG-AA companion)", () => {
-      expect(brand.strong).toBe(brandColors.emerald[700]);
+    it("brand.strong === stone-800 (WCAG-AAA companion for white-on-fill)", () => {
+      expect(brand.strong).toBe(brandColors.stone[800]);
     });
 
-    it("brand spreads the full emerald numeric scale", () => {
-      for (const step of Object.keys(brandColors.emerald)) {
-        expect(brand[step]).toBe(brandColors.emerald[step]);
+    it("brand spreads the full stone numeric scale", () => {
+      for (const step of Object.keys(brandColors.stone)) {
+        expect(brand[step]).toBe(brandColors.stone[step]);
       }
     });
+
+    it("brand no longer aliases the teal/finyk hue", () => {
+      expect(brand.DEFAULT).not.toBe(brandColors.teal[700]);
+      expect(brand.strong).not.toBe(brandColors.teal[800]);
+    });
+  });
+
+  describe("textColor — `-strong` як ТЕКСТ іде через тема-змінну", () => {
+    const textColor = preset.theme.extend.textColor;
+
+    // AI-CONTEXT (2026-09-02): `-strong` несе дві ролі — заливку під
+    // `text-white` і текст на поверхні. Розводить їх саме цей блок: `colors`
+    // лишається джерелом для `bg-`/`border-`, а `textColor` перекриває рівно
+    // утиліту `text-`. Якщо запис звідси зникне, Tailwind тихо повернеться до
+    // `colors.{family}.strong` — статичного світлого тиру, і темна тема знову
+    // малюватиме темне по темному (1.11…2.74:1). Візуально це помітно лише
+    // на скріншоті в темній темі, тож перевірка тут.
+    const FAMILIES = [
+      ...Object.keys(statusStrongHex),
+      ...Object.keys(accentStrongHex),
+    ];
+
+    for (const family of FAMILIES) {
+      it(`text-${family}-strong резолвиться через --c-${family}-ink`, () => {
+        expect(textColor[`${family}-strong`]).toContain(
+          `var(--c-${family}-ink`,
+        );
+      });
+    }
+
+    // Fallback усередині `var()` — рівно СВІТЛИЙ тир. Платформа без цих
+    // змінних (майбутній bare-preset) мусить рендерити те саме, що й до
+    // розведення ролей, а не чорнильний тир на світлому фоні.
+    const triple = (hex) =>
+      [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)).join(" ");
+
+    for (const [family, hex] of Object.entries(accentStrongHex)) {
+      it(`text-${family}-strong має світлий fallback (${hex})`, () => {
+        expect(textColor[`${family}-strong`]).toContain(triple(hex));
+        expect(textColor[`${family}-strong`]).not.toContain(
+          triple(accentInkHex[family]),
+        );
+      });
+    }
   });
 
   describe("zIndex — semantic tier mirrors zTier exactly", () => {
@@ -93,25 +146,82 @@ describe("@sergeant/design-tokens — tailwind-preset.js", () => {
     });
   });
 
-  describe("borderRadius — v2 scale keys are present and don't clobber legacy", () => {
+  describe("borderRadius — canonical semantic scale", () => {
     const { borderRadius } = preset.theme.extend;
 
-    it("exposes the v2 r-* radius scale", () => {
-      expect(borderRadius["r-md"]).toBe("12px");
-      expect(borderRadius["r-lg"]).toBe("14px");
-      expect(borderRadius["r-xl"]).toBe("18px");
-      expect(borderRadius["r-2xl"]).toBe("24px");
+    it("does not expose the retired parallel r-* namespace", () => {
+      expect(borderRadius).not.toHaveProperty("r-md");
+      expect(borderRadius).not.toHaveProperty("r-lg");
+      expect(borderRadius).not.toHaveProperty("r-xl");
+      expect(borderRadius).not.toHaveProperty("r-2xl");
     });
 
-    it("keeps the legacy CONTROL/CARD/HERO contract distinct from r-*", () => {
-      // `2xl=16` is the legacy CONTROL value; `r-2xl=24` is the v2 hero
-      // value. They must NOT collide.
+    it("keeps the canonical CARD and HERO values", () => {
       expect(borderRadius["2xl"]).toBe("16px");
-      expect(borderRadius["2xl"]).not.toBe(borderRadius["r-2xl"]);
+      expect(borderRadius["3xl"]).toBe("24px");
     });
 
     it("full radius is the pill value", () => {
       expect(borderRadius.full).toBe("9999px");
+    });
+  });
+
+  describe("край і зріз — підйом маскованого краю (анти-слоп П3)", () => {
+    /** Зібрати всі утиліти, які плагіни преcету реєструють через `addUtilities`. */
+    function collectUtilities() {
+      const out = {};
+      for (const plugin of preset.plugins) {
+        plugin({
+          addUtilities: (utils) => Object.assign(out, utils),
+          // Плагіни, які не кличуть `addUtilities`, просто нічого не додають.
+          addComponents: () => {},
+          addBase: () => {},
+          theme: () => undefined,
+          matchUtilities: () => {},
+        });
+      }
+      return out;
+    }
+
+    const utils = collectUtilities();
+
+    /**
+     * AI-DANGER: маска й підйом мусять жити на РІЗНИХ вузлах. Фільтр
+     * застосовується до маски, тож на одному вузлі маска зрізає й тінь —
+     * заміряно в headless Chromium 2026-08-06: `filter + mask` разом дають
+     * рівно те саме, що `box-shadow + mask`, тобто нічого. Цей тест ловить
+     * «спрощення», яке зіллє дві утиліти в одну.
+     */
+    it("підйом не несе маски, а маска не несе підйому", () => {
+      for (const masked of [".edge-perf", ".edge-stub"]) {
+        expect(utils[masked]).toBeDefined();
+        expect(utils[masked].mask).toBeTruthy();
+        expect(utils[masked]).not.toHaveProperty("filter");
+        expect(utils[masked].boxShadow ?? "none").toBe("none");
+      }
+      for (const lift of [".edge-lift", ".edge-lift-interactive"]) {
+        expect(utils[lift]).toBeDefined();
+        expect(utils[lift].filter).toBe("var(--drop-e1)");
+        expect(utils[lift]).not.toHaveProperty("mask");
+      }
+    });
+
+    it("інтерактивний підйом піднімається на hover, звичайний — ні", () => {
+      expect(utils[".edge-lift-interactive"]["&:hover"].filter).toBe(
+        "var(--drop-e2)",
+      );
+      expect(utils[".edge-lift"]).not.toHaveProperty("&:hover");
+    });
+
+    /**
+     * `edge-rule` маски НЕ має — це лише квадратний верх і 2px лінійка.
+     * Тому підйом їй не потрібен, і `boxShadow: none` там був рішенням, а
+     * не обмеженням. Тест фіксує саме цю різницю, бо через неї дві з трьох
+     * утиліт поводяться інакше.
+     */
+    it("друкарська лінійка лишається без маски", () => {
+      expect(utils[".edge-rule"]).toBeDefined();
+      expect(utils[".edge-rule"]).not.toHaveProperty("mask");
     });
   });
 

@@ -80,7 +80,7 @@ describe("PersonalInfoSection — name save", () => {
     const save = screen.getByRole("button", { name: "Зберегти" });
     expect((save as HTMLButtonElement).disabled).toBe(true);
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "Олександр" },
     });
     expect((save as HTMLButtonElement).disabled).toBe(false);
@@ -90,7 +90,7 @@ describe("PersonalInfoSection — name save", () => {
     updateUserMock.mockResolvedValue({ data: { ok: true }, error: null });
     const { onRefresh } = renderSection();
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "  Олександр  " },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
@@ -99,7 +99,7 @@ describe("PersonalInfoSection — name save", () => {
       expect(updateUserMock).toHaveBeenCalledWith({ name: "Олександр" });
     });
     await waitFor(() => {
-      expect(toastSuccessMock).toHaveBeenCalledWith("Ім'я оновлено");
+      expect(toastSuccessMock).toHaveBeenCalledWith("Імʼя оновлено");
       expect(onRefresh).toHaveBeenCalled();
     });
   });
@@ -115,8 +115,8 @@ describe("PersonalInfoSection — name save", () => {
     });
     renderSection();
 
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
-      target: { value: "Новеім'я" },
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
+      target: { value: "Новеімʼя" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
@@ -132,7 +132,7 @@ describe("PersonalInfoSection — name save", () => {
 
   it("does not save a whitespace-only name", async () => {
     renderSection();
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "   " },
     });
     const save = screen.getByRole("button", { name: "Зберегти" });
@@ -144,7 +144,7 @@ describe("PersonalInfoSection — name save", () => {
 
   it("offline disables the save button", () => {
     renderSection({}, false);
-    fireEvent.change(screen.getByLabelText("Ім'я"), {
+    fireEvent.change(screen.getByLabelText("Імʼя"), {
       target: { value: "Інше" },
     });
     expect(
@@ -172,12 +172,77 @@ describe("PersonalInfoSection — email change", () => {
         newEmail: "new@example.com",
       });
     });
+    // Verified account → Better Auth sends a confirmation to the CURRENT
+    // address first; the address does not change until that link is clicked.
+    // The copy has to say so, otherwise the user watches the old email sit in
+    // the field and assumes the save silently failed.
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Лист підтвердження нового email надіслано",
+        "Лист підтвердження надіслано на поточну адресу",
       );
       expect(onRefresh).toHaveBeenCalled();
     });
+  });
+
+  /**
+   * The other Better Auth branch: with an unverified current address,
+   * `updateEmailWithoutVerification` swaps it immediately and mails the
+   * verification to the NEW inbox. Same `{ status: true }` on the wire, so the
+   * component branches on `emailVerified` — pin both arms.
+   */
+  it("unverified account gets the immediate-swap copy instead", async () => {
+    changeEmailMock.mockResolvedValue({ data: { ok: true }, error: null });
+    const { onRefresh } = renderSection({ emailVerified: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "new@example.com" },
+    });
+    const saves = screen.getAllByRole("button", { name: "Зберегти" });
+    fireEvent.click(saves[saves.length - 1]!);
+
+    await waitFor(() => {
+      expect(toastSuccessMock).toHaveBeenCalledWith(
+        "Адресу змінено, перевір нову скриньку",
+      );
+    });
+    // This branch is the only one where the address really changed on the
+    // server, so the refetch is load-bearing: without it the field keeps
+    // rendering the old address and the toast reads as a lie.
+    await waitFor(() => {
+      expect(onRefresh).toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * Regression anchor for the shipped bug: `user.changeEmail` was never
+   * configured on the server, so this endpoint answered `400
+   * CHANGE_EMAIL_DISABLED` every single time. The server-side guard lives in
+   * `apps/server/src/auth.test.ts`; here we only pin that the code reaches the
+   * user as Ukrainian copy rather than the generic fallback.
+   */
+  it("CHANGE_EMAIL_DISABLED surfaces its own Ukrainian copy", async () => {
+    changeEmailMock.mockResolvedValue({
+      error: {
+        code: "CHANGE_EMAIL_DISABLED",
+        message: "Change email is disabled",
+      },
+    });
+    renderSection();
+
+    fireEvent.click(screen.getByRole("button", { name: "Змінити" }));
+    fireEvent.change(screen.getByLabelText("Email"), {
+      target: { value: "new@example.com" },
+    });
+    const saves = screen.getAllByRole("button", { name: "Зберегти" });
+    fireEvent.click(saves[saves.length - 1]!);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText("Зміна email тимчасово недоступна."),
+      ).toBeTruthy();
+    });
+    expect(toastSuccessMock).not.toHaveBeenCalled();
   });
 
   it("email save stays disabled when the value equals the current email", () => {

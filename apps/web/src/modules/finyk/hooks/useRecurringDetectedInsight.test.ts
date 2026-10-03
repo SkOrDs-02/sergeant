@@ -50,6 +50,25 @@ describe("useRecurringDetectedInsight", () => {
     expect(result.current!.title).toContain("Netflix");
   });
 
+  it("веде на Планування з розкритим блоком, а не на Активи", () => {
+    // Регресія 2026-09-13: підписки й «Можливі підписки» переїхали з
+    // «Активів» у «Планування» ще 2026-09-03, а інсайт лишився вести на
+    // старий шлях — тап був редіректом у нікуди. `section=recurring`
+    // додатково розкриває акордеон, щоб деталі кандидата було видно.
+    const transactions = [
+      tx("n1", 5, 39900),
+      tx("n2", 35, 39900),
+      tx("n3", 65, 39900),
+    ];
+    const { result } = renderHook(() =>
+      useRecurringDetectedInsight({ transactions }),
+    );
+    expect(result.current!.action).toEqual({
+      type: "navigate",
+      path: "/finyk/budgets?section=recurring",
+    });
+  });
+
   it("respects excludedTxIds passed as a Set without throwing", () => {
     const transactions = [tx("n1", 5, 39900), tx("n2", 35, 39900)];
     const { result } = renderHook(() =>

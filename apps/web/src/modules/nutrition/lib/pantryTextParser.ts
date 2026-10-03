@@ -9,9 +9,11 @@
  * `import { parseLoosePantryText } from "@sergeant/nutrition-domain";`
  */
 export {
-  normalizeFoodName,
+  displayFoodName,
+  matchFoodName,
   normalizeUnit,
   canonicalFoodKey,
   parseLoosePantryText,
+  PANTRY_AMBIGUOUS_QTY_THRESHOLD,
 } from "@sergeant/nutrition-domain";
 export type { PantryItem } from "@sergeant/nutrition-domain";

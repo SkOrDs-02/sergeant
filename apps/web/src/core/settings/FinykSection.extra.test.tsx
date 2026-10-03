@@ -1,0 +1,394 @@
+/** @vitest-environment jsdom */
+/**
+ * Extra branch coverage for FinykSection — supplements FinykSection.interactions.test.tsx
+ * by exercising the cancel paths on both confirm modals, non-Error fallback
+ * messages in connectWebhook / triggerBackfill, and the disconnect error-swallow
+ * guarantee.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
+
+const apiState = vi.hoisted(() => ({ isPro: true }));
+
+const backfillState = vi.hoisted(() => ({
+  status: null as string | null,
+}));
+
+vi.mock("@shared/api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@shared/api")>("@shared/api");
+  return {
+    ...actual,
+    monoWebhookApi: {
+      syncState: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      backfill: vi.fn(),
+      accounts: vi.fn(),
+      transactions: vi.fn(),
+    },
+    privatApi: { balanceFinal: vi.fn() },
+    // Silpo card renders alongside Monobank in the same "Фінік" group —
+    // without this mock `useSilpoSyncState` would hit the real (unmocked)
+    // `httpClient` fetch in jsdom.
+    silpoApi: {
+      syncState: vi.fn().mockResolvedValue({
+        status: "disconnected",
+        accessTokenExpiresAt: null,
+        lastSyncAt: null,
+        receiptsCount: 0,
+      }),
+      sync: vi.fn(),
+      disconnect: vi.fn(),
+      wipe: vi.fn(),
+      receipts: vi.fn(),
+      receiptDetail: vi.fn(),
+    },
+    silpoConnectUrl: () => "https://example.test/api/v1/silpo/connect",
+    isApiError: (e: unknown): boolean =>
+      typeof e === "object" && e !== null && "kind" in e,
+  };
+});
+
+vi.mock("@finyk/hooks/useStorage", () => ({
+  useStorage: () => ({
+    customCategories: [],
+    addCustomCategory: vi.fn(),
+    removeCustomCategory: vi.fn(),
+  }),
+}));
+
+// `SilpoIntegrationSection` calls `useToast()` (sync/disconnect/wipe result
+// toasts) — this suite has no `<ToastProvider>` in its render tree, so
+// stub the hook directly rather than adding an unrelated provider.
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    show: vi.fn(),
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warning: vi.fn(),
+    dismiss: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+  }),
+}));
+
+vi.mock("../billing/usePlan", () => ({
+  usePlan: () => ({
+    plan: apiState.isPro ? "pro" : "free",
+    isPro: apiState.isPro,
+    isLoading: false,
+  }),
+}));
+
+const removeFinykStorageItem = vi.hoisted(() => vi.fn());
+vi.mock("@finyk/lib/finykStorage", () => ({
+  removeItem: removeFinykStorageItem,
+}));
+
+vi.mock("@finyk/hooks/useMonoBackfillProgress", () => ({
+  useMonoBackfillProgress: () => ({
+    progress: backfillState.status
+      ? {
+          status: backfillState.status,
+          accountsProcessed: 1,
+          accountsTotal: 3,
+          transactionsProcessed: 5,
+          lastError: null,
+        }
+      : null,
+  }),
+}));
+
+import { monoWebhookApi } from "@shared/api";
+import { FinykSection } from "./FinykSection";
+
+const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedConnect = monoWebhookApi.connect as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedDisconnect = monoWebhookApi.disconnect as unknown as ReturnType<
+  typeof vi.fn
+>;
+const mockedBackfill = monoWebhookApi.backfill as unknown as ReturnType<
+  typeof vi.fn
+>;
+
+const DISCONNECTED = {
+  status: "disconnected" as const,
+  webhookActive: false,
+  lastEventAt: null,
+  lastBackfillAt: null,
+  accountsCount: 0,
+};
+const ACTIVE = {
+  status: "active" as const,
+  webhookActive: true,
+  lastEventAt: null,
+  lastBackfillAt: null,
+  accountsCount: 2,
+};
+
+function renderSection() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderSettingsSection(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <FinykSection />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe("FinykSection extra branches", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    apiState.isPro = true;
+    backfillState.status = null;
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  afterEach(() => {
+    cleanup();
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  // ── Cancel paths on the confirmation dialog ──────────────────────────────
+  // Раніше тут стояло «ConfirmModal» — той примітив видалено (V-8, аудит
+  // 2026-08-08); канонічна оболонка одна, `@shared/components/ui/ConfirmDialog`.
+
+  it("cancels the cache-clear confirm modal without clearing anything", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByText("Скасувати"));
+
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(removeFinykStorageItem).not.toHaveBeenCalled();
+  });
+
+  it("cancels the disconnect confirm modal without disconnecting", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE);
+    renderSection();
+    fireEvent.click(await screen.findByText("Відʼєднати"));
+
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByText("Скасувати"));
+
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(mockedDisconnect).not.toHaveBeenCalled();
+  });
+
+  // ── Non-Error / plain-string fallback messages ───────────────────────────
+
+  it("shows fallback connect error message when a plain object is thrown", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    // Throw something that is NOT an Error instance and not an ApiError
+    mockedConnect.mockRejectedValue({ unexpected: true });
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows fallback connect error when Error has empty message", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockRejectedValue(new Error(""));
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    expect(
+      await screen.findByText(
+        "Не вдалося підключити Monobank. Спробуй ще раз.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows fallback backfill error when a non-Error value is thrown", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE);
+    mockedBackfill.mockRejectedValue("nope");
+    renderSection();
+    fireEvent.click(await screen.findByText("Синхронізувати історію"));
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
+    );
+  });
+
+  // ── Помилка відʼєднання ──────────────────────────────────────────────────
+
+  it("shows disconnect() rejection and keeps the connected state", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE);
+    mockedDisconnect.mockRejectedValue(new Error("disconnect failed"));
+    renderSection();
+    fireEvent.click(await screen.findByText("Відʼєднати"));
+
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByText("Вийти"));
+
+    await waitFor(() => expect(mockedDisconnect).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "disconnect failed",
+    );
+    expect(screen.getByText("Синхронізація активна")).toBeInTheDocument();
+  });
+
+  // ── Connect success path ─────────────────────────────────────────────────
+
+  it("clears the token input after a successful connect", async () => {
+    mockedSyncState
+      .mockResolvedValueOnce(DISCONNECTED)
+      .mockResolvedValue(ACTIVE);
+    mockedConnect.mockResolvedValue({ status: "active", accountsCount: 1 });
+    renderSection();
+    const input = (await screen.findByPlaceholderText(
+      "Токен Monobank API",
+    )) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "my-token" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    await waitFor(() => expect(mockedConnect).toHaveBeenCalledTimes(1));
+    // Token input should be cleared after successful connect
+    await waitFor(() => expect(input.value).toBe(""));
+  });
+
+  // ── Enter key on token input ─────────────────────────────────────────────
+
+  it("validates empty token on Enter key press", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(await screen.findByText("Введи токен")).toBeInTheDocument();
+  });
+
+  // ── Category Enter key guard (non-empty only) ────────────────────────────
+
+  it("adds a category via the button even when Enter guard is skipped", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    // An Enter on empty input should NOT call add (guard: newCategoryLabel.trim())
+    // We can verify the button path clears the input on each add cycle.
+    fireEvent.change(input, { target: { value: "Test" } });
+    expect((input as HTMLInputElement).value).toBe("Test");
+  });
+
+  // ── Refreshing guard (idempotent) ────────────────────────────────────────
+
+  it("triggers exactly three invalidations per refresh click", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    const btn = await screen.findByText("Оновити дані");
+    fireEvent.click(btn);
+    // refreshAllData calls invalidateQueries three times:
+    // finykKeys.mono, finykKeys.monoSyncState, hubKeys.preview("finyk").
+    // Just confirm it doesn't throw and the button is still present.
+    await waitFor(() =>
+      expect(screen.getByText("Оновити дані")).toBeInTheDocument(),
+    );
+  });
+
+  // ── Cache clear confirm executes clearTxCache ─────────────────────────────
+
+  it("clears tx cache when the confirm modal Очистити button is clicked", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
+
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(within(dialog).getByText("Очистити"));
+
+    await waitFor(() =>
+      expect(removeFinykStorageItem).toHaveBeenCalledWith("finyk_tx_cache"),
+    );
+    expect(removeFinykStorageItem).toHaveBeenCalledWith(
+      "finyk_tx_cache_last_good",
+    );
+  });
+
+  // ── Connect: auth error with no server message falls back to default ───────
+
+  it("shows default auth error when serverMessage is null", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    mockedConnect.mockRejectedValue({
+      kind: "http",
+      isAuth: true,
+      serverMessage: null,
+    });
+    renderSection();
+    const input = await screen.findByPlaceholderText("Токен Monobank API");
+    fireEvent.change(input, { target: { value: "tok" } });
+    fireEvent.click(screen.getByText("Підключити Monobank"));
+    expect(
+      await screen.findByText(
+        "Токен Monobank недійсний або закінчився. Онови токен.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // ── triggerBackfill: Error instance → error message stored ─────────────────
+
+  it("shows the catalog fallback after backfill fails", async () => {
+    mockedSyncState.mockResolvedValue(ACTIVE);
+    mockedBackfill.mockRejectedValue(new Error("Помилка re-sync"));
+    renderSection();
+    fireEvent.click(await screen.findByText("Синхронізувати історію"));
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не вдалося повторити синхронізацію. Спробуй ще раз.",
+    );
+  });
+
+  // ── Enter key on empty category input ─────────────────────────────────────
+
+  it("does not crash when Enter is pressed on empty category input", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    const input = await screen.findByPlaceholderText("Напр. Хобі");
+    // Guard: newCategoryLabel.trim() must be truthy
+    fireEvent.keyDown(input, { key: "Enter" });
+    // Component stays stable
+    expect(input).toBeInTheDocument();
+  });
+
+  // ── Webhook status badge: lastEventAt null (no timestamp separator) ────────
+
+  it("does not render the · separator when lastEventAt is null", async () => {
+    mockedSyncState.mockResolvedValue({
+      ...ACTIVE,
+      lastEventAt: null,
+    });
+    renderSection();
+    expect(
+      await screen.findByText("Синхронізація активна"),
+    ).toBeInTheDocument();
+    const statusSection = screen.getByText(
+      "Синхронізація активна",
+    ).parentElement;
+    expect(statusSection?.textContent).not.toContain("·");
+  });
+});

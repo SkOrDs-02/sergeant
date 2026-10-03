@@ -21,7 +21,7 @@
     "assert": {
       "assertions": {
         "largest-contentful-paint": [
-          "warn",
+          "error",
           { "maxNumericValue": 3000, "aggregationMethod": "median-run" }
         ],
         "first-contentful-paint": [

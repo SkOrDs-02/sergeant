@@ -1,6 +1,6 @@
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "@sergeant/db-schema/sqlite/migrations";
 import { runMigrations } from "@sergeant/db-schema/migrate/runner";
 import {
@@ -19,8 +19,8 @@ export async function migrateRoutine(
 ): Promise<void> {
   await runMigrations({
     adapter: createSqliteAdapter(client),
-    files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-    tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE, // keeps existing migration table name
+    files: ROUTINE_CLIENT_MIGRATIONS,
+    tableName: ROUTINE_MIGRATIONS_TABLE, // keeps existing migration table name
   });
 }
 

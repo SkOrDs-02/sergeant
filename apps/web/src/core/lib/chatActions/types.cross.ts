@@ -48,6 +48,17 @@ export interface CategoryBreakdownAction {
   input: { period_days?: number | string };
 }
 
+export interface GetDailySeriesAction {
+  name: "get_daily_series";
+  input: {
+    metrics: string[];
+    habit_id?: string;
+    date_from?: string;
+    date_to?: string;
+    fill?: "zero" | "null";
+  };
+}
+
 export interface DetectAnomaliesAction {
   name: "detect_anomalies";
   input: {

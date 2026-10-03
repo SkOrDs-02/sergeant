@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
@@ -20,7 +20,7 @@ export interface SubscriptionEditSheetProps {
 }
 
 function makeId(): string {
-  return `sub-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  return `sub-${Date.now()}-${crypto.randomUUID()}`;
 }
 
 const EMPTY: Subscription = {
@@ -40,19 +40,24 @@ export function SubscriptionEditSheet({
   onDelete,
   testID,
 }: SubscriptionEditSheetProps) {
-  const [form, setForm] = useState<Subscription>(EMPTY);
+  const [form, setForm] = useState<Subscription>(() =>
+    open ? (subscription ?? EMPTY) : EMPTY,
+  );
   const [error, setError] = useState<string | null>(null);
   const isEditing = !!subscription?.id;
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setForm(subscription ?? EMPTY);
-    setError(null);
-  }, [open, subscription]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setForm(subscription ?? EMPTY);
+      setError(null);
+    }
+  }
 
   const handleSubmit = () => {
     if (!form.name.trim()) {
-      setError("Вкажіть назву підписки");
+      setError("Вкажи назву підписки");
       return;
     }
     const day = Number(form.billingDay);

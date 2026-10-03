@@ -37,7 +37,7 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
           accessibilityLabel="Підписки"
           onPress={() => onNavigate?.("subscriptions")}
         >
-          <Text className="text-xs font-medium text-emerald-700">Всі →</Text>
+          <Text className="text-xs font-medium text-teal-700">Всі →</Text>
         </Pressable>
       </View>
       <View>

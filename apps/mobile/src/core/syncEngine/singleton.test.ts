@@ -1,16 +1,20 @@
 /**
- * Tests for the mobile sync v2 writer-runtime singleton.
+ * Tests for the mobile sync v2 writer + reader runtime singletons.
  *
  * Mirrors `apps/web/src/core/syncEngine/singleton.test.ts` so the
  * boot semantics (idempotent boot, error-swallowing, captureException
- * forwarding) stay symmetric with web.
+ * forwarding) stay symmetric with web. Extended with reader-boot tests
+ * added in PR-4 (sync-client-wiring mobile parity).
  */
 import type { SyncEngineWriterRuntime } from "./syncEngineWriter";
+import type { SyncEngineReaderRuntime } from "./syncEngineReader";
 
 import {
   __resetSyncEngineWriterForTests,
   bootSyncEngineWriter,
   getSyncEngineWriter,
+  bootSyncEngineReader,
+  getSyncEngineReader,
 } from "./singleton";
 
 function makeRuntime(): SyncEngineWriterRuntime {
@@ -22,6 +26,20 @@ function makeRuntime(): SyncEngineWriterRuntime {
     getStatus: jest.fn(),
     recoverAllDeadLetters: jest.fn(),
   } as unknown as SyncEngineWriterRuntime;
+}
+
+function makeReaderRuntime(): SyncEngineReaderRuntime {
+  return {
+    start: jest.fn(),
+    stop: jest.fn(),
+    pullOnce: jest.fn().mockResolvedValue({
+      pulled: 0,
+      applied: 0,
+      skipped: 0,
+      rejected: 0,
+      lastOpId: 0,
+    }),
+  };
 }
 
 beforeEach(() => {
@@ -84,5 +102,68 @@ describe("bootSyncEngineWriter (mobile)", () => {
     __resetSyncEngineWriterForTests();
     expect(runtime.stop).toHaveBeenCalledTimes(1);
     expect(getSyncEngineWriter()).toBeNull();
+  });
+});
+
+describe("bootSyncEngineReader (mobile)", () => {
+  beforeEach(() => {
+    __resetSyncEngineWriterForTests();
+  });
+
+  it("starts once and returns the same runtime on repeated boot", async () => {
+    const readerRuntime = makeReaderRuntime();
+    const createRuntime = jest.fn().mockResolvedValue(readerRuntime);
+
+    await expect(bootSyncEngineReader({ createRuntime })).resolves.toBe(
+      readerRuntime,
+    );
+    await expect(bootSyncEngineReader({ createRuntime })).resolves.toBe(
+      readerRuntime,
+    );
+
+    expect(createRuntime).toHaveBeenCalledTimes(1);
+    expect(readerRuntime.start).toHaveBeenCalledTimes(1);
+    expect(getSyncEngineReader()).toBe(readerRuntime);
+  });
+
+  it("does not throw when boot dependencies are unavailable", async () => {
+    const captureException = jest.fn();
+    const createRuntime = jest.fn().mockRejectedValue(new Error("sqlite down"));
+
+    await expect(
+      bootSyncEngineReader({ createRuntime, captureException }),
+    ).resolves.toBeNull();
+
+    expect(captureException).toHaveBeenCalledWith(expect.any(Error), {
+      scope: "sync-v2-reader-boot",
+    });
+    expect(getSyncEngineReader()).toBeNull();
+  });
+
+  it("coalesces concurrent boot requests into a single in-flight promise", async () => {
+    const readerRuntime = makeReaderRuntime();
+    const createRuntime = jest.fn(() => Promise.resolve(readerRuntime));
+
+    const [first, second] = await Promise.all([
+      bootSyncEngineReader({ createRuntime }),
+      bootSyncEngineReader({ createRuntime }),
+    ]);
+
+    expect(first).toBe(readerRuntime);
+    expect(second).toBe(readerRuntime);
+    expect(createRuntime).toHaveBeenCalledTimes(1);
+    expect(readerRuntime.start).toHaveBeenCalledTimes(1);
+  });
+
+  it("__resetSyncEngineWriterForTests also stops and clears the reader", async () => {
+    const readerRuntime = makeReaderRuntime();
+    const createRuntime = jest.fn().mockResolvedValue(readerRuntime);
+
+    await bootSyncEngineReader({ createRuntime });
+    expect(getSyncEngineReader()).toBe(readerRuntime);
+
+    __resetSyncEngineWriterForTests();
+    expect(readerRuntime.stop).toHaveBeenCalledTimes(1);
+    expect(getSyncEngineReader()).toBeNull();
   });
 });

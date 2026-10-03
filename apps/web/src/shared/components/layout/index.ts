@@ -17,12 +17,14 @@ export {
   ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
   ModuleHeaderChevronButton,
+  ModuleHeaderHubButton,
   ModuleHeaderIconButton,
   ModuleHeaderSettingsButton,
 } from "./ModuleHeader";
 export type {
   ModuleHeaderAssistantButtonProps,
   ModuleHeaderBackButtonProps,
+  ModuleHeaderHubButtonProps,
   ModuleHeaderIconButtonProps,
   ModuleHeaderProps,
   ModuleHeaderSettingsButtonProps,
@@ -30,6 +32,9 @@ export type {
 
 export { ModuleSettingsDrawer } from "./ModuleSettingsDrawer";
 export type { ModuleSettingsDrawerProps } from "./ModuleSettingsDrawer";
+
+export { SwipePages, SWIPE_THRESHOLD_PX } from "./SwipePages";
+export type { SwipePagesProps } from "./SwipePages";
 
 export { StorageErrorBanner } from "./StorageErrorBanner";
 export type { StorageErrorBannerProps } from "./StorageErrorBanner";

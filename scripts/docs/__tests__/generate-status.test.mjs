@@ -11,9 +11,26 @@ import { join } from "node:path";
 
 import {
   extractFocus,
+  formatPriorityTag,
   loadShipped,
   summariseInFlight,
 } from "../generate-status.mjs";
+
+describe("formatPriorityTag", () => {
+  it("renders agent-ready work without a synthetic phase", () => {
+    assert.equal(
+      formatPriorityTag({ priorityKind: "agent-ready", priorityPhase: null }),
+      "agent-ready",
+    );
+  });
+
+  it("keeps phase-based blocked labels", () => {
+    assert.equal(
+      formatPriorityTag({ priorityKind: "blocked", priorityPhase: "3" }),
+      "Phase 3 blocked 🚧",
+    );
+  });
+});
 
 describe("extractFocus", () => {
   it("returns the default placeholder when there is no existing file", () => {
@@ -36,6 +53,31 @@ describe("extractFocus", () => {
       "## next",
     ].join("\n");
     assert.equal(extractFocus(file), "Цього тижня: paywall + sync v2 sunset.");
+  });
+
+  it("skips markers quoted inline in the AUTO-GENERATED comment", () => {
+    // Реальна розкладка STATUS.md: службовий коментар під шапкою цитує обидва
+    // маркери в одному рядку. Наївний indexOf брав «` / `» між ними і кожна
+    // регенерація затирала ручний блок на «`/`».
+    const file = [
+      "# STATUS",
+      "",
+      "<!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй. -->",
+      "",
+      "## 🎯 Фокус зараз",
+      "",
+      "<!-- FOCUS:START -->",
+      "",
+      "- **Тиша замість шуму** — три хвилі фіксів злито.",
+      "",
+      "<!-- FOCUS:END -->",
+      "",
+      "## 🟢 Зроблено",
+    ].join("\n");
+    assert.equal(
+      extractFocus(file),
+      "- **Тиша замість шуму** — три хвилі фіксів злито.",
+    );
   });
 
   it("falls back to default when the region is whitespace-only", () => {

@@ -68,6 +68,17 @@ export interface SwitchProps {
   className?: string;
   /** Native `aria-label` fallback when no visible `label`. */
   "aria-label"?: string;
+  /**
+   * Id зовнішнього елемента, що називає перемикач, коли підпис живе НЕ
+   * всередині `Switch` (напр. `ToggleRow` у Налаштуваннях малює власний
+   * рядок-картку). Без цього такий перемикач лишався зовсім без
+   * доступного імені: власний `<label htmlFor>` компонента містить лише
+   * `aria-hidden`-спани треку й бігунка, тож обчислене імʼя порожнє, а
+   * зовнішній `<label>`-обгортка не рахується — вкладені `<label>`
+   * невалідні, і внутрішній explicit-label перемагає.
+   * Знахідка axe-гейта 2026-08-09: `label` critical, 5 вузлів на `/settings`.
+   */
+  "aria-labelledby"?: string;
 }
 
 const trackSize: Record<SwitchSize, string> = {
@@ -101,6 +112,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     announceText,
     className,
     "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
   },
   ref,
 ) {
@@ -133,11 +145,18 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
     [announce, announceText, disabled, isControlled, label, onChange],
   );
 
+  // `brand-strong` — це stone-800 (#292524). У «Чорнилі» вимкнений трек
+  // (`--c-line` = #1f2a25) майже не відрізняється від нього, тож обидва стани
+  // читались як один темний піл (user report). Увімкнений трек у темній —
+  // `dark:bg-brand-200` (#e7e5e4): проти вимкненого `bg-control` (#827b77) це
+  // 3.31:1, а `brand-400` (#a8a29e), який стояв тут із #1286, давав лише 1.65:1
+  // (знахідка CodeRabbit на #1286; гейт — `theme.controlFocus.test.ts`,
+  // «Switch: трек»). Світла (`brand-strong` проти `control`) — 3.34:1.
   const trackBg = currentChecked
-    ? "bg-brand-strong"
+    ? "bg-brand-strong dark:bg-brand-200"
     : error
       ? "bg-danger-soft"
-      : "bg-line";
+      : "bg-control";
 
   const ringColor = error
     ? "peer-focus-visible:ring-danger/45"
@@ -151,7 +170,13 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         className,
       )}
     >
-      <span className="relative inline-flex shrink-0 items-center">
+      <label
+        htmlFor={inputId}
+        className={cn(
+          "relative inline-flex shrink-0 items-center touch-target",
+          disabled ? "cursor-not-allowed" : "cursor-pointer",
+        )}
+      >
         <input
           ref={ref}
           id={inputId}
@@ -163,7 +188,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
           aria-checked={currentChecked}
           aria-invalid={error || undefined}
           aria-label={!label && ariaLabel ? ariaLabel : undefined}
-          aria-labelledby={label ? labelId : undefined}
+          aria-labelledby={label ? labelId : ariaLabelledBy}
           aria-describedby={description ? descId : undefined}
           disabled={disabled}
           onChange={handleChange}
@@ -172,33 +197,39 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
         <span
           aria-hidden="true"
           className={cn(
-            "relative inline-flex items-center rounded-full",
-            "transition-colors duration-200",
+            "inline-flex items-center rounded-full",
+            "transition-colors duration-base",
             "outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg",
             ringColor,
             trackSize[size],
             trackBg,
             disabled ? "cursor-not-allowed" : "cursor-pointer",
           )}
-        >
-          <span
-            className={cn(
-              "absolute left-[3px] rounded-full bg-panel shadow-card",
-              "transition-transform duration-200",
-              thumbSize[size],
-              thumbCheckedTranslate[size],
-            )}
-          />
-        </span>
-      </span>
+        ></span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            // Бігунок світлий в обох темах (iOS-конвенція). У «Чорнилі»
+            // `bg-panel` (#2a231f) зливався з вимкненим треком (#1f2a25) і
+            // стан не читався навіть по позиції. Виняток — увімкнений стан у
+            // темній: трек там майже білий (`brand-200`), світлий бігунок на
+            // ньому давав 1.15:1, тож бігунок темний (`bg-bg`, 15:1).
+            "pointer-events-none absolute left-[3px] rounded-full bg-panel dark:bg-text shadow-card",
+            currentChecked && "dark:bg-bg",
+            "transition-transform duration-base",
+            thumbSize[size],
+            thumbCheckedTranslate[size],
+          )}
+        />
+      </label>
 
       {(label || description) && (
         // The toggle is the `<input role="switch">` above; the label /
         // description block is a passive presentational region. The
         // input is `aria-labelledby` + `aria-describedby` so AT reads
         // them as part of the switch — and because the input is `peer`
-        // sr-only with `id`, an outer `<label htmlFor>` can still
-        // forward clicks.
+        // sr-only with `id`, both this text label and the visible track
+        // forward clicks to the same native control.
         <span className="flex-1 min-w-0 leading-snug select-none">
           {label && (
             <label
@@ -216,7 +247,7 @@ export const Switch = forwardRef<HTMLInputElement, SwitchProps>(function Switch(
             <span
               id={descId}
               className={cn(
-                "block text-xs mt-0.5",
+                "block text-style-caption mt-0.5",
                 error ? "text-danger-strong dark:text-danger" : "text-muted",
               )}
             >

@@ -5,10 +5,10 @@
  *
  * Не вимірюємо самі значення (collectDefaultMetrics + business counters
  * — це стани процесу, які тестувати в unit-форматі дорого і крихко).
- * Покриваємо саме контракт: ім'я метрики, тип, набір лейблів, видимість
- * у експорт-payload-і. Це той контракт, на який зав'язані Grafana-дашборди
+ * Покриваємо саме контракт: імʼя метрики, тип, набір лейблів, видимість
+ * у експорт-payload-і. Це той контракт, на який завʼязані Grafana-дашборди
  * (e.g. `* on (instance) group_left(version, commit) http_request_duration_ms`)
- * — тут ми ловимо drift, який інакше з'явився б тільки під alert-evaluator-ом.
+ * — тут ми ловимо drift, який інакше зʼявився б тільки під alert-evaluator-ом.
  */
 import { afterEach, describe, it, expect, vi } from "vitest";
 import type { Request, Response } from "express";
@@ -20,6 +20,7 @@ import {
   metricsHandler,
   n8nWebhookReplayAttemptsTotal,
   n8nWebhookReplayDurationMs,
+  syncConflictsTotal,
   syncOpLogApplyTotal,
   syncOpLogPullLagMs,
   syncOpLogPullQueueDepth,
@@ -31,7 +32,7 @@ import {
 import { env } from "../env/env.js";
 
 describe("metrics registry — `app_build_info` gauge", () => {
-  it("реєструється у спільному `register`-і з ім'ям `app_build_info`", () => {
+  it("реєструється у спільному `register`-і з імʼям `app_build_info`", () => {
     const metric = register.getSingleMetric("app_build_info");
     expect(metric).toBe(appBuildInfo);
     expect(metric).toBeDefined();
@@ -52,7 +53,7 @@ describe("metrics registry — `app_build_info` gauge", () => {
     expect(text).toMatch(/node_version="[^"]+"/);
   });
 
-  it("`commit` обрізається до 12 символів (slice ув'язується з prom-cardinality bound-ом)", async () => {
+  it("`commit` обрізається до 12 символів (slice увʼязується з prom-cardinality bound-ом)", async () => {
     const text = await register.metrics();
     const match = /commit="([^"]+)"/.exec(text);
     expect(match).not.toBeNull();
@@ -65,7 +66,7 @@ describe("metrics registry — `app_build_info` gauge", () => {
 
 describe("metrics registry — AI per-endpoint duration histogram", () => {
   it("`ai_request_duration_ms` зареєстрований і має лейбли provider/model/endpoint/outcome", () => {
-    // SLO/dashboards зав'язані саме на цей набір лейблів. Дзеркалить
+    // SLO/dashboards завʼязані саме на цей набір лейблів. Дзеркалить
     // labelNames у `aiRequestsTotal` — щоб p95-латентність помилкових
     // запитів можна було виокремити з `outcome="error"`.
     const metric = register.getSingleMetric("ai_request_duration_ms");
@@ -137,15 +138,36 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // PR #042b (Stage 5): apply-level allowlist розширено `missing_delta` +
     // `invalid_delta` (PN-counter primitive payload validation у
     // `applyRoutineStreaks`).
-    // Cardinality cap у `docs/observability/metrics.md` §4 = ~28 tables ×
-    // 3 statuses × 53 reasons ≈ 4_452 series worst-case (phenomenologically <100,
+    // Cardinality cap у `docs/operations/observability/metrics.md` §4 = ~28 tables ×
+    // 3 statuses × 59 reasons ≈ 4_956 series worst-case (phenomenologically <100,
     // більшість табл/reason-пар не зустрічаються одночасно). Якщо сума
     // елементів у двох масивах drift-ує — оновити cardinality calc у
     // metrics.md + dashboard top-10 reject reasons panel.
-    expect(APPLY_REJECT_REASONS.length).toBe(48);
-    expect(ENGINE_REJECT_REASONS.length).toBe(5);
+    // Phase 2 sync expansion (ba5eadd75) додало 6 нових причин для full-state
+    // таблиць: missing_date_key, missing_note_key, invalid_last_used_at,
+    // invalid_entry_at, invalid_energy, invalid_sleep_quality.
+    // Хвиля 1 (фундамент даних), стадія 1 трьох журналів: +3 причини —
+    // append_only_violation (гейт update/delete для append-only таблиць),
+    // invalid_event_kind і missing_delta_or_abs (ledger комори),
+    // invalid_goal_origin (журнал цілей КБЖВ). Реєстр таблиць виріс до 45.
+    // Хвиля 4: +2 (`missing_skip_key`, `invalid_at`) для `routine_habit_skips`
+    // — третій стан дня «не зміг з причиною» (канон `routine.md` §5).
+    // Pre-beta input-boundaries audit (2026-08-04): +1 `text_too_long`
+    // (shared reason for unbounded name/label/note/text fields across
+    // nutrition sync appliers — `beta-input-boundaries.md` Фаза 3).
+    // CodeRabbit PR #627 review: +1 `invalid_tz_offset_min` — `tz_offset_min`
+    // had no range check at all; a present value outside the real UTC-offset
+    // range now rejects instead of silently passing through.
+    // Фікс «оп-лог поза savepoint»: +1 engine-level `oplog_write_failed` —
+    // запис рядка в `sync_op_log` під власним savepoint-ом, тож його
+    // помилка відхиляє ОДИН оп замість ROLLBACK-у всього батча.
+    // Міграція 146: +10 `invalid_*` на решту полів веб-форми заміру тіла
+    // (жир, шия, передпліччя, стегно, литка, ліва/права сторони біцепса) —
+    // колонок під них не було, тож уведене користувачем зникало.
+    expect(APPLY_REJECT_REASONS.length).toBe(75);
+    expect(ENGINE_REJECT_REASONS.length).toBe(6);
 
-    // Ключові CRDT-інваріанти, на які прив'язаний sync health alerting,
+    // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,
     // фіксуємо явно — щоб accidental refactor не приховав їх із
     // допустимого набору.
     expect(APPLY_REJECT_REASONS).toContain("lww_conflict");
@@ -156,6 +178,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     expect(ENGINE_REJECT_REASONS).toContain("apply_failed");
     expect(ENGINE_REJECT_REASONS).toContain("table_not_allowed");
     expect(ENGINE_REJECT_REASONS).toContain("op_not_supported");
+    expect(ENGINE_REJECT_REASONS).toContain("oplog_write_failed");
 
     // Жодних дублікатів — Set.size має дорівнювати довжині масиву.
     const all = [...APPLY_REJECT_REASONS, ...ENGINE_REJECT_REASONS];
@@ -174,12 +197,31 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     const text = await register.metrics();
     expect(text).toContain("# TYPE sync_op_log_pull_lag_ms histogram");
     expect(text).toContain("# TYPE sync_op_log_pull_queue_depth histogram");
-    // Bucket borders, на які зав'язані SLO-алерти (SSE happy-path <100ms,
+    // Bucket borders, на які завʼязані SLO-алерти (SSE happy-path <100ms,
     // polling-fallback <5s) — фіксуємо у тесті, щоб випадковий refactor
     // bucket-ів не зламав алерти.
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="100"\}/);
     expect(text).toMatch(/sync_op_log_pull_lag_ms_bucket\{le="5000"\}/);
     expect(text).toMatch(/sync_op_log_pull_queue_depth_bucket\{le="200"\}/);
+  });
+});
+
+describe("metrics registry — `sync_conflicts_total` (W4)", () => {
+  // До W4 цей counter був оголошений в `obs/metrics/domain.ts`, але жоден
+  // код у репо його не інкрементив — `syncV2Push` тепер робить це в тому
+  // самому per-op циклі, де вже пишеться `sync_op_log_apply_total` (див.
+  // `syncV2.test.ts` за end-to-end доказом через реальний push-запит).
+  it("реєстрований у спільному `register`-і з labels {module}", () => {
+    const metric = register.getSingleMetric("sync_conflicts_total");
+    expect(metric).toBe(syncConflictsTotal);
+  });
+
+  it("апдейтиться через .inc({module}) і експортується з label-ом", async () => {
+    syncConflictsTotal.inc({ module: "finyk" });
+    const text = await register.metrics();
+    expect(text).toContain("# TYPE sync_conflicts_total counter");
+    // Runbook `SyncConflictSpike` робить `sum by (module) (rate(...))`.
+    expect(text).toMatch(/sync_conflicts_total\{module="finyk"\} \d+/);
   });
 });
 

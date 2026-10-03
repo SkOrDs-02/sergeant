@@ -12,10 +12,11 @@ const sharedThresholds = require("../../coverage-thresholds.json").workspaces;
 
 module.exports = {
   preset: "jest-expo",
-  testMatch: [
-    "<rootDir>/src/**/*.test.{ts,tsx}",
-    "<rootDir>/plugins/**/*.test.{ts,tsx}",
+  testRegex: [
+    "[/\\\\]src[/\\\\].*\\.test\\.(ts|tsx)$",
+    "[/\\\\]plugins[/\\\\].*\\.test\\.(ts|tsx)$",
   ],
+  testPathIgnorePatterns: ["node_modules"],
   setupFiles: ["<rootDir>/jest.setup.js"],
   // Bound Jest's worker fan-out so the mobile suite doesn't run out of
   // heap on default CI runners. With ~110 suites the default
@@ -27,12 +28,11 @@ module.exports = {
   // the 4 GB v8 default heap and the runner OOMs with
   // `FATAL ERROR: Reached heap limit Allocation failed`.
   //
-  // `'50%'` (≈ 4 workers on a 8-vCPU runner, ≈ 6 on a 12-vCPU host)
-  // is the upstream `jest-expo` recommendation for Reanimated / Expo
-  // suites, and `workerIdleMemoryLimit: '512MB'` recycles each worker
-  // once it crosses the threshold so long-lived modules don't pile up
+  // Turbo runs one other workspace task concurrently, so use two workers
+  // locally and one on CI. `workerIdleMemoryLimit: '512MB'` recycles each
+  // worker once it crosses the threshold so long-lived modules don't pile up
   // across suite boundaries.
-  maxWorkers: "50%",
+  maxWorkers: process.env.CI ? 1 : 2,
   workerIdleMemoryLimit: "512MB",
   // `@sergeant/*-domain` packages use NodeNext `.js`-extension imports
   // inside their TS source (required so they compile cleanly under the

@@ -2,7 +2,7 @@
  * `useWorkoutTemplates` — mobile hook for Fizruk workout templates.
  *
  * Stage 12 / PR #057f-tombstone-mobile-stage12 of
- * `docs/planning/storage-roadmap.md` (mobile parity for Stage 8
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (mobile parity for Stage 8
  * `#057f-tombstone` extended to the new Stage 12
  * workout-templates slot). Reads from the SQLite warm cache
  * (`getCachedFizrukSqliteState`) and persists exclusively through
@@ -17,7 +17,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWorkoutTemplateSnapshots,
@@ -44,7 +44,7 @@ export interface WorkoutTemplate {
 }
 
 function uid(): string {
-  return `tpl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `tpl_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /** Project a cache row onto the loose hook shape. */
@@ -102,14 +102,21 @@ export function useWorkoutTemplates(): UseWorkoutTemplatesResult {
 
   // Stage 12 / PR #057f-tombstone-mobile-stage12: overlay templates
   // from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.workoutTemplates.map(projectFromCache);
-    stateRef.current = overlay;
-    setTemplates(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setTemplates(cache.workoutTemplates.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = templates;
+  }, [templates]);
 
   const persist = useCallback(
     (updater: (prev: WorkoutTemplate[]) => WorkoutTemplate[]) => {

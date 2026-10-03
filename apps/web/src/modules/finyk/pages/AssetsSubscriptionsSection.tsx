@@ -1,5 +1,12 @@
+import { useMemo } from "react";
+import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { detectRecurring } from "@sergeant/finyk-domain/lib/recurringDetect";
 import { SubCard } from "../components/SubCard";
+import { MonthOutflowComb } from "../components/MonthOutflowComb";
+import type { CombEntry } from "../lib/monthOutflowComb";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { Icon } from "@shared/components/ui/Icon";
+import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -20,20 +27,73 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
     setNewSub,
     setTxPicker,
     showBalance,
+    subsMonthly,
   } = state;
   const toast = useToast();
 
+  // Дні регулярних надходжень. Той самий рушій, що ловить підписки, але
+  // з іншого боку потоку (`flow: "income"` — етап 2 гребеня). Окремий
+  // `useMemo`, бо залежить лише від транзакцій: перелік підписок на
+  // зарплату не впливає.
+  const incomeDays = useMemo(() => {
+    const candidates = detectRecurring([...transactions], { flow: "income" });
+    return [...new Set(candidates.map((c) => c.billingDay))];
+  }, [transactions]);
+
+  // AI-CONTEXT: суми для гребеня беруться тим самим
+  // `getSubscriptionAmountMeta`, що й у `SubCard`. Це не зручність, а
+  // інваріант: якби гребінь рахував суму інакше, він показував би інший
+  // місяць, ніж список під ним, і розбіжність помітили б не одразу.
+  //
+  // Межі місяця — за КИЇВСЬКИМ годинником, не за пристроєм. ADR-0078
+  // ділить добу навпіл: пристрій володіє ОСОБИСТИМ днем (відмітка
+  // звички, лог їжі, денний запис), а фінансові періоди лишаються за
+  // Europe/Kyiv. Місяць підписок — фінансовий період, тож 1-ше число
+  // тут те саме, з якого рахуються звіти, а не те, яке показує телефон
+  // у роумінгу.
+  const { combEntries, daysInMonth, todayDom } = useMemo(() => {
+    const kyiv = getKyivDateParts();
+    const entries: CombEntry[] = subscriptions.map((sub) => ({
+      id: String(sub.id),
+      name: String(sub.name ?? ""),
+      billingDay: Number(sub.billingDay) || 0,
+      amount: getSubscriptionAmountMeta(sub, [...transactions]).amount,
+    }));
+    return {
+      combEntries: entries,
+      // День 0 наступного місяця = останній день поточного.
+      daysInMonth: new Date(Date.UTC(kyiv.year, kyiv.month, 0)).getUTCDate(),
+      todayDom: kyiv.day,
+    };
+  }, [subscriptions, transactions]);
+
   return (
     <div className="mb-3 space-y-0">
+      <MonthOutflowComb
+        entries={combEntries}
+        daysInMonth={daysInMonth}
+        today={todayDom}
+        incomeDays={incomeDays}
+        showBalance={showBalance}
+        className="mb-2"
+      />
+      <div className="mb-2 rounded-xl border border-finyk-soft-border bg-finyk-soft px-4 py-3 flex items-center justify-between gap-3">
+        <span className="text-style-caption text-finyk-soft-fg">
+          Витрати на підписки за місяць
+        </span>
+        <strong className="text-style-label tabular-nums text-finyk-soft-fg">
+          {showBalance ? <Money amount={Math.round(subsMonthly)} /> : "••••"}
+        </strong>
+      </div>
       {subscriptions.length > 0 && (
         <button
           type="button"
           onClick={() => openHubModule("routine", "")}
-          className="w-full text-xs text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
+          className="w-full text-style-caption text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
         >
-          <Icon name="calendar" size={14} aria-hidden />
+          <Icon name="calendar" size="sm" aria-hidden />
           <span>Побачити у календарі Рутини</span>
-          <Icon name="chevron-right" size={14} aria-hidden />
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       )}
       {subscriptions.map((sub, i) => (
@@ -68,21 +128,19 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onLinkTransactions={() => setTxPicker({ type: "sub", subId: sub.id })}
         />
       ))}
-      {showSubForm ? (
+      {/* Вхід у форму — пункт «Підписка» комбінованого пікера
+          «Запланувати» внизу сторінки Планування (`Budgets.tsx`, founder-UX
+          audit round 2, F2; до цього — окремий quick-action «+ Підписка»
+          угорі, звіт власника 2026-09-03). Власна кнопка секції дублювала
+          його й тому прибрана. */}
+      {showSubForm && (
         <SubscriptionForm
           newSub={newSub}
           setNewSub={setNewSub}
           setSubscriptions={setSubscriptions}
           setShowSubForm={setShowSubForm}
+          transactions={transactions}
         />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setShowSubForm(true)}
-          className="w-full py-2.5 text-style-label rounded-xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft mt-2"
-        >
-          + Додати підписку
-        </button>
       )}
     </div>
   );

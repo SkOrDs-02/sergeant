@@ -3,76 +3,85 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
+import { BarcodeLookupNotice } from "../BarcodeLookupNotice";
+import type { BarcodeLookupNotice as BarcodeLookupNoticeState } from "./useBarcodeLookup";
+
+const DEFAULT_ACTION_LABEL = "Сканувати";
 
 interface BarcodeSectionProps {
-  barcode: string;
-  setBarcode: Dispatch<SetStateAction<string>>;
   barcodeStatus: string;
   setBarcodeStatus: Dispatch<SetStateAction<string>>;
-  handleBarcodeLookup: (barcode: string) => void | Promise<void>;
-  handleBarcodeBind: (barcode: string) => void | Promise<void>;
+  barcodeNotice?: BarcodeLookupNoticeState | null | undefined;
+  onDismissBarcodeNotice?: (() => void) | undefined;
+  onRetryBarcodeLookup?: (() => void) | undefined;
+  onUsePhotoForBarcode?: (() => void) | undefined;
+  /** Вихід на вкладку «Своє» — симетрично до «Сфотографувати страву». */
+  onManualEntryForBarcode?: (() => void) | undefined;
   setScannerOpen: Dispatch<SetStateAction<boolean>>;
+  /**
+   * Підпис кнопки. Під вкладкою «Скан» сканер відкривається сам, тож там
+   * кнопка — це повтор, а не основна дія, і підпис має казати саме це.
+   * Пропонувати «Сканувати» людині, яка вже обрала «Скан» і дивиться в
+   * відкритий сканер, — та сама зайва дія, що й «Аналізувати» під уже
+   * запущеним автоаналізом фото.
+   */
+  actionLabel?: string;
 }
 
 export function BarcodeSection({
-  barcode,
-  setBarcode,
   barcodeStatus,
   setBarcodeStatus,
-  handleBarcodeLookup,
-  handleBarcodeBind,
+  barcodeNotice,
+  onDismissBarcodeNotice,
+  onRetryBarcodeLookup,
+  onUsePhotoForBarcode,
+  onManualEntryForBarcode,
   setScannerOpen,
+  actionLabel = DEFAULT_ACTION_LABEL,
 }: BarcodeSectionProps) {
+  // WCAG 2.5.3 Label in Name: доступна назва мусить МІСТИТИ видимий
+  // підпис, інакше голосове керування не викличе кнопку тим, що людина
+  // бачить. Типовий підпис короткий («Сканувати»), тож для нього лишаємо
+  // розгорнуту назву з контекстом; будь-який інший підпис стає назвою
+  // сам — «Сканувати штрихкод» його вже не містить.
+  const ariaLabel =
+    actionLabel === DEFAULT_ACTION_LABEL ? "Сканувати штрихкод" : actionLabel;
   return (
-    <div className="mb-4 rounded-2xl border border-line bg-panel/40 px-3 py-3">
-      <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
-        Штрихкод
-      </SectionHeading>
-      <div className="flex flex-wrap gap-2 items-center">
-        <Input
-          value={barcode}
-          onChange={(e) => {
-            setBarcode(e.target.value.replace(/\s+/g, ""));
-            setBarcodeStatus("");
-          }}
-          inputMode="numeric"
-          placeholder="EAN/UPC…"
-          aria-label="Штрихкод"
-          className="w-[160px]"
+    <div className="min-w-0">
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full h-12 min-h-[44px] flex items-center justify-center gap-2"
+        onClick={() => {
+          setBarcodeStatus("");
+          onDismissBarcodeNotice?.();
+          setScannerOpen(true);
+        }}
+        aria-label={ariaLabel}
+      >
+        <Icon
+          name="barcode"
+          size="sm"
+          aria-hidden
+          data-testid="barcode-action-icon"
         />
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => handleBarcodeLookup(barcode)}
-        >
-          Знайти
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => handleBarcodeBind(barcode)}
-        >
-          Прив{"'"}язати
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-9 text-xs"
-          onClick={() => {
-            setBarcodeStatus("");
-            setScannerOpen(true);
-          }}
-        >
-          📷 Сканувати
-        </Button>
-      </div>
-      {barcodeStatus && (
-        <div className="text-xs text-subtle mt-1">{barcodeStatus}</div>
+        <span>{actionLabel}</span>
+      </Button>
+      {barcodeStatus && !barcodeNotice && (
+        <div className="text-style-caption text-subtle mt-1">
+          {barcodeStatus}
+        </div>
+      )}
+      {barcodeNotice && onDismissBarcodeNotice && (
+        <BarcodeLookupNotice
+          kind={barcodeNotice.kind}
+          onDismiss={onDismissBarcodeNotice}
+          onRetry={onRetryBarcodeLookup}
+          onUsePhoto={onUsePhotoForBarcode}
+          onManualEntry={onManualEntryForBarcode}
+        />
       )}
     </div>
   );

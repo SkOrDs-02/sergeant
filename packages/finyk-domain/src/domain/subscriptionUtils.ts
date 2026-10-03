@@ -4,14 +4,20 @@ interface Subscription {
   linkedTxId?: string | undefined;
   keyword?: string | undefined;
   currency?: string | undefined;
+  /**
+   * Очікувана сума в мінорних одиницях (Р20 спеки аналітики v2): середнє
+   * з історії списань, записане при підтвердженні пропозиції. Показується,
+   * поки немає зіставленої транзакції.
+   */
+  expectedAmount?: number | undefined;
 }
 
 interface Transaction {
   id: string;
   amount: number;
-  time?: number;
-  description?: string;
-  currencyCode?: number;
+  time?: number | undefined;
+  description?: string | undefined;
+  currencyCode?: number | undefined;
 }
 
 interface AmountMeta {
@@ -20,7 +26,7 @@ interface AmountMeta {
   lastTx: Transaction | null;
 }
 
-/** Остання релевантна транзакція: спочатку прив'язана вручну, інакше за ключовим словом (найновіша). */
+/** Остання релевантна транзакція: спочатку привʼязана вручну, інакше за ключовим словом (найновіша). */
 export function getLastTxForSubscription(
   sub: Subscription,
   transactions: Transaction[],
@@ -46,8 +52,9 @@ export function getSubscriptionAmountMeta(
 ): AmountMeta {
   const lastTx = getLastTxForSubscription(sub, transactions);
   if (!lastTx) {
+    const expected = Number(sub.expectedAmount);
     return {
-      amount: null,
+      amount: expected > 0 ? expected / 100 : null,
       currency: sub.currency === "USD" ? "$" : "₴",
       lastTx: null,
     };

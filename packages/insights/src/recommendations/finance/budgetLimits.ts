@@ -1,27 +1,15 @@
 // Rule: попередження/перевищення бюджетних лімітів (categoryId + limit).
 //
-// Spent рахуємо з `canonicalMonthSpend` (резолв через `getCategory`,
-// MCC + keywords + override + customCategories) — рівно як на сторінці
-// Планування → Ліміти. Це гарантує, що відсоток в інсайті збігається
-// з тим, що користувач бачить на картці ліміту. Якщо canonical-індекс
-// порожній (ранні тести або ще-не-перебудований контекст), падаємо
-// на legacy raw-keyed `categorySpend`.
+// Стан ліміту береться з `ctx.limitUsage` (`calcLimitUsages` у finyk-domain):
+// те саме вікно періоду, ті самі кошики категорій і той самий відсоток, що
+// на картці ліміту в Плануванні та в хаб-картці перевищення. Своєї
+// арифметики тут немає навмисно: дві формули для одного числа і дали
+// «використано 162 %» поруч із «перевищень немає» (Р5 спеки аналітики v2).
 
 import type { Rec, Rule } from "../types.js";
 import type { FinanceContext } from "../financeContext.js";
-
-const BUILTIN_LABELS: Record<string, string> = {
-  food: "Продукти",
-  cafe: "Кафе та ресторани",
-  restaurant: "Кафе та ресторани",
-  transport: "Транспорт",
-  entertainment: "Розваги",
-  health: "Здоров'я",
-  shopping: "Покупки",
-  utilities: "Комунальні",
-  subscriptions: "Підписки",
-  other: "Інше",
-};
+import { formatNumberUk } from "@sergeant/shared";
+import { MCC_CATEGORIES } from "@sergeant/finyk-domain/constants";
 
 function resolveLabel(
   categoryId: string,
@@ -29,7 +17,8 @@ function resolveLabel(
 ): string {
   const custom = customCategories.find((c) => c.id === categoryId);
   if (custom) return custom.label;
-  return BUILTIN_LABELS[categoryId] || categoryId;
+  const canonical = MCC_CATEGORIES.find((c) => c.id === categoryId);
+  return canonical?.label || categoryId;
 }
 
 export const budgetLimitsRule: Rule<FinanceContext> = {
@@ -37,48 +26,46 @@ export const budgetLimitsRule: Rule<FinanceContext> = {
   module: "finyk",
   evaluate(ctx) {
     const recs: Rec[] = [];
-    for (const limit of ctx.limits) {
-      const catId = limit.categoryId;
+    for (const usage of ctx.limitUsage) {
+      const { budget, categoryIds: catIds, key: catKey } = usage;
+      const catId = catIds[0];
       if (!catId) continue;
-      if (!limit.limit || limit.limit <= 0) continue;
 
-      const canonicalSpent = ctx.canonicalMonthSpend.get(catId);
-      const spent =
-        typeof canonicalSpent === "number"
-          ? canonicalSpent
-          : ctx.categorySpend[catId] || 0;
-      const pct = spent / limit.limit;
-      const catLabel = resolveLabel(catId, ctx.customCategories);
-      // Глибокий лінк на сторінку Планування з підсвіткою саме цієї
-      // категорії — інсайт повинен вести до картки, про яку говорить,
-      // а не на дефолтний Огляд модуля.
+      const catLabel =
+        budget.label?.trim() ||
+        catIds.map((id) => resolveLabel(id, ctx.customCategories)).join(" + ");
+      // Глибокий лінк на сторінку Планування з підсвіткою картки, про яку
+      // говорить інсайт: комбо-картка зареєстрована під кожною своєю
+      // категорією, тож першої вистачає.
       const actionHash = `budgets?cat=${encodeURIComponent(catId)}`;
 
-      if (pct >= 1.0) {
+      if (usage.overLimit) {
         recs.push({
-          id: `budget_over_${catId}`,
+          // Ключ рекомендації — весь набір, щоб два ліміти зі спільною
+          // першою категорією не злипались в один rec.
+          id: `budget_over_${catKey}`,
           module: "finyk" as const,
           priority: 90,
           severity: "danger" as const,
-          icon: "💸",
-          title: `Бюджет "${catLabel}" перевищено на ${Math.round((pct - 1) * 100)}%`,
-          body: `Витрачено ${Math.round(spent).toLocaleString("uk-UA")} ₴ з ${Math.round(limit.limit).toLocaleString("uk-UA")} ₴`,
+          icon: "flag",
+          title: `Бюджет «${catLabel}» перевищено на ${Math.round(usage.pctRaw - 100)}%`,
+          body: `Витрачено ${formatNumberUk(Math.round(usage.spent))} ₴ з ${formatNumberUk(Math.round(usage.limit))} ₴`,
           action: "finyk",
           actionHash,
           // Ліміт уже пробито — часто це означає, що є ще незафіксовані
           // витрати, які б затягнули картину ще гірше. Одним тапом відкриваємо
-          // sheet, щоб дописати їх, поки деталі свіжі в пам'яті.
+          // sheet, щоб дописати їх, поки деталі свіжі в памʼяті.
           pwaAction: "add_expense" as const,
         });
-      } else if (pct >= 0.9) {
+      } else if (usage.pctRaw >= 90) {
         recs.push({
-          id: `budget_warn_${catId}`,
+          id: `budget_warn_${catKey}`,
           module: "finyk" as const,
           priority: 60,
           severity: "warning" as const,
-          icon: "⚠️",
-          title: `Ліміт "${catLabel}" майже вичерпано`,
-          body: `${Math.round(pct * 100)}% бюджету витрачено цього місяця`,
+          icon: "alert-triangle",
+          title: `Ліміт «${catLabel}» майже вичерпано`,
+          body: `${Math.round(usage.pctRaw)}% бюджету витрачено цього місяця`,
           action: "finyk",
           actionHash,
         });

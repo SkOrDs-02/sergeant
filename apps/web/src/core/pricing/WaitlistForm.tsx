@@ -4,7 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Label } from "@shared/components/ui/FormField";
 import { useToast } from "@shared/hooks/useToast";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { waitlistApi } from "@shared/api";
 import { isApiError } from "@sergeant/api-client";
@@ -28,7 +28,7 @@ const TIER_OPTIONS: ReadonlyArray<{
   {
     value: "pro",
     label: "Premium",
-    hint: "AI-чат, авто-Mono, повні звіти, cloud sync",
+    hint: "Сержант без тижневої стелі, фото і голос, PDF-звіти",
   },
   {
     value: "free",
@@ -139,9 +139,9 @@ export function WaitlistForm({
         created: res.created,
       });
       if (res.created) {
-        toast.success("Дякуємо! Повідомимо, щойно Premium буде готовий.");
+        toast.success("Email збережено. Напишу, щойно Premium буде готовий.");
       } else {
-        toast.info("Ми вже памʼятаємо твій інтерес — жодних дублікатів.");
+        toast.info("Цей email уже в списку.");
       }
       reset({ email: "", tier_interest: values.tier_interest });
       onSuccess?.(res.created);
@@ -171,10 +171,7 @@ export function WaitlistForm({
         tier_interest: defaultTier,
       });
     }
-    // `reset` із RHF стабільний; `watch` не запускає лишніх render-ів через
-    // те, що ми його викликаємо вручну.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultTier]);
+  }, [defaultTier, reset, watch]);
 
   const tierValue = watch("tier_interest");
   const emailErrorMessage = formState.errors.email?.message;
@@ -210,7 +207,7 @@ export function WaitlistForm({
           {emailErrorMessage && (
             <p
               id="waitlist-email-error"
-              className="mt-1 text-xs text-danger-strong"
+              className="mt-1 text-style-caption text-danger-strong"
               role="alert"
             >
               {emailErrorMessage}
@@ -220,7 +217,7 @@ export function WaitlistForm({
 
         <fieldset>
           <legend className="text-style-label text-text mb-2">
-            Який тариф цікавить найбільше?
+            Який план цікавить найбільше?
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {TIER_OPTIONS.map((opt) => {
@@ -230,9 +227,15 @@ export function WaitlistForm({
                 <label
                   key={opt.value}
                   htmlFor={inputId}
-                  aria-label={`${opt.label} — ${opt.hint}`}
+                  aria-label={`${opt.label} · ${opt.hint}`}
                   className={
-                    "flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
+                    // Справжнє радіо нижче — `peer sr-only`, тобто нативне
+                    // кільце фокуса невидиме, а замінника не було: клавіатурний
+                    // фокус по групі не читався взагалі (аудит 2026-09-16,
+                    // WF-24). Peer-кільце на обгортці — той самий патерн, що в
+                    // `Switch.tsx:200`, з канонічною непрозорістю `/45`.
+                    "relative flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
+                    "peer-focus-visible:ring-2 peer-focus-visible:ring-focus/45 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg " +
                     (checked
                       ? "border-brand-500 bg-brand/10 dark:bg-brand/15"
                       : "border-line bg-panel hover:bg-panelHi")
@@ -266,7 +269,9 @@ export function WaitlistForm({
                     <span className="text-style-label text-text">
                       {opt.label}
                     </span>
-                    <span className="text-xs text-muted">{opt.hint}</span>
+                    <span className="text-style-caption text-muted">
+                      {opt.hint}
+                    </span>
                   </span>
                 </label>
               );
@@ -276,7 +281,7 @@ export function WaitlistForm({
 
         {serverError && (
           <p
-            className="text-xs text-danger-strong"
+            className="text-style-caption text-danger-strong"
             role="alert"
             data-testid="waitlist-server-error"
           >
@@ -284,17 +289,15 @@ export function WaitlistForm({
           </p>
         )}
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          loading={isSubmitting}
-        >
+        <Button type="submit" variant="solid" size="lg" loading={isSubmitting}>
           Підписатись на waitlist
         </Button>
 
-        <p className="text-xs text-muted">
-          Без спаму. Один лист, коли Premium запуститься. Ціну оголосимо на
+        {/* AI-NOTE: дисклеймер під кнопкою відправки — названий виняток
+            `no-sentence-in-caption`. Він свідомо тихіший за саму дію, бо
+            читається один раз і не конкурує з CTA. */}
+        <p className="text-style-caption text-muted">
+          Без спаму. Один лист, коли Premium запуститься. Ціна зʼявиться на
           запуску.
         </p>
       </div>

@@ -307,6 +307,60 @@ describe("getDayMacros / getDaySummary", () => {
     expect(s.hasMeals).toBe(true);
     expect(s.hasAnyMacros).toBe(true);
     expect(s.kcal).toBe(350);
+    // Обидва рядки фікстури — `mealType: "breakfast"` (дефолт `makeMeal`),
+    // тобто 2 рядки, але 1 ПРИЙОМ.
+    expect(s.loggedMealTypesCount).toBe(1);
+  });
+
+  it("getDaySummary: loggedMealTypesCount рахує рядки одного фото як ОДИН прийом (nutrition audit PR-N2)", () => {
+    // Фото "суп + хліб + салат" пише 3 рядки журналу, усі mealType:
+    // "dinner" (decision 2026-09-03, AddMealSheet multi-item save). Це не
+    // три прийоми — це один прийом (вечеря) із трьома позиціями.
+    const photoDay: NutritionLog = {
+      "2026-07-01": {
+        meals: [
+          makeMeal({ id: "soup", mealType: "dinner", label: "Вечеря" }),
+          makeMeal({ id: "bread", mealType: "dinner", label: "Вечеря" }),
+          makeMeal({ id: "salad", mealType: "dinner", label: "Вечеря" }),
+        ],
+      },
+    };
+    const s = getDaySummary(photoDay, "2026-07-01");
+    expect(s.mealCount).toBe(3);
+    expect(s.loggedMealTypesCount).toBe(1);
+  });
+
+  it("getDaySummary: loggedMealTypesCount рахує 3 СПРАВЖНІ окремі прийоми як 3 (guard)", () => {
+    const realDay: NutritionLog = {
+      "2026-07-02": {
+        meals: [
+          makeMeal({ id: "a", mealType: "breakfast", label: "Сніданок" }),
+          makeMeal({ id: "b", mealType: "lunch", label: "Обід" }),
+          makeMeal({ id: "c", mealType: "dinner", label: "Вечеря" }),
+        ],
+      },
+    };
+    const s = getDaySummary(realDay, "2026-07-02");
+    expect(s.mealCount).toBe(3);
+    expect(s.loggedMealTypesCount).toBe(3);
+  });
+
+  it("getDaySummary: loggedMealTypesCount ігнорує тип із нульовими ккал", () => {
+    const zeroKcalSnack: NutritionLog = {
+      "2026-07-03": {
+        meals: [
+          makeMeal({ id: "a", mealType: "breakfast" }),
+          makeMeal({
+            id: "b",
+            mealType: "snack",
+            macros: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          }),
+        ],
+      },
+    };
+    const s = getDaySummary(zeroKcalSnack, "2026-07-03");
+    expect(s.mealCount).toBe(2);
+    expect(s.loggedMealTypesCount).toBe(1);
   });
 
   it("getDaySummary: hasAnyMacros=false коли всі macros null", () => {
@@ -327,6 +381,46 @@ describe("getDayMacros / getDaySummary", () => {
     const s = getDaySummary(log, "2026-99-99");
     expect(s.mealCount).toBe(0);
     expect(s.hasMeals).toBe(false);
+  });
+
+  it("getDaySummary: estimatedKcalShare=0 коли немає photoAI-прийомів", () => {
+    expect(getDaySummary(log, "2026-05-10").estimatedKcalShare).toBe(0);
+  });
+
+  it("getDaySummary: estimatedKcalShare=0 для дня без ккал", () => {
+    expect(getDaySummary({}, "2026-05-10").estimatedKcalShare).toBe(0);
+  });
+
+  it("getDaySummary: estimatedKcalShare рахується за ккал, не за кількістю прийомів (founder-сценарій)", () => {
+    // 3 ручні прийоми по 100 ккал + 1 фото-прийом на 900 ккал →
+    // 75% дня вгадано за ккал, а не 25% за кількістю прийомів.
+    const day: NutritionLog = {
+      "2026-06-01": {
+        meals: [
+          makeMeal({
+            id: "m1",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m2",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m3",
+            macroSource: "manual",
+            macros: { kcal: 100, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+          makeMeal({
+            id: "m4",
+            macroSource: "photoAI",
+            macros: { kcal: 900, protein_g: null, fat_g: null, carbs_g: null },
+          }),
+        ],
+      },
+    };
+    expect(getDaySummary(day, "2026-06-01").estimatedKcalShare).toBe(0.75);
   });
 });
 
@@ -545,5 +639,24 @@ describe("trimLogOldestDays", () => {
 
   it("обробляє непридатний вхід (null) → {}", () => {
     expect(trimLogOldestDays(null, 5)).toEqual({});
+  });
+});
+
+describe("addLogEntry — ідемпотентність за id", () => {
+  it("другий запис з тим самим id не створює дубль", () => {
+    const meal = { id: "m1", name: "Кава", macros: { kcal: 5 } };
+    const once = addLogEntry({}, "2026-08-01", meal);
+    const twice = addLogEntry(once, "2026-08-01", meal);
+    expect(twice).toBe(once);
+    expect(twice["2026-08-01"]?.meals).toHaveLength(1);
+  });
+
+  it("різні id додаються обидва", () => {
+    const log = addLogEntry(
+      addLogEntry({}, "2026-08-01", { id: "m1", name: "Кава" }),
+      "2026-08-01",
+      { id: "m2", name: "Чай" },
+    );
+    expect(log["2026-08-01"]?.meals).toHaveLength(2);
   });
 });

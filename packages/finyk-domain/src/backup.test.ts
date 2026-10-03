@@ -42,18 +42,18 @@ describe("FINYK_FIELD_TO_STORAGE_KEY", () => {
 describe("normalizeFinykBackup", () => {
   it("rejects non-object input", () => {
     expect(() => normalizeFinykBackup(null)).toThrow(
-      /Файл має містити JSON-об'єкт/,
+      /Файл має містити JSON-обʼєкт/,
     );
     expect(() => normalizeFinykBackup("hello")).toThrow(
-      /Файл має містити JSON-об'єкт/,
+      /Файл має містити JSON-обʼєкт/,
     );
     expect(() => normalizeFinykBackup([])).toThrow(
-      /Файл має містити JSON-об'єкт/,
+      /Файл має містити JSON-обʼєкт/,
     );
   });
 
   it("rejects empty object", () => {
-    expect(() => normalizeFinykBackup({})).toThrow(/Порожній об'єкт/);
+    expect(() => normalizeFinykBackup({})).toThrow(/Порожній обʼєкт/);
   });
 
   it("rejects out-of-range version", () => {
@@ -119,6 +119,21 @@ describe("normalizeFinykBackup", () => {
         dismissedRecurring: [1, 2],
       }),
     ).toThrow(/dismissedRecurring/);
+  });
+});
+
+describe("excludedStatTxIds round-trip", () => {
+  it("survives normalizeFinykBackup export→import", () => {
+    const out = normalizeFinykBackup({
+      version: FINYK_BACKUP_VERSION,
+      excludedStatTxIds: ["tx-1", "tx-2"],
+    });
+    expect(out.excludedStatTxIds).toEqual(["tx-1", "tx-2"]);
+  });
+
+  it("survives the compact `es` sync payload key", () => {
+    const out = normalizeFinykSyncPayload({ es: ["tx-1"] });
+    expect(out.excludedStatTxIds).toEqual(["tx-1"]);
   });
 });
 

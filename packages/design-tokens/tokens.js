@@ -65,18 +65,32 @@ export const brandColors = {
     400: "#eedcc4",
     500: "#e4ccab",
   },
-  // Soft coral for Routine module
-  coral: {
-    50: "#fff5f3",
-    100: "#ffe8e3",
-    200: "#ffd4cb",
-    300: "#ffb4a6",
-    400: "#ff8c78",
-    500: "#f97066",
-    600: "#e64d4d",
-    700: "#c23a3a",
-    800: "#a13333",
-    900: "#862e2e",
+  // Тепла троянда для Рутини (рішення власника Б1+Р2, 2026-08-07).
+  //
+  // AI-CONTEXT: рампа побудована як ІЗОЛЮМІНАНТНА до попередньої коралової —
+  // відносна світлота кожного тира збережена (ΔL від −0.42% до +0.46%,
+  // CR(rose,rose) = 1.00 у всіх десяти). Тому всі задокументовані
+  // контрастні пари лишились чинними в межах 0.02, а драбина стріків у
+  // темній темі має ті самі кроки (1.33 / 1.23 / 1.36 / 1.39).
+  //
+  // Чому не корал: rose-600/700/900 мали hue РІВНО 0° — той самий, що
+  // `--c-danger` red-500 #ef4444. Тобто акцент Рутини був буквально одного
+  // відтінку з семантикою помилки. Троянда сидить на 344–346°.
+  //
+  // AI-DANGER: ключ і далі зветься `rose` — перейменування на `rose`
+  // винесене окремим кроком (58 Tailwind-класів у 25 файлах). Значення тут
+  // трояндові; не «виправляй» їх назад під імʼя.
+  rose: {
+    50: "#fff5f6",
+    100: "#ffe7eb",
+    200: "#fed3db",
+    300: "#fcb3c1",
+    400: "#f68da4",
+    500: "#eb7691",
+    600: "#d15c7a",
+    700: "#ac4c64",
+    800: "#8d4256",
+    900: "#753949",
   },
   // Fresh lime for Nutrition module
   lime: {
@@ -91,6 +105,26 @@ export const brandColors = {
     800: "#466212",
     900: "#3b5314",
   },
+  // Warm neutral (stone) — the HUB chrome family (2026-07 design-audit M1).
+  // The hub/shell is a *neutral parent* so the four module accents
+  // (finyk teal · fizruk cyan · routine rose · nutrition lime) each read
+  // as the single point of colour on any screen. Previously the hub `brand`
+  // token aliased teal, making the shell indistinguishable from finyk and
+  // effectively a fifth accent. This warm-gray ramp pairs with the cream
+  // page background yet carries no module hue of its own. Not a module
+  // colour — never use it as a module accent (Hard Rule #12).
+  stone: {
+    50: "#fafaf9",
+    100: "#f5f5f4",
+    200: "#e7e5e4",
+    300: "#d6d3d1",
+    400: "#a8a29e",
+    500: "#78716c",
+    600: "#57534e",
+    700: "#44403c",
+    800: "#292524",
+    900: "#1c1917",
+  },
 };
 
 /**
@@ -100,7 +134,7 @@ export const brandColors = {
 export const chartPalette = {
   1: "#10b981", // emerald-500 (primary)
   2: "#14b8a6", // teal-500
-  3: "#f97066", // coral-500
+  3: "#eb7691", // rose-500
   4: "#92cc17", // lime-500
   5: "#60a5fa", // blue-400 (soft)
   6: "#a78bfa", // violet-400 (soft)
@@ -111,26 +145,284 @@ export const chartPalette = {
 export const chartPaletteList = Object.values(chartPalette);
 
 /**
+ * Кольори категорій витрат Фініка — окрема родина, НЕ похідна від
+ * модульних акцентів (рішення власника 2026-08-11, репорт тестера
+ * «якби лейби категорій мали кольорову диференціацію, було б легше
+ * зчитувати»).
+ *
+ * AI-CONTEXT: чому окрема родина, а не бренд-палітра. Чотири з шести
+ * бренд-родин уже зайняті модулями (teal=Фінік, cyan=Фізрук,
+ * rose=Рутина, lime=Їжа), а stone — нейтральна хромота хабу. Тобто на
+ * 16 категорій лишалося дві родини — фарбувати категорії бренд-тирами
+ * означало б або повторювати hue між категоріями, або вносити акцент
+ * чужого модуля всередину піддерева Фініка. Тому категорії дістали
+ * власний набір hue, свідомо РОЗВЕДЕНИЙ із модульними.
+ *
+ * Заборонені смуги (OKLCH hue ±~15°, заміряно з самих токенів):
+ *   teal 182–186 · cyan 215–223 · lime 128 · rose 7 · danger 25.
+ * Жоден hue нижче в ці смуги не потрапляє — це гейт
+ * `categoryColors.contract.test.js`, а не домовленість на словах.
+ *
+ * Тири на категорію:
+ *   tint     — фон чипа/строки у світлій темі (OKLCH L .945, C ≤ .042)
+ *   border   — межа того ж чипа (L .885)
+ *   ink      — гліф і текст поверх `tint` (L .46) — ≥ 5.6:1 і на `tint`,
+ *              і на фоні сторінки `#ecebe7`, і на білій картці
+ *   solid    — насичений мід-тон для точок і сегментів діаграм (L .62)
+ *   tintDark / inkDark — та сама пара для «Чорнила» (≥ 9.2:1)
+ *
+ * AI-GENERATED: packages/design-tokens/categoryColors.gen.js — правити
+ * генератор (hue + тир), не хекси руками; гейт звіряє їх deep-equal.
+ *
+ * Чесне обмеження: 16 взаємно-розрізнюваних приглушених кольорів на
+ * 232° дуги (після вирізання модульних смуг) не існує — сусідні пари
+ * на кшталт `travel`/`utilities` різняться на 13°. Колір тут ПІДСИЛЮЄ
+ * підпис, а не замінює його; частотні категорії (їжа, ресторан,
+ * транспорт, покупки, здоровʼя) навмисно рознесені максимально.
+ *
+ * 17-й запис `income` (2026-08-13) — спільний тир УСІХ надходжень
+ * (`salary`, `freelance`, `gift`, `refund`, `other-income` і легасі
+ * `in_*` та `internal_transfer`). До нього жодне з цих id не мало
+ * запису в палітрі, тож `getCatTiers` віддавав їм перший fallback-тир —
+ * і кожен чип доходу малювався кольором категорії «Транспорт». Дохід
+ * навмисно ОДНОТИРНИЙ: вільного hue на 5 окремих кольорів уже немає,
+ * а розрізняти види доходу має підпис, не відтінок. Відділений від
+ * `entertainment` (160) хромою, не кутом — див. `categoryColors.gen.js`.
+ *
+ * Ще пʼять (2026-10-01, рішення власника «c1»): `home`, `pets`, `telecom`,
+ * `p2p_transfer`, `gifts`. Вільного hue для них немає, тож кожна сіла на
+ * середину наявного проміжку з приглушеною хромою (C×0.3–0.65) — мотивація
+ * й заміри відстаней у `categoryColors.gen.js`.
+ */
+export const categoryColors = {
+  restaurant: {
+    tint: "#fee7df",
+    border: "#facebd",
+    ink: "#874124",
+    solid: "#ca653c",
+    tintDark: "#3a2015",
+    inkDark: "#febca2",
+  }, // H 42
+  travel: {
+    tint: "#fee8db",
+    border: "#f7d0b8",
+    ink: "#844514",
+    solid: "#c66a25",
+    tintDark: "#392112",
+    inkDark: "#fbbf9a",
+  }, // H 53
+  home: {
+    tint: "#f8eadf",
+    border: "#e7d5c8",
+    ink: "#6e513a",
+    solid: "#a67c5b",
+    tintDark: "#30251d",
+    inkDark: "#e4c8b3",
+  }, // H 59.5, C×0.5 — приглушена глина між travel і utilities
+  utilities: {
+    tint: "#fee9d4",
+    border: "#f3d3b3",
+    ink: "#7e4a00",
+    solid: "#bd7200",
+    tintDark: "#37230e",
+    inkDark: "#f4c392",
+  }, // H 66
+  smoking: {
+    tint: "#f6ebda",
+    border: "#e5d7c1",
+    ink: "#6b542d",
+    solid: "#a18049",
+    tintDark: "#2f2618",
+    inkDark: "#e0cba9",
+  }, // H 79, C×0.6
+  charity: {
+    tint: "#f7edce",
+    border: "#e6d9b0",
+    ink: "#6b5603",
+    solid: "#a18304",
+    tintDark: "#30270a",
+    inkDark: "#e2cd8d",
+  }, // H 92
+  sport: {
+    tint: "#f0efcf",
+    border: "#dedcb2",
+    ink: "#605a01",
+    solid: "#928a07",
+    tintDark: "#2b290c",
+    inkDark: "#d6d190",
+  }, // H 105
+  food: {
+    tint: "#dcf5dc",
+    border: "#c3e3c3",
+    ink: "#2c6730",
+    solid: "#479c4d",
+    tintDark: "#192d1a",
+    inkDark: "#abddac",
+  }, // H 145
+  pets: {
+    tint: "#e1f2e5",
+    border: "#cae0cf",
+    ink: "#3c6247",
+    solid: "#5e956d",
+    tintDark: "#1e2c21",
+    inkDark: "#b6d8be",
+  }, // H 152.5, C×0.6 — шавлія між food і entertainment
+  entertainment: {
+    tint: "#d6f6e3",
+    border: "#bbe5cd",
+    ink: "#036944",
+    solid: "#019f68",
+    tintDark: "#112e20",
+    inkDark: "#9cdfbb",
+  }, // H 160
+  transport: {
+    tint: "#ddf0fe",
+    border: "#b9dffa",
+    ink: "#015e8c",
+    solid: "#0a8fd1",
+    tintDark: "#102a3b",
+    inkDark: "#9cd6ff",
+  }, // H 240
+  telecom: {
+    tint: "#e4eef8",
+    border: "#cedbe7",
+    ink: "#465a6f",
+    solid: "#6c89a7",
+    tintDark: "#212930",
+    inkDark: "#bdd0e4",
+  }, // H 248.5, C×0.4 — сталева синь між transport і education
+  education: {
+    tint: "#e2eeff",
+    border: "#c3dbfe",
+    ink: "#2f5892",
+    solid: "#4b86d9",
+    tintDark: "#19283e",
+    inkDark: "#b0d0fe",
+  }, // H 257
+  subscriptions: {
+    tint: "#e7ecff",
+    border: "#cdd7fe",
+    ink: "#465292",
+    solid: "#6d7dda",
+    tintDark: "#21263e",
+    inkDark: "#becbfe",
+  }, // H 274
+  p2p_transfer: {
+    tint: "#ebecf5",
+    border: "#d7d8e4",
+    ink: "#55566a",
+    solid: "#82839f",
+    tintDark: "#26272e",
+    inkDark: "#cbccdf",
+  }, // H 282.5, C×0.3 — холодна нейтраль між subscriptions і shopping
+  shopping: {
+    tint: "#eceaff",
+    border: "#d9d3fc",
+    ink: "#594c8e",
+    solid: "#8874d3",
+    tintDark: "#28233c",
+    inkDark: "#cdc5fe",
+  }, // H 291
+  beauty: {
+    tint: "#f3e7ff",
+    border: "#e3d0f6",
+    ink: "#684685",
+    solid: "#9e6cc6",
+    tintDark: "#2e2139",
+    inkDark: "#ddbff9",
+  }, // H 308
+  gifts: {
+    tint: "#f4e8f9",
+    border: "#e3d2e9",
+    ink: "#674c72",
+    solid: "#9c75ab",
+    tintDark: "#2d2331",
+    inkDark: "#ddc3e6",
+  }, // H 316.5, C×0.65 — орхідея між beauty і health
+  health: {
+    tint: "#fce4fd",
+    border: "#eccdee",
+    ink: "#754178",
+    solid: "#b066b4",
+    tintDark: "#332034",
+    inkDark: "#ebbbed",
+  }, // H 325
+  debt: {
+    tint: "#ffe4f4",
+    border: "#f4cbe3",
+    ink: "#7e3e68",
+    solid: "#be619e",
+    tintDark: "#371e2e",
+    inkDark: "#f5b8dd",
+  }, // H 342
+  alcohol: {
+    tint: "#fbe6ef",
+    border: "#ebd1dc",
+    ink: "#73495d",
+    solid: "#ad718d",
+    tintDark: "#322229",
+    inkDark: "#e9c1d2",
+  }, // H 350, C×0.6
+  other: {
+    tint: "#efece9",
+    border: "#dcd8d4",
+    ink: "#5c5750",
+    solid: "#8c857b",
+    tintDark: "#292725",
+    inkDark: "#d2cdc7",
+  }, // H 74, C×0.12 — тепла нейтраль
+  income: {
+    tint: "#e5f0ea",
+    border: "#cfddd5",
+    ink: "#465f52",
+    solid: "#6c907d",
+    tintDark: "#212a25",
+    inkDark: "#bdd4c8",
+  }, // H 162, C×0.35 — приглушена зелень, спільний тир усіх надходжень
+};
+
+/**
+ * Палітра для КАСТОМНИХ категорій (їх id наперед невідомий). Порядок —
+ * максимальний хроматичний крок між сусідами, щоб дві поспіль створені
+ * категорії не виявились однакового відтінку.
+ */
+export const categoryFallbackOrder = [
+  "transport",
+  "restaurant",
+  "shopping",
+  "food",
+  "health",
+  "charity",
+  "subscriptions",
+  "travel",
+  "entertainment",
+  "beauty",
+];
+
+/**
  * Module-specific accent colors. Each module has its own personality.
  */
 export const moduleColors = {
   finyk: {
-    primary: "#10b981", // emerald-500
-    secondary: "#14b8a6", // teal-500
-    surface: "#ecfdf5", // emerald-50
-    surfaceAlt: "#f0fdfa", // teal-50
+    // 2026-07: shifted from emerald-500 (#10b981) to teal-700 (#0f766e).
+    // Emerald-500 is the "Tailwind default" AI-slop tell — teal-700 is
+    // deeper and more distinctive while staying in the same hue family.
+    primary: "#0f766e", // teal-700
+    secondary: "#0d9488", // teal-600
+    surface: "#f0fdfa", // teal-50
+    surfaceAlt: "#ccfbf1", // teal-100
   },
   fizruk: {
     primary: "#0e7490", // cyan-700 — disambiguates from finyk emerald (was teal-500 #14b8a6)
-    secondary: "#0d9488", // teal-600 — retained as accent for hero gradients
-    surface: "#f0fdfa", // teal-50
+    secondary: "#0891b2", // cyan-600 — same family as primary (design-audit F5)
+    surface: "#ecfeff", // cyan-50
     accent: "#c8f264", // lime-300 (CTA highlight)
   },
   routine: {
-    primary: "#f97066", // coral-500
-    secondary: "#ff8c78", // coral-400
-    surface: "#fff5f3", // coral-50
-    surfaceAlt: "#ffe8e3", // coral-100
+    primary: "#eb7691", // rose-500
+    secondary: "#f68da4", // rose-400
+    surface: "#fff5f6", // rose-50
+    surfaceAlt: "#ffe7eb", // rose-100
   },
   nutrition: {
     primary: "#92cc17", // lime-500
@@ -145,7 +437,7 @@ export const moduleColors = {
  * `--module-accent-strong-rgb` CSS variables exposed by
  * `ModuleAccentProvider`. Kept here (not in the React component) so
  * the triplets stay in lockstep with `moduleColors.primary` and
- * `brandColors.{emerald,teal,coral,lime}[700|800]` — the single source
+ * `brandColors.{emerald,teal,rose,lime}[700|800]` — the single source
  * of truth for Sergeant module branding.
  *
  * Shape: "R G B" (space-separated, no commas) so the value is directly
@@ -154,15 +446,230 @@ export const moduleColors = {
  *   className="bg-[rgb(var(--module-accent-rgb)/0.1)]"
  *   className="bg-[rgb(var(--module-accent-strong-rgb))] text-white"
  *
- * The `strong` triplet is the WCAG-AA companion shade (`-700` for most
- * modules; `-800` for nutrition/lime where `-700` still regresses on
- * white). It matches the `bg-{module}-strong` Tailwind utility.
+ * The `strong` triplet is the WCAG-AA companion shade — `-800` for усіх
+ * чотирьох модулів. It matches the `bg-{module}-strong` Tailwind utility.
+ *
+ * AI-CONTEXT (2026-08-07): routine стояв на `-700` і був єдиним винятком.
+ * Обґрунтування в цьому ж коментарі («routine — той модуль, де -700 уже
+ * тримає AA») міряло контраст проти БІЛОГО; на білому rose-700 справді
+ * дає 5.29. Але `text-routine-strong` стоїть і на фоні сторінки, а там
+ * після переходу на базу `#ecebe7` виходило 4.43 — нижче AA. Решта трьох
+ * модулів на `-800` дають 5.8–6.4, тобто routine був сиротою і за
+ * контрастом, і за тиром. `-800` (`#8d4256`) → 5.78 на фоні сторінки.
+ * Значення тут мусить збігатися з `--c-routine-accent` у `theme.css` —
+ * гейт `contrast.test.js` тепер читає саме цю мапу, а не свою копію.
  */
 export const moduleAccentRgb = {
-  finyk: { default: "16 185 129", strong: "4 120 87" }, // emerald-500 / -700
+  finyk: { default: "15 118 110", strong: "17 94 89" }, // teal-700 / teal-800 (2026-07: was emerald-500/-700)
   fizruk: { default: "14 116 144", strong: "21 94 117" }, // cyan-700 / cyan-800 — disambiguates fizruk from finyk emerald (was teal-500 / teal-700). `strong` companion ≈ 7.5:1 on white for hover/active states.
-  routine: { default: "249 112 102", strong: "194 58 58" }, // coral-500 / -700
+  routine: { default: "235 118 145", strong: "141 66 86" }, // rose-500 / -800 (2026-08-07: was rose-700, 4.43 на фоні сторінки)
   nutrition: { default: "146 204 23", strong: "70 98 18" }, // lime-500 / -800
+};
+
+/**
+ * Стіл і зона — фонова система web (рішення власника 2026-09-03).
+ *
+ * `desk` — фон сторінки, зсунутий у hue модуля; хрома ≤5%, світлота майже
+ * як у `--c-bg`: темніший стіл тягне третинний текст до порогу AA (гейт —
+ * contrast.test.js). `zone` — той самий hue на крок глибше, лише під шапкою
+ * і табами модуля. Хаб нейтральний: без hue, щоб не читатись як п'ятий
+ * модуль. Темна тема: стіл один для всіх (ink base), зона — 7% tier-400
+ * акценту на ньому.
+ *
+ * AI-DANGER: **у зоні живе не лише `-strong` акцент.** Саме це припущення
+ * лишило гейт сліпим: `ModuleHeader` рендерить кнопку «Назад» у
+ * `text-muted`, а картки й банери підкладають під третинний текст ще й
+ * напівпрозорі тони. Заміри axe 2026-09-11: 14 вузлів на 11 маршрутах у
+ * діапазоні 4.21-4.49:1. Лікували не поверхнями, а драбиною — третинні
+ * тони світлої теми стояли рівно на порозі й не мали запасу на жодне
+ * тонування фону (`--c-muted` #5c665f → #535c56, `--c-subtle` #6b645d →
+ * #605a54, theme.css). Поглиблюєш `zone` чи `desk` — спершу подивись у
+ * contrast.test.js, чи тримає драбина новий тон.
+ *
+ * Дзеркало — `--module-desk-rgb` / `--module-zone-rgb` у
+ * apps/web/src/styles/theme.css; міняй парою.
+ */
+export const moduleSurfaces = {
+  hub: {
+    light: { desk: "#e7e5df", zone: "#dad6ce" },
+    dark: { desk: "#14100e", zone: "#1f1b19" },
+  },
+  finyk: {
+    light: { desk: "#e4e9e6", zone: "#d3e3de" },
+    dark: { desk: "#14100e", zone: "#161e1a" },
+  },
+  fizruk: {
+    light: { desk: "#e3e8ea", zone: "#cfdfe4" },
+    dark: { desk: "#14100e", zone: "#151e1e" },
+  },
+  routine: {
+    light: { desk: "#eae3e5", zone: "#efd8dd" },
+    dark: { desk: "#14100e", zone: "#241918" },
+  },
+  nutrition: {
+    light: { desk: "#e6e9e0", zone: "#dde5c9" },
+    dark: { desk: "#14100e", zone: "#1f1f11" },
+  },
+};
+
+/**
+ * «Чорнило» (Ink) — dark-first surface + text scale.
+ *
+ * Canonical values for the `.theme-dark` "Ink" visual direction (spec:
+ * docs/work/specs/chornylo-visual-direction.md § 1). A single
+ * deep warm-charcoal surface with luminescent per-module accents; depth comes
+ * from surface tint + accent border + glow, not a downward shadow.
+ *
+ * AI-CONTEXT: база була зелено-чорною (#0d1512 / #121c17 / #17231d) до
+ * 2026-08-05. Зелений фон під зеленими tier-400 акцентами давав фон і акцент
+ * одного hue — головний «tell» генерованого дизайну, через який наш скрін не
+ * відрізнявся від чужих продуктів (docs/design/design/anti-slop-strategy.md
+ * § 2, § 5/P1). Тепле вугілля розводить hue фону й акценту і водночас робить
+ * теплу базу наскрізною ідеєю обох тем, а не збігом у світлій.
+ * Контраст не постраждав — нова база трохи темніша, тож усі пари виросли:
+ * текст strong 16.98 → 17.33, fg 15.93 → 16.26, muted 6.03 → 6.16 на фоні;
+ * акценти tier-400 на фоні 8.18–12.55 → 8.35–12.81; ink-текст поверх
+ * акцент-філу — ті самі числа (симетрична пара). Усе ≥ AA.
+ *
+ * `surface`/`text` are authored here as the source of truth for the `.dark`
+ * CSS variables in apps/web/src/styles/theme.css. `accent` re-surfaces the
+ * existing `brandColors.{emerald,cyan,rose,lime}[400]` tier-400 tones in
+ * their module role — text placed over an accent fill is always `bg` ink
+ * (#14100e), never white (spec § 1).
+ *
+ * AI-DANGER: 2026-09-12 — коефіцієнти в КОМЕНТАРЯХ цього файлу рахуються
+ * проти значень `inkTheme.surface` нижче — і рівно цього не було до цієї
+ * дати. Усі 14 чисел (`statusInkHex`, `accentInkHex`, таблиця `-strong`)
+ * були пораховані проти `#1b1613` / `#221c18` — поверхонь, яких файл не
+ * оголошує. Причина точна, не «накопичилось»: коміт `2f0c49a` (2026-09-06,
+ * «polish founder feedback flows») підняв обидві поверхні на щабель — саме
+ * щоб картка читалась над фоном — і оновив РІВНО дві декларації тут та
+ * `.dark` у theme.css. Числа, DESIGN.md, прев'ю-блок, glass-аліаси й
+ * літерал у `categoryColors.contract.test.js` лишились на старому
+ * значенні, яке трималось із 2026-08-05 («Чорнило», `anti-slop-strategy.md`
+ * § 5/P1).
+ *
+ * Розходження жило не тільки в коментарях. `.dark` у theme.css шипив
+ * `#1f1a17`, а `--surface-glass` (back-compat аліас, на якому тримаються
+ * `Card glass`, `Sheet`, `Popover`) — `#1b1613`, тож на ОДНОМУ екрані
+ * було дві різні «картки»: різниця мала, щоб читатись як намір, і
+ * достатня, щоб екран виглядав брудно.
+ *
+ * Чому вціліло `#1f1a17`, а не `#1b1613`: воно задеклароване тут, воно
+ * шипиться в `.dark`, і саме проти нього рахує `contrast.test.js` —
+ * єдиний гейт у цій зоні, зелений усі шість днів drift-у. `#1b1613` лишився
+ * лише в коментарях, у DESIGN.md і в прев'ю-блоці, тобто в місцях без гейта.
+ *
+ * **Числа в коментарях гейта не мають і після цієї правки.** Перевіряються
+ * лише ПОРОГИ (`contrast.test.js`) і збіг theme.css з цим файлом
+ * (`apps/web/src/styles/theme.inkSurfaces.test.ts`). Рухаєш поверхню —
+ * перелічуй коментарі руками: зелений CI цього не зловить.
+ *
+ * AI-DANGER: 2026-09-12, крок 2 — поверхні рознесено, і в темної теми
+ * виявився ЖОРСТКИЙ БЮДЖЕТ ГЛИБИНИ, який варто знати до наступної спроби.
+ * Нові значення: surface `#1f1a17` → `#2a231f` (1.10 → 1.22 над фоном),
+ * surfaceHi `#2a231f` → `#3a302b` (1.12 → 1.21 над карткою). Тобто нова
+ * картка — це буквально колишній `surfaceHi`, а третій рівень надбудовано
+ * зверху: рівні не додано, їх ПЕРЕРОЗПОДІЛЕНО.
+ *
+ * **Бюджет ділиться, а не додається.** Від фону до найсвітлішої поверхні
+ * доступно ~1.475:1, і це стеля, а не поточний стан. Замовлені аудитом
+ * «обидва щаблі по 1.25-1.35» вимагають 1.56…1.82 — тобто математично
+ * неможливі при будь-яких значеннях тексту. Тепер узято рівно стелю:
+ * 1.22 × 1.21 = 1.475.
+ *
+ * Стелю тримають ДВА різні пороги, і другий легко проґавити:
+ *   • `statusInkHex.danger` (red-400 `#f87171`) на `surfaceHi` — 4.64 при
+ *     1.475, 4.50 при 1.52, 4.05 при 1.69. Це поле введення, тобто рівно
+ *     те місце, де текст помилки форми й живе.
+ *   • `text.subtle` на `surfaceHi` — і саме він тримав стелю ДО кроку 2
+ *     (4.96 зараз). Гейтує його НЕ цей пакет, а
+ *     `apps/web/src/styles/theme.softContrast.test.ts`: тут `contrast.test.js`
+ *     міряє `subtle` лише на картці, а веб — на всіх трьох поверхнях.
+ *     Я побудував замір із одного гейта й через це спершу вибрав пару,
+ *     яка валила другий. **Обмеження ink-поверхонь живуть у ДВОХ файлах;
+ *     перевіряй обидва.**
+ *
+ * Щоб узяти стелю, `text.subtle` піднято `#8a968e` → `#98a49c` (на фоні
+ * 6.16 → 7.32, тобто підпис став ЧИТАБЕЛЬНІШИМ, а не гіршим — напрям той
+ * самий, що в рішенні власника 2026-08-21). Ціна — драбина `muted`↔`subtle`
+ * стиснулась (8.25 vs 7.32 на фоні); рішення власника, свідоме.
+ *
+ * Зниження `bg` стелю НЕ підіймає — перевірено, а не припущено: навіть
+ * чистий чорний фон дає danger-ink 4.63 замість 4.17 при обох щаблях по
+ * 1.28. Причина структурна: біля чорного контраст упирається в доданок
+ * +0.05 формули WCAG, тож ланцюг зсувається, а не розтягується. Тепле
+ * вугілля фону при цьому зникло б — а це свідома ідентичність
+ * (`anti-slop-strategy.md` § 5/P1), не випадкове значення.
+ *
+ * Підняти `danger` до red-300 теоретично звільнило б стелю, але це
+ * повернуло б МІШАНКУ ТИРІВ, через яку вище й виростали сироти: увесь
+ * ink-шар — тир -400. Не роби цього, не прочитавши коментар до
+ * `accentInkHex`.
+ *
+ * І ще одне, бо це друга помилка того самого виду в цьому файлі: крок 1
+ * (вище) стверджував «усі 14 чисел» — а насправді проґавив ще два,
+ * `text.muted` і `text.subtle`. Вони теж рахувались проти `#1b1613`
+ * (7.83 / 5.84 замість справжніх 7.52 / 5.61). Причина та сама, що з
+ * мертвими `glow-accent-*`: крок 1 шукав по БЛОКАХ, де знайшов першу
+ * розбіжність, а не по всьому файлу. Числа «на фоні» пережили drift
+ * саме тому, що фон не рухався. **Правило на майбутнє: перелічуй кожен
+ * коефіцієнт, чия ЗАЯВЛЕНА опорна поверхня змінилась, а не ті, що
+ * лежать поруч зі знайденим.**
+ */
+export const inkTheme = {
+  surface: {
+    bg: "#14100e", // page background — тепле вугілля
+    surface: "#2a231f", // cards and nav — 1.22:1 над фоном (крок 2, 2026-09-12)
+    surfaceHi: "#3a302b", // fields / hover — 1.21:1 над карткою, 1.48:1 над фоном
+    line: "rgba(255, 255, 255, 0.14)", // calm but traceable boundary
+    lineStrong: "rgba(255, 255, 255, 0.22)", // major section divider
+  },
+  text: {
+    strong: "#f2f6f2", // display / headings — 17.33:1 on bg
+    fg: "#e7f0ea", // body — 16.26:1 on bg
+    // AI-CONTEXT (2026-08-21): обидва нейтральні тири підняті на один
+    // щабель. Підпис `subtle` — «labels ≥12px only» — посилався на
+    // послаблення WCAG до 3:1, якого для 12px НЕ ІСНУЄ: 3:1 діє від
+    // 18.66px bold / 24px regular, а 12px — звичайний текст із порогом
+    // 4.5:1. Тому старий `#5f6b64` давав 2.78 на картці й axe ловив
+    // `[serious] color-contrast` на підписах `/settings [dark]` (розбір —
+    // docs/work/specs/tech-debt/frontend.md § «`text-subtle` у темній темі»).
+    // Там же зафіксовано розвилку «підняти значення vs звузити роль»;
+    // власник обрав перше (репорт тестера 2026-08-21: «сірі літери погано
+    // видно»). `muted` пішов слідом, щоб драбина лишилась із трьома
+    // помітними щаблями, а не двома.
+    muted: "#a3aea6", // meta — 6.74:1 on surface (8.25 on bg, 5.60 on surfaceHi)
+    subtle: "#98a49c", // hints — 5.98:1 on surface (7.32 on bg, 4.96 on surfaceHi; крок 2 підняв із #8a968e)
+  },
+  accent: {
+    finyk: brandColors.teal[400], // #2dd4bf (2026-07: was emerald-400 #34d399)
+    fizruk: brandColors.cyan[400], // #22d3ee
+    routine: brandColors.rose[400], // #f68da4
+    nutrition: brandColors.lime[400], // #b0e636
+  },
+};
+
+/**
+ * Межа контролу — роль «поле вводу / трек перемикача / непозначений чекбокс
+ * впізнаються за контуром» (аудит контрасту 2026-10-01, знахідка A3).
+ *
+ * AI-CONTEXT: `inkTheme.line` / `--c-line` — «тихий» контур картки й
+ * роздільник (1.3-1.6:1 проти картки), і це правильно для картки, яку тримає
+ * ще й заливка. Для КОНТРОЛУ WCAG 1.4.11 вимагає 3:1 проти кожної поверхні,
+ * на якій він стоїть, тому роль має власний токен. Значення підібрані проти
+ * НАЙТЕМНІШОЇ реальної поверхні кожної теми:
+ *
+ *   light #7c756e — біла картка 4.54 · panelHi 4.16 · фон 3.80 · стіл хаба 3.60 ·
+ *                   стіл модуля ≥3.59 · зона хаба (найтемніша) 3.13
+ *   dark  #827b77 — картка #2a231f 3.72 · panelHi #3a302b 3.08 · фон #14100e 4.55
+ *
+ * Дзеркало — `--c-control` у `apps/web/src/styles/theme.css`; збіг і пороги
+ * тримає `theme.controlFocus.test.ts`. Міняєш значення — перерахуй обидві теми.
+ */
+export const controlEdge = {
+  light: "#7c756e",
+  dark: "#827b77",
 };
 
 /** Status/semantic colors — consistent across app. */
@@ -174,12 +681,145 @@ export const statusColors = {
 };
 
 /**
+ * WCAG-AA компаньйони до `statusColors` — те, що рендериться як ТЕКСТ
+ * (`text-{c}-strong`) або як суцільний філ під `text-white`
+ * (`bg-{c}-strong`). Насичені `-500` вище для цього не годяться.
+ *
+ * AI-CONTEXT (2026-08-07): ці значення жили лише в `tailwind-preset.js`
+ * як літерали, і тому не мали гейта — `contrast.test.js` не імпортує
+ * пресет. Наслідок знайшли перезаміром таблиці brandbook:
+ * `warning-strong` на `amber-700` давав **4.21 на фоні сторінки**, тобто
+ * фейлив AA, а підпис у пресеті стверджував 4.83. Число 4.83 не було
+ * вигадкою — воно міряло стару кремову базу, яка зникла з переходом на
+ * `#ecebe7`. Тепер мапа експортується, пресет її споживає, а тест читає
+ * саме її: та сама схема, що закрила drift у `moduleAccentRgb`.
+ *
+ * Усі чотири на `-800` — один тир із чотирма модульними акцентами.
+ * Змішані тири і були тим ґрунтом, на якому виростали сироти: система з
+ * двома конвенціями не має способу відрізнити «свідомий виняток» від
+ * «забули підняти».
+ */
+export const statusStrongHex = {
+  success: "#065f46", // emerald-800 — 6.44:1 на #ecebe7 (was emerald-700, 4.60)
+  warning: "#92400e", // amber-800   — 5.94:1 на #ecebe7 (was amber-700, 4.21 — фейл AA)
+  danger: "#991b1b", // red-800     — 6.97:1 на #ecebe7 (was red-700, 5.42)
+  info: "#075985", // sky-800     — 6.34:1 на #ecebe7 (was sky-700, 4.97)
+};
+
+/**
+ * «Чорнило»-компаньйони до `statusStrongHex` — те, що рендериться як
+ * ТЕКСТ статусу в ТЕМНІЙ темі.
+ *
+ * AI-CONTEXT (2026-08-21, репорт тестера «червоні літери в темній темі
+ * погано видно»): `statusStrongHex` — тир -800, підібраний під світлу
+ * базу. У «Чорнилі» він дає 1.86:1 (red-800 #991b1b на картці #2a231f),
+ * тобто помилка форми була практично невидима. Дефект був системний, а
+ * не в одному екрані: `text-{status}-strong` стоїть у 376 місцях, і лише
+ * дві третини з них мали ручну пару `dark:text-{status}`. Друга третина
+ * малювала темно-червоне по темному.
+ *
+ * Тому тир розвернуто через CSS-змінну `--c-{status}-ink`, а не ручні
+ * `dark:`-пари в className (вони й були тим механізмом, який мовчки
+ * пропустив третину місць). Значення — тир -400: рівно той самий щабель,
+ * що вже несуть модульні акценти й `--c-chart-{status}` у темній темі,
+ * тож система лишається з ОДНИМ тиром на тему, а не з мішанкою.
+ *
+ * Пороги на ink-поверхнях (bg #14100e / surface #2a231f / surfaceHi
+ * #3a302b) — 4.64…11.33:1, найтісніше в danger на `surfaceHi`: саме ця
+ * пара і є стелею глибини темної теми (див. AI-DANGER вище).
+ */
+export const statusInkHex = {
+  success: "#34d399", // emerald-400 — 8.04:1 на #2a231f
+  warning: "#fbbf24", // amber-400   — 9.26:1 на #2a231f
+  danger: "#f87171", // red-400     — 5.59:1 на #2a231f
+  info: "#38bdf8", // sky-400      — 7.22:1 на #2a231f
+};
+
+/**
+ * «Чорнило»-компаньйони до акцентних `-strong` тирів — те, що рендериться
+ * як ТЕКСТ бренду чи модуля (`text-{accent}-strong`) у ТЕМНІЙ темі.
+ *
+ * AI-CONTEXT (2026-09-02): це друга половина того самого дефекту, який
+ * `statusInkHex` закрив для статусів 2026-08-21 — просто її тоді не
+ * помітили. Акцентний `-strong` — тир -800, підібраний під світлу базу;
+ * на ink-поверхнях він дає **1.02…2.74:1**. Заміри (fg на
+ * bg #14100e / surface #2a231f / surfaceHi #3a302b):
+ *
+ *   brand     stone-800 #292524 — 1.25 / 1.02 / 1.18
+ *   finyk     teal-800  #115e59 — 2.49 / 2.04 / 1.69
+ *   fizruk    cyan-800  #155e75 — 2.60 / 2.13 / 1.76
+ *   routine   rose-800  #8d4256 — 2.74 / 2.24 / 1.86
+ *   nutrition lime-800  #466212 — 2.72 / 2.22 / 1.84
+ *
+ * Дефект системний, а не в одному екрані: `text-{accent}-strong` стоїть у
+ * 211 місцях `apps/{web,mobile}/src` — серед них спільні примітиви
+ * `Tabs`, `Badge`, `Stat`, `KeyboardAccessory`, екран входу й повідомлення
+ * чату. Двічі його вже ловили поштучно (`HeroCardStates.tsx`, `Atlas.tsx`)
+ * і лікували ще однією `dark:`-парою.
+ *
+ * **Рахувати «скільки місць мають ручну `dark:`-пару» тут мало** — і саме
+ * на цьому збився попередній підрахунок боргу. 33 місця бренду пару
+ * мають (`text-brand-strong dark:text-brand`), але вона віддає stone-700,
+ * тобто **1.25…1.84:1**: так само невидимо. Пара, яка сама нечитабельна,
+ * гірша за її відсутність — вона виглядає як полагоджене місце і
+ * переживає будь-який аудит «скільки без пари». Тому ці пари знято, а не
+ * доповнено; пара в className гейта не має, змінна має.
+ *
+ * Значення — тир -400 для модулів (рівно той самий щабель, що вже несуть
+ * `--c-{module}-accent` і `--c-chart-{module}` у темній темі) і stone-300
+ * для нейтрального бренду (той самий щабель, що вже несе
+ * `--c-brand-soft-fg` у `.dark`). Один тир на тему, а не мішанка — саме
+ * змішані тири й були тим ґрунтом, на якому виростали сироти (див.
+ * коментар до `moduleAccentRgb`).
+ */
+export const accentInkHex = {
+  brand: "#d6d3d1", // stone-300 — 10.38:1 на #2a231f
+  finyk: "#2dd4bf", // teal-400  — 8.30:1 на #2a231f
+  fizruk: "#22d3ee", // cyan-400  — 8.55:1 на #2a231f
+  routine: "#f68da4", // rose-400  — 6.82:1 на #2a231f
+  nutrition: "#b0e636", // lime-400  — 10.46:1 на #2a231f
+};
+
+/**
+ * Світлі (заливкові) компаньйони до `accentInkHex` — тир -800, те, у що
+ * резолвиться `bg-{accent}-strong` під `text-white` в обох темах.
+ *
+ * Модульні значення дублюють `moduleAccentRgb.{m}.strong` у hex-формі;
+ * бренд власного запису в тій мапі не має (він не модульний акцент), тож
+ * живе тут. Пара потрібна `contrast.test.js`, який доводить, що спільного
+ * значення для «текст на чорнилі» і «заливка під `text-white`» не існує —
+ * інакше хтось звів би дві ролі назад в одне число, як це вже було.
+ */
+export const accentStrongHex = {
+  brand: brandColors.stone[800], // #292524
+  finyk: brandColors.teal[800], // #115e59
+  fizruk: brandColors.cyan[800], // #155e75
+  routine: brandColors.rose[800], // #8d4256
+  nutrition: brandColors.lime[800], // #466212
+};
+
+/**
+ * Святкування — єдиний hue поза чотирма модульними, який система
+ * узаконює. Подія (сота доба серії, конфеті, level-up) не належить
+ * жодному модулю, тож фарбувати її модульним акцентом було б брехнею.
+ *
+ * Пара, а не одне значення: amber-400 світиться на ink-базі, але дає
+ * 1.66:1 на білому — для світлої теми береться AA-компаньйон amber-700
+ * (5.02:1). Значення дзеркалять `--c-celebration` / `--c-streak-tier-100`
+ * у `apps/web/src/styles/theme.css`.
+ */
+export const celebrationColors = {
+  light: "#b45309", // amber-700 — 5.02:1 на білому
+  dark: "#fbbf24", // amber-400 — люмінесцентний на ink
+};
+
+/**
  * Status colors as a flat hex map — alias of `statusColors` for inline
  * SVG / canvas / native status-bar call sites that can't consume the
  * Tailwind `text-success` / `bg-danger` utilities (body-highlighter,
  * raw `<path stroke>` attrs, etc.). Same values as `statusColors`;
  * exposed under `statusHex` so web-only code uses one consistent name
- * across `@shared/lib/themeHex`, chart series and mobile status bar.
+ * across chart series and mobile status bar.
  */
 export const statusHex = {
   success: statusColors.success,
@@ -292,11 +932,35 @@ export const zTier = {
  * source of truth.
  */
 export const chartHex = {
-  primary: "#6366f1", // indigo-500 — budget trend default
-  limit: statusColors.danger, // #ef4444 — over-budget / limit line
-  neutral: "#94a3b8", // slate-400 — "Other" slice / unused category
-  kcal: "#f97316", // orange-500
-  protein: "#3b82f6", // blue-500
-  fat: "#eab308", // yellow-500
-  carbs: "#22c55e", // green-500
+  limit: statusColors.danger, // #ef4444 — over-budget / limit line (статус, не бренд)
+  neutral: inkTheme.text.subtle, // #98a49c — "Інше"/невикористана категорія; була slate-400 (холодна синя нейтраль, чужа теплій ink-системі). Читає `subtle`, а не `muted`. AI-NOTE: підйом 2026-08-21 сегмента НЕ рухав (subtle тоді взяв старе значення muted), а крок 2 D1 2026-09-12 — рухає: #8a968e → #98a49c. Гейта на цей сегмент немає; він лишається теплою нейтраллю, тільки на щабель світлішою.
+  // Макро-шкала, третя ітерація. Спершу це були blue-500 / yellow-500 /
+  // green-500: жодного з цих hue немає в палітрі Sergeant. Друга ітерація
+  // (дизайн-аудит 2026-07) перевела шкалу на бренд-hue cyan/rose/lime - але
+  // це рівно hue Фізрука, Рутини й Їжі, тож на `/nutrition/menu` бар читався
+  // як чужі модульні акценти (продуктовий аудит 2026-09-16, N-13).
+  //
+  // Третя ітерація (2026-09-22) лишає власну родину поза модульними смугами,
+  // але виправляє помилку другої: та поставила всі три сегменти на ОДНАКОВУ
+  // світлоту (L .48) і розвела лише відтінком, причому білки й вуглеводи -
+  // усього на 35°, обидва в синьо-фіолетовій зоні. Замір симуляцією
+  // дихромазії: під протанопією ті два кольори розходились на 18 одиниць із
+  // 255, тобто зливались повністю. Однакова світлота означала, що й у
+  // градаціях сірого сегменти не розрізнити: взаємний контраст 1.05:1.
+  //
+  // AI-DANGER: світлота тут затиснута З ДВОХ БОКІВ, і це не стилістика.
+  // Знизу - `text-white` на сегменті (потрібно >= 4.5:1, Hard Rule #9).
+  // Зверху - сам сегмент на темній панелі `surfaceHi` #3a302b: надто темний
+  // колір просто зникає (кандидат L .32 давав 1.03:1, тобто невидимий).
+  // Робочий діапазон вузький, тож розрізнюваність тримається на ВІДТІНКУ:
+  // синій 264 · бурштин 52 · слива 320, попарно не ближче за 56°, плюс
+  // вуглеводи на щабель темніші за решту. Найгірша пара під усіма трьома
+  // дихромазіями - 76 одиниць (було 18). Гейт - `chartHex.contract.test.js`,
+  // там і склад родини, і поріг розрізнюваності, і обидві межі контрасту.
+  //
+  // Значення обчислені тим самим `oklchToHex` (`categoryColors.gen.js`), що
+  // й `categoryColors` Фініка нижче.
+  protein: "#436cc8", // L .55 C .15 H 264 (синій) - біле 4.98:1, панель 2.58:1
+  fat: "#af5504", // L .55 C .14 H 52 (бурштин) - біле 5.09:1, панель 2.52:1
+  carbs: "#784784", // L .48 C .11 H 320 (слива) - біле 6.92:1, панель 1.85:1
 };

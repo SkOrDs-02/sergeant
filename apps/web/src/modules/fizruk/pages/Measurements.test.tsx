@@ -66,6 +66,62 @@ describe("Measurements page", () => {
     expect(() => render(<Measurements />)).not.toThrow();
   });
 
+  it("не показує тайли статистики, поки записів немає", () => {
+    // Три плитки «Записів 0 / Останній – / Полів 0» подають нулі як
+    // результат (критика екранів 2026-09-23). До першого запису їм нема
+    // що казати, тож їх нема.
+    render(<Measurements />);
+    expect(screen.queryByText("Записів")).toBeNull();
+    expect(screen.queryByText("Полів")).toBeNull();
+  });
+
+  it("кнопка гайду стоїть в акценті модуля, а не в success", () => {
+    // Довідка про заміри не є «успіхом»: зелений усередині cyan-модуля
+    // ламає module-accent containment (критика екранів 2026-09-23).
+    render(<Measurements />);
+    const trigger = screen.getByRole("button", {
+      name: /Як правильно робити заміри/,
+    });
+    expect(trigger.querySelector('[class*="success"]')).toBeNull();
+    expect(trigger.querySelector('[class*="fizruk"]')).not.toBeNull();
+  });
+
+  it("opens the internal measurement guide with primary-source links", () => {
+    render(<Measurements />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Як правильно робити заміри" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /CDC/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("cdc.gov"),
+    );
+    expect(screen.getByRole("link", { name: /NHS/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("nhs.uk"),
+    );
+    expect(screen.getByRole("link", { name: /CDC/ })).toHaveAttribute(
+      "href",
+      expect.stringContaining("cdc.gov"),
+    );
+  });
+
+  it("contains the wide guide table inside a narrow-layout scroller", () => {
+    render(<Measurements />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+    );
+
+    const scroller = screen.getByTestId("measurement-guide-table-scroll");
+    expect(scroller.className).toContain("max-w-full");
+    expect(scroller.className).toContain("min-w-0");
+    expect(scroller.className).toContain("overflow-x-auto");
+    expect(scroller.firstElementChild?.className).toContain("min-w-[560px]");
+  });
+
   it("disables the submit button when the form is empty (F4)", () => {
     render(<Measurements />);
     expect(getSaveButton()).toBeDisabled();
@@ -96,9 +152,7 @@ describe("Measurements page", () => {
 
   it("parses a decimal field value before persisting", () => {
     render(<Measurements />);
-    // % жиру range is 2..70 — a dot decimal within bounds. (The form input
-    // is type=number so the browser normalises separators; the page's
-    // `replace(",", ".")` is a defensive fallback for programmatic values.)
+    // % жиру range is 2..70 — a dot decimal within bounds.
     fireEvent.change(screen.getByLabelText(/% жиру · %/), {
       target: { value: "12.5" },
     });
@@ -106,15 +160,43 @@ describe("Measurements page", () => {
     expect(addEntry).toHaveBeenCalledWith({ bodyFatPct: 12.5 });
   });
 
-  it("blocks an out-of-range value via the zod schema and warns (F3)", () => {
+  it("accepts a UA comma decimal separator (type=text bugfix)", () => {
+    // Regression test: `type="number"` used to silently drop "82,5" before
+    // this component ever saw an onChange — the comma-to-dot normalisation
+    // below existed but was unreachable. `type="text"` lets the comma reach
+    // state; `Number(v.replace(",", "."))` on submit does the rest.
+    render(<Measurements />);
+    fireEvent.change(screen.getByLabelText(/Вага · кг/), {
+      target: { value: "82,5" },
+    });
+    expect(getSaveButton()).toBeEnabled();
+    fireEvent.click(getSaveButton());
+    expect(addEntry).toHaveBeenCalledWith({ weightKg: 82.5 });
+  });
+
+  it("blocks an out-of-range value and marks the offending field (F3)", () => {
     render(<Measurements />);
     // weightKg max is 300 — 99999 must be rejected.
-    fireEvent.change(screen.getByLabelText(/Вага · кг/), {
-      target: { value: "99999" },
-    });
+    const weight = screen.getByLabelText(/Вага · кг/);
+    fireEvent.change(weight, { target: { value: "99999" } });
     fireEvent.click(getSaveButton());
     expect(addEntry).not.toHaveBeenCalled();
-    expect(warning).toHaveBeenCalledTimes(1);
+    // Помилка діапазону живе під своїм полем, а не в тості у куті екрана:
+    // з восьми полів користувач інакше не бачить, яке саме завелике.
+    expect(weight).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(warning).not.toHaveBeenCalled();
+  });
+
+  it("прибирає помилку поля, щойно користувач починає правити значення", () => {
+    render(<Measurements />);
+    const weight = screen.getByLabelText(/Вага · кг/);
+    fireEvent.change(weight, { target: { value: "99999" } });
+    fireEvent.click(getSaveButton());
+    expect(weight).toHaveAttribute("aria-invalid", "true");
+
+    fireEvent.change(weight, { target: { value: "85" } });
+    expect(weight).not.toHaveAttribute("aria-invalid");
   });
 
   it("strips NaN input so a stray value cannot enable submit (F3/F4)", () => {
@@ -133,7 +215,7 @@ describe("Measurements page", () => {
     ];
     render(<Measurements />);
     // +3.0 kg delta surfaced in the "Останній замір" card.
-    expect(screen.getByText(/\+3\.0/)).toBeInTheDocument();
+    expect(screen.getByText(/\+3,0/)).toBeInTheDocument();
   });
 
   it("delete button exposes an accessible name and touch-target sizing (F8)", () => {
@@ -155,7 +237,180 @@ describe("Measurements page", () => {
   it("each measurement input is associated with a label (a11y)", () => {
     render(<Measurements />);
     // 14 numeric fields, each with htmlFor/id binding (F13 closed earlier).
+    // `type="text"` + `inputMode="decimal"` (not `type="number"`) so a UA
+    // comma decimal separator reaches state — see the comma bugfix test.
     const waist = screen.getByLabelText(/Талія · см/);
-    expect(waist).toHaveAttribute("type", "number");
+    expect(waist).toHaveAttribute("type", "text");
+    expect(waist).toHaveAttribute("inputMode", "decimal");
+  });
+
+  // Defect #7 — a history row can carry up to 14 filled fields; slicing to
+  // 4 used to drop the rest with no indicator.
+  describe("history row overflow (defect #7)", () => {
+    beforeEach(() => {
+      mockEntries = [
+        {
+          id: "a",
+          at: "2026-05-14T08:00:00Z",
+          weightKg: 80,
+          bodyFatPct: 15,
+          neckCm: 38,
+          chestCm: 100,
+          waistCm: 85,
+        },
+      ];
+    });
+
+    it("shows a +N indicator instead of silently dropping fields past the limit", () => {
+      render(<Measurements />);
+      expect(screen.getByText("+1 ще")).toBeInTheDocument();
+      // The 5th field (Талія) is hidden until expanded. Match the exact
+      // history-row fragment ("Талія: 85 см") — "Талія" alone also appears
+      // in the always-rendered form field label and, with this fixture, in
+      // the "Останній замір" card, so a bare-word query would be ambiguous.
+      expect(screen.queryByText(/Талія: 85/)).not.toBeInTheDocument();
+    });
+
+    it("reveals the remaining fields when the +N toggle is clicked", () => {
+      render(<Measurements />);
+      fireEvent.click(screen.getByText("+1 ще"));
+      expect(screen.getByText(/Талія: 85/)).toBeInTheDocument();
+      expect(screen.getByText("Згорнути")).toBeInTheDocument();
+    });
+
+    it("collapses back to the 4-field summary when Згорнути is clicked", () => {
+      render(<Measurements />);
+      fireEvent.click(screen.getByText("+1 ще"));
+      fireEvent.click(screen.getByText("Згорнути"));
+      expect(screen.getByText("+1 ще")).toBeInTheDocument();
+      expect(screen.queryByText(/Талія: 85/)).not.toBeInTheDocument();
+    });
+
+    it("does not render an overflow toggle for a row with 4 or fewer fields", () => {
+      mockEntries = [{ id: "a", at: "2026-05-14T08:00:00Z", weightKg: 80 }];
+      render(<Measurements />);
+      expect(screen.queryByText(/^\+\d+ ще$/)).not.toBeInTheDocument();
+    });
+  });
+
+  // Defect #9 — toggling the guide view used to leave scroll position and
+  // keyboard/SR focus pointing at whatever was there before the swap.
+  describe("guide view focus + scroll management (defect #9)", () => {
+    it("moves focus to the guide heading when the guide opens", () => {
+      render(<Measurements />);
+      fireEvent.click(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      );
+      expect(
+        screen.getByRole("heading", { name: "Як правильно робити заміри" }),
+      ).toHaveFocus();
+    });
+
+    it("returns focus to the trigger button when the guide closes", () => {
+      render(<Measurements />);
+      fireEvent.click(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /Назад до замірів/ }));
+      // Re-query rather than reusing the pre-toggle handle: the guide and
+      // main views are structurally different subtrees, so React remounts
+      // the trigger button on the way back — the earlier reference is a
+      // detached node.
+      expect(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      ).toHaveFocus();
+    });
+
+    it("does not steal focus on initial mount", () => {
+      render(<Measurements />);
+      expect(document.body).toHaveFocus();
+    });
+
+    it("resets the scroll container position when the guide toggles", () => {
+      const { container } = render(<Measurements />);
+      const scrollEl = container.querySelector(
+        ".overflow-y-auto",
+      ) as HTMLElement;
+      expect(scrollEl).toBeTruthy();
+      scrollEl.scrollTop = 120;
+      expect(scrollEl.scrollTop).toBe(120);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+      );
+      expect(scrollEl.scrollTop).toBe(0);
+    });
+  });
+
+  // Defect #10 — `target="_blank"` links didn't announce the new-tab
+  // behaviour; the catalog string existed but was unused.
+  it("tells assistive tech that guide reference links open in a new tab (defect #10)", () => {
+    render(<Measurements />);
+    fireEvent.click(
+      screen.getByRole("button", { name: /Як правильно робити заміри/ }),
+    );
+    const cdcLink = screen.getByRole("link", {
+      name: /CDC.*відкриється в новій вкладці/,
+    });
+    expect(cdcLink).toHaveAttribute("href", expect.stringContaining("cdc.gov"));
+    const nhsLink = screen.getByRole("link", {
+      name: /NHS.*відкриється в новій вкладці/,
+    });
+    expect(nhsLink).toHaveAttribute("href", expect.stringContaining("nhs.uk"));
+  });
+
+  describe("список першим", () => {
+    const twoEntries = [
+      { id: "b", at: "2026-05-14T08:00:00Z", weightKg: 83 },
+      { id: "a", at: "2026-05-07T08:00:00Z", weightKg: 80 },
+    ];
+
+    it("з записами історія стоїть у DOM раніше за гайд, а форми інлайн немає", () => {
+      mockEntries = twoEntries;
+      render(<Measurements />);
+      expect(
+        screen.queryByRole("button", { name: "Зберегти замір" }),
+      ).toBeNull();
+      const history = screen.getByText("Історія");
+      const guide = screen.getByRole("button", {
+        name: /Як правильно робити заміри/,
+      });
+      expect(
+        history.compareDocumentPosition(guide) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it("не рендерить плитку «Полів»", () => {
+      mockEntries = twoEntries;
+      render(<Measurements />);
+      expect(screen.getByText("Записів")).toBeInTheDocument();
+      expect(screen.queryByText("Полів")).toBeNull();
+    });
+
+    it("кнопка біля заголовка відкриває форму в аркуші і закриває його після збереження", () => {
+      mockEntries = twoEntries;
+      render(<Measurements />);
+      fireEvent.click(screen.getByRole("button", { name: "Додати замір" }));
+      const dialog = screen.getByRole("dialog");
+      // Історія й динаміка стоять над формою і в порядку DOM.
+      expect(
+        screen.getByText("Історія").compareDocumentPosition(getSaveButton()) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      fireEvent.change(screen.getByLabelText(/Вага/), {
+        target: { value: "82" },
+      });
+      fireEvent.click(getSaveButton());
+      expect(addEntry).toHaveBeenCalledWith({ weightKg: 82 });
+      expect(dialog).not.toBeInTheDocument();
+    });
+
+    it("без записів форма інлайн, а кнопки аркуша немає", () => {
+      render(<Measurements />);
+      expect(getSaveButton()).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Додати замір" })).toBeNull();
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 });

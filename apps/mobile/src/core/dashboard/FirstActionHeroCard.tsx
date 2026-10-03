@@ -62,8 +62,8 @@ const ACTIONS: Record<DashboardModuleId, ActionSpec> = {
   routine: {
     title: "Створи першу звичку",
     desc: "~5 секунд. І серія днів стартує одразу.",
-    accentChip: "bg-coral-50 border border-coral-300/60",
-    accentText: "text-coral-700",
+    accentChip: "bg-rose-50 border border-rose-300/60",
+    accentText: "text-rose-700",
     shortLabel: "Звичка",
   },
   finyk: {
@@ -243,7 +243,7 @@ export function FirstActionHeroCard({
         <View className="flex-row items-start justify-between gap-3">
           <View className="flex-1">
             <SectionHeading size="2xs" weight="semibold" variant="muted">
-              Почнемо
+              Почни звідси
             </SectionHeading>
             <Text className="mt-1 text-base font-bold leading-snug text-fg">
               {primary.title}

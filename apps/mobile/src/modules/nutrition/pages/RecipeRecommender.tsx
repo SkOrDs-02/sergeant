@@ -16,7 +16,7 @@
  * (goal/servings/timeMinutes/exclude) пишемо у MMKV через `updatePrefs`,
  * як web `setPrefs`.
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -30,7 +30,6 @@ import {
   labelForMealType,
   mealTypeByNow,
   type NutritionPrefs,
-  type PantryItem,
 } from "@sergeant/nutrition-domain";
 import { hapticTap, toLocalISODate } from "@sergeant/shared";
 
@@ -70,17 +69,14 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
   const api = useApiClient();
   const toast = useToast();
   const { prefs, updatePrefs } = useNutritionPrefs();
-  const { activePantry, activePantryId } = useNutritionPantries();
+  const { pantryItems } = useNutritionPantries();
   const { addMeal } = useNutritionLog();
 
-  const pantryItems = useMemo<PantryItem[]>(
-    () => (Array.isArray(activePantry?.items) ? activePantry.items : []),
-    [activePantry?.items],
-  );
-
   const recipeCacheKey = useMemo(
-    () => buildRecipeCacheKey(activePantryId, pantryItems, prefs),
-    [activePantryId, pantryItems, prefs],
+    // Комора одна на всі місця, тож і кеш рецептів один: скоуп ключа —
+    // увесь запас, а не окрема полиця (активної комори більше немає).
+    () => buildRecipeCacheKey("all", pantryItems, prefs),
+    [pantryItems, prefs],
   );
 
   const [recipes, setRecipes] = useState<RecommendedRecipe[]>([]);
@@ -92,7 +88,10 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
 
   // Hydrate з session-кеша при зміні ключа (склад/налаштування). Показуємо
   // останній результат + підказку про оновлення — паритет з web banner-ом.
-  useEffect(() => {
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
+  const [prevCacheKey, setPrevCacheKey] = useState(recipeCacheKey);
+  if (recipeCacheKey !== prevCacheKey) {
+    setPrevCacheKey(recipeCacheKey);
     const cached = readRecipeCache<RecommendedRecipe>(recipeCacheKey);
     if (cached && cached.recipes.length > 0) {
       setRecipes(cached.recipes);
@@ -102,7 +101,7 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
     } else {
       setFromCache(false);
     }
-  }, [recipeCacheKey]);
+  }
 
   const { recommendRecipes, isPending } = useNutritionRemoteActions({
     api,
@@ -189,9 +188,8 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
         ) : null}
       </View>
       <Text className="text-xs text-fg-muted">
-        Рекомендації на базі продуктів зі складу (
-        {activePantry?.name || "Склад"}
-        ). Можна вказати час, порції та «не хочу».
+        Рекомендації на базі продуктів з комори. Можна вказати час, порції та
+        «не хочу».
       </Text>
 
       <Card className="gap-3">
@@ -299,7 +297,7 @@ export function RecipeRecommender({ testID, onClose }: RecipeRecommenderProps) {
 
         {fromCache && recipes.length > 0 ? (
           <Text className="text-xs text-nutrition-strong text-center">
-            Показано кеш сеансу — натисни «Запропонувати» для оновлення.
+            Показано кеш сеансу, натисни «Запропонувати» для оновлення.
           </Text>
         ) : null}
 

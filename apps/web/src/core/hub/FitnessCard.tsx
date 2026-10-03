@@ -3,20 +3,29 @@
  * Reads its own localStorage shard and aggregates independently so
  * the Reports page can show this card without blocking on other domains.
  */
+import { ReportSheet } from "./ReportSheet";
 import { useMemo, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
-import { getKyivDateParts, parseKyivDate } from "@shared/lib/time/kyivTime";
+import {
+  formatChartLabel,
+  formatChartTooltip,
+  labelStep,
+} from "./reportChartLabels";
 import {
   aggregateWorkouts,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
+import { formatNumberUk } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 // ── Local sub-components (shared pattern, duplicated per card to keep
 //    each card's chunk self-contained — no cross-card coupling) ───────
@@ -42,34 +51,16 @@ function BarChart({
 
   if (!hasData) {
     return (
-      <div className="h-24 flex items-center justify-center text-xs text-muted">
+      <div className="h-24 flex items-center justify-center text-style-caption text-muted">
         Немає даних
       </div>
     );
   }
 
-  function labelStep(count: number) {
-    if (count <= 7) return 1;
-    if (count <= 15) return 2;
-    return Math.ceil(count / 8);
-  }
   const step = labelStep(dates.length);
-
-  function formatLabel(dateStr: string) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    if (isWeek) {
-      const dayNames = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
-      return dayNames[parts.weekday];
-    }
-    return String(parts.day);
-  }
-
-  function formatTooltip(dateStr: string, value: number) {
-    const parts = getKyivDateParts(parseKyivDate(dateStr) ?? new Date(dateStr));
-    const day = String(parts.day).padStart(2, "0");
-    const month = String(parts.month).padStart(2, "0");
-    return `${day}.${month}: ${value.toLocaleString("uk-UA")}${unit}`;
-  }
+  const formatLabel = (dateStr: string) => formatChartLabel(dateStr, isWeek);
+  const formatTooltip = (dateStr: string, value: number) =>
+    formatChartTooltip(dateStr, value, unit);
 
   return (
     <div>
@@ -79,98 +70,68 @@ function BarChart({
         </div>
       )}
       {selected === null && <div className="h-4 mb-1" />}
-      <div className="flex items-end gap-0.5 h-20" aria-label="Графік">
-        {vals.map((v, i) => {
-          const pct = Math.max(0, Math.min(100, (v / max) * 100));
-          const isToday = dates[i] === localDateKey();
-          const isSelected = selected === i;
-          return (
-            <button
-              key={dates[i]}
-              type="button"
-              aria-label={formatTooltip(dates[i] ?? "", v)}
-              aria-pressed={isSelected}
-              className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
-              onClick={() => setSelected(isSelected ? null : i)}
-            >
-              <div
-                className={cn(
-                  "w-full rounded-t-sm transition-[height,background-color,opacity]",
-                  "motion-safe:animate-bar-grow",
-                  colorClass,
-                  (isToday || isSelected) && "opacity-100",
-                  !isToday && !isSelected && "opacity-60",
-                )}
-                style={{
-                  height: `${pct}%`,
-                  minHeight: v > 0 ? "2px" : "0",
-                  animationDelay: `${Math.min(i * 30, 600)}ms`,
-                }}
-              />
-            </button>
-          );
-        })}
-      </div>
-      <div className="flex gap-0.5 mt-1">
-        {dates.map((d, i) => {
-          const show = i % step === 0 || i === dates.length - 1;
-          return (
-            <span
-              key={d}
-              className={cn(
-                "flex-1 text-center text-style-caption leading-tight",
-                selected === i ? "text-text font-medium" : "text-muted",
-              )}
-            >
-              {show ? formatLabel(d) : ""}
-            </span>
-          );
-        })}
+      <div
+        data-testid="report-chart-scroller"
+        className="w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain"
+      >
+        <div
+          className="min-w-full"
+          style={{
+            width: dates.length > 14 ? `${dates.length * 24}px` : "100%",
+          }}
+        >
+          <div className="flex items-end gap-0.5 h-20" aria-label="Графік">
+            {vals.map((v, i) => {
+              const pct = Math.max(0, Math.min(100, (v / max) * 100));
+              const isToday = dates[i] === localDateKey();
+              const isSelected = selected === i;
+              return (
+                <button
+                  key={dates[i]}
+                  type="button"
+                  data-compact
+                  aria-label={formatTooltip(dates[i] ?? "", v)}
+                  aria-pressed={isSelected}
+                  className="flex-1 flex flex-col items-center justify-end gap-0.5 h-full appearance-none bg-transparent border-0 p-0 cursor-pointer"
+                  onClick={() => setSelected(isSelected ? null : i)}
+                >
+                  <div
+                    className={cn(
+                      "w-full rounded-t-sm transition-[height,background-color,opacity]",
+                      "motion-safe:animate-bar-grow",
+                      colorClass,
+                      (isToday || isSelected) && "opacity-100",
+                      !isToday && !isSelected && "opacity-60",
+                    )}
+                    style={{
+                      height: `${pct}%`,
+                      minHeight: v > 0 ? "2px" : "0",
+                      animationDelay: `${Math.min(i * 30, 600)}ms`,
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-0.5 mt-1">
+            {dates.map((d, i) => {
+              const show = i % step === 0 || i === dates.length - 1;
+              return (
+                <span
+                  key={d}
+                  className={cn(
+                    "flex-1 text-center text-style-caption leading-tight",
+                    selected === i ? "text-text font-medium" : "text-muted",
+                  )}
+                >
+                  {show ? formatLabel(d) : ""}
+                </span>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
-  );
-}
-
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0) return <span className="text-xs text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
-  return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
   );
 }
 
@@ -191,8 +152,15 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
+  // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
+  // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
+  // модуля — бачить. Без нього картка лишалась із нулями до наступного
+  // запису у сховище (та сама діра, що в ExpensesCard).
+  const sqliteTick = useFizrukSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates } = useMemo(() => {
+    void bump; // storage-write tick
+    void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling getCached* inside deps
     // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
     // is tombstoned (drained + deleted on boot). The canonical list carries
     // ISO-string timestamps; `aggregateWorkouts` expects the legacy epoch-ms
@@ -207,53 +175,56 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
               endedAt: w.endedAt ? Date.parse(w.endedAt) : null,
             })),
           );
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateWorkouts(rawWorkouts, curDates),
-      prev: aggregateWorkouts(rawWorkouts, prevDates),
-      dates: curDates,
+      cur: aggregateWorkouts(rawWorkouts, w.cur),
+      prev: aggregateWorkouts(rawWorkouts, w.prev),
+      prevAny: aggregateWorkouts(rawWorkouts, w.prevAll).count > 0,
+      dates: w.dates,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bump triggers re-read on storage writes
-  }, [period, offset, bump]);
+  }, [period, offset, bump, sqliteTick]);
 
-  const formattedCurrent = cur.count.toLocaleString("uk-UA");
-  const formattedPrev = prev.count.toLocaleString("uk-UA");
+  const formattedCurrent = formatNumberUk(cur.count);
+  const formattedPrev = formatNumberUk(prev.count);
+  // Нуль тренувань зараз і за весь попередній період: предмета звіту ще немає.
+  const empty = cur.count === 0 && !prevAny;
 
   return (
-    <div
-      className={cn(
-        "bg-panel border border-line rounded-2xl",
-        collapsed ? "p-3" : "p-4 space-y-3",
-      )}
-    >
+    <ReportSheet collapsed={collapsed}>
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
         aria-expanded={!collapsed}
         className={cn(
           "w-full flex items-center gap-2 text-left rounded-xl",
-          "-m-1 p-1 hover:bg-panelHi transition-colors",
+          "-m-1 p-1 hover:bg-panelHi transition-[background-color,transform] active:scale-[0.99]",
         )}
       >
-        <span className="text-lg shrink-0" aria-hidden>
-          🏋️
-        </span>
+        <Icon
+          name="dumbbell"
+          size="lg"
+          className="shrink-0 text-fizruk"
+          aria-hidden
+        />
         <SectionHeading
           as="span"
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          Фізрук (тренування)
+          Тренування
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <span className="text-base font-bold text-text">
-              {formattedCurrent} трен.
+            <span className="text-style-body font-bold text-text">
+              {empty ? "–" : `${formattedCurrent} трен.`}
             </span>
-            <Delta cur={cur.count} prev={prev.count} higherIsBetter={true} />
+            {!empty && (
+              <DeltaChip
+                cur={cur.count}
+                prev={prev.count}
+                higherIsBetter={true}
+              />
+            )}
           </span>
         )}
         <svg
@@ -274,15 +245,26 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyWorkouts}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
-            <span className="text-style-hero text-text">
+            <span className="text-style-headline text-text">
               {formattedCurrent} трен.
             </span>
-            <Delta cur={cur.count} prev={prev.count} higherIsBetter={true} />
+            <DeltaChip
+              cur={cur.count}
+              prev={prev.count}
+              higherIsBetter={true}
+            />
           </div>
-          <p className="text-xs text-muted">Минулий: {formattedPrev} трен.</p>
+          <p className="text-style-caption text-muted">
+            Минулий: {formattedPrev} трен.
+          </p>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}
@@ -292,6 +274,6 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
           />
         </>
       )}
-    </div>
+    </ReportSheet>
   );
 }

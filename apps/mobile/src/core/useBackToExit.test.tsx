@@ -98,7 +98,7 @@ describe("useBackToExit", () => {
     expect(consumed).toBe(true);
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockToastShow).toHaveBeenCalledTimes(1);
-    expect(mockToastShow.mock.calls[0]?.[0]).toMatch(/Натисніть «Назад»/);
+    expect(mockToastShow.mock.calls[0]?.[0]).toMatch(/Натисни «Назад»/);
   });
 
   it("second tap at root inside the window: returns false so RN exits the app", () => {

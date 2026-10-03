@@ -60,7 +60,7 @@ export function HubChatComposer({
       {!online && (
         <div
           role="status"
-          className="mx-4 mb-2 mt-1 px-3 py-2 bg-warning/10 border border-warning/30 rounded-xl text-xs text-warning-strong dark:text-warning text-center shrink-0"
+          className="mx-4 mb-2 mt-1 px-3 py-2 bg-warning/10 border border-warning/30 rounded-xl text-style-caption text-warning-strong dark:text-warning text-center shrink-0"
         >
           {messages.hub.chatOfflineNotice}
         </div>

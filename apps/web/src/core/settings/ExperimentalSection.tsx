@@ -1,9 +1,11 @@
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { messages } from "@shared/i18n/uk";
+import { Banner } from "@shared/components/ui/Banner";
 import { Icon } from "@shared/components/ui/Icon";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
 
 // Збереження «користувач визнав ризик експериментальних фіч». Живе
@@ -35,7 +37,7 @@ function setExperimentalAcknowledged(next: boolean): void {
 
 /**
  * Секція «Експериментальне» у Settings. Рендерить FLAG_REGISTRY як toggle-
- * рядки. Нові експериментальні фічі з'являються тут автоматично — достатньо
+ * рядки. Нові експериментальні фічі зʼявляються тут автоматично — достатньо
  * додати запис у реєстр.
  *
  * UX-roast 2026-Q2 / §9.3: до першого підтвердження ризику тумблери
@@ -52,20 +54,26 @@ export function ExperimentalSection() {
   const togglesDisabled = !acknowledged;
 
   return (
-    <SettingsGroup title={copy.title} emoji="🧪">
-      <p className="text-xs text-subtle leading-snug">{copy.intro}</p>
-      <div
-        role="note"
-        className="flex items-start gap-3 rounded-xl border border-warn/40 bg-warn/10 px-3 py-2.5"
-      >
+    // V-7 (2026-08-08): title читається з каталогу, не з `copy.title` — ⌘K і
+    // сторінка мали окремі, тому колись розійшлись рядки ("Додаткові
+    // можливості" тут vs "Експериментальні" у пошуку), і сама видима назва
+    // майже дублювала сусідню секцію «Можливості». Нове імʼя секції —
+    // "Експериментальні функції" (КОПІЯ ДЛЯ ЗАТВЕРДЖЕННЯ ВЛАСНИКОМ) — тепер
+    // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
+    // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
+    <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
+      <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
+      <Banner variant="warning" role="note" className="flex items-start gap-3">
         <Icon
           name="alert-triangle"
-          size={16}
-          className="text-warn shrink-0 mt-0.5"
+          size="md"
+          className="text-warning-strong dark:text-warning shrink-0 mt-0.5"
           aria-hidden
         />
-        <p className="text-xs text-text leading-snug">{copy.warningBanner}</p>
-      </div>
+        <p className="text-style-caption text-text leading-snug">
+          {copy.warningBanner}
+        </p>
+      </Banner>
       {!acknowledged && (
         <div className="flex items-start gap-3 text-text">
           <input
@@ -81,30 +89,33 @@ export function ExperimentalSection() {
             className="flex-1 min-w-0 cursor-pointer"
           >
             <span className="text-style-label block">{copy.optInLabel}</span>
-            <span className="text-xs text-subtle mt-1 block leading-relaxed">
+            <span className="text-style-caption text-subtle mt-1 block leading-relaxed">
               {copy.optInHint}
             </span>
           </label>
         </div>
       )}
-      <div
-        className="space-y-4"
-        aria-disabled={togglesDisabled || undefined}
-        // Поки користувач не визнав ризик — тумблери видимі, але tap-and-flip
-        // без ефекту: setFlag-no-op гасить взаємодію, opacity натякає, що
-        // секція розблоковується чекбоксом вище.
-        style={togglesDisabled ? { opacity: 0.55 } : undefined}
-      >
+      {/*
+        Блокування тепер на САМОМУ тумблері, а не на коробці навколо нього.
+        Доти тут стояли `aria-disabled` на цьому `div`, `opacity: 0.55` і
+        no-op в `onChange` — виглядало заблокованим, але для клавіатури й
+        скрінрідера кожен тумблер лишався звичайним активним switch-ем:
+        сфокусувати, натиснути, почути підтвердження — і нічого не
+        станеться. Знахідка PR-S11.
+
+        `opacity` на контейнері прибрано навмисно: `Switch` у вимкненому
+        стані вже гасить себе сам (`opacity-60`), а подвійне приглушення
+        робило підписи менш читабельними без жодної нової інформації.
+      */}
+      <div className="space-y-4">
         {items.map((flag) => (
           <ToggleRow
             key={flag.id}
             label={flag.label}
             description={flag.description}
             checked={Boolean(flags[flag.id])}
-            onChange={(checked) => {
-              if (togglesDisabled) return;
-              setFlag(flag.id, checked);
-            }}
+            disabled={togglesDisabled}
+            onChange={(checked) => setFlag(flag.id, checked)}
           />
         ))}
       </div>

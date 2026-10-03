@@ -72,7 +72,7 @@ function makeHabit(overrides: Partial<Habit> & { id: string }): Habit {
   return {
     id: overrides.id,
     name: overrides.name ?? "Habit",
-    emoji: overrides.emoji ?? "✓",
+    emoji: overrides.emoji ?? "check",
     recurrence: overrides.recurrence ?? "daily",
     reminderTimes: overrides.reminderTimes ?? ["08:00"],
     weekdays: overrides.weekdays,
@@ -222,7 +222,8 @@ describe("useRoutineReminders", () => {
       minute: 0,
     });
     expect(firstCall![0].content).toMatchObject({
-      title: "✓ Drink water",
+      // Гліф більше не префіксує заголовок нагадування.
+      title: "Drink water",
     });
 
     // Persisted map contains 4 ids under the single habit.

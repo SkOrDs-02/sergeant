@@ -20,6 +20,10 @@ const meta: Meta<typeof Select> = {
   argTypes: {
     size: { control: "select", options: ["sm", "md", "lg"] },
     variant: { control: "select", options: ["default", "filled", "ghost"] },
+    accent: {
+      control: "select",
+      options: ["brand", "finyk", "fizruk", "nutrition", "routine"],
+    },
     error: { control: "boolean" },
     disabled: { control: "boolean" },
   },
@@ -90,6 +94,23 @@ export const Sizes: Story = {
       <ControlledDemo size="sm" />
       <ControlledDemo size="md" />
       <ControlledDemo size="lg" />
+    </div>
+  ),
+};
+
+/**
+ * Модульні акценти focus-ring (module-accent containment): tab-ни в кожен
+ * селект, щоб побачити тон ринга — brand / finyk / fizruk / nutrition /
+ * routine. Усередині піддерева модуля використовуй його акцент.
+ */
+export const Accents: Story = {
+  render: () => (
+    <div className="flex flex-col gap-3 w-64">
+      <ControlledDemo accent="brand" />
+      <ControlledDemo accent="finyk" />
+      <ControlledDemo accent="fizruk" />
+      <ControlledDemo accent="nutrition" />
+      <ControlledDemo accent="routine" />
     </div>
   ),
 };

@@ -2,7 +2,7 @@
  * `useCustomExercises` — mobile hook for the Fizruk **Exercise library**
  * (user-created entries layered on top of the built-in catalogue).
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Reads from the SQLite warm cache and persists exclusively through
  * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
  * slot `STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES` is drained on first
@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { FizrukData } from "@sergeant/fizruk-domain";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractCustomExerciseSnapshots,
@@ -50,7 +50,7 @@ export interface CustomExerciseDraft {
 }
 
 function uid(): string {
-  return `cex_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `cex_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**
@@ -108,14 +108,21 @@ export function useCustomExercises(): UseCustomExercisesResult {
 
   // Stage 8 PR #057f-tombstone: overlay custom exercises from the
   // SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.customExercises.map(projectFromCache);
-    stateRef.current = overlay;
-    setExercises(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setExercises(cache.customExercises.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = exercises;
+  }, [exercises]);
 
   const persist = useCallback(
     (updater: (prev: CustomExercise[]) => CustomExercise[]) => {

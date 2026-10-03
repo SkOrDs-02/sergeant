@@ -4,6 +4,8 @@
    assertion is pre-existing. */
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import { validatePositiveAmount } from "./amountValidation";
+import { formatNumberUk } from "@sergeant/shared";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -15,20 +17,23 @@ import type {
 
 export function createDebt(action: CreateDebtAction): ChatActionResult {
   const { name, amount, due_date, emoji } = action.input;
+  const amountCheck = validatePositiveAmount(amount, "amount");
+  if (!amountCheck.ok) return amountCheck.message;
+  const amountN = amountCheck.value;
   const debts = ls<Debt[]>("finyk_debts", []);
   const newDebt: Debt = {
     id: `d_${Date.now()}`,
     name,
-    totalAmount: Number(amount),
+    totalAmount: amountN,
     dueDate: due_date || "",
-    emoji: emoji || "💸",
+    emoji: emoji || "",
     linkedTxIds: [],
   };
   debts.push(newDebt);
   finykChatWrite("finyk_debts", debts);
   const debtId = newDebt.id;
   return {
-    result: `Борг "${name}" на ${amount} грн створено (id:${debtId})`,
+    result: `Борг "${name}" на ${formatNumberUk(amountN)} грн створено (id:${debtId})`,
     undo: () => {
       const cur = ls<Debt[]>("finyk_debts", []);
       const next = cur.filter((d) => d.id !== debtId);
@@ -41,18 +46,21 @@ export function createReceivable(
   action: CreateReceivableAction,
 ): ChatActionResult {
   const { name, amount } = action.input;
+  const amountCheck = validatePositiveAmount(amount, "amount");
+  if (!amountCheck.ok) return amountCheck.message;
+  const amountN = amountCheck.value;
   const recv = ls<Receivable[]>("finyk_recv", []);
   const newRecv: Receivable = {
     id: `r_${Date.now()}`,
     name,
-    amount: Number(amount),
+    amount: amountN,
     linkedTxIds: [],
   };
   recv.push(newRecv);
   finykChatWrite("finyk_recv", recv);
   const recvId = newRecv.id;
   return {
-    result: `Дебіторку "${name}" на ${amount} грн додано (id:${recvId})`,
+    result: `Дебіторку "${name}" на ${formatNumberUk(amountN)} грн додано (id:${recvId})`,
     undo: () => {
       const cur = ls<Receivable[]>("finyk_recv", []);
       const next = cur.filter((r) => r.id !== recvId);
@@ -68,16 +76,14 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
   const debts = ls<Debt[]>("finyk_debts", []);
   const idx = debts.findIndex((d) => d.id === id);
   if (idx < 0) return `Борг ${id} не знайдено.`;
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- idx ≥ 0 confirmed above; noUncheckedIndexedAccess makes [idx] T|undefined
+
   const debt = { ...debts[idx]! };
   const payAmount =
     amount != null && Number.isFinite(Number(amount))
       ? Math.abs(Number(amount))
       : Number(debt.totalAmount) || 0;
   if (payAmount <= 0) return "Сума погашення має бути додатною.";
-  const txId = `m_${Date.now().toString(36)}_${Math.random()
-    .toString(36)
-    .slice(2, 8)}`;
+  const txId = `m_${crypto.randomUUID()}`;
   const manualExpenses = ls<
     Array<{
       id: string;
@@ -113,5 +119,5 @@ export function markDebtPaid(action: MarkDebtPaidAction): ChatActionResult {
     debts[idx] = debt;
   }
   finykChatWrite("finyk_debts", debts);
-  return `Погашено ${payAmount} грн з "${debt.name}"${closed ? " — борг закрито" : ""} (tx:${txId})`;
+  return `Погашено ${formatNumberUk(payAmount)} грн з "${debt.name}"${closed ? ", борг закрито" : ""} (tx:${txId})`;
 }

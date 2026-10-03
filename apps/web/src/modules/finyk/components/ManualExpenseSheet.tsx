@@ -1,132 +1,89 @@
 /**
- * Last validated: 2026-05-20
+ * Last validated: 2026-09-24
  * Status: Active
+ *
+ * Manual expense add/edit sheet. Orchestrates form state and delegates
+ * the visible blocks to sibling sections so this file stays under Hard
+ * Rule #18 (`max-lines: 600`): `ManualExpenseKindTabs`,
+ * `ManualExpenseAmountSection`, `ManualExpenseDescriptionSection`,
+ * `ManualExpenseDateSection`, `ManualExpenseCategorySection` and
+ * `ManualExpenseFooter`. Category slug system lives in
+ * `./manualExpenseCategories`; pure helpers in `./manualExpenseForm`.
+ *
+ * **Три блоки про ЗБЕРЕЖЕНИЙ запис, не про чернетку.** Позиції чека
+ * (`ReceiptItemsSection`), місток до пасиву (`DebtTxLinkSection`) і чек
+ * Сільпо (`SilpoReceiptSection`) читають те, що лежить у сховищі, і
+ * рендеряться лише в режимі редагування. Показувати їх поруч із
+ * недописаною правкою було б брехнею, а місток ще й записав би в пасив
+ * суму, якої в сховищі ще немає. Рішення «чи показувати місток і в якій
+ * ролі» — чиста `decideManualDebtLink` у `./manualDebtLink`.
  */
-import { useState, useEffect, useId, useMemo } from "react";
-import { z } from "zod";
-import { Button } from "@shared/components/ui/Button";
-import { Input } from "@shared/components/ui/Input";
-import { useApiForm } from "@shared/forms/useApiForm";
-import { Label } from "@shared/components/ui/FormField";
+import { useState, useId, useMemo, useEffect, useRef } from "react";
+import { useApiForm } from "@shared/forms";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
-import {
-  parseExpenseSpeech,
-  toLocalISODate,
-  useVisualKeyboardInset,
-} from "@sergeant/shared";
+import { toLocalISODate } from "@sergeant/shared";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
-import { formatMoney, pluralTimes } from "@sergeant/shared";
-import { Icon } from "@shared/components/ui/Icon";
-import { Badge } from "@shared/components/ui/Badge";
+import {
+  classifyDateBound,
+  DATE_WARN_MESSAGE,
+} from "@shared/lib/time/dateBounds";
 import {
   CANONICAL_TO_MANUAL_LABEL,
   type FrequentCategory,
   type FrequentMerchant,
 } from "@sergeant/finyk-domain/domain/personalization";
-
-// Category-slug system (types, display map, three-era upgrade) extracted to
-// `./manualExpenseCategories` to keep this component under the 600-LOC
-// `max-lines` gate (Hard Rule #18 / initiative 0013). Re-exported below for
-// backward-compat with existing importers.
+import {
+  resolveManualExpenseKind,
+  type ManualExpenseKind,
+} from "@sergeant/finyk-domain/domain/transactions";
+import type { CustomCategoryInput } from "@sergeant/finyk-domain";
+import type {
+  Debt,
+  SetLinkedTxRole,
+} from "@sergeant/finyk-domain/domain/debtEngine";
+import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 import {
   CATEGORY_DISPLAY,
   CATEGORY_SLUGS,
   DEFAULT_CATEGORY,
-  isCategorySlug,
   upgradeCategory,
-  type CategorySlug,
+  upgradeCategoryAllowingCustom,
+  type CategoryDisplay,
 } from "./manualExpenseCategories";
+import {
+  INCOME_CATEGORY_SLUGS,
+  incomeCustomCategories,
+  incomeCategoryDisplay,
+  expenseCustomCategories,
+  upgradeIncomeCategory,
+} from "./manualIncomeCategories";
+import {
+  buildAmountSuggestions,
+  expenseAmountHryvnia,
+  expenseFormSchema,
+  getFrequentCategorySlugs,
+  sortCategoriesByFrequency,
+  toExpenseInstant,
+  type ExpenseFormValues,
+} from "./manualExpenseForm";
+import { SilpoReceiptSection } from "./SilpoReceiptSection";
+import { ManualExpenseAmountSection } from "./ManualExpenseAmountSection";
+import { ManualExpenseDescriptionSection } from "./ManualExpenseDescriptionSection";
+import { ManualExpenseCategorySection } from "./ManualExpenseCategorySection";
+import { ReceiptItemsSection } from "./ReceiptItemsSection";
+import { useManualCategoryHydration } from "./useManualCategoryHydration";
+import { ManualExpenseKindTabs } from "./ManualExpenseKindTabs";
+import { ManualExpenseDateSection } from "./ManualExpenseDateSection";
+import { ManualExpenseFooter } from "./ManualExpenseFooter";
+import { DebtTxLinkSection } from "./DebtTxLinkSection";
+import { decideManualDebtLink } from "./manualDebtLink";
 
+// Re-exported for backward-compat with existing importers / tests.
 export {
   CATEGORY_DISPLAY,
   upgradeCategory,
   type CategorySlug,
 } from "./manualExpenseCategories";
-
-// Amount suggestion pills. Defaults give a first-run user sane round
-// values; personalised «часті» amounts (from top merchants' average
-// spend) are merged into the same row and rendered first, marked with
-// a small dot so the user can still tell which suggestion is based on
-// their own history. One row instead of two separately-labelled rows
-// cuts visual chrome without hiding the personalised shortcuts.
-const DEFAULT_AMOUNTS = [50, 100, 200, 500];
-const MAX_AMOUNT_CHIPS = 6;
-const DAY_NOON_UTC = "T12:00:00.000Z";
-
-function toExpenseInstant(dayKey: string): string {
-  // API stores an ISO instant; UTC noon preserves the selected day key
-  // without reading the host-local timezone.
-  return new Date(Date.parse(`${dayKey}${DAY_NOON_UTC}`)).toISOString();
-}
-
-function buildAmountSuggestions(
-  frequentMerchants: FrequentMerchant[] | undefined,
-) {
-  const frequentRaw: number[] = [];
-  for (const m of frequentMerchants || []) {
-    if (!m || typeof m.total !== "number" || !m.count) continue;
-    const avg = Math.round(m.total / m.count);
-    if (avg > 0 && !frequentRaw.includes(avg)) frequentRaw.push(avg);
-    if (frequentRaw.length >= 3) break;
-  }
-  const frequent = frequentRaw.map((v) => ({ value: v, personal: true }));
-  const quick = DEFAULT_AMOUNTS.filter((v) => !frequentRaw.includes(v)).map(
-    (v) => ({ value: v, personal: false }),
-  );
-  return [...frequent, ...quick].slice(0, MAX_AMOUNT_CHIPS);
-}
-
-// Сортує доступні підписи категорій за персональною частотою, зберігаючи
-// стабільний порядок для категорій без статистики.
-// `amount` зберігається як string (бо Input value="" легше описується як
-// string); refine перевіряє parse + > 0. description / category / date —
-// вільні string-поля без mandatory-валідаторів, бо UI дає дефолти.
-const expenseFormSchema = z.object({
-  description: z.string(),
-  amount: z
-    .string()
-    .refine(
-      (v) => Boolean(v) && !Number.isNaN(parseFloat(v)) && parseFloat(v) > 0,
-      "Вкажи суму більше 0",
-    ),
-  category: z.string().min(1),
-  date: z.string(),
-});
-
-type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
-
-function sortCategoriesByFrequency(
-  frequentCategories: FrequentCategory[] = [],
-): CategorySlug[] {
-  if (!frequentCategories.length) return CATEGORY_SLUGS;
-  // Перетворюємо частотну статистику на індекс slug → rank.
-  // manualLabel може зберігати будь-яку з 3 ер — upgradeCategory нормалізує.
-  // CANONICAL_TO_MANUAL_LABEL повертає slug (F5b), тож подвійне upgradeCategory
-  // — no-op для Era 3; безпечно для Era 2/1.
-  const rank = new Map<CategorySlug, number>();
-  frequentCategories.forEach((cat, idx) => {
-    const rawLabel = cat.manualLabel
-      ? upgradeCategory(cat.manualLabel)
-      : cat.id
-        ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
-        : null;
-    const slug = rawLabel && isCategorySlug(rawLabel) ? rawLabel : null;
-    if (slug && CATEGORY_SLUGS.includes(slug) && !rank.has(slug)) {
-      rank.set(slug, idx);
-    }
-  });
-  const withRank = CATEGORY_SLUGS.map((slug, originalIdx) => ({
-    slug,
-    rank: rank.has(slug) ? (rank.get(slug) ?? Infinity) : Infinity,
-    originalIdx,
-  }));
-  withRank.sort((a, b) => {
-    if (a.rank !== b.rank) return a.rank - b.rank;
-    return a.originalIdx - b.originalIdx;
-  });
-  return withRank.map((x) => x.slug);
-}
 
 interface ManualExpenseSheetProps {
   open: boolean;
@@ -137,6 +94,7 @@ interface ManualExpenseSheetProps {
     amount: number;
     category: string;
     date: string;
+    kind: ManualExpenseKind;
   }) => void;
   /**
    * Delete the expense currently being edited. Only wired in edit mode
@@ -151,11 +109,59 @@ interface ManualExpenseSheetProps {
     amount?: number;
     category?: string;
     date?: string;
+    kind?: string;
+    /** Legacy alias — see `resolveManualExpenseKind` in finyk-domain. */
+    type?: string;
   } | null;
   frequentCategories?: FrequentCategory[];
   frequentMerchants?: FrequentMerchant[];
   initialCategory?: string | null;
   initialDescription?: string | null;
+  /**
+   * Привʼязана сума в гривнях для нового (не edit-mode) запису — напр.
+   * «Створити витрату» з чека Сільпо без транзакції. Ігнорується в
+   * edit-mode (`initialExpense.amount` лишається джерелом правди для
+   * редагування). Число, не рядок: викликач знає суму з БД/API, а не з
+   * форми.
+   */
+  initialAmount?: number | null;
+  /** Дата ("YYYY-MM-DD") для того самого prefill-сценарію, що й
+   * `initialAmount`. */
+  initialDate?: string | null;
+  /**
+   * Категорії, які користувач завів сам. Вбудований набір
+   * (`CATEGORY_SLUGS`) про них не знає, тож без цього пропа щойно
+   * створена категорія просто не зʼявлялась у пікері — спіймано
+   * бета-тестером 2026-08-10.
+   *
+   * Витрати й надходження мають окремі каталоги: `kind: "income"`
+   * потрапляє лише до надходжень, а відсутній `kind` лишається legacy-
+   * сумісною витратною категорією.
+   */
+  customCategories?: readonly CustomCategoryInput[];
+  /** Device-local чек, привʼязаний до цієї ручної витрати (спека §
+   * Розгортка) — `null`/`undefined`, коли пристрій про чек не знає, або
+   * коли аркуш відкрито для НОВОГО запису (нова витрата не може мати
+   * чек). Джерело: `useFinykReceiptLinks`. */
+  receiptId?: number | null | undefined;
+  /**
+   * Спліти всіх операцій — потрібні лише секції чека Сільпо: вона
+   * пропонує розбивку і має попередити, що підтвердження замінить уже
+   * наявну ручну.
+   */
+  txSplits?: TxSplitsMap | undefined;
+  /** Той самий сетер, що й у деталях банківської операції. Без нього
+   * секція чека не рендериться. */
+  onSplitChange?: ((id: string, splits: TxSplit[] | null) => void) | undefined;
+  /**
+   * Пасиви й сетер ролі привʼязки — для містка «запис із категорією Борг →
+   * пасив» (див. {@link DebtTxLinkSection}). Опційні: поверхня, яка лише
+   * СТВОРЮЄ запис (`SilpoUnmatchedReceipts`), місток показати не може —
+   * привʼязувати ще нема чого, — тож і пропи їй не потрібні.
+   */
+  manualDebts?: readonly Debt[] | undefined;
+  setManualDebts?: ((updater: (debts: Debt[]) => Debt[]) => void) | undefined;
+  setLinkedTxRole?: SetLinkedTxRole | undefined;
 }
 
 export function ManualExpenseSheet({
@@ -168,14 +174,50 @@ export function ManualExpenseSheet({
   frequentMerchants = [],
   initialCategory,
   initialDescription,
+  initialAmount,
+  initialDate,
+  customCategories = [],
+  receiptId = null,
+  txSplits,
+  onSplitChange,
+  manualDebts,
+  setManualDebts,
+  setLinkedTxRole,
 }: ManualExpenseSheetProps) {
   const formId = useId();
   const descId = `${formId}-desc`;
   const amountId = `${formId}-amount`;
   const dateId = `${formId}-date`;
   const catLabelId = `${formId}-cat-label`;
-  const kbInsetPx = useVisualKeyboardInset(open);
   const isEditing = !!initialExpense?.id;
+  /** Id збереженого запису — він же transactionId для звʼязки з чеком. */
+  const expenseId = initialExpense?.id ? String(initialExpense.id) : null;
+  const [kind, setKind] = useState<ManualExpenseKind>("expense");
+
+  // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
+  // мемо, щоб `customIds` був стабільним для нормалізації нижче.
+  const customExpenseCategories = useMemo(
+    () => expenseCustomCategories(customCategories),
+    [customCategories],
+  );
+  const customIds = useMemo(
+    () => new Set(customExpenseCategories.map((c) => c.id)),
+    [customExpenseCategories],
+  );
+  const customIncomeCategories = useMemo(
+    () => incomeCustomCategories(customCategories),
+    [customCategories],
+  );
+  const customIncomeIds = useMemo(
+    () => new Set(customIncomeCategories.map((c) => c.id)),
+    [customIncomeCategories],
+  );
+
+  // UX-15 batch entry. `keepOpenRef` is read inside `onSubmit` to decide
+  // whether to close or reset-and-stay. `batchFocusRef` lets the amount
+  // field register a focus callback so the next item starts amount-first.
+  const keepOpenRef = useRef(false);
+  const batchFocusRef = useRef<(() => void) | null>(null);
 
   const { register, submit, reset, setValue, watch, formState, isSubmitting } =
     useApiForm<ExpenseFormValues, void>({
@@ -187,22 +229,67 @@ export function ManualExpenseSheet({
         date: toLocalISODate(),
       },
       onSubmit: async (values) => {
-        const slug = upgradeCategory(values.category);
         const trimmedDesc = values.description.trim();
-        // Fallback description uses the UA label from the display map.
-        const description =
-          trimmedDesc || (CATEGORY_DISPLAY[slug]?.label ?? slug);
+        // Branch fully per-kind (rather than indexing a union display map
+        // with a union slug) so each `display[slug]` lookup stays narrowly
+        // typed against its own taxonomy.
+        const slug: string =
+          kind === "income"
+            ? (() => {
+                const s = customIncomeIds.has(values.category)
+                  ? values.category
+                  : upgradeIncomeCategory(values.category);
+                return s;
+              })()
+            : (() => {
+                // `upgradeCategory` звів би id власної категорії до
+                // `DEFAULT_CATEGORY` — саме тут обрана людиною категорія
+                // тихо ставала «Інше».
+                const s = upgradeCategoryAllowingCustom(
+                  values.category,
+                  customIds,
+                );
+                return s;
+              })();
         hapticSuccess();
         onSave?.({
           ...(initialExpense?.id ? { id: String(initialExpense.id) } : {}),
-          description,
-          amount: parseFloat(values.amount),
+          description: trimmedDesc,
+          // Локальний blob Фініка досі зберігає гривні (див.
+          // domain-invariants.md § Money) — парсер лише гарантує, що сюди
+          // не доїде `1e9`, `12.345` чи відʼємне.
+          amount: expenseAmountHryvnia(values.amount),
           // Write path: always emit slug (Era 3).
           category: slug,
-          // "YYYY-MM-DD" як local date може з'їхати при toISOString() в UTC.
-          // Ставимо полудень, щоб стабільно зберігати правильний день.
-          date: toExpenseInstant(values.date || toLocalISODate()),
+          // Редагування без зміни дня лишає записану мить: інакше кожне
+          // виправлення суми переставляло б час запису на час правки.
+          date:
+            initialExpense?.date &&
+            toLocalISODate(initialExpense.date) === values.date
+              ? initialExpense.date
+              : toExpenseInstant(values.date || toLocalISODate()),
+          kind,
         });
+
+        // UX-15: "Додати ще" keeps the sheet open for rapid batch entry.
+        // We reset only the per-item fields (description + amount) and keep
+        // category, date and kind so logging a run of same-category expenses
+        // (e.g. a grocery haul split by item) is amount-only. `keepOpenRef`
+        // is a ref, not state, so it never triggers a re-render mid-submit;
+        // it's consumed then immediately cleared for the next submit.
+        if (keepOpenRef.current) {
+          keepOpenRef.current = false;
+          reset({
+            description: "",
+            amount: "",
+            category: values.category,
+            date: values.date,
+          });
+          setDescFocused(false);
+          setAiAppliedCategory(null);
+          batchFocusRef.current?.();
+          return;
+        }
         onClose();
       },
     });
@@ -212,16 +299,22 @@ export function ManualExpenseSheet({
   const date = watch("date");
   const amount = watch("amount");
   const amountError = formState.errors.amount?.message;
+  const categoryError = formState.errors.category?.message;
+  const dateError = formState.errors.date?.message;
+  const dateWarning = useMemo(
+    () =>
+      date && classifyDateBound(date) === "warn" ? DATE_WARN_MESSAGE : null,
+    [date],
+  );
 
   // 6.2 hero preview — show big display-hero typography above the input
   // once a value is set. Input stays editable below. Parsed defensively
   // because react-hook-form stores `amount` as string while the schema
   // validates it as a non-empty numeric string.
-  const amountNumeric = useMemo(() => {
-    if (!amount) return 0;
-    const n = parseFloat(amount);
-    return Number.isFinite(n) && n > 0 ? n : 0;
-  }, [amount]);
+  const amountNumeric = useMemo(
+    () => (amount ? expenseAmountHryvnia(amount) : 0),
+    [amount],
+  );
   const amountHeroVisible = amountNumeric > 0;
 
   // 6.3 inline AI suggestion — surfaces the silent merchant-driven
@@ -229,33 +322,96 @@ export function ManualExpenseSheet({
   // merchant chip with `suggestedManualCategory` is clicked; cleared on
   // dismiss OR when the user picks a different category manually OR on
   // form reset.
-  const [aiAppliedCategory, setAiAppliedCategory] =
-    useState<CategorySlug | null>(null);
+  const [aiAppliedCategory, setAiAppliedCategory] = useState<string | null>(
+    null,
+  );
 
-  // showDateField — UI-only, не частина zod-схеми. Раніше жило в
-  // form-state, але то був лиш toggle для видимості поля — без валідації
-  // чи подачі на сервер. Тримаємо окремо, щоб схема лишалася
-  // чистою (description/amount/category/date).
-  const [showDateField, setShowDateField] = useState(false);
+  // UI-only toggle, який скидається в reset-ефекті нижче. Оголошений тут
+  // (перед ефектом), щоб його сеттер був доступний у момент виклику.
+  const [descFocused, setDescFocused] = useState(false);
+
+  const openInitKey = useMemo(
+    () =>
+      open
+        ? [
+            initialExpense?.id ?? "new",
+            initialCategory ?? "",
+            initialDescription ?? "",
+            initialAmount ?? "",
+            initialDate ?? "",
+            frequentCategories.map((c) => c.id).join(","),
+          ].join("|")
+        : "",
+    [
+      open,
+      initialExpense,
+      initialCategory,
+      initialDescription,
+      initialAmount,
+      initialDate,
+      frequentCategories,
+    ],
+  );
+  const [prevOpenInitKey, setPrevOpenInitKey] = useState("");
 
   useEffect(() => {
-    if (open) {
+    if (!open) {
+      // Чистимо форму синхронно, ще до відкладеного скиду ключа нижче.
+      //
+      // Скид `prevOpenInitKey` навмисно лишається в мікротаску (синхронний
+      // `setState` тут ловить `react-hooks/set-state-in-effect`), але саме
+      // через цю відкладеність він міг не встигнути до наступного відкриття:
+      // тоді `openInitKey === prevOpenInitKey`, ранній `return` нижче зʼїдав
+      // `reset()`, і аркуш відкривався з недобитою чернеткою — поле суми
+      // лишалося заповненим, а новий ввід дописувався в кінець («50000» +
+      // «50000» = «5000050000», browser QA 2026-08-04, F-009). `reset()` —
+      // метод react-hook-form, не React-стан, тож він тут дозволений і
+      // прибирає чернетку незалежно від того, чи виграв мікротаск гонку.
+      reset({
+        description: "",
+        amount: "",
+        category: DEFAULT_CATEGORY,
+        date: toLocalISODate(),
+      });
+      void Promise.resolve().then(() => {
+        setPrevOpenInitKey("");
+      });
+      return;
+    }
+    if (openInitKey === prevOpenInitKey) return;
+
+    void Promise.resolve().then(() => {
+      setPrevOpenInitKey(openInitKey);
+
       if (initialExpense?.id) {
+        const initialKind = resolveManualExpenseKind(initialExpense);
+        setKind(initialKind);
         reset({
           description: String(initialExpense.description || ""),
           amount:
             initialExpense.amount != null ? String(initialExpense.amount) : "",
-          // upgradeCategory handles Era 1/2/3 stored values.
-          category: upgradeCategory(initialExpense.category),
-          date: toLocalISODate(initialExpense.date || Date.now()),
+          category:
+            initialKind === "income"
+              ? customIncomeIds.has(String(initialExpense.category ?? ""))
+                ? String(initialExpense.category)
+                : upgradeIncomeCategory(initialExpense.category)
+              : upgradeCategoryAllowingCustom(
+                  initialExpense.category,
+                  customIds,
+                ),
+          date: initialExpense.date
+            ? toLocalISODate(initialExpense.date)
+            : toLocalISODate(),
         });
       } else {
-        // Пріоритет: явна initialCategory (клік з дашборду) > найчастіша
-        // категорія з статистики > дефолт ("other"). Будь-яка legacy
-        // мітка (Era 1/2) оновлюється до slug (Era 3).
-        let startCategory: CategorySlug = DEFAULT_CATEGORY;
+        setKind("expense");
+        // Не `CategorySlug`: власна категорія за визначенням поза union-ом.
+        let startCategory: string = DEFAULT_CATEGORY;
         if (initialCategory) {
-          startCategory = upgradeCategory(initialCategory);
+          startCategory = upgradeCategoryAllowingCustom(
+            initialCategory,
+            customIds,
+          );
         } else if (frequentCategories.length > 0) {
           const top = frequentCategories[0];
           if (top) {
@@ -274,57 +430,124 @@ export function ManualExpenseSheet({
         reset({
           description:
             typeof initialDescription === "string" ? initialDescription : "",
-          amount: "",
+          amount: initialAmount != null ? String(initialAmount) : "",
           category: startCategory,
-          date: toLocalISODate(),
+          date: initialDate || toLocalISODate(),
         });
       }
-      // UI-only state (категорії розгорнуті / фокус у полі Назва) зберігається
-      // між відкриттями, бо компонент змонтований постійно (FinykApp тримає
-      // його як always-rendered). Скидаємо до дефолтів, щоб новий «Додати
-      // витрату» не успадковував стан попереднього відкриття.
-      setCategoriesExpanded(false);
       setDescFocused(false);
-      setShowDateField(false);
-      // 6.3: clear AI-applied state when the sheet reopens — stale
-      // suggestion from a previous session shouldn't carry over.
       setAiAppliedCategory(null);
-    }
-    // frequentCategories/initialCategory/initialDescription лише задають
-    // стартовий стан при відкритті — навмисно не реагуємо на їхні
-    // оновлення у відкритому sheet.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, initialExpense]);
+    });
+  }, [
+    open,
+    openInitKey,
+    prevOpenInitKey,
+    initialExpense,
+    initialCategory,
+    initialDescription,
+    initialAmount,
+    initialDate,
+    frequentCategories,
+    // Гвардія `openInitKey === prevOpenInitKey` вище робить цю залежність
+    // безкоштовною: зміна набору власних категорій перезапустить ефект,
+    // він побачить незмінений ключ і вийде, не чіпаючи чернетку форми.
+    customIds,
+    customIncomeIds,
+    reset,
+  ]);
 
   const sortedCategories = useMemo(
     () => sortCategoriesByFrequency(frequentCategories),
     [frequentCategories],
   );
+  const frequentCategoryIds = useMemo(
+    () => getFrequentCategorySlugs(frequentCategories).slice(0, 5),
+    [frequentCategories],
+  );
 
-  // Top-N категорії для згорнутого стану. Якщо обрана категорія випадає
-  // за межі top-N — підтягуємо її у видимий ряд, щоб активний чип завжди
-  // залишався видимим і не плутав користувача при відкритті аркуша.
-  const CATEGORY_COLLAPSED_COUNT = 6;
-  const [categoriesExpanded, setCategoriesExpanded] = useState(false);
+  // Довантаження власних категорій ПІСЛЯ відкриття аркуша.
+  //
+  // Слоти сховища віддають синхронний LS як фолбек першого пейнту, а
+  // значення з SQLite приходить, «once it warms» (`useStorage.ts`). Аркуш,
+  // відкритий у цьому вікні, бачить порожні custom-id набори, і категорія
+  // редагованого запису вже нормалізувалась у дефолт свого типу. Гвардія
+  // `openInitKey` ефекту ініціалізації правильно не дає йому
+  // перезапуститись — він скинув би чернетку, — тож без окремої звірки
+  // збереження записало б «Інше» замість власної категорії. Рівно та
+  // мовчазна підміна, проти якої цей аркуш і правили. Знайдено ревʼю #781.
+  //
+  // Звірка спрацьовує РІВНО ОДИН РАЗ на відкриття. Це не оптимізація, а
+  // єдина працездатна семантика: `dirtyFields` тут не помічник, бо RHF
+  // рахує dirty відносно `defaultValues`, а там уже лежить `other` —
+  // вибір «Інше» руками не відрізняється від нашої ж нормалізації. Ефект
+  // без лічильника через це бився б із користувачем: кожен вибір «Інше»
+  // після гідратації одразу перекидало б назад на власну категорію.
+  //
+  // Лишається один неоднозначний випадок: людина свідомо обрала «Інше» до
+  // того, як категорії доїхали. Її вибір один раз перекине на збережену
+  // категорію. Це видима зміна, яку видно й можна повторити, — на відміну
+  // від альтернативи, де ми тихо перезаписуємо реальні дані на «Інше».
+  const rawInitialCategory = initialExpense?.category ?? initialCategory;
+  const initialRecordIsIncome = initialExpense
+    ? resolveManualExpenseKind(initialExpense) === "income"
+    : false;
+  useManualCategoryHydration({
+    open,
+    openInitKey,
+    rawInitialCategory,
+    initialRecordIsIncome,
+    customExpenseIds: customIds,
+    customIncomeIds,
+    category,
+    restoreCategory: (categoryId) =>
+      setValue("category", categoryId, { shouldDirty: false }),
+  });
+
+  const isIncome = kind === "income";
+
+  // Підписи власних категорій. `tag` — та сама іконка, що й у вбудованого
+  // «Інше»: власної категорія не має, а заводити тут другий словник іконок
+  // поруч із канонічним не варто. Порожній `label` навмисно пропускаємо —
+  // фолбек `display[slug]?.label ?? slug` на місці рендера чесніший за
+  // порожній рядок у списку.
+  const customCategoryDisplay: Readonly<Record<string, CategoryDisplay>> =
+    Object.fromEntries(
+      customExpenseCategories
+        .filter((c) => c.label)
+        .map((c) => [c.id, { iconName: "tag" as const, label: c.label ?? "" }]),
+    );
+
+  // Без `useMemo`: React Compiler не зміг зберегти ручну мемоізацію на
+  // гілці з достроковими return-ами (`react-hooks/preserve-manual-memoization`),
+  // а сам він це кешує краще. Обчислення — спред двох невеликих обʼєктів.
+  const categoryDisplay: Readonly<Record<string, CategoryDisplay>> = isIncome
+    ? incomeCategoryDisplay(customIncomeCategories)
+    : { ...CATEGORY_DISPLAY, ...customCategoryDisplay };
 
   // Normalise the watched category value so comparison against slug list is
-  // stable even if a legacy value slips through.
-  const categorySlug = upgradeCategory(category);
+  // stable even if a legacy value slips through. Income has a fixed 5-slug
+  // taxonomy (§3, fab-and-manual-income spec) — no frequency sort.
+  const categorySlug = category
+    ? isIncome
+      ? customIncomeIds.has(category)
+        ? category
+        : upgradeIncomeCategory(category)
+      : upgradeCategoryAllowingCustom(category, customIds)
+    : "";
 
-  const visibleCategories = useMemo(() => {
-    if (categoriesExpanded) return sortedCategories;
-    const base = sortedCategories.slice(0, CATEGORY_COLLAPSED_COUNT);
-    if (categorySlug && !base.includes(categorySlug)) {
-      return [categorySlug, ...base].slice(0, CATEGORY_COLLAPSED_COUNT);
-    }
-    return base;
-  }, [sortedCategories, categoriesExpanded, categorySlug]);
-  const hasHiddenCategories =
-    sortedCategories.length > CATEGORY_COLLAPSED_COUNT;
+  // Спільна пошукова шторка показує весь активний набір категорій.
+  // Власні йдуть у хвіст: частотне сортування рахується лише по вбудованих
+  // (`sortCategoriesByFrequency` — перестановка `CATEGORY_SLUGS`), тож
+  // вмішувати їх у той порядок означало б вигадати їм ранг.
+  const categorySlugs: string[] = isIncome
+    ? [...INCOME_CATEGORY_SLUGS, ...customIncomeCategories.map((c) => c.id)]
+    : [...sortedCategories, ...customExpenseCategories.map((c) => c.id)];
 
+  // Merchant-driven quick amounts / description hints are expense-only —
+  // they come from banking-merchant history and have no income analogue.
   const amountSuggestions = useMemo(
-    () => buildAmountSuggestions(frequentMerchants),
-    [frequentMerchants],
+    () => (isIncome ? [] : buildAmountSuggestions(frequentMerchants)),
+    [isIncome, frequentMerchants],
   );
 
   // Список мерчант-пропозицій, що рендериться інлайн під полем «Назва»
@@ -333,13 +556,12 @@ export function ManualExpenseSheet({
   // нижче — показуємо лише поки поле порожнє або у фокусі, щоб не
   // перевантажувати аркуш, коли користувач уже обрав назву.
   const merchantSuggestions = useMemo(() => {
-    if (!frequentMerchants.length) return [];
+    if (isIncome || !frequentMerchants.length) return [];
     const currentKey = (description || "").trim().toLocaleLowerCase("uk-UA");
     return frequentMerchants
       .filter((m) => m.name && m.name.toLocaleLowerCase("uk-UA") !== currentKey)
       .slice(0, 5);
-  }, [frequentMerchants, description]);
-  const [descFocused, setDescFocused] = useState(false);
+  }, [isIncome, frequentMerchants, description]);
   const showMerchantHints =
     merchantSuggestions.length > 0 &&
     (descFocused || description.trim() === "");
@@ -353,330 +575,183 @@ export function ManualExpenseSheet({
     void submit();
   };
 
+  // UX-15: submit but keep the sheet open for the next item. Sets the ref
+  // that `onSubmit` reads AFTER zod validation passes — so an invalid form
+  // still surfaces errors and does NOT reset/stay in a misleading state.
+  const handleSubmitKeepOpen = () => {
+    keepOpenRef.current = true;
+    void submit().then(() => {
+      // If validation failed, `onSubmit` never ran, so the ref would leak
+      // into the next (normal) submit. Clear it defensively here.
+      if (Object.keys(formState.errors).length > 0) {
+        keepOpenRef.current = false;
+      }
+    });
+  };
+
+  // A kind change invalidates the old taxonomy category. The required empty
+  // value makes the user explicitly choose from the new taxonomy before save.
+  const handleKindChange = (nextKind: ManualExpenseKind) => {
+    if (nextKind === kind) return;
+    setKind(nextKind);
+    setValue("category", "", { shouldDirty: true, shouldValidate: true });
+    setAiAppliedCategory(null);
+  };
+
+  // Місток «запис із категорією Борг → пасив» (§ 4a канону Фініка).
+  // Рішення чисте й живе в `./manualDebtLink` — там же пояснено, чому
+  // воно читає ЗБЕРЕЖЕНИЙ запис, а не поля форми.
+  const savedDebtLink = decideManualDebtLink(
+    initialExpense,
+    expenseId ? txSplits?.[expenseId] : null,
+  );
+
+  // Видалення звʼязуємо з id ТУТ, а не у футері: рішення «що саме
+  // видаляти» і «чи закривати аркуш» належить аркушу. `null` — коли
+  // видаляти нічого (створення) або викликач не дав обробника.
+  const handleDelete =
+    isEditing && onDelete && initialExpense?.id
+      ? () => {
+          onDelete(String(initialExpense.id));
+          onClose();
+        }
+      : null;
+
+  const sheetTitle = isEditing
+    ? isIncome
+      ? "Редагувати надходження"
+      : "Редагувати витрату"
+    : isIncome
+      ? "Додати надходження"
+      : "Додати витрату";
+
   return (
     <Sheet
       open={open}
       onClose={onClose}
-      title={isEditing ? "Редагувати витрату" : "Додати витрату"}
-      kbInsetPx={kbInsetPx}
+      title={sheetTitle}
       panelClassName="finyk-sheet"
       bodyClassName="space-y-4"
       footer={
-        <div className="space-y-2">
-          <div className="flex gap-3">
-            <Button
-              variant="secondary"
-              className="flex-1"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Скасувати
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isEditing ? "Зберегти" : "Додати"}
-            </Button>
-          </div>
-          {isEditing && onDelete && initialExpense?.id ? (
-            <Button
-              variant="danger"
-              className="w-full"
-              onClick={() => {
-                const id = String(initialExpense.id);
-                onDelete(id);
-                onClose();
-              }}
-              disabled={isSubmitting}
-            >
-              Видалити
-            </Button>
-          ) : null}
-        </div>
+        <ManualExpenseFooter
+          isEditing={isEditing}
+          isSubmitting={isSubmitting}
+          createLabel={sheetTitle}
+          onCancel={onClose}
+          onSubmit={handleSubmit}
+          onSubmitKeepOpen={handleSubmitKeepOpen}
+          onDelete={handleDelete}
+        />
       }
     >
       <div className="space-y-3">
+        <ManualExpenseKindTabs
+          isIncome={isIncome}
+          isSubmitting={isSubmitting}
+          onKindChange={handleKindChange}
+        />
+
+        {isEditing && receiptId != null && (
+          <ReceiptItemsSection receiptId={receiptId} />
+        )}
+
+        {expenseId &&
+          savedDebtLink &&
+          manualDebts &&
+          setManualDebts &&
+          setLinkedTxRole && (
+            <DebtTxLinkSection
+              txId={expenseId}
+              txAmountKop={Math.round(
+                Math.abs(initialExpense?.amount ?? 0) * 100,
+              )}
+              txDateIso={initialExpense?.date ?? ""}
+              manualDebts={manualDebts}
+              setManualDebts={setManualDebts}
+              setLinkedTxRole={setLinkedTxRole}
+              txRole={savedDebtLink.txRole}
+              splitAmountUAH={savedDebtLink.splitAmountUAH}
+            />
+          )}
+
+        {/* Чек Сільпо для РУЧНОЇ витрати. Та сама секція, що в деталях
+            банківської операції: витрати, залиті скріном банкінгу, живуть
+            у `finyk_manual_expenses`, і для людини вони така сама покупка
+            в Сільпо — без цього блоку чек привʼязувався б, але ніде не
+            показувався (репорт founder-а 2026-08-25).
+
+            Сума й опис беруться з ЗБЕРЕЖЕНОГО запису, не з полів форми:
+            чек звірявся саме з тим, що лежить у сховищі, і показувати
+            його поруч із недописаною правкою було б брехнею. */}
+        {isEditing && expenseId && onSplitChange && (
+          <SilpoReceiptSection
+            transactionId={expenseId}
+            transactionDescription={initialExpense?.description}
+            transactionAmountKop={Math.round(
+              Math.abs(initialExpense?.amount ?? 0) * 100,
+            )}
+            transactionDateIso={initialExpense?.date ?? ""}
+            onSplitChange={onSplitChange}
+            customCategories={customCategories}
+            existingSplitsCount={(txSplits?.[expenseId] ?? []).length}
+          />
+        )}
+
         {/* S15: amount is the only «must-fill» field — it used to live
             under the name input, so new users had to scroll past an
             optional field before they could do the single thing that
             makes an expense valid. Amount is now the first block on the
             sheet; the mic stays near it because dictation typically
             produces both the amount and the description in one shot. */}
-        <div className="flex gap-2 items-end">
-          <div className="flex-1">
-            <Label htmlFor={amountId}>Сума ₴</Label>
-            {amountSuggestions.length > 0 && (
-              <div
-                className="flex flex-wrap items-center gap-1.5 mb-2"
-                role="group"
-                aria-label="Швидкі суми"
-              >
-                {amountSuggestions.map(({ value, personal }) => (
-                  <button
-                    key={`${personal ? "f" : "q"}-${value}`}
-                    type="button"
-                    onClick={() =>
-                      setValue("amount", String(value), {
-                        shouldDirty: true,
-                        shouldValidate: Boolean(amountError),
-                      })
-                    }
-                    className={
-                      personal
-                        ? "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-style-caption bg-success/10 text-success-strong dark:text-success border border-success/30 hover:bg-success/15 transition-colors tabular-nums"
-                        : "px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors tabular-nums"
-                    }
-                    aria-label={
-                      personal
-                        ? `${formatMoney(value)} — часта сума`
-                        : `${formatMoney(value)}`
-                    }
-                  >
-                    {personal ? (
-                      <span
-                        aria-hidden
-                        className="w-1.5 h-1.5 rounded-full bg-finyk"
-                      />
-                    ) : null}
-                    {formatMoney(value)}
-                  </button>
-                ))}
-              </div>
-            )}
-            {/* 6.2: display-hero preview anchors the sheet on the single
-                "must-fill" field. Input stays editable below so users can
-                tap to correct without losing the visual emphasis. Hidden
-                from screen readers (aria-hidden) — the editable input
-                below carries the accessible label + value. */}
-            {amountHeroVisible ? (
-              <div
-                aria-hidden
-                className="text-style-display-hero font-mono tabular-nums text-finyk-strong dark:text-finyk leading-none mb-2 select-none"
-              >
-                {formatMoney(amountNumeric)}
-              </div>
-            ) : null}
-            <Input
-              id={amountId}
-              type="number"
-              inputMode="decimal"
-              placeholder="0"
-              min="0"
-              step="0.01"
-              error={!!amountError}
-              disabled={isSubmitting}
-              helperText={amountError ?? undefined}
-              {...register("amount")}
-            />
-          </div>
-          {/* Mic-only icon was indistinguishable from the rest of the form
-              chrome — users didn't realise they could dictate the whole
-              expense. Pair the mic with a "Сказати" label so the affordance
-              is visible at rest. `VoiceMicButton` hides itself when the
-              Web Speech API isn't supported, so we hide the label too in
-              that case via `hidden:*`-style absent fallback (the button
-              returns null and the flex container collapses to the input
-              alone). */}
-          <div className="flex flex-col items-center gap-0.5 pb-1">
-            <VoiceMicButton
-              size="md"
-              label="Сказати голосом"
-              promptHint="Витрата у гривнях: кава 60 гривень, продукти 350 грн, таксі 200, обід 150."
-              onResult={(transcript) => {
-                const parsed = parseExpenseSpeech(transcript);
-                if (!parsed) return;
-                if (parsed.name) {
-                  setValue("description", parsed.name, { shouldDirty: true });
-                }
-                if (parsed.amount != null) {
-                  setValue("amount", String(Math.round(parsed.amount)), {
-                    shouldDirty: true,
-                    shouldValidate: Boolean(amountError),
-                  });
-                }
-              }}
-            />
-            <span
-              className="text-style-caption text-subtle select-none"
-              aria-hidden
-            >
-              Сказати
-            </span>
-          </div>
-        </div>
+        <ManualExpenseAmountSection
+          amountId={amountId}
+          amountSuggestions={amountSuggestions}
+          amountError={amountError}
+          amountHeroVisible={amountHeroVisible}
+          amountNumeric={amountNumeric}
+          isSubmitting={isSubmitting}
+          register={register}
+          setValue={setValue}
+          focusRef={batchFocusRef}
+        />
 
-        <div>
-          <Label htmlFor={descId} optional>
-            Назва
-          </Label>
-          <Input
-            id={descId}
-            placeholder="Кава, продукти, таксі…"
-            disabled={isSubmitting}
-            aria-controls={
-              showMerchantHints ? `${formId}-merchants` : undefined
-            }
-            aria-autocomplete="list"
-            {...register("description", {
-              onBlur: () => setDescFocused(false),
-            })}
-            onFocus={() => setDescFocused(true)}
-          />
-          {showMerchantHints && (
-            <div
-              id={`${formId}-merchants`}
-              className="flex flex-wrap gap-1.5 mt-2"
-              role="group"
-              aria-label="Нещодавні мерчанти"
-            >
-              {merchantSuggestions.map((m) => (
-                <button
-                  key={m.key}
-                  type="button"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    setValue("description", m.name, { shouldDirty: true });
-                    // Якщо є впевнений підпис manual-категорії для цього
-                    // мерчанта — підставляємо його, щоб економити тапи.
-                    // suggestedManualCategory може бути Era 1/2/3 — upgradeCategory
-                    // нормалізує до slug.
-                    const suggestedRaw = m.suggestedManualCategory;
-                    const suggested =
-                      suggestedRaw &&
-                      CATEGORY_SLUGS.includes(upgradeCategory(suggestedRaw))
-                        ? upgradeCategory(suggestedRaw)
-                        : null;
-                    if (suggested) {
-                      setValue("category", suggested, { shouldDirty: true });
-                      // 6.3: surface the auto-applied category via an AI
-                      // badge near the category section so users can see
-                      // why their category changed and dismiss if wrong.
-                      setAiAppliedCategory(suggested);
-                    }
-                  }}
-                  className="px-2.5 py-1 rounded-full text-style-caption bg-panelHi text-muted border border-line hover:border-muted/50 transition-colors"
-                  title={`${m.count} ${pluralTimes(m.count)} · ${formatMoney(m.total)}`}
-                >
-                  {m.name}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <ManualExpenseDescriptionSection
+          formId={formId}
+          descId={descId}
+          isSubmitting={isSubmitting}
+          isIncome={isIncome}
+          showMerchantHints={showMerchantHints}
+          merchantSuggestions={merchantSuggestions}
+          setDescFocused={setDescFocused}
+          setAiAppliedCategory={setAiAppliedCategory}
+          register={register}
+          setValue={setValue}
+        />
 
-        {/* Date is "today" 95%+ of the time — the always-visible picker
-            forced a tap out to a native date sheet just to confirm what
-            was already true. Collapse behind a chip; reveal only when the
-            user explicitly says "not today" or when editing an older
-            entry where the date is already not today. */}
-        {date !== toLocalISODate() || showDateField ? (
-          <div>
-            <Label htmlFor={dateId}>Дата</Label>
-            <Input
-              id={dateId}
-              type="date"
-              disabled={isSubmitting}
-              {...register("date")}
-            />
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowDateField(true)}
-            className="text-xs text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
-          >
-            Не сьогодні? Змінити дату
-          </button>
-        )}
+        <ManualExpenseDateSection
+          dateId={dateId}
+          date={date}
+          dateError={dateError}
+          dateWarning={dateWarning}
+          isSubmitting={isSubmitting}
+          onDateChange={(iso) =>
+            setValue("date", iso, { shouldDirty: true, shouldValidate: false })
+          }
+          register={register}
+        />
 
-        <div>
-          <div
-            id={catLabelId}
-            // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Category group label needs a stable id (catLabelId) for aria-labelledby; Label would require dropping htmlFor.
-            className="block text-xs text-muted uppercase tracking-wide font-semibold mb-1"
-          >
-            Категорія
-          </div>
-          {/* 6.3: AI-applied badge surfaces the silent merchant→category
-              auto-application. Renders only when AI applied and current
-              category still matches the AI suggestion (so dismissal +
-              manual overrides hide it). Dismiss = clear local state only;
-              category stays applied (user can still change it via picker
-              below).
-              motion-safe wrappers — reduced-motion users see a static
-              badge without the fade-in. */}
-          {aiAppliedCategory && categorySlug === aiAppliedCategory ? (
-            <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200 mb-2">
-              <Badge
-                variant="finyk"
-                tone="soft"
-                size="sm"
-                className="inline-flex items-center gap-1.5"
-              >
-                <Icon name="sparkles" size={12} aria-hidden />
-                AI ·{" "}
-                {CATEGORY_DISPLAY[aiAppliedCategory]?.label ??
-                  aiAppliedCategory}
-                <button
-                  type="button"
-                  onClick={() => setAiAppliedCategory(null)}
-                  aria-label="Сховати AI-підказку"
-                  className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-finyk/20 transition-colors touch-target"
-                >
-                  <Icon name="close" size={10} aria-hidden />
-                </button>
-              </Badge>
-            </div>
-          ) : null}
-          <div
-            className="flex flex-wrap gap-2"
-            role="group"
-            aria-labelledby={catLabelId}
-          >
-            {visibleCategories.map((slug) => {
-              const display = CATEGORY_DISPLAY[slug];
-              return (
-                <button
-                  key={slug}
-                  type="button"
-                  onClick={() => {
-                    setValue("category", slug, { shouldDirty: true });
-                    // Manual category pick supersedes any AI suggestion;
-                    // clear the badge so it doesn't linger after an
-                    // explicit user choice.
-                    if (slug !== aiAppliedCategory) {
-                      setAiAppliedCategory(null);
-                    }
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-style-caption border transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95 ${
-                    categorySlug === slug
-                      ? "bg-finyk-strong text-white border-finyk-strong shadow-sm"
-                      : "bg-panelHi text-muted border-line hover:border-muted/50 hover:bg-panelHi/80"
-                  }`}
-                >
-                  <Icon
-                    name={display?.iconName ?? "tag"}
-                    size="xs"
-                    aria-hidden
-                  />
-                  {display?.label ?? slug}
-                </button>
-              );
-            })}
-            {hasHiddenCategories && (
-              <button
-                type="button"
-                onClick={() => setCategoriesExpanded((v) => !v)}
-                aria-expanded={categoriesExpanded}
-                className="px-3 py-1.5 rounded-full text-style-caption border border-line bg-panel text-muted hover:text-text hover:border-muted/50 hover:bg-panelHi transition-[background-color,border-color,color,opacity,transform] duration-150 ease-smooth active:scale-95"
-              >
-                {categoriesExpanded ? "Менше ▴" : "Більше ▾"}
-              </button>
-            )}
-          </div>
-        </div>
+        <ManualExpenseCategorySection
+          catLabelId={catLabelId}
+          categoryDisplay={categoryDisplay}
+          aiAppliedCategory={aiAppliedCategory}
+          categoryError={categoryError}
+          categorySlug={categorySlug}
+          categorySlugs={categorySlugs}
+          frequentCategoryIds={isIncome ? [] : frequentCategoryIds}
+          register={register}
+          setValue={setValue}
+          setAiAppliedCategory={setAiAppliedCategory}
+        />
       </div>
     </Sheet>
   );

@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockGetSqliteDb = vi.fn();
 const mockMigrate = vi.fn();
-const mockResidual = vi.fn();
 const mockRefresh = vi.fn();
+const mockBootstrapBodyWeight = vi.fn();
 const mockRecordFallback = vi.fn();
 const migrationClient = { __label: "mc" };
 
@@ -13,11 +13,12 @@ vi.mock("../../../core/db/sqlite.js", () => ({
 vi.mock("./clientMigrate.js", () => ({
   migrateFizruk: (...a: unknown[]) => mockMigrate(...a),
 }));
-vi.mock("./residualImport.js", () => ({
-  importFizrukResidualFromLs: (...a: unknown[]) => mockResidual(...a),
-}));
 vi.mock("./sqliteReader.js", () => ({
   refreshFizrukSqliteState: (...a: unknown[]) => mockRefresh(...a),
+}));
+vi.mock("./bodyWeightBootstrap.js", () => ({
+  bootstrapBodyWeightFromBiometrics: (...a: unknown[]) =>
+    mockBootstrapBodyWeight(...a),
 }));
 vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
   recordReadFallback: (...a: unknown[]) => mockRecordFallback(...a),
@@ -31,16 +32,16 @@ import {
 beforeEach(() => {
   mockGetSqliteDb.mockReset();
   mockMigrate.mockReset();
-  mockResidual.mockReset();
   mockRefresh.mockReset();
+  mockBootstrapBodyWeight.mockReset();
   mockRecordFallback.mockReset();
   __resetFizrukSqliteReadBootForTests();
   mockGetSqliteDb.mockResolvedValue({
     migrationClient: () => migrationClient,
   });
   mockMigrate.mockResolvedValue(undefined);
-  mockResidual.mockResolvedValue({ imported: false, cleaned: false });
   mockRefresh.mockResolvedValue(undefined);
+  mockBootstrapBodyWeight.mockResolvedValue(false);
 });
 
 describe("bootFizrukSqliteReadPath", () => {
@@ -49,12 +50,12 @@ describe("bootFizrukSqliteReadPath", () => {
     expect(mockGetSqliteDb).not.toHaveBeenCalled();
   });
 
-  it("runs migrate → residual import → refresh and returns true", async () => {
+  it("runs migrate → refresh and returns true", async () => {
     const ok = await bootFizrukSqliteReadPath("u1");
     expect(ok).toBe(true);
     expect(mockMigrate).toHaveBeenCalledWith(migrationClient);
-    expect(mockResidual).toHaveBeenCalledWith(migrationClient, "u1");
     expect(mockRefresh).toHaveBeenCalledWith(migrationClient, "u1");
+    expect(mockBootstrapBodyWeight).toHaveBeenCalledWith(migrationClient, "u1");
   });
 
   it("is idempotent — second call returns false", async () => {

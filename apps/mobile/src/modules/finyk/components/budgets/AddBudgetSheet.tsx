@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type {
@@ -62,7 +62,7 @@ const EMPTY: FormState = {
 };
 
 function makeId(): string {
-  return `b-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `b-${Date.now()}-${crypto.randomUUID()}`;
 }
 
 export function AddBudgetSheet({
@@ -75,12 +75,15 @@ export function AddBudgetSheet({
 }: AddBudgetSheetProps) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [error, setError] = useState<string | null>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    setForm(EMPTY);
-    setError(null);
-  }, [open]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setForm(EMPTY);
+      setError(null);
+    }
+  }
 
   const handleSubmit = () => {
     if (form.type === "limit") {
@@ -119,6 +122,7 @@ export function AddBudgetSheet({
         name: res.normalized.name ?? form.name,
         targetAmount: res.normalized.targetAmount,
         savedAmount: res.normalized.savedAmount,
+        contributions: [],
         ...(form.emoji ? { emoji: form.emoji } : {}),
         ...(form.targetDate ? { targetDate: form.targetDate } : {}),
       };
@@ -276,7 +280,7 @@ export function AddBudgetSheet({
             <Input
               value={form.name}
               onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
-              placeholder="Накопичити на…"
+              placeholder="Накопичити на"
               testID={testID ? `${testID}-name` : undefined}
             />
             <View className="h-2" />

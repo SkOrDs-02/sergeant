@@ -21,6 +21,7 @@ import {
   clearSqliteRoutineStateCache,
   clearSqliteCompletionsCache,
 } from "../../../modules/routine/lib/sqliteReader";
+import { __setFinykSqliteStateCacheForTests } from "../../../modules/finyk/lib/sqliteReader";
 import type { ChatAction } from "./types";
 
 beforeEach(() => {
@@ -37,6 +38,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   localStorage.clear();
+  __setFinykSqliteStateCacheForTests({});
   clearSqliteRoutineStateCache();
   clearSqliteCompletionsCache();
   vi.useRealTimers();
@@ -160,18 +162,32 @@ describe("habit_correlation", () => {
     seedRoutine([{ id: "h1", name: "Біг" }], {
       h1: ["2026-04-22", "2026-04-21"],
     });
-    // bank cache: time is epoch-seconds, amount kopiykas (negative = expense).
-    const day = (d: string) =>
-      Math.floor(new Date(`${d}T12:00:00`).getTime() / 1000);
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          { id: "t1", amount: -10000, time: day("2026-04-22") }, // run day: 100 грн
-          { id: "t2", amount: -50000, time: day("2026-04-20") }, // no-run day: 500 грн
-        ],
-      }),
-    );
+    // Витрати сідаємо ручними записами через канонічний SQLite-кеш Фініка.
+    // До 2026-08-24 тут стояв `localStorage["finyk_tx_cache"]` — ключ,
+    // виведений з експлуатації разом із переїздом дзеркала в SQLite. Тест
+    // проходив на НУЛЯХ: він перевіряв лише підписи («Витрати», «Дні зі
+    // звичкою»), а не числа, тож не помітив, що всесвіт витрат порожній.
+    // Саме ця сліпа пляма пропустила F-11 у прод.
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        // день зі звичкою — 100 грн
+        {
+          id: "m1",
+          date: "2026-04-22T12:00:00.000Z",
+          amount: 100,
+          category: "cafe",
+          kind: "expense",
+        },
+        // день без звички — 500 грн
+        {
+          id: "m2",
+          date: "2026-04-20T12:00:00.000Z",
+          amount: 500,
+          category: "cafe",
+          kind: "expense",
+        },
+      ],
+    } as never);
     const out = call({
       name: "habit_correlation",
       input: { habit: "біг", against: "spending", period_days: 7 },
@@ -179,6 +195,9 @@ describe("habit_correlation", () => {
     expect(out).toContain("Витрати");
     expect(out).toContain("Дні зі звичкою");
     expect(out).toContain("Дні без неї");
+    // Числа, а не лише підписи: без цього тест знову осліпне.
+    expect(out).toMatch(/Дні зі звичкою \(\d+\): (?!0 )/);
+    expect(out).toContain("Різниця:");
   });
 
   it("happy: correlates habit with workouts", () => {

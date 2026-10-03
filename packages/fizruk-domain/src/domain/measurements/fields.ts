@@ -11,31 +11,37 @@
  * without touching the screens (the form + list iterate this array).
  */
 
+import { MEASUREMENT_BOUNDS } from "@sergeant/shared";
+
 import type { MeasurementFieldDef, MeasurementFieldId } from "./types.js";
 
+/**
+ * Межі (`min` / `max` / `integer`) НЕ живуть тут — вони приходять з
+ * канонічного реєстру `MEASUREMENT_BOUNDS` у `@sergeant/shared`, який
+ * той самий сервер використовує для санітарної перевірки sync-апплаєра
+ * (`applyMisc.ts`). Тут лишається лише презентаційна частина — порядок,
+ * український label і одиниця. Правиш діапазон — прав у shared, інакше
+ * клієнт і сервер розійдуться (рішення власника 2026-08-25).
+ */
 export const MEASUREMENT_FIELDS: readonly MeasurementFieldDef[] = [
-  { id: "weightKg", label: "Вага", unit: "кг", min: 20, max: 400 },
-  { id: "waistCm", label: "Талія", unit: "см", min: 30, max: 300 },
-  { id: "chestCm", label: "Груди", unit: "см", min: 30, max: 300 },
-  { id: "hipsCm", label: "Стегна", unit: "см", min: 30, max: 300 },
-  { id: "bicepCm", label: "Біцепс", unit: "см", min: 10, max: 100 },
-  { id: "sleepHours", label: "Сон", unit: "год", min: 0, max: 24 },
+  { id: "weightKg", label: "Вага", unit: "кг", ...MEASUREMENT_BOUNDS.weightKg },
+  { id: "waistCm", label: "Талія", unit: "см", ...MEASUREMENT_BOUNDS.waistCm },
+  { id: "chestCm", label: "Груди", unit: "см", ...MEASUREMENT_BOUNDS.chestCm },
+  { id: "hipsCm", label: "Стегна", unit: "см", ...MEASUREMENT_BOUNDS.hipsCm },
+  { id: "bicepCm", label: "Біцепс", unit: "см", ...MEASUREMENT_BOUNDS.bicepCm },
+  {
+    id: "sleepHours",
+    label: "Сон",
+    unit: "год",
+    ...MEASUREMENT_BOUNDS.sleepHours,
+  },
   {
     id: "energyLevel",
     label: "Енергія",
     unit: "/5",
-    min: 1,
-    max: 5,
-    integer: true,
+    ...MEASUREMENT_BOUNDS.energyLevel,
   },
-  {
-    id: "mood",
-    label: "Настрій",
-    unit: "/5",
-    min: 1,
-    max: 5,
-    integer: true,
-  },
+  { id: "mood", label: "Настрій", unit: "/5", ...MEASUREMENT_BOUNDS.mood },
 ] as const;
 
 /** Convenience: just the ids, in declaration order. */

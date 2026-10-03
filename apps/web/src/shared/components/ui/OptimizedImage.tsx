@@ -15,6 +15,7 @@ import {
   useEffect,
   type ImgHTMLAttributes,
 } from "react";
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -125,7 +126,7 @@ export function OptimizedImage({
         )}
         style={aspectRatio ? { aspectRatio } : undefined}
         role="img"
-        aria-label={alt || "Image failed to load"}
+        aria-label={alt || messages.errors.generic.imageFailed}
       >
         <svg
           width="24"
@@ -177,7 +178,7 @@ export function OptimizedImage({
             "w-full h-full object-cover",
             blurOnLoad && !isLoaded && "blur-sm scale-105",
             blurOnLoad && isLoaded && "blur-0 scale-100",
-            "transition-[filter,transform] duration-500 ease-out",
+            "transition-[filter,transform] duration-slower ease-standard",
             "motion-reduce:transition-none motion-reduce:blur-0 motion-reduce:scale-100",
             className,
           )}

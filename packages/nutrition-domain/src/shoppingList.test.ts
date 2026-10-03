@@ -1,14 +1,15 @@
 // Pure-helpers для списку покупок: normalizeShoppingList (sanitize + dedup),
 // toggleShoppingItem, removeCheckedItems, getCheckedItems, getTotalCount.
-// Без `localStorage` / `window`; ID-фабрика всередині sanitizeItem використовує
-// `Date.now()` + `Math.random()` — у дедуп-тестах достатньо перевіряти що ID
+// Без `localStorage` / `window`; у дедуп-тестах достатньо перевіряти, що UUID
 // унікальні (без точних значень).
 import { describe, expect, it } from "vitest";
 
 import {
   SHOPPING_LIST_KEY,
+  addManualShoppingItem,
   getCheckedItems,
   getTotalCount,
+  mergeGeneratedShoppingList,
   normalizeShoppingList,
   removeCheckedItems,
   toggleShoppingItem,
@@ -43,7 +44,7 @@ describe("normalizeShoppingList", () => {
     });
   });
 
-  it("пропускає категорії, що не є об'єктами", () => {
+  it("пропускає категорії, що не є обʼєктами", () => {
     const r = normalizeShoppingList({
       categories: [
         null,
@@ -63,7 +64,7 @@ describe("normalizeShoppingList", () => {
     expect(r.categories[0]!.name).toBe("Інше");
   });
 
-  it("trim-ить ім'я категорії; whitespace-only теж дає 'Інше'", () => {
+  it("trim-ить імʼя категорії; whitespace-only теж дає 'Інше'", () => {
     const r = normalizeShoppingList({
       categories: [
         { name: "   ", items: [{ name: "Сіль" }] },
@@ -196,7 +197,7 @@ describe("normalizeShoppingList", () => {
     expect(r.categories[0]!.items).toHaveLength(1);
   });
 
-  it("обʼєднує дублікати name з різних категорій з однаковим ім'ям", () => {
+  it("обʼєднує дублікати name з різних категорій з однаковим імʼям", () => {
     // Категорії з ідентичним name (з різним casing вони НЕ обʼєднуються —
     // дедуп тут case-sensitive). Тест перевіряє, що при exact-match назви
     // bucket reuse спрацьовує і items зливаються в одну категорію.
@@ -209,6 +210,230 @@ describe("normalizeShoppingList", () => {
     expect(r.categories).toHaveLength(1);
     expect(r.categories[0]!.items).toHaveLength(1);
     expect(r.categories[0]!.items[0]!.quantity).toBe("1 кг");
+  });
+});
+
+describe("addManualShoppingItem", () => {
+  it("додає позицію в дефолтну категорію 'Інше' з source: manual", () => {
+    const r = addManualShoppingItem(null, { name: "Хліб" });
+    expect(r.categories).toHaveLength(1);
+    expect(r.categories[0]!.name).toBe("Інше");
+    expect(r.categories[0]!.items[0]!).toMatchObject({
+      name: "Хліб",
+      quantity: "",
+      note: "",
+      checked: false,
+      source: "manual",
+    });
+  });
+
+  it("trim-ить name/quantity/note і використовує кастомну категорію", () => {
+    const r = addManualShoppingItem(null, {
+      name: "  Молоко  ",
+      quantity: " 1 л ",
+      note: " 2.5% ",
+      category: "  Молочні продукти  ",
+    });
+    expect(r.categories[0]!.name).toBe("Молочні продукти");
+    expect(r.categories[0]!.items[0]).toMatchObject({
+      name: "Молоко",
+      quantity: "1 л",
+      note: "2.5%",
+    });
+  });
+
+  it("не додає нічого для порожнього/whitespace-only name", () => {
+    expect(addManualShoppingItem(null, { name: "" })).toEqual({
+      categories: [],
+    });
+    expect(addManualShoppingItem(null, { name: "   " })).toEqual({
+      categories: [],
+    });
+  });
+
+  it("дедуплікує з наявною позицією в тій самій категорії (перевикористовує normalizeShoppingList)", () => {
+    const existing: ShoppingList = {
+      categories: [
+        {
+          name: "Інше",
+          items: [
+            { id: "i1", name: "Хліб", quantity: "", note: "", checked: true },
+          ],
+        },
+      ],
+    };
+    const r = addManualShoppingItem(existing, {
+      name: "хліб",
+      quantity: "1 буханка",
+    });
+    expect(r.categories).toHaveLength(1);
+    expect(r.categories[0]!.items).toHaveLength(1);
+    const item = r.categories[0]!.items[0]!;
+    expect(item.id).toBe("i1");
+    expect(item.quantity).toBe("1 буханка");
+    expect(item.checked).toBe(true);
+    expect(item.source).toBe("manual");
+  });
+
+  it("додає в наявну категорію з тим самим іменем, а не створює дублікат", () => {
+    const existing: ShoppingList = {
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "i1",
+              name: "Огірок",
+              quantity: "",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ],
+    };
+    const r = addManualShoppingItem(existing, {
+      name: "Морква",
+      category: "Овочі",
+    });
+    expect(r.categories).toHaveLength(1);
+    expect(r.categories[0]!.items.map((i) => i.name).sort()).toEqual([
+      "Морква",
+      "Огірок",
+    ]);
+  });
+});
+
+describe("mergeGeneratedShoppingList", () => {
+  it("нова генерація замінює попередній AI-набір, але не чіпає ручні позиції", () => {
+    const current: ShoppingList = {
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "ai1",
+              name: "Стара морква",
+              quantity: "",
+              note: "",
+              checked: false,
+              source: "ai",
+            },
+          ],
+        },
+        {
+          name: "Інше",
+          items: [
+            {
+              id: "m1",
+              name: "Ручна нотатка",
+              quantity: "",
+              note: "",
+              checked: false,
+              source: "manual",
+            },
+          ],
+        },
+      ],
+    };
+    const r = mergeGeneratedShoppingList(current, [
+      { name: "Овочі", items: [{ name: "Нова цибуля" }] },
+    ]);
+    const names = r.categories.flatMap((c) => c.items.map((i) => i.name));
+    expect(names).toContain("Нова цибуля");
+    expect(names).not.toContain("Стара морква");
+    expect(names).toContain("Ручна нотатка");
+    const manualItem = r.categories
+      .flatMap((c) => c.items)
+      .find((i) => i.name === "Ручна нотатка")!;
+    expect(manualItem.source).toBe("manual");
+  });
+
+  it("легасі-item без source (до фічі) трактується як AI-походження — зникає при регенерації, як і раніше", () => {
+    const current: ShoppingList = {
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "legacy1",
+              name: "Легасі помідор",
+              quantity: "",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ],
+    };
+    const r = mergeGeneratedShoppingList(current, [
+      { name: "Овочі", items: [{ name: "Новий кабачок" }] },
+    ]);
+    const names = r.categories.flatMap((c) => c.items.map((i) => i.name));
+    expect(names).not.toContain("Легасі помідор");
+    expect(names).toContain("Новий кабачок");
+  });
+
+  it("новозгенерована позиція отримує source: 'ai'", () => {
+    const r = mergeGeneratedShoppingList(null, [
+      { name: "Овочі", items: [{ name: "Кабачок" }] },
+    ]);
+    expect(r.categories[0]!.items[0]!.source).toBe("ai");
+  });
+
+  it("ручна позиція перемагає при однаковому імені з новою AI-позицією (мердж, не replace)", () => {
+    const current: ShoppingList = {
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "m1",
+              name: "Цибуля",
+              quantity: "2 шт",
+              note: "",
+              checked: true,
+              source: "manual",
+            },
+          ],
+        },
+      ],
+    };
+    const r = mergeGeneratedShoppingList(current, [
+      { name: "Овочі", items: [{ name: "цибуля" }] },
+    ]);
+    const items = r.categories.flatMap((c) => c.items);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.source).toBe("manual");
+    expect(items[0]!.checked).toBe(true);
+    expect(items[0]!.quantity).toBe("2 шт");
+  });
+
+  it("з порожнім/невалідним generatedCategories лишає лише ручні позиції", () => {
+    const current: ShoppingList = {
+      categories: [
+        {
+          name: "Інше",
+          items: [
+            {
+              id: "m1",
+              name: "Сіль",
+              quantity: "",
+              note: "",
+              checked: false,
+              source: "manual",
+            },
+          ],
+        },
+      ],
+    };
+    expect(mergeGeneratedShoppingList(current, null).categories).toEqual(
+      mergeGeneratedShoppingList(current, undefined).categories,
+    );
+    const r = mergeGeneratedShoppingList(current, "garbage");
+    expect(r.categories.flatMap((c) => c.items.map((i) => i.name))).toEqual([
+      "Сіль",
+    ]);
   });
 });
 

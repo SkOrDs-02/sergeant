@@ -22,7 +22,7 @@ import {
 import { loadShoppingList, saveShoppingList } from "../lib/nutritionStore";
 
 function makeItemId(): string {
-  return `si_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `si_${Date.now()}_${crypto.randomUUID()}`;
 }
 
 export interface UseShoppingListResult {

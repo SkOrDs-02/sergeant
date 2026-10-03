@@ -5,6 +5,7 @@ import {
   calcDebtRemaining,
   getDebtEffectiveTotal,
 } from "../utils";
+import { sumMonoCardPaid } from "@sergeant/finyk-domain/domain/monoCardDebt";
 import { getAccountVisual } from "../lib/accountVisual";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -25,6 +26,8 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
     setShowDebtForm,
     newDebt,
     setNewDebt,
+    editingDebtId,
+    setEditingDebtId,
     debtFormRef,
     debtNameInputRef,
     setTxPicker,
@@ -38,21 +41,16 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
     <div className="mb-3 space-y-0">
       {liabilitiesEmpty && (
         <div className="space-y-2 mb-3">
-          <p className="text-xs text-muted px-1">
-            Кредити, розстрочки, позики, комунальні борги — додавайте з датою
-            повернення, прив&apos;язуйте транзакції-платежі, і картка сама
-            покаже прогрес «Сплачено N з M».
+          <p className="text-style-body text-muted px-1">
+            Кредити, розстрочки, позики, комунальні борги, додавай з датою
+            повернення, привʼязуй операції-платежі, і картка сама покаже прогрес
+            «Сплачено N з M».
           </p>
           <div className="flex flex-wrap gap-1.5 px-1">
-            {[
-              "\uD83D\uDCB3 Кредит",
-              "\uD83D\uDCC5 Розстрочка",
-              "\uD83E\uDD1D Позика",
-              "\uD83D\uDCA1 Комуналка",
-            ].map((chip) => (
+            {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (
               <span
                 key={chip}
-                className="inline-flex items-center text-meta text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+                className="inline-flex items-center text-style-caption text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
               >
                 {chip}
               </span>
@@ -60,29 +58,48 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           </div>
         </div>
       )}
-      {showDebtForm ? (
+      {/* Вхід у форму — quick-action «+ Пасив» угорі сторінки; власна
+          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {showDebtForm && (
         <DebtForm
           newDebt={newDebt}
           setNewDebt={setNewDebt}
           setManualDebts={setManualDebts}
-          setShowDebtForm={setShowDebtForm}
+          setShowDebtForm={(next) => {
+            setShowDebtForm(next);
+            if (!next) setEditingDebtId(null);
+          }}
           debtFormRef={debtFormRef}
           debtNameInputRef={debtNameInputRef}
+          editingId={editingDebtId}
+          editingDebt={manualDebts.find((debt) => debt.id === editingDebtId)}
+          transactions={transactions}
+          onUpdate={(id, value) => {
+            setManualDebts((ds) =>
+              ds.map((item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      ...value,
+                      id,
+                      linkedTxIds: item.linkedTxIds ?? [],
+                    }
+                  : item,
+              ),
+            );
+            setEditingDebtId(null);
+          }}
         />
-      ) : (
-        <button
-          type="button"
-          onClick={() => setShowDebtForm(true)}
-          className="w-full py-2.5 text-style-label rounded-xl bg-danger/10 text-danger-strong dark:bg-danger/15 dark:text-danger border border-danger/30 hover:bg-danger/15 dark:hover:bg-danger/25 active:scale-[0.99] transition-colors shadow-soft mb-2"
-        >
-          + Додати пасив
-        </button>
       )}
       {monoDebtAccounts.map((a, i) => {
         const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
-        const paidFromLinked = transactions
-          .filter((t) => linkedIds.includes(t.id))
-          .reduce((s, t) => s + Math.abs(t.amount / 100), 0);
+        // Правило погашення — канонічне в `@sergeant/finyk-domain`; раніше
+        // воно жило двома копіями (тут і в пікері) й розійшлося.
+        const paidFromLinked = sumMonoCardPaid(
+          transactions,
+          linkedIds,
+          a.id ?? "",
+        );
         const remaining = getMonoDebt(a);
         const volatileTotal = paidFromLinked + remaining;
         const visual = getAccountVisual(a);
@@ -105,6 +122,17 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           key={d.id}
           name={d.name ?? ""}
           emoji={d.emoji ?? ""}
+          onEdit={() => {
+            setEditingDebtId(d.id);
+            setNewDebt({
+              name: d.name ?? "",
+              emoji: d.emoji ?? "",
+              totalAmount: String(d.totalAmount ?? d.amount ?? ""),
+              dueDate: d.dueDate ?? "",
+              autoLinkKeyword: d.autoLinkKeyword ?? "",
+            });
+            setShowDebtForm(true);
+          }}
           remaining={calcDebtRemaining(d, transactions)}
           paid={getDebtPaid(d, transactions)}
           total={getDebtEffectiveTotal(d, transactions)}
@@ -114,7 +142,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             const removed = d;
             setManualDebts((ds) => ds.filter((x) => x.id !== removed.id));
             showUndoToast(toast, {
-              msg: `Видалено борг «${removed.name}»`,
+              msg: `Видалено пасив «${removed.name}»`,
               onUndo: () => setManualDebts((ds) => [...ds, removed]),
             });
           }}

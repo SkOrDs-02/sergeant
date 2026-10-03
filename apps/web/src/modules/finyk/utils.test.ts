@@ -21,7 +21,7 @@ describe("getFinykExcludedTxIdsFromStorage", () => {
     expect(s).toBeInstanceOf(Set);
     expect(s.size).toBe(0);
   });
-  it("об'єднує hidden + internal_transfer + recv.linkedTxIds + extra", () => {
+  it("обʼєднує hidden + internal_transfer + recv.linkedTxIds + extra", () => {
     localStorage.setItem("finyk_hidden_txs", JSON.stringify(["a"]));
     localStorage.setItem(
       "finyk_tx_cats",
@@ -46,7 +46,7 @@ describe("getFinykTxSplitsFromStorage", () => {
   it("повертає {} коли немає даних", () => {
     expect(getFinykTxSplitsFromStorage()).toEqual({});
   });
-  it("повертає збережений об'єкт", () => {
+  it("повертає збережений обʼєкт", () => {
     localStorage.setItem(
       "finyk_tx_splits",
       JSON.stringify({ t1: [{ amount: 10, categoryId: "food" }] }),
@@ -54,7 +54,7 @@ describe("getFinykTxSplitsFromStorage", () => {
     const v = getFinykTxSplitsFromStorage() as Record<string, unknown[]>;
     expect(v["t1"]).toHaveLength(1);
   });
-  it("повертає {} коли значення — не об'єкт", () => {
+  it("повертає {} коли значення — не обʼєкт", () => {
     localStorage.setItem("finyk_tx_splits", JSON.stringify("string"));
     expect(getFinykTxSplitsFromStorage()).toEqual({});
   });

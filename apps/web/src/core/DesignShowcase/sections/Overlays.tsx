@@ -13,7 +13,7 @@ import {
 
 const SAMPLE_USAGE = `// Modal portals to document.body to escape transformed ancestors (PR #2227)
 <Modal open={open} onClose={close} size="md" title="…">
-  <p className="text-sm text-muted">…</p>
+  <p className="text-style-body text-muted">…</p>
 </Modal>
 
 // ConfirmDialog — destructive irreversible action
@@ -38,12 +38,12 @@ export function OverlaysSection() {
       intro={
         <>
           Modal / Sheet / ConfirmDialog портують у <code>document.body</code>{" "}
-          (PR #2227) — щоб не страждати від transformed-ancestor контейнерів.
+          (PR #2227), щоб не страждати від transformed-ancestor контейнерів.
           Контракт фокусу: focus-trap + Esc + click-outside-to-dismiss.
         </>
       }
     >
-      <Group label="Modal — розміри" row>
+      <Group label="Modal: розміри" row>
         {(["sm", "md", "lg"] as const).map((size) => (
           <Button
             key={size}
@@ -86,7 +86,7 @@ export function OverlaysSection() {
           </div>
         }
       >
-        <p className="text-sm text-muted leading-relaxed">
+        <p className="text-style-body text-muted">
           Тіло модального вікна. Може містити форми, списки або будь-який вміст.
           Розмір:{" "}
           <span className="font-mono font-semibold text-text">{modal}</span>.
@@ -97,7 +97,7 @@ export function OverlaysSection() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         title="Приклад Sheet"
-        description="Bottom sheet — основний паттерн для мобільних форм і детальних панелей."
+        description="Bottom sheet: основний паттерн для мобільних форм і детальних панелей."
         footer={
           <div className="flex gap-2">
             <Button
@@ -113,7 +113,7 @@ export function OverlaysSection() {
           </div>
         }
       >
-        <p className="text-sm text-muted leading-relaxed py-4">
+        <p className="text-style-body text-muted py-4">
           Вміст аркуша. Прокручується, якщо контент не вміщується у viewport.
           Фокус-пастка та Escape закривають аркуш автоматично.
         </p>
@@ -156,13 +156,12 @@ export function OverlaysSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #14", hint: "focus-visible only" },
-          { label: "HR #17", hint: "Motion budget — fade-in" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "prefer-focus-visible" },
-          { label: "prefer-data-state" },
+          {
+            label: "check-design-conventions",
+            hint: "`focus:` заборонено, лише focus-visible: / focus-within:",
+          },
         ]}
       />
     </Sec>

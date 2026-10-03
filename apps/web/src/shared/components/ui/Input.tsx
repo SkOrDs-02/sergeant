@@ -6,6 +6,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 import { cn } from "../../lib/ui/cn";
+import { searchFieldAutofillGuard } from "../../lib/ui/searchFieldProps";
 import type { FormVariant, SmallMediumLarge } from "./types";
 
 /**
@@ -50,10 +51,20 @@ const DEFAULT_INPUT_MODE: Partial<
 export type InputSize = SmallMediumLarge;
 export type InputVariant = FormVariant;
 
+/**
+ * AI-DANGER: `pointer-coarse:min-h-[44px]` — у ПІКСЕЛЯХ, не в rem, і це не
+ * дублювання `h-11`. На вузьких мобільних вьюпортах корінний шрифт падає до
+ * 15px (перевірено: 320px → 15px, 390px → 16px), тож `h-11` = 2.75rem дає
+ * 41.25px і тихо провалює 44px-флор WCAG 2.5.5 саме там, де палець
+ * найтовщий. `Button` цю ж пастку обходить тим самим px-флором
+ * (`Button.tsx`); `Input` його не мав — браузерний аудит 2026-08-26.
+ */
+const COARSE_TOUCH_FLOOR = "pointer-coarse:min-h-[44px]";
+
 const sizes: Record<InputSize, string> = {
-  sm: "h-9 px-3 text-sm rounded-xl",
-  md: "h-11 px-4 text-base rounded-2xl",
-  lg: "h-12 px-5 text-base rounded-2xl",
+  sm: `h-9 px-3 text-style-body rounded-xl ${COARSE_TOUCH_FLOOR}`,
+  md: `h-11 px-4 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
+  lg: `h-12 px-5 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
 };
 
 /**
@@ -65,11 +76,11 @@ const sizes: Record<InputSize, string> = {
  */
 const variants: Record<InputVariant, string> = {
   default:
-    "bg-panelHi border border-line caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
+    "bg-panelHi border border-control caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
   filled:
-    "bg-panelHi border-transparent caret-brand focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
+    "bg-panelHi border-transparent caret-brand focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
   ghost:
-    "bg-transparent border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-focus/30",
+    "bg-transparent border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-focus/45",
 };
 
 export interface InputProps extends Omit<
@@ -117,14 +128,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const stateClass = error
     ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
     : success
-      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-focus/25"
+      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-focus/45"
       : "";
 
   const maxLen = props.maxLength;
   const currentLen =
     maxLen !== undefined ? String(props.value ?? "").length : 0;
+  // Explicit `showCharCount={false}` wins over the maxLength auto-opt-in.
+  // Without this escape hatch, adding `maxLength` purely as a storage guard
+  // (see the beta-input-boundaries spec, which rejected counters as UI noise)
+  // silently ships a counter — and on an uncontrolled RHF field, where
+  // `props.value` is undefined, it is stuck reading "0/200".
   const renderCounter =
-    (showCharCount || maxLen !== undefined) && maxLen !== undefined;
+    showCharCount !== false &&
+    (showCharCount || maxLen !== undefined) &&
+    maxLen !== undefined;
   const maxLenSafe = maxLen ?? 0;
   const counterColor =
     currentLen >= maxLenSafe
@@ -139,18 +157,24 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     spellCheck ?? (type && NON_PROSE_TYPES.has(type) ? false : undefined);
   const resolvedInputMode =
     inputMode ?? (type ? DEFAULT_INPUT_MODE[type] : undefined);
+  // Password-manager guard for search fields (tester report 2026-08-10:
+  // Chrome offered saved credentials in the settings-search box and refilled
+  // the e-mail after every clear). Spread BEFORE `...props` below so an
+  // explicit `autoComplete` / `name` from the caller still wins — see
+  // `searchFieldProps.ts` for why `autocomplete="off"` alone is not enough.
+  const searchGuard = type === "search" ? searchFieldAutofillGuard : undefined;
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
       {label && (
         <label
           htmlFor={id}
-          className="text-sm font-medium text-text leading-snug"
+          className="text-style-label font-medium text-text leading-snug"
         >
           {label}
         </label>
       )}
-      <div className="relative">
+      <div className="relative w-full min-w-0 max-w-full">
         {icon && (
           <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
             {icon}
@@ -160,13 +184,14 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           ref={ref}
           id={id}
           type={type}
+          {...searchGuard}
           spellCheck={resolvedSpellCheck}
           inputMode={resolvedInputMode}
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "w-full text-text placeholder:text-subtle/70",
-            "outline-none transition-colors duration-200",
+            "box-border w-full text-text placeholder:text-subtle",
+            "outline-none transition-colors duration-base",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             sizes[size],
             variants[variant],
@@ -190,7 +215,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
               id={id ? `${id}-helper` : undefined}
               role={error ? "alert" : "status"}
               className={cn(
-                "text-xs leading-snug",
+                "text-style-caption leading-snug",
                 error ? "text-danger-strong dark:text-danger" : "text-subtle",
               )}
             >
@@ -202,7 +227,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
           {renderCounter && (
             <span
               className={cn(
-                "text-xs tabular-nums shrink-0 transition-colors",
+                "text-style-caption tabular-nums shrink-0 transition-colors",
                 counterColor,
               )}
               aria-live="polite"
@@ -253,7 +278,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={id}
-            className="text-sm font-medium text-text leading-snug"
+            className="text-style-label font-medium text-text leading-snug"
           >
             {label}
           </label>
@@ -265,8 +290,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-invalid={error ? true : undefined}
           aria-describedby={helperText && id ? `${id}-helper` : undefined}
           className={cn(
-            "w-full px-4 py-3 text-base text-text placeholder:text-subtle/70 rounded-2xl",
-            "outline-none transition-colors duration-200 resize-none",
+            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle rounded-2xl",
+            "outline-none transition-colors duration-base resize-none",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             variants[variant],
             stateClass,
@@ -279,7 +304,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             id={id ? `${id}-helper` : undefined}
             role={error ? "alert" : "status"}
             className={cn(
-              "text-xs leading-snug",
+              "text-style-caption leading-snug",
               error ? "text-danger" : "text-subtle",
             )}
           >

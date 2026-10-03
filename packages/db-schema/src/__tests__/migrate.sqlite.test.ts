@@ -191,4 +191,15 @@ describe("runMigrations × sqlite adapter (better-sqlite3)", () => {
     });
     expect(result.applied).toEqual(FILES.map((f) => f.name));
   });
+
+  it("applies an all-whitespace migration body without issuing exec() for it (skip branch)", async () => {
+    const adapter = createSqliteAdapter(client);
+    const blank: MigrationFile = { name: "001_blank.sql", sql: "   \n\t " };
+    const result = await runMigrations({ adapter, files: [blank] });
+    expect(result.applied).toEqual(["001_blank.sql"]);
+    const ledger = db
+      .prepare('SELECT name FROM "__migrations" ORDER BY id ASC')
+      .all() as { name: string }[];
+    expect(ledger.map((r) => r.name)).toEqual(["001_blank.sql"]);
+  });
 });

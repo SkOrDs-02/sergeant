@@ -20,6 +20,41 @@ export interface FizrukNavItem extends ModuleBottomNavItem {
   id: Extract<FizrukPage, "dashboard" | "workouts" | "progress" | "body">;
 }
 
+/**
+ * Fizruk chrome audit V-7: not every `FizrukPage` owns a tab of its own
+ * — «Заміри» is a full page, but it lives under the «Прогрес»
+ * tab rather than getting a fifth icon in the strip, and the two
+ * detail-style routes («Атлас», «Вправа») don't own a tab either. Before
+ * this map existed `FizrukApp` passed the raw `page` straight through as
+ * `activeId`, so on any of those routes the nav rendered with **no**
+ * active state at all (nothing in `FIZRUK_NAV` has `id: "measurements"`,
+ * `"atlas"`, …). This resolves any `FizrukPage` to the tab that should
+ * read as active, mirroring the same "which section owns this route"
+ * judgement `FizrukApp.contextualBackTarget` already makes for the back
+ * arrow — kept as an explicit switch (not a lookup record) so a new
+ * `FizrukPage` fails to compile here until it's given a home tab.
+ */
+export function fizrukNavActiveId(page: FizrukPage): FizrukNavItem["id"] {
+  switch (page) {
+    case "dashboard":
+      return "dashboard";
+    case "workouts":
+    case "workout":
+    case "programs":
+    case "history":
+    case "exercise":
+    case "catalog":
+    case "templates":
+      return "workouts";
+    case "progress":
+    case "measurements":
+      return "progress";
+    case "body":
+    case "atlas":
+      return "body";
+  }
+}
+
 export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   {
     id: "dashboard",
@@ -42,7 +77,16 @@ export const FIZRUK_NAV: readonly FizrukNavItem[] = [
   },
   {
     id: "progress",
-    label: "Прогрес і заміри",
+    // «Прогрес і заміри» (16 символів) не влазив у стелю підпису активної
+    // вкладки — `ModuleBottomNav` тримає її на `max-w-[88px]`, і хвіст
+    // зрізало посеред слова: «Прогрес і замір» (знахідка QA-аудиту
+    // 2026-08-04 «кліп лейбла без ellipsis», скарга власника 2026-08-08).
+    // Підпис нижньої навігації — це одне слово, а не назва розділу:
+    // сторінка має власний H1 «Прогрес», а вхід у заміри — перша картка
+    // на ній («Заміри тіла · Обхвати й динаміка»), тож маршрут
+    // `measurements` лишається під цією вкладкою (див. `fizrukNavActiveId`)
+    // без згадки в самому підписі.
+    label: "Прогрес",
     icon: (
       <svg {...NAV_SVG_PROPS}>
         <polyline points="3 17 9 11 13 15 21 7" />
@@ -60,3 +104,11 @@ export const FIZRUK_NAV: readonly FizrukNavItem[] = [
     ),
   },
 ] as const;
+
+/**
+ * Порядок вкладок для горизонтального свайпу (`SwipePages`) — той самий, що
+ * й у нижній навігації, тож жест і смужка табів рухаються в один бік.
+ */
+export const SWIPE_PAGE_IDS: readonly FizrukNavItem["id"][] = FIZRUK_NAV.map(
+  (item) => item.id,
+);

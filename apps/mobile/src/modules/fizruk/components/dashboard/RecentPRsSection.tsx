@@ -48,7 +48,7 @@ export function RecentPRsSection({
             Поки без рекордів
           </Text>
           <Text className="text-xs text-fg-muted text-center mt-1">
-            Запиши вагу й повторення у сетах — Dashboard підсвітить найкращі.
+            Запиши вагу й повторення у сетах, Dashboard підсвітить найкращі.
           </Text>
         </Card>
       </View>

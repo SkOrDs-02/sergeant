@@ -1,9 +1,18 @@
-import { useEffect, useRef, useState } from "react";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useState } from "react";
+import {
+  normalizeWeeklyTargetHistory,
+  resolveHabitGlyph,
+  routineUid,
+  weeklyTargetForDate,
+} from "@sergeant/routine-domain";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
-import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
+import { Sheet } from "@shared/components/ui/Sheet";
+import {
+  classifyDateBound,
+  DATE_INVALID_MESSAGE,
+} from "@shared/lib/time/dateBounds";
 import { createHabit, updateHabit } from "../lib/routineStorage";
 import {
   emptyHabitDraft,
@@ -13,7 +22,6 @@ import {
 } from "../lib/routineDraftUtils";
 import { dateKeyFromDate } from "../lib/hubCalendarAggregate";
 import { Button } from "@shared/components/ui/Button";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { HabitForm, type HabitFormErrors } from "./settings/HabitForm";
 import type { Habit, HabitDraft, RoutineState } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
@@ -37,21 +45,12 @@ export interface HabitQuickCreateDialogProps {
    * reopens the dialog after closing it.
    */
   focusTick?: number;
-  /**
-   * When true, render a `<FirstRunHintBanner />` at the top of the
-   * dialog framing this first habit as preliminary — used by the
-   * per-module first-run flow that auto-opens the dialog on the user's
-   * first Routine entry. See `core/onboarding/useModuleFirstRun.ts`.
-   */
-  firstRunHint?: boolean;
-  /** Dismiss callback for the first-run hint banner. */
-  onDismissFirstRunHint?: () => void;
 }
 
 function habitToDraft(habit: Habit): HabitDraft {
   return {
     name: habit.name || "",
-    emoji: habit.emoji || "✓",
+    emoji: resolveHabitGlyph(habit.emoji),
     tagIds: habit.tagIds || [],
     categoryId: habit.categoryId || null,
     recurrence: habit.recurrence || "daily",
@@ -64,6 +63,13 @@ function habitToDraft(habit: Habit): HabitDraft {
         ? habit.weekdays
         : [0, 1, 2, 3, 4, 5, 6],
     paused: habit.paused === true,
+    weeklyTarget: weeklyTargetForDate(
+      habit,
+      dateKeyFromDate(routineTodayDate()),
+    ),
+    weeklyTargetHistory: normalizeWeeklyTargetHistory(
+      habit.weeklyTargetHistory,
+    ),
   };
 }
 
@@ -80,21 +86,31 @@ export function HabitQuickCreateDialog({
   onClose,
   editingId,
   focusTick,
-  firstRunHint,
-  onDismissFirstRunHint,
 }: HabitQuickCreateDialogProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, ref, { onEscape: onClose, inertBackground: true });
   const toast = useToast();
   const [draft, setDraft] = useState<HabitDraft>(() => emptyHabitDraft());
   const [internalFocusTick, setInternalFocusTick] = useState(0);
   const [errors, setErrors] = useState<HabitFormErrors>({});
 
-  // Seed the draft every time the dialog opens. In create mode we reset
-  // to an empty draft so reopens feel fresh; in edit mode we load the
-  // current habit so the form reflects its latest persisted state.
-  useEffect(() => {
-    if (!open) return;
+  const [draftId, setDraftId] = useState("");
+
+  const [prevOpenKey, setPrevOpenKey] = useState("");
+  const openKey = `${open}:${editingId ?? ""}:${focusTick ?? 0}`;
+  // AI-DANGER: закриття мусить СКИДАТИ ключ, інакше повторне відкриття
+  // того самого аркуша для тієї самої звички не переcіює чернетку.
+  // `focusTick` тут не рятує: `HabitDetailSheet` його не передає (завжди
+  // 0), тож для пари (та сама звичка, той самий тік) ключ після закриття
+  // лишався рівним попередньому, умова нижче не спрацьовувала — і форма
+  // показувала СТАРУ чернетку замість поточних полів звички. Зміна дати,
+  // зроблена деінде (або в попередньому відкритті), у формі не бачилась
+  // до перезавантаження сторінки, а «Зберегти зміни» могло записати назад
+  // застарілі значення.
+  if (!open && prevOpenKey !== "") {
+    setPrevOpenKey("");
+  }
+  if (open && openKey !== prevOpenKey) {
+    setPrevOpenKey(openKey);
+    setDraftId(routineUid("hab"));
     if (editingId) {
       const habit = routine.habits.find((h) => h.id === editingId);
       setDraft(habit ? habitToDraft(habit) : emptyHabitDraft());
@@ -103,27 +119,18 @@ export function HabitQuickCreateDialog({
     }
     setErrors({});
     setInternalFocusTick((t) => t + 1);
-    // Depend on `editingId` + `focusTick` — not `routine`, otherwise the
-    // draft resets on every keystroke-driven routine update.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, editingId, focusTick]);
+  }
 
-  // Clear field errors as soon as the user touches the relevant field
-  // so the red border doesn't linger once they start fixing the input.
-  useEffect(() => {
-    if (errors.name && draft.name.trim()) {
-      setErrors((e) => ({ ...e, name: undefined }));
-    }
-  }, [draft.name, errors.name]);
-  useEffect(() => {
-    if (
-      errors.weekdays &&
-      Array.isArray(draft.weekdays) &&
-      draft.weekdays.length > 0
-    ) {
-      setErrors((e) => ({ ...e, weekdays: undefined }));
-    }
-  }, [draft.weekdays, errors.weekdays]);
+  if (errors.name && draft.name.trim()) {
+    setErrors((e) => ({ ...e, name: undefined }));
+  }
+  if (
+    errors.weekdays &&
+    Array.isArray(draft.weekdays) &&
+    draft.weekdays.length > 0
+  ) {
+    setErrors((e) => ({ ...e, weekdays: undefined }));
+  }
 
   if (!open) return null;
 
@@ -139,8 +146,27 @@ export function HabitQuickCreateDialog({
     ) {
       nextErrors.weekdays = "Обери хоча б один день тижня.";
     }
-    if (nextErrors.name || nextErrors.weekdays) {
+    if (draft.startDate && classifyDateBound(draft.startDate) === "invalid") {
+      nextErrors.startDate = DATE_INVALID_MESSAGE;
+    }
+    if (draft.endDate && classifyDateBound(draft.endDate) === "invalid") {
+      nextErrors.endDate = DATE_INVALID_MESSAGE;
+    }
+    if (
+      draft.startDate &&
+      draft.endDate &&
+      draft.endDate < draft.startDate &&
+      !nextErrors.endDate
+    ) {
+      nextErrors.endDate = "Кінець не може бути раніше за початок.";
+    }
+    if (Object.values(nextErrors).some(Boolean)) {
       setErrors(nextErrors);
+      // Порожня назва — найчастіший фейл сабміту, і повідомлення про нього
+      // легко лишається поза полем зору (форма скролиться, кнопка «Додати»
+      // внизу). Тик повертає фокус і скрол на поле назви — те саме, що
+      // робить відкриття аркуша (browser QA 2026-08-05, F-011).
+      if (nextErrors.name) setInternalFocusTick((t) => t + 1);
       return;
     }
     setErrors({});
@@ -149,7 +175,9 @@ export function HabitQuickCreateDialog({
       hapticSuccess();
       toast.success("Звичку оновлено.");
     } else {
-      setRoutine((s) => createHabit(s, patch));
+      // id фіксується на відкриття аркуша — подвійний тап приходить у
+      // `applyCreateHabit` з тим самим id і відкидається як дубль.
+      setRoutine((s) => createHabit(s, { ...patch, id: draftId }));
       hapticSuccess();
       toast.success("Звичку створено.");
     }
@@ -158,107 +186,51 @@ export function HabitQuickCreateDialog({
 
   const title = editingId ? "Редагувати звичку" : "Нова звичка";
 
-  return (
-    <div
-      className="fixed inset-0 z-200 flex items-end justify-center sm:items-center"
-      role="presentation"
-    >
-      <div
-        className="absolute inset-0 bg-text/40 backdrop-blur-sm motion-safe:animate-fade-in"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="habit-quick-create-title"
-        className={cn(
-          "relative z-10 w-full max-w-md mx-0 sm:mx-4",
-          "bg-bg rounded-t-3xl sm:rounded-3xl shadow-float border border-line",
-          "max-h-[92dvh] overflow-hidden flex flex-col",
-          "motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-200",
-        )}
+  // Sticky footer keeps the primary CTA in the viewport regardless of how
+  // long the form scrolls. Without it, a habit with the advanced disclosure
+  // open pushes "Додати звичку" below the fold and forces a scroll-hunt on
+  // every save. Rendered via the Sheet footer slot (outside the scroll area).
+  const footer = (
+    <div className={cn("flex gap-2", editingId ? "flex-row" : "flex-col")}>
+      {editingId && (
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          onClick={onClose}
+        >
+          {messages.actions.cancel}
+        </Button>
+      )}
+      <Button
+        type="button"
+        variant="solid"
+        tone="routine"
+        className="w-full"
+        onClick={handleSave}
       >
-        <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <h2
-            id="habit-quick-create-title"
-            className="text-style-subtitle text-text"
-          >
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="focus-ring w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-            aria-label={messages.actions.close}
-          >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto px-5 pb-3">
-          {firstRunHint && !editingId && (
-            <FirstRunHintBanner
-              variant="routine"
-              title={messages.routine.firstRun.title}
-              description={messages.routine.firstRun.description}
-              onDismiss={onDismissFirstRunHint ?? (() => {})}
-              className="mb-3"
-            />
-          )}
-          <HabitForm
-            routine={routine}
-            habitDraft={draft}
-            setHabitDraft={setDraft}
-            editingId={editingId ?? null}
-            onSave={handleSave}
-            onCancel={onClose}
-            focusTick={internalFocusTick}
-            hideHeading
-            hideActions
-            errors={errors}
-          />
-        </div>
-        {/* Sticky footer: keeps the primary CTA in the viewport regardless
-            of how long the form scrolls. Without this, a habit with the
-            advanced disclosure open pushes "Додати звичку" below the fold
-            and forces a scroll-hunt on every save. */}
-        <div className="border-t border-line bg-bg px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div
-            className={cn("flex gap-2", editingId ? "flex-row" : "flex-col")}
-          >
-            {editingId && (
-              <Button
-                type="button"
-                variant="secondary"
-                className="flex-1"
-                onClick={onClose}
-              >
-                {messages.actions.cancel}
-              </Button>
-            )}
-            <Button
-              type="button"
-              className={cn("w-full", C.primary)}
-              onClick={handleSave}
-            >
-              {editingId ? "Зберегти зміни" : "Додати звичку"}
-            </Button>
-          </div>
-        </div>
-      </div>
+        {editingId ? "Зберегти зміни" : "Додати звичку"}
+      </Button>
     </div>
+  );
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      zIndex={200}
+      panelClassName="max-w-md"
+      footer={footer}
+    >
+      <HabitForm
+        routine={routine}
+        habitDraft={draft}
+        setHabitDraft={setDraft}
+        editingId={editingId ?? null}
+        focusTick={internalFocusTick}
+        errors={errors}
+      />
+    </Sheet>
   );
 }

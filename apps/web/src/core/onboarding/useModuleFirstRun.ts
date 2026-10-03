@@ -30,11 +30,11 @@
  * future change to this namespace must update both call sites.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
-  safeReadStringLS,
-  safeWriteLS,
-  safeRemoveLS,
+  safeReadStringLSDurable,
+  safeWriteStringLSDurable,
+  safeRemoveLSDurable,
 } from "@shared/lib/storage/storage";
 import { useStorageReady } from "../db/storageReady";
 
@@ -48,18 +48,26 @@ export const MODULE_FIRST_RUN_IDS = [
   "routine",
   "nutrition",
 ] as const;
-export type ModuleFirstRunId = (typeof MODULE_FIRST_RUN_IDS)[number];
 
 function firstSeenKey(moduleId: string): string {
   return `${FIRST_SEEN_KEY_PREFIX}${moduleId}${FIRST_SEEN_KEY_SUFFIX}`;
 }
 
+// The seen flag is written on dismiss and immediately followed by the
+// user reloading the app. Routed through the plain `webKVStore` path,
+// the write lands only in the SQLite warm-cache and fans out to a
+// fire-and-forget OPFS write-back that a hard reload can race past — so
+// the post-reload warm-cache scan misses it and the banner re-appears
+// every session. The durable helpers ALSO mirror synchronously to the
+// `localStorage` fallback that `bootstrapKvStore()` re-seeds the warm
+// cache from, closing the race (same fix the theme choice uses).
+
 function readFirstSeen(moduleId: string): boolean {
-  return safeReadStringLS(firstSeenKey(moduleId)) === "1";
+  return safeReadStringLSDurable(firstSeenKey(moduleId)) === "1";
 }
 
 function writeFirstSeen(moduleId: string): void {
-  safeWriteLS(firstSeenKey(moduleId), "1");
+  safeWriteStringLSDurable(firstSeenKey(moduleId), "1");
 }
 
 export interface UseModuleFirstRun {
@@ -99,20 +107,17 @@ export function useModuleFirstRun(moduleId: string | null): UseModuleFirstRun {
     moduleId !== null && storageReady ? !readFirstSeen(moduleId) : false,
   );
 
-  // Resolve `firstRun` when the caller switches modules OR when the persistent
-  // store first becomes ready. `storageReady` is a one-way latch (false→true),
-  // so this reads the real flag exactly once per moduleId after the warm-cache
-  // settles. Intentionally ignores cross-tab edits to the seen flag — once the
-  // module is mounted, mid-session toggles must not yank the editor surface
-  // back open (the effect only re-runs on moduleId / storageReady changes, not
-  // on a plain re-render).
-  useEffect(() => {
+  const [prevModuleId, setPrevModuleId] = useState(moduleId);
+  const [prevStorageReady, setPrevStorageReady] = useState(storageReady);
+  if (moduleId !== prevModuleId || storageReady !== prevStorageReady) {
+    setPrevModuleId(moduleId);
+    setPrevStorageReady(storageReady);
     if (moduleId === null || !storageReady) {
       setFirstRun(false);
-      return;
+    } else {
+      setFirstRun(!readFirstSeen(moduleId));
     }
-    setFirstRun(!readFirstSeen(moduleId));
-  }, [moduleId, storageReady]);
+  }
 
   const markSeen = useCallback(() => {
     if (!moduleId) return;
@@ -130,6 +135,6 @@ export function useModuleFirstRun(moduleId: string | null): UseModuleFirstRun {
  */
 export function resetModuleFirstSeen(): void {
   for (const id of MODULE_FIRST_RUN_IDS) {
-    safeRemoveLS(firstSeenKey(id));
+    safeRemoveLSDurable(firstSeenKey(id));
   }
 }

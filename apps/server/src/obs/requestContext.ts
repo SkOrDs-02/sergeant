@@ -50,8 +50,3 @@ export function setRequestModule(mod: string | null): void {
   const store = als.getStore();
   if (store) store.module = mod;
 }
-
-export function setTraceId(traceId: string | null): void {
-  const store = als.getStore();
-  if (store) store.traceId = traceId;
-}

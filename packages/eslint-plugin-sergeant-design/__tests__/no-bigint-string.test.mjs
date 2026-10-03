@@ -215,7 +215,6 @@ describe("no-bigint-string – allows properly coerced values", () => {
   });
 
   it("does NOT flag spread elements", () => {
-    // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- intentional spread `...` in JS source under test
     const messages = lint(`
       const data = result.rows.map((r) => ({
         ...r,

@@ -17,17 +17,34 @@ import type {
   BillingCheckoutResponse,
   BillingPlan,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 
 /**
  * Канонічний набір payment-provider-ів. Узгоджено з CHECK-constraint
- * `subscriptions_provider_check` (migration 075) — мінус `manual`, який
+ * `subscriptions_provider_check` (migration 081) — мінус `manual`, який
  * не має checkout-flow (seeded/admin-granted), і мінус `apple`/`google`,
  * що йдуть через native IAP, а не через цей web-billing resolver.
+ *
+ * Phase 7 UA billing: `liqpay` (ПриватБанк) і `plata` (monobank) — live
+ * UA-provider-и; `stripe` — dormant за флагом (ніколи не пропонується
+ * українцям, лишається у репо для легкого реверту).
  */
-export type ProviderId = "stripe" | "liqpay";
+export type ProviderId = "stripe" | "liqpay" | "plata";
+
+/**
+ * Кинуто, коли provider увімкнено, але його ключі/секрети не сконфігуровані
+ * (наприклад `LIQPAY_ENABLED=true`, але `LIQPAY_PRIVATE_KEY` порожній).
+ * Route-layer мапить це на `503 BILLING_UNAVAILABLE`. Один канонічний клас
+ * на всі провайдери (stripe/liqpay/plata re-export/import його).
+ */
+export class BillingConfigurationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "BillingConfigurationError";
+  }
+}
 
 export interface ProviderSessionUser {
   id: string;
@@ -64,38 +81,130 @@ export interface BillingProvider {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse>;
+  ): Promise<BillingSubscriptionStatus>;
   /** Верифікує підпис вхідного webhook-запиту (provider-specific). */
   verifyWebhookSignature(rawBody: string, signature: string): boolean;
   /** Обробляє верифікований webhook → upsert у `subscriptions`. */
   processWebhook(pool: Pool, rawBody: string): Promise<void>;
-}
-
-export interface ResolveProviderOptions {
-  /** ISO-3166 alpha-2 країна користувача (наприклад `"UA"`, `"US"`). */
-  country?: string | null;
   /**
-   * Чи увімкнено LiqPay. Default — `env.LIQPAY_ENABLED` (feature-flag,
-   * off до Phase 7). Явний override існує для тестів і для майбутнього
-   * PostHog-flag rollout-у.
+   * Скасовує активну підписку користувача. Жоден UA-provider не має
+   * Customer Portal (як Stripe), тож скасування йде через власну кнопку в
+   * застосунку: LiqPay → `action:unsubscribe`; Plata → `subscription/edit`
+   * (`action:cancel`). Idempotent: повторний виклик на вже скасованій
+   * (`cancel_at_period_end`) підписці провайдера не смикає і повертає
+   * `already_canceling`.
+   *
+   * Результат каже викликачеві, що сталось насправді — без нього роут
+   * відповідав `ok` навіть тоді, коли скасовувати було нічого
+   * ({@link CancelSubscriptionOutcome}). Провайдер-помилка = `throw`; caller
+   * логує й вирішує сам: deletion юзера й admin-downgrade продовжують
+   * (ADR-0016), користувацький `/api/billing/cancel` віддає 502.
    */
-  liqpayEnabled?: boolean;
+  cancelSubscription(
+    pool: Pool,
+    userId: string,
+  ): Promise<CancelSubscriptionOutcome>;
 }
 
 /**
- * Обирає payment-provider за країною користувача.
- *
- * Правило: UA + LiqPay-enabled → `liqpay`; усі інші випадки → `stripe`
- * (canonical default). Поки `LIQPAY_ENABLED=false` (до Phase 7) resolver
- * завжди повертає `stripe`, тож scaffold безпечно живе у проді не
- * змінюючи поведінку.
+ * Що зробив {@link BillingProvider.cancelSubscription}:
+ *  - `canceled` — провайдеру наказано зупинити списання, `cancel_at_period_end`
+ *    виставлено;
+ *  - `already_canceling` — підписка вже скасована до кінця періоду, провайдера
+ *    не чіпали;
+ *  - `none` — у цього провайдера в користувача немає активної підписки.
  */
-export function getProviderForCountry({
+export type CancelSubscriptionOutcome =
+  "canceled" | "already_canceling" | "none";
+
+/**
+ * Чи білінг узагалі увімкнено — тобто чи приймає гроші бодай один провайдер.
+ *
+ * Навмисно НЕ прив'язано до жодного конкретного прапорця. Гейт платних
+ * поверхонь (`requirePlan`) раніше читав лише `STRIPE_ENABLED`, а в проді
+ * Stripe dormant (гроші йдуть через LiqPay і Plata) — тож усі чотири
+ * Pro-роути (`ai-memory`, `transcribe`, `nutrition` x2) віддавались
+ * безкоштовно кожному залогіненому користувачу. Прапорець одного провайдера
+ * ніколи не є відповіддю на питання «чи ми продаємо Pro».
+ *
+ * Усі три вимкнені = білінг ще не запущено (локально / preview) → гейт
+ * пропускає, як і раніше.
+ */
+export interface BillingEnforcementOptions {
+  /** Override `env.STRIPE_ENABLED` (для тестів). */
+  stripeEnabled?: boolean;
+  /** Override `env.LIQPAY_ENABLED`. */
+  liqpayEnabled?: boolean;
+  /** Override `env.PLATA_ENABLED`. */
+  plataEnabled?: boolean;
+}
+
+export function isBillingEnforced({
+  stripeEnabled = env.STRIPE_ENABLED,
+  liqpayEnabled = env.LIQPAY_ENABLED,
+  plataEnabled = env.PLATA_ENABLED,
+}: BillingEnforcementOptions = {}): boolean {
+  return stripeEnabled || liqpayEnabled || plataEnabled;
+}
+
+export interface EnabledProvidersOptions {
+  /** ISO-3166 alpha-2 країна користувача (наприклад `"UA"`, `"US"`). */
+  country?: string | null;
+  /** Override `env.LIQPAY_ENABLED` (для тестів / майбутнього flag-rollout-у). */
+  liqpayEnabled?: boolean;
+  /** Override `env.PLATA_ENABLED`. */
+  plataEnabled?: boolean;
+}
+
+/**
+ * Кинуто, коли користувач обрав provider, недоступний у його країні
+ * (наприклад `stripe` для UA, або provider з вимкненим флагом). Route-layer
+ * мапить це на `400 PROVIDER_UNAVAILABLE`.
+ */
+export class ProviderNotAvailableError extends Error {
+  constructor(public readonly providerId: string) {
+    super(`Provider '${providerId}' is not available for this user`);
+    this.name = "ProviderNotAvailableError";
+  }
+}
+
+/**
+ * Повертає впорядкований список payment-provider-ів, доступних користувачу з
+ * `country`. Це джерело правди для UI-кнопок на `/pricing` і для
+ * валідації в {@link resolveProvider}.
+ *
+ * Phase 7 UA billing: для `country==='UA'` пропонуємо лише увімкнені
+ * UA-provider-и (`liqpay`, `plata`) — **Stripe свідомо ніколи не потрапляє
+ * у список для українців** (dormant). Для решти країн — `['stripe']`
+ * (canonical). Порядок фіксований: LiqPay перший (scaffold готовий, менший
+ * ризик), Plata другий.
+ */
+export function getEnabledProviders({
   country,
   liqpayEnabled = env.LIQPAY_ENABLED,
-}: ResolveProviderOptions = {}): ProviderId {
-  if (liqpayEnabled && country?.toUpperCase() === "UA") {
-    return "liqpay";
+  plataEnabled = env.PLATA_ENABLED,
+}: EnabledProvidersOptions = {}): ProviderId[] {
+  if (country?.toUpperCase() === "UA") {
+    const providers: ProviderId[] = [];
+    if (liqpayEnabled) providers.push("liqpay");
+    if (plataEnabled) providers.push("plata");
+    return providers;
   }
-  return "stripe";
+  return ["stripe"];
+}
+
+/**
+ * Валідує provider, обраний користувачем на checkout, проти
+ * {@link getEnabledProviders}. Повертає той самий `id`, якщо він дозволений;
+ * інакше кидає {@link ProviderNotAvailableError}. Захищає від підробленого
+ * `provider` у тілі запиту (наприклад `stripe` від UA-юзера).
+ */
+export function resolveProvider(
+  id: ProviderId,
+  options: EnabledProvidersOptions = {},
+): ProviderId {
+  if (!getEnabledProviders(options).includes(id)) {
+    throw new ProviderNotAvailableError(id);
+  }
+  return id;
 }

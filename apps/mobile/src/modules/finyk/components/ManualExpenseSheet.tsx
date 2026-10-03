@@ -17,12 +17,15 @@
  * PR4 lands.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+
+import { toLocalISODate } from "@sergeant/shared";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Sheet } from "@/components/ui/Sheet";
+import { foldApostrophes } from "@sergeant/shared";
 
 // Category list must stay aligned with the web component — Finyk
 // storage and analytics key off these exact labels (`MANUAL_CATEGORY_ID_MAP`).
@@ -32,7 +35,7 @@ export const MANUAL_EXPENSE_CATEGORIES = [
   "🍔 кафе та ресторани",
   "🚗 транспорт",
   "🎮 розваги",
-  "💊 здоров'я",
+  "💊 здоровʼя",
   "🛍️ покупки",
   "🏠 комунальні",
   "📱 техніка",
@@ -52,7 +55,7 @@ const LEGACY_CATEGORY_UPGRADE: Record<string, ManualExpenseCategory> = {
   їжа: "🍴 їжа",
   транспорт: "🚗 транспорт",
   розваги: "🎮 розваги",
-  "здоров'я": "💊 здоров'я",
+  здоровʼя: "💊 здоровʼя",
   одяг: "🛍️ покупки",
   комунальні: "🏠 комунальні",
   техніка: "📱 техніка",
@@ -63,26 +66,38 @@ export function upgradeCategory(
   raw: string | undefined,
 ): ManualExpenseCategory {
   if (!raw) return DEFAULT_CATEGORY;
-  if ((MANUAL_EXPENSE_CATEGORIES as readonly string[]).includes(raw)) {
-    return raw as ManualExpenseCategory;
-  }
-  return LEGACY_CATEGORY_UPGRADE[raw] ?? DEFAULT_CATEGORY;
+  // AI-DANGER: порівнюємо ЗГОРНУТИМИ формами (канон §1.10). Ці підписи —
+  // не показ, а значення, яке лягає у сховище; «💊 здоров'я» через ASCII
+  // `'` уже записаний старими версіями застосунку й на інших платформах.
+  // Точний збіг після зміни символу не спрацював би, `LEGACY_*` теж, і
+  // витрата мовчки поїхала б у «🏷 інше» — підміна даних без сліду.
+  const folded = foldApostrophes(raw);
+  const known = (MANUAL_EXPENSE_CATEGORIES as readonly string[]).find(
+    (c) => foldApostrophes(c) === folded,
+  );
+  if (known) return known as ManualExpenseCategory;
+  const legacyKey = Object.keys(LEGACY_CATEGORY_UPGRADE).find(
+    (k) => foldApostrophes(k) === folded,
+  );
+  if (legacyKey === undefined) return DEFAULT_CATEGORY;
+  return LEGACY_CATEGORY_UPGRADE[legacyKey] ?? DEFAULT_CATEGORY;
 }
 
 // Strips leading emoji / punctuation so "🍴 їжа" → "їжа". Used as the
 // fallback description when the user leaves the field blank.
+function computeInitialExpenseDate(raw?: string | number | Date): string {
+  if (raw != null && raw !== "") {
+    const d = raw instanceof Date ? raw : new Date(raw);
+    if (!Number.isNaN(d.getTime())) return toLocalISODate(d);
+  }
+  return toLocalISODate(new Date());
+}
+
 function stripEmoji(label: string): string {
   const str = String(label || "");
   let i = 0;
   while (i < str.length && !/[\p{L}\p{N}]/u.test(str[i] ?? "")) i++;
   return str.slice(i).trim();
-}
-
-function toLocalISODate(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, "0");
-  const d = String(date.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
 }
 
 export interface ManualExpenseInput {
@@ -133,14 +148,6 @@ export function ManualExpenseSheet({
 }: ManualExpenseSheetProps) {
   const isEditing = !!initialExpense?.id;
 
-  const initialDate = useMemo(() => {
-    if (initialExpense?.date) {
-      const d = new Date(initialExpense.date);
-      if (!Number.isNaN(d.getTime())) return toLocalISODate(d);
-    }
-    return toLocalISODate(new Date());
-  }, [initialExpense?.date]);
-
   const [description, setDescription] = useState(
     initialExpense?.description ?? initialDescription ?? "",
   );
@@ -150,35 +157,33 @@ export function ManualExpenseSheet({
   const [category, setCategory] = useState<ManualExpenseCategory>(
     upgradeCategory(initialExpense?.category ?? initialCategory),
   );
-  const [date, setDate] = useState(initialDate);
+  const [date, setDate] = useState(() =>
+    computeInitialExpenseDate(initialExpense?.date),
+  );
   const [error, setError] = useState<string | null>(null);
 
   // When the sheet is re-opened with a different row (e.g. user taps
   // "edit" on a second manual expense) we must pick up the new initial
-  // state. Reset once per `open` transition.
-  useEffect(() => {
-    if (!open) return;
-    setDescription(initialExpense?.description ?? initialDescription ?? "");
-    setAmount(
-      initialExpense?.amount != null ? String(initialExpense.amount) : "",
-    );
-    setCategory(upgradeCategory(initialExpense?.category ?? initialCategory));
-    setDate(initialDate);
-    setError(null);
-  }, [
-    open,
-    initialDate,
-    initialExpense?.amount,
-    initialExpense?.category,
-    initialExpense?.description,
-    initialCategory,
-    initialDescription,
-  ]);
+  // state. Reset once per `open` transition (render-time pattern,
+  // avoids `react-hooks/set-state-in-effect`, initiative 0021).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDescription(initialExpense?.description ?? initialDescription ?? "");
+      setAmount(
+        initialExpense?.amount != null ? String(initialExpense.amount) : "",
+      );
+      setCategory(upgradeCategory(initialExpense?.category ?? initialCategory));
+      setDate(computeInitialExpenseDate(initialExpense?.date));
+      setError(null);
+    }
+  }
 
   const handleSubmit = () => {
     const amt = parseFloat(amount.replace(",", "."));
     if (!amount || Number.isNaN(amt) || amt <= 0) {
-      setError("Вкажіть суму більше 0");
+      setError("Вкажи суму більше 0");
       return;
     }
     const trimmedDesc = description.trim();

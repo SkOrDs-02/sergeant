@@ -3,9 +3,12 @@ import {
   BUDGET_ALERT_THRESHOLD,
   BUDGET_WARN_THRESHOLD,
   buildAtRiskKey,
+  calcLimitPace,
+  calcLimitUsages,
+  projectMonthEndSpend,
   calculateGoalProgress,
+  calculateGoalSavedAmount,
   calculateLimitUsage,
-  calculateRemainingBudget,
   calculateSafeToSpendPerDay,
   calculateTotalExpenseFact,
   getCurrentMonthContext,
@@ -14,13 +17,35 @@ import {
   getLimitBudgets,
   getMonthlyPlanUsage,
   isBudgetAlert,
+  migrateGoalSavedAmountToContribution,
   selectAtRiskForecasts,
   shouldShowProactiveAdvice,
+  sumGoalContributions,
   validateGoalBudgetForm,
   validateLimitBudgetForm,
+  getLimitPeriodRange,
+  normalizeLimitBudget,
+  filterTransactionsForLimitPeriod,
+  findLimitCategoryOverlaps,
+  formatLimitBudgetLabel,
+  isSameLimitCategorySet,
+  limitBudgetCategoryIds,
+  limitBudgetCategoryKey,
 } from "./budget";
 
 describe("budget: split helpers", () => {
+  it("preserves legacy Shopping coverage and keeps new limits precise", () => {
+    expect(limitBudgetCategoryIds({ categoryId: "shopping" })).toEqual([
+      "shopping",
+      "tech",
+    ]);
+    expect(
+      limitBudgetCategoryIds({
+        categoryId: "shopping",
+        categoryTaxonomyVersion: 2,
+      }),
+    ).toEqual(["shopping"]);
+  });
   it("getLimitBudgets / getGoalBudgets filter by type", () => {
     const list = [
       { id: "a", type: "limit" },
@@ -34,21 +59,77 @@ describe("budget: split helpers", () => {
   });
 });
 
-describe("budget: limit usage", () => {
-  it("calculateRemainingBudget caps pct and returns remaining", () => {
-    expect(calculateRemainingBudget({ limit: 100 }, 30)).toEqual({
-      remaining: 70,
-      pct: 30,
-      isOver: false,
-    });
-    expect(calculateRemainingBudget({ limit: 100 }, 150)).toEqual({
-      remaining: 0,
-      pct: 100,
-      isOver: true,
-    });
-    expect(calculateRemainingBudget({ limit: 0 }, 10).pct).toBe(0);
+describe("budget: limit periods", () => {
+  it("normalizes legacy limits to a monthly period", () => {
+    expect(
+      normalizeLimitBudget({
+        id: "legacy",
+        type: "limit",
+        categoryId: "food",
+        limit: 1000,
+      }),
+    ).toMatchObject({ period: "month" });
   });
 
+  it("builds Kyiv-aware month, week and one-time ranges", () => {
+    const now = new Date("2026-07-16T21:30:00Z");
+    expect(getLimitPeriodRange({ period: "month" }, now).startMs).toBe(
+      Date.UTC(2026, 5, 30, 21),
+    );
+    expect(getLimitPeriodRange({ period: "week" }, now).startMs).toBe(
+      Date.UTC(2026, 6, 12, 21),
+    );
+    expect(
+      getLimitPeriodRange(
+        { period: "one_time", createdAt: "2026-07-10T12:00:00.000Z" },
+        now,
+      ).startMs,
+    ).toBe(Date.parse("2026-07-10T12:00:00.000Z"));
+  });
+
+  it("рахує сьогоднішній ручний запис, доданий до 15:00 за Києвом", () => {
+    // Ручна витрата не має реального інстанта: форма штампує день о 12:00
+    // UTC. З межею вікна на `now` така витрата лежала в майбутньому і
+    // випадала з власного ліміту цілий ранок.
+    const today = [{ id: "manual-today", date: "2026-07-16T12:00:00.000Z" }];
+    expect(
+      filterTransactionsForLimitPeriod(
+        today,
+        { period: "month" },
+        new Date("2026-07-16T06:00:00Z"),
+      ).map((item) => item.id),
+    ).toEqual(["manual-today"]);
+  });
+
+  it("не рахує записи завтрашнім днем", () => {
+    const tomorrow = [
+      { id: "manual-tomorrow", date: "2026-07-17T12:00:00.000Z" },
+    ];
+    expect(
+      filterTransactionsForLimitPeriod(
+        tomorrow,
+        { period: "month" },
+        new Date("2026-07-16T06:00:00Z"),
+      ),
+    ).toEqual([]);
+  });
+
+  it("filters transactions to the selected limit period", () => {
+    const tx = [
+      { id: "old", time: Date.parse("2026-07-12T20:59:59Z") / 1000 },
+      { id: "week", time: Date.parse("2026-07-12T21:00:00Z") / 1000 },
+    ];
+    expect(
+      filterTransactionsForLimitPeriod(
+        tx,
+        { period: "week" },
+        new Date("2026-07-16T12:00:00Z"),
+      ).map((item) => item.id),
+    ).toEqual(["week"]);
+  });
+});
+
+describe("budget: limit usage", () => {
   it("calculateLimitUsage flags overLimit and warnLimit", () => {
     const ok = calculateLimitUsage({ limit: 100 }, 50);
     expect(ok.pctRaw).toBe(50);
@@ -71,6 +152,126 @@ describe("budget: limit usage", () => {
     expect(calculateSafeToSpendPerDay(1000, 0)).toBe(0);
     expect(calculateSafeToSpendPerDay(1000, -3)).toBe(0);
     expect(calculateSafeToSpendPerDay(1000, 4)).toBe(250);
+  });
+
+  // Р8-Р9 спеки аналітики v2: прогноз за темпом і попередження до
+  // перевищення. Вересень 2026 має 30 днів; 12:00 за Києвом = 09:00 UTC.
+  describe("темп ліміту", () => {
+    const sept = (day: number) =>
+      new Date(`2026-09-${String(day).padStart(2, "0")}T09:00:00Z`);
+
+    it("projectMonthEndSpend: 15 днів, 1 500 → 3 000; до третього дня прогнозу нема", () => {
+      expect(projectMonthEndSpend(1500, 15, 30)).toBe(3000);
+      expect(projectMonthEndSpend(100, 2, 30)).toBeNull();
+      expect(projectMonthEndSpend(100, 1, 30)).toBeNull();
+      expect(projectMonthEndSpend(100, 1, 30, 1)).toBe(3000);
+    });
+
+    it("рахує з точного факту: 247,50 за 10 днів → 742,50", () => {
+      expect(projectMonthEndSpend(247.5, 10, 30)).toBeCloseTo(742.5, 5);
+    });
+
+    it("попереджає, коли прогноз вищий за ліміт, а факт ще ні", () => {
+      // Сценарій клік-скрипта: «Транспорт» 150, витрачено 120 на 20-й день.
+      const pace = calcLimitPace({ limit: 150 }, 120, sept(20));
+      expect(pace.forecast).toBeCloseTo(180, 5);
+      expect(pace.forecastOverLimit).toBe(true);
+      // Темп 6 ₴/день, до ліміту 30 ₴ → 5 днів.
+      expect(pace.daysUntilOver).toBe(5);
+    });
+
+    it("після фактичного перевищення попередження зникає, прогноз лишається", () => {
+      const pace = calcLimitPace({ limit: 500 }, 807.5, sept(24));
+      expect(pace.forecast).toBeCloseTo(1009.375, 5);
+      expect(pace.forecastOverLimit).toBe(false);
+      expect(pace.daysUntilOver).toBeNull();
+    });
+
+    it("1-2 день, без витрат і не місячний період: попередження немає", () => {
+      expect(calcLimitPace({ limit: 100 }, 90, sept(2))).toEqual({
+        forecast: null,
+        forecastOverLimit: false,
+        daysUntilOver: null,
+      });
+      expect(calcLimitPace({ limit: 100 }, 0, sept(20))).toMatchObject({
+        forecast: 0,
+        forecastOverLimit: false,
+      });
+      expect(
+        calcLimitPace({ limit: 100, period: "week" }, 90, sept(20)).forecast,
+      ).toBeNull();
+    });
+
+    it("calcLimitUsages несе темп поряд зі станом", () => {
+      const [usage] = calcLimitUsages(
+        [{ id: "t", type: "limit", categoryId: "transport", limit: 150 }],
+        [
+          {
+            id: "a",
+            amount: -12_000,
+            time: Math.floor(Date.UTC(2026, 8, 10, 9) / 1000),
+            description: "",
+            mcc: 0,
+            manual: true,
+            categoryId: "transport",
+          },
+        ],
+        { now: sept(20) },
+      );
+      expect(usage).toMatchObject({
+        spent: 120,
+        overLimit: false,
+        forecastOverLimit: true,
+        daysUntilOver: 5,
+      });
+    });
+  });
+
+  // Р5 спеки аналітики v2: один прохід для картки ліміту, хаб-картки і
+  // рекомендації `budget_over_*`. Факт лишається точним (807,50, не 808).
+  it("calcLimitUsages: вікно періоду, кошик категорії, точний факт, ключ набору", () => {
+    const now = new Date("2026-06-15T09:00:00Z");
+    const june = Math.floor(Date.UTC(2026, 5, 10, 9) / 1000);
+    const may = Math.floor(Date.UTC(2026, 4, 10, 9) / 1000);
+    const tx = (id: string, amountMinor: number, time: number) => ({
+      id,
+      amount: amountMinor,
+      time,
+      description: "",
+      mcc: 0,
+      manual: true,
+      categoryId: "groceries",
+    });
+    const [usage, ...rest] = calcLimitUsages(
+      [
+        { id: "b1", type: "limit", categoryId: "food", limit: 500 },
+        { id: "b2", type: "limit", categoryId: "", limit: 500 },
+        { id: "b3", type: "limit", categoryId: "transport", limit: 0 },
+        {
+          id: "g1",
+          type: "goal",
+          name: "Подушка",
+          targetAmount: 1000,
+          savedAmount: 0,
+          contributions: [],
+        },
+      ],
+      // Ручна таксономія `groceries` лягає в кошик `food`; травневий запис
+      // поза вікном місячного ліміту.
+      [tx("a", -24_750, june), tx("b", -56_000, june), tx("c", -99_900, may)],
+      { now },
+    );
+
+    expect(rest).toEqual([]);
+    expect(usage).toMatchObject({
+      key: "food",
+      categoryIds: ["food"],
+      spent: 807.5,
+      limit: 500,
+      overLimit: true,
+    });
+    expect(usage?.pctRaw).toBeCloseTo(161.5, 5);
+    expect(usage?.budget.id).toBe("b1");
   });
 });
 
@@ -138,6 +339,96 @@ describe("budget: goal progress", () => {
   });
 });
 
+describe("budget: goal saved amount (jar + contributions)", () => {
+  it("sumGoalContributions sums amountUah, ignoring bad entries", () => {
+    expect(sumGoalContributions(undefined)).toBe(0);
+    expect(sumGoalContributions(null)).toBe(0);
+    expect(sumGoalContributions([])).toBe(0);
+    expect(
+      sumGoalContributions([
+        { id: "1", amountUah: 500, date: "2026-01-01" },
+        { id: "2", amountUah: 250.5, date: "2026-01-02", note: "готівка" },
+      ]),
+    ).toBe(750.5);
+  });
+
+  it("calculateGoalSavedAmount = jar balance + contributions when a jar is linked", () => {
+    const saved = calculateGoalSavedAmount({
+      linkedJarBalanceUah: 1000,
+      contributions: [{ id: "1", amountUah: 200, date: "2026-01-01" }],
+    });
+    expect(saved).toBe(1200);
+  });
+
+  it("calculateGoalSavedAmount = sum of contributions only when there is no jar", () => {
+    const saved = calculateGoalSavedAmount({
+      contributions: [
+        { id: "1", amountUah: 300, date: "2026-01-01" },
+        { id: "2", amountUah: 100, date: "2026-01-05" },
+      ],
+    });
+    expect(saved).toBe(400);
+  });
+
+  it("calculateGoalSavedAmount is 0 for a goal with neither jar nor contributions", () => {
+    expect(calculateGoalSavedAmount({})).toBe(0);
+  });
+
+  it("deleting a contribution recalculates the total (caller filters, then re-sums)", () => {
+    const contributions = [
+      { id: "1", amountUah: 300, date: "2026-01-01" },
+      { id: "2", amountUah: 100, date: "2026-01-05" },
+    ];
+    const afterDelete = contributions.filter((c) => c.id !== "2");
+    expect(sumGoalContributions(afterDelete)).toBe(300);
+  });
+});
+
+describe("budget: migrateGoalSavedAmountToContribution", () => {
+  const baseGoal = {
+    id: "g1",
+    type: "goal" as const,
+    name: "Відпустка",
+    targetAmount: 10000,
+    savedAmount: 3000,
+    contributions: [],
+  };
+
+  it("converts an existing savedAmount into the first contribution entry", () => {
+    const migrated = migrateGoalSavedAmountToContribution(
+      baseGoal,
+      "2026-07-26",
+    );
+    expect(migrated.contributions).toHaveLength(1);
+    expect(migrated.contributions[0]).toMatchObject({
+      amountUah: 3000,
+      date: "2026-07-26",
+      note: "Початковий залишок",
+    });
+    // savedAmount lives on untouched — deprecated, but preserved for
+    // back-compat readers of old snapshots.
+    expect(migrated.savedAmount).toBe(3000);
+  });
+
+  it("is a no-op (idempotent) once contributions already exist", () => {
+    const already = {
+      ...baseGoal,
+      contributions: [{ id: "existing", amountUah: 500, date: "2026-01-01" }],
+    };
+    const migrated = migrateGoalSavedAmountToContribution(
+      already,
+      "2026-07-26",
+    );
+    expect(migrated).toBe(already);
+  });
+
+  it("does not fabricate a contribution for savedAmount <= 0", () => {
+    const zero = { ...baseGoal, savedAmount: 0 };
+    const migrated = migrateGoalSavedAmountToContribution(zero, "2026-07-26");
+    expect(migrated.contributions).toEqual([]);
+  });
+});
+
 describe("budget: month context and totals", () => {
   it("getCurrentMonthContext returns consistent days", () => {
     const ctx = getCurrentMonthContext(new Date(2024, 2, 10));
@@ -154,6 +445,13 @@ describe("budget: month context and totals", () => {
     expect(ctx.daysPassed).toBe(11);
     expect(ctx.daysInMonth).toBe(31);
     expect(ctx.daysLeft).toBe(20);
+  });
+
+  it("getCurrentMonthContext anchors monthStart to Kyiv midnight, not the host clock (§1.10)", () => {
+    const ctx = getCurrentMonthContext(new Date("2024-03-10T23:30:00Z"));
+    // 2024-03-01 00:00 Kyiv (EET, UTC+2 before the spring DST switch) is
+    // 2024-02-29T22:00:00Z, not a host-local midnight of any calendar day.
+    expect(ctx.monthStart.toISOString()).toBe("2024-02-29T22:00:00.000Z");
   });
 
   it("calculateTotalExpenseFact sums absolute expenses in UAH", () => {
@@ -232,5 +530,163 @@ describe("budget: form validators", () => {
       targetAmount: 10000,
       savedAmount: 2000,
     });
+  });
+});
+
+describe("budget: multi-category limits", () => {
+  it("limitBudgetCategoryIds falls back to legacy categoryId and dedupes", () => {
+    expect(limitBudgetCategoryIds({ categoryId: "food" })).toEqual(["food"]);
+    expect(
+      limitBudgetCategoryIds({
+        categoryId: "food",
+        categoryIds: ["food", "restaurant", "food"],
+      }),
+    ).toEqual(["food", "restaurant"]);
+    expect(limitBudgetCategoryIds({ categoryId: "" })).toEqual([]);
+  });
+
+  it("normalizeLimitBudget keeps categoryId in sync with the first of categoryIds", () => {
+    const combo = normalizeLimitBudget({
+      id: "b1",
+      type: "limit",
+      categoryId: "stale",
+      categoryIds: ["food", "restaurant"],
+      limit: 20000,
+    });
+    expect(combo.categoryIds).toEqual(["food", "restaurant"]);
+    expect(combo.categoryId).toBe("food");
+
+    const legacy = normalizeLimitBudget({
+      id: "b2",
+      type: "limit",
+      categoryId: "transport",
+      limit: 3000,
+    });
+    expect(legacy.categoryIds).toEqual(["transport"]);
+    expect(legacy.categoryId).toBe("transport");
+  });
+
+  it("limitBudgetCategoryKey is order-insensitive", () => {
+    expect(
+      limitBudgetCategoryKey({
+        categoryId: "food",
+        categoryIds: ["restaurant", "food"],
+      }),
+    ).toBe("food+restaurant");
+    expect(limitBudgetCategoryKey({ categoryId: "food" })).toBe("food");
+  });
+
+  it("isSameLimitCategorySet compares sets, not order", () => {
+    expect(isSameLimitCategorySet(["a", "b"], ["b", "a"])).toBe(true);
+    expect(isSameLimitCategorySet(["a"], ["a", "b"])).toBe(false);
+    expect(isSameLimitCategorySet(["a", "c"], ["a", "b"])).toBe(false);
+  });
+
+  it("formatLimitBudgetLabel: custom label → single → «A + B» → «A + ще N»", () => {
+    const resolve = (id: string) =>
+      ({ food: "Продукти", restaurant: "Кафе", transport: "Транспорт" })[id];
+    expect(
+      formatLimitBudgetLabel(
+        {
+          label: "Їжа",
+          categoryId: "food",
+          categoryIds: ["food", "restaurant"],
+        },
+        resolve,
+      ),
+    ).toBe("Їжа");
+    expect(formatLimitBudgetLabel({ categoryId: "food" }, resolve)).toBe(
+      "Продукти",
+    );
+    expect(
+      formatLimitBudgetLabel(
+        { categoryId: "food", categoryIds: ["food", "restaurant"] },
+        resolve,
+      ),
+    ).toBe("Продукти + Кафе");
+    expect(
+      formatLimitBudgetLabel(
+        {
+          categoryId: "food",
+          categoryIds: ["food", "restaurant", "transport"],
+        },
+        resolve,
+      ),
+    ).toBe("Продукти + ще 2");
+    // Нерезолвнутий id деградує до самого id, а не в порожнечу.
+    expect(formatLimitBudgetLabel({ categoryId: "custom_x" }, resolve)).toBe(
+      "custom_x",
+    );
+  });
+
+  it("findLimitCategoryOverlaps returns shared ids per existing limit", () => {
+    const existing = [
+      { id: "b1", type: "limit", categoryId: "restaurant", limit: 12000 },
+      {
+        id: "b2",
+        type: "limit",
+        categoryId: "food",
+        categoryIds: ["food", "transport"],
+        limit: 9000,
+      },
+      { id: "g1", type: "goal", name: "Ціль", targetAmount: 1 },
+    ] as never;
+    const overlaps = findLimitCategoryOverlaps(
+      ["food", "restaurant"],
+      existing,
+    );
+    expect(overlaps).toHaveLength(2);
+    expect(overlaps[0]?.budget.id).toBe("b1");
+    expect(overlaps[0]?.categoryIds).toEqual(["restaurant"]);
+    expect(overlaps[1]?.budget.id).toBe("b2");
+    expect(overlaps[1]?.categoryIds).toEqual(["food"]);
+    // excludeBudgetId — для редагування власного ліміту.
+    expect(
+      findLimitCategoryOverlaps(["restaurant"], existing, {
+        excludeBudgetId: "b1",
+      }),
+    ).toEqual([]);
+  });
+
+  it("validateLimitBudgetForm blocks only the EXACT same category set", () => {
+    const existing = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        categoryIds: ["food", "restaurant"],
+        limit: 20000,
+      },
+    ] as never;
+    // Точний збіг набору (в іншому порядку) — дублікат.
+    expect(
+      validateLimitBudgetForm(
+        { categoryIds: ["restaurant", "food"], limit: 500 },
+        existing,
+      ).error,
+    ).toBe("Ліміт для цього набору категорій вже існує");
+    // Частковий перетин — дозволено.
+    const partial = validateLimitBudgetForm(
+      { categoryIds: ["restaurant"], limit: 500 },
+      existing,
+    );
+    expect(partial.error).toBeNull();
+    expect(partial.normalized).toMatchObject({
+      categoryId: "restaurant",
+      categoryIds: ["restaurant"],
+    });
+    // Legacy-вхід із самим categoryId нормалізується в categoryIds.
+    const legacy = validateLimitBudgetForm({
+      categoryId: "transport",
+      limit: 100,
+    });
+    expect(legacy.normalized).toMatchObject({
+      categoryId: "transport",
+      categoryIds: ["transport"],
+    });
+    // Порожній набір — стара помилка.
+    expect(validateLimitBudgetForm({ categoryIds: [], limit: 100 }).error).toBe(
+      "Оберіть категорію",
+    );
   });
 });

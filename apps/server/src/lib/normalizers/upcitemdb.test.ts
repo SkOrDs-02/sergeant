@@ -4,7 +4,7 @@
  * Перевіряємо нормалізацію реальних raw-shape-ів від UPCitemdb trial API:
  * happy path, brand-less items, locale-нюанси у `title`, edge-cases (nullable
  * top-level data, порожній `items`, відсутній `title`, non-string поля,
- * trim-whitespace), і обов'язкове виставлення `partial: true` + `null`-овані
+ * trim-whitespace), і обовʼязкове виставлення `partial: true` + `null`-овані
  * макроси (UPCitemdb не повертає nutrition).
  */
 

@@ -37,7 +37,7 @@
  *  - No `Card` wrapper — the `Sheet` body is already the visible card.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import {
@@ -46,6 +46,7 @@ import {
   emptyHabitDraft,
   habitDraftToPatch,
   habitToDraft,
+  matchReminderPreset,
   validateHabitDraft,
   type Habit,
   type HabitDraft,
@@ -58,27 +59,18 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Sheet } from "@/components/ui/Sheet";
 
+import { ROUTINE_GLYPHS, type RoutineGlyph } from "@sergeant/routine-domain";
+
+import { HabitGlyph, routineGlyphLabel } from "../../components/HabitGlyph";
 import { WeekdayPicker } from "./WeekdayPicker";
 
-/** 16 emoji suggestions — identical set as the web file. */
-export const HABIT_EMOJI_SUGGESTIONS: readonly string[] = [
-  "✓",
-  "💧",
-  "🚶",
-  "🏃",
-  "💪",
-  "🧘",
-  "📖",
-  "✍️",
-  "🧠",
-  "💊",
-  "🥗",
-  "😴",
-  "☕",
-  "🎯",
-  "⏰",
-  "🌙",
-];
+/**
+ * Набір гліфів — спільний із вебом, канон у `@sergeant/routine-domain`
+ * (`glyphs.ts`). До 2026-08-03 тут лежали 16 emoji-символів, які RN малює
+ * системним шрифтом: вигляд відрізнявся між iOS і Android, і гліф не
+ * підхоплював колір теми.
+ */
+export const HABIT_GLYPH_SUGGESTIONS: readonly RoutineGlyph[] = ROUTINE_GLYPHS;
 
 export interface HabitFormProps {
   /** Whether the sheet is visible. */
@@ -132,45 +124,47 @@ export function HabitForm({
   const [showAdvanced, setShowAdvanced] = useState<boolean>(isEditing);
 
   // Reset local state whenever the sheet re-opens with a (potentially
-  // different) editing target. Parallels the `useEffect` reset pattern
-  // used by `ManualExpenseSheet` (PR #453).
-  useEffect(() => {
-    if (!open) return;
-    setDraft(makeInitial(editingHabit));
-    setErrors({});
-    setShowEmoji(false);
-    setShowAdvanced(!!editingHabit);
-  }, [open, editingHabit, makeInitial]);
+  // different) editing target. Render-time pattern avoids
+  // `react-hooks/set-state-in-effect` (initiative 0021).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) {
+      setDraft(makeInitial(editingHabit));
+      setErrors({});
+      setShowEmoji(false);
+      setShowAdvanced(!!editingHabit);
+    }
+  }
 
   // Clear field errors as the user corrects the relevant field — same
   // UX as the web `RoutineSettingsSection` component.
-  useEffect(() => {
-    if (errors.name && draft.name.trim()) {
-      setErrors((e) => ({ ...e, name: undefined }));
-    }
-  }, [draft.name, errors.name]);
-  useEffect(() => {
-    if (
-      errors.weekdays &&
-      Array.isArray(draft.weekdays) &&
-      draft.weekdays.length > 0
-    ) {
-      setErrors((e) => ({ ...e, weekdays: undefined }));
-    }
-  }, [draft.weekdays, errors.weekdays]);
+  // Derived at render time: clear name error once name is non-empty.
+  let effectiveErrors = errors;
+  if (errors.name && draft.name.trim()) {
+    effectiveErrors = { ...effectiveErrors, name: undefined };
+  }
+  if (
+    effectiveErrors.weekdays &&
+    Array.isArray(draft.weekdays) &&
+    draft.weekdays.length > 0
+  ) {
+    effectiveErrors = { ...effectiveErrors, weekdays: undefined };
+  }
+  if (effectiveErrors !== errors) {
+    setErrors(effectiveErrors);
+  }
 
   // Which reminder preset (if any) matches the current times — drives
   // the "selected" state of the preset chip row.
-  const activePresetId = useMemo<string | null>(() => {
-    const cur = (draft.reminderTimes || []).slice().sort();
-    for (const p of REMINDER_PRESETS) {
-      const ref = [...p.times].sort();
-      if (cur.length === ref.length && cur.every((t, i) => t === ref[i])) {
-        return p.id;
-      }
-    }
-    return null;
-  }, [draft.reminderTimes]);
+  // Збіг за ЧАСТИНОЮ ДОБИ, а не за точним часом: правка 08:00 → 11:00 має
+  // перевести підсвітку на «День», а не погасити її. Розбір і межі — у
+  // `matchReminderPreset` (`@sergeant/routine-domain`), спільному з вебом,
+  // щоб дві поверхні не розійшлись у тому, що вважають «ранком».
+  const activePresetId = useMemo<string | null>(
+    () => matchReminderPreset(draft.reminderTimes || [])?.id ?? null,
+    [draft.reminderTimes],
+  );
 
   const handleSelectPreset = useCallback((presetId: string) => {
     const preset = REMINDER_PRESETS.find((p) => p.id === presetId);
@@ -231,12 +225,12 @@ export function HabitForm({
             <Pressable
               onPress={() => setShowEmoji((v) => !v)}
               accessibilityRole="button"
-              accessibilityLabel="Обрати емодзі"
+              accessibilityLabel="Обрати іконку звички"
               accessibilityState={{ expanded: showEmoji }}
               testID={testID ? `${testID}-emoji-toggle` : undefined}
               className="w-14 h-12 rounded-xl border border-cream-300 bg-cream-50 items-center justify-center"
             >
-              <Text className="text-xl">{draft.emoji || "✓"}</Text>
+              <HabitGlyph value={draft.emoji} size={20} color="#1c1917" />
             </Pressable>
             <View className="flex-1">
               <Input
@@ -259,26 +253,26 @@ export function HabitForm({
           ) : null}
           {showEmoji ? (
             <View className="mt-2 p-2 rounded-2xl border border-cream-300 bg-cream-50 flex-row flex-wrap gap-1">
-              {HABIT_EMOJI_SUGGESTIONS.map((e) => {
-                const selected = draft.emoji === e;
+              {HABIT_GLYPH_SUGGESTIONS.map((g) => {
+                const selected = draft.emoji === g;
                 return (
                   <Pressable
-                    key={e}
+                    key={g}
                     onPress={() => {
-                      setDraft((d) => ({ ...d, emoji: e }));
+                      setDraft((d) => ({ ...d, emoji: g }));
                       setShowEmoji(false);
                     }}
                     accessibilityRole="button"
-                    accessibilityLabel={`Емодзі ${e}`}
+                    accessibilityLabel={routineGlyphLabel(g)}
                     accessibilityState={{ selected }}
-                    testID={testID ? `${testID}-emoji-${e}` : undefined}
+                    testID={testID ? `${testID}-emoji-${g}` : undefined}
                     className={
                       selected
-                        ? "w-10 h-10 rounded-lg items-center justify-center bg-coral-100 border border-coral-400"
+                        ? "w-10 h-10 rounded-lg items-center justify-center bg-rose-100 border border-rose-400"
                         : "w-10 h-10 rounded-lg items-center justify-center bg-white"
                     }
                   >
-                    <Text className="text-lg">{e}</Text>
+                    <HabitGlyph value={g} size={18} color="#1c1917" />
                   </Pressable>
                 );
               })}
@@ -309,7 +303,7 @@ export function HabitForm({
                   }
                   className={
                     active
-                      ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center mr-2"
+                      ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center mr-2"
                       : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center mr-2"
                   }
                 >
@@ -368,7 +362,7 @@ export function HabitForm({
                   testID={testID ? `${testID}-reminder-${p.id}` : undefined}
                   className={
                     active
-                      ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                      ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                       : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                   }
                 >
@@ -458,7 +452,7 @@ export function HabitForm({
                     testID={testID ? `${testID}-tag-none` : undefined}
                     className={
                       draft.tagIds.length === 0
-                        ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                        ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                         : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                     }
                   >
@@ -469,7 +463,7 @@ export function HabitForm({
                           : "text-xs font-medium text-fg"
                       }
                     >
-                      — без тегу —
+                      Без тегу
                     </Text>
                   </Pressable>
                   {routine.tags.map((t) => {
@@ -485,7 +479,7 @@ export function HabitForm({
                         testID={testID ? `${testID}-tag-${t.id}` : undefined}
                         className={
                           selected
-                            ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                            ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                             : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                         }
                       >
@@ -522,7 +516,7 @@ export function HabitForm({
                     testID={testID ? `${testID}-category-none` : undefined}
                     className={
                       !draft.categoryId
-                        ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                        ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                         : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                     }
                   >
@@ -533,7 +527,7 @@ export function HabitForm({
                           : "text-xs font-medium text-fg"
                       }
                     >
-                      — без категорії —
+                      Без категорії
                     </Text>
                   </Pressable>
                   {routine.categories.map((c) => {
@@ -551,7 +545,7 @@ export function HabitForm({
                         }
                         className={
                           selected
-                            ? "h-9 px-3 rounded-full border border-coral-500 bg-coral-500 items-center justify-center"
+                            ? "h-9 px-3 rounded-full border border-rose-500 bg-rose-500 items-center justify-center"
                             : "h-9 px-3 rounded-full border border-cream-300 bg-cream-50 items-center justify-center"
                         }
                       >

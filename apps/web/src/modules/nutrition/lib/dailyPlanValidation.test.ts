@@ -24,16 +24,22 @@ function makePrefs(
     servings: 3,
     timeMinutes: 30,
     exclude: "",
+    recipeMealType: "any",
+    recipePantryMode: "prefer",
     dailyTargetKcal: null,
     dailyTargetProtein_g: null,
     dailyTargetFat_g: null,
     dailyTargetCarbs_g: null,
+    adaptiveGoalEnabled: false,
+    adaptiveGoalIntent: "maintenance",
+    adaptiveGoalLastUpdatedAt: null,
+    adaptiveGoalLastReason: null,
     mealTemplates: [],
     reminderEnabled: false,
     reminderHour: 12,
     waterGoalMl: 2000,
     ...overrides,
-  } as NutritionPrefs;
+  };
 }
 
 // ─── calcGoalRangeIssues ──────────────────────────────────────────────────────

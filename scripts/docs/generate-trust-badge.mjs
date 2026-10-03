@@ -1,13 +1,23 @@
 #!/usr/bin/env node
 // scripts/docs/generate-trust-badge.mjs
 //
-// At-a-glance "is the docs system healthy?" badge. Computes three signals:
+// At-a-glance "is the docs system healthy?" badge. Computes two signals:
 //   - stale-count    : open documents whose `Next review:` date is in the past
 //   - wip-violations : trackers at soft or hard WIP limit (from check-wip-limits)
-//   - cron-failures  : scheduled docs/release workflows with ≥2 consecutive
-//                      failed runs (added 2026-05-31 after docs-daily-brief
-//                      failed silently for 13 days because the badge had no
-//                      awareness of GitHub Actions health)
+//
+// Чому без здоровʼя кронів (знято 2026-10-01, рішення власника). З
+// 2026-05-31 бейдж питав `gh run list` про хвіст падінь кількох
+// scheduled-воркфлоу. Це робило закомічений файл функцією зовнішнього
+// стану: історії Actions і того, чи авторизований `gh` там, де бейдж
+// рендерять. `main`, згенерований з авторизованим `gh`, показував WARNING,
+// а будь-яке середовище без токена рахувало HEALTHY, тож pre-commit
+// (`pre-commit-derived-artifacts.mjs`) червонів на дереві, де ніхто нічого
+// не змінив, і коміти з `.md` ішли через `SERGEANT_NO_DERIVED_CHECK=1`.
+// До того ж обидва воркфлоу, які бейдж стеріг, більше не крутяться за
+// розкладом. Падіння Actions видно в самих Actions і в їхніх сповіщеннях;
+// бейдж рахує лише те, що лежить у дереві, і однаковий у будь-якому
+// середовищі. Повертаєш сюди зовнішній сигнал — спершу зроби так, щоб
+// генерація і звірка в хуку бачили його однаково.
 //
 // Renders the badge as a markdown block between
 // `<!-- TRUST-BADGE:START -->` and `<!-- TRUST-BADGE:END -->` markers in
@@ -15,18 +25,14 @@
 // outside are untouched.
 //
 // Thresholds:
-//   🟢 healthy   — stale = 0  AND wip-violations = 0 AND cron-failures = 0
-//   🟡 warning   — stale ≤ 3 OR  wip-violations = 1 OR  any one monitored
-//                  workflow has exactly 2 consecutive failed runs
-//   🔴 critical  — stale > 3 OR  wip-violations > 1 OR  any monitored
-//                  workflow has ≥3 consecutive failed runs, OR ≥2 workflows
-//                  are at warning-or-worse
+//   🟢 healthy   — stale = 0  AND wip-violations = 0
+//   🟡 warning   — stale ≤ 3 OR  wip-violations = 1
+//   🔴 critical  — stale > 3 OR  wip-violations > 1
 //
 // Usage:
 //   node scripts/docs/generate-trust-badge.mjs            # write
 //   node scripts/docs/generate-trust-badge.mjs --check    # CI gate
 
-import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,16 +44,6 @@ import {
   isStaleIgnoringDateStamp,
   TRUST_BADGE_DATE,
 } from "./freshness-stamp.mjs";
-
-// Scheduled workflows we treat as load-bearing for docs trust. Keep this
-// list tight — every entry costs one `gh run list` call per badge regen.
-// Add a workflow here only if its silent failure would mean the badge
-// itself is lying about docs health (the exact failure mode the badge
-// is supposed to flag).
-export const MONITORED_WORKFLOWS = [
-  "docs-daily-brief.yml",
-  "changelog-auto-cut.yml",
-];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -63,125 +59,24 @@ const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
 
 /**
- * Count consecutive trailing failures in a list of recent-runs records
- * (newest first). Conclusion strings other than "failure" / "cancelled"
- * break the streak — including "success", "neutral", "skipped".
+ * Compute the trust score from collected open-work + WIP evaluation.
  * Pure for testability.
  */
-export function countConsecutiveFailures(runs) {
-  let n = 0;
-  for (const r of runs) {
-    if (r.conclusion === "failure" || r.conclusion === "cancelled") n++;
-    else break;
-  }
-  return n;
-}
-
-/**
- * Probe each MONITORED_WORKFLOWS via `gh run list` and return a list of
- * `{ workflow, consecutiveFailures, totalSeen }` records.
- *
- * Degrades gracefully if `gh` is missing, unauthenticated, or offline —
- * returns `{ available: false, workflows: [] }` so local-dev runs without
- * gh tokens don't flash 🔴 false alarms. CI runners always have gh wired,
- * so production badge accurately reflects cron health.
- */
-export function getCronHealth({ runListImpl } = {}) {
-  const probe =
-    runListImpl ??
-    ((wf) => {
-      const stdout = execFileSync(
-        "gh",
-        [
-          "run",
-          "list",
-          `--workflow=${wf}`,
-          "--limit=5",
-          "--json",
-          "conclusion,createdAt",
-        ],
-        { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
-      );
-      return JSON.parse(stdout);
-    });
-
-  const workflows = [];
-  for (const wf of MONITORED_WORKFLOWS) {
-    let runs;
-    try {
-      runs = probe(wf);
-    } catch (err) {
-      return {
-        available: false,
-        workflows: [],
-        reason: err.message ?? String(err),
-      };
-    }
-    if (!Array.isArray(runs)) {
-      return {
-        available: false,
-        workflows: [],
-        reason: `unexpected gh output for ${wf}`,
-      };
-    }
-    workflows.push({
-      workflow: wf,
-      consecutiveFailures: countConsecutiveFailures(runs),
-      totalSeen: runs.length,
-    });
-  }
-  return { available: true, workflows };
-}
-
-/**
- * Compute the trust score from collected open-work + WIP evaluation + cron
- * health. Pure for testability — cronHealth is the structured result from
- * getCronHealth(), not a live probe.
- *
- * Cron contribution to status:
- *   - any workflow with ≥3 consecutive failures      → critical
- *   - ≥2 workflows at "warning or worse" (≥2 fails)   → critical
- *   - exactly one workflow at exactly 2 consec fails  → warning
- *   - cronHealth.available === false                  → ignored (no signal)
- */
-export function computeTrust({ wipRows, overdueCount, cronHealth }) {
+export function computeTrust({ wipRows, overdueCount }) {
   const violations = wipRows.filter(
     (r) => r.severity === "warn" || r.severity === "fail",
   ).length;
 
-  let cronStatus = "healthy";
-  let cronSummary = null;
-  let worstWorkflow = null;
-  let worstStreak = 0;
-  let warnOrWorseCount = 0;
-
-  if (cronHealth && cronHealth.available) {
-    for (const w of cronHealth.workflows) {
-      if (w.consecutiveFailures >= 2) warnOrWorseCount++;
-      if (w.consecutiveFailures > worstStreak) {
-        worstStreak = w.consecutiveFailures;
-        worstWorkflow = w.workflow;
-      }
-    }
-    if (worstStreak >= 3 || warnOrWorseCount >= 2) cronStatus = "critical";
-    else if (worstStreak === 2) cronStatus = "warning";
-    if (worstStreak >= 2) {
-      cronSummary = `${worstWorkflow} failed ${worstStreak}× поспіль`;
-      if (warnOrWorseCount > 1)
-        cronSummary += ` (+${warnOrWorseCount - 1} more)`;
-    }
-  }
-
   let status;
-  if (overdueCount === 0 && violations === 0 && cronStatus === "healthy") {
+  if (overdueCount === 0 && violations === 0) {
     status = "healthy";
-  } else if (overdueCount > 3 || violations > 1 || cronStatus === "critical") {
+  } else if (overdueCount > 3 || violations > 1) {
     status = "critical";
   } else {
     status = "warning";
   }
 
-  return { status, overdueCount, violations, cronStatus, cronSummary };
+  return { status, overdueCount, violations };
 }
 
 function emoji(status) {
@@ -189,23 +84,19 @@ function emoji(status) {
 }
 
 export function renderBlock(trust) {
-  const { status, overdueCount, violations, cronSummary } = trust;
+  const { status, overdueCount, violations } = trust;
   const baseSummary =
     status === "healthy"
-      ? "0 stale docs · 0 WIP violations · 0 cron failures — система здорова, працюй спокійно."
+      ? "0 stale docs · 0 WIP violations — система здорова, працюй спокійно."
       : status === "warning"
         ? `${overdueCount} stale, ${violations} WIP soft-violation — варто прибрати найближчим тижнем.`
         : `${overdueCount} stale, ${violations} WIP violations — **STOP**, дренуй backlog перш ніж заводити нове.`;
-  const cronLine = cronSummary
-    ? `> ⚠ Cron health: ${cronSummary}. Перевір \`gh run list --workflow=<name> --status=failure\`.`
-    : null;
   return [
     MARK_START,
     "",
     `> ${emoji(status)} **Docs trust: ${status.toUpperCase()}** — _оновлено ${TODAY} via \`pnpm docs:gen-trust-badge\`_`,
     ">",
     `> ${baseSummary} Деталі → [\`today.md\`](./today.md).`,
-    ...(cronLine ? [">", cronLine] : []),
     "",
     MARK_END,
   ].join("\n");
@@ -237,17 +128,7 @@ function main() {
   const limits = loadLimits();
   const wipRows = evaluate(report, limits);
   const overdue = pickOverdueReview(report);
-  const cronHealth = getCronHealth();
-  if (!cronHealth.available) {
-    process.stderr.write(
-      `docs:gen-trust-badge: cron health probe unavailable (${cronHealth.reason}). Badge will reflect docs/WIP signals only.\n`,
-    );
-  }
-  const trust = computeTrust({
-    wipRows,
-    overdueCount: overdue.length,
-    cronHealth,
-  });
+  const trust = computeTrust({ wipRows, overdueCount: overdue.length });
 
   const readme = readFileSync(README_PATH, "utf8");
   const next = spliceReadme(readme, renderBlock(trust));

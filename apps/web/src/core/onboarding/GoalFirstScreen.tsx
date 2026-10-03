@@ -135,11 +135,11 @@ export function GoalFirstScreen({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+          className="text-style-headline text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
         >
           {messages.onboarding.goalFirstHeading}
         </h2>
-        <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
+        <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
           {messages.onboarding.goalFirstSubtitle}
         </p>
       </div>
@@ -158,7 +158,7 @@ export function GoalFirstScreen({
                 onClick={() => handlePick(outcome)}
                 aria-disabled={busy}
                 className={cn(
-                  "w-full text-left rounded-2xl border p-4 transition-all duration-200",
+                  "w-full text-left rounded-2xl border p-4 transition-all duration-base",
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                   busy
                     ? "border-line bg-panel opacity-60"
@@ -174,13 +174,13 @@ export function GoalFirstScreen({
                       accent.icon,
                     )}
                   >
-                    <Icon name={iconName} size={20} aria-hidden />
+                    <Icon name={iconName} size="lg" aria-hidden />
                   </span>
                   <div className="min-w-0">
-                    <div className="text-style-body-strong text-text">
+                    <div className="text-style-label text-text">
                       {outcome.headline}
                     </div>
-                    <div className="text-xs text-muted mt-1 leading-snug">
+                    <div className="text-style-body text-muted mt-1 leading-snug">
                       {outcome.body}
                     </div>
                   </div>

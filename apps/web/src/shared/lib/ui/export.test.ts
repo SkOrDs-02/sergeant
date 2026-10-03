@@ -1,12 +1,19 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+// Детекцію iOS standalone-PWA підміняємо: її власна поведінка пінована в
+// `iosStandalone.test.ts`, а тут важить лише розвилка «Поділитись/завантажити».
+const platform = vi.hoisted(() => ({ iosStandalone: false }));
+vi.mock("@shared/lib/platform/iosStandalone", () => ({
+  isIOSStandalonePWA: () => platform.iosStandalone,
+}));
+
 import {
   arrayToCSV,
   dataToHTMLTable,
   downloadString,
   exportToCSV,
-  exportToPDF,
   generatePDFReport,
+  saveStringAsFile,
   type ExportColumn,
 } from "./export";
 
@@ -76,7 +83,7 @@ describe("arrayToCSV", () => {
     expect(csv).toContain("coffee");
   });
 
-  it("nested key для рядка без вкладеного об'єкта — пустий рядок", () => {
+  it("nested key для рядка без вкладеного обʼєкта — пустий рядок", () => {
     // У третій row немає meta, тож тег має бути порожній.
     const csv = arrayToCSV(rows, columns);
     const last = csv.split("\n").at(-1)!;
@@ -108,11 +115,13 @@ describe("downloadString / exportToCSV", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
   it("downloadString створює <a> з href, проставляє download та клікає", () => {
+    vi.useFakeTimers();
     const clickSpy = vi.fn();
     const origCreate = document.createElement.bind(document);
     const createSpy = vi
@@ -128,10 +137,34 @@ describe("downloadString / exportToCSV", () => {
     downloadString("hello", "file.txt", "text/plain");
 
     expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
     expect(clickSpy).toHaveBeenCalledTimes(1);
+    // URL відкликається, але не одразу (див. наступний тест).
+    vi.runAllTimers();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
 
     createSpy.mockRestore();
+  });
+
+  // iOS Safari/PWA забирає blob уже після повернення з обробника кліку:
+  // відкликаний одразу URL лишав застосунок «завислим» (звіт власника).
+  it("downloadString не відкликає blob-URL одразу після кліку, а лише за хвилину", () => {
+    vi.useFakeTimers();
+    vi.spyOn(document, "createElement").mockImplementation(((tag: string) => {
+      const el = document.implementation
+        .createHTMLDocument()
+        .createElement(tag);
+      if (tag === "a") (el as HTMLAnchorElement).click = vi.fn();
+      return el;
+    }) as typeof document.createElement);
+
+    downloadString("hello", "file.txt", "text/plain");
+
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(59_999);
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
   });
 
   it("downloadString дефолтний mime-type — text/plain", () => {
@@ -162,7 +195,7 @@ describe("downloadString / exportToCSV", () => {
       return el;
     }) as typeof document.createElement);
 
-    exportToCSV(rows, columns, "report.csv");
+    void exportToCSV(rows, columns, "report.csv");
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
     expect(created[0]!.download).toBe("report.csv");
@@ -182,7 +215,7 @@ describe("downloadString / exportToCSV", () => {
       return el;
     }) as typeof document.createElement);
 
-    exportToCSV(rows, columns);
+    void exportToCSV(rows, columns);
     expect(created[0]!.download).toBe("export.csv");
   });
 });
@@ -250,49 +283,15 @@ describe("generatePDFReport", () => {
     const html = generatePDFReport({ title: "T", sections: [] });
     expect(html).toMatch(/Згенеровано .+ о .+/);
   });
-});
 
-describe("exportToPDF", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("відкриває нове вікно, пише HTML і запускає print після onload", () => {
-    const printSpy = vi.fn();
-    const focusSpy = vi.fn();
-    const writeSpy = vi.fn();
-    const closeSpy = vi.fn();
-
-    const fakeWindow = {
-      document: { write: writeSpy, close: closeSpy },
-      onload: null as (() => void) | null,
-      focus: focusSpy,
-      print: printSpy,
-    };
-
-    vi.spyOn(window, "open").mockReturnValue(
-      fakeWindow as unknown as Window & typeof globalThis,
-    );
-
-    exportToPDF({
-      title: "Report",
-      sections: [{ title: "X", content: "<p>x</p>" }],
-    });
-
-    expect(window.open).toHaveBeenCalledWith("", "_blank");
-    expect(writeSpy).toHaveBeenCalledTimes(1);
-    expect(closeSpy).toHaveBeenCalledTimes(1);
-
-    // onload встановлено — стрельнемо вручну.
-    expect(typeof fakeWindow.onload).toBe("function");
-    fakeWindow.onload!();
-    expect(focusSpy).toHaveBeenCalledTimes(1);
-    expect(printSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it("якщо window.open повернув null — нічого не падає", () => {
-    vi.spyOn(window, "open").mockReturnValue(null);
-    expect(() => exportToPDF({ title: "T", sections: [] })).not.toThrow();
+  it("does not embed an in-report toolbar (controls live in the React preview modal)", () => {
+    const html = generatePDFReport({ title: "T", sections: [] });
+    // The old window.open flow baked a sticky toolbar + inline
+    // onclick handlers into the report; the in-app PdfPreviewModal now
+    // owns those controls, so the report HTML must stay chrome-free.
+    expect(html).not.toContain(".print-preview-toolbar");
+    expect(html).not.toContain("window.close()");
+    expect(html).not.toContain("window.history.back()");
   });
 });
 
@@ -330,5 +329,176 @@ describe("dataToHTMLTable", () => {
     // tbody присутній, але без <tr>.
     const tbody = html.split("<tbody>")[1]!.split("</tbody>")[0]!;
     expect(tbody.trim()).toBe("");
+  });
+});
+
+// Звіт власника 2026-10-01: у встановленому PWA на iPhone `<a download>` з
+// blob-URL не качає файл, а водить застосунок на blob (без «назад») — він
+// виглядає завислим. Там файл віддається через системне «Поділитись».
+describe("saveStringAsFile — системне «Поділитись» в iOS PWA", () => {
+  const createObjectURL = vi.fn(() => "blob:mock-url");
+  const clickSpy = vi.fn();
+  const share = vi.fn();
+  const canShare = vi.fn();
+
+  // `readAsText` зрізає BOM при декодуванні, а нам треба довести, що він у
+  // файлі: читаємо байти й декодуємо з `ignoreBOM`.
+  const readText = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve(
+          new TextDecoder("utf-8", { ignoreBOM: true }).decode(
+            reader.result as ArrayBuffer,
+          ),
+        );
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(file);
+    });
+
+  beforeEach(() => {
+    platform.iosStandalone = true;
+    createObjectURL.mockClear();
+    clickSpy.mockClear();
+    share.mockReset().mockResolvedValue(undefined);
+    canShare.mockReset().mockReturnValue(true);
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL: vi.fn() });
+    vi.stubGlobal("navigator", { share, canShare, userAgent: "" });
+    vi.spyOn(document, "createElement").mockImplementation(((tag: string) => {
+      const el = document.implementation
+        .createHTMLDocument()
+        .createElement(tag);
+      if (tag === "a") (el as HTMLAnchorElement).click = clickSpy;
+      return el;
+    }) as typeof document.createElement);
+  });
+
+  afterEach(() => {
+    platform.iosStandalone = false;
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it("віддає файл через navigator.share, а не через <a download>", async () => {
+    const result = await saveStringAsFile(
+      "a,b\n1,2",
+      "finyk-2026-09.csv",
+      "text/csv",
+    );
+
+    expect(result).toBe("shared");
+    expect(share).toHaveBeenCalledTimes(1);
+    const arg = share.mock.calls[0]![0] as { files: File[] };
+    expect(arg.files).toHaveLength(1);
+    expect(arg.files[0]!.name).toBe("finyk-2026-09.csv");
+    expect(arg.files[0]!.type).toBe("text/csv");
+    // BOM лишається: Excel без нього читає UTF-8 як Windows-1251.
+    expect(await readText(arg.files[0]!)).toBe("\uFEFFa,b\n1,2");
+    // Саме `canShare` схвалив цей файл.
+    expect(canShare).toHaveBeenCalledWith({ files: [arg.files[0]] });
+    // Жодної навігації на blob.
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it("викликає navigator.share синхронно: iOS вимагає активації жесту, а await її з'їдає", () => {
+    share.mockReturnValue(new Promise(() => {}));
+    void saveStringAsFile("x", "x.csv", "text/csv");
+    expect(share).toHaveBeenCalledTimes(1);
+  });
+
+  it("закриття аркуша (AbortError) — тиха відмова: ні завантаження, ні помилки", async () => {
+    share.mockRejectedValue(new DOMException("canceled", "AbortError"));
+
+    const result = await saveStringAsFile("x", "x.csv", "text/csv");
+
+    expect(result).toBe("cancelled");
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it("AbortError, що не є DOMException, теж читається як скасування", async () => {
+    const abort = new Error("canceled");
+    abort.name = "AbortError";
+    share.mockRejectedValue(abort);
+
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("cancelled");
+  });
+
+  it.each([
+    ["NotAllowedError", "немає активації жесту"],
+    ["TypeError", "тип файла не підтримано"],
+    ["DataError", "будь-яка інша відмова"],
+  ])(
+    "відмова share (%s: %s) — фолбек на завантаження, експорт не губиться",
+    async (name) => {
+      const failure = new Error("nope");
+      failure.name = name;
+      share.mockRejectedValue(failure);
+
+      const result = await saveStringAsFile("x", "x.csv", "text/csv");
+
+      expect(result).toBe("downloaded");
+      expect(createObjectURL).toHaveBeenCalledTimes(1);
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("відмова без Error (рядок) теж веде у завантаження", async () => {
+    share.mockRejectedValue("boom");
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("downloaded");
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("canShare не схвалив файл — завантаження, share не викликається", async () => {
+    canShare.mockReturnValue(false);
+
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("downloaded");
+    expect(share).not.toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("canShare кидає — завантаження, а не падіння експорту", async () => {
+    canShare.mockImplementation(() => {
+      throw new Error("boom");
+    });
+
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("downloaded");
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it("немає canShare або share (старий WebKit) — завантаження", async () => {
+    vi.stubGlobal("navigator", { share, userAgent: "" });
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("downloaded");
+
+    vi.stubGlobal("navigator", { canShare, userAgent: "" });
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("downloaded");
+
+    expect(share).not.toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("поза iOS standalone-PWA (вкладка Safari, десктоп, Android) — лише завантаження", async () => {
+    platform.iosStandalone = false;
+
+    expect(await saveStringAsFile("x", "x.csv", "text/csv")).toBe("downloaded");
+    expect(share).not.toHaveBeenCalled();
+    expect(canShare).not.toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("exportToCSV іде тим самим шляхом і віддає text/csv з імʼям файла", async () => {
+    const result = await exportToCSV(rows, columns, "report.csv");
+
+    expect(result).toBe("shared");
+    const file = (share.mock.calls[0]![0] as { files: File[] }).files[0]!;
+    expect(file.name).toBe("report.csv");
+    expect(file.type).toBe("text/csv");
+    expect(await readText(file)).toContain("ID,Назва,Сума,Тег");
+  });
+
+  it("exportToCSV: скасування аркуша доходить до викликача як cancelled", async () => {
+    share.mockRejectedValue(new DOMException("canceled", "AbortError"));
+    expect(await exportToCSV(rows, columns, "report.csv")).toBe("cancelled");
   });
 });

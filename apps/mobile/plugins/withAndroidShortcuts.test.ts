@@ -99,7 +99,7 @@ describe("buildShortcutsXml", () => {
       makeShortcut({
         id: "open_today",
         shortLabel: "Сьогодні",
-        longLabel: "Рутина — сьогодні",
+        longLabel: "Рутина: сьогодні",
         intent: {
           action: "android.intent.action.VIEW",
           data: "sergeant://routine",

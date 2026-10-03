@@ -37,7 +37,7 @@ type Story = StoryObj<typeof CounterReveal>;
 
 export const Default: Story = {
   render: (args) => (
-    <div className="text-style-display-hero text-text">
+    <div className="text-style-display text-text">
       <CounterReveal {...args} />
     </div>
   ),
@@ -60,7 +60,7 @@ function LiveUpdatesDemo() {
     return () => clearInterval(t);
   }, []);
   return (
-    <div className="text-style-display-hero text-text">
+    <div className="text-style-display text-text">
       <CounterReveal
         value={value}
         duration={600}

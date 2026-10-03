@@ -44,28 +44,18 @@ export interface UseChatSessionsResult {
 export function useChatSessions(): UseChatSessionsResult {
   const toast = useToast();
 
-  const initialSessionsRef = useRef<{
-    sessions: HubChatSession[];
-    activeId: string;
-  } | null>(null);
-  if (initialSessionsRef.current === null) {
-    initialSessionsRef.current = ensureActiveSession(
-      loadSessions(),
-      loadActiveSessionId(),
-    );
-  }
+  const [boot] = useState(() =>
+    ensureActiveSession(loadSessions(), loadActiveSessionId()),
+  );
 
   const [sessions, setSessions] = useState<HubChatSession[]>(
-    () => initialSessionsRef.current!.sessions,
+    () => boot.sessions,
   );
-  const [activeId, setActiveId] = useState<string>(
-    () => initialSessionsRef.current!.activeId,
-  );
+  const [activeId, setActiveId] = useState<string>(() => boot.activeId);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const initial = initialSessionsRef.current!;
-    const found = initial.sessions.find((s) => s.id === initial.activeId);
+    const found = boot.sessions.find((s) => s.id === boot.activeId);
     return normalizeStoredMessages(found?.messages ?? null);
   });
 

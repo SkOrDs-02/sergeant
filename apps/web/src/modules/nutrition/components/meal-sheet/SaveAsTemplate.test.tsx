@@ -7,6 +7,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+const toastSuccess = vi.fn();
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({ success: toastSuccess, error: vi.fn(), info: vi.fn() }),
+}));
+
 import { SaveAsTemplate } from "./SaveAsTemplate";
 import type { MealFormState } from "./mealFormUtils";
 
@@ -32,12 +37,13 @@ describe("SaveAsTemplate", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("appends a template to prefs on save", () => {
+  it("appends a template to prefs on save and shows a success toast", () => {
     const setPrefs = vi.fn();
+    toastSuccess.mockClear();
     render(
       <SaveAsTemplate form={form()} setForm={vi.fn()} setPrefs={setPrefs} />,
     );
-    fireEvent.click(screen.getByText("+ Зберегти як шаблон"));
+    fireEvent.click(screen.getByText("+ Запамʼятати для повтору"));
     expect(setPrefs).toHaveBeenCalled();
     const updater = setPrefs.mock.calls[0]![0];
     const next = updater({ mealTemplates: [] });
@@ -47,6 +53,7 @@ describe("SaveAsTemplate", () => {
       mealType: "breakfast",
       macros: { kcal: 300, protein_g: 20, fat_g: 15, carbs_g: 5 },
     });
+    expect(toastSuccess).toHaveBeenCalledTimes(1);
   });
 
   it("errors when the name is empty", () => {
@@ -59,7 +66,7 @@ describe("SaveAsTemplate", () => {
         setPrefs={setPrefs}
       />,
     );
-    fireEvent.click(screen.getByText("+ Зберегти як шаблон"));
+    fireEvent.click(screen.getByText("+ Запамʼятати для повтору"));
     expect(setPrefs).not.toHaveBeenCalled();
     expect(setForm).toHaveBeenCalled();
   });
@@ -74,7 +81,7 @@ describe("SaveAsTemplate", () => {
         setPrefs={setPrefs}
       />,
     );
-    fireEvent.click(screen.getByText("+ Зберегти як шаблон"));
+    fireEvent.click(screen.getByText("+ Запамʼятати для повтору"));
     expect(setPrefs).not.toHaveBeenCalled();
     expect(setForm).toHaveBeenCalled();
   });

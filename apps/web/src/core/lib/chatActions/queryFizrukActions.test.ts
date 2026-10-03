@@ -105,7 +105,7 @@ describe("query_workouts", () => {
     seed();
     const out = call({ name: "query_workouts", input: {} });
     expect(out).toContain("Тренувань за 30 днів: 3"); // w1,w2,w3 (not old, not planned)
-    expect(out).toMatch(/об'єм/i);
+    expect(out).toMatch(/обʼєм/i);
   });
 
   it("happy: filters by exercise", () => {
@@ -157,7 +157,7 @@ describe("exercise_progress", () => {
       input: { exercise_name: "жим" },
     });
     expect(out).toContain("Прогрес");
-    expect(out).toMatch(/75 → 82\.5/); // w3 first (75) → w1 last (82.5)
+    expect(out).toMatch(/75 → 82,5/); // w3 first (75) → w1 last (82.5)
   });
 
   it("error: missing exercise_name returns guidance", () => {

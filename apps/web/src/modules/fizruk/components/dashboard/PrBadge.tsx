@@ -20,7 +20,9 @@
  */
 
 import { messages } from "@shared/i18n/uk";
+import { Badge } from "@shared/components/ui/Badge";
 import type { PrLatest } from "../../hooks/usePrLatest";
+import { fmtLoose } from "../../lib/numberFmt";
 
 /**
  * Past which the badge is hidden — see file-level note. 14 days is a
@@ -51,6 +53,15 @@ export interface PrBadgeProps {
 }
 
 /**
+ * The hero reserves corner space whenever it gets a `cornerSlot`, so callers
+ * must pass the badge only when it will render (a `null`-returning element is
+ * still truthy and squeezed the kicker into ~120px on first run).
+ */
+export function isPrBadgeVisible(pr: PrLatest | null): pr is PrLatest {
+  return pr != null && pr.daysAgo <= DISPLAY_WINDOW_DAYS;
+}
+
+/**
  * Renders nothing when the PR is missing or stale; otherwise emits a
  * compact soft-tone pill positioned absolutely at the top-right of
  * the hero card. The wrapper carries a 44×44 touch-target box (per
@@ -59,23 +70,22 @@ export interface PrBadgeProps {
  * summary — the underlying PR data is reachable through Progress.
  */
 export function PrBadge({ pr }: PrBadgeProps) {
-  if (!pr) return null;
-  if (pr.daysAgo > DISPLAY_WINDOW_DAYS) return null;
+  if (!isPrBadgeVisible(pr)) return null;
 
   const exerciseShort = shortExerciseName(pr.exerciseName);
   // Round to one decimal so "82.5" stays exact but "80" doesn't show
   // a trailing ".0". Kopiykas-style: kg are the user-facing unit, the
   // decimal exists only when meaningful.
   const weightLabel = Number.isInteger(pr.weightKg)
-    ? `${pr.weightKg}`
+    ? fmtLoose(pr.weightKg)
     : `${Math.round(pr.weightKg * 10) / 10}`;
 
   return (
     <div
       aria-hidden
-      className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-end pointer-events-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
+      className="absolute top-3 right-3 min-h-[44px] min-w-[44px] flex items-center justify-end pointer-events-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow"
     >
-      <span className="inline-flex items-center gap-1 h-6 px-2 rounded-xl border whitespace-nowrap bg-fizruk-soft text-fizruk-strong border-fizruk-ring/50 dark:bg-fizruk-surface-dark/15 dark:text-fizruk-300 dark:border-fizruk-border-dark/30 text-xs font-semibold">
+      <Badge variant="fizruk" size="xs" className="h-6 px-2 rounded-xl">
         <svg
           width={12}
           height={12}
@@ -95,7 +105,7 @@ export function PrBadge({ pr }: PrBadgeProps) {
         <span>
           PR · {exerciseShort} · {weightLabel} {messages.fizruk.kgUnit}
         </span>
-      </span>
+      </Badge>
     </div>
   );
 }

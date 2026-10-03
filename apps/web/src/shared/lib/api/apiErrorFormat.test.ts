@@ -21,14 +21,14 @@ describe("formatApiError", () => {
     );
   });
 
-  it("ApiError http + auth (401) → стандартне 'Доступ заборонено.'", () => {
+  it("ApiError http + auth (401) → пояснює наступний крок", () => {
     const err = new ApiError({
       kind: "http",
       message: "HTTP 401",
       status: 401,
       url: URL,
     });
-    expect(formatApiError(err)).toBe("Доступ заборонено.");
+    expect(formatApiError(err)).toBe("Увійди в акаунт, щоб продовжити.");
   });
 
   it("ApiError http → доменний httpStatusToMessage перекриває дефолт", () => {
@@ -68,7 +68,7 @@ describe("formatApiError", () => {
     expect(formatApiError(err)).toBe("Помилка 502");
   });
 
-  it("ApiError http + serverMessage → використовує server text при дефолтному мапері", () => {
+  it("ApiError http + serverMessage → не показує технічний request id", () => {
     const err = new ApiError({
       kind: "http",
       message: "HTTP 500",
@@ -77,9 +77,7 @@ describe("formatApiError", () => {
       requestId: "req_123",
       url: URL,
     });
-    expect(formatApiError(err, { fallback: "fb" })).toBe(
-      "boom (requestId: req_123)",
-    );
+    expect(formatApiError(err, { fallback: "fb" })).toBe("boom");
   });
 
   it("ApiError network + offline → офлайн-копія", () => {
@@ -94,26 +92,27 @@ describe("formatApiError", () => {
     );
   });
 
-  it("ApiError network + online → message або дефолт", () => {
+  it("ApiError network + online → фіксована копія, не технічний message", () => {
     vi.stubGlobal("navigator", { onLine: true });
     const err = new ApiError({
       kind: "network",
       message: "DNS failed",
       url: URL,
     });
-    expect(formatApiError(err)).toBe("DNS failed");
+    expect(formatApiError(err)).toBe(
+      "Не вдалося зʼєднатися із сервером. Перевір зʼєднання і спробуй ще раз.",
+    );
   });
 
   it("ApiError parse + HTML body → спеціальний rewrite-текст", () => {
     const err = new ApiError({
       kind: "parse",
       message: "Unexpected token <",
-      // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- literal HTML fixture, not user-facing copy
       bodyText: "<!doctype html><html>...</html>",
       url: URL,
     });
     expect(formatApiError(err)).toBe(
-      "API повернув HTML замість JSON (ймовірно, rewrite перехоплює /api/*).",
+      "Сервер відповів сторінкою замість даних. Онови сторінку, а якщо не допоможе, спробуй пізніше.",
     );
   });
 

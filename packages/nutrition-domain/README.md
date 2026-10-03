@@ -17,9 +17,14 @@
 import { formatNutrition, mealTypes } from "@sergeant/nutrition-domain";
 ```
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/nutrition-domain <script>`.
 
 ```bash
-pnpm --filter @sergeant/nutrition-domain test       # Vitest
-pnpm --filter @sergeant/nutrition-domain typecheck
+pnpm --filter @sergeant/nutrition-domain typecheck      # TypeScript
+pnpm --filter @sergeant/nutrition-domain lint           # ESLint
+pnpm --filter @sergeant/nutrition-domain test           # Vitest
+pnpm --filter @sergeant/nutrition-domain test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/nutrition-domain test:coverage  # Vitest з покриттям
 ```

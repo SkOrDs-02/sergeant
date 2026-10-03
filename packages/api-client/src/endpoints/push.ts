@@ -29,7 +29,7 @@ export type PushPlatform = PushRegisterRequest["platform"];
 /**
  * Runtime-схема відповіді `POST /api/v1/push/register`. Сервер відповідає
  * `200 { ok: true, platform }` як на web, так і на native (див.
- * `docs/mobile/overview.md`).
+ * `docs/engineering/mobile/overview.md`).
  */
 export const PushRegisterResponseSchema = z.object({
   ok: z.literal(true),
@@ -72,24 +72,8 @@ export type PushUnregisterResponse = z.infer<
 >;
 
 export interface PushEndpoints {
-  /** Legacy web-push: VAPID public key для `PushManager.subscribe`. */
+  /** VAPID public key для `PushManager.subscribe` (web-push). */
   getVapidPublic: () => Promise<{ publicKey: string }>;
-  /**
-   * Legacy web-push: зберегти `PushSubscription.toJSON()` на бекенді.
-   *
-   * @deprecated Використовуй `register({ platform: "web", token, keys })`.
-   * Серверний `/api/push/subscribe` залишено proxy-адаптером (див.
-   * `apps/server/src/modules/push/push.ts`) на період rollout.
-   * @removeBy 2026-09-01
-   */
-  subscribe: (subscription: PushSubscriptionJSON) => Promise<unknown>;
-  /**
-   * Legacy web-push: видалити підписку за `endpoint`.
-   *
-   * @deprecated Використовуй `unregister({ platform: "web", endpoint })`.
-   * @removeBy 2026-09-01
-   */
-  unsubscribe: (endpoint: string) => Promise<unknown>;
   /**
    * `POST /api/push/register` — уніфікована реєстрація push-пристрою
    * (web / iOS / Android). Шлях автоматично перетворюється в
@@ -127,10 +111,6 @@ export function createPushEndpoints(http: HttpClient): PushEndpoints {
   return {
     getVapidPublic: () =>
       http.get<{ publicKey: string }>("/api/push/vapid-public"),
-    subscribe: (subscription) =>
-      http.post<unknown>("/api/push/subscribe", subscription),
-    unsubscribe: (endpoint) =>
-      http.del<unknown>("/api/push/subscribe", { endpoint }),
     register: async (body, { signal } = {}) => {
       const raw = await http.post<unknown>("/api/push/register", body, {
         signal,

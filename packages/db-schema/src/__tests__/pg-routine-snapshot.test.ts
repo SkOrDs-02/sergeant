@@ -7,9 +7,9 @@ import {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
+  routineCompletionEvents,
 } from "../pg/routine.js";
 
 /**
@@ -43,14 +43,18 @@ describe("pg/routineEntries schema snapshot", () => {
     ]);
   });
 
-  it("should have correct column types matching migration 026", () => {
+  it("should have correct column types matching migrations 026 + 094", () => {
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );
 
-    // id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+    // id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text
+    //
+    // Міграція 026 оголошувала UUID, але клієнт шле детермінований
+    // `<habitId>|<дата>|<стан>`, який UUID-ом не є. Це давало 22P02 →
+    // `apply_failed` на КОЖНОМУ push-і Рутини, тож 094 послабила тип до TEXT.
     expect(columnMap["id"]!.dataType).toBe("string");
-    expect(columnMap["id"]!.columnType).toBe("PgUUID");
+    expect(columnMap["id"]!.columnType).toBe("PgText");
     expect(columnMap["id"]!.primary).toBe(true);
     expect(columnMap["id"]!.notNull).toBe(true);
     expect(columnMap["id"]!.hasDefault).toBe(true);
@@ -168,6 +172,8 @@ describe("pg/routineHabits schema snapshot", () => {
       "time_of_day",
       "reminder_times",
       "weekdays",
+      "pause_intervals",
+      "weekly_target_history",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -259,19 +265,6 @@ describe("pg/routinePrefs schema snapshot", () => {
   });
 });
 
-describe("pg/routinePushups schema snapshot", () => {
-  const config = getTableConfig(routinePushups);
-
-  it("has the canonical table name", () => {
-    expect(config.name).toBe("routine_pushups");
-  });
-
-  it("declares all expected columns", () => {
-    const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
-  });
-});
-
 describe("pg/routineHabitOrder schema snapshot", () => {
   const config = getTableConfig(routineHabitOrder);
 
@@ -314,5 +307,53 @@ describe("pg/routineCompletionNotes schema snapshot", () => {
     );
     expect(idx).toBeDefined();
     expect(idx!.config.where).toBeDefined();
+  });
+});
+
+/**
+ * `routine_completion_events` — append-only журнал відміток
+ * (міграція 085, W1-ROUTINE-APPEND стадія 1).
+ */
+describe("pg/routineCompletionEvents schema snapshot", () => {
+  const config = getTableConfig(routineCompletionEvents);
+
+  it("has the canonical table name", () => {
+    expect(config.name).toBe("routine_completion_events");
+  });
+
+  it("declares all expected columns in migration order", () => {
+    expect(config.columns.map((c) => c.name)).toEqual([
+      "id",
+      "user_id",
+      "habit_id",
+      "date_key",
+      "state",
+      "occurred_at",
+      "tz_offset_min",
+      "day_anchor",
+      "source",
+      "device_id",
+      "created_at",
+    ]);
+  });
+
+  it("is append-only — no updated_at / deleted_at columns exist", () => {
+    const names = config.columns.map((c) => c.name);
+    expect(names).not.toContain("updated_at");
+    expect(names).not.toContain("deleted_at");
+  });
+
+  it("keys on a TEXT id — deliberately NOT uuid (see migration 085 rationale)", () => {
+    const id = config.columns.find((c) => c.name === "id");
+    expect(id).toBeDefined();
+    expect(id!.primary).toBe(true);
+    expect(id!.columnType).toBe("PgText");
+  });
+
+  it("declares both lookup indexes", () => {
+    expect(config.indexes.map((i) => i.config.name).sort()).toEqual([
+      "routine_completion_events_user_habit_date_idx",
+      "routine_completion_events_user_occurred_idx",
+    ]);
   });
 });

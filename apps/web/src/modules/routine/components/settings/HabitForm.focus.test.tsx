@@ -25,9 +25,6 @@ function Harness() {
       habitDraft={draft}
       setHabitDraft={setDraft}
       editingId={null}
-      onSave={() => {}}
-      onCancel={() => {}}
-      hideHeading
     />
   );
 }
@@ -36,26 +33,28 @@ describe("HabitForm focus stability", () => {
   it("keeps the name input mounted and focused while typing in the dialog form", () => {
     render(<Harness />);
 
-    const input = screen.getByPlaceholderText("Назва");
+    const input = screen.getByLabelText("Назва звички");
     input.focus();
     expect(document.activeElement).toBe(input);
 
     fireEvent.change(input, { target: { value: "в" } });
 
-    expect(screen.getByPlaceholderText("Назва")).toBe(input);
+    expect(screen.getByLabelText("Назва звички")).toBe(input);
     expect(document.activeElement).toBe(input);
   });
 
-  it("closes the emoji picker on Escape (keyboard parity with click-outside)", () => {
+  it("closes the icon picker on Escape (keyboard parity with click-outside)", () => {
     render(<Harness />);
 
-    const toggle = screen.getByRole("button", { name: "Обрати емодзі" });
+    const toggle = screen.getByRole("button", { name: "Обрати іконку звички" });
     fireEvent.click(toggle);
     expect(
-      screen.queryByRole("dialog", { name: "Обрати емодзі" }),
+      screen.queryByRole("dialog", { name: "Обрати іконку звички" }),
     ).not.toBeNull();
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("dialog", { name: "Обрати емодзі" })).toBeNull();
+    expect(
+      screen.queryByRole("dialog", { name: "Обрати іконку звички" }),
+    ).toBeNull();
   });
 });

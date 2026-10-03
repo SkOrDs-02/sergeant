@@ -1,6 +1,6 @@
 -- 027: sync_op_log — per-row operation log for v2 sync (Stage 2 / PR #021).
 --
--- See `docs/planning/storage-roadmap.md` PR #021 for the full design.
+-- See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` PR #021 for the full design.
 -- TL;DR: instead of the v1 whole-blob LWW model in `module_data`, v2
 -- accepts a stream of per-row ops (`insert` | `update` | `delete`) for
 -- normalised per-module tables. Each op is durably recorded here with

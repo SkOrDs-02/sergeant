@@ -9,24 +9,27 @@
     ".": "./src/index.ts",
     "./search": "./src/search/index.ts",
     "./recommendations": "./src/recommendations/index.ts",
-    "./recommendations/finance": "./src/recommendations/finance/index.ts"
+    "./recommendations/finance": "./src/recommendations/finance/index.ts",
+    "./activation": "./src/activation.ts",
+    "./adviceId": "./src/adviceId.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint": "eslint --cache \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@sergeant/design-tokens": "workspace:*",
+    "@sergeant/finyk-domain": "workspace:*",
     "@sergeant/shared": "workspace:*"
   },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
     "@types/node": "^20.19.41",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   }
 }

@@ -7,6 +7,7 @@ import {
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
+import { messages } from "@shared/i18n/uk";
 import {
   safeReadStringSS,
   safeWriteSS,
@@ -81,14 +82,21 @@ export function HubChatPage() {
     <main
       id="main"
       tabIndex={-1}
-      className="h-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter outline-none"
+      className="h-app-dvh flex flex-col bg-bg text-text overflow-hidden safe-area-pt-pb page-enter outline-none"
     >
-      <SuspenseWithMinDelay fallback={<PageLoader />}>
+      <h1 className="sr-only">{messages.nav.chat}</h1>
+      {/* Той самий height-chain фікс, що в HubChatOverlay: wrapper мусить
+          бути flex-item з min-h-0, інакше список повідомлень не скролиться. */}
+      <SuspenseWithMinDelay
+        fallback={<PageLoader />}
+        className="flex-1 min-h-0 flex flex-col"
+      >
         <HubChat
           onClose={handleClose}
           initialMessage={initialMessage}
           autoSendInitial={false}
           onOpenCatalogue={handleOpenCatalogue}
+          source="route"
         />
       </SuspenseWithMinDelay>
     </main>

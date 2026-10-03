@@ -8,6 +8,8 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 
 // Memo-обгортка навколо чистих селекторів персоналізації. Повертає список
 // найчастіших категорій і мерчантів для поточного користувача — використовується
@@ -19,6 +21,8 @@ interface PersonalizationOptions {
         manualExpenses?: readonly ManualExpense[] | undefined;
         customCategories?: Category[] | undefined;
         txCategories?: Readonly<Record<string, string | undefined>> | undefined;
+        /** Правила «Завжди так для цього магазину»: частота категорій рахується за ними. */
+        merchantRuleIndex?: MerchantRuleIndex | undefined;
         excludedTxIds?: Set<string> | undefined;
       }
     | undefined;
@@ -47,7 +51,27 @@ export function useFinykPersonalization({
     () => rawCustomCategories || [],
     [rawCustomCategories],
   );
-  const txCategories = useMemo(() => rawTxCategories || {}, [rawTxCategories]);
+  const explicitTxCategories = useMemo(
+    () => rawTxCategories || {},
+    [rawTxCategories],
+  );
+  // Явні override-и + виведене правилами мерчантів (лише читання).
+  const rawMerchantRuleIndex = storage?.merchantRuleIndex;
+  const txCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        transactions,
+        explicitTxCategories as Record<string, string>,
+        rawMerchantRuleIndex,
+        customCategories,
+      ),
+    [
+      transactions,
+      explicitTxCategories,
+      rawMerchantRuleIndex,
+      customCategories,
+    ],
+  );
 
   // `storage.excludedTxIds` — `new Set(...)` збирається у useStorage кожного
   // рендера, тож її посилання нестабільне. Використовуємо відсортований вміст
@@ -58,11 +82,12 @@ export function useFinykPersonalization({
     if (!rawExcludedTxIds || rawExcludedTxIds.size === 0) return "";
     return Array.from(rawExcludedTxIds).sort().join("|");
   }, [rawExcludedTxIds]);
-  const excludedTxIds = useMemo<Set<string> | undefined>(
-    () => rawExcludedTxIds || undefined,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [excludedTxIdsKey],
-  );
+  // Re-create the Set only when the canonical key (sorted id list) changes;
+  // comparing the Set reference itself would re-allocate on every parent render.
+  const excludedTxIds = useMemo<Set<string> | undefined>(() => {
+    if (!excludedTxIdsKey) return undefined;
+    return new Set(excludedTxIdsKey.split("|"));
+  }, [excludedTxIdsKey]);
 
   const opts = useMemo(
     () => ({

@@ -88,6 +88,8 @@ import { AuthProvider, useAuth, translateAuthError } from "./AuthContext";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 
 interface UseUserState {
+  /** `useQuery.isPending` — «даних ще немає». Дефолт іде за `isLoading`. */
+  isPending?: boolean;
   data?:
     | {
         user: {
@@ -108,6 +110,10 @@ function setUser(state: UseUserState) {
   useUserMock.mockReturnValue({
     data: state.data,
     isLoading: state.isLoading ?? false,
+    // Справжній `useQuery` завжди віддає `isPending` («даних ще немає»), і
+    // саме на нього спирається `AuthContext`. Фікстура його не мала, через
+    // що вікно «pending, але ще не fetching» тут не моделювалось узагалі.
+    isPending: state.isPending ?? state.isLoading ?? false,
     error: state.error ?? null,
   });
 }
@@ -172,6 +178,20 @@ describe("AuthContext", () => {
     expect(result.current.isLoading).toBe(true);
     expect(result.current.status).toBe("loading");
     expect(result.current.user).toBeNull();
+  });
+
+  // Регресія з browser-QA 2026-09-02. У React Query v5
+  // `isLoading === isPending && isFetching`, тож між монтуванням і стартом
+  // fetch-у існує вікно `isLoading === false` при `data === undefined`.
+  // Доти `AuthContext` читав саме `isLoading` і в цьому вікні оголошував
+  // сесію відсутньою: deep-link на `/?tab=profile` зривало на `/` у 4
+  // прогонах із 6, бо bounce-ефект у `useAppEffects` бачив `!user`.
+  it("НЕ оголошує сесію відсутньою, поки запит ще pending без fetch-у", () => {
+    setUser({ data: undefined, isLoading: false, isPending: true });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(result.current.status).toBe("loading");
+    expect(result.current.status).not.toBe("unauthenticated");
   });
 
   it("reports `unauthenticated` when useUser() has no user", () => {
@@ -287,15 +307,56 @@ describe("AuthContext", () => {
     expect(clearSpy).toHaveBeenCalled();
   });
 
+  it("flips to unauthenticated on logout even while useUser() still serves the cached user", async () => {
+    // Regression for browser QA 2026-08-05 F-008. `queryClient.clear()` evicts
+    // the `me` entry but never notifies the mounted `useUser` observer, so the
+    // hook keeps returning the last successful payload — `setUser` below models
+    // exactly that. Before the fix `user` stayed populated after logout: the
+    // header greeted the signed-out user, Profile rendered their email, and the
+    // `/sign-in` redirect bounced back to the hub.
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(result.current.status).toBe("authenticated");
+
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.status).toBe("unauthenticated");
+    expect(result.current.isLoading).toBe(false);
+  });
+
+  it("returns to authenticated after logging in again", async () => {
+    // The signed-out marker must not outlive the session that set it, otherwise
+    // the next login renders a permanently blank profile.
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+    expect(result.current.status).toBe("unauthenticated");
+
+    await act(async () => {
+      const ok = await result.current.login("a@b.c", "pw");
+      expect(ok).toBe(true);
+    });
+
+    expect(result.current.user).toEqual(SAMPLE_USER);
+    expect(result.current.status).toBe("authenticated");
+  });
+
   it("purges app-owned localStorage on logout but preserves foreign keys", async () => {
     // Browser-QA finding (b): logout left the previous user's local-first data
-    // (transactions, water log, hub prefs, the sqlite-wasm kvvfs store)
-    // readable by the next user on a shared device. Logout must remove the
-    // app-owned slices but leave third-party origins (PostHog/Sentry) alone.
+    // (transactions, water log, hub prefs) readable by the next user on a
+    // shared device. Logout must remove the app-owned slices but leave
+    // third-party origins (PostHog/Sentry) alone.
     localStorage.setItem("finyk_tx_cache", "[{secret tx}]");
     localStorage.setItem("nutrition_water_v1", "{}");
     localStorage.setItem("hub_user_profile_v1", "[]");
-    localStorage.setItem("kvvfs-local-0", "page-blob");
     localStorage.setItem("ph_phc_project_posthog", "distinct-id");
     localStorage.setItem("sentry_session", "trace");
 
@@ -309,10 +370,24 @@ describe("AuthContext", () => {
     expect(localStorage.getItem("finyk_tx_cache")).toBeNull();
     expect(localStorage.getItem("nutrition_water_v1")).toBeNull();
     expect(localStorage.getItem("hub_user_profile_v1")).toBeNull();
-    expect(localStorage.getItem("kvvfs-local-0")).toBeNull();
     // Foreign keys are out of the allowlist — never touched.
     expect(localStorage.getItem("ph_phc_project_posthog")).toBe("distinct-id");
     expect(localStorage.getItem("sentry_session")).toBe("trace");
+
+    localStorage.clear();
+  });
+
+  it("does NOT purge the sqlite-wasm kvvfs backing store via the localStorage allowlist — that store is shared across every partition on the device (no per-user filename), so isolation for it lives in wipeSqliteDb()'s row-level DELETE instead of a wholesale key purge (see anonymous-local-first-persistence spec § «Відомий залишковий ризик»)", async () => {
+    localStorage.setItem("kvvfs-local-0", "page-blob");
+
+    setUser({ data: { user: SAMPLE_USER } });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    await act(async () => {
+      await result.current.logout();
+    });
+
+    expect(localStorage.getItem("kvvfs-local-0")).toBe("page-blob");
 
     localStorage.clear();
   });
@@ -414,6 +489,92 @@ describe("AuthContext", () => {
     expect(result.current.authError).toBe("Provider not configured");
   });
 
+  // WF-60 root cause: `signIn.social` full-page-redirects, so
+  // `loginWithGoogle`/`loginWithApple` never resolve on success and can't
+  // fire `signup_completed` themselves. `AuthContext` instead stashes the
+  // provider in sessionStorage pre-redirect and resolves it once `useUser()`
+  // reports the post-callback session, gated on how fresh `createdAt` is.
+  it("fires signup_completed with method=google after a fresh OAuth callback", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+
+    function Probe() {
+      const { user, status, loginWithGoogle } = useAuth();
+      return (
+        <div>
+          <div data-testid="probe">
+            {status}:{user?.id ?? ""}
+          </div>
+          <button onClick={() => void loginWithGoogle()}>go</button>
+        </div>
+      );
+    }
+
+    const { getByText, rerender } = render(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await act(async () => {
+      getByText("go").click();
+    });
+    expect(trackEventMock).not.toHaveBeenCalledWith(
+      "signup_completed",
+      expect.anything(),
+    );
+
+    // Simulate the OAuth callback landing: `me` now resolves a brand-new
+    // account (createdAt ≈ now).
+    setUser({
+      data: {
+        user: { ...SAMPLE_USER, createdAt: new Date().toISOString() },
+      },
+    });
+    rerender(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await waitFor(() =>
+      expect(trackEventMock).toHaveBeenCalledWith("signup_completed", {
+        method: "google",
+      }),
+    );
+  });
+
+  it("does NOT fire signup_completed when an OAuth session is a repeat login (old createdAt)", async () => {
+    setUser({ data: undefined });
+    const { Wrapper } = makeWrapper();
+
+    function Probe() {
+      const { loginWithGoogle } = useAuth();
+      return <button onClick={() => void loginWithGoogle()}>go</button>;
+    }
+
+    const { getByText, rerender } = render(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await act(async () => {
+      getByText("go").click();
+    });
+
+    // Callback lands, but this account already existed (old createdAt) —
+    // must not be misattributed as a new signup.
+    setUser({ data: { user: SAMPLE_USER } });
+    rerender(
+      <Wrapper>
+        <Probe />
+      </Wrapper>,
+    );
+    await waitFor(() => expect(useUserMock).toHaveBeenCalled());
+    expect(trackEventMock).not.toHaveBeenCalledWith(
+      "signup_completed",
+      expect.anything(),
+    );
+  });
+
   it("useAuth() throws when used outside AuthProvider", () => {
     setUser({ data: undefined });
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
@@ -480,10 +641,10 @@ describe("translateAuthError", () => {
     expect(translateAuthError("", "Помилка входу")).toBe("Помилка входу");
   });
 
-  it("мапить Better Auth INVALID_EMAIL_OR_PASSWORD у одне повідомлення про невірні credentials", () => {
+  it("мапить Better Auth INVALID_EMAIL_OR_PASSWORD у одне повідомлення про неправильні credentials", () => {
     // Регресія: до фіксу `/invalid email/i` фальш-метчив підрядок
     // `"Invalid email"` усередині `"Invalid email or password"` → юзер з
-    // неправильним паролем бачив «Невірний формат email.» (хоча email був
+    // неправильним паролем бачив «Неправильний формат email.» (хоча email був
     // OK). Тепер мапимо за `code`, тож точне повідомлення стабільне.
     expect(
       translateAuthError(
@@ -494,7 +655,7 @@ describe("translateAuthError", () => {
         },
         "Помилка входу",
       ),
-    ).toBe("Невірний email або пароль.");
+    ).toBe("Неправильний email або пароль.");
   });
 
   it("мапить рядок `Invalid email or password` без коду через message-fallback", () => {
@@ -503,7 +664,7 @@ describe("translateAuthError", () => {
     // вузької гілки `/^invalid email\\b/i`.
     expect(
       translateAuthError("Invalid email or password", "Помилка входу"),
-    ).toBe("Невірний email або пароль.");
+    ).toBe("Неправильний email або пароль.");
   });
 
   it("мапить 429 (status або code=RATE_LIMIT) у людське повідомлення", () => {

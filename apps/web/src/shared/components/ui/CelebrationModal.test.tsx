@@ -17,6 +17,28 @@ import {
   useCelebration,
 } from "./CelebrationModal";
 
+function setMatchMediaReduced(reduced: boolean): void {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("reduce") ? reduced : false,
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      onchange: null,
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  // also expose on window for code that reads window.matchMedia
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    writable: true,
+    value: globalThis.matchMedia,
+  });
+}
+
 beforeEach(() => {
   vi.useFakeTimers();
   Object.defineProperty(navigator, "vibrate", {
@@ -24,6 +46,7 @@ beforeEach(() => {
     writable: true,
     value: vi.fn(),
   });
+  setMatchMediaReduced(false);
   vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback): number => {
     cb(0);
     return 0;
@@ -74,7 +97,8 @@ describe("CelebrationModal", () => {
         title="Перемога"
       />,
     );
-    expect(navigator.vibrate).toHaveBeenCalled();
+    // useEffect runs in RTL's act flush — waitFor polls with fake timers and hangs.
+    expect(navigator.vibrate).toHaveBeenCalledWith([50, 30, 50]);
   });
 
   it("renders value + unit", () => {
@@ -176,6 +200,49 @@ describe("CelebrationModal", () => {
     );
     expect(screen.getByTestId("custom-icon")).toBeInTheDocument();
   });
+
+  // C2/C3/C6 web-audit: migrated from the legacy `useFocusTrap` (no
+  // background inert, no scroll lock) to `useDialogFocusTrap` +
+  // `useBodyScrollLock`, and the raw `navigator.vibrate` call now routes
+  // through the shared haptic layer so it respects reduced-motion.
+  it("Escape closes the dialog via the shared focus trap", () => {
+    const onClose = vi.fn();
+    render(
+      <CelebrationModal type="success" open onClose={onClose} title="x" />,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    act(() => vi.advanceTimersByTime(250)); // close animation delay
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("locks body scroll while open and restores it on close", () => {
+    const { rerender } = render(
+      <CelebrationModal type="success" open onClose={vi.fn()} title="x" />,
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    rerender(
+      <CelebrationModal
+        type="success"
+        open={false}
+        onClose={vi.fn()}
+        title="x"
+      />,
+    );
+    expect(document.body.style.overflow).not.toBe("hidden");
+  });
+
+  it("does not vibrate when the user prefers reduced motion", () => {
+    setMatchMediaReduced(true);
+    render(
+      <CelebrationModal
+        type="confetti"
+        open
+        onClose={vi.fn()}
+        title="Перемога"
+      />,
+    );
+    expect(navigator.vibrate).not.toHaveBeenCalled();
+  });
 });
 
 describe("useCelebration", () => {
@@ -211,6 +278,27 @@ describe("useCelebration", () => {
     act(() => result.current.dismiss());
     act(() => result.current.achievement("Win"));
     expect(result.current.CelebrationComponent).not.toBeNull();
+  });
+
+  it("streak/levelUp title does not repeat the number shown as the big value", () => {
+    const { result } = renderHook(() => useCelebration());
+    act(() => result.current.streak(30));
+    const { unmount, getByText, queryByText } = render(
+      result.current.CelebrationComponent,
+    );
+    // Big value "30" + unit "днів" render once; the title must not spell
+    // the number out again ("30 днів поспіль" duplicated the digit twice).
+    expect(getByText("30")).toBeInTheDocument();
+    expect(queryByText(/30.*поспіль/)).not.toBeInTheDocument();
+    unmount();
+    act(() => result.current.dismiss());
+
+    act(() => result.current.levelUp(5, { current: 1, max: 2 }));
+    const { getByText: getByText2, queryByText: queryByText2 } = render(
+      result.current.CelebrationComponent,
+    );
+    expect(getByText2("5")).toBeInTheDocument();
+    expect(queryByText2(/рівень 5/i)).not.toBeInTheDocument();
   });
 });
 

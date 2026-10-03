@@ -1,16 +1,42 @@
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
+import { Money } from "@shared/components/ui/Money";
+import { DateField } from "@shared/components/ui/DateField";
+import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
-import { parseExpenseSpeech as parseExpenseVoice } from "@sergeant/shared";
-import { useLocale } from "@shared/i18n/useLocale";
-import { PaywallModal, useFeatureGate } from "../../../core/billing";
+import {
+  formatNumberUk,
+  parseExpenseSpeech as parseExpenseVoice,
+} from "@sergeant/shared";
 import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import type {
   Debt,
   Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
+import {
+  getDebtOriginated,
+  getDebtPaid,
+  getDebtSourced,
+} from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
+import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { DebtAutoLinkField } from "./DebtAutoLinkField";
+import type { TxRowTx } from "../components/TxRow";
+import { parseAmountToMinor } from "@shared/lib/format/amount";
+import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+
+// Спільні межі сум (спека beta-input-boundaries): додає верхню стелю й
+// відсікання «1e9» до наявної вимоги «строго додатне».
+const isPositiveFinite = (value: string) => parseAmountToMinor(value).ok;
+
+const isValidBillingDay = (value: string | number) => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 31;
+};
 
 // ---------------------------------------------------------------------------
 // Subscription form
@@ -20,6 +46,7 @@ export function SubscriptionForm({
   setNewSub,
   setSubscriptions,
   setShowSubForm,
+  transactions = [],
 }: {
   newSub: {
     name: string;
@@ -31,21 +58,53 @@ export function SubscriptionForm({
   setNewSub: React.Dispatch<React.SetStateAction<typeof newSub>>;
   setSubscriptions: React.Dispatch<React.SetStateAction<Subscription[]>>;
   setShowSubForm: (v: boolean) => void;
+  transactions?: readonly TxRowTx[];
 }) {
+  const keywordMatch = newSub.keyword.trim()
+    ? getLastTxForSubscription({ keyword: newSub.keyword }, [...transactions])
+    : null;
   return (
     <Card variant="flat" radius="md" className="space-y-3 mt-2">
       <Input
         aria-label="Назва підписки"
         placeholder="Назва"
+        maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         value={newSub.name}
         onChange={(e) => setNewSub((a) => ({ ...a, name: e.target.value }))}
       />
-      <Input
-        aria-label="Ключове слово з транзакції"
-        placeholder="Ключове слово з транзакції"
-        value={newSub.keyword}
-        onChange={(e) => setNewSub((a) => ({ ...a, keyword: e.target.value }))}
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="subscription-transaction-keyword" optional>
+          Пошук операції за описом
+        </Label>
+        <Input
+          id="subscription-transaction-keyword"
+          aria-label="Пошук операції за описом"
+          // Поле стоїть посеред форми з іншими текстовими інпутами, тож без
+          // явних `name`/`autocomplete` менеджер паролів має всі підстави
+          // прийняти його за логін (див. `searchFieldProps.ts`). Побічно
+          // знімає й автокапіталізацію — «netflix» не має ставати «Netflix».
+          {...searchFieldProps("subscription-keyword-search")}
+          placeholder="Наприклад, netflix"
+          maxLength={NAME_MAX_LEN}
+          showCharCount={false}
+          value={newSub.keyword}
+          onChange={(e) =>
+            setNewSub((a) => ({ ...a, keyword: e.target.value }))
+          }
+        />
+      </div>
+      <p className="text-style-body text-subtle">
+        Якщо не вибрати операцію вручну, знайду найновішу витрату, опис якої
+        містить цей текст. Пошук не залежить від регістру.
+      </p>
+      {newSub.keyword.trim() && (
+        <p className="text-style-caption text-subtle" role="status">
+          {keywordMatch
+            ? `Знайдено: ${keywordMatch.description || "Операція"} · ${formatNumberUk(Math.abs(keywordMatch.amount / 100))} ₴`
+            : "Збігів не знайдено"}
+        </p>
+      )}
       <Input
         aria-label="День списання (1-31)"
         placeholder="День списання (1-31)"
@@ -54,16 +113,21 @@ export function SubscriptionForm({
         max="31"
         value={newSub.billingDay}
         onChange={(e) =>
-          setNewSub((a) => ({
-            ...a,
-            billingDay: Number(e.target.value),
-          }))
+          setNewSub((a) => ({ ...a, billingDay: Number(e.target.value) }))
         }
       />
+      {(!newSub.name.trim() || !isValidBillingDay(newSub.billingDay)) && (
+        <p className="text-style-caption text-subtle" role="status">
+          Заповни назву та вкажи день списання від 1 до 31.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
+          disabled={
+            !newSub.name.trim() || !isValidBillingDay(newSub.billingDay)
+          }
           onClick={() => {
             if (!newSub.name || !newSub.billingDay) return;
             // The day-of-month <input type="number"> exposes min/max only as
@@ -102,7 +166,7 @@ export function SubscriptionForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowSubForm(false)}
         >
           Скасувати
@@ -120,6 +184,8 @@ export function ReceivableForm({
   setNewRecv,
   setReceivables,
   setShowRecvForm,
+  editingId,
+  onUpdate,
 }: {
   newRecv: {
     name: string;
@@ -131,55 +197,85 @@ export function ReceivableForm({
   setNewRecv: React.Dispatch<React.SetStateAction<typeof newRecv>>;
   setReceivables: React.Dispatch<React.SetStateAction<Receivable[]>>;
   setShowRecvForm: (v: boolean) => void;
+  editingId?: string | null;
+  onUpdate?: (id: string, value: Receivable) => void;
 }) {
   return (
     <Card variant="flat" radius="md" className="space-y-3">
+      <div className="text-style-label text-text">
+        {editingId ? "Редагування запису" : "Новий запис «Мені винні»"}
+      </div>
       <Input
-        aria-label="Ім'я або назва боржника"
-        placeholder="Ім'я або назва"
+        aria-label="Імʼя або назва боржника"
+        placeholder="Імʼя або назва"
+        maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         value={newRecv.name}
         onChange={(e) => setNewRecv((a) => ({ ...a, name: e.target.value }))}
       />
-      <Input
+      <MoneyInput
         aria-label="Сума у гривнях"
         placeholder="Сума ₴"
-        type="number"
         value={newRecv.amount}
-        onChange={(e) => setNewRecv((a) => ({ ...a, amount: e.target.value }))}
+        onValueChange={(next) =>
+          setNewRecv((a) => ({
+            ...a,
+            amount: next == null ? "" : String(next),
+          }))
+        }
       />
       <Input
-        aria-label="Нотатка (необов'язково)"
-        placeholder="Нотатка (необов'язково)"
+        aria-label="Нотатка (необовʼязково)"
+        placeholder="Нотатка (необовʼязково)"
+        maxLength={NAME_MAX_LEN}
+        showCharCount={false}
         value={newRecv.note}
         onChange={(e) => setNewRecv((a) => ({ ...a, note: e.target.value }))}
       />
-      <Input
-        aria-label="Дата повернення"
-        type="date"
-        value={newRecv.dueDate}
-        onChange={(e) => setNewRecv((a) => ({ ...a, dueDate: e.target.value }))}
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="receivable-due-date" optional>
+          Дата повернення
+        </Label>
+        <DateField
+          id="receivable-due-date"
+          aria-label="Дата повернення"
+          className="w-full"
+          emptyLabel="Обери дату повернення"
+          value={newRecv.dueDate}
+          onChange={(e) =>
+            setNewRecv((a) => ({ ...a, dueDate: e.target.value }))
+          }
+        />
+      </div>
+      {(!newRecv.name.trim() || !isPositiveFinite(newRecv.amount)) && (
+        <p className="text-style-caption text-subtle" role="status">
+          Заповни імʼя та вкажи позитивну суму.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
+          disabled={!newRecv.name.trim() || !isPositiveFinite(newRecv.amount)}
           onClick={() => {
             if (!newRecv.name || !newRecv.amount) return;
             // <input type="number"> accepts negatives + arbitrary precision;
             // a Receivable («мені винні») must be strictly positive — a
             // negative receivable corrupts net-worth aggregation and renders
             // as "−1 000 ₴" on a row that is supposed to be an asset.
-            const parsedAmount = Number(newRecv.amount);
-            if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
-            setReceivables((rs) => [
-              ...rs,
-              {
-                ...newRecv,
-                id: crypto.randomUUID(),
-                amount: parsedAmount,
-                linkedTxIds: [],
-              } as Receivable,
-            ]);
+            const parsedAmount = amountStringToHryvnia(String(newRecv.amount));
+            if (parsedAmount <= 0) return;
+            const next = {
+              ...newRecv,
+              id: crypto.randomUUID(),
+              amount: parsedAmount,
+              linkedTxIds: [],
+            } as Receivable;
+            if (editingId && onUpdate) {
+              onUpdate(editingId, { ...next, id: editingId });
+            } else {
+              setReceivables((rs) => [...rs, next]);
+            }
             setNewRecv({
               name: "",
               emoji: "\u{1F464}",
@@ -190,12 +286,12 @@ export function ReceivableForm({
             setShowRecvForm(false);
           }}
         >
-          Додати
+          {editingId ? "Зберегти" : "Додати"}
         </Button>
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowRecvForm(false)}
         >
           Скасувати
@@ -215,6 +311,8 @@ export function AssetForm({
   setShowAssetForm,
   assetFormRef,
   assetNameInputRef,
+  editingId,
+  onUpdate,
 }: {
   newAsset: { name: string; amount: string; currency: string; emoji: string };
   setNewAsset: React.Dispatch<React.SetStateAction<typeof newAsset>>;
@@ -222,18 +320,10 @@ export function AssetForm({
   setShowAssetForm: (v: boolean) => void;
   assetFormRef: React.RefObject<HTMLElement | null>;
   assetNameInputRef: React.RefObject<HTMLInputElement | null>;
+  editingId?: string | null;
+  onUpdate?: (id: string, value: ManualAsset) => void;
 }) {
-  // Phase 7 D2 — multi-currency assets (non-UAH) are gated to Premium.
-  // UAH stays free for everyone; touching the picker to switch off UAH
-  // opens the paywall and reverts the selection. `useLocale` resolves
-  // paywall copy under `?lang=en` override; UA users see UK copy via
-  // the resolver's fall-through.
-  const currencyGate = useFeatureGate("multi-currency");
-  const { messages } = useLocale();
-  const onCurrencyChange = (next: string) => {
-    if (next !== "UAH" && !currencyGate.requireAccess()) return;
-    setNewAsset((a) => ({ ...a, currency: next }));
-  };
+  const isLegacyNonUah = newAsset.currency !== "UAH";
   return (
     <>
       <Card
@@ -243,8 +333,10 @@ export function AssetForm({
         className="space-y-3"
       >
         <div>
-          <div className="text-style-label text-text">Новий актив</div>
-          <div className="text-xs text-muted mt-0.5">
+          <div className="text-style-label text-text">
+            {editingId ? "Редагування активу" : "Новий актив"}
+          </div>
+          <div className="text-style-caption text-muted mt-0.5">
             Готівка, брокерський рахунок, крипта тощо.
           </div>
         </div>
@@ -252,51 +344,71 @@ export function AssetForm({
           ref={assetNameInputRef as React.Ref<HTMLInputElement>}
           aria-label="Назва активу"
           placeholder="Назва"
+          maxLength={NAME_MAX_LEN}
+          showCharCount={false}
           value={newAsset.name}
           onChange={(e) => setNewAsset((a) => ({ ...a, name: e.target.value }))}
         />
-        <Input
+        <MoneyInput
           aria-label="Сума активу"
           placeholder="Сума"
-          type="number"
           value={newAsset.amount}
-          onChange={(e) =>
-            setNewAsset((a) => ({ ...a, amount: e.target.value }))
+          onValueChange={(next) =>
+            setNewAsset((a) => ({
+              ...a,
+              amount: next == null ? "" : String(next),
+            }))
           }
         />
-        <select
-          aria-label="Валюта активу"
-          className="input-focus-finyk w-full h-11 rounded-2xl border border-line bg-panelHi px-4 text-text"
-          value={newAsset.currency}
-          onChange={(e) => onCurrencyChange(e.target.value)}
-        >
-          <option value="UAH">UAH</option>
-          <option value="USD">USD</option>
-          <option value="EUR">EUR</option>
-          <option value="BTC">BTC</option>
-        </select>
+        <div className="rounded-2xl border border-line bg-panelHi px-4 py-3">
+          <div className="text-style-caption text-muted">Валюта активу</div>
+          <div className="text-style-label text-text">
+            {isLegacyNonUah ? newAsset.currency : "UAH"}
+          </div>
+        </div>
+        {isLegacyNonUah && (
+          <p
+            className="text-style-body text-warning-strong dark:text-warning"
+            role="status"
+          >
+            Це старий запис у {newAsset.currency}. Валюту не змінюю без
+            реального курсу, а суму поки не враховую в загальному капіталі.
+          </p>
+        )}
+        {(!newAsset.name.trim() || !isPositiveFinite(newAsset.amount)) && (
+          <p className="text-style-caption text-subtle" role="status">
+            Заповни назву та вкажи позитивну суму активу.
+          </p>
+        )}
         <div className="flex gap-2">
           <Button
             className="flex-1"
             size="sm"
+            disabled={
+              !newAsset.name.trim() || !isPositiveFinite(newAsset.amount)
+            }
             onClick={() => {
               if (!newAsset.name || !newAsset.amount) return;
               // <input type="number"> accepts negatives + arbitrary precision;
               // an asset balance must be strictly positive. A negative manual
               // asset shows up as "−1 000 ₴" inside the assets list, flips the
               // section header to "Активи +−1 000 ₴" (because the formatter
-              // unconditionally prepends `+`), and pulls Загальний нетворс
+              // unconditionally prepends `+`), and pulls Загальний капітал
               // negative.
-              const parsedAmount = Number(newAsset.amount);
-              if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
-              setManualAssets((a) => [
-                ...a,
-                {
-                  ...newAsset,
-                  id: crypto.randomUUID(),
-                  amount: parsedAmount,
-                } as ManualAsset,
-              ]);
+              const parsedAmount = amountStringToHryvnia(
+                String(newAsset.amount),
+              );
+              if (parsedAmount <= 0) return;
+              const next = {
+                ...newAsset,
+                id: crypto.randomUUID(),
+                amount: parsedAmount,
+              } as ManualAsset;
+              if (editingId && onUpdate) {
+                onUpdate(editingId, { ...next, id: editingId });
+              } else {
+                setManualAssets((a) => [...a, next]);
+              }
               setNewAsset({
                 name: "",
                 amount: "",
@@ -306,25 +418,18 @@ export function AssetForm({
               setShowAssetForm(false);
             }}
           >
-            Додати
+            {editingId ? "Зберегти" : "Додати"}
           </Button>
           <Button
             className="flex-1"
             size="sm"
-            variant="secondary"
+            variant="outline"
             onClick={() => setShowAssetForm(false)}
           >
             Скасувати
           </Button>
         </div>
       </Card>
-      <PaywallModal
-        open={currencyGate.paywallOpen}
-        onClose={currencyGate.closePaywall}
-        surface={currencyGate.paywallSurface}
-        title={messages.paywall["multi-currency"].title}
-        description={messages.paywall["multi-currency"].description}
-      />
     </>
   );
 }
@@ -339,19 +444,38 @@ export function DebtForm({
   setShowDebtForm,
   debtFormRef,
   debtNameInputRef,
+  editingId,
+  editingDebt,
+  transactions = [],
+  onUpdate,
 }: {
   newDebt: {
     name: string;
     emoji: string;
     totalAmount: string;
     dueDate: string;
+    autoLinkKeyword: string;
   };
   setNewDebt: React.Dispatch<React.SetStateAction<typeof newDebt>>;
   setManualDebts: React.Dispatch<React.SetStateAction<Debt[]>>;
   setShowDebtForm: (v: boolean) => void;
   debtFormRef: React.RefObject<HTMLElement | null>;
   debtNameInputRef: React.RefObject<HTMLInputElement | null>;
+  editingId?: string | null;
+  editingDebt?: Debt | undefined;
+  transactions?: readonly TxRowTx[];
+  onUpdate?: (id: string, value: Debt) => void;
 }) {
+  const enteredBase = Number(newDebt.totalAmount.replace(",", ".")) || 0;
+  const sourced = editingDebt ? getDebtSourced(editingDebt, transactions) : 0;
+  const increases = editingDebt
+    ? getDebtOriginated(editingDebt, transactions)
+    : 0;
+  const paid = editingDebt ? getDebtPaid(editingDebt, transactions) : 0;
+  const effectiveBase = Math.max(enteredBase, sourced);
+  const effectiveTotal = effectiveBase + increases;
+  const remaining = Math.max(0, effectiveTotal - paid);
+
   return (
     <Card
       ref={debtFormRef as React.Ref<HTMLElement>}
@@ -361,22 +485,25 @@ export function DebtForm({
     >
       <div>
         <div className="text-style-label text-danger-strong dark:text-danger">
-          Новий пасив
+          {editingId ? "Редагування пасиву" : "Новий пасив"}
         </div>
-        <div className="text-xs text-muted mt-0.5">
-          Кредит, борг або інше зобов&#x27;язання.
+        <div className="text-style-caption text-muted mt-0.5">
+          Кредит, борг або інше зобовʼязання.
         </div>
       </div>
       <div className="flex gap-2">
         <Input
           ref={debtNameInputRef as React.Ref<HTMLInputElement>}
-          aria-label="Назва пасиву (кредит, борг…)"
+          aria-label="Назва пасиву (кредит, борг)"
           className="flex-1"
-          placeholder="Назва пасиву (кредит, борг…)"
+          placeholder="Назва пасиву (кредит, борг)"
+          maxLength={NAME_MAX_LEN}
+          showCharCount={false}
           value={newDebt.name}
           onChange={(e) => setNewDebt((a) => ({ ...a, name: e.target.value }))}
         />
         <VoiceMicButton
+          module="finyk"
           size="md"
           label="Голосовий ввід"
           promptHint="Пасив у гривнях: кредит 50000, борг 12000, іпотека."
@@ -394,53 +521,113 @@ export function DebtForm({
           }}
         />
       </div>
-      <Input
-        aria-label="Загальна сума у гривнях"
-        placeholder="Загальна сума ₴"
-        type="number"
-        value={newDebt.totalAmount}
-        onChange={(e) =>
-          setNewDebt((a) => ({ ...a, totalAmount: e.target.value }))
+      <div className="space-y-1.5">
+        <Label htmlFor="debt-initial-amount">Початкова сума боргу</Label>
+        <MoneyInput
+          id="debt-initial-amount"
+          aria-label="Початкова сума боргу у гривнях"
+          placeholder="Початкова сума ₴"
+          value={newDebt.totalAmount}
+          onValueChange={(next) =>
+            setNewDebt((a) => ({
+              ...a,
+              totalAmount: next == null ? "" : String(next),
+            }))
+          }
+        />
+      </div>
+      {editingDebt && (
+        <div className="rounded-xl border border-line bg-panel px-3 py-2.5 space-y-1.5">
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Виникнення за операціями</span>
+            <Money amount={sourced} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Збільшення боргу</span>
+            <Money amount={increases} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Сплачено</span>
+            <Money amount={paid} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-1.5 text-style-label text-text">
+            <span>Залишилось повернути</span>
+            <Money amount={remaining} kopecks />
+          </div>
+          {sourced > enteredBase && (
+            <p className="text-style-body text-subtle">
+              Підтверджені операції виникнення більші за введену початкову суму,
+              тому розрахунок бере їхню суму за базу.
+            </p>
+          )}
+        </div>
+      )}
+      <div className="space-y-1.5">
+        <Label htmlFor="debt-due-date" optional>
+          Дата погашення
+        </Label>
+        <DateField
+          id="debt-due-date"
+          aria-label="Дата погашення"
+          className="w-full"
+          emptyLabel="Обери дату погашення"
+          value={newDebt.dueDate}
+          onChange={(e) =>
+            setNewDebt((a) => ({ ...a, dueDate: e.target.value }))
+          }
+        />
+      </div>
+      <DebtAutoLinkField
+        keyword={newDebt.autoLinkKeyword}
+        onKeywordChange={(v) =>
+          setNewDebt((a) => ({ ...a, autoLinkKeyword: v }))
         }
+        transactions={transactions}
+        editingDebt={editingDebt}
       />
-      <Input
-        aria-label="Дата погашення"
-        type="date"
-        value={newDebt.dueDate}
-        onChange={(e) => setNewDebt((a) => ({ ...a, dueDate: e.target.value }))}
-      />
+      {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
+        <p className="text-style-caption text-subtle" role="status">
+          Заповни назву та вкажи позитивну суму пасиву.
+        </p>
+      )}
       <div className="flex gap-2">
         <Button
           className="flex-1"
           size="sm"
+          disabled={
+            !newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)
+          }
           onClick={() => {
             if (newDebt.name && newDebt.totalAmount) {
-              setManualDebts((ds) => [
-                ...ds,
-                {
-                  ...newDebt,
-                  id: crypto.randomUUID(),
-                  amount: Number(newDebt.totalAmount),
-                  totalAmount: Number(newDebt.totalAmount),
-                  linkedTxIds: [],
-                } satisfies Debt,
-              ]);
+              const next = {
+                ...newDebt,
+                id: crypto.randomUUID(),
+                amount: amountStringToHryvnia(String(newDebt.totalAmount)),
+                totalAmount: amountStringToHryvnia(String(newDebt.totalAmount)),
+                linkedTxIds: [],
+              } satisfies Debt;
+              if (editingId && onUpdate) {
+                onUpdate(editingId, { ...next, id: editingId });
+              } else {
+                setManualDebts((ds) => [...ds, next]);
+              }
               setNewDebt({
                 name: "",
                 emoji: "\u{1F4B8}",
                 totalAmount: "",
                 dueDate: "",
+                autoLinkKeyword: "",
               });
               setShowDebtForm(false);
             }
           }}
         >
-          Додати
+          {editingId ? "Зберегти" : "Додати"}
         </Button>
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowDebtForm(false)}
         >
           Скасувати

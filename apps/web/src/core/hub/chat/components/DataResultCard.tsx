@@ -43,7 +43,7 @@ interface MetricRow {
 
 interface BreakdownRow {
   label: string;
-  /** Числове значення для масштабу mini-bar (грн / об'єм / ккал тощо). */
+  /** Числове значення для масштабу mini-bar (грн / обʼєм / ккал тощо). */
   amount: number;
   /** Готовий текст значення праворуч (з одиницями). */
   display: string;
@@ -158,7 +158,7 @@ const LIST_INTRO_BY_TOOL: Readonly<Record<string, string>> = {
   aggregate_spending: "Розбивка за ",
   // `Знайдено N транзакц. на суму X грн[ (показано …)]: m_1: …; …`
   query_transactions: " грн",
-  // `Тренувань за N днів: M, сумарний об'єм X кг×повт[ (…)]: 2026-…: …`
+  // `Тренувань за N днів: M, сумарний обʼєм X кг×повт[ (…)]: 2026-…: …`
   query_workouts: "кг×повт",
   // `Прийомів за from — to: N, разом X ккал (…)[ (…)]: 2026-…: …`
   query_nutrition: "г)",
@@ -195,6 +195,25 @@ function parseResult(toolName: string, result: string): ParsedResult {
   return parseSingleLineWithList(toolName, result);
 }
 
+/**
+ * Чи можна тримати значення нестисливим (`shrink-0`) праворуч від мітки.
+ *
+ * AI-DANGER: `shrink-0` тут не косметика. Значення в цих рядках здебільшого
+ * короткі («0/7 (0%)», «2340 грн»), і `shrink-0` не дає довгій мітці їх
+ * зіжмакати. Але `parseMultiline` кладе у значення ВЕСЬ хвіст після першої
+ * двокрапки — а це буває список: «Дні без жодного виконання: 2026-08-06,
+ * 2026-08-05, …». Нестисливий елемент із таким вмістом зберігає повну
+ * внутрішню ширину й вилазить за межі картки, аж за край екрана.
+ *
+ * Поріг у символах, а не вимір ширини: у flex-рядку картка вужча за 300 px,
+ * і все, що довше за коротку мітку, все одно мусить переноситись.
+ */
+const COMPACT_VALUE_MAX_CHARS = 24;
+
+function isCompactValue(value: string): boolean {
+  return value.length <= COMPACT_VALUE_MAX_CHARS;
+}
+
 function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
   const max = Math.max(1, ...rows.map((r) => r.amount));
   return (
@@ -206,7 +225,14 @@ function BreakdownBars({ rows }: { rows: BreakdownRow[] }) {
             <div className="flex items-baseline justify-between gap-2 text-style-caption">
               <span className="min-w-0 truncate text-subtle">{row.label}</span>
               {row.display && (
-                <span className="shrink-0 font-medium text-text tabular-nums">
+                <span
+                  className={cn(
+                    "min-w-0 font-medium text-text",
+                    isCompactValue(row.display)
+                      ? "shrink-0 tabular-nums"
+                      : "text-right wrap-break-word",
+                  )}
+                >
                   {row.display}
                 </span>
               )}
@@ -259,11 +285,11 @@ function DataResultCardImpl({
         >
           <Icon
             name={failed ? "alert" : iconForQueryTool(toolName)}
-            size={14}
+            size="sm"
           />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold text-text wrap-break-word">
+          <p className="text-style-caption font-semibold text-text wrap-break-word">
             {title}
           </p>
           <p className="mt-0.5 text-style-caption text-subtle wrap-break-word">
@@ -279,7 +305,14 @@ function DataResultCardImpl({
                 >
                   <dt className="min-w-0 truncate text-subtle">{m.label}</dt>
                   {m.value && (
-                    <dd className="shrink-0 font-medium text-text tabular-nums">
+                    <dd
+                      className={cn(
+                        "min-w-0 font-medium text-text",
+                        isCompactValue(m.value)
+                          ? "shrink-0 tabular-nums"
+                          : "text-right wrap-break-word",
+                      )}
+                    >
                       {m.value}
                     </dd>
                   )}

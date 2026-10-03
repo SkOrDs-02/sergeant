@@ -23,7 +23,8 @@ vi.mock("../../modules/ai-memory/dlq.js", async (origImport) => {
   return {
     ...actual,
     listDlqRows: listDlqRowsMock,
-    markDlqRowReplayed: markDlqRowReplayedMock,
+    // Route викликає strict-варіант (rethrow-ить failure у replay-flow).
+    markDlqRowReplayedStrict: markDlqRowReplayedMock,
   };
 });
 
@@ -32,7 +33,8 @@ vi.mock("../../modules/ai-memory/ingestQueue.js", async (origImport) => {
     await origImport<typeof import("../../modules/ai-memory/ingestQueue.js")>();
   return {
     ...actual,
-    enqueueMemoryIngest: enqueueMemoryIngestMock,
+    // Route викликає strict-варіант (rethrow-ить enqueue-failure).
+    enqueueMemoryIngestStrict: enqueueMemoryIngestMock,
   };
 });
 
@@ -53,11 +55,11 @@ function sampleRow(overrides: Partial<DlqRow> = {}): DlqRow {
   return {
     id: 42,
     userId: "u1",
-    source: "finyk",
+    source: "cofounder",
     sourceRef: "tx-1",
     payloadJson: {
       userId: "u1",
-      source: "finyk",
+      source: "cofounder",
       sourceRef: "tx-1",
       content: "txn snapshot",
       metadata: { amount: 100 },
@@ -82,7 +84,7 @@ describe("POST /api/internal/ai-memory-dlq/list", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/list")
-      .send({ source: "finyk", limit: 50 });
+      .send({ source: "cofounder", limit: 50 });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
@@ -90,7 +92,7 @@ describe("POST /api/internal/ai-memory-dlq/list", () => {
       {
         id: 42,
         userId: "u1",
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-1",
         errorMsg: "Voyage 503",
         attempts: 5,
@@ -118,7 +120,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk" });
+      .send({ source: "cofounder" });
 
     expect(res.status).toBe(200);
     expect(res.body.dryRun).toBe(true);
@@ -131,14 +133,14 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
   it("dryRun=false — re-enqueue + mark replayed для кожного row", async () => {
     listDlqRowsMock.mockResolvedValueOnce([
       sampleRow({ id: 1 }),
-      sampleRow({ id: 2, source: "chat", sourceRef: null }),
+      sampleRow({ id: 2, source: "digest", sourceRef: null }),
     ]);
     enqueueMemoryIngestMock.mockResolvedValue(undefined);
 
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk", dryRun: false });
+      .send({ source: "cofounder", dryRun: false });
 
     expect(res.status).toBe(200);
     expect(res.body.dryRun).toBe(false);
@@ -148,6 +150,51 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     expect(markDlqRowReplayedMock).toHaveBeenCalledTimes(2);
     expect(markDlqRowReplayedMock).toHaveBeenCalledWith(1);
     expect(markDlqRowReplayedMock).toHaveBeenCalledWith(2);
+  });
+
+  it("enqueue-failure для row → потрапляє в errors[], НЕ рахується у replayed", async () => {
+    listDlqRowsMock.mockResolvedValueOnce([
+      sampleRow({ id: 1 }),
+      sampleRow({ id: 2, source: "digest", sourceRef: null }),
+    ]);
+    // row #1 успішний; row #2 — strict-enqueue кидає (Redis-incident).
+    enqueueMemoryIngestMock
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("Redis ECONNREFUSED"));
+    markDlqRowReplayedMock.mockResolvedValue(undefined);
+
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/ai-memory-dlq/replay")
+      .send({ source: "cofounder", dryRun: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.attempted).toBe(2);
+    expect(res.body.replayed).toBe(1);
+    expect(res.body.errors).toEqual([{ id: 2, error: "Redis ECONNREFUSED" }]);
+    // row #2 НЕ був позначений replayed (enqueue провалився до mark-у).
+    expect(markDlqRowReplayedMock).toHaveBeenCalledTimes(1);
+    expect(markDlqRowReplayedMock).toHaveBeenCalledWith(1);
+  });
+
+  it("mark-replayed failure → потрапляє в errors[], НЕ рахується у replayed", async () => {
+    listDlqRowsMock.mockResolvedValueOnce([sampleRow({ id: 7 })]);
+    enqueueMemoryIngestMock.mockResolvedValue(undefined);
+    // enqueue пройшов, але UPDATE replayed_at провалився (DB-incident).
+    markDlqRowReplayedMock.mockRejectedValueOnce(new Error("DB write timeout"));
+
+    const app = await makeApp();
+    const res = await request(app)
+      .post("/api/internal/ai-memory-dlq/replay")
+      .send({ source: "cofounder", dryRun: false });
+
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(false);
+    expect(res.body.attempted).toBe(1);
+    expect(res.body.replayed).toBe(0);
+    expect(res.body.errors).toEqual([{ id: 7, error: "DB write timeout" }]);
+    expect(enqueueMemoryIngestMock).toHaveBeenCalledTimes(1);
   });
 
   it("400 коли жоден з filter-ів не переданий", async () => {
@@ -166,7 +213,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ eventIds: [99], source: "finyk", dryRun: true });
+      .send({ eventIds: [99], source: "cofounder", dryRun: true });
 
     expect(listDlqRowsMock).toHaveBeenCalledWith(
       expect.objectContaining({ ids: [99] }),
@@ -177,7 +224,7 @@ describe("POST /api/internal/ai-memory-dlq/replay", () => {
     const app = await makeApp();
     const res = await request(app)
       .post("/api/internal/ai-memory-dlq/replay")
-      .send({ source: "finyk", limit: 5000 });
+      .send({ source: "cofounder", limit: 5000 });
 
     expect(res.status).toBe(400);
   });

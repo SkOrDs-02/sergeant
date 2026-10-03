@@ -16,7 +16,7 @@
  *   7. Concurrent `runOnce` calls do not overlap.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Pool } from "pg";
 
 import { LogArchivePoller, DEFAULT_ARCHIVE_TABLES } from "./archivePoller.js";
@@ -53,6 +53,9 @@ const emptyTables: Record<string, MockQueryShape> = Object.fromEntries(
 
 describe("LogArchivePoller", () => {
   beforeEach(() => {
+    vi.useRealTimers();
+  });
+  afterEach(() => {
     vi.useRealTimers();
   });
 
@@ -146,6 +149,38 @@ describe("LogArchivePoller", () => {
     const deleteCall = deleteCalls[0] ?? [];
     expect(deleteCall[0]).toContain("DELETE FROM openclaw_invocations");
     expect(deleteCall[1]).toEqual([["1", "2"]]);
+  });
+
+  it("object-name date uses the Europe/Kyiv civil day at the UTC→Kyiv day boundary", async () => {
+    // 2026-05-15T21:30:00Z = 2026-05-16 00:30 Kyiv (summer, UTC+3): the Kyiv
+    // day has already rolled over to the 16th, so the archive folder must be
+    // `2026-05-16`. A UTC day-key would (wrongly) still say `2026-05-15`.
+    const rows = [{ id: "1", invoked_at: "2026-04-01T00:00:00Z", foo: "a" }];
+    const pool = makePool({
+      ...emptyTables,
+      openclaw_invocations: { rows, rowCount: rows.length },
+    });
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      text: async () => "",
+    } as unknown as Response);
+    const poller = new LogArchivePoller({
+      pool,
+      enabled: true,
+      retentionDays: 30,
+      bucket: "test-bucket",
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl },
+      now: () => new Date("2026-05-15T21:30:00Z"),
+    });
+    await poller.runOnce();
+
+    const [url] = fetchImpl.mock.calls[0] ?? [];
+    expect(url).toContain(
+      "name=openclaw-archive%2F2026-05-16%2Fopenclaw_invocations__1-1.jsonl.gz",
+    );
+    expect(url).not.toContain("openclaw-archive%2F2026-05-15%2F");
   });
 
   it("runOnce keeps rows in DB when GCS upload fails", async () => {
@@ -261,6 +296,104 @@ describe("LogArchivePoller", () => {
     expect(() => poller.start()).not.toThrow();
     // Calling start() twice is also a no-op (idempotent).
     expect(() => poller.start()).not.toThrow();
+  });
+
+  it("start() is a no-op when interval, retention, or bucket config disables archival", () => {
+    const intervalOff = new LogArchivePoller({
+      pool: makePool(emptyTables),
+      enabled: true,
+      retentionDays: 30,
+      intervalMs: 0,
+      bucket: "test-bucket",
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl: vi.fn() },
+    });
+    expect(() => intervalOff.start()).not.toThrow();
+
+    const retentionOff = new LogArchivePoller({
+      pool: makePool(emptyTables),
+      enabled: true,
+      retentionDays: 0,
+      intervalMs: 1000,
+      bucket: "test-bucket",
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl: vi.fn() },
+    });
+    expect(() => retentionOff.start()).not.toThrow();
+
+    const bucketUnset = new LogArchivePoller({
+      pool: makePool(emptyTables),
+      enabled: true,
+      retentionDays: 30,
+      intervalMs: 1000,
+      bucket: "",
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl: vi.fn() },
+    });
+    expect(() => bucketUnset.start()).not.toThrow();
+  });
+
+  it("start() schedules one non-overlapping interval tick and remains idempotent", async () => {
+    vi.useFakeTimers();
+    const pool = makePool({
+      openclaw_invocations: { rows: [], rowCount: 0 },
+    });
+    const poller = new LogArchivePoller({
+      pool,
+      enabled: true,
+      retentionDays: 30,
+      intervalMs: 100,
+      bucket: "test-bucket",
+      tables: [
+        { table: "openclaw_invocations", timestampColumn: "invoked_at" },
+      ],
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl: vi.fn() },
+    });
+
+    poller.start();
+    poller.start();
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect((pool.query as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+    await poller.stop();
+  });
+
+  it("runOnce returns an empty result while another archive pass is active", async () => {
+    let releaseSelect:
+      | ((value: {
+          rows: ReadonlyArray<{ id: string } & Record<string, unknown>>;
+          rowCount: number;
+        }) => void)
+      | undefined;
+    const query = vi.fn(async (sql: string) => {
+      if (String(sql).trim().toUpperCase().startsWith("SELECT")) {
+        return await new Promise<MockQueryShape>((resolve) => {
+          releaseSelect = resolve;
+        });
+      }
+      return { rows: [], rowCount: 0 };
+    });
+    const poller = new LogArchivePoller({
+      pool: { query } as unknown as Pool,
+      enabled: true,
+      retentionDays: 30,
+      bucket: "test-bucket",
+      tables: [
+        { table: "openclaw_invocations", timestampColumn: "invoked_at" },
+      ],
+      gcsDeps: { getAccessToken: async () => "tok", fetchImpl: vi.fn() },
+    });
+
+    const firstRun = poller.runOnce();
+    await vi.waitFor(() => expect(releaseSelect).toBeDefined());
+
+    await expect(poller.runOnce()).resolves.toEqual({
+      archived: {},
+      failed: {},
+    });
+
+    releaseSelect?.({ rows: [], rowCount: 0 });
+    await expect(firstRun).resolves.toEqual({
+      archived: { openclaw_invocations: 0 },
+      failed: { openclaw_invocations: 0 },
+    });
   });
 
   it("stop() before start() does not throw", async () => {

@@ -38,7 +38,7 @@
  *    extension).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AccessibilityInfo, Animated, Text, View } from "react-native";
 import { pluralUa } from "@sergeant/shared";
 
@@ -79,7 +79,11 @@ function cx(...classes: Array<string | false | null | undefined>): string {
  * components feel part of the same motion family.
  */
 function usePulse(active: boolean): Animated.AnimatedInterpolation<number> | 1 {
-  const progress = useRef(new Animated.Value(0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [progress] = useState(() => new Animated.Value(0));
   const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
@@ -176,10 +180,8 @@ export function SyncStatusIndicator({
           className,
         )}
       >
-        <View className="h-2 w-2 rounded-full bg-emerald-500" />
-        <Text className="text-[11px] font-medium text-emerald-800">
-          Синк: on
-        </Text>
+        <View className="h-2 w-2 rounded-full bg-teal-700" />
+        <Text className="text-[11px] font-medium text-teal-900">Синк: on</Text>
       </View>
     );
   }
@@ -228,7 +230,7 @@ export function SyncStatusIndicator({
       >
         <View className="h-2 w-2 rounded-full bg-amber-500" />
         <Text className="text-xs font-semibold text-amber-900">
-          {pending > 0 ? `Офлайн — ${pendingLabel(pending)}` : "Офлайн"}
+          {pending > 0 ? `Офлайн: ${pendingLabel(pending)}` : "Офлайн"}
         </Text>
       </View>
     );

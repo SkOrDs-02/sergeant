@@ -1,7 +1,7 @@
 /**
  * Boot wiring for the mobile Fizruk dual-write context (PR #028 follow-up).
  *
- * Stage 4 of `docs/planning/storage-roadmap.md`. Mirror of
+ * Stage 4 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirror of
  * `apps/mobile/src/modules/routine/lib/dualWriteBoot.ts`. See that file
  * for the rationale.
  *
@@ -17,7 +17,7 @@ import { getSqliteMigrationClient } from "@/core/db/sqlite";
 import {
   registerFizrukDualWriteContext,
   type FizrukDualWriteContext,
-} from "./dualWrite";
+} from "./sqliteWriter";
 
 export interface BootFizrukDualWriteInput {
   getUserId(): string | null;

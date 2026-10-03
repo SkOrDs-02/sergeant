@@ -7,16 +7,42 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { IDBFactory } from "fake-indexeddb";
 
-import { __resetSergeantDbForTests } from "../../../shared/lib/idb/sergeantDb";
+import {
+  __resetSergeantDbForTests,
+  openSergeantDb,
+} from "../../../shared/lib/idb/sergeantDb";
 import {
   deleteSavedRecipe,
   listSavedRecipes,
+  listSavedRecipesOrThrow,
   normalizeRecipeForSave,
   saveRecipeToBook,
   scaleMacros,
 } from "./recipeBook";
 
 const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
+const LEGACY_DB_NAME = "hub_nutrition_recipe_book";
+
+async function seedLegacyRecipeBook(recipes: unknown[]): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const req = indexedDB.open(LEGACY_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore("recipes", { keyPath: "id" });
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction("recipes", "readwrite");
+      const store = tx.objectStore("recipes");
+      for (const recipe of recipes) store.put(recipe);
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
 
 beforeEach(() => {
   (globalThis as { indexedDB?: IDBFactory }).indexedDB = new IDBFactory();
@@ -51,8 +77,12 @@ describe("normalizeRecipeForSave (pure)", () => {
     expect(r.ingredients).toEqual(["Буряк", "Капуста", "5"]);
     expect(r.steps).toEqual(["Крок 1"]);
     expect(r.tips).toEqual([]);
+    // unification-modules.md #1.28: normalizeMacrosNullable (canon) treats
+    // a negative/invalid macro as "not entered" (null), not as a fake 0 —
+    // 0 would silently count a broken AI-generated recipe as a real
+    // macros-having day in period averages.
     expect(r.macros).toEqual({
-      kcal: 0,
+      kcal: null,
       protein_g: null,
       fat_g: 3,
       carbs_g: 10,
@@ -104,6 +134,12 @@ describe("scaleMacros (pure)", () => {
       carbs_g: null,
     });
     expect(scaleMacros({ kcal: 50 }, "bad")).toMatchObject({ kcal: 50 });
+    expect(scaleMacros(null, 2)).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
   });
 });
 
@@ -128,6 +164,51 @@ describe("saveRecipeToBook + listSavedRecipes", () => {
     await saveRecipeToBook({ title: "A" });
     await saveRecipeToBook({ title: "B" });
     expect(await listSavedRecipes(1)).toHaveLength(1);
+  });
+
+  it("migrates recipes from the legacy recipe book DB on first read", async () => {
+    await seedLegacyRecipeBook([
+      normalizeRecipeForSave({
+        id: "rcp_legacy",
+        title: "Легасі суп",
+        updatedAt: 1_700_000_000_000,
+      }),
+    ]);
+
+    const list = await listSavedRecipes();
+    expect(list.map((recipe) => recipe.title)).toContain("Легасі суп");
+
+    const dbs = await indexedDB.databases();
+    expect(dbs.map((db) => db.name)).not.toContain(LEGACY_DB_NAME);
+  });
+
+  it("returns safe fallbacks when recipe transactions fail", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    const txSpy = vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("tx failed");
+    });
+
+    expect(await listSavedRecipes()).toEqual([]);
+    expect(await saveRecipeToBook({ title: "Broken" })).toEqual({
+      ok: false,
+      error: "Не вдалося зберегти рецепт",
+    });
+    expect(await deleteSavedRecipe("rcp_broken")).toBe(false);
+
+    txSpy.mockRestore();
+  });
+
+  it("listSavedRecipesOrThrow не ховає збій читання під порожній список", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    const txSpy = vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("tx failed");
+    });
+
+    await expect(listSavedRecipesOrThrow()).rejects.toThrow("tx failed");
+
+    txSpy.mockRestore();
   });
 });
 

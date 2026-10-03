@@ -2,7 +2,7 @@
  * Copy generator for the post-FTUX SoftAuth prompt — A/B-ready.
  *
  * The pre-S3.2 copy was fear-framed: «У тебе {N} записів. Створи
- * акаунт, щоб не втратити.» The audit (`docs/launch/ftux-sprint-plan.md`
+ * акаунт, щоб не втратити.» The audit (`docs/work/specs/launch/ftux-sprint-plan.md`
  * §5) flagged this as anti-honest — the user has *just* completed a
  * value moment, and the next thing we say is "you might lose this".
  *
@@ -87,7 +87,7 @@ function getGainCopy({
       title: "Хочеш ці записи в телефоні?",
       body: `${entryCount} ${pluralizeEntries(
         entryCount,
-      )} вже тут. Акаунт синхронізує їх між телефоном і браузером — 20 секунд.`,
+      )} вже тут. Акаунт синхронізує їх між телефоном і браузером, 20 секунд.`,
     };
   }
 

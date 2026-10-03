@@ -3,6 +3,9 @@ import { useQueries } from "@tanstack/react-query";
 import {
   shouldShowProactiveAdvice,
   getCurrentMonthContext,
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
+  limitBudgetCategoryKey,
 } from "@sergeant/finyk-domain/domain/budget";
 import type {
   Budget,
@@ -10,7 +13,7 @@ import type {
   LimitBudget,
 } from "@sergeant/finyk-domain/domain/types";
 import { resolveExpenseCategoryMeta } from "../../utils";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { currentKyivMonthPrefix } from "../../lib/monthWindow";
 import {
   fetchProactiveAdvice,
   loadProactiveAdviceFromLS,
@@ -39,7 +42,8 @@ export interface UseProactiveAdviceResult {
  * - One React Query per at-risk category (`useQueries`)
  * - Seeded synchronously from localStorage so cached advice paints with
  *   no spinner; stale entries (older than 24h) are auto-refetched.
- * - Returns flat lookup maps keyed by `categoryId` for the UI to consume.
+ * - Returns flat lookup maps keyed by `categoryKey` (стабільний ключ набору
+ *   категорій ліміту, `limitBudgetCategoryKey`) for the UI to consume.
  */
 export function useProactiveAdvice({
   limitBudgets,
@@ -55,22 +59,26 @@ export function useProactiveAdvice({
     const { daysLeft: daysRemaining } = getCurrentMonthContext(now);
     // Key by the Kyiv civil month so advice rolls over on the same boundary
     // for every user regardless of host timezone (domain-invariants spec).
-    const { year, month } = getKyivDateParts(now);
-    const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+    const monthKey = currentKyivMonthPrefix(now);
     const items: ProactiveItem[] = [];
     for (const b of limitBudgets) {
       const limit = Number(b.limit) || 0;
-      const categoryId = b.categoryId ?? "";
-      if (!categoryId) continue;
+      const categoryKey = limitBudgetCategoryKey(b);
+      if (!categoryKey) continue;
       const spent = calcSpent(b);
       const pctRaw = limit > 0 ? (spent / limit) * 100 : 0;
       if (!shouldShowProactiveAdvice({ pctRaw }, null)) continue;
-      const cat = resolveExpenseCategoryMeta(categoryId, customCategories);
-      const catLabel = cat?.label || categoryId;
+      // Для комбо-ліміту в промпт іде повний підпис («Їжа» або «A + B»),
+      // щоб порада говорила про весь набір, а не про першу категорію.
+      const catLabel =
+        formatLimitBudgetLabel(
+          b,
+          (id) => resolveExpenseCategoryMeta(id, customCategories)?.label,
+        ) || limitBudgetCategoryIds(b).join(" + ");
       const remaining = Math.max(0, limit - spent);
       const pct = limit > 0 ? Math.round((spent / limit) * 100) : 0;
       items.push({
-        categoryId,
+        categoryKey,
         monthKey,
         catLabel,
         spent,
@@ -90,21 +98,21 @@ export function useProactiveAdvice({
   // matching the pre-migration manual TTL check.
   const proactiveQueries = useQueries({
     queries: proactiveItems.map((item) => ({
-      queryKey: proactiveAdviceQueryKey(item.monthKey, item.categoryId),
+      queryKey: proactiveAdviceQueryKey(item.monthKey, item.categoryKey),
       queryFn: () => fetchProactiveAdvice(item),
       staleTime: PROACTIVE_CACHE_TTL,
       gcTime: PROACTIVE_CACHE_TTL,
       retry: false,
       initialData: () => {
         const cached = loadProactiveAdviceFromLS(
-          item.categoryId,
+          item.categoryKey,
           item.monthKey,
         );
         return cached?.text ?? undefined;
       },
       initialDataUpdatedAt: () => {
         const cached = loadProactiveAdviceFromLS(
-          item.categoryId,
+          item.categoryKey,
           item.monthKey,
         );
         return cached?.ts ?? undefined;
@@ -116,8 +124,8 @@ export function useProactiveAdvice({
   const proactiveLoading: Record<string, boolean> = {};
   proactiveItems.forEach((item, i) => {
     const q = proactiveQueries[i];
-    proactiveAdvice[item.categoryId] = q?.data ?? null;
-    proactiveLoading[item.categoryId] = Boolean(q?.isFetching);
+    proactiveAdvice[item.categoryKey] = q?.data ?? null;
+    proactiveLoading[item.categoryKey] = Boolean(q?.isFetching);
   });
 
   return { proactiveItems, proactiveAdvice, proactiveLoading };

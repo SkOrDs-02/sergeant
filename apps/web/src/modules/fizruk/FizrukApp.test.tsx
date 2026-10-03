@@ -94,11 +94,6 @@ vi.mock("./components/workouts/RestTimerOverlayConnected", () => ({
   RestTimerOverlayConnected: () => null,
 }));
 
-// Stub AIPill
-vi.mock("@shared/components/ui/AIPill", () => ({
-  AIPill: () => null,
-}));
-
 // Stub StorageErrorBanner
 vi.mock("@shared/components/layout", async () => {
   const actual = await vi.importActual<
@@ -129,16 +124,21 @@ describe("FizrukApp smoke tests", () => {
 
   it("renders the bottom navigation bar on the dashboard page", () => {
     render(<FizrukApp />);
-    // ModuleBottomNav renders nav items for fizruk — check for at least one
-    // The nav is shown when page !== 'atlas' && page !== 'exercise'
+    // ModuleBottomNav renders nav items for fizruk — check for at least one.
+    // Since the V-7 chrome audit fix the nav is shown on every Fizruk page
+    // (see FizrukApp.extra.test.tsx for the per-page coverage, including
+    // Атлас/Вправа/Заміри).
     const nav = screen.getByRole("navigation");
     expect(nav).toBeInTheDocument();
   });
 
   it("renders the FizrukHeader title text for the dashboard page", () => {
     render(<FizrukApp />);
-    // FizrukHeader renders "ФІЗРУК" as the module title on the dashboard page
-    expect(screen.getByText("ФІЗРУК")).toBeInTheDocument();
+    // FizrukHeader renders "Фізрук" as the module heading on the dashboard page
+    // Назва модуля — хром оболонки, свідомо не заголовок (#527).
+    expect(screen.getByTestId("module-header-title")).toHaveTextContent(
+      "Фізрук",
+    );
   });
 
   it("renders with optional props left undefined without crashing", () => {

@@ -11,14 +11,14 @@ export interface ApiHelmetOptions {
 /**
  * CSP директиви для API-only сервера.
  *
- * Railway сервер віддає лише JSON (або мінімальні текст/plain для health) і не
- * обслуговує HTML фронтенду — той живе на Vercel. Тому CSP може бути дуже
- * суворою: ніякий контент із цього origin не має виконувати скрипти / бути
+ * API-сервер (Hetzner + Coolify, ADR-0074) віддає лише JSON (або мінімальні
+ * текст/plain для health) і не обслуговує HTML фронтенду — той живе на
+ * Vercel. Тому CSP може бути дуже суворою: ніякий контент із цього origin не має виконувати скрипти / бути
  * вбудованим у фрейм / завантажувати щось. Це захищає на випадок помилки
  * middleware, яка випадково поверне HTML.
  *
  * Для фронтенду CSP треба задавати в `vercel.json` з урахуванням PWA
- * (script-src + worker-src blob:, connect-src — Railway + Anthropic-free, бо
+ * (script-src + worker-src blob:, connect-src — API-origin + Anthropic-free, бо
  * AI виклики проксовані через API).
  */
 export function buildApiCspDirectives(): ApiCspDirectives {
@@ -46,12 +46,16 @@ export function buildApiCspDirectives(): ApiCspDirectives {
  *   видалення Replit-режиму (2026-06-08) runtime ніколи не передає
  *   `servesFrontend: true` — `config.servesFrontend` завжди `false`; ця гілка
  *   лишається лише як generic capability (кандидат на видалення окремим PR).
- * - `servesFrontend: false` (дефолт) — API-only (Railway). CSP буде строгою
- *   (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1` переводить її у
- *   report-only-режим — корисно під час phased-rollout: браузер логує
- *   порушення у DevTools-консоль, не блокуючи запит. NB: `report-uri`/
- *   `report-to` endpoint НЕ налаштований — порушення видно лише локально в
- *   консолі, централізовано не збираються (додати report-endpoint — окремий PR).
+ * - `servesFrontend: false` (дефолт) — API-only (Hetzner + Coolify, ADR-0074).
+ *   CSP буде строгою (див. buildApiCspDirectives). `CSP_REPORT_ONLY=1`
+ *   переводить її у report-only-режим — корисно під час phased-rollout: браузер логує
+ *   порушення у DevTools-консоль, не блокуючи запит. NB: саме ця API-політика
+ *   `report-uri`/`report-to` НЕ задає — порушення API-CSP видно лише локально
+ *   в консолі. Це навмисно: API віддає JSON без скриптів, тож репортити
+ *   нічого. Централізований збір існує для **фронтенд**-політики: Vercel
+ *   (`apps/web/vercel.json`) ставить `report-uri`/`report-to` на
+ *   `/api/csp-report`, який приймає `modules/observability/csp-report.ts` і
+ *   рахує в `csp_violation_total` (C2-frontend-csp, Phase 1, 2026-05-04).
  *
  * **Видалено** (M1 — `docs/security/hardening/M1-csp-disable-runtime-flag.md`,
  * 2026-05-04): `CSP_DISABLE=1`-kill-switch. Він давав можливість одним
@@ -61,7 +65,7 @@ export function buildApiCspDirectives(): ApiCspDirectives {
  * залишають аудит-слід.
  *
  * `crossOriginResourcePolicy: 'cross-origin'` — щоб fetch з іншого домену
- * (Vercel → Railway) не ламався.
+ * (Vercel → API на Coolify) не ламався.
  */
 export function apiHelmetMiddleware({
   servesFrontend = false,

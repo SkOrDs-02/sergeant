@@ -1,0 +1,97 @@
+import { describe, expect, it } from "vitest";
+
+import { isPathBasedModulePath } from "../app/appPaths";
+import { KNOWN_PATHS } from "../app/routes";
+import { ALL_CAPABILITIES, CAPABILITY_GROUPS } from "./capabilityRegistry";
+
+/**
+ * Каталог можливостей — рекламна вітрина застосунку. Найгірший його стан не
+ * «застарілий текст», а картка, що веде в нікуди: юзер тапає обіцянку і
+ * отримує 404. Цей тест і є той гейт, який спека вимагає замість ручної
+ * перевірки — реєстр статичний, тож перевірити його можна повністю.
+ */
+describe("capabilityRegistry", () => {
+  /**
+   * Топ-рівневі сегменти, які володіє САМ роутер (`core/app/router.tsx`), а
+   * не `StandaloneRoutes`. `KNOWN_PATHS` їх не бачить, бо виводиться лише зі
+   * standalone-таблиці. Список короткий і майже не змінюється, тож тримати
+   * його тут дешевше, ніж моделювати весь роутер; головна помилка, яку ловить
+   * цей тест, — це все одно одруківка в href.
+   */
+  const ROUTER_OWNED_SEGMENTS = ["insights", "settings", "onboarding"];
+
+  it("кожен href веде на реальний маршрут", () => {
+    for (const item of ALL_CAPABILITIES) {
+      // Порівнюємо лише pathname: `?group=…#settings-…` — це deep-link
+      // всередині сторінки налаштувань, роутер його не розрізняє.
+      const pathname = item.href.split(/[?#]/)[0] ?? "";
+      const firstSegment = pathname.split("/")[1] ?? "";
+      const reachable =
+        KNOWN_PATHS.has(pathname) ||
+        isPathBasedModulePath(pathname) ||
+        ROUTER_OWNED_SEGMENTS.includes(firstSegment);
+      expect(
+        reachable,
+        `«${item.title}» веде на ${item.href}, якого немає серед маршрутів`,
+      ).toBe(true);
+    }
+  });
+
+  // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+  // «Конфіденційність» у Профіль → «Безпека» 2026-09-04 — картка досі
+  // казала «постав PIN у Налаштуваннях» і вела на `#settings-privacy`,
+  // де PIN-контролу більше немає.
+  it("картка PIN веде у Профіль, а не в неіснуючий PIN-контрол Налаштувань", () => {
+    const privacy = ALL_CAPABILITIES.find((c) => c.id === "privacy");
+    expect(privacy?.href).toBe("/?tab=profile");
+    expect(privacy?.quickAction).toContain("Профілі");
+    expect(privacy?.description).toContain("Профілі");
+    expect(privacy?.href).not.toContain("settings-privacy");
+  });
+
+  it("id унікальні — вони є React-ключами і testid-ами", () => {
+    const ids = ALL_CAPABILITIES.map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("жодна група не порожня", () => {
+    for (const group of CAPABILITY_GROUPS) {
+      expect(
+        group.items.length,
+        `група «${group.title}» порожня`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it("кожен запис має текст, який щось пояснює", () => {
+    for (const item of ALL_CAPABILITIES) {
+      expect(item.title.trim().length).toBeGreaterThan(0);
+      // Однослівний опис — це назва, а не пояснення користі.
+      expect(
+        item.description.trim().split(/\s+/).length,
+        `опис «${item.title}» надто короткий`,
+      ).toBeGreaterThan(5);
+    }
+  });
+
+  /**
+   * Founder-ux-review round 2 (O4): `/capabilities` мусить читатись як
+   * «що я зроблю за 30 секунд», а не як другий каталог `/assistant`. Гейт
+   * не перевіряє формулювання (тон — робота copy-review), лише що поле
+   * заповнене й не є буквальним дублем `description` — інакше "сценарій
+   * зверху, подробиці далі" мовчки виродиться назад у "той самий текст
+   * двічі".
+   */
+  it("кожен запис має окремий quickAction — «дію за 30 секунд», не дубль опису", () => {
+    for (const item of ALL_CAPABILITIES) {
+      expect(
+        item.quickAction.trim().split(/\s+/).length,
+        `quickAction «${item.title}» надто короткий`,
+      ).toBeGreaterThan(2);
+      expect(
+        item.quickAction.trim(),
+        `quickAction «${item.title}» дублює description`,
+      ).not.toBe(item.description.trim());
+    }
+  });
+});

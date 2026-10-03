@@ -1,0 +1,5 @@
+tag,theme,quote,respondent_id,segment,module,hypothesis,frequency
+manual-entry-friction,"Ручний ввід задовго","«я просто перестав вбивати кожну каву»",I01,quit,finances,H1,1
+fragmentation,"Все в різних місцях","«гроші в банку, їжа в нотатках, спорт в голові»",I02,active,all,H2,1
+no-perceived-value,"Не бачу користі від цифр","«ну записав і що далі»",I01,quit,nutrition,H1,1
+dont-know-where-to-start,"Не знаю з чого почати","«хочу, але не розумію як»",I03,never,nutrition,H4,1

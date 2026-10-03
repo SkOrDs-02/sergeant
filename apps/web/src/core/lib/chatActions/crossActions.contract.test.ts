@@ -95,7 +95,7 @@ describe("set_goal", () => {
       input: { description: "Калорійний план", daily_kcal: 2000 },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("2000");
+    expect(out).toContain("2 000");
     // The kcal target now persists through the canonical nutrition store
     // (persistNutritionPrefs → SQLite), not the tombstoned `nutrition_prefs_v1`
     // LS key — assert the dead key is no longer written.
@@ -185,6 +185,42 @@ describe("category_breakdown", () => {
 
   it("shape: result is a non-empty string", () => {
     const out = call({ name: "category_breakdown", input: {} });
+    expect(typeof out).toBe("string");
+    expect(out.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// get_daily_series
+// ---------------------------------------------------------------------------
+describe("get_daily_series", () => {
+  it("happy: returns aligned series + correlation block", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const txs: Array<{ id: string; amount: number; time: number }> = [];
+    for (let d = 0; d < 5; d++) {
+      const t = nowSec - d * 86400;
+      txs.push({ id: `e${d}`, amount: -(1000 + d * 100) * 100, time: t });
+      txs.push({ id: `i${d}`, amount: (2000 + d * 200) * 100, time: t });
+    }
+    localStorage.setItem("finyk_tx_cache", JSON.stringify({ txs }));
+    const out = call({
+      name: "get_daily_series",
+      input: { metrics: ["spending", "income"] },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("day,spending,income");
+  });
+
+  it("error: empty metrics returns guidance string", () => {
+    const out = call({ name: "get_daily_series", input: { metrics: [] } });
+    expect(out).toContain("Вкажи");
+  });
+
+  it("shape: result is a non-empty string", () => {
+    const out = call({
+      name: "get_daily_series",
+      input: { metrics: ["spending"] },
+    });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
   });
@@ -383,7 +419,7 @@ describe("remember", () => {
       input: { fact: "Я вегетаріанець", category: "diet" },
     });
     expect(typeof out).toBe("string");
-    expect(out).toContain("Запам'ятав");
+    expect(out).toContain("Запамʼятав");
     expect(out).toContain("вегетаріанець");
   });
 
@@ -579,7 +615,7 @@ describe("save_note · undo", () => {
   it("повертає {undo} який видаляє щойно додану нотатку за id", () => {
     const out = handleCrossAction({
       name: "save_note",
-      input: { text: "Тест запам'ятати щось важливе", tag: "ideas" },
+      input: { text: "Тест запамʼятати щось важливе", tag: "ideas" },
     });
     if (out == null || typeof out === "string") {
       throw new Error(`expected undoable result, got ${typeof out}`);
@@ -587,7 +623,7 @@ describe("save_note · undo", () => {
     const before = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
     expect(before).toHaveLength(1);
 
-    out.undo();
+    out.undo?.();
     const after = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
     expect(after).toHaveLength(0);
   });
@@ -604,7 +640,7 @@ describe("save_note · undo", () => {
     if (second == null || typeof second === "string") {
       throw new Error("expected undoable result");
     }
-    second.undo();
+    second.undo?.();
 
     const after = JSON.parse(localStorage.getItem("hub_notes_v1") || "[]");
     expect(after).toHaveLength(1);
@@ -625,7 +661,7 @@ describe("remember · undo", () => {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
 
-    out.undo();
+    out.undo?.();
     // After undo, the entry should be gone
     const profile = handleCrossAction({
       name: "my_profile",
@@ -650,7 +686,7 @@ describe("remember · undo", () => {
     }
     expect(out.result).toContain("Оновив");
 
-    out.undo();
+    out.undo?.();
     // Should still have the entry (we restored prev version)
     const profile = handleCrossAction({
       name: "my_profile",

@@ -3,11 +3,7 @@
 // legacy synonym for `budgets` (kept to keep older Hub recommendations and
 // share-cards working through the Phase-3 hash-redirect shim).
 export type FinykPage =
-  | "overview"
-  | "transactions"
-  | "budgets"
-  | "analytics"
-  | "assets";
+  "overview" | "transactions" | "budgets" | "analytics" | "assets";
 
 const VALID_FINYK_PAGES: readonly FinykPage[] = [
   "overview",
@@ -18,6 +14,10 @@ const VALID_FINYK_PAGES: readonly FinykPage[] = [
 ];
 
 const LEGACY_REDIRECTS: Record<string, FinykPage> = {
+  // The former cards tab now lives in the Assets surface. Keep shared and
+  // bookmarked `/finyk/cards` links meaningful instead of silently showing
+  // the unrelated overview (global QA 2026-08-04, finding 8).
+  cards: "assets",
   payments: "budgets",
 };
 
@@ -86,8 +86,7 @@ export function finykRoutePath(next: FinykPage | null | undefined): string {
  * landed on the default tab".
  */
 export function parseLegacyFinykHash():
-  | (ParsedFinykRoute & { search?: string })
-  | null {
+  (ParsedFinykRoute & { search?: string }) | null {
   if (typeof window === "undefined") return null;
   const raw = (window.location.hash || "").replace(/^#\/?/, "").trim();
   if (!raw) return null;

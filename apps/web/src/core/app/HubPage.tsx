@@ -37,7 +37,10 @@ export function HubPage() {
   // `core/db/storageReady.ts`.
   const storageReady = useStorageReady();
 
-  const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
+  const openAuth = useCallback(
+    () => navigate(SIGN_IN_PATH, { flushSync: true }),
+    [navigate],
+  );
 
   // «Поки що пропустити» на /sign-in (same logic as legacy AppInner):
   const leaveAuth = useCallback(() => {
@@ -56,9 +59,23 @@ export function HubPage() {
     navigate("/", { replace: true });
   }, [navigate]);
 
+  // Стрілка «Назад» у каталогах (`/assistant`, `/capabilities`).
+  //
+  // Було безумовне `navigate("/")`, тобто на хаб — незалежно від того,
+  // звідки прийшли. Але каталог відкривають із трьох різних місць:
+  // «?» у композері чату, Налаштування → «Що вміє Сержант» і глибокий
+  // лінк. У перших двох хаб — не та сторінка, яку людина лишила, і
+  // свайп-назад (той самий `history.back()`) поводився інакше за
+  // стрілку. Тепер обидва жести роблять одне й те саме: крок назад по
+  // історії, а `/` лишається запасним виходом рівно для входу, що
+  // історії не має (`location.key === "default"` — прямий лінк).
   const onAssistantClose = useCallback(() => {
-    navigate("/");
-  }, [navigate]);
+    if (location.key !== "default") {
+      navigate(-1);
+      return;
+    }
+    navigate("/", { replace: true });
+  }, [navigate, location.key]);
 
   // 1. Legacy `?module=X` → path-based redirect.
   //    Preserves hash so module-level compat shims can handle it.
@@ -82,16 +99,32 @@ export function HubPage() {
     return <>{standalone}</>;
   }
 
-  // 3. First-time visitors → /welcome — but only once the persistent store has
-  //    resolved. `shouldShowOnboarding()` reads (and, when it finds existing
-  //    data, writes) the SQLite-backed warm-cache; evaluating it against the
-  //    empty pre-boot store falsely redirects a returning user to `/welcome` on
-  //    every hard reload. Render the splash until ready, then decide.
+  // 3. First-time visitors → /welcome — but only once the persistent store AND
+  //    the session have resolved.
+  //
+  //    `shouldShowOnboarding()` reads (and, when it finds existing data, writes)
+  //    the SQLite-backed warm-cache; evaluating it against the empty pre-boot
+  //    store falsely redirects a returning user to `/welcome` on every hard
+  //    reload. Render the splash until ready, then decide.
+  //
+  //    `authLoading` is part of the same gate because the decision needs the
+  //    session too — see the `shell.user` guard below. Both resolve in
+  //    parallel and the storage boot (lazy ~700 KB chunk + SQLite init) is the
+  //    slower of the two, so waiting for the session costs no extra phase.
   if (!shell.activeModule) {
-    if (!storageReady) {
+    if (!storageReady || shell.authLoading) {
       return <PageLoader />;
     }
-    if (shouldShowOnboarding()) {
+    // `/welcome` is the ANONYMOUS cold-start surface: a demo dashboard plus
+    // «Почати» / «У мене вже є акаунт». `shouldShowOnboarding()` is purely
+    // local (done-flag + local-data heuristic) and knows nothing about auth,
+    // so a user who had just signed in on a clean device — data on the server,
+    // nothing local yet — was bounced into that splash and offered to log into
+    // the account they were already using (аудит 2026-08-04, знахідка 5).
+    // An authenticated user is by definition not a first-time visitor; the Hub
+    // has its own first-run guidance (`inFtuxSession` → «З чого хочеш
+    // почати?») for a freshly created account.
+    if (!shell.user && shouldShowOnboarding()) {
       return <RedirectTo to={WELCOME_PATH} />;
     }
   }
@@ -107,7 +140,8 @@ export function HubPage() {
       onInstall={shell.onInstall}
       onDismissInstall={shell.onDismissInstall}
       iosVisible={shell.iosVisible}
-      onDismissIos={shell.onDismissIos}
+      onDismissIosForever={shell.onDismissIosForever}
+      onSnoozeIos={shell.onSnoozeIos}
       updateAvailable={shell.updateAvailable}
       onApplyUpdate={shell.onApplyUpdate}
       openModule={shell.openModule}

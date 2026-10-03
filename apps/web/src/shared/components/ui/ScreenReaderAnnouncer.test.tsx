@@ -38,12 +38,10 @@ describe("ScreenReaderAnnouncer", () => {
 
   it("default announce() places the message in the polite region", async () => {
     const api = setup();
-    act(() => api.announce("Транзакцію збережено"));
+    act(() => api.announce("Операцію збережено"));
     // The message is set inside a requestAnimationFrame callback.
     await waitFor(() =>
-      expect(screen.getByRole("status").textContent).toBe(
-        "Транзакцію збережено",
-      ),
+      expect(screen.getByRole("status").textContent).toBe("Операцію збережено"),
     );
     expect(screen.getByRole("alert").textContent).toBe("");
   });

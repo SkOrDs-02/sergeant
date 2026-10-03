@@ -1,14 +1,27 @@
-// Pure domain-шар правил і обчислень, пов'язаних з бюджетами.
+// Pure domain-шар правил і обчислень, повʼязаних з бюджетами.
 // Тут немає React-хуків і немає доступу до localStorage — кожна функція є
 // чистою проєкцією вхідних даних. Усі UI/хуки мають викликати саме ці
 // функції, а не дублювати формули.
-import { toLocalISODate } from "@sergeant/shared";
-import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
+import {
+  kyivDayEndMs,
+  kyivDayStartMs,
+  kyivMondayStartMs,
+  toLocalISODate,
+  formatNumberUk,
+} from "@sergeant/shared";
+import {
+  getTxStatAmount,
+  calcMonthlyNeeded,
+  type SpendingTxLike,
+  type TxCategoriesLike,
+  type TxSplitsLike,
+} from "../utils";
+import { calcLimitCategorySpent } from "../lib/limitCategorySpend.js";
 import type {
   Budget,
   GoalBudget,
+  GoalContribution,
   LimitBudget,
-  RemainingBudget,
   Transaction,
   TxSplitsMap,
 } from "./types";
@@ -27,8 +40,180 @@ export function getLimitBudgets(
   budgets: readonly Budget[] | null | undefined,
 ): LimitBudget[] {
   return Array.isArray(budgets)
-    ? budgets.filter((b): b is LimitBudget => b?.type === "limit")
+    ? budgets
+        .filter((b): b is LimitBudget => b?.type === "limit")
+        .map(normalizeLimitBudget)
     : [];
+}
+
+export type LimitPeriod = "month" | "week" | "one_time";
+
+/**
+ * Повний набір категорій ліміту з дедупом і фолбеком на legacy `categoryId`.
+ * Канонічна точка читання пари `categoryId`/`categoryIds`: `@sergeant/insights`
+ * (`financeContext.ts` § `budgetCategoryIds`) тепер теж викликає цю функцію
+ * напряму, а не тримає власну копію (§2.28 audit finding).
+ */
+export function limitBudgetCategoryIds(
+  budget: Pick<
+    LimitBudget,
+    "categoryId" | "categoryIds" | "categoryTaxonomyVersion"
+  >,
+): string[] {
+  const raw =
+    Array.isArray(budget.categoryIds) && budget.categoryIds.length > 0
+      ? budget.categoryIds
+      : [budget.categoryId];
+  const out: string[] = [];
+  for (const id of raw) {
+    if (typeof id === "string" && id && !out.includes(id)) out.push(id);
+  }
+  // Чинний ліміт «Покупки» історично включав ручну «Техніку».
+  // На read-time зберігаємо його охоплення; нові ліміти мають version=2.
+  if (
+    budget.categoryTaxonomyVersion !== 2 &&
+    out.includes("shopping") &&
+    !out.includes("tech")
+  ) {
+    out.push("tech");
+  }
+  return out;
+}
+
+export function normalizeLimitBudget<T extends LimitBudget>(
+  budget: T,
+): T & {
+  period: LimitPeriod;
+  categoryIds: string[];
+} {
+  const period: LimitPeriod =
+    budget.period === "week" || budget.period === "one_time"
+      ? budget.period
+      : "month";
+  // `categoryId` завжди = перша категорія набору: legacy-читачі (mobile,
+  // insights, старі бекапи) продовжують бачити валідний одно-категорійний
+  // запис без міграції даних.
+  const categoryIds = limitBudgetCategoryIds(budget);
+  return {
+    ...budget,
+    period,
+    categoryIds,
+    categoryId: categoryIds[0] ?? budget.categoryId ?? "",
+  };
+}
+
+/**
+ * Підпис картки ліміту. Пріоритет: власна назва → підпис єдиної категорії →
+ * «A + B» для двох → «A + ще N» для трьох і більше. `resolveCategoryLabel`
+ * приходить з поверхні (web/mobile мають різні резолвери мета-даних).
+ */
+export function formatLimitBudgetLabel(
+  budget: Pick<LimitBudget, "label" | "categoryId" | "categoryIds">,
+  resolveCategoryLabel: (categoryId: string) => string | null | undefined,
+): string {
+  const custom = budget.label?.trim();
+  if (custom) return custom;
+  const labels = limitBudgetCategoryIds(budget).map(
+    (id) => resolveCategoryLabel(id)?.trim() || id,
+  );
+  const first = labels[0];
+  if (!first) return "";
+  if (labels.length === 1) return first;
+  if (labels.length === 2) return `${first} + ${labels[1]}`;
+  return `${first} + ще ${labels.length - 1}`;
+}
+
+/**
+ * Наявні ліміти, що перетинаються з набором категорій (рішення «дозволити
+ * з попередженням»): перетин НЕ блокує створення, але форма показує підказку,
+ * що витрати цих категорій рахуватимуться в обох лімітах.
+ */
+export function findLimitCategoryOverlaps(
+  categoryIds: readonly string[],
+  existingBudgets: readonly Budget[] | null | undefined,
+  options: { excludeBudgetId?: string } = {},
+): { budget: LimitBudget; categoryIds: string[] }[] {
+  const wanted = new Set(categoryIds.filter(Boolean));
+  if (wanted.size === 0) return [];
+  const out: { budget: LimitBudget; categoryIds: string[] }[] = [];
+  for (const b of getLimitBudgets(existingBudgets)) {
+    if (options.excludeBudgetId && b.id === options.excludeBudgetId) continue;
+    const shared = limitBudgetCategoryIds(b).filter((id) => wanted.has(id));
+    if (shared.length > 0) out.push({ budget: b, categoryIds: shared });
+  }
+  return out;
+}
+
+/**
+ * Стабільний рядковий ключ набору категорій ліміту (sorted join). Ключ
+ * кешів/запитів проактивних порад: зміна складу комбо → інший ключ →
+ * свіжа порада, без ручної інвалідації.
+ */
+export function limitBudgetCategoryKey(
+  budget: Pick<LimitBudget, "categoryId" | "categoryIds">,
+): string {
+  return [...limitBudgetCategoryIds(budget)].sort().join("+");
+}
+
+/** Точний збіг наборів категорій (незалежно від порядку). */
+export function isSameLimitCategorySet(
+  a: readonly string[],
+  b: readonly string[],
+): boolean {
+  if (a.length !== b.length) return false;
+  const sortedB = [...b].sort();
+  return [...a].sort().every((id, i) => id === sortedB[i]);
+}
+
+export function getLimitPeriodRange(
+  budget: Pick<LimitBudget, "period" | "createdAt">,
+  now: Date = new Date(),
+): { startMs: number; endMs: number } {
+  const period = budget.period ?? "month";
+  // Верхня межа — КІНЕЦЬ поточної київської доби, а не `now`.
+  //
+  // AI-DANGER: ручний запис не має реального інстанта — форма штампує день
+  // о 12:00 UTC (`toExpenseInstant`, `manualExpenseForm.ts`), тобто 15:00 за
+  // Києвом. З межею на `now` витрата, додана сьогодні вранці, лежала В
+  // МАЙБУТНЬОМУ відносно вікна і випадала з власного ліміту до 15:00 —
+  // бюджет показував нуль там, де людина щойно записала витрату
+  // (знахідка суміжного фіксу до F-19, браузерний QA 2026-08-24).
+  // Кінець доби лишає в силі початковий намір «не рахувати майбутнє»:
+  // записи завтрашнім і пізнішим днем так само за межею.
+  const endMs = kyivDayEndMs(toLocalISODate(now));
+  if (period === "week") {
+    return { startMs: kyivMondayStartMs(now), endMs };
+  }
+  if (period === "one_time") {
+    const parsed = budget.createdAt ? Date.parse(budget.createdAt) : NaN;
+    return {
+      startMs: Number.isFinite(parsed)
+        ? parsed
+        : kyivDayStartMs(toLocalISODate(now)),
+      endMs,
+    };
+  }
+  const monthKey = `${toLocalISODate(now).slice(0, 7)}-01`;
+  return { startMs: kyivDayStartMs(monthKey), endMs };
+}
+
+export function filterTransactionsForLimitPeriod<
+  T extends { time?: number | undefined; date?: string | undefined },
+>(
+  transactions: readonly T[],
+  budget: Pick<LimitBudget, "period" | "createdAt">,
+  now: Date = new Date(),
+): T[] {
+  const { startMs, endMs } = getLimitPeriodRange(budget, now);
+  return transactions.filter((transaction) => {
+    const timeMs =
+      typeof transaction.time === "number"
+        ? transaction.time * 1000
+        : transaction.date
+          ? Date.parse(transaction.date)
+          : NaN;
+    return Number.isFinite(timeMs) && timeMs >= startMs && timeMs <= endMs;
+  });
 }
 
 export function getGoalBudgets(
@@ -43,16 +228,6 @@ export function getGoalBudgets(
 // правила порогів спирались саме на «сирий» відсоток, а UI — на округлений.
 function rawPct(spent: number, limit: number) {
   return limit > 0 ? (spent / limit) * 100 : 0;
-}
-
-export function calculateRemainingBudget(
-  budget: { limit?: number | undefined },
-  spent: number,
-): RemainingBudget {
-  const limit = budget.limit || 0;
-  const remaining = Math.max(0, limit - spent);
-  const pct = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
-  return { remaining, pct, isOver: spent > limit };
 }
 
 export function calculateSafeToSpendPerDay(
@@ -85,6 +260,128 @@ export function calculateLimitUsage(
     overLimit,
     warnLimit,
   };
+}
+
+export type LimitUsage = ReturnType<typeof calculateLimitUsage>;
+
+/**
+ * З якого дня місяця прогноз за темпом показується (Р8 спеки аналітики v2):
+ * на 1-2 день темп із однієї-двох витрат дає шум, а не прогноз, тож до
+ * третього дня людина бачить лише денну норму.
+ */
+export const MIN_FORECAST_DAY = 3;
+
+/**
+ * Прогноз витрат на кінець місяця за поточним темпом: витрачено за минулі
+ * дні (включно з сьогодні) / кількість цих днів × днів у місяці. Рахує з
+ * точної суми, округлює лише показ. `null` до `minDay`-го дня. Одна формула
+ * для картки ліміту, картки плану, хаб-попередження і `calcForecast`.
+ */
+export function projectMonthEndSpend(
+  spent: number,
+  daysPassed: number,
+  daysInMonth: number,
+  minDay: number = MIN_FORECAST_DAY,
+): number | null {
+  if (daysPassed < Math.max(1, minDay) || daysInMonth <= 0) return null;
+  return (spent / daysPassed) * daysInMonth;
+}
+
+export interface LimitPace {
+  /** Прогноз на кінець місяця, грн без округлення; `null` — прогнозу нема. */
+  forecast: number | null;
+  /** Прогноз вищий за ліміт, а факт ще ні: час попередити (Р9). */
+  forecastOverLimit: boolean;
+  /** Через скільки днів за поточним темпом факт перейде ліміт. */
+  daysUntilOver: number | null;
+}
+
+const NO_PACE: LimitPace = {
+  forecast: null,
+  forecastOverLimit: false,
+  daysUntilOver: null,
+};
+
+/**
+ * Темп ліміту в поточному місяці. Лише для місячного періоду: тижневий і
+ * разовий ліміти мають власне вікно, а спека v1 тримає місяць базою (Р3).
+ */
+export function calcLimitPace(
+  budget: { limit?: number | undefined; period?: LimitPeriod | undefined },
+  spent: number,
+  now: Date = new Date(),
+): LimitPace {
+  if ((budget?.period ?? "month") !== "month") return NO_PACE;
+  const limit = Number(budget?.limit) || 0;
+  const { daysPassed, daysInMonth } = getCurrentMonthContext(now);
+  const forecast = projectMonthEndSpend(spent, daysPassed, daysInMonth);
+  if (forecast === null) return NO_PACE;
+  const forecastOverLimit =
+    limit > 0 && spent > 0 && spent < limit && forecast > limit;
+  return {
+    forecast,
+    forecastOverLimit,
+    daysUntilOver: forecastOverLimit
+      ? Math.ceil((limit - spent) / (spent / daysPassed))
+      : null,
+  };
+}
+
+export interface LimitUsageEntry extends LimitUsage, LimitPace {
+  budget: LimitBudget;
+  categoryIds: string[];
+  /** Набір категорій через `+`, як в id рекомендації `budget_over_<key>`. */
+  key: string;
+}
+
+export interface LimitUsagesOptions {
+  txCategories?: TxCategoriesLike | undefined;
+  txSplits?: TxSplitsLike | undefined;
+  customCategories?: readonly unknown[] | undefined;
+  now?: Date | undefined;
+}
+
+/**
+ * Стан кожного ліміту з одного проходу: вікно періоду, кошики категорій
+ * і відсоток рахуються тут і лише тут. Картка ліміту в Плануванні,
+ * хаб-картка перевищення і рекомендація `budget_over_*` читають цей
+ * результат, тож «162 %» і «перевищень немає» не можуть стояти поруч
+ * (Р5 спеки аналітики v2). `transactions` вже без прихованих і виключених
+ * зі статистики; вікно періоду накладається тут, тож передавай історію
+ * цілком, а не місячний зріз (тижневий і разовий ліміт мають власне вікно).
+ */
+export function calcLimitUsages<
+  T extends SpendingTxLike & {
+    time?: number | undefined;
+    date?: string | undefined;
+  },
+>(
+  budgets: readonly Budget[] | null | undefined,
+  transactions: readonly T[],
+  opts: LimitUsagesOptions = {},
+): LimitUsageEntry[] {
+  const { txCategories = {}, txSplits = {}, customCategories = [], now } = opts;
+  const at = now ?? new Date();
+  const out: LimitUsageEntry[] = [];
+  for (const budget of getLimitBudgets(budgets)) {
+    const categoryIds = limitBudgetCategoryIds(budget);
+    if (categoryIds.length === 0 || !(Number(budget.limit) > 0)) continue;
+    const spent = calcLimitCategorySpent(
+      filterTransactionsForLimitPeriod(transactions, budget, at),
+      categoryIds,
+      txCategories,
+      txSplits,
+      customCategories,
+    );
+    out.push({
+      ...calculateLimitUsage(budget, spent),
+      ...calcLimitPace(budget, spent, at),
+      budget,
+      categoryIds,
+      key: categoryIds.join("+"),
+    });
+  }
+  return out;
 }
 
 // Правило для блоку Overview «бюджети під загрозою» — саме воно визначає,
@@ -140,9 +437,63 @@ export function buildAtRiskKey(
 ) {
   const atRisk = selectAtRiskForecasts(forecasts, threshold);
   if (atRisk.length === 0) return "";
-  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  // §1.9: Kyiv civil month, not the host clock's — matches the month key
+  // every other "цього місяця" aggregate in Finyk keys off.
+  const monthKey = toLocalISODate(now).slice(0, 7);
   const ids = atRisk.map((fc) => fc.categoryId).sort();
   return `${monthKey}|${ids.join(",")}`;
+}
+
+// Сума ручних поповнень цілі. Чиста арифметика — не знає ні про банку, ні
+// про storage; викликач передає лише масив.
+export function sumGoalContributions(
+  contributions: readonly GoalContribution[] | null | undefined,
+): number {
+  if (!Array.isArray(contributions)) return 0;
+  return contributions.reduce((s, c) => s + (Number(c?.amountUah) || 0), 0);
+}
+
+export interface GoalSavedInput {
+  contributions?: readonly GoalContribution[] | undefined;
+  /** Баланс привʼязаної банки в гривнях (UAH), вже сконвертований з копійок. */
+  linkedJarBalanceUah?: number | undefined;
+}
+
+// Прогрес цілі накопичення (design decision #1, goal-progress-auto-sync):
+// прогрес = баланс привʼязаної банки (якщо є) + сума ручних поповнень.
+// Обидва джерела співіснують — банка тягнеться з mono, поповнення додаються
+// поверх (готівка/інші джерела).
+export function calculateGoalSavedAmount(goal: GoalSavedInput): number {
+  const fromJar = Number(goal.linkedJarBalanceUah) || 0;
+  const fromContributions = sumGoalContributions(goal.contributions);
+  return fromJar + fromContributions;
+}
+
+// Міграція без втрат (design decision #4): наявний `savedAmount > 0`
+// конвертується в перший запис логу поповнень один раз. Ідемпотентна —
+// ціль з уже непорожнім `contributions` повертається без змін, тож повторний
+// виклик на кожному читанні `getBudget()` безпечний.
+export function migrateGoalSavedAmountToContribution(
+  goal: GoalBudget,
+  migrationDate: string,
+): GoalBudget {
+  if (Array.isArray(goal.contributions) && goal.contributions.length > 0) {
+    return goal;
+  }
+  if (!goal.savedAmount || goal.savedAmount <= 0) {
+    return { ...goal, contributions: goal.contributions ?? [] };
+  }
+  return {
+    ...goal,
+    contributions: [
+      {
+        id: `mig_${goal.id}`,
+        amountUah: goal.savedAmount,
+        date: migrationDate,
+        note: "Початковий залишок",
+      },
+    ],
+  };
 }
 
 export interface GoalInput {
@@ -186,10 +537,10 @@ export function getGoalMonthlyLabel(
 ) {
   if (!progress) return null;
   const { monthly } = progress;
-  if (monthly?.isAchieved) return "Ціль досягнута 🎉";
+  if (monthly?.isAchieved) return "Ціль досягнута";
   if (monthly?.isOverdue) return "Термін минув";
   if (monthly?.monthlyNeeded != null) {
-    return `Потрібно відкладати: ${monthly.monthlyNeeded.toLocaleString("uk-UA")} ₴/міс.`;
+    return `Потрібно відкладати: ${formatNumberUk(monthly.monthlyNeeded)} ₴/міс.`;
   }
   return null;
 }
@@ -205,7 +556,11 @@ export function getCurrentMonthContext(now: Date = new Date()) {
   const [year = 1970, month = 1, day = 1] = toLocalISODate(now)
     .split("-")
     .map(Number);
-  const monthStart = new Date(year, month - 1, 1);
+  // §1.10: a host-local `new Date(year, month-1, 1)` here is the same class
+  // of drift as `calcForecast`'s month window — the Kyiv civil year/month
+  // above deserve a Kyiv-local midnight instant, not a host-local one.
+  const monthKey = `${year}-${String(month).padStart(2, "0")}-01`;
+  const monthStart = new Date(kyivDayStartMs(monthKey));
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysPassed = day;
   const daysLeft = daysInMonth - daysPassed;
@@ -269,13 +624,19 @@ export function getMonthlyPlanUsage(
 export interface LimitFormInput {
   type?: "limit";
   categoryId?: string;
+  categoryIds?: string[];
   limit?: number | string;
+  period?: LimitPeriod;
+  createdAt?: string;
   [k: string]: unknown;
 }
 
 export interface LimitFormNormalized extends LimitFormInput {
   type: "limit";
+  categoryId: string;
+  categoryIds: string[];
   limit: number;
+  period: LimitPeriod;
 }
 
 export interface LimitFormResult {
@@ -287,22 +648,44 @@ export function validateLimitBudgetForm(
   form: LimitFormInput = {},
   existingBudgets: readonly Budget[] = [],
 ): LimitFormResult {
-  if (!form.categoryId) {
+  const categoryIds = limitBudgetCategoryIds({
+    categoryId: form.categoryId ?? "",
+    ...(form.categoryIds ? { categoryIds: form.categoryIds } : {}),
+  });
+  if (categoryIds.length === 0) {
     return { error: "Оберіть категорію", normalized: null };
   }
   const limitVal = Number(form.limit);
   if (!form.limit || Number.isNaN(limitVal) || limitVal <= 0) {
     return { error: "Вкажіть ліміт більше 0", normalized: null };
   }
+  // Дублікатом вважається лише ТОЧНО такий самий набір категорій; частковий
+  // перетин дозволений свідомо (окремий «Кафе» + комбо «Їжа» співіснують),
+  // форма супроводжує його попередженням через `findLimitCategoryOverlaps`.
   const dup = (existingBudgets || []).some(
-    (b) => b?.type === "limit" && b.categoryId === form.categoryId,
+    (b) =>
+      b?.type === "limit" &&
+      isSameLimitCategorySet(limitBudgetCategoryIds(b), categoryIds),
   );
   if (dup) {
-    return { error: "Ліміт для цієї категорії вже існує", normalized: null };
+    return {
+      error:
+        categoryIds.length > 1
+          ? "Ліміт для цього набору категорій вже існує"
+          : "Ліміт для цієї категорії вже існує",
+      normalized: null,
+    };
   }
   return {
     error: null,
-    normalized: { ...form, type: "limit" as const, limit: limitVal },
+    normalized: {
+      ...form,
+      type: "limit" as const,
+      categoryId: categoryIds[0] ?? "",
+      categoryIds,
+      limit: limitVal,
+      period: form.period ?? "month",
+    },
   };
 }
 
@@ -338,7 +721,7 @@ export function validateGoalBudgetForm(
   const savedVal = Number(form.savedAmount || 0);
   if (savedVal < 0) {
     return {
-      error: "Відкладена сума не може бути від'ємною",
+      error: "Відкладена сума не може бути відʼємною",
       normalized: null,
     };
   }

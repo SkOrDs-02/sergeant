@@ -104,15 +104,26 @@ describe("summaryFor", () => {
     expect(summaryFor("set_habit_schedule", { days: [] }, "fb")).toBe("fb");
   });
 
-  it("pause_habit: paused state variants", () => {
+  it("pause_habit: діапазон і повернення з паузи", () => {
+    // Хвиля 4: пауза датована, тож summary показує межі, а не лише стан.
     expect(summaryFor("pause_habit", { habit_id: "h1" }, "r")).toBe(
-      "h1 · на паузі",
+      "h1 · пауза",
     );
     expect(
+      summaryFor(
+        "pause_habit",
+        { habit_id: "h1", from: "2026-08-10", to: "2026-08-17" },
+        "r",
+      ),
+    ).toBe("h1 · 2026-08-10 – 2026-08-17");
+    expect(
+      summaryFor("pause_habit", { habit_id: "h1", from: "2026-08-10" }, "r"),
+    ).toBe("h1 · з 2026-08-10");
+    expect(
       summaryFor("pause_habit", { habit_id: "h1", paused: false }, "r"),
-    ).toBe("h1 · знято з паузи");
+    ).toBe("h1 · повернення з паузи");
     expect(summaryFor("pause_habit", { paused: false }, "r")).toBe(
-      "знято з паузи",
+      "повернення з паузи",
     );
   });
 
@@ -146,16 +157,29 @@ describe("summaryFor", () => {
   });
 
   it("set_budget_limit / update_budget", () => {
+    // AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+    // `category_id` — канонічний id з `MCC_CATEGORIES`, картка показує
+    // людський label ("Продукти"), не сирий id ("food").
     expect(
       summaryFor("set_budget_limit", { category_id: "food", limit: 5000 }, "r"),
-    ).toBe("food · 5000 ₴");
+    ).toBe("Продукти · 5 000 ₴");
     expect(
       summaryFor(
         "update_budget",
         { category_id: "food", target_amount: 3000 },
         "r",
       ),
-    ).toBe("food · 3000 ₴");
+    ).toBe("Продукти · 3 000 ₴");
+  });
+
+  it("set_budget_limit — невідомий/custom category_id лишається як є (без резолву)", () => {
+    expect(
+      summaryFor(
+        "set_budget_limit",
+        { category_id: "my_custom_cat", limit: 100 },
+        "r",
+      ),
+    ).toBe("my_custom_cat · 100 ₴");
   });
 
   it("set_monthly_plan", () => {
@@ -170,7 +194,7 @@ describe("summaryFor", () => {
 
   it("create_debt / create_receivable", () => {
     expect(summaryFor("create_debt", { name: "Банк", amount: 1000 }, "r")).toBe(
-      "Банк · 1000 ₴",
+      "Банк · 1 000 ₴",
     );
     expect(
       summaryFor("create_receivable", { name: "Друг", amount: 500 }, "r"),
@@ -292,13 +316,29 @@ describe("summaryFor", () => {
   it("set_daily_plan", () => {
     expect(
       summaryFor("set_daily_plan", { kcal: 2000, protein_g: 150 }, "r"),
-    ).toBe("2000 ккал · 150 г білка");
+    ).toBe("2 000 ккал · 150 г білка");
   });
 
   it("suggest_meal", () => {
     expect(
       summaryFor("suggest_meal", { meal_type: "обід", focus: "білок" }, "r"),
     ).toBe("обід · білок");
+  });
+
+  it("suggest_meal — AI-6: канонічний enum перекладається, не показує сирий ключ", () => {
+    expect(
+      summaryFor("suggest_meal", { meal_type: "dinner", focus: "лишки" }, "r"),
+    ).toBe("Вечеря · лишки");
+  });
+
+  it("log_meal — AI-6: канонічний enum перекладається", () => {
+    expect(
+      summaryFor(
+        "log_meal",
+        { meal_type: "dinner", name: "Плов", calories: 500 },
+        "r",
+      ),
+    ).toBe("Вечеря · Плов · 500 ккал");
   });
 
   it("copy_meal_from_date / plan_meals_for_day", () => {
@@ -308,9 +348,9 @@ describe("summaryFor", () => {
         { source_date: "2024-01-01", target_kcal: 1800 },
         "r",
       ),
-    ).toBe("2024-01-01 · 1800 ккал");
+    ).toBe("2024-01-01 · 1 800 ккал");
     expect(summaryFor("plan_meals_for_day", { target_kcal: 1800 }, "r")).toBe(
-      "1800 ккал",
+      "1 800 ккал",
     );
   });
 
@@ -441,9 +481,21 @@ describe("summaryFor", () => {
     expect(summaryFor("export_module_data", {}, "r")).toBe("Експорт даних");
   });
 
-  it("remember / forget", () => {
-    expect(summaryFor("remember", { key: "k1" }, "r")).toBe("k1");
-    expect(summaryFor("forget", { id: "i1" }, "r")).toBe("i1");
+  /**
+   * Регресія зі скріна 2026-08-07: у картці світився сирий UUID. Білдери
+   * шукали поля `key`/`id`, яких у схемах `remember`/`forget` немає, тож
+   * завжди повертали `undefined`, і картка падала у `truncate(result)` —
+   * а результат виконавця несе `(Уподобання, id:84920a0a-…)`.
+   */
+  it("remember / forget — картка без технічного id", () => {
+    const rawResult =
+      "Запамʼятав: Не любить чорнослив (Уподобання, id:84920a0a-84b4-4f5e-932a-43ef23733ffa)";
+    expect(
+      summaryFor("remember", { fact: "Не любить чорнослив" }, rawResult),
+    ).toBe("Не любить чорнослив");
+    expect(
+      summaryFor("forget", { fact_id: "84920a0a" }, "Забув: X"),
+    ).not.toContain("84920a0a");
   });
 
   it("my_profile", () => {
@@ -452,7 +504,7 @@ describe("summaryFor", () => {
 
   it("recall_memory: query and default", () => {
     expect(summaryFor("recall_memory", { query: "пошук" }, "r")).toBe("пошук");
-    expect(summaryFor("recall_memory", {}, "r")).toBe("Пошук у пам'яті");
+    expect(summaryFor("recall_memory", {}, "r")).toBe("Пошук у памʼяті");
   });
 
   it("query/analytics tools return raw result untruncated", () => {
@@ -479,6 +531,7 @@ describe("summaryFor", () => {
       "fallback",
     );
     expect(summaryFor("save_note", {}, "fallback")).toBe("fallback");
+    // `remember` без `fact` — теоретичний випадок: поле обовʼязкове за схемою.
     expect(summaryFor("remember", {}, "fallback")).toBe("fallback");
   });
 });

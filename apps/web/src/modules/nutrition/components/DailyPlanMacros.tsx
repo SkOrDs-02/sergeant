@@ -3,7 +3,11 @@
  * Status: Active
  */
 import { chartHex } from "@sergeant/design-tokens/tokens";
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import { Measure } from "@shared/components/ui/Measure";
+import {
+  ATWATER_KCAL_PER_G,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 
@@ -13,9 +17,9 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
   const carb = prefs.dailyTargetCarbs_g ?? 0;
   if (!(prot > 0) && !(fat > 0) && !(carb > 0)) return null;
 
-  const protKcal = prot * 4;
-  const fatKcal = fat * 9;
-  const carbKcal = carb * 4;
+  const protKcal = prot * ATWATER_KCAL_PER_G.protein;
+  const fatKcal = fat * ATWATER_KCAL_PER_G.fat;
+  const carbKcal = carb * ATWATER_KCAL_PER_G.carbs;
   const total = protKcal + fatKcal + carbKcal || 1;
 
   const pctP = Math.round((protKcal / total) * 100);
@@ -59,21 +63,26 @@ export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.protein }}
           />{" "}
-          Б {pctP}% · {prot}г · {Math.round(protKcal)} ккал
+          Б <Measure value={pctP} unit="%" /> ·{" "}
+          <Measure value={prot} unit="г" /> ·{" "}
+          <Measure value={Math.round(protKcal)} unit="ккал" />
         </span>
         <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.fat }}
           />{" "}
-          Ж {pctF}% · {fat}г · {Math.round(fatKcal)} ккал
+          Ж <Measure value={pctF} unit="%" /> · <Measure value={fat} unit="г" />{" "}
+          · <Measure value={Math.round(fatKcal)} unit="ккал" />
         </span>
         <span className="flex items-center gap-1 text-style-caption text-subtle">
           <span
             className="w-2 h-2 rounded-sm"
             style={{ backgroundColor: chartHex.carbs }}
           />{" "}
-          В {pctC}% · {carb}г · {Math.round(carbKcal)} ккал
+          В <Measure value={pctC} unit="%" /> ·{" "}
+          <Measure value={carb} unit="г" /> ·{" "}
+          <Measure value={Math.round(carbKcal)} unit="ккал" />
         </span>
       </div>
     </div>
@@ -97,6 +106,8 @@ export function MacroBadge({
   return (
     <span
       className={cn(
+        // AI-NOTE: сирий `text-xs` — розмір ЧИПА: висота плашки тримається
+        // на парі з `py-0.5`, а `rounded-xl` розрахований під неї.
         "inline-flex items-center gap-1 text-xs rounded-xl px-2 py-0.5",
         color || "bg-bg border border-line text-subtle",
       )}

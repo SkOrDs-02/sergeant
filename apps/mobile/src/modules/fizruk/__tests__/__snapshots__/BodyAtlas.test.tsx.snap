@@ -505,7 +505,7 @@ exports[`BodyAtlas matches snapshot for the back view 1`] = `
             />
           </RNSVGGroup>
           <RNSVGGroup
-            accessibilityLabel="Відвідні м'язи"
+            accessibilityLabel="Відвідні мʼязи"
             accessible={true}
             fill={
               {
@@ -1135,7 +1135,7 @@ exports[`BodyAtlas matches snapshot for the front view 1`] = `
             />
           </RNSVGGroup>
           <RNSVGGroup
-            accessibilityLabel="Косі м'язи"
+            accessibilityLabel="Косі мʼязи"
             accessible={true}
             fill={
               {
@@ -1239,7 +1239,7 @@ exports[`BodyAtlas matches snapshot for the front view 1`] = `
             />
           </RNSVGGroup>
           <RNSVGGroup
-            accessibilityLabel="Привідні м'язи"
+            accessibilityLabel="Привідні мʼязи"
             accessible={true}
             fill={
               {

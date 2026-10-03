@@ -94,7 +94,7 @@ export function useInlineAiRail(): UseInlineAiRailResult {
       const baseAnswer = reply
         ? reply
         : hasToolCalls
-          ? "Знайшов дію — для виконання потрібен повноцінний чат."
+          ? "Знайшов дію, для виконання потрібен повноцінний чат."
           : "Немає відповіді.";
       const truncated = baseAnswer.length > MAX_INLINE_REPLY_LEN;
       const answer = truncated
@@ -122,7 +122,11 @@ export function useInlineAiRail(): UseInlineAiRailResult {
 
       let msg: string;
       if (err instanceof ApiError && err.kind === "http") {
-        msg = friendlyApiError(err.status, err.serverMessage);
+        msg = friendlyApiError(
+          err.status,
+          err.serverMessage,
+          (err.body as { code?: string } | undefined)?.code,
+        );
       } else {
         msg = friendlyChatError(err);
       }

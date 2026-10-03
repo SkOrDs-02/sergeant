@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { BudgetAlertsList } from "./BudgetAlertsList";
 import type {
   LimitBudget,
@@ -35,6 +35,7 @@ describe("BudgetAlertsList", () => {
         statTx={[]}
         txCategories={{}}
         txSplits={{}}
+        onOpenLimit={vi.fn()}
       />,
     );
     expect(container.firstChild).toBeNull();
@@ -49,6 +50,7 @@ describe("BudgetAlertsList", () => {
         statTx={[tx]}
         txCategories={{ t1: CATEGORY }}
         txSplits={{}}
+        onOpenLimit={vi.fn()}
       />,
     );
     expect(screen.getByText(/понад 60% ліміту/)).toBeInTheDocument();
@@ -57,16 +59,22 @@ describe("BudgetAlertsList", () => {
 
   it("renders an over-limit row marked перевищено when spend exceeds the limit", () => {
     const tx = makeTx("t1", -150000); // 1500 ₴
+    const onOpenLimit = vi.fn();
     const { container } = render(
       <BudgetAlertsList
         budgetAlerts={[makeBudget(1000)]}
         statTx={[tx]}
         txCategories={{ t1: CATEGORY }}
         txSplits={{}}
+        onOpenLimit={onOpenLimit}
       />,
     );
     expect(screen.getByText(/перевищено/)).toBeInTheDocument();
     expect(container.textContent).toContain("150");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Відкрити ліміт у плануванні/ }),
+    );
+    expect(onOpenLimit).toHaveBeenCalledWith(CATEGORY);
   });
 
   it("falls back to the raw categoryId and 0% when no label resolves and limit is 0", () => {
@@ -84,6 +92,7 @@ describe("BudgetAlertsList", () => {
         statTx={[]}
         txCategories={{}}
         txSplits={{}}
+        onOpenLimit={vi.fn()}
       />,
     );
     // No category meta resolves for an unknown id → shows the raw categoryId.

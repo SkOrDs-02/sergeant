@@ -1,5 +1,6 @@
 import { pluralExercises } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
+import { Icon } from "@shared/components/ui/Icon";
 import type { Workout } from "@sergeant/fizruk-domain";
 import type { WorkoutsView } from "../../pages/Workouts.types";
 
@@ -9,6 +10,17 @@ export interface WorkoutsHeaderProps {
   finishedCount: number;
   onBack: () => void;
   onAddCatalog: () => void;
+  /**
+   * Чи належить поточний вигляд власному МАРШРУТУ (`/fizruk/catalog`,
+   * `/fizruk/templates`). На таких екранах вихід малює шапка модуля
+   * (`FizrukHeader` контекстний back), і друга стрілка тут була б дублем —
+   * саме її бачили поруч із парою «Назад»/«На хаб» (PR-Z7).
+   *
+   * Коли вигляд перемикається ВСЕРЕДИНІ вкладки (`section` не задано),
+   * стрілка тут — єдиний вихід, бо маршрут не змінювався і контекстного
+   * back у шапки немає. Тому прапорець, а не безумовне зняття.
+   */
+  routeOwnsBack?: boolean | undefined;
 }
 
 /**
@@ -23,6 +35,7 @@ export function WorkoutsHeader({
   finishedCount,
   onBack,
   onAddCatalog,
+  routeOwnsBack = false,
 }: WorkoutsHeaderProps) {
   const title =
     view === "catalog"
@@ -42,31 +55,35 @@ export function WorkoutsHeader({
         )}`
       : finishedCount > 0
         ? `Завершено: ${finishedCount}`
-        : "Перше тренування — попереду";
+        : "Перше тренування – попереду";
 
   return (
     <div className="flex items-center gap-3 mb-3">
-      {view !== "home" ? (
+      {view !== "home" && !routeOwnsBack ? (
         <button
           type="button"
-          className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] -ml-1 rounded-xl flex items-center justify-center text-text/80 hover:bg-surface-2"
+          className="w-9 h-9 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] -ml-1 rounded-xl flex items-center justify-center text-text hover:bg-panelHi focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
           onClick={onBack}
           aria-label="Повернутись до тренувань"
         >
-          ‹
+          <Icon name="chevron-left" size="sm" />
         </button>
       ) : null}
       <div className="flex-1">
         <h1 className="text-style-title text-text">{title}</h1>
         {view === "home" ? (
-          <p className="text-xs text-subtle mt-0.5">{homeSubtitle}</p>
+          <p className="text-style-caption text-subtle mt-0.5">
+            {homeSubtitle}
+          </p>
         ) : null}
       </div>
       {view === "catalog" ? (
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           size="sm"
-          className="h-9 min-h-[44px] px-4"
+          className="h-9 px-4"
           onClick={onAddCatalog}
           aria-label="Додати вправу в каталог"
         >

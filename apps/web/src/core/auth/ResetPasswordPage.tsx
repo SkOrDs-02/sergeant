@@ -10,7 +10,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { useToast } from "@shared/hooks/useToast";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
 import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
@@ -20,7 +20,7 @@ import { resetPassword } from "./authClient";
 /**
  * Зод-схема — локальна, як у `AuthPage`. Меседжі — з
  * `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`), див.
- * `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
+ * `docs/design/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
  * після парсу — стандартний react-hook-form pattern для cross-field
  * перевірок.
  */
@@ -131,27 +131,22 @@ export function ResetPasswordPage() {
       <main
         id="main"
         tabIndex={-1}
-        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-500 outline-none"
+        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower outline-none"
       >
         <div className="text-center mb-6">
           <BrandLogo as="h1" size="md" className="justify-center" />
         </div>
 
-        <Card
-          prominence="hero"
-          radius="r-2xl"
-          padding="lg"
-          className="space-y-5"
-        >
+        <Card prominence="hero" radius="xl" padding="lg" className="space-y-5">
           <div className="text-center">
             <h2
               ref={headingRef}
               tabIndex={-1}
-              className="text-style-display-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+              className="text-style-display text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
             >
               Новий пароль
             </h2>
-            <p className="text-style-body-sm text-subtle mt-2">
+            <p className="text-style-label text-subtle mt-2">
               Встанови новий пароль для свого акаунта.
             </p>
           </div>
@@ -159,7 +154,7 @@ export function ResetPasswordPage() {
           {!token ? (
             <div
               role="alert"
-              className="text-style-body-sm text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
+              className="text-style-label text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
             >
               <p>
                 Посилання на скидання пароля неповне або протерміноване. Відкрий
@@ -167,7 +162,7 @@ export function ResetPasswordPage() {
               </p>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="md"
                 className="w-full"
                 onClick={() => navigate("/sign-in", { replace: true })}
@@ -254,7 +249,7 @@ export function ResetPasswordPage() {
 
               <Button
                 type="submit"
-                variant="primary"
+                variant="solid"
                 size="lg"
                 loading={status === "sending"}
                 className="w-full"

@@ -11,21 +11,13 @@
  * "Присід · 120 × 5 · 20 кві".
  */
 
+import { finiteOrNull } from "@sergeant/shared";
+
+import { epley1rm } from "../../lib/workoutStats.js";
 import type { DashboardPRItem, DashboardWorkoutInput } from "./types.js";
 
 /** Default top-N rendered on the dashboard. */
 export const DEFAULT_TOP_PRS_LIMIT = 3;
-
-function toFiniteNumber(v: unknown): number | null {
-  if (v == null || v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function epley1rm(weight: number, reps: number): number {
-  if (weight <= 0 || reps <= 0) return 0;
-  return weight * (1 + reps / 30);
-}
 
 interface Candidate {
   exerciseId: string;
@@ -68,8 +60,8 @@ export function computeTopPRs(
           : null;
       const sets = item.sets ?? [];
       for (const s of sets) {
-        const weight = toFiniteNumber(s?.weightKg);
-        const reps = toFiniteNumber(s?.reps);
+        const weight = finiteOrNull(s?.weightKg);
+        const reps = finiteOrNull(s?.reps);
         if (weight == null || reps == null) continue;
         const one = epley1rm(weight, reps);
         if (one <= 0) continue;

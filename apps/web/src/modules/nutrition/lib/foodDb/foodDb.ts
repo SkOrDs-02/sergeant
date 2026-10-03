@@ -9,7 +9,7 @@ import {
   migrateLegacyDbOnce,
   openSergeantDb,
 } from "../../../../shared/lib/idb/sergeantDb";
-import { generatePrefixedId } from "@sergeant/shared";
+import { clampNonNegative, generatePrefixedId } from "@sergeant/shared";
 
 /**
  * Lazy-loader для 1600+ seed-продуктів. Статичний import затягував весь
@@ -57,8 +57,7 @@ export interface FoodProductInput {
 }
 
 export type UpsertFoodResult =
-  | { ok: true; product: FoodProduct }
-  | { ok: false; error: string };
+  { ok: true; product: FoodProduct } | { ok: false; error: string };
 
 function normText(s: unknown): string {
   return String(s || "")
@@ -68,21 +67,16 @@ function normText(s: unknown): string {
     .replace(/\s+/g, " ");
 }
 
-function clamp0(n: unknown): number {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.max(0, v) : 0;
-}
-
 function normalizeMacros(per100: unknown): Macros {
   const m =
     per100 && typeof per100 === "object"
       ? (per100 as Record<string, unknown>)
       : {};
   return {
-    kcal: clamp0(m["kcal"]),
-    protein_g: clamp0(m["protein_g"]),
-    fat_g: clamp0(m["fat_g"]),
-    carbs_g: clamp0(m["carbs_g"]),
+    kcal: clampNonNegative(m["kcal"]),
+    protein_g: clampNonNegative(m["protein_g"]),
+    fat_g: clampNonNegative(m["fat_g"]),
+    carbs_g: clampNonNegative(m["carbs_g"]),
   };
 }
 
@@ -150,7 +144,8 @@ export function makeFoodProduct(partial: unknown): FoodProduct {
       ? String(p.id).trim()
       : generatePrefixedId("food");
   const norm = normText([name, brand].filter(Boolean).join(" "));
-  const defaultGrams = p.defaultGrams != null ? clamp0(p.defaultGrams) : 100;
+  const defaultGrams =
+    p.defaultGrams != null ? clampNonNegative(p.defaultGrams) : 100;
   return {
     id,
     name,
@@ -222,6 +217,40 @@ export async function listFoods(limit = 500): Promise<FoodProduct[]> {
   }
 }
 
+/**
+ * Один продукт за його id, або `null`, якщо його вже немає.
+ *
+ * Існує заради редагування прийому: страва зберігає `foodId` і
+ * `amount_g`, але не `per100`, тож без цього читання аркуш редагування не
+ * може ні показати вагу порції, ні перерахувати макроси під іншу вагу
+ * (browser-QA 2026-09-02). `listFoods()` для цього не годиться: він тягне
+ * весь стор і ріже за лімітом, тобто для великого каталогу міг би просто
+ * не знайти потрібний рядок.
+ */
+export async function getFoodById(
+  id: string | number,
+): Promise<FoodProduct | null> {
+  const key = String(id ?? "").trim();
+  if (!key) return null;
+  try {
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return null;
+    const tx = db.transaction(STORE_PRODUCTS, "readonly");
+    const store = tx.objectStore(STORE_PRODUCTS);
+    const found = await new Promise<FoodProduct | null>((resolve, reject) => {
+      const r = store.get(key);
+      r.onsuccess = () =>
+        resolve((r.result as FoodProduct | undefined) ?? null);
+      r.onerror = () => reject(r.error);
+    });
+    await txDone(tx);
+    return found;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchFoods(
   query: string,
   limit = 20,
@@ -267,7 +296,7 @@ export async function upsertFood(product: unknown): Promise<UpsertFoodResult> {
 }
 
 export function macrosForGrams(per100: unknown, grams: unknown): Macros {
-  const g = clamp0(grams);
+  const g = clampNonNegative(grams);
   const k = g / 100;
   const m = normalizeMacros(per100);
   return {

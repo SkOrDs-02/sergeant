@@ -1,25 +1,25 @@
-/* eslint-disable sergeant-design/no-raw-storage-key, sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
-   Cross-module briefing executor (outside React): routine / fizruk / nutrition
-   now read canonical SQLite state (loadRoutineState / readFizrukWorkouts /
-   loadNutritionLog); only the finyk tx-cache stays on LS (not tombstoned). The
-   host-local day-key and non-null assertions are pre-existing. Raw-key
-   burndown tracked for 2026-Q3. */
+/* eslint-disable @typescript-eslint/no-non-null-assertion --
+   Pre-existing non-null assertions on already-Array.isArray-guarded
+   index lookups. */
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   Tx splits stay on LS; bank transactions now come from the Mono mirror
+   reader (Dual-write teardown Phase 3). */
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { formatNumberUk } from "@sergeant/shared";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
+import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import { loadRoutineState } from "../../../../modules/routine/lib/routineStorage";
 import { loadNutritionLog } from "../../../../modules/nutrition/lib/nutritionStorage";
 import { readFizrukWorkouts } from "../fizrukActions/shared";
 
 export function morningBriefing(): string {
   const now = new Date();
-  const todayKey = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-  ].join("-");
-  const parts: string[] = [
-    `Доброго ранку! Сьогодні ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long" })}`,
-  ];
+  const todayKey = getKyivDayKey(now);
+  const dateLabel = formatUaWeekdayDate(now, { timeZone: "Europe/Kyiv" });
+  const parts: string[] = [`Доброго ранку! Сьогодні ${dateLabel}`];
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {
     const activeHabits = routineState.habits.filter((h) => !h.archived);
@@ -43,15 +43,14 @@ export function morningBriefing(): string {
   const todayMeals = nutritionLog[todayKey]?.meals || [];
   const todayKcal = todayMeals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
   if (todayKcal > 0) {
-    parts.push(`Калорії: ${Math.round(todayKcal)} ккал`);
+    parts.push(`Калорії: ${formatNumberUk(Math.round(todayKcal))} ккал`);
   }
   return parts.join("\n");
 }
 
 export function weeklySummary(): string {
   const now = new Date();
-  const weekAgo = new Date(now);
-  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgo = new Date(now.getTime() - 7 * 86400000);
   const parts: string[] = ["Тижневий підсумок:"];
   const workouts = readFizrukWorkouts();
   const weekWorkouts = workouts.filter(
@@ -59,20 +58,11 @@ export function weeklySummary(): string {
   );
   parts.push(`Тренувань: ${weekWorkouts.length}`);
   const totalVolume = weekWorkouts.reduce(
-    (total, w) =>
-      total +
-      w.items.reduce(
-        (s, item) =>
-          s +
-          (item.sets ?? []).reduce(
-            (ss, set) => ss + set.weightKg * set.reps,
-            0,
-          ),
-        0,
-      ),
+    (total, w) => total + workoutTonnageKg(w),
     0,
   );
-  if (totalVolume > 0) parts.push(`Об'єм: ${Math.round(totalVolume)} кг×повт`);
+  if (totalVolume > 0)
+    parts.push(`Обʼєм: ${formatNumberUk(Math.round(totalVolume))} кг×повт`);
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {
     const activeHabits = routineState.habits.filter((h) => !h.archived);
@@ -80,13 +70,7 @@ export function weeklySummary(): string {
     let totalDone = 0;
     let totalPossible = 0;
     for (let i = 0; i < 7; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      const dk = [
-        d.getFullYear(),
-        String(d.getMonth() + 1).padStart(2, "0"),
-        String(d.getDate()).padStart(2, "0"),
-      ].join("-");
+      const dk = getKyivDayKey(new Date(now.getTime() - i * 86400000));
       totalPossible += activeHabits.length;
       for (const h of activeHabits) {
         if (Array.isArray(completions[h.id]) && completions[h.id]!.includes(dk))
@@ -95,18 +79,14 @@ export function weeklySummary(): string {
     }
     const pct =
       totalPossible > 0 ? Math.round((totalDone / totalPossible) * 100) : 0;
-    parts.push(`Звички: ${pct}% (${totalDone}/${totalPossible})`);
+    parts.push(
+      `Звички: ${formatNumberUk(pct)}% (${totalDone}/${totalPossible})`,
+    );
   }
   const nutritionLog = loadNutritionLog();
   const weekKcal: number[] = [];
   for (let i = 0; i < 7; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    const dk = [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, "0"),
-      String(d.getDate()).padStart(2, "0"),
-    ].join("-");
+    const dk = getKyivDayKey(new Date(now.getTime() - i * 86400000));
     const dayMeals = nutritionLog[dk]?.meals || [];
     const k = dayMeals.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
     if (k > 0) weekKcal.push(k);
@@ -115,25 +95,25 @@ export function weeklySummary(): string {
     const avg = Math.round(
       weekKcal.reduce((a, b) => a + b, 0) / weekKcal.length,
     );
-    parts.push(`Калорії: ~${avg} ккал/день (${weekKcal.length} днів)`);
+    parts.push(
+      `Калорії: ~${formatNumberUk(avg)} ккал/день (${weekKcal.length} днів)`,
+    );
   }
-  const txCache = ls<{
-    txs?: Array<{
-      id: string;
-      amount: number;
-      time?: number;
-      description?: string;
-      mcc?: number;
-    }>;
-  } | null>("finyk_tx_cache", null);
+  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions as Array<{
+    id: string;
+    amount: number;
+    time?: number;
+    description?: string;
+    mcc?: number;
+  }>;
   const txSplits = ls<Record<string, unknown>>("finyk_tx_splits", {});
-  if (txCache?.txs) {
+  if (mirrorTxs.length > 0) {
     const weekTs = weekAgo.getTime() / 1000;
-    const weekTxs = txCache.txs.filter((t) => (t.time || 0) > weekTs);
+    const weekTxs = mirrorTxs.filter((t) => (t.time || 0) > weekTs);
     const spent = weekTxs
       .filter((t) => t.amount < 0)
       .reduce((s, t) => s + getTxStatAmount(t, txSplits), 0);
-    parts.push(`Витрати: ${Math.round(spent)} грн`);
+    parts.push(`Витрати: ${formatNumberUk(Math.round(spent))} грн`);
   }
   return parts.join("\n");
 }

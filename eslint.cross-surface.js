@@ -12,7 +12,7 @@ export const crossSurfaceBlocks = [
   // Import-extension hygiene — bans `.js`/`.jsx`/`.ts`/`.tsx`/`.mjs`/`.cjs`
   // suffixes in import specifiers for the bundler-fed frontend apps. Codemod
   // #3 stripped 436 historical extension-suffixed imports in `apps/web/src`
-  // (see `docs/90-work/tech-debt/frontend.md` §"Уже закрито"); without an enforcing
+  // (see `docs/work/specs/tech-debt/frontend.md` §"Уже закрито"); without an enforcing
   // rule, new code silently re-introduces the suffix and the
   // `tsc --moduleResolution bundler` / `vite` / `vitest` triple disagrees
   // about resolution again.
@@ -40,24 +40,6 @@ export const crossSurfaceBlocks = [
       "import/extensions": ["error", "never"],
     },
   },
-  // DS primitives that legitimately define the eyebrow treatment.
-  // SectionHeading owns the uppercase+tracking+text size tokens, Label
-  // owns the field-label eyebrow variant, and chartTheme defines the
-  // tooltip label token — all three are the single source-of-truth
-  // callers should import from. Mobile mirrors the same primitive at
-  // `apps/mobile/src/components/ui/SectionHeading.tsx`; treat both
-  // platforms' source-of-truth files identically.
-  {
-    files: [
-      "apps/web/src/shared/components/ui/SectionHeading.tsx",
-      "apps/web/src/shared/components/ui/FormField.tsx",
-      "apps/web/src/shared/charts/chartTheme.ts",
-      "apps/mobile/src/components/ui/SectionHeading.tsx",
-    ],
-    rules: {
-      "sergeant-design/no-eyebrow-drift": "off",
-    },
-  },
   // Jest setup / test files need jest globals.
   {
     files: [
@@ -71,7 +53,7 @@ export const crossSurfaceBlocks = [
     },
   },
   // Monobank PAT client-storage guardrail — Stage 0 / PR #002 from
-  // `docs/90-work/planning/storage-roadmap.md`. The PAT lives only on the
+  // `docs/work/specs/planning/storage-roadmap.md`. The PAT lives only on the
   // server (`mono_connection.token_ciphertext`); persisting it
   // anywhere on the client (LS / sessionStorage / MMKV / IDB / cloud-sync
   // `module_data`) is a security regression. Reads (the migration
@@ -99,7 +81,7 @@ export const crossSurfaceBlocks = [
   },
   // SAST guardrail — `eslint-plugin-security` taint-flow heuristics on
   // production server + console code. Closes the M11 audit gap from
-  // `docs/04-governance/security/hardening/M11-eslint-plugin-security.md`: SQL
+  // `docs/work/specs/security-hardening/M11-eslint-plugin-security.md`: SQL
   // parameterisation and table-name allowlists are correct today, but
   // nothing in lint forbids the next regression. The three rules below
   // catch the highest-signal patterns the audit asked for; the
@@ -133,12 +115,12 @@ export const crossSurfaceBlocks = [
       // patterns in the existing codebase (typed `distPath` arguments,
       // user-id-keyed backup file paths, the openclaw doc-search
       // helpers, the CORS allowlist regex). Per
-      // `docs/04-governance/security/hardening/M11-eslint-plugin-security.md`
+      // `docs/work/specs/security-hardening/M11-eslint-plugin-security.md`
       // verification ("baseline run produces no new errors on the
       // existing codebase") the rules ship at "warn" — review-time
       // signal in CI lint output without blocking on the audited
       // baseline. Promote to "error" once the baseline is migrated;
-      // see `docs/04-governance/security/audit-exceptions.md` for the inventory.
+      // see `docs/governance/security/audit-exceptions.md` for the inventory.
       "security/detect-non-literal-fs-filename": "warn",
       "security/detect-non-literal-regexp": "warn",
       // Custom hard-rule companion to the SAST plugin: forbid templated
@@ -169,13 +151,13 @@ export const crossSurfaceBlocks = [
           selector:
             "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/04-governance/security/hardening/M11-eslint-plugin-security.md.",
+            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/README.md — картка M11.",
         },
         {
           selector:
             "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/04-governance/security/hardening/M11-eslint-plugin-security.md.",
+            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/README.md — картка M11.",
         },
       ],
     },
@@ -197,7 +179,7 @@ export const crossSurfaceBlocks = [
     },
   },
   // PII-in-console guardrail (audit S2,
-  // `docs/90-work/audits/2026-05-13-security-observability-roast.md`). Forbids
+  // `docs/work/specs/audits/2026-05-13-security-observability-roast.md`). Forbids
   // `console.{log,error,warn,info}` with a string / template literal
   // matching `/email|phone|password|token|secret|auth/i` or an object
   // literal whose (nested) keys match the same regex. Sentry's `console`
@@ -224,7 +206,7 @@ export const crossSurfaceBlocks = [
   //
   // Allowlist below now contains only test-file globs — every initial
   // production call-site listed at rule introduction (see
-  // `docs/90-work/tech-debt/frontend.md` §no-strict-bypass) has been migrated.
+  // `docs/work/specs/tech-debt/frontend.md` §no-strict-bypass) has been migrated.
   // The rule is fully enforced in production: any new bypass on
   // `apps/server/src/**` or `apps/web/src/**` will fail CI.
   {
@@ -265,12 +247,14 @@ export const crossSurfaceBlocks = [
       // read/write entry-points that everyone else should call.
       "apps/web/src/modules/routine/lib/routineStorage.ts",
       "apps/mobile/src/modules/routine/lib/routineStore.ts",
-      // Stage 8 PR #057r-tombstone — the residual-import helper +
-      // shared `routineStorage` instance are the only callsites
-      // allowed to touch the now-deprecated `hub_routine_v1` LS key.
-      // The helper drains the leftover LS payload into SQLite once
-      // on boot and then deletes the key.
-      "apps/web/src/modules/routine/lib/residualImport.ts",
+      // Stage 8 PR #057r-tombstone — the shared `routineStorage`
+      // instance is a callsite allowed to touch the now-deprecated
+      // `hub_routine_v1` LS key. It used to be shared with a
+      // boot-time residual-import helper (`residualImport.ts`, one-time
+      // pre-beta LS→SQLite drain, removed 2026-08 once no testers were
+      // left with pre-SQLite LS data to migrate — see git history) that
+      // drained the leftover LS payload into SQLite once on boot and
+      // then deleted the key.
       "apps/web/src/modules/routine/lib/routineStorageInstance.ts",
       // Stage 8 PR #057r-tombstone-mobile — mobile mirror of the
       // residual-import helper. Drains the leftover `hub_routine_v1`
@@ -437,7 +421,7 @@ export const crossSurfaceBlocks = [
   // `warn` because ~50 existing call-sites remain (chatActions, onboarding,
   // recommendations, weeklyDigest, dailyFinykSummary); they are tracked in
   // the burn-down documented in the audit. Promoted to `error` when the
-  // count reaches zero. See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 5.
+  // count reaches zero. See docs/work/specs/audits/2026-05-13-consolidated-page-audit.md § Theme 5.
   // Files that legitimately use raw key strings (migration helpers, seed/cleanup
   // demo data, the registry itself, searchCache internal cache key) are exempt
   // inside the rule implementation.
@@ -459,31 +443,6 @@ export const crossSurfaceBlocks = [
       "sergeant-design/no-raw-storage-key": "warn",
     },
   },
-  // Theme 2 (consolidated audit 2026-05-13): `no-small-button-touch-target` —
-  // warn-level gate for raw `<button>` elements with height/size classes below
-  // 44px without a touch-target compensator. WCAG 2.5.5 requires ≥ 44×44px.
-  // Use the `Button` primitive (auto-applies `pointer-coarse:min-h-[44px]`) or
-  // add `min-h-[44px] min-w-[44px]` manually. The rule is `warn` because some
-  // call-sites are data-cell contexts (calendar cells, chart bars) where 44px
-  // would break layout. Burn-down: 2026-Q3.
-  // See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 2.
-  {
-    files: [
-      "apps/web/src/**/*.{ts,tsx}",
-      "apps/mobile/src/**/*.{ts,tsx}",
-      "apps/mobile/app/**/*.{ts,tsx}",
-    ],
-    ignores: [
-      "apps/web/src/**/*.test.{ts,tsx}",
-      "apps/web/src/**/__tests__/**",
-      "apps/web/src/**/*.stories.{ts,tsx}",
-      "apps/mobile/src/**/*.test.{ts,tsx}",
-      "apps/mobile/src/**/__tests__/**",
-    ],
-    rules: {
-      "sergeant-design/no-small-button-touch-target": "warn",
-    },
-  },
   // Theme 1 (consolidated audit 2026-05-13) — `new Date()` guard.
   //
   // `new Date()` with zero arguments returns the current instant anchored to
@@ -491,7 +450,7 @@ export const crossSurfaceBlocks = [
   // any "today" / "this week" derivation must flow through `getKyivDateParts()`,
   // `getKyivDayKey()`, or `getKyivWeekStart()` from
   // `apps/web/src/shared/lib/time/kyivTime.ts` so day boundaries stay anchored
-  // to Europe/Kyiv per the domain-invariants spec (docs/02-engineering/architecture/
+  // to Europe/Kyiv per the domain-invariants spec (docs/engineering/architecture/
   // domain-invariants.md § timezone).
   //
   // `new Date(someValue)` (1+ arguments) is NOT banned — constructing a Date
@@ -499,7 +458,7 @@ export const crossSurfaceBlocks = [
   // bake in the host timezone.
   //
   // Severity: `warn` — ramps to `error` once the burn-down sweep in the
-  // companion tracker (docs/90-work/audits/2026-05-13-consolidated-page-audit.md
+  // companion tracker (docs/work/specs/audits/2026-05-13-consolidated-page-audit.md
   // § Theme 1) closes. Test files and the canonical `kyivTime.ts` are exempt.
   //
   // New call-sites added in the scoped paths that genuinely need "current
@@ -544,7 +503,8 @@ export const crossSurfaceBlocks = [
             "boundaries stay anchored to Europe/Kyiv. If you genuinely need a " +
             "UTC-anchored wall-clock instant (e.g. `updatedAt` timestamp), add " +
             "an `eslint-disable-next-line no-restricted-syntax` with a WHY comment. " +
-            "See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 1.",
+            "Розбір, чому це правило існує, — у git history аудиту\n" +
+            "2026-05-13-consolidated-page-audit § Theme 1.",
         },
         // Inherit the legacy palette selectors from the top-level block so this
         // scoped override doesn't accidentally drop them — flat-config merges
@@ -560,6 +520,90 @@ export const crossSurfaceBlocks = [
             "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]",
           message:
             "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
+        },
+      ],
+    },
+  },
+  // ── Toast recovery-action gate (web + mobile) ─────────────────────────
+  //
+  // `toast.error(...)` мусить нести recovery-дію: `{ label, onClick }` у
+  // вебі, `{ label, onPress }` на мобілці. Правило з такою назвою вже
+  // існувало і було retired в ADR-0081 із тезою, що коректність дії
+  // залежить від сценарію й не має надійного синтаксичного сигналу. Теза
+  // правильна, висновок — ні: за пів року без гейта дію мали 3 з 37
+  // error-тостів у `apps/web`. Решта лишали користувача в глухому куті.
+  //
+  // Тому гейт повертається у формі, яка визнає ту саму тезу: він ловить
+  // лише ФАКТ відсутності дії, а «тут дії справді бути не може» — це
+  // явний запис нижче з причиною. Мовчазний глухий кут стає підписаним.
+  //
+  // Чому блок живе тут, а не в `eslint.web.js`. Доти правило було
+  // ввімкнене лише для `apps/web/src/**`, і рівно це лишалось чинним
+  // залишком PR-X3 наскрізного огляду 2026-09-13: механізм закрито, але
+  // гейт не покривав другу поверхню з ідентичним API тоста
+  // (`error(msg, duration?, action?)` в обох). Сама реалізація правила
+  // мобільну форму вже знала — `hasToastAction` приймає `onPress` поряд
+  // з `onClick`, — тобто бракувало саме глоба. Блок, що охоплює 2+
+  // поверхні, за домовленістю файлу живе в cross-surface.
+  //
+  // Політика тону і формa `action` — docs/design/ui/toast-policy.md.
+  {
+    files: [
+      "apps/web/src/**/*.{ts,tsx}",
+      "apps/mobile/src/**/*.{ts,tsx}",
+      // Роутовий шар expo-router. Власних `toast.error` тут сьогодні
+      // нуль (екрани — тонкі обгортки над `src/`), але глоб включено
+      // навмисно: без нього гейт резолвленого конфіга
+      // (`pnpm lint:eslint-config-diff`) мобільну половину правила НЕ
+      // бачить — його фікстура вказує саме сюди
+      // (`apps/mobile/app/(tabs)/index.tsx`). Тобто правило було б
+      // ввімкнене, а снапшот-гейт лишався б сліпим до його зняття —
+      // рівно та форма «гейт не покриває поверхню», через яку PR-X3 і
+      // прожив відкритим.
+      "apps/mobile/app/**/*.{ts,tsx}",
+    ],
+    ignores: [
+      "apps/web/src/**/*.test.{ts,tsx}",
+      "apps/web/src/**/__tests__/**",
+      "apps/web/src/**/*.stories.{ts,tsx}",
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/src/**/*.stories.{ts,tsx}",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/require-toast-error-action": [
+        "error",
+        {
+          allowlist: [
+            // Rate-limit 429: копія вже несе інструкцію («Спробуй за
+            // годину»), а «Повторити» зараз гарантовано впаде знову.
+            "apps/web/src/core/pricing/WaitlistForm.tsx",
+            // Імпорт лога харчування з битого JSON. Хук не володіє
+            // файловим input-ом, тож «Обрати інший» звідси не підняти, а
+            // сама кнопка імпорту лишається на екрані — recovery-шлях
+            // видимий без тоста.
+            "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
+            // Те саме для Фініка: `importData` приймає готовий `Blob` і не
+            // знає, звідки той узявся, тож «Обрати інший» тут не підняти.
+            // (На 2026-08-05 хук ще й не має жодного UI-споживача — він
+            // висить у `useStorage` без виклику.)
+            "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
+            // `showUndoToast`: тост про ПРОВАЛЕНИЙ undo. Повторний виклик
+            // `onUndo` після часткового відкату може подвоїти запис —
+            // ретрай тут небезпечніший за його відсутність.
+            "apps/web/src/shared/lib/ui/undoToast.tsx",
+            // Мобільне дзеркало того самого хелпера (`showUndoToast.ts`
+            // сам називає себе портом `undoToast.tsx`). Причина тотожна:
+            // `onUndo` — синхронний відкат локального стану, і повторний
+            // виклик після часткового відкату так само може подвоїти
+            // запис. Виняток мусить бути дзеркальним, інакше дві
+            // поверхні розійдуться саме там, де код навмисно спільний.
+            "apps/mobile/src/lib/showUndoToast.ts",
+            // Docstring-приклад у JSDoc, не виконуваний код.
+            "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts",
+          ],
         },
       ],
     },

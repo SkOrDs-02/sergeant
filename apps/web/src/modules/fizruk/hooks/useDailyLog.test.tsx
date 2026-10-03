@@ -14,7 +14,7 @@ afterEach(() => {
 });
 
 describe("useDailyLog.addEntry", () => {
-  it("persists the new entry to fizruk_daily_log_v1", () => {
+  it("тримає новий запис у стані і НЕ пише legacy LS-ключ (DCRUD-007 cutover)", () => {
     const { result } = renderHook(() => useDailyLog());
 
     act(() => {
@@ -22,12 +22,12 @@ describe("useDailyLog.addEntry", () => {
     });
 
     expect(result.current.entries).toHaveLength(1);
-    const stored = JSON.parse(
-      localStorage.getItem(STORAGE_KEYS.FIZRUK_DAILY_LOG) ?? "[]",
-    );
-    expect(stored).toHaveLength(1);
-    expect(stored[0].sleepHours).toBe(7);
-    expect(stored[0].moodScore).toBe(4);
+    expect(result.current.entries[0]?.sleepHours).toBe(7);
+    expect(result.current.entries[0]?.moodScore).toBe(4);
+    // Журнал персиститься виключно через dual-write пайплайн у
+    // структурну таблицю fizruk_daily_log; legacy-ключ дренується на
+    // boot і більше не пишеться.
+    expect(localStorage.getItem(STORAGE_KEYS.FIZRUK_DAILY_LOG)).toBeNull();
   });
 
   it("mirrors a weight write into hub_biometrics_v1", () => {
@@ -50,5 +50,38 @@ describe("useDailyLog.addEntry", () => {
     });
 
     expect(localStorage.getItem(STORAGE_KEYS.HUB_BIOMETRICS)).toBeNull();
+  });
+
+  it("deletes, restores, and filters recent entries by numeric field", () => {
+    const { result } = renderHook(() => useDailyLog());
+    let deleted = null as (typeof result.current.entries)[number] | null;
+
+    act(() => {
+      const older = result.current.addEntry({
+        at: "2026-06-20T07:00:00.000Z",
+        weightKg: 80,
+      });
+      result.current.addEntry({
+        at: "2026-06-21T07:00:00.000Z",
+        sleepHours: 7,
+      });
+      deleted = older;
+      result.current.deleteEntry(older.id);
+    });
+
+    expect(result.current.entries.map((entry) => entry.id)).not.toContain(
+      deleted?.id,
+    );
+
+    act(() => {
+      result.current.restoreEntry(null);
+      result.current.restoreEntry(deleted);
+      result.current.restoreEntry(deleted);
+    });
+
+    expect(
+      result.current.entries.filter((entry) => entry.id === deleted?.id),
+    ).toHaveLength(1);
+    expect(result.current.recentWith("weightKg", 1)).toHaveLength(1);
   });
 });

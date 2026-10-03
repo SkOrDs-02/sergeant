@@ -18,25 +18,33 @@ import {
   __setFinykSqliteStateCacheForTests,
   clearFinykSqliteCache,
 } from "../../modules/finyk/lib/sqliteReader";
+import {
+  __setFinykMonoMirrorCacheForTests,
+  clearFinykMonoMirrorCache,
+} from "../../modules/finyk/lib/monoMirrorReader";
 import type { ManualExpense } from "../../modules/finyk/hooks/useStorage.types";
 import { executeAction } from "./hubChatActions";
-import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/dualWrite/index";
+import { triggerFizrukDualWrite } from "../../modules/fizruk/lib/sqliteWriter/index";
 import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 
 // Tombstoned slices (workouts / measurements / pantries / prefs) live in the
 // SQLite cache, not LS. Fake the canonical helpers in-memory so these
-// integration specs assert the persisted state. LS-backed slices (water,
-// shopping, daily-log, plan-template) keep their real LS path.
+// integration specs assert the persisted state.
+// shoppingListStorage also moved to SQLite-only writes (Phase 3) — mock it
+// in-memory so add_to_shopping_list can assert state without a real DB.
 const mem = vi.hoisted(() => ({
   workouts: [] as FizrukWorkout[],
   pantries: null as unknown,
   active: "home",
   prefs: {} as Record<string, unknown>,
+  shoppingList: { categories: [] } as {
+    categories: Array<{ name: string; items: Array<Record<string, unknown>> }>;
+  },
 }));
 
-vi.mock("../../modules/fizruk/lib/dualWrite/index", async (orig) => {
+vi.mock("../../modules/fizruk/lib/sqliteWriter/index", async (orig) => {
   const actual =
-    await orig<typeof import("../../modules/fizruk/lib/dualWrite/index")>();
+    await orig<typeof import("../../modules/fizruk/lib/sqliteWriter/index")>();
   return { ...actual, triggerFizrukDualWrite: vi.fn() };
 });
 
@@ -79,6 +87,25 @@ vi.mock("../../modules/nutrition/lib/nutritionStorage", async (orig) => {
   };
 });
 
+// shoppingListStorage moved to SQLite-only writes (Phase 3). Back it with
+// in-memory state so add_to_shopping_list can assert state without a real DB.
+vi.mock("../../modules/nutrition/lib/shoppingListStorage", async (orig) => {
+  const actual =
+    await orig<
+      typeof import("../../modules/nutrition/lib/shoppingListStorage")
+    >();
+  return {
+    ...actual,
+    loadShoppingList: vi.fn(() => mem.shoppingList),
+    persistShoppingList: vi.fn((list: unknown) => {
+      mem.shoppingList = actual.normalizeShoppingList(
+        list,
+      ) as unknown as typeof mem.shoppingList;
+      return true;
+    }),
+  };
+});
+
 beforeEach(() => {
   // Stage 8 PR #057r/#057k-tombstone — routine + finyk canonical state
   // lives in the SQLite warm caches, not localStorage. Reset all so each
@@ -88,9 +115,11 @@ beforeEach(() => {
   mem.pantries = null;
   mem.active = "home";
   mem.prefs = {};
+  mem.shoppingList = { categories: [] };
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2024-06-15T12:00:00Z"));
 });
@@ -99,6 +128,7 @@ afterEach(() => {
   clearSqliteCompletionsCache();
   clearSqliteRoutineStateCache();
   clearFinykSqliteCache();
+  clearFinykMonoMirrorCache();
   vi.useRealTimers();
 });
 
@@ -115,7 +145,7 @@ function readLS<T>(key: string, fallback: T): T {
 // ─── Фінік ────────────────────────────────────────────────────────────
 
 describe("find_transaction", () => {
-  it("шукає ручну транзакцію за описом і сумою", () => {
+  it("шукає ручну операцію за описом і сумою", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         {
@@ -146,26 +176,22 @@ describe("find_transaction", () => {
   });
 
   it("шукає bank cache transactions і не показує hidden ids", () => {
-    localStorage.setItem(
-      "finyk_tx_cache",
-      JSON.stringify({
-        txs: [
-          {
-            id: "mono_ok",
-            amount: -12500,
-            description: "Сільпо",
-            time: 1718376000,
-          },
-          {
-            id: "mono_hidden",
-            amount: -12500,
-            description: "Сільпо",
-            time: 1718376000,
-          },
-        ],
-      }),
-    );
-    // Bank tx cache stays on LS; hidden-tx ids are read from SQLite now.
+    __setFinykMonoMirrorCacheForTests({
+      transactions: [
+        {
+          id: "mono_ok",
+          amount: -12500,
+          description: "Сільпо",
+          time: 1718376000,
+        },
+        {
+          id: "mono_hidden",
+          amount: -12500,
+          description: "Сільпо",
+          time: 1718376000,
+        },
+      ] as never[],
+    });
     __setFinykSqliteStateCacheForTests({ hiddenTransactions: ["mono_hidden"] });
     const msg = executeAction({
       name: "find_transaction",
@@ -193,7 +219,7 @@ describe("batch_categorize", () => {
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
   });
 
-  it("з dry_run=false записує категорію для matched транзакцій", () => {
+  it("з dry_run=false записує категорію для matched операцій", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
@@ -227,7 +253,7 @@ describe("batch_categorize", () => {
 });
 
 describe("delete_transaction", () => {
-  it("видаляє ручну транзакцію за id", () => {
+  it("видаляє ручну операцію за id", () => {
     localStorage.setItem(
       "finyk_manual_expenses_v1",
       JSON.stringify([
@@ -244,7 +270,7 @@ describe("delete_transaction", () => {
     expect(arr.map((t) => t.id)).toEqual(["m_keep"]);
   });
 
-  it("відмовляє для монобанк-транзакцій (не m_)", () => {
+  it("відмовляє для монобанк-операцій (не m_)", () => {
     const msg = executeAction({
       name: "delete_transaction",
       input: { tx_id: "mono_xyz" },
@@ -267,7 +293,7 @@ describe("update_budget", () => {
       name: "update_budget",
       input: { scope: "limit", category_id: "food", limit: 5000 },
     });
-    expect(msg).toContain("5000");
+    expect(msg).toMatch(/5\s000/);
     const budgets = readLS<
       Array<{ type: string; categoryId?: string; limit?: number }>
     >("finyk_budgets", []);
@@ -298,20 +324,25 @@ describe("update_budget", () => {
       },
     });
     expect(msg).toContain("Відпустка");
-    expect(msg).toContain("5000/30000");
+    expect(msg).toMatch(/5\s000\/30\s000/);
     const budgets = readLS<
       Array<{
         type: string;
         name?: string;
         targetAmount?: number;
         savedAmount?: number;
+        contributions?: Array<{ amountUah: number }>;
       }>
     >("finyk_budgets", []);
+    // Прогрес пишеться в лог поповнень, не в застаріле `savedAmount`
+    // (goal-progress-auto-sync).
+    expect(budgets[0]!.contributions).toEqual([
+      expect.objectContaining({ amountUah: 5000 }),
+    ]);
     expect(budgets[0]).toMatchObject({
       type: "goal",
       name: "Відпустка",
       targetAmount: 30000,
-      savedAmount: 5000,
     });
   });
 
@@ -332,7 +363,7 @@ describe("update_budget", () => {
 });
 
 describe("mark_debt_paid", () => {
-  it("створює repayment-транзакцію і закриває борг при повній сумі", () => {
+  it("створює repayment-операцію і закриває борг при повній сумі", () => {
     localStorage.setItem(
       "finyk_debts",
       JSON.stringify([
@@ -404,7 +435,7 @@ describe("add_asset", () => {
       name: "add_asset",
       input: { name: "Депозит ПриватБанк", amount: 100000 },
     });
-    expect(msg).toContain("100000");
+    expect(msg).toMatch(/100\s000/);
     expect(msg).toContain("UAH");
     const assets = readLS<
       Array<{ name: string; amount: number; currency?: string }>
@@ -443,14 +474,15 @@ describe("add_asset", () => {
 });
 
 describe("import_monobank_range", () => {
-  it("очищує кеш місяців у діапазоні і диспатчить подію", () => {
-    // month0: Jan=0 ... Mar=2, Apr=3, May=4, Jun=5
-    localStorage.setItem("finyk_tx_cache_2024_2", '{"stub":1}'); // березень — поза діапазоном
-    localStorage.setItem("finyk_tx_cache_2024_4", '{"stub":1}'); // травень
-    localStorage.setItem("finyk_tx_cache_2024_5", '{"stub":1}'); // червень
-    let dispatched = false;
-    const handler = () => {
-      dispatched = true;
+  // Тест раніше засівав ключі `finyk_tx_cache_<рік>_<місяць0>` і перевіряв, що
+  // дія їх зніме. Це був єдиний у репо автор такої форми ключа — тобто тест
+  // сам створював те, що потім «чистилось», а в продакшні чистити не було
+  // чого. Разом із мертвим циклом прибрано і той пін; лишається справжня
+  // робота дії — подія, яку слухає Фінік. Знахідка PR-T7.
+  it("диспатчить подію імпорту з валідним діапазоном", () => {
+    const seen: Array<{ from: string; to: string }> = [];
+    const handler = (e: Event) => {
+      seen.push((e as CustomEvent<{ from: string; to: string }>).detail);
     };
     window.addEventListener("hub:finyk-mono-import-range", handler);
     const msg = executeAction({
@@ -459,10 +491,10 @@ describe("import_monobank_range", () => {
     });
     window.removeEventListener("hub:finyk-mono-import-range", handler);
     expect(msg).toContain("2024-05-01");
-    expect(localStorage.getItem("finyk_tx_cache_2024_2")).not.toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_2024_4")).toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_2024_5")).toBeNull();
-    expect(dispatched).toBe(true);
+    expect(msg).toContain("2024-06-15");
+    // Відповідь більше не обіцяє чищення кешу, якого не відбувається.
+    expect(msg).not.toContain("Очищено кеш");
+    expect(seen).toEqual([{ from: "2024-05-01", to: "2024-06-15" }]);
   });
 
   it("відмовляє на некоректний формат дат", () => {
@@ -575,7 +607,7 @@ describe("add_program_day", () => {
 });
 
 describe("log_wellbeing", () => {
-  it("записує самопочуття у fizruk_daily_log_v1", () => {
+  it("записує самопочуття через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_wellbeing",
       input: {
@@ -586,18 +618,15 @@ describe("log_wellbeing", () => {
       },
     });
     expect(msg).toContain("вага 78");
-    expect(msg).toContain("сон 7.5");
-    const arr = readLS<
-      Array<{
-        weightKg: number | null;
-        sleepHours: number | null;
-        energyLevel: number | null;
-      }>
-    >("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(78);
-    expect(arr[0]!.sleepHours).toBe(7.5);
-    expect(arr[0]!.energyLevel).toBe(4);
+    expect(msg).toContain("сон 7,5");
+    // LS-ключ `fizruk_daily_log_v1` tombstoned: журнал їде лише в SQLite
+    // через dual-write, тож перевіряємо `next.dailyLog`, а не localStorage.
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(78);
+    expect(next?.dailyLog[0]!.sleepHours).toBe(7.5);
+    expect(next?.dailyLog[0]!.energyLevel).toBe(4);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє якщо немає жодного поля", () => {
@@ -654,15 +683,18 @@ describe("complete_habit_for_date + archive_habit", () => {
     executeAction({ name: "create_habit", input: { name: "Тестова" } });
     const state0 = loadRoutineState();
     const id = state0.habits[0]!.id;
+    // LOG-2 (аудит 2026-09): tool іде через applyToggleHabitCompletion, тож
+    // день ПОЗА розкладом звички (до startDate = сьогодні, 2024-06-15) —
+    // no-op. Беремо день у розкладі.
     executeAction({
       name: "complete_habit_for_date",
-      input: { habit_id: id, date: "2024-06-10" },
+      input: { habit_id: id, date: "2024-06-15" },
     });
     let state = loadRoutineState();
-    expect(state.completions[id]).toEqual(["2024-06-10"]);
+    expect(state.completions[id]).toEqual(["2024-06-15"]);
     executeAction({
       name: "complete_habit_for_date",
-      input: { habit_id: id, date: "2024-06-10", completed: false },
+      input: { habit_id: id, date: "2024-06-15", completed: false },
     });
     state = loadRoutineState();
     expect(state.completions[id]).toEqual([]);
@@ -777,7 +809,10 @@ describe("pause_habit", () => {
     });
     expect(msg).toContain("на паузу");
     const state = loadRoutineState();
-    expect(state.habits[0]!.paused).toBe(true);
+    // Хвиля 4: тул пише ДАТОВАНИЙ інтервал. Легасі-прапор навмисно не
+    // вмикається — саме він ретроактивно вимивав звичку з історії (E-3).
+    expect(state.habits[0]!.pauseIntervals).toHaveLength(1);
+    expect(state.habits[0]!.paused).not.toBe(true);
   });
 
   it("paused=false знімає з паузи", () => {
@@ -787,7 +822,7 @@ describe("pause_habit", () => {
       name: "pause_habit",
       input: { habit_id: id, paused: false },
     });
-    expect(msg).toContain("знято з паузи");
+    expect(msg).toContain("повернуто з паузи");
     const state = loadRoutineState();
     expect(state.habits[0]!.paused).toBe(false);
   });
@@ -799,7 +834,7 @@ describe("pause_habit", () => {
       name: "pause_habit",
       input: { habit_id: id },
     });
-    expect(msg).toContain("вже на паузі");
+    expect(msg).toContain("уже на паузі");
   });
 
   it("повертає помилку для відсутнього habit_id / неіснуючої звички", () => {
@@ -835,7 +870,7 @@ describe("profile memory actions", () => {
       input: {},
     });
 
-    expect(msg).toBe("Потрібен факт для запам'ятовування.");
+    expect(msg).toBe("Потрібен факт для запамʼятовування.");
     expect(readLS("hub_user_profile_v1", [])).toHaveLength(0);
   });
 
@@ -845,7 +880,7 @@ describe("profile memory actions", () => {
       input: { fact: "Не їм арахіс", category: "allergy" },
     });
 
-    expect(msg).toContain("Запам'ятав");
+    expect(msg).toContain("Запамʼятав");
     const profile = readLS<
       Array<{ id: string; fact: string; category: string }>
     >("hub_user_profile_v1", []);
@@ -901,14 +936,9 @@ describe("add_to_shopping_list", () => {
       name: "add_to_shopping_list",
       input: { name: "Молоко", quantity: "1 л", category: "Молочні" },
     });
-    let list = readLS<{
-      categories: Array<{
-        name: string;
-        items: Array<{ name: string; quantity: string; checked: boolean }>;
-      }>;
-    }>("nutrition_shopping_list_v1", { categories: [] });
-    expect(list.categories).toHaveLength(1);
-    expect(list.categories[0]!.items[0]).toMatchObject({
+    // shoppingListStorage is mocked with in-memory state (SQLite-only writes).
+    expect(mem.shoppingList.categories).toHaveLength(1);
+    expect(mem.shoppingList.categories[0]!.items[0]).toMatchObject({
       name: "Молоко",
       quantity: "1 л",
       checked: false,
@@ -919,14 +949,8 @@ describe("add_to_shopping_list", () => {
       input: { name: "молоко", quantity: "2 л", category: "Молочні" },
     });
     expect(msg).toContain("оновлено");
-    list = readLS<{
-      categories: Array<{
-        name: string;
-        items: Array<{ name: string; quantity: string; checked: boolean }>;
-      }>;
-    }>("nutrition_shopping_list_v1", { categories: [] });
-    expect(list.categories[0]!.items).toHaveLength(1);
-    expect(list!.categories[0]!.items[0]!.quantity).toBe("2 л");
+    expect(mem.shoppingList.categories[0]!.items).toHaveLength(1);
+    expect(mem.shoppingList.categories[0]!.items[0]!["quantity"]).toBe("2 л");
   });
 });
 
@@ -970,7 +994,7 @@ describe("set_daily_plan", () => {
       name: "set_daily_plan",
       input: { kcal: 2200, protein_g: 150, water_ml: 2500 },
     });
-    expect(msg).toContain("2200");
+    expect(msg).toMatch(/2\s200/);
     const prefs = mem.prefs as Record<string, number | null | undefined>;
     expect(prefs["dailyTargetKcal"]).toBe(2200);
     expect(prefs["dailyTargetProtein_g"]).toBe(150);
@@ -987,15 +1011,16 @@ describe("set_daily_plan", () => {
 });
 
 describe("log_weight", () => {
-  it("пише вагу у fizruk_daily_log_v1", () => {
+  it("пише вагу через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_weight",
       input: { weight_kg: 77.3 },
     });
-    expect(msg).toContain("77.3");
-    const arr = readLS<Array<{ weightKg: number }>>("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(77.3);
+    expect(msg).toContain("77,3");
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(77.3);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє на 0/неч.", () => {

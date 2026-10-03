@@ -5,15 +5,14 @@
 import {
   forwardRef,
   useCallback,
-  useEffect,
   useId,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { clampToDomain } from "@shared/charts/chartMath";
 
 /**
  * Sergeant Design System — Slider.
@@ -105,10 +104,6 @@ const thumbSize: Record<SliderSize, string> = {
   md: "w-5 h-5",
 };
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 function snapToStep(value: number, min: number, step: number): number {
   if (step <= 0) return value;
   const stepped = Math.round((value - min) / step) * step + min;
@@ -140,18 +135,22 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 
     const isRange = props.range === true;
     const trackRef = useRef<HTMLDivElement | null>(null);
+    const thumbRefs = useRef<[HTMLDivElement | null, HTMLDivElement | null]>([
+      null,
+      null,
+    ]);
     const generatedId = useId();
     const uid = generatedId;
     const isVertical = orientation === "vertical";
 
     // ── State ────────────────────────────────────────────────────────────
+    const singleDefault = (props as SingleSliderProps).defaultValue;
+    const rangeDefault = (props as RangeSliderProps).defaultValue;
     const defaultSingle =
-      !isRange && (props as SingleSliderProps).defaultValue !== undefined
-        ? (props as SingleSliderProps).defaultValue!
-        : min;
+      !isRange && singleDefault !== undefined ? singleDefault : min;
     const defaultRange: RangeValue =
-      isRange && (props as RangeSliderProps).defaultValue !== undefined
-        ? (props as RangeSliderProps).defaultValue!
+      isRange && rangeDefault !== undefined
+        ? rangeDefault
         : ([min, max] as RangeValue);
 
     const [internalSingle, setInternalSingle] = useState<number>(defaultSingle);
@@ -207,7 +206,11 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 
     const updateThumb = useCallback(
       (thumb: 0 | 1, rawValue: number, end = false) => {
-        const snapped = clamp(snapToStep(rawValue, min, step), min, max);
+        const snapped = clampToDomain(
+          snapToStep(rawValue, min, step),
+          min,
+          max,
+        );
         if (isRange) {
           const [lo, hi] = currentValue as RangeValue;
           const next: RangeValue =
@@ -231,7 +234,7 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
         const fraction = isVertical
           ? 1 - (clientY - rect.top) / Math.max(rect.height, 1)
           : (clientX - rect.left) / Math.max(rect.width, 1);
-        return min + clamp(fraction, 0, 1) * (max - min);
+        return min + clampToDomain(fraction, 0, 1) * (max - min);
       },
       [isVertical, max, min],
     );
@@ -262,6 +265,20 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       const raw = positionToValue(e.clientX, e.clientY);
       updateThumb(activeThumb, raw, true);
       setActiveThumb(null);
+      // Bug fix: the drag-tooltip must not outlive the drag. Clear it here
+      // (not just on thumb `onBlur`, which never fires on touch because
+      // pointer capture lives on the track, not the thumb). One exception:
+      // if a thumb genuinely holds DOM focus (keyboard user who then
+      // dragged), keep ITS tooltip alive until blur — clearing it here
+      // would strand a focused thumb with no value readout.
+      const focusedThumb = thumbRefs.current.findIndex(
+        (el) => el !== null && el === document.activeElement,
+      );
+      setTooltipThumb(
+        focusedThumb === 0 || focusedThumb === 1
+          ? (focusedThumb as 0 | 1)
+          : null,
+      );
       try {
         (e.currentTarget as HTMLDivElement).releasePointerCapture(e.pointerId);
       } catch {
@@ -310,18 +327,16 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
     );
 
     // Release tooltip when focus leaves both thumbs.
-    useEffect(() => {
-      if (activeThumb !== null) setTooltipThumb(activeThumb);
-    }, [activeThumb]);
+    const highlightedThumb = activeThumb ?? tooltipThumb;
 
     // ── Render ───────────────────────────────────────────────────────────
     const percent = (n: number) => ((n - min) / Math.max(1, max - min)) * 100;
-    const [valA, valB] = isRange
-      ? (currentValue as RangeValue)
-      : [currentValue as number, null];
-
-    const lower = isRange ? percent(valA!) : 0;
-    const upper = isRange ? percent(valB!) : percent(valA!);
+    const rangeValues = isRange ? (currentValue as RangeValue) : null;
+    const singleValue = !isRange ? (currentValue as number) : null;
+    const lower = rangeValues ? percent(rangeValues[0]) : 0;
+    const upper = rangeValues
+      ? percent(rangeValues[1])
+      : percent(singleValue ?? min);
 
     const renderThumb = (thumb: 0 | 1) => {
       const v = valueAt(thumb);
@@ -329,17 +344,24 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       const positionStyle = isVertical
         ? { bottom: `calc(${pct}% - ${size === "sm" ? 8 : 10}px)` }
         : { left: `calc(${pct}% - ${size === "sm" ? 8 : 10}px)` };
-      const focused = tooltipThumb === thumb;
+      const focused = highlightedThumb === thumb;
 
       return (
         <div
           key={thumb}
+          ref={(el) => {
+            thumbRefs.current[thumb] = el;
+          }}
           role="slider"
           tabIndex={disabled ? -1 : 0}
           aria-orientation={orientation}
           aria-disabled={disabled || undefined}
-          aria-valuemin={isRange && thumb === 1 ? valA! : min}
-          aria-valuemax={isRange && thumb === 0 ? valB! : max}
+          aria-valuemin={
+            isRange && thumb === 1 ? (rangeValues?.[0] ?? min) : min
+          }
+          aria-valuemax={
+            isRange && thumb === 0 ? (rangeValues?.[1] ?? max) : max
+          }
           aria-valuenow={v}
           aria-valuetext={formatValue ? fmt(v) : undefined}
           aria-label={ariaLabel && !ariaLabelledBy ? ariaLabel : undefined}
@@ -402,7 +424,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
           onPointerUp={onTrackPointerUp}
           onPointerCancel={onTrackPointerUp}
           className={cn(
-            "relative rounded-full bg-line",
+            // Незаповнений трек — `bg-control` (≥3:1, WCAG 1.4.11), як вимкнений
+            // трек `Switch` і межа полів; `bg-line` давав 1.32 / 1.56 (аудит
+            // 2026-10-01, A3; рішення власника: у тому ж follow-up).
+            "relative rounded-full bg-control",
             isVertical
               ? cn(trackThicknessVertical[size], "h-full mx-auto")
               : cn(trackThickness[size], "w-full my-3"),
@@ -429,7 +454,10 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
                   <span
                     key={t}
                     className={cn(
-                      "absolute block rounded-full bg-muted/60",
+                      // Мітки на темнішому `bg-control`: `bg-muted/60` зливався б
+                      // із треком, непрозорий `bg-panel` читається і на ньому,
+                      // і на заливці.
+                      "absolute block rounded-full bg-panel",
                       isVertical
                         ? "w-1 h-1 left-1/2 -translate-x-1/2"
                         : "w-1 h-1 top-1/2 -translate-y-1/2",
@@ -453,9 +481,3 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 );
 
 Slider.displayName = "Slider";
-
-export function SliderTicks({ children }: { children?: ReactNode }) {
-  // Reserved for future composition: a `<SliderTicks>` slot that
-  // consumers can render below the track for custom tick labels.
-  return <>{children}</>;
-}

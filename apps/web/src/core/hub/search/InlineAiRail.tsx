@@ -24,10 +24,10 @@ export interface InlineAiRailProps {
 
 const STATUS_LABEL: Record<InlineAiState["status"], string> = {
   idle: "",
-  loading: "AI шукає відповідь",
-  success: "Відповідь асистента",
+  loading: "Сержант шукає відповідь",
+  success: "Відповідь Сержанта",
   aborted: "Запит скасовано",
-  error: "Помилка асистента",
+  error: "Сержант не відповів",
 };
 
 /**
@@ -91,7 +91,7 @@ export function InlineAiRail({
     <div
       className="px-3 sm:px-4 pt-2"
       role="region"
-      aria-label="Inline-відповідь асистента"
+      aria-label="Швидка відповідь Сержанта"
       onFocusCapture={() => {
         focusWithinRef.current = true;
       }}
@@ -120,19 +120,19 @@ export function InlineAiRail({
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
                 state.status === "error"
-                  ? "bg-danger-soft text-danger-strong"
+                  ? "bg-danger-soft text-danger-soft-fg"
                   : "bg-brand-soft text-brand-strong dark:text-brand-300",
               )}
               aria-hidden="true"
             >
               <Icon
-                name={state.status === "error" ? "alert-circle" : "sparkle"}
-                size={16}
+                name={state.status === "error" ? "alert-circle" : "sergeant"}
+                size="md"
                 strokeWidth={2.2}
               />
             </span>
             <div className="min-w-0">
-              <SectionHeading as="p" size="sm" variant="muted">
+              <SectionHeading as="p" size="xs" variant="muted">
                 {STATUS_LABEL[state.status]}
               </SectionHeading>
               <div className="text-style-label text-text truncate">
@@ -144,16 +144,16 @@ export function InlineAiRail({
             type="button"
             onClick={onDismiss}
             aria-label="Закрити відповідь"
-            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
-            <Icon name="close" size={16} strokeWidth={2.2} />
+            <Icon name="close" size="md" strokeWidth={2.2} />
           </button>
         </div>
 
         {state.status === "loading" && (
           <div className="flex items-center justify-between gap-3">
             <div
-              className="flex items-center gap-2 text-sm text-muted"
+              className="flex items-center gap-2 text-style-caption text-muted"
               aria-live="polite"
             >
               <span
@@ -165,7 +165,7 @@ export function InlineAiRail({
             <button
               type="button"
               onClick={onCancel}
-              className="text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+              className="text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
             >
               Скасувати
             </button>
@@ -185,26 +185,26 @@ export function InlineAiRail({
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="sparkle" size={14} strokeWidth={2.2} />
+                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
               {state.hasToolCalls && (
-                <span className="text-meta text-muted">
+                <span className="text-style-caption text-muted">
                   Дія потребує підтвердження в чаті
                 </span>
               )}
               {state.truncated && !state.hasToolCalls && (
-                <span className="text-meta text-muted">
-                  Повна відповідь — у чаті
+                <span className="text-style-caption text-muted">
+                  Повна відповідь – у чаті
                 </span>
               )}
               <button
                 type="button"
                 onClick={() => onRetry(state.question)}
-                className="ml-auto text-sm text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+                className="ml-auto text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
               >
                 Спробувати ще раз
               </button>
@@ -214,13 +214,13 @@ export function InlineAiRail({
 
         {state.status === "aborted" && (
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted">
-              Запит скасовано — натисни «Запитати знову», щоб спробувати ще раз.
+            <p className="text-style-body text-muted">
+              Запит скасовано, натисни «Запитати знову», щоб спробувати ще раз.
             </p>
             <button
               type="button"
               onClick={() => onRetry(state.question)}
-              className="text-sm text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus rounded px-2 py-1"
+              className="text-style-label text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
             >
               Запитати знову
             </button>
@@ -229,7 +229,7 @@ export function InlineAiRail({
 
         {state.status === "error" && (
           <div className="space-y-2">
-            <p className="text-sm text-danger-strong dark:text-red-200">
+            <p className="text-style-body text-danger-strong dark:text-red-200">
               {state.message}
             </p>
             <div className="flex flex-wrap items-center gap-2">
@@ -239,10 +239,10 @@ export function InlineAiRail({
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-panel border border-line text-text hover:bg-panelHi",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="refresh-cw" size={14} strokeWidth={2.2} />
+                <Icon name="refresh-cw" size="sm" strokeWidth={2.2} />
                 Повторити
               </button>
               <button
@@ -252,10 +252,10 @@ export function InlineAiRail({
                   "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
                   "bg-brand-soft text-brand-strong dark:text-brand-300",
                   "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
                 )}
               >
-                <Icon name="sparkle" size={14} strokeWidth={2.2} />
+                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
             </div>

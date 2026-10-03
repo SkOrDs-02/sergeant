@@ -8,6 +8,7 @@ import {
   RateLimitError,
   ExternalServiceError,
   isOperationalError,
+  makeAiProviderError,
 } from "./errors.js";
 
 describe("AppError hierarchy", () => {
@@ -39,5 +40,43 @@ describe("AppError hierarchy", () => {
     const cause = new Error("root");
     const e = new ValidationError("wrap", { cause });
     expect(e.cause).toBe(cause);
+  });
+});
+
+describe("makeAiProviderError", () => {
+  it("ніколи не пробрасывает auth-статуси upstream-у клієнту", () => {
+    // Anthropic-401 (наш невалідний ключ) діставався клієнта як HTTP 401 і
+    // UI показував «Доступ заборонено» залогіненому користувачу
+    // (аудит 2026-08-04, знахідка 6).
+    expect(
+      makeAiProviderError({ rawProviderMessage: "x", status: 401 }).status,
+    ).toBe(502);
+    expect(
+      makeAiProviderError({ rawProviderMessage: "x", status: 403 }).status,
+    ).toBe(502);
+    expect(
+      makeAiProviderError({ rawProviderMessage: "x", status: 500 }).status,
+    ).toBe(502);
+    expect(
+      makeAiProviderError({ rawProviderMessage: "x", status: undefined })
+        .status,
+    ).toBe(502);
+  });
+
+  it("429 upstream → 503 (спробуй пізніше), не власний rate-limit клієнта", () => {
+    expect(
+      makeAiProviderError({ rawProviderMessage: "x", status: 429 }).status,
+    ).toBe(503);
+  });
+
+  it("cause несе message — pino не друкує [object Object]", () => {
+    const e = makeAiProviderError({
+      rawProviderMessage: "invalid x-api-key",
+      status: 401,
+    });
+    expect((e.cause as { message: string }).message).toContain("401");
+    expect((e.cause as { message: string }).message).toContain(
+      "invalid x-api-key",
+    );
   });
 });

@@ -5,7 +5,7 @@
  * measurements), Stage 12 PR #057f-tombstone-mobile-stage12 (daily-log /
  * monthly-plan / workout-templates), and Stage 12.5 PR
  * #057f2-tombstone-mobile-stage12-5 (programs / plan-template /
- * wellbeing) of `docs/planning/storage-roadmap.md`.
+ * wellbeing) of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Reads any leftover values from the now-deprecated MMKV keys,
  * imports them into the local `fizruk_*` SQLite tables (idempotent +
@@ -52,7 +52,7 @@ import {
 
 import { safeReadLS, safeRemoveLS } from "@/lib/storage";
 
-import { applyFizrukDualWriteOps } from "./dualWrite/adapter";
+import { applyFizrukDualWriteOps } from "./sqliteWriter/adapter";
 import {
   diffFizrukDualWriteOps,
   type FizrukCustomExerciseSnapshot,
@@ -63,7 +63,7 @@ import {
   type FizrukSetSnapshot,
   type FizrukWorkoutSnapshot,
   type FizrukWorkoutTemplateSnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import {
   extractMonthlyPlanSnapshot,
   extractPlanTemplateSnapshot,
@@ -412,13 +412,11 @@ function toItemSnapshot(item: WorkoutItem): FizrukItemSnapshot {
     type: String(item.type ?? "strength"),
   };
   if (Array.isArray(item.sets)) {
-    out.sets = item.sets.map(
-      (s): FizrukSetSnapshot => ({
-        weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
-        reps: typeof s.reps === "number" ? s.reps : 0,
-        ...(typeof s.rpe === "number" ? { rpe: s.rpe } : {}),
-      }),
-    );
+    out.sets = item.sets.map((s): FizrukSetSnapshot => ({
+      weightKg: typeof s.weightKg === "number" ? s.weightKg : 0,
+      reps: typeof s.reps === "number" ? s.reps : 0,
+      ...(typeof s.rpe === "number" ? { rpe: s.rpe } : {}),
+    }));
   }
   if (typeof item.durationSec === "number") out.durationSec = item.durationSec;
   if (typeof item.distanceM === "number") out.distanceM = item.distanceM;

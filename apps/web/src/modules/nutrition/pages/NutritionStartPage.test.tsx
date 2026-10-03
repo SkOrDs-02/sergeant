@@ -4,14 +4,13 @@
 //
 // NutritionStartPage orchestrates:
 //   • <NutritionDashboard> — gets log, prefs, callbacks
-//   • A collapsible <details> wrapper around <PhotoAnalyzeCard>
-//   • useFeatureGate("ai-photo-analysis") — gates analyzePhoto behind Premium
-//   • <PaywallModal> bound to gate.paywallOpen / gate.closePaywall
-//   • useLocale() — resolves paywall copy
+//   • useLocale() — resolves the sr-only page heading
 //
-// Strategy: vi.mock() both `useFeatureGate` and `useLocale` at the module
-// level so the page component never hits real billing queries or localStorage.
-// NutritionDashboard and PhotoAnalyzeCard are also mocked so tests stay
+// Фотоаналізу тут немає взагалі: ані UI (він крок AddMealSheet —
+// meal-sheet/PhotoStep), ані CTA-ярлика в нього (прибраний 2026-08-17 як
+// другий вхід у той самий флоу).
+//
+// Strategy: vi.mock `useLocale` and NutritionDashboard so tests stay
 // focused on the page's wiring.
 
 import { describe, expect, it, vi, afterEach } from "vitest";
@@ -21,7 +20,6 @@ import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import { messages } from "@shared/i18n/uk";
 
 import type { useNutritionLog } from "../hooks/useNutritionLog";
-import type { usePhotoAnalysis } from "../hooks/usePhotoAnalysis";
 import { NutritionStartPage } from "./NutritionStartPage";
 
 // ---------------------------------------------------------------------------
@@ -43,42 +41,6 @@ vi.mock("@shared/lib/storage/storage", () => ({
 }));
 
 // ---------------------------------------------------------------------------
-// vi.hoisted — build stable mock references before any import is resolved.
-// ---------------------------------------------------------------------------
-const { requireAccessMock, closePaywallMock } = vi.hoisted(() => ({
-  requireAccessMock: vi.fn(() => true), // default: user is Pro
-  closePaywallMock: vi.fn(),
-}));
-
-// ---------------------------------------------------------------------------
-// Mock billing gate — allows controlling isPro per test.
-// ---------------------------------------------------------------------------
-vi.mock("../../../core/billing", () => ({
-  useFeatureGate: () => ({
-    canAccess: requireAccessMock.mock.results[0]?.value !== false,
-    requireAccess: requireAccessMock,
-    paywallOpen: false,
-    paywallSurface: "unlimited_ai_photo" as const,
-    featureId: "ai-photo-analysis" as const,
-    closePaywall: closePaywallMock,
-  }),
-  PaywallModal: ({
-    open,
-    title,
-    onClose,
-  }: {
-    open: boolean;
-    title: string;
-    onClose: () => void;
-  }) =>
-    open ? (
-      <div role="dialog" aria-label={title}>
-        <button onClick={onClose}>Закрити</button>
-      </div>
-    ) : null,
-}));
-
-// ---------------------------------------------------------------------------
 // Mock useLocale — return uk messages directly (no localStorage needed).
 // ---------------------------------------------------------------------------
 vi.mock("@shared/i18n/useLocale", () => ({
@@ -92,29 +54,20 @@ vi.mock("../components/NutritionDashboard", () => ({
   NutritionDashboard: ({
     onGoToLog,
     onGoToDailyPlan,
-    onAddMeal,
-    onFetchDayHint,
   }: {
     onGoToLog: () => void;
     onGoToDailyPlan: () => void;
-    onAddMeal: () => void;
-    onFetchDayHint: () => void;
   }) => (
     <div data-testid="nutrition-dashboard">
       <button onClick={onGoToLog}>До щоденника</button>
       <button onClick={onGoToDailyPlan}>До плану</button>
-      <button onClick={onAddMeal}>Додати прийом їжі</button>
-      <button onClick={onFetchDayHint}>Підказка дня</button>
     </div>
   ),
 }));
 
-vi.mock("../components/PhotoAnalyzeCard", () => ({
-  PhotoAnalyzeCard: ({ analyzePhoto }: { analyzePhoto: () => void }) => (
-    <div data-testid="photo-analyze-card">
-      <button onClick={analyzePhoto}>Аналізувати фото</button>
-    </div>
-  ),
+const boot = vi.hoisted(() => ({ settled: true }));
+vi.mock("../hooks/useNutritionSqliteReadBoot", () => ({
+  isNutritionReadCacheSettled: () => boot.settled,
 }));
 
 // ---------------------------------------------------------------------------
@@ -132,8 +85,6 @@ function makeLog(
     setSelectedDate: vi.fn(),
     addMealSheetOpen: false,
     setAddMealSheetOpen: vi.fn(),
-    addMealPhotoResult: null,
-    setAddMealPhotoResult: vi.fn(),
     handleAddMeal: vi.fn(),
     handleEditMeal: vi.fn(),
     handleRemoveMeal: vi.fn(),
@@ -147,76 +98,49 @@ function makeLog(
   } as ReturnType<typeof useNutritionLog>;
 }
 
-function makePhoto(
-  override?: Partial<ReturnType<typeof usePhotoAnalysis>>,
-): ReturnType<typeof usePhotoAnalysis> {
-  return {
-    fileRef: { current: null },
-    photoPreviewUrl: "",
-    photoResult: null,
-    lastPhotoPayload: null,
-    answers: {},
-    setAnswers: vi.fn(),
-    portionGrams: "",
-    setPortionGrams: vi.fn(),
-    onPickPhoto: vi.fn(),
-    analyzePhoto: vi.fn(),
-    refinePhoto: vi.fn(),
-    ...override,
-  } as ReturnType<typeof usePhotoAnalysis>;
-}
-
 function renderStartPage(
   overrides: {
     log?: Partial<ReturnType<typeof useNutritionLog>>;
-    photo?: Partial<ReturnType<typeof usePhotoAnalysis>>;
     setActivePageAndHash?: (page: string) => void;
-    onRequestAddMeal?: () => void;
-    photoCardForceOpen?: boolean;
   } = {},
 ) {
   const log = makeLog(overrides.log);
-  const photo = makePhoto(overrides.photo);
   const setActivePageAndHash = overrides.setActivePageAndHash ?? vi.fn();
-  const onRequestAddMeal = overrides.onRequestAddMeal ?? vi.fn();
 
   render(
     <NutritionStartPage
       log={log}
-      photo={photo}
       prefs={EMPTY_PREFS}
-      busy={false}
+      onPickMeal={vi.fn()}
       setActivePageAndHash={
         setActivePageAndHash as (
           page: import("../lib/nutritionRouter").NutritionPage,
         ) => void
       }
-      fetchDayHint={vi.fn()}
-      dayHintText=""
-      dayHintBusy={false}
-      onRequestAddMeal={onRequestAddMeal}
-      photoCardForceOpen={overrides.photoCardForceOpen ?? false}
-      setPhotoCardForceOpen={vi.fn()}
-      onSaveToLog={vi.fn()}
     />,
   );
 
-  return { log, photo, setActivePageAndHash, onRequestAddMeal };
+  return { log, setActivePageAndHash };
 }
 
 afterEach(() => {
   cleanup();
-  requireAccessMock.mockReset();
-  requireAccessMock.mockReturnValue(true);
-  closePaywallMock.mockReset();
+  boot.settled = true;
 });
 
 describe("NutritionStartPage", () => {
-  it("renders without crashing — shows NutritionDashboard and the photo-analyze collapsible", () => {
+  it("renders without crashing — shows NutritionDashboard", () => {
     renderStartPage();
     expect(screen.getByTestId("nutrition-dashboard")).toBeTruthy();
-    // The summary card for the collapsible section is always visible
-    expect(screen.getByText("Аналіз фото страви")).toBeTruthy();
+  });
+
+  it("показує скелетон, поки кеш читання не готовий", () => {
+    boot.settled = false;
+    renderStartPage();
+    expect(
+      screen.getByRole("status", { name: messages.loaders.loadingSection }),
+    ).toBeTruthy();
+    expect(screen.queryByTestId("nutrition-dashboard")).toBeNull();
   });
 
   it("'До щоденника' button calls setActivePageAndHash('log')", async () => {
@@ -235,65 +159,13 @@ describe("NutritionStartPage", () => {
     expect(setActivePageAndHash).toHaveBeenCalledWith("menu");
   });
 
-  it("'Додати прийом їжі' delegates to onRequestAddMeal (parent owns navigate + sheet-open)", async () => {
-    // F13: the page no longer owns the date-set / navigate / setTimeout
-    // sheet-open dance. It just requests the action; NutritionApp drives the
-    // deterministic, effect-based follow-up once the Log page has mounted.
-    const onRequestAddMeal = vi.fn();
+  it("не тримає власного входу у фотоаналіз — він лишається джерелом у AddMealSheet", () => {
+    // Пін проти повернення дубля: спершу тут жив повний UI аналізу у
+    // <details>, потім CTA-ярлик у нього. Обидва прибрані — «Огляд» не
+    // веде у фото повз потік «Додати прийом їжі».
+    renderStartPage();
 
-    renderStartPage({ onRequestAddMeal });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Додати прийом їжі" }),
-    );
-
-    expect(onRequestAddMeal).toHaveBeenCalledTimes(1);
-  });
-
-  it("when user is Pro, clicking 'Аналізувати фото' calls photo.analyzePhoto", async () => {
-    requireAccessMock.mockReturnValue(true);
-    const analyzePhoto = vi.fn();
-
-    renderStartPage({ photo: { analyzePhoto }, photoCardForceOpen: true });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Аналізувати фото" }),
-    );
-
-    expect(requireAccessMock).toHaveBeenCalledTimes(1);
-    expect(analyzePhoto).toHaveBeenCalledTimes(1);
-  });
-
-  it("when user is Free (requireAccess returns false), analyzePhoto is NOT called", async () => {
-    requireAccessMock.mockReturnValue(false);
-    const analyzePhoto = vi.fn();
-
-    renderStartPage({ photo: { analyzePhoto }, photoCardForceOpen: true });
-
-    await userEvent.click(
-      screen.getByRole("button", { name: "Аналізувати фото" }),
-    );
-
-    expect(requireAccessMock).toHaveBeenCalledTimes(1);
-    expect(analyzePhoto).not.toHaveBeenCalled();
-  });
-
-  it("PhotoAnalyzeCard is inside a collapsible <details> — hidden when collapsed, visible when open", () => {
-    renderStartPage({ photoCardForceOpen: false });
-
-    // The details element is closed by default — PhotoAnalyzeCard stub IS in
-    // the DOM (details renders children regardless), but the card itself
-    // is not visually expanded. We assert the testid exists but the
-    // <details> is not `open`.
-    const detailsEl = document.querySelector("details");
-    expect(detailsEl).toBeTruthy();
-    expect(detailsEl!.hasAttribute("open")).toBe(false);
-  });
-
-  it("photoCardForceOpen=true sets the <details> open attribute", () => {
-    renderStartPage({ photoCardForceOpen: true });
-    const detailsEl = document.querySelector("details");
-    expect(detailsEl).toBeTruthy();
-    expect(detailsEl!.hasAttribute("open")).toBe(true);
+    expect(screen.queryByTestId("nutrition-photo-cta")).toBeNull();
+    expect(screen.queryByText("Аналіз фото страви")).toBeNull();
   });
 });

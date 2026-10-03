@@ -11,6 +11,11 @@ import {
   setCachedSqliteCompletions,
   setCachedSqliteRoutineState,
 } from "./sqliteReader";
+import {
+  __resetRoutineLocalWriteWindowForTests,
+  beginRoutineLocalWrite,
+  endRoutineLocalWrite,
+} from "./localWriteWindow";
 
 interface Row {
   [k: string]: unknown;
@@ -106,7 +111,6 @@ describe("sqliteReader full-state cache", () => {
       routine_tags: [{ id: "t1", name: "Health", scope: "" }],
       routine_categories: [{ id: "c1", name: "Body", emoji: "" }],
       routine_prefs: [{ data_json: '{"routineRemindersEnabled":true}' }],
-      routine_pushups: [{ date_key: "2026-01-01", reps: 30 }],
       routine_habit_order: [{ order_json: '["h1"]' }],
       routine_completion_notes: [{ note_key: "h1:2026-01-01", note: "done" }],
     });
@@ -127,7 +131,6 @@ describe("sqliteReader full-state cache", () => {
       { id: "c1", name: "Body", emoji: undefined },
     ]);
     expect(s.prefs).toEqual({ routineRemindersEnabled: true });
-    expect(s.pushupsByDate).toEqual({ "2026-01-01": 30 });
     expect(s.habitOrder).toEqual(["h1"]);
     expect(s.completionNotes).toEqual({ "h1:2026-01-01": "done" });
     expect(getCachedSqliteRoutineState()).toBe(s);
@@ -138,7 +141,6 @@ describe("sqliteReader full-state cache", () => {
     const s = await refreshSqliteRoutineState(client, "u1");
     expect(s.prefs).toEqual({});
     expect(s.habitOrder).toEqual([]);
-    expect(s.pushupsByDate).toEqual({});
   });
 
   it("falls back to defaults on malformed JSON columns", async () => {
@@ -180,7 +182,7 @@ describe("sqliteReader full-state cache", () => {
       tags: [],
       categories: [],
       prefs: { routineRemindersEnabled: true },
-      pushupsByDate: { "2026-01-01": 5 },
+      skips: {},
       habitOrder: ["h1"],
       completionNotes: {},
     });
@@ -192,5 +194,76 @@ describe("sqliteReader full-state cache", () => {
   it("test helper seeds the full-state cache", () => {
     __setRoutineSqliteStateCacheForTests({ habitOrder: ["a", "b"] });
     expect(getCachedSqliteRoutineState().habitOrder).toEqual(["a", "b"]);
+  });
+});
+
+describe("sqliteReader: оновлення кеша не затирає запис у польоті", () => {
+  beforeEach(() => {
+    clearSqliteRoutineStateCache();
+    __resetRoutineLocalWriteWindowForTests();
+  });
+
+  /**
+   * Гейт на причинність, а не на порядок видачі. Наявний seq-гвард
+   * (DCRUD-007b) рахує, ХТО СТАРТУВАВ пізніше, і тому не бачить випадку
+   * нижче: оновлення стартує ПІСЛЯ write-through (тобто «новіше»), але
+   * читає базу, у яку вставка ще не дійшла. Розбір і заміри —
+   * `./localWriteWindow.ts`.
+   */
+  it("відкидає знімок, прочитаний доки dual-write у польоті", async () => {
+    setCachedSqliteRoutineState({
+      habits: [{ id: "h1", name: "Вода" }] as never,
+      tags: [],
+      categories: [],
+      prefs: {} as never,
+      habitOrder: ["h1"],
+      completionNotes: {},
+      skips: {},
+    });
+
+    beginRoutineLocalWrite();
+    // База ще порожня — вставка в польоті.
+    await refreshSqliteRoutineState(makeClient({}), "u1");
+    endRoutineLocalWrite();
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
+  });
+
+  it("відкидає й тоді, коли запис завершився вже під час читання", async () => {
+    setCachedSqliteRoutineState({
+      habits: [{ id: "h1", name: "Вода" }] as never,
+      tags: [],
+      categories: [],
+      prefs: {} as never,
+      habitOrder: ["h1"],
+      completionNotes: {},
+      skips: {},
+    });
+
+    beginRoutineLocalWrite();
+    const client = {
+      all: vi.fn(async () => {
+        // Запис долітає рівно посеред читання — мітка «до» вже нічого не
+        // каже, тому гвард звіряє ще й епоху завершень.
+        endRoutineLocalWrite();
+        return [] as never;
+      }),
+    } as never;
+    await refreshSqliteRoutineState(client, "u1");
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
+  });
+
+  it("публікує знімок, коли локальних записів не було", async () => {
+    await refreshSqliteRoutineState(
+      makeClient({
+        routine_habits: [
+          { id: "h2", name: "Читання", emoji: "", tag_ids_json: "[]" },
+        ],
+      }),
+      "u1",
+    );
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
   });
 });

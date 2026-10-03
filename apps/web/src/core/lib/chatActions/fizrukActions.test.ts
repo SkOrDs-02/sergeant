@@ -5,7 +5,7 @@ import type { Workout as FizrukWorkout } from "@sergeant/fizruk-domain";
 // Spy on the dual-write trigger so the tombstoned measurements key (and the
 // daily-log mirror) are guarded: a regression back to raw `lsSet` would leave
 // the trigger uncalled and fail these assertions.
-vi.mock("../../../modules/fizruk/lib/dualWrite/index", () => ({
+vi.mock("../../../modules/fizruk/lib/sqliteWriter/index", () => ({
   triggerFizrukDualWrite: vi.fn(),
   isFizrukDualWriteRegistered: () => false,
 }));
@@ -29,12 +29,37 @@ vi.mock("./fizrukActions/shared", async (orig) => {
 });
 
 import { handleFizrukAction } from "./fizrukActions";
-import { triggerFizrukDualWrite } from "../../../modules/fizruk/lib/dualWrite/index";
-import { persistFizrukWorkouts } from "./fizrukActions/shared";
+import { triggerFizrukDualWrite } from "../../../modules/fizruk/lib/sqliteWriter/index";
+import {
+  persistFizrukWorkouts,
+  readFizrukWorkouts,
+} from "./fizrukActions/shared";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type CachedDailyLogEntry,
+} from "../../../modules/fizruk/lib/sqliteReader";
 import type { ChatAction } from "./types";
+
+/** Журнал у SQLite-кеші (не LS — ключ tombstoned): дефолти для полів, яких тест не задає. */
+function seedJournal(
+  rows: Array<Partial<CachedDailyLogEntry> & { at: string }>,
+): CachedDailyLogEntry[] {
+  return rows.map((row, i) => ({
+    id: row.id ?? `dl_seed_${i}`,
+    weightKg: null,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+    ...row,
+  }));
+}
 
 beforeEach(() => {
   localStorage.clear();
+  clearFizrukSqliteCache();
   mem.workouts = [];
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -160,6 +185,46 @@ describe("start_workout", () => {
     const out = call({ name: "start_workout", input: {} });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
+  });
+
+  /**
+   * Регресія 2026-08-07: о 02:48 асистент відрапортував «розпочато о 09:00».
+   * Модель заповнила опційне `time`, бо контекст ніс лише дату без годинника,
+   * а виконавець будь-яке значення приймав як істину. Виправлено з двох
+   * боків — тут фіксуємо клієнтську половину: без `time` береться поточна
+   * київська година, а не типова ранкова.
+   */
+  it("без time бере поточну київську годину, а не вигадану", () => {
+    const out = call({ name: "start_workout", input: {} }) as string;
+    const parts = getKyivDateParts();
+    const expected = `${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
+    expect(out).toContain(`розпочато о ${expected}`);
+  });
+
+  /**
+   * `Date.parse("2026-08-07T09:00:00")` без суфікса зони читається у поясі
+   * ПРИСТРОЮ, а година й день-ключ тут київські. На пристрої поза Києвом
+   * збережений `startedAt` їхав на різницю поясів.
+   *
+   * Звірка з абсолютним інстантом, а не з відрендереною годиною: 7 серпня
+   * Київ у EEST (+3), тож 09:00 місцевих — це рівно 06:00Z. На київській
+   * машині розробника стара й нова реалізації збігаються і тест нічого не
+   * ловить; у CI (UTC) стара дала б 09:00Z і тест червоніє. Підкрутити TZ
+   * процесу не вийде — на Windows `TZ` до vitest-воркерів не долітає.
+   */
+  it("явний час осідає як київський стінний годинник, не як локальний", () => {
+    call({
+      name: "start_workout",
+      input: { date: "2026-08-07", time: "09:00" },
+    });
+    const stored = readFizrukWorkouts()[0];
+    expect(stored).toBeDefined();
+    expect(stored!.startedAt).toBe("2026-08-07T06:00:00.000Z");
+  });
+
+  it("неможлива година відхиляється, а не пишеться в майбутнє", () => {
+    const out = call({ name: "start_workout", input: { time: "99:00" } });
+    expect(out).toBe("Некоректна дата або час.");
   });
 });
 
@@ -478,13 +543,12 @@ describe("compare_progress", () => {
 // ---------------------------------------------------------------------------
 describe("weight_chart", () => {
   it("happy: returns chart when entries exist", () => {
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
         { at: "2026-04-20T08:00:00.000Z", weightKg: 82 },
         { at: "2026-04-21T08:00:00.000Z", weightKg: 81.5 },
       ]),
-    );
+    });
     const out = call({ name: "weight_chart", input: {} });
     expect(typeof out).toBe("string");
     expect(out).toContain("Вага");
@@ -498,10 +562,9 @@ describe("weight_chart", () => {
   });
 
   it("shape: result is a non-empty string", () => {
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([{ at: "2026-04-22T08:00:00.000Z", weightKg: 80 }]),
-    );
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([{ at: "2026-04-22T08:00:00.000Z", weightKg: 80 }]),
+    });
     const out = call({ name: "weight_chart", input: { period_days: 7 } });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
@@ -563,15 +626,17 @@ describe("log_wellbeing · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    const before = JSON.parse(
-      localStorage.getItem("fizruk_daily_log_v1") || "[]",
-    );
-    expect(before).toHaveLength(1);
+    // Запис іде в dual-write (LS-ключ tombstoned): перший виклик додає
+    // рівно один запис, undo — прибирає його з `next`, тримаючи в `prev`.
+    const calls = vi.mocked(triggerFizrukDualWrite).mock.calls;
+    expect(calls).toHaveLength(1);
+    const added = calls[0]![1].dailyLog;
+    expect(added).toHaveLength(1);
 
-    out.undo();
-    const after = JSON.parse(
-      localStorage.getItem("fizruk_daily_log_v1") || "[]",
-    );
-    expect(after).toHaveLength(0);
+    out.undo?.();
+    expect(calls).toHaveLength(2);
+    const [undoPrev, undoNext] = calls[1]!;
+    expect(undoPrev.dailyLog.map((e) => e.id)).toEqual([added[0]!.id]);
+    expect(undoNext.dailyLog).toHaveLength(0);
   });
 });

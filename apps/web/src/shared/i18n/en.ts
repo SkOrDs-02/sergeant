@@ -1,35 +1,29 @@
-/**
- * English message catalog for apps/web.
- *
- * Structurally complete — every top-level group present in `uk.ts` is also
- * present here so the EN locale can be used standalone via `getMessages("en")`.
- *
- * Voice: 1st-person singular ("I"), friendly-not-corporate, concrete.
- * "Premium" stays capitalized (ADR-0051). Interpolation placeholders are
- * preserved verbatim from the UK source.
- *
- * Merge contract (see `index.ts`): top-level keys here REPLACE the same key
- * in `uk.ts`. Groups must be fully translated — partial group coverage is
- * forbidden by the `messagesEn contract` test in `index.test.ts`.
- *
- * Roadmap: see `docs/i18n/readiness.md` for the per-surface migration
- * sequence.
- */
-
-import type { MessageCatalog } from "./uk";
+import type { messages as ukMessages, MessageGroupShape } from "./uk";
+import { pricingEn } from "./en.pricing";
+import { nutritionTdeeEn } from "./en.nutritionTdee";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
  * key in `uk.ts` when the resolver picks `lang='en'`. Top-level keys absent
  * fall through to `uk.ts`. See `index.ts → getMessages()` for merge semantics.
  *
- * Typed as `Partial<MessageCatalog>` so the resolver's merge produces a full
- * `MessageCatalog` regardless of which groups EN currently covers.
+ * Type contract: структурне дзеркало `typeof uk`, Partial лише на верхньому
+ * рівні. Оголосив групу — зобовʼязаний перекласти КОЖЕН її ключ, інакше
+ * compile error. Це механічне втілення shallow-merge правила «translate the
+ * whole group or don't touch it»: раніше тип був `Partial<MessageCatalog>`
+ * (гола index-signature), і 3-ключовий stub групи `fizruk` мовчки затирав
+ * 283 UA-ключі, даючи `undefined`/TypeError під `?lang=en`.
  */
-export const messagesEn: Partial<MessageCatalog> = {
+export const messagesEn: Partial<{
+  [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
+}> = {
   auth: {
+    /** Apple sign-in button label. */
+    signInWithApple: "Sign in with Apple",
+
     // Generic fallback — used when the specific cause cannot be determined.
     genericFailure: "Sign-in failed. Please try again.",
+    registerFailure: "Sign-up failed. Please try again.",
 
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Incorrect email or password.",
@@ -53,23 +47,33 @@ export const messagesEn: Partial<MessageCatalog> = {
   },
 
   sync: {
-    errorNetwork: "Sync failed — check your connection.",
+    errorNetwork: "Sync failed, check your connection.",
     errorServerRetryable: "The server is temporarily unresponsive. Try again.",
     errorServerNonRetryable: "Sync error. Check your input.",
-    errorGeneric: "Sync error.",
     retryCta: "Try again",
 
     conflictResolved: "Conflict resolved automatically.",
     pushFailed: "Sync failed. We'll retry shortly.",
     offlineQueueRecovered: "Recovered from offline queue.",
+
+    anonymousMigrationProgress:
+      "Moving your data into the profile and saving it to the server…",
+    anonymousMigrationFailure:
+      "Could not finish the migration. The data on this device was not deleted, but it is not protected by sync yet.",
+    anonymousMigrationFailureOffline:
+      "No connection, so the data could not be moved into the profile. It stayed on this device — retry once you are back online.",
+    anonymousMigrationRetry: "Retry",
+    anonymousMigrationDefer: "Continue, I'll migrate later",
+    anonymousMigrationDeferredToast:
+      "Okay. The data stays on this device; I'll try to migrate it on the next launch.",
+    anonymousMigrationDeferredNotice:
+      "The data has not been moved to the profile yet, it lives only on this device.",
+    anonymousMigrationDeferredRetry: "Try now",
+    anonymousMigrationSuccess:
+      "Data migrated and safely stored in your profile.",
   },
 
   validation: {
-    /**
-     * @deprecated PR-31: use `<entity>Required` keys instead.
-     * @removeBy 2026-09-01
-     */
-    fieldRequired: "This field is required.",
     emailRequired: "Enter your email",
     emailInvalid: "Invalid email format",
     emailInvalidPublic: "Invalid email address",
@@ -94,6 +98,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     passwordResetMin10: "Password must be at least 10 characters.",
     passwordsDontMatchDot: "Passwords don't match.",
     passwordsDontMatch: "Passwords don't match",
+    categoryNameRequired: "Enter a category name",
   },
 
   actions: {
@@ -133,6 +138,8 @@ export const messagesEn: Partial<MessageCatalog> = {
     updating: "Updating…",
     done: "Done",
     doneLowercase: "done",
+    hiddenValuePrefix: "Hidden",
+    streakPrefix: "Streak",
   },
 
   period: {
@@ -144,15 +151,28 @@ export const messagesEn: Partial<MessageCatalog> = {
 
   nav: {
     hubSections: "Hub sections",
+    dashboard: "Home",
+    profile: "Profile",
+    chat: "Assistant chat",
+    nutritionOverview: "Overview",
+    finykOverview: "Overview",
+    fizrukOverview: "Overview",
+    nutritionLog: "Journal",
     reports: "Reports",
+    settings: "Settings",
     openAssistant: "Open AI assistant",
     globalSearch: "Global search",
-    searchPlaceholder: "Search across all modules…",
+    searchPlaceholder: "Search across all modules",
     moduleSwitcher: "Module switcher",
     closeSettings: "Close settings",
     closeMenu: "Close menu",
     quickActions: "Quick actions",
     voiceInput: "Voice input",
+    welcome: "Welcome",
+    finykSections: "Finyk sections",
+    fizrukSections: "Fizruk sections",
+    routineSections: "Routine sections",
+    nutritionSections: "Nutrition sections",
   },
 
   empty: {
@@ -188,6 +208,10 @@ export const messagesEn: Partial<MessageCatalog> = {
       retry: "Try again",
       timeout: "Request timed out. Try again.",
       unknown: "Something went wrong. Try again.",
+      failed: "Could not {what}. {action}",
+      retryAction: "Try again.",
+      storageSaveFailed:
+        "Could not save data. Free up browser storage or save a backup.",
 
       title: "Error",
       somethingWrong: "Something went wrong",
@@ -196,6 +220,7 @@ export const messagesEn: Partial<MessageCatalog> = {
         "This section crashed, but the rest of the module is working.",
       moduleFailed: "Module error",
       backToModulePicker: "Back to module picker",
+      imageFailed: "Image failed to load",
       copyRequestId: "Copy",
       copyRequestIdAria: "Copy requestId",
     },
@@ -209,18 +234,98 @@ export const messagesEn: Partial<MessageCatalog> = {
     failed: "Action failed",
   },
 
+  durability: {
+    localOnly: {
+      title: "Data lives on this device only",
+      body: "Cash expenses, assets, debts and your own categories for bank transactions are stored here only. Clearing browser data wipes them, and the bank cannot bring them back. Signing in enables a server copy.",
+      signIn: "Sign in",
+      backup: "Download a copy",
+    },
+    memoryOnly: {
+      title: "Entries are not being saved",
+      body: "Browser storage did not open, so new entries live in memory for now. Reload the page to keep them.",
+      bodyOtherTab:
+        "The database is open in another tab. Close extra Sergeant tabs and reload this one.",
+      reload: "Reload",
+    },
+  },
+
+  dataDisclosure: {
+    subprocessors: {
+      title: "Where your data goes for AI",
+      body: "To answer in chat, give advice and recognize photos, we send requests to Anthropic, and to Voyage AI for memory search. Before sending we strip email, phone, IBAN, card number and tax ID, and people's names from bank transfers.",
+      photoNote:
+        "Photos are the exception: part of the frame cannot be hidden, so it is sent whole. We warn you before the first photo.",
+    },
+    sunset: {
+      title: "If Sergeant ever shuts down",
+      body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
+      bankNote:
+        "One honest caveat: we do not duplicate bank transactions, they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
+    },
+  },
+
+  dataExport: {
+    busy: "Preparing export…",
+    downloadJson: "Download JSON",
+    downloadCsv: "Download CSV",
+    formatsHint:
+      "JSON is the complete file for moving your data elsewhere. CSV is a table for simply looking at it in Excel or Google Sheets.",
+    doneJson: "Server export downloaded as JSON.",
+    doneCsv: "Server export downloaded as CSV.",
+    failed: "Could not create the server export. Please try again.",
+    guestHint:
+      "The server export is available once you sign in. You can build a local copy above without signing in.",
+    sections: {
+      moduleData: "Module data",
+      monoAccounts: "Monobank accounts",
+      monoTransactions: "Monobank transactions",
+      monoConnection: "Monobank connection",
+      subscriptions: "Subscriptions",
+      pushDevices: "Notification devices",
+      excluded: "Not included in this file",
+    },
+  },
+
   hub: {
-    insights: "Insights",
+    destructiveConfirm: {
+      title: "Confirm an irreversible action",
+      body: "The assistant wants to do something that cannot be undone:",
+      confirm: "Yes, do it",
+      cancel: "Cancel",
+    },
+    otherTips: "More tips",
+    nowPile: {
+      heading: "Now",
+      empty: "Everything is closed for today, nothing needs your attention.",
+      postponed: "Postponed",
+      showPostponed: "show",
+      more: "more",
+      doIt: "Do it",
+      open: "Open",
+      openWeekReport: "Open the week report",
+      askAiChip: "AI",
+      askAi: "Ask Sergeant about this",
+      askAiLimit: "Daily limit of Sergeant requests reached",
+      dismiss: "Dismiss tip",
+    },
+    closedPile: {
+      heading: "Closed today",
+    },
+    moduleRail: "Modules",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",
-    weeklyDigestTitle: "Weekly digest — stories",
+    weeklyDigestTitle: "Weekly digest: stories",
     chatOfflineNotice:
       "The assistant is unavailable without internet. Module data is visible offline, but\n          AI responses require a connection.",
 
-    chatEmptyTitle: "Ask me anything — I'm here to help",
+    chatEmptyTitle: "Ask me anything, I'm here to help",
     chatEmptyDescription:
-      "Tap a suggestion — it fills the input so you can edit it before sending.",
+      "Tap a suggestion, it fills the input so you can edit it before sending.",
+    chatEmptyDescriptionSignedOut: "Here is what you can ask once you sign in.",
+    chatEmptyAiDisclosure:
+      "You are talking to an AI, not a person. It can be wrong, so double-check anything important.",
     chatEmptyAriaLabel: "Chat starter suggestions",
     chatEmptySuggestionFinyk: "How much did I spend this week?",
     chatEmptySuggestionFizruk: "How are my workouts going?",
@@ -230,27 +335,37 @@ export const messagesEn: Partial<MessageCatalog> = {
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportPreviousToDate: "Previous, same days:",
+    reportEmptyWorkouts: "No workouts yet. Log the first one in Fizruk.",
+    reportEmptyHabits: "No habits yet. Add the first one in Routine.",
+    reportEmptyExpenses: "No expenses yet. Add the first one in Finyk.",
+    reportEmptyMeals: "No meals logged yet. Add the first one in Nutrition.",
+    reportDeltaFlat: "no change",
+
+    overlayTitle: "AI assistant",
+    closeChat: "Close chat",
+    chatUsageUnit: "actions, resets Monday",
+    chatUsageAriaPrefix: "Used",
+    chatUsageAriaSuffix: "AI actions this week, the limit resets on Monday",
+    chatUsageExhausted: "Weekly AI limit reached. See plans",
   },
 
   onboarding: {
+    pickerAllOnHint: "Everything is on, switch off what you will not use.",
     hideChecklist: "Hide checklist",
 
-    tourSettingsTitle: "App introduction",
-    tourLaunchLabel: "View the intro tour",
-    tourResetLabel: "Start the introduction over",
-    tourCopyExplanation:
-      "The tour shows the welcome screen again — your data won't change. Starting over lets you re-select modules and see the first tips again. Your module records stay as they are.",
-    tourResetConfirmTitle: "Start the introduction over?",
-    tourResetConfirmDescription:
-      "You'll see the welcome screen and first tips again. Module data (transactions, workouts, meals) will remain unchanged.",
-    tourResetConfirmAction: "Start over",
-    tourResetSuccess: "Introduction restarted",
+    capabilitiesGroupTitle: "Capabilities",
+    tourLaunchLabel: "What the app can do",
+    appCapabilitiesHint:
+      "What each section does and how they work together. Nothing changes in your data.",
 
     goalFirstHeading: "What matters most to you right now?",
     goalFirstSubtitle:
-      "Choose your priority — Sergeant will suggest where to start.",
+      "Choose your priority, Sergeant will suggest where to start.",
     goalFirstSkipLabel: "See everything",
     goalFirstAriaLabel: "Onboarding goals",
+
+    presetSaveFailed: "Could not save. Try again.",
   },
 
   welcomeModulePicker: {
@@ -261,7 +376,6 @@ export const messagesEn: Partial<MessageCatalog> = {
     cta: "Get started",
     emptyHint: "Select at least one module to continue.",
     lateHint: "You can add more later in settings.",
-    demoCta: "See an example",
     haveAccount: "I already have an account",
     taglines: {
       finyk: "Expenses, budgets and trends",
@@ -293,42 +407,11 @@ export const messagesEn: Partial<MessageCatalog> = {
     openSettings: "Module settings",
   },
 
-  fizruk: {
-    returnToActiveWorkout: "Return to active workout",
-    workoutRest: "Rest",
-    kgUnit: "kg",
-  },
-
-  nutrition: {
-    fromPantry: "From pantry",
-    mealType: "Meal type",
-    templates: "Templates",
-    reportHeading: "Nutrition (kcal/day)",
-    kcalUnit: "kcal",
-  },
-
-  routine: {
-    dayReport: "Day report",
-    weekdays: "Weekdays",
-    archive: "Archive",
-    reportHeading: "Routine (habit completion)",
-    firstRun: {
-      title: "Your first habit — a preview",
-      description:
-        "Add any habit to get started. You can edit it and add more from the same dialog.",
-    },
-  },
-
-  finyk: {
-    reportHeading: "Finyk (expenses)",
-    addLimitOrGoal: "+ Add limit or goal",
-    transactionsFilterLabel: "Transaction filter",
-    monoConnectErrors: {
-      tokenRejected:
-        "Mono rejected the token. Check that you copied it correctly.",
-      networkUnavailable: "Could not reach Mono. Check your connection.",
-    },
-  },
+  // Групи fizruk / finyk / nutrition / routine НЕ оголошені навмисно:
+  // за shallow-merge контрактом оголошена група повністю замінює UA-групу,
+  // а перекладати 280+ ключів модуля частково заборонено (див. тип вище).
+  // Історичні 3–7-ключові stub-и цих груп видалено 2026-08-28 — вони
+  // затирали 560 UA-ключів і давали TypeError під `?lang=en`.
 
   profileSessions: {
     sectionTitle: "Active sessions",
@@ -344,28 +427,30 @@ export const messagesEn: Partial<MessageCatalog> = {
     unknownIp: "IP unknown",
     unknownDevice: "Unknown device",
     lastSeenPrefix: "Active",
+    currentUnknown:
+      "Could not identify this device's session. Refresh the list to end sessions.",
   },
 
   experimentalSection: {
-    title: "Experimental",
+    // V-7 (2026-08-08): mirrors the uk.ts rename — see that file's comment.
+    title: "Experimental features",
     intro:
-      "These features are still being tested. Enable at your own risk — behavior may change in future versions.",
+      "These features are still being tested. Enable at your own risk, behavior may change in future versions.",
     warningBanner:
       "Experimental features may be unstable. Settings are saved on this device only.",
     optInLabel: "I understand this might break",
     optInHint:
-      "Check this box to unlock the toggles. You'll only be asked once — until you clear site data.",
+      "Check this box to unlock the toggles. You'll only be asked once, until you clear site data.",
   },
 
   privacy: {
     chip: "Only you",
-    chipTooltip: "All data is local — no cloud",
+    chipTooltip: "All data is local, no cloud",
     bannerTitle: "Protect Sergeant with a lock",
-    bannerHint: "PIN · Face ID — for your Mono token and health data",
+    bannerHint: "PIN · Face ID: for your Mono token and health data",
     bannerCta: "Set up",
 
     lock: {
-      sectionTitle: "Privacy",
       enableLabel: "App lock",
       enableDescription:
         "Protect your data with a PIN. The app locks when you switch away or after 5 minutes of inactivity.",
@@ -391,6 +476,67 @@ export const messagesEn: Partial<MessageCatalog> = {
       open: "Open",
       deleteDigit: "Delete",
     },
+
+    aiMemory: {
+      sectionTitle: "What the AI remembers about you",
+      // V-11 (2026-08-09): mirrors the uk.privacy.ts addition — see the
+      // comment there for why this scope line exists.
+      sectionScope:
+        "Everything the assistant has remembered: from chat, modules and your profile.",
+      sectionHint:
+        "Each fact can be deleted individually. Deleted facts are gone for good.",
+      loading: "Loading memory…",
+      loadError: "Could not load AI memory.",
+      // Mirrors uk.privacy.ts: 401 on the list is the guest state, not a
+      // failure (audit `web-qa-pre-beta.md` § 9, 2026-09-03).
+      authRequired:
+        "AI memory lives in your account. Sign in and everything the assistant remembers about you will show up here.",
+      empty:
+        "The AI hasn't recorded anything about you yet. Facts appear when you mention something important in chat: an allergy, a goal, a constraint.",
+      loadMore: "Show more",
+      loadingMore: "Loading…",
+      deleteAria: "Delete fact",
+      confirmTitle: "Delete this fact?",
+      confirmBody:
+        "will be gone from the AI memory for good, there is no undo.",
+      confirmButton: "Delete permanently",
+      deleteError: "Could not delete the fact. Try again.",
+      groupToggleAria: "Show facts from this source",
+      expandFact: "Show in full",
+      // The `profile` group is no longer a checklist with delete buttons:
+      // it is a pointer card, since the single profile-facts editor now
+      // lives in Profile -> "Memory bank" (owner decision 2026-08-30).
+      // Mirrors uk.privacy.ts.
+      profileGroupTitle: "Profile facts",
+      profileGroupHint:
+        "This is what you told us about yourself. Edit and delete it in your profile.",
+      profileGroupAction: "Open profile",
+      clearButton: "Clear AI memory",
+      clearing: "Clearing…",
+      clearConfirmTitle: "Clear AI memory?",
+      clearConfirmBody:
+        "Every fact disappears, both local and on the server. This cannot be undone.",
+      clearConfirmButton: "Clear forever",
+      /** `{count}` — how many facts from this group are loaded so far. */
+      profileGroupCount: "Facts: {count}",
+      collapseFact: "Collapse",
+      technicalGroupHints: {
+        product:
+          "App service markers: registration, onboarding, first action in a module, subscription. The assistant reads them as an action history, not as a fact about you.",
+        digest:
+          "Weekly reports the assistant compiled itself from your modules. This is not a fact you told it — it is its own summary.",
+      },
+    },
+
+    // Mirrors uk.privacy.ts: first-launch analytics consent banner.
+    analyticsConsent: {
+      title: "Help make Sergeant better?",
+      body: "We can collect usage statistics: which screens are opened and where things break. No amounts, names or text you type.",
+      changeLater: "You can change your mind in Settings, under privacy.",
+      privacyLink: "About privacy",
+      accept: "Allow",
+      decline: "No, thanks",
+    },
   },
 
   biometrics: {
@@ -402,9 +548,9 @@ export const messagesEn: Partial<MessageCatalog> = {
     sexLabel: "Sex",
     sexMale: "Male",
     sexFemale: "Female",
-    sexPlaceholder: "— Select —",
+    sexPlaceholder: "Select",
     activityLabel: "Activity level",
-    activityPlaceholder: "— Select —",
+    activityPlaceholder: "Select",
     activitySedentaryLabel: "Sedentary",
     activitySedentaryHint: "Desk job, almost no exercise",
     activityLightLabel: "Light activity",
@@ -417,36 +563,32 @@ export const messagesEn: Partial<MessageCatalog> = {
     activityVeryActiveHint: "Physical job or 2× daily training",
     weightLabel: "Current weight (kg)",
     weightSyncHint: "Synced with the Body journal in Fizruk",
+    countWorkoutsLabel: "Count workouts in the target",
+    countWorkoutsHint:
+      "Off: the target comes from your activity level, which already accounts for training up front. On: the target starts at rest and adds what you actually burned today, and the activity level stops accounting for training.",
     save: "Save",
     saveSuccess: "Biometrics saved",
     saveError: "Could not save biometrics",
+    heightRangeError: "Height must be between 80 and 260 cm",
+    weightRangeError: "Weight must be between 20 and 400 kg",
     ageLabel: "Age",
     ageYearsSuffix: "years",
   },
 
-  nutritionTdee: {
-    triggerLabel: "Calculate from profile",
-    triggerHint:
-      "Fill in your biometrics in your profile (sex, age, height, weight, activity level) and we'll calculate your daily calorie target automatically.",
-    profileLink: "Fill in profile",
-    goalCutting: "Cut weight (−500 kcal)",
-    goalMaintenance: "Maintenance",
-    goalBulking: "Bulk (+300 kcal)",
-    appliedToast: "Targets applied from profile",
-  },
+  nutritionTdee: nutritionTdeeEn,
 
   nutritionGoalRange: {
-    kcalTooLow: "Under 800 kcal — not safe without medical supervision.",
-    kcalTooHigh: "Over 6 000 kcal — that's a lot even for athletes.",
-    proteinTooLow: "Under 30 g protein — risk of deficiency.",
-    proteinTooHigh: "Over 300 g protein — that's a lot even for athletes.",
-    fatTooLow: "Under 20 g fat — risk of essential fatty acid deficiency.",
-    fatTooHigh: "Over 250 g fat — that's high for a typical diet.",
-    carbsTooHigh: "Over 700 g carbs — that's a lot even for athletes.",
+    kcalTooLow: "Under 800 kcal, not safe without medical supervision.",
+    kcalTooHigh: "Over 6 000 kcal, that's a lot even for athletes.",
+    proteinTooLow: "Under 30 g protein, risk of deficiency.",
+    proteinTooHigh: "Over 300 g protein, that's a lot even for athletes.",
+    fatTooLow: "Under 20 g fat, risk of essential fatty acid deficiency.",
+    fatTooHigh: "Over 250 g fat, that's high for a typical diet.",
+    carbsTooHigh: "Over 700 g carbs, that's a lot even for athletes.",
   },
 
   publicStatus: {
-    pageTitle: "Sergeant — Status",
+    pageTitle: "Sergeant · Status",
     pollNote: "Current component status. Updated automatically every",
     pollNoteSuffix: "s.",
     loading: "Loading service status…",
@@ -470,7 +612,7 @@ export const messagesEn: Partial<MessageCatalog> = {
     linksNavAria: "Legal documents",
     homeLogoAria: "Sergeant home",
     reviewGateNotice:
-      "this is a working draft before public launch — not legal advice. Before open registration the founder or a lawyer must confirm the details, refunds, processors and applicable law.",
+      "this is a working draft before public launch, not legal advice. Before open registration the founder or a lawyer must confirm the details, refunds, processors and applicable law.",
     lastUpdatedPrefix: "Last updated:",
     goToPricing: "Go to pricing",
     signInOrCreate: "Sign in or create an account",
@@ -485,156 +627,31 @@ export const messagesEn: Partial<MessageCatalog> = {
   // for the "Unlock {name}" CTA composition; titles/descriptions can flow
   // longer since the modal owns its own viewport space.
   paywall: {
-    "ai-photo-analysis": {
-      name: "AI meal photo analysis",
-      title: "AI photo analysis — Premium",
+    "ai.photo": {
+      name: "Unlimited meal photos",
+      title: "Unlimited meal photos: Premium",
       description:
-        "AI estimates calories, protein, carbs and fat from a meal photo. Available on Premium.",
+        "Free covers 3 AI meal photos a week. The limit resets on Monday, and Premium removes it.",
     },
-    "multi-currency": {
-      name: "Multi-currency assets",
-      title: "Multi-currency — Premium",
+    "ai.finykVision": {
+      name: "Unlimited AI scans",
+      title: "Unlimited AI receipt scans: Premium",
       description:
-        "Hold assets in USD, EUR, BTC and auto-convert to UAH — Premium only.",
+        "Free covers 5 AI scans a week for receipts without a QR code and bank screenshots. Receipts with a QR code stay free.",
     },
-    "analytics-export-pdf": {
+    "export.pdf": {
       name: "PDF export",
-      title: "PDF reports — Premium",
+      title: "PDF reports: Premium",
       description:
-        "Cross-module reports and PDF export — available on Premium.",
+        "PDF export of reports is part of Premium. Reports and CSV stay free.",
+    },
+    "nutrition.weekPlan": {
+      name: "Weekly meal plan",
+      title: "Weekly meal plan: Premium",
+      description:
+        "Day plans, recipes and shopping lists stay free. A full seven-day plan comes with Premium.",
     },
   },
 
-  // Initiative 0010 Phase 6.2 — Landing page (`/`). Full EN translation of the
-  // `landing` group so non-UA visitors see English copy end-to-end. Voice:
-  // 1st-person singular, friendly-not-corporate, concrete. Tier names
-  // ("Premium") capitalized per ADR-0051.
-  landing: {
-    // Header
-    signIn: "Sign in",
-    signInAria: "Sign in to your account",
-
-    // Hero section
-    heroAriaLabel: "Hero — introducing Sergeant",
-    eyebrow: "Local-first · AI · In your language",
-    heroHeadline:
-      "One assistant for finances, workouts,\nnutrition and routines.",
-    heroSubcopy:
-      "Sergeant combines four modules — Finyk, Fizruk, Nutrition, Routine" +
-      " — into one AI chat that remembers your goals and suggests the next step." +
-      " No cloud by default. Full control over your data.",
-    registerCta: "Create account",
-    loginCta: "I already have an account",
-    skipCta: "Try without an account",
-
-    // Features section
-    featuresAriaLabel: "Why Sergeant",
-    features: {
-      aiTitle: "AI assistant in your pocket",
-      aiBody:
-        "A chat that knows your finances, workouts, nutrition and routines — and suggests what to do next.",
-      localFirstTitle: "Local-first by default",
-      localFirstBody:
-        "Your data lives on your device. Cloud sync is optional (Premium) and never turns on without your confirmation.",
-      noHiddenTitle: "No surprise charges",
-      noHiddenBody:
-        "Free tier — forever. Premium — one paid plan, no surprise charges. Pricing will be announced at launch.",
-    },
-
-    // Waitlist section
-    waitlistAriaLabel: "Subscribe to the Sergeant launch",
-    waitlistHeadline: "Get notified when Premium is ready",
-    waitlistSubcopy:
-      "Leave your email for a launch update. Same interest list," +
-      " now with `source=landing` attribution.",
-
-    // Pricing section
-    pricingAriaLabel: "View pricing",
-    pricingHeadline: "Check out the plans",
-    pricingSubcopy:
-      "Free forever for everyday use. Premium unlocks unlimited AI chat," +
-      " auto-Mono sync and cross-device CloudSync.",
-    pricingCta: "See plans",
-
-    // Footer
-    footerText:
-      "Sergeant is a Ukrainian project. No ads, no data reselling," +
-      " no dark patterns. Telegram channel for updates and a public" +
-      " changelog in the repo.",
-  },
-
-  // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
-  // surface; EN translation is the gating reason a non-UA visitor can
-  // self-checkout. Tier names ("Free", "Premium") are brand-stable across
-  // locales — identical to UK.
-  pricing: {
-    pageTitle: "Plans",
-    backLabel: "Back",
-    plansAriaLabel: "Pricing plans",
-    hero: {
-      headlineLine1: "Sergeant is free for everyday use.",
-      headlineLine2: "Premium — when you need everything at once.",
-      subtitle:
-        "One paid plan. No tiers, no lifetime deal, no trial timer. Tap Premium and Stripe Checkout opens.",
-    },
-    tiers: {
-      freeName: "Free",
-      freePrice: "₴0",
-      freeCadence: "forever",
-      freeTagline: "Basic limits across all 4 modules. Local-first, no cloud.",
-      premiumName: "Premium",
-      premiumCadence: "price announced at launch",
-      premiumTagline: "Everything unlocked. One plan — no tiers, no add-ons.",
-    },
-    features: {
-      expensesFinyk: "Finyk expenses",
-      aiPhotoFood: "AI meal photo in Nutrition",
-      aiPhotoFoodShort: "AI meal photo",
-      manualMeals: "Manual meal entries",
-      activeWorkoutTemplate: "Active workout template",
-      workoutTemplates: "Workout templates",
-      activeHabits: "Active habits",
-      habits: "Habits",
-      pdfExport: "PDF report export",
-      multiCurrency: "Multi-currency accounts",
-      cloudSync: "Cross-device CloudSync",
-    },
-    limits: {
-      // Leading space matches uk — composes as `${N} / month`.
-      perMonth: " / month",
-      unlimited: "unlimited",
-    },
-    cta: {
-      tryPremium: "Try Premium",
-      openingCheckout: "Opening checkout…",
-      manageSubscription: "Manage subscription",
-      openingPortal: "Opening portal…",
-      switchToFree: "Switch to Free",
-      currentPlan: "Your current plan",
-    },
-    status: {
-      checkoutCreatedPrefix: "Checkout session created",
-    },
-    errors: {
-      checkoutUnavailable:
-        "Checkout is temporarily unavailable. Leave your email below and we'll get back with a checkout link.",
-      portalNoBillingCustomer:
-        "No Stripe billing profile found. Reach out to support — we'll set it up manually.",
-      portalUnavailable:
-        "Subscription management is temporarily unavailable. Try again later.",
-      portalGeneric:
-        "Couldn't open the portal. Check your connection and try again.",
-    },
-    toast: {
-      subscriptionActive: "Subscription active — welcome to Premium!",
-      subscriptionActiveCta: "Go to settings",
-      paymentCanceled: "Payment canceled. No subscription was created.",
-    },
-    waitlist: {
-      headline: "Waitlist email",
-      subtitle: "One email when Premium launches. No spam, no auto-charges.",
-    },
-    footer:
-      "Prices in EUR; Stripe charges the UAH-equivalent for the UA market. The exact price will be announced at launch.",
-  },
+  pricing: pricingEn,
 };

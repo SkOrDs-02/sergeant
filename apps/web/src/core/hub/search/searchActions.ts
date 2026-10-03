@@ -37,7 +37,7 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.finyk.action,
     title: MODULE_PRIMARY_ACTION.finyk.label,
     subtitle: "Фінік · одна команда замість FAB",
-    icon: "💳",
+    icon: "credit-card",
     keywords:
       "витрата витрати кошти гроші платіж кав каву кафе spend spent expense add transaction trans tx finyk фінік",
   },
@@ -46,7 +46,7 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.fizruk.action,
     title: MODULE_PRIMARY_ACTION.fizruk.label,
     subtitle: "Фізрук · стартує сесію без переходу",
-    icon: "🏋️",
+    icon: "dumbbell",
     keywords:
       "тренування трен зал гим жим кардіо біг workout train start gym lift run fizruk фізрук",
   },
@@ -55,15 +55,15 @@ const ACTIONS: ActionDef[] = [
     action: MODULE_PRIMARY_ACTION.routine.action,
     title: MODULE_PRIMARY_ACTION.routine.label,
     subtitle: "Рутина · нова звичка одним тапом",
-    icon: "✅",
+    icon: "check-circle",
     keywords: "звичка habit рутина streak серія додати add new daily routine",
   },
   {
     moduleId: "nutrition",
     action: MODULE_PRIMARY_ACTION.nutrition.action,
     title: MODULE_PRIMARY_ACTION.nutrition.label,
-    subtitle: "Харчування · прийом їжі без модалки",
-    icon: "🥗",
+    subtitle: "Їжа · прийом їжі без модалки",
+    icon: "utensils",
     keywords:
       "їжа їсти прийом сніданок обід вечеря перекус калорії білок meal eat food breakfast lunch dinner snack ккал nutrition харчування",
   },
@@ -129,10 +129,10 @@ export function searchAiHandoff(query: string): Hit[] {
     {
       id: "ai_handoff",
       module: "ai",
-      moduleLabel: "AI-помічник",
-      title: `Запитати AI: «${trimmed}»`,
+      moduleLabel: "Сержант",
+      title: `Запитати Сержанта: «${trimmed}»`,
       subtitle: "Відкрити чат з готовим запитом",
-      icon: "✨",
+      icon: "sergeant",
       target: { kind: "ai-handoff", query: trimmed },
       // Constant low score so AI handoff sits at the bottom of its
       // group regardless of query — it's the fallback, not the answer.

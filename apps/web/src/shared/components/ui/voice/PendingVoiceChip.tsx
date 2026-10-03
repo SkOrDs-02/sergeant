@@ -16,7 +16,7 @@ const CHIP_VIEWPORT_MARGIN = 8;
 // Висота чипа динамічна (1–2 рядки тексту), але для розрахунку «вгору vs
 // вниз» нам достатньо консервативної оцінки: один рядок ≈ 56px,
 // два рядки ≈ 72px. Беремо більшу — краще трохи зайнятого простору
-// зверху, ніж чип, який вилазить за нижній край в'юпорта.
+// зверху, ніж чип, який вилазить за нижній край вʼюпорта.
 const CHIP_HEIGHT_ESTIMATE = 72;
 
 export interface PendingVoiceChipProps {
@@ -33,15 +33,19 @@ export function PendingVoiceChip({
   onCancel,
 }: PendingVoiceChipProps) {
   const [progress, setProgress] = useState(1);
-  const startedAtRef = useRef<number>(Date.now());
+  const startedAtRef = useRef<number | null>(null);
   const onConfirmRef = useRef(onConfirm);
-  onConfirmRef.current = onConfirm;
+
+  useEffect(() => {
+    onConfirmRef.current = onConfirm;
+  }, [onConfirm]);
 
   useEffect(() => {
     startedAtRef.current = Date.now();
     let raf = 0;
     const tick = () => {
-      const elapsed = Date.now() - startedAtRef.current;
+      const startedAt = startedAtRef.current ?? Date.now();
+      const elapsed = Date.now() - startedAt;
       const remaining = Math.max(0, VOICE_CONFIRM_MS - elapsed);
       setProgress(remaining / VOICE_CONFIRM_MS);
       if (remaining <= 0) {
@@ -67,9 +71,9 @@ export function PendingVoiceChip({
     return () => window.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
-  // Позиціонування фіксоване відносно в'юпорта: пробуємо знизу від
+  // Позиціонування фіксоване відносно вʼюпорта: пробуємо знизу від
   // кнопки; якщо не вліз — піднімаємо вгору. Горизонтально центруємо
-  // по кнопці, але клампимо у в'юпорт.
+  // по кнопці, але клампимо у вʼюпорт.
   const vw = typeof window !== "undefined" ? window.innerWidth : 0;
   const vh = typeof window !== "undefined" ? window.innerHeight : 0;
   const spaceBelow = vh - anchorRect.bottom;
@@ -137,7 +141,7 @@ export function PendingVoiceChip({
             }}
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-micro font-semibold text-text tabular-nums">
+        <span className="absolute inset-0 flex items-center justify-center text-style-caption font-semibold text-text tabular-nums">
           {secondsLeft}
         </span>
       </div>
@@ -151,13 +155,10 @@ export function PendingVoiceChip({
           hapticTap();
           onConfirm();
         }}
-        className="flex-1 min-w-0 text-left text-xs leading-tight text-text hover:text-brand-strong line-clamp-2"
+        className="flex-1 min-w-0 text-left text-style-caption leading-tight text-text hover:text-brand-strong line-clamp-2"
         title="Зберегти зараз"
       >
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
-        <span className="block text-micro uppercase tracking-wide text-subtle">
-          Голос
-        </span>
+        <span className="block text-style-caption text-subtle">Голос</span>
         <span className="block">{text}</span>
       </button>
 

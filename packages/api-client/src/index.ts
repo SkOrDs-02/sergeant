@@ -26,6 +26,10 @@ export type {
 // Endpoint factories and their response shapes
 export {
   createMeEndpoints,
+  type AiMemoryClearResponse,
+  type AiMemoryDeleteResponse,
+  type AiMemoryListItem,
+  type AiMemoryListResponse,
   type MeDeleteResponse,
   type MeEndpoints,
   type MeExportResponse,
@@ -33,6 +37,8 @@ export {
   type User,
   type UserPreferences,
   type UserPreferencesPatch,
+  type UserProfilePayload,
+  type UserProfileResponse,
 } from "./endpoints/me";
 
 export {
@@ -78,6 +84,7 @@ export {
   runSyncEnginePushOnce,
   mapDrainedRowToSyncV2PushOp,
   describePushError,
+  isTerminalPushFailure,
   type DrainSyncOpOutboxFn,
   type DrainedOutboxRowShape,
   type MarkOutboxRejectedFn,
@@ -146,18 +153,19 @@ export {
   createNutritionEndpoints,
   type NutritionBackupDownloadResponse,
   type NutritionBackupUploadResponse,
-  type NutritionDayHintResponse,
   type NutritionDayMeal,
   type NutritionDayPlan,
   type NutritionDayPlanResponse,
   type NutritionEndpoints,
   type NutritionMacros,
   type NutritionMealType,
+  type NutritionNotFoodKind,
   type NutritionPantryItem,
   type NutritionParsePantryResponse,
   type NutritionPhotoIngredient,
   type NutritionPhotoPortion,
   type NutritionPhotoResponse,
+  type NutritionPhotoItem,
   type NutritionPhotoResult,
   type NutritionRecipe,
   type NutritionRecipesResponse,
@@ -195,6 +203,7 @@ export {
   type MonoConnectionStatus,
   type MonoDisconnectResponse,
   type MonoJar,
+  type MonoJarDto,
   type MonoSyncState,
   type MonoTransactionDto,
   type MonoTransactionsPage,
@@ -212,6 +221,42 @@ export {
 } from "./endpoints/privat";
 
 export {
+  createSilpoEndpoints,
+  silpoConnectUrl,
+  type SilpoCartApplyRequest,
+  type SilpoCartDto,
+  type SilpoCartItemDto,
+  type SilpoCartMatchDto,
+  type SilpoCartPreviewItem,
+  type SilpoCartPreviewQueryDto,
+  type SilpoCartPreviewRequest,
+  type SilpoCartPreviewResponse,
+  type SilpoCartSelection,
+  type SilpoConnectionStatus,
+  type SilpoDisconnectResponse,
+  type SilpoEndpoints,
+  type SilpoPantryClaimMode,
+  type SilpoPantryClaimRequest,
+  type SilpoPantryClaimResponse,
+  type SilpoPantryReleaseRequest,
+  type SilpoPantryReleaseResponse,
+  type SilpoReceiptChannel,
+  type SilpoReceiptDetailDto,
+  type SilpoReceiptItemDto,
+  type SilpoReceiptsListParams,
+  type SilpoReceiptsPage,
+  type SilpoReceiptsQuery,
+  type SilpoReceiptSummaryDto,
+  type SilpoSettingsRequest,
+  type SilpoSettingsResponse,
+  type SilpoSyncResult,
+  type SilpoSyncState,
+  type SilpoRelinkResponse,
+  type SilpoUnlinkResponse,
+  type SilpoWipeResponse,
+} from "./endpoints/silpo";
+
+export {
   createWaitlistEndpoints,
   WaitlistSubmitRequestSchema,
   WaitlistSubmitResponseSchema,
@@ -221,11 +266,21 @@ export {
 } from "./endpoints/waitlist";
 
 export {
+  createFeedbackEndpoints,
+  FeedbackSubmitRequestSchema,
+  FeedbackSubmitResponseSchema,
+  type FeedbackEndpoints,
+  type FeedbackSubmitRequest,
+  type FeedbackSubmitResponse,
+} from "./endpoints/feedback";
+
+export {
   createBillingEndpoints,
   BillingCheckoutRequestBodySchema,
   BillingCheckoutResponseBodySchema,
   BillingPortalResponseBodySchema,
   BillingStatusResponseBodySchema,
+  type BillingAccess,
   type BillingCheckoutRequest,
   type BillingCheckoutResponse,
   type BillingEndpoints,
@@ -241,6 +296,77 @@ export {
   type ManualExpenseCreateRequest,
   type ManualExpenseCreateResponse,
 } from "./endpoints/finyk";
+
+// Чек-скан v1 (`POST/GET /api/finyk/receipts/*`) — types re-exported here
+// too (not just via the composed `FinykEndpoints` above) so callers can
+// import `ReceiptDraft`/`Receipt`/etc. directly.
+export {
+  createFinykReceiptsEndpoints,
+  ReceiptAnalyzeRequestBodySchema,
+  ReceiptDraftResponseBodySchema,
+  ReceiptGetResponseBodySchema,
+  ReceiptLookupRequestBodySchema,
+  ReceiptSaveRequestBodySchema,
+  ReceiptSaveResponseBodySchema,
+  type FinykReceiptsEndpoints,
+  type Receipt,
+  type ReceiptAnalyzeRequest,
+  type ReceiptDraft,
+  type ReceiptDraftItem,
+  type ReceiptDraftResponse,
+  type ReceiptDraftSource,
+  type ReceiptGetResponse,
+  type ReceiptItem,
+  type ReceiptLink,
+  type ReceiptLookupRequest,
+  type ReceiptSaveRequest,
+  type ReceiptSaveResponse,
+} from "./endpoints/finykReceipts";
+
+// Масове ведення (`POST/GET/DELETE /api/finyk/import/*`).
+export {
+  createFinykImportEndpoints,
+  ImportBatchGetResponseBodySchema,
+  ImportBatchUndoResponseBodySchema,
+  ImportCommitRequestBodySchema,
+  ImportCommitResponseBodySchema,
+  ImportScreenshotAnalyzeRequestBodySchema,
+  ImportScreenshotAnalyzeResponseBodySchema,
+  ImportStatementPreviewRequestBodySchema,
+  ImportStatementPreviewResponseBodySchema,
+  type FinykImportEndpoints,
+  type ImportBatch,
+  type ImportBatchGetResponse,
+  type ImportBatchStatus,
+  type ImportBatchUndoResponse,
+  type ImportColumnMapping,
+  type ImportCommitRequest,
+  type ImportCommitResponse,
+  type ImportCommitRow,
+  type ImportDateFormat,
+  type ImportDirection,
+  type ImportScreenshotAnalyzeRequest,
+  type ImportScreenshotAnalyzeResponse,
+  type ImportScreenshotDocType,
+  type ImportScreenshotDraft,
+  type ImportScreenshotRow,
+  type ImportSkipReason,
+  type ImportSkippedRow,
+  type ImportSource,
+  type ImportStatementPreviewRequest,
+  type ImportStatementPreviewResponse,
+  type ImportStatementProfile,
+  type ImportStatementRow,
+} from "./endpoints/finykImport";
+
+// Non-standard 413/415 image-validation error envelope shared by
+// `analyzeReceipt` and `analyzeImportScreenshot` — NOT the standard
+// `{error, message, code, requestId}` shape (see module docstring).
+export {
+  isImageValidationErrorBody,
+  type ImageValidationErrorBody,
+  type ImageValidationErrorCode,
+} from "./endpoints/imageValidationError";
 
 export {
   createWeeklyDigestEndpoints,
@@ -260,30 +386,3 @@ export {
   type TranscribeQuery,
   type TranscribeResponse,
 } from "./endpoints/transcribe";
-
-export {
-  createWebVitalsEndpoints,
-  WebVitalsPayloadSchema,
-  type WebVitalsEndpoints,
-  type WebVitalsPayload,
-} from "./endpoints/webVitals";
-
-// ────────────────────── OpenAPI typed client ──────────────────────
-//
-// Auto-generated from `docs/api/openapi.json` by `pnpm api:generate-openapi-types`.
-// Single source of truth → zod schemas in `packages/shared/src/schemas/api.ts`,
-// then `pnpm api:generate-openapi` (zod → spec), then types here. CI gates
-// (`pnpm api:check-openapi` + `pnpm api:check-openapi-types`) fail any PR that
-// touches one without the others.
-//
-// Use `paths` to type-route handlers and `components["schemas"]["MeResponse"]`
-// to pick out a named schema. `operations` is keyed by `operationId` once the
-// spec gets them populated. Keep hand-written types in `endpoints/*` as
-// _the_ public surface for now — the generated ones are an additive parallel
-// layer so consumers can move incrementally.
-export type {
-  paths as OpenApiPaths,
-  components as OpenApiComponents,
-  operations as OpenApiOperations,
-  webhooks as OpenApiWebhooks,
-} from "./generated/openapi";

@@ -54,6 +54,66 @@ describe("DataState", () => {
     expect(screen.getByTestId("empty")).toBeTruthy();
   });
 
+  it("renders a contextual errorAction beside the default retry (R2-UX-18)", () => {
+    render(
+      <DataState
+        query={{
+          data: undefined,
+          isError: true,
+          error: new Error("boom"),
+        }}
+        errorAction={<button data-testid="ctx">Додати вручну</button>}
+      >
+        {(data: number[]) => <span>{data.length}</span>}
+      </DataState>,
+    );
+    // Default fallback retry is present…
+    expect(screen.getByText("Спробувати ще")).toBeTruthy();
+    // …alongside the contextual recovery action.
+    expect(screen.getByTestId("ctx")).toBeTruthy();
+  });
+
+  it("passes retry into the functional errorAction form (R2-UX-18)", () => {
+    const refetch = vi.fn();
+    render(
+      <DataState
+        query={{
+          data: undefined,
+          isError: true,
+          error: new Error("boom"),
+          refetch,
+        }}
+        errorAction={(retry) => (
+          <button data-testid="ctx" onClick={retry}>
+            Ще раз
+          </button>
+        )}
+      >
+        {(data: number[]) => <span>{data.length}</span>}
+      </DataState>,
+    );
+    fireEvent.click(screen.getByTestId("ctx"));
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores errorAction when a custom error slot owns the affordances (R2-UX-18)", () => {
+    render(
+      <DataState
+        query={{
+          data: undefined,
+          isError: true,
+          error: new Error("boom"),
+        }}
+        error={<div data-testid="custom">custom</div>}
+        errorAction={<button data-testid="ctx">Додати вручну</button>}
+      >
+        {(data: number[]) => <span>{data.length}</span>}
+      </DataState>,
+    );
+    expect(screen.getByTestId("custom")).toBeTruthy();
+    expect(screen.queryByTestId("ctx")).toBeNull();
+  });
+
   it("renders the error slot and forwards refetch via the retry callback", () => {
     const refetch = vi.fn();
     const errorRenderer = vi.fn((err: Error, retry: () => void) => (

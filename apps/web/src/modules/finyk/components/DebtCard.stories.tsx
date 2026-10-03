@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { DebtCard } from "./DebtCard";
 
 /**
@@ -67,7 +68,7 @@ export const Overdue: Story = {
   },
 };
 
-/** Due-date на сьогодні — м'який ринок, без червоного попередження. */
+/** Due-date на сьогодні — мʼякий ринок, без червоного попередження. */
 export const DueToday: Story = {
   args: {
     name: "Оренда",
@@ -75,7 +76,9 @@ export const DueToday: Story = {
     remaining: 8000,
     paid: 0,
     total: 8000,
-    dueDate: new Date().toISOString().slice(0, 10),
+    // Строк боргу — фінансовий період, тож день київський (ADR-0078), а
+    // не доба пристрою. `getKyivDayKey()` уже віддає `YYYY-MM-DD`.
+    dueDate: getKyivDayKey(),
   },
 };
 
@@ -86,7 +89,7 @@ export const HiddenBalance: Story = {
   },
 };
 
-/** З CTA «прив'язати транзакції» — render-only, обробник нічого не робить. */
+/** З CTA «привʼязати транзакції» — render-only, обробник нічого не робить. */
 export const WithLinkAction: Story = {
   args: {
     onLink: () => {},

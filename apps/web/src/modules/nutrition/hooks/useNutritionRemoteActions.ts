@@ -2,7 +2,17 @@ import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
-import { toLocalISODate, generatePrefixedId } from "@sergeant/shared";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { useAccessGuard } from "../../../core/access/useCanUse";
+import {
+  generatePrefixedId,
+  pantryModeAvailabilityError,
+} from "@sergeant/shared";
+import {
+  deviceDayKey,
+  deviceTimeOfDay,
+  stripPlacement,
+} from "@sergeant/nutrition-domain";
 import type {
   NutritionDayMeal,
   NutritionDayPlan as ApiNutritionDayPlan,
@@ -14,8 +24,8 @@ import type {
 import { formatNutritionError } from "../lib/nutritionErrors";
 import { writeRecipeCache } from "../lib/recipeCache";
 import { stableRecipeId } from "../lib/recipeIds";
+import { SHOPPING_RECIPES_MAX, toShoppingRecipe } from "../lib/shoppingRecipes";
 import { newMealId } from "../lib/mealId";
-import { getDayMacros, getDaySummary } from "../lib/nutritionStorage";
 import type { Meal, NutritionLogLike } from "../lib/nutritionStorage";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type {
@@ -23,11 +33,14 @@ import type {
   NutritionRecipe as UiNutritionRecipe,
   NutritionWeekPlan as UiNutritionWeekPlan,
 } from "./useNutritionUiState";
-import type { ShoppingCategory } from "../lib/shoppingListStorage";
+import {
+  migrateShoppingListCategories,
+  type ShoppingCategory,
+} from "../lib/shoppingListStorage";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 type AnySetter<T = unknown> =
-  | Dispatch<SetStateAction<T>>
-  | ((value: T) => void);
+  Dispatch<SetStateAction<T>> | ((value: T) => void);
 
 interface BuildMutationHandlersParams<TData> {
   setBusy?: AnySetter<boolean>;
@@ -100,6 +113,8 @@ export interface RemoteActionsPrefs {
   servings?: number | string | null;
   timeMinutes?: number | string | null;
   exclude?: string | null;
+  recipeMealType?: "any" | "breakfast" | "lunch" | "dinner" | "snack";
+  recipePantryMode?: "prefer" | "only" | "ignore";
   dailyTargetKcal: number | null;
   dailyTargetProtein_g: number | null;
   dailyTargetFat_g: number | null;
@@ -107,8 +122,7 @@ export interface RemoteActionsPrefs {
 }
 
 /**
- * Subset of `useNutritionLog()` return used by `fetchDayHint` and
- * `addMealFromPlan`.
+ * Subset of `useNutritionLog()` return used by `addMealFromPlan`.
  */
 export interface RemoteActionsLog {
   nutritionLog: NutritionLogLike;
@@ -136,6 +150,12 @@ export interface UseNutritionRemoteActionsParams {
   setBusy: AnySetter<boolean>;
   setErr: AnySetter<string>;
   setStatusText: AnySetter<string>;
+  /**
+   * Куди покласти причину, з якої дію НЕ запустили (A3, поставка 2).
+   * Окремо від `setErr` навмисно: `setErr` несе текст помилки, що вже
+   * сталась, а це — причина, з якої запиту не було взагалі.
+   */
+  setDenial: (denial: AccessDenial) => void;
   pantry: RemoteActionsPantry;
   prefs: RemoteActionsPrefs;
   recipes: UiNutritionRecipe[];
@@ -145,12 +165,12 @@ export interface UseNutritionRemoteActionsParams {
   recipeCacheKey: string;
   weekPlan: UiNutritionWeekPlan | null;
   setWeekPlan: (value: UiNutritionWeekPlan | null) => void;
+  /** Потрібен для відкату: структура і сирий текст мають вертатись разом. */
+  weekPlanRaw: string;
   setWeekPlanRaw: (value: string) => void;
   setWeekPlanBusy: AnySetter<boolean>;
   setDayPlan: Dispatch<SetStateAction<UiNutritionDayPlan | null>>;
   setDayPlanBusy: AnySetter<boolean>;
-  setDayHintBusy: AnySetter<boolean>;
-  setDayHintText: AnySetter<string>;
   log: RemoteActionsLog;
   shopping: RemoteActionsShopping;
   setShoppingBusy: AnySetter<boolean>;
@@ -163,6 +183,50 @@ export interface UseNutritionRemoteActionsParams {
  * this boundary.
  */
 type RecipeFromApi = ApiNutritionRecipe & { id?: unknown };
+
+/**
+ * Режим комори з prefs. Один вибір користувача («Як враховувати комору» в
+ * «Меню») керує ВСІМА трьома генераторами: рецепти, денний план, тижневий.
+ */
+function pantryModeOf(prefs: RemoteActionsPrefs): "prefer" | "only" | "ignore" {
+  return prefs.recipePantryMode ?? "prefer";
+}
+
+/**
+ * Комора для тіла запиту. При `ignore` шлемо порожній список навмисно:
+ * інструкція «не враховуй комору» поруч зі списком продуктів — слабкий
+ * важіль, модель усе одно тягне страви зі списку. Не показати списку —
+ * надійніше, ніж попросити його не використовувати.
+ */
+function pantryPayload(
+  items: PantryItem[],
+  mode: "prefer" | "only" | "ignore",
+  limit: number,
+): PantryItem[] {
+  return mode === "ignore" ? [] : stripPlacement(items.slice(0, limit));
+}
+
+function assertPantryModeAvailable(
+  items: PantryItem[],
+  mode: "prefer" | "only" | "ignore",
+): void {
+  const error = pantryModeAvailabilityError(items, mode);
+  if (error) throw new Error(error);
+}
+
+/**
+ * UX-1 (аудит 2026-09-01): `dayPlan` повертав голе «Не вдалося отримати
+ * план харчування» без причини й дії — той самий клас, що
+ * `pantryModeAvailabilityError` вище вже лагодить для суміжної гілки
+ * («тільки з наявного»). Причина відома в момент кидання (режим комори),
+ * тож повідомлення несе її прямо, а не узагальнює до одного тексту на всі
+ * випадки — за структурою style guide `[Що сталося.] [Що зроби.]`.
+ */
+function emptyDayPlanErrorMessage(mode: "prefer" | "only" | "ignore"): string {
+  return mode === "only"
+    ? "Сержант не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори."
+    : "Сержант повернув порожній план харчування. Спробуй згенерувати ще раз.";
+}
 
 /** Coerce a possibly-numeric pref value to a number with a fallback. */
 function toNumber(value: unknown, fallback: number): number {
@@ -178,7 +242,7 @@ function toNumber(value: unknown, fallback: number): number {
 function adaptShoppingCategories(
   categories: readonly NutritionShoppingCategory[],
 ): ShoppingCategory[] {
-  return categories.map((cat, catIdx) => ({
+  const minted = categories.map((cat, catIdx) => ({
     name: String(cat.name ?? ""),
     items: (Array.isArray(cat.items) ? cat.items : []).map((it, itIdx) => ({
       id: `sl_${catIdx}_${itIdx}_${generatePrefixedId("sl")}`,
@@ -188,6 +252,10 @@ function adaptShoppingCategories(
       checked: false,
     })),
   }));
+  // Одна таксономія з коморою (рішення власника 2026-10-01): модель просить
+  // категорії комори, але стара чи вигадана назва («Мʼясо та риба») зводиться
+  // до них за назвою позиції, а не потрапляє в список як є.
+  return migrateShoppingListCategories({ categories: minted }).categories;
 }
 
 export function useNutritionRemoteActions({
@@ -195,6 +263,7 @@ export function useNutritionRemoteActions({
   setBusy,
   setErr,
   setStatusText,
+  setDenial,
   // pantry + prefs
   pantry,
   prefs,
@@ -207,31 +276,37 @@ export function useNutritionRemoteActions({
   // week plan
   weekPlan,
   setWeekPlan,
+  weekPlanRaw,
   setWeekPlanRaw,
   setWeekPlanBusy,
-  // day plan / day hint
+  // day plan
   setDayPlan,
   setDayPlanBusy,
-  setDayHintBusy,
-  setDayHintText,
   // log + shopping
   log,
   shopping,
   setShoppingBusy,
 }: UseNutritionRemoteActionsParams) {
+  // Один pre-gate на всі чотири AI-дії нижче. До цієї поставки жодна з
+  // них гейта не мала: анонім доходив до запиту й отримував 401 уже
+  // після того, як вклав у дію роботу.
+  const guard = useAccessGuard(setDenial);
+
   // ─── Recipes ────────────────────────────────────────────────────────────
   const recipesMutation = useMutation({
     mutationFn: () => {
       const items = pantry.effectiveItems;
-      if (items.length === 0)
-        throw new Error("Дай хоча б 2–3 продукти для рецептів.");
+      const mode = pantryModeOf(prefs);
+      assertPantryModeAvailable(items, mode);
       return nutritionApi.recommendRecipes({
-        pantry: items.slice(0, 40),
+        pantry: pantryPayload(items, mode, 40),
         preferences: {
           goal: prefs.goal,
           servings: toNumber(prefs.servings, 1),
           timeMinutes: toNumber(prefs.timeMinutes, 25),
           exclude: String(prefs.exclude || ""),
+          mealType: prefs.recipeMealType ?? "any",
+          pantryMode: mode,
           locale: "uk-UA",
         },
       });
@@ -242,7 +317,7 @@ export function useNutritionRemoteActions({
       setBusy,
       setErr,
       setStatusText,
-      fallbackError: "Помилка рекомендацій",
+      fallbackError: failedCopy("підібрати рецепти"),
       onMutateSideEffects: {
         statusText: "Генерую рецепти…",
         run: () => {
@@ -267,17 +342,18 @@ export function useNutritionRemoteActions({
   });
 
   const recommendRecipes = useCallback(
-    () => recipesMutation.mutate(),
-    [recipesMutation],
+    () => guard("recipes", () => recipesMutation.mutate()),
+    [guard, recipesMutation],
   );
 
   // ─── Week plan ──────────────────────────────────────────────────────────
   const weekPlanMutation = useMutation({
     mutationFn: () => {
-      const items = pantry.effectiveItems;
-      if (items.length === 0) throw new Error("Додай продукти на склад.");
+      const mode = pantryModeOf(prefs);
+      assertPantryModeAvailable(pantry.effectiveItems, mode);
       return nutritionApi.weekPlan({
-        pantry: items.slice(0, 50),
+        pantry: pantryPayload(pantry.effectiveItems, mode, 50),
+        pantryMode: mode,
         preferences: { goal: prefs.goal },
         locale: "uk-UA",
       });
@@ -285,13 +361,17 @@ export function useNutritionRemoteActions({
     onMutate: () => {
       setWeekPlanBusy(true);
       setErr("");
-      // Capture snapshot for rollback on error (weekPlanRaw not passed as param)
-      return { prevWeekPlan: weekPlan };
+      // Знімок для відкату. `plan` і `raw` — два представлення ОДНІЄЇ
+      // відповіді LLM, тож і зберігаються, і вертаються разом. Раніше тут
+      // лежав лише `plan`, і невдала генерація лишала структуру старого
+      // покоління поряд із сирим текстом нового. Доки стан жив у памʼяті,
+      // розбіжність помирала на розмонтуванні; відколи план пишеться у
+      // сховище — вона переживає перезапуск.
+      return { prevWeekPlan: weekPlan, prevWeekPlanRaw: weekPlanRaw };
     },
     onSuccess: (data) => {
       const plan = (data?.plan ?? null) as
-        | (ApiNutritionWeekPlan & Record<string, unknown>)
-        | null;
+        (ApiNutritionWeekPlan & Record<string, unknown>) | null;
       setWeekPlan(plan);
       setWeekPlanRaw(typeof data?.rawText === "string" ? data.rawText : "");
       hapticSuccess();
@@ -300,8 +380,9 @@ export function useNutritionRemoteActions({
       // Rollback to previous week plan on failure
       if (ctx) {
         setWeekPlan(ctx.prevWeekPlan);
+        setWeekPlanRaw(ctx.prevWeekPlanRaw);
       }
-      setErr(formatNutritionError(err, "Помилка плану"));
+      setErr(formatNutritionError(err, failedCopy("скласти план на тиждень")));
     },
     onSettled: () => {
       setWeekPlanBusy(false);
@@ -309,74 +390,19 @@ export function useNutritionRemoteActions({
   });
 
   const fetchWeekPlan = useCallback(
-    () => weekPlanMutation.mutate(),
-    [weekPlanMutation],
-  );
-
-  // ─── Day hint ───────────────────────────────────────────────────────────
-  const dayHintMutation = useMutation({
-    mutationFn: () => {
-      const summary = getDaySummary(log.nutritionLog, log.selectedDate);
-      if (!summary.hasMeals) {
-        // Return a synthetic payload so `onSuccess` can render the "empty day"
-        // message without triggering an actual API call.
-        return Promise.resolve({
-          hint: "День порожній. Додай прийом їжі — і я зможу дати підказку.",
-          _synthetic: true,
-        });
-      }
-      const rawMeals = log.nutritionLog?.[log.selectedDate]?.meals || [];
-      const meals = rawMeals as Array<Partial<Meal>>;
-      const macroSources = meals.reduce<Record<string, number>>((acc, m) => {
-        const k = String(
-          m?.macroSource || (m?.source === "photo" ? "photoAI" : "manual"),
-        );
-        acc[k] = (acc[k] || 0) + 1;
-        return acc;
-      }, {});
-      const macros = summary.hasAnyMacros
-        ? getDayMacros(log.nutritionLog, log.selectedDate)
-        : { kcal: null, protein_g: null, fat_g: null, carbs_g: null };
-      return nutritionApi.dayHint({
-        macros,
-        hasMeals: summary.hasMeals,
-        hasAnyMacros: summary.hasAnyMacros,
-        macroSources,
-        targets: {
-          dailyTargetKcal: prefs.dailyTargetKcal,
-          dailyTargetProtein_g: prefs.dailyTargetProtein_g,
-          dailyTargetFat_g: prefs.dailyTargetFat_g,
-          dailyTargetCarbs_g: prefs.dailyTargetCarbs_g,
-        },
-        locale: "uk-UA",
-      });
-    },
-    onMutate: () => {
-      setDayHintBusy(true);
-      setErr("");
-    },
-    onSuccess: (data) => {
-      setDayHintText(typeof data?.hint === "string" ? data.hint : "");
-    },
-    onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка підказки"));
-    },
-    onSettled: () => {
-      setDayHintBusy(false);
-    },
-  });
-
-  const fetchDayHint = useCallback(
-    () => dayHintMutation.mutate(),
-    [dayHintMutation],
+    () => guard("week-plan", () => weekPlanMutation.mutate()),
+    [guard, weekPlanMutation],
   );
 
   // ─── Day plan ───────────────────────────────────────────────────────────
   const dayPlanMutation = useMutation({
-    mutationFn: (regenerateMealType: string | null | undefined) =>
-      nutritionApi
+    mutationFn: (regenerateMealType: string | null | undefined) => {
+      const mode = pantryModeOf(prefs);
+      assertPantryModeAvailable(pantry.effectiveItems, mode);
+      return nutritionApi
         .dayPlan({
-          pantry: pantry.effectiveItems.slice(0, 50),
+          pantry: pantryPayload(pantry.effectiveItems, mode, 50),
+          pantryMode: mode,
           targets: {
             kcal: prefs.dailyTargetKcal,
             protein_g: prefs.dailyTargetProtein_g,
@@ -388,9 +414,12 @@ export function useNutritionRemoteActions({
         })
         .then((data) => {
           const plan = data?.plan;
-          if (!plan) throw new Error("Не вдалося отримати план харчування");
+          if (!plan || !Array.isArray(plan.meals) || plan.meals.length === 0) {
+            throw new Error(emptyDayPlanErrorMessage(mode));
+          }
           return { plan, regenerateMealType };
-        }),
+        });
+    },
     onMutate: (regenerateMealType) => {
       setDayPlanBusy(true);
       setErr("");
@@ -456,7 +485,7 @@ export function useNutritionRemoteActions({
       if (ctx && "prevDayPlan" in ctx && ctx.prevDayPlan !== undefined) {
         setDayPlan(ctx.prevDayPlan);
       }
-      setErr(formatNutritionError(err, "Помилка генерації плану"));
+      setErr(formatNutritionError(err, failedCopy("скласти план на день")));
     },
     onSettled: () => {
       setDayPlanBusy(false);
@@ -465,8 +494,8 @@ export function useNutritionRemoteActions({
 
   const fetchDayPlan = useCallback(
     (regenerateMealType?: string | null) =>
-      dayPlanMutation.mutate(regenerateMealType),
-    [dayPlanMutation],
+      guard("day-plan", () => dayPlanMutation.mutate(regenerateMealType)),
+    [guard, dayPlanMutation],
   );
 
   // ─── Add meal from plan (local-only; no network) ────────────────────────
@@ -478,8 +507,22 @@ export function useNutritionRemoteActions({
     fat_g?: number | null;
     carbs_g?: number | null;
   }
+  /**
+   * Записати страву з денного плану в журнал.
+   *
+   * Повертає `{ id, dateKey }` — куди саме ліг запис, щоб сторінка могла
+   * запропонувати «Скасувати». Сам тост ЖИВЕ НЕ ТУТ: за рішенням власника
+   * 2026-09-11 тости нутриції належать рівню `NutritionApp`, де вже є
+   * `useToast()`, а дата-хуки лишаються без презентації (той самий доказ
+   * у коментарі `NutritionApp.tsx` про `pantryRef`).
+   *
+   * Доти цей шлях був ЄДИНИМ із трьох, що писав у журнал мовчки: аркуш
+   * прийому і рядок пошуку вже мали «Скасувати», а тап по страві з плану —
+   * ні, тож помилковий тап коштував ручного пошуку запису й видалення
+   * (залишок знахідки PR-N1, аудит 2026-09-13).
+   */
   const addMealFromPlan = useCallback(
-    (meal: PlanMealInput) => {
+    (meal: PlanMealInput): { id: string; dateKey: string } => {
       const id = newMealId();
       const typeLabels: Record<string, string> = {
         breakfast: "Сніданок",
@@ -491,10 +534,14 @@ export function useNutritionRemoteActions({
       // інакше для минулих/майбутніх днів сьогоднішній час виглядав би як баг
       // (запис "вчора 09:30 ранку" створений увечері). Див. H5 з аудиту.
       const now = new Date();
-      const isToday = log.selectedDate === toLocalISODate(now);
-      const time = isToday
-        ? `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`
-        : "";
+      // ADR-0078: `log.selectedDate` is the device-local day key the log is
+      // written under (useNutritionLog) — comparing against a Kyiv key here
+      // would desync this check the moment device tz != Kyiv.
+      const isToday = log.selectedDate === deviceDayKey(now);
+      // ADR-0078: час доби беремо з того самого годинника, що й день-ключ
+      // вище (`deviceDayKey`). Київський настінний час поруч із девайсовим
+      // днем дає пару, з якої `composeEatenAt` складав неіснуючий момент.
+      const time = isToday ? deviceTimeOfDay(now) : "";
       log.handleAddMeal({
         id,
         time,
@@ -510,6 +557,7 @@ export function useNutritionRemoteActions({
         source: "manual",
         macroSource: "recipeAI",
       });
+      return { id, dateKey: log.selectedDate };
     },
     [log],
   );
@@ -519,10 +567,16 @@ export function useNutritionRemoteActions({
     pantryItems: PantryItem[];
     locale: string;
     weekPlan?: UiNutritionWeekPlan;
-    recipes?: UiNutritionRecipe[];
+    recipes?: UiNutritionRecipe[] | ReturnType<typeof toShoppingRecipe>[];
   }
   const shoppingMutation = useMutation({
-    mutationFn: (source: string) => {
+    mutationFn: ({
+      source,
+      selected,
+    }: {
+      source: string;
+      selected?: unknown[] | undefined;
+    }) => {
       const body: ShoppingRequestBody = {
         pantryItems: pantry.effectiveItems.slice(0, 50),
         locale: "uk-UA",
@@ -530,6 +584,15 @@ export function useNutritionRemoteActions({
       const weekPlanDays = Array.isArray(weekPlan?.days) ? weekPlan.days : [];
       if (source === "weekplan" && weekPlan && weekPlanDays.length > 0) {
         body.weekPlan = weekPlan;
+      } else if (selected !== undefined) {
+        // Вибір із переліку «Мої рецепти» + «Згенеровані»: список складається
+        // з позначених, а не з усього, що лежить у памʼяті.
+        if (selected.length === 0) {
+          throw new Error("Немає рецептів чи тижневого плану для генерації.");
+        }
+        body.recipes = selected
+          .slice(0, SHOPPING_RECIPES_MAX)
+          .map(toShoppingRecipe);
       } else if (recipes.length > 0) {
         body.recipes = recipes;
       } else {
@@ -538,19 +601,27 @@ export function useNutritionRemoteActions({
       return nutritionApi.shoppingList(body).then((data) => {
         if (!Array.isArray(data?.categories))
           throw new Error("Не вдалося згенерувати список покупок.");
-        return data;
+        const categories = adaptShoppingCategories(data.categories).filter(
+          (category) => category.items.length > 0,
+        );
+        if (categories.length === 0) {
+          throw new Error(
+            "Сержант не повернув жодної покупки. Перевір джерело списку або склад комори й спробуй ще раз.",
+          );
+        }
+        return categories;
       });
     },
     onMutate: () => {
       setShoppingBusy(true);
       setErr("");
     },
-    onSuccess: (data) => {
-      shopping.setGeneratedList(adaptShoppingCategories(data.categories));
+    onSuccess: (categories) => {
+      shopping.setGeneratedList(categories);
       hapticSuccess();
     },
     onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка генерації списку покупок"));
+      setErr(formatNutritionError(err, failedCopy("скласти список покупок")));
     },
     onSettled: () => {
       setShoppingBusy(false);
@@ -558,14 +629,16 @@ export function useNutritionRemoteActions({
   });
 
   const generateShoppingList = useCallback(
-    (source: string) => shoppingMutation.mutate(source),
-    [shoppingMutation],
+    (source: string, selected?: unknown[]) =>
+      guard("shopping-list", () =>
+        shoppingMutation.mutate({ source, selected }),
+      ),
+    [guard, shoppingMutation],
   );
 
   return {
     recommendRecipes,
     fetchWeekPlan,
-    fetchDayHint,
     fetchDayPlan,
     addMealFromPlan,
     generateShoppingList,

@@ -1,4 +1,8 @@
 import type { ChatActionCardModule } from "./hubChatActionCards";
+import { MCC_CATEGORIES } from "@sergeant/finyk-domain";
+import { MANUAL_TAXONOMY_BY_ID } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import { isMealTypeId, labelForMealType } from "@sergeant/nutrition-domain";
+import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 
 export function moduleFor(name: string): ChatActionCardModule {
   // Finyk tools
@@ -34,6 +38,7 @@ export function moduleFor(name: string): ChatActionCardModule {
     name === "add_recipe" ||
     name === "add_to_shopping_list" ||
     name === "consume_from_pantry" ||
+    name === "clear_pantry" ||
     name === "set_daily_plan" ||
     name === "suggest_meal" ||
     name === "copy_meal_from_date" ||
@@ -111,6 +116,8 @@ export function iconFor(name: string): string | undefined {
       return "piggy-bank";
     case "export_report":
       return "file-text";
+    case "get_daily_series":
+      return "bar-chart";
     case "import_monobank_range":
       return "refresh-cw";
     // Nutrition
@@ -126,6 +133,8 @@ export function iconFor(name: string): string | undefined {
       return "shopping-cart";
     case "consume_from_pantry":
       return "check";
+    case "clear_pantry":
+      return "trash";
     case "set_daily_plan":
       return "target";
     case "suggest_meal":
@@ -220,22 +229,98 @@ export function iconFor(name: string): string | undefined {
   }
 }
 
+/**
+ * AI-4 / AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+ * один мапер ключ → підпис на всі три родини «карта показує сирий id/enum
+ * замість людського тексту»: звичка (`hab_<uuid>`), категорія Фініка
+ * (`restaurant`), тип прийому їжі (`dinner`). Кожна функція повертає
+ * `undefined`, коли резолв не вдався (звичку видалено, категорію
+ * не впізнано) — виклики нижче в `hubChatActionCardsRegistry.ts` тоді
+ * падають назад на raw id, а не на порожній рядок.
+ */
+
+const MCC_CATEGORY_LABEL_BY_ID: ReadonlyMap<string, string> = new Map(
+  MCC_CATEGORIES.map((c) => [c.id, c.label]),
+);
+
+/** Модель шле `id:`-префіксовані значення час від часу (той самий шум, що
+ * `normalizeHabitId` у `chatActions/routineActions.ts` вже чистить для
+ * запису) — тут та сама нормалізація для читання, окрема копія навмисно:
+ * дві-три рядки не варті спільного експорту через модульну межу. */
+function stripIdPrefix(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^id:\s*/i, "")
+    .trim();
+}
+
+/**
+ * Назва звички з локального стану Рутини (`loadRoutineState().habits`) —
+ * той самий джерело істини, що читає UI. `undefined`, якщо звичку вже
+ * видалено/архівовано локально або id не резолвиться — виклик нижче
+ * falls back на сирий id, не ховає інформацію повністю.
+ */
+export function habitNameFor(habitId: string | undefined): string | undefined {
+  if (!habitId) return undefined;
+  const id = stripIdPrefix(habitId);
+  if (!id) return undefined;
+  return loadRoutineState().habits.find((h) => h.id === id)?.name;
+}
+
+/**
+ * Людський підпис категорії Фініка з канонічного реєстру `MCC_CATEGORIES`
+ * (той самий, що керує бюджетами/лімітами), з fallback на ручну таксономію
+ * (`MANUAL_TAXONOMY_BY_ID`) для legacy manual-слагів. Користувацькі
+ * (custom) категорії тут не резолвляться — картка тоді показує raw id,
+ * що не гірше за поточну поведінку.
+ */
+export function categoryLabelFor(
+  categoryId: string | undefined,
+): string | undefined {
+  if (!categoryId) return undefined;
+  const id = categoryId.trim();
+  if (!id) return undefined;
+  return (
+    MCC_CATEGORY_LABEL_BY_ID.get(id) ?? MANUAL_TAXONOMY_BY_ID.get(id)?.label
+  );
+}
+
+/**
+ * Українська назва типу прийому їжі через канонічний
+ * `labelForMealType` з `@sergeant/nutrition-domain` (той самий, що керує
+ * рендером плану харчування) — не власна копія словника.
+ *
+ * Tool-схема (`toolDefs/nutrition.ts`) описує `meal_type` як вільний
+ * рядок із підказкою `'breakfast' | 'lunch' | 'dinner' | 'snack'` — БЕЗ
+ * enum-обмеження, тож модель штатно шле і вже українське слово («обід»,
+ * «сніданок»), яке саме по собі читабельне. Перекладаємо лише РОЗПІЗНАНИЙ
+ * канонічний enum (`isMealTypeId`); усе інше повертаємо як є — інакше
+ * `labelForMealType`-фолбек «Прийом їжі» затер би вже нормальний текст,
+ * замінивши конкретне на загальне.
+ */
+export function mealTypeLabelFor(
+  mealType: string | undefined,
+): string | undefined {
+  if (!mealType) return undefined;
+  return isMealTypeId(mealType) ? labelForMealType(mealType) : mealType;
+}
+
 export function titleFor(name: string, status: "completed" | "failed"): string {
-  const failedSuffix = status === "failed" ? " — не вийшло" : "";
+  const failedSuffix = status === "failed" ? ", не вийшло" : "";
   switch (name) {
     // Finyk
     case "create_transaction":
-      return `Транзакцію записано${failedSuffix}`;
+      return `Операцію записано${failedSuffix}`;
     case "find_transaction":
-      return `Транзакції знайдено${failedSuffix}`;
+      return `Операції знайдено${failedSuffix}`;
     case "batch_categorize":
       return `Категорії оновлено${failedSuffix}`;
     case "change_category":
       return `Категорію змінено${failedSuffix}`;
     case "delete_transaction":
-      return `Транзакцію видалено${failedSuffix}`;
+      return `Операцію видалено${failedSuffix}`;
     case "hide_transaction":
-      return `Транзакцію приховано${failedSuffix}`;
+      return `Операцію приховано${failedSuffix}`;
     case "set_budget_limit":
     case "update_budget":
       return `Бюджет оновлено${failedSuffix}`;
@@ -250,9 +335,11 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
     case "add_asset":
       return `Актив додано${failedSuffix}`;
     case "split_transaction":
-      return `Транзакцію розділено${failedSuffix}`;
+      return `Операцію розділено${failedSuffix}`;
     case "recurring_expense":
       return `Періодичну витрату створено${failedSuffix}`;
+    case "import_monobank_range":
+      return `Імпорт з Monobank${failedSuffix}`;
     case "export_report":
       return `Звіт згенеровано${failedSuffix}`;
     // Nutrition
@@ -266,6 +353,8 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Продукт додано до списку покупок${failedSuffix}`;
     case "consume_from_pantry":
       return `Продукт спожито${failedSuffix}`;
+    case "clear_pantry":
+      return `Комору очищено${failedSuffix}`;
     case "set_daily_plan":
       return `Щоденний план оновлено${failedSuffix}`;
     case "suggest_meal":
@@ -299,6 +388,12 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Порівняння прогресу${failedSuffix}`;
     // Routine
     case "mark_habit_done":
+      // Не «створено»: обидві дії ділили один заголовок, тож відмітка
+      // виконання рапортувала користувачу створення нової звички
+      // (браузерна реверифікація 2026-08-24). Картка дії — це звіт про те,
+      // ЩО сталось; помилковий дієслівний час тут коштує рівно стільки ж,
+      // скільки хибне «зроблено» в самій відповіді.
+      return `Звичку відмічено${failedSuffix}`;
     case "create_habit":
       return `Звичку створено${failedSuffix}`;
     case "set_habit_schedule":
@@ -338,6 +433,8 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Виявлення аномалій${failedSuffix}`;
     case "habit_trend":
       return `Тренд звичок${failedSuffix}`;
+    case "get_daily_series":
+      return `Ряди метрик за днями${failedSuffix}`;
     // Utility
     case "calculate_1rm":
       return `1RM розраховано${failedSuffix}`;
@@ -351,7 +448,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Експорт даних${failedSuffix}`;
     // Memory
     case "remember":
-      return `Пам'ять оновлено${failedSuffix}`;
+      return `Памʼять оновлено${failedSuffix}`;
     case "forget":
       return `Забуто${failedSuffix}`;
     case "my_profile":
@@ -360,7 +457,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Спогад${failedSuffix}`;
     // Query / analytics ("talk to your data", PR1-3)
     case "query_transactions":
-      return `Транзакції за запитом${failedSuffix}`;
+      return `Операції за запитом${failedSuffix}`;
     case "aggregate_spending":
       return `Розбивка витрат${failedSuffix}`;
     case "compare_periods":

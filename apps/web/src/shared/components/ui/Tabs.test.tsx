@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 const ITEMS = [
   { value: "overview", label: "Огляд" },
-  { value: "transactions", label: "Транзакції" },
+  { value: "transactions", label: "Операції" },
   { value: "categories", label: "Категорії" },
 ] as const;
 
@@ -98,8 +98,8 @@ describe("Tabs", () => {
     );
     const active = getAllByRole("tab")[0];
     expect(active!.className!).toContain("border-finyk");
-    // `text-finyk-strong` (=emerald-700) clears WCAG AA on cream `bg-bg`;
-    // the previous `text-finyk` (=emerald-500) only cleared ~2.4:1.
+    // `text-finyk-strong` (= teal-800) clears WCAG AA on cream `bg-bg`;
+    // the plain `text-finyk` (= teal-700) is reserved for larger text.
     expect(active!.className!).toContain("text-finyk-strong");
   });
 

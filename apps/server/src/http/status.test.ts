@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  BOT_OPERATIONAL_WINDOW_MS,
   N8N_DEGRADED_THRESHOLD,
   N8N_RECENT_WINDOW_MS,
   buildStatusResponse,
@@ -17,8 +16,7 @@ import {
  *      - database probe `SELECT 1` success ⇒ operational, failure ⇒ down
  *      - n8n failure-event burst ⇒ degraded (>= threshold), single
  *        failure stays operational
- *      - console-bot last-invocation within 24 h ⇒ operational, older
- *        ⇒ degraded (idle).
+ *      (`console-bot` прибрано — OpenClaw декомісований, ADR-0075).
  *   3. `lastIncident` is populated from the most recent
  *      `n8n_failure_events.created_at` in the 7-day lookback.
  *   4. L7 info-leak invariant: response shape MUST NOT contain
@@ -158,7 +156,6 @@ describe("buildStatusResponse", () => {
       "server",
       "database",
       "n8n",
-      "console-bot",
     ]);
     expect(body.components.every((c) => c.status === "operational")).toBe(true);
     expect(body.lastIncident).toBeNull();
@@ -235,34 +232,19 @@ describe("buildStatusResponse", () => {
     expect(body.lastIncident?.at).toBe(olderIncident);
   });
 
-  it("marks console-bot degraded when last invocation is older than the operational window", async () => {
-    const staleBot = new Date(
-      FIXED_NOW.getTime() - BOT_OPERATIONAL_WINDOW_MS - 60_000,
-    ).toISOString();
+  it("does not expose the decommissioned console-bot component (ADR-0075)", async () => {
     const pool = fakePool([
       { match: "SELECT 1", rows: [{ ok: 1 }] },
       { match: /COUNT\(\*\)/, rows: [{ count: "0" }] },
       { match: /FROM n8n_failure_events/i, rows: [] },
-      { match: /FROM openclaw_invocations/i, rows: [{ invoked_at: staleBot }] },
-    ]);
-
-    const body = await buildStatusResponse(pool, { now: FIXED_NOW });
-    expect(body.components.find((c) => c.id === "console-bot")?.status).toBe(
-      "degraded",
-    );
-    expect(body.status).toBe("degraded");
-  });
-
-  it("marks console-bot degraded when there are no invocations at all (table empty)", async () => {
-    const pool = fakePool([
-      { match: "SELECT 1", rows: [{ ok: 1 }] },
-      { match: /COUNT\(\*\)/, rows: [{ count: "0" }] },
-      { match: /FROM n8n_failure_events/i, rows: [] },
-      { match: /FROM openclaw_invocations/i, rows: [] },
     ]);
     const body = await buildStatusResponse(pool, { now: FIXED_NOW });
-    expect(body.components.find((c) => c.id === "console-bot")?.status).toBe(
-      "degraded",
+    expect(
+      body.components.find((c) => (c.id as string) === "console-bot"),
+    ).toBeUndefined();
+    expect(body.status).toBe("operational");
+    expect(pool.calls.some((c) => /openclaw_invocations/i.test(c.sql))).toBe(
+      false,
     );
   });
 
@@ -282,7 +264,6 @@ describe("buildStatusResponse", () => {
   });
 
   it("accepts Date objects (not only ISO strings) returned by pg", async () => {
-    const recentBot = new Date(FIXED_NOW.getTime() - 60_000);
     const recentIncident = new Date(FIXED_NOW.getTime() - 2_000);
     const pool = fakePool([
       { match: "SELECT 1", rows: [{ ok: 1 }] },
@@ -291,15 +272,8 @@ describe("buildStatusResponse", () => {
         match: /FROM n8n_failure_events/i,
         rows: [{ created_at: recentIncident }],
       },
-      {
-        match: /FROM openclaw_invocations/i,
-        rows: [{ invoked_at: recentBot }],
-      },
     ]);
     const body = await buildStatusResponse(pool, { now: FIXED_NOW });
-    expect(body.components.find((c) => c.id === "console-bot")?.status).toBe(
-      "operational",
-    );
     expect(body.lastIncident?.at).toBe(recentIncident.toISOString());
   });
 });

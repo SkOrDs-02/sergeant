@@ -14,6 +14,7 @@ import { computePulseStyle } from "@sergeant/finyk-domain/domain";
 
 import { Card } from "../../../../components/ui/Card";
 import { cn } from "./cn";
+import { formatNumberUk } from "@sergeant/shared";
 
 export interface MonthPulseCardProps {
   dateLabel: string;
@@ -38,7 +39,7 @@ export interface MonthPulseCardProps {
 }
 
 function fmt(n: number): string {
-  return n.toLocaleString("uk-UA", { maximumFractionDigits: 0 });
+  return formatNumberUk(n, { maximumFractionDigits: 0 });
 }
 
 const MonthPulseCardImpl = function MonthPulseCard({
@@ -99,13 +100,10 @@ const MonthPulseCardImpl = function MonthPulseCard({
         </View>
         <View className="items-end">
           <Text className="text-xs text-fg-muted font-medium">Дохід</Text>
-          <Text className="text-3xl font-bold mt-1 text-emerald-600">
+          <Text className="text-3xl font-bold mt-1 text-teal-700">
             {showBalance ? `+${fmt(income)}` : "••••"}
             {showBalance && (
-              <Text className="text-base font-medium text-emerald-700/70">
-                {" "}
-                ₴
-              </Text>
+              <Text className="text-base font-medium text-teal-700/70"> ₴</Text>
             )}
           </Text>
         </View>

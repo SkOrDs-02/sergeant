@@ -1,6 +1,6 @@
 ---
 name: sergeant-planning-batch
-description: Use when executing a batch of N open tasks from docs/90-work/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків.
+description: "Use when executing a batch of N open tasks from docs/work/specs/planning/* PR-plans — dynamic selection, parallel agent fan-out, tracker updates, fast-forward archival of complete docs; UA: виконати батч planning-тасків."
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` so UA-only chat routing still resolves the right SKILL.
 ---
@@ -8,13 +8,13 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 # Planning-batch executor (dynamic parallel fan-out)
 
 This skill coordinates a dynamic, parallel-agent run that pulls the next N open
-tasks out of `docs/90-work/planning/*` PR-plans and roadmaps, executes each one (code or
+tasks out of `docs/work/specs/planning/*` PR-plans and roadmaps, executes each one (code or
 docs), reflects the work back into the trackers, and fast-forward archives any
 planning doc that work has driven to fully-complete.
 
 It is the planning-folder sibling of `sergeant-deliver-squad` (cross-surface
 code) and the parallel docs sweep in
-[`docs/00-start/agents/agent-workflows.md`](../../../docs/00-start/agents/agent-workflows.md) §12.
+[`docs/start/agents/agent-workflows.md`](../../../docs/start/agents/agent-workflows.md) §12.
 Unlike the §11 docs-sync sweep, this workflow **does** carry real code work and
 **does** archive — without the 90-day stabilization wait.
 
@@ -22,9 +22,18 @@ Unlike the §11 docs-sync sweep, this workflow **does** carry real code work and
 
 Load when the request is «виконай N тасків з планінгу» / «прожени батч planning
 PR-карток» / «execute a batch of planning tasks», and the work spans multiple
-`docs/90-work/planning/*` PR-cards. Each PR-card carries
-`Status / Trigger / Action / Files / Acceptance / Size / P-рівень / Dependencies
-/ Freeze-compatible / Owner`.
+`docs/work/specs/planning/*` tasks.
+
+**Read the live format, don't assume one.** Planning docs in this repo do **not**
+share a single card schema — today they range from `> **Status:**` lifecycle
+headers to sprint tables (`sprint-9-10-plan-2026.md` uses
+`ID / Source-roast / Surface / P-рівень / Effort / Залежності / Acceptance`) to
+prose roadmaps and research notes under `specs/` and `prompts/`. The richer
+`Status / Trigger / Action / Files / Acceptance / Size / P-рівень / Dependencies /
+Freeze-compatible / Owner` card is the **target** shape for new cards, not a
+guarantee about existing ones. Parse whatever fields a doc actually has; treat a
+missing `Dependencies` or `Freeze-compatible` field as "unknown → verify
+manually", never as "no dependencies".
 
 **Do not load** for a single isolated task that already maps to one specialist
 skill — route straight to that skill instead. Do not load for the read-only
@@ -37,13 +46,13 @@ Ground truth for "what is still open" is the trackers, not the prose:
 
 - [`docs/open-work.md`](../../../docs/open-work.md) — generated dashboard of all
   open tracker docs (`pnpm docs:gen-open-work` to refresh).
-- [`docs/04-governance/pr-ledger/index.json`](../../../docs/04-governance/pr-ledger/index.json) — whether a
+- [`docs/governance/pr-ledger/index.json`](../../../docs/governance/pr-ledger/index.json) — whether a
   `#NNNN` PR-mention already merged.
 
 Select the next batch by: skip every card already marked `✅ Виконано` /
 `Closed`; honor each card's `Dependencies` (never start a card before its
 blockers); respect each card's `Freeze-compatible` flag against any active
-freeze in `docs/04-governance/governance/`. Prefer the lowest `P-рівень` and smallest `Size`
+freeze in `docs/governance/governance/`. Prefer the lowest `P-рівень` and smallest `Size`
 first so the batch front-loads shippable wins. The batch size N is dynamic —
 take what the request asks for, capped by what dependencies actually unblock.
 
@@ -55,7 +64,7 @@ Classify each selected card before fan-out, then route it:
 | --------------------------------------------- | ------------------------------------------------------------------------------------- |
 | DB + server + api-client + web/mobile         | `sergeant-deliver-squad` (sequential handoff chain, one card at a time)               |
 | One code surface only                         | The matching specialist skill (`sergeant-web-ui`, `sergeant-server-api`, …)           |
-| Docs / trackers / status only                 | `docs/00-start/playbooks/reconcile-doc-drift.md` recipe (evidence-backed edits)                |
+| Docs / trackers / status only                 | `docs/start/instructions/reconcile-doc-drift.md` recipe (evidence-backed edits)                |
 | Cross-surface test/typecheck validation       | `sergeant-qa-squad`                                                                   |
 
 ## Parallel fan-out strategy
@@ -85,35 +94,23 @@ Classify each selected card before fan-out, then route it:
   `today.md`.
 - Bump the touched doc's `Last validated:` freshness marker (single marker only).
 
-## Archival policy — fast-forward (skip the 90-day gate)
+## Completed-document cleanup
 
-Archive a planning doc **only when** work has driven it to fully complete:
-follow-ups closed, no open `- [ ]`, the doc is now a frozen snapshot. When that
-bar is met, move it to `docs/90-work/planning/archive/` immediately — **do not wait the
-90-day stabilization window.** Founder has standing approval for fast-forward
-archival (precedent: [`docs/90-work/initiatives/README.md`](../../../docs/90-work/initiatives/README.md)
-batch archival 2026-05-13 / 2026-06-01, "90-day waiting period skipped за
-рішенням founder-а").
-
-On move, apply the archive frontmatter from
-[`docs/90-work/planning/README.md`](../../../docs/90-work/planning/README.md) § Конвенція
-архівації (`Status: Archived (read-only)`, `Source:`, `Purpose:`) and update
-inbound links to the `archive/` path. If no doc meets the bar this run,
-archival is a deliberate no-op — never force it.
+Clean up a planning doc **only when** work has driven it to fully complete: follow-ups closed, no open `- [ ]`, Outcome and PR/commit evidence recorded. Merge that state first; a follow-up may delete the frozen snapshot and update inbound references to an immutable commit permalink. If no doc meets the bar, cleanup is a deliberate no-op.
 
 ## Verification
 
 - `pnpm docs:check-open-work`, `pnpm docs:check-today` green (trackers match).
 - `pnpm docs:check-freshness-single-marker`, `pnpm docs:check-freshness-cadence`.
-- `pnpm docs:check-links` (no broken links after any archive move).
-- `pnpm lint:archive-move-depth` if a doc was archived.
+- `pnpm docs:check-links` (no broken links after cleanup or structural moves).
 - For code cards: `pnpm typecheck` after each surface (per deliver-squad).
 - Land the whole batch as **one PR** on the batch branch.
 
 ## Red flags
 
-- «Archive this doc, it looks old» → only archive on fully-complete evidence, not
-  age or vibe. Reference, not stale, lives in `archive/` only as anti-regression.
+- «Archive this doc, it looks old» → remove a frozen snapshot from checkout only
+  after Outcome, merge evidence, canonical extraction and permalink repair. Age
+  or vibe alone is not evidence; local archive trees are forbidden by Rule #23.
 - «Run all code cards fully in parallel» → a single cross-surface card is a
   sequential chain; only independent cards parallelize.
 - «Hand-edit open-work.md» → it is generated; edit the source doc, then
@@ -123,7 +120,7 @@ archival is a deliberate no-op — never force it.
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/execute-planning-batch.md`](../../../docs/00-start/playbooks/execute-planning-batch.md) — step-by-step recipe.
-- [`docs/00-start/playbooks/reconcile-doc-drift.md`](../../../docs/00-start/playbooks/reconcile-doc-drift.md) — single-doc drift reconcile.
-- [`docs/00-start/playbooks/run-squad-deliver.md`](../../../docs/00-start/playbooks/run-squad-deliver.md) — cross-surface code card chain.
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — skill routing catalog.
+- [`docs/start/instructions/execute-planning-batch.md`](../../../docs/start/instructions/execute-planning-batch.md) — step-by-step recipe.
+- [`docs/start/instructions/reconcile-doc-drift.md`](../../../docs/start/instructions/reconcile-doc-drift.md) — single-doc drift reconcile.
+- [`docs/start/instructions/run-squad-deliver.md`](../../../docs/start/instructions/run-squad-deliver.md) — cross-surface code card chain.
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — skill routing catalog.

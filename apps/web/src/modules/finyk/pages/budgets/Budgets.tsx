@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
 import { HIGHLIGHT_CLEAR_MS } from "@shared/lib/ui/timeouts";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
@@ -8,8 +8,14 @@ import {
   type DataStateQueryLike,
 } from "@shared/components/ui/DataState";
 import { calcCategorySpent } from "../../utils";
-import { computeFinykSchedule, startOfToday } from "../../lib/upcomingSchedule";
-import { FinykStatsStrip } from "../../components/FinykStatsStrip";
+import {
+  calcLimitCategoryBreakdown,
+  calcLimitCategorySpent,
+} from "./limitCategorySpend";
+import {
+  currentKyivMonthPrefix,
+  filterToKyivMonth,
+} from "../../lib/monthWindow";
 import { buildExpenseCategoryList } from "@sergeant/finyk-domain/domain/categories";
 import {
   getLimitBudgets,
@@ -17,17 +23,30 @@ import {
   getCurrentMonthContext,
   getMonthlyPlanUsage,
   calculateTotalExpenseFact,
+  filterTransactionsForLimitPeriod,
+  limitBudgetCategoryIds,
+  projectMonthEndSpend,
 } from "@sergeant/finyk-domain/domain/budget";
-import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import {
+  filterStatTransactions,
+  manualExpenseToTransaction,
+} from "@sergeant/finyk-domain/domain/transactions";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
+import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import { MonthlyPlanCard } from "../../components/budgets/MonthlyPlanCard";
-import { AddBudgetForm } from "../../components/budgets/AddBudgetForm";
+import {
+  AddBudgetForm,
+  type BudgetFormType,
+} from "../../components/budgets/AddBudgetForm";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { useToast } from "@shared/hooks/useToast";
 import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../../core/observability/analytics";
+import { readSignalContext } from "../../../../core/observability/valueSignalAttribution";
 import { BudgetsLimitsSection } from "./BudgetsLimitsSection";
 import { BudgetsGoalsSection } from "./BudgetsGoalsSection";
 import { useProactiveAdvice } from "./useProactiveAdvice";
@@ -35,11 +54,16 @@ import type { NewBudgetDraft } from "../../components/budgets/AddBudgetForm";
 import type {
   Budget,
   Category,
+  LimitBudget,
   Transaction,
   TxCategoriesMap,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
+import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
+import { QuickActionButton } from "../AssetsBars";
+import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
+import { Icon } from "@shared/components/ui/Icon";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -60,6 +84,8 @@ export interface BudgetsMonoSlice {
   realTx: Transaction[];
   loadingTx: boolean;
   transactions?: Transaction[];
+  /** Банки Monobank юзера — для прогресу і дропдауна привʼязки цілі. */
+  jars?: MonoJarDto[];
 }
 
 /**
@@ -73,11 +99,18 @@ export interface BudgetsStorageSlice {
   monthlyPlan: MonthlyPlan | null | undefined;
   setMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
   txCategories: TxCategoriesMap;
+  /**
+   * Правила «Завжди так для цього магазину»: ліміти рахують витрати за тією ж
+   * категорією, яку показує список операцій, тож правила підмішуються в
+   * ефективну мапу категорій (див. `withMerchantRuleOverrides`).
+   */
+  merchantRuleIndex?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
   customCategories: Category[] | undefined;
   subscriptions?: readonly unknown[];
   manualDebts?: readonly unknown[];
   receivables?: readonly unknown[];
+  manualExpenses?: ManualExpense[];
 }
 
 export interface BudgetsProps {
@@ -95,6 +128,23 @@ export interface BudgetsProps {
   monthlyPlanFirstRunHint?: boolean;
   /** Dismiss callback for the first-run hint banner. */
   onDismissMonthlyPlanFirstRunHint?: () => void;
+  /**
+   * Блок «майбутнього» між планом і лімітами: найближчі платежі, підказки
+   * про регулярні витрати, підписки (`PlanningSubscriptions`). Слот, а не
+   * прямий імпорт: він живе на стані `useAssetsState`, який потребує
+   * повних `mono`/`storage` — Планування читає лише свої зрізи, і
+   * розширювати його типи заради сусіднього блоку не варто.
+   */
+  planningSlot?: ReactNode;
+  /**
+   * Пункт «Підписка» комбінованого пікера «Запланувати» (founder-UX audit
+   * round 2, F2) делегує сюди — сама форма підписки живе всередині
+   * `planningSlot` (`PlanningSubscriptions`), у ІНШОМУ `useAssetsState`-
+   * інстансі, тож `Budgets` не може відкрити її напряму. `FinykApp` реалізує
+   * цей колбек через `openSubscriptionSignal`-лічильник, переданий у
+   * `PlanningSubscriptions`.
+   */
+  onAddSubscription?: () => void;
 }
 
 /**
@@ -117,51 +167,146 @@ export function Budgets({
   focusLimitCategoryId = null,
   monthlyPlanFirstRunHint = false,
   onDismissMonthlyPlanFirstRunHint,
+  planningSlot,
+  onAddSubscription,
 }: BudgetsProps) {
   const toast = useToast();
-  const { realTx, loadingTx, transactions } = mono;
+  const { realTx, loadingTx, jars = [] } = mono;
   const {
     budgets,
     setBudgets,
     excludedTxIds,
     monthlyPlan,
     setMonthlyPlan,
-    txCategories,
+    txCategories: explicitTxCategories,
+    merchantRuleIndex,
     txSplits,
     customCategories,
-    subscriptions = [],
-    manualDebts = [],
-    receivables = [],
+    manualExpenses = [],
   } = storage;
+
+  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
+  const now = useMemo(() => new Date(), []);
+  const { monthStart, daysPassed, daysInMonth } = getCurrentMonthContext(now);
+
+  // Manual expenses/income live in storage (LS + React state), not in the
+  // bank tx stream — the fact-vs-plan selectors below must merge them in
+  // explicitly, or a manually-added salary/expense never moves the Plan
+  // card's progress. Mirrors the merge pattern `useOverviewData` uses for
+  // Overview's own income/spent totals.
+  const manualExpenseTxs = useMemo(
+    () => manualExpenses.map((e) => manualExpenseToTransaction(e)),
+    [manualExpenses],
+  );
+
+  // AI-DANGER: план і ліміти — місячні, тож факт мусить рахуватись рівно за
+  // поточний київський місяць. `realTx` не є month-scoped (mirror-overlay), а
+  // `getMonthlySummary` / `calcCategorySpent` не мають вбудованого вікна —
+  // без цього клампу картка Плану показувала all-time суми. Повний контекст:
+  // `../../lib/monthWindow.ts`.
+  const kyivMonthPrefix = useMemo(() => currentKyivMonthPrefix(now), [now]);
+
+  const allTx = useMemo(
+    () =>
+      manualExpenseTxs.length > 0 ? [...realTx, ...manualExpenseTxs] : realTx,
+    [realTx, manualExpenseTxs],
+  );
+
+  const txForStats = useMemo(
+    () => filterToKyivMonth(allTx, kyivMonthPrefix),
+    [allTx, kyivMonthPrefix],
+  );
+
+  /**
+   * Exclusion-filtered but NOT month-clamped.
+   *
+   * AI-DANGER: limit budgets must be scored against this list, not the
+   * month-clamped one. `LimitBudget.period` is `month | week | one_time`, and
+   * `filterTransactionsForLimitPeriod` applies its own window — a `week`
+   * budget looked at on a Wednesday 2-го числа starts on Monday of the
+   * previous month, and `one_time` starts at `budget.createdAt`, arbitrarily
+   * far back. Pre-clamping to the current month silently drops those rows and
+   * understates spend against the limit.
+   */
+  const allStatTx = useMemo(
+    () => filterStatTransactions(allTx, excludedTxIds),
+    [allTx, excludedTxIds],
+  );
+
+  // Ефективна мапа категорій: явні override-и плюс виведене правилами
+  // мерчантів. Лише для читання агрегаторами нижче; у слот не пишеться.
+  // `allStatTx` ширший за місячний `statTx`, тож покриває обидва.
+  const txCategories = useMemo(
+    () =>
+      withMerchantRuleOverrides(
+        allStatTx,
+        explicitTxCategories,
+        merchantRuleIndex,
+        customCategories,
+      ),
+    [allStatTx, explicitTxCategories, merchantRuleIndex, customCategories],
+  );
+
+  /** Month-clamped counterpart — for the monthly plan-vs-fact card only. */
   const statTx = useMemo(
-    () => filterStatTransactions(realTx, excludedTxIds),
-    [realTx, excludedTxIds],
+    () => filterStatTransactions(txForStats, excludedTxIds),
+    [txForStats, excludedTxIds],
   );
   const monthlySummary = useMemo(
-    () => getMonthlySummary(realTx, { excludedTxIds, txSplits }),
-    [realTx, excludedTxIds, txSplits],
+    () => getMonthlySummary(txForStats, { excludedTxIds, txSplits }),
+    [txForStats, excludedTxIds, txSplits],
   );
   const factIncome = monthlySummary.income;
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
-
-  // eslint-disable-next-line no-restricted-syntax -- wall-clock instant passed straight into Kyiv-time helper getCurrentMonthContext
-  const now = useMemo(() => new Date(), []);
-  const { monthStart } = getCurrentMonthContext(now);
+  // Тип, з яким відкриється `AddBudgetForm` — обирається пунктом
+  // «Ліміт» / «Ціль» комбінованого пікера «Запланувати» (F2).
+  const [formType, setFormType] = useState<BudgetFormType>("limit");
   const expenseCategoryList = useMemo(
     () => buildExpenseCategoryList(customCategories, { excludeIncome: false }),
     [customCategories],
   );
+  // Both branches read the unclamped list on purpose: limit budgets carry
+  // their own period window (see `allStatTx`), and goal budgets accumulate
+  // across the whole history — neither is a "цього місяця" number.
   const calcSpent = useCallback(
-    (budget: Budget) =>
-      calcCategorySpent(
-        statTx,
-        budget.type === "limit" ? budget.categoryId : "",
+    (budget: Budget) => {
+      if (budget.type !== "limit") {
+        return calcCategorySpent(
+          allStatTx,
+          "",
+          txCategories,
+          txSplits,
+          customCategories,
+        );
+      }
+      // `calcLimitCategorySpent`, а не `calcCategorySpent`: ліміт живе в
+      // словнику MCC, а ручна витрата — у детальнішій ручній таксономії,
+      // і кілька її слагів (`groceries`, `cafe`, `tech`) мають ІНШИЙ
+      // канонічний id. Буквальне порівняння id давало нуль у ліміті при
+      // видимих витратах в Аналітиці — див. `./limitCategorySpend.ts`.
+      return calcLimitCategorySpent(
+        filterTransactionsForLimitPeriod(allStatTx, budget, now),
+        limitBudgetCategoryIds(budget),
+        txCategories,
+        txSplits,
+        customCategories,
+      );
+    },
+    [customCategories, now, allStatTx, txCategories, txSplits],
+  );
+  // Розбивка факту комбо-ліміту по категоріях — те саме period-вікно, що й
+  // calcSpent; секція викликає її лише для лімітів із 2+ категоріями.
+  const calcLimitBreakdown = useCallback(
+    (budget: LimitBudget) =>
+      calcLimitCategoryBreakdown(
+        filterTransactionsForLimitPeriod(allStatTx, budget, now),
+        limitBudgetCategoryIds(budget),
         txCategories,
         txSplits,
         customCategories,
       ),
-    [customCategories, statTx, txCategories, txSplits],
+    [customCategories, now, allStatTx, txCategories, txSplits],
   );
   const limitBudgets = useMemo(() => getLimitBudgets(budgets), [budgets]);
   const goalBudgets = useMemo(() => getGoalBudgets(budgets), [budgets]);
@@ -174,21 +319,11 @@ export function Budgets({
     [statTx, txSplits],
   );
   const factSavings = factIncome - totalExpenseFact;
-
-  // Upcoming-schedule feed for the stats strip (reuses the same
-  // computation as the Активи page so Сума підписок + Наступний платіж
-  // stay consistent across tabs).
-  const [todayStart] = useState<Date>(startOfToday);
-  const schedule = useMemo(
-    () =>
-      computeFinykSchedule({
-        subscriptions,
-        manualDebts,
-        receivables,
-        transactions: transactions ?? [],
-        todayStart,
-      }),
-    [subscriptions, manualDebts, receivables, transactions, todayStart],
+  // Прогноз з точних копійок (Р7-Р8), не з округленого `totalExpenseFact`.
+  const forecastExpense = projectMonthEndSpend(
+    monthlySummary.spentMinor / 100,
+    daysPassed,
+    daysInMonth,
   );
 
   // Per-(month, category) dismissed-advice registry. Persisted under a
@@ -218,7 +353,7 @@ export function Budgets({
   }, [setLimitsOpen]);
 
   // Якщо прийшов deep-link з Hub-інсайту (`#budgets?cat=…`), розгортаємо
-  // секцію лімітів і просимо потрібну картку проскролитись у в'юпорт.
+  // секцію лімітів і просимо потрібну картку проскролитись у вʼюпорт.
   // Підсвітка живе коротко (3 с) — досить, щоб око зачепилось, але не
   // лишається назавжди й не плутає, коли користувач уже з нею взаємодіяв.
   const limitCardRefs = useRef(new Map<string, HTMLDivElement | null>());
@@ -257,11 +392,11 @@ export function Budgets({
     setGoalsOpen((v) => !v);
   }, [setGoalsOpen]);
   const dismissAdvice = useCallback(
-    (categoryId: string, monthKey: string, text: string) => {
+    (categoryKey: string, monthKey: string, text: string) => {
       if (!text) return;
       setDismissedAdvice((prev) => ({
         ...prev,
-        [`${monthKey}_${categoryId}`]: text,
+        [`${monthKey}_${categoryKey}`]: text,
       }));
     },
     [setDismissedAdvice],
@@ -283,21 +418,52 @@ export function Budgets({
   // додаткової валідації.
   const handleAddBudget = useCallback(
     (draft: NewBudgetDraft) => {
-      setBudgets((b) => [...b, { ...draft, id: crypto.randomUUID() }]);
-      trackEvent(
-        ANALYTICS_EVENTS.BUDGET_SET,
-        draft.type === "limit"
-          ? { type: "limit", categoryId: draft.categoryId }
-          : { type: "goal" },
-      );
+      setBudgets((b) => [
+        ...b,
+        draft.type === "goal"
+          ? // Нова ціль стартує з порожнього логу поповнень — savedAmount
+            // більше не вводиться при створенні (goal-progress-auto-sync).
+            {
+              ...draft,
+              id: crypto.randomUUID(),
+              savedAmount: 0,
+              contributions: [],
+            }
+          : { ...draft, id: crypto.randomUUID() },
+      ]);
+      // Хвиля 2: подія переюзана як є — додані лише поля атрибуції петлі,
+      // щоб «бюджет після сигналу про перевитрату» став вимірюваним без
+      // нової події і без ренейму наявної.
+      trackEvent(ANALYTICS_EVENTS.BUDGET_SET, {
+        ...(draft.type === "limit"
+          ? {
+              type: "limit",
+              categoryId: draft.categoryId,
+              categoryCount: draft.categoryIds.length,
+            }
+          : { type: "goal" }),
+        ...readSignalContext("finyk"),
+      });
       setShowForm(false);
     },
-    [setBudgets],
+    [setBudgets, setShowForm],
   );
 
   const handleCancelForm = useCallback(() => {
     setShowForm(false);
-  }, []);
+  }, [setShowForm]);
+
+  // Пункти комбінованого пікера «Запланувати» (F2): «Ліміт»/«Ціль»
+  // відкривають ЦЮ форму на потрібній вкладці, «Підписка» делегує в
+  // `onAddSubscription` (форма підписки живе в іншому React-піддереві —
+  // `PlanningSubscriptions`, див. коментар на `BudgetsProps.onAddSubscription`).
+  const openBudgetForm = useCallback(
+    (type: BudgetFormType) => {
+      setFormType(type);
+      setShowForm(true);
+    },
+    [setFormType, setShowForm],
+  );
 
   // DataState contract: `data === undefined` triggers the skeleton slot.
   // First-paint of the Budgets page treats "loading and no realTx yet" as
@@ -350,21 +516,10 @@ export function Budgets({
         <div className="flex-1 overflow-y-auto">
           <h1 className="sr-only">Бюджети</h1>
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
-            {/* Сума підписок + Наступний платіж з тих самих даних, що й на
-            сторінці Активи — без пасив-з-дедлайном тайлу (у Плануванні
-            це не релевантно). Зникає цілком, якщо обидва слоти пусті. */}
-            <FinykStatsStrip
-              subsMonthly={schedule.subsMonthly}
-              subsCount={schedule.subsCount}
-              nextCharge={schedule.nextCharge}
-              urgentLiability={null}
-              todayStart={todayStart}
-              showBalance={showBalance}
-            />
-
             <MonthlyPlanCard
               monthlyPlan={monthlyPlan}
               onChangeMonthlyPlan={setMonthlyPlan}
+              showBalance={showBalance}
               planIncome={planIncome}
               planExpense={planExpense}
               planSavings={planSavings}
@@ -376,21 +531,27 @@ export function Budgets({
               pctExpense={pctExpense}
               isOver={isOver}
               daysLeft={daysLeft2}
+              forecastExpense={forecastExpense}
               firstRunHint={monthlyPlanFirstRunHint}
               onDismissFirstRunHint={onDismissMonthlyPlanFirstRunHint}
             />
+
+            {planningSlot}
 
             <BudgetsLimitsSection
               limitsOpen={limitsOpen}
               toggleLimits={toggleLimits}
               monthStart={monthStart}
+              now={now}
               limitBudgets={limitBudgets}
               budgets={budgets}
               setBudgets={setBudgets}
+              showBalance={showBalance}
               editIdx={editIdx}
               setEditIdx={setEditIdx}
               customCategories={customCategories}
               calcSpent={calcSpent}
+              calcBreakdown={calcLimitBreakdown}
               proactiveItems={proactiveItems}
               proactiveAdvice={proactiveAdvice}
               proactiveLoading={proactiveLoading}
@@ -407,27 +568,69 @@ export function Budgets({
               goalBudgets={goalBudgets}
               budgets={budgets}
               setBudgets={setBudgets}
+              showBalance={showBalance}
               editIdx={editIdx}
               setEditIdx={setEditIdx}
               now={now}
               toast={toast}
+              jars={jars}
             />
 
             {showForm ? (
               <AddBudgetForm
                 existingBudgets={budgets}
                 expenseCategoryList={expenseCategoryList}
+                jars={jars}
+                initialType={formType}
                 onSubmit={handleAddBudget}
                 onCancel={handleCancelForm}
               />
             ) : (
-              <button
-                type="button"
-                onClick={() => setShowForm(true)}
-                className="group w-full inline-flex items-center justify-center gap-2 py-3 text-style-label rounded-2xl bg-finyk-soft text-finyk-strong dark:bg-finyk/15 dark:text-finyk border border-finyk-soft-border hover:bg-brand-100 dark:hover:bg-finyk/25 active:scale-[0.99] transition-colors shadow-soft"
-              >
-                {messages.finyk.addLimitOrGoal}
-              </button>
+              // Комбінований пікер «Запланувати» (founder-UX audit round 2,
+              // F2) — замінює три розкидані афоданси («+ Підписка» вище
+              // секцій, ця кнопка внизу, дубль у RecurringSuggestions) на
+              // один тригер + `DropdownMenu`, за зразком `AssetsTable.tsx`
+              // («+ Актив» → «Актив» / «Мені винні»). Дубль у
+              // `RecurringSuggestions` лишається навмисно — це data-driven
+              // підказка на конкретний виявлений кандидат, не CTA-бар.
+              <DropdownMenu
+                ariaLabel={messages.finyk.planning.scheduleAria}
+                placement="bottom-start"
+                items={[
+                  {
+                    type: "item",
+                    id: "subscription",
+                    label: messages.finyk.planning.addSubscription,
+                    description:
+                      messages.finyk.planning.addSubscriptionDescription,
+                    icon: <Icon name="refresh-cw" size="md" aria-hidden />,
+                    onSelect: () => onAddSubscription?.(),
+                  },
+                  {
+                    type: "item",
+                    id: "limit",
+                    label: messages.finyk.planning.addLimitLabel,
+                    description: messages.finyk.planning.addLimitDescription,
+                    icon: <Icon name="flag" size="md" aria-hidden />,
+                    onSelect: () => openBudgetForm("limit"),
+                  },
+                  {
+                    type: "item",
+                    id: "goal",
+                    label: messages.finyk.planning.addGoalLabel,
+                    description: messages.finyk.planning.addGoalDescription,
+                    icon: <Icon name="target" size="md" aria-hidden />,
+                    onSelect: () => openBudgetForm("goal"),
+                  },
+                ]}
+                trigger={
+                  <QuickActionButton
+                    label={messages.finyk.planning.schedule}
+                    tone="finyk"
+                    className="rounded-2xl shadow-soft"
+                  />
+                }
+              />
             )}
           </div>
         </div>

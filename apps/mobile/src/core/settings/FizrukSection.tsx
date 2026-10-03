@@ -13,7 +13,7 @@
  *    `fizruk_rest_settings_v1` використовує web — payload рідe під
  *    тим самим cloud-sync-конвертом, нічого мігрувати не треба).
  *
- * Deferred (див. `docs/mobile/react-native-migration.md` Phase 2 / Hub-core,
+ * Deferred (див. `docs/engineering/mobile/react-native-migration.md` Phase 2 / Hub-core,
  * §2.4) — рендериться як `DeferredNotice`-карточка:
  *  - **Резервні копії та дані** (`WorkoutBackupBar` на web).
  *    Експорт / імпорт тренувань чекають реальний mobile-адаптер
@@ -76,8 +76,8 @@ export function FizrukSection() {
       <SettingsSubGroup title="Таймер відпочинку">
         <Text className="text-xs text-fg-muted leading-snug">
           Рекомендований час відпочинку підбирається автоматично за типом
-          вправи. Ці значення з&apos;являться як кнопка за замовчуванням у
-          кожній вправі.
+          вправи. Ці значення зʼявляться як кнопка за замовчуванням у кожній
+          вправі.
         </Text>
         <View className="gap-3">
           {categories.map(({ cat, label }) => (
@@ -127,9 +127,9 @@ export function FizrukSection() {
       <SettingsSubGroup title="Резервні копії та дані">
         <DeferredNotice>
           Експорт та імпорт тренувань чекають реального mobile-адаптера
-          downloadJson (expo-file-system + expo-sharing) та expo-document-picker
-          — сьогодні у коді є лише warn-only заглушка. Підключиться з портом
-          модуля Фізрук (Phase 6).
+          downloadJson (expo-file-system + expo-sharing) та
+          expo-document-picker, сьогодні у коді є лише warn-only заглушка.
+          Підключиться з портом модуля Фізрук (Phase 6).
         </DeferredNotice>
       </SettingsSubGroup>
     </SettingsGroup>

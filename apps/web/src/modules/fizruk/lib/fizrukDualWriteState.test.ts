@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
-vi.mock("./dualWrite/index.js", () => ({
+vi.mock("./sqliteWriter/index.js", () => ({
   isFizrukDualWriteRegistered: () => mockRegistered(),
 }));
 
@@ -36,6 +36,8 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       dailyLog: [],
       monthlyPlan: null,
       workoutTemplates: [],
+      injuries: [],
+      customActivities: [],
     });
   });
 });
@@ -85,6 +87,45 @@ describe("extractWorkoutSnapshots", () => {
     expect(snap!.wellbeing).toEqual({ energy: 4, mood: 5 });
   });
 
+  it("проводить sleep/soreness і chosenVariant крізь БІЛИЙ СПИСОК", () => {
+    // Найдорожчий баг цієї фічі — мовчазна втрата: `WorkoutWellbeing` має
+    // індексну сигнатуру, тож нове поле типізується без правок конвертера і
+    // просто зникає по дорозі в SQLite. Типи зелені, тести зелені, гине
+    // лише продукт (той самий сценарій, що в AI-DANGER у sqliteReader).
+    // Цей тест існує рівно для того, щоб такий пропуск був червоним.
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w3",
+        startedAt: "2026-09-02T10:00:00Z",
+        endedAt: null,
+        items: [
+          {
+            id: "i1",
+            exerciseId: "squat",
+            nameUk: "Присідання",
+            primaryGroup: "legs",
+            musclesPrimary: [],
+            musclesSecondary: [],
+            type: "strength",
+            chosenVariant: "easier",
+          },
+        ],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+        wellbeing: { energy: 4, mood: 5, sleep: 2, soreness: 1 },
+      } as never,
+    ]);
+    expect(snap!.wellbeing).toEqual({
+      energy: 4,
+      mood: 5,
+      sleep: 2,
+      soreness: 1,
+    });
+    expect(snap!.items[0]!["chosenVariant"]).toBe("easier");
+  });
+
   it("defaults missing fields safely", () => {
     const [snap] = extractWorkoutSnapshots([
       { id: "w2", items: [{ id: "i", exerciseId: "" }] } as never,
@@ -93,6 +134,46 @@ describe("extractWorkoutSnapshots", () => {
     expect(snap!.warmup).toBeNull();
     expect(snap!.wellbeing).toBeNull();
     expect(snap!.items[0]!.type).toBe("strength");
+  });
+
+  it("carries group type and restSec through the snapshot", () => {
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w3",
+        startedAt: "2024-01-01T00:00:00Z",
+        items: [{ id: "i1", exerciseId: "e1" }],
+        groups: [{ id: "g1", itemIds: ["i1"], type: "circuit", restSec: 90 }],
+      } as never,
+    ]);
+    expect(snap!.groups).toEqual([
+      { id: "g1", itemIds: ["i1"], type: "circuit", restSec: 90 },
+    ]);
+  });
+
+  it("omits group type/restSec when the source group lacks them", () => {
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w4",
+        startedAt: "2024-01-01T00:00:00Z",
+        items: [{ id: "i1", exerciseId: "e1" }],
+        groups: [{ id: "g1", itemIds: ["i1"] }],
+      } as never,
+    ]);
+    expect(snap!.groups).toEqual([{ id: "g1", itemIds: ["i1"] }]);
+    expect(snap!.groups[0]).not.toHaveProperty("type");
+    expect(snap!.groups[0]).not.toHaveProperty("restSec");
+  });
+
+  it("drops an invalid group type and a non-numeric restSec", () => {
+    const [snap] = extractWorkoutSnapshots([
+      {
+        id: "w5",
+        startedAt: "2024-01-01T00:00:00Z",
+        items: [{ id: "i1", exerciseId: "e1" }],
+        groups: [{ id: "g1", itemIds: ["i1"], type: "bogus", restSec: "90" }],
+      } as never,
+    ]);
+    expect(snap!.groups).toEqual([{ id: "g1", itemIds: ["i1"] }]);
   });
 });
 

@@ -27,6 +27,8 @@ import { test, expect, type Page } from "@playwright/test";
 
 const SEEDED_LS: Record<string, string> = {
   hub_onboarding_done_v1: "1",
+  // Банер згоди на аналітику не має перекривати UI під тестом (рішення «ні»).
+  "sergeant.analytics_consent_decision.v1": JSON.stringify({ v: "denied" }),
   hub_first_action_done_v1: "1",
   hub_vibe_picks_v1: JSON.stringify({
     picks: ["finyk", "fizruk", "nutrition", "routine"],
@@ -67,10 +69,10 @@ async function seedLocalStorage(page: Page) {
 }
 
 const MODULES = [
-  { id: "finyk", title: "ФІНІК" },
-  { id: "fizruk", title: "ФІЗРУК" },
-  { id: "routine", title: "РУТИНА" },
-  { id: "nutrition", title: "ХАРЧУВАННЯ" },
+  { id: "finyk", title: "Фінік" },
+  { id: "fizruk", title: "Фізрук" },
+  { id: "routine", title: "Рутина" },
+  { id: "nutrition", title: "ЇЖА" },
 ] as const;
 
 test("@critical bottom-nav: hub root mounts HubBottomNav and tab switching works", async ({
@@ -108,19 +110,24 @@ for (const mod of MODULES) {
     await page.goto(`/?module=${mod.id}`, { waitUntil: "domcontentloaded" });
 
     // Module shell mounted: header title visible AND hub `<nav>` is gone.
-    await expect(page.getByText(mod.title, { exact: true })).toBeVisible({
+    await expect(
+      page
+        .getByTestId("module-header-title")
+        .filter({ hasText: mod.title })
+        .first(),
+    ).toBeVisible({
       timeout: 10_000,
     });
     await expect(
       page.getByRole("navigation", { name: "Розділи хабу" }),
     ).toHaveCount(0);
 
-    // Click the canonical "До хабу" back button. All four modules use
-    // `ModuleHeaderBackButton` from `@shared/components/layout/ModuleHeader`,
+    // Click the canonical "На хаб" button. All four modules use
+    // `ModuleHeaderHubButton` from `@shared/components/layout/ModuleHeader`,
     // so this aria-label is the single contract under test.
-    const backButton = page.getByRole("button", { name: "До хабу" }).first();
-    await expect(backButton).toBeVisible();
-    await backButton.click();
+    const hubButton = page.getByRole("button", { name: "На хаб" }).first();
+    await expect(hubButton).toBeVisible();
+    await hubButton.click();
 
     // Returned to hub: BottomNav is back, dashboard tab is selected,
     // and the URL no longer carries a `module=` param.

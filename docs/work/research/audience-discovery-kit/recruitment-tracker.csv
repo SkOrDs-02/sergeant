@@ -1,0 +1,4 @@
+id,name_or_handle,segment,channel,contact,status,interview_date,notes
+R01,"Приклад: @taras_b",active,Telegram-спільнота фінграмотності,t.me/taras_b,contacted,,"видали цей рядок-зразок"
+R02,"Приклад: Олена",quit,знайомі знайомих,olena@example.com,scheduled,2026-07-02,"кинула MyFitnessPal — гарний кейс для retention"
+R03,"Приклад: Reddit user",never,r/productivity,dm,replied,,"веде все в голові"

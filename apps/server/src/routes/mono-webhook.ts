@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  asyncHandler,
+  requireFreshSession,
   requireSession,
   requireVerifiedEmail,
   setModule,
@@ -10,7 +10,11 @@ import {
   disconnectHandler,
   syncStateHandler,
 } from "../modules/mono/connection.js";
-import { accountsHandler, transactionsHandler } from "../modules/mono/read.js";
+import {
+  accountsHandler,
+  jarsHandler,
+  transactionsHandler,
+} from "../modules/mono/read.js";
 import {
   backfillHandler,
   backfillProgressHandler,
@@ -32,7 +36,10 @@ import { webhookHandler } from "../modules/mono/webhook.js";
  * вибирає секрет з header-а (якщо є) або з path-param-у. Header виграє при
  * колізії, тож edge-rewrite зміг би перехопити транспорт без server-change.
  *
- * Решта endpoints — під `requireSession()`.
+ * Решта endpoints — під `requireSession()`; `connect` / `disconnect` — під
+ * `requireFreshSession()` (сесія перевіряється в БД, в обхід 5-хвилинного
+ * cookie-кешу): підʼєднати чужий банк або відʼєднати свій зі вкраденої
+ * сесії має перестати працювати в момент її відкликання, а не за 5 хв.
  */
 export function createMonoWebhookRouter(): Router {
   const r = Router();
@@ -41,6 +48,7 @@ export function createMonoWebhookRouter(): Router {
   r.use("/api/mono/disconnect", setModule("finyk"));
   r.use("/api/mono/sync-state", setModule("finyk"));
   r.use("/api/mono/accounts", setModule("finyk"));
+  r.use("/api/mono/jars", setModule("finyk"));
   r.use("/api/mono/transactions", setModule("finyk"));
   r.use("/api/mono/backfill", setModule("finyk"));
   r.use("/api/mono/backfill-progress", setModule("finyk"));
@@ -49,52 +57,50 @@ export function createMonoWebhookRouter(): Router {
   //
   // Header-only маршрут реєструється першим, щоб `POST /api/mono/webhook` без
   // path-secret (edge-rewrite кейс) потрапляв сюди, а не у 404. Monobank
-  // реально б'є у path-варіант нижче.
-  r.post("/api/mono/webhook", asyncHandler(webhookHandler));
-  r.post("/api/mono/webhook/:secret", asyncHandler(webhookHandler));
+  // реально бʼє у path-варіант нижче.
+  r.post("/api/mono/webhook", webhookHandler);
+  r.post("/api/mono/webhook/:secret", webhookHandler);
 
   // Session-protected endpoints.
   //
-  // H6 — `/api/mono/connect` додатково гейтиться на `email_verified=true`
-  // через `requireVerifiedEmail()`. Без цього атакувальник, що зареєстрував
-  // squat-акаунт на чужий email, міг би одразу під'єднати свій Mono-token
-  // і дати жертві картину "хтось бачить мої транзакції" (плюс ми писали
-  // б шифрований token у БД на чужому user_id). 403 з code
-  // `EMAIL_VERIFICATION_REQUIRED` — фронт показує банер "Підтверди email,
-  // щоб під'єднати банк".
+  // H6-контекст: `/api/mono/connect` МАЄ гейтитися на `email_verified=true`
+  // через `requireVerifiedEmail()` — без цього атакувальник, що зареєстрував
+  // squat-акаунт на чужий email, підʼєднав би свій Mono-token і дав жертві
+  // картину "хтось бачить мої транзакції" (плюс шифрований token у БД на
+  // чужому user_id). `/api/mono/disconnect`, accounts, transactions,
+  // backfill навмисно НЕ гейтнуті: вони не створюють нових прав, лише
+  // дають подивитись/відключити вже підʼєднане; disconnect — anti-lock-in.
   //
-  // `/api/mono/disconnect`, accounts, transactions, backfill — навмисно НЕ
-  // гейтнуті: вони не створюють нових прав, а лише дозволяють юзеру
-  // подивитись/відключити те, що він уже встиг під'єднати (для legacy
-  // акаунтів, що під'єднались до H6). Disconnect взагалі має лишатись
-  // доступним без верифікації, бо це anti-lock-in primitive.
+  // Гейт повернуто 2026-09-16. Беточний виняток тримався на тому, що
+  // доставка верифікаційних листів не працювала — тоді гейт не закривав би
+  // діру, а перетворював підключення банку на глухий кут для всіх нових.
+  // Передумова відпала з двох боків: `betterAuthEnv.ts` тепер ВІДМОВЛЯЄТЬСЯ
+  // стартувати прод без `RESEND_API_KEY` (знахідка 17 глобального QA
+  // 2026-08-04), а `RESEND_FROM` і верифікований домен налаштовані —
+  // підтверджено власником. Тобто «поки листи не працюють» більше не
+  // описує реальність.
+  //
+  // Порядок ланцюга важливий: `requireFreshSession()` → `requireVerifiedEmail()`
+  // → handler. Перевірка email стоїть ДО `connectHandler`, щоб відсіяти
+  // запит раніше за його побічні ефекти (fetch client-info у Mono,
+  // шифрування токена) — саме заради цього H6 і зроблено middleware, а не
+  // inline-перевіркою.
   r.post(
     "/api/mono/connect",
-    requireSession(),
+    requireFreshSession(),
     requireVerifiedEmail(),
-    asyncHandler(connectHandler),
+    connectHandler,
   );
-  r.post(
-    "/api/mono/disconnect",
-    requireSession(),
-    asyncHandler(disconnectHandler),
-  );
-  r.get(
-    "/api/mono/sync-state",
-    requireSession(),
-    asyncHandler(syncStateHandler),
-  );
-  r.get("/api/mono/accounts", requireSession(), asyncHandler(accountsHandler));
-  r.get(
-    "/api/mono/transactions",
-    requireSession(),
-    asyncHandler(transactionsHandler),
-  );
-  r.post("/api/mono/backfill", requireSession(), asyncHandler(backfillHandler));
+  r.post("/api/mono/disconnect", requireFreshSession(), disconnectHandler);
+  r.get("/api/mono/sync-state", requireSession(), syncStateHandler);
+  r.get("/api/mono/accounts", requireSession(), accountsHandler);
+  r.get("/api/mono/jars", requireSession(), jarsHandler);
+  r.get("/api/mono/transactions", requireSession(), transactionsHandler);
+  r.post("/api/mono/backfill", requireSession(), backfillHandler);
   r.get(
     "/api/mono/backfill-progress",
     requireSession(),
-    asyncHandler(backfillProgressHandler),
+    backfillProgressHandler,
   );
 
   return r;

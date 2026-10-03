@@ -1,28 +1,49 @@
 name: Docs daily brief
 
-# Owner: @Skords-01 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Purpose: regenerate the daily-ops artifacts (open-work / today / trust badge)
-# from a scheduled run, then push the refreshed copy back to `main` if any of
-# them drifted in the last 24 hours. Without this cron the artifacts would only
-# refresh when a PR touches them, which would defeat the "open today.md every
-# morning" maintainer routine — Status headers and Next review dates change
+# from a manual run, then push the refreshed copy back to `main` if any of
+# them drifted since the last refresh. Without this workflow the artifacts would
+# only refresh when a PR touches them, which would defeat the "open today.md
+# every morning" maintainer routine — Status headers and Next review dates change
 # silently as time passes.
 #
-# Schedule rationale: 06:00 UTC = ~08:00 / 09:00 Kyiv time, before the
-# maintainer's working day. Aligned with existing observability cron blocks
-# so a single morning glance covers product + docs health.
+# Schedule: removed 2026-07-09 (`dca267eeb`) to cut Actions minutes for a
+# solo maintainer; RE-ADDED 2026-09-16 by explicit maintainer decision — the
+# exact decision the removal note asked for. Reason: the artifacts this job
+# regenerates are also compared by two PR gates in `docs-automation.yml`
+# (`Open work (in sync)`, `Daily brief + WIP + trust badge (in sync)`), and
+# those generators read Status headers across the WHOLE tree. So every batch
+# of merges leaves `main` drifted and both gates red — on `main` and on every
+# PR branched from it — until a human remembers to regenerate. That happened
+# on 2026-09-16: PRs #75–#88 all carried two red docs gates that none of them
+# caused. A manual-only refresh makes the drift a recurring interrupt; the
+# cron makes it self-healing within a day.
+#
+# Schedule: 05:30 UTC = ~08:30 Kyiv — before the maintainer's morning
+# `today.md` read. Deliberately NOT 06:00 UTC (the historical slot): that
+# hour now belongs to `pact-drift.yml`, and this repo keeps cron lanes
+# separated so alert noise does not coalesce (see that workflow's header).
 #
 # Safety:
 #   - The commit step uses the GITHUB_TOKEN with `contents: write` scoped
 #     to this workflow only — no cross-repo bleed.
 #   - `[skip ci]` in the commit message prevents an infinite loop with
 #     docs-automation.yml drift gates.
-#   - Manual trigger via `workflow_dispatch` so the maintainer can force a
-#     refresh between scheduled runs without touching the repo.
+#   - The job never pushes to `main` directly: it opens a labeled PR from a
+#     dated bot branch and lets branch protection gate it (see the PR step).
+#     A cron firing on a clean tree exits before committing anything.
+#   - `workflow_dispatch` stays, so a manual refresh is still one click.
 
+# Лише вручну з 2026-10-01 (рішення власника). Розклад знято вдруге, і з
+# іншої причини, ніж 2026-07-09: бот-PR, відкритий через GITHUB_TOKEN, не
+# запускає `pull_request`-воркфлоу, тож обовʼязкові чеки на ньому не
+# стартують, auto-merge висить, а щотижня додається ще один PR, який власник
+# землить руками. Розбіжність похідних доків ловить pre-commit
+# (`pre-commit-derived-artifacts.mjs` у кожному коміті з `.md`, з командою
+# регенерації), а ця кнопка лишається для ручного освіження. Повертаєш
+# `schedule:` — спершу розвʼяжи питання токена (AI-NOTE на кроці PR нижче).
 on:
-  schedule:
-    - cron: "0 6 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -60,6 +81,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Чому тут Go і gitleaks. `pnpm install` запускає `prepare: husky`, тож
+      # `git commit` у кроці PR нижче проходить той самий pre-commit, що й у
+      # людини (Hard Rule #7), а його gitleaks-крок fail-closed: без бінарника
+      # коміт блокується. Саме так падали прогони 2026-09-30 і 2026-10-01
+      # (run 36857268041: «gitleaks is not installed - commit blocked»).
+      # Обходу для CI ні хук, ні CONTRIBUTING.md не дають: `HUSKY=0` ніде не
+      # санкціоновано, а `SERGEANT_SKIP_GITLEAKS=1` — одноразовий break-glass
+      # для людини. Тому ставимо сканер, як радить CONTRIBUTING § «Локальний
+      # secret-scan»: `go install`. Цілісність гарантує checksum-база Go
+      # (sum.golang.org), тож окремий sha256 не потрібен. Шлях модуля —
+      # `zricethezav/gitleaks`, а не `gitleaks/gitleaks`: репо перейменовано,
+      # go.mod — ні, і `go install github.com/gitleaks/gitleaks/v8@…` падає.
+      # actions/setup-go v6.5.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: stable
+          # go.sum у репо немає, кешувати нічого.
+          cache: false
+
+      - name: Install gitleaks (pre-commit hook requires it)
+        env:
+          GITLEAKS_VERSION: v8.30.1
+        run: |
+          set -euo pipefail
+          go install "github.com/zricethezav/gitleaks/v8@${GITLEAKS_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          "$(go env GOPATH)/bin/gitleaks" version
+
       - name: Regenerate all daily auto-gen artifacts
         # `docs:gen-daily` orchestrates the full daily refresh:
         #   1. open-work.md        — depends on tracker headers
@@ -67,22 +116,14 @@ jobs:
         #   3. today.md            — consumes open-work
         #   4. trust badge         — reads pickOverdueReview from today
         #   5. hard-rules matrix   — date-stamped; re-stamps Last validated
-        #   6. freshness dashboard — consumes tracker headers across all trackers
-        #   7. knowledge graph     — walks 17 workspaces' source
-        #   8. symbol index        — walks per-workspace exports
-        #   9. repo map            — workspace manifest snapshot
-        #  10. service catalog     — surfaces tag snapshot
-        #  11. architecture diagrams (c3-workspaces.md)
-        # follow-ups + hard-rules are sequenced before the freshness dashboard
-        # so the dashboard reflects their refreshed Last-validated dates in the
-        # same run (they were previously off-cron and drifted every new day).
-        # Steps 1–6 are the original "light" artifacts (sub-second each).
-        # Steps 7–11 are heavier — they walk the code tree — but still finish
-        # in under a minute total on the runner. Centralising the refresh
-        # here closes the per-PR drift that was accumulating across both
-        # `docs/04-governance/governance/*.{json,html,auto.json}` and
-        # `apps/*/symbols.json` because none of those generators were on
-        # the daily cron until now.
+        #   6. repo map            — workspace manifest snapshot
+        #   7. service catalog     — surfaces tag snapshot
+        # Steps 1–5 are the original "light" artifacts (sub-second each).
+        # Steps 6–7 walk workspace manifests and surface metadata.
+        # Freshness dashboard тут більше немає (2026-10-01): він не
+        # комітиться, а збирається артефактом у docs-freshness.yml.
+        # GH_TOKEN тут не потрібен: з 2026-10-01 trust badge не питає
+        # `gh run list` і рахує лише те, що лежить у дереві.
         run: pnpm docs:gen-daily
 
       - name: Open auto-merge PR with refreshed artifacts (if any drift)
@@ -91,6 +132,14 @@ jobs:
         # labeled PR, and rely on GitHub's auto-merge to land it once the
         # protected-branch checks pass. This keeps branch protection intact
         # while preserving the daily-refresh cadence.
+        #
+        # AI-NOTE: обмеження, яке цей крок сам не знімає. PR, відкритий через
+        # GITHUB_TOKEN, не запускає `pull_request`-воркфлоу (GitHub глушить
+        # події від GITHUB_TOKEN, щоб не було рекурсії), тож обовʼязкові чеки
+        # branch protection (`check`, critical-flow, migration-*, commitlint,
+        # secret-scan) на ньому не стартують і auto-merge висить. Землить PR
+        # або власник вручну (адмін, протекція `non_admins`), або токен
+        # GitHub App/PAT замість GITHUB_TOKEN. Рішення за власником.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -103,26 +152,14 @@ jobs:
           # the daily refresh PR.
           REFRESH_PATHS=(
             docs/open-work.md
-            docs/90-work/initiatives/follow-ups.md
+            docs/work/specs/initiatives/follow-ups.md
             docs/today.md
             docs/STATUS.md
             docs/README.md
-            docs/04-governance/governance/hard-rules-matrix.md
-            docs/04-governance/governance/freshness-dashboard.html
-            docs/04-governance/governance/knowledge-graph.json
-            docs/04-governance/governance/knowledge-graph.html
-            docs/04-governance/governance/symbol-index.json
-            docs/04-governance/governance/symbol-index.html
-            docs/04-governance/governance/repo-map.auto.json
-            docs/04-governance/governance/service-catalog.auto.json
-            docs/04-governance/governance/retrieval-index.json
-            docs/02-engineering/architecture/diagrams/c3-workspaces.md
+            docs/governance/governance/hard-rules-matrix.md
+            docs/governance/governance/repo-map.auto.json
+            docs/governance/governance/service-catalog.auto.json
           )
-          # Per-workspace symbol-index snapshots — globbed because the
-          # workspace set evolves; one new workspace tomorrow should not
-          # silently fall out of the refresh.
-          mapfile -t SYMBOL_FILES < <(git ls-files '*/symbols.json')
-          REFRESH_PATHS+=("${SYMBOL_FILES[@]}")
           if git diff --quiet -- "${REFRESH_PATHS[@]}"; then
             echo "no drift — nothing to commit"
             exit 0
@@ -149,7 +186,7 @@ jobs:
               --base main \
               --head "$BRANCH" \
               --title "chore(docs): daily brief refresh ${STAMP}" \
-              --body "Auto-generated by \`docs-daily-brief.yml\` cron. Refreshed \`docs/open-work.md\`, \`docs/today.md\`, \`docs/README.md\` from the daily regen run. Safe to squash-merge once required checks pass." \
+              --body "Auto-generated by \`docs-daily-brief.yml\` (\`${GITHUB_EVENT_NAME}\` run). Refreshed the daily-ops artifacts listed in \`REFRESH_PATHS\` from the regen run. Safe to squash-merge once required checks pass." \
               --label documentation 2>&1)"; then
               echo "::warning title=Daily brief PR auto-create blocked::$PR_URL"
               echo "Branch pushed at https://github.com/${GITHUB_REPOSITORY}/tree/${BRANCH} — open the PR manually, or enable 'Allow GitHub Actions to create and approve pull requests' in repo Settings → Actions → General."

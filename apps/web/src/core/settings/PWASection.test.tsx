@@ -54,14 +54,16 @@ describe("PWASection", () => {
 
   it("renders both SW action buttons", () => {
     render(<PWASection />);
-    expect(screen.getByText("Діагностика SW")).toBeInTheDocument();
+    expect(screen.getByText("Технічна діагностика")).toBeInTheDocument();
     expect(screen.getByText("Скинути кеш PWA")).toBeInTheDocument();
   });
 
   it("disables buttons when serviceWorker is unavailable", () => {
     ensureServiceWorker(false);
     render(<PWASection />);
-    expect(screen.getByText("Діагностика SW").closest("button")).toBeDisabled();
+    expect(
+      screen.getByText("Технічна діагностика").closest("button"),
+    ).toBeDisabled();
     expect(
       screen.getByText("Скинути кеш PWA").closest("button"),
     ).toBeDisabled();
@@ -72,14 +74,14 @@ describe("PWASection", () => {
     swMocks.swGetDebugSnapshot.mockResolvedValue({ caches: [] });
     render(<PWASection />);
 
-    fireEvent.click(screen.getByText("Діагностика SW"));
+    fireEvent.click(screen.getByText("Технічна діагностика"));
 
     await waitFor(() => {
       expect(swMocks.swSetDebug).toHaveBeenCalledWith(true);
     });
     expect(swMocks.swGetDebugSnapshot).toHaveBeenCalledTimes(1);
     expect(toastMocks.success).toHaveBeenCalledWith(
-      "SW-діагностика виведена в консоль",
+      "SW-діагностику підготовлено",
     );
   });
 
@@ -87,11 +89,13 @@ describe("PWASection", () => {
     swMocks.swSetDebug.mockRejectedValue(new Error("boom"));
     render(<PWASection />);
 
-    fireEvent.click(screen.getByText("Діагностика SW"));
+    fireEvent.click(screen.getByText("Технічна діагностика"));
 
     await waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalledWith(
         "Не вдалося отримати діагностику SW",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
       );
     });
   });
@@ -101,6 +105,20 @@ describe("PWASection", () => {
     fireEvent.click(screen.getByText("Скинути кеш PWA"));
     expect(screen.getByText("Скинути кеш PWA?")).toBeInTheDocument();
     expect(screen.getByText("Скинути та перезавантажити")).toBeInTheDocument();
+  });
+
+  // Регресія browser-QA 2026-09-03: діалог лякав утратою офлайн-черги,
+  // якої `clearAppCaches` не торкається взагалі (воно ходить лише по
+  // CacheStorage). Пін тримає текст чесним в обидва боки: без хибної
+  // загрози і з реальною ціною дії.
+  it("не обіцяє втрати офлайн-черги, бо очистка кешу її не чіпає", () => {
+    render(<PWASection />);
+    fireEvent.click(screen.getByText("Скинути кеш PWA"));
+    expect(screen.queryByText(/офлайн-черзі можуть бути втрачені/)).toBeNull();
+    expect(
+      screen.getByText(/офлайн-черга лишаються на місці/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/дотягне заново/)).toBeInTheDocument();
   });
 
   it("clears caches and schedules a reload on confirm", async () => {
@@ -120,7 +138,7 @@ describe("PWASection", () => {
       expect(swMocks.swClearCaches).toHaveBeenCalledTimes(1);
     });
     expect(toastMocks.success).toHaveBeenCalledWith(
-      "Кеш PWA скинуто. Перезавантажуємо…",
+      "Кеш PWA скинуто. Перезавантажую…",
       4000,
     );
 
@@ -137,6 +155,8 @@ describe("PWASection", () => {
     await waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalledWith(
         "Не вдалося скинути кеш PWA",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
       );
     });
   });

@@ -1,18 +1,130 @@
+/**
+ * Фактична покупка, яка злилась у позицію комори.
+ *
+ * `name` — повна назва з чека («Молоко Яготинське 2.6% 900г»), яку родова
+ * назва позиції втратила б назавжди. `qty`/`unit` — ЗАВЖДИ у базовій
+ * одиниці свого виміру (`г` / `мл` / `шт`), щоб сума варіантів була просто
+ * сумою чисел.
+ */
+export interface PantryItemSource {
+  name: string;
+  qty: number;
+  unit: string;
+  /** День покупки `YYYY-MM-DD`; `null` — походження невідоме (синтетичний варіант зі старого залишку). */
+  addedAt: string | null;
+  /**
+   * Скільки одиниць фасування було в покупці — щоб «2 × 250 мл» не читалось
+   * як пляшка 500 мл, якої людина не купувала.
+   *
+   * AI-DANGER: чинне лише поки `qty` не чіпали. Будь-яка зміна кількості
+   * (списання, згортання варіантів) робить його брехнею, тож там воно
+   * скидається в `null`, а не перераховується: 250 мл, що лишились від двох
+   * банок, це вже не «2 ×».
+   */
+  packCount?: number | null;
+  /**
+   * Вага одного фасування в грамах, коли чек її знає (наприклад, «Молоко
+   * 3.2% 930 мл» з чека Сільпо конвертоване у грами) — підставляється як
+   * порція в прийом їжі, коли позицію обирають із комори. Опційне: старі
+   * джерела (ручний ввід, довоєнні дані) його не мають.
+   */
+  packGrams?: number | null;
+}
+
 export interface PantryItem {
+  /**
+   * Display-назва — рівно те, що ввела людина (`displayFoodName`).
+   * Для будь-якого порівняння бери `matchFoodName(name)` чи
+   * `canonicalFoodKey(name)`: саме поле для зіставлення НЕ придатне.
+   */
   name: string;
   qty: number | null;
   unit: string | null;
   notes: string | null;
+  /**
+   * Фактичні покупки, які злились у цю позицію (картка продукту).
+   *
+   * AI-DANGER: інваріант — сума `qty` варіантів дорівнює `qty` позиції, і
+   * всі вони в одній базовій одиниці. Порушення означає, що комора показує
+   * неправдиве число. Тому позиція З варіантами тримає `qty`/`unit` саме в
+   * базовій одиниці, а не в «зручній» (`кг`/`л`).
+   *
+   * `null`/відсутнє/порожній масив означають одне й те саме: варіантів
+   * немає — позиція введена руками або створена до цієї фічі.
+   */
+  sources?: readonly PantryItemSource[] | null;
+  /**
+   * `true`, коли `unit` тут — здогадка парсера, не факт: людина написала
+   * голе хвостове число БЕЗ жодної одиниці, і воно ≥
+   * {@link PANTRY_AMBIGUOUS_QTY_THRESHOLD} (аудит 2026-09 UX-4: «Нутелла
+   * 350» мовчки ставало «350 шт», хоча малось на увазі 350 г). Нижче порога
+   * («Яйця 10», «Coca-Cola 2») штучний зміст і так очевидний — прапорець не
+   * ставиться, `unit` лишається тихим «шт», як і раніше.
+   *
+   * UI має перепитати («350 шт чи г?»), а не мовчки прийняти цю здогадку;
+   * саме поле — лише сигнал для UI, доменна логіка (злиття, списання) його
+   * не читає.
+   */
+  ambiguousQty?: boolean;
 }
 
-export function normalizeFoodName(s: unknown): string {
+/**
+ * Поріг, з якого голе хвостове число без одиниці вважається неоднозначним.
+ * Дані аудиту 2026-09 (UX-4): «Coca-Cola 2» і «рис 2» — це справді штуки,
+ * «Нутелла 350» — це грами. Межа між «очевидна кількість predметів» і
+ * «схоже на вагу/обʼєм» лежить десь у районі сотні: пачка яєць чи огірків
+ * рідко переходить за неї, а вага типової упаковки (крупа, солодощі,
+ * снеки) — майже завжди. Founder-рішення 2026-09-01 (канон nutrition §6,
+ * Журнал рішень): не вгадувати, а перепитувати саме тут.
+ */
+export const PANTRY_AMBIGUOUS_QTY_THRESHOLD = 100;
+
+function isAmbiguousBareQty(qty: number | null): boolean {
+  return (
+    qty != null && Number.isFinite(qty) && qty >= PANTRY_AMBIGUOUS_QTY_THRESHOLD
+  );
+}
+
+/**
+ * Стеля списку варіантів. Без неї щотижнева покупка молока за рік дала б
+ * 52 записи в одному рядку JSON.
+ */
+export const MAX_PANTRY_SOURCES = 10;
+
+/**
+ * Display-назва продукту: те, що ввела людина, з косметичним прибиранням
+ * (зайві пробіли, буліт-крапки, хвостові коми). Регістр НЕ чіпаємо —
+ * бренди й власні назви («Яготинське», «Coca-Cola», «Наша Ряба») мають
+ * лишатись такими, як їх написали.
+ *
+ * Це рівно `matchFoodName` мінус `toLowerCase()`, тож display-назва і
+ * match-ключ ніколи не розʼїжджаються ні за пробілами, ні за пунктуацією.
+ */
+export function displayFoodName(s: unknown): string {
   return String(s || "")
     .trim()
-    .toLowerCase()
     .replace(/\s+/g, " ")
     .replace(/[•·]/g, ",")
     .replace(/^[,;]+|[,;]+$/g, "");
 }
+
+/**
+ * Match-ключ назви: display-назва у нижньому регістрі. Живе тільки у
+ * зіставленні — злиття позицій, пошук, аліаси, дедуп списку покупок —
+ * і НІКОЛИ не тече у відображення.
+ */
+export function matchFoodName(s: unknown): string {
+  return displayFoodName(s).toLowerCase();
+}
+
+/**
+ * @deprecated Історична назва `matchFoodName`. Саме через неї
+ * нормалізований (нижній регістр) рядок протікав у показ, і комора
+ * малювала «яготинське молоко» замість «Яготинське молоко». Лишена
+ * аліасом для зовнішніх споживачів (`apps/mobile`); у новому коді бери
+ * явну пару `displayFoodName` (показ) / `matchFoodName` (зіставлення).
+ */
+export const normalizeFoodName = matchFoodName;
 
 export function normalizeUnit(u: unknown): string | null {
   const s = String(u || "")
@@ -27,11 +139,14 @@ export function normalizeUnit(u: unknown): string | null {
   if (["шт", "штук", "штуки"].includes(s)) return "шт";
   if (["уп", "упак", "упаковка", "пач", "пачка", "пак", "пакет"].includes(s))
     return "уп";
+  // Відсоток це жирність, а не кількість. Без цього «Йогурт 2,2%» давав
+  // позицію з одиницею «%», а «400 г 2 %» — безіменний запис у коморі.
+  if (s.includes("%")) return null;
   return s;
 }
 
 // Мапа типових форм → канонічна форма продукту.
-// Використовується лише для зіставлення при злитті; відображуване ім'я
+// Використовується лише для зіставлення при злитті; відображуване імʼя
 // не змінюється.
 const FOOD_ALIASES = new Map<string, string>([
   // овочі
@@ -161,7 +276,7 @@ const FOOD_ALIASES = new Map<string, string>([
 
 // Канонічний ключ продукту для порівняння при злитті.
 export function canonicalFoodKey(name: unknown): string {
-  const n = normalizeFoodName(name);
+  const n = matchFoodName(name);
   if (!n) return "";
   const alias = FOOD_ALIASES.get(n);
   if (alias) return alias;
@@ -181,61 +296,123 @@ export function canonicalFoodKey(name: unknown): string {
 }
 
 const UNIT_CHAR_RE = "[a-zA-Zа-яА-ЯіїєґІЇЄҐ%]+";
+/**
+ * Число з можливим знаком і показником степеня. Знак і `e` тут не для
+ * того, щоб їх ПІДТРИМАТИ, а щоб їх ЗЛОВИТИ: без них «Молоко -5 г» і
+ * «Сіль 1e9 г» не матчились узагалі й цілком осідали в назві продукту,
+ * тобто сміття тихо ставало товаром у коморі. Тепер вони розбираються
+ * і відхиляються `sanitizeQty`.
+ */
+const NUM_RE = "[+-]?\\d+(?:[.,]\\d+)?(?:[eE][+-]?\\d+)?";
 const LEADING_QTY_RE = new RegExp(
-  `^(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_CHAR_RE})?\\s*(.+)?$`,
+  `^(${NUM_RE})\\s*(${UNIT_CHAR_RE})?\\s*(.+)?$`,
 );
 const TRAILING_QTY_RE = new RegExp(
-  `^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_CHAR_RE})?$`,
+  `^(.+?)\\s+(${NUM_RE})\\s*(${UNIT_CHAR_RE})?$`,
 );
 
-function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
-  const qty = m[1] ? Number(String(m[1]).replace(",", ".")) : null;
-  const unitRaw = normalizeFoodName(m[2] || "");
-  const rest = normalizeFoodName(m[3] || "");
+/**
+ * Стеля кількості. Мішок цукру на 50 кг це 50000 г, тож мільйон із
+ * запасом накриває будь-яку побутову покупку і водночас відсікає
+ * «1e9», яке в комору потрапити не може.
+ */
+const MAX_QTY = 1_000_000;
 
-  // "2 яйця" — одне слово після числа = назва, не одиниця
+/** `null` для всього, що не є додатною побутовою кількістю. */
+function sanitizeQty(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const n = Number(String(raw).replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0 || n > MAX_QTY) return null;
+  return n;
+}
+
+// `unitRaw` лишається у display-регістрі: `normalizeUnit` сам опускає
+// регістр, тож «0.5Л молоко» так само дасть одиницю «л», а гілка
+// «одне слово після числа = насправді назва» отримує назву як введено.
+function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
+  const qty = sanitizeQty(m[1]);
+  const unitRaw = displayFoodName(m[2] || "");
+  const rest = displayFoodName(m[3] || "");
+
+  // "2 яйця" — одне слово після числа = назва, не одиниця. Число тут завжди
+  // рахує самі предмети ("2 яйця" = дві штуки), тож неоднозначності немає
+  // навіть за великих значень — прапорець не ставиться. Але «2 %» — не
+  // назва: відсоток продуктом не буває, і без цієї перевірки в коморі
+  // зʼявлявся товар на імʼя «%».
   if (!rest && unitRaw) {
+    if (unitRaw.includes("%"))
+      return { name: "", qty: null, unit: null, notes: null };
     return {
-      name: normalizeFoodName(unitRaw),
-      qty: qty != null && Number.isFinite(qty) ? qty : null,
-      unit: qty != null && Number.isFinite(qty) ? "шт" : null,
+      name: unitRaw,
+      qty,
+      unit: qty != null ? "шт" : null,
       notes: null,
     };
   }
 
   const name =
     rest ||
-    normalizeFoodName(raw.replace(m[0], "").trim()) ||
-    normalizeFoodName(raw);
+    displayFoodName(raw.replace(m[0], "").trim()) ||
+    displayFoodName(raw);
+  return { name, ...resolveQtyUnit(qty, unitRaw), notes: null };
+}
+
+/**
+ * Кількість і одиниця йдуть парою або не йдуть зовсім.
+ *
+ * Відсоток після числа означає жирність («сметана 20%»), тож саме число
+ * кількістю не є. А негодяще число («-5», «1e9», «0») забирає з собою й
+ * одиницю: позиція «Цукор» без нічого чесніша за «Цукор 0 г», яку потім
+ * не знайде ані пошук, ані математика списку покупок.
+ *
+ * Уціліле голе число без одиниці лишається тихим «шт», але позначається
+ * `ambiguousQty`, коли воно ≥ порога: «Нутелла 350» це майже напевно
+ * грами, і UI має перепитати, а не мовчки прийняти здогадку.
+ */
+function resolveQtyUnit(
+  qty: number | null,
+  unitRaw: string,
+): { qty: number | null; unit: string | null; ambiguousQty?: boolean } {
+  if (unitRaw.includes("%")) return { qty: null, unit: null };
+  if (qty == null) return { qty: null, unit: null };
   const unit = unitRaw ? normalizeUnit(unitRaw) : null;
-  const resolvedQty = qty != null && Number.isFinite(qty) ? qty : null;
+  const isBareQty = unit == null;
   return {
-    name: normalizeFoodName(name),
-    qty: resolvedQty,
-    unit: resolvedQty != null && unit == null ? "шт" : unit,
-    notes: null,
+    qty,
+    unit: isBareQty ? "шт" : unit,
+    ...(isBareQty && isAmbiguousBareQty(qty) ? { ambiguousQty: true } : {}),
   };
 }
 
 function buildTrailingResult(tm: RegExpMatchArray): PantryItem | null {
-  const name = normalizeFoodName(tm[1]);
+  const name = displayFoodName(tm[1]);
   if (!name) return null;
-  const qty = Number(String(tm[2]).replace(",", "."));
-  const unitRaw = normalizeFoodName(tm[3] || "");
-  const unit = unitRaw ? normalizeUnit(unitRaw) : null;
-  const resolvedQty = Number.isFinite(qty) ? qty : null;
+  // Число розібрано, але воно негодяще («-5», «1e9»): лишаємо саму назву
+  // без кількості. Повертати назву разом із хвостом не можна — тоді в
+  // коморі осідає позиція «Молоко -5 г», якої ніколи не знайде пошук.
   return {
     name,
-    qty: resolvedQty,
-    unit: resolvedQty != null && unit == null ? "шт" : unit,
+    ...resolveQtyUnit(sanitizeQty(tm[2]), displayFoodName(tm[3] || "")),
     notes: null,
   };
 }
 
+/**
+ * AI-DANGER: кома тут двозначна — це і роздільник списку, і десяткова
+ * крапка українською. Різати по ній наосліп не можна: «Йогурт чорниця
+ * 2,2%» розпадався на «Йогурт чорниця 2» плюс окремий товар на імʼя «%»,
+ * тобто ОДИН введений рядок давав ДВА записи, і жирність підмінялась
+ * кількістю «2 шт». Регекси нижче десяткову кому підтримують від початку
+ * (`[.,]` у `NUM_RE`), тож спліт суперечив власному матчеру.
+ *
+ * Правило: кома розділяє, ЯКЩО з якогось боку від неї не цифра.
+ * «2,2» лишається числом, «молоко, яйця» і «огірок 2, яйця» діляться.
+ */
+const PART_SPLIT_RE = /[\n;]+|(?<!\d),|,(?!\d)/g;
+
 export function parseLoosePantryText(raw: unknown): PantryItem[] {
   const parts = String(raw || "")
-    .replace(/\n+/g, ",")
-    .split(/[;,]/g)
+    .split(PART_SPLIT_RE)
     .map((s) => s.trim())
     .filter(Boolean);
 
@@ -253,7 +430,7 @@ export function parseLoosePantryText(raw: unknown): PantryItem[] {
       }
 
       return {
-        name: normalizeFoodName(p),
+        name: displayFoodName(p),
         qty: null,
         unit: null,
         notes: null,

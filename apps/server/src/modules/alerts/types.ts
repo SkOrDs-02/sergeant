@@ -27,13 +27,6 @@ export type TgAlertSeverity = "P0" | "P1" | "P2" | "P3";
 export type TgAlertAckAction = "read" | "investigating" | "muted";
 
 /**
- * Тривалість snooze (Tier 2 repeat-ping inline-keyboard). Map на ms у
- * route-layer; зберігається у `snoozed_until_at` як absolute timestamp,
- * не як duration — простіше для WF-105/WF-106 cron query.
- */
-export type TgAlertSnoozeDuration = "1h" | "4h";
-
-/**
  * One row in `tg_alert_acks`. ISO-8601 timestamps; nullable
  * fields reflect the lifecycle state (NULL until the corresponding
  * transition happens).

@@ -5,9 +5,15 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
+import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
-import type { NutritionPrefs, PantryItem } from "@sergeant/nutrition-domain";
+import {
+  kcalFromMacros,
+  type NutritionPrefs,
+  type PantryItem,
+} from "@sergeant/nutrition-domain";
 import type {
   NutritionDayPlan,
   NutritionWeekPlan,
@@ -18,12 +24,14 @@ import {
   MissingMacrosHint,
 } from "./DailyPlanWarnings";
 import { MacroRatioBar } from "./DailyPlanMacros";
+import { WeekPlanButton } from "./WeekPlanButton";
 import {
   DailyPlanMealRow,
   MEAL_TYPE_ORDER,
   type PlanMeal,
 } from "./DailyPlanMealRow";
 import { DailyPlanGoalSelectors } from "./DailyPlanGoalSelectors";
+import { PantryModeSelect } from "./PantryModeSelect";
 
 // Re-export pure validation helpers for tests / consumers that already
 // imported them from the original (now slimmed) component module. The
@@ -32,6 +40,7 @@ export {
   calcGoalRangeIssues,
   calcMacroKcalMismatch,
 } from "../lib/dailyPlanValidation";
+import { describePlanFreshness } from "../lib/planFreshness";
 
 interface WeekPlanDay {
   label?: string;
@@ -45,6 +54,8 @@ interface DailyPlanCardProps {
   pantryItems?: PantryItem[];
   busy?: boolean;
   dayPlan?: NutritionDayPlan | null;
+  /** Unix ms генерації — підпис свіжості. `null` = мітки немає. */
+  dayPlanSavedAt?: number | null;
   dayPlanBusy?: boolean;
   fetchDayPlan: () => void | Promise<void>;
   regenMeal: (mealType: string) => void | Promise<void>;
@@ -70,6 +81,7 @@ export function DailyPlanCard({
   pantryItems,
   busy,
   dayPlan,
+  dayPlanSavedAt,
   dayPlanBusy,
   fetchDayPlan,
   regenMeal,
@@ -93,30 +105,38 @@ export function DailyPlanCard({
   const weekPlanDays = Array.isArray(weekPlan?.days)
     ? (weekPlan.days as WeekPlanDay[])
     : [];
-  const shoppingList = Array.isArray(weekPlan?.shoppingList)
-    ? (weekPlan.shoppingList as string[])
-    : [];
+
+  // План навмисно не протухає (`planStorage.ts`), тож заголовок мусить
+  // перестати обіцяти «сьогодні», щойно доба змінилась. Без цього єдина
+  // помітна користувачеві неправда — саме цей рядок.
+  const freshness = describePlanFreshness(dayPlanSavedAt);
+
+  // Копія мусить відповідати режиму комори: обіцяти «з урахуванням продуктів
+  // з комори», коли користувач обрав «не враховувати», — це та сама неправда,
+  // що й ігнорувати сам вибір.
+  const pantryIgnored = prefs.recipePantryMode === "ignore";
 
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Денний план</div>
-      <div className="text-xs text-muted mt-0.5">
-        AI генерує персоналізований план прийомів їжі з урахуванням твоїх цілей
-        та продуктів зі складу.
+      <div className="text-style-caption text-muted mt-0.5">
+        {pantryIgnored
+          ? messages.nutrition.dayPlanIntro.pantryIgnored
+          : messages.nutrition.dayPlanIntro.withPantry}
       </div>
 
       <div className="mt-4 space-y-4">
         {firstRunHint && (
           <FirstRunHintBanner
             variant="nutrition"
-            title="Це попередня ціль — потім сам поправиш"
-            description="Постав ккал/Б/Ж/В нижче або обери пресет як підказку. Цілі живуть отут ж — повертайся на цю сторінку, коли захочеш змінити."
+            title="Це попередня ціль, потім сам поправиш"
+            description="Постав ккал/Б/Ж/В нижче або обери пресет як підказку. Цілі живуть тут-таки, повертайся на цю сторінку, коли захочеш змінити."
             onDismiss={onDismissFirstRunHint ?? (() => {})}
           />
         )}
         <div>
           <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
-            <div className="text-xs text-muted">Цілі на день</div>
+            <div className="text-style-caption text-muted">Цілі на день</div>
             <DailyPlanGoalSelectors
               prefs={prefs}
               setPrefs={setPrefs}
@@ -155,10 +175,28 @@ export function DailyPlanCard({
               ] as const
             ).map(({ key, label, unit, color }) => (
               <div key={key}>
+                {/* AI-CONTEXT: тут стояв AI-DANGER «не міняти `text-xs` на
+                    роль», і спирався він на побоювання, що поруч із
+                    `font-semibold` два правила ваги на одному вузлі й
+                    невідомо, яке виграє. Побоювання зняте заміром у
+                    зібраному CSS (записаний у `tailwind-preset.js`): ролі
+                    реєструються через `addUtilities`, тобто мають ту саму
+                    специфічність, що й core-утиліти, і виграє той, що нижче
+                    у файлі — `.font-semibold` (офсет 180546) стоїть нижче за
+                    `.text-style-caption` (177815). Отже роль ПРОГРАЄ явній
+                    вазі передбачувано, а не «як пощастить», і мітка лишається
+                    напівжирною.
+
+                    Що лишилось чинним із того коментаря: мітка стоїть НАД
+                    інпутом навмисно — правило «підпис під числом» діє для
+                    чисел, які читають, а не для полів, які заповнюють.
+
+                    AI-DANGER: замір привʼязаний до порядку утиліт у білді.
+                    Переміряй, перш ніж спиратись на нього деінде. */}
                 <div
                   className={cn(
-                    "text-xs mb-1 font-semibold",
-                    color ?? "text-subtle",
+                    "text-style-caption mb-1 font-semibold",
+                    color ?? "text-muted",
                   )}
                 >
                   {label}
@@ -173,17 +211,25 @@ export function DailyPlanCard({
                     const v =
                       raw === "" ? null : Number(raw) > 0 ? Number(raw) : null;
                     setPrefs((p) => {
-                      const next = { ...p, [key]: v };
+                      const next = {
+                        ...p,
+                        [key]: v,
+                        adaptiveGoalEnabled: false,
+                      };
                       // Авто-перерахунок Ккал лише коли користувач явно не
                       // задав ціль (kcal === null) або коли вона дорівнює
                       // попередньому авто-значенню. Інакше тиха перезапис
-                      // з'їдала кастомні значення (M7 з аудиту).
+                      // зʼїдала кастомні значення (M7 з аудиту).
                       if (key !== "dailyTargetKcal") {
                         const prevProt = p.dailyTargetProtein_g ?? 0;
                         const prevFat = p.dailyTargetFat_g ?? 0;
                         const prevCarb = p.dailyTargetCarbs_g ?? 0;
                         const prevCalc = Math.round(
-                          prevProt * 4 + prevFat * 9 + prevCarb * 4,
+                          kcalFromMacros({
+                            protein_g: prevProt,
+                            fat_g: prevFat,
+                            carbs_g: prevCarb,
+                          }),
                         );
                         const isAutoKcal =
                           p.dailyTargetKcal == null ||
@@ -195,7 +241,11 @@ export function DailyPlanCard({
                           const carb =
                             key === "dailyTargetCarbs_g" ? v : prevCarb;
                           const calc = Math.round(
-                            (prot || 0) * 4 + (fat || 0) * 9 + (carb || 0) * 4,
+                            kcalFromMacros({
+                              protein_g: prot,
+                              fat_g: fat,
+                              carbs_g: carb,
+                            }),
                           );
                           next.dailyTargetKcal = calc > 0 ? calc : null;
                         }
@@ -219,31 +269,41 @@ export function DailyPlanCard({
 
           <GoalRangeWarning prefs={prefs} />
 
+          {!prefs.adaptiveGoalEnabled && (
+            <p className="mt-3 text-style-caption text-muted">
+              Автокалібрування вмикається в Налаштуваннях → Їжа.
+            </p>
+          )}
+
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">
               {prefs.dailyTargetKcal != null && (
-                <span className="text-xs bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
-                  {prefs.dailyTargetKcal} ккал
+                <span className="text-style-caption bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/20 rounded-xl px-2 py-0.5">
+                  <Measure
+                    value={prefs.dailyTargetKcal}
+                    unit="ккал"
+                    tone="inherit"
+                  />
                 </span>
               )}
               {prefs.dailyTargetProtein_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
-                  Б: {prefs.dailyTargetProtein_g}г
+                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                  Б: <Measure value={prefs.dailyTargetProtein_g} unit="г" />
                 </span>
               )}
               {prefs.dailyTargetFat_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
-                  Ж: {prefs.dailyTargetFat_g}г
+                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                  Ж: <Measure value={prefs.dailyTargetFat_g} unit="г" />
                 </span>
               )}
               {prefs.dailyTargetCarbs_g != null && (
-                <span className="text-xs bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
-                  В: {prefs.dailyTargetCarbs_g}г
+                <span className="text-style-caption bg-bg border border-line rounded-xl px-2 py-0.5 text-muted">
+                  В: <Measure value={prefs.dailyTargetCarbs_g} unit="г" />
                 </span>
               )}
               <button
                 type="button"
-                className="text-xs text-muted hover:text-danger transition-colors px-1 ml-auto"
+                className="text-style-caption text-muted hover:text-danger transition-colors px-1 ml-auto"
                 onClick={() =>
                   setPrefs((p) => ({
                     ...p,
@@ -254,11 +314,17 @@ export function DailyPlanCard({
                   }))
                 }
               >
-                ✕ Скинути
+                Скинути
               </button>
             </div>
           )}
         </div>
+
+        <PantryModeSelect
+          prefs={prefs}
+          setPrefs={setPrefs}
+          disabled={busy || dayPlanBusy || weekPlanBusy}
+        />
 
         <div className="grid gap-2">
           <button
@@ -267,29 +333,29 @@ export function DailyPlanCard({
             disabled={busy || dayPlanBusy}
             className={cn(
               "text-style-label w-full h-11 rounded-2xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
+              // Обидві CTA — сирі `<button>`, тож кільце фокуса не приходить
+              // від `Button`. Без нього з клавіатури не видно, де ти стоїш
+              // (підтверджено живим прогоном 2026-09-16). Канон — утиліта
+              // `focus-ring`, а не рукописний `focus-visible:ring-2`: її
+              // стереже храповик `handRolledFocusRing` у `pnpm lint`.
+              "focus-ring",
             )}
           >
             {dayPlanBusy ? "Генерую план…" : "Згенерувати денний план"}
           </button>
           {typeof fetchWeekPlan === "function" && (
-            <button
-              type="button"
+            <WeekPlanButton
               onClick={fetchWeekPlan}
               disabled={busy || weekPlanBusy}
-              className={cn(
-                "text-style-label w-full h-11 rounded-2xl border border-nutrition/40",
-                "text-nutrition-strong dark:text-nutrition hover:bg-nutrition/10 disabled:opacity-50 transition-colors",
-              )}
-            >
-              {weekPlanBusy ? "…" : "План на тиждень + покупки"}
-            </button>
+              busy={weekPlanBusy}
+            />
           )}
         </div>
 
-        {pantryItems?.length === 0 && (
-          <div className="text-xs text-muted text-center -mt-2">
-            Додай продукти на склад — AI врахує їх у плані
+        {pantryItems?.length === 0 && !pantryIgnored && (
+          <div className="text-style-body text-muted text-center -mt-2">
+            Додай продукти в комору, AI врахує їх у плані
           </div>
         )}
 
@@ -299,16 +365,23 @@ export function DailyPlanCard({
             {weekPlanDays.map((d: WeekPlanDay, i: number) => (
               <div
                 key={i}
+                /* AI-DANGER: `text-sm` — це кегль КОНТЕЙНЕРА, від якого
+                   успадковують діти. `text-style-label` замість нього підняв
+                   би вагу до 500 на всьому блоці, включно з нотатками, які
+                   мають лишатись звичайними. Заміняти можна тільки разом із
+                   перебором дітей. */
                 className="text-sm border-b border-line/40 pb-2 last:border-0"
               >
                 <div className="font-semibold text-nutrition-strong dark:text-nutrition">
                   {d.label}
                 </div>
                 {d.note && (
-                  <div className="text-xs text-muted mt-0.5">{d.note}</div>
+                  <div className="text-style-caption text-muted mt-0.5">
+                    {d.note}
+                  </div>
                 )}
                 {Array.isArray(d.meals) && d.meals.length > 0 && (
-                  <ul className="list-disc pl-4 mt-1 text-xs text-text space-y-0.5">
+                  <ul className="list-disc pl-4 mt-1 text-style-caption text-text space-y-0.5">
                     {d.meals.map((line: string, j: number) => (
                       <li key={j}>{line}</li>
                     ))}
@@ -316,50 +389,64 @@ export function DailyPlanCard({
                 )}
               </div>
             ))}
-            {shoppingList.length > 0 && (
-              <div>
-                <div className="text-xs text-muted mb-1">Список покупок</div>
-                <ul className="list-disc pl-4 text-sm text-text space-y-0.5">
-                  {shoppingList.map((s: string, i: number) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
         )}
 
-        {weekPlanRaw && (!weekPlan?.days || weekPlan.days.length === 0) && (
-          <details className="rounded-2xl border border-line bg-bg p-3">
-            <summary className="cursor-pointer text-xs text-muted">
-              Діагностика плану (raw)
-            </summary>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-muted max-h-48 overflow-auto">
-              {weekPlanRaw}
-            </pre>
-          </details>
-        )}
+        {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
+                Це діагностика для розробника: неформатований текст від
+                LLM, який у продакшн-UI не пояснює людині нічого, зате
+                показує їй внутрішню кухню (знахідка PR-N8, аудит
+                2026-09-13). `import.meta.env.DEV` статично `false` у
+                прод-збірці, тож Vite вирізає гілку цілком — це той самий
+                гейт, що в `StandaloneRoutes` для внутрішнього стайлгайду.
+                Повертаєш це людям — роби через прапорець і у вигляді,
+                який можна прочитати, а не `<pre>{raw}</pre>`. */}
+        {import.meta.env.DEV &&
+          weekPlanRaw &&
+          (!weekPlan?.days || weekPlan.days.length === 0) && (
+            <details className="rounded-2xl border border-line bg-bg p-3">
+              <summary className="cursor-pointer text-style-caption text-muted">
+                Діагностика плану (raw)
+              </summary>
+              <pre className="mt-2 whitespace-pre-wrap text-style-caption text-muted max-h-48 overflow-auto">
+                {weekPlanRaw}
+              </pre>
+            </details>
+          )}
 
         {sortedMeals.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-style-label text-text">
-                Ваш план на сьогодні
+              <div className="min-w-0">
+                <div className="text-style-label text-text">
+                  {freshness.stale ? "Твій план" : "Твій план на сьогодні"}
+                </div>
+                {freshness.label && (
+                  <div className="text-style-caption text-muted">
+                    {freshness.label}
+                  </div>
+                )}
               </div>
               {dayPlan?.totalKcal != null && (
-                <span className="text-xs text-muted">
-                  ~{Math.round(dayPlan.totalKcal)} ккал разом
+                <span className="text-style-caption text-muted">
+                  ~<Measure value={Math.round(dayPlan.totalKcal)} unit="ккал" />{" "}
+                  разом
                 </span>
               )}
             </div>
 
             {dayPlan?.totalKcal != null && prefs.dailyTargetKcal != null && (
               <div className="rounded-xl bg-panel border border-line px-3 py-2">
-                <div className="flex justify-between text-xs text-muted mb-1">
+                <div className="flex justify-between text-style-caption text-muted mb-1">
                   <span>Прогрес до цілі</span>
+                  {/* Одиниця стоїть один раз на пару чисел — перше йде з
+                      порожнім `unit`, але з тими самими `tabular-nums`,
+                      інакше чисельник і знаменник читаються різними
+                      системами. Той самий прийом, що в `Money` для
+                      «сплачено 1 000 з 5 000 ₴». */}
                   <span>
-                    {Math.round(dayPlan.totalKcal)} / {prefs.dailyTargetKcal}{" "}
-                    ккал
+                    <Measure value={Math.round(dayPlan.totalKcal)} unit="" /> /{" "}
+                    <Measure value={prefs.dailyTargetKcal} unit="ккал" />
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-line overflow-hidden">
@@ -396,7 +483,7 @@ export function DailyPlanCard({
             </div>
 
             {dayPlan?.note && (
-              <div className="rounded-xl bg-panel/60 border border-line px-3 py-2 text-xs text-muted">
+              <div className="rounded-xl bg-panel border border-line px-3 py-2 text-style-caption text-muted">
                 {dayPlan.note}
               </div>
             )}

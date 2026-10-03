@@ -164,7 +164,11 @@ export function HubInsightsPanel({
 }: HubInsightsPanelProps) {
   const total = items.length;
   const [open, setOpen] = useState(defaultOpen);
-  const progress = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  // AI-CONTEXT: lazy `useState` (not `useRef(...).current`) — the
+  // Animated.Value is created once on mount and its identity never changes,
+  // which keeps render free of ref reads (react-hooks/refs) without touching
+  // animation behavior.
+  const [progress] = useState(() => new Animated.Value(defaultOpen ? 1 : 0));
   const reduceMotionRef = useRef(false);
 
   useEffect(() => {

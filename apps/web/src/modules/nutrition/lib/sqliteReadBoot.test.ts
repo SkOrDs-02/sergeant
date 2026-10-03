@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-06-23
+ * Last validated: 2026-08-08
  * Status: Active
  * Unit tests for the nutrition SQLite read-path boot wiring.
  */
@@ -8,13 +8,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getSqliteDb = vi.fn();
 const migrateNutrition = vi.fn();
-const importResidual = vi.fn();
 const refreshState = vi.fn();
 const recordReadFallback = vi.fn();
 const loggerWarn = vi.fn();
+const loggerDebug = vi.fn();
 
 vi.mock("@shared/lib", () => ({
-  logger: { warn: (...a: unknown[]) => loggerWarn(...a) },
+  logger: {
+    warn: (...a: unknown[]) => loggerWarn(...a),
+    debug: (...a: unknown[]) => loggerDebug(...a),
+  },
 }));
 vi.mock("../../../core/observability/dualWriteTelemetry.js", () => ({
   recordReadFallback: (...a: unknown[]) => recordReadFallback(...a),
@@ -24,9 +27,6 @@ vi.mock("../../../core/db/sqlite.js", () => ({
 }));
 vi.mock("./clientMigrate.js", () => ({
   migrateNutrition: (...a: unknown[]) => migrateNutrition(...a),
-}));
-vi.mock("./residualImport.js", () => ({
-  importNutritionResidualFromLs: (...a: unknown[]) => importResidual(...a),
 }));
 vi.mock("./sqliteReader.js", () => ({
   refreshNutritionSqliteState: (...a: unknown[]) => refreshState(...a),
@@ -44,12 +44,10 @@ beforeEach(() => {
   __resetNutritionSqliteReadBootForTests();
   getSqliteDb.mockReset().mockResolvedValue(handle);
   migrateNutrition.mockReset().mockResolvedValue(undefined);
-  importResidual
-    .mockReset()
-    .mockResolvedValue({ imported: false, cleaned: false });
   refreshState.mockReset().mockResolvedValue(undefined);
   recordReadFallback.mockReset();
   loggerWarn.mockReset();
+  loggerDebug.mockReset();
 });
 
 afterEach(() => {
@@ -63,17 +61,25 @@ describe("bootNutritionSqliteReadPath", () => {
     expect(getSqliteDb).not.toHaveBeenCalled();
   });
 
-  it("boots the read path: migrate → residual import → refresh", async () => {
+  it("boots the read path: migrate → refresh", async () => {
     const ok = await bootNutritionSqliteReadPath("user-1");
     expect(ok).toBe(true);
     expect(migrateNutrition).toHaveBeenCalledWith(migrationClient);
-    expect(importResidual).toHaveBeenCalledWith(migrationClient, "user-1");
     expect(refreshState).toHaveBeenCalledWith(migrationClient, "user-1");
   });
 
   it("latches: a second call no-ops", async () => {
     expect(await bootNutritionSqliteReadPath("user-1")).toBe(true);
     expect(await bootNutritionSqliteReadPath("user-1")).toBe(false);
+    expect(getSqliteDb).toHaveBeenCalledTimes(1);
+  });
+
+  it("shares one run between concurrent callers", async () => {
+    const [a, b] = await Promise.all([
+      bootNutritionSqliteReadPath("user-1"),
+      bootNutritionSqliteReadPath("user-1"),
+    ]);
+    expect([a, b]).toEqual([true, true]);
     expect(getSqliteDb).toHaveBeenCalledTimes(1);
   });
 

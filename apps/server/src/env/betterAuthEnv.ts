@@ -1,12 +1,5 @@
 import { logger } from "../obs/logger.js";
-
-function isDeployedProduction(): boolean {
-  return (
-    process.env["NODE_ENV"] === "production" ||
-    Boolean(process.env["RAILWAY_ENVIRONMENT"]) ||
-    Boolean(process.env["RAILWAY_SERVICE_NAME"])
-  );
-}
+import { isDeployedProduction } from "./env.js";
 
 function resolveBetterAuthBaseURL(): string {
   if (process.env["BETTER_AUTH_URL"]) return process.env["BETTER_AUTH_URL"];
@@ -23,7 +16,7 @@ const WEAK_BETTER_AUTH_SECRETS = new Set([
 /**
  * Викликати на старті процесу (до `createApp`). У продакшн-середовищі
  * падає з помилкою, якщо `BETTER_AUTH_SECRET` відсутній або занадто слабкий.
- * Додатково — warn-и для типових misconfig (HTTPS base, CORS origins, Resend).
+ * Додатково — warn-и для типових misconfig (HTTPS base, CORS origins).
  */
 export function assertBetterAuthStartupEnv(): void {
   if (!isDeployedProduction()) {
@@ -33,7 +26,7 @@ export function assertBetterAuthStartupEnv(): void {
   const secret = process.env["BETTER_AUTH_SECRET"]?.trim();
   if (!secret || secret.length < 32) {
     throw new Error(
-      "BETTER_AUTH_SECRET is required in production and must be at least 32 characters (see README / docs/integrations/railway-vercel.md).",
+      "BETTER_AUTH_SECRET is required in production and must be at least 32 characters (see README / docs/engineering/integrations/railway-vercel.md).",
     );
   }
   const lower = secret.toLowerCase();
@@ -63,9 +56,13 @@ export function assertBetterAuthStartupEnv(): void {
   }
 
   if (!process.env["RESEND_API_KEY"]?.trim()) {
-    logger.warn({
-      msg: "resend_api_key_missing",
-      hint: "Password reset and verification emails are skipped until RESEND_API_KEY is set (see .env.example).",
-    });
+    // Better Auth acknowledges a queued verification request before the
+    // asynchronous mail dispatcher sees this value. Starting production in
+    // this state therefore made `send-verification-email` return 200 while no
+    // message could ever be delivered (global QA 2026-08-04, finding 17).
+    // Refuse the unhealthy deployment rather than offering a false success.
+    throw new Error(
+      "RESEND_API_KEY is required in production: verification, password-reset, and change-email messages cannot be delivered without it (see .env.example).",
+    );
   }
 }

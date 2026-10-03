@@ -1,15 +1,28 @@
-/* eslint-disable sergeant-design/no-raw-storage-key --
-   Chat-action executors run synchronously outside React, so the canonical
-   Finyk storage wrappers (`modules/finyk/hooks/useStorage`) — which are hooks —
-   are unavailable here. Manual expenses / per-tx categories / hidden-tx ids
-   now read from the canonical SQLite warm cache; only the bank tx cache
-   (`finyk_tx_cache`, no SQLite canon) is still read raw from localStorage,
-   mirroring the sibling reader in `finykActions/search.ts` (read-only). */
-import { getWeekKey } from "@sergeant/shared";
-import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
+import { formatNumberUk, getWeekKey } from "@sergeant/shared";
+import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+
+/**
+ * Підпис періоду для фінансових зведень. `todayKey` потрібен, щоб рік
+ * дописувався лише тоді, коли він відрізняється від поточного: без нього
+ * `formatDayKeyUk` пише його завжди («28 вер 2026 – 1 жов 2026»). Відносні
+ * слова вимкнено навмисно (`relative: false`): фінансові вибірки майже
+ * завжди про минуле, і «сьогодні» посеред звіту за місяць читається гірше за
+ * дату.
+ */
+const finykRange = (from: string, to: string): string =>
+  formatDayRangeUk(from, to, { todayKey: getKyivDayKey(), relative: false });
+import {
+  buildFinykExcludedTxIds,
+  getExpenseCategoryForTransaction,
+  getIncomeCategoryForTransaction,
+  getTxStatAmount,
+  type CategoryLike,
+  type TxSplitsLike,
+} from "@sergeant/finyk-domain/utils";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { ls } from "../hubChatUtils";
+import { clamp, isoOrUndef, normalizeText, round } from "./queryArgs";
 import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
 import {
   toDisplayAmount,
   toIsoDay,
@@ -21,8 +34,21 @@ import type { ChatAction, ChatActionResult } from "./types";
 /**
  * Read-only "talk to your data" виконавці для Фініка (PR1 talk-to-your-data).
  * Дзеркало серверних `QUERY_FINYK_TOOLS` (`toolDefs/queryFinyk.ts`). Жоден з
- * них НЕ пише у localStorage — лише читають (manual + bank, з урахуванням
- * прихованих) і повертають числові відповіді / агрегації.
+ * них НЕ пише у localStorage — лише читають (manual + bank) і повертають
+ * числові відповіді / агрегації.
+ *
+ * AI-CONTEXT (W1-CANON-AGG, стадія 2b): тут живуть ДВА всесвіти, і різниця
+ * між ними навмисна.
+ *   - `readQueryTransactions` — всесвіт ПОШУКУ: відсіює лише `hidden`.
+ *     Транзакція, виключена зі статистики, все одно має знаходитись, коли
+ *     користувач питає «де мій переказ на 500?».
+ *   - `readStatTransactions` — всесвіт СТАТИСТИКИ: канонічний excluded-set
+ *     (`buildFinykExcludedTxIds` — hidden + внутрішні перекази + погашення
+ *     боргів + явно виключені), плюс спліти в сумі. Його бачать
+ *     `aggregate_spending` і `compare_periods`, бо це метрика «витрати за
+ *     період», і вона мусить збігатися з рештою поверхонь.
+ * До стадії 2b обидві тулзи рахували по всесвіту пошуку й без сплітів — на
+ * фікстурі parity-тесту це давало 2500 грн проти 1150 канонічних.
  *
  * Реєструється у `hubChatActions.ts` dispatch-chain окремою гілкою, не
  * чіпаючи мутаційний `handleFinykAction`.
@@ -81,7 +107,11 @@ type RawTx = {
   description?: string;
   merchant?: string;
   amount?: number | string;
+  /** Ручна витрата: збережений id категорії. У банківського рядка поля немає. */
   category?: string;
+  /** Банківський рядок: MCC і серверний слаг категорії (`categorySlug`). */
+  mcc?: number | string;
+  categoryId?: string;
   type?: string;
 };
 
@@ -89,18 +119,20 @@ type RawTx = {
 
 /**
  * Unified read of Finyk transactions (manual грн + bank kopiykas), hidden
- * filtered, category overrides applied. Mirror of the private
- * `readSearchTransactions` in `finykActions/search.ts`.
+ * filtered. Mirror of the private `readSearchTransactions` in
+ * `finykActions/search.ts`.
+ *
+ * `category` тут — лише ЯВНИЙ id: користувацький override
+ * (`txCategories[id]`) > серверний `categoryId` банківського рядка > збережена
+ * категорія ручної витрати. Підпис і групування дає `resolveTxCategory`, що
+ * додає MCC / ключові слова — банківська транзакція власного `category` не має,
+ * тож без цього кроку все, що не перекатегоризовано вручну, падало в «Без
+ * категорії».
  */
 function readQueryTransactions(): FinykSearchTx[] {
   const sqlite = getCachedFinykSqliteState();
   const manual = sqlite.manualExpenses as RawTx[];
-  const cached = ls<RawTx[] | { txs?: RawTx[] }>("finyk_tx_cache", []);
-  const bankTxs = Array.isArray(cached)
-    ? cached
-    : Array.isArray(cached.txs)
-      ? cached.txs
-      : [];
+  const bankTxs = getVisibleFinykMonoMirrorState().transactions as RawTx[];
   const txCategories = sqlite.txCategories;
   const hidden = new Set(sqlite.hiddenTransactions);
 
@@ -110,12 +142,14 @@ function readQueryTransactions(): FinykSearchTx[] {
       const id = String(tx.id || "").trim();
       if (!id || hidden.has(id)) return null;
       const amount = Number(tx.amount);
+      const mcc = Number(tx.mcc);
       return {
         id,
         date: toIsoDay(dateField(tx)),
         amount: Number.isFinite(amount) ? amount : 0,
         description: String(tx.description || tx.merchant || ""),
-        category: txCategories[id] || tx.category || "",
+        category: txCategories[id] || tx.categoryId || tx.category || "",
+        mcc: Number.isFinite(mcc) ? mcc : 0,
         type: tx.type,
         source,
       };
@@ -127,29 +161,58 @@ function readQueryTransactions(): FinykSearchTx[] {
   ].filter((tx): tx is FinykSearchTx => tx !== null);
 }
 
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-function normalizeText(value: unknown): string {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase();
+/**
+ * Всесвіт СТАТИСТИКИ: пошуковий всесвіт мінус канонічний excluded-set.
+ * Той самий набір, що обслуговує Overview, дайджест, Hub-Reports і
+ * HubChat-контекст (`buildFinykExcludedTxIds`), тож «витрати за період» на
+ * усіх цих поверхнях відповідають на одне питання однаково.
+ */
+function readStatTransactions(): FinykSearchTx[] {
+  const sqlite = getCachedFinykSqliteState();
+  // CALC-1 (2026-09-01 product audit): `transactions` carries the manual
+  // records — only THEY tag a transfer on the record itself
+  // (`category: "internal_transfer"`); bank transactions are tagged via
+  // the `txCategories` map. Without it a manual `internal_transfer` was
+  // counted as a real expense here, diverging from Overview/Operations/
+  // quick-stats (`useStorage.ts`, PR #1000), which already pass this.
+  //
+  // Deliberately NOT `manualExpenseToTransaction` (canonical universe
+  // helper): it prefixes the id (`manual_<id>`), but `readQueryTransactions`
+  // above keeps the record's own raw id so `query_transactions` /
+  // `change_category` can report and edit by that same id. Only `id` +
+  // `categoryId` matter for the transfer check (`isTxLevelTransfer`), so a
+  // minimal same-id-scheme entry is enough — no risk of the two universes'
+  // id schemes silently diverging again.
+  const excluded = buildFinykExcludedTxIds({
+    hiddenTxIds: sqlite.hiddenTransactions,
+    txCategories: sqlite.txCategories,
+    receivables: sqlite.receivables,
+    excludedStatTxIds: sqlite.excludedStatTxIds,
+    transactions: [
+      ...sqlite.manualExpenses.map((entry) => ({
+        id: String(entry.id ?? ""),
+        amount: 0,
+        categoryId: String(entry.category ?? ""),
+      })),
+      // Банк: пари «списання ↔ скасування» ловляться лише коли обидві ноги
+      // у вході (рішення власника 2026-10-01), тож чат рахує їх так само,
+      // як Огляд і Звіти.
+      ...getVisibleFinykMonoMirrorState().transactions,
+    ],
+  });
+  return readQueryTransactions().filter((tx) => !excluded.has(tx.id));
 }
+
+function readTxSplits(): TxSplitsLike {
+  return getCachedFinykSqliteState().txSplits;
+}
+
+// ─── helpers ────────────────────────────────────────────────────────────────
 
 function parseNum(value: unknown): number | undefined {
   if (value == null || value === "") return undefined;
   const n = Number(value);
   return Number.isFinite(n) ? n : undefined;
-}
-
-function isoOrUndef(value: unknown): string | undefined {
-  const s = String(value ?? "").trim();
-  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : undefined;
-}
-
-function clamp(value: unknown, fallback: number, max: number): number {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
-  return Math.min(max, Math.max(1, Math.floor(n)));
 }
 
 function normalizeType(value: unknown): TxDirection | undefined {
@@ -192,22 +255,53 @@ function txDirection(tx: FinykSearchTx): TxDirection {
   return tx.amount < 0 ? "expense" : "income";
 }
 
-/** Абсолютна сума у грн (kopiyka-нормалізація для bank — у `toDisplayAmount`). */
-function txAmountGrn(tx: FinykSearchTx): number {
-  return toDisplayAmount(tx, txSource(tx));
+/**
+ * Абсолютна сума у грн (kopiyka-нормалізація для bank — у `toDisplayAmount`).
+ *
+ * `txSplits` передають ЛИШЕ статистичні викликачі: розбита транзакція входить
+ * у витрати тією часткою, що не є внутрішнім переказом (канонічний
+ * `getTxStatAmount`). Пошук splits НЕ передає навмисно — на питання «знайди
+ * транзакцію на 1000 грн» має відповідати фактична сума списання, а не її
+ * статистична частка. Спліти живуть лише на банківських рядках, тож
+ * `manual` іде повз них.
+ */
+function txAmountGrn(tx: FinykSearchTx, txSplits?: TxSplitsLike): number {
+  const source = txSource(tx);
+  if (source === "bank") {
+    return getTxStatAmount({ id: tx.id, amount: tx.amount }, txSplits ?? {});
+  }
+  return toDisplayAmount(tx, source);
 }
 
 function readCustomCats(): unknown[] {
   return getCachedFinykSqliteState().customCategories;
 }
 
-function categoryLabel(
-  categoryId: string | undefined,
+/**
+ * Категорія операції — той самий резолв, що в рядку транзакції, деталях і
+ * HubChat-контексті (`hubChatContext/finance.ts`): явний id (override /
+ * серверний слаг / збережена категорія) → MCC → ключові слова опису →
+ * «Інше». Розгалуження за напрямком обовʼязкове: expense-резолвер віддав би
+ * ручній зарплаті «Інше» замість «Зарплата».
+ */
+function resolveTxCategory(
+  tx: FinykSearchTx,
   customCats: unknown[],
-): string {
-  if (!categoryId) return "Без категорії";
-  const meta = resolveExpenseCategoryMeta(categoryId, customCats);
-  return meta?.label || categoryId;
+): CategoryLike {
+  const input = {
+    description: tx.description,
+    mcc: tx.mcc ?? 0,
+    source: txSource(tx),
+    date: tx.date || undefined,
+  };
+  return txDirection(tx) === "income"
+    ? getIncomeCategoryForTransaction(input, tx.category, customCats)
+    : getExpenseCategoryForTransaction(input, tx.category, customCats);
+}
+
+function categoryLabel(tx: FinykSearchTx, customCats: unknown[]): string {
+  const cat = resolveTxCategory(tx, customCats);
+  return cat.label || cat.id;
 }
 
 function withinRange(
@@ -220,9 +314,8 @@ function withinRange(
   return true;
 }
 
-function roundGrn(n: number): number {
-  return Math.round(n);
-}
+// Домашня назва для округлення сум у гривнях; реалізація — спільний `round`.
+const roundGrn = round;
 
 function groupKeyFor(
   tx: FinykSearchTx,
@@ -239,7 +332,7 @@ function groupKeyFor(
     case "merchant":
       return tx.description.trim() || "Без опису";
     case "category":
-      return categoryLabel(tx.category, customCats);
+      return categoryLabel(tx, customCats);
   }
 }
 
@@ -278,8 +371,11 @@ export function queryTransactions(
       if (!haystack.includes(query)) return false;
     }
     if (category) {
+      // Явний id + резолвнуті id/підпис: фільтр і за «transport», і за
+      // «Транспорт» ловить і банківський рядок без власного `category`.
+      const resolved = resolveTxCategory(tx, customCats);
       const catText = normalizeText(
-        `${tx.category ?? ""} ${categoryLabel(tx.category, customCats)}`,
+        `${tx.category ?? ""} ${resolved.id} ${resolved.label}`,
       );
       if (!catText.includes(category)) return false;
     }
@@ -293,24 +389,22 @@ export function queryTransactions(
     return withinRange(tx, from, to);
   });
 
-  if (matched.length === 0) return "Транзакцій за цими фільтрами не знайдено.";
+  if (matched.length === 0) return "Операцій за цими фільтрами не знайдено.";
 
   const total = matched.reduce((sum, tx) => sum + txAmountGrn(tx), 0);
   const shown = matched.slice(0, limit);
   const list = shown
     .map((tx) => {
-      const cat = tx.category
-        ? ` · ${categoryLabel(tx.category, customCats)}`
-        : "";
+      const cat = ` · ${categoryLabel(tx, customCats)}`;
       const desc = tx.description ? ` · ${tx.description}` : "";
-      return `${tx.id}: ${tx.date || "без дати"} · ${roundGrn(txAmountGrn(tx))} грн${desc}${cat}`;
+      return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(roundGrn(txAmountGrn(tx)))} грн${desc}${cat}`;
     })
     .join("; ");
   const more =
     matched.length > shown.length
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
-  return `Знайдено ${matched.length} транзакц. на суму ${roundGrn(total)} грн${more}: ${list}`;
+  return `Знайдено ${matched.length} операц. на суму ${formatNumberUk(roundGrn(total))} грн${more}: ${list}`;
 }
 
 export function aggregateSpending(
@@ -328,19 +422,20 @@ export function aggregateSpending(
   const top = clamp(input.top, 10, 30);
 
   const customCats = readCustomCats();
-  const rows = readQueryTransactions().filter(
+  const txSplits = readTxSplits();
+  const rows = readStatTransactions().filter(
     (tx) => txDirection(tx) === direction && tx.date >= from && tx.date <= to,
   );
 
   const dirWord = direction === "income" ? "доходів" : "витрат";
   if (rows.length === 0) {
-    return `Немає ${dirWord} за період ${from} — ${to}.`;
+    return `Немає ${dirWord} за період ${finykRange(from, to)}.`;
   }
 
   const groups = new Map<string, { sum: number; count: number }>();
   let total = 0;
   for (const tx of rows) {
-    const amount = txAmountGrn(tx);
+    const amount = txAmountGrn(tx, txSplits);
     total += amount;
     const key = groupKeyFor(tx, groupBy, customCats);
     const acc = groups.get(key) ?? { sum: 0, count: 0 };
@@ -359,11 +454,14 @@ export function aggregateSpending(
   const sorted = [...groups.entries()]
     .sort((a, b) => b[1].sum - a[1].sum)
     .slice(0, top)
-    .map(([key, v]) => `${key}: ${roundGrn(v.sum)} грн (${v.count})`);
+    .map(
+      ([key, v]) =>
+        `${key}: ${formatNumberUk(roundGrn(v.sum))} грн (${v.count})`,
+    );
 
   const dirTitle = direction === "income" ? "Дохід" : "Витрати";
   const more = groups.size > sorted.length ? ` з ${groups.size} груп` : "";
-  return `${dirTitle} за ${from} — ${to}: ${roundGrn(total)} грн усього (${rows.length} транзакц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
+  return `${dirTitle} за ${finykRange(from, to)}: ${formatNumberUk(roundGrn(total))} грн усього (${rows.length} операц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
 }
 
 export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
@@ -376,7 +474,8 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
     return "Потрібні обидва періоди у форматі YYYY-MM-DD: period_a_from/to і period_b_from/to.";
   }
   const metric = normalizeMetric(input.metric);
-  const all = readQueryTransactions();
+  const all = readStatTransactions();
+  const txSplits = readTxSplits();
 
   const measure = (from: string, to: string): number => {
     const inRange = all.filter((tx) => tx.date >= from && tx.date <= to);
@@ -384,14 +483,14 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
     const direction: TxDirection = metric === "income" ? "income" : "expense";
     return inRange
       .filter((tx) => txDirection(tx) === direction)
-      .reduce((sum, tx) => sum + txAmountGrn(tx), 0);
+      .reduce((sum, tx) => sum + txAmountGrn(tx, txSplits), 0);
   };
 
   const a = roundGrn(measure(aFrom, aTo));
   const b = roundGrn(measure(bFrom, bTo));
   const delta = a - b;
   const pct = b !== 0 ? (delta / b) * 100 : a !== 0 ? 100 : 0;
-  const unit = metric === "count" ? "транзакц." : "грн";
+  const unit = metric === "count" ? "операц." : "грн";
   const metricTitle =
     metric === "count"
       ? "Кількість"
@@ -399,7 +498,7 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
         ? "Дохід"
         : "Витрати";
   const sign = (n: number): string => (n >= 0 ? "+" : "");
-  return `${metricTitle}: A (${aFrom} — ${aTo}) = ${a} ${unit}; B (${bFrom} — ${bTo}) = ${b} ${unit}. Різниця (A − B): ${sign(delta)}${delta} ${unit} (${sign(pct)}${pct.toFixed(1)}%).`;
+  return `${metricTitle}: A (${aFrom} – ${aTo}) = ${formatNumberUk(a)} ${unit}; B (${bFrom} – ${bTo}) = ${formatNumberUk(b)} ${unit}. Різниця (A − B): ${sign(delta)}${formatNumberUk(delta)} ${unit} (${sign(pct)}${formatNumberUk(pct, { maximumFractionDigits: 1 })}%).`;
 }
 
 /**

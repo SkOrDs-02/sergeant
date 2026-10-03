@@ -1,6 +1,10 @@
-import { memo, useState } from "react";
+import { memo, useState, type ReactNode } from "react";
 import { chartHex } from "@sergeant/design-tokens/tokens";
 import { cn } from "@shared/lib/ui/cn";
+import { Money } from "@shared/components/ui/Money";
+import { Icon } from "@shared/components/ui/Icon";
+import { formatNumberUk } from "@sergeant/shared";
+import { stripLeadingEmoji } from "../txRowHelpers";
 
 // Convert a polar angle (0° = 12 o'clock, clockwise) to cartesian coordinates.
 function polarToXY(cx: number, cy: number, r: number, angleDeg: number) {
@@ -82,6 +86,46 @@ interface CategoryPieChartProps {
    * pass the shared total to keep the donut centre in lockstep.
    */
   total?: number;
+  /**
+   * Дрил-даун: перехід у список операцій, звужений цією категорією.
+   * Коли не передано, легенда лишається статичною.
+   */
+  onSelectCategory?: (categoryId: string) => void;
+  /**
+   * «Приховати суми» (PR-F3) — маскує суму в центрі кільця, кожен рядок
+   * легенди й екранний summary; частки (%) і сама геометрія лишаються
+   * видимими — вони не число, і саме розподіл, а не суму, показує кільце.
+   */
+  showBalance?: boolean;
+}
+
+/**
+ * Рядок легенди. Кнопка, коли є куди вести, і `<div>`, коли нема —
+ * інтерактивна семантика без дії була б брехнею для скрінрідера.
+ */
+function Row({
+  onSelect,
+  children,
+}: {
+  onSelect?: () => void;
+  children: ReactNode;
+}) {
+  const shared = "w-full flex items-center gap-2";
+  if (!onSelect) return <div className={shared}>{children}</div>;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        shared,
+        "text-left rounded-lg -mx-1 px-1 py-0.5 pointer-coarse:min-h-[44px]",
+        "transition-colors hover:bg-panelHi",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50",
+      )}
+    >
+      {children}
+    </button>
+  );
 }
 
 function CategoryPieChartComponent({
@@ -89,6 +133,8 @@ function CategoryPieChartComponent({
   size = 160,
   className,
   total: totalProp,
+  onSelectCategory,
+  showBalance = true,
 }: CategoryPieChartProps) {
   const [showAll, setShowAll] = useState(false);
   const hasOverflow = (data?.length ?? 0) > TOP_N;
@@ -132,13 +178,15 @@ function CategoryPieChartComponent({
         : top;
   }
 
-  let currentAngle = 0;
-  const arcs = segments.map((seg) => {
+  const arcs = segments.map((seg, i) => {
     const pct = seg.spent / total;
     const sweep = pct * 360;
-    const start = currentAngle;
-    currentAngle += sweep;
-    return { ...seg, start, end: currentAngle, pct };
+    // Start angle = сума розгорток усіх попередніх сегментів. Обчислюємо
+    // префікс-суму замість мутації зовнішнього акумулятора під час рендеру.
+    const start = segments
+      .slice(0, i)
+      .reduce((angle, prev) => angle + (prev.spent / total) * 360, 0);
+    return { ...seg, start, end: start + sweep, pct };
   });
 
   // Gap between segments, in degrees. Only applied when there are 2+
@@ -148,6 +196,7 @@ function CategoryPieChartComponent({
   const RENDER_MIN_SWEEP = 0.5;
   const visible = arcs.filter((a) => a.end - a.start >= RENDER_MIN_SWEEP);
   const GAP_DEG = visible.length > 1 ? 1 : 0;
+  const summaryId = "finyk-category-pie-summary";
 
   return (
     <div className={cn("w-full", className)}>
@@ -159,6 +208,7 @@ function CategoryPieChartComponent({
           className="shrink-0"
           role="img"
           aria-label="Кругова діаграма категорій"
+          aria-describedby={summaryId}
         >
           {arcs.map((arc, i) => {
             const sweep = arc.end - arc.start;
@@ -187,6 +237,11 @@ function CategoryPieChartComponent({
           >
             Всього
           </text>
+          {/* AI-NOTE: сума в центрі бублика лишається сирим рядком навмисно
+              — це `<text>` усередині SVG, а `Money` рендерить `<span>`,
+              який у SVG не існує. Тири тут довелось би перекладати на
+              `<tspan>` з власними `font-size`; поки центр — єдине таке
+              місце, воно того не варте. Легенда праворуч уже на `Money`. */}
           <text
             x={cx}
             y={cy + 12}
@@ -195,22 +250,34 @@ function CategoryPieChartComponent({
             fontWeight="600"
             className="fill-text"
           >
-            {displayTotal.toLocaleString("uk-UA")} ₴
+            {showBalance ? `${formatNumberUk(displayTotal)} ₴` : "••••"}
           </text>
         </svg>
 
         <div className="flex-1 w-full space-y-1.5 min-w-0">
           {arcs.map((arc) => (
-            <div
+            /*
+              AI-CONTEXT: рядок легенди — КНОПКА, коли є `onSelectCategory`.
+              Доти кільце було глухим кутом: воно казало «Продукти 1150 ₴»,
+              але дійти від цього числа до самих операцій було ніяк, а
+              операції фільтрувались окремим скролером чипів, який сум не
+              показував. Один факт у двох місцях, і жодного звʼязку.
+
+              «Інше» (`_other`) кнопкою НЕ стає: це агрегат кількох
+              категорій, фільтрувати по ньому нічого.
+            */
+            <Row
               key={arc.categoryId}
-              className="flex items-center gap-2 text-sm"
+              {...(onSelectCategory && arc.categoryId !== "_other"
+                ? { onSelect: () => onSelectCategory(arc.categoryId) }
+                : {})}
             >
               <span
                 className="w-2.5 h-2.5 rounded-full shrink-0"
                 style={{ background: arc.color }}
               />
-              <span className="text-text truncate flex-1 min-w-0 text-xs">
-                {arc.label}
+              <span className="text-text truncate flex-1 min-w-0 text-style-caption">
+                {stripLeadingEmoji(arc.label)}
               </span>
               {(() => {
                 // `arc.pct` is the fraction of `total` (0..1), not a
@@ -219,17 +286,42 @@ function CategoryPieChartComponent({
                 // are still > 0.
                 const pctInt = Math.round(arc.pct * 100);
                 return (
-                  <span className="text-muted tabular-nums text-xs shrink-0">
+                  <span className="text-muted tabular-nums text-style-caption shrink-0">
                     {pctInt < 1 ? "<1" : pctInt}%
                   </span>
                 );
               })()}
-              <span className="text-text tabular-nums text-style-caption shrink-0">
-                {arc.spent.toLocaleString("uk-UA")} ₴
-              </span>
-            </div>
+              {showBalance ? (
+                <Money
+                  amount={arc.spent}
+                  className="text-text text-style-caption shrink-0"
+                />
+              ) : (
+                <span className="text-text text-style-caption shrink-0">
+                  ••••
+                </span>
+              )}
+            </Row>
           ))}
         </div>
+      </div>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Розподіл витрат за категоріями. Всього{" "}
+          {showBalance ? `${formatNumberUk(displayTotal)} ₴` : "••••"}.
+        </p>
+        <ul>
+          {arcs.map((arc) => {
+            const pctInt = Math.round(arc.pct * 100);
+            return (
+              <li key={arc.categoryId}>
+                {stripLeadingEmoji(arc.label)}:{" "}
+                {showBalance ? `${formatNumberUk(arc.spent)} ₴` : "••••"} (
+                {pctInt < 1 ? "менше 1" : pctInt}%)
+              </li>
+            );
+          })}
+        </ul>
       </div>
       {hasOverflow ? (
         <div className="mt-3 flex justify-center">
@@ -238,9 +330,10 @@ function CategoryPieChartComponent({
             onClick={() => setShowAll((v) => !v)}
             aria-expanded={expanded}
             data-testid="finyk-analytics-donut-toggle"
-            className="px-3 py-1.5 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors"
+            className="inline-flex items-center gap-1 min-h-[44px] px-3 py-2 rounded-full border border-line bg-panelHi text-style-caption text-text hover:border-muted/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
-            {expanded ? "Згорнути ↑" : `Показати всі (${data.length}) ↓`}
+            {expanded ? "Згорнути" : `Показати всі (${data.length})`}
+            <Icon name={expanded ? "chevron-up" : "chevron-down"} size="sm" />
           </button>
         </div>
       ) : null}

@@ -1,8 +1,8 @@
-import { memo, useCallback, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { cn } from "@shared/lib/ui/cn";
 import { type User } from "@sergeant/shared";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
-import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import { ErrorBoundary } from "../ErrorBoundary";
 import { HubDashboard } from "../hub/HubDashboard";
 import { lazyImport } from "../lib/lazyImport";
@@ -16,8 +16,11 @@ import type { HubView } from "../hooks/useHubUIState";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import { PageLoader } from "./PageLoader";
 import { coachKeys, digestKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { messages } from "@shared/i18n/uk";
 import { IOSInstallBanner } from "./IOSInstallBanner";
-import { TrialBanner } from "../billing/TrialBanner";
+import { LocalOnlyDataBanner } from "../durability/LocalOnlyDataBanner";
+import { HubBannerBudgetProvider } from "../hub/bannerBudget";
+import { TrialBanner } from "../billing";
 
 /**
  * Mounts only after the parent Suspense boundary resolves. Inside a
@@ -73,7 +76,9 @@ interface HubSectionFallbackProps {
 function HubSectionFallback({ resetError }: HubSectionFallbackProps) {
   return (
     <div className="px-1 py-6 text-center">
-      <p className="text-sm text-muted mb-3">Щось пішло не так у цій секції.</p>
+      <p className="text-style-body text-muted mb-3">
+        Не вдалося показати цю секцію. Натисни «Спробувати ще раз».
+      </p>
       <button
         type="button"
         onClick={resetError}
@@ -91,7 +96,8 @@ export interface HubMainContentProps {
     opts?: OpenModuleOptions,
   ) => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
   hubView: HubView;
   user: User | null;
   onShowAuth: () => void;
@@ -101,7 +107,8 @@ export interface HubMainContentProps {
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
   iosVisible,
-  onDismissIos,
+  onDismissIosForever,
+  onSnoozeIos,
   hubView,
   user,
   onShowAuth,
@@ -109,33 +116,72 @@ export const HubMainContent = memo(function HubMainContent({
 }: HubMainContentProps) {
   const queryClient = useQueryClient();
 
-  // Scroll-to-top when switching hub tabs. Targets the inner scroll
-  // container of `PullToRefresh` (the real scroller) — calling
-  // `window.scrollTo` on the document does nothing useful here because
-  // `#root` is `100dvh` and `HubHomeView` is `overflow-hidden`, and on
-  // iOS Safari / Capacitor it triggers a visual-viewport jump that
-  // pushes the bottom nav off-screen (user feedback 2026-05-13).
+  // Per-tab scroll persistence. Кожна hub-вкладка запамʼятовує свою
+  // позицію скролу; при поверненні на вкладку її прокрутку відновлюємо
+  // замість жорсткого скидання на верх (UX-пропозиція 2026-07: юзер, що
+  // заходить у хаб десятки разів на день, повертається туди, де був).
+  //
+  // Скрол читаємо/пишемо на внутрішньому контейнері `PullToRefresh`
+  // (реальний скролер) — `window.scrollTo` тут не працює, бо `#root`
+  // володіє точною висотою viewport-а, а `HubHomeView` — `overflow-hidden`.
+  // На iOS Safari / Capacitor виклик document-скролу тригерив visual-
+  // viewport jump, що зіштовхував bottom-nav (user feedback 2026-05-13),
+  // тому лишаємось строго на контейнері.
   const scrollElRef = useRef<HTMLDivElement | null>(null);
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(
+    null,
+  );
   const prevHubViewRef = useRef<HubView | null>(null);
+  // Позиції скролу по кожній вкладці (best-effort, тримаємо в памʼяті на
+  // час маунту хаба — не персистимо у storage, щоб холодний старт завжди
+  // відкривав дашборд згори).
+  const scrollPositionsRef = useRef<Map<HubView, number>>(new Map());
+  // «Жива» вкладка для scroll-listener-а: він пише позицію саме тієї
+  // вкладки, що зараз на екрані, а не тієї, на яку ми щойно перемкнулись.
+  const liveViewRef = useRef<HubView>(hubView);
   const handleScrollElement = useCallback((el: HTMLDivElement | null) => {
     scrollElRef.current = el;
+    setScrollElement(el);
   }, []);
+
+  // Безперервно фіксуємо позицію активної вкладки — так до моменту
+  // перемикання ми вже маємо збережений `scrollTop` вихідної вкладки.
   useEffect(() => {
+    const el = scrollElement;
+    if (!el) return;
+    const onScroll = () => {
+      scrollPositionsRef.current.set(liveViewRef.current, el.scrollTop);
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [scrollElement]);
+
+  useEffect(() => {
+    liveViewRef.current = hubView;
     if (prevHubViewRef.current !== null && prevHubViewRef.current !== hubView) {
-      scrollElRef.current?.scrollTo({
-        top: 0,
-        behavior: motionScrollBehavior(),
+      const el = scrollElRef.current;
+      const saved = scrollPositionsRef.current.get(hubView) ?? 0;
+      // Відкладаємо на два rAF, щоб контент нової вкладки встиг
+      // змонтуватись/спейнтитись і мав достатню висоту для відновлення
+      // (дашборд — eager; reports/profile/settings — lazy через Suspense,
+      // де відновлення лишається best-effort до появи контенту).
+      const outer = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Миттєве відновлення (не «smooth»): вкладка має відчуватись
+          // так, ніби вона лишалась на цій позиції, а не доскролюватись
+          // на очах. `top: 0` для першого відкриття вкладки теж має бути
+          // без анімації.
+          el?.scrollTo({ top: saved, behavior: "auto" });
+        });
       });
+      prevHubViewRef.current = hubView;
+      return () => cancelAnimationFrame(outer);
     }
     prevHubViewRef.current = hubView;
+    return undefined;
   }, [hubView]);
 
-  // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches. Fire
-  // `beginHubTabSwitch` here (after React commits the new `hubView`)
-  // and pair it with `<TabReadyProbe>` mounted inside each tab's
-  // Suspense boundary below; the probe fires `endHubTabSwitch` once
-  // the chunk has resolved and the panel content has painted.
-  // `dashboard` is excluded — no Suspense, no meaningful TTI.
+  // Initiative 0017 Sprint 0 — RUM baseline for hub tab switches.
   useEffect(() => {
     if (
       hubView === "reports" ||
@@ -144,6 +190,36 @@ export const HubMainContent = memo(function HubMainContent({
     ) {
       beginHubTabSwitch(hubView);
     }
+  }, [hubView]);
+
+  // #11 — directional slide choreography between hub tabs.
+  // The canonical tab order is: dashboard → reports → profile → settings.
+  // Switching to a tab that is further right → slide-in from the right;
+  // switching left → slide-in from the left. This mirrors the spatial model
+  // of a physical tab strip, matching the user's mental map.
+  const HUB_TAB_ORDER: HubView[] = [
+    "dashboard",
+    "reports",
+    "profile",
+    "settings",
+  ];
+  const prevHubViewForAnim = useRef<HubView>(hubView);
+  const [slideClass, setSlideClass] = useState<string>("");
+
+  useEffect(() => {
+    const prev = prevHubViewForAnim.current;
+    if (prev === hubView) return;
+    const prevIdx = HUB_TAB_ORDER.indexOf(prev);
+    const nextIdx = HUB_TAB_ORDER.indexOf(hubView);
+    const goRight = nextIdx > prevIdx;
+    setSlideClass(goRight ? "animate-slide-in-right" : "animate-slide-in-left");
+    prevHubViewForAnim.current = hubView;
+    // Clear the class after the animation completes so re-mounting
+    // the same tab doesn't re-trigger the enter keyframe.
+    const id = setTimeout(() => setSlideClass(""), 260);
+    return () => clearTimeout(id);
+    // HUB_TAB_ORDER is a module-level constant — no dep needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `HUB_TAB_ORDER` — module-level константа, dep не потрібен
   }, [hubView]);
 
   const handleRefresh = useCallback(async () => {
@@ -166,7 +242,12 @@ export const HubMainContent = memo(function HubMainContent({
     <>
       {!inFtuxSession && <TrialBanner />}
 
-      {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
+      {showIos && (
+        <IOSInstallBanner
+          onDismissForever={onDismissIosForever}
+          onSnooze={onSnoozeIos}
+        />
+      )}
 
       <PullToRefresh
         as="main"
@@ -184,13 +265,33 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-dashboard"
               role="tabpanel"
               aria-labelledby="hub-tab-dashboard"
-              className="flex flex-col gap-5 pt-2"
+              className={cn("flex flex-col gap-5 pt-2", slideClass)}
             >
-              <HubDashboard
-                onOpenModule={onOpenModule}
-                user={user}
-                onShowAuth={onShowAuth}
-              />
+              <h1 className="sr-only">{messages.nav.dashboard}</h1>
+              {/* Канон finyk §6.2 — durability. Банер жив лише всередині
+                  finyk/Overview, тож відвідувач, який працює в routine,
+                  nutrition чи fizruk, не дізнавався, що його дані існують
+                  в одному екземплярі на цьому пристрої. Хаб — спільний
+                  дах усіх модулів, тож попередження належить сюди.
+                  Показуватись чи ні, вирішує сам банер (той самий предикат
+                  `isSyncableUserId`, що вимикає запис в outbox), тому гейта
+                  на `user` тут немає. Під час FTUX мовчить: перша сесія
+                  тримає рівно один сигнал на екрані — CTA першої дії.
+                  Стоїть ПІСЛЯ дашборда: першим, над модулями й «Зараз»,
+                  банер читався як загроза втрати даних замість наступного
+                  кроку (критика екранів 2026-09-23). */}
+              {/* Стеля на кількість підказок одночасно — див.
+                  `bannerBudget.tsx` (анти-слоп аудит 2026-09-01, F3). */}
+              <HubBannerBudgetProvider>
+                <HubDashboard
+                  onOpenModule={onOpenModule}
+                  user={user}
+                  onShowAuth={onShowAuth}
+                />
+                {!inFtuxSession && (
+                  <LocalOnlyDataBanner onSignIn={onShowAuth} />
+                )}
+              </HubBannerBudgetProvider>
             </div>
           </ErrorBoundary>
         )}
@@ -201,8 +302,9 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-reports"
               role="tabpanel"
               aria-labelledby="hub-tab-reports"
-              className="pt-2"
+              className={cn("pt-2", slideClass)}
             >
+              <h1 className="sr-only">{messages.nav.reports}</h1>
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <HubReports />
                 <TabReadyProbe tab="reports" />
@@ -217,7 +319,16 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-profile"
               role="tabpanel"
               aria-labelledby="hub-tab-profile"
-              className="pt-2"
+              // Без `pt-2` — на відміну від dashboard/reports вище (V-10,
+              // аудит Профілю/Налаштувань 2026-08-08). Рішення власника —
+              // звести Профіль до сітки Налаштувань, а панель Налаштувань
+              // теж не має тут відступу: його оголошує сама сторінка
+              // (`pt-3` у корені `HubSettingsPage`), і `ProfilePage` тепер
+              // повторює ту саму форму. Лишити `pt-2` означало б 20px
+              // згори проти 12px у сусідній вкладці — рівно та розбіжність
+              // сусідніх вкладок одного хаба, яку V-10 і фіксує, просто
+              // переїхала б на рівень вище.
+              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
                 <ProfilePage />
@@ -233,9 +344,10 @@ export const HubMainContent = memo(function HubMainContent({
               id="hub-panel-settings"
               role="tabpanel"
               aria-labelledby="hub-tab-settings"
+              className={slideClass || undefined}
             >
               <SuspenseWithMinDelay fallback={<PageLoader />}>
-                <HubSettingsPage user={user} />
+                <HubSettingsPage scrollContainer={scrollElement} />
                 <TabReadyProbe tab="settings" />
               </SuspenseWithMinDelay>
             </div>

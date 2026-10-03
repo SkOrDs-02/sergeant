@@ -1,30 +1,35 @@
-import { INTERNAL_TRANSFER_ID } from "../../../modules/finyk/constants";
+/* eslint-disable sergeant-design/no-raw-storage-key --
+   All remaining keys in this file (finyk_hidden, finyk_budgets, finyk_debts,
+   finyk_recv, finyk_hidden_txs, finyk_tx_cats, finyk_tx_splits,
+   finyk_custom_cats_v1, finyk_monthly_plan, finyk_subs, finyk_mono_debt_linked)
+   have no SQLite canon yet and are on the 2026-Q3 burn-down list. The two
+   tombstoned keys (finyk_tx_cache / finyk_info_cache) were removed in
+   Dual-write teardown Phase 3 and replaced by the mirror reader below. */
+import { buildFinykSpendingUniverse } from "@sergeant/finyk-domain";
+import { withMerchantRuleOverrides } from "@sergeant/finyk-domain/lib/merchantRuleOverrides";
+import { buildMerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
+
 import { ls } from "../hubChatUtils";
+import { getVisibleFinykMonoMirrorState } from "../../../modules/finyk/lib/monoMirrorReader";
+import { getCachedFinykSqliteState } from "../../../modules/finyk/lib/sqliteReader";
 import type {
   AllData,
   Budget,
   Debt,
-  InfoCache,
   MonthlyPlan,
   Receivable,
   Subscription,
-  TxCache,
 } from "./types";
 
 export function readAllData(): AllData {
-  const txCache = ls<TxCache | null>("finyk_tx_cache", null);
-  const rawInfo = ls<{ info?: InfoCache } | InfoCache | null>(
-    "finyk_info_cache",
-    null,
-  );
-  const infoCache: InfoCache | null =
-    (rawInfo && "info" in rawInfo ? rawInfo.info : (rawInfo as InfoCache)) ||
-    null;
+  const mirror = getVisibleFinykMonoMirrorState();
 
-  const transactions = txCache?.txs || [];
-  const accounts = infoCache?.accounts || [];
-  const clientName = infoCache?.name || "";
-  const cacheTime = txCache?.timestamp || null;
+  const transactions = mirror.transactions;
+  const accounts = mirror.accounts as AllData["accounts"];
+  const clientName = "";
+  const cacheTime = mirror.refreshedAt
+    ? new Date(mirror.refreshedAt).getTime()
+    : null;
 
   const hiddenAccounts = ls<string[]>("finyk_hidden", []);
   const budgets = ls<Budget[]>("finyk_budgets", []);
@@ -41,17 +46,43 @@ export function readAllData(): AllData {
     {},
   );
 
-  const transferTxIds = Object.entries(txCategories)
-    .filter(([, catId]) => catId === INTERNAL_TRANSFER_ID)
-    .map(([txId]) => txId);
+  // AI-CONTEXT: канонічний всесвіт витрат (Хвиля 1, W1-CANON-AGG).
+  // Стадія 2а: excluded-set більше не збирається вручну з ТРЬОХ частин —
+  // раніше мовчки губилася четверта, `finyk_excluded_stat_txs`, тобто
+  // транзакції, які користувач явно позначив «виключити зі статистики».
+  // Стадія 2d: до всесвіту додано ГОТІВКУ (ручні витрати з SQLite), тож
+  // чат більше не називає меншу суму, ніж дайджест і Звіти на тих самих
+  // даних. Канон finyk §5 («банк і ручний світ рівні») вимагає одного
+  // всесвіту на всіх поверхнях; реєстр розбіжностей —
+  // docs/engineering/architecture/metric-registry.md.
+  //
+  // `transactions` навмисно лишається БАНК-ONLY: на ньому рахуються борги
+  // й receivables (`calcDebtRemaining`, `getReceivableEffectiveTotal`), і
+  // домішування туди ручних записів перекроїло б зовсім іншу метрику.
+  const universe = buildFinykSpendingUniverse({
+    bankTxs: transactions,
+    manualExpenses: getCachedFinykSqliteState().manualExpenses,
+    hiddenTxIds,
+    txCategories,
+    receivables,
+    excludedStatTxIds: ls<string[]>("finyk_excluded_stat_txs", []),
+  });
+  const excludedIds = universe.excludedTxIds;
 
-  const excludedIds = new Set<string>([
-    ...hiddenTxIds,
-    ...transferTxIds,
-    ...receivables.flatMap((r) => r.linkedTxIds || []),
-  ]);
+  const statTx = universe.transactions.filter(
+    (t) => !excludedIds.has(t.id),
+  ) as AllData["statTx"];
 
-  const statTx = transactions.filter((t) => !excludedIds.has(t.id));
+  // Правила «Завжди так для цього магазину» (2026-10-01): чат-контекст бере
+  // категорію з `txCategories[tx.id]`, тож віддаємо ефективну мапу (явні
+  // override-и + виведене правилами). Виключення вище рахувались з явних
+  // override-ів, і правило не може зробити операцію переказом.
+  const effectiveTxCategories = withMerchantRuleOverrides(
+    universe.transactions,
+    txCategories,
+    buildMerchantRuleIndex(getCachedFinykSqliteState().merchantRules),
+    customCategories,
+  ) as Record<string, string>;
 
   return {
     transactions,
@@ -62,7 +93,7 @@ export function readAllData(): AllData {
     budgets,
     manualDebts,
     receivables,
-    txCategories,
+    txCategories: effectiveTxCategories,
     txSplits,
     customCategories,
     monthlyPlan,

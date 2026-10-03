@@ -15,12 +15,27 @@
 // either side was refactored without updating the other), this test
 // fails before the PR can merge.
 //
-// **Coverage:** the pact file has 22 consumer interactions across 14
-// unique routes (10 baseline + 12 added by the sync-v2 / food-search
-// / parse-pantry extension PRs). Of those, 8 routes are fully-verified
-// here via supertest replay against `createApp()`:
+// **Coverage:** the pact file has 73 consumer interactions across 49
+// unique routes, including the chat-usage extension, the
+// billing/privat/finyk consumer expansion (2026-08-04), the
+// preferences/profile consumer expansion (2026-08-04, pre-beta
+// schema-debt audit: `healthDataConsent` + write-through `/api/me/profile`),
+// the `activeModules` three-state expansion (2026-08-05, browser-audit
+// finding B2 / migration 116 — three extra `/api/v1/me/preferences`
+// interactions: `null` / `[]` / ordered array), and the receipt-scan +
+// bulk-import consumer expansion (2026-08-17 — 14 interactions across 9
+// new `/api/v1/finyk/{receipts,import}/*` routes), plus the
+// other-bank-statement expansion (2026-08-25 — 2 interactions on ALREADY
+// covered routes, no new route: `statement/preview` accepting the raw
+// file (`file_base64`, XLSX/HTML-as-`.xls`/CSV in any encoding) and
+// `screenshot/analyze` explaining an EMPTY draft via `dropped`/`truncated`).
+// Of those, 11 routes are fully-verified here via supertest replay against
+// `createApp()`:
 //
 //   - GET  /api/v1/me                       (hub persona)
+//   - GET  /api/v1/me/preferences           (settings persona, healthDataConsent)
+//   - GET  /api/v1/me/profile                (settings persona, defaults-not-404)
+//   - PUT  /api/v1/me/profile                (settings persona, write-through roundtrip)
 //   - GET  /api/v1/mono/accounts             (finyk persona, bigint coercion)
 //   - GET  /api/v1/mono/sync-state           (finyk persona)
 //   - GET  /api/v1/mono/transactions         (finyk persona, bigint coercion)
@@ -29,16 +44,28 @@
 //   - POST /api/v1/push/register             (fizruk persona, ios sibling)
 //   - POST /api/v1/nutrition/day-plan        (nutrition persona, Anthropic-stubbed)
 //
-// The remaining 6 routes (`/api/v1/chat`, `/api/v1/nutrition/analyze-photo`,
-// `/api/v1/food-search`, `/api/v1/v2/sync/pull`, `/api/v1/v2/sync/push`,
-// `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
+// The remaining 7 pre-existing routes (`/api/v1/chat`, `/api/v1/chat/usage`,
+// `/api/v1/nutrition/analyze-photo`, `/api/v1/food-search`, `/api/v2/sync/pull`,
+// `/api/v2/sync/push`, `/api/v1/nutrition/parse-pantry`) are covered by the consumer pact but
 // skipped on the provider side here because their handler chains require
 // streaming or vision Anthropic stubs, full v2 sync log fixtures, or
 // upstream/timeout simulation that are already covered by dedicated
 // tests in `apps/server/src/modules/chat/*.test.ts`,
 // `apps/server/src/modules/nutrition/*.test.ts`, and
 // `apps/server/src/modules/sync/*.test.ts`. See
-// `docs/architecture/api-contracts.md § Extending coverage`.
+// `docs/engineering/architecture/api-contracts.md § Extending coverage`.
+//
+// The 9 new receipt-scan/bulk-import routes are likewise `it.todo`
+// gap-marked below (§ "Finyk receipt-scan + bulk-import — explicit gap
+// markers"): 5 of the 9 handlers run multi-statement Postgres
+// transactions (some with `SAVEPOINT`) and/or call an external service
+// (DPS `chkAll`, the vision LLM) — replaying them here would duplicate
+// the mock chains already exercised, against the SAME real handlers and
+// SAME `.parse()` calls against the SAME `@sergeant/shared` schemas, by
+// `apps/server/src/modules/finyk/{receipts,import}/*.test.ts` (every one
+// of those tests calls the handler directly and inspects `res.body`/
+// `res.statusCode` — i.e. the "real serializer" runtime proof already
+// exists there, just not replayed via this pact file).
 
 import fs from "node:fs";
 import path from "node:path";
@@ -48,31 +75,51 @@ import request from "supertest";
 
 // ── Mocks (must be hoisted ABOVE `import { createApp }`) ─────────────────────
 
-const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
-  // Some handlers (`/api/mono/sync-state`, anything gated by the
-  // Anthropic stack) read env vars at MODULE-LOAD time, not per-request.
-  // Set them here so the imports below see a consistent configuration.
-  process.env["MONO_WEBHOOK_ENABLED"] = "true";
-  process.env["ANTHROPIC_API_KEY"] = "sk-pact-replay";
-  process.env["AI_QUOTA_DISABLED"] = "true";
+const { mockPool, queryMock, getSessionUserMock, invokeLLMMock } = vi.hoisted(
+  () => {
+    // Some handlers (`/api/mono/sync-state`, anything gated by the
+    // Anthropic stack) read env vars at MODULE-LOAD time, not per-request.
+    // Set them here so the imports below see a consistent configuration.
+    process.env["MONO_WEBHOOK_ENABLED"] = "true";
+    process.env["ANTHROPIC_API_KEY"] = "sk-pact-replay";
+    process.env["AI_QUOTA_DISABLED"] = "true";
+    // Провайдерний шар нижче замоканий у `{ name: "stub" }`, тож оголошуємо
+    // це і в конфізі. Доти конфіг казав `openrouter` (дефолт) без ключа
+    // шлюзу, а працювало воно лише тому, що `getLLMProvider()` fail-soft
+    // підмінював провайдера заглушкою — збіг, а не намір. Гейт
+    // `requireLlmUpstream("nutrition")` тепер читає саме цю змінну.
+    process.env["LLM_NUTRITION_PROVIDER"] = "stub";
 
-  const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
-  const mockPool = {
-    query: queryMock,
-    connect: vi.fn(),
-    on: vi.fn(),
-    totalCount: 0,
-    idleCount: 0,
-    waitingCount: 0,
-  };
-  const getSessionUserMock = vi.fn().mockResolvedValue(null);
-  return { mockPool, queryMock, getSessionUserMock };
-});
+    const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
+    const mockPool = {
+      query: queryMock,
+      connect: vi.fn(),
+      on: vi.fn(),
+      totalCount: 0,
+      idleCount: 0,
+      waitingCount: 0,
+    };
+    const getSessionUserMock = vi.fn().mockResolvedValue(null);
+    const invokeLLMMock = vi.fn();
+    return { mockPool, queryMock, getSessionUserMock, invokeLLMMock };
+  },
+);
+
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
 
 vi.mock("./../../db.js", () => ({
   default: mockPool,
   pool: mockPool,
   query: queryMock,
+  // RLS-контекст прозорий: `fn` отримує той самий мок, SQL-виклики не міняються.
+  withUserContext: (_userId: string, fn: (db: unknown) => unknown) =>
+    fn(mockPool),
   ensureSchema: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -97,23 +144,18 @@ vi.mock("./../../http/rateLimit.js", async () => {
   };
 });
 
-// Anthropic handle for the day-plan replay. Reuses the shared mock
-// harness (`apps/server/src/test/__mocks__/anthropic.ts`) — same shape
-// every other handler test uses — so the day-plan handler's call to
-// `anthropicMessages` returns the exact JSON the pact expects without
-// ever touching api.anthropic.com.
-vi.mock("./../../lib/anthropic.js", async () =>
-  (
-    await import("./../../test/__mocks__/anthropic.js")
-  ).createAnthropicMockHandle(),
-);
+// Day-plan replay goes through `invokeLLM()` (nutrition uses
+// `LLM_NUTRITION_PROVIDER`, default openrouter → stub without a key).
+// Mock the provider layer — same pattern as `day-plan.test.ts`.
+vi.mock("./../../lib/llm/provider.js", () => ({
+  getLLMProvider: vi.fn(() => ({ name: "stub" })),
+  invokeLLM: invokeLLMMock,
+}));
 
 import { createApp } from "./../../app.js";
-import { anthropicMessages as _anthropicMessages } from "./../../lib/anthropic.js";
-import { anthropicResponses } from "./../../test/__mocks__/anthropic.js";
 import type { Mock } from "vitest";
 
-const anthropicMessages = _anthropicMessages as unknown as Mock;
+const invokeLLM = invokeLLMMock as unknown as Mock;
 
 // ── Pact file loading ────────────────────────────────────────────────────────
 
@@ -145,6 +187,15 @@ interface PactFile {
   interactions: PactInteraction[];
 }
 
+/**
+ * AI-CONTEXT: consumer-тести @sergeant/api-client ПЕРЕЗАПИСУЮТЬ той самий
+ * PACT_FILE під час свого прогону (PactV4 пише не-атомарно). Паралельний
+ * turbo-запуск (`--concurrency=2`) зрідка читав файл посеред запису —
+ * «SyntaxError: Unexpected end of JSON input» (CI-флейк, уперше зловлений
+ * на PR #820 з web-only діфом). Структурний фікс — turbo.json:
+ * `@sergeant/server#test` тепер dependsOn `@sergeant/api-client#test`,
+ * тож provider-верифікація стартує лише ПІСЛЯ завершення consumer-запису.
+ */
 function loadPact(): PactFile {
   if (!fs.existsSync(PACT_FILE)) {
     throw new Error(
@@ -174,6 +225,33 @@ function findInteraction(
   return match;
 }
 
+/**
+ * `GET /api/v1/me/preferences` has two consumer interactions (consented +
+ * legacy-server-without-healthDataConsent). `findInteraction` only returns
+ * the first method+path match, so this variant additionally filters by a
+ * substring of `description` for the routes where more than one
+ * interaction shares the same method+path.
+ */
+function findInteractionByDescription(
+  pact: PactFile,
+  method: string,
+  pathStr: string,
+  descriptionIncludes: string,
+): PactInteraction {
+  const match = pact.interactions.find(
+    (i) =>
+      i.request.method === method &&
+      i.request.path === pathStr &&
+      i.description.includes(descriptionIncludes),
+  );
+  if (!match) {
+    throw new Error(
+      `No interaction in pact for ${method} ${pathStr} matching description "${descriptionIncludes}".`,
+    );
+  }
+  return match;
+}
+
 // ── Test env / mock reset ────────────────────────────────────────────────────
 
 // `ENV_KEYS` here are the per-test env vars (VAPID is module-load-once but
@@ -191,7 +269,7 @@ beforeEach(() => {
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue(null);
-  anthropicMessages.mockReset();
+  invokeLLM.mockReset();
   for (const k of ENV_KEYS) delete process.env[k];
 });
 
@@ -207,14 +285,39 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 22 expected consumer interactions across 14 routes", () => {
+  it("pact file has 86 expected consumer interactions across 53 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
-    expect(pact.interactions).toHaveLength(22);
+    // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
+    // (файлова гілка `statement/preview` і порожній draft
+    // `screenshot/analyze` із причиною) — `expectedRoutes` нижче не росте.
+    // 76, не 75: +1 інтеракція на НОВОМУ маршруті `import/recent` (#930),
+    // тож цього разу росте і `expectedRoutes`.
+    // 79, не 76: +3 інтеракції `hubPrefs` (PR-S13, міграція 137) на вже
+    // покритому `GET /api/v1/me/preferences` — дзеркально до трьох, які
+    // свого часу додав `activeModules`. Маршрут той самий, тож
+    // `expectedRoutes` не росте: змінилась лише кількість інтеракцій.
+    // 80, не 79: +1 інтеракція на вже покритому
+    // `GET /api/v1/silpo/sync-state` — третій стан, якого контракт доти не
+    // знав узагалі: підключено, але синк ПАДАЄ. Саме його відсутність на
+    // дроті й робила два тижні мертвого синку невидимими (міграція 138).
+    // Маршрут той самий, тож `expectedRoutes` не росте.
+    // 81, не 80: ще одна на тому ж маршруті — відповідь СТАРОГО сервера,
+    // без полів провалу. Web і server деплояться окремо, тож це не
+    // гіпотетичний випадок, а вікно між двома деплоями.
+    // 84, не 81: +3 інтеракції на НОВИХ маршрутах silpo — `PUT
+    // /silpo/settings` і пара `pantry-claim` / `pantry-release` (кожен по
+    // одній), тож росте і `expectedRoutes`.
+    // 86, не 84: +2 інтеракції billing на ВЖЕ покритих маршрутах —
+    // `GET /billing/status` зі `subscription.cancelAtPeriodEnd: true` і
+    // `POST /billing/cancel` → 409 `NO_ACTIVE_SUBSCRIPTION`. Маршрути ті
+    // самі, тож `expectedRoutes` не росте.
+    expect(pact.interactions).toHaveLength(86);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
       "GET /api/v1/mono/accounts",
+      "GET /api/v1/mono/jars",
       "POST /api/v1/push/register",
       "POST /api/v1/nutrition/analyze-photo",
       "POST /api/v1/chat",
@@ -223,12 +326,77 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       "GET /api/v1/mono/transactions",
       "GET /api/v1/coach/memory",
       "GET /api/v1/barcode",
+      "GET /api/v1/chat/usage",
       "POST /api/v1/nutrition/day-plan",
       // sync-v2 + food-search + parse-pantry extension (4)
       "GET /api/v1/food-search",
       "GET /api/v2/sync/pull",
       "POST /api/v2/sync/push",
       "POST /api/v1/nutrition/parse-pantry",
+      // billing + privat + finyk consumer expansion (10)
+      "GET /api/v1/billing/providers",
+      "GET /api/v1/billing/status",
+      "POST /api/v1/billing/cancel",
+      "POST /api/v1/billing/checkout",
+      "POST /api/v1/billing/portal",
+      "GET /api/v1/privat",
+      "GET /api/v1/privat/status",
+      "POST /api/v1/privat/connect",
+      "POST /api/v1/privat/disconnect",
+      "POST /api/v1/finyk/manual-expenses",
+      // preferences/profile consumer expansion (3) — pre-beta schema-debt
+      // audit (2026-08-04): healthDataConsent + write-through user_profile.
+      "GET /api/v1/me/preferences",
+      "GET /api/v1/me/profile",
+      "PUT /api/v1/me/profile",
+      // activeModules (міграція 116, знахідка B2 браузерного аудиту
+      // 2026-08-05) додала 3 інтеракції на вже наявний
+      // `GET /api/v1/me/preferences` — маршрут той самий, тож набір
+      // маршрутів не змінився, змінилась лише їх кількість (41 → 44).
+      //
+      // Receipt-scan + bulk-import consumer expansion (9 new routes, 14
+      // interactions — 2026-08-17): receipt-scan v1
+      // (`packages/api-client/src/__tests__/contracts/
+      // finyk-receipts.contract.test.ts`) + Фаза 2 масового ведення
+      // (`.../finyk-import.contract.test.ts`).
+      "POST /api/v1/finyk/receipts/lookup",
+      "POST /api/v1/finyk/receipts/analyze",
+      "POST /api/v1/finyk/receipts",
+      "GET /api/v1/finyk/receipts/501",
+      "POST /api/v1/finyk/import/screenshot/analyze",
+      "POST /api/v1/finyk/import/statement/preview",
+      "POST /api/v1/finyk/import/commit",
+      "GET /api/v1/finyk/import/batches/88",
+      "DELETE /api/v1/finyk/import/batches/88",
+      // плашка «залий документи» в Огляді Фініка (#930): 1 інтеракція /
+      // 1 новий маршрут — дати останніх успішних батчів (75 → 76, 49 → 50).
+      "GET /api/v1/finyk/import/recent",
+      // silpo розлінк хибної пари (аудит 2026-08-24): 1 інтеракція / 1 маршрут
+      "DELETE /api/v1/silpo/receipts/link/mono-tx-1",
+      // silpo ручне привʼязування + «Повернути» (2026-08-25): 1 / 1
+      "POST /api/v1/silpo/receipts/link/mono-tx-1",
+      // silpo walking-skeleton (PR #819): 7 інтеракцій / 6 маршрутів
+      // (sync-state має і success-, і disabled-інтеракцію; 44 → 51).
+      "GET /api/v1/silpo/receipts",
+      "GET /api/v1/silpo/receipts/rcpt-pact-0001",
+      "GET /api/v1/silpo/sync-state",
+      "POST /api/v1/silpo/disconnect",
+      "POST /api/v1/silpo/sync",
+      "POST /api/v1/silpo/wipe",
+      // silpo кошик, трек G (PR #819): 5 інтеракцій / 3 маршрути
+      // (preview має matched- і unmatched-інтеракцію, cart — звичайний,
+      // порожній і schema-drift варіанти; 51 → 56).
+      //
+      // +1 інтеракція на вже наявний `GET /api/v1/silpo/receipts`
+      // (фільтр `?transactionId=`, раунд-4 ревʼю) — маршрут той самий,
+      // тож набір маршрутів не змінився, лише кількість інтеракцій.
+      "GET /api/v1/silpo/cart",
+      "POST /api/v1/silpo/cart/preview",
+      "POST /api/v1/silpo/cart/apply",
+      // silpo налаштування і комора: 3 інтеракції / 3 маршрути
+      "PUT /api/v1/silpo/settings",
+      "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-claim",
+      "POST /api/v1/silpo/receipts/rcpt-pact-0001/pantry-release",
     ]);
     const actualRoutes = new Set(
       pact.interactions.map((i) => `${i.request.method} ${i.request.path}`),
@@ -269,6 +437,142 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
 
     expect(res.status).toBe(interaction.response.status);
     expect(res.body).toEqual(expected);
+  });
+
+  // ── GET /api/v1/me/preferences ─────────────────────────────────────────────
+  //
+  // Single SELECT against `user_preferences`. Replays the "consented"
+  // interaction (`healthDataConsent: true`) — the sibling "legacy server"
+  // interaction is a pure consumer-side default-fallback test (no server
+  // round-trip to replay: an old DB row simply has the column, migration
+  // 111 backfills `DEFAULT false`).
+  it("GET /api/v1/me/preferences replays against the real handler (settings persona, healthDataConsent)", async () => {
+    const interaction = findInteractionByDescription(
+      pact,
+      "GET",
+      "/api/v1/me/preferences",
+      "consented",
+    );
+    const expected = interaction.response.body as {
+      analytics: boolean;
+      aiMemory: boolean;
+      pushNotifications: boolean;
+      sergeantNudges: boolean;
+      pushDailyCap: number;
+      healthDataConsent: boolean;
+      activeModules: string[] | null;
+      hubPrefs: Record<string, unknown> | null;
+      updatedAt: string | null;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          analytics: expected.analytics,
+          ai_memory: expected.aiMemory,
+          push_notifications: expected.pushNotifications,
+          sergeant_nudges: expected.sergeantNudges,
+          push_daily_cap: expected.pushDailyCap,
+          health_data_consent: expected.healthDataConsent,
+          // Nullable-колонка без DEFAULT (міграція 116): персона pact-а
+          // ще не робила вибору модулів, тож `pg` віддає `null`, а
+          // серіалізатор — `activeModules: null` («сервер не знає
+          // вибору»), НЕ `[]` («вибір є і він порожній»).
+          active_modules: expected.activeModules,
+          // Nullable-колонка без DEFAULT (міграція 137), та сама трійця
+          // станів, що в `active_modules` вище: персона pact-а ще не
+          // синхронізувала налаштування хаба, тож `pg` віддає `null`, а
+          // серіалізатор — `hubPrefs: null` («сервер не знає, лиши
+          // локальні»), НЕ `{}` («знає, і всі дефолтні»).
+          hub_prefs: expected.hubPrefs,
+          updated_at: expected.updatedAt,
+        },
+      ],
+    });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    expect(typeof res.body.healthDataConsent).toBe("boolean");
+    // Ключ мусить бути присутній навіть коли вибору немає — на цьому
+    // тримається три-станова семантика на клієнті.
+    expect(res.body).toHaveProperty("activeModules", null);
+    // Те саме для `hubPrefs`: ключ мусить бути присутній навіть коли
+    // серверних налаштувань немає — інакше клієнт не відрізнить «не знаю»
+    // від «знаю, і все дефолтне», і затре локальні налаштування.
+    expect(res.body).toHaveProperty("hubPrefs", null);
+  });
+
+  // ── GET /api/v1/me/profile ─────────────────────────────────────────────────
+  //
+  // Write-through singleton (migration 115, NOT oplog-sync). No
+  // `user_profile` row for this pact persona → the handler's "defaults,
+  // not 404" branch fires: `{ profile: {}, updatedAt: null }`.
+  it("GET /api/v1/me/profile replays against the real handler (settings persona, defaults-not-404)", async () => {
+    const interaction = findInteraction(pact, "GET", "/api/v1/me/profile");
+    const expected = interaction.response.body as {
+      profile: Record<string, unknown>;
+      updatedAt: string | null;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+
+    const app = createApp();
+    const res = await request(app)
+      .get(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay");
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+  });
+
+  // ── PUT /api/v1/me/profile ─────────────────────────────────────────────────
+  //
+  // Single INSERT ... ON CONFLICT DO UPDATE ... RETURNING against
+  // `user_profile`. The pact locks a small biometrics payload roundtrip.
+  it("PUT /api/v1/me/profile replays against the real handler (settings persona, write-through roundtrip)", async () => {
+    const interaction = findInteraction(pact, "PUT", "/api/v1/me/profile");
+    const expected = interaction.response.body as {
+      profile: Record<string, unknown>;
+      updatedAt: string | null;
+    };
+    const sentBody = interaction.request.body as {
+      profile: Record<string, unknown>;
+    };
+
+    getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
+    // `upsertUserProfile` пише в транзакції (LWW-гард `memoryBank`):
+    // BEGIN, SELECT … FOR UPDATE, INSERT … RETURNING, COMMIT на клієнті пулу.
+    const client = {
+      query: vi.fn(async (sql: string) =>
+        String(sql).includes("RETURNING payload")
+          ? {
+              rows: [
+                { payload: expected.profile, updated_at: expected.updatedAt },
+              ],
+            }
+          : { rows: [] },
+      ),
+      release: vi.fn(),
+    };
+    mockPool.connect.mockResolvedValueOnce(client);
+
+    const app = createApp();
+    const res = await request(app)
+      .put(interaction.request.path)
+      .set("Authorization", "Bearer pact-replay")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send(sentBody);
+
+    expect(res.status).toBe(interaction.response.status);
+    expect(res.body).toEqual(expected);
+    expect(typeof res.body.updatedAt).toBe("string");
   });
 
   // ── GET /api/v1/mono/accounts ──────────────────────────────────────────────
@@ -559,6 +863,14 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         servingGrams: number | null;
         source: "off" | "usda" | "upcitemdb";
         partial?: boolean;
+        imageUrl?: string | null;
+        nutrients?: {
+          fiber_100g: number | null;
+          sugars_100g: number | null;
+          saturatedFat_100g: number | null;
+          salt_100g: number | null;
+          alcohol_100g: number | null;
+        };
       };
     };
 
@@ -572,14 +884,27 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         product_name_uk: expected.product.name,
         product_name: expected.product.name,
         brands: expected.product.brand,
+        // Нутрієнти теж їдуть із пакта, а не вписані тут окремо: інакше
+        // мок і очікування розійшлися б, і тест перестав би бути доказом
+        // того, що ці поля справді проходять шлях OFF → нормалізатор →
+        // відповідь. `saturated-fat_100g` — саме з дефісом, так його
+        // називає OFF.
         nutriments: {
           "energy-kcal_100g": expected.product.kcal_100g,
           proteins_100g: expected.product.protein_100g,
           fat_100g: expected.product.fat_100g,
           carbohydrates_100g: expected.product.carbs_100g,
+          fiber_100g: expected.product.nutrients?.fiber_100g ?? null,
+          sugars_100g: expected.product.nutrients?.sugars_100g ?? null,
+          "saturated-fat_100g":
+            expected.product.nutrients?.saturatedFat_100g ?? null,
+          salt_100g: expected.product.nutrients?.salt_100g ?? null,
+          alcohol_100g: expected.product.nutrients?.alcohol_100g ?? null,
         },
         serving_size: expected.product.servingSize,
         serving_quantity: expected.product.servingGrams,
+        // Найдрібніший варіант — саме його бере нормалізатор першим.
+        image_front_small_url: expected.product.imageUrl ?? undefined,
       },
     };
 
@@ -610,12 +935,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
 
   // ── POST /api/v1/nutrition/day-plan (Anthropic-stubbed) ────────────────────
   //
-  // Anthropic-gated. We stub `anthropicMessages` (via the shared mock
-  // harness) to return the canned plan JSON the consumer pact recorded.
-  // The pact's `rawText: null` enforces that the handler's "JSON parse
-  // succeeded" branch fires (otherwise rawText would be the raw model
-  // output). `AI_QUOTA_DISABLED=true` + `ANTHROPIC_API_KEY=…` are
-  // pinned at module load via `vi.hoisted`.
+  // LLM-gated. We stub `invokeLLM` to return the canned plan JSON the
+  // consumer pact recorded. The pact's `rawText: null` enforces that the
+  // handler's "JSON parse succeeded" branch fires (otherwise rawText would
+  // be the raw model output). `AI_QUOTA_DISABLED=true` +
+  // `ANTHROPIC_API_KEY=…` are pinned at module load via `vi.hoisted`.
   it("POST /api/v1/nutrition/day-plan replays against the real handler with Anthropic stub (nutrition persona)", async () => {
     const interaction = findInteraction(
       pact,
@@ -645,14 +969,21 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-001" });
+    // КБЖВ-план стоїть за `requireHealthConsent()` (#1250): без згоди на
+    // дані про здоровʼя роут віддає 403. Контракт описує людину, що згоду
+    // дала, тож перший запит у БД (перевірка згоди) її й повертає.
+    queryMock.mockResolvedValueOnce({
+      rows: [{ health_data_consent: true }],
+    });
     // The pact envelope is `{ plan, rawText: null }`. The day-plan
     // handler builds that envelope from the normalised plan + the raw
     // model output — for rawText to be `null` the model JSON must
     // already match the plan shape so `extractJsonFromText` succeeds.
     // We hand the mock exactly that JSON.
-    anthropicMessages.mockResolvedValueOnce(
-      anthropicResponses.text(JSON.stringify(expected.plan)),
-    );
+    invokeLLM.mockResolvedValueOnce({
+      ok: true,
+      text: JSON.stringify(expected.plan),
+    });
 
     const app = createApp();
     const res = await request(app)
@@ -671,8 +1002,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
 
     expect(res.status).toBe(interaction.response.status);
     expect(res.body).toEqual(expected);
-    // Sanity: the Anthropic stub was actually called (no real upstream).
-    expect(anthropicMessages).toHaveBeenCalledTimes(1);
+    // Sanity: the LLM stub was actually called (no real upstream).
+    expect(invokeLLM).toHaveBeenCalledTimes(1);
   });
 
   // ── AI-flow endpoints — explicit gap markers ───────────────────────────────
@@ -686,12 +1017,64 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   //
   // We instead lock the pact contract to a fixed expected wire-shape
   // and leave a `todo` marker so future maintenance knows where to
-  // extend coverage. See `docs/architecture/api-contracts.md
+  // extend coverage. See `docs/engineering/architecture/api-contracts.md
   // § Extending coverage`.
   it.todo(
     "POST /api/v1/chat — replay against real chat handler (requires streaming Anthropic stub)",
   );
   it.todo(
     "POST /api/v1/nutrition/analyze-photo — replay against real handler (requires vision Anthropic stub)",
+  );
+
+  // ── Finyk receipt-scan + bulk-import — explicit gap markers ────────────────
+  //
+  // 9 new routes (14 interactions) added by the receipt-scan v1 +
+  // "Масове ведення" consumer expansion. Each handler either calls an
+  // external service (DPS `chkAll` XML lookup, the vision LLM) or runs a
+  // multi-statement Postgres transaction (some with `SAVEPOINT` — the
+  // mono-vs-manual-expense link decision in `save.ts`, the mono/dedup
+  // tiers in `commit.ts`). Replaying them here would duplicate the mock
+  // chains already exercised — against the SAME real handler code and
+  // the SAME `.parse()` calls against the `@sergeant/shared` receipts/
+  // import zod schemas — by the dedicated handler-level tests below
+  // (every one of them calls the exported handler directly and asserts
+  // `res.body`/`res.statusCode`, so the "real serializer" runtime proof
+  // Hard Rule #3 asks for already exists, just not replayed via this
+  // pact file):
+  //   - `apps/server/src/modules/finyk/receipts/lookup.test.ts`
+  //   - `apps/server/src/modules/finyk/receipts/analyze.test.ts`
+  //   - `apps/server/src/modules/finyk/receipts/save.test.ts`
+  //   - `apps/server/src/modules/finyk/receipts/get.test.ts`
+  //   - `apps/server/src/modules/finyk/import/screenshotAnalyze.test.ts`
+  //   - `apps/server/src/modules/finyk/import/statementPreview.test.ts`
+  //   - `apps/server/src/modules/finyk/import/commit.test.ts`
+  //   - `apps/server/src/modules/finyk/import/batches.test.ts`
+  //   - `apps/server/src/routes/finyk.route.test.ts` (auth-guard + wiring)
+  it.todo(
+    "POST /api/v1/finyk/receipts/lookup — replay against real handler (requires DPS chkAll HTTP stub)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/receipts/analyze — replay against real handler (requires vision LLM stub)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/receipts — replay against real handler (transactional save + mono matcher)",
+  );
+  it.todo(
+    "GET /api/v1/finyk/receipts/{id} — replay against real handler (multi-query SELECT)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/import/screenshot/analyze — replay against real handler (requires vision LLM stub)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/import/statement/preview — replay against real handler (CSV parsing + «сітка 2» duplicateLikely-запит у БД, duplicateDetect.ts)",
+  );
+  it.todo(
+    "POST /api/v1/finyk/import/commit — replay against real handler (transactional commit + dedup tiers)",
+  );
+  it.todo(
+    "GET /api/v1/finyk/import/batches/{id} — replay against real handler (single SELECT)",
+  );
+  it.todo(
+    "DELETE /api/v1/finyk/import/batches/{id} — replay against real handler (transactional undo/tombstone)",
   );
 });

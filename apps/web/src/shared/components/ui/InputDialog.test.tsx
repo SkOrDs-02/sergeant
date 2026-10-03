@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe("InputDialog — useApiForm + zod (Item #8 round-13)", () => {
   it("renders nothing when closed", () => {
-    render(<InputDialog open={false} title="Введи код" />);
+    render(<InputDialog open={false} title="Введи код" confirmLabel="ОК" />);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -26,6 +26,7 @@ describe("InputDialog — useApiForm + zod (Item #8 round-13)", () => {
         open
         title="Введи код"
         defaultValue=""
+        confirmLabel="ОК"
         onConfirm={onConfirm}
       />,
     );
@@ -66,6 +67,7 @@ describe("InputDialog — useApiForm + zod (Item #8 round-13)", () => {
       <InputDialog
         open
         title="Введи код"
+        confirmLabel="ОК"
         cancelLabel="Скасувати"
         onConfirm={onConfirm}
         onCancel={onCancel}
@@ -82,5 +84,21 @@ describe("InputDialog — useApiForm + zod (Item #8 round-13)", () => {
     fireEvent.click(cancelButtons[cancelButtons.length - 1]!);
     expect(onCancel).toHaveBeenCalled();
     expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("portals to document.body with Sheet/Modal-aligned black scrim", () => {
+    render(
+      <InputDialog
+        open
+        title="Portal?"
+        confirmLabel="ОК"
+        cancelLabel="Скасувати"
+      />,
+    );
+    const dialog = screen.getByRole("dialog");
+    expect(document.body.contains(dialog)).toBe(true);
+    const scrim = screen.getAllByRole("button", { name: "Скасувати" })[0];
+    expect(scrim?.className).toContain("bg-black/40");
+    expect(scrim?.className).not.toContain("bg-text/40");
   });
 });

@@ -14,7 +14,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const capturePostHogEventFn = vi.fn();
 const safeReadLSFn = vi.fn<(key: string) => unknown>(() => null);
 const safeWriteLSFn = vi.fn<(key: string, value: unknown) => void>();
-const syncEventToMemoryFn = vi.fn();
 
 vi.mock("./posthog", () => ({
   capturePostHogEvent: capturePostHogEventFn,
@@ -31,11 +30,6 @@ vi.mock("@shared/lib/storage/storage", () => ({
   safeListLSKeys: vi.fn(() => []),
 }));
 
-// productMemorySync uses fetch internally; mock it so tests stay offline.
-vi.mock("./productMemorySync", () => ({
-  syncEventToMemory: syncEventToMemoryFn,
-}));
-
 beforeEach(() => {
   // Reset analytics module so module-level state (memoryLog, flushTimer,
   // flushListenersAttached) is fresh for every test. Must come before the
@@ -46,7 +40,6 @@ beforeEach(() => {
   safeReadLSFn.mockReset();
   safeReadLSFn.mockReturnValue(null);
   safeWriteLSFn.mockReset();
-  syncEventToMemoryFn.mockReset();
 
   localStorage.clear();
   const w = window as Window & {
@@ -64,9 +57,22 @@ afterEach(() => {
   delete w.DEBUG_ANALYTICS;
 });
 
+/**
+ * Свіжий `analytics` + згода на аналітику (за замовчуванням дана, бо решта
+ * тестів перевіряє транспорт). `setAnalyticsConsent` пише рішення у storage,
+ * тож лічильник `safeWriteLS` скидаємо, щоб він міряв лише ring-buffer.
+ */
+async function loadAnalytics(granted = true) {
+  const consent = await import("./analyticsConsent");
+  if (granted) consent.setAnalyticsConsent(true);
+  safeWriteLSFn.mockClear();
+  const analytics = await import("./analytics");
+  return { ...analytics, ...consent };
+}
+
 describe("trackEvent", () => {
   it("пише подію у memoryLog і форвардить у PostHog", async () => {
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     trackEvent("demo_event", { foo: "bar" });
 
     // In DEV (vitest), window.__hubAnalytics mirrors the in-memory ring-buffer.
@@ -80,7 +86,7 @@ describe("trackEvent", () => {
 
   it("записує у storage після debounce-flush", async () => {
     vi.useFakeTimers();
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     trackEvent("demo_event", { foo: "bar" });
 
     // Before the 500ms debounce fires, safeWriteLS is not called.
@@ -98,7 +104,7 @@ describe("trackEvent", () => {
   });
 
   it("форвардить подію у PostHog transport", async () => {
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     trackEvent("hub_opened", { source: "fab" });
 
     expect(capturePostHogEventFn).toHaveBeenCalledWith("hub_opened", {
@@ -107,7 +113,7 @@ describe("trackEvent", () => {
   });
 
   it("ігнорує виклики без name", async () => {
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     // Runtime-guard: порожній рядок / не-рядок — no-op. Сигнатура
     // `trackEvent` не типізована (JS-compatible), тому передаємо як є.
     trackEvent("");
@@ -124,7 +130,7 @@ describe("trackEvent", () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_POSTHOG_KEY", "phc_smoke_test_key");
 
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     trackEvent("demo_event", { foo: "bar" });
 
     const w = window as Window & { __hubAnalytics?: unknown[] };
@@ -141,7 +147,7 @@ describe("trackEvent", () => {
     vi.stubEnv("DEV", false);
     vi.stubEnv("VITE_POSTHOG_KEY", "");
 
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     trackEvent("demo_event", { foo: "bar" });
 
     const w = window as Window & { __hubAnalytics?: unknown[] };
@@ -149,7 +155,7 @@ describe("trackEvent", () => {
   });
 
   it("нормалізує не-object payload у порожній обʼєкт", async () => {
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     // Runtime-coerce: не-object payload повинен стати {}.
     trackEvent(
       "weird_payload",
@@ -164,7 +170,7 @@ describe("trackEvent", () => {
     (window as Window & { DEBUG_ANALYTICS?: boolean }).DEBUG_ANALYTICS = true;
     vi.stubEnv("DEV", true);
 
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     try {
       trackEvent("pii_leak_guard", {
@@ -206,7 +212,7 @@ describe("trackEvent", () => {
     (window as Window & { DEBUG_ANALYTICS?: boolean }).DEBUG_ANALYTICS = true;
     vi.stubEnv("DEV", true);
 
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     try {
       // "userContact" is not in REDACT_KEY_NAMES, so scrubPII leaves the
@@ -233,7 +239,7 @@ describe("trackEvent", () => {
     (window as Window & { DEBUG_ANALYTICS?: boolean }).DEBUG_ANALYTICS = true;
     vi.stubEnv("DEV", true);
 
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     try {
       trackEvent("onboarding_step", {
@@ -252,7 +258,7 @@ describe("trackEvent", () => {
     vi.stubEnv("DEV", true);
     // DEBUG_ANALYTICS is NOT set on window.
 
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     try {
       trackEvent("page_view", { path: "/dashboard" });
@@ -269,10 +275,39 @@ describe("trackEvent", () => {
     capturePostHogEventFn.mockImplementationOnce(() => {
       throw new Error("posthog explosion");
     });
-    const { trackEvent } = await import("./analytics");
+    const { trackEvent } = await loadAnalytics();
     expect(() => trackEvent("safe_event", { foo: 1 })).not.toThrow();
     // In-memory ring-buffer still receives the event.
     const w = window as Window & { __hubAnalytics?: unknown[] };
     expect(w.__hubAnalytics).toHaveLength(1);
+  });
+
+  describe("згода на аналітику (PostHog-транспорт)", () => {
+    it("до згоди подія лишається в ring-buffer, але в PostHog не шле", async () => {
+      const { trackEvent } = await loadAnalytics(false);
+      trackEvent("hub_opened", { source: "fab" });
+
+      expect(capturePostHogEventFn).not.toHaveBeenCalled();
+      const w = window as Window & { __hubAnalytics?: unknown[] };
+      expect(w.__hubAnalytics).toHaveLength(1);
+    });
+
+    it("після «Дозволити» шле", async () => {
+      const { trackEvent, setAnalyticsConsent } = await loadAnalytics(false);
+      trackEvent("before", {});
+      setAnalyticsConsent(true);
+      trackEvent("after", { a: 1 });
+
+      expect(capturePostHogEventFn).toHaveBeenCalledTimes(1);
+      expect(capturePostHogEventFn).toHaveBeenCalledWith("after", { a: 1 });
+    });
+
+    it("після «Ні, дякую» не шле", async () => {
+      const { trackEvent, setAnalyticsConsent } = await loadAnalytics(true);
+      setAnalyticsConsent(false);
+      trackEvent("after_decline", {});
+
+      expect(capturePostHogEventFn).not.toHaveBeenCalled();
+    });
   });
 });

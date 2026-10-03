@@ -62,6 +62,17 @@ await build({
   legalComments: "none",
 });
 
+// Разові операторські скрипти. Runtime-образ несе лише `dist-server/` (ні
+// `src/`, ні `tsx`, ні pnpm), тож `pnpm <script>` у терміналі контейнера
+// Coolify не запускається: скрипт, який має бігти на проді, мусить бути тут.
+await build({
+  ...base,
+  entryPoints: ["src/scripts/healthTextBackfill.ts"],
+  outfile: "dist-server/healthTextBackfill.js",
+  minify: false,
+  legalComments: "none",
+});
+
 // `runPendingSqlMigrations` resolves `migrationsDir` as
 // `path.join(__dirname, "migrations")`, де `__dirname` після bundling — це
 // `dist-server/`. esbuild не копіює нон-JS ассети сам, тому без цього кроку

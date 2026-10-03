@@ -72,4 +72,68 @@ describe("ProgressRing", () => {
     // 50% → offset is ≈ circumference/2
     expect(offset).toBeCloseTo(circumference / 2, 2);
   });
+
+  it("incomplete=true dashes the track ring and appends a text a11y suffix", () => {
+    const { getByRole } = render(
+      <ProgressRing
+        value={50}
+        max={100}
+        incomplete
+        aria-label="Калорії: 500 з 2000"
+      />,
+    );
+    const ring = getByRole("progressbar");
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBe("4 3");
+    expect(ring.getAttribute("aria-label")).toBe(
+      "Калорії: 500 з 2000 · неповні дані за день",
+    );
+  });
+
+  it("onHero routes the arc through the -on-hero chart tier", () => {
+    const { getByRole } = render(
+      <ProgressRing value={50} variant="nutrition" onHero />,
+    );
+    const circles = getByRole("progressbar").querySelectorAll("circle");
+    expect(circles[1]!.getAttribute("stroke")).toBe(
+      "rgb(var(--c-chart-nutrition-on-hero))",
+    );
+  });
+
+  it("onHero swaps status variants too — not just module ones", () => {
+    const { getByRole } = render(
+      <ProgressRing value={50} variant="warning" onHero />,
+    );
+    const circles = getByRole("progressbar").querySelectorAll("circle");
+    expect(circles[1]!.getAttribute("stroke")).toBe(
+      "rgb(var(--c-chart-warning-on-hero))",
+    );
+  });
+
+  it("onHero flips the track to hero-ink at a readable opacity", () => {
+    const { getByRole } = render(
+      <ProgressRing value={50} variant="nutrition" onHero />,
+    );
+    const ring = getByRole("progressbar");
+    const track = ring.querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke")).toBe("currentColor");
+    expect(track!.getAttribute("stroke-opacity")).toBe("0.3");
+    expect(ring.className).toContain("text-hero-ink");
+  });
+
+  it("without onHero a status variant keeps the currentColor path", () => {
+    const { getByRole } = render(<ProgressRing value={50} variant="warning" />);
+    const circles = getByRole("progressbar").querySelectorAll("circle");
+    expect(circles[1]!.getAttribute("stroke")).toBe("currentColor");
+    expect(circles[0]!.getAttribute("stroke-opacity")).toBe("0.15");
+    expect(getByRole("progressbar").className).toContain("text-warning");
+  });
+
+  it("incomplete=false (default) keeps the track ring solid", () => {
+    const { getByRole } = render(
+      <ProgressRing value={50} max={100} aria-label="Калорії: 500 з 2000" />,
+    );
+    const track = getByRole("progressbar").querySelectorAll("circle")[0];
+    expect(track!.getAttribute("stroke-dasharray")).toBeNull();
+  });
 });

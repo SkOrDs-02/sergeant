@@ -5,6 +5,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { TxRow, type TxRowTx } from "./TxRow";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import type { MerchantRuleIndex } from "@sergeant/finyk-domain/lib/merchantRules";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
 
 interface TxListItemProps {
@@ -13,18 +14,26 @@ interface TxListItemProps {
   selectMode: boolean;
   selected: boolean;
   hidden: boolean;
+  /** «Не враховувати у статистиці» (PR-F4) — threaded straight to `TxRow`. */
+  isExcludedFromStats?: boolean | undefined;
+  /** Нога скасованого платежу — threaded straight to `TxRow`. */
+  isCancelled?: boolean | undefined;
   overrideCatId?: string | null | undefined;
+  /** Правила мерчантів — threaded straight to `TxRow`. */
+  merchantRules?: MerchantRuleIndex | undefined;
   txSplits: TxSplitsMap;
+  /** User's own free-text annotation for this transaction. */
+  note?: string | undefined;
   accounts: readonly MonoAccount[];
   hideAmount: boolean;
   customCategories?: readonly CustomCategoryInput[] | undefined;
+  /** Threaded straight to `TxRow` — see its docstring. */
+  hasReceipt?: boolean | undefined;
   onToggleSelect: (id: string) => void;
   onSwipeHideTx?: ((id: string) => void) | undefined;
   onSwipeDeleteManual?: ((tx: TxRowTx) => void) | undefined;
-  onEditManual?: ((manualId?: string) => void) | undefined;
-  onHideTx?: ((id: string) => void) | undefined;
-  onCatChange?: ((id: string, categoryId: string | null) => void) | undefined;
-  onSplitChange?: ((id: string, splits: unknown) => void) | undefined;
+  /** Canonical entry point for both manual and imported transaction details. */
+  onOpenDetails?: ((tx: TxRowTx) => void) | undefined;
 }
 
 function TxListItemImpl({
@@ -33,18 +42,20 @@ function TxListItemImpl({
   selectMode,
   selected,
   hidden,
+  isExcludedFromStats = false,
+  isCancelled = false,
   overrideCatId,
+  merchantRules,
   txSplits,
+  note,
   accounts,
   hideAmount,
   customCategories,
+  hasReceipt = false,
   onToggleSelect,
   onSwipeHideTx,
   onSwipeDeleteManual,
-  onEditManual,
-  onHideTx,
-  onCatChange,
-  onSplitChange,
+  onOpenDetails,
 }: TxListItemProps) {
   const isManual = !!tx._manual;
   const canSwipeLeft = isManual
@@ -55,7 +66,6 @@ function TxListItemImpl({
     <div
       className={cn(
         "px-1 sm:px-2 relative",
-        rowIndex % 2 === 1 && "bg-panelHi/25",
         selectMode && selected && "bg-primary/8",
       )}
     >
@@ -95,9 +105,11 @@ function TxListItemImpl({
                 : () => onSwipeHideTx?.(tx.id)
               : undefined
           }
+          // Keep one directional destructive quick action only. Editing is
+          // canonical on row tap and cannot compete with the page swipe.
           onSwipeRight={undefined}
-          rightLabel="🙈 Приховати"
-          rightColor="bg-warning/80"
+          rightLabel={isManual ? "Видалити" : "Приховати"}
+          rightColor={isManual ? "bg-danger" : "bg-warning/80"}
           // Surface the swipe-affordance peek on the first row of the list
           // for first-time users only — `SwipeToAction` reads/writes a
           // single localStorage flag (`sergeant:swipe_hint_shown`) so the
@@ -105,25 +117,24 @@ function TxListItemImpl({
           // anywhere in the app.
           showHint={canSwipeLeft && rowIndex === 0}
           hintText={
-            isManual ? "Свайпни вліво — видалити" : "Свайпни вліво — приховати"
+            isManual ? "Свайпни вліво: видалити" : "Свайпни вліво: приховати"
           }
         >
           <TxRow
             tx={tx}
-            onClick={
-              isManual && typeof onEditManual === "function"
-                ? () => onEditManual(tx._manualId)
-                : undefined
-            }
-            onHide={isManual ? undefined : onHideTx}
+            onClick={onOpenDetails ? () => onOpenDetails(tx) : undefined}
             hidden={hidden}
+            isExcludedFromStats={isExcludedFromStats}
+            isCancelled={isCancelled}
             overrideCatId={overrideCatId}
-            onCatChange={isManual ? undefined : onCatChange}
+            merchantRules={merchantRules}
             accounts={accounts}
             hideAmount={hideAmount}
             txSplits={txSplits}
-            onSplitChange={isManual ? undefined : onSplitChange}
+            note={isManual ? undefined : note}
             customCategories={customCategories}
+            hasReceipt={hasReceipt}
+            divider={false}
           />
         </SwipeToAction>
       </div>

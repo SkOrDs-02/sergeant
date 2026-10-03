@@ -45,6 +45,10 @@
       "@nutrition/*": ["./src/modules/nutrition/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": [
+    "src/**/*",
+    "tests/fixtures/worlds/**/*",
+    "tests/utils/scenario.ts"
+  ],
   "exclude": ["node_modules", "dist", "src/sw.ts", "src/sw"]
 }

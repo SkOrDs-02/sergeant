@@ -1,7 +1,7 @@
 /**
  * Mobile mirror of `apps/web/src/core/observability/dualWriteTelemetry.ts`.
  *
- * Stage 8 of `docs/planning/storage-roadmap.md` defines three
+ * Stage 8 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` defines three
  * client-side decision-gate metrics:
  *
  *   - `<module>.sqlite.dualwrite.error_rate` ≤ 0.1 % over 14 d
@@ -18,7 +18,7 @@
  * the same trail in mobile Sentry events.
  *
  * **Stage 10 mobile mirror** introduces `recordParityCheck` for
- * Routine — see `../../modules/routine/lib/dualWrite/parity.ts`.
+ * Routine — see `../../modules/routine/lib/sqliteWriter/parity.ts`.
  *
  * @see apps/web/src/core/observability/dualWriteTelemetry.ts — single
  *      source-of-truth for the bucket boundaries and gate thresholds.

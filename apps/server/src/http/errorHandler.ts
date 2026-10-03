@@ -44,9 +44,20 @@ export const errorHandler: ErrorRequestHandler = (
   const operational = isOperationalError(err);
   const e = (err && typeof err === "object" ? err : {}) as AppLikeError;
   const status = Number(e.status) || (operational ? 400 : 500);
+  // Non-operational error carrying an explicit 4xx status is a client error
+  // surfaced by a library (body-parser: malformed JSON → 400, payload too
+  // large → 413, unsupported media → 415), not a programmer bug. Serialise it
+  // as a clean VALIDATION 4xx instead of the INTERNAL/"Server error" 5xx path.
+  const clientError = !operational && status >= 400 && status < 500;
   const code =
     (typeof e.code === "string" && e.code) ||
-    (status === 429 ? "RATE_LIMIT" : operational ? "BAD_REQUEST" : "INTERNAL");
+    (status === 429
+      ? "RATE_LIMIT"
+      : operational
+        ? "BAD_REQUEST"
+        : clientError
+          ? "VALIDATION"
+          : "INTERNAL");
   const mod = als.getStore()?.module || "unknown";
 
   try {
@@ -98,7 +109,7 @@ export const errorHandler: ErrorRequestHandler = (
   // Auth-власний хендлер (rate-limit, AppError, generic 500), приходить у
   // фронт без `message` → ловиться загальним fallback-ом на кшталт
   // «Помилка входу» без жодних деталей.
-  const userMessage = operational ? e.message : "Server error";
+  const userMessage = operational || clientError ? e.message : "Server error";
   // Surfacing `details` лише для operational помилок (4xx). Це формат,
   // який кидають `parseBody`/`parseQuery` через `cause: { details }`.
   // Для programmer-помилок (5xx) клієнт отримує тільки generic

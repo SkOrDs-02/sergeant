@@ -27,7 +27,30 @@ export function createCompressionMiddleware() {
 
     // Filter function to decide what to compress
     filter: (req: Request, res: Response) => {
-      // Don't compress Server-Sent Events
+      // Don't compress Server-Sent Events. This MUST key off the RESPONSE
+      // Content-Type, not the request `Accept` header (incident B34): the
+      // api-client always sends `Accept: application/json` — including for
+      // the streaming call, which goes through `http.raw`
+      // (packages/api-client/src/httpClient.ts JSON_MIME) — so a
+      // request-side-only check never matches. With that guard dead,
+      // `compression.filter()` saw a `text/event-stream` response, treated
+      // it as compressible (matches `^text/`), and gzip buffered the whole
+      // stream past the 1KB threshold: first token delayed, and the
+      // keep-alive `: ping` heartbeat comments (emitted every 15s
+      // specifically to keep idle proxies/load-balancers from timing the
+      // connection out) got stuck in the gzip buffer too — defeating the
+      // exact protection they exist for.
+      const contentType = res.getHeader("Content-Type");
+      if (
+        typeof contentType === "string" &&
+        contentType.includes("text/event-stream")
+      ) {
+        return false;
+      }
+
+      // Keep the request-header check too — harmless, and covers any
+      // client that DOES send a correct `Accept: text/event-stream`. Not
+      // the one that must work, though: see above.
       if (req.headers.accept === "text/event-stream") {
         return false;
       }

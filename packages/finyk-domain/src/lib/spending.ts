@@ -1,5 +1,6 @@
 import {
   getTxStatAmount,
+  txTimeMs,
   type TxSplitsLike,
   type SpendingTxLike,
 } from "./transactions.js";
@@ -67,8 +68,7 @@ export function calcFinykSpendingByDate(
   for (const tx of list) {
     if (!tx || excluded.has(tx.id)) continue;
     if (!(tx.amount < 0)) continue;
-    const ts = (tx.time ?? 0) > 1e10 ? (tx.time ?? 0) : (tx.time ?? 0) * 1000;
-    const dk = localDateKeyFn(new Date(ts));
+    const dk = localDateKeyFn(new Date(txTimeMs(tx.time)));
     if (!dateSet.has(dk)) continue;
     const amt = getTxStatAmount(tx, txSplits);
     if (!Number.isFinite(amt) || amt <= 0) continue;
@@ -149,8 +149,7 @@ export function calcFinykPeriodAggregate(
   for (const tx of list) {
     if (!tx) continue;
     if (excluded.has(tx.id)) continue;
-    const rawTime = tx.time ?? 0;
-    const ms = rawTime > 1e10 ? rawTime : rawTime * 1000;
+    const ms = txTimeMs(tx.time);
     if (!Number.isFinite(ms) || ms < start || ms >= end) continue;
     txCount++;
     const raw = tx.amount ?? 0;

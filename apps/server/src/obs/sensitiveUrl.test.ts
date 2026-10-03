@@ -57,22 +57,72 @@ describe("redactSensitiveUrl", () => {
     expect(redactSensitiveUrl("/api/mono/webhook")).toBe("/api/mono/webhook");
   });
 
-  it("обробляє абсолютні URL з origin-ом (Sentry може передавати повний URL)", () => {
-    // Sentry `event.request.url` буває повним: scheme + host + path. Хелпер
-    // не парсить його як URL-об'єкт, але path-prefix не співпаде, тому
-    // повертаємо as-is — `event.request.url` від Sentry для express-app
-    // насправді `req.originalUrl`-альний path. Цей кейс — sanity check, що
-    // ми не ламаємо абсолютні URL і не редагуємо те, що не повинні.
+  it("редагує секрет і в абсолютних URL з origin-ом (Sentry дає повний URL)", () => {
+    // priv-07: `url.full` / `contexts.trace.data` несуть scheme + host + path,
+    // тож path-prefix треба матчити після origin-а, інакше секрет витікає.
     expect(
       redactSensitiveUrl("https://api.example.com/api/mono/webhook/abc"),
-    ).toBe("https://api.example.com/api/mono/webhook/abc");
+    ).toBe("https://api.example.com/api/mono/webhook/[redacted]");
+    expect(
+      redactSensitiveUrl(
+        "https://api.example.com/api/auth/reset-password/tok123?callbackURL=%2F",
+      ),
+    ).toBe(
+      "https://api.example.com/api/auth/reset-password/[redacted]?callbackURL=%2F",
+    );
+  });
+
+  it("маскує Telegram bot-токен у path вихідного URL", () => {
+    const token = "123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    expect(
+      redactSensitiveUrl(`https://api.telegram.org/bot${token}/sendMessage`),
+    ).toBe("https://api.telegram.org/bot[redacted]/sendMessage");
+    expect(
+      redactSensitiveUrl(`https://api.telegram.org/bot${token}/getMe`),
+    ).not.toContain(token);
+  });
+
+  it("не чіпає telegram-URL без токена у path-і", () => {
+    expect(redactSensitiveUrl("https://api.telegram.org/botanical")).toBe(
+      "https://api.telegram.org/botanical",
+    );
   });
 
   it("залишає suffix після секрету (defensive — на майбутнє під-роути)", () => {
-    // Якщо коли-небудь з'явиться `/api/mono/webhook/<secret>/replay` — суфікс
+    // Якщо коли-небудь зʼявиться `/api/mono/webhook/<secret>/replay` — суфікс
     // не має маскуватись, тільки сам секрет.
     expect(redactSensitiveUrl("/api/mono/webhook/abc123/replay")).toBe(
       "/api/mono/webhook/[redacted]/replay",
+    );
+  });
+});
+
+describe("redactSensitiveUrl → чутливі query-ключі (OAuth-колбек Сільпо)", () => {
+  it("маскує code і state, лишаючи решту query читабельною", () => {
+    expect(
+      redactSensitiveUrl(
+        "/api/silpo/callback?code=abc123def&state=nonce456&foo=bar",
+      ),
+    ).toBe("/api/silpo/callback?code=[redacted]&state=[redacted]&foo=bar");
+  });
+
+  it("маскує у повному URL, як його бачить Sentry", () => {
+    const url =
+      "https://api.example.com/api/silpo/callback?state=nonce456&code=abc123def";
+    expect(redactSensitiveUrl(url)).not.toContain("abc123def");
+    expect(redactSensitiveUrl(url)).not.toContain("nonce456");
+  });
+
+  it("не чіпає ключі, що лише ЗАКІНЧУЮТЬСЯ на code/state", () => {
+    // `[?&]` перед ключем — саме заради цього випадку.
+    expect(redactSensitiveUrl("/x?substate=keep&code_challenge=keep2")).toBe(
+      "/x?substate=keep&code_challenge=keep2",
+    );
+  });
+
+  it("працює разом із path-редакцією mono-webhook", () => {
+    expect(redactSensitiveUrl("/api/mono/webhook/sec1?code=abc")).toBe(
+      "/api/mono/webhook/[redacted]?code=[redacted]",
     );
   });
 });

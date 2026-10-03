@@ -41,6 +41,8 @@ function makeDeps(over: Partial<AppEffectsDeps> = {}): AppEffectsDeps {
       setHubView: vi.fn(),
       setSearchOpen: vi.fn(),
       closeSearch: vi.fn(),
+      searchQuery: "",
+      openSearch: vi.fn(),
     },
     openModule: vi.fn(),
     navigate: vi.fn() as unknown as AppEffectsDeps["navigate"],
@@ -64,11 +66,14 @@ describe("useAppEffects — global event bridges", () => {
     expect(prefetchHubMock).toHaveBeenCalled();
   });
 
-  it("registers the openChat and openSearch hub-bus listeners", () => {
+  it("registers the openChat hub-bus listener", () => {
     renderHook(() => useAppEffects(makeDeps()));
     const events = onHubBusMock.mock.calls.map((c) => c[0]);
     expect(events).toContain("openChat");
-    expect(events).toContain("openSearch");
+    // `openSearch` знято 2026-09-15: канал мав слухача і НУЛЬ продуктових
+    // емітерів. Тест лишається пінити, що зареєстрований саме той канал, у
+    // якого емітери є.
+    expect(events).not.toContain("openSearch");
   });
 
   it("opens a module on the HUB_OPEN_MODULE custom event", () => {
@@ -81,7 +86,12 @@ describe("useAppEffects — global event bridges", () => {
         }),
       );
     });
-    expect(openModule).toHaveBeenCalledWith("finyk", { hash: "tab" });
+    // Джерело завжди їде в опціях: без названого — `other` (P3, базова
+    // лінія перед віссю дії хабу).
+    expect(openModule).toHaveBeenCalledWith("finyk", {
+      hash: "tab",
+      source: "other",
+    });
   });
 
   it("persists a valid PWA action from the open-module event", () => {
@@ -135,6 +145,8 @@ describe("useAppEffects — global event bridges", () => {
             setHubView,
             setSearchOpen: vi.fn(),
             closeSearch: vi.fn(),
+            searchQuery: "",
+            openSearch: vi.fn(),
           },
         }),
       ),
@@ -146,7 +158,7 @@ describe("useAppEffects — global event bridges", () => {
         }),
       );
     });
-    expect(setHubView).toHaveBeenCalledWith("settings");
+    expect(setHubView).toHaveBeenCalledWith("settings", { syncUrl: false });
     expect(navigate).toHaveBeenCalledWith("/?tab=settings#settings-modules");
   });
 
@@ -168,5 +180,31 @@ describe("useAppEffects — global event bridges", () => {
         window.dispatchEvent(new Event(REQUEST_PULL_EVENT));
       });
     }).not.toThrow();
+  });
+
+  it("opens a module when the service worker posts OPEN_MODULE", () => {
+    const openModule = vi.fn();
+    let messageHandler: ((event: Event) => void) | null = null;
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        addEventListener: (type: string, handler: EventListener) => {
+          if (type === "message")
+            messageHandler = handler as (event: Event) => void;
+        },
+        removeEventListener: vi.fn(),
+      },
+    });
+    renderHook(() => useAppEffects(makeDeps({ openModule })));
+    act(() => {
+      messageHandler?.(
+        new MessageEvent("message", {
+          data: { type: "OPEN_MODULE", module: "nutrition" },
+        }),
+      );
+    });
+    expect(openModule).toHaveBeenCalledWith("nutrition", {
+      source: "pwa_shortcut",
+    });
   });
 });

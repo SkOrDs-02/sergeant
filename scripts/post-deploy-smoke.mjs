@@ -27,6 +27,11 @@
 //   --dry-run               Parse config, print plan, do NOT make HTTP calls.
 //   --concurrency <n>       Max parallel requests (default: 8).
 //
+// Env:
+//   STAGING_SESSION_COOKIE  Cookie for `auth: session` tests.
+//   SMOKE_ALLOWED_HOSTS     Comma-separated hosts (or URLs) allowed to receive
+//                           that cookie. Required whenever the cookie is set.
+//
 // Exit codes:
 //   0  All checks pass.
 //   1  ≥1 failure detected (status / latency / shape mismatch).
@@ -174,6 +179,47 @@ export async function loadConfig(configPath) {
     throw new Error(`smoke-tests config invalid JSON: ${err.message}`);
   }
   return { config: parsed, tests: normaliseTests(parsed) };
+}
+
+// ---------- Cookie host allowlist ----------
+
+/**
+ * Розбирає `SMOKE_ALLOWED_HOSTS` — кому-розділений список хостів або
+ * повних URL-ів. Із URL береться hostname, решта — як є.
+ *
+ * @param {string|undefined} raw
+ * @returns {string[]}
+ */
+export function parseAllowedHosts(raw) {
+  return (raw ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      try {
+        return new URL(entry).hostname.toLowerCase();
+      } catch {
+        return entry.toLowerCase();
+      }
+    });
+}
+
+/**
+ * `--base-url` приходить із payload-у `deployment_status`, який пише
+ * будь-хто з правом на deployments — тож сесійна кука летить лише на
+ * заздалегідь дозволений хост. Порожній список = нікуди (fail-closed).
+ *
+ * @param {string} baseUrl
+ * @param {string[]} allowedHosts
+ */
+export function isCookieHostAllowed(baseUrl, allowedHosts) {
+  let host;
+  try {
+    host = new URL(baseUrl).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  return allowedHosts.includes(host);
 }
 
 // ---------- Filtering ----------
@@ -614,6 +660,17 @@ export async function runMain(argv = process.argv.slice(2)) {
       );
     }
     return 0;
+  }
+
+  if (sessionCookie) {
+    const allowedHosts = parseAllowedHosts(process.env.SMOKE_ALLOWED_HOSTS);
+    if (!isCookieHostAllowed(baseUrl, allowedHosts)) {
+      process.stderr.write(
+        `Error: STAGING_SESSION_COOKIE is set but ${baseUrl} is not in SMOKE_ALLOWED_HOSTS ` +
+          `(${allowedHosts.join(", ") || "empty"}). Refusing to send the session cookie.\n`,
+      );
+      return 2;
+    }
   }
 
   const results = await runWithConcurrency(tests, args.concurrency, (t) =>

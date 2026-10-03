@@ -7,6 +7,7 @@ import {
   fireEvent,
   cleanup,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
@@ -35,14 +36,12 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
 interface HarnessProps {
   initial?: RoutineState;
   editingId?: string | null;
-  firstRunHint?: boolean;
   onClose?: () => void;
 }
 
 function Harness({
   initial = defaultRoutineState(),
   editingId = null,
-  firstRunHint = false,
   onClose = vi.fn(),
 }: HarnessProps) {
   const [routine, setRoutine] = useState(initial);
@@ -54,7 +53,6 @@ function Harness({
         setRoutine={setRoutine}
         onClose={onClose}
         editingId={editingId}
-        firstRunHint={firstRunHint}
       />
       <ToastContainer />
     </ToastProvider>
@@ -122,6 +120,60 @@ describe("HabitQuickCreateDialog", () => {
     expect(screen.getByDisplayValue("Пити воду")).toBeInTheDocument();
   });
 
+  /**
+   * Регресія: `prevOpenKey` не скидався на закритті, тож повторне
+   * відкриття для ТІЄЇ САМОЇ звички з тим самим `focusTick`
+   * (`HabitDetailSheet` його взагалі не передає) не переcіювало
+   * чернетку — форма показувала старий драфт, а не поточні поля звички.
+   */
+  it("перевідкриття для тієї самої звички перечитує її поточні поля", () => {
+    const habit = makeHabit("h1", "Пити воду");
+    const initial: RoutineState = {
+      ...defaultRoutineState(),
+      habits: [habit],
+    };
+
+    function ReopenHarness({
+      routine,
+      open,
+    }: {
+      routine: RoutineState;
+      open: boolean;
+    }) {
+      return (
+        <ToastProvider>
+          <HabitQuickCreateDialog
+            open={open}
+            routine={routine}
+            setRoutine={vi.fn()}
+            onClose={vi.fn()}
+            editingId="h1"
+          />
+        </ToastProvider>
+      );
+    }
+
+    const { rerender } = render(<ReopenHarness routine={initial} open />);
+    expect(screen.getByDisplayValue("Пити воду")).toBeInTheDocument();
+
+    // Людина щось набрала і закрила аркуш, не зберігаючи.
+    fireEvent.change(screen.getByDisplayValue("Пити воду"), {
+      target: { value: "Чернетка, яку не зберегли" },
+    });
+    rerender(<ReopenHarness routine={initial} open={false} />);
+
+    // Тим часом звичка змінилась деінде — дату переставили на завтра.
+    const updated: RoutineState = {
+      ...defaultRoutineState(),
+      habits: [{ ...habit, startDate: "2026-08-25" }],
+    };
+    rerender(<ReopenHarness routine={updated} open />);
+
+    expect(screen.queryByDisplayValue("Чернетка, яку не зберегли")).toBeNull();
+    expect(screen.getByDisplayValue("Пити воду")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("2026-08-25")).toBeInTheDocument();
+  });
+
   it("blocks save with an empty name and surfaces a name error", async () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "Додати звичку" }));
@@ -133,7 +185,7 @@ describe("HabitQuickCreateDialog", () => {
   it("creates a habit on save and closes the dialog", async () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
-    const nameInput = screen.getByPlaceholderText("Назва");
+    const nameInput = screen.getByLabelText("Назва звички");
     fireEvent.change(nameInput, { target: { value: "Медитація" } });
     fireEvent.click(screen.getByRole("button", { name: "Додати звичку" }));
     await waitFor(() => {
@@ -145,17 +197,20 @@ describe("HabitQuickCreateDialog", () => {
   it("close button (✕) calls onClose", () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
-    fireEvent.click(screen.getByRole("button", { name: /закрити/i }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /закрити/i }));
     expect(onClose).toHaveBeenCalled();
   });
 
   it("backdrop click calls onClose", () => {
     const onClose = vi.fn();
     render(<Harness onClose={onClose} />);
+    const dialog = screen.getByRole("dialog");
     const backdrop = screen
-      .getByRole("dialog")
-      .parentElement!.querySelector("[aria-hidden]") as HTMLElement;
-    fireEvent.click(backdrop);
+      .getAllByRole("button", { name: /закрити/i })
+      .find((button) => !dialog.contains(button));
+    expect(backdrop).toBeDefined();
+    fireEvent.click(backdrop!);
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -169,14 +224,5 @@ describe("HabitQuickCreateDialog", () => {
     const cancel = screen.getByRole("button", { name: "Скасувати" });
     fireEvent.click(cancel);
     expect(onClose).toHaveBeenCalled();
-  });
-
-  it("renders the first-run hint banner when firstRunHint is set (create mode)", () => {
-    render(<Harness firstRunHint />);
-    // The banner heading comes from messages.routine.firstRun.title; assert
-    // the dialog still renders the create CTA so the banner branch is covered.
-    expect(
-      screen.getByRole("button", { name: "Додати звичку" }),
-    ).toBeInTheDocument();
   });
 });

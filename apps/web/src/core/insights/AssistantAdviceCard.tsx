@@ -1,19 +1,61 @@
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { SkeletonText } from "@shared/components/ui/Skeleton";
+import { Badge } from "@shared/components/ui/Badge";
+import { messages } from "@shared/i18n/uk";
+import { useAiTier } from "@shared/api/useAiTier";
+import { usePlan } from "../billing/usePlan";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import {
   safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
+import {
+  markAdviceShown,
+  trackAdviceReaction,
+} from "../observability/adviceTelemetry";
+import { AdviceFeedback } from "./AdviceFeedback";
+
+// Pro tiered model degradation (premium → standard → floor). `premium` is
+// the expected default and stays invisible — only degraded tiers get a
+// badge, so most Pro users never see this.
+//
+// AI-CONTEXT (2026-08-06): бейдж має сенс ЛИШЕ для платника — він означає
+// «твоя premium-квота на сьогодні вичерпана», тобто називає подію, яку людина
+// пережила. Відколи Free перевели на standard-модель чату, у неплатника він
+// горів би постійно й не вказував ні на що: premium він не мав і втратити не
+// міг. Тому нижче бейдж гейтиться `isPro`, а не самим тиром.
+const DEGRADED_TIER_LABEL: Record<"standard" | "floor", string> = {
+  standard: "Стандартна модель",
+  floor: "Економний режим",
+};
 
 interface AssistantAdviceCardProps {
   insight: string | null;
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  /**
+   * Ідентичність поради для телеметрії (`advice_id`). Приходить із
+   * `useCoachInsight`. Без нього подій не буде — краще мовчання, ніж
+   * події-сироти, які не звести в петлю «побачив → зреагував».
+   */
+  adviceId?: string | null;
+  /**
+   * Чи розгорнута ЗОВНІШНЯ `CollapsibleSection`, всередині якої живе картка.
+   *
+   * КРИТИЧНО для знаменника: `CollapsibleSection` тримає дітей у DOM навіть
+   * згорнутою (`grid-rows-[0fr] overflow-hidden`), тож без цього прапорця
+   * impression стріляв би на mount — а картка сидить у ПОДВІЙНОМУ collapse.
+   * Знаменник роздувся б у рази і «цінність AI» вийшла б штучно низькою
+   * назавжди: переписати історію подій не можна.
+   *
+   * Дефолт `true` — для call-site-ів поза `CollapsibleSection`.
+   */
+  sectionOpen?: boolean;
 }
 
 const COLLAPSED_KEY = "hub_assistant_advice_collapsed";
@@ -32,14 +74,48 @@ export function AssistantAdviceCard({
   loading,
   error,
   onRefresh,
+  adviceId = null,
+  sectionOpen = true,
 }: AssistantAdviceCardProps) {
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const bodyId = useId();
+  const aiTier = useAiTier();
+  const { isPro } = usePlan();
+  const degradedLabel =
+    isPro && (aiTier === "standard" || aiTier === "floor")
+      ? DEGRADED_TIER_LABEL[aiTier]
+      : null;
 
-  const toggle = () => {
-    setCollapsed((prev) => {
-      writeCollapsed(!prev);
-      return !prev;
+  // Impression. Стоїть ПЕРЕД ранніми `return null` (Rules of Hooks), тому
+  // всі умови видимості перевіряються всередині ефекту:
+  //   1) зовнішня `CollapsibleSection` розгорнута (`sectionOpen`);
+  //   2) сама картка не згорнута (`hub_assistant_advice_collapsed`);
+  //   3) текст поради реально відрендерений (не скелетон і не порожньо).
+  // Дедуплікацію «рівно один раз на (advice_id, завантаження сторінки)"
+  // тримає `markAdviceShown`.
+  useEffect(() => {
+    if (!adviceId || !sectionOpen || collapsed) return;
+    if (typeof insight !== "string" || insight.length === 0) return;
+    markAdviceShown({
+      adviceId,
+      source: "coach_insight",
+      surface: "hub_dashboard",
+      // Лише довжина. Сам текст — вільна українська оповідь про фінанси/тіло/
+      // харчування конкретної людини; у payload він не існує (Hard Rule #21).
+      chars: insight.length,
     });
+  }, [adviceId, sectionOpen, collapsed, insight]);
+
+  // Побічні ефекти винесені з updater-а `setCollapsed`: під StrictMode
+  // updater викликається двічі, і подія полетіла б удвічі частіше за клік.
+  const toggle = () => {
+    const next = !collapsed;
+    writeCollapsed(next);
+    setCollapsed(next);
+    // Реакція на НАЯВНОМУ афордансі — нових кнопок картка не отримує.
+    // На «expand» impression ще не стріляв (ефект відпрацює наступним
+    // рендером), тому `seconds_since_shown` там буде 0 за конструкцією.
+    trackAdviceReaction(adviceId, next ? "collapse" : "expand");
   };
 
   // Hide the card entirely when there's an error and no cached insight
@@ -52,83 +128,167 @@ export function AssistantAdviceCard({
     <div
       className={cn(
         "rounded-2xl overflow-hidden",
-        "transition-all duration-200",
+        "transition-all duration-base",
         "p-px bg-linear-to-br from-brand-300/40 via-line to-teal-300/40",
       )}
     >
-      <div className="rounded-[15px] bg-surface-glass backdrop-blur-md overflow-hidden">
+      <div className="rounded-2xl bg-panel overflow-hidden">
         <button
           type="button"
           onClick={toggle}
-          className="flex items-center justify-between w-full px-4 py-3 text-left"
+          aria-expanded={!collapsed}
+          aria-controls={bodyId}
+          className="flex items-center justify-between w-full px-4 py-3 text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-inset"
         >
           <div className="flex items-center gap-2">
             <span
-              className="w-6 h-6 rounded-full bg-brand-soft flex items-center justify-center text-xs"
+              className="w-6 h-6 rounded-full bg-brand-soft flex items-center justify-center text-xs" /* glyph scales with container, not a type role */
               aria-hidden
             >
               S
             </span>
             <SectionHeading as="span" size="xs" variant="muted">
-              Порада асистента
+              {messages.sergeant.adviceCardTitle}
             </SectionHeading>
+            {/* Градація впевненості (Хвиля 4, hub-coach § G2): порада дня —
+                суцільний вільний текст моделі, тож рівень «припущення»
+                проставляється детерміновано на рівні картки, а не promt-ом.
+                Показуємо лише коли текст реально є (не на скелетоні). */}
+            {insight && (
+              <Badge variant="neutral" size="xs">
+                {messages.sergeant.insightAssumptionBadge}
+              </Badge>
+            )}
+            {degradedLabel && (
+              <Badge variant="neutral" size="xs">
+                {degradedLabel}
+              </Badge>
+            )}
           </div>
           <Icon
             name={collapsed ? "chevron-down" : "chevron-up"}
-            size={14}
+            size="sm"
             className="text-muted"
           />
         </button>
 
         {!collapsed && (
-          <div className="px-4 pb-3.5 -mt-0.5">
+          <div id={bodyId} className="px-4 pb-3.5 -mt-0.5">
             {loading && !insight ? (
               // Skeleton stand-in matches three lines of body copy at
               // the real text size — keeps the card height stable so
               // the swap to real content does not nudge the dashboard
-              // grid below (CLS budget). Pulse here is the only
-              // AMBIENT animation on screen during initial load; the
-              // refresh-button spin is hidden until an insight is
-              // cached so we stay within Hard Rule #17 (≤1 AMBIENT).
+              // grid below (CLS budget).
+              //
+              // AI-DANGER: pulse живе на КОНТЕЙНЕРІ, а рядки йдуть із
+              // `pulse={false}`. Доти тут стояло три `SkeletonText` зі
+              // своїм pulse кожен — тобто ТРИ Animation-обʼєкти, — а
+              // коментар поруч стверджував протилежне: «the only AMBIENT
+              // animation… within Hard Rule #17 (≤1 AMBIENT)». Неправду
+              // зловив не рев'ю, а smoke `reduced-motion.spec.ts`, який
+              // назвав усі три поіменно. Той самий урок уже записано в
+              // `PageLoader` (design-audit F8) — сюди він не доїхав.
               <div
                 role="status"
                 aria-live="polite"
-                aria-label="Готую пораду асистента"
-                className="space-y-2 py-0.5"
+                aria-label={messages.sergeant.adviceLoadingAria}
+                className="space-y-2 py-0.5 motion-safe:animate-pulse"
               >
                 <span className="sr-only">Готую пораду…</span>
-                <SkeletonText className="h-3.5 w-full" />
-                <SkeletonText className="h-3.5 w-11/12" />
-                <SkeletonText className="h-3.5 w-4/5" />
+                <SkeletonText className="h-3.5 w-full" pulse={false} />
+                <SkeletonText className="h-3.5 w-11/12" pulse={false} />
+                <SkeletonText className="h-3.5 w-4/5" pulse={false} />
               </div>
             ) : null}
 
             {insight && (
               <p
                 key={insight}
-                className="text-sm text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-200"
+                className="text-style-body text-text leading-relaxed motion-safe:animate-fade-in motion-safe:duration-base"
               >
                 {insight}
               </p>
             )}
 
+            {/* Розкриття авторства — під ТІЛОМ поради і лише коли тіло є, та
+                сама форма, що в `WeeklyDigestCard`: підписувати скелетон або
+                порожній стан нема чого, там немає згенерованого тексту.
+                Бейдж «Припущення» у шапці цього не замінює — він про ступінь
+                впевненості й однаково стоятиме над текстом, який написала
+                людина (знахідка PR-A10). */}
+            {insight && (
+              <p className="mt-1.5 text-style-caption text-subtle leading-snug">
+                {messages.sergeant.adviceAiSignature}
+              </p>
+            )}
+
             {!(loading && !insight) && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRefresh();
-                }}
-                disabled={loading}
-                aria-label="Оновити пораду"
-                className={cn(
-                  "mt-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
-                  loading &&
-                    "opacity-40 cursor-not-allowed motion-safe:animate-spin",
+              <div className="mt-2.5 flex items-center gap-2">
+                {/* Actionable insight (UX-пропозиція 2026-07): порада була
+                    суто текстовою — тепер із неї можна одразу перейти в
+                    дію. «Запитати Сержанта про це» відкриває його із
+                    засіяним контекстом поради (autoSend: false, щоб юзер
+                    міг відредагувати питання перед відправкою). */}
+                {insight && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // Подія — ДО консюмерського шляху: `trackAdviceReaction`
+                      // fire-and-forget і не кидає, зате throw у шині не зʼїсть
+                      // реакцію.
+                      //
+                      // AI-NOTE: наявна поведінка, НЕ вводиться цим патчем —
+                      // prompt нижче вставляє ПОВНИЙ текст поради у чат. Це
+                      // існуючий продуктовий шлях (чат і так бачить контекст
+                      // користувача), і він НЕ є телеметрією — у payload події
+                      // тексту немає, лише `chars`.
+                      trackAdviceReaction(adviceId, "ask_ai");
+                      emitHubBus("openChat", {
+                        message: `Розкажи детальніше про цю пораду й що мені зробити далі: "${insight}"`,
+                        autoSend: false,
+                      });
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl touch-target",
+                      "bg-brand-soft text-brand-soft-fg text-style-caption font-semibold",
+                      "hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
+                    )}
+                  >
+                    <Icon
+                      name="sergeant"
+                      size={13}
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                    Запитати Сержанта про це
+                  </button>
                 )}
-              >
-                <Icon name="refresh-cw" size={14} />
-              </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    trackAdviceReaction(adviceId, "refresh");
+                    onRefresh();
+                  }}
+                  disabled={loading}
+                  aria-label="Оновити пораду"
+                  className={cn(
+                    "inline-flex items-center justify-center",
+                    "p-1.5 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
+                    loading &&
+                      "opacity-40 cursor-not-allowed motion-safe:animate-spin",
+                  )}
+                >
+                  <Icon name="refresh-cw" size="sm" />
+                </button>
+                {/* Оцінка — праворуч, окремо від дій над порадою: «зроби
+                    щось із цим» і «чи це взагалі було варте показу» — різні
+                    наміри, і склеєні в один ряд вони читались би як меню. */}
+                {insight && (
+                  <AdviceFeedback adviceId={adviceId} className="ml-auto" />
+                )}
+              </div>
             )}
           </div>
         )}

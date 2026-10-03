@@ -14,6 +14,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { PactV4 } from "@pact-foundation/pact";
 
+import { sumMacrosNullable } from "@sergeant/shared";
+
 import { createHttpClient } from "../../httpClient";
 import { createNutritionEndpoints } from "../../endpoints/nutrition";
 import { CONTRACT_SUITE_OPTIONS, createPact } from "./_pact";
@@ -53,13 +55,39 @@ describe(
           res.headers({ "content-type": "application/json" });
           res.jsonBody({
             result: {
+              isFood: true,
+              notFoodKind: null,
               dishName: "Борщ із сметаною",
               confidence: 0.87,
               portion: { label: "тарілка", gramsApprox: 350 },
               ingredients: [
                 { name: "буряк", notes: null },
                 { name: "капуста", notes: null },
-                { name: "м'ясо", notes: "телятина" },
+                { name: "мʼясо", notes: "телятина" },
+              ],
+              items: [
+                {
+                  name: "Борщ",
+                  macros: {
+                    kcal: 220,
+                    protein_g: 14,
+                    fat_g: 8,
+                    carbs_g: 20,
+                  },
+                  gramsApprox: 300,
+                  confidence: 0.88,
+                },
+                {
+                  name: "Сметана",
+                  macros: {
+                    kcal: 60,
+                    protein_g: 4,
+                    fat_g: 4,
+                    carbs_g: 2,
+                  },
+                  gramsApprox: 50,
+                  confidence: 0.72,
+                },
               ],
               macros: {
                 kcal: 280,
@@ -80,9 +108,20 @@ describe(
             mimeType: "image/png",
             locale: "uk-UA",
           });
+          expect(out.result?.isFood).toBe(true);
+          expect(out.result?.notFoodKind).toBeNull();
           expect(out.result?.dishName).toBe("Борщ із сметаною");
           expect(out.result?.macros.kcal).toBe(280);
           expect(out.result?.ingredients).toHaveLength(3);
+          expect(out.result?.items).toHaveLength(2);
+
+          // Підсумок мусить бути сумою позицій, інакше видалення рядка на
+          // картці нічого не змінює — рівно той баг, від якого тікає
+          // ініціатива 0023. Сервер рахує його через `sumMacrosNullable`;
+          // пакт пінить рівність на боці споживача.
+          expect(out.result?.macros).toEqual(
+            sumMacrosNullable((out.result?.items ?? []).map((i) => i.macros)),
+          );
         });
     });
   },

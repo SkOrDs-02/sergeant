@@ -5,8 +5,7 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { useAuth } from "./AuthContext";
 import { registerSchema, type RegisterValues } from "./authSchemas";
@@ -22,7 +21,6 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
   const { register: signup, authError } = useAuth();
-  const { achievement } = useCelebration();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -36,31 +34,21 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
     defaultValues: { email: "", password: "", name: "" },
     onSubmit: async (values) => {
       const fallbackName = values.email.split("@")[0] ?? "";
-      const ok = await signup(
+      const result = await signup(
         values.email,
         values.password,
         values.name?.trim() || fallbackName,
       );
-      if (!ok) {
-        // Сценарій «вже зареєстровано» обробляє AuthPage (auto-switch
-        // на login). Інші помилки відображає `authError` нижче.
-        if (authError && /вже зареєстровано/i.test(authError)) {
+      if (result !== true) {
+        // «Вже зареєстровано» приходить синхронно з `register` —
+        // читання `authError` одразу після await ловило stale state і
+        // auto-switch на login ніколи не спрацьовував на першій спробі.
+        if (result === "exists") {
           onAlreadyRegistered();
         }
         throw new Error("");
       }
-      return ok;
-    },
-    onSuccess: (_ok, values) => {
-      const name = values.name?.trim() || values.email.split("@")[0] || "";
-      achievement(
-        `Готово, ${name}!`,
-        "Твої дані тепер з тобою на всіх пристроях.",
-        [
-          { icon: "🔐", label: "Захищений акаунт" },
-          { icon: "🔄", label: "Синхронізація" },
-        ],
-      );
+      return true;
     },
   });
 
@@ -73,12 +61,12 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
           htmlFor="auth-name"
           className="block text-style-caption text-muted mb-1.5"
         >
-          Ім{"'"}я
+          Імʼя
         </label>
         <Input
           id="auth-name"
           type="text"
-          placeholder={"Твоє ім'я"}
+          placeholder={"Твоє імʼя"}
           autoComplete="name"
           error={!!errors.name}
           aria-invalid={!!errors.name}
@@ -152,7 +140,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
 
       <Button
         type="submit"
-        variant="primary"
+        variant="solid"
         size="lg"
         loading={isSubmitting}
         className="w-full"

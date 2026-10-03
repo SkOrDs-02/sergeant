@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { isIOSStandalonePWA } from "@shared/lib/platform/iosStandalone";
 
 /* -------------------------------------------------------------------------- *
  *  Web Speech API (browser-native) — fallback path.
@@ -50,13 +51,16 @@ export function useVoiceInput({
   onError,
 }: UseVoiceInputOptions = {}): UseVoiceInputReturn {
   const [listening, setListening] = useState(false);
-  const [supported, setSupported] = useState(false);
+  // AI-CONTEXT: на iOS у standalone-PWA `webkitSpeechRecognition` існує,
+  // але не працює (WebKit 185448/215884) — `start()` мовчки нічого не
+  // робить, `onresult` не приходить. Репортуємо unsupported, щоб
+  // VoiceMicButton не показував мертву кнопку (він ховається при
+  // !supported). У Safari-вкладці (не standalone) Web Speech працює —
+  // там лишаємо supported=true.
+  const [supported] = useState(
+    () => !!getSpeechRecognitionCtor() && !isIOSStandalonePWA(),
+  );
   const recRef = useRef<SpeechRecognitionLike | null>(null);
-
-  useEffect(() => {
-    const SpeechRecognition = getSpeechRecognitionCtor();
-    setSupported(!!SpeechRecognition);
-  }, []);
 
   const start = useCallback(() => {
     const SpeechRecognition = getSpeechRecognitionCtor();
@@ -95,7 +99,7 @@ export function useVoiceInput({
       } else if (e.error === "no-speech") {
         onError?.("Не вдалося розпізнати мову. Спробуй ще раз.");
       } else if (e.error !== "aborted") {
-        onError?.(`Помилка розпізнавання: ${e.error}`);
+        onError?.("Не вдалося розпізнати мову. Спробуй ще раз.");
       }
     };
 

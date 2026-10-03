@@ -1,8 +1,10 @@
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { pluralExercises } from "@sergeant/shared";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { Label } from "@shared/components/ui/FormField";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -12,6 +14,7 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { WorkoutTemplate } from "../hooks/useWorkoutTemplates";
+import { SupersetBadge } from "./workouts/SupersetBadge";
 
 type GroupType = "superset" | "circuit";
 
@@ -41,7 +44,7 @@ type WorkoutTemplatesSectionProps = {
 };
 
 function uid(prefix = "g"): string {
-  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `${prefix}_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 export function WorkoutTemplatesSection({
@@ -54,6 +57,7 @@ export function WorkoutTemplatesSection({
   restoreTemplate,
   onStartTemplate,
 }: WorkoutTemplatesSectionProps) {
+  const nameId = useId();
   const toast = useToast();
   const [q, setQ] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -128,9 +132,12 @@ export function WorkoutTemplatesSection({
     setOrderIds((o) => {
       const j = idx + dir;
       if (j < 0 || j >= o.length) return o;
+      const a = o[idx];
+      const b = o[j];
+      if (a === undefined || b === undefined) return o;
       const next = [...o];
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      [next[idx], next[j]] = [next[j]!, next[idx]!];
+      next[idx] = b;
+      next[j] = a;
       return next;
     });
   };
@@ -175,16 +182,18 @@ export function WorkoutTemplatesSection({
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-subtle leading-relaxed">
-        Шаблони — лише твої: додай назву й послідовність вправ з каталогу. План
+      <div className="text-style-body text-muted leading-relaxed">
+        Шаблони – лише твої: додай назву й послідовність вправ з каталогу. План
         на головній будується з цих шаблонів. Щоб стартувати тренування зі
-        списку нижче — натисни «Почати» біля шаблону (відкриється журнал з
+        списку нижче, натисни «Почати» біля шаблону (відкриється журнал з
         активним тренуванням).
       </div>
 
       {!editingId && (
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="w-full h-12 min-h-[44px]"
           onClick={startNew}
         >
@@ -194,8 +203,10 @@ export function WorkoutTemplatesSection({
 
       {editingId && (
         <Card radius="lg" className="space-y-3">
+          <Label htmlFor={nameId}>Назва шаблону</Label>
           <Input
-            placeholder="Назва (за замовчуванням — «Мій шаблон»)"
+            id={nameId}
+            placeholder="Напр. Push day, Ноги (без назви: «Мій шаблон»)"
             value={name}
             onChange={(e) => setName(e.target.value)}
             aria-label="Назва шаблону"
@@ -210,7 +221,8 @@ export function WorkoutTemplatesSection({
               Додати вправу з каталогу
             </SectionHeading>
             <Input
-              placeholder="Пошук…"
+              {...searchFieldProps("template-exercise-search")}
+              placeholder="Пошук"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               aria-label="Пошук вправи для шаблону"
@@ -220,15 +232,15 @@ export function WorkoutTemplatesSection({
                 <button
                   key={ex.id}
                   type="button"
-                  className="w-full text-left px-3 py-2.5 min-h-[44px] text-sm hover:bg-panelHi transition-colors"
+                  className="w-full text-left px-3 py-2.5 min-h-[44px] text-style-label hover:bg-panelHi transition-colors"
                   onClick={() => addEx(ex)}
                 >
                   {ex?.name?.uk || ex?.name?.en}
                 </button>
               ))}
               {pickList.length === 0 && (
-                <div className="p-3 text-xs text-subtle text-center">
-                  Нічого не знайдено
+                <div className="p-3 text-style-caption text-muted text-center">
+                  Нічого не знайшов
                 </div>
               )}
             </div>
@@ -242,13 +254,22 @@ export function WorkoutTemplatesSection({
               {orderIds.length >= 2 && !groupSelectMode && (
                 <button
                   type="button"
-                  className="text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
+                  // AI-DANGER: `text-xs` на цій і сусідніх чіп-кнопках —
+                  // розмір КОНТРОЛА (бордер + падинг + hover), а не роль
+                  // тексту. Семантична шкала ролей описує текст: `caption`
+                  // це «мета, таймстемпи», і мітка кнопки нею не є.
+                  // Спеціальної ролі для контролів у шкалі немає, тож
+                  // правильна дія тут — лишити сирий розмір, а не
+                  // підібрати найближчу роль. Те саме стосується
+                  // `text-xs!` на компоненті `Button`.
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-xl border border-line text-subtle hover:text-text hover:bg-panelHi transition-colors"
                   onClick={() => {
                     setGroupSelectMode(true);
                     setGroupSelected(new Set());
                   }}
                 >
-                  ⊕ Суперсет
+                  <Icon name="plus-circle" size="sm" />
+                  Суперсет
                 </button>
               )}
               {groupSelectMode && (
@@ -273,19 +294,20 @@ export function WorkoutTemplatesSection({
                   </button>
                   <button
                     type="button"
+                    aria-label="Скасувати групування"
                     className="text-xs px-2 py-1 rounded-xl border border-line text-subtle"
                     onClick={() => {
                       setGroupSelectMode(false);
                       setGroupSelected(new Set());
                     }}
                   >
-                    ✕
+                    <Icon name="close" size="sm" aria-hidden />
                   </button>
                 </div>
               )}
             </div>
             {orderIds.length === 0 ? (
-              <div className="text-sm text-subtle text-center py-4">
+              <div className="text-style-label text-subtle text-center py-4">
                 Додай хоча б одну вправу
               </div>
             ) : (
@@ -323,20 +345,13 @@ export function WorkoutTemplatesSection({
                           )}
                         </button>
                       )}
-                      <span className="text-xs text-subtle w-5 text-center">
+                      <span className="text-style-caption text-muted w-5 text-center tabular-nums">
                         {idx + 1}
                       </span>
-                      <span className="flex-1 text-sm truncate min-w-0">
+                      <span className="flex-1 text-style-label truncate min-w-0">
                         {ex?.name?.uk || ex?.name?.en || id}
                       </span>
-                      {group && (
-                        <span
-                          // eslint-disable-next-line sergeant-design/no-eyebrow-drift -- Inline superset/circuit pill at text-2xs with dynamic module tint; defer Badge migration.
-                          className={`text-2xs font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${group.type === "circuit" ? "bg-fizruk/15 text-fizruk border border-fizruk/30" : "bg-success/15 text-success-strong dark:text-success border border-success/30"}`}
-                        >
-                          {group.type === "circuit" ? "Коло" : "СС"}
-                        </span>
-                      )}
+                      {group && <SupersetBadge type={group.type} compact />}
                       {group && !groupSelectMode && (
                         <Tooltip
                           content="Прибрати з групи"
@@ -344,11 +359,11 @@ export function WorkoutTemplatesSection({
                         >
                           <button
                             type="button"
-                            className="text-2xs text-danger-strong/60 dark:text-danger/60 hover:text-danger px-1"
+                            className="inline-flex items-center justify-center text-danger-strong dark:text-danger hover:text-danger px-1"
                             aria-label="Прибрати з групи"
                             onClick={() => handleRemoveGroup(group.id)}
                           >
-                            ⊗
+                            <Icon name="x-circle" size="sm" />
                           </button>
                         </Tooltip>
                       )}
@@ -356,27 +371,27 @@ export function WorkoutTemplatesSection({
                         <>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-subtle hover:text-text"
+                            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-subtle hover:text-text"
                             aria-label="Вище"
                             onClick={() => move(idx, -1)}
                           >
-                            ↑
+                            <Icon name="arrow-up" size={15} aria-hidden />
                           </button>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-subtle hover:text-text"
+                            className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] text-subtle hover:text-text"
                             aria-label="Нижче"
                             onClick={() => move(idx, 1)}
                           >
-                            ↓
+                            <Icon name="arrow-down" size={15} aria-hidden />
                           </button>
                           <button
                             type="button"
-                            className="min-w-[44px] min-h-[44px] text-danger-strong/80 dark:text-danger/80"
+                            className="min-w-[44px] min-h-[44px] text-danger-strong dark:text-danger"
                             aria-label="Прибрати з шаблону"
                             onClick={() => removeAt(idx)}
                           >
-                            ✕
+                            <Icon name="trash" size={15} aria-hidden />
                           </button>
                         </>
                       )}
@@ -389,7 +404,9 @@ export function WorkoutTemplatesSection({
 
           <div className="flex gap-2">
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="flex-1 h-12 min-h-[44px]"
               onClick={save}
               disabled={!orderIds.length}
@@ -397,7 +414,7 @@ export function WorkoutTemplatesSection({
               Зберегти
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 setEditingId(null);
@@ -413,8 +430,8 @@ export function WorkoutTemplatesSection({
       )}
 
       <Card radius="lg" padding="none" className="overflow-hidden">
-        <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
-          <SectionHeading as="div" size="sm">
+        <div className="px-4 py-3 bg-panelHi border-b border-line">
+          <SectionHeading as="div" size="xs" variant="fizruk">
             Збережені шаблони
           </SectionHeading>
         </div>
@@ -422,9 +439,9 @@ export function WorkoutTemplatesSection({
           <EmptyState
             compact
             module="fizruk"
-            icon={<Icon name="dumbbell" size={20} />}
+            icon={<Icon name="dumbbell" size="lg" />}
             title="Поки немає шаблонів"
-            description="Створи свій перший — кнопка вище."
+            description="Створи свій перший, кнопка вище."
           />
         ) : (
           (templates || []).map((t) => (
@@ -436,7 +453,7 @@ export function WorkoutTemplatesSection({
                 <div className="text-style-label text-text truncate">
                   {t.name}
                 </div>
-                <div className="text-xs text-subtle">
+                <div className="text-style-caption text-muted">
                   {(t.exerciseIds || []).length}{" "}
                   {pluralExercises((t.exerciseIds || []).length)}
                   {(t.groups || []).length > 0 && (
@@ -451,7 +468,7 @@ export function WorkoutTemplatesSection({
                 {typeof onStartTemplate === "function" && (
                   <Button
                     size="sm"
-                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
+                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
                     onClick={() => onStartTemplate(t)}
                     disabled={!(t.exerciseIds || []).length}
                   >
@@ -460,7 +477,7 @@ export function WorkoutTemplatesSection({
                 )}
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="outline"
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => startEdit(t)}
                 >
@@ -468,11 +485,13 @@ export function WorkoutTemplatesSection({
                 </Button>
                 <Button
                   size="sm"
-                  variant="danger"
+                  variant="soft"
+                  tone="danger"
+                  aria-label={`Видалити шаблон ${t.name}`}
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => setConfirmDeleteId(t.id)}
                 >
-                  ✕
+                  <Icon name="trash" size={15} aria-hidden />
                 </Button>
               </div>
             </div>

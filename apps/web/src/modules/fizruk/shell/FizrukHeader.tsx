@@ -5,10 +5,13 @@
 import type * as React from "react";
 import {
   ModuleHeader,
+  ModuleHeaderAssistantButton,
   ModuleHeaderBackButton,
+  ModuleHeaderHubButton,
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import type { FizrukPage } from "./fizrukRoute";
 
 interface ActiveProgramHeaderView {
@@ -19,6 +22,7 @@ export interface FizrukHeaderProps {
   page: FizrukPage;
   activeProgram?: ActiveProgramHeaderView | null | undefined;
   onBackToHub?: (() => void) | undefined;
+  onGoToHub?: (() => void) | undefined;
   /**
    * Called when the user taps the contextual back arrow on a sub-page
    * (atlas / exercise / measurements). The parent decides where each
@@ -29,23 +33,8 @@ export interface FizrukHeaderProps {
   onOpenSettings?: (() => void) | undefined;
 }
 
-function titleFor(page: FizrukPage): string {
-  switch (page) {
-    case "atlas":
-      return "Атлас тіла";
-    case "exercise":
-      return "Вправа";
-    case "programs":
-      return "Програми";
-    case "body":
-      return "Моє тіло";
-    case "progress":
-      return "Прогрес і заміри";
-    case "measurements":
-      return "Заміри тіла";
-    default:
-      return "ФІЗРУК";
-  }
+function titleFor(_page: FizrukPage): string {
+  return "Фізрук";
 }
 
 /** The nav item label the user came from — used for contextual back title. */
@@ -53,15 +42,27 @@ function backLabelFor(page: FizrukPage): string {
   switch (page) {
     case "atlas":
       return "Моє тіло";
+    // PR-Z7: каталог і шаблони приєднані до `exercise`. Раніше на їх місці
+    // стояв коментар, що вони лишаються осторонь через власну стрілку
+    // `WorkoutsHeader` — але та стрілка малювалась ОДНОЧАСНО з парою
+    // «Назад»/«На хаб» із цієї ж шапки, тобто намір «не дублювати» код не
+    // виконував: на екрані було три виходи замість одного. Тепер вихід
+    // один і живе тут, а `WorkoutsHeader` свою стрілку на маршрутних
+    // екранах не малює (`section` != undefined).
     case "exercise":
+    case "catalog":
+    case "templates":
       return "Тренування";
+    case "history":
+    case "programs":
+      return "Огляд";
     case "measurements":
-      // Measurements is now entered from the «Моє тіло» page (the only
-      // surface that exposes the «Виміри» button), so the back arrow
-      // must lead the user back there. Previously it advertised
-      // «Прогрес і заміри» but redirected to the dashboard, which the
-      // user flagged as confusing.
-      return "Моє тіло";
+      // Measurements is entered exclusively from the «Прогрес» stat, so the
+      // back arrow leads there (mirrors FizrukApp.contextualBackTarget for
+      // "measurements"). Текст дзеркалить підпис вкладки в
+      // `FIZRUK_NAV` — обіцянка стрілки має збігатися з тим, куди людина
+      // потрапляє, тож ці два рядки міняються разом.
+      return "Прогрес";
     default:
       return "ФІЗРУК";
   }
@@ -80,11 +81,13 @@ function ContextualBackButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 min-h-[44px] min-w-[44px]",
+        "-ml-1 flex items-center gap-1 rounded-xl px-2 py-2 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
-      aria-label={`Назад до ${label}`}
+      // «Назад до Огляд» було без відмінка; двокрапка тримає видимий підпис
+      // у назві й не вимагає родового відмінка для кожної вкладки.
+      aria-label={`Назад: ${label}`}
     >
       <svg
         width="18"
@@ -104,29 +107,13 @@ function ContextualBackButton({
   );
 }
 
-function subtitleFor(
-  page: FizrukPage,
-  activeProgram?: ActiveProgramHeaderView | null,
-): string {
-  switch (page) {
-    case "programs":
-      return activeProgram
-        ? `Активна: ${activeProgram.name}`
-        : "Оберіть тренувальну програму";
-    case "body":
-      return "Вага · сон · самопочуття";
-    default:
-      return "Тренування · прогрес";
-  }
-}
-
 function DumbbellBadge() {
   return (
     <div
       className={cn(
         "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center",
-        "bg-linear-to-br from-teal-100 to-cyan-100",
-        "dark:from-teal-900/40 dark:to-cyan-900/30",
+        "bg-linear-to-br from-cyan-100 to-cyan-200",
+        "dark:from-cyan-900/40 dark:to-cyan-900/30",
         "text-fizruk-strong dark:text-fizruk-300",
         "border border-fizruk-soft-border/60",
         "shadow-sm",
@@ -151,15 +138,24 @@ function DumbbellBadge() {
 
 export function FizrukHeader({
   page,
-  activeProgram,
   onBackToHub,
+  onGoToHub,
   onContextualBack,
   onOpenSettings,
 }: FizrukHeaderProps) {
-  const isAtlas = page === "atlas";
-  const isExercise = page === "exercise";
-  const isMeasurements = page === "measurements";
-  const showContextualBack = isAtlas || isExercise || isMeasurements;
+  // Один вихід на підсторінку, і він завжди тут. До PR-Z7 набір був
+  // вужчий (atlas / exercise / measurements), тож на `catalog`,
+  // `templates` і `history` шапка малювала пару «Назад» + «На хаб», а
+  // сторінка згори докладала власну стрілку — два-три різні виходи поруч;
+  // на `programs` при цьому не було жодного.
+  const showContextualBack =
+    page === "atlas" ||
+    page === "exercise" ||
+    page === "measurements" ||
+    page === "catalog" ||
+    page === "templates" ||
+    page === "history" ||
+    page === "programs";
 
   // Module-level settings drawer was dropped per user request — all
   // Fizruk settings (backup, reminders, data reset) now live in the
@@ -174,7 +170,14 @@ export function FizrukHeader({
       />
     );
   } else if (typeof onBackToHub === "function") {
-    left = <ModuleHeaderBackButton onClick={onBackToHub} />;
+    left = (
+      <div className="flex items-center gap-1">
+        <ModuleHeaderBackButton onClick={onBackToHub} />
+        {typeof onGoToHub === "function" && (
+          <ModuleHeaderHubButton onClick={onGoToHub} />
+        )}
+      </div>
+    );
   } else {
     left = <DumbbellBadge />;
   }
@@ -184,11 +187,13 @@ export function FizrukHeader({
       module={showContextualBack ? undefined : "fizruk"}
       left={left}
       title={titleFor(page)}
-      subtitle={
-        showContextualBack ? undefined : subtitleFor(page, activeProgram)
+      subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
+      subtitleShort={
+        showContextualBack ? undefined : messages.fizruk.headerSubtitleShort
       }
       right={
         <div className="flex items-center gap-2">
+          <ModuleHeaderAssistantButton />
           {onOpenSettings && (
             <ModuleHeaderSettingsButton onClick={onOpenSettings} />
           )}

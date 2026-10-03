@@ -33,19 +33,12 @@
        gap (the offset-*width* utility would, but the width is var-driven). */
     --tw-ring-offset-shadow: 0 0 0 var(--focus-ring-offset, 2px)
       var(--tw-ring-offset-color);
+    /* Суцільний `--c-focus-solid` (а не `--focus-ring-color` з альфою .4/.45):
+       кільце з прозорістю давало 1.82:1 на білому при пороці 3:1 (аудит
+       2026-10-01, A1). `--focus-ring-color` лишається для `shadow-glow`. */
     --tw-ring-shadow: 0 0 0
       calc(var(--focus-ring-offset, 2px) + var(--focus-ring-width, 3px))
-      var(--focus-ring-color, rgba(16, 185, 129, 0.4));
-  }
-}
-
-@utility focus-ring-enhanced {
-  /* Enhanced focus ring — thicker, with animation on keyboard focus.
-     Applies to all interactive elements that don't define their own ring. */
-  @apply outline-hidden;
-  transition: box-shadow 0.15s ease-out;
-  &:focus-visible {
-    box-shadow: var(--shadow-focus-ring, 0 0 0 3px rgba(16, 185, 129, 0.4));
+      rgb(var(--c-focus-solid, 17 94 89));
   }
 }
 
@@ -63,14 +56,14 @@
 
 @utility input-focus-finyk {
   @apply outline-hidden transition-colors
-           focus-visible:border-primary/60
-           focus-visible:ring-2 focus-visible:ring-primary/25;
+           focus-visible:border-finyk/60
+           focus-visible:ring-2 focus-visible:ring-finyk/25;
 }
 
 @utility input-focus-fizruk {
   @apply outline-hidden transition-colors
-           focus-visible:border-success/60
-           focus-visible:ring-2 focus-visible:ring-success/25;
+           focus-visible:border-fizruk/60
+           focus-visible:ring-2 focus-visible:ring-fizruk/25;
 }
 
 @utility input-focus-nutrition {
@@ -85,82 +78,20 @@
            focus-visible:ring-2 focus-visible:ring-routine/25;
 }
 
-@utility text-display {
-  /* ═══════════════════════════════════════════════════════════════════════
-     TYPOGRAPHY HIERARCHY — Consistent heading scale across the app.
-     Usage: apply `.text-h1` / `.text-h2` etc. to heading elements.
-     Letter-spacing and font-weight are baked in; colour inherits from
-     the surrounding context so dark-mode works automatically.
-     ═══════════════════════════════════════════════════════════════════════ */
+/* ── Legacy типографічна шкала — ВИДАЛЕНА (D8-sweep, цикл 5) ──────────────
+   Тут жила друга шкала (`text-display` / `text-h1…h3` / `text-body*` /
+   `text-caption` / `text-eyebrow` / `text-meta` / `text-micro` /
+   `text-display-stat` / `text-display-hero`), паралельна семантичній
+   `.text-style-*`. Два «display hero», два caption і два набори заголовків
+   означали, що однакова роль на різних екранах отримувала різний розмір.
 
-  /* Display — hero numbers, large stat values (e.g. ₴ 12 400) */
-  @apply text-[2.25rem] leading-none font-bold tracking-tight tabular-nums;
-}
-
-@utility text-h1 {
-  /* H1 — page / screen title */
-  @apply text-[1.5rem] leading-tight font-bold tracking-tight;
-}
-
-@utility text-h2 {
-  /* H2 — section heading */
-  @apply text-[1.125rem] leading-snug font-semibold tracking-[-0.01em];
-}
-
-@utility text-h3 {
-  /* H3 — card title, subsection label */
-  @apply text-[0.9375rem] leading-snug font-semibold;
-}
-
-@utility text-body {
-  /* Body — default prose */
-  @apply text-[0.9375rem] leading-relaxed font-normal;
-}
-
-@utility text-body-sm {
-  /* Body Small — secondary text, descriptions */
-  @apply text-[0.8125rem] leading-relaxed font-normal;
-}
-
-@utility text-caption {
-  /* Caption — labels, timestamps, meta copy */
-  @apply text-[0.75rem] leading-snug font-normal tracking-[0.01em];
-}
-
-@utility text-eyebrow {
-  /* Eyebrow — overline / section prefix ("ФІНІК", "СЬОГОДНІ") */
-  @apply text-[0.6875rem] leading-none font-semibold tracking-[0.08em] uppercase;
-}
-
-@utility text-meta {
-  /* Meta — compact lowercase labels (KPI hints, badges, "Monobank", "USD",
-     histogram axis ticks). 11px/medium with optional `tabular-nums` for
-     numeric companions. NOT uppercase — that is `text-eyebrow`'s job. */
-  @apply text-[0.6875rem] leading-snug font-medium;
-}
-
-@utility text-micro {
-  /* Micro — 10px aux glyph labels: icon-overlay numbers (mic levels, push-up
-     reps, progress-ring hints). Floor is 10px; nothing below ships in
-     prose. Use only inside controls where surrounding affordance carries
-     the meaning, never for running text. */
-  @apply text-[0.625rem] leading-tight font-medium;
-}
-
-@utility text-display-stat {
-  /* Display Stat — the single most prominent number on a screen:
-     Finyk HeroCard amount, AssetsTable asset value. 40px / bold /
-     tabular-nums / leading-tight so multi-line wraps don't push other
-     hero rows. */
-  @apply text-[2.5rem] leading-tight font-bold tracking-tight tabular-nums;
-}
-
-@utility text-display-hero {
-  /* Display Hero — full-screen "celebration" stat (story slides, weekly
-     digest take-aways). 44px / black / tabular-nums / leading-none for
-     the largest single-line number. */
-  @apply text-[2.75rem] leading-none font-black tracking-tight tabular-nums;
-}
+   Усі 31 вживання переведені на семантичні ролі. NB: правило
+   `sergeant-design/prefer-text-style` більше НЕ існує (retired ADR-0081
+   разом з рештою естетичних AST-лінтів), тож повернення legacy-класів
+   механічно не ловиться — лише review. Механічно гейтиться тільки 12px-floor
+   (`scripts/check-design-conventions.mjs`). Таблиця мапінгу — у
+   `docs/work/specs/audits/2026-07-22-cycle-5.md`.
+   ─────────────────────────────────────────────────────────────────────── */
 
 /* ── Semantic `.text-style-*` utilities ────────────────────────────────────
    The canonical 12-slot fluid type scale (display, headline, title-lg,
@@ -169,22 +100,9 @@
    `packages/design-tokens/tailwind-preset.js`. Each slot is a `clamp()`
    across the 320→1280px viewport range with role-specific line-height
    and letter-spacing, respecting the 12px floor (Hard Rule #16).
-   `.text-style-hero` remains as a back-compat alias of `headline`.
+   `.text-style-headline` remains as a back-compat alias of `headline`.
    `.tnum` (font-variant-numeric: tabular-nums) is registered alongside.
-   Referenced by the `prefer-text-style` ESLint rule.
    ─────────────────────────────────────────────────────────────────────── */
-
-@utility text-celebration {
-  /* Celebration — achievement moments: XP gains, streaks, confetti title */
-  @apply text-[1.25rem] leading-tight font-bold tracking-[0.02em];
-  color: rgb(var(--c-celebration));
-}
-
-@utility text-xp {
-  /* XP / level chip */
-  @apply text-[0.8125rem] leading-none font-bold tracking-[0.02em] tabular-nums;
-  color: rgb(var(--c-xp));
-}
 
 @utility panel {
   /* ═══════════════════════════════════════════════════════════════════════
@@ -206,9 +124,41 @@
 
 @utility page-tabbar-pad {
   /* ═══════════════════════════════════════════════════════════════════════
-     SAFE AREA PADDING — iOS notch & home indicator
+     BOTTOM CLEARANCE — лише смуга home indicator, БЕЗ запасу під навігацію.
+
+     88px тут стояли з часів, коли нав був поза потоком і перекривав низ
+     контенту. Зараз не перекриває: `bottom-nav-shell` — `position: relative`
+     (див. цей же файл), а сам нав рендериться СУСІДОМ контенту у флекс-
+     колонці `ModuleShell` (`shared/components/layout/ModuleShell.tsx`: `<div
+     class="flex-1 overflow-hidden …">{children}</div>` і одразу `{nav}`).
+     Тобто контент фізично не може заїхати під нав — а 88px усередині
+     скрол-контейнера лишались порожнечею в кінці КОЖНОЇ сторінки всіх
+     чотирьох модулів (Фізрук, Фінік, Рутина, Їжа — ~25 місць). Перевірено
+     2026-09-14 у продуктовому аудиті (PR-Z5); `Atlas.tsx` зняв цей клас у
+     себе ще раніше, але діагноз там був вужчий («на цій сторінці нава
+     немає»), тож решта модулів борг зберегла.
+
+     Safe-area лишається, і саме вона тут єдина робота: на сторінках БЕЗ
+     нава (`FizrukApp.showBottomNav === false`) низ контенту впирається в
+     смугу home indicator. Там, де нав є, він уже несе власний
+     `padding-bottom: env(safe-area-inset-bottom)`, тож цей рядок нічого не
+     додає — дублювання безпечне, а окремий клас під два випадки коштував би
+     дорожче за нього.
+
+     Назва лишилась попри зміну змісту: перейменування — це 25 call-site-ів
+     churn-у заради слова, і саме тому тут стоїть цей абзац.
+
+     Друга робота (2026-09-24): запас під плаваючу кнопку дії. FAB — fixed і
+     стоїть над навом, тож останній рядок контенту заїжджав під нього на
+     кожній сторінці з FAB. Кнопка публікує свою смугу в `--sgt-fab-inset`
+     (`useBottomInsetVar`), нав — свою в `--sgt-bottom-nav-inset`; різниця і
+     є тим, на скільки FAB нависає над скрол-контейнером. Без FAB обидві
+     змінні відсутні, і доданок дорівнює нулю.
      ═══════════════════════════════════════════════════════════════════════ */
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    env(safe-area-inset-bottom, 0px) +
+      max(0px, var(--sgt-fab-inset, 0px) - var(--sgt-bottom-nav-inset, 0px))
+  );
 }
 
 @utility routine-main-pad {
@@ -225,7 +175,35 @@
 }
 
 @utility fizruk-above-tabbar {
-  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  /* Плаваючі шари Фізрука (таймер відпочинку, підсумок тренування) стоять
+     рівно НА верхній межі треку табів. Нав має МІНІМАЛЬНУ висоту треку
+     (60/64px), а при збільшеному тексті росте — тож константа `60px` тут
+     лишилась лише нижньою межею (нав відсутній / сховався під клавіатурою:
+     змінної немає і діє вона), а реальну позицію дає виміряне
+     `--sgt-bottom-nav-inset` (`useBottomInsetVar`) мінус `border` (2px) і
+     `padding-top` оболонки (0.375rem), які лежать над треком. На 100% тексту
+     й fine-pointer це рівно `60px`, як і було; на coarse трек 64px, тож
+     шар піднімається на 4px і більше не накриває верх табів. */
+  bottom: max(
+    calc(60px + env(safe-area-inset-bottom, 0px)),
+    calc(var(--sgt-bottom-nav-inset, 0px) - 0.375rem - 2px)
+  );
+}
+
+@utility above-bottom-nav-pb {
+  /* Нижній відступ для fixed-смуги, що мусить стояти НАД нав-баром (панель
+     пакетних дій Фініка). `60px + 0.375rem + 0.5rem` — це нав на 100% тексту
+     (трек 60px + верхній відступ оболонки) і 0.5rem повітря; при збільшеному
+     тексті нав вищий, тож береться більше з двох: ця константа або виміряний
+     нав без safe-area (її вже додає зовнішній `safe-area-pb` смуги) +
+     0.375rem повітря. Без нав-бара (змінної немає) діє константа. */
+  padding-bottom: max(
+    calc(60px + 0.375rem + 0.5rem),
+    calc(
+      var(--sgt-bottom-nav-inset, 0px) - env(safe-area-inset-bottom, 0px) +
+        0.375rem
+    )
+  );
 }
 
 @utility routine-touch-field {
@@ -247,20 +225,20 @@
      FOCUS STATES — Accessible, branded
      ═══════════════════════════════════════════════════════════════════════ */
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-teal-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
   }
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-teal-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-fizruk/45 ring-offset-2 ring-offset-panel;
   }
 }
 
 @utility routine-sheet {
   & button:focus-visible {
-    @apply outline-hidden ring-2 ring-coral-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-rose-500/45 ring-offset-2 ring-offset-panel;
   }
 
   & a:focus-visible {
-    @apply outline-hidden ring-2 ring-coral-500/45 ring-offset-2 ring-offset-panel;
+    @apply outline-hidden ring-2 ring-rose-500/45 ring-offset-2 ring-offset-panel;
   }
 }
 
@@ -337,10 +315,7 @@
 }
 
 @utility badge-neutral {
-  @apply badge bg-stone-100 text-stone-600;
-  .dark & {
-    @apply bg-stone-800 text-stone-400;
-  }
+  @apply badge bg-panelHi text-muted;
 }
 
 @utility transition-interactive {
@@ -432,28 +407,80 @@
   height: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
-@utility bottom-nav-shell {
-  /* ── Browser mode: floating pill ────────────────────────────────────
-     Inset from screen edges so the page background shows through the
-     surround gap — reads as a distinct panel "lying on" the mesh surface.
-     The bottom margin clears the home indicator / browser chrome. */
-  margin-left: 0.75rem;
-  margin-right: 0.75rem;
-  margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
-  border-radius: 1.5rem; /* rounded-3xl */
+@utility h-app-dvh {
+  /* Inherit the exact block size from the normal-flow `#root`: browser mode
+     uses `100dvh`, while installed PWA standalone deliberately uses `100vh`
+     to include WebKit's viewport-fit extension. Never copy
+     `visualViewport.height`, which excludes that extension on iOS. */
+  height: 100%;
+  min-height: 0;
+}
 
-  /* ── PWA standalone: edge-to-edge dock ──────────────────────────────
-     No horizontal insets, no bottom gap, rounded only at the top so the
-     nav panel sits flush against the screen bottom. The panel background
-     (bg-panel) extends into the safe-area strip, filling what would
-     otherwise be page-coloured dead space below the labels
-     (user report 2026-06-05 / bottom-nav-gap). */
-  @media (display-mode: standalone) {
-    margin-left: 0;
-    margin-right: 0;
-    margin-bottom: 0;
-    border-radius: 1.5rem 1.5rem 0 0; /* rounded-t-3xl */
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+@utility bottom-nav-shell {
+  /* Docked flush against the screen bottom in both browser and PWA
+     standalone — no horizontal insets, flat bottom, rounded only at the
+     top (rounded-t-3xl). The panel background (bg-panel) extends into the
+     safe-area strip via padding-bottom, so there's no page-coloured dead
+     space below the labels and the nav never floats above the home
+     indicator. One navigation shape everywhere
+     (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
+
+     `padding-top` is a small fixed gap, NOT a mirror of the safe-area
+     bottom padding: mirroring `env(safe-area-inset-bottom)` (round-2 UI
+     audit X1) grew the shell by ~34px on notched phones and the owner
+     rejected the taller nav (round-3 UI audit). The home-indicator strip
+     below the labels reads as a system gutter, so a slim top inset is
+     enough to detach the row from the rounded corner. Any consumer that
+     offsets itself above this nav via `--bottom-nav-height` / the `60px`
+     inner-track constant must add this same `0.375rem` term — see
+     HubHomeView.tsx, ModuleShell.tsx, `above-bottom-nav-pb` /
+     `fizruk-above-tabbar` in this file.
+
+     The inner track is `min-h-[60px]` (`min-h-[64px]` on coarse), NOT a
+     fixed height: at 200% root text the active label (24px font) needs more
+     than 60px, and a fixed track clipped it to 0-20px (low-vision spec,
+     2026-10-01). So `60px` is a FLOOR, not the nav's height — the real
+     occupied band is the measured `--sgt-bottom-nav-inset` published by
+     `useBottomInsetVar`. Prefer it over any hardcoded 60/64.
+
+     Do not add an out-of-flow apron below this box. The old 4rem `::after`
+     workaround became a visible 64px extension, while a fixed `::before`
+     still stopped at WebKit's inset fixed-position viewport in standalone
+     mode (owner repro 2026-07-13). The normal-flow root owns the full PWA
+     height; this nav's own background and safe-area padding paint its edge. */
+  position: relative;
+  border-radius: 1.5rem 1.5rem 0 0;
+  padding-top: 0.375rem;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@utility bottom-nav-height-var {
+  /* Exposes `--bottom-nav-height` for portaled <Sheet>s to offset above
+     the hub bottom nav. Must equal the nav's REAL occupied box, not the
+     inner track alone: `bottom-nav-shell`'s `border` (1px top + 1px
+     bottom) and `padding-top: 0.375rem` sit outside the `min-h-[60px]`
+     (`min-h-[64px]` coarse) track — round-3 UI audit measured the box at
+     68px (fine) while the old formula (`60px + 0.375rem`) only produced
+     66px, a 2px `border` shortfall. Track + border explicitly instead
+     of guessing.
+
+     Track + border is the nav's height at 100% text only: the track grows
+     with scaled text, so the floor below is `max()`-ed with the measured
+     band (`--sgt-bottom-nav-inset` on <html>, which includes the safe-area
+     padding this variable excludes). With no measurement yet (first paint,
+     nav hidden under the keyboard) the floor wins, as before. */
+  --bottom-nav-height: max(
+    calc(60px + 0.375rem + 2px),
+    calc(var(--sgt-bottom-nav-inset, 0px) - env(safe-area-inset-bottom, 0px))
+  );
+}
+
+@media (pointer: coarse) {
+  .bottom-nav-height-var {
+    --bottom-nav-height: max(
+      calc(64px + 0.375rem + 2px),
+      calc(var(--sgt-bottom-nav-inset, 0px) - env(safe-area-inset-bottom, 0px))
+    );
   }
 }
 
@@ -519,6 +546,6 @@
   @apply bg-linear-to-r from-brand-600 to-teal-600 bg-clip-text text-transparent;
 }
 
-@utility text-gradient-coral {
-  @apply bg-linear-to-r from-coral-500 to-coral-600 bg-clip-text text-transparent;
+@utility text-gradient-rose {
+  @apply bg-linear-to-r from-rose-500 to-rose-600 bg-clip-text text-transparent;
 }

@@ -3,10 +3,14 @@
  * Status: Active
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { TranscribeModule } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { PendingVoiceChip } from "./voice/PendingVoiceChip";
-import { resolveConfiguredProvider } from "./voice/resolveVoiceProvider";
+import {
+  isVoiceInputEnabled,
+  resolveConfiguredProvider,
+} from "./voice/resolveVoiceProvider";
 import { useGroqVoiceInput } from "./voice/useGroqVoiceInput";
 import { useVoiceInput } from "./voice/useVoiceInput";
 
@@ -40,6 +44,12 @@ export interface VoiceMicButtonProps {
    */
   promptHint?: string;
   /**
+   * Модуль, з якого йде голос (`?module=` у `/api/transcribe`). Передавай
+   * ЗАВЖДИ: для `nutrition`/`fizruk` сервер без згоди на дані про здоровʼя
+   * відповідає 403 до Groq (GDPR Art. 9). Без тегу гейт не спрацює.
+   */
+  module?: TranscribeModule;
+  /**
    * Якщо `true` (за замовчуванням), після успішного розпізнавання
    * показуємо preview-чипі з 3-секундним таймером авто-підтвердження
    * (à la Gmail Undo Send). Користувач може:
@@ -54,6 +64,32 @@ export interface VoiceMicButtonProps {
    * draft, а юзер бачить його і може правити).
    */
   confirmBeforeCommit?: boolean;
+  /**
+   * Видимий підпис під іконкою («Сказати»). Сама іконка мікрофона
+   * невиразна серед решти хрому форми — люди не здогадуються, що можна
+   * надиктувати.
+   *
+   * **Живе ВСЕРЕДИНІ компонента навмисно.** Раніше підпис стояв сусіднім
+   * `<span>` у call-сайті (`ManualExpenseAmountSection`), і коментар там
+   * стверджував, що «контейнер сколапситься разом із кнопкою». Не
+   * сколапсювався: `VoiceMicButton` повертає `null`, а сусідній span —
+   * окрема дитина того ж `div`, тож підпис лишався сиротою без іконки.
+   * Ламалося це в кожному сценарії, де кнопки немає: провайдер не
+   * підтримується, і — з 2026-08-10 — kill-switch вимкнений.
+   *
+   * Тепер підпис не може пережити кнопку: обидва в одному ранньому
+   * `return null`. Не додавай видимий підпис сусіднім елементом у
+   * call-сайті — саме так і зʼявився цей баг.
+   *
+   * `aria-hidden`, бо доступну назву вже несе `label` → `aria-label`
+   * кнопки; без цього скрін-рідер прочитав би підпис двічі.
+   */
+  caption?: string;
+  /**
+   * Класи обгортки, коли задано `caption` (колонка «кнопка + підпис»).
+   * Без `caption` ігнорується — тоді верстку кнопки задає `className`.
+   */
+  captionWrapperClassName?: string;
 }
 
 export function VoiceMicButton({
@@ -65,7 +101,10 @@ export function VoiceMicButton({
   label,
   disabled = false,
   promptHint,
+  module,
   confirmBeforeCommit = true,
+  caption,
+  captionWrapperClassName,
 }: VoiceMicButtonProps) {
   // Sticky-fallback на Web Speech, якщо `/api/transcribe` повернув 503.
   // Тримаємо у state, щоб не спамити upstream і не плутати юзера між
@@ -74,7 +113,7 @@ export function VoiceMicButton({
 
   // `pending` — це останній transcript, що чекає на підтвердження.
   // Anchor-rect знімаємо разом з ним, бо чип позиціонується ВІДНОСНО
-  // кнопки, але рендериться у portal (фіксоване розташування у в'юпорті
+  // кнопки, але рендериться у portal (фіксоване розташування у вʼюпорті
   // живе своїм життям незалежно від overflow:hidden обгорток форм).
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const [pending, setPending] = useState<{
@@ -82,7 +121,10 @@ export function VoiceMicButton({
     anchorRect: DOMRect;
   } | null>(null);
   const onResultRef = useRef(onResult);
-  onResultRef.current = onResult;
+
+  useEffect(() => {
+    onResultRef.current = onResult;
+  }, [onResult]);
 
   // Інтерсептор: замість миттєвого commit показуємо preview-чипі.
   // Якщо `confirmBeforeCommit=false` — поведінка стара (миттєвий
@@ -100,24 +142,48 @@ export function VoiceMicButton({
         buttonRef.current?.getBoundingClientRect() ??
         // Fallback — кнопка ще не змонтована (теоретично неможливо тут,
         // бо event прилетіти може лише після click). На всякий випадок —
-        // центр в'юпорта.
+        // центр вʼюпорта.
         new DOMRect(window.innerWidth / 2, window.innerHeight / 2, 0, 0);
       setPending({ text: trimmed, anchorRect: rect });
     },
     [confirmBeforeCommit],
   );
 
-  const groq = useGroqVoiceInput({
-    lang,
-    promptHint,
-    onResult: handleTranscript,
-    onError,
-    onProviderUnavailable: () => setForceFallback(true),
-  });
+  // `webspeech` оголошений ПЕРШИМ навмисно: рішення про фолбек нижче
+  // мусить знати, чи той фолбек узагалі існує на цьому пристрої.
   const webspeech = useVoiceInput({
     lang,
     onResult: handleTranscript,
     onError,
+  });
+  const groq = useGroqVoiceInput({
+    lang,
+    promptHint,
+    module,
+    onResult: handleTranscript,
+    onError,
+    onProviderUnavailable: () => {
+      // AI-DANGER: перемикаємось ЛИШЕ коли є на що. Сліпий
+      // `setForceFallback(true)` прибирав кнопку з екрана посеред сесії:
+      // на iOS standalone-PWA `webspeech.supported === false`, тож
+      // `active` ставав непідтримуваним і рендер падав у `return null`
+      // нижче. Саме через це «підтримка голосу» залежала одночасно від
+      // платформи І від наявності серверного ключа — умова зняття
+      // прапорця №1 у `resolveVoiceProvider.ts`.
+      if (webspeech.supported) {
+        setForceFallback(true);
+        onError?.(
+          "Голосовий сервер тимчасово недоступний, перемикаюсь на браузерне розпізнавання.",
+        );
+        return;
+      }
+      // Фолбеку немає — лишаємось на Groq. Кнопка на місці, наступний
+      // тап спробує ще раз; 503 віддається до звернення до upstream,
+      // тож повтор нічого не коштує.
+      onError?.(
+        "Голосовий сервер недоступний, а цей пристрій не розпізнає мову сам. Спробуй пізніше.",
+      );
+    },
   });
 
   const configured = resolveConfiguredProvider();
@@ -150,6 +216,11 @@ export function VoiceMicButton({
     };
   }, []);
 
+  // Kill-switch стоїть ПІСЛЯ всіх хуків (Rules of Hooks) і ПЕРЕД будь-яким
+  // рендером: жоден із хуків вище не має side-effect-ів до `start()`, тож
+  // вимкнена фіча нічого не ініціалізує — ні мікрофон, ні мережу.
+  // Обґрунтування дефолту (вимкнено) — у `isVoiceInputEnabled`.
+  if (!isVoiceInputEnabled()) return null;
   if (!active.supported) return null;
 
   const isUploading = useGroq ? groq.uploading : false;
@@ -182,7 +253,7 @@ export function VoiceMicButton({
       ? "Розпізнаю…"
       : label || "Голосовий ввід";
 
-  return (
+  const micButton = (
     <>
       <button
         ref={buttonRef}
@@ -256,5 +327,21 @@ export function VoiceMicButton({
         />
       )}
     </>
+  );
+
+  if (!caption) return micButton;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex flex-col items-center gap-0.5",
+        captionWrapperClassName,
+      )}
+    >
+      {micButton}
+      <span className="text-style-caption text-subtle select-none" aria-hidden>
+        {caption}
+      </span>
+    </span>
   );
 }

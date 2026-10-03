@@ -132,7 +132,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Дякуємо! Повідомимо, щойно Premium буде готовий.",
+        "Email збережено. Напишу, щойно Premium буде готовий.",
       );
     });
     expect(onSuccess).toHaveBeenCalledWith(true);
@@ -152,7 +152,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     expect(
       (
-        screen.getByLabelText(/Premium — AI-чат/, {
+        screen.getByLabelText(/Premium · Сержант без тижневої стелі/, {
           selector: "label",
         }) as HTMLLabelElement
       ).className,
@@ -169,12 +169,24 @@ describe("WaitlistForm — submit flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Підписатись/ }));
 
     await waitFor(() => {
-      expect(toastInfoMock).toHaveBeenCalledWith(
-        "Ми вже памʼятаємо твій інтерес — жодних дублікатів.",
-      );
+      expect(toastInfoMock).toHaveBeenCalledWith("Цей email уже в списку.");
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledWith(false);
+  });
+});
+
+describe("WaitlistForm — tier label layout", () => {
+  it("лейбл тіра має `relative` — інакше sr-only radio-інпут (position: absolute) прив'язується до initial containing block і від'їжджає далеко вниз по документу (Tab виводить фокус за межі екрана)", () => {
+    render(<WaitlistForm source="pricing_page" />);
+
+    const label = screen.getByLabelText(
+      /Premium · Сержант без тижневої стелі/,
+      {
+        selector: "label",
+      },
+    ) as HTMLLabelElement;
+    expect(label.className.split(/\s+/)).toContain("relative");
   });
 });
 
@@ -232,5 +244,21 @@ describe("WaitlistForm — server error mapping", () => {
     // top-level банер не повинен зʼявитись (`bound > 0 && topLevel === null`
     // у `applyServerError`).
     expect(screen.queryByTestId("waitlist-server-error")).toBeNull();
+  });
+
+  it("дає sr-only радіо видиме кільце фокуса через peer-обгортку", () => {
+    // Регресія WF-24 (аудит 2026-09-16): справжній `<input type="radio">`
+    // має `peer sr-only`, тобто нативне кільце невидиме, а замінника на
+    // лейблі не було — клавіатурний фокус по групі не читався взагалі.
+    render(<WaitlistForm source="pricing_page" />);
+    const label = screen.getByLabelText(
+      /Premium · Сержант без тижневої стелі/,
+      {
+        selector: "label",
+      },
+    );
+    const classes = label.className.split(/\s+/);
+    expect(classes).toContain("peer-focus-visible:ring-2");
+    expect(classes).toContain("peer-focus-visible:ring-focus/45");
   });
 });

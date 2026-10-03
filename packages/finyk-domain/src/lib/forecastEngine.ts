@@ -1,5 +1,7 @@
-import { getCategory } from "../utils";
+import { getExpenseCategoryForTransaction } from "../utils";
 import { toLocalISODate } from "@sergeant/shared";
+import { INTERNAL_TRANSFER_ID } from "../constants";
+import { getCurrentMonthContext, projectMonthEndSpend } from "../domain/budget";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
 
 /** Мінімальний набір полів транзакції, потрібних прогнозу. */
@@ -62,18 +64,17 @@ function buildDailySpending(
     const splits = txSplits[tx.id];
     if (splits && splits.length > 0) {
       for (const s of splits) {
-        if (!s.categoryId || s.categoryId === "internal_transfer") continue;
+        if (!s.categoryId || s.categoryId === INTERNAL_TRANSFER_ID) continue;
         dayMap[dayKey][s.categoryId] =
           (dayMap[dayKey][s.categoryId] || 0) + (s.amount || 0);
       }
     } else {
-      const cat = getCategory(
-        tx.description,
-        tx.mcc,
+      const cat = getExpenseCategoryForTransaction(
+        tx,
         txCategories[tx.id],
         customCategories,
       );
-      if (cat.id === "internal_transfer") continue;
+      if (cat.id === INTERNAL_TRANSFER_ID) continue;
       const amt = Math.abs(tx.amount / 100);
       dayMap[dayKey][cat.id] = (dayMap[dayKey][cat.id] || 0) + amt;
     }
@@ -96,15 +97,17 @@ export function calcForecast(
   customCategories: Category[] = [],
 ): ForecastResult[] {
   const now = today || new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const daysInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0,
-  ).getDate();
-  const dayOfMonth = now.getDate();
+  // §1.10: Kyiv-anchored month window (the same one `getCurrentMonthContext`
+  // gives Budgets/Overview), not host-local `Date` getters, so the forecast
+  // and the rest of Finyk agree on which month/day it currently is.
+  const {
+    monthStart,
+    daysInMonth,
+    daysPassed: dayOfMonth,
+    daysLeft: daysRemaining,
+  } = getCurrentMonthContext(now);
   const daysElapsed = Math.max(1, dayOfMonth);
-  const daysRemaining = daysInMonth - dayOfMonth;
+  const monthPrefix = toLocalISODate(monthStart).slice(0, 7);
 
   const dailySpending = buildDailySpending(
     transactions,
@@ -119,17 +122,22 @@ export function calcForecast(
     const { categoryId, limit } = budget;
 
     // Sum actual spent per day for this category
-    let spent = 0;
+    let rawSpent = 0;
     const dailyActuals: Record<string, number> = {};
     for (const [dayKey, cats] of Object.entries(dailySpending)) {
       const amt = cats[categoryId] || 0;
       dailyActuals[dayKey] = amt;
-      spent += amt;
+      rawSpent += amt;
     }
-    spent = Math.round(spent);
+    const spent = Math.round(rawSpent);
 
-    const avgPerDay = spent / daysElapsed;
-    const forecast = Math.round(spent + avgPerDay * daysRemaining);
+    // Темп і прогноз — з точної суми (Р7 спеки аналітики v2), тією самою
+    // формулою, що й картки лімітів у web. Мобільний графік малює прогноз
+    // з першого дня, тож поріг дня тут 1, а не MIN_FORECAST_DAY.
+    const avgPerDay = rawSpent / daysElapsed;
+    const forecast = Math.round(
+      projectMonthEndSpend(rawSpent, daysElapsed, daysInMonth, 1) ?? rawSpent,
+    );
 
     const overLimit = limit > 0 && forecast > limit;
     const overPercent = overLimit
@@ -141,8 +149,7 @@ export function calcForecast(
     // Running cumulative for actual
     let cumActual = 0;
     for (let d = 1; d <= daysInMonth; d++) {
-      const dateObj = new Date(now.getFullYear(), now.getMonth(), d);
-      const dayKey = toLocalISODate(dateObj);
+      const dayKey = `${monthPrefix}-${String(d).padStart(2, "0")}`;
       const isPast = d <= dayOfMonth;
 
       if (isPast) {
@@ -154,7 +161,9 @@ export function calcForecast(
           forecast: null,
         });
       } else {
-        const projectedCum = Math.round(spent + avgPerDay * (d - dayOfMonth));
+        const projectedCum = Math.round(
+          rawSpent + avgPerDay * (d - dayOfMonth),
+        );
         dailyData.push({
           day: d,
           dayKey,

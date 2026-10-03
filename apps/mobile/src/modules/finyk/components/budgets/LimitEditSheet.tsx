@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Text, View } from "react-native";
 
 import type { Budget, LimitBudget } from "@sergeant/finyk-domain/domain";
@@ -26,21 +26,26 @@ export function LimitEditSheet({
   onDelete,
   testID,
 }: LimitEditSheetProps) {
-  const [limit, setLimit] = useState("");
+  const [limit, setLimit] = useState(() =>
+    open && budget ? String(budget.limit ?? "") : "",
+  );
   const [error, setError] = useState<string | null>(null);
+  const [prevOpen, setPrevOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open || !budget) return;
-    setLimit(String(budget.limit ?? ""));
-    setError(null);
-  }, [open, budget]);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open && budget) {
+      setLimit(String(budget.limit ?? ""));
+      setError(null);
+    }
+  }
 
   if (!budget) return null;
 
   const handleSubmit = () => {
     const v = Number(limit);
     if (!limit || Number.isNaN(v) || v <= 0) {
-      setError("Вкажіть ліміт більше 0");
+      setError("Вкажи ліміт більше 0");
       return;
     }
     onSubmit({ ...budget, limit: v });

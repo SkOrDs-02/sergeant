@@ -29,7 +29,7 @@ const NAV = [
   },
   {
     id: "pantry",
-    label: "Склад",
+    label: "Комора",
     icon: (
       <svg
         width="22"
@@ -96,6 +96,15 @@ const NAV = [
     ),
   },
 ];
+
+/**
+ * N-12 (аудит 2026-09-16): та сама мітка, що й у шапці модуля
+ * (`NutritionHeader.subtitle`) - одне джерело, щоб назва вкладки й назва
+ * екрана не розходились.
+ */
+export const NUTRITION_NAV_LABELS: Record<string, string> = Object.fromEntries(
+  NAV.map((item) => [item.id, item.label]),
+);
 
 interface NutritionBottomNavProps {
   activePage: string;

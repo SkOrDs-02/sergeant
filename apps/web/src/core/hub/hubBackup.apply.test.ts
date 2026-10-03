@@ -7,11 +7,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const normalizeFinykBackup = vi.fn((v: unknown) => v);
 const readFinykBackupFromStorage = vi.fn(() => ({}));
 const persistFinykNormalizedToStorage = vi.fn();
+const persistFinykNormalizedToSqlite = vi.fn(async (_v: unknown) => {});
 vi.mock("../../modules/finyk/lib/finykBackup", () => ({
   normalizeFinykBackup: (v: unknown) => normalizeFinykBackup(v),
   readFinykBackupFromStorage: () => readFinykBackupFromStorage(),
   persistFinykNormalizedToStorage: (v: unknown) =>
     persistFinykNormalizedToStorage(v),
+  persistFinykNormalizedToSqlite: (v: unknown) =>
+    persistFinykNormalizedToSqlite(v),
 }));
 
 const buildFizrukFullBackupPayload = vi.fn(() => ({ fizruk: true }));
@@ -93,17 +96,20 @@ describe("buildHubBackupPayload — hub / chat branches", () => {
 });
 
 describe("applyHubBackupPayload", () => {
-  it("throws on a non-hub-backup object", () => {
-    expect(() => applyHubBackupPayload({ kind: "other" })).toThrow(
+  it("throws on a non-hub-backup object", async () => {
+    await expect(applyHubBackupPayload({ kind: "other" })).rejects.toThrow(
       /резервної копії/,
     );
   });
 
-  it("routes each module section to its apply fn", () => {
-    applyHubBackupPayload(
+  it("routes each module section to its apply fn", async () => {
+    await applyHubBackupPayload(
       validPayload({ finyk: { accounts: [], version: 1 } }),
     );
     expect(persistFinykNormalizedToStorage).toHaveBeenCalledTimes(1);
+    // Канонічний запис імпорту — SQLite, не LS: без нього відновлене
+    // не видно жодному читанню Фініка (див. hubBackup.roundtrip.test.ts).
+    expect(persistFinykNormalizedToSqlite).toHaveBeenCalledTimes(1);
     expect(applyRoutineBackupPayload).toHaveBeenCalledWith({ routine: true });
     expect(applyFizrukFullBackupPayload).toHaveBeenCalledWith({ fizruk: true });
     expect(applyNutritionBackupPayload).toHaveBeenCalledWith({
@@ -111,8 +117,10 @@ describe("applyHubBackupPayload", () => {
     });
   });
 
-  it("injects version:1 into finyk when missing before persisting", () => {
-    applyHubBackupPayload(validPayload({ finyk: { accounts: [{ id: "a" }] } }));
+  it("injects version:1 into finyk when missing before persisting", async () => {
+    await applyHubBackupPayload(
+      validPayload({ finyk: { accounts: [{ id: "a" }] } }),
+    );
     expect(persistFinykNormalizedToStorage).toHaveBeenCalledTimes(1);
     const normalizeArg = normalizeFinykBackup.mock.calls.at(-1)?.[0] as Record<
       string,
@@ -121,36 +129,36 @@ describe("applyHubBackupPayload", () => {
     expect(normalizeArg["version"]).toBe(1);
   });
 
-  it("skips finyk persist when only a version key is present (no real data)", () => {
-    applyHubBackupPayload(validPayload({ finyk: { version: 1 } }));
+  it("skips finyk persist when only a version key is present (no real data)", async () => {
+    await applyHubBackupPayload(validPayload({ finyk: { version: 1 } }));
     expect(persistFinykNormalizedToStorage).not.toHaveBeenCalled();
   });
 
-  it("skips finyk persist when finyk is empty object", () => {
-    applyHubBackupPayload(validPayload({ finyk: {} }));
+  it("skips finyk persist when finyk is empty object", async () => {
+    await applyHubBackupPayload(validPayload({ finyk: {} }));
     expect(persistFinykNormalizedToStorage).not.toHaveBeenCalled();
   });
 
-  it("restores a valid hub.lastModule but ignores an unknown module", () => {
-    applyHubBackupPayload(validPayload({ hub: { lastModule: "finyk" } }));
+  it("restores a valid hub.lastModule but ignores an unknown module", async () => {
+    await applyHubBackupPayload(validPayload({ hub: { lastModule: "finyk" } }));
     expect(localStorage.getItem(HUB_MODULE_KEY)).toBe("finyk");
 
     localStorage.clear();
-    applyHubBackupPayload(
+    await applyHubBackupPayload(
       validPayload({ hub: { lastModule: "bogus-module" } }),
     );
     expect(localStorage.getItem(HUB_MODULE_KEY)).toBeNull();
   });
 
-  it("restores hub.chatHistory when it is a string", () => {
-    applyHubBackupPayload(
+  it("restores hub.chatHistory when it is a string", async () => {
+    await applyHubBackupPayload(
       validPayload({ hub: { chatHistory: '[{"role":"user"}]' } }),
     );
     expect(localStorage.getItem(HUB_CHAT_KEY)).toBe('[{"role":"user"}]');
   });
 
-  it("does not call module apply fns for absent sections", () => {
-    applyHubBackupPayload({
+  it("does not call module apply fns for absent sections", async () => {
+    await applyHubBackupPayload({
       kind: HUB_BACKUP_KIND,
       schemaVersion: HUB_BACKUP_SCHEMA_VERSION,
       finyk: null,

@@ -15,6 +15,7 @@ export {
 } from "./buildIdHeader.js";
 
 export {
+  authAccountRateLimit,
   authSensitiveRateLimit,
   authMetricsMiddleware,
 } from "./authMiddleware.js";
@@ -50,15 +51,22 @@ export * as schemas from "./schemas.js";
 
 // Нові middleware для доменних роутерів (PR 1 додає файли; PR 3 почне
 // використовувати їх замість per-handler boilerplate).
-export { asyncHandler } from "./asyncHandler.js";
 export { setModule } from "./setModule.js";
-export { requireSession, requireSessionSoft } from "./requireSession.js";
+export {
+  requireFreshSession,
+  requireSession,
+  requireSessionSoft,
+} from "./requireSession.js";
 export { requireVerifiedEmail } from "./requireVerifiedEmail.js";
 export { requireApiSecret } from "./requireApiSecret.js";
 export { requireCsrfHeader } from "./requireCsrfHeader.js";
 export type { RequireCsrfHeaderOptions } from "./requireCsrfHeader.js";
 export { safeStringEqual } from "./safeCompare.js";
-export { requireAnthropicKey } from "./requireAnthropicKey.js";
+export {
+  providerUpstreamReady,
+  requireChatUpstreamKey,
+  requireLlmUpstream,
+} from "./requireAnthropicKey.js";
 export { requireGroqKey } from "./requireGroqKey.js";
 export { requireAiQuota } from "./requireAiQuota.js";
 export { requestTimeout } from "./timeout.js";

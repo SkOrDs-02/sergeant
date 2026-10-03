@@ -10,10 +10,12 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { parseDateKey } from "../lib/hubCalendarAggregate";
 import type { HubCalendarEvent } from "../lib/types";
+import { Icon } from "@shared/components/ui/Icon";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 type GroupedListItem =
-  | { kind: "header"; label: string }
-  | { kind: "event"; e: HubCalendarEvent };
+  { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
 
 export interface RoutineCalendarMonthGridProps {
   monthCursor: { y: number; m: number };
@@ -31,7 +33,7 @@ export interface RoutineCalendarMonthGridProps {
 }
 
 /**
- * Month-mode block: top nav (‹ / month / ›), "Today" CTA, the 7×N grid
+ * Month-mode block: top nav (chevron / month / chevron), "Today" CTA, the 7×N grid
  * of day cells, the selected-day caption, and an inline list of the
  * day's grouped events. Only mounted when `timeMode === "month"`, so
  * the parent controls visibility.
@@ -62,11 +64,11 @@ export function RoutineCalendarMonthGrid({
           <IconButton
             size="md"
             variant="ghost"
-            className="border border-line bg-panel/90 shadow-sm"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             onClick={() => goMonth(-1)}
             aria-label="Попередній місяць"
           >
-            ‹
+            <Icon name="chevron-left" size="sm" />
           </IconButton>
           <span className="text-style-label capitalize flex-1 text-center">
             {monthTitle}
@@ -74,11 +76,11 @@ export function RoutineCalendarMonthGrid({
           <IconButton
             size="md"
             variant="ghost"
-            className="border border-line bg-panel/90 shadow-sm"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             onClick={() => goMonth(1)}
             aria-label="Наступний місяць"
           >
-            ›
+            <Icon name="chevron-right" size="sm" />
           </IconButton>
         </div>
         <Button
@@ -109,11 +111,8 @@ export function RoutineCalendarMonthGrid({
             const key = `${monthCursor.y}-${String(monthCursor.m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const n = dayCounts.get(key) || 0;
             const sel = selectedDay === key;
-            const label = parseDateKey(key).toLocaleDateString("uk-UA", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
+            const label = formatUaWeekdayDate(parseDateKey(key), {
+              withYear: true,
             });
             const aria =
               n > 0
@@ -126,8 +125,12 @@ export function RoutineCalendarMonthGrid({
                 onClick={() => onSelectDay(key)}
                 aria-label={aria}
                 aria-pressed={sel}
+                // data-compact: глобальна сітка 44px на coarse давала клітинці
+                // мінімальну ширину 44px, а колонка на 360px має ~38px, і сусідні
+                // зони натиску накладались. Висота 44px лишається, ширина = колонка.
+                data-compact
                 className={cn(
-                  "text-style-label aspect-square min-h-[44px] rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors",
+                  "text-style-label aspect-square min-h-[44px] w-full rounded-xl flex flex-col items-center justify-center gap-0.5 transition-colors focus-ring",
                   sel
                     ? C.monthSel
                     : "hover:bg-panelHi border border-transparent",
@@ -148,13 +151,8 @@ export function RoutineCalendarMonthGrid({
             );
           })}
         </div>
-        <p className="text-xs text-subtle mt-3 pt-3 border-t border-line">
-          Обрано:{" "}
-          {parseDateKey(selectedDay).toLocaleDateString("uk-UA", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
+        <p className="text-style-caption text-subtle mt-3 pt-3 border-t border-line">
+          Обрано: {formatUaWeekdayDate(parseDateKey(selectedDay))}
         </p>
         {showFizrukShortcut && (
           <Button
@@ -196,8 +194,7 @@ export function RoutineCalendarMonthGrid({
                     }
                   }}
                   className={cn(
-                    "flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel/60",
-                    e.completed && "opacity-70",
+                    "flex items-center gap-2 rounded-xl px-3 py-2 border border-line bg-panel",
                     e.fizruk &&
                       "cursor-pointer hover:bg-info/5 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
                   )}
@@ -206,6 +203,9 @@ export function RoutineCalendarMonthGrid({
                     className={cn(
                       "w-1.5 h-1.5 rounded-full shrink-0",
                       e.fizruk ? "bg-info" : e.finykSub ? "bg-success" : C.dot,
+                      // Виконане приглушуємо лише на маркері: opacity на всьому
+                      // рядку тягнула `text-subtle` підпис нижче AA.
+                      e.completed && "opacity-40",
                     )}
                   />
                   <span className="text-style-label flex-1 min-w-0 text-text truncate">
@@ -222,14 +222,18 @@ export function RoutineCalendarMonthGrid({
                         if (e.habitId) onToggleHabit(e.habitId, e.date);
                       }}
                       className={cn(
-                        "shrink-0 rounded-xl border text-xs! font-bold",
+                        "shrink-0 rounded-xl border font-bold",
                         e.completed ? C.done : "border-line text-muted",
                       )}
                       aria-label={
                         e.completed ? "Скасувати виконання" : "Виконано"
                       }
                     >
-                      {e.completed ? "✓" : "○"}
+                      <Icon
+                        name={e.completed ? "check" : "circle-outline"}
+                        size="sm"
+                        aria-hidden
+                      />
                     </IconButton>
                   )}
                 </div>

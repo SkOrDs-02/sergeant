@@ -22,15 +22,15 @@ describe("SubCard", () => {
     vi.useRealTimers();
   });
 
-  it("renders the subscription name and emoji in read mode", () => {
+  it("renders the subscription name without action emoji in read mode", () => {
     render(<SubCard sub={baseSub} transactions={[]} onDelete={vi.fn()} />);
     expect(screen.getByText("Netflix")).toBeInTheDocument();
-    expect(screen.getByText("🎬")).toBeInTheDocument();
+    expect(screen.queryByText("🎬")).not.toBeInTheDocument();
   });
 
-  it("shows 'ще не списувалось' when there is no matching transaction", () => {
+  it("shows 'Ще не списувалось' when there is no matching transaction", () => {
     render(<SubCard sub={baseSub} transactions={[]} onDelete={vi.fn()} />);
-    expect(screen.getByText("ще не списувалось")).toBeInTheDocument();
+    expect(screen.getByText("Ще не списувалось")).toBeInTheDocument();
   });
 
   it("masks the amount when showBalance is false", () => {
@@ -52,6 +52,25 @@ describe("SubCard", () => {
     expect(screen.getByText("••••")).toBeInTheDocument();
   });
 
+  it("says «Сьогодні» on an unpaid billing day and moves on once today's charge is linked", () => {
+    const sub = { ...baseSub, billingDay: 10, linkedTxId: "tx-today" };
+    const { unmount } = render(
+      <SubCard sub={sub} transactions={[]} onDelete={vi.fn()} />,
+    );
+    expect(screen.getByText(/Сьогодні · 10-го/)).toBeInTheDocument();
+    unmount();
+
+    const paid = {
+      id: "tx-today",
+      amount: -29900,
+      time: new Date("2026-06-10T08:30:00+03:00").getTime() / 1000,
+      description: "netflix.com",
+      currencyCode: 980,
+    } as unknown as Transaction;
+    render(<SubCard sub={sub} transactions={[paid]} onDelete={vi.fn()} />);
+    expect(screen.getByText(/Через 30 днів · 10-го/)).toBeInTheDocument();
+  });
+
   it("fires onDelete from the trash button", () => {
     const onDelete = vi.fn();
     render(<SubCard sub={baseSub} transactions={[]} onDelete={onDelete} />);
@@ -69,7 +88,7 @@ describe("SubCard", () => {
         onLinkTransactions={onLink}
       />,
     );
-    fireEvent.click(screen.getByText(/Привʼязати транзакцію/));
+    fireEvent.click(screen.getByText(/Привʼязати операцію/));
     expect(onLink).toHaveBeenCalledTimes(1);
   });
 
@@ -84,6 +103,9 @@ describe("SubCard", () => {
       />,
     );
     fireEvent.click(screen.getByLabelText("Редагувати підписку"));
+    expect(
+      screen.getByText(/для суми підписки знайду найновішу витратну/),
+    ).toBeInTheDocument();
     // Now in edit mode — change the name and save.
     const nameInput = screen.getByPlaceholderText("Назва");
     fireEvent.change(nameInput, { target: { value: "Netflix Premium" } });
@@ -109,6 +131,24 @@ describe("SubCard", () => {
     const dayInput = screen.getByPlaceholderText("День (1-31)");
     fireEvent.change(dayInput, { target: { value: "99" } });
     fireEvent.click(screen.getByText("Зберегти"));
+    expect(onEdit).not.toHaveBeenCalled();
+  });
+
+  it("does not round a fractional billing day", () => {
+    const onEdit = vi.fn();
+    render(
+      <SubCard
+        sub={baseSub}
+        transactions={[]}
+        onDelete={vi.fn()}
+        onEdit={onEdit}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("Редагувати підписку"));
+    fireEvent.change(screen.getByPlaceholderText("День (1-31)"), {
+      target: { value: "1.5" },
+    });
+    expect(screen.getByRole("button", { name: "Зберегти" })).toBeDisabled();
     expect(onEdit).not.toHaveBeenCalled();
   });
 

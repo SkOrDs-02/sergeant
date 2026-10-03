@@ -69,10 +69,3 @@ export function evaluateActivationV2(input: ActivationInput): ActivationResult {
     hoursElapsed,
   };
 }
-
-/** Convenience builder: evaluate at the current moment. */
-export function evaluateActivationV2Now(
-  input: Omit<ActivationInput, "evaluatedAt">,
-): ActivationResult {
-  return evaluateActivationV2({ ...input, evaluatedAt: Date.now() });
-}

@@ -1,6 +1,8 @@
 import {
+  createContext,
+  useContext,
   useEffect,
-  useRef,
+  useId,
   useState,
   type CSSProperties,
   type ReactNode,
@@ -10,7 +12,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
 import { Switch } from "@shared/components/ui/Switch";
 import { Skeleton, SkeletonText } from "@shared/components/ui/Skeleton";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { messages } from "@shared/i18n/uk";
 
 interface ChevronIconProps {
@@ -21,9 +23,9 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
   return (
     <Icon
       name="chevron-right"
-      size={16}
+      size="md"
       className={cn(
-        "transition-transform duration-200 shrink-0",
+        "transition-transform duration-base shrink-0",
         expanded && "rotate-90",
       )}
     />
@@ -33,30 +35,26 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
 /** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
 type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
 
-/** Scoped bg-class for the icon badge — avoids global accent-rgb emission
- *  (Hard Rule #12). Each module has a registered `-soft` / `-soft-border`
- *  pair in the design token contract. */
+/** Module accent for the header glyph (text colour only — the tinted
+ *  badge is gone, see the comment at the render site).
+ *
+ *  Раніше тут стояло «Hard Rule #12» — правило retired
+ *  [ADR-0081](../../../../../docs/governance/adr/0081-repository-simplification.md):
+ *  module-accent containment лишається чинною конвенцією, але тримається
+ *  design tokens і ревʼю, а не ESLint-гейтом. Посилання на неіснуючий номер
+ *  правила прибрано (§6 боргу, аудит Профілю/Налаштувань 2026-08-08) — саме
+ *  той клас коментаря, що пережив свій механізм. */
 const MODULE_ICON_BG: Record<SettingsModule, string> = {
-  finyk: "bg-finyk-soft border-finyk-soft-border text-finyk",
-  fizruk: "bg-fizruk-soft border-fizruk-soft-border text-fizruk",
-  routine: "bg-routine-soft border-routine-soft-border text-routine",
-  nutrition: "bg-nutrition-soft border-nutrition-soft-border text-nutrition",
+  finyk: "text-finyk",
+  fizruk: "text-fizruk",
+  routine: "text-routine",
+  nutrition: "text-nutrition",
 };
 
 export interface SettingsGroupProps {
   title: string;
-  /**
-   * Optional icon name (Lucide icon string). Replaces the deprecated
-   * `emoji` prop. When combined with `module`, the icon badge uses the
-   * module's soft-surface palette.
-   */
+  /** Optional design-system icon shown in the section badge. */
   icon?: string;
-  /**
-   * @deprecated Use `icon` instead. Kept for call-site back-compat;
-   * when both are provided `icon` wins.
-   * @removeBy 2026-09-01
-   */
-  emoji?: string;
   /** Module accent for the icon badge. Requires `icon` to be set. */
   module?: SettingsModule;
   children: ReactNode;
@@ -77,39 +75,133 @@ function matchesHash(anchorId: string | undefined): boolean {
   return window.location.hash === `#${anchorId}`;
 }
 
+/**
+ * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * прибрали другий рівень акордеона. Рішенням власника 2026-09-11
+ * forced-first-of-tab (перша секція активної вкладки, що відкривалась за
+ * замовчуванням) СКАСОВАНО — на холодному завантаженні жодна секція не
+ * відкривається автоматично лише через свою позицію в списку.
+ *
+ * `HubSettingsPage` не рендерить `<SettingsGroup>` напряму (кожна секція
+ * рендерить його всередині себе). Контекст — єдиний спосіб сторінці
+ * сказати секції, чи відкрити її за замовчуванням, не знаючи наперед, яка
+ * секція що рендерить: `HubSettingsPage` обчислює `defaultOpen` для
+ * кожної секції з двох сигналів — ціль хеш-діп-лінка/query-return
+ * (`hashSectionId`) або явний вибір юзера (`sectionOpenOverrides`), see
+ * `HubSettingsPage.tsx`. Дефолт `{ defaultOpen: false }`: без провайдера
+ * (наприклад, юніт-тест, що монтує секцію окремо від `HubSettingsPage`)
+ * поведінка не міняється.
+ *
+ * Адверсарне ревʼю 2026-08-08 (дефект №3, лишається чинним і після зняття
+ * forced-first): голий `boolean` памʼятав лише "чи форсити відкриття", але
+ * не давав секції способу сказати сторінці "юзер сам мене згорнув — не
+ * форси мене знову". Без цього перемикання вкладки (яке РЕМАУНТИТЬ
+ * секцію — вона зникає з `visible`, коли вкладка неактивна) скидало явний
+ * вибір юзера й перевідкривало секцію в дефолтний стан, тоді як пошук (де
+ * та сама React-інстанція лишається змонтованою, доки збігається запит)
+ * той самий вибір випадково зберігав — одна дія юзера, дві різні
+ * поведінки. `onUserToggle` — зворотний виклик, яким секція повідомляє
+ * власника контексту про явний (не hash-, не дефолт-, не mount-) клік по
+ * заголовку.
+ */
+export interface SettingsGroupDefaultOpenState {
+  /** Чи секція відкривається за замовчуванням при монтуванні. */
+  defaultOpen: boolean;
+  /**
+   * Викликається з новим станом `open` щоразу, коли юзер сам тапає
+   * заголовок — НЕ при авто-розкритті через дефолт чи hash-deep-link.
+   */
+  onUserToggle?: (open: boolean) => void;
+}
+
+const DEFAULT_SETTINGS_GROUP_CONTEXT: SettingsGroupDefaultOpenState = {
+  defaultOpen: false,
+};
+
+export const SettingsGroupDefaultOpenContext =
+  createContext<SettingsGroupDefaultOpenState>(DEFAULT_SETTINGS_GROUP_CONTEXT);
+
+/**
+ * L-7 parity fix (adversarial review 2026-08-08): `CollapsibleSection`
+ * (`@shared/components/ui`) closes the tab-trap for its accordion by
+ * marking the collapsed content `inert`, but `SettingsGroup` shared the
+ * exact same `grid-rows-[0fr] overflow-hidden` collapse pattern (as did
+ * `SettingsSubGroup`, before Варіант A removed its accordion entirely —
+ * see the comment above `SettingsSubGroup` below) and was left unfixed —
+ * Tab from a collapsed header (e.g. "Дашборд") still fell into ~15 hidden
+ * interactive controls (toggles, density buttons, module checkboxes), and
+ * Space on a hidden checkbox silently flipped a module on/off. Defaults to
+ * `defaultOpen={false}`, so this is the common first-paint state, not an
+ * edge case.
+ *
+ * `aria-expanded={false}` on the trigger alone made this WORSE, not
+ * better: it explicitly told assistive tech "collapsed" while the content
+ * stayed live in the tab order and a11y tree — a lie by omission that
+ * plain silence didn't have.
+ *
+ * Механізм — `useInertWhileCollapsed` (`@shared/hooks`), СПІЛЬНИЙ із
+ * `CollapsibleSection.tsx`. Доти обидва компоненти несли власну копію тієї
+ * самої логіки; розходження копій не впало б жодним тестом і не було б
+ * видно на екрані — одна з поверхонь просто тихо втратила б гарантію
+ * tab-порядку. Чому саме `inert` + `aria-hidden` + `useLayoutEffect` —
+ * розписано в докстрінгу хука.
+ */
 export function SettingsGroup({
   title,
   icon,
-  emoji,
   module,
   children,
   defaultOpen = false,
   anchorId,
 }: SettingsGroupProps) {
-  const [open, setOpen] = useState<boolean>(
-    () => defaultOpen || matchesHash(anchorId),
+  const { defaultOpen: contextDefaultOpen, onUserToggle } = useContext(
+    SettingsGroupDefaultOpenContext,
   );
+  const [open, setOpen] = useState<boolean>(
+    () => defaultOpen || contextDefaultOpen || matchesHash(anchorId),
+  );
+  // PR-S1 (аудит 2026-09-13 хвиля 5): `contextDefaultOpen` раніше читався
+  // ЛИШЕ в ініціалізаторі `useState` вище — коректно на холодному
+  // монтуванні (нова вкладка, новий hash при першому рендері), але
+  // мовчазно ігнорував ЗМІНУ контексту для секції, яка вже змонтована в
+  // активній вкладці. Це давало асиметрію «4 з 14»: `dashboard`/`plan`/
+  // `privacy`/`finyk` (єдині з `anchorId`) мали ОКРЕМИЙ слухач
+  // `window.hashchange`, що й розкривав їх постфактум; решта 10 секцій
+  // такого слухача не мали і не реагували на диплінк із ⌘K/пошуку, коли
+  // «Загальні» вже були відкриті (перехід у «Сповіщення» чи «Сержант»
+  // скролив до згорнутої шапки). Один ефект на сам контекст працює для
+  // всіх 14 однаково — `HubSettingsPage` уже оновлює `defaultOpen` на
+  // будь-який діп-лінк (hash, billing-return, silpo-return), синтетичний
+  // чи природний `hashchange` тут більше не потрібен.
+  //
+  // Ефект лише РОЗКРИВАЄ, ніколи не згортає: диплінк в ІНШУ секцію (де
+  // `contextDefaultOpen` для цієї секції став `false`) не повинен ховати
+  // те, що юзер сам залишив відкритим — той самий односторонній контракт,
+  // що мав старий `hashchange`-слухач.
+  //
+  // `queueMicrotask` — той самий обхід, що вже стоїть у
+  // `HubSettingsPage.tsx` для того ж класу ефектів: синхронний `setState`
+  // у ТІЛІ ефекту ловить `react-hooks/set-state-in-effect` (React Compiler
+  // бачить лише прямі інструкції функції, не вкладені колбеки), а зайвий
+  // каскадний рендер тут і справді не потрібен — ефект реагує на щойно
+  // застосовану зміну контексту, не на подію, яку не можна відкласти.
   useEffect(() => {
-    if (!anchorId) return;
-    const onHashChange = () => {
-      if (matchesHash(anchorId)) setOpen(true);
-    };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, [anchorId]);
-
-  // `icon` wins over the deprecated `emoji` prop.
-  const resolvedIcon = icon ?? undefined;
-  const resolvedEmoji = !resolvedIcon ? emoji : undefined;
+    if (!contextDefaultOpen) return;
+    queueMicrotask(() => setOpen(true));
+  }, [contextDefaultOpen]);
 
   // Scoped module bg class — uses registered token pair, never raw RGB
-  // (Hard Rule #12). Guard with ?. so noUncheckedIndexedAccess is satisfied.
+  // (конвенція module-accent containment, ex-Hard Rule #12, retired
+  // ADR-0081 — див. коментар над `MODULE_ICON_BG`). Guard with ?. so
+  // noUncheckedIndexedAccess is satisfied.
   const moduleBg = module != null ? (MODULE_ICON_BG[module] ?? "") : "";
+  const contentRef = useInertWhileCollapsed(open);
 
   return (
     <Card
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       padding="none"
       // `shadow-e1` drop-shadow: the glass surface's own `shadow-card-v2`
       // is an inset top-highlight only (no drop shadow), so near-white
@@ -119,40 +211,79 @@ export function SettingsGroup({
       // naturally imperceptible and the glass hairline carries separation.
       className="overflow-hidden shadow-e1"
     >
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className={cn(
-          "w-full px-4 py-4 flex items-center justify-between gap-3",
-          "hover:bg-surface-strong-glass active:bg-surface-soft-glass transition-colors",
-          open && "bg-surface-soft-glass",
-        )}
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          {resolvedIcon && (
-            <span
-              className={cn(
-                "rounded-r-md p-1.5 border flex items-center justify-center shrink-0",
-                moduleBg ||
-                  "bg-surface-soft-glass border-surface-line text-muted-v2",
-              )}
-            >
-              <Icon name={resolvedIcon} size={18} />
-            </span>
+      {/* Дефект №5 (адверсарне ревʼю 2026-08-08): найближчий заголовок вище
+          — sr-only `<h1>Налаштування</h1>` на рівні сторінки; сама секція
+          малювала заголовок як `<span>` усередині кнопки, тобто не
+          заголовок узагалі, тож аутлайн стрибав h1 → h3 (заголовок
+          `SettingsSubGroup` нижче) — axe `heading-order` це ловить.
+          Канонічний disclosure-патерн — `<h2><button aria-expanded>…
+          </button></h2>`. `className="contents"` (display:contents) не
+          додає власного боксу в layout, тож кнопка лишається прямим
+          flex-дитям `<Card>` візуально й запити `getByRole("button", {
+          name })` не бачать різниці — але дерево заголовків стає
+          коректним h1 → h2 → h3.
+
+          Ризик, який тут треба знати: історично `display: contents`
+          ВИКИДАВ елемент із дерева доступності (Chrome/Firefox/Safari,
+          ~2018-2022) — тобто рівно той механізм, який мовчки звів би цей
+          фікс нанівець. У сучасних рушіях це полагоджено, і перевіряє це
+          не припущення, а гейт: `heading-order` тепер входить у фільтр
+          `tests/a11y/axe.spec.ts` і ганяється в справжньому Chromium
+          (CI-джоб «Accessibility (axe-core)»). Якщо колись візьмемо
+          рушій, де баг живий, той гейт почервоніє — і тоді заміна проста:
+          віддати `<h2>` реальний бокс і зняти flex-обгортку з кнопки. */}
+      <h2 className="contents">
+        <button
+          type="button"
+          onClick={() => {
+            // CodeRabbit-ревʼю PR #757: апдейтер `setOpen` мусить лишатись
+            // ЧИСТИМ — React 18 (незалежно від dev/prod) інколи обчислює
+            // updater-функцію "eager" одразу в обробнику dispatch-у (щоб
+            // перевірити, чи справді змінюється стан), а потім ЩЕ РАЗ під
+            // час самого рендеру — побічний ефект (`onUserToggle`)
+            // усередині апдейтера стріляв би більше одного разу на клік.
+            // Рахуємо `next` з поточного `open` ПОЗА апдейтером,
+            // викликаємо `setOpen`, і лише ПІСЛЯ цього — `onUserToggle`,
+            // рівно один раз.
+            const next = !open;
+            setOpen(next);
+            // Явний клік юзера — не mount, не hash, не Варіант A
+            // дефолт. Повідомляємо нагору (дефект №3), щоб власник
+            // контексту (зазвичай `HubSettingsPage`) міг запамʼятати
+            // цей вибір per-section-id і не форсити дефолт знову після
+            // ремаунту (перемикання вкладки чи search).
+            onUserToggle?.(next);
+          }}
+          aria-expanded={open}
+          className={cn(
+            "w-full px-4 py-4 flex items-center justify-between gap-3",
+            "hover:bg-surface-strong-glass active:bg-surface-soft-glass transition-colors",
+            open && "bg-surface-soft-glass",
           )}
-          {resolvedEmoji && (
-            <span className="text-lg w-7 h-7 flex items-center justify-center rounded-xl bg-bg">
-              {resolvedEmoji}
-            </span>
-          )}
-          <span className="text-base font-semibold text-text">{title}</span>
-        </div>
-        <ChevronIcon expanded={open} />
-      </button>
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Гліф у рядку назви, без тонованого квадрата (огляд 2026-09-04,
+                той самий хід, що `BentoCard` 2026-09-03): icon-in-tinted-
+                square — T5 з анти-слоп аудиту, і 14 таких квадратів поспіль
+                робили сторінку стосом однакових плиток. Модульний акцент
+                лишається на самому гліфі. */}
+            {icon && (
+              <Icon
+                name={icon}
+                size="lg"
+                className={cn("shrink-0", moduleBg || "text-muted")}
+                aria-hidden
+              />
+            )}
+            <span className="text-style-title text-text">{title}</span>
+          </div>
+          <ChevronIcon expanded={open} />
+        </button>
+      </h2>
       <div
+        ref={contentRef}
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out",
+          "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
@@ -169,46 +300,29 @@ export function SettingsGroup({
 export interface SettingsSubGroupProps {
   title: string;
   children: ReactNode;
-  defaultOpen?: boolean;
 }
 
-export function SettingsSubGroup({
-  title,
-  children,
-  defaultOpen = false,
-}: SettingsSubGroupProps) {
-  const [open, setOpen] = useState<boolean>(defaultOpen);
+/**
+ * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * підрозділ більше не другий рівень акордеона. Раніше тут стояв власний
+ * `<button>` з `aria-expanded`, шевроном зліва (на відміну від
+ * `SettingsGroup` вище, де шеврон справа) і власною рамкою-коробкою — два
+ * різні патерни розкриття на шляху до одного тумблера (V-12 audit finding:
+ * підблок малювався пʼятьма різними рецептами по кодовій базі). Тепер це
+ * підписана група: заголовок-лейбл (`<h3>`) + завжди видимий вміст — без
+ * кнопки, стану, `aria-expanded`, `inert` чи власної рамки. Підрозділ
+ * візуально відділяється лейблом, а не вкладеною панеллю.
+ */
+export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
   return (
-    <div className="rounded-xl bg-surface-soft-glass border border-surface-line shadow-soft overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "flex items-center gap-2 w-full text-left group px-3 py-3",
-          "hover:bg-surface-strong-glass transition-colors",
-        )}
-      >
-        <ChevronIcon expanded={open} />
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift --
-            Collapsible header uses `group-hover:text-brand-strong` interactive
-            state + transition-colors, which SectionHeading can't express via
-            its static tone tokens. Resting tone is `text-text` (stone-900) —
-            the previous `text-muted` resting tone read as light-on-light in
-            the warm light theme over the soft-glass card (user report
-            2026-05-26 / `ui-layout-styling-fixes`). */}
-        <span className="text-xs font-bold text-text uppercase tracking-wider group-hover:text-brand-strong transition-colors">
-          {title}
-        </span>
-      </button>
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out",
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-        )}
-      >
-        <div className="overflow-hidden">
-          <div className="px-3 pb-3 pt-1 space-y-3">{children}</div>
-        </div>
+    <div className="space-y-3">
+      <h3 className="text-style-overline text-text">{title}</h3>
+      {/* Сусідні рядки (`data-row`, див. `ToggleRow`) стоять впритул на
+          спільній hairline — проміжок лишається лише між рядком і
+          абзацом/кнопкою. */}
+      <div className="flex flex-col gap-3 [&>[data-row]+[data-row]]:-mt-3">
+        {children}
       </div>
     </div>
   );
@@ -219,136 +333,127 @@ export interface ToggleRowProps {
   description?: ReactNode;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  /**
+   * Вимикає САМ контрол, а не малює його вимкненим.
+   *
+   * Доти цієї пропи не було, і єдиний споживач із заблокованими тумблерами
+   * (`ExperimentalSection`) обходився `aria-disabled` на КОНТЕЙНЕРІ плюс
+   * `opacity` плюс no-op в `onChange`. Візуально це читалось як
+   * заблоковане, а для клавіатури й скрінрідера тумблер лишався звичайним
+   * активним switch-ем: його можна сфокусувати, натиснути, почути
+   * підтвердження — і нічого не станеться. Знахідка PR-S11.
+   *
+   * `Switch` вимкнений стан має повний (`disabled` на контролі,
+   * `opacity-60`, `cursor-not-allowed`) — бракувало лише шляху до нього.
+   */
+  disabled?: boolean;
 }
 
+/**
+ * Рядок «підпис ліворуч — тумблер праворуч» у Налаштуваннях.
+ *
+ * Візуал (tappable-картка з бордером і hover-станом) — PR-37 ux-roast
+ * 2026-Q3 §3.1: доти рядок читався як звичайний текст на тлі секції і
+ * тумблери губились. Обгортка лишається `label` саме заради цього —
+ * тапається весь рядок, а не лише підпис чи трек.
+ *
+ * **Чому імʼя тумблера задається через `aria-labelledby`, а не структурою.**
+ * У цьому рядку два конкуруючі варіанти фіксу зійшлись у мерджі: гілка
+ * PR #762 розводила вкладеність (обгортка → `div`, підпис → `label htmlFor`),
+ * `main` (PR #760) лишив обгортку `label` і додав явний `aria-labelledby`.
+ * Взято варіант `main` — він змерджений, зелений у CI і зберігає тап по
+ * всьому рядку; підхід PR #762 звужував тап-зону до підпису й треку.
+ *
+ * Ціна вибору названа чесно: вкладений `label` лишається невалідним за
+ * контент-моделлю HTML («no descendant label elements»). Саме ця
+ * невалідність і була КОРЕНЕМ падіння axe — Chrome на такій розмітці не
+ * виводив інпуту доступного імені взагалі. `aria-labelledby` знімає
+ * симптом (імʼя тепер явне), але не саму вкладеність, тож структурне
+ * прибирання лишається відкритим боргом.
+ */
 export function ToggleRow({
   label,
   description,
   checked,
   onChange,
+  disabled = false,
 }: ToggleRowProps) {
+  const labelId = useId();
   return (
     <label
-      // PR-37 ux-roast 2026-Q3 / §3.1: row reads as plain copy on the
-      // section background — користувачі скаржаться, що тумблери губляться
-      // на тлі. Тепер це явна tappable картка з бордером і фоном, явним
-      // hover/active-стейтом, по всій ширині.
+      data-row
       className={cn(
-        "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
-        "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
-        "hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass",
-        "transition-[background-color,border-color]",
+        "flex items-center justify-between gap-4 group min-h-[44px]",
+        // Курсор і hover теж мусять піти: рядок, який підсвічується під
+        // мишею, обіцяє дію, якої не буде.
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
+        // Рядок списку на hairline, а не картка в картці (огляд 2026-09-04,
+        // П2 анти-слоп стратегії: контекст під заголовком — щільний список
+        // без карток). Тап лишається на всю ширину рядка.
+        "py-3 -mx-2 px-2 rounded-lg border-b border-line/60 last:border-b-0",
+        !disabled && "hover:bg-panelHi active:bg-panelHi",
+        "transition-[background-color]",
       )}
     >
       <div className="flex-1 min-w-0">
-        <span className="text-style-label text-text group-hover:text-brand-strong transition-colors">
+        <span
+          id={labelId}
+          className="text-style-label text-text group-hover:text-brand-strong transition-colors"
+        >
           {label}
         </span>
         {description && (
-          <p className="text-xs text-subtle mt-1 leading-relaxed">
+          // `text-muted`, не `text-subtle`: опис тумблера пояснює, ЩО саме
+          // вмикаєш, — тобто це не декоративний текст, і читабельним він
+          // мусить бути. Спершу це був ще й обхід контрасту (темний subtle
+          // #5f6b64 давав 3.22 при потрібних 4.5); 2026-08-21 тир піднято до
+          // #8a968e (5.84) і обхід більше не потрібен — аргумент про роль
+          // тексту лишається.
+          //
+          // Обидві гілки мерджу зійшлись тут на одному й тому ж висновку
+          // незалежно одна від одної.
+          <p className="text-style-caption text-muted mt-1 leading-relaxed">
             {description}
           </p>
         )}
       </div>
       <div className="shrink-0">
-        <Switch checked={checked} onChange={onChange} />
+        <Switch
+          checked={checked}
+          onChange={onChange}
+          disabled={disabled}
+          aria-labelledby={labelId}
+        />
       </div>
     </label>
   );
 }
 
-export interface ConfirmModalProps {
-  open: boolean;
-  title: string;
-  body?: ReactNode;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-export function ConfirmModal({
-  open,
-  title,
-  body,
-  confirmLabel,
-  danger,
-  onConfirm,
-  onCancel,
-}: ConfirmModalProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  useDialogFocusTrap(open, panelRef, {
-    onEscape: onCancel,
-    inertBackground: true,
-  });
-
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-120 flex items-center justify-center p-4"
-      role="presentation"
-    >
-      <button
-        type="button"
-        className="absolute inset-0 bg-black/60 backdrop-blur-md motion-safe:animate-fade-in"
-        onClick={onCancel}
-        aria-label={messages.actions.close}
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="confirm-modal-title"
-        className={cn(
-          "relative w-full max-w-sm p-6 z-10 motion-safe:animate-scale-in",
-          // v2 glass surface — auto-upgrades to opaque in HC (theme.css
-          // §HC v2 overrides: --surface-glass → rgba(255,255,255,1) /
-          // rgba(32,28,25,1) dark-HC). No separate `html.hc &` needed.
-          "bg-surface-glass backdrop-blur-xl border border-surface-line",
-          "rounded-r-2xl shadow-card-v2",
-        )}
-      >
-        <h2
-          id="confirm-modal-title"
-          className="text-style-title text-text leading-tight"
-        >
-          {title}
-        </h2>
-        {body && (
-          <p className="text-sm text-muted mt-3 leading-relaxed">{body}</p>
-        )}
-        <div className="flex gap-3 mt-6">
-          <button
-            type="button"
-            className="text-style-label flex-1 py-3.5 rounded-xl border border-line text-muted hover:bg-surface-strong-glass hover:text-text transition-colors"
-            onClick={onCancel}
-          >
-            {messages.actions.cancel}
-          </button>
-          <button
-            type="button"
-            className={cn(
-              "text-style-label flex-1 py-3.5 rounded-xl text-white transition-colors shadow-soft",
-              danger
-                ? "bg-danger-strong hover:bg-danger/90 active:bg-danger/80"
-                : "bg-brand-strong hover:bg-brand/90 active:bg-brand/80",
-            )}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+// `ConfirmModal` видалено (V-8, аудит Профілю/Налаштувань 2026-08-08).
+// Це була ДРУГА оболонка підтвердження на тих самих двох сторінках, з
+// власним затемненням (`bg-black/60 backdrop-blur-md` проти `bg-black/40`
+// у канонічному `ConfirmDialog`) і — головне — БЕЗ `createPortal`: вона
+// малювалась у потоці батька, тож усередині glass-картки Налаштувань її
+// обрізало (той самий симптом, що вже описаний у `OnboardingWizard.tsx`).
+// На момент видалення продуктових споживачів не лишилось жодного —
+// останній (`PrivacySection`) переїхав на `ConfirmDialog` хвилею 2. Мертвий
+// код із відомим дефектом небезпечніший за відсутній: наступний, хто
+// шукатиме «модалку в цьому файлі», знайде саме його.
+// Канонічна оболонка одна — `@shared/components/ui/ConfirmDialog`.
 export interface SectionSkeletonProps {
   /**
-   * Minimum height in pixels. Matches the real section's default-expanded
-   * height (header + collapsed SubGroups + chrome padding) so the Suspense
-   * fallback does not cause Cumulative Layout Shift when the lazy chunk
-   * resolves and the real section paints.
+   * Minimum height in pixels. Matches the real section's footprint AS IT
+   * FIRST PAINTS — the closed-header height for a section that mounts
+   * collapsed (the common case since forced-first-of-tab was retired by
+   * owner decision 2026-09-11), or the full expanded-content height for a
+   * section whose `defaultOpen` resolves `true` from a hash-deep-link
+   * target or a remembered user override (see
+   * `SettingsGroupDefaultOpenContext` above). This is no longer "header +
+   * collapsed SubGroups" (adversarial review 2026-08-08, дефект №4):
+   * Варіант A removed `SettingsSubGroup`'s own collapse state entirely —
+   * its content is always visible now — so there's no in-between
+   * middle-height state left to match; it's either the closed header or
+   * the section's true rendered height.
    *
    * Per-section values are owned by the caller — each `<Suspense>`
    * boundary in `HubSettingsPage` passes the height it knows for its
@@ -390,7 +495,7 @@ export function SectionSkeleton({
   return (
     <Card
       prominence="glass"
-      radius="r-lg"
+      radius="lg"
       padding="none"
       className="overflow-hidden"
       role="status"
@@ -400,7 +505,7 @@ export function SectionSkeleton({
     >
       <div className="w-full px-4 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Skeleton shimmer className="w-9 h-9 rounded-r-md shrink-0" />
+          <Skeleton shimmer className="w-9 h-9 rounded-xl shrink-0" />
           <SkeletonText shimmer className="w-1/3 max-w-[180px]" />
         </div>
         <Skeleton shimmer className="w-4 h-4 rounded-sm shrink-0" />

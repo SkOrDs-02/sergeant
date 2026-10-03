@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { triggerFizrukDualWrite } from "../lib/dualWrite/index";
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import { recordBodyWeight } from "../../../core/profile/recordBodyWeight";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractMeasurementSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractMeasurementSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -50,7 +52,7 @@ export interface MeasurementEntry {
 }
 
 function uid() {
-  return `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `m_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 // F3: min/max bounds guard against out-of-range PII writes (e.g. NaN,
@@ -82,34 +84,40 @@ export const MEASURE_FIELDS = [
  */
 export function useMeasurements() {
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  const [entries, setEntries] = useState<MeasurementEntry[]>(() => {
-    const cache = getCachedFizrukSqliteState();
-    return cache.refreshedAt === null
-      ? []
-      : (cache.measurements as MeasurementEntry[]);
-  });
+  const [entries, setEntries] = useSqliteTickOverlay<MeasurementEntry[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? undefined
+        : (cache.measurements as MeasurementEntry[]);
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null
+        ? []
+        : (cache.measurements as MeasurementEntry[]);
+    },
+  );
 
-  // Overlay measurements from the SQLite cache once it's warm.
-  useEffect(() => {
-    const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    setEntries(cache.measurements as MeasurementEntry[]);
-  }, [sqliteCacheTick]);
+  const intended = useFizrukIntendedSlice<"measurements">(sqliteCacheTick);
 
-  const persist = useCallback((next: MeasurementEntry[]) => {
-    setEntries(next);
-    const prevDualWrite =
-      peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-    const nextDualWrite = {
-      ...prevDualWrite,
-      measurements: extractMeasurementSnapshots(next),
-    };
-    try {
-      triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
-    } catch {
-      /* trigger is fire-and-forget — never propagate */
-    }
-  }, []);
+  const persist = useCallback(
+    (next: MeasurementEntry[]) => {
+      setEntries(next);
+      const transition = fizrukDualWriteTransition(
+        "measurements",
+        intended,
+        extractMeasurementSnapshots(next),
+      );
+      try {
+        triggerFizrukDualWrite(transition.prev, transition.next);
+      } catch {
+        /* trigger is fire-and-forget — never propagate */
+      }
+    },
+    [intended, setEntries],
+  );
 
   const addEntry = useCallback(
     (entry: Partial<MeasurementEntry>): MeasurementEntry => {
@@ -127,9 +135,16 @@ export function useMeasurements() {
       const e: MeasurementEntry = {
         ...sanitised,
         id: uid(),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для timestamp запису (не Kyiv-межа доби)
         at: new Date().toISOString(),
       };
       persist([e, ...entries]);
+      // W1-WEIGHT-SOT стадія 2: мосту звідси НЕ БУЛО — зважування на екрані
+      // «Заміри» мовчки не оновлювало «поточну вагу» для КБЖВ-цілей. Той
+      // самий хелпер, що й у `useDailyLog.addEntry`.
+      if (typeof e.weightKg === "number") {
+        recordBodyWeight({ weightKg: e.weightKg, at: e.at });
+      }
       return e;
     },
     [persist, entries],

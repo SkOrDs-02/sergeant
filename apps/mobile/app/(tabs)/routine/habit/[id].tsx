@@ -2,7 +2,7 @@
  * Deep-link target for `sergeant://routine/habit/{id}`.
  *
  * Stays as a lightweight placeholder while the full per-habit detail
- * screen is scoped (see follow-up in `docs/mobile/react-native-migration.md`
+ * screen is scoped (see follow-up in `docs/engineering/mobile/react-native-migration.md`
  * § 5.4). Today it surfaces the habit id so that a user who arrived
  * from a push-notification reminder or an Android app-shortcut still
  * has a visible confirmation that the deep link was routed correctly;
@@ -19,7 +19,7 @@ export default function HabitDetailScreen() {
     <DeepLinkPlaceholder
       title="Звичка"
       detail={id ? `ID: ${id}` : undefined}
-      followUp="Повний екран звички (деталі, streak, історія, нотатки) — наступний PR фази Рутина."
+      followUp="Повний екран звички (деталі, streak, історія, нотатки): наступний PR фази Рутина."
       primaryAction={{ label: "До списку звичок", href: "/(tabs)/routine" }}
     />
   );

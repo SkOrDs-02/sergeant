@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // pnpm overrides drift guard — closes hardening card L1
-// (docs/04-governance/security/hardening/L1-uuid-override.md).
+// (docs/work/specs/security-hardening/L1-uuid-override.md).
 //
 // `package.json` declares `pnpm.overrides` to force a specific major of
 // transitive deps (e.g. `uuid`) so that we don't ship two copies in the
@@ -36,6 +36,7 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pkgPath = join(repoRoot, "package.json");
 const pkg = JSON.parse(readFileSync(pkgPath, "utf8"));
 const overrides = pkg.pnpm?.overrides ?? {};
+const pnpmNeedsShell = process.platform === "win32";
 
 const overrideNames = Object.keys(overrides);
 if (overrideNames.length === 0) {
@@ -87,9 +88,20 @@ for (const key of overrideNames) {
       cwd: repoRoot,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
-      maxBuffer: 64 * 1024 * 1024,
+      // 512 MB, не 64: для пакетів із широким деревом залежних (babel →
+      // browserslist у кожному воркспейсі) `pnpm why -r --json` віддає
+      // ~70 MB, і на 64 MB execFileSync кидав ENOBUFS, який нижче читався
+      // як «жоден пакет не залежить» — хибний червоний гейт (PR #1005).
+      maxBuffer: 512 * 1024 * 1024,
+      shell: pnpmNeedsShell,
     });
   } catch (err) {
+    if (/** @type {{code?: string}} */ (err).code === "ENOBUFS") {
+      failures.push(
+        `${key}: \`pnpm why ${name} -r --json\` overflowed maxBuffer — raise the limit in this script, the override itself was not checked.`,
+      );
+      continue;
+    }
     // `pnpm why` exits non-zero when no workspace package depends on
     // `name`. That means the override is dead — flag it explicitly so
     // the contributor can drop it.
@@ -164,7 +176,7 @@ if (failures.length > 0) {
   console.error("\n[check-pnpm-overrides] FAILED:\n");
   for (const f of failures) console.error(`  - ${f}`);
   console.error(
-    '\nFix: tighten the override range to a single major (e.g. "^14" not ">=14"),\nor drop the override if no package depends on the target. See\ndocs/04-governance/security/hardening/L1-uuid-override.md for context.\n',
+    '\nFix: tighten the override range to a single major (e.g. "^14" not ">=14"),\nor drop the override if no package depends on the target. See\ndocs/work/specs/security-hardening/README.md (картка L1) for context.\n',
   );
   process.exit(1);
 }

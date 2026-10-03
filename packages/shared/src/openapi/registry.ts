@@ -1,7 +1,10 @@
-import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
+import * as receiptSchemas from "../schemas/receipts";
+import * as importSchemas from "../schemas/import";
+import * as silpoSchemas from "../schemas/silpo";
+import * as finykSchemas from "../schemas/finyk";
 
 /**
  * Builds OpenAPI 3.1 document from zod-схем у `@sergeant/shared/schemas/api`.
@@ -12,7 +15,7 @@ import * as schemas from "../schemas/api";
  * `#/components/schemas/<id>` формується автоматично з `$ref`-ом.
  *
  * Caller має імпортувати `./routes` перед викликом, щоб route-каталог
- * зареєструвався у локальному об'єкті `paths`.
+ * зареєструвався у локальному обʼєкті `paths`.
  */
 
 // ────────────────────── Named components (з ID для $ref) ──────────────────────
@@ -28,10 +31,82 @@ const MeResponse = schemas.MeResponseSchema.meta({
   id: "MeResponse",
   description: "Відповідь на GET /api/me.",
 });
+const MeDeleteBody = schemas.MeDeleteBodySchema.meta({
+  id: "MeDeleteBody",
+  description:
+    "Тіло DELETE /api/me. Пароль обовʼязковий для акаунтів із credential-входом і безпредметний для OAuth-акаунтів.",
+});
+const MeDeleteResponse = schemas.MeDeleteResponseSchema.meta({
+  id: "MeDeleteResponse",
+  description:
+    "Відповідь DELETE /api/me. `deletedAt` — коли сервер прийняв прохання; `scheduledPurgeAt` — коли акаунт зникне (30 днів).",
+});
+const MeDeletionStatusResponse = schemas.MeDeletionStatusResponseSchema.meta({
+  id: "MeDeletionStatusResponse",
+  description:
+    "Відповідь GET /api/me/deletion-status. `pending: false` — акаунт активний, дат немає.",
+});
+const MeRestoreResponse = schemas.MeRestoreResponseSchema.meta({
+  id: "MeRestoreResponse",
+  description: "Відповідь POST /api/me/restore — прохання скасоване.",
+});
+const UserProfilePutBody = schemas.UserProfilePutBodySchema.meta({
+  id: "UserProfilePutBody",
+  description:
+    "PUT /api/me/profile request body — write-through профіль/біометрія (migration 115, НЕ oplog-sync).",
+});
+const UserProfileResponse = schemas.UserProfileResponseSchema.meta({
+  id: "UserProfileResponse",
+  description:
+    "Відповідь GET/PUT /api/me/profile. `profile: {}` / `updatedAt: null` — дефолт, коли рядка ще немає.",
+});
+const UserPreferences = schemas.UserPreferencesSchema.meta({
+  id: "UserPreferences",
+  description:
+    "Відповідь GET/PATCH /api/me/preferences — налаштування користувача.",
+});
+const UserPreferencesPatch = schemas.UserPreferencesPatchSchema.meta({
+  id: "UserPreferencesPatch",
+  description:
+    "Тіло PATCH /api/me/preferences — часткове оновлення налаштувань.",
+});
+const MeExportResponse = schemas.MeExportResponseSchema.meta({
+  id: "MeExportResponse",
+  description:
+    "Відповідь GET /api/me/export — повний експорт даних користувача (GDPR-право на доступ).",
+});
+const SyncV2PushRequest = schemas.SyncV2PushSchema.meta({
+  id: "SyncV2PushRequest",
+  description: "Тіло POST /api/v2/sync/push — пачка op-ів per-row op-log sync.",
+});
+const SyncV2PullQuery = schemas.SyncV2PullSchema.meta({
+  id: "SyncV2PullQuery",
+  description:
+    "Query для GET /api/v2/sync/pull і /stream: `since` (курсор по id) та `limit`.",
+});
+const CspReportBody = schemas.CspReportBodySchema.meta({
+  id: "CspReportBody",
+  description:
+    "POST /api/csp-report — legacy `csp-report`, Reporting-API масив або bare-об'єкт (Safari).",
+});
+const ManualExpenseCreate = finykSchemas.ManualExpenseCreateSchema.meta({
+  id: "ManualExpenseCreate",
+  description: "Тіло POST /api/finyk/manual-expenses (сума в копійках).",
+});
+const ManualExpenseCreateResponse =
+  finykSchemas.ManualExpenseCreateResponseSchema.meta({
+    id: "ManualExpenseCreateResponse",
+    description: "Відповідь 201 POST /api/finyk/manual-expenses.",
+  });
 const ChatRequest = schemas.ChatRequestSchema.meta({
   id: "ChatRequest",
   description:
     "POST /api/chat — Anthropic-чат із tool-results і опційним streaming.",
+});
+const ChatUsageResponse = schemas.ChatUsageResponseSchema.meta({
+  id: "ChatUsageResponse",
+  description:
+    "GET /api/chat/usage — денний Free-tier ліміт AI-чату (PR-42 chat counter).",
 });
 const RecallMemoryRequest = schemas.RecallMemoryRequestSchema.meta({
   id: "RecallMemoryRequest",
@@ -47,6 +122,21 @@ const RecallMemoryResponse = schemas.RecallMemoryResponseSchema.meta({
   id: "RecallMemoryResponse",
   description:
     "Відповідь POST /api/ai-memory/recall — масив результатів (може бути порожнім).",
+});
+const AiMemoryClearResponse = schemas.AiMemoryClearResponseSchema.meta({
+  id: "AiMemoryClearResponse",
+  description:
+    "Відповідь DELETE /api/ai-memory — підтвердження та кількість видалених записів.",
+});
+const AiMemoryListResponse = schemas.AiMemoryListResponseSchema.meta({
+  id: "AiMemoryListResponse",
+  description:
+    "Відповідь GET /api/ai-memory/list — сторінка фактів памʼяті + keyset-курсор.",
+});
+const AiMemoryDeleteResponse = schemas.AiMemoryDeleteResponseSchema.meta({
+  id: "AiMemoryDeleteResponse",
+  description:
+    "Відповідь DELETE /api/ai-memory/{id} — ідемпотентна; deleted:false означає, що рядка вже не було.",
 });
 const AnalyzePhoto = schemas.AnalyzePhotoSchema.meta({
   id: "AnalyzePhoto",
@@ -67,10 +157,6 @@ const BackupUpload = schemas.BackupUploadSchema.meta({
 const RecommendRecipes = schemas.RecommendRecipesSchema.meta({
   id: "RecommendRecipes",
   description: "POST /api/nutrition/recommend-recipes.",
-});
-const DayHint = schemas.DayHintSchema.meta({
-  id: "DayHint",
-  description: "POST /api/nutrition/day-hint.",
 });
 const DayPlan = schemas.DayPlanSchema.meta({
   id: "DayPlan",
@@ -104,14 +190,6 @@ const CoachMemoryPost = schemas.CoachMemoryPostSchema.meta({
 const PrivatQuery = schemas.PrivatQuerySchema.meta({
   id: "PrivatQuery",
   description: "Query для GET /api/privat.",
-});
-const PushSubscribe = schemas.PushSubscribeSchema.meta({
-  id: "PushSubscribe",
-  description: "Web-push subscribe (legacy).",
-});
-const PushUnsubscribe = schemas.PushUnsubscribeSchema.meta({
-  id: "PushUnsubscribe",
-  description: "Web-push unsubscribe (legacy).",
 });
 const PushRegister = schemas.PushRegisterSchema.meta({
   id: "PushRegister",
@@ -159,6 +237,14 @@ const MonoAccountsResponse = schemas.MonoAccountsResponseSchema.meta({
   id: "MonoAccountsResponse",
   description: "Відповідь GET /api/mono/accounts — масив MonoAccountDto.",
 });
+const MonoJarDto = schemas.MonoJarDtoSchema.meta({
+  id: "MonoJarDto",
+  description: "Рядок `mono_jar` після нормалізації (bigint coerce).",
+});
+const MonoJarsResponse = schemas.MonoJarsResponseSchema.meta({
+  id: "MonoJarsResponse",
+  description: "Відповідь GET /api/mono/jars — масив MonoJarDto.",
+});
 const MonoTransactionDto = schemas.MonoTransactionDtoSchema.meta({
   id: "MonoTransactionDto",
   description:
@@ -192,6 +278,81 @@ const MonoBackfillProgress = schemas.MonoBackfillProgressSchema.meta({
   description:
     "Відповідь GET /api/mono/backfill-progress — поточний стан per-user backfill job.",
 });
+// ── Silpo MCP integration (walking-skeleton experiment) ──────────────────
+// Shapes below describe our OWN normalized storage (`silpo_receipts` /
+// `silpo_receipt_items`, migration 121), not the raw MCP tool payload — see
+// the docstring in `packages/shared/src/schemas/silpo.ts`.
+const SilpoSyncState = silpoSchemas.SilpoSyncStateSchema.meta({
+  id: "SilpoSyncState",
+  description:
+    "Відповідь GET /api/silpo/sync-state — статус інтеграції + лічильники для Settings-картки.",
+});
+const SilpoDisconnectResponse = silpoSchemas.SilpoDisconnectResponseSchema.meta(
+  {
+    id: "SilpoDisconnectResponse",
+    description:
+      "Відповідь POST /api/silpo/disconnect — `{ ok: true }` (mono-патерн: видаляє лише `silpo_connection`).",
+  },
+);
+const SilpoWipeResponse = silpoSchemas.SilpoWipeResponseSchema.meta({
+  id: "SilpoWipeResponse",
+  description:
+    "Відповідь POST /api/silpo/wipe — повне видалення чеків користувача, `deletedReceipts` — лічильник.",
+});
+const SilpoSyncResult = silpoSchemas.SilpoSyncResultSchema.meta({
+  id: "SilpoSyncResult",
+  description:
+    "Відповідь POST /api/silpo/sync — діагностичні лічильники pull/insert/match ПІСЛЯ спроби синхронізації.",
+});
+const SilpoReceiptItemDto = silpoSchemas.SilpoReceiptItemDtoSchema.meta({
+  id: "SilpoReceiptItemDto",
+  description:
+    "Рядок `silpo_receipt_items` після нормалізації (bigint coerce: `id`, `priceKop`).",
+});
+const SilpoReceiptSummaryDto = silpoSchemas.SilpoReceiptSummaryDtoSchema.meta({
+  id: "SilpoReceiptSummaryDto",
+  description:
+    "Рядок `silpo_receipts` без line items (bigint coerce: `totalKop`); `transactionId: null` — перше-класний стан «чек без транзакції».",
+});
+const SilpoReceiptDetailDto = silpoSchemas.SilpoReceiptDetailDtoSchema.meta({
+  id: "SilpoReceiptDetailDto",
+  description: "SilpoReceiptSummaryDto + масив SilpoReceiptItemDto.",
+});
+const SilpoReceiptsPage = silpoSchemas.SilpoReceiptsPageSchema.meta({
+  id: "SilpoReceiptsPage",
+  description:
+    "Відповідь GET /api/silpo/receipts — cursor-paginated `{data, nextCursor}`.",
+});
+const SilpoReceiptsQuery = silpoSchemas.SilpoReceiptsQuerySchema.meta({
+  id: "SilpoReceiptsQuery",
+  description:
+    "Query для GET /api/silpo/receipts — limit (coerced), cursor, опційний transactionId для точкового пошуку привʼязаного чека.",
+});
+// ── Silpo cart (Track G — MCP write path) ─────────────────────────────────
+const SilpoCartPreviewRequest = silpoSchemas.SilpoCartPreviewRequestSchema.meta(
+  {
+    id: "SilpoCartPreviewRequest",
+    description:
+      "Тіло POST /api/silpo/cart/preview — `{items: [{name, quantity?}]}` (1..100).",
+  },
+);
+const SilpoCartPreviewResponse =
+  silpoSchemas.SilpoCartPreviewResponseSchema.meta({
+    id: "SilpoCartPreviewResponse",
+    description:
+      "Відповідь POST /api/silpo/cart/preview — по одному result на запитаний рядок, у порядку запиту.",
+  });
+const SilpoCartApplyRequest = silpoSchemas.SilpoCartApplyRequestSchema.meta({
+  id: "SilpoCartApplyRequest",
+  description:
+    "Тіло POST /api/silpo/cart/apply — `{selections: [{lagerId, quantity}]}` (1..100); `lagerId` — опаковий токен з preview.",
+});
+const SilpoCartDto = silpoSchemas.SilpoCartDtoSchema.meta({
+  id: "SilpoCartDto",
+  description:
+    "Відповідь GET /api/silpo/cart і POST /api/silpo/cart/apply — поточний стан кошика Сільпо.",
+});
+
 const Pagination = schemas.PaginationSchema.meta({
   id: "Pagination",
   description:
@@ -207,6 +368,16 @@ const WaitlistSubmitResponse = schemas.WaitlistSubmitResponseSchema.meta({
   description:
     "Відповідь на POST /api/v1/waitlist — `created` розрізняє новий запис vs duplicate.",
 });
+const FeedbackSubmit = schemas.FeedbackSubmitSchema.meta({
+  id: "FeedbackSubmit",
+  description:
+    "POST /api/v1/feedback — in-app віджет фідбеку (головний багрепорт-канал бети).",
+});
+const FeedbackSubmitResponse = schemas.FeedbackSubmitResponseSchema.meta({
+  id: "FeedbackSubmitResponse",
+  description:
+    "Відповідь на POST /api/v1/feedback — `id` рядка у feedback_entries (bigint скоерсено в number).",
+});
 const BillingCheckoutRequest = schemas.BillingCheckoutRequestSchema.meta({
   id: "BillingCheckoutRequest",
   description: "POST /api/billing/checkout — Stripe Checkout session request.",
@@ -219,12 +390,22 @@ const BillingCheckoutResponse = schemas.BillingCheckoutResponseSchema.meta({
 const BillingStatusResponse = schemas.BillingStatusResponseSchema.meta({
   id: "BillingStatusResponse",
   description:
-    "Поточний subscription state користувача, серіалізований з subscriptions (m056).",
+    "Поточний subscription state користувача, серіалізований з subscriptions (m056), плюс знімок доступу `access` (стан free/trial/pro/grace, фічі реєстру, тижневі лічильники).",
 });
 const BillingPortalResponse = schemas.BillingPortalResponseSchema.meta({
   id: "BillingPortalResponse",
   description:
     "Відповідь POST /api/billing/portal: short-lived redirect URL у Stripe Customer Portal.",
+});
+const BillingCancelResponse = schemas.BillingCancelResponseSchema.meta({
+  id: "BillingCancelResponse",
+  description:
+    "Відповідь POST /api/billing/cancel — власне скасування Pro (LiqPay/Plata не мають Customer Portal).",
+});
+const BillingProvidersResponse = schemas.BillingProvidersResponseSchema.meta({
+  id: "BillingProvidersResponse",
+  description:
+    "GET /api/billing/providers — payment-провайдери, доступні юзеру (UA → liqpay/plata; інші → stripe).",
 });
 const TranscribeQuery = schemas.TranscribeQuerySchema.meta({
   id: "TranscribeQuery",
@@ -241,6 +422,85 @@ const WebVitalsPayload = schemas.WebVitalsPayloadSchema.meta({
   description:
     "POST /api/metrics/web-vitals — батч Core Web Vitals (LCP/INP/FCP/TTFB/CLS).",
 });
+
+// ────────────────────── Чек-скан v1 (/api/finyk/receipts/*) ───────────────
+const ReceiptLookupRequest = receiptSchemas.ReceiptLookupRequestSchema.meta({
+  id: "ReceiptLookupRequest",
+  description:
+    "POST /api/finyk/receipts/lookup — опакові поля QR фіскального чека ДПС.",
+});
+const ReceiptAnalyzeRequest = receiptSchemas.ReceiptAnalyzeRequestSchema.meta({
+  id: "ReceiptAnalyzeRequest",
+  description:
+    "POST /api/finyk/receipts/analyze — base64 фото чека (vision fallback).",
+});
+const ReceiptDraftResponse = receiptSchemas.ReceiptDraftResponseSchema.meta({
+  id: "ReceiptDraftResponse",
+  description:
+    "Відповідь lookup/analyze — чернетка чека БЕЗ запису в БД (`source: 'dps'|'vision'`).",
+});
+const ReceiptSaveRequest = receiptSchemas.ReceiptSaveRequestSchema.meta({
+  id: "ReceiptSaveRequest",
+  description:
+    "POST /api/finyk/receipts — відредагований draft + category. Опційний " +
+    "`clientScanId` (uuid) — ідемпотентність retry для vision-чеків без fiscalNum.",
+});
+const ReceiptSaveResponse = receiptSchemas.ReceiptSaveResponseSchema.meta({
+  id: "ReceiptSaveResponse",
+  description:
+    "Відповідь save — 201 (новий) або 200 + alreadyExists:true (ідемпотентний повтор).",
+});
+const ReceiptGetResponse = receiptSchemas.ReceiptGetResponseSchema.meta({
+  id: "ReceiptGetResponse",
+  description: "Відповідь GET /api/finyk/receipts/{id}.",
+});
+
+// ────────────────────── Масове ведення (/api/finyk/import/*) ──────────────
+const ImportScreenshotAnalyzeRequest =
+  importSchemas.ImportScreenshotAnalyzeRequestSchema.meta({
+    id: "ImportScreenshotAnalyzeRequest",
+    description:
+      "POST /api/finyk/import/screenshot/analyze — base64 скрін банкінгу.",
+  });
+const ImportScreenshotAnalyzeResponse =
+  importSchemas.ImportScreenshotAnalyzeResponseSchema.meta({
+    id: "ImportScreenshotAnalyzeResponse",
+    description: "Відповідь screenshot/analyze — draft rows[] БЕЗ запису в БД.",
+  });
+const ImportStatementPreviewRequest =
+  importSchemas.ImportStatementPreviewRequestSchema.meta({
+    id: "ImportStatementPreviewRequest",
+    description:
+      "POST /api/finyk/import/statement/preview — рівно одне з csv_text (готовий текст) чи file_base64 (сам файл: XLSX, HTML-таблиця під іменем .xls, CSV у будь-якому кодуванні) + опційний column mapping.",
+  });
+const ImportStatementPreviewResponse =
+  importSchemas.ImportStatementPreviewResponseSchema.meta({
+    id: "ImportStatementPreviewResponse",
+    description:
+      "Відповідь statement/preview — discriminated за needsMapping " +
+      "(profile+rows+skipped, АБО headers+sampleRows для ручного column-mapper).",
+  });
+const ImportCommitRequest = importSchemas.ImportCommitRequestSchema.meta({
+  id: "ImportCommitRequest",
+  description:
+    "POST /api/finyk/import/commit — вибрані/відредаговані rows (1..5000).",
+});
+const ImportCommitResponse = importSchemas.ImportCommitResponseSchema.meta({
+  id: "ImportCommitResponse",
+  description:
+    "Відповідь commit — batchId + created/linked + skipped{monoMatched,duplicate}.",
+});
+const ImportBatchGetResponse = importSchemas.ImportBatchGetResponseSchema.meta({
+  id: "ImportBatchGetResponse",
+  description: "Відповідь GET /api/finyk/import/batches/{id}.",
+});
+const ImportBatchUndoResponse =
+  importSchemas.ImportBatchUndoResponseSchema.meta({
+    id: "ImportBatchUndoResponse",
+    description:
+      "Відповідь DELETE /api/finyk/import/batches/{id} — undo, " +
+      "ідемпотентний (tombstoned:0 на повторний виклик).",
+  });
 
 /**
  * Канонічний shape body-помилки, який віддає `apps/server/src/http/errorHandler.ts`
@@ -284,16 +544,33 @@ const ApiError = z
 export const namedSchemas = {
   User,
   MeResponse,
+  MeDeleteBody,
+  MeDeleteResponse,
+  MeDeletionStatusResponse,
+  MeRestoreResponse,
+  UserProfilePutBody,
+  UserProfileResponse,
+  UserPreferences,
+  UserPreferencesPatch,
+  MeExportResponse,
+  SyncV2PushRequest,
+  SyncV2PullQuery,
+  CspReportBody,
+  ManualExpenseCreate,
+  ManualExpenseCreateResponse,
   ChatRequest,
+  ChatUsageResponse,
   RecallMemoryRequest,
   RecallMemoryResult,
   RecallMemoryResponse,
+  AiMemoryClearResponse,
+  AiMemoryListResponse,
+  AiMemoryDeleteResponse,
   AnalyzePhoto,
   RefinePhoto,
   ParsePantry,
   BackupUpload,
   RecommendRecipes,
-  DayHint,
   DayPlan,
   WeekPlan,
   ShoppingList,
@@ -301,8 +578,6 @@ export const namedSchemas = {
   CoachInsight,
   CoachMemoryPost,
   PrivatQuery,
-  PushSubscribe,
-  PushUnsubscribe,
   PushRegister,
   PushUnregister,
   PushSend,
@@ -314,6 +589,8 @@ export const namedSchemas = {
   MonoTransactionsQuery,
   MonoAccountDto,
   MonoAccountsResponse,
+  MonoJarDto,
+  MonoJarsResponse,
   MonoTransactionDto,
   MonoTransactionsPage,
   MonoSyncState,
@@ -321,17 +598,46 @@ export const namedSchemas = {
   MonoDisconnectResponse,
   MonoBackfillResponse,
   MonoBackfillProgress,
+  SilpoSyncState,
+  SilpoDisconnectResponse,
+  SilpoWipeResponse,
+  SilpoSyncResult,
+  SilpoReceiptItemDto,
+  SilpoReceiptSummaryDto,
+  SilpoReceiptDetailDto,
+  SilpoReceiptsPage,
+  SilpoReceiptsQuery,
+  SilpoCartPreviewRequest,
+  SilpoCartPreviewResponse,
+  SilpoCartApplyRequest,
+  SilpoCartDto,
   Pagination,
   WaitlistSubmit,
   WaitlistSubmitResponse,
+  FeedbackSubmit,
+  FeedbackSubmitResponse,
   BillingCheckoutRequest,
   BillingCheckoutResponse,
   BillingStatusResponse,
   BillingPortalResponse,
+  BillingCancelResponse,
+  BillingProvidersResponse,
   TranscribeQuery,
   TranscribeResponse,
   WebVitalsPayload,
+  ReceiptLookupRequest,
+  ReceiptAnalyzeRequest,
+  ReceiptDraftResponse,
+  ReceiptSaveRequest,
+  ReceiptSaveResponse,
+  ReceiptGetResponse,
+  ImportScreenshotAnalyzeRequest,
+  ImportScreenshotAnalyzeResponse,
+  ImportStatementPreviewRequest,
+  ImportStatementPreviewResponse,
+  ImportCommitRequest,
+  ImportCommitResponse,
+  ImportBatchGetResponse,
+  ImportBatchUndoResponse,
   ApiError,
 } as const;
-
-export { createDocument };

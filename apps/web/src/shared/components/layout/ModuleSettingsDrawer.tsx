@@ -84,7 +84,7 @@ export function ModuleSettingsDrawer({
           className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-line touch-pan-x"
           {...swipe.bind}
         >
-          <h2 id={titleId} className="text-base font-semibold text-text">
+          <h2 id={titleId} className="text-style-body font-semibold text-text">
             {title}
           </h2>
           <button

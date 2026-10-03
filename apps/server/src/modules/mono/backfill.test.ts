@@ -110,6 +110,16 @@ describe("backfillHandler", () => {
     expect(res.body).toEqual({ error: "Backfill already in progress" });
   });
 
+  it("lets the legacy active-backfills view clear a user with set(false)", async () => {
+    const active = __getActiveBackfills();
+    active.set("user_1", true);
+    expect(__getActiveBackfills().has("user_1")).toBe(true);
+
+    active.set("user_1", false);
+
+    expect(__getActiveBackfills().has("user_1")).toBe(false);
+  });
+
   it("returns 400 if no connection", async () => {
     queryMock.mockResolvedValueOnce({ rows: [] });
 
@@ -135,6 +145,28 @@ describe("backfillHandler", () => {
     const res = makeRes();
     await backfillHandler(makeReq(), res);
     expect(res.statusCode).toBe(400);
+  });
+
+  it("returns 400 if token decrypt throws", async () => {
+    (env as { MONO_TOKEN_ENC_KEY: string | undefined }).MONO_TOKEN_ENC_KEY =
+      "a".repeat(64);
+    decryptToken.mockRejectedValueOnce(new Error("bad auth tag"));
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          token_ciphertext: Buffer.from("ct"),
+          token_iv: Buffer.from("iv"),
+          token_tag: Buffer.from("tag"),
+        },
+      ],
+    });
+
+    const res = makeRes();
+    await backfillHandler(makeReq(), res);
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toEqual({
+      error: "No Monobank connection or decryption failed",
+    });
   });
 
   it("returns 400 if no accounts to backfill", async () => {
@@ -320,6 +352,63 @@ describe("backfillHandler", () => {
     await new Promise((r) => setTimeout(r, 100));
 
     expect(sleepMock).toHaveBeenCalledWith(60_000);
+  });
+
+  it("paginates a full statement page before completing a single account", async () => {
+    const sleepMock = vi.fn(async () => {});
+    __setBackfillSleep(sleepMock);
+
+    (env as { MONO_TOKEN_ENC_KEY: string | undefined }).MONO_TOKEN_ENC_KEY =
+      "a".repeat(64);
+    decryptToken.mockReturnValue("test-token");
+
+    queryMock
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            token_ciphertext: Buffer.from("ct"),
+            token_iv: Buffer.from("iv"),
+            token_tag: Buffer.from("tag"),
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        rows: [{ mono_account_id: "acc1" }],
+      })
+      .mockResolvedValue({ rows: [] });
+
+    const now = Math.floor(Date.now() / 1000);
+    const firstPage = Array.from({ length: 500 }, (_, i) => ({
+      id: `tx_${i}`,
+      time: now - 100 - i,
+      amount: -1000,
+      operationAmount: -1000,
+      currencyCode: 980,
+    }));
+    bankProxyFetch
+      .mockResolvedValueOnce({
+        status: 200,
+        body: JSON.stringify(firstPage),
+      })
+      .mockResolvedValueOnce({
+        status: 200,
+        body: JSON.stringify([]),
+      });
+
+    const res = makeRes();
+    await backfillHandler(makeReq(), res);
+
+    expect(res.statusCode).toBe(200);
+    await new Promise((r) => setTimeout(r, 100));
+
+    expect(bankProxyFetch).toHaveBeenCalledTimes(2);
+    expect(sleepMock).toHaveBeenCalledWith(60_000);
+    expect(
+      queryMock.mock.calls.some((call) => {
+        const sql = call[0];
+        return typeof sql === "string" && sql.includes("ON CONFLICT");
+      }),
+    ).toBe(true);
   });
 
   it("populates per-user progress while running", async () => {

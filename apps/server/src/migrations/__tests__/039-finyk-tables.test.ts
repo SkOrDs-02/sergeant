@@ -1,5 +1,5 @@
 // Migration 039 — focused round-trip for the Finyk tables
-// (Stage 4 / PR #035 of `docs/planning/storage-roadmap.md`).
+// (Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // Mirrors `035-nutrition-tables.test.ts`: same Docker / pgvector
 // testcontainer harness, same soft-skip behaviour, same assertions
@@ -14,6 +14,12 @@
 //      `apps/server/src/migrations/039_finyk_tables.sql`,
 //   2. running `039_finyk_tables.down.sql` drops them all (and
 //      removes the explicit indexes),
+//
+// SCOPE: пізніші міграції створюють ВЛАСНІ finyk_*-таблиці поза 039
+// (перша — `finyk_tx_receipt_links`, 121_receipts.sql), тому хелпери
+// нижче скоуплять запити до явного списку FINYK_TABLES, а не до
+// `LIKE 'finyk_%'` — інакше кожна нова finyk-таблиця з чужої міграції
+// хибно валила б цей раунд-тріп (саме так упав CI на PR #818).
 //   3. the down migration is idempotent (rule #4 invariant),
 //   4. down → re-up restores the schema fingerprint byte-for-byte.
 
@@ -48,20 +54,34 @@ const FINYK_TABLES = [
   "finyk_tx_splits",
 ] as const;
 
+// SCOPE: сюди входять і індекси, які на таблиці 039 вішають ПІЗНІШІ
+// міграції — тест міряє фактичний стан схеми після всього набору, а не
+// вміст одного файлу. Вісім `_user_cascade_idx` створює
+// `142_cascade_user_id_indexes.sql`: частковий `_user_active_idx`
+// (`WHERE deleted_at IS NULL`) для беззастережного каскадного DELETE не
+// придатний, тож 142 додає беззастережний по `(user_id)` поруч.
 const FINYK_INDEXES = [
   "finyk_assets_user_active_idx",
+  "finyk_assets_user_cascade_idx",
   "finyk_budgets_user_active_idx",
+  "finyk_budgets_user_cascade_idx",
   "finyk_custom_categories_user_active_idx",
+  "finyk_custom_categories_user_cascade_idx",
   "finyk_debts_user_active_idx",
+  "finyk_debts_user_cascade_idx",
   "finyk_hidden_accounts_user_active_idx",
   "finyk_hidden_transactions_user_active_idx",
   "finyk_manual_expenses_user_active_idx",
+  "finyk_manual_expenses_user_cascade_idx",
   "finyk_mono_debt_links_user_idx",
   "finyk_networth_history_user_month_idx",
   "finyk_receivables_user_active_idx",
+  "finyk_receivables_user_cascade_idx",
   "finyk_subscriptions_user_active_idx",
+  "finyk_subscriptions_user_cascade_idx",
   "finyk_tx_categories_user_idx",
   "finyk_tx_filters_user_active_idx",
+  "finyk_tx_filters_user_cascade_idx",
   "finyk_tx_splits_user_idx",
 ] as const;
 
@@ -135,17 +155,22 @@ async function resetSchema(p: pg.Pool): Promise<void> {
 async function listTables(p: pg.Pool): Promise<string[]> {
   const r = await p.query<{ tablename: string }>(
     `SELECT tablename FROM pg_tables
-     WHERE schemaname = 'public' AND tablename LIKE 'finyk_%'
+     WHERE schemaname = 'public' AND tablename = ANY($1::text[])
      ORDER BY tablename`,
+    [[...FINYK_TABLES]],
   );
   return r.rows.map((row) => row.tablename);
 }
 
 async function listFinykIndexes(p: pg.Pool): Promise<string[]> {
+  // Скоуп по tablename (не indexname LIKE 'finyk_%'): ловимо всі індекси
+  // саме 039-таблиць і не чіпляємо індекси finyk-таблиць пізніших міграцій
+  // (finyk_tx_receipt_links_tx_idx з 121 тощо).
   const r = await p.query<{ indexname: string }>(
     `SELECT indexname FROM pg_indexes
-     WHERE schemaname = 'public' AND indexname LIKE 'finyk_%'
+     WHERE schemaname = 'public' AND tablename = ANY($1::text[])
      ORDER BY indexname`,
+    [[...FINYK_TABLES]],
   );
   return r.rows.map((row) => row.indexname);
 }
@@ -220,7 +245,11 @@ describe("039_finyk_tables migration", () => {
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
-      expect(byName["id"]!.type).toBe("uuid");
+      // 096_finyk_fizruk_pk_text.sql widened id uuid -> text: the
+      // client's `b_${Date.now()}` (and sibling `sub_`/`a_`/`cus_`/bare
+      // Date.now()) ids aren't UUIDs, so the original `uuid` column type
+      // 22P02'd every push.
+      expect(byName["id"]!.type).toBe("text");
       expect(byName["id"]!.nullable).toBe("NO");
       expect(byName["user_id"]!.type).toBe("text");
       expect(byName["data_json"]!.type).toBe("jsonb");
@@ -306,7 +335,9 @@ describe("039_finyk_tables migration", () => {
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
       expect(byName["month"]!.type).toBe("text");
       expect(byName["month"]!.nullable).toBe("NO");
-      expect(byName["networth"]!.type).toBe("real");
+      // 039 створює networth як REAL; 108 розширює до DOUBLE PRECISION
+      // (lossless float4→float8) — тут перевіряється фінальний стан схеми.
+      expect(byName["networth"]!.type).toBe("double precision");
       expect(byName["snapshot_json"]!.type).toBe("jsonb");
 
       const pkCheck = await pool.query<{ column_name: string }>(
@@ -366,7 +397,7 @@ describe("039_finyk_tables migration", () => {
   );
 
   it(
-    "039_finyk_tables.down.sql drops every finyk_* table",
+    "039_finyk_tables.down.sql drops every 039-owned finyk table",
     async (ctx) => {
       if (!dockerAvailable || !pool) {
         ctx.skip();
@@ -423,10 +454,32 @@ describe("039_finyk_tables migration", () => {
       // Stage 13 / PR #075 — 053 додає ALTER TABLE на finyk_prefs;
       // щоб down→up цикл відновив той самий fingerprint, порядок
       // важливий: спершу откатити 053 (DROP COLUMN), потім вже 039.
+      //
+      // 096_finyk_fizruk_pk_text.sql widens id uuid -> text on top of
+      // finyk_budgets (and its 7 siblings, plus 7 fizruk tables in the
+      // same transaction). It must be unwound before 039's down.sql
+      // drops the finyk tables it touches, and re-applied last — after
+      // 039/053 recreate them fresh as uuid — else `after` would still
+      // be uuid while `before` (captured post-097) is text.
+      //
+      // 108_finyk_networth_history_double.sql так само сидить поверх 039
+      // (networth REAL → DOUBLE PRECISION), тож розмотується першим і
+      // накочується останнім.
+      await execSqlFile(pool, "108_finyk_networth_history_double.down.sql");
+      await execSqlFile(pool, "096_finyk_fizruk_pk_text.down.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.down.sql");
       await execSqlFile(pool, "039_finyk_tables.down.sql");
       await execSqlFile(pool, "039_finyk_tables.sql");
       await execSqlFile(pool, "053_finyk_prefs_excluded_dismissed.sql");
+      await execSqlFile(pool, "096_finyk_fizruk_pk_text.sql");
+      await execSqlFile(pool, "108_finyk_networth_history_double.sql");
+      // 142 вішає вісім `_user_cascade_idx` на таблиці 039. Розмотувати
+      // його окремо не треба — `039_finyk_tables.down.sql` зносить самі
+      // таблиці, а з ними й індекси. Але накотити назад обовʼязково,
+      // інакше `after` недорахує рівно тих восьми. Файл увесь на
+      // `CREATE INDEX IF NOT EXISTS`, тож повторний прогін по таблицях,
+      // яких цей цикл не чіпав, — no-op.
+      await execSqlFile(pool, "142_cascade_user_id_indexes.sql");
 
       const after = {
         tables: await listTables(pool),

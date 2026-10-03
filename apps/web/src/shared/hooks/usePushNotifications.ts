@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePushRegister, usePushUnregister } from "@sergeant/api-client/react";
 import type { PushRegisterRequest } from "@sergeant/api-client";
@@ -112,15 +112,6 @@ export function usePushNotifications(): UsePushNotificationsResult {
   const [subscribed, setSubscribed] = useState<boolean>(
     () => safeReadStringLS(PUSH_SUB_KEY) === "1",
   );
-
-  useEffect(() => {
-    // Native-гілка тримає permission-стан всередині плагіна — читати
-    // `Notification.permission` у WebView некоректно (web API тут може
-    // взагалі не відображати APNs/FCM-дозвіл).
-    if (!supported || native) return;
-    if (typeof Notification === "undefined") return;
-    setPermission(Notification.permission);
-  }, [supported, native]);
 
   // Prefetch VAPID на маунт — коли користувач натисне "увімкнути",
   // ключ вже буде в кеші й ми одразу підемо у pushManager.subscribe.

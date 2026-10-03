@@ -1,67 +1,38 @@
 /**
- * Read-path subscription for the Finyk SQLite cutover (PR #037).
+ * Last validated: 2026-08-28
+ * Status: Active
  *
- * The web Finyk module spreads its persisted state across many slots
- * (`useFinykStorageSlots`), each registered through `usePersist` and
- * therefore reading directly from `localStorage` on mount. To overlay
- * SQLite reads we keep a tiny in-process pub-sub so:
+ * Read-path subscription for the Finyk SQLite cutover.
  *
- *  - the boot wiring file (`sqliteReadBoot.ts`) bumps the tick after
- *    a successful migration + cache refresh,
- *  - and every slot re-reads on the next render.
- *
- * Stage 8 PR #057k-flag — `feature.finyk.sqlite_v2.read_sqlite` was
- * graduated out of the registry; the overlay now fires unconditionally
- * once the cache is warm. Tick-only API kept for cache-refresh signaling.
- *
- * Mirrors `apps/web/src/modules/nutrition/lib/sqliteReadGate.ts` and
- * `apps/web/src/modules/fizruk/lib/sqliteReadGate.ts`.
+ * Тонка обгортка над спільною фабрикою `createSqliteReadGate` —
+ * реалізація pub-sub, mutation-window семантика (DCRUD-007) і
+ * browser-test сигнали живуть там. Історичні імена експортів збережено:
+ * їх мокають тести (`vi.mock("../lib/sqliteReadGate")`) і використовує
+ * dual-write черга.
  */
+import { createSqliteReadGate } from "@shared/lib/db/createSqliteReadGate";
 
-import { useSyncExternalStore } from "react";
+const gate = createSqliteReadGate("finyk");
 
-let cacheTick = 0;
-const listeners = new Set<() => void>();
+/** Opened by the dual-write queue at enqueue time (one per write). */
+export const __openFinykSqliteMutationWindow = gate.openMutationWindow;
 
-function subscribe(onChange: () => void): () => void {
-  listeners.add(onChange);
-  return () => {
-    listeners.delete(onChange);
-  };
-}
-
-function getSnapshot(): number {
-  return cacheTick;
-}
+/** Closed by the dual-write queue after apply → refresh completes. */
+export const __closeFinykSqliteMutationWindow = gate.closeMutationWindow;
 
 /**
  * React hook for components that overlay reads from the SQLite cache.
  * Re-renders whenever {@link notifyFinykSqliteCacheRefresh} fires.
- *
- * Returns the current tick counter — consumers should use the tick
- * value to invalidate memoised reads after the cache warms.
  */
 export function useFinykSqliteReadTick(): number {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return gate.useReadTick();
 }
 
 /**
  * Bumps the tick + notifies subscribers so consuming hooks re-render
  * with the latest `getCachedFinykSqliteState()`.
  */
-export function notifyFinykSqliteCacheRefresh(): void {
-  cacheTick += 1;
-  for (const listener of listeners) {
-    try {
-      listener();
-    } catch {
-      /* noop — listeners must never break notify */
-    }
-  }
-}
+export const notifyFinykSqliteCacheRefresh = gate.notifyCacheRefresh;
 
 /** Test-only escape hatch: clears subscribers + resets tick. */
-export function __resetFinykSqliteReadGateForTests(): void {
-  cacheTick = 0;
-  listeners.clear();
-}
+export const __resetFinykSqliteReadGateForTests = gate.resetForTests;

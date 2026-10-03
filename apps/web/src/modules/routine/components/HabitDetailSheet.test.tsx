@@ -6,8 +6,8 @@
  * `streaks` / `hubCalendarAggregate` helpers, so we let those run for
  * real and only stub the destructive `routineStorage` mutators (which
  * touch localStorage) plus the heavy `HabitQuickCreateDialog` editor.
- * "Today" is pinned with fake timers so the Kyiv-anchored calendar /
- * completion-% are deterministic.
+ * "Today" is pinned with fake timers so the device-local (ADR-0078)
+ * calendar / completion-% are deterministic.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -60,14 +60,14 @@ vi.mock("./HabitQuickCreateDialog", () => ({
 
 import { HabitDetailSheet } from "./HabitDetailSheet";
 
-// 2026-06-16T09:00Z = 12:00 Europe/Kyiv (summer, UTC+3) → Kyiv day 2026-06-16.
+// 2026-06-16T09:00Z → device-local day 2026-06-16 (TZ=UTC in vitest.config.js).
 const FIXED_NOW = new Date("2026-06-16T09:00:00Z");
 
 function makeRoutine(over: Partial<RoutineState> = {}): RoutineState {
   return {
     ...defaultRoutineState(),
     tags: [{ id: "t1", name: "Ранок" }],
-    categories: [{ id: "c1", name: "Здоров'я" }],
+    categories: [{ id: "c1", name: "Здоровʼя" }],
     habits: [
       {
         id: "h1",
@@ -112,6 +112,81 @@ describe("HabitDetailSheet", () => {
     expect(container.querySelector('[role="dialog"]')).toBeNull();
   });
 
+  it("гнучку звичку міряє тижнями, а не днями", () => {
+    // 2026-06-16 — вівторок. Ціль 3/тиждень: у цьому тижні дві відмітки
+    // (пн, вт), у попередньому три (пн, ср, пт) — один повний тиждень
+    // поспіль плюс поточний, ще не закритий.
+    //
+    // Без правки сюди приїжджав `flexibleStreakBreakdown` — поденна серія
+    // з бюджетом прощень, ІНША «гнучкість». Вона рахувала пропуском кожен
+    // день, у який людина нічого й не мала робити.
+    render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine({
+          habits: [
+            {
+              id: "h1",
+              name: "Спорт",
+              emoji: "check",
+              recurrence: "flexible",
+              startDate: "2026-01-01",
+              weeklyTargetHistory: [{ from: "2026-01-01", target: 3 }],
+            },
+          ],
+          completions: {
+            h1: [
+              "2026-06-15",
+              "2026-06-16",
+              "2026-06-08",
+              "2026-06-10",
+              "2026-06-12",
+            ],
+          },
+        })}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Тижнів поспіль")).toBeInTheDocument();
+    expect(screen.queryByText("Поточна серія")).toBeNull();
+    expect(screen.getByText("Цього тижня")).toBeInTheDocument();
+    expect(screen.getByText("2 з 3")).toBeInTheDocument();
+  });
+
+  it("bridges a transient miss of the same habit id instead of unmounting (sync-race hardening)", () => {
+    // Regression for the routine critical-flow flake (2026-08-04): a
+    // mid-flight sync refresh can momentarily drop the just-opened habit
+    // from `routine.habits` before its own write has landed. The sheet
+    // must keep rendering the last-known habit (footer actions included)
+    // rather than unmount, or a stable click target never settles.
+    const { rerender } = render(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine()}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: /редагувати/i }),
+    ).toBeInTheDocument();
+
+    // Simulate the transient sync-refresh blip: `h1` momentarily absent.
+    rerender(
+      <HabitDetailSheet
+        habitId="h1"
+        routine={makeRoutine({ habits: [] })}
+        onClose={vi.fn()}
+        setRoutine={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /редагувати/i }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the habit name, recurrence + time and the tag/category chips", () => {
     render(
       <HabitDetailSheet
@@ -120,17 +195,20 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // Title renders "{emoji} {name}" inside a single <span>.
+    // Гліф тепер окремий <svg>, тож назва живе у власному <span>. Матчимо
+    // лише листовий вузол — обгортка з іконкою має той самий textContent.
     expect(
       screen.getByText(
         (_t, el) =>
-          el?.tagName === "SPAN" && el.textContent === "💧 Випити воду",
+          el?.tagName === "SPAN" &&
+          el.children.length === 0 &&
+          el.textContent === "Випити воду",
       ),
     ).toBeInTheDocument();
     // recurrence label "Щодня" + timeOfDay are concatenated
     expect(screen.getByText(/08:00/)).toBeInTheDocument();
     expect(screen.getByText("Ранок")).toBeInTheDocument();
-    expect(screen.getByText("Здоров'я")).toBeInTheDocument();
+    expect(screen.getByText("Здоровʼя")).toBeInTheDocument();
   });
 
   it("shows total completions and a non-zero current streak in the stats grid", () => {
@@ -141,15 +219,19 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    const totalLabel = screen.getByText("Разів виконано");
-    // "Разів виконано" caption sits directly under its count <p> in the card.
-    const card = totalLabel.parentElement!;
-    expect(card.textContent).toContain("3");
+    // Stats card reworked to hero + text line (P2-4, анти-слоп аудит
+    // 2026-09-23): total completions live in the "Усього" text line, not a
+    // standalone tile.
+    const totalLabel = screen.getByText("Усього");
+    const line = totalLabel.parentElement!;
+    expect(line.textContent).toContain("3");
   });
 
   it("renders an em-dash when nothing is scheduled in the windows (all pct null)", () => {
-    // A "once" habit anchored years ago is never scheduled within the last
+    // A daily habit that ENDED years ago is never scheduled within the last
     // 7/30/90 days, so completionPct returns null for all three windows.
+    // (`once` не годиться фікстурою: для неї відсоткова картка схована
+    // взагалі — канон §7 п.2, 2026-08-30.)
     render(
       <HabitDetailSheet
         habitId="h1"
@@ -158,8 +240,9 @@ describe("HabitDetailSheet", () => {
             {
               id: "h1",
               name: "Старе",
-              recurrence: "once",
+              recurrence: "daily",
               startDate: "2020-01-01",
+              endDate: "2020-02-01",
             },
           ],
           completions: { h1: [] },
@@ -180,7 +263,7 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // Starts on the current Kyiv month (червень 2026).
+    // Starts on the current device-local month (ADR-0078; червень 2026).
     expect(screen.getByText(/червень 2026/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Наступний місяць" }));
     expect(screen.getByText(/липень 2026/i)).toBeInTheDocument();

@@ -8,6 +8,7 @@ import {
   rateLimitHitsTotal,
 } from "../obs/metrics.js";
 import { getRedis } from "../lib/redis.js";
+import { pluralSeconds } from "@sergeant/shared";
 
 type Outcome = "allowed" | "blocked";
 
@@ -130,6 +131,24 @@ export interface RateLimitOptions {
    */
   failMode?: "open" | "closed";
   /**
+   * Overrides what the bucket is keyed on. Default (omitted) is
+   * {@link rateLimitSubject} — `u:<sessionUserId>` when a session is already
+   * resolved, else `ip:<clientIp>`.
+   *
+   * **Why this exists.** On pre-auth credential flows there is no session
+   * yet, so the default collapses to per-IP — and per-IP alone does not
+   * bound a distributed attack: 100 IPs against one account multiply the
+   * effective guess rate by 100 while every individual bucket stays green.
+   * Keying a second limiter on the *targeted account* makes the cap a
+   * property of the victim rather than of the attacker's network, which is
+   * the only thing a botnet cannot rent its way around.
+   *
+   * Returning `undefined` means "this request has nothing to key on" — the
+   * caller should skip the limiter rather than silently fall back to IP,
+   * otherwise two different policies would share one bucket.
+   */
+  subject?: (req: Request) => string | undefined;
+  /**
    * Per-request cost multiplier. Defaults to `1` (current behavior — every
    * call consumes exactly one token from the bucket). Pass a function to
    * make heavy calls bill more than one token.
@@ -180,6 +199,27 @@ export interface RateLimitOptions {
    * bucket and are unaffected.
    */
   ipLimit?: number;
+  /**
+   * Composes a SECOND bucket on the SAME subject as the primary, with an
+   * independent (typically longer) window — a burst allowance plus a
+   * sustained cap over a longer horizon.
+   *
+   * **Why this exists (AI-3, `docs/work/specs/audits/2026-09-01-product-audit/
+   * findings.md`).** A single fixed-window bucket forces a choice between
+   * "generous enough for a quick back-and-forth" and "tight enough over
+   * several minutes" — `api:chat` at 6 streams/min let a normal conversation
+   * (question, follow-up, action, undo) hit the 7th message inside ~80s of
+   * ordinary use. Two independent windows resolve the tension: `limit`/
+   * `windowMs` above stays the short burst allowance (unchanged, still
+   * cost-weighted via `cost(req)`), `sustained` adds a stricter cap over a
+   * longer window that a burst alone cannot exhaust in one shot.
+   *
+   * Unlike `ipLimit` (different subject — the client IP), `sustained` uses
+   * the SAME subject as the primary bucket. Checked only after the primary
+   * (and, if configured, the `ipLimit`) bucket both pass — whichever bucket
+   * blocks first is reported via `RateLimitResult.blockedBy`.
+   */
+  sustained?: { limit: number; windowMs: number; key?: string };
 }
 
 export interface RateLimitResult {
@@ -190,11 +230,13 @@ export interface RateLimitResult {
   /**
    * Indicates which bucket caused a block. Undefined means allowed (ok=true)
    * or no secondary check was performed. Set to `"ip"` when the secondary
-   * per-IP bucket (M9) exhausted first, `"user"` when the primary per-user
-   * bucket did. Used to emit distinguishable 429 `code` values so load-test
-   * and alerting can differentiate per-user saturation from IP-level abuse.
+   * per-IP bucket (M9) exhausted first, `"sustained"` when the AI-3
+   * same-subject longer-window bucket did, `"user"` when the primary
+   * per-user (or per-IP for anon) bucket did. Used to emit distinguishable
+   * 429 `code` values so load-test and alerting can differentiate per-user
+   * saturation from IP-level / sustained-rate abuse.
    */
-  blockedBy?: "user" | "ip";
+  blockedBy?: "user" | "ip" | "sustained";
 }
 
 // In-memory fixed-window rate limit.
@@ -310,7 +352,7 @@ export async function checkRateLimitRedis(
   req: Request,
   options: RateLimitOptions,
 ): Promise<RateLimitResult> {
-  const subject = rateLimitSubject(req);
+  const subject = options.subject?.(req) ?? rateLimitSubject(req);
   const cost = resolveRateLimitCost(req, { cost: options.cost });
   return checkRateLimitRedisBySubject(redis, subject, options, cost);
 }
@@ -342,7 +384,7 @@ export async function checkRateLimitPg(
   req: Request,
   options: RateLimitOptions,
 ): Promise<RateLimitResult> {
-  const subject = rateLimitSubject(req);
+  const subject = options.subject?.(req) ?? rateLimitSubject(req);
   const cost = resolveRateLimitCost(req, { cost: options.cost });
   return checkRateLimitPgBySubject(subject, options, cost);
 }
@@ -495,7 +537,7 @@ export function checkRateLimit(
   req: Request,
   options: RateLimitOptions,
 ): RateLimitResult {
-  const subject = rateLimitSubject(req);
+  const subject = options.subject?.(req) ?? rateLimitSubject(req);
   const cost = resolveRateLimitCost(req, { cost: options.cost });
   return checkRateLimitBySubject(subject, options, cost);
 }
@@ -556,29 +598,39 @@ function checkRateLimitBySubject(
 }
 
 /**
- * Runs a secondary per-IP bucket check using the same Redis→Pg→in-memory
- * fallback chain as the primary check. Used by {@link rateLimitExpress} for
- * the M9 fix: prevents an attacker with N authenticated accounts from
- * multiplying effective throughput by N from a single machine.
+ * Runs a secondary bucket check (any subject, any key) using the same
+ * Redis→Pg→in-memory fallback chain as the primary check. Two callers today:
+ *
+ *   - M9 (`ipLimit`) — secondary bucket on the client's IP, prevents an
+ *     attacker with N authenticated accounts from multiplying effective
+ *     throughput by N from a single machine.
+ *   - AI-3 (`sustained`, `docs/work/specs/audits/2026-09-01-product-audit/
+ *     findings.md`) — secondary bucket on the SAME subject as the primary,
+ *     but a longer window: a burst-friendly short window plus a stricter
+ *     sustained cap over several minutes.
+ *
+ * Cost is always `1` here regardless of the primary bucket's `cost(req)` —
+ * both secondary uses count *requests*, not the primary's AI-stream-weighted
+ * units (mirrors the pre-existing M9 behavior).
  */
-async function checkSecondaryIpBucket(
-  ipSubject: string,
-  ipOpts: { key: string; limit: number; windowMs: number },
+async function checkSecondaryBucket(
+  subject: string,
+  opts: { key: string; limit: number; windowMs: number },
 ): Promise<RateLimitResult | null> {
   const redis = getRedis();
   if (redis) {
     try {
-      return await checkRateLimitRedisBySubject(redis, ipSubject, ipOpts, 1);
+      return await checkRateLimitRedisBySubject(redis, subject, opts, 1);
     } catch {
       // Redis unavailable — try Postgres next.
     }
   }
   try {
-    return await checkRateLimitPgBySubject(ipSubject, ipOpts, 1);
+    return await checkRateLimitPgBySubject(subject, opts, 1);
   } catch {
     // Postgres unavailable — degrade to in-memory.
   }
-  return checkRateLimitBySubject(ipSubject, ipOpts, 1);
+  return checkRateLimitBySubject(subject, opts, 1);
 }
 
 export function rateLimitExpress({
@@ -588,11 +640,21 @@ export function rateLimitExpress({
   failMode = "open",
   cost,
   ipLimit,
+  subject,
+  sustained,
 }: RateLimitOptions): RequestHandler {
   return async (req, res, next) => {
     const redis = getRedis();
     let rl: RateLimitResult | null = null;
-    const options: RateLimitOptions = { key, limit, windowMs, cost };
+    const options: RateLimitOptions = {
+      key,
+      limit,
+      windowMs,
+      cost,
+      // Умовний спред, а не `subject,` — під `exactOptionalPropertyTypes`
+      // явний `undefined` не те саме, що відсутнє поле.
+      ...(subject ? { subject } : {}),
+    };
 
     if (redis) {
       try {
@@ -639,7 +701,8 @@ export function rateLimitExpress({
     // M9: secondary per-IP bucket for authenticated requests.
     // Primary per-user bucket passed; now enforce the shared IP cap so an
     // attacker with N accounts cannot multiply effective throughput by N.
-    // TODO(M9): (IP,ASN) keying for CGNAT fairness — needs ASN datasource, deferred.
+    // Deferred by design (M9): (IP,ASN) keying for CGNAT fairness needs an
+    // ASN datasource we do not run; revisit only if CGNAT users report 429s.
     //
     // `reportedLimit` is the cap surfaced in the `RateLimit-Limit` header. It
     // follows whichever bucket actually constrains the response, so a 429 from
@@ -652,7 +715,7 @@ export function rateLimitExpress({
       if (subject.startsWith("u:")) {
         const ipSubject = `ip:${getIp(req)}`;
         const ipOpts = { key: `${key}:ip`, limit: ipLimit, windowMs };
-        const ipRl = await checkSecondaryIpBucket(ipSubject, ipOpts);
+        const ipRl = await checkSecondaryBucket(ipSubject, ipOpts);
         if (ipRl && !ipRl.ok) {
           // Secondary IP bucket exhausted — record which bucket blocked so the
           // 429 response can carry a distinguishable `code` value. Load tests
@@ -671,10 +734,37 @@ export function rateLimitExpress({
       // actual subject — anonymous throttling must report RATE_LIMIT_IP, not
       // RATE_LIMIT_USER. `reportedLimit` stays the primary `limit`, which is
       // the cap the anonymous IP bucket was checked against.
+      // A policy with a custom `subject` (e.g. the per-account credential
+      // bucket) is neither per-user nor per-IP, so label it by the effective
+      // subject rather than the default one — otherwise a 429 from the
+      // account bucket would masquerade as RATE_LIMIT_IP and send incident
+      // triage looking at the wrong dimension.
+      const effectiveSubject = subject?.(req) ?? rateLimitSubject(req);
       rl = {
         ...rl,
-        blockedBy: rateLimitSubject(req).startsWith("u:") ? "user" : "ip",
+        blockedBy: effectiveSubject.startsWith("ip:") ? "ip" : "user",
       };
+    }
+
+    // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+    // sustained same-subject bucket, checked only once the burst (and,
+    // if configured, the M9 IP) bucket both passed. Independent window,
+    // same subject as the primary — see `RateLimitOptions.sustained`.
+    if (rl.ok && sustained) {
+      const sustainedSubject = subject?.(req) ?? rateLimitSubject(req);
+      const sustainedOpts = {
+        key: sustained.key ?? `${key}:sustained`,
+        limit: sustained.limit,
+        windowMs: sustained.windowMs,
+      };
+      const sustainedRl = await checkSecondaryBucket(
+        sustainedSubject,
+        sustainedOpts,
+      );
+      if (sustainedRl && !sustainedRl.ok) {
+        rl = { ...sustainedRl, blockedBy: "sustained" };
+        reportedLimit = sustained.limit;
+      }
     }
 
     // Best-effort sweep of stale rows; runs ~1/256 calls so the table
@@ -702,7 +792,11 @@ export function rateLimitExpress({
         /* ignore */
       }
       const requestId = (req as Request & { requestId?: string }).requestId;
-      const message = "Забагато запитів. Спробуй пізніше.";
+      // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+      // копія називає, скільки саме чекати, а не голе «пізніше»: `retryAfterSec`
+      // тут той самий рахунок, що йде в заголовок `Retry-After` нижче, тож
+      // текст і header ніколи не розходяться.
+      const message = `Забагато запитів. Спробуй через ${rl.retryAfterSec} ${pluralSeconds(rl.retryAfterSec)}.`;
       // `error` — стара форма для прямих `fetch`-колерів. `message` — те
       // саме поле, яке читає better-fetch (а отже — Better Auth client) при
       // десеріалізації не-2xx body. Без цього 429 на `/api/auth/sign-in`
@@ -710,16 +804,19 @@ export function rateLimitExpress({
       // бачив generic «Помилка входу» замість осмисленого rate-limit
       // повідомлення.
       //
-      // `code` distinguishes the blocking bucket (M9):
-      //   RATE_LIMIT_IP   — secondary per-IP bucket exhausted first (multi-account abuse)
-      //   RATE_LIMIT_USER — primary per-user bucket exhausted (normal per-account cap)
-      //   RATE_LIMIT      — defensive fallback; should not appear in normal operation
+      // `code` distinguishes the blocking bucket (M9 + AI-3):
+      //   RATE_LIMIT_IP        — secondary per-IP bucket exhausted first (multi-account abuse)
+      //   RATE_LIMIT_SUSTAINED — AI-3 same-subject longer-window bucket exhausted
+      //   RATE_LIMIT_USER      — primary per-user bucket exhausted (normal per-account cap)
+      //   RATE_LIMIT           — defensive fallback; should not appear in normal operation
       const code =
         rl.blockedBy === "ip"
           ? "RATE_LIMIT_IP"
-          : rl.blockedBy === "user"
-            ? "RATE_LIMIT_USER"
-            : "RATE_LIMIT";
+          : rl.blockedBy === "sustained"
+            ? "RATE_LIMIT_SUSTAINED"
+            : rl.blockedBy === "user"
+              ? "RATE_LIMIT_USER"
+              : "RATE_LIMIT";
       res.status(429).json({
         error: message,
         message,

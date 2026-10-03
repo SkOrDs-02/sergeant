@@ -98,7 +98,7 @@ describe("useNutritionReminders — Kyiv-time bug fix", () => {
 
     expect(showNotificationMock).toHaveBeenCalledTimes(1);
     const [title] = showNotificationMock.mock.calls[0]!;
-    expect(title).toBe("Харчування");
+    expect(title).toBe("Їжа");
   });
 
   it("fires anywhere within the target Kyiv hour, not only at HH:00", async () => {

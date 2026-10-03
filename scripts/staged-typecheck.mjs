@@ -45,7 +45,7 @@ const REPO_ROOT = resolve(__dirname, "..");
 // (`scripts/pre-commit-timing.mjs`) sets `SERGEANT_TIMING_LOG` to a session-
 // scoped JSONL file; downstream scripts append `{ stage, ms }` records so the
 // summary shows per-stage breakdown. Pure best-effort — never block a commit.
-// Contract documented in `docs/02-engineering/development/pre-commit-timing.md`.
+// Contract documented in `docs/engineering/development/pre-commit-timing.md`.
 function emitStageTiming(stage, ms) {
   const log = process.env.SERGEANT_TIMING_LOG;
   if (!log) return;
@@ -85,19 +85,18 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
   // it, `app/_layout.tsx`'s `import "../global.css"` (NativeWind v4)
   // trips TS2882 the moment any sibling .ts(x) file is staged.
   "apps/mobile/tsconfig.json": ["nativewind-env.d.ts", "expo-env.d.ts"],
-  // openclaw-plugin keeps the SDK shape behind ambient `declare module`
-  // statements (`src/types/openclaw-ambient.d.ts`) because both `openclaw`
-  // and `typebox` are installed only inside the Gateway Docker image at
-  // runtime — they're not workspace dependencies. Without the ambient
-  // file, staged typecheck on any plugin .ts fails TS2307 for both
-  // imports + downstream TS7006 implicit-any on `api`/`params`.
-  "packages/openclaw-plugin/tsconfig.json": ["src/types/openclaw-ambient.d.ts"],
   // `vite-env.d.ts` narrows `ImportMetaEnv` (VITE_BUILD_ID / VITE_TARGET) to
   // explicit interface members. Without it, `tsc-files` (which strips the
   // project `include`) sees only the open-set index signature, so
   // `import.meta.env.VITE_*` access trips TS4111 under
   // noPropertyAccessFromIndexSignature once apps/web enabled the flag.
   "apps/web/tsconfig.json": ["src/vite-env.d.ts"],
+  // `fonts.d.ts` оголошує CSS-only пакети шрифтів (`@fontsource-variable/manrope`,
+  // `@fontsource/unbounded/*`), які `main.tsx` імпортує заради side-effect.
+  // Повний tsc резолвить їх через `"main": "index.css"` + `vite/client`, а
+  // `tsc-files` без `include` — ні (TS2882). Знайдено 2026-09-01, коли
+  // `main.tsx` уперше потрапив у staged.
+  "apps/landing/tsconfig.json": ["src/fonts.d.ts"],
 };
 
 /**
@@ -108,20 +107,54 @@ const EXTRA_INPUTS_BY_TSCONFIG = {
  * `exclude` list — so without this skip the staged typecheck force-loads code
  * that the canonical `pnpm typecheck` correctly leaves out of scope.
  *
- * Currently used by `packages/openclaw-plugin`, whose `src/legacy/**` subtree
- * is intentionally excluded (it uses ESM `./foo.js` import specifiers against
- * `.ts` sources via the legacy NodeNext convention and would otherwise fail
- * `tsc-files --noEmit` with TS2307 for every relative import).
+ * Currently used by `apps/web`, whose service-worker subtree is excluded from
+ * the main `tsconfig.json` and typechecked separately.
  */
 const SKIP_PREFIXES_BY_TSCONFIG = {
-  "packages/openclaw-plugin/tsconfig.json": ["src/legacy/"],
   // The service-worker subtree is excluded from `apps/web/tsconfig.json`
   // (`exclude: ["src/sw.ts", "src/sw"]`) and typechecked separately by
   // `tsconfig.sw.json` (standalone `strict: false`, WebWorker lib). Without
   // this skip, `tsc-files` force-loads staged SW files under the main strict
   // config and reports flags (exactOptionalPropertyTypes /
   // noPropertyAccessFromIndexSignature) that the SW build never enforces.
-  "apps/web/tsconfig.json": ["src/sw.ts", "src/sw/"],
+  // `tests/` — той самий клас, але через `include`, а не `exclude`:
+  // `apps/web/tsconfig.json` має `include: ["src/**/*"]`, тож Playwright-специ
+  // взагалі не в програмі й канонічний `pnpm typecheck` їх не бачить. Вони
+  // ганяються власними `playwright.*.config.ts` і транспілюються без tsc.
+  // `tsc-files` форс-додає стейджнутий спец у `files` під `types: ["vite/client",
+  // "@testing-library/jest-dom", "node"]` — без типів Playwright, і легальний
+  // `test.use({ reducedMotion: "reduce" })` падає з TS2353, хоча в CI цей самий
+  // спец зелений (`Critical-flow E2E`, тест #42). Знайдено 2026-08-08, коли
+  // мердж main застейджив `tests/smoke/reduced-motion.spec.ts` і заблокував коміт.
+  "apps/web/tsconfig.json": ["src/sw.ts", "src/sw/", "tests/"],
+  // Every `packages/*` tsconfig pins `rootDir: ./src` + `include: ["src/**/*"]`,
+  // so the root-level `vitest.config.ts` sits outside the program and the
+  // canonical `pnpm typecheck` never sees it. `tsc-files` force-adding it to
+  // the `files` list trips TS6059 ("not under rootDir") — skip it to mirror
+  // the canonical scope.
+  // `apps/server/tsconfig.json` має `include: ["src/**/*", "migrate.mjs"]`, тож
+  // кореневі vitest-конфіги в програму не входять і канонічний `pnpm typecheck`
+  // їх не бачить. `tsc-files` же форс-додає застейджений конфіг у `files`, а він
+  // тягне `vitest/config` → `lib.dom.d.ts`. DOM-івський `BodyInit` не приймає
+  // `Buffer`, і сусідній серверний файл падає з TS2769 на звичайному
+  // `fetch(url, { body: gzippedBody })` — при тому, що повний `tsc -p` на ньому
+  // зелений. Знайдено 2026-08-24, коли мердж main застейджив
+  // `vitest.integration.config.ts` і заблокував коміт через
+  // `src/modules/logRetention/gcsUpload.ts`.
+  "apps/server/tsconfig.json": [
+    "vitest.config.ts",
+    "vitest.integration.config.ts",
+    "vitest.mutation.normalizers.config.ts",
+  ],
+  "packages/api-client/tsconfig.json": ["vitest.config.ts"],
+  "packages/db-schema/tsconfig.json": ["vitest.config.ts"],
+  "packages/dualwrite-core/tsconfig.json": ["vitest.config.ts"],
+  "packages/finyk-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/fizruk-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/insights/tsconfig.json": ["vitest.config.ts"],
+  "packages/nutrition-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/routine-domain/tsconfig.json": ["vitest.config.ts"],
+  "packages/shared/tsconfig.json": ["vitest.config.ts"],
 };
 
 function main() {

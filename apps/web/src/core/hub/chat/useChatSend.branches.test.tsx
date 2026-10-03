@@ -9,14 +9,21 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // and the SSE success accumulation path. These complement the happy/tool-call
 // cases in useChatSend.test.tsx.
 
-const { sendMock, streamMock, executeActionsMock, consumeSseMock, speakMock } =
-  vi.hoisted(() => ({
-    sendMock: vi.fn(),
-    streamMock: vi.fn(),
-    executeActionsMock: vi.fn(),
-    consumeSseMock: vi.fn(),
-    speakMock: vi.fn(),
-  }));
+const {
+  sendMock,
+  streamMock,
+  usageMock,
+  executeActionsMock,
+  consumeSseMock,
+  speakMock,
+} = vi.hoisted(() => ({
+  sendMock: vi.fn(),
+  streamMock: vi.fn(),
+  usageMock: vi.fn(),
+  executeActionsMock: vi.fn(),
+  consumeSseMock: vi.fn(),
+  speakMock: vi.fn(),
+}));
 
 // Controllable per-test flags.
 const flags = { isPro: true, online: true };
@@ -31,7 +38,10 @@ vi.mock("../../lib/hubChatUtils", async () => {
 vi.mock("@shared/api", async () => {
   const actual =
     await vi.importActual<typeof import("@shared/api")>("@shared/api");
-  return { ...actual, chatApi: { send: sendMock, stream: streamMock } };
+  return {
+    ...actual,
+    chatApi: { send: sendMock, stream: streamMock, usage: usageMock },
+  };
 });
 
 vi.mock("../useFinykHubPreview", () => ({
@@ -77,6 +87,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 import { ApiError } from "@shared/api";
 import { useChatSend } from "./useChatSend";
 import type { ChatMessage } from "../../lib/hubChatUtils";
+import type { ChatPreset } from "@sergeant/shared";
 
 function makeWrapper() {
   const client = new QueryClient({
@@ -89,7 +100,7 @@ function makeWrapper() {
   };
 }
 
-function renderWithCapture() {
+function renderWithCapture(options: { preset?: ChatPreset } = {}) {
   const captured: ChatMessage[][] = [];
   const setMessages = vi.fn((updater: unknown) => {
     if (typeof updater === "function") {
@@ -99,15 +110,18 @@ function renderWithCapture() {
       captured.push(updater as ChatMessage[]);
     }
   });
-  const hook = renderHook(() => useChatSend({ messages: [], setMessages }), {
-    wrapper: makeWrapper(),
-  });
+  const hook = renderHook(
+    () => useChatSend({ messages: [], setMessages, ...options }),
+    { wrapper: makeWrapper() },
+  );
   return { ...hook, captured, setMessages };
 }
 
 beforeEach(() => {
   sendMock.mockReset();
   streamMock.mockReset();
+  usageMock.mockReset();
+  usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 5 });
   executeActionsMock.mockReset();
   consumeSseMock.mockReset();
   speakMock.mockReset();
@@ -121,11 +135,19 @@ afterEach(() => {
 });
 
 describe("useChatSend — guard branches", () => {
-  it("/help opens the catalogue and never hits the API", async () => {
+  it("/help opens the capability catalogue and never touches the thread or API", async () => {
     const onOpenCatalogue = vi.fn();
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      } else {
+        captured.push(updater as ChatMessage[]);
+      }
+    });
     const { result } = renderHook(
-      () =>
-        useChatSend({ messages: [], setMessages: vi.fn(), onOpenCatalogue }),
+      () => useChatSend({ messages: [], setMessages, onOpenCatalogue }),
       { wrapper: makeWrapper() },
     );
     await act(async () => {
@@ -133,6 +155,41 @@ describe("useChatSend — guard branches", () => {
     });
     expect(onOpenCatalogue).toHaveBeenCalledTimes(1);
     expect(sendMock).not.toHaveBeenCalled();
+    // No help text is pushed into the thread — the catalogue replaces it.
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "assistant")).toBe(false);
+  });
+
+  it("/help falls back to inline help text when no catalogue handler is wired", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      } else {
+        captured.push(updater as ChatMessage[]);
+      }
+    });
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+    await act(async () => {
+      await result.current.send("/help");
+    });
+    expect(sendMock).not.toHaveBeenCalled();
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "user" && m.text === "/help")).toBe(
+      true,
+    );
+    expect(
+      flat.some(
+        (m) =>
+          m.role === "assistant" &&
+          m.text.includes("/help") &&
+          m.text.includes("додай витрату"),
+      ),
+    ).toBe(true);
   });
 
   it("offline appends an offline notice and skips the API", async () => {
@@ -146,17 +203,14 @@ describe("useChatSend — guard branches", () => {
     expect(flat.some((m) => m.text.includes("Немає підключення"))).toBe(true);
   });
 
-  it("free-tier user is paywalled after the daily limit is reached", async () => {
+  it("free-tier user is paywalled once the server-reported quota is exhausted", async () => {
     flags.isPro = false;
-    // Seed today's counter at the limit.
-    const { getKyivDayKey } = await vi.importActual<
-      typeof import("@shared/lib/time/kyivTime")
-    >("@shared/lib/time/kyivTime");
-    localStorage.setItem(
-      "sergeant:ai-chat:daily-count:v1",
-      JSON.stringify({ day: getKyivDayKey(), count: 5 }),
-    );
+    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 0 });
     const { result } = renderWithCapture();
+    // Пре-гейт читає `chatKeys.usage` з RQ-кеша (канон #1.13) — дочекатись
+    // відповіді `GET /api/chat/usage`, інакше гейт мовчки пропустить хід.
+    await waitFor(() => expect(result.current.usageLimit).toBe(5));
+
     await act(async () => {
       await result.current.send("ще одне питання");
     });
@@ -167,18 +221,67 @@ describe("useChatSend — guard branches", () => {
     await waitFor(() => expect(result.current.paywallOpen).toBe(false));
   });
 
-  it("free-tier user under the limit increments the counter and sends", async () => {
+  // 1C: заповнення профілю не витрачає денні 5 запитів. Без цього
+  // онбординг упирався в paywall посеред інтервʼю — тижневе preset-відро
+  // й лишається окремим бюджетом незалежно від цього; історично лічба
+  // виходила з подвійного списання за tool-хід, яке AI-5 рішення 1
+  // (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) закрило —
+  // тепер хід з дією коштує один запит, не два.
+  it("preset-хід не блокується пейволом на вичерпаній денній квоті", async () => {
     flags.isPro = false;
+    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 0 });
+    sendMock.mockResolvedValue({ text: "Питання перше" });
+
+    const { result } = renderWithCapture({ preset: "profile_interview" });
+    await waitFor(() => expect(result.current.usageLimit).toBe(5));
+
+    await act(async () => {
+      await result.current.send("Заповни мій профіль");
+    });
+
+    expect(result.current.paywallOpen).toBe(false);
+    expect(sendMock).toHaveBeenCalledTimes(1);
+    expect(sendMock.mock.calls[0]![0]).toMatchObject({
+      preset: "profile_interview",
+    });
+  });
+
+  // Preset не може жити вічно: доївши інтервʼю, людина питає щось звичайне
+  // в тому ж вікні, і це має бути звичайний запит зі звичайного відра.
+  it("preset відпадає після вичерпання бюджету ходів", async () => {
+    flags.isPro = true;
+    sendMock.mockResolvedValue({ text: "ок" });
+    const { result } = renderWithCapture({ preset: "profile_add_info" });
+
+    // `profile_add_info` — seed + одне уточнення.
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        await result.current.send(`хід ${i}`);
+      });
+    }
+
+    const presets = sendMock.mock.calls.map(
+      (call) => (call[0] as { preset?: string }).preset,
+    );
+    expect(presets).toEqual([
+      "profile_add_info",
+      "profile_add_info",
+      undefined,
+    ]);
+  });
+
+  it("free-tier user under the limit sends normally", async () => {
+    flags.isPro = false;
+    usageMock.mockResolvedValue({ plan: "free", limit: 5, remaining: 3 });
     sendMock.mockResolvedValue({ text: "Привіт!" });
     const { result } = renderWithCapture();
+    await waitFor(() => expect(result.current.usageLimit).toBe(5));
+
     await act(async () => {
       await result.current.send("привіт");
     });
     expect(sendMock).toHaveBeenCalledTimes(1);
-    const stored = JSON.parse(
-      localStorage.getItem("sergeant:ai-chat:daily-count:v1") || "{}",
-    );
-    expect(stored.count).toBe(1);
+    expect(result.current.paywallOpen).toBe(false);
   });
 });
 
@@ -259,5 +362,98 @@ describe("useChatSend — SSE success path", () => {
 
     const flat = captured.flat();
     expect(flat.some((m) => m.text.includes("Готово!"))).toBe(true);
+  });
+});
+
+describe("useChatSend — TTS paths", () => {
+  it("fromVoice=true triggers speak after a plain reply", async () => {
+    sendMock.mockResolvedValue({ text: "Привіт!" });
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("привіт", true /* fromVoice */);
+    });
+    expect(speakMock).toHaveBeenCalledWith("Привіт!");
+    expect(result.current.speaking).toBe(true);
+  });
+
+  it("auto-TTS via stored key triggers speak when VOICE_KEYWORDS match", async () => {
+    sendMock.mockResolvedValue({ text: "Ось відповідь." });
+    localStorage.setItem("sergeant:hub-chat:auto-tts:v1", "true");
+    const { result } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("голосом розкажи мені");
+    });
+    expect(speakMock).toHaveBeenCalledWith("Ось відповідь.");
+    localStorage.removeItem("sergeant:hub-chat:auto-tts:v1");
+  });
+});
+
+describe("useChatSend — initialMessage handling", () => {
+  it("autoSendInitial=true fires send with the initial message", async () => {
+    sendMock.mockResolvedValue({ text: "Відповідь" });
+    const { result, captured } = (() => {
+      const msgs: ChatMessage[][] = [];
+      const setMessages = vi.fn((updater: unknown) => {
+        if (typeof updater === "function") {
+          const prev = msgs.at(-1) ?? [];
+          msgs.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+        } else {
+          msgs.push(updater as ChatMessage[]);
+        }
+      });
+      const hook = renderHook(
+        () =>
+          useChatSend({
+            messages: [],
+            setMessages,
+            initialMessage: "автостарт",
+            autoSendInitial: true,
+          }),
+        { wrapper: makeWrapper() },
+      );
+      return { result: hook.result, captured: msgs };
+    })();
+    await waitFor(() => expect(sendMock).toHaveBeenCalledTimes(1));
+    expect(result.current).toBeDefined();
+    const flat = captured.flat();
+    expect(flat.some((m) => m.role === "user" && m.text === "автостарт")).toBe(
+      true,
+    );
+  });
+
+  it("autoSendInitial=false pre-fills the input field only", async () => {
+    const { result } = renderHook(
+      () =>
+        useChatSend({
+          messages: [],
+          setMessages: vi.fn(),
+          initialMessage: "попередня назва",
+          autoSendInitial: false,
+        }),
+      { wrapper: makeWrapper() },
+    );
+    await waitFor(() => expect(result.current.input).toBe("попередня назва"));
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("useChatSend — parse error rewrite", () => {
+  it("rewrites a parse ApiError to a friendly Ukrainian message", async () => {
+    sendMock.mockRejectedValue(
+      new ApiError({
+        kind: "parse",
+        message: "Unexpected token",
+        url: "/api/chat",
+      }),
+    );
+    const { result, captured } = renderWithCapture();
+    await act(async () => {
+      await result.current.send("питання");
+    });
+    const flat = captured.flat();
+    const assistantMsg = flat.find((m) => m.role === "assistant");
+    expect(assistantMsg).toBeDefined();
+    // friendlyChatError handles parse errors; just verify a message is appended.
+    expect(assistantMsg!.text.length).toBeGreaterThan(0);
   });
 });

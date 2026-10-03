@@ -16,7 +16,7 @@
  * must never appear in this payload (L10 hardening). Callers use `hashUserId`
  * from `lib/userIdHash.ts`.
  *
- * See docs/runbooks/security-events.md for operator playbook.
+ * See docs/start/instructions/security-events.md for operator playbook.
  */
 
 import { logger } from "./logger.js";
@@ -28,17 +28,16 @@ import { logger } from "./logger.js";
 export type SecurityEventName =
   | "mono_webhook_bad_payload"
   | "stripe_webhook_bad_sig"
+  | "liqpay_webhook_bad_sig"
+  | "plata_webhook_bad_sig"
   | "auth_session_ua_drift"
+  | "auth_apple_client_secret_failed"
   | "prompt_injection_attempt"
   | "transcribe_usd_cap_hit"
   | "chat_tool_cap_hit";
 
 export type SecurityEventSeverity =
-  | "critical"
-  | "high"
-  | "medium"
-  | "low"
-  | "info";
+  "critical" | "high" | "medium" | "low" | "info";
 
 export interface SecurityEvent {
   event: SecurityEventName;

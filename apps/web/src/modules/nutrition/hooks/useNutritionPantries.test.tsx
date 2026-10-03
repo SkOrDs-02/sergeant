@@ -15,6 +15,21 @@ vi.mock("@shared/api", async () => {
   };
 });
 
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
+
 import { useNutritionPantries } from "./useNutritionPantries";
 import { nutritionApi } from "@shared/api";
 const apiParsePantry = nutritionApi.parsePantry as unknown as ReturnType<
@@ -56,8 +71,9 @@ function renderHarness() {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const { result } = renderHook(
-    () => useNutritionPantries({ setBusy, setErr, setStatusText }),
+    () => useNutritionPantries({ setBusy, setErr, setStatusText, setDenial }),
     { wrapper: makeWrapper() },
   );
   return { result, setBusy, setErr, setStatusText };
@@ -85,7 +101,7 @@ describe("useNutritionPantries", () => {
   });
 
   describe("parsePantry happy path", () => {
-    it("posts text, merges parsed items into active pantry", async () => {
+    it("posts text, stages parsed items in preview until confirmed", async () => {
       seedPantries(
         [{ id: "home", name: "Дім", items: [], text: "молоко, яйця" }],
         "home",
@@ -102,6 +118,18 @@ describe("useNutritionPantries", () => {
         result.current.parsePantry();
       });
 
+      // Розібране НЕ потрапляє в комору одразу — спершу превʼю.
+      await waitFor(() => {
+        expect(result.current.parsePreview?.items.length).toBe(2);
+      });
+      expect(result.current.parsePreview?.source).toBe("ai");
+      expect(result.current.pantryItems.length).toBe(0);
+      expect(result.current.pantryText).toBe("молоко, яйця");
+
+      act(() => {
+        result.current.confirmParsePreview(result.current.parsePreview!.items);
+      });
+
       await waitFor(() => {
         expect(result.current.pantryItems.length).toBe(2);
       });
@@ -109,7 +137,8 @@ describe("useNutritionPantries", () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         result.current.pantryItems.map((x: any) => x.name),
       ).toEqual(["молоко", "яйця"]);
-      // text cleared after successful parse
+      expect(result.current.parsePreview).toBeNull();
+      // text cleared after the user confirms
       expect(result.current.pantryText).toBe("");
       expect(apiParsePantry).toHaveBeenCalledWith({
         text: "молоко, яйця",
@@ -118,13 +147,10 @@ describe("useNutritionPantries", () => {
     });
   });
 
-  describe("regression: pantryId captured at mutate-time (issue #189)", () => {
-    it("merges parsed items into the ORIGINAL pantry even if user switches active pantry mid-flight", async () => {
+  describe("розбір списку кладе позиції по місцях", () => {
+    it("розкладає підтверджені позиції за суттю, а не в одну купу", async () => {
       seedPantries(
-        [
-          { id: "home", name: "Дім", items: [], text: "молоко" },
-          { id: "work", name: "Робота", items: [], text: "" },
-        ],
+        [{ id: "home", name: "Дім", items: [], text: "молоко" }],
         "home",
       );
 
@@ -140,39 +166,42 @@ describe("useNutritionPantries", () => {
       );
 
       const { result } = renderHarness();
-      expect(result.current.activePantryId).toBe("home");
 
-      // Kick off parse — captures pantryId = "home" at mutate-time.
       act(() => {
         result.current.parsePantry();
       });
-      // Wait for mutationFn to actually invoke the mock (resolveParse set).
       await waitFor(() => expect(apiParsePantry).toHaveBeenCalled());
 
-      // User switches to "work" while API is still in flight.
-      act(() => {
-        result.current.setActivePantryId("work");
-      });
-      expect(result.current.activePantryId).toBe("work");
-
-      // Now resolve — items must still go to "home", not "work".
       await act(async () => {
-        resolveParse!({ items: [{ name: "молоко", qty: 1, unit: "л" }] });
+        resolveParse!({
+          items: [
+            { name: "молоко", qty: 1, unit: "л" },
+            { name: "пельмені", qty: 1, unit: "кг" },
+          ],
+        });
       });
 
-      await waitFor(() => {
-        const home = result.current.pantries.find(
-          (p: Pantry) => p.id === "home",
-        );
-        expect(home?.items?.length).toBe(1);
+      await waitFor(() => expect(result.current.parsePreview).not.toBeNull());
+      act(() => {
+        result.current.confirmParsePreview(result.current.parsePreview!.items);
       });
 
+      await waitFor(() =>
+        expect(result.current.pantryItems.length).toBeGreaterThan(0),
+      );
+
+      const fridge = result.current.pantries.find(
+        (p: Pantry) => p.id === "fridge",
+      );
+      const freezer = result.current.pantries.find(
+        (p: Pantry) => p.id === "freezer",
+      );
       const home = result.current.pantries.find((p: Pantry) => p.id === "home");
-      const work = result.current.pantries.find((p: Pantry) => p.id === "work");
-      expect(home!.items[0]!.name).toBe("молоко");
-      expect(work!.items).toEqual([]);
-      // Active remained "work" (user's choice).
-      expect(result.current.activePantryId).toBe("work");
+      expect(fridge!.items.map((i) => i.name)).toEqual(["молоко"]);
+      expect(freezer!.items.map((i) => i.name)).toEqual(["пельмені"]);
+      expect(home!.items).toEqual([]);
+      // Чернетка тексту очистилась саме там, де жила.
+      expect(home!.text).toBe("");
     });
   });
 });

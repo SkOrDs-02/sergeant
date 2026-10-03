@@ -20,6 +20,7 @@ import {
   brandColors,
   moduleColors,
   statusColors,
+  chartHex,
   chartPalette,
   chartPaletteList,
 } from "@sergeant/design-tokens/tokens";
@@ -29,6 +30,7 @@ export {
   brandColors,
   moduleColors,
   statusColors,
+  chartHex,
   chartPalette,
   chartPaletteList,
 };
@@ -42,18 +44,20 @@ export const chartColors = {
   routine: {
     future: brandColors.cream[300]!, // #f5ead8 — disabled/future
     empty: brandColors.cream[200]!, // #faf3e8 — neutral
-    l1: brandColors.coral[200]!, // #ffd4cb — weak
-    l2: brandColors.coral[400]!, // #ff8c78 — medium
-    l3: brandColors.coral[500]!, // #f97066 — strong
-    strokeToday: brandColors.coral[700]!, // #c23a3a
-    strokeSelected: brandColors.coral[900]!, // #862e2e
+    l1: brandColors.rose[200]!, // #fed3db — weak
+    l2: brandColors.rose[400]!, // #f68da4 — medium
+    l3: brandColors.rose[500]!, // #eb7691 — strong
+    strokeToday: brandColors.rose[700]!, // #ac4c64
+    strokeSelected: brandColors.rose[900]!, // #753949
   },
   /** Nutrition module macro rings */
   nutrition: {
+    // AI-NOTE: kcal has no canonical `chartHex` token — keeps the
+    // pre-existing orange until one is added.
     kcal: "#f97316", // orange-500 — calories
-    protein: brandColors.emerald[500]!, // #10b981 — protein
-    carbs: "#3b82f6", // blue-500 — carbohydrates
-    fat: "#eab308", // yellow-500 — fat
+    protein: chartHex.protein, // #0e7490 — cyan-700
+    carbs: chartHex.carbs, // #567c0f — lime-700 (was blue-500, off-brand)
+    fat: chartHex.fat, // #ac4c64 — rose-700 (was yellow-500, off-brand)
     track: brandColors.cream[300]!, // #f5ead8 — background track
   },
   /** Fizruk module charts */
@@ -65,8 +69,8 @@ export const chartColors = {
   },
   /** Finyk module charts */
   finyk: {
-    income: brandColors.emerald[500]!, // #10b981
-    expense: brandColors.coral[500]!, // #f97066
+    income: brandColors.teal[700]!, // #0f766e (2026-07: was emerald-500, aligns with brand shift)
+    expense: brandColors.rose[500]!, // #eb7691
     balance: brandColors.teal[500]!, // #14b8a6
     track: brandColors.cream[300]!,
   },

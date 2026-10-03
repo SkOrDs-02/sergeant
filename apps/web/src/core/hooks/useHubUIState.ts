@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
 import { useBrowserLocation } from "./useBrowserLocation";
 
 export type HubView = "dashboard" | "reports" | "profile" | "settings";
@@ -27,14 +28,30 @@ function readViewFromSearch(search: string): HubView {
 // this hook tracks only search/hub-view.
 export interface HubUIState {
   searchOpen: boolean;
+  /**
+   * Запит, з яким пошук відкрили ззовні (палітра команд → «Шукати „…“»).
+   * Порожній для звичайного відкриття; скидається разом із закриттям.
+   */
+  searchQuery: string;
   hubView: HubView;
-  setHubView: (view: HubView) => void;
+  setHubView: (view: HubView, options?: { syncUrl?: boolean }) => void;
   setSearchOpen: (value: boolean) => void;
+  /** Відкрити пошук із готовим запитом (порожній — як `setSearchOpen(true)`). */
+  openSearch: (query?: string) => void;
   closeSearch: () => void;
 }
 
 export function useHubUIState(): HubUIState {
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpenRaw] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const setSearchOpen = useCallback((value: boolean) => {
+    if (!value) setSearchQuery("");
+    setSearchOpenRaw(value);
+  }, []);
+  const openSearch = useCallback((query: string = "") => {
+    setSearchQuery(query);
+    setSearchOpenRaw(true);
+  }, []);
   const routerLocation = useLocation();
   const location = useBrowserLocation(routerLocation);
   const navigate = useNavigate();
@@ -47,11 +64,15 @@ export function useHubUIState(): HubUIState {
   // every location change (which would break referential equality for
   // `HubBottomNav`'s `onChange` prop).
   const locationRef = useRef(location);
-  locationRef.current = location;
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
 
   const setHubView = useCallback(
-    (view: HubView) => {
+    (view: HubView, options?: { syncUrl?: boolean }) => {
       setHubViewRaw(view);
+
+      if (options?.syncUrl === false) return;
 
       // Sync the tab to URL search params so deep-links and back button work.
       // CRITICAL: must go through react-router's `navigate` — calling
@@ -86,32 +107,26 @@ export function useHubUIState(): HubUIState {
       // `window.scrollTo({ top: 0, behavior: "smooth" })`, але документ
       // взагалі не скролиться (#root = `100dvh` + HubHomeView `overflow-hidden`),
       // і виклик `smooth`-скролу на iOS Safari / Capacitor триггерив візуальний
-      // viewport jump: на мить з'являвся UI-бар браузера, верх отримував зайвий
+      // viewport jump: на мить зʼявлявся UI-бар браузера, верх отримував зайвий
       // safe-area простір, а низ підрізав bottom-nav (user feedback 2026-05-13).
     },
     [navigate],
   );
 
-  // Re-sync `hubView` whenever the URL search params change, regardless of
-  // how the change was triggered — this covers (a) browser back/forward
-  // (popstate, picked up by react-router and reflected in `useLocation()`),
-  // (b) react-router `navigate()` calls that update the search string
-  // without going through `setHubView` (e.g. the `/profile → /?tab=profile`
-  // legacy redirect in `App.tsx`), and (c) any other code path that mutates
-  // `window.history` outside this hook. Without this, an external
-  // `navigate()` to `/?tab=profile` would change the address bar but leave
-  // `hubView` stuck on its initial value (typically `"dashboard"`).
-  useEffect(() => {
+  // Re-sync `hubView` when URL search params change (back/forward, external navigate).
+  useSyncedFromKey(location.search, () => {
     setHubViewRaw(readViewFromSearch(location.search));
-  }, [location.search]);
+  });
 
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
+  const closeSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
   return {
     searchOpen,
+    searchQuery,
     hubView,
     setHubView,
     setSearchOpen,
+    openSearch,
     closeSearch,
   };
 }

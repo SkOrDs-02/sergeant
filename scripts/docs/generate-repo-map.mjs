@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/docs/generate-repo-map.mjs
 //
-// Build a machine-readable mirror of `docs/02-engineering/architecture/repo-map.md` by
+// Build a machine-readable mirror of `docs/engineering/architecture/repo-map.md` by
 // enumerating workspaces (`pnpm-workspace.yaml`) and parsing each
-// `package.json`. Output: `docs/04-governance/governance/repo-map.auto.json`.
+// `package.json`. Output: `docs/governance/governance/repo-map.auto.json`.
 //
 // Acts as a **drift detector**: the markdown view stays hand-maintained
 // (editorial Purpose column, build/deploy narrative, test-stack
@@ -33,12 +33,9 @@ const REPO_ROOT = resolve(__dirname, "../..");
 
 const OUT_JSON = resolve(
   REPO_ROOT,
-  "docs/04-governance/governance/repo-map.auto.json",
+  "docs/governance/governance/repo-map.auto.json",
 );
-const VIEW_MD = resolve(
-  REPO_ROOT,
-  "docs/02-engineering/architecture/repo-map.md",
-);
+const VIEW_MD = resolve(REPO_ROOT, "docs/engineering/architecture/repo-map.md");
 const CODEOWNERS_PATH = resolve(REPO_ROOT, ".github/CODEOWNERS");
 const ROOT_PKG = resolve(REPO_ROOT, "package.json");
 
@@ -289,9 +286,21 @@ function main() {
   const coverageErrors = findMissingMentions(map, viewText);
 
   if (wantsCheck) {
+    // `generated_at` is a clock value: a byte-exact compare would flag every
+    // committed artifact as stale the day after it was generated (breaking any
+    // PR that outlives midnight). Neutralize the stamp on both sides before
+    // comparing — only real content drift fails. Mirrors the precedent in
+    // scripts/agent/build-retrieval-index.mjs.
+    const stripGeneratedAt = (s) =>
+      s === null
+        ? null
+        : s
+            .replace(/"generated_at":\s*"[^"]*"/g, '"generated_at":""')
+            .replace(/\(\d{4}-\d{2}-\d{2}\)/g, "(<date>)")
+            .replace(/Generated \d{4}-\d{2}-\d{2}/g, "Generated <date>");
     const current = readSafe(OUT_JSON);
     let mismatch = false;
-    if (current !== nextJson) {
+    if (stripGeneratedAt(current) !== stripGeneratedAt(nextJson)) {
       console.error(
         `${relPath(OUT_JSON)} is out of date. Run \`pnpm docs:gen-repo-map\` and commit.`,
       );

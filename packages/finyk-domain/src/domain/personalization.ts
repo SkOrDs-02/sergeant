@@ -11,8 +11,14 @@
 //  - для мерчантів додатково зберігаємо найчастішу категорію
 //    (щоб quick add міг підставити її автоматично).
 // Без ML, без ваг на зразок TF-IDF — тільки підрахунки + сортування.
-import { getCategory } from "../utils";
+import {
+  getCategory,
+  getExpenseCategoryForTransaction,
+  txTimeMs,
+} from "../utils";
+import { MANUAL_EXPENSE_TAXONOMY } from "../lib/manualTaxonomy.js";
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { foldApostrophes } from "@sergeant/shared";
 import type { Category, Transaction } from "./types";
 
 /** Manual-витрата як зберігається у localStorage (`finyk_manual_expenses_v1`). */
@@ -22,6 +28,8 @@ export interface ManualExpense {
   description?: string;
   amount: number;
   category?: string;
+  /** Відсутнє поле = `"expense"` — старі записи валідні без міграції даних. */
+  kind?: "expense" | "income";
 }
 
 export interface FrequentCategory {
@@ -79,7 +87,7 @@ const MANUAL_CATEGORY_ID_MAP: Record<string, string> = {
   транспорт: "transport",
   підписки: "subscriptions",
   розваги: "entertainment",
-  "здоров'я": "health",
+  здоровʼя: "health",
   здоров: "health",
   одяг: "shopping",
   покупки: "shopping",
@@ -109,6 +117,11 @@ export const CANONICAL_TO_MANUAL_LABEL: Record<string, string> = {
   beauty: "shopping",
   travel: "travel",
   education: "education",
+  telecom: "telecom",
+  home: "home",
+  pets: "pets",
+  gifts: "gifts",
+  p2p_transfer: "p2p_transfer",
   other: "other",
 };
 
@@ -124,21 +137,56 @@ function stripLeadingSymbols(str: string): string {
 }
 
 function normalizeManualLabel(label: string | undefined | null): string {
-  return stripLeadingSymbols((label || "").trim())
-    .trim()
-    .toLocaleLowerCase("uk-UA");
+  // AI-DANGER: згортання апострофа тут ОБОВʼЯЗКОВЕ (канон §1.10). Ключі
+  // мапи нижче канонічні (`ʼ`), а підписи категорій у сховищі
+  // користувача писали попередні версії застосунку через ASCII `'` — і
+  // переписати їх ми не можемо. Без згортання «Здоров'я» зі старих даних
+  // перестане резолвитись у `health`, а це тихо розсипає категоризацію
+  // наявних витрат: ліміт на здоровʼя перестане їх бачити.
+  return foldApostrophes(
+    stripLeadingSymbols((label || "").trim())
+      .trim()
+      .toLocaleLowerCase("uk-UA"),
+  );
 }
 
+/**
+ * Era 3 (слаг) → canonical id. `MANUAL_CATEGORY_ID_MAP` вище знає лише
+ * УКРАЇНСЬКІ підписи Ер 1–2, тож слаги крізь нього проходили як є — і
+ * `groceries`, `cafe`, `tech` осідали окремими «категоріями», яких
+ * немає в MCC-каталозі. Наслідок: ліміт, поставлений на «Кафе та
+ * ресторани» (`restaurant`), не бачив ручних витрат зі слагом `cafe`, а
+ * рекомендації рахували продукти й їжу як дві різні звички. Кольори ці
+ * самі три слаги вже зводили до канонічної категорії з 2026-08-12 —
+ * тепер так само робить і агрегація. Джерело обох — `manualTaxonomy.ts`.
+ */
+const SLUG_TO_CANONICAL_ID: Record<string, string> = Object.fromEntries(
+  MANUAL_EXPENSE_TAXONOMY.map((d) => [d.id, d.aggregateId ?? d.canonicalId]),
+);
+
 /** Підпис manual-категорії → canonical id або сам підпис (для custom). */
-export function manualCategoryToCanonicalId(label: string | undefined): string {
+export function manualCategoryToCanonicalId(
+  label: string | undefined,
+  date?: string | Date,
+): string {
   const norm = normalizeManualLabel(label);
   if (!norm) return "other";
-  return MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  const id = SLUG_TO_CANONICAL_ID[norm] || MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  if (id === "tech" && date) {
+    const timestamp = new Date(date).getTime();
+    if (
+      Number.isFinite(timestamp) &&
+      timestamp < Date.parse("2026-08-31T21:00:00.000Z")
+    )
+      return "shopping";
+  }
+  return id;
 }
 
 function toTimestampMs(tx: Transaction): number {
   if (!tx || !tx.time) return 0;
-  return tx.time > 1e10 ? tx.time : tx.time * 1000;
+  const ms = txTimeMs(tx.time);
+  return Number.isFinite(ms) ? ms : 0;
 }
 
 function toManualTs(me: ManualExpense): number {
@@ -233,9 +281,8 @@ export function getFrequentCategories(
     const ts = toTimestampMs(tx);
     if (!inWindow(ts)) continue;
     const overrideId = txCategories[tx.id];
-    const cat = getCategory(
-      tx.description || "",
-      tx.mcc || 0,
+    const cat = getExpenseCategoryForTransaction(
+      tx,
       overrideId,
       customCategories,
     );
@@ -248,7 +295,7 @@ export function getFrequentCategories(
     if (!me) continue;
     const ts = toManualTs(me);
     if (!inWindow(ts)) continue;
-    const canonicalId = manualCategoryToCanonicalId(me.category);
+    const canonicalId = manualCategoryToCanonicalId(me.category, me.date);
     if (canonicalId === INTERNAL_TRANSFER_ID) continue;
     const label = resolveCategoryLabel(
       canonicalId,
@@ -341,9 +388,8 @@ export function getFrequentMerchants(
     const ts = toTimestampMs(tx);
     if (!inWindow(ts)) continue;
     const overrideId = txCategories[tx.id];
-    const cat = getCategory(
-      tx.description || "",
-      tx.mcc || 0,
+    const cat = getExpenseCategoryForTransaction(
+      tx,
       overrideId,
       customCategories,
     );
@@ -361,7 +407,7 @@ export function getFrequentMerchants(
     if (!me) continue;
     const ts = toManualTs(me);
     if (!inWindow(ts)) continue;
-    const canonicalId = manualCategoryToCanonicalId(me.category);
+    const canonicalId = manualCategoryToCanonicalId(me.category, me.date);
     if (canonicalId === INTERNAL_TRANSFER_ID) continue;
     addHit(
       me.description || "",

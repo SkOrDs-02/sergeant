@@ -70,6 +70,7 @@
       "CSSConditionRule": false,
       "CSSContainerRule": false,
       "CSSCounterStyleRule": false,
+      "CSSFontFaceDescriptors": false,
       "CSSFontFaceRule": false,
       "CSSFontFeatureValuesRule": false,
       "CSSFontPaletteValuesRule": false,
@@ -106,6 +107,7 @@
       "CSSPositionTryRule": false,
       "CSSPositionValue": false,
       "CSSPropertyRule": false,
+      "CSSPseudoElement": false,
       "CSSRotate": false,
       "CSSRule": false,
       "CSSRuleList": false,
@@ -426,6 +428,7 @@
       "KeyboardLayoutMap": false,
       "KeyframeEffect": false,
       "LanguageDetector": false,
+      "LanguageModel": false,
       "LargestContentfulPaint": false,
       "LaunchParams": false,
       "LaunchQueue": false,
@@ -482,6 +485,7 @@
       "MessagePort": false,
       "MimeType": false,
       "MimeTypeArray": false,
+      "ModelContext": false,
       "ModelGenericSession": false,
       "ModelManager": false,
       "MouseEvent": false,
@@ -876,6 +880,7 @@
       "WebGLTransformFeedback": false,
       "WebGLUniformLocation": false,
       "WebGLVertexArrayObject": false,
+      "WebMCPEvent": false,
       "WebSocket": false,
       "WebSocketError": false,
       "WebSocketStream": false,
@@ -1200,12 +1205,14 @@
       "when": false,
       "window": false
     },
-    "parser": "typescript-eslint/parser@8.59.2",
+    "parser": "typescript-eslint/parser@8.63.0",
     "parserOptions": {
       "ecmaFeatures": {
         "jsx": true
       },
-      "jsxPragma": null
+      "jsxPragma": null,
+      "projectService": true,
+      "tsconfigRootDir": "<repo>"
     },
     "sourceType": "module"
   },
@@ -1214,7 +1221,7 @@
   },
   "plugins": [
     "@",
-    "@typescript-eslint:@typescript-eslint/eslint-plugin@8.59.2",
+    "@typescript-eslint:@typescript-eslint/eslint-plugin@8.63.0",
     "react",
     "jsx-a11y:eslint-plugin-jsx-a11y@6.10.2",
     "react-hooks:eslint-plugin-react-hooks@7.0.0",
@@ -1822,6 +1829,9 @@
     "@typescript-eslint/no-extra-semi": [
       0
     ],
+    "@typescript-eslint/no-floating-promises": [
+      0
+    ],
     "@typescript-eslint/no-misused-new": [
       2
     ],
@@ -2015,6 +2025,14 @@
     "import/extensions": [
       2,
       "never"
+    ],
+    "import/no-cycle": [
+      2,
+      {
+        "allowUnsafeDynamicCyclicDependency": false,
+        "disableScc": false,
+        "ignoreExternal": true
+      }
     ],
     "indent": [
       0
@@ -2498,7 +2516,7 @@
             "name": "better-auth/react"
           },
           {
-            "message": "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
+            "message": "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle.",
             "name": "@sergeant/db-schema/migrate"
           }
         ]
@@ -2690,25 +2708,25 @@
       2
     ],
     "react-hooks/immutability": [
-      0
+      2
     ],
     "react-hooks/incompatible-library": [
       1
     ],
     "react-hooks/preserve-manual-memoization": [
-      0
+      2
     ],
     "react-hooks/purity": [
-      0
+      2
     ],
     "react-hooks/refs": [
-      0
+      2
     ],
     "react-hooks/rules-of-hooks": [
       2
     ],
     "react-hooks/set-state-in-effect": [
-      0
+      2
     ],
     "react-hooks/set-state-in-render": [
       2
@@ -2720,7 +2738,7 @@
       1
     ],
     "react-hooks/use-memo": [
-      0
+      2
     ],
     "react/display-name": [
       2
@@ -2854,42 +2872,11 @@
     "sergeant-design/ai-marker-syntax": [
       2
     ],
+    "sergeant-design/no-adhoc-metric-aggregation": [
+      2
+    ],
     "sergeant-design/no-anthropic-key-in-logs": [
       2
-    ],
-    "sergeant-design/no-arbitrary-text-size": [
-      2
-    ],
-    "sergeant-design/no-bare-empty-text": [
-      2
-    ],
-    "sergeant-design/no-bare-fixed-inset-modal": [
-      1,
-      {
-        "allow": [
-          "apps/web/src/core/app/WelcomeScreen.tsx",
-          "apps/web/src/core/hub/HubChatHistoryDrawer.tsx",
-          "apps/web/src/core/hub/search/HubSearch.tsx",
-          "apps/web/src/core/onboarding/FirstEntryCelebrationModal.tsx",
-          "apps/web/src/core/onboarding/OnboardingWizard.tsx",
-          "apps/web/src/core/profile/DeleteAccountDialog.tsx",
-          "apps/web/src/core/security/AppLock.tsx",
-          "apps/web/src/core/settings/SettingsPrimitives.tsx",
-          "apps/web/src/core/stories/WeeklyDigestStories.tsx",
-          "apps/web/src/modules/finyk/FinykApp.tsx",
-          "apps/web/src/modules/routine/components/HabitQuickCreateDialog.tsx",
-          "apps/web/src/shared/components/layout/ModuleSettingsDrawer.tsx",
-          "apps/web/src/shared/components/ui/CelebrationModal.tsx",
-          "apps/web/src/shared/components/ui/CommandPalette.tsx",
-          "apps/web/src/shared/components/ui/ConfirmDialog.tsx",
-          "apps/web/src/shared/components/ui/FloatingActionButton.tsx",
-          "apps/web/src/shared/components/ui/InputDialog.tsx",
-          "apps/web/src/shared/components/ui/KeyboardShortcutsModal.tsx",
-          "apps/web/src/shared/components/ui/Modal.tsx",
-          "apps/web/src/shared/components/ui/QuickActionsMenu.tsx",
-          "apps/web/src/shared/components/ui/Sheet.tsx"
-        ]
-      }
     ],
     "sergeant-design/no-console-pii": [
       2
@@ -2917,11 +2904,59 @@
           "apps/web/src/core/DesignShowcase/sections/Motion.tsx",
           "apps/web/src/core/DesignShowcase/sections/Overlays.tsx",
           "apps/web/src/core/DesignShowcase/sections/Primitives.tsx",
+          "apps/web/src/core/DesignShowcase/sections/ProposalsUI.tsx",
+          "apps/web/src/core/DesignShowcase/sections/ProposalsUX.tsx",
           "apps/web/src/core/DesignShowcase/sections/Spacing.tsx",
           "apps/web/src/core/DesignShowcase/sections/Theming.tsx",
           "apps/web/src/core/DesignShowcase/sections/Typography.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/AccentMorphDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/BatchEntryDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/BatchSelectDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/BottomNavGlowDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/BottomSheetDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/BreathingMeshDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/CarouselDotsDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ChartTransitionDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ChipsFilterRowDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ClipboardActionDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/CoachMarksDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ContrastMoreDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/DateScrubberDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/DemoToRealDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/DualRangeSliderDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/DynamicThemeColorDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/DynamicTypeDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/EmptyStateIdleDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ErrorRecoveryDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/FocusGlowDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ForcedColorsDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/GrainOverlayDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/IconMorphDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/KeyboardAccessoryDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/KpiCarouselDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/LaunchHandlerDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/MacroRingDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/MonochromeIconDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/MultiSelectDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/OdometerRollupDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/OfflineFeedbackDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ParallaxHeroDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/PeekExpandableDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/PressDepthDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ReducedTransparencyDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ScrollRevealDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/SegmentedSheetFallbackDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/SharedElementMorphDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/SmartSuggestDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/SplashCrossfadeDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/StickySummaryDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/StreakTiersDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/TableToCardDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/ViewTransitionDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/WheelPickerDemo.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/_Compare.tsx",
+          "apps/web/src/core/DesignShowcase/sections/proposals/_PhoneFrame.tsx",
           "apps/web/src/core/ErrorBoundary.tsx",
-          "apps/web/src/core/LandingPage.tsx",
           "apps/web/src/core/PricingPage.tsx",
           "apps/web/src/core/app/HubHeader.tsx",
           "apps/web/src/core/app/HubMainContent.tsx",
@@ -2947,23 +2982,19 @@
           "apps/web/src/core/hub/HubDashboard.tsx",
           "apps/web/src/core/hub/HubHeroBlock.tsx",
           "apps/web/src/core/hub/HubInsightsBlock.tsx",
-          "apps/web/src/core/hub/HubModulesGrid.tsx",
           "apps/web/src/core/hub/HubReports.tsx",
           "apps/web/src/core/hub/HubSettingsPage.tsx",
           "apps/web/src/core/hub/OutcomeCard.tsx",
           "apps/web/src/core/hub/chat/HubChatBody.tsx",
           "apps/web/src/core/hub/chat/HubChatHeader.tsx",
-          "apps/web/src/core/hub/dashboard/BentoCard.tsx",
           "apps/web/src/core/hub/dashboard/dashboardCards.tsx",
           "apps/web/src/core/hub/search/InlineAiRail.tsx",
           "apps/web/src/core/hub/search/SearchResults.tsx",
           "apps/web/src/core/insights/AssistantAdviceCard.tsx",
           "apps/web/src/core/insights/TodayFocusCard.tsx",
           "apps/web/src/core/insights/WeeklyDigestCard.tsx",
-          "apps/web/src/core/onboarding/CelebrationModal.tsx",
           "apps/web/src/core/onboarding/DailyNudge.tsx",
           "apps/web/src/core/onboarding/DemoModeBanner.tsx",
-          "apps/web/src/core/onboarding/FirstActionSheet.tsx",
           "apps/web/src/core/onboarding/OnboardingProgress.tsx",
           "apps/web/src/core/onboarding/OnboardingWizard.tsx",
           "apps/web/src/core/onboarding/ReEngagementCard.tsx",
@@ -2976,17 +3007,16 @@
           "apps/web/src/core/profile/ProfilePage.tsx",
           "apps/web/src/core/profile/SessionsSection.tsx",
           "apps/web/src/core/settings/AIDigestSection.tsx",
-          "apps/web/src/core/settings/AssistantCatalogueSection.tsx",
           "apps/web/src/core/settings/DashboardSection.tsx",
           "apps/web/src/core/settings/DataExportSection.tsx",
           "apps/web/src/core/settings/ExperimentalSection.tsx",
           "apps/web/src/core/settings/FinykSection.tsx",
           "apps/web/src/core/settings/FizrukSection.tsx",
-          "apps/web/src/core/settings/GeneralSection.tsx",
           "apps/web/src/core/settings/NotificationsSection.tsx",
           "apps/web/src/core/settings/NutritionSection.tsx",
           "apps/web/src/core/settings/PWASection.tsx",
           "apps/web/src/core/settings/PlanSection.tsx",
+          "apps/web/src/core/settings/PrivacySection.tsx",
           "apps/web/src/core/settings/RoutineSection.tsx",
           "apps/web/src/core/stories/components/StoriesProgressHeader.tsx",
           "apps/web/src/core/stories/components/slides/FinykSlide.tsx",
@@ -2996,24 +3026,38 @@
           "apps/web/src/core/stories/components/slides/OverallSlide.tsx",
           "apps/web/src/core/stories/components/slides/RoutineSlide.tsx",
           "apps/web/src/modules/finyk/FinykApp.tsx",
-          "apps/web/src/modules/finyk/components/FinykHeaderControls.tsx",
-          "apps/web/src/modules/finyk/components/FinykPageHost.tsx",
+          "apps/web/src/modules/finyk/FinykAppChrome.tsx",
           "apps/web/src/modules/finyk/components/DebtCard.tsx",
           "apps/web/src/modules/finyk/components/FinykLoginScreen.tsx",
           "apps/web/src/modules/finyk/components/FinykManualExpenseConflictBanner.tsx",
+          "apps/web/src/modules/finyk/components/FinykScanEntryPoints.tsx",
           "apps/web/src/modules/finyk/components/FinykStatsStrip.tsx",
-          "apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx",
+          "apps/web/src/modules/finyk/components/ManualExpenseAmountSection.tsx",
+          "apps/web/src/modules/finyk/components/ManualExpenseCategorySection.tsx",
+          "apps/web/src/modules/finyk/components/ManualExpenseDescriptionSection.tsx",
           "apps/web/src/modules/finyk/components/NoBankBanner.tsx",
+          "apps/web/src/modules/finyk/components/ReceiptItemsSection.tsx",
           "apps/web/src/modules/finyk/components/RecurringSuggestions.tsx",
           "apps/web/src/modules/finyk/components/SubCard.tsx",
           "apps/web/src/modules/finyk/components/TxListItem.tsx",
           "apps/web/src/modules/finyk/components/TxRow.tsx",
+          "apps/web/src/modules/finyk/components/TxRowCategoryPicker.tsx",
+          "apps/web/src/modules/finyk/components/TxRowMetaChips.tsx",
+          "apps/web/src/modules/finyk/components/TxRowSplitEditor.tsx",
           "apps/web/src/modules/finyk/components/analytics/CategoryPieChart.tsx",
           "apps/web/src/modules/finyk/components/analytics/MerchantList.tsx",
           "apps/web/src/modules/finyk/components/budgets/AddBudgetForm.tsx",
           "apps/web/src/modules/finyk/components/budgets/GoalBudgetCard.tsx",
           "apps/web/src/modules/finyk/components/budgets/LimitBudgetCard.tsx",
           "apps/web/src/modules/finyk/components/budgets/MonthlyPlanCard.tsx",
+          "apps/web/src/modules/finyk/components/bulkImport/BulkImportSheet.tsx",
+          "apps/web/src/modules/finyk/components/bulkImport/BulkReceiptsProgress.tsx",
+          "apps/web/src/modules/finyk/components/bulkImport/BulkReviewTable.tsx",
+          "apps/web/src/modules/finyk/components/bulkImport/ColumnMapper.tsx",
+          "apps/web/src/modules/finyk/components/receiptScan/ReceiptReviewForm.tsx",
+          "apps/web/src/modules/finyk/components/receiptScan/ReceiptReviewItemRow.tsx",
+          "apps/web/src/modules/finyk/components/receiptScan/ReceiptScanCameraView.tsx",
+          "apps/web/src/modules/finyk/components/receiptScan/ReceiptScanSheet.tsx",
           "apps/web/src/modules/finyk/pages/Analytics.tsx",
           "apps/web/src/modules/finyk/pages/AssetsAssetsSection.tsx",
           "apps/web/src/modules/finyk/pages/AssetsBars.tsx",
@@ -3028,7 +3072,6 @@
           "apps/web/src/modules/finyk/pages/budgets/BudgetsLimitsSection.tsx",
           "apps/web/src/modules/finyk/pages/overview/FirstInsightBanner.tsx",
           "apps/web/src/modules/finyk/pages/overview/HeroCard.tsx",
-          "apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx",
           "apps/web/src/modules/finyk/pages/overview/NetworthSection.tsx",
           "apps/web/src/modules/finyk/pages/overview/PlannedFlowsCard.tsx",
           "apps/web/src/modules/finyk/pages/transactions/TransactionList.tsx",
@@ -3044,9 +3087,9 @@
           "apps/web/src/modules/fizruk/components/WeeklyVolumeChart.tsx",
           "apps/web/src/modules/fizruk/components/WellbeingChart.tsx",
           "apps/web/src/modules/fizruk/components/WorkoutTemplatesSection.tsx",
-          "apps/web/src/modules/fizruk/components/dashboard/HeroCard.tsx",
+          "apps/web/src/modules/fizruk/components/dashboard/HeroCardStates.tsx",
+          "apps/web/src/modules/fizruk/components/dashboard/HeroRecoveryBars.tsx",
           "apps/web/src/modules/fizruk/components/dashboard/RecentWorkoutsSection.tsx",
-          "apps/web/src/modules/fizruk/components/dashboard/StatusStrip.tsx",
           "apps/web/src/modules/fizruk/components/workouts/ActiveWorkoutHeader.tsx",
           "apps/web/src/modules/fizruk/components/workouts/ActiveWorkoutPanel.tsx",
           "apps/web/src/modules/fizruk/components/workouts/AddExerciseSheet.tsx",
@@ -3064,14 +3107,8 @@
           "apps/web/src/modules/fizruk/components/workouts/WorkoutsHeader.tsx",
           "apps/web/src/modules/fizruk/components/workouts/WorkoutsHome.tsx",
           "apps/web/src/modules/fizruk/pages/Atlas.tsx",
-          "apps/web/src/modules/fizruk/pages/Body.tsx",
-          "apps/web/src/modules/fizruk/pages/Body/JournalEntryCard.tsx",
-          "apps/web/src/modules/fizruk/pages/Body/JournalSection.tsx",
           "apps/web/src/modules/fizruk/pages/Dashboard.tsx",
           "apps/web/src/modules/fizruk/pages/Exercise.tsx",
-          "apps/web/src/modules/fizruk/pages/Measurements.tsx",
-          "apps/web/src/modules/fizruk/pages/Programs.tsx",
-          "apps/web/src/modules/fizruk/pages/Progress.tsx",
           "apps/web/src/modules/nutrition/NutritionApp.tsx",
           "apps/web/src/modules/nutrition/components/AddMealSheet.tsx",
           "apps/web/src/modules/nutrition/components/BarcodeScanner.tsx",
@@ -3090,19 +3127,25 @@
           "apps/web/src/modules/nutrition/components/PantryCard.tsx",
           "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",
           "apps/web/src/modules/nutrition/components/PhotoAnalyzeCard.tsx",
+          "apps/web/src/modules/nutrition/components/PhotoPrivacyNotice.tsx",
           "apps/web/src/modules/nutrition/components/RecipesCard.Generator.tsx",
           "apps/web/src/modules/nutrition/components/RecipesCard.SavedSection.tsx",
           "apps/web/src/modules/nutrition/components/RecipesCard.tsx",
           "apps/web/src/modules/nutrition/components/ShoppingListCard.tsx",
           "apps/web/src/modules/nutrition/components/VirtualMealList.tsx",
           "apps/web/src/modules/nutrition/components/WaterTrackerCard.tsx",
+          "apps/web/src/modules/nutrition/components/meal-sheet/AddMealSheetTitle.tsx",
           "apps/web/src/modules/nutrition/components/meal-sheet/BarcodeSection.tsx",
           "apps/web/src/modules/nutrition/components/meal-sheet/FoodHitRow.tsx",
           "apps/web/src/modules/nutrition/components/meal-sheet/FoodPickerSection.tsx",
           "apps/web/src/modules/nutrition/components/meal-sheet/MacrosEditor.tsx",
+          "apps/web/src/modules/nutrition/components/meal-sheet/ManualEntryTab.tsx",
           "apps/web/src/modules/nutrition/components/meal-sheet/NameTimeRow.tsx",
-          "apps/web/src/modules/nutrition/components/meal-sheet/SaveAsFood.tsx",
+          "apps/web/src/modules/nutrition/components/meal-sheet/PackageEntryStep.tsx",
+          "apps/web/src/modules/nutrition/components/meal-sheet/PickedFoodCard.tsx",
           "apps/web/src/modules/nutrition/components/meal-sheet/SaveAsTemplate.tsx",
+          "apps/web/src/modules/nutrition/components/meal-sheet/SearchTabPanel.tsx",
+          "apps/web/src/modules/nutrition/components/meal-sheet/SourceTabs.tsx",
           "apps/web/src/modules/nutrition/pages/NutritionLogPage.tsx",
           "apps/web/src/modules/nutrition/pages/NutritionMenuPage.tsx",
           "apps/web/src/modules/nutrition/pages/NutritionPantryPage.tsx",
@@ -3110,25 +3153,24 @@
           "apps/web/src/modules/routine/RoutineHeader.tsx",
           "apps/web/src/modules/routine/RoutineTimeline.tsx",
           "apps/web/src/modules/routine/components/DayReportSheet.tsx",
-          "apps/web/src/modules/routine/components/FizrukDayPlanSheet.tsx",
           "apps/web/src/modules/routine/components/HabitDetailSheet.tsx",
           "apps/web/src/modules/routine/components/HabitHeatmap.tsx",
           "apps/web/src/modules/routine/components/HabitLeadersBlock.tsx",
-          "apps/web/src/modules/routine/components/PushupsWidget.tsx",
+          "apps/web/src/modules/routine/components/HabitMonthCalendar.tsx",
+          "apps/web/src/modules/routine/components/HabitStatsSection.tsx",
           "apps/web/src/modules/routine/components/RoutineBottomNav.tsx",
           "apps/web/src/modules/routine/components/RoutineCalendarHero.tsx",
           "apps/web/src/modules/routine/components/RoutineCalendarMonthGrid.tsx",
           "apps/web/src/modules/routine/components/RoutineCalendarPanel.tsx",
           "apps/web/src/modules/routine/components/RoutineStatsPanel.tsx",
           "apps/web/src/modules/routine/components/WeekDayStrip.tsx",
-          "apps/web/src/modules/routine/components/settings/ActiveHabitsSection.tsx",
-          "apps/web/src/modules/routine/components/settings/ArchivedHabitsSection.tsx",
+          "apps/web/src/modules/routine/components/habits/ActiveHabitsSection.tsx",
+          "apps/web/src/modules/routine/components/habits/ArchivedHabitsSection.tsx",
+          "apps/web/src/modules/routine/components/habits/HabitListItem.tsx",
           "apps/web/src/modules/routine/components/settings/CategoriesSection.tsx",
           "apps/web/src/modules/routine/components/settings/HabitForm.tsx",
-          "apps/web/src/modules/routine/components/settings/HabitListItem.tsx",
           "apps/web/src/modules/routine/components/settings/ReminderPresets.tsx",
           "apps/web/src/modules/routine/components/settings/TagsSection.tsx",
-          "apps/web/src/shared/components/ui/AccentColorPicker.tsx",
           "apps/web/src/shared/components/ui/CommandPalette.stories.tsx",
           "apps/web/src/shared/components/ui/CommandPalette.tsx",
           "apps/web/src/shared/components/ui/CommandPaletteUI.tsx",
@@ -3143,84 +3185,65 @@
         ]
       }
     ],
-    "sergeant-design/no-ellipsis-dots": [
-      2
-    ],
-    "sergeant-design/no-eyebrow-drift": [
-      2
-    ],
     "sergeant-design/no-finyk-token-in-storage": [
       2
     ],
     "sergeant-design/no-flat-shared-lib": [
       2
     ],
-    "sergeant-design/no-foreign-module-accent": [
-      2
-    ],
-    "sergeant-design/no-hex-in-classname": [
-      2
-    ],
-    "sergeant-design/no-low-contrast-text-on-fill": [
-      2
-    ],
-    "sergeant-design/no-raw-dark-palette": [
+    "sergeant-design/no-opacity-on-text-token": [
       2
     ],
     "sergeant-design/no-raw-local-storage": [
       2
     ],
+    "sergeant-design/no-raw-motion-value": [
+      2
+    ],
     "sergeant-design/no-raw-storage-key": [
       1
     ],
-    "sergeant-design/no-rounded-lg": [
-      2
+    "sergeant-design/no-raw-type-size": [
+      1
     ],
-    "sergeant-design/no-small-button-touch-target": [
+    "sergeant-design/no-sentence-in-caption": [
       1
     ],
     "sergeant-design/no-strict-bypass": [
       2
     ],
-    "sergeant-design/no-v1-gradient": [
-      2
-    ],
-    "sergeant-design/prefer-focus-visible": [
-      2
-    ],
     "sergeant-design/prefer-kyiv-time": [
       1
     ],
-    "sergeant-design/prefer-text-style": [
-      1
-    ],
     "sergeant-design/require-toast-error-action": [
-      1,
+      2,
       {
         "allowlist": [
-          "apps/web/src/core/hub/HubBackupPanel.tsx",
           "apps/web/src/core/pricing/WaitlistForm.tsx",
-          "apps/web/src/core/profile/BiometricsSection.tsx",
-          "apps/web/src/core/profile/DangerZoneSection.tsx",
-          "apps/web/src/core/profile/MemoryBankSection.tsx",
-          "apps/web/src/core/profile/PersonalInfoSection.tsx",
-          "apps/web/src/core/profile/ProfilePage.tsx",
-          "apps/web/src/core/profile/SessionsSection.tsx",
-          "apps/web/src/core/settings/DashboardSection.tsx",
-          "apps/web/src/core/settings/PWASection.tsx",
-          "apps/web/src/modules/finyk/FinykApp.tsx",
-          "apps/web/src/modules/finyk/components/FinykLoginScreen.tsx",
-          "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
           "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
-          "apps/web/src/shared/lib/ui/undoToast.tsx"
+          "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
+          "apps/web/src/shared/lib/ui/undoToast.tsx",
+          "apps/mobile/src/lib/showUndoToast.ts",
+          "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts"
         ]
       }
     ],
     "sergeant-design/rq-keys-only-from-factory": [
       2
     ],
-    "sergeant-design/valid-tailwind-opacity": [
-      2
+    "sergeant-design/ukrainian-copy": [
+      2,
+      {
+        "allowFirstPersonPlural": [
+          "src/core/legal",
+          "src/shared/i18n/uk.dataDisclosure.ts",
+          "src/core/errors/NotFoundPage.tsx",
+          "src/core/errors/ServerErrorPage.tsx"
+        ],
+        "allowlist": [
+          "src/core/DesignShowcase"
+        ]
+      }
     ],
     "space-after-function-name": [
       0

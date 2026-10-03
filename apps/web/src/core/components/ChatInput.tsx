@@ -1,5 +1,6 @@
 import { cn } from "@shared/lib/ui/cn";
 import { Tooltip } from "@shared/components/ui/Tooltip";
+import { isVoiceInputEnabled } from "@shared/components/ui/voice/resolveVoiceProvider";
 import { stopSpeaking, unlockTTS } from "../lib/hubChatSpeech";
 import { useSpeech } from "../hooks/useSpeech";
 import {
@@ -25,7 +26,7 @@ interface ChatInputProps {
   >;
   /**
    * Опційний callback ref для фокусу інпуту зовні (наприклад, після
-   * prefill з ChatQuickActions). HubChat прив'язує сюди функцію, яка
+   * prefill з ChatQuickActions). HubChat привʼязує сюди функцію, яка
    * потім викликає `.focus()`.
    */
   focusInputRef?: MutableRefObject<(() => void) | null>;
@@ -70,12 +71,20 @@ export function ChatInput({
   const {
     listening,
     toggle: rawToggleMic,
-    supported: speechSupported,
+    supported: rawSpeechSupported,
   } = useSpeech((text) => {
     if (text.trim()) {
       sendRef.current?.(text.trim(), true);
     }
   });
+
+  // Той самий kill-switch, що ховає `VoiceMicButton` у чотирьох модулях
+  // (`voice/resolveVoiceProvider.ts#isVoiceInputEnabled`). Чат — ДРУГА,
+  // незалежна голосова поверхня: він не використовує `VoiceMicButton`, а
+  // тримає власний `useSpeech` + власну кнопку нижче. Без цього рядка
+  // «прибрали голос із продукту» було б неправдою рівно в одному місці —
+  // і саме в тому, де мікрофон бачить найбільше людей.
+  const speechSupported = rawSpeechSupported && isVoiceInputEnabled();
 
   const toggleMic = useCallback(() => {
     unlockTTS();
@@ -89,7 +98,8 @@ export function ChatInput({
           type="button"
           onClick={onHelp}
           className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 transition-[background-color,border-color,color,opacity] border bg-panel border-line text-muted hover:text-text hover:border-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
-          aria-label="Показати список команд"
+          aria-label="Команди: показати довідку"
+          title="Команди"
         >
           <svg
             width="16"
@@ -111,11 +121,11 @@ export function ChatInput({
       </Tooltip>
       <input
         ref={inputRef}
-        className="input-focus-finyk flex-1 bg-panel border border-line rounded-2xl px-4 py-3 text-sm text-text placeholder:text-subtle disabled:opacity-50"
+        className="input-focus-finyk flex-1 bg-panel border border-line rounded-2xl px-4 py-3 text-style-body text-text placeholder:text-subtle disabled:opacity-50"
         placeholder={
           online
             ? "Запитай або попроси змінити щось…"
-            : "Немає зʼєднання — асистент офлайн"
+            : "Немає зʼєднання, Сержант офлайн"
         }
         value={input}
         onChange={(e) => setInput(e.target.value)}
@@ -123,7 +133,7 @@ export function ChatInput({
           e.key === "Enter" && !e.shiftKey && online && onSend()
         }
         disabled={!online}
-        aria-label="Повідомлення асистенту"
+        aria-label="Повідомлення Сержанту"
       />
       {speaking ? (
         <button
@@ -186,7 +196,7 @@ export function ChatInput({
         disabled={loading || !input.trim() || !online}
         className="w-11 h-11 rounded-full bg-primary text-bg flex items-center justify-center shrink-0 hover:brightness-110 transition-[filter,opacity] disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel"
         aria-label={online ? "Надіслати" : "Надсилання недоступне офлайн"}
-        title={online ? "Надіслати" : "Немає інтернету — асистент офлайн"}
+        title={online ? "Надіслати" : "Немає інтернету, Сержант офлайн"}
       >
         <svg
           width="18"

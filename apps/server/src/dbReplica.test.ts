@@ -15,6 +15,13 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { EndPoolOptions } from "./lib/poolShutdown.js";
+
+type DrainReplicaResultShape =
+  | { ok: true; reason: "ended" | "skipped" }
+  | { ok: false; reason: "aborted"; abortedAfterMs: number }
+  | { ok: false; reason: "error"; err: unknown };
+
 interface ReplicaModuleShape {
   REPLICA_ENABLED: boolean;
   getReplicaPoolStats: () =>
@@ -25,6 +32,9 @@ interface ReplicaModuleShape {
         idleCount: number;
         waitingCount: number;
       };
+  drainReplicaPool: (
+    options: Omit<EndPoolOptions, "poolLabel">,
+  ) => Promise<DrainReplicaResultShape>;
 }
 
 async function loadReplica(
@@ -92,5 +102,63 @@ describe("PR #047 — read-replica routing via DATABASE_URL_REPLICA", () => {
     expect(stats.totalCount).toBeGreaterThanOrEqual(0);
     expect(stats.idleCount).toBeGreaterThanOrEqual(0);
     expect(stats.waitingCount).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("drainReplicaPool — graceful-shutdown drain for the replica pool", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('drains the replica pool with a `pool: "replica"` log when configured', async () => {
+    const mod = await loadReplica({
+      DATABASE_URL: "postgres://app:app@primary.internal:5432/sergeant",
+      DATABASE_URL_REPLICA: "postgres://ro:ro@replica.internal:5432/sergeant",
+    });
+
+    // Жоден query не робився → replica pool не має checked-out клієнтів, тож
+    // реальний `pg.Pool.end()` резолвиться миттєво без TCP-раунд-тріпу.
+    const info = vi.fn<(obj: object) => void>();
+    const warn = vi.fn<(obj: object) => void>();
+
+    const result = await mod.drainReplicaPool({
+      timeoutMs: 1_000,
+      logger: { info, warn },
+    });
+
+    expect(result).toEqual({ ok: true, reason: "ended" });
+    expect(info).toHaveBeenCalledWith({
+      msg: "pg_pool_ended",
+      pool: "replica",
+    });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("is a no-op returning `skipped` when the replica is not configured", async () => {
+    const mod = await loadReplica({
+      DATABASE_URL: "postgres://app:app@primary.internal:5432/sergeant",
+      DATABASE_URL_REPLICA: "",
+    });
+
+    const info = vi.fn<(obj: object) => void>();
+    const warn = vi.fn<(obj: object) => void>();
+
+    let thrown: unknown = null;
+    let result: DrainReplicaResultShape | undefined;
+    try {
+      result = await mod.drainReplicaPool({
+        timeoutMs: 1_000,
+        logger: { info, warn },
+      });
+    } catch (err) {
+      thrown = err;
+    }
+
+    expect(thrown).toBeNull();
+    expect(result).toEqual({ ok: true, reason: "skipped" });
+    // No-op не має нічого дренувати чи логувати.
+    expect(info).not.toHaveBeenCalled();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

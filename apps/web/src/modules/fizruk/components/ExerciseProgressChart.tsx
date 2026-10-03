@@ -1,4 +1,12 @@
 import { cn } from "@shared/lib/ui/cn";
+import {
+  seriesExtent,
+  pointStep,
+  xAt,
+  linearY,
+  buildLinePath,
+  buildAreaPath,
+} from "@shared/charts";
 import { fmt } from "../lib/numberFmt";
 
 export interface ProgressPoint {
@@ -21,16 +29,14 @@ export function ExerciseProgressChart({
 }: ExerciseProgressChartProps) {
   if (!points || points.length < 2) {
     return (
-      <div className="rounded-xl border border-dashed border-line bg-panelHi/50 py-6 text-center text-xs text-subtle">
+      <div className="rounded-xl border border-dashed border-line bg-panelHi/50 py-6 text-center text-style-caption text-subtle">
         Потрібно щонайменше 2 тренування для графіка
       </div>
     );
   }
 
   const vals = points.map((p) => p.value);
-  const minVal = Math.min(...vals);
-  const maxVal = Math.max(...vals);
-  const range = maxVal - minVal || 1;
+  const { min: minVal, range } = seriesExtent(vals);
 
   const w = 320;
   const h = 90;
@@ -41,31 +47,22 @@ export function ExerciseProgressChart({
   const innerW = w - padL - padR;
   const innerH = h - padT - padB;
   const n = points.length;
-  const step = n > 1 ? innerW / (n - 1) : innerW;
+  const step = pointStep(innerW, n);
 
   const mapped = points.map((p, i) => {
-    const x = padL + i * step;
-    const pct = (p.value - minVal) / range;
-    const y = padT + innerH - pct * innerH;
+    const x = xAt(padL, i, step);
+    const y = linearY(p.value, minVal, range, padT, innerH);
     return { x, y, ...p };
   });
 
-  const lineD = mapped
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-    .join(" ");
-
-  const lastMapped = mapped[mapped.length - 1];
-  const firstMapped = mapped[0];
-  const areaD =
-    lastMapped && firstMapped
-      ? `${lineD} L ${lastMapped.x.toFixed(1)} ${(padT + innerH).toFixed(1)} L ${firstMapped.x.toFixed(1)} ${(padT + innerH).toFixed(1)} Z`
-      : lineD;
+  const lineD = buildLinePath(mapped);
+  const areaD = buildAreaPath(mapped, padT + innerH);
 
   const gradId = `prog_${label.replace(/\s/g, "_")}`;
 
   const yTicks = [0, 0.5, 1].map((fr) => ({
     y: padT + innerH * (1 - fr),
-    lab: (minVal + fr * range).toFixed(0),
+    lab: fmt(minVal + fr * range),
   }));
 
   const labelSet = new Set([0, n - 1]);
@@ -74,6 +71,7 @@ export function ExerciseProgressChart({
   const lastVal = points[points.length - 1]?.value ?? 0;
   const firstVal = points[0]?.value ?? 0;
   const delta = lastVal - firstVal;
+  const summaryId = `fizruk-exercise-progress-${label.replace(/\s/g, "-")}`;
 
   return (
     <div className="w-full">
@@ -82,6 +80,7 @@ export function ExerciseProgressChart({
         className="w-full h-auto max-h-[120px] overflow-visible"
         role="img"
         aria-label={`Графік ${label}`}
+        aria-describedby={summaryId}
       >
         <defs>
           <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -128,7 +127,9 @@ export function ExerciseProgressChart({
             cy={p.y}
             r="3"
             fill={color}
-            stroke="white"
+            /* #4 — surface token instead of a static white "cut-out" ring so
+             * dots stay clean against the dark-theme panel (`--c-panel`). */
+            stroke="rgb(var(--c-panel))"
             strokeWidth="1.5"
           />
         ))}
@@ -148,6 +149,21 @@ export function ExerciseProgressChart({
           );
         })}
       </svg>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Прогрес {label}. Поточне значення: {fmt(lastVal, 1)} {unit}.
+          {delta !== 0 && Number.isFinite(delta)
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
+            : ""}
+        </p>
+        <ul>
+          {points.map((p, i) => (
+            <li key={i}>
+              {p.dateLabel}: {fmt(p.value, 1)} {unit}
+            </li>
+          ))}
+        </ul>
+      </div>
       <div className="flex items-baseline gap-2 mt-1">
         <span className="text-lg font-extrabold tabular-nums text-text">
           {fmt(lastVal, 1)} {unit}
@@ -162,7 +178,7 @@ export function ExerciseProgressChart({
             )}
           >
             {delta > 0 ? "+" : ""}
-            {delta.toFixed(1)} {unit}
+            {fmt(delta, 1)} {unit}
           </span>
         )}
       </div>

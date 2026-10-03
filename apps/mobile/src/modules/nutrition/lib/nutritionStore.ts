@@ -7,7 +7,7 @@
  * `NutritionLog` / `Pantry` / `WaterLog` / `ShoppingList` / `Prefs`
  * semantics — one domain change, both platforms updated.
  *
- * Stage 8 PR #057n-tombstone-mobile (`docs/planning/storage-roadmap.md`):
+ * Stage 8 PR #057n-tombstone-mobile (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`):
  * the `load*` / `save*` helpers no longer touch MMKV. The SQLite
  * `nutrition_*` tables (including `nutrition_water_log` and
  * `nutrition_shopping_list` from Stage 11) are the source of truth —
@@ -21,12 +21,14 @@
 import {
   defaultNutritionPrefs,
   makeDefaultPantry,
+  migrateShoppingListCategories,
   normalizeNutritionLog,
   normalizeNutritionPrefs,
   normalizePantries,
   normalizeShoppingList,
   normalizeWaterLog,
   type NutritionLog,
+  type GoalPeriod,
   type NutritionPrefs,
   type Pantry,
   type ShoppingList,
@@ -36,11 +38,11 @@ import {
 import {
   triggerNutritionDualWrite,
   type NutritionDualWriteState,
-} from "./dualWrite";
+} from "./sqliteWriter";
 import type {
   NutritionMealSnapshot,
   NutritionPantrySnapshot,
-} from "./dualWrite/diff";
+} from "./sqliteWriter/diff";
 import { peekNutritionDualWriteState } from "./dualWriteState";
 import { getCachedNutritionSqliteState } from "./sqliteReader";
 
@@ -52,6 +54,11 @@ export function loadNutritionLog(): NutritionLog {
   // overlay re-renders once the cache warms via `useNutritionSqliteReadTick`.
   const cache = getCachedNutritionSqliteState();
   return normalizeNutritionLog(cache.log);
+}
+
+/** Append-only history used by retrospective goal comparisons. */
+export function loadNutritionGoalPeriods(): readonly GoalPeriod[] {
+  return getCachedNutritionSqliteState().goalPeriods;
 }
 
 export function saveNutritionLog(
@@ -191,6 +198,13 @@ function extractPantrySnapshots(
       qty: typeof it.qty === "number" ? it.qty : null,
       unit: typeof it.unit === "string" ? it.unit : null,
       notes: typeof it.notes === "string" ? it.notes : null,
+      // Дзеркало web: варіанти покупок їдуть одним JSON-полем разом зі
+      // своєю позицією (міграція 130). Без цього рядка синк із телефону
+      // затирав би картку продукту, яку щойно записав веб.
+      sources:
+        Array.isArray(it.sources) && it.sources.length > 0
+          ? JSON.stringify(it.sources)
+          : null,
     })),
   }));
 }
@@ -222,7 +236,9 @@ export function loadShoppingList(): ShoppingList {
   // `normalizeShoppingList(null)` returns the canonical empty document
   // `{ categories: [] }` so a cold cache renders without crashing.
   const cache = getCachedNutritionSqliteState();
-  return normalizeShoppingList(cache.shoppingList);
+  // Один перелік категорій із коморою: списки, збережені до 2026-10-01 зі
+  // старими назвами («Мʼясо та риба»), зводяться до категорій комори.
+  return migrateShoppingListCategories(cache.shoppingList);
 }
 
 export function saveShoppingList(list: unknown): boolean {

@@ -275,7 +275,7 @@ describe("WeeklyDigestSchema", () => {
   // undefined, інакше сервер віддає 400 на цілком валідний запит.
   it("приймає null для модулів без даних", () => {
     const r = WeeklyDigestSchema.safeParse({
-      weekRange: "14 кві — 20 кві",
+      weekRange: "14 кві – 20 кві",
       finyk: { totalSpent: 0, totalIncome: 0, txCount: 0, topCategories: [] },
       fizruk: null,
       nutrition: null,
@@ -291,7 +291,7 @@ describe("WeeklyDigestSchema", () => {
 
   it("приймає валідний повний payload", () => {
     const r = WeeklyDigestSchema.safeParse({
-      weekRange: "14 кві — 20 кві",
+      weekRange: "14 кві – 20 кві",
       finyk: {
         totalSpent: 1234,
         totalIncome: 500,

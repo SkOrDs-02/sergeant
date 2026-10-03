@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pr-ledger.schema.json",
+  "title": "Sergeant PR Ledger",
+  "description": "Canonical reverse-index of merged PRs that touched canonical governance docs (ADR / initiative / playbook / hard-rule). Updated by scripts/ci/update-pr-backlinks.mjs: `--sync` reads merged PRs from the Bitbucket API (since 2026-09-23), older entries came from GitHub merge events. Drives the `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->` block at the end of each canonical doc.",
+  "type": "object",
+  "required": ["version", "generated_at", "prs"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "generated_at": { "type": "string", "format": "date" },
+    "prs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/prEntry" }
+    },
+    "examined": {
+      "type": "object",
+      "description": "Номери змерджених PR, які вже оглянуті й НЕ торкнулись жодного канонічного документа, згруповані за хостом. Потрібні, щоб `--stale` не рахував їх пропущеними вічно: більшість PR канонічних доків не чіпає, запису не отримує, і без цього списку кожен пуш нагадував би про ті самі PR. Зберігається саме перелік, а не «найбільший оглянутий номер»: PR зі старішим номером може змерджитись пізніше за новіший, і відсічка по максимуму тихо проковтнула б його.",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "integer", "minimum": 1 }
+      }
+    }
+  },
+  "definitions": {
+    "prEntry": {
+      "type": "object",
+      "required": ["number", "title", "merged_at", "author", "touchedDocs"],
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "PR number у межах пари (host, repo). Сам по собі НЕ унікальний: Bitbucket нумерує з одиниці, тож його #29 зіткнеться з давнім GitHub-#29. Ключ запису — трійка host+repo+number."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "merged_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 час мержу: `mergedAt` у GitHub, `closed_on` у Bitbucket."
+        },
+        "author": {
+          "type": "string",
+          "pattern": "^@\\S+$",
+          "description": "Автор у формі `@handle`. GitHub дає ASCII-логін; Bitbucket у відповіді API логіна не повертає взагалі (поля `nickname` немає), лише `display_name`, який буває не-латиницею — тому шаблон вимагає лише відсутності пробілів."
+        },
+        "host": {
+          "type": "string",
+          "enum": ["github", "bitbucket"],
+          "description": "Хост, де живе цей номер PR. Поле ОПЦІЙНЕ: відсутність означає `github`, бо всі 60 записів до 2026-09-23 прийшли звідти і переписувати їх немає потреби. Потрібне з двох причин: шлях до PR у хостів різний (`/pull/` проти `/pull-requests/`), і нумерація Bitbucket почалася заново з одиниці."
+        },
+        "repo": {
+          "type": "string",
+          "pattern": "^[^/\\s]+/[^/\\s]+$",
+          "description": "Репо, у якому існує цей номер PR. Поле ОПЦІЙНЕ і навмисно: 20 із 60 записів прийшли зі старого репо `Skords-01/Sergeant`, де їхні номери й живуть, тож відсутність поля означає легасі-репо. Записи без нього лишаються валідними і не потребують переписування. `update-pr-backlinks.mjs` бере базу посилання за цим полем — без нього блок у новому ADR вів би на неіснуючу сторінку старого репо. Раніше тут стояв `enum` з одним слугом, і він мовчки розійшовся з даними: у реєстрі вже лежали записи `zaebal-beep/sergeant`, бо схему ніхто не виконує в рантаймі."
+        },
+        "touchedDocs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1,
+          "description": "Repo-relative paths of canonical docs (ADR / initiative / playbook / hard-rule) that this PR modified. Sorted alphabetically."
+        }
+      }
+    }
+  }
+}

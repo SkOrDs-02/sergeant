@@ -102,9 +102,60 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
     },
   },
   {
+    name: "get_daily_series",
+    description:
+      "Вирівняні по днях ряди метрик з різних модулів + пораховані кодом кореляції (Pearson/Spearman) для кожної пари. ГОЛОВНИЙ інструмент для 'чи повʼязано / чи корелює / чи залежить X від Y' по БУДЬ-ЯКІЙ парі метрик, коли в парі НЕ звичка: 'чи повʼязані мої витрати з тренуваннями?', 'чи менше витрачаю коли тренуюсь?', 'вага корелює з калоріями?', 'більше білка — більший обʼєм?'. Обери 1-6 метрик; кореляції рахуються на днях, де обидві метрики мають дані. (Якщо в парі є звичка — habit_correlation.)",
+    input_schema: {
+      type: "object",
+      properties: {
+        metrics: {
+          type: "array",
+          items: {
+            type: "string",
+            enum: [
+              "spending",
+              "income",
+              "kcal",
+              "protein",
+              "water",
+              "workout_volume",
+              "workouts",
+              "weight",
+              "wellbeing",
+              "habit_rate",
+            ],
+          },
+          description:
+            "1-6 метрик. finyk: spending/income (грн). nutrition: kcal, protein (г), water (мл). fizruk: workout_volume (кг×повт), workouts (шт/день), weight (кг), wellbeing (настрій 1-5). routine: habit_rate (% виконаних звичок/день).",
+        },
+        habit_id: {
+          type: "string",
+          description:
+            "Опційно — для habit_rate конкретної звички (100/0 по днях). Без нього — % по всіх активних звичках.",
+        },
+        date_from: {
+          type: "string",
+          description: "Початок діапазону YYYY-MM-DD (опційно).",
+        },
+        date_to: {
+          type: "string",
+          description:
+            "Кінець діапазону YYYY-MM-DD (опційно, default сьогодні).",
+        },
+        fill: {
+          type: "string",
+          enum: ["zero", "null"],
+          description:
+            "Чим заповнювати дні без запису у таблиці: zero (0) або null (порожньо). Default zero. На кореляції не впливає — вони рахуються лише на спільних непорожніх днях.",
+        },
+      },
+      required: ["metrics"],
+    },
+  },
+  {
     name: "detect_anomalies",
     description:
-      "Виявити аномальні витрати — транзакції, які значно відрізняються від середнього. 'Чи є підозрілі витрати?'",
+      "Виявити аномальні витрати — операції, які значно відрізняються від середнього. 'Чи є підозрілі витрати?'",
     input_schema: {
       type: "object",
       properties: {

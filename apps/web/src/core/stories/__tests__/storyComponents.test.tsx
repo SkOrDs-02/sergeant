@@ -1,0 +1,255 @@
+/** @vitest-environment jsdom */
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { StoriesProgressHeader } from "../components/StoriesProgressHeader";
+import { renderSlide } from "../components/slides";
+import type {
+  FinykSlideData,
+  FizrukSlideData,
+  NutritionSlideData,
+  RoutineSlideData,
+  Slide,
+} from "../types";
+
+const baseSlide = {
+  id: "intro",
+  kind: "intro",
+  label: "Старт",
+  bg: "from-brand to-brand-strong",
+  weekRange: "20–26 липня",
+} satisfies Slide;
+
+describe("story slide components", () => {
+  afterEach(() => cleanup());
+
+  it("renders the intro and overall slides through the router", () => {
+    const { rerender } = render(<>{renderSlide(baseSlide)}</>);
+    expect(screen.getByText("Твій тиждень")).toBeInTheDocument();
+    expect(screen.getByText("20–26 липня")).toBeInTheDocument();
+
+    rerender(
+      <>
+        {renderSlide({
+          ...baseSlide,
+          id: "overall",
+          kind: "overall",
+          label: "Підсумок",
+          recommendations: ["Заплануй тренування", "Поповни бюджет"],
+        })}
+      </>,
+    );
+
+    expect(screen.getByText("Що робити далі")).toBeInTheDocument();
+    expect(screen.getByText("Заплануй тренування")).toBeInTheDocument();
+    expect(screen.getByText("Поповни бюджет")).toBeInTheDocument();
+  });
+
+  it("renders Finyk slide top categories and AI summary", () => {
+    const slide: FinykSlideData = {
+      ...baseSlide,
+      id: "finyk",
+      kind: "finyk",
+      label: "Фінік",
+      agg: {
+        totalSpent: 1500,
+        totalIncome: 2200,
+        txCount: 8,
+        monthlyBudget: null,
+        topCategories: [
+          { name: "Кава", amount: 600 },
+          { name: "Таксі", amount: 300 },
+          { name: "Їжа", amount: 150 },
+          { name: "Книги", amount: 50 },
+        ],
+      },
+      ai: {
+        summary: "Кава тягне тиждень вгору.",
+        comment: "Перевір денний ліміт.",
+      },
+    };
+
+    render(<>{renderSlide(slide)}</>);
+
+    expect(screen.getByText("Кава")).toBeInTheDocument();
+    expect(screen.getByText("Таксі")).toBeInTheDocument();
+    expect(screen.getByText("Їжа")).toBeInTheDocument();
+    expect(screen.queryByText("Книги")).not.toBeInTheDocument();
+    expect(screen.getByText("Кава тягне тиждень вгору.")).toBeInTheDocument();
+    expect(screen.getByText("Перевір денний ліміт.")).toBeInTheDocument();
+  });
+
+  it("renders Fizruk slide exercises and recovery label", () => {
+    const slide: FizrukSlideData = {
+      ...baseSlide,
+      id: "fizruk",
+      kind: "fizruk",
+      label: "Фізрук",
+      agg: {
+        workoutsCount: 3,
+        totalVolume: 12345,
+        recoveryLabel: "Відновлення добре",
+        topExercises: [
+          { name: "Жим", totalVolume: 5000 },
+          { name: "Присід", totalVolume: 4200 },
+          { name: "Тяга", totalVolume: 3000 },
+          { name: "Планка", totalVolume: 145 },
+        ],
+      },
+    };
+
+    render(<>{renderSlide(slide)}</>);
+
+    expect(screen.getByText("Головні вправи")).toBeInTheDocument();
+    expect(screen.getByText("Жим")).toBeInTheDocument();
+    expect(screen.getByText("Присід")).toBeInTheDocument();
+    expect(screen.getByText("Тяга")).toBeInTheDocument();
+    expect(screen.queryByText("Планка")).not.toBeInTheDocument();
+    expect(screen.getByText("Відновлення добре")).toBeInTheDocument();
+  });
+
+  it("renders Nutrition slide capped kcal progress and macro stats", () => {
+    const slide: NutritionSlideData = {
+      ...baseSlide,
+      id: "nutrition",
+      kind: "nutrition",
+      label: "Їжа",
+      agg: {
+        avgKcal: 1500,
+        targetKcal: 1000,
+        avgProtein: 120,
+        avgFat: 70,
+        avgCarbs: 180,
+        daysLogged: 5,
+        daysInPeriod: 7,
+      },
+      ai: { summary: "Білок стабільний." },
+    };
+    const { container } = render(<>{renderSlide(slide)}</>);
+
+    expect(
+      screen.getByText("140% від цілі · залоговано 5 / 7 днів"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Білки")).toBeInTheDocument();
+    expect(screen.getByText("Жири")).toBeInTheDocument();
+    expect(screen.getByText("Вугл.")).toBeInTheDocument();
+    expect(screen.getByText("Білок стабільний.")).toBeInTheDocument();
+    expect(container.querySelector('[style="width: 100%;"]')).toBeTruthy();
+  });
+
+  it("renders Routine slide top habits sorted by completion rate", () => {
+    const slide: RoutineSlideData = {
+      ...baseSlide,
+      id: "routine",
+      kind: "routine",
+      label: "Рутина",
+      agg: {
+        habitCount: 4,
+        overallRate: 72,
+        habits: [
+          { name: "Вода", done: 4, total: 7, completionRate: 57 },
+          { name: "Сон", done: 7, total: 7, completionRate: 100 },
+          { name: "Читання", done: 5, total: 7, completionRate: 71 },
+          { name: "Розтяжка", done: 1, total: 7, completionRate: 14 },
+        ],
+      },
+      ai: { summary: "Сон — найсильніша звичка.", comment: "Тримай темп." },
+    };
+
+    render(<>{renderSlide(slide)}</>);
+
+    expect(screen.getByText("Сон")).toBeInTheDocument();
+    expect(screen.getByText("Читання")).toBeInTheDocument();
+    expect(screen.getByText("Вода")).toBeInTheDocument();
+    expect(screen.queryByText("Розтяжка")).not.toBeInTheDocument();
+    expect(screen.getByText("7/7")).toBeInTheDocument();
+    expect(screen.getByText("Сон — найсильніша звичка.")).toBeInTheDocument();
+    expect(screen.getByText("Тримай темп.")).toBeInTheDocument();
+  });
+
+  it("returns null for an unknown slide kind", () => {
+    const { container } = render(
+      <>
+        {renderSlide({
+          ...baseSlide,
+          id: "unknown",
+          kind: "unknown",
+        } as unknown as Slide)}
+      </>,
+    );
+
+    expect(container.firstChild).toBeNull();
+  });
+});
+
+describe("StoriesProgressHeader", () => {
+  afterEach(() => cleanup());
+
+  const bars = (container: HTMLElement) =>
+    Array.from(
+      container.querySelectorAll<HTMLElement>(".h-\\[3px\\] > div"),
+    ).map((el) => el.style.transform);
+
+  it("marks past slides full and future slides empty, and closes from the header button", () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <StoriesProgressHeader
+        slides={[
+          baseSlide,
+          { ...baseSlide, id: "nutrition", kind: "nutrition", label: "Їжа" },
+          { ...baseSlide, id: "overall", kind: "overall", label: "Підсумок" },
+        ]}
+        currentIndex={1}
+        durationMs={6500}
+        paused={false}
+        activeLabel="Їжа"
+        weekRange="20–26 липня"
+        onClose={onClose}
+      />,
+    );
+
+    expect(screen.getByText("Дайджест · Їжа")).toBeInTheDocument();
+    expect(screen.getByText("20–26 липня")).toBeInTheDocument();
+    // Past bar full, future bar empty. The middle one is the active bar and is
+    // driven imperatively, so its transform is not asserted here.
+    const [past, , future] = bars(container);
+    expect(past).toBe("scaleX(1)");
+    expect(future).toBe("scaleX(0)");
+
+    fireEvent.click(screen.getByRole("button", { name: "Закрити" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands the active bar a transition sized to the remaining slide time", () => {
+    render(
+      <StoriesProgressHeader
+        slides={[baseSlide]}
+        currentIndex={0}
+        durationMs={6500}
+        paused={false}
+        activeLabel="Старт"
+        onClose={vi.fn()}
+      />,
+    );
+
+    const active = screen.getByTestId("active-story-progress");
+    // One compositor-owned transition per slide — never a JS-driven width.
+    expect(active.style.transition).toBe("transform 6500ms linear");
+    expect(active.style.transform).toBe("scaleX(1)");
+  });
+
+  it("freezes the active bar in place while paused", () => {
+    render(
+      <StoriesProgressHeader
+        slides={[baseSlide]}
+        currentIndex={0}
+        durationMs={6500}
+        paused
+        activeLabel="Старт"
+        onClose={vi.fn()}
+      />,
+    );
+
+    const active = screen.getByTestId("active-story-progress");
+    expect(active.style.transition).toBe("none");
+  });
+});

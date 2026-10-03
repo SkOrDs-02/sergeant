@@ -10,7 +10,13 @@ import { cn } from "../../lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
 import { hapticTap } from "../../lib/adapters/haptic";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import {
+  FAB_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
+import { useVisualKeyboardInset } from "@sergeant/shared";
 
 /**
  * Sergeant Design System -- FloatingActionButton (FAB)
@@ -48,14 +54,15 @@ export type FABVariant =
   | "fizruk"
   | "routine"
   | "nutrition"
-  // Sergeant v2 redesign (2026-05, PR-4) — module-aware FAB gradients.
-  // Each v2 variant uses a bright top-left → darker bottom-right gradient
-  // tuned per module (handoff `02-component-map.md § FAB`):
-  //   v2-finyk     emerald-400 → teal-700  (cross-family green-teal)
-  //   v2-fizruk    cyan-400    → cyan-700
-  //   v2-routine   coral-400   → coral-700
-  //   v2-nutrition lime-400    → lime-600
-  // Paired with `shadow-fab` (teal-tinted glow from theme.css).
+  // Sergeant v2 redesign (2026-05, PR-4) — module-aware FAB variants.
+  // До 2026-09-01 кожен v2-варіант ніс градієнт tier-400 → tier-700 плюс
+  // кольорове свічення `shadow-fab`. Анти-слоп аудит 2026-09-01 (F11 / Q5):
+  // це був єдиний градієнт-на-контролі в продукті, і саме на найпомітнішій
+  // кнопці — рівно те, що `DESIGN.md § Слоп 2023` забороняє. Рішення
+  // власника: плоский `-strong` companion модуля (він і так WCAG-AA під
+  // `text-white`) і звичайна elevation-тінь `shadow-e3`, без свічення.
+  // Імена варіантів лишаються заради call-site-ів; різниця з `finyk` тощо —
+  // лише тінь (`shadow-e3` проти `shadow-*/30`).
   | "v2-finyk"
   | "v2-fizruk"
   | "v2-routine"
@@ -70,24 +77,30 @@ export interface FABAction {
   color?: string;
 }
 
+// Темна тема: заливка як у модульної solid-кнопки (`Button.tsx`,
+// luminescent tier-400 + ink-текст), інакше FAB лишався на -strong світлої
+// теми й стояв поруч зі світлими CTA модуля другим, темнішим акцентом.
 const variantStyles: Record<FABVariant, string> = {
-  default: "bg-brand-strong text-white shadow-brand/30 hover:brightness-110",
-  finyk: "bg-finyk-strong text-white shadow-finyk/30 hover:brightness-110",
-  fizruk: "bg-fizruk-strong text-white shadow-fizruk/30 hover:brightness-110",
+  default:
+    "bg-brand-strong text-white shadow-brand/30 hover:brightness-110 dark:bg-brand-100 dark:text-brand-900",
+  finyk:
+    "bg-finyk-strong text-white shadow-finyk/30 hover:brightness-110 dark:bg-finyk dark:text-bg",
+  fizruk:
+    "bg-fizruk-strong text-white shadow-fizruk/30 hover:brightness-110 dark:bg-fizruk dark:text-bg",
   routine:
-    "bg-routine-strong text-white shadow-routine/30 hover:brightness-110",
+    "bg-routine-strong text-white shadow-routine/30 hover:brightness-110 dark:bg-routine dark:text-bg",
   nutrition:
-    "bg-nutrition-strong text-white shadow-nutrition/30 hover:brightness-110",
-  // v2 redesign — gradient backgrounds with `shadow-fab` glow (v2 token).
-  // Hover bumps brightness so motion feels alive without changing hue.
+    "bg-nutrition-strong text-white shadow-nutrition/30 hover:brightness-110 dark:bg-nutrition dark:text-bg",
+  // v2 — плоский -strong + elevation e3 (без градієнта і свічення, див.
+  // коментар у `FABVariant`). Hover підіймає яскравість, hue не змінює.
   "v2-finyk":
-    "bg-gradient-to-br from-brand-400 to-teal-700 text-white shadow-fab hover:brightness-110",
+    "bg-finyk-strong text-white shadow-e3 hover:brightness-110 dark:bg-finyk dark:text-bg",
   "v2-fizruk":
-    "bg-gradient-to-br from-cyan-400 to-cyan-700 text-white shadow-fab hover:brightness-110",
+    "bg-fizruk-strong text-white shadow-e3 hover:brightness-110 dark:bg-fizruk dark:text-bg",
   "v2-routine":
-    "bg-gradient-to-br from-coral-400 to-coral-700 text-white shadow-fab hover:brightness-110",
+    "bg-routine-strong text-white shadow-e3 hover:brightness-110 dark:bg-routine dark:text-bg",
   "v2-nutrition":
-    "bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-fab hover:brightness-110",
+    "bg-nutrition-strong text-white shadow-e3 hover:brightness-110 dark:bg-nutrition dark:text-bg",
 };
 
 const sizeStyles: Record<FABSize, { button: string; icon: number }> = {
@@ -119,7 +132,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   actions,
   variant = "default",
   size = "md",
-  hideOnScroll = false,
+  hideOnScroll = true,
   position = "bottom-right",
   label,
   "aria-label": ariaLabel,
@@ -128,12 +141,24 @@ export const FloatingActionButton = memo(function FloatingActionButton({
 }: FloatingActionButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isHidden, setIsHidden] = useState(false);
-  const lastScrollY = useRef(0);
+  // Mirrors `ModuleBottomNav`'s own keyboard-hide (iOS visual-viewport
+  // inset) — the FAB is a sibling of that nav, not a child, so it needs
+  // the same signal to slide away with it instead of floating alone
+  // once the pill it sits above is gone.
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const hidden = isHidden || kbInsetPx > 0;
   // outerRef wraps the whole FAB (button + expanded items) for positioning
   const outerRef = useRef<HTMLDivElement>(null);
   // menuRef is the expanded action list; focus trap lives here so Tab
   // cycles through action items only, and Escape closes the popover.
   const menuRef = useRef<HTMLDivElement>(null);
+  // Сама кнопка, не обгортка: розкритий список дій росте вгору і не має
+  // розсувати контент під собою.
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  // Відступ знімається лише під клавіатурою. Сховавшись від прокрутки, кнопка
+  // повернеться на те саме місце, тож резерв під нею лишається: інакше висота
+  // контенту змінювалась би посеред прокрутки і сторінка стрибала.
+  useBottomInsetVar(buttonRef, FAB_INSET_VAR, kbInsetPx === 0);
 
   const hasActions = actions && actions.length > 0;
 
@@ -146,44 +171,47 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // Body scroll lock while the full-screen backdrop is visible.
   useBodyScrollLock(isOpen && !!hasActions);
 
-  // Scroll-to-hide behavior
+  // Scroll-to-hide behavior. Модулі прокручують не лише вікно: Їжа, наприклад,
+  // гортає внутрішній контейнер сторінок, а подія `scroll` не спливає. Тому
+  // слухаємо ще й фазу захоплення на `document` і міряємо той елемент, що
+  // прокрутився.
   useEffect(() => {
     if (!hideOnScroll) return;
 
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      const delta = currentY - lastScrollY.current;
-
+    const lastByTarget = new WeakMap<EventTarget, number>();
+    const react = (target: EventTarget, currentY: number) => {
+      const delta = currentY - (lastByTarget.get(target) ?? 0);
       if (delta > 10 && currentY > 80) {
         setIsHidden(true);
         setIsOpen(false);
       } else if (delta < -10) {
         setIsHidden(false);
       }
-
-      lastScrollY.current = currentY;
+      lastByTarget.set(target, currentY);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const handleWindowScroll = () => react(window, window.scrollY);
+    const handleElementScroll = (e: Event) => {
+      if (e.target instanceof Element) react(e.target, e.target.scrollTop);
+    };
+
+    lastByTarget.set(window, window.scrollY);
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    document.addEventListener("scroll", handleElementScroll, {
+      passive: true,
+      capture: true,
+    });
+    return () => {
+      window.removeEventListener("scroll", handleWindowScroll);
+      document.removeEventListener("scroll", handleElementScroll, {
+        capture: true,
+      });
+    };
   }, [hideOnScroll]);
 
   // Close on outside click (pointer events outside the outer FAB container).
   // Escape is now handled by useDialogFocusTrap above.
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClick = (e: MouseEvent) => {
-      if (outerRef.current && !outerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClick);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [isOpen]);
+  useOutsideClick(outerRef, () => setIsOpen(false), { enabled: isOpen });
 
   const handleClick = useCallback(() => {
     hapticTap();
@@ -203,7 +231,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // Bottom offset = 6rem (96px) + safe-area-inset-bottom. Clears the v2
   // floating glass `ModuleBottomNav` pill (mx-3 mb-3 outer + 60-64px
   // inner + safe-area-pb) with breathing room above. Per
-  // docs/design/unified-bottom-nav.md the FAB sits 76px above the nav;
+  // docs/design/design/unified-bottom-nav.md the FAB sits 76px above the nav;
   // we round up to 96 to keep clearance on smaller iPhones where the
   // nav's own safe-area-pb stacks below the inner height. Pre-fix
   // (~24px) the FAB clipped the navbar on every module screen.
@@ -221,24 +249,29 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   return (
     <div
       ref={outerRef}
+      aria-hidden={hidden || undefined}
       className={cn(
         positionClasses[position],
         "z-50 flex flex-col-reverse items-center gap-3",
-        "transition-all duration-300 ease-out",
-        isHidden && "translate-y-24 opacity-0 pointer-events-none",
+        "transition-[transform,opacity] duration-slow ease-standard",
+        hidden && "translate-y-24 opacity-0 pointer-events-none",
         className,
       )}
     >
       {/* Main FAB button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleClick}
+        onContextMenu={(event) => event.preventDefault()}
+        tabIndex={hidden ? -1 : undefined}
         aria-label={ariaLabel || label || "Action"}
         aria-haspopup={hasActions ? "menu" : undefined}
         aria-expanded={hasActions ? isOpen : undefined}
         className={cn(
           "inline-flex items-center justify-center rounded-full",
-          "shadow-lg transition-all duration-200",
+          "touch-manipulation select-none",
+          "shadow-lg transition-[transform,box-shadow,background-color,color] duration-base",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand",
           "active:scale-95",
           variantStyles[variant],
@@ -252,7 +285,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
               size={styles.icon}
               strokeWidth={2.5}
               className={cn(
-                "transition-transform duration-200",
+                "transition-transform duration-base",
                 isOpen && "rotate-45",
               )}
             />
@@ -288,10 +321,10 @@ export const FloatingActionButton = memo(function FloatingActionButton({
                 role="menuitem"
                 onClick={() => handleActionClick(action)}
                 className={cn(
-                  "flex items-center gap-3 pl-4 pr-5 py-2.5 rounded-full",
+                  "flex items-center gap-3 pl-4 pr-5 py-2.5 rounded-full w-60",
                   "bg-panel border border-line shadow-float",
-                  "hover:bg-panel-hi active:scale-95",
-                  "transition-all duration-200",
+                  "hover:bg-panelHi active:scale-95",
+                  "transition-[transform,background-color,color,border-color] duration-base",
                   "motion-safe:animate-fab-item",
                 )}
                 style={{

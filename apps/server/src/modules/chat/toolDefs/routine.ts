@@ -11,7 +11,6 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
       properties: {
         habit_id: {
           type: "string",
-          // eslint-disable-next-line sergeant-design/no-ellipsis-dots -- pattern syntax for the LLM (id:<id> placeholder), not user-facing copy
           description: "ID звички (id:... з блоку [Рутина сьогодні])",
         },
         date: {
@@ -33,7 +32,8 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         name: { type: "string", description: "Назва звички" },
         emoji: {
           type: "string",
-          description: "Емодзі (опційно, за замовчуванням ✓)",
+          description:
+            "Іконка звички (опційно, за замовчуванням 'check'). Одне зі значень: check, target, flame, award, sparkles, lightbulb, droplet, run, dumbbell, activity, heart, scale, utensils, egg, coffee, leaf, shopping-cart, package, brain, book-open, pen, monitor, camera, file-text, clock, bell, calendar-check, moon, sun, home, briefcase, truck, piggy-bank, shield, tool, message-circle. Емодзі теж приймається — клієнт сам підбере найближчу іконку.",
         },
         recurrence: {
           type: "string",
@@ -43,7 +43,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         weekdays: {
           type: "array",
           description:
-            "Для recurrence='weekly': номери днів 0-6 (0 — неділя, 1 — понеділок, …, 6 — субота). Опційно.",
+            "Для recurrence='weekly': номери днів 0-6, тиждень починається з понеділка (0 — понеділок, 1 — вівторок, …, 6 — неділя). Узгоджено з set_habit_schedule. Опційно.",
           items: { type: "number" },
         },
         time_of_day: {
@@ -103,14 +103,18 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
   {
     name: "add_calendar_event",
     description:
-      "Додати разову подію в календар Рутини (реалізовано як звичка recurrence='once' на одну дату). Корисно для нагадувань про зустріч, деньнародження тощо.",
+      "Додати разову подію в календар Рутини (реалізовано як звичка recurrence='once' на одну дату). Корисно для нагадувань про зустріч, день народження тощо.",
     input_schema: {
       type: "object",
       properties: {
         name: { type: "string", description: "Назва події" },
         date: { type: "string", description: "Дата YYYY-MM-DD" },
         time: { type: "string", description: "Час HH:MM (опційно)" },
-        emoji: { type: "string", description: "Емодзі (опційно)" },
+        emoji: {
+          type: "string",
+          description:
+            "Іконка події (опційно, за замовчуванням 'calendar-check'). Той самий словник, що й у create_habit.",
+        },
       },
       required: ["name", "date"],
     },
@@ -118,13 +122,17 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
   {
     name: "edit_habit",
     description:
-      "Редагувати існуючу звичку: змінити назву, емодзі, розклад. Передавати лише ті поля, які змінюються.",
+      "Редагувати існуючу звичку: змінити назву, іконку, розклад. Передавати лише ті поля, які змінюються.",
     input_schema: {
       type: "object",
       properties: {
         habit_id: { type: "string", description: "ID звички" },
         name: { type: "string", description: "Нова назва (опційно)" },
-        emoji: { type: "string", description: "Новий емодзі (опційно)" },
+        emoji: {
+          type: "string",
+          description:
+            "Нова іконка (опційно). Той самий словник, що й у create_habit.",
+        },
         recurrence: {
           type: "string",
           description:
@@ -132,7 +140,8 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         },
         weekdays: {
           type: "array",
-          description: "Нові дні тижня 0-6 для weekly (опційно)",
+          description:
+            "Нові дні тижня 0-6 для weekly, тиждень починається з понеділка (0 — понеділок, 1 — вівторок, …, 6 — неділя). Узгоджено з set_habit_schedule. Опційно.",
           items: { type: "number" },
         },
       },
@@ -193,7 +202,7 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
   {
     name: "pause_habit",
     description:
-      "Тимчасово поставити звичку на паузу (або зняти з паузи). Не видаляє і не архівує — звичка зберігає історію виконань. Ідемпотентно: повторний виклик з тим самим прапором — no-op.",
+      "Заявити ПЛАНОВАНУ паузу звички датованим інтервалом (або повернути з паузи). Дні паузи випадають із розкладу: вони не рахуються пропусками і не ламають серію. Не видаляє і не архівує — історія виконань зберігається. Без `from` пауза починається сьогодні; без `to` діє, поки її не знято. Повернення закриває інтервал учорашнім днем — дні, що вже минули на паузі, лишаються паузою. Ідемпотентно: повторний виклик на той самий діапазон — no-op.",
     strict: true,
     input_schema: {
       type: "object",
@@ -201,10 +210,25 @@ export const ROUTINE_TOOLS: AnthropicTool[] = [
         habit_id: { type: "string", description: "ID звички" },
         paused: {
           type: "boolean",
-          description: "true=поставити на паузу (default), false=зняти з паузи",
+          description:
+            "true=поставити на паузу (default), false=повернути з паузи",
+        },
+        from: {
+          type: "string",
+          description:
+            "Перший день паузи, YYYY-MM-DD (Europe/Kyiv). Для паузи «з сьогодні» передай сьогоднішню дату явно.",
+        },
+        to: {
+          type: "string",
+          description:
+            "Останній день паузи включно, YYYY-MM-DD. Пропусти для паузи без заявленої дати кінця.",
         },
       },
-      required: ["habit_id"],
+      // `from` обовʼязковий навмисно: канон §4 говорить про ПЛАНОВАНУ паузу,
+      // і явна дата початку — це саме те, що робить її планованою. Заразом це
+      // тримає strict-grammar-бюджет: кожен optional-параметр коштує гілку в
+      // граматиці (`strict-normalize.test.ts`).
+      required: ["habit_id", "from"],
     },
   },
 ];

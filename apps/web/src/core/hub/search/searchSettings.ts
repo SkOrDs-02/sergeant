@@ -2,117 +2,117 @@ import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
 } from "@sergeant/shared";
+import { VISIBLE_SETTINGS_SECTIONS } from "../settingsSectionsCatalog";
 import { type Hit, pushScored } from "./searchTypes";
 
-// Settings sections — mirrors the catalogue declared in HubSettingsPage.tsx
-// so a query like "експорт" surfaces "Експорт/імпорт JSON" directly from
-// the global ⌘K palette, instead of forcing the user to first open
-// Settings and then re-query inside its own search field.
+// Settings sections — id/title/keywords come from the shared
+// `SETTINGS_SECTIONS_CATALOG` (also consumed by HubSettingsPage.tsx) so a
+// query like "експорт" surfaces "Експорт/імпорт JSON" directly from the
+// global ⌘K palette, instead of forcing the user to first open Settings and
+// then re-query inside its own search field.
 //
-// Keep `keywords` in sync with HubSettingsPage's `sections` table whenever
-// new sections are added there. We deliberately don't import that array —
-// it carries `render: () => <Section/>` closures that would drag a much
-// larger render-time graph into the search modal's chunk.
+// L-13 audit finding (2026-08-08): before the shared catalog existed, this
+// array was a hand-copied duplicate of HubSettingsPage's own section list
+// and had drifted — it carried two ids with no matching section ("general",
+// "assistant") and was missing four real ones ("plan", "privacy",
+// "feedback", "capabilities"), so those sections were unreachable from ⌘K.
+// `description`/`icon` stay local (search-only presentation, not part of
+// the id/title/keywords contract two consumers must agree on) — keyed by
+// id below. Audit finding #10 (2026-08-08) corrects the claim that used to
+// be here: a missing entry is NOT a type error — `Record<string, …>`
+// indexing doesn't enforce every specific key is present, even under
+// `noUncheckedIndexedAccess` (Hard Rule #19) it only widens the VALUE type
+// to include `undefined`. A missing entry falls back at runtime to a
+// generic gear icon + empty description (see `presentation` below) so a
+// new catalog entry without a matching presentation record stays
+// searchable instead of crashing ⌘K.
+const SETTINGS_PRESENTATION: Readonly<
+  Record<string, { description: string; icon: string }>
+> = {
+  dashboard: {
+    description: "Підказки, щільність, активні модулі",
+    icon: "grid",
+  },
+  plan: {
+    description: "План, оплата, портал підписки",
+    icon: "wallet",
+  },
+  notifications: {
+    description: "Push-нагадування і щоденні сповіщення",
+    icon: "bell",
+  },
+  ai: {
+    description: "Тижневий тренер, insights",
+    icon: "sergeant",
+  },
+  capabilities: {
+    description: "Каталог можливостей Сержанта, онбординг",
+    icon: "compass",
+  },
+  feedback: {
+    description: "Відгук, ідея, баг",
+    icon: "message-circle",
+  },
+  routine: {
+    description: "Звички, цілі, reset",
+    icon: "check-circle",
+  },
+  fizruk: {
+    description: "Тренування, кардіо, вага",
+    icon: "dumbbell",
+  },
+  finyk: {
+    description: "Інтеграції банків, бюджет",
+    icon: "wallet",
+  },
+  nutrition: {
+    description: "Калорії, макроси, комора",
+    icon: "utensils",
+  },
+  privacy: {
+    // PR-S6 (аудит 2026-09-13 хвиля 5): PIN-блокування переїхало в
+    // Профіль → «Безпека» 2026-09-04 (`ProfilePage.tsx`), і видалення
+    // акаунта поїхало разом з ним (`DangerZoneSection`) — ця секція
+    // Налаштувань лишає собі тільки згоди й юрдокументи
+    // (`PrivacySection.tsx`: аналітика, AI-памʼять, памʼять про здоровʼя).
+    description: "Згоди на аналітику й AI-памʼять, юридичні документи",
+    icon: "lock",
+  },
+  pwa: {
+    description: "Service worker, кеш, діагностика",
+    icon: "wifi-off",
+  },
+  dataExport: {
+    description: "Резервна копія Hub, перенос даних",
+    icon: "download",
+  },
+  experimental: {
+    description: "Lab, beta, debug",
+    icon: "sergeant",
+  },
+};
+
 export const SETTINGS_INDEX: ReadonlyArray<{
   id: string;
   title: string;
   description: string;
   keywords: string;
   icon: string;
-}> = [
-  {
-    id: "dashboard",
-    title: "Дашборд",
-    description: "Підказки, щільність, активні модулі",
-    keywords:
-      "дашборд dashboard підказки щільність density вигляд активні модулі порядок упорядкувати reorder hide inactive приховати",
-    icon: "layout-grid",
-  },
-  {
-    id: "general",
-    title: "Загальні",
-    description: "Онбординг, акаунт, синхронізація",
-    keywords:
-      "загальні онбординг onboarding welcome синхронізація акаунт sync cloud",
+}> = VISIBLE_SETTINGS_SECTIONS.map((section) => {
+  // Falls back to a generic gear icon/empty description rather than
+  // throwing — a new catalog entry without a presentation record should
+  // still be searchable (just visually plain) instead of crashing ⌘K.
+  const presentation = SETTINGS_PRESENTATION[section.id] ?? {
+    description: "",
     icon: "settings",
-  },
-  {
-    id: "notifications",
-    title: "Нагадування",
-    description: "Push-нагадування і щоденні сповіщення",
-    keywords: "сповіщення нагадування пуш push notifications reminders щоденні",
-    icon: "bell",
-  },
-  {
-    id: "ai",
-    title: "AI-дайджести",
-    description: "Тижневий тренер, insights",
-    keywords:
-      "ai штучний інтелект дайджест digest тижневий тренер coach insights",
-    icon: "sparkles",
-  },
-  {
-    id: "assistant",
-    title: "Можливості асистента",
-    description: "Каталог інструментів, які може запустити AI",
-    keywords:
-      "асистент команди chat help допомога інструменти каталог можливості tools",
-    icon: "sparkles",
-  },
-  {
-    id: "routine",
-    title: "Рутина",
-    description: "Звички, цілі, reset",
-    keywords: "звички рутина habits streak ціль reset",
-    icon: "check-circle",
-  },
-  {
-    id: "fizruk",
-    title: "Фізрук",
-    description: "Тренування, кардіо, вага",
-    keywords: "фізрук тренування кардіо вага workouts gym fitness",
-    icon: "dumbbell",
-  },
-  {
-    id: "finyk",
-    title: "Фінік",
-    description: "Інтеграції банків, бюджет",
-    keywords:
-      "фінанси фінік finyk monobank privatbank token api transactions budget",
-    icon: "wallet",
-  },
-  {
-    id: "nutrition",
-    title: "Харчування",
-    description: "Калорії, макроси, комора",
-    keywords:
-      "харчування їжа nutrition meals food kбжу калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
-    icon: "utensils",
-  },
-  {
-    id: "pwa",
-    title: "PWA та офлайн",
-    description: "Service worker, кеш, діагностика",
-    keywords:
-      "pwa офлайн offline service worker sw кеш cache діагностика скинути reset",
-    icon: "wifi-off",
-  },
-  {
-    id: "dataExport",
-    title: "Експорт/імпорт JSON",
-    description: "Резервна копія Hub, перенос даних",
-    keywords:
-      "експорт імпорт export import json резервна копія backup hub дані data перенос",
-    icon: "download",
-  },
-  {
-    id: "experimental",
-    title: "Експериментальні",
-    description: "Lab, beta, debug",
-    keywords: "experimental lab beta debug розробка розробник developer",
-    icon: "flask-conical",
-  },
-];
+  };
+  return {
+    id: section.id,
+    title: section.title,
+    keywords: section.keywords,
+    ...presentation,
+  };
+});
 
 export function searchSettings(tokens: string[]): Hit[] {
   const results: Hit[] = [];
@@ -136,12 +136,18 @@ export function searchSettings(tokens: string[]): Hit[] {
     );
   }
   // Прибираємо keywords з видимого subtitle після scoring — інакше
-  // картка перетворюється на заплутану мішанину тегів.
+  // картка перетворюється на заплутану мішанину тегів. Audit finding #10
+  // (2026-08-08): `??` here, NOT `||` — a section with a genuinely EMPTY
+  // `description` (falsy but a valid, deliberate "no description" value)
+  // used to fall through `||` straight back to the raw pre-strip
+  // `subtitle` (`"" · "keyword soup"`, complete with the leading " · "
+  // separator) — exactly the "заплутана мішанина тегів" this line exists
+  // to avoid. `??` only falls back when the lookup itself finds nothing.
   return results
     .map((r) => ({
       ...r,
       subtitle:
-        SETTINGS_INDEX.find((s) => `settings_${s.id}` === r.id)?.description ||
+        SETTINGS_INDEX.find((s) => `settings_${s.id}` === r.id)?.description ??
         r.subtitle,
     }))
     .sort((a, b) => b._score - a._score)
@@ -157,7 +163,7 @@ export function searchAssistantTools(tokens: string[]): Hit[] {
       {
         id: `assistant_${cap.id}`,
         module: "assistant",
-        moduleLabel: "AI-можливості",
+        moduleLabel: "Можливості Сержанта",
         title: cap.label,
         // Subtitle містить опис + keywords + назву модуля — токени з
         // `keywords` беруть участь у scoring, але після сортування ми

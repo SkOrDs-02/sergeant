@@ -1,7 +1,7 @@
 -- 045: Dedicated `coach_memory` table — odlucz coach state від `module_data`
 -- legacy blob-таблиці.
 --
--- Stage 7 (Cleanup) prerequisite з `docs/planning/storage-roadmap.md`. Перед
+-- Stage 7 (Cleanup) prerequisite з `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Перед
 -- тим як drop-нути column `module_data` (PR #051 у roadmap-у), треба
 -- перенести ще-активних користувачів `module_data`: на момент 2026-05-06
 -- це лише `coach` (records-у з module='coach'). `profile` теж лежить у

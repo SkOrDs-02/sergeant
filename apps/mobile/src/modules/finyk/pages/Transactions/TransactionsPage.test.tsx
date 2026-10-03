@@ -83,6 +83,11 @@ jest.mock("@/components/ui/SwipeToAction", () => {
   };
 });
 
+jest.mock("../../lib/monoMirrorGate", () => ({
+  notifyFinykMonoMirrorRefresh: jest.fn(),
+  useFinykMonoMirrorTick: () => 0,
+}));
+
 import { ToastProvider } from "@/components/ui/Toast";
 
 import { TransactionsPage } from "./TransactionsPage";

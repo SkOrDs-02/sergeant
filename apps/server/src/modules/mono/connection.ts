@@ -4,6 +4,13 @@ import { env } from "../../env/env.js";
 import { query } from "../../db.js";
 import { logger } from "../../obs/logger.js";
 import {
+  AppError,
+  ExternalServiceError,
+  NotFoundError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../obs/errors.js";
+import {
   MonoConnectResponseSchema,
   MonoDisconnectResponseSchema,
   MonoSyncStateSchema,
@@ -19,6 +26,7 @@ import {
   type MonoTokenRow,
 } from "./tokenStore.js";
 import { scheduleHistoryBackfill } from "./historyFetch.js";
+import { upsertJars, type MonoClientInfoJar } from "./jars.js";
 
 /**
  * POST /api/mono/connect  — register Monobank webhook + persist connection.
@@ -30,25 +38,22 @@ import { scheduleHistoryBackfill } from "./historyFetch.js";
  */
 
 /** Timeout for outbound Monobank API calls (client-info, webhook register). */
-const MONO_API_TIMEOUT_MS = 15_000;
+export const MONO_API_TIMEOUT_MS = 15_000;
 
 interface AuthedRequest extends Request {
   user?: { id: string };
 }
 
-function assertWebhookEnabled(res: Response): boolean {
+function assertWebhookEnabled(): void {
   if (!env.MONO_WEBHOOK_ENABLED) {
-    res.status(404).json({ error: "Monobank webhook integration is disabled" });
-    return false;
+    throw new NotFoundError("Monobank webhook integration is disabled");
   }
-  return true;
 }
 
-function getUserId(req: AuthedRequest, res: Response): string | null {
+function getUserId(req: AuthedRequest): string {
   const userId = req.user?.id;
   if (!userId) {
-    res.status(401).json({ error: "Потрібна автентифікація" });
-    return null;
+    throw new UnauthorizedError("Потрібна автентифікація");
   }
   return userId;
 }
@@ -67,6 +72,7 @@ interface MonoClientInfoAccount {
 
 interface MonoClientInfoResponse {
   accounts?: MonoClientInfoAccount[];
+  jars?: MonoClientInfoJar[];
   [key: string]: unknown;
 }
 
@@ -74,22 +80,20 @@ export async function connectHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!assertWebhookEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  assertWebhookEnabled();
+  const userId = getUserId(req as AuthedRequest);
 
   const { token } = req.body as { token?: string };
   if (!token || typeof token !== "string" || token.length < 10) {
-    res.status(400).json({ error: "Invalid or missing token" });
-    return;
+    throw new ValidationError("Invalid or missing token");
   }
 
   const ring = monoKeyRing();
   if (!ring) {
-    res
-      .status(500)
-      .json({ error: "Server misconfigured: missing encryption key" });
-    return;
+    throw new AppError("Server misconfigured: missing encryption key", {
+      status: 500,
+      code: "MONO_MISCONFIGURED",
+    });
   }
 
   let clientInfoRes: globalThis.Response;
@@ -107,10 +111,13 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       err: err instanceof Error ? err.message : String(err),
     });
-    res
-      .status(504)
-      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
-    return;
+    throw new AppError(
+      "Monobank API не відповідає. Спробуй за кілька хвилин.",
+      {
+        status: 504,
+        code: "MONO_TIMEOUT",
+      },
+    );
   }
   if (!clientInfoRes.ok) {
     // Upstream body може містити внутрішні деталі Monobank (стек/чужі
@@ -122,19 +129,20 @@ export async function connectHandler(
       msg: "mono_connect_client_info_failed",
       status: clientInfoRes.status,
       fingerprint: tokenFingerprint(token),
-      upstreamBody: body,
+      upstreamBody: body.slice(0, 200),
     });
-    res.status(clientInfoRes.status === 401 ? 401 : 502).json({
-      error:
-        clientInfoRes.status === 401
-          ? "Invalid Monobank token"
-          : "Failed to reach Monobank API",
-      code:
-        clientInfoRes.status === 401
-          ? "MONO_TOKEN_INVALID"
-          : "MONO_UPSTREAM_ERROR",
-    });
-    return;
+    throw new AppError(
+      clientInfoRes.status === 401
+        ? "Invalid Monobank token"
+        : "Failed to reach Monobank API",
+      {
+        status: clientInfoRes.status === 401 ? 401 : 502,
+        code:
+          clientInfoRes.status === 401
+            ? "MONO_TOKEN_INVALID"
+            : "MONO_UPSTREAM_ERROR",
+      },
+    );
   }
 
   const clientInfo: MonoClientInfoResponse =
@@ -161,10 +169,13 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       err: err instanceof Error ? err.message : String(err),
     });
-    res
-      .status(504)
-      .json({ error: "Monobank API не відповідає. Спробуйте пізніше." });
-    return;
+    throw new AppError(
+      "Monobank API не відповідає. Спробуй за кілька хвилин.",
+      {
+        status: 504,
+        code: "MONO_TIMEOUT",
+      },
+    );
   }
 
   if (!registerRes.ok) {
@@ -173,36 +184,34 @@ export async function connectHandler(
       msg: "mono_webhook_register_failed",
       status: registerRes.status,
       fingerprint: tokenFingerprint(token),
-      upstreamBody: body,
+      upstreamBody: body.slice(0, 200),
     });
-    res.status(502).json({
-      error: "Failed to register webhook with Monobank",
+    throw new ExternalServiceError("Failed to register webhook with Monobank", {
       code: "MONO_UPSTREAM_ERROR",
     });
-    return;
   }
 
   const encrypted = encryptTokenWithRing(token, ring);
   const fingerprint = tokenFingerprint(token);
-  // Plaintext secret stays in `webhook_secret` only for one release cycle
-  // (rollback safety) — see migration 017's header. The new lookup path
-  // resolves rows by `webhook_secret_hash`, so even if the plaintext
-  // column is dropped tomorrow this insert keeps working.
+  // Phase 2 DROP (migration 107) removed the plaintext `webhook_secret`
+  // column entirely — only `webhook_secret_hash` (017) is persisted now.
+  // Webhook lookup/verification resolves rows exclusively by hash; the
+  // raw `webhookSecret` value only ever lives in the outbound webhook URL
+  // we register with Monobank, never at rest in our DB.
   const webhookSecretHashHex = webhookSecretHash(webhookSecret);
 
   await query(
     `INSERT INTO mono_connection
        (user_id, token_ciphertext, token_iv, token_tag, token_key_version,
-        token_fingerprint, webhook_secret, webhook_secret_hash,
+        token_fingerprint, webhook_secret_hash,
         webhook_registered_at, status, updated_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), 'active', NOW())
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), 'active', NOW())
      ON CONFLICT (user_id) DO UPDATE SET
        token_ciphertext = EXCLUDED.token_ciphertext,
        token_iv = EXCLUDED.token_iv,
        token_tag = EXCLUDED.token_tag,
        token_key_version = EXCLUDED.token_key_version,
        token_fingerprint = EXCLUDED.token_fingerprint,
-       webhook_secret = EXCLUDED.webhook_secret,
        webhook_secret_hash = EXCLUDED.webhook_secret_hash,
        webhook_registered_at = NOW(),
        status = 'active',
@@ -214,7 +223,6 @@ export async function connectHandler(
       encrypted.tag,
       encrypted.keyVersion,
       fingerprint,
-      webhookSecret,
       webhookSecretHashHex,
     ],
     { op: "mono_connection_upsert" },
@@ -252,6 +260,12 @@ export async function connectHandler(
     );
   }
 
+  // Jars ("банки") come back on the same client-info call as accounts —
+  // persist them now instead of dropping `clientInfo.jars` on the floor, so
+  // goal-progress auto-sync (docs/work/specs/goal-progress-auto.md)
+  // has a linkable balance from the moment of connect.
+  await upsertJars(userId, clientInfo.jars ?? []);
+
   logger.info({
     msg: "mono_connected",
     fingerprint,
@@ -281,9 +295,8 @@ export async function disconnectHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!assertWebhookEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  assertWebhookEnabled();
+  const userId = getUserId(req as AuthedRequest);
 
   const ring = monoKeyRing();
 
@@ -319,21 +332,124 @@ export async function disconnectHandler(
   res.status(200).json(MonoDisconnectResponseSchema.parse({ ok: true }));
 }
 
+/**
+ * Скільки чекати на `client-info` під час перевірки живості токена.
+ *
+ * Навмисно НЕ `MONO_API_TIMEOUT_MS` (15 с): та стеля стоїть на явних
+ * діях користувача — «підключити», «синхронізувати», — де почекати
+ * прийнятно. Тут перевірка сидить усередині GET-а, який малює екран
+ * Налаштувань, тож 15 с підвисання екрана заради службової перевірки —
+ * гірше за невизначеність. Не встигли — вважаємо результат невідомим.
+ */
+const MONO_TOKEN_PROBE_TIMEOUT_MS = 4_000;
+
+type TokenLiveness = "alive" | "revoked" | "unknown";
+
+/**
+ * Питає Monobank, чи токен ще живий.
+ *
+ * `revoked` повертається ЛИШЕ на явну відмову в авторизації (401/403).
+ * Будь-що інше — таймаут, 429, 5xx, обрив мережі — це `unknown`, і
+ * підключення лишається як було. Помилятись тут можна тільки в один бік:
+ * назвати робоче підключення мертвим — значить своїми руками відрізати
+ * людину від її банку через чужу тимчасову аварію.
+ */
+async function probeTokenLiveness(userId: string): Promise<TokenLiveness> {
+  const ring = monoKeyRing();
+  if (!ring) return "unknown";
+
+  const tokenResult = await query<MonoTokenRow>(
+    `SELECT token_ciphertext, token_iv, token_tag, token_key_version
+       FROM mono_connection WHERE user_id = $1`,
+    [userId],
+    { op: "mono_token_probe_select" },
+  );
+  const row = tokenResult.rows[0];
+  if (!row) return "unknown";
+
+  const token = await decryptAndLazyReencrypt(row, userId, ring);
+
+  const probeRes = await fetch("https://api.monobank.ua/personal/client-info", {
+    headers: { "X-Token": token },
+    signal: AbortSignal.timeout(MONO_TOKEN_PROBE_TIMEOUT_MS),
+  });
+  if (probeRes.ok) return "alive";
+  if (probeRes.status === 401 || probeRes.status === 403) return "revoked";
+  return "unknown";
+}
+
+/**
+ * Позначає підключення як таке, що втратило звʼязок, і повертає новий
+ * статус для відповіді (або `null`, якщо статус не змінився).
+ *
+ * Відмітка `last_token_check_at` ставиться на БУДЬ-ЯКОМУ результаті,
+ * включно з `unknown`. Це свідомий вибір: якщо не стямпити невдалу
+ * спробу, то під час аварії на боці Monobank КОЖЕН запит `sync-state`
+ * платив би повний таймаут перевірки — тобто зовнішній збій перетворював
+ * би екран Налаштувань на повільний. Ціна вибору: відкликаний токен
+ * помічається на один цикл (6 год) пізніше, якщо не пощастило збігтися з
+ * аварією. Повільний екран у всіх гірший за пізніше попередження в одного.
+ */
+async function recordTokenCheck(
+  userId: string,
+  liveness: TokenLiveness,
+): Promise<"invalid" | null> {
+  if (liveness === "revoked") {
+    await query(
+      `UPDATE mono_connection
+          SET status = 'invalid', last_token_check_at = NOW(), updated_at = NOW()
+        WHERE user_id = $1`,
+      [userId],
+      { op: "mono_token_probe_revoked" },
+    );
+    logger.info({ msg: "mono_token_revoked_detected" });
+    return "invalid";
+  }
+  await query(
+    "UPDATE mono_connection SET last_token_check_at = NOW() WHERE user_id = $1",
+    [userId],
+    { op: "mono_token_probe_stamp" },
+  );
+  return null;
+}
+
 export async function syncStateHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!assertWebhookEnabled(res)) return;
-  const userId = getUserId(req as AuthedRequest, res);
-  if (!userId) return;
+  assertWebhookEnabled();
+  const userId = getUserId(req as AuthedRequest);
 
+  // `token_check_due` рахується в SQL, а не в Node, з двох причин: це той
+  // самий годинник, що й у колонок (сервер і база можуть розʼїхатись), і
+  // всі чотири пороги видно в одному місці замість розкиданих констант.
+  //
+  //   status = 'active'          — `invalid`/`disconnected` перевіряти нема сенсу;
+  //   webhook_registered_at      — щойно підключені (<30 хв) не чіпаємо:
+  //                                `connect` сам щойно ходив у client-info,
+  //                                а повторний виклик впіймав би ліміт 1/60 с;
+  //   last_event_at              — підключення з подіями за останні 3 доби
+  //                                живе очевидно, зовнішній виклик зайвий.
+  //                                Саме цей предикат тримає перевірку рідкісною:
+  //                                звичайний активний юзер під неї не потрапляє
+  //                                НІКОЛИ, тож затримку платять лише підозрілі;
+  //   last_token_check_at        — вікно троттлінга (міграція 120).
   const connResult = await query<{
     status: string;
     webhook_registered_at: Date | string | null;
     last_event_at: Date | string | null;
     last_backfill_at: Date | string | null;
+    token_check_due?: boolean | null;
   }>(
-    `SELECT status, webhook_registered_at, last_event_at, last_backfill_at
+    `SELECT status, webhook_registered_at, last_event_at, last_backfill_at,
+            (status = 'active'
+              AND webhook_registered_at IS NOT NULL
+              AND webhook_registered_at < NOW() - INTERVAL '30 minutes'
+              AND (last_event_at IS NULL
+                   OR last_event_at < NOW() - INTERVAL '3 days')
+              AND (last_token_check_at IS NULL
+                   OR last_token_check_at < NOW() - INTERVAL '6 hours')
+            ) AS token_check_due
      FROM mono_connection WHERE user_id = $1`,
     [userId],
     { op: "mono_sync_state" },
@@ -354,17 +470,41 @@ export async function syncStateHandler(
 
   const conn = connResult.rows[0];
 
+  // Перевірка живості токена. Обгорнута цілком: цей ендпоінт малює екран
+  // Налаштувань, і жоден збій СЛУЖБОВОЇ перевірки не має права перетворити
+  // робочу відповідь на 500. Не вдалося перевірити — віддаємо стан із бази,
+  // рівно як до міграції 120.
+  let probedStatus: "invalid" | null = null;
+  if (conn!.token_check_due === true) {
+    try {
+      probedStatus = await recordTokenCheck(
+        userId,
+        await probeTokenLiveness(userId),
+      );
+    } catch (err) {
+      logger.warn({
+        msg: "mono_token_probe_failed",
+        err: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // `is_jar = FALSE` (міграція 119) тримає цей лічильник у згоді з тим,
+  // що реально віддає `/api/mono/accounts`. Інакше «підключено N
+  // рахунків» рахувало б і заглушки під банки, яких у списку немає.
   const countResult = await query<{ count: string }>(
-    "SELECT COUNT(*)::text AS count FROM mono_account WHERE user_id = $1",
+    `SELECT COUNT(*)::text AS count FROM mono_account
+      WHERE user_id = $1 AND is_jar = FALSE`,
     [userId],
     { op: "mono_accounts_count" },
   );
 
+  const status = probedStatus ?? conn!.status;
+
   res.status(200).json(
     MonoSyncStateSchema.parse({
-      status: conn!.status,
-      webhookActive:
-        conn!.status === "active" && conn!.webhook_registered_at != null,
+      status,
+      webhookActive: status === "active" && conn!.webhook_registered_at != null,
       lastEventAt:
         conn!.last_event_at instanceof Date
           ? conn!.last_event_at.toISOString()

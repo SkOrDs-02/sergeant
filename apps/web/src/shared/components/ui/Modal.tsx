@@ -1,14 +1,13 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  type ReactNode,
-  type KeyboardEvent,
-} from "react";
+import { useId, useRef, type ReactNode, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@shared/lib/ui/cn";
+import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+import { useHistoryDismiss } from "@shared/hooks/useHistoryDismiss";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
+import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
+import { useVisualKeyboardInset } from "@sergeant/shared";
+import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
 import { Button } from "./Button";
 import { Icon } from "./Icon";
 import { Sheet } from "./Sheet";
@@ -83,6 +82,7 @@ export function Modal({
   bodyClassName,
 }: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
   useDialogFocusTrap(open, panelRef, {
@@ -103,14 +103,20 @@ export function Modal({
   const coarse = useCoarsePointer();
   const useSheet = coarse && !hideClose && Boolean(title);
 
-  useEffect(() => {
-    if (!open || useSheet) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open, useSheet]);
+  useBodyScrollLock(open && !useSheet);
+  // Only the centered branch needs its own history entry — the coarse-pointer
+  // branch delegates to <Sheet>, which owns one already.
+  useHistoryDismiss(open && !useSheet, onClose);
+
+  // Так само лише центрована гілка: `Sheet` тримає власну
+  // keyboard-геометрію і компенсацію пану. Сюди ця гілка потрапляє на
+  // coarse pointer тільки для безтитульних / незакриваних модалок, але
+  // children там довільні, тож поле вводу можливе — а без геометрії
+  // компенсація пану сховала б його під клавіатурою назавжди
+  // (розбір — у шапці `keyboardOverlay.ts`).
+  const kbInsetPx = useVisualKeyboardInset(open && !useSheet);
+  const kbStyles = keyboardOverlayStyles(kbInsetPx);
+  useKeyboardAwareOverlay(open && !useSheet, overlayRef);
 
   if (!open) return null;
   if (typeof document === "undefined") return null;
@@ -152,8 +158,9 @@ export function Modal({
   // the same problem for the same reason.
   const dialog = (
     <div
+      ref={overlayRef}
       className="fixed inset-0 flex items-center justify-center p-4 motion-safe:animate-fade-in"
-      style={{ zIndex }}
+      style={{ zIndex, ...kbStyles.container }}
     >
       {/* Scrim — real <button> keeps dismiss reachable by AT. */}
       <button
@@ -177,6 +184,10 @@ export function Modal({
         aria-labelledby={title ? titleId : undefined}
         aria-describedby={description ? descriptionId : undefined}
         onPointerDown={(e) => e.stopPropagation()}
+        // Інлайн бʼє `max-h-[…]` нижче саме тоді, коли клавіатура на
+        // екрані: `90vh`/`100dvh` її не враховують, тож без цього панель
+        // лізла б під статус-бар. Скрол-регіон у тілі вже є.
+        style={kbStyles.panel}
         className={cn(
           // Elevation e4 — modal/sheet tier. Pairs with the default
           // `zIndex={200}` prop (`zTier.modal`); a Modal must always
@@ -195,7 +206,7 @@ export function Modal({
               {title && (
                 <div
                   id={titleId}
-                  className="text-lg font-extrabold text-fg leading-tight"
+                  className="text-style-title font-extrabold text-fg leading-tight"
                 >
                   {title}
                 </div>
@@ -203,7 +214,7 @@ export function Modal({
               {description && (
                 <div
                   id={descriptionId}
-                  className="text-sm text-fg-muted leading-relaxed mt-1"
+                  className="text-style-body text-fg-muted leading-relaxed mt-1"
                 >
                   {description}
                 </div>

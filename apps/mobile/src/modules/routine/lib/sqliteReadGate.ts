@@ -1,7 +1,7 @@
 /**
  * Read-path subscription for mobile Routine SQLite cutover.
  *
- * Stage 8 PR #057r-tombstone-mobile of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057r-tombstone-mobile of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Mirror of `apps/mobile/src/modules/fizruk/lib/sqliteReadGate.ts`. The
  * mobile Routine module no longer reads from the MMKV `hub_routine_v1`
  * blob; the canonical state comes from the SQLite warm cache populated

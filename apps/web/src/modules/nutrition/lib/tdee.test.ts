@@ -109,6 +109,16 @@ describe("computeNutritionTargets", () => {
     expect(bulking.fat_g).toBe(80);
   });
 
+  it("accepts the legacy persisted `maintain` goal as maintenance", () => {
+    const legacyGoal = "maintain" as unknown as Parameters<
+      typeof computeNutritionTargets
+    >[1];
+
+    expect(computeNutritionTargets(baseInput, legacyGoal)).toEqual(
+      computeNutritionTargets(baseInput, "maintenance"),
+    );
+  });
+
   it("keeps macro kcal close to the kcal target (within a 1 g rounding error)", () => {
     for (const goal of ["cutting", "maintenance", "bulking"] as const) {
       const t = computeNutritionTargets(baseInput, goal);
@@ -151,6 +161,7 @@ describe("computeNutritionTargetsFromBiometrics", () => {
       activityLevel: "moderate",
       weightKg: 80,
       weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-01-01T00:00:00.000Z",
       ...patch,
     };
@@ -192,5 +203,109 @@ describe("computeNutritionTargetsFromBiometrics", () => {
     expect(t!.protein_g).toBeGreaterThan(0);
     expect(t!.fat_g).toBeGreaterThan(0);
     expect(t!.carbs_g).toBeGreaterThanOrEqual(0);
+  });
+
+  // ── W1-WEIGHT-SOT стадія 1: вага з fizruk-SoT з фолбеком на біометрію ──
+  describe("fizruk-вага як джерело SoT", () => {
+    const NOW = new Date("2026-01-15T12:00:00Z"); // рівно 31 рік.
+
+    it("надає перевагу fizruk-вазі над знімком біометрії", () => {
+      const bio = fullBiometrics({ weightKg: 80 });
+      const fromFizruk = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+        90,
+      );
+      const asIfBiometrics = computeNutritionTargetsFromBiometrics(
+        fullBiometrics({ weightKg: 90 }),
+        "maintenance",
+        NOW,
+      );
+      expect(fromFizruk).toEqual(asIfBiometrics);
+      expect(fromFizruk!.kcal).not.toBe(
+        computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW)!.kcal,
+      );
+    });
+
+    it("падає назад на biometrics.weightKg, коли fizruk порожній", () => {
+      const bio = fullBiometrics({ weightKg: 80 });
+      const base = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+      );
+      expect(
+        computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW, null),
+      ).toEqual(base);
+      expect(
+        computeNutritionTargetsFromBiometrics(
+          bio,
+          "maintenance",
+          NOW,
+          undefined,
+        ),
+      ).toEqual(base);
+    });
+
+    it("ігнорує сміттєву fizruk-вагу (0, відʼємна, NaN)", () => {
+      const bio = fullBiometrics({ weightKg: 80 });
+      const base = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+      );
+      for (const bad of [0, -5, Number.NaN]) {
+        expect(
+          computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW, bad),
+        ).toEqual(base);
+      }
+    });
+
+    it("рятує юзера без ваги в біометрії, якщо fizruk-вага є", () => {
+      const bio = fullBiometrics({ weightKg: null });
+      expect(
+        computeNutritionTargetsFromBiometrics(bio, "maintenance", NOW),
+      ).toBeNull();
+      const t = computeNutritionTargetsFromBiometrics(
+        bio,
+        "maintenance",
+        NOW,
+        82,
+      );
+      expect(t).not.toBeNull();
+      expect(t!.kcal).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("countWorkoutsInGoal", () => {
+  const base = {
+    weightKg: 80,
+    heightCm: 180,
+    ageYears: 30,
+    sex: "male",
+    activityLevel: "moderate",
+  } as const;
+
+  it("вимкнений тумблер лишає рівно старе число", () => {
+    // Регресійний гейт проти подвійного обліку: наявні користувачі після
+    // релізу не мають побачити в нормі жодної зміни.
+    expect(computeTdee({ ...base })).toBe(1780 * ACTIVITY_MULTIPLIERS.moderate);
+    expect(computeTdee({ ...base, workoutKcal: 500 })).toBe(
+      1780 * ACTIVITY_MULTIPLIERS.moderate,
+    );
+  });
+
+  it("увімкнений - це BMR × 1.2 плюс спалене за день", () => {
+    expect(
+      computeTdee({ ...base, countWorkoutsInGoal: true, workoutKcal: 270 }),
+    ).toBe(1780 * 1.2 + 270);
+  });
+
+  it("увімкнений без тренувань дає чистий sedentary, а не колишній множник", () => {
+    expect(computeTdee({ ...base, countWorkoutsInGoal: true })).toBe(
+      1780 * 1.2,
+    );
   });
 });

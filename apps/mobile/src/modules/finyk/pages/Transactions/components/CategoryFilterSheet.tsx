@@ -40,13 +40,12 @@ export function CategoryFilterSheet({
       open={open}
       onClose={onClose}
       title="Фільтр по категорії"
-      description="Оберіть категорію (включно з MCC-категоріями за замовчуванням), щоб показати лише транзакції з нею."
+      description="Обери категорію (включно з MCC-категоріями за замовчуванням), щоб показати лише операції з нею."
     >
       <ScrollView
         contentContainerStyle={{ paddingBottom: 16, gap: 4 }}
         testID={`${testID}-filter-cat-sheet`}
       >
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
         <Text className="text-[11px] uppercase tracking-wide text-fg-subtle px-3 pt-2 pb-1">
           Витрати
         </Text>
@@ -68,7 +67,6 @@ export function CategoryFilterSheet({
             </Pressable>
           );
         })}
-        {/* eslint-disable-next-line sergeant-design/no-eyebrow-drift */}
         <Text className="text-[11px] uppercase tracking-wide text-fg-subtle px-3 pt-3 pb-1">
           Доходи
         </Text>

@@ -1,10 +1,12 @@
 /**
  * Format a Date as `YYYY-MM-DD` in the **Europe/Kyiv** timezone.
  *
- * Domain invariant (AGENTS.md): all day boundaries must use Kyiv local time,
- * never UTC and never the server's local zone.
+ * Це КИЇВСЬКА доба, не доба пристрою. За [ADR-0078](../../../../docs/governance/adr/0078-day-boundary-device-local.md)
+ * межа розділена: Київ — для показу часу, серверних звітів і фінансових
+ * періодів, а день-ключ відмітки звички, логу їжі й денного запису визначає
+ * годинник ПРИСТРОЮ — там ця функція не підходить.
  */
-export function toLocalISODate(d: Date | number | string = new Date()): string {
+export function toKyivISODate(d: Date | number | string = new Date()): string {
   const dt = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(dt.getTime())) return "1970-01-01";
   // en-CA gives YYYY-MM-DD; `timeZone` forces Europe/Kyiv regardless of
@@ -13,6 +15,17 @@ export function toLocalISODate(d: Date | number | string = new Date()): string {
     dt,
   );
 }
+
+/**
+ * @deprecated Імʼя бреше: читається як «доба пристрою», хоча форсує
+ * Europe/Kyiv. Використовуй {@link toKyivISODate}. Аліас лишено заради 150+
+ * викликів по монорепо — прибрати після міграції call-сайтів.
+ *
+ * AI-LEGACY: expires 2026-11-07 — прибрати цей аліас і перевести залишкові
+ * виклики на `toKyivISODate` напряму; перелік call-сайтів і розбір розходжень
+ * — docs/work/specs/audits/unification-modules.md.
+ */
+export const toLocalISODate = toKyivISODate;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
@@ -33,7 +46,7 @@ function dayKeyToUtcMidnight(dayKey: string): number {
 export function kyivDayStartMs(dayKey: string): number {
   const utcMidnight = dayKeyToUtcMidnight(dayKey);
   const summer = utcMidnight - 3 * HOUR_MS;
-  return toLocalISODate(summer) === dayKey ? summer : utcMidnight - 2 * HOUR_MS;
+  return toKyivISODate(summer) === dayKey ? summer : utcMidnight - 2 * HOUR_MS;
 }
 
 /**
@@ -44,7 +57,7 @@ export function kyivDayStartMs(dayKey: string): number {
 export function kyivDayEndMs(dayKey: string): number {
   // +26h from day start always lands inside the next Kyiv day, whatever
   // the current day's length (23/24/25h).
-  const nextKey = toLocalISODate(kyivDayStartMs(dayKey) + 26 * HOUR_MS);
+  const nextKey = toKyivISODate(kyivDayStartMs(dayKey) + 26 * HOUR_MS);
   return kyivDayStartMs(nextKey) - 1;
 }
 
@@ -57,9 +70,32 @@ export function kyivDayEndMs(dayKey: string): number {
  * boundaries are Kyiv local, never raw 24-hour windows.
  */
 export function kyivCalendarDaysBetween(aMs: number, bMs: number): number {
-  const a = dayKeyToUtcMidnight(toLocalISODate(aMs));
-  const b = dayKeyToUtcMidnight(toLocalISODate(bMs));
+  const a = dayKeyToUtcMidnight(toKyivISODate(aMs));
+  const b = dayKeyToUtcMidnight(toKyivISODate(bMs));
   return Math.round((a - b) / DAY_MS);
+}
+
+const KYIV_HOUR_FORMATTER = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Kyiv",
+  hour: "numeric",
+  // h23, а не hour12:false: деякі рушії при hour12:false віддають "24" о
+  // півночі, а нам потрібен 0..23.
+  hourCycle: "h23",
+});
+
+/**
+ * Година доби (0–23) за **Europe/Kyiv** для моменту `d`. Пара до
+ * {@link toKyivISODate}: та каже, до якої київської доби належить момент, ця —
+ * котра там зараз година. Потрібна порогам «після 14:00» над грошима, які
+ * рахують ДОБУ за Києвом: ні годинник пристрою, ні його пояс не мають на
+ * неї впливу. Returns `NaN` for unparseable input.
+ */
+export function kyivHour(d: Date | number | string = Date.now()): number {
+  const ms = (d instanceof Date ? d : new Date(d)).getTime();
+  if (Number.isNaN(ms)) return NaN;
+  const hour = Number(KYIV_HOUR_FORMATTER.format(ms));
+  // Страховка від рушія, що попри h23 віддає "24": це північ.
+  return hour === 24 ? 0 : hour;
 }
 
 const KYIV_WEEKDAY_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -92,10 +128,49 @@ export function kyivMondayStartMs(
 ): number {
   const ms = (d instanceof Date ? d : new Date(d)).getTime();
   if (Number.isNaN(ms)) return NaN;
-  const dayStart = kyivDayStartMs(toLocalISODate(ms));
+  const dayStart = kyivDayStartMs(toKyivISODate(ms));
   const mondayIndex =
     MONDAY_FIRST_INDEX[KYIV_WEEKDAY_FORMATTER.format(ms)] ?? 0;
   if (mondayIndex === 0) return dayStart;
   const approxMondayNoon = dayStart - mondayIndex * DAY_MS + DAY_MS / 2;
-  return kyivDayStartMs(toLocalISODate(approxMondayNoon));
+  return kyivDayStartMs(toKyivISODate(approxMondayNoon));
+}
+
+/**
+ * Format a Date as `YYYY-MM-DD` in the DEVICE's local timezone.
+ *
+ * За [ADR-0078](../../../../docs/governance/adr/0078-day-boundary-device-local.md)
+ * день-ключ відмітки звички, логу їжі й денного запису визначає годинник
+ * ПРИСТРОЮ, не Києва — на відміну від {@link toKyivISODate}. Канон для
+ * восьми байт-ідентичних копій цього форматера
+ * (`docs/work/specs/audits/unification-modules.md` §2.1).
+ */
+export function deviceDayKey(d: Date | number = new Date()): string {
+  const date = typeof d === "number" ? new Date(d) : d;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Start of the ISO week (Monday 00:00, DEVICE local time) containing the
+ * given instant, as a Unix-epoch millisecond timestamp.
+ *
+ * Пара до {@link kyivMondayStartMs}: та функція — для фінансів і звітів, ця —
+ * для персональних сутностей (звички, тренування) за ADR-0078. Назви
+ * навмисно розрізняють годинник (`docs/work/specs/audits/unification-modules.md`
+ * §1.2), інакше наступний виклик знову вибере навмання. Returns `NaN` for
+ * unparseable input.
+ */
+export function deviceMondayStart(
+  d: Date | number | string = Date.now(),
+): number {
+  const date = d instanceof Date ? d : new Date(d);
+  if (Number.isNaN(date.getTime())) return NaN;
+  const mondayOffset = (date.getDay() + 6) % 7;
+  const monday = new Date(date);
+  monday.setDate(date.getDate() - mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  return monday.getTime();
 }

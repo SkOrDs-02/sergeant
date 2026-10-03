@@ -26,14 +26,14 @@ import type { MonoAccount, Transaction } from "@sergeant/finyk-domain/domain";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { _getMMKVInstance, safeReadLS, safeWriteLS } from "@/lib/storage";
-import { triggerFinykDualWrite } from "./dualWrite";
+import { triggerFinykDualWrite } from "./sqliteWriter";
 import {
   blobsFromArray,
   idsFromArray,
   stateWithSlice,
   txCatsFromMap,
   txSplitsFromMap,
-} from "./dualWrite/extract";
+} from "./sqliteWriter/extract";
 
 import type { ManualExpensePayload } from "../components/ManualExpenseSheet";
 
@@ -49,7 +49,7 @@ import {
 } from "./monoMirrorReader";
 import {
   notifyFinykMonoMirrorRefresh,
-  useFinykMonoMirrorGate,
+  useFinykMonoMirrorTick,
 } from "./monoMirrorGate";
 
 const KEY_MANUAL = FINYK_STORAGE_KEYS.transactions;
@@ -221,7 +221,7 @@ export function useFinykTxFilters(seed?: Partial<FinykTxFilterState>): {
 }
 
 function genId(): string {
-  return `me_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  return `me_${Date.now().toString(36)}_${crypto.randomUUID()}`;
 }
 
 /**
@@ -248,6 +248,19 @@ export function useFinykTransactionsStore(
   const [realTx, setRealTxState] = useState<Transaction[]>(
     () => seed?.realTx ?? readBankTxCache(),
   );
+  const [customCategories, setCustomCategoriesState] = useState<
+    { id: string; label: string }[]
+  >(() => {
+    if (seed?.customCategories) return seed.customCategories;
+    const cached = getCachedFinykSqliteState();
+    if (cached.refreshedAt !== null) {
+      return cached.customCategories.map(({ id, label }) => ({
+        id,
+        label: label ?? "",
+      }));
+    }
+    return [];
+  });
 
   // Flush seed realTx through MMKV (Mono cache keys are still
   // MMKV-backed). Dual-write keys are no longer flushed here.
@@ -284,48 +297,61 @@ export function useFinykTransactionsStore(
   // Stage 8 PR #057k-tombstone — overlay every persisted slice from
   // the local SQLite cache once it's warm. MMKV reads above stay as
   // a synchronous first-paint fallback; MMKV writes are gone.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFinykSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();
-    if (cache.refreshedAt === null) return;
-    // The cache's `ManualExpense` shape mirrors `ManualExpenseRecord`
-    // exactly (kept in sync inside `sqliteReader.ts` to avoid a
-    // circular import); the assignment is a structural pass-through.
-    setManualState(cache.manualExpenses);
-    // `TxCategoriesMap` declares `string | undefined` values; the
-    // `_State` setter takes `Record<string, string>`. Sweep
-    // `undefined`-valued entries (cache rows always carry a defined
-    // `category_id` so this is defensive only).
-    const txCats: Record<string, string> = {};
-    for (const [k, v] of Object.entries(cache.txCategories)) {
-      if (typeof v === "string") txCats[k] = v;
+    if (cache.refreshedAt !== null) {
+      // The cache's `ManualExpense` shape mirrors `ManualExpenseRecord`
+      // exactly (kept in sync inside `sqliteReader.ts` to avoid a
+      // circular import); the assignment is a structural pass-through.
+      setManualState(cache.manualExpenses);
+      // `TxCategoriesMap` declares `string | undefined` values; the
+      // `_State` setter takes `Record<string, string>`. Sweep
+      // `undefined`-valued entries (cache rows always carry a defined
+      // `category_id` so this is defensive only).
+      const txCats: Record<string, string> = {};
+      for (const [k, v] of Object.entries(cache.txCategories)) {
+        if (typeof v === "string") txCats[k] = v;
+      }
+      setTxCatsState(txCats);
+      // `TxSplitsMap` declares `TxSplit[] | undefined`; the
+      // `_State` setter takes `Record<string, TxSplitEntry[]>`. Same
+      // sweep — drop `undefined`-valued buckets.
+      const txSplitsMap: Record<string, TxSplitEntry[]> = {};
+      for (const [k, v] of Object.entries(cache.txSplits)) {
+        if (Array.isArray(v)) txSplitsMap[k] = v;
+      }
+      setTxSplitsState(txSplitsMap);
+      setHiddenState(cache.hiddenTransactions);
+      // Overlay `customCategories` from SQLite so settings changes
+      // (written via `useFinykCustomCategories`) are immediately
+      // visible to the Transactions screen without a remount.
+      setCustomCategoriesState(
+        cache.customCategories.map(({ id, label }) => ({
+          id,
+          label: label ?? "",
+        })),
+      );
     }
-    setTxCatsState(txCats);
-    // `TxSplitsMap` declares `TxSplit[] | undefined`; the
-    // `_State` setter takes `Record<string, TxSplitEntry[]>`. Same
-    // sweep — drop `undefined`-valued buckets.
-    const txSplitsMap: Record<string, TxSplitEntry[]> = {};
-    for (const [k, v] of Object.entries(cache.txSplits)) {
-      if (Array.isArray(v)) txSplitsMap[k] = v;
-    }
-    setTxSplitsState(txSplitsMap);
-    setHiddenState(cache.hiddenTransactions);
-  }, [sqliteCacheTick]);
+  }
 
-  // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache when
-  // `feature.finyk.sqlite_v2.mono_mirror` is on. The MMKV first-paint
-  // hydration above stays as a synchronous fallback; this effect only
-  // fires after `useFinykMonoMirrorBoot` has refreshed the cache.
-  const { enabled: monoMirrorEnabled, tick: monoMirrorTick } =
-    useFinykMonoMirrorGate();
-  useEffect(() => {
-    if (!monoMirrorEnabled) return;
+  // Stage 4 PR #038 — overlay `realTx` from the Mono mirror cache. The
+  // MMKV first-paint hydration above stays as a synchronous fallback;
+  // this effect only fires after `useFinykMonoMirrorBoot` has refreshed
+  // the cache.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
+  const monoMirrorTick = useFinykMonoMirrorTick();
+  const [prevMonoTick, setPrevMonoTick] = useState(monoMirrorTick);
+  if (monoMirrorTick !== prevMonoTick) {
+    setPrevMonoTick(monoMirrorTick);
     const cache = getCachedFinykMonoMirrorState();
-    if (cache.refreshedAt === null) return;
-    if (cache.transactions.length > 0) {
+    if (cache.refreshedAt !== null && cache.transactions.length > 0) {
       setRealTxState(cache.transactions);
     }
-  }, [monoMirrorEnabled, monoMirrorTick]);
+  }
 
   // Stage 4 PR #038 — best-effort write into the Mono mirror tables on
   // every `realTx` change (the slice updates whenever cloud-sync
@@ -337,7 +363,7 @@ export function useFinykTransactionsStore(
   });
   const userId = meData?.user?.id ?? null;
   useEffect(() => {
-    if (!monoMirrorEnabled || !userId || realTx.length === 0) return;
+    if (!userId || realTx.length === 0) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -358,7 +384,7 @@ export function useFinykTransactionsStore(
     return () => {
       cancelled = true;
     };
-  }, [realTx, userId, monoMirrorEnabled]);
+  }, [realTx, userId]);
 
   const writeManual = useCallback((next: ManualExpenseRecord[]) => {
     const prev = read<ManualExpenseRecord[]>(KEY_MANUAL, []);
@@ -485,7 +511,10 @@ export function useFinykTransactionsStore(
     hiddenTxIds,
     realTx,
     accounts: seed?.accounts ?? [],
-    customCategories: seed?.customCategories ?? [],
+    // `customCategories` is overlaid from the SQLite cache via the
+    // `sqliteCacheTick` effect above. `seed` injection still wins for
+    // tests that pre-populate the store with explicit fixtures.
+    customCategories: seed?.customCategories ?? customCategories,
 
     addManualExpense,
     updateManualExpense,

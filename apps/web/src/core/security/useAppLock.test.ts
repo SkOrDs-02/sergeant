@@ -83,18 +83,21 @@ describe("useAppLock", () => {
   });
 
   it("transitions to 'setup' on startSetup()", () => {
+    mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.startSetup());
     expect(result.current.state).toBe("setup");
   });
 
   it("transitions to 'change' on startChange()", () => {
+    mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.startChange());
     expect(result.current.state).toBe("change");
   });
 
   it("transitions back to 'idle' on finishSetup()", () => {
+    mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.startSetup());
     act(() => result.current.finishSetup());
@@ -102,6 +105,7 @@ describe("useAppLock", () => {
   });
 
   it("finishSetup() after startSetup emits mode:'setup'", () => {
+    mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.startSetup());
     act(() => result.current.finishSetup());
@@ -112,6 +116,7 @@ describe("useAppLock", () => {
   });
 
   it("finishSetup() after startChange emits mode:'change'", () => {
+    mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.startChange());
     act(() => result.current.finishSetup());
@@ -150,6 +155,7 @@ describe("useAppLock", () => {
   });
 
   it("lock() forces state to 'locked'", async () => {
+    mockUseFlag.mockReturnValue(true);
     const { result } = renderHook(() => useAppLock());
     act(() => result.current.lock());
     expect(result.current.state).toBe("locked");

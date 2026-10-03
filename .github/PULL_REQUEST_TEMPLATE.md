@@ -29,6 +29,7 @@ Additional checks:
 
 - [ ] Local smoke / manual validation completed
 - [ ] Surface-specific checks completed
+- [ ] **New or reworked UI surface:** ran the slop test — [`DESIGN.md § Slop-тест`](../DESIGN.md#slop-тест-обовязковий-на-design-review) (підміна / генератор / дані). Skip for non-UI PRs.
 
 ## Docs and Governance
 

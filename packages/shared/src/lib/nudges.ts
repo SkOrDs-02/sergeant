@@ -39,13 +39,28 @@ export interface NudgeDefinition {
   conditionModule?: DashboardModuleId;
   /** If true, show only when the condition module has no entries yet. */
   conditionEmpty?: boolean;
+  /**
+   * Tier 3 — cross-module wedge. Show only when the user has real
+   * entries in *exactly one* module: they have proven the single-tracker
+   * habit but not yet the cross-module promise. Requires the caller to
+   * pass `modulesWithEntries`; absent that set the nudge never surfaces
+   * (fail-closed) so we never nudge a user we cannot segment.
+   */
+  conditionExactlyOneModule?: boolean;
 }
 
 const NUDGE_CATALOG: readonly NudgeDefinition[] = [
   {
+    id: "day2_cross_module",
+    day: 2,
+    message:
+      "Один напрямок ти вже ведеш. Додай другий, Sergeant покаже, як вони впливають один на одного.",
+    conditionExactlyOneModule: true,
+  },
+  {
     id: "day2_routine",
     day: 2,
-    message: "Вчора ти зробив перший запис. Сьогодні — створи звичку?",
+    message: "Вчора ти зробив перший запис. Сьогодні – створи звичку?",
     conditionModule: "routine",
     conditionEmpty: true,
   },
@@ -82,6 +97,11 @@ export function dismissNudge(store: KVStore, nudgeId: string): void {
   const map = getDismissedMap(store);
   map[nudgeId] = true;
   writeJSON(store, NUDGE_DISMISSED_KEY, map);
+}
+
+/** Check whether a namespaced engagement item was permanently dismissed. */
+export function isNudgeDismissed(store: KVStore, nudgeId: string): boolean {
+  return getDismissedMap(store)[nudgeId] === true;
 }
 
 interface NudgeSnoozeMap {
@@ -141,6 +161,13 @@ export function getActiveNudge(
     if (nudge.day > sessionDays) continue;
     if (dismissed[nudge.id]) continue;
     if (isSnoozed(snoozed, nudge.id)) continue;
+
+    if (
+      nudge.conditionExactlyOneModule &&
+      opts?.modulesWithEntries?.size !== 1
+    ) {
+      continue;
+    }
 
     if (nudge.conditionModule) {
       const picks = opts?.picks;

@@ -6,16 +6,12 @@
  * display label derived from the note or first strength exercise.
  */
 
+import { finiteOrNull } from "@sergeant/shared";
+
 import type { DashboardRecentWorkout, DashboardWorkoutInput } from "./types.js";
 
 /** Default row count on the dashboard "Останні тренування" card. */
 export const DEFAULT_RECENT_LIMIT = 3;
-
-function toFiniteNumber(v: unknown): number | null {
-  if (v == null || v === "") return null;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
 
 function computeDuration(startedAt: string, endedAt: string): number {
   const start = Date.parse(startedAt);
@@ -31,8 +27,8 @@ function computeTonnageKg(w: DashboardWorkoutInput): number {
     if (item?.type !== "strength") continue;
     const sets = item.sets ?? [];
     for (const s of sets) {
-      const weight = toFiniteNumber(s?.weightKg);
-      const reps = toFiniteNumber(s?.reps);
+      const weight = finiteOrNull(s?.weightKg);
+      const reps = finiteOrNull(s?.reps);
       if (weight == null || reps == null) continue;
       if (weight <= 0 || reps <= 0) continue;
       total += weight * reps;

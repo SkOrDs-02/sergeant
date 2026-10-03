@@ -26,8 +26,7 @@ function main(): void {
   const androidPackage = config.android?.package ?? "";
   const plugins = (config.plugins ?? []).map(pluginName).filter(Boolean);
   const backgroundModes = config.ios?.infoPlist?.UIBackgroundModes as
-    | string[]
-    | undefined;
+    string[] | undefined;
 
   console.log(`name=${config.name}`);
   console.log(`slug=${config.slug}`);

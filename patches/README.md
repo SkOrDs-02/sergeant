@@ -1,6 +1,6 @@
 # patches/
 
-> **Last validated:** 2026-05-13 by Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-08-22 by @claude. **Next review:** 2026-11-27.
 > **Status:** Active
 
 This directory contains pnpm-managed patches applied to upstream packages
@@ -10,7 +10,7 @@ which fails CI when a patch is missing a row, has empty mandatory cells,
 or when `pnpm.patchedDependencies` in root `package.json` references a
 patch file that does not exist on disk.
 
-Closes [PR-20](../docs/90-work/initiatives/stack-pulse-2026-05/pr-20-patches-readme.md)
+Closes [PR-20](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-20-patches-readme.md)
 (stack-pulse-2026-05 / M4).
 
 ## Active patches

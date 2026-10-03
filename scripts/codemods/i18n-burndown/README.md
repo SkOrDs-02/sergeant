@@ -1,6 +1,6 @@
 # `i18n-burndown` codemod
 
-> **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
 > **Status:** Active
 
 Migrates inline UA JSX literals (text + attribute strings) to references
@@ -8,7 +8,8 @@ to the central message catalog (`apps/web/src/shared/i18n/uk.ts`) and
 drops the corresponding entries from
 `apps/web/eslint.i18n-allowlist.json`. Long-running burndown for item
 **#18** of the [web deep-dive
-diagnostic](../../../docs/90-work/audits/2026-05-03-web-deep-dive/00-overview.md).
+diagnostic](https://github.com/Skords-01/Sergeant/blob/bb61d91893be16fd192f7bc96f1060d7992b0f81~1/docs/90-work/audits/2026-05-03-web-deep-dive/00-overview.md)
+(tracker removed from the working tree — permalink to the last commit that had it).
 
 Unlike the one-shot codemods next to it (`strip-js-extensions/`,
 `syncedKV/`), this script is meant to be **re-run** every time we widen
@@ -93,7 +94,7 @@ node scripts/codemods/i18n-burndown/script.mjs --write   # apply
 
 When `apps/web/eslint.i18n-allowlist.json` is `[]` and the rule is
 promoted to `"error"` (see
-[`docs/05-design/i18n/readiness.md`](../../../docs/05-design/i18n/readiness.md) §
+[`docs/design/i18n/readiness.md`](../../../docs/design/i18n/readiness.md) §
 Phase 3), this codemod is no longer load-bearing. At that point:
 
 1. Mark this file `// @deprecated` like the sibling one-shots.

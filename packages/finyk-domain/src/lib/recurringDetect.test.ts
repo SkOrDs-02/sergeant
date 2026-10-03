@@ -20,6 +20,87 @@ function tx(
 }
 
 describe("finyk/recurringDetect", () => {
+  // AI-CONTEXT: до 2026-08-06 рушій умів лише витрати — фільтр
+  // `tx.amount >= 0` стояв просто в циклі групування, тож дохід
+  // відкидався за побудовою. Ці тести тримають обидва боки і, головне,
+  // дефолт: жоден наявний виклик не мав змінити поведінки.
+  describe("flow", () => {
+    const salary = (id: string, time: number, amount = 4_500_00) =>
+      tx({ id, time, amount, description: "ТОВ РОБОТА зарплата", mcc: 0 });
+
+    const NOW = 1_760_000_000;
+
+    it("ignores income by default", () => {
+      const out = detectRecurring(
+        [
+          salary("s1", NOW - 62 * DAY),
+          salary("s2", NOW - 31 * DAY),
+          salary("s3", NOW - 1 * DAY),
+        ],
+        { nowSec: NOW },
+      );
+      expect(out).toHaveLength(0);
+    });
+
+    it("finds a monthly salary with flow: income", () => {
+      const out = detectRecurring(
+        [
+          salary("s1", NOW - 62 * DAY),
+          salary("s2", NOW - 31 * DAY),
+          salary("s3", NOW - 1 * DAY),
+        ],
+        { nowSec: NOW, flow: "income" },
+      );
+      expect(out).toHaveLength(1);
+      expect(out[0]?.cadence).toBe("monthly");
+      // Сума додатна, як і для витрат: рушій завжди рахує на Math.abs.
+      expect(out[0]?.avgAmount).toBe(4500);
+      expect(out[0]?.occurrences).toBe(3);
+    });
+
+    it("ignores expenses when asked for income", () => {
+      const out = detectRecurring(
+        [
+          tx({ id: "n1", time: NOW - 62 * DAY }),
+          tx({ id: "n2", time: NOW - 31 * DAY }),
+          tx({ id: "n3", time: NOW - 1 * DAY }),
+        ],
+        { nowSec: NOW, flow: "income" },
+      );
+      expect(out).toHaveLength(0);
+    });
+
+    it("separates the two sides of a mixed history", () => {
+      const mixed = [
+        salary("s1", NOW - 62 * DAY),
+        salary("s2", NOW - 31 * DAY),
+        salary("s3", NOW - 1 * DAY),
+        tx({ id: "n1", time: NOW - 60 * DAY }),
+        tx({ id: "n2", time: NOW - 30 * DAY }),
+        tx({ id: "n3", time: NOW - 2 * DAY }),
+      ];
+      const expenses = detectRecurring(mixed, { nowSec: NOW });
+      const income = detectRecurring(mixed, { nowSec: NOW, flow: "income" });
+      expect(expenses.map((c) => c.displayName)).toEqual(["Netflix"]);
+      expect(income).toHaveLength(1);
+      expect(income[0]?.displayName).toMatch(/робота/i);
+    });
+
+    // Нуль не належить жодному боку — інакше службова транзакція на 0
+    // потрапляла б і у витрати, і в дохід.
+    it("counts a zero amount as neither side", () => {
+      const zeros = [
+        tx({ id: "z1", time: NOW - 62 * DAY, amount: 0, description: "Тест" }),
+        tx({ id: "z2", time: NOW - 31 * DAY, amount: 0, description: "Тест" }),
+        tx({ id: "z3", time: NOW - 1 * DAY, amount: 0, description: "Тест" }),
+      ];
+      expect(detectRecurring(zeros, { nowSec: NOW })).toHaveLength(0);
+      expect(
+        detectRecurring(zeros, { nowSec: NOW, flow: "income" }),
+      ).toHaveLength(0);
+    });
+  });
+
   describe("normalizeMerchantKey", () => {
     it("lowercases, strips digits/punctuation, keeps up to 3 tokens", () => {
       expect(normalizeMerchantKey("Netflix.com *1234")).toBe("netflix com");
@@ -43,6 +124,25 @@ describe("finyk/recurringDetect", () => {
 
     it("returns empty array for empty input", () => {
       expect(detectRecurring([])).toEqual([]);
+    });
+
+    // §7.1 спеки аналітики v2: два списання Netflix 199 з інтервалом 30
+    // днів уже дають кандидата «щомісяця» з сумою й днем останнього.
+    it("two Netflix 199 charges 30 days apart make a monthly candidate", () => {
+      const out = detectRecurring(
+        [
+          tx({ id: "n1", time: baseTwo }),
+          tx({ id: "n2", time: baseTwo + 30 * DAY }),
+        ],
+        { nowSec: now },
+      );
+      expect(out).toHaveLength(1);
+      expect(out[0]).toMatchObject({
+        key: "netflix",
+        cadence: "monthly",
+        avgAmount: 199,
+        billingDay: new Date((baseTwo + 30 * DAY) * 1000).getDate(),
+      });
     });
 
     it("detects monthly cadence with stable amount (4 occurrences → high)", () => {
@@ -243,6 +343,37 @@ describe("finyk/recurringDetect", () => {
       expect(out[1]!.confidence).toBe("low");
     });
 
+    it("breaks a confidence+amount tie by more recent lastTxTime", () => {
+      const base = baseThree;
+      const clean: RecurringTx[] = [
+        // Group A: same confidence (2 occ) and amount as B, older lastTxTime
+        tx({ id: "a1", time: base, description: "Older Sub", amount: -19900 }),
+        tx({
+          id: "a2",
+          time: base + 30 * DAY,
+          description: "Older Sub",
+          amount: -19900,
+        }),
+        // Group B: same confidence/amount, more recent lastTxTime
+        tx({
+          id: "b1",
+          time: base + 5 * DAY,
+          description: "Newer Sub",
+          amount: -19900,
+        }),
+        tx({
+          id: "b2",
+          time: base + 35 * DAY,
+          description: "Newer Sub",
+          amount: -19900,
+        }),
+      ];
+      const out = detectRecurring(clean, { nowSec: now });
+      expect(out).toHaveLength(2);
+      expect(out[0]!.key).toBe("newer sub");
+      expect(out[1]!.key).toBe("older sub");
+    });
+
     it("returns USD for currencyCode 840", () => {
       const base = baseTwo;
       const txs: RecurringTx[] = [
@@ -284,6 +415,105 @@ describe("finyk/recurringDetect", () => {
         }),
       ];
       expect(detectRecurring(txs, { nowSec: now })).toHaveLength(0);
+    });
+
+    // AI-CONTEXT: кандидати зʼявлялись хвилями, бо входом було «усе дзеркало»
+    // до відповіді мережі й «лише поточний місяць» після неї. Вікно робить
+    // результат функцією даних у вікні, а не того, скільки їх передали.
+    describe("lookbackDays (фіксоване вікно історії)", () => {
+      const monthly = (from: number, count: number, description = "Netflix") =>
+        Array.from({ length: count }, (_, i) =>
+          tx({
+            id: `${description}-${i}`,
+            time: from + i * 30 * DAY,
+            description,
+          }),
+        );
+
+      it("ignores charges older than the 120-day default window", () => {
+        // −125, −95, −65, −35, −5: найстаріше випадає за вікно.
+        const out = detectRecurring(monthly(now - 125 * DAY, 5), {
+          nowSec: now,
+        });
+        expect(out).toHaveLength(1);
+        expect(out[0]!.occurrences).toBe(4);
+        expect(out[0]!.sampleTxIds).not.toContain("Netflix-0");
+      });
+
+      it("gives the same candidates whatever older history the caller adds", () => {
+        const inWindow = monthly(now - 95 * DAY, 4);
+        const withOlder = [
+          ...monthly(now - 400 * DAY, 8),
+          ...inWindow,
+          tx({ id: "ancient", time: now - 900 * DAY, description: "Netflix" }),
+        ];
+
+        expect(detectRecurring(withOlder, { nowSec: now })).toEqual(
+          detectRecurring(inWindow, { nowSec: now }),
+        );
+      });
+
+      it("does not depend on input order", () => {
+        const txs = monthly(now - 95 * DAY, 4);
+        expect(detectRecurring([...txs].reverse(), { nowSec: now })).toEqual(
+          detectRecurring(txs, { nowSec: now }),
+        );
+      });
+
+      it("needs two charges inside the window: one month of data cannot make a monthly candidate", () => {
+        expect(
+          detectRecurring([tx({ id: "only", time: now - 5 * DAY })], {
+            nowSec: now,
+          }),
+        ).toEqual([]);
+      });
+
+      it("a custom window widens or narrows the history", () => {
+        const txs = monthly(now - 125 * DAY, 5);
+        expect(
+          detectRecurring(txs, { nowSec: now, lookbackDays: 200 })[0]
+            ?.occurrences,
+        ).toBe(5);
+        expect(
+          detectRecurring(txs, { nowSec: now, lookbackDays: 40 })[0]
+            ?.occurrences,
+        ).toBe(2);
+      });
+
+      it("Infinity or a non-positive window turns the window off", () => {
+        const txs = monthly(now - 125 * DAY, 5);
+        for (const lookbackDays of [Infinity, 0, -1]) {
+          expect(
+            detectRecurring(txs, { nowSec: now, lookbackDays })[0]?.occurrences,
+          ).toBe(5);
+        }
+      });
+
+      it("a subscription linked to a charge older than the window still covers the merchant", () => {
+        // Підписку привʼязали до списання 125 днів тому; чотири наступні
+        // місячні списання у вікні не мають пропонуватись як нова підписка.
+        const txs = monthly(now - 125 * DAY, 5);
+        expect(
+          detectRecurring(txs, {
+            nowSec: now,
+            subscriptions: [
+              { id: "s", name: "Netflix", linkedTxId: "Netflix-0" },
+            ],
+          }),
+        ).toEqual([]);
+      });
+
+      it("yearly charges fall outside the default window", () => {
+        const yearly = [
+          tx({ id: "y1", time: now - 375 * DAY, description: "Adobe" }),
+          tx({ id: "y2", time: now - 10 * DAY, description: "Adobe" }),
+        ];
+        expect(detectRecurring(yearly, { nowSec: now })).toEqual([]);
+        expect(
+          detectRecurring(yearly, { nowSec: now, lookbackDays: Infinity })[0]
+            ?.cadence,
+        ).toBe("yearly");
+      });
     });
   });
 });

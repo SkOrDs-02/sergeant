@@ -129,6 +129,40 @@ export const Danger: Story = {
   args: { value: 102, max: 100, variant: "danger" },
 };
 
+/**
+ * `onHero` — кільце на `Card prominence="hero"`. Дефолтні `--c-chart-*`
+ * тюнуються під кремовий `bg-bg`, а hero-поверхня темна в усіх темах, тож
+ * без прапорця дуга зливається із заливкою: `chart-nutrition` (lime-800) —
+ * це буквально стартовий стоп світлого nutrition-градієнта. Ліва пара —
+ * баг, права — фікс.
+ */
+export const OnHero: Story = {
+  render: () => (
+    <div className="bg-hero-grad-nutrition rounded-2xl p-6 flex gap-8">
+      {([false, true] as const).map((onHero) => (
+        <div key={String(onHero)} className="flex items-end gap-4">
+          <ProgressRing
+            value={72}
+            variant="nutrition"
+            size="lg"
+            onHero={onHero}
+          />
+          <ProgressRing
+            value={45}
+            variant="warning"
+            size="sm"
+            incomplete
+            onHero={onHero}
+          />
+          <span className="text-xs text-hero-ink">
+            {onHero ? "onHero" : "default"}
+          </span>
+        </div>
+      ))}
+    </div>
+  ),
+};
+
 /** Без видимого label — тільки візуальна дуга (текст приховано). */
 export const HiddenLabel: Story = {
   args: { value: 40, showPercent: false, "aria-label": "40 з 100" },

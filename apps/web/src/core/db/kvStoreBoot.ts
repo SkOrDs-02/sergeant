@@ -1,7 +1,7 @@
 /**
  * Bootstrap wiring for the SQLite-backed `kv_store` warm-cache.
  *
- * Stage 9 / PR #062 of `docs/planning/storage-roadmap.md`. PR #060
+ * Stage 9 / PR #062 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. PR #060
  * landed the per-device `kv_store` SQLite table + bundled migration;
  * PR #061 landed the platform-agnostic `createSqliteKVStore` factory
  * with the warm-cache adapter pattern. This module is the web-side
@@ -28,33 +28,70 @@
  * the app continues with the LS-backed fallback in `resolveStore()`.
  */
 
-import { eq } from "drizzle-orm";
-import {
-  KV_STORE_CLIENT_MIGRATIONS,
-  KV_STORE_MIGRATIONS_TABLE,
-} from "@sergeant/db-schema/sqlite";
-import { kvStore } from "@sergeant/db-schema/sqlite";
-import {
-  createSqliteAdapter,
-  type SqliteMigrationClient,
-} from "@sergeant/db-schema/migrate/sqlite";
-// Import the runner from the dedicated `./migrate/runner` sub-path
-// rather than `./migrate`. The umbrella `./migrate` entry re-exports
-// `loadMigrationFiles` from `./files.js`, which top-level imports
-// `node:fs` / `node:path` and breaks Vite's browser bundle (white
-// screen on boot). The runner itself is dialect- and platform-free.
-// See routine/lib/clientMigrate.ts for the same pattern.
-import { runMigrations } from "@sergeant/db-schema/migrate/runner";
+// AI-DANGER: усі DB-залежності тут — ЛИШЕ `import type`.
+// Значення підвантажуються через `loadDbDeps()` нижче. Мета: прибрати
+// рантайм drizzle-orm (69 kB brotli, chunk `vendor-sqlite`) з eager-графа.
+// Раніше тут стояли статичні імпорти `drizzle-orm`, `@sergeant/db-schema/sqlite`,
+// `@sergeant/db-schema/migrate/{runner,sqlite}` і `./sqlite.js` — саме вони
+// робили увесь drizzle-стек критичним шляхом, бо `main.tsx` статично
+// імпортує `bootstrapKvStore` з цього файлу.
+import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 import type {
   BroadcastChannelLike,
   KVStore,
+  SqliteKVStore,
   SqliteKVStoreBoot,
   SqliteKVStoreClient,
 } from "@sergeant/shared";
 import { createSqliteKVStore } from "@sergeant/shared";
 import { addSentryBreadcrumb } from "../observability/sentry.js";
 import { logger } from "@shared/lib";
-import { getSqliteDb, type SqliteDbHandle } from "./sqlite.js";
+import type { SqliteDbHandle } from "./sqlite.js";
+
+interface KvStoreDbDeps {
+  readonly eq: typeof import("drizzle-orm").eq;
+  readonly kvStore: typeof import("@sergeant/db-schema/sqlite").kvStore;
+  readonly KV_STORE_CLIENT_MIGRATIONS: typeof import("@sergeant/db-schema/sqlite").KV_STORE_CLIENT_MIGRATIONS;
+  readonly KV_STORE_MIGRATIONS_TABLE: typeof import("@sergeant/db-schema/sqlite").KV_STORE_MIGRATIONS_TABLE;
+  readonly createSqliteAdapter: typeof import("@sergeant/db-schema/migrate/sqlite").createSqliteAdapter;
+  readonly runMigrations: typeof import("@sergeant/db-schema/migrate/runner").runMigrations;
+  readonly getSqliteDb: typeof import("./sqlite.js").getSqliteDb;
+}
+
+let dbDepsPromise: Promise<KvStoreDbDeps> | null = null;
+
+/**
+ * Lazily resolve every drizzle / db-schema value this module needs.
+ *
+ * The runner comes from the dedicated `./migrate/runner` sub-path rather
+ * than `./migrate`: the umbrella entry re-exports `loadMigrationFiles`
+ * from `./files.js`, which top-level imports `node:fs` / `node:path` and
+ * breaks Vite's browser bundle (white screen on boot). The runner itself
+ * is dialect- and platform-free. See routine/lib/clientMigrate.ts for the
+ * same pattern.
+ */
+function loadDbDeps(): Promise<KvStoreDbDeps> {
+  dbDepsPromise ??= (async () => {
+    const [drizzleOrm, schema, migrateSqlite, migrateRunner, sqliteModule] =
+      await Promise.all([
+        import("drizzle-orm"),
+        import("@sergeant/db-schema/sqlite"),
+        import("@sergeant/db-schema/migrate/sqlite"),
+        import("@sergeant/db-schema/migrate/runner"),
+        import("./sqlite.js"),
+      ]);
+    return {
+      eq: drizzleOrm.eq,
+      kvStore: schema.kvStore,
+      KV_STORE_CLIENT_MIGRATIONS: schema.KV_STORE_CLIENT_MIGRATIONS,
+      KV_STORE_MIGRATIONS_TABLE: schema.KV_STORE_MIGRATIONS_TABLE,
+      createSqliteAdapter: migrateSqlite.createSqliteAdapter,
+      runMigrations: migrateRunner.runMigrations,
+      getSqliteDb: sqliteModule.getSqliteDb,
+    };
+  })();
+  return dbDepsPromise;
+}
 
 /**
  * Channel name for cross-tab `kv_store` writes. Stable so `apps/web`
@@ -116,7 +153,38 @@ let activeSqliteClient: SqliteKVStoreClient | null = null;
  * adapter-construction call site (which would couple the LS-only test
  * suite to the SQLite-WASM module-init path).
  */
-let activeSqliteKvStore: KVStore | null = null;
+let activeSqliteKvStore: SqliteKVStore | null = null;
+
+/**
+ * Handle, з якого заповнено поточний warm-cache. Бут стартує ще на
+ * анонімному розділі (сесія невідома), тож після входу
+ * {@link refreshKvWarmCache} порівнює з ним живий handle і перечитує кеш,
+ * лише якщо розділ справді інший.
+ */
+let scannedHandle: SqliteDbHandle | null = null;
+
+/**
+ * Ключі, записані, поки активним був анонімний розділ. Такий запис лягає в
+ * `anon`, тож при перемиканні на акаунт його треба донести в розділ
+ * користувача, інакше перечитаний кеш його затре. Стартуємо з `true`, бо бут
+ * завжди на `anon`. Прапорець гаситься лише в момент застосування
+ * перечитаного кешу: запис між перемиканням і сканом інакше загубився б.
+ *
+ * ponytail: множина росте, поки людина не увійде; стеля - кількість різних
+ * KV-ключів застосунку.
+ */
+let anonPartitionActive = true;
+const anonWrites = new Set<string>();
+
+/** Лічильник перемикань: перечитування, яке наздогнав новий світч, не застосовується. */
+let partitionGeneration = 0;
+let refreshQueue: Promise<void> = Promise.resolve();
+let bootInFlight: Promise<unknown> = Promise.resolve();
+let bootSource: BootstrapKvStoreOptions = {};
+
+function noteKvWrite(key: string): void {
+  if (anonPartitionActive) anonWrites.add(key);
+}
 
 /**
  * Drop the in-memory SQLite warm-cache and unbind the active adapter.
@@ -137,12 +205,144 @@ export function resetKvStoreBoot(): void {
   kvStoreBoot.loaded = false;
   activeSqliteClient = null;
   activeSqliteKvStore = null;
+  scannedHandle = null;
+  anonWrites.clear();
 }
 
 /** Test-only escape hatch — exported so unit tests can reset the singleton. */
 export function __resetKvStoreBootForTests(): void {
   resetKvStoreBoot();
   kvStoreCrossTab = null;
+  anonPartitionActive = true;
+  partitionGeneration = 0;
+  refreshQueue = Promise.resolve();
+  bootInFlight = Promise.resolve();
+  bootSource = {};
+}
+
+/**
+ * Синхронна позначка «активний тепер анонімний розділ». Кличеться з
+ * `switchSqliteUser` одразу при зміні ключа, до закриття старого handle:
+ * записи з цієї миті вже летять в `anon`.
+ */
+export function markKvAnonPartition(): void {
+  partitionGeneration += 1;
+  anonPartitionActive = true;
+}
+
+/**
+ * Перечитує warm-cache з активного розділу після перемикання на акаунт.
+ * Ніколи не кидає. Черга серіалізує перечитування, тож швидкі світчі
+ * застосовуються по порядку.
+ */
+export function refreshKvWarmCache(): Promise<void> {
+  partitionGeneration += 1;
+  const generation = partitionGeneration;
+  refreshQueue = refreshQueue.then(() =>
+    refreshFromActivePartition(generation),
+  );
+  return refreshQueue;
+}
+
+async function refreshFromActivePartition(generation: number): Promise<void> {
+  // Світч може прийти, поки перший скан буту ще летить: без цього очікування
+  // бут дописав би в кеш анонімні рядки вже після перечитування.
+  await bootInFlight;
+  const store = activeSqliteKvStore;
+  const client = activeSqliteClient;
+  if (!kvStoreBoot.loaded || !store || !client) {
+    anonPartitionActive = false;
+    anonWrites.clear();
+    return;
+  }
+  let handle: SqliteDbHandle;
+  let rows: readonly { key: string; value: string }[] | null = null;
+  try {
+    const deps = await loadDbDeps();
+    handle = await (bootSource.getDb ?? deps.getSqliteDb)();
+    if (handle !== scannedHandle) {
+      await deps.runMigrations({
+        adapter: deps.createSqliteAdapter(handle.migrationClient()),
+        files: deps.KV_STORE_CLIENT_MIGRATIONS,
+        tableName: deps.KV_STORE_MIGRATIONS_TABLE,
+      });
+      rows = await handle.drizzle
+        .select({ key: deps.kvStore.key, value: deps.kvStore.value })
+        .from(deps.kvStore);
+    }
+  } catch (err) {
+    reportKvStoreError("kv-store-refresh", err);
+    return;
+  }
+  if (generation !== partitionGeneration || store !== activeSqliteKvStore) {
+    return;
+  }
+  anonPartitionActive = false;
+  if (rows === null) {
+    anonWrites.clear();
+    return;
+  }
+
+  const next = new Map(rows.map((row) => [row.key, row.value]));
+  seedFromLocalStorage(next, resolveSeedStorage(bootSource.localStorage));
+  // Ранній запис зроблено в цьому сеансі сторінки, тож він новіший за
+  // збережене в розділі користувача і перемагає його.
+  const carried = Array.from(anonWrites, (key) => ({
+    key,
+    value: kvStoreBoot.warmCache.get(key),
+  }));
+  anonWrites.clear();
+  for (const { key, value } of carried) {
+    if (value === undefined) next.delete(key);
+    else next.set(key, value);
+  }
+  scannedHandle = handle;
+  store.replaceCache(next);
+  for (const { key, value } of carried) {
+    void Promise.resolve()
+      .then(() =>
+        value === undefined
+          ? client.remove(key)
+          : client.upsert({ key, value, updatedAt: Date.now() }),
+      )
+      .catch((err: unknown) => reportKvStoreError("kv-store-carry", err));
+  }
+}
+
+function reportKvStoreError(stage: string, err: unknown): void {
+  logger.warn(`[kvStoreBoot] ${stage} failed`, err);
+  addSentryBreadcrumb({
+    category: "storage",
+    level: "warning",
+    message: `kvStoreBoot: ${stage} failed`,
+    data: { error: err instanceof Error ? err.message : String(err) },
+  });
+}
+
+function resolveSeedStorage(
+  override: Storage | null | undefined,
+): Storage | null {
+  return override !== undefined
+    ? override
+    : ((globalThis as { localStorage?: Storage }).localStorage ?? null);
+}
+
+function seedFromLocalStorage(
+  cache: Map<string, string>,
+  ls: Storage | null,
+): void {
+  if (ls === null) return;
+  try {
+    for (let i = 0; i < ls.length; i++) {
+      const key = ls.key(i);
+      if (key !== null && !cache.has(key)) {
+        const value = ls.getItem(key);
+        if (value !== null) cache.set(key, value);
+      }
+    }
+  } catch {
+    /* localStorage не перелічується: пропускаємо */
+  }
 }
 
 /**
@@ -174,21 +374,57 @@ export function getActiveSqliteKvStore(): KVStore | null {
 }
 
 /**
- * Build the {@link SqliteKVStoreClient} bound to the live SQLite
- * handle. Drizzle's `.onConflictDoUpdate` resolves the upsert in one
+ * Build the {@link SqliteKVStoreClient} over the live SQLite handle.
+ * Drizzle's `.onConflictDoUpdate` resolves the upsert in one
  * round-trip; a sync-throw or rejected promise routes through
  * `createSqliteKVStore`'s `onWriteError` hook.
+ *
+ * The handle is re-resolved through `getDb` on EVERY write, not
+ * captured once. `AuthContext` перемикає SQLite-партицію на кожен
+ * sign-in/sign-up (`setSqliteUser` → закриває старий handle), а цей
+ * клієнт живе довше за партицію: клієнт, привʼязаний до знімка handle,
+ * після логіну сипав «DB has been closed» на КОЖЕН upsert аж до hard
+ * reload — губились analytics ring-buffer, quick-stats і диміси
+ * банерів (аудит 2026-08-04, знахідка 2). Свіжий handle нової партиції
+ * ще не бачив kv-міграцій (їх ганяє лише bootstrap), тож перед першим
+ * записом у новий handle вони проганяються тут — idempotent, один раз
+ * на handle.
  *
  * Exported so PR #063 can pass this into
  * `createSqliteKVStore({ sqlite })` at adapter-construction time.
  */
 export function makeSqliteKvStoreClient(
   handle: SqliteDbHandle,
+  getDb?: () => Promise<SqliteDbHandle>,
 ): SqliteKVStoreClient {
+  let current = handle;
+  // The boot-time handle already ran KV migrations inside bootstrapKvStore.
+  const migrated = new WeakSet<SqliteDbHandle>([handle]);
+  const resolveHandle = async (
+    deps: KvStoreDbDeps,
+  ): Promise<SqliteDbHandle> => {
+    const live = await (getDb ?? deps.getSqliteDb)();
+    if (live !== current) {
+      if (!migrated.has(live)) {
+        await deps.runMigrations({
+          adapter: deps.createSqliteAdapter(live.migrationClient()),
+          files: deps.KV_STORE_CLIENT_MIGRATIONS,
+          tableName: deps.KV_STORE_MIGRATIONS_TABLE,
+        });
+        migrated.add(live);
+      }
+      current = live;
+    }
+    return current;
+  };
   return {
     async upsert(row) {
+      noteKvWrite(row.key);
+      const deps = await loadDbDeps();
+      const { kvStore } = deps;
+      const db = await resolveHandle(deps);
       const updatedAt = new Date(row.updatedAt);
-      await handle.drizzle
+      await db.drizzle
         .insert(kvStore)
         .values({
           key: row.key,
@@ -201,7 +437,11 @@ export function makeSqliteKvStoreClient(
         });
     },
     async remove(key) {
-      await handle.drizzle.delete(kvStore).where(eq(kvStore.key, key));
+      noteKvWrite(key);
+      const deps = await loadDbDeps();
+      const { kvStore, eq } = deps;
+      const db = await resolveHandle(deps);
+      await db.drizzle.delete(kvStore).where(eq(kvStore.key, key));
     },
   };
 }
@@ -267,8 +507,16 @@ export interface BootstrapKvStoreOptions {
  * cache (e.g. HMR re-runs `main.tsx`), the second call returns the
  * existing state without re-querying SQLite.
  */
-export async function bootstrapKvStore(
+export function bootstrapKvStore(
   opts: BootstrapKvStoreOptions = {},
+): Promise<BootstrapKvStoreResult> {
+  const run = runBootstrap(opts);
+  bootInFlight = run;
+  return run;
+}
+
+async function runBootstrap(
+  opts: BootstrapKvStoreOptions,
 ): Promise<BootstrapKvStoreResult> {
   if (kvStoreBoot.loaded) {
     return {
@@ -279,17 +527,7 @@ export async function bootstrapKvStore(
     };
   }
 
-  const onError =
-    opts.onError ??
-    ((stage, err) => {
-      logger.warn(`[kvStoreBoot] ${stage} failed`, err);
-      addSentryBreadcrumb({
-        category: "storage",
-        level: "warning",
-        message: `kvStoreBoot: ${stage} failed`,
-        data: { error: err instanceof Error ? err.message : String(err) },
-      });
-    });
+  const onError = opts.onError ?? reportKvStoreError;
 
   // Cross-tab BroadcastChannel: best-effort. Construction failure
   // (Safari Private mode, missing API) silently degrades to single-tab.
@@ -297,11 +535,14 @@ export async function bootstrapKvStore(
     kvStoreCrossTab = resolveBroadcastChannel(opts.broadcastChannel);
   }
 
-  const getDb = opts.getDb ?? getSqliteDb;
-
+  let deps: KvStoreDbDeps;
   let handle: SqliteDbHandle;
   try {
-    handle = await getDb();
+    // The lazy chunk resolves before the DB handle so a module-load
+    // failure lands on the same `sqlite-init` fallback path as an
+    // OPFS/WASM init failure — both leave `loaded = false` + LS fallback.
+    deps = await loadDbDeps();
+    handle = await (opts.getDb ?? deps.getSqliteDb)();
   } catch (err) {
     onError("sqlite-init", err);
     return {
@@ -311,13 +552,15 @@ export async function bootstrapKvStore(
       loaded: false,
     };
   }
+  const { kvStore } = deps;
+  const getDb = opts.getDb;
 
   const migrationClient: SqliteMigrationClient = handle.migrationClient();
   try {
-    await runMigrations({
-      adapter: createSqliteAdapter(migrationClient),
-      files: KV_STORE_CLIENT_MIGRATIONS,
-      tableName: KV_STORE_MIGRATIONS_TABLE,
+    await deps.runMigrations({
+      adapter: deps.createSqliteAdapter(migrationClient),
+      files: deps.KV_STORE_CLIENT_MIGRATIONS,
+      tableName: deps.KV_STORE_MIGRATIONS_TABLE,
     });
   } catch (err) {
     onError("kv-store-migration", err);
@@ -356,29 +599,15 @@ export async function bootstrapKvStore(
   //      (e.g. after a failed migration run).
   // We only populate the in-memory warm cache — no SQLite DB writes here.
   // Pass `opts.localStorage = null` to disable (e.g. in unit tests).
-  const lsOverride = opts.localStorage;
-  const lsToSeed =
-    lsOverride !== undefined
-      ? lsOverride
-      : ((globalThis as { localStorage?: Storage }).localStorage ?? null);
-  if (lsToSeed !== null) {
-    try {
-      for (let i = 0; i < lsToSeed.length; i++) {
-        const key = lsToSeed.key(i);
-        if (key !== null && !kvStoreBoot.warmCache.has(key)) {
-          const value = lsToSeed.getItem(key);
-          if (value !== null) {
-            kvStoreBoot.warmCache.set(key, value);
-          }
-        }
-      }
-    } catch {
-      /* localStorage enumeration unavailable — skip */
-    }
-  }
+  seedFromLocalStorage(
+    kvStoreBoot.warmCache,
+    resolveSeedStorage(opts.localStorage),
+  );
 
-  const sqliteClient = makeSqliteKvStoreClient(handle);
+  const sqliteClient = makeSqliteKvStoreClient(handle, getDb);
 
+  scannedHandle = handle;
+  bootSource = opts;
   kvStoreBoot.loaded = true;
   activeSqliteClient = sqliteClient;
   activeSqliteKvStore = createSqliteKVStore({

@@ -17,36 +17,47 @@
  */
 
 import { kyivMondayStartMs, toLocalISODate } from "@sergeant/shared";
+import { compareIsoDesc } from "../../lib/workoutStats.js";
 
 import {
   epley1rm,
   suggestNextSet as suggestNextSetJs,
 } from "../../lib/workoutStats.js";
+import type {
+  SuggestNextSetOptions,
+  SuggestedNextSetResult,
+} from "../../lib/workoutStats.js";
 import type { Workout, WorkoutItem, WorkoutSet } from "./types.js";
 
 /** Typed wrapper around the legacy JS `suggestNextSet` helper. */
-export interface SuggestedNextSet {
-  weightKg: number;
-  reps: number;
-  altWeightKg?: number | null;
-  altReps?: number | null;
-}
+export type SuggestedNextSet = SuggestedNextSetResult;
 
 /**
  * Typed re-export of {@link suggestNextSetJs} so TS consumers (mobile,
  * web) get a proper shape without resorting to `any`. Behaviour is
  * identical to the legacy helper; `null` means "not enough data".
+ * `options` передаються далі: діапазон повторів і м'який режим — частина
+ * того самого контракту підказки.
  */
 export function suggestExerciseNextSet(
   lastBestSet: Pick<WorkoutSet, "weightKg" | "reps"> | null | undefined,
+  options: SuggestNextSetOptions = {},
 ): SuggestedNextSet | null {
-  const result = suggestNextSetJs(
-    lastBestSet ?? null,
-  ) as SuggestedNextSet | null;
-  return result ?? null;
+  return suggestNextSetJs(lastBestSet ?? null, options);
 }
 
 const WEEK_BUCKET_CAP = 12;
+
+/**
+ * Наскільки поточний рівень має просісти проти піка, щоб це називалось
+ * регресом, а не шумом.
+ *
+ * ⚠️ Інженерний дефолт (канон числа не дає). Epley-1RM чутлива до одного
+ * повтору — 100×5 і 100×4 дають 116.7 і 113.3, тобто −3% на тому самому
+ * робочому вазі. Без порогу борд писав би «регрес» майже щотижня і
+ * перетворився б на шум, який перестають читати.
+ */
+export const REGRESSION_NOTICE_PCT = 0.05;
 
 function toNum(v: unknown): number {
   const n = Number(v);
@@ -95,6 +106,28 @@ export interface ExerciseBestSummary {
    * every prior workout's best 1RM. Used to surface the "new PR" banner.
    */
   isNewPR: boolean;
+  /**
+   * ISO timestamp of the most recent **strength** session for this exercise.
+   * `null` when there is no strength data.
+   *
+   * AI-CONTEXT: це вхід старіння 1RM (канон `fizruk.md` §6) — саме давність
+   * останнього підходу, а не давність піка, вирішує, чи безпечно рахувати
+   * робочу вагу від рекорду. Див. `oneRmAging.ts`.
+   */
+  lastStrengthAt: string | null;
+  /** Найкраща 1RM у ОСТАННЬОМУ тренуванні (0 — силових сетів там не було). */
+  lastWorkoutBest1rm: number;
+  /**
+   * Поточний рівень просів проти піка більше, ніж на
+   * {@link REGRESSION_NOTICE_PCT}.
+   *
+   * Дзеркало `isNewPR`: борд мав реакцію лише на рух ВГОРУ, тож регрес був
+   * невидимий (канон §6 — «PR-борд розуміє регрес»). Це констатація, не осуд:
+   * копія на цьому прапорі не має звучати як докір.
+   */
+  isRegression: boolean;
+  /** Відхилення поточного рівня від піка у відсотках (≤ 0 — просів). */
+  deltaVsPeakPct: number;
 }
 
 /** Bucketed point on a weekly chart. */
@@ -169,16 +202,9 @@ export function collectExerciseHistory(
       out.push({ workout: w, item: it });
     }
   }
-  out.sort((a, b) => {
-    const at = a.workout?.startedAt ? Date.parse(a.workout.startedAt) : NaN;
-    const bt = b.workout?.startedAt ? Date.parse(b.workout.startedAt) : NaN;
-    const aOk = Number.isFinite(at);
-    const bOk = Number.isFinite(bt);
-    if (!aOk && !bOk) return 0;
-    if (!aOk) return 1;
-    if (!bOk) return -1;
-    return bt - at;
-  });
+  out.sort((a, b) =>
+    compareIsoDesc(a.workout?.startedAt, b.workout?.startedAt),
+  );
   return out;
 }
 
@@ -197,6 +223,7 @@ export function computeExerciseBest(
   let lastTopEst = 0;
   let lastWorkoutBest1rm = 0;
   let priorBest1rm = 0;
+  let lastStrengthAt: string | null = null;
 
   // Під strict-index `history[0]` має тип `T | undefined`, тому
   // явно проводимо через optional-chain — зберігаємо стару семантику
@@ -208,6 +235,16 @@ export function computeExerciseBest(
     if (item?.type !== "strength") continue;
     const isLatest = workout?.id === lastWorkoutId;
     const sets = Array.isArray(item.sets) ? item.sets : [];
+    // Історія відсортована новішим-першим, тож перша силова позиція і є
+    // остання сесія. Порівнюємо рядки, а не беремо `history[0]`: останнє
+    // тренування могло бути кардіо, і тоді 1RM старіє від силового, а не
+    // від будь-якого запису.
+    const startedAt = workout?.startedAt;
+    if (typeof startedAt === "string" && startedAt.length > 0) {
+      if (lastStrengthAt === null || startedAt > lastStrengthAt) {
+        lastStrengthAt = startedAt;
+      }
+    }
     for (const s of sets) {
       const est = epley1rm(s.weightKg, s.reps);
       if (est > best1rm) {
@@ -235,7 +272,25 @@ export function computeExerciseBest(
   }
 
   const isNewPR = lastWorkoutBest1rm > 0 && lastWorkoutBest1rm > priorBest1rm;
-  return { best1rm, bestSet, lastTop: lastTopSet, isNewPR };
+  const deltaVsPeakPct =
+    best1rm > 0 && lastWorkoutBest1rm > 0
+      ? Math.round(((lastWorkoutBest1rm - best1rm) / best1rm) * 100)
+      : 0;
+  const isRegression =
+    lastWorkoutBest1rm > 0 &&
+    best1rm > 0 &&
+    lastWorkoutBest1rm < best1rm * (1 - REGRESSION_NOTICE_PCT);
+
+  return {
+    best1rm,
+    bestSet,
+    lastTop: lastTopSet,
+    isNewPR,
+    lastStrengthAt,
+    lastWorkoutBest1rm,
+    isRegression,
+    deltaVsPeakPct,
+  };
 }
 
 /**

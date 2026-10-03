@@ -1,8 +1,27 @@
 import {
-  createHabit as routineCreateHabit,
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
+// ADR-0078: межа доби відмітки — годинник ПРИСТРОЮ. У цьому ж файлі поруч
+// живе `getKyivDayKey` (він доречний для звітних періодів), тож підставити
+// його сюди було б природно і хибно — для користувача на захід від Києва
+// «завтра» настало б на добу раніше, ніж у нього на екрані.
+import { anchoredCompletionBounds } from "../../../modules/routine/lib/dayAnchor";
+import { persistRoutineState } from "./routinePersistence";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import {
+  applyCreateHabit,
+  applyPauseHabitBetween,
+  applyResumeHabitFrom,
+  applySetHabitSkip,
+  applyToggleHabitCompletion,
+  flexibleMaxStreakAllTime,
+  flexibleStreakBreakdown,
+  habitCompletionRate,
+  habitScheduledOnDate,
+  resolveHabitGlyph,
+  upgradeHabitGlyph,
+} from "@sergeant/routine-domain";
 import type {
   MarkHabitDoneAction,
   CreateHabitAction,
@@ -19,92 +38,90 @@ import type {
   ChatAction,
   ChatActionResult,
 } from "./types";
-
-// Mon-first 0..6 — matches `@sergeant/routine-domain` `isoWeekdayFromDateKey`
-// and `WEEKDAY_LABELS`. Both English short names and Ukrainian short names
-// are accepted from the LLM tool input.
-const DAY_NAME_TO_INDEX: Readonly<Record<string, number>> = {
-  mon: 0,
-  tue: 1,
-  wed: 2,
-  thu: 3,
-  fri: 4,
-  sat: 5,
-  sun: 6,
-  пн: 0,
-  вт: 1,
-  ср: 2,
-  чт: 3,
-  пт: 4,
-  сб: 5,
-  нд: 6,
-};
-
-const WEEKDAY_LABEL_UK: readonly string[] = [
-  "Пн",
-  "Вт",
-  "Ср",
-  "Чт",
-  "Пт",
-  "Сб",
-  "Нд",
-];
-
-function normalizeDayToken(token: unknown): number | null {
-  if (typeof token !== "string") return null;
-  const key = token.trim().toLowerCase();
-  if (!key) return null;
-  const idx = DAY_NAME_TO_INDEX[key];
-  return typeof idx === "number" ? idx : null;
-}
+import {
+  DAY_MS,
+  habitTrendText,
+  WEEKDAY_LABEL_UK,
+  normalizeDayToken,
+  normalizeHabitId,
+  isDateKey,
+} from "./routineActions.helpers";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function handleRoutineAction(
   action: ChatAction,
 ): ChatActionResult | undefined {
   switch (action.name) {
     case "mark_habit_done": {
-      const { habit_id, date: habitDate } = (action as MarkHabitDoneAction)
-        .input;
+      const { habit_id: rawHabitId, date: habitDate } = (
+        action as MarkHabitDoneAction
+      ).input;
+      const habitId = normalizeHabitId(rawHabitId);
       const routineState = loadRoutineState();
-      const completions: Record<string, string[]> = {
-        ...routineState.completions,
-      };
-      const now = new Date();
-      const targetDate =
-        habitDate ||
-        [
-          now.getFullYear(),
-          String(now.getMonth() + 1).padStart(2, "0"),
-          String(now.getDate()).padStart(2, "0"),
-        ].join("-");
-      const prevArr = Array.isArray(completions[habit_id])
-        ? completions[habit_id].slice()
+      const habit = routineState.habits.find((h) => h.id === habitId);
+      // Validate before writing: an unmatched id (model passed a stale or
+      // `id:`-prefixed value) must not silently write a phantom completion
+      // key and then claim success (QA D-005).
+      if (!habit) {
+        return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}", перевір список звичок.`;
+      }
+      // Дефолт беремо з ТІЄЇ САМОЇ межі, якою редюсер відсікає майбутнє,
+      // тож неявна ціль не може бути ним відхилена за побудовою. Доти тут
+      // стояв `getKyivDayKey()` — після появи межі (PR-R3) він став
+      // регресією: на захід від Києва ввечері київська доба вже наступна,
+      // ціль ставала «майбутньою», і чат відмовляв. Пін — тест «біля межі».
+      const targetDate = habitDate || anchoredCompletionBounds().todayKey;
+      const habitLabel = habit.name || habitId;
+      const prevArr = Array.isArray(routineState.completions[habitId])
+        ? routineState.completions[habitId]
         : [];
       const alreadyDone = prevArr.includes(targetDate);
-      const arr = alreadyDone ? prevArr : [...prevArr, targetDate];
-      completions[habit_id] = arr;
-      saveRoutineState({ ...routineState, completions });
-      const habit = routineState.habits.find((h) => h.id === habit_id);
-      const result = `Звичку "${habit?.name || habit_id}" відмічено як виконану (${targetDate})`;
-      // Якщо звичка вже була в completions до виклику — undo нічого не
-      // робить (no-op); інакше прибираємо `targetDate` зі списку.
+      const result = `Звичку "${habitLabel}" відмічено як виконану (${targetDate})`;
+      // Ідемпотентно: якщо вже відмічено — жодного запису, той самий
+      // no-op, що й до фіксу.
       if (alreadyDone) {
-        return result;
+        return { result, confirm: persistRoutineState(routineState) };
       }
+      // LOG-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+      // домен-редʼюсер, а не ручний запис у `completions`:
+      // `applyToggleHabitCompletion` (1) не пише незаплановий день (той
+      // самий `habitScheduledOnDate`-гейт, що чекбокс в UI) і (2) знімає
+      // «не зміг з причиною» на цю дату (канон §5 — стани взаємовиключні).
+      const previousSkip = routineState.skips?.[habitId]?.[targetDate];
+      const nextState = applyToggleHabitCompletion(
+        routineState,
+        habitId,
+        targetDate,
+        anchoredCompletionBounds(),
+      );
+      if (nextState === routineState) {
+        return `Звичку "${habitLabel}" не заплановано на ${targetDate}, тому не відмічаю.`;
+      }
+      const confirm = persistRoutineState(nextState);
       return {
         result,
+        confirm,
         undo: () => {
           const cur = loadRoutineState();
-          const curCompletions = { ...cur.completions };
-          const list = Array.isArray(curCompletions[habit_id])
-            ? curCompletions[habit_id].filter((d) => d !== targetDate)
-            : [];
-          if (list.length > 0) {
-            curCompletions[habit_id] = list;
-          } else {
-            delete curCompletions[habit_id];
-          }
-          saveRoutineState({ ...cur, completions: curCompletions });
+          // Toggle назад знімає саме цю відмітку (idempotent: якщо стан
+          // тим часом змінили ще раз, `applyToggleHabitCompletion` все одно
+          // діє коректно на актуальному знімку).
+          const reverted = applyToggleHabitCompletion(
+            cur,
+            habitId,
+            targetDate,
+            anchoredCompletionBounds(),
+          );
+          const restored = previousSkip
+            ? applySetHabitSkip(
+                reverted,
+                habitId,
+                targetDate,
+                previousSkip.reason,
+                previousSkip.note,
+              )
+            : reverted;
+          saveRoutineState(restored);
         },
       };
     }
@@ -127,6 +144,17 @@ export function handleRoutineAction(
       ]);
       const rec =
         recurrence && allowedRec.has(recurrence) ? recurrence : "daily";
+      // Мовчазний фолбек на "daily" був брехнею в бік успіху: на прохання
+      // «тричі на тиждень» (`flexible` — шосте значення енума, яке цей тул
+      // не вміє) звичка створювалась ЩОДЕННОЮ, а відповідь рапортувала
+      // успіх. Домен має шість розкладів, тул — пʼять; різницю треба
+      // називати вголос, а не ховати (знахідка PR-R9 огляду 2026-09-13).
+      const recNote =
+        recurrence && !allowedRec.has(recurrence)
+          ? ` Розклад «${recurrence}» через чат не ставлю, тож звичка поки щоденна. Постав гнучкий розклад у модулі «Рутина».`
+          : "";
+      // Mon-first 0..6 — passthrough без remap; anchor задає опис `weekdays`
+      // у `apps/server/src/modules/chat/toolDefs/routine.ts` (audit E-5).
       const wdays = Array.isArray(weekdays)
         ? weekdays
             .map((d) => Number(d))
@@ -137,13 +165,16 @@ export function handleRoutineAction(
           ? String(timeOfDay).trim().padStart(5, "0")
           : "";
       const stateBefore = loadRoutineState();
-      const nextState = routineCreateHabit(stateBefore, {
+      const nextState = applyCreateHabit(stateBefore, {
         name: trimmed,
-        emoji: emoji || "✓",
+        // `emoji` з tool-call може бути й emoji, і slug — reducer
+        // нормалізує обидва (`@sergeant/routine-domain` → `glyphs.ts`).
+        emoji: resolveHabitGlyph(emoji),
         recurrence: rec,
         weekdays: wdays && wdays.length ? wdays : undefined,
         timeOfDay: tod,
       });
+      const confirm = persistRoutineState(nextState);
       const created = nextState.habits[nextState.habits.length - 1];
       const createdId = created?.id;
       const recLabelMap: Record<string, string> = {
@@ -153,13 +184,14 @@ export function handleRoutineAction(
         monthly: "щомісяця",
         once: "разово",
       };
-      const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})`;
-      if (!createdId) return result;
+      const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})${recNote}`;
+      if (!createdId) return { result, confirm };
       // Undo тримає id (а не повний snapshot), щоб не переписувати
       // інші зміни, які можуть статися між створенням і undo
       // (інша звичка створена, completions додані, etc.).
       return {
         result,
+        confirm,
         undo: () => {
           const cur = loadRoutineState();
           const habits = Array.isArray(cur.habits)
@@ -178,7 +210,7 @@ export function handleRoutineAction(
     }
     case "create_reminder": {
       const { habit_id, time } = (action as CreateReminderAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       const t = String(time || "").trim();
       if (!id) return "Потрібен habit_id.";
       if (!/^\d{1,2}:\d{2}$/.test(t)) return "Час має бути у форматі HH:MM.";
@@ -187,28 +219,33 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const reminders = Array.isArray(habits[hIdx]!.reminderTimes)
-        ? [...habits[hIdx]!.reminderTimes]
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      const reminders = Array.isArray(habit.reminderTimes)
+        ? [...habit.reminderTimes]
         : [];
       if (reminders.includes(normTime)) {
-        return `Нагадування ${normTime} для "${habits[hIdx]!.name || id}" вже існує.`;
+        return `Нагадування ${normTime} для "${habit.name || id}" вже існує.`;
       }
       reminders.push(normTime);
       reminders.sort();
-      habits[hIdx] = { ...habits[hIdx]!, reminderTimes: reminders };
-      saveRoutineState({ ...state, habits });
-      const habitName = habits[hIdx]!.name || id;
+      habits[hIdx] = { ...habit, reminderTimes: reminders };
+      const confirm = persistRoutineState({ ...state, habits });
+      const habitName = habit.name || id;
       return {
         result: `Нагадування ${normTime} додано до "${habitName}"`,
+        confirm,
         undo: () => {
           const cur = loadRoutineState();
           const curHabits = cur.habits.slice();
           const i = curHabits.findIndex((h) => h.id === id);
           if (i < 0) return;
-          const list = Array.isArray(curHabits[i]!.reminderTimes)
-            ? curHabits[i]!.reminderTimes.filter((x) => x !== normTime)
+          const target = curHabits[i];
+          if (!target) return;
+          const list = Array.isArray(target.reminderTimes)
+            ? target.reminderTimes.filter((x) => x !== normTime)
             : [];
-          curHabits[i] = { ...curHabits[i]!, reminderTimes: list };
+          curHabits[i] = { ...target, reminderTimes: list };
           saveRoutineState({ ...cur, habits: curHabits });
         },
       };
@@ -217,7 +254,7 @@ export function handleRoutineAction(
       const { habit_id, date, completed } = (
         action as CompleteHabitForDateAction
       ).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       const d = String(date || "").trim();
       if (!id) return "Потрібен habit_id.";
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d))
@@ -226,68 +263,108 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      const completions: Record<string, string[]> = {
-        ...state.completions,
-      };
-      const prevList = Array.isArray(completions[id])
-        ? completions[id].slice()
+      const habitLabel = habit.name || id;
+      const prevArr = Array.isArray(state.completions[id])
+        ? state.completions[id]
         : [];
-      const cur = prevList.slice();
-      const has = cur.includes(d);
-      let mutated = false;
-      if (doComplete) {
-        if (!has) {
-          cur.push(d);
-          mutated = true;
-        }
-      } else if (has) {
-        const idx = cur.indexOf(d);
-        if (idx >= 0) {
-          cur.splice(idx, 1);
-          mutated = true;
-        }
+      const has = prevArr.includes(d);
+      const result = `Звичку "${habitLabel}" ${doComplete ? "відмічено" : "знято з позначки"} на ${d}`;
+      // Уже в бажаному стані — no-op, та сама ідемпотентність, що й до фіксу.
+      if (has === doComplete) {
+        return { result, confirm: persistRoutineState(state) };
       }
-      completions[id] = cur.sort();
-      saveRoutineState({ ...state, completions });
-      const result = `Звичку "${habit.name || id}" ${doComplete ? "відмічено" : "знято з позначки"} на ${d}`;
-      if (!mutated) return result;
-      // Undo відновлює лише свою зміну (додав d → видаляє d;
-      // видалив d → возвращає d), а не переписує повний snapshot —
-      // інакше паралельні mark/unmark інших дат втратяться.
+      if (doComplete) {
+        // LOG-2 — той самий домен-редʼюсер, що й `mark_habit_done`: не
+        // пише незаплановий день, знімає «не зміг» на цю дату (канон §5).
+        const previousSkip = state.skips?.[id]?.[d];
+        const nextState = applyToggleHabitCompletion(
+          state,
+          id,
+          d,
+          anchoredCompletionBounds(),
+        );
+        if (nextState === state) {
+          return `Звичку "${habitLabel}" не заплановано на ${d}, тому не відмічаю.`;
+        }
+        const confirm = persistRoutineState(nextState);
+        return {
+          result,
+          confirm,
+          undo: () => {
+            const cur = loadRoutineState();
+            const reverted = applyToggleHabitCompletion(
+              cur,
+              id,
+              d,
+              anchoredCompletionBounds(),
+            );
+            const restored = previousSkip
+              ? applySetHabitSkip(
+                  reverted,
+                  id,
+                  d,
+                  previousSkip.reason,
+                  previousSkip.note,
+                )
+              : reverted;
+            saveRoutineState(restored);
+          },
+        };
+      }
+      // completed:false — знімаємо відмітку. Toggle прибирає незалежно від
+      // розкладу (день уже позначено — самим фактом позначки він був
+      // запланований, коли позначку ставили).
+      const confirm = persistRoutineState(
+        applyToggleHabitCompletion(state, id, d, anchoredCompletionBounds()),
+      );
       return {
         result,
+        confirm,
         undo: () => {
-          const c = loadRoutineState();
-          const cc = { ...c.completions };
-          const list = Array.isArray(cc[id]) ? cc[id].slice() : [];
-          if (doComplete) {
-            const next = list.filter((x) => x !== d);
-            if (next.length === 0) delete cc[id];
-            else cc[id] = next;
-          } else {
-            if (!list.includes(d)) {
-              cc[id] = [...list, d].sort();
-            }
-          }
-          saveRoutineState({ ...c, completions: cc });
+          const cur = loadRoutineState();
+          saveRoutineState(
+            applyToggleHabitCompletion(cur, id, d, anchoredCompletionBounds()),
+          );
         },
       };
     }
     case "archive_habit": {
       const { habit_id, archived } = (action as ArchiveHabitAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       const doArchive = archived !== false;
       if (!id) return "Потрібен habit_id.";
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const idx = habits.findIndex((h) => h.id === id);
       if (idx < 0) return `Звичку ${id} не знайдено.`;
-      if (!!habits[idx]!.archived === doArchive) {
-        return `Звичку "${habits[idx]!.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
+      const habit = habits[idx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      if (!!habit.archived === doArchive) {
+        return `Звичку "${habit.name || id}" вже ${doArchive ? "заархівовано" : "активна"}.`;
       }
-      habits[idx] = { ...habits[idx]!, archived: doArchive };
-      saveRoutineState({ ...state, habits });
-      return `Звичку "${habits[idx]!.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`;
+      habits[idx] = { ...habit, archived: doArchive };
+      const confirm = persistRoutineState({ ...state, habits });
+      // Рішення founder-а #8: оборотні дії виконуються одразу, але з
+      // кнопкою «скасувати». Архівація оборотна за визначенням (той самий
+      // інструмент приймає `archived: false`), тож підтвердження їй не
+      // потрібне — потрібен undo. Читаємо стан заново, а не замикаємось на
+      // `state`: між дією і натисканням undo користувач міг змінити інші
+      // звички, і запис старого знімка стер би ті зміни.
+      const previous = !!habit.archived;
+      return {
+        result: `Звичку "${habit.name || id}" ${doArchive ? "заархівовано" : "повернуто з архіву"}`,
+        confirm,
+        undo: () => {
+          const current = loadRoutineState();
+          const list = current.habits.slice();
+          const at = list.findIndex((h) => h.id === id);
+          if (at < 0) return;
+          const target = list[at];
+          if (!target) return;
+          list[at] = { ...target, archived: previous };
+          saveRoutineState({ ...current, habits: list });
+        },
+      };
     }
     case "add_calendar_event": {
       const { name, date, time, emoji } = (action as AddCalendarEventAction)
@@ -302,58 +379,82 @@ export function handleRoutineAction(
           ? String(time).trim().padStart(5, "0")
           : "";
       const state = loadRoutineState();
-      const nextState = routineCreateHabit(state, {
+      const nextState = applyCreateHabit(state, {
         name: evName,
-        emoji: emoji || "📅",
+        emoji: upgradeHabitGlyph(emoji) ?? "calendar-check",
         recurrence: "once",
         startDate: d,
         endDate: d,
         timeOfDay: tod,
       });
+      const confirm = persistRoutineState(nextState);
       const created = nextState.habits[nextState.habits.length - 1];
-      return `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${created?.id || "?"})`;
+      return {
+        result: `Подію "${evName}" додано на ${d}${tod ? ` о ${tod}` : ""} (id:${created?.id || "?"})`,
+        confirm,
+      };
     }
     case "edit_habit": {
       const { habit_id, name, emoji, recurrence, weekdays } = (
         action as EditHabitAction
       ).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const state = loadRoutineState();
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const updated = { ...habits[hIdx]! };
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      const updated = { ...habit };
       const changes: string[] = [];
       if (name && name.trim()) {
         updated.name = name.trim();
         changes.push(`назва → "${name.trim()}"`);
       }
-      if (emoji) {
-        updated.emoji = emoji;
-        changes.push(`емодзі → ${emoji}`);
+      const nextGlyph = upgradeHabitGlyph(emoji);
+      if (nextGlyph) {
+        updated.emoji = nextGlyph;
+        changes.push(`іконка → ${nextGlyph}`);
       }
+      // Тут фолбеку не було взагалі: непідтриманий розклад просто не
+      // потрапляв у `changes`, тож прохання зникало безслідно — а якщо
+      // поруч ішла інша зміна, відповідь ще й рапортувала успіх. Нотатка
+      // йде ОКРЕМО від `changes`, щоб не вмикати запис там, де насправді
+      // нічого не змінилось.
+      //
+      // AI-CONTEXT: набір тут ВУЖЧИЙ, ніж у `create_habit` вище — там є ще
+      // `once`. Асиметрія навмисно не вирівнюється цією правкою: додати
+      // `once` в редагування означає лишити звичку без дати, а це вже
+      // зміна поведінки, не чесності.
+      let recNote = "";
       if (recurrence) {
         const allowedRec = new Set(["daily", "weekdays", "weekly", "monthly"]);
         if (allowedRec.has(recurrence)) {
           updated.recurrence = recurrence;
           changes.push(`розклад → ${recurrence}`);
+        } else {
+          recNote = ` Розклад «${recurrence}» через чат не ставлю. Зміни його в модулі «Рутина».`;
         }
       }
+      // Mon-first 0..6 — passthrough без remap (див. create_habit вище).
       if (Array.isArray(weekdays) && weekdays.length > 0) {
         updated.weekdays = weekdays.filter(
           (d) => Number.isInteger(d) && d >= 0 && d <= 6,
         );
         changes.push(`дні → [${updated.weekdays.join(",")}]`);
       }
-      if (changes.length === 0) return "Немає змін для оновлення.";
+      if (changes.length === 0) return `Немає змін для оновлення.${recNote}`;
       habits[hIdx] = updated;
-      saveRoutineState({ ...state, habits });
-      return `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}`;
+      const confirm = persistRoutineState({ ...state, habits });
+      return {
+        result: `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}.${recNote}`,
+        confirm,
+      };
     }
     case "set_habit_schedule": {
       const { habit_id, days } = (action as SetHabitScheduleAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       if (!Array.isArray(days) || days.length === 0)
         return "Потрібен непорожній масив days.";
@@ -377,36 +478,61 @@ export function handleRoutineAction(
       const habits = state.habits.slice();
       const hIdx = habits.findIndex((h) => h.id === id);
       if (hIdx < 0) return `Звичку ${id} не знайдено.`;
+      const habit = habits[hIdx];
+      if (!habit) return `Звичку ${id} не знайдено.`;
       habits[hIdx] = {
-        ...habits[hIdx]!,
+        ...habit,
         recurrence: "weekly",
         weekdays: normalized,
       };
-      saveRoutineState({ ...state, habits });
+      const confirm = persistRoutineState({ ...state, habits });
       const labels = normalized.map((n) => WEEKDAY_LABEL_UK[n]).join(", ");
-      return `Розклад звички "${habits[hIdx]!.name || id}" — ${labels}`;
+      return {
+        result: `Розклад звички "${habit.name || id}": ${labels}`,
+        confirm,
+      };
     }
     case "pause_habit": {
-      const { habit_id, paused } = (action as PauseHabitAction).input;
-      const id = String(habit_id || "").trim();
+      // Хвиля 4: тул пише ДАТОВАНИЙ інтервал, а не недатований прапор
+      // `paused`. Старий шлях був головною пасткою E-3 — опис обіцяв
+      // «зберігає історію», а насправді пауза ретроактивно вимивала
+      // звичку з усіх минулих вікон і обнуляла стрік.
+      const { habit_id, paused, from, to } = (action as PauseHabitAction).input;
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const target = paused !== false;
       const state = loadRoutineState();
-      const habits = state.habits.slice();
-      const hIdx = habits.findIndex((h) => h.id === id);
-      if (hIdx < 0) return `Звичку ${id} не знайдено.`;
-      const current = habits[hIdx]!.paused === true;
-      const habitName = habits[hIdx]!.name || id;
-      if (current === target) {
-        return target
-          ? `Звичка "${habitName}" вже на паузі.`
-          : `Звичка "${habitName}" вже активна.`;
+      const habit = state.habits.find((h) => h.id === id);
+      if (!habit) return `Звичку ${id} не знайдено.`;
+      const habitName = habit.name || id;
+      const todayKey = anchoredCompletionBounds().todayKey;
+
+      if (!target) {
+        const next = applyResumeHabitFrom(state, id, todayKey);
+        if (next === state) return `Звичка "${habitName}" вже активна.`;
+        return {
+          result: `Звичку "${habitName}" повернуто з паузи від сьогодні.`,
+          confirm: persistRoutineState(next),
+        };
       }
-      habits[hIdx] = { ...habits[hIdx]!, paused: target };
-      saveRoutineState({ ...state, habits });
-      return target
-        ? `Звичку "${habitName}" поставлено на паузу.`
-        : `Звичку "${habitName}" знято з паузи.`;
+
+      const fromKey = isDateKey(from) ? from : todayKey;
+      const toKey = isDateKey(to) ? to : null;
+      if (toKey !== null && toKey < fromKey) {
+        return "Кінець паузи не може бути раніше за початок.";
+      }
+      const next = applyPauseHabitBetween(state, id, fromKey, toKey);
+      if (next === state) {
+        return `Звичка "${habitName}" уже на паузі в цьому діапазоні.`;
+      }
+      const confirm = persistRoutineState(next);
+      return {
+        result:
+          toKey === null
+            ? `Звичку "${habitName}" поставлено на паузу з ${fromKey}. Ці дні не рахуються, серія їх не помітить.`
+            : `Звичку "${habitName}" поставлено на паузу ${fromKey} – ${toKey}. Ці дні не рахуються, серія їх не помітить.`,
+        confirm,
+      };
     }
     case "reorder_habits": {
       const { habit_ids } = (action as ReorderHabitsAction).input;
@@ -418,54 +544,67 @@ export function handleRoutineAction(
       const reordered = habit_ids
         .map((id) => habitMap.get(id))
         .filter((h): h is (typeof habits)[0] => h != null);
-      const remaining = habits.filter((h) => !habit_ids.includes(h.id));
-      saveRoutineState({
+      const idSet = new Set(habit_ids);
+      const remaining = habits.filter((h) => !idSet.has(h.id));
+      const confirm = persistRoutineState({
         ...state,
         habits: [...reordered, ...remaining],
       });
-      return `Порядок звичок оновлено (${reordered.length} переміщено)`;
+      return {
+        result: `Порядок звичок оновлено (${reordered.length} переміщено)`,
+        confirm,
+      };
     }
     case "habit_stats": {
       const { habit_id, period_days } = (action as HabitStatsAction).input;
-      const id = String(habit_id || "").trim();
+      const id = normalizeHabitId(habit_id);
       if (!id) return "Потрібен habit_id.";
       const days = Number(period_days) || 30;
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      const completions = state.completions;
-      const habitCompletions = Array.isArray(completions[id])
-        ? completions[id]
-        : [];
-      const now = new Date();
-      let doneCount = 0;
-      let streak = 0;
-      let maxStreak = 0;
-      let currentStreak = 0;
+      // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
+      // — той самий гнучкий стрік і той самий per-habit rate, що рахує UI
+      // (`flexStreak.ts`/`streaks.ts`), а не третя жорстка реалізація, яка
+      // обнуляла серію на першому пропущеному дні незалежно від паузи,
+      // пропуску з причиною чи розкладу «3/тиждень».
+      const completionsForHabit = state.completions[id];
+      const skipsForHabit = state.skips?.[id];
+      const now = Date.now();
+      const todayKey = getKyivDayKey(now);
+      const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+      const { completed, scheduled } = habitCompletionRate(
+        habit,
+        completionsForHabit,
+        startKey,
+        todayKey,
+      );
+      const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
+      const currentStreak = flexibleStreakBreakdown(
+        habit,
+        completionsForHabit,
+        todayKey,
+        { skipsForHabit },
+      ).days;
+      const maxStreak = flexibleMaxStreakAllTime(habit, completionsForHabit, {
+        skipsForHabit,
+      });
       const missedDates: string[] = [];
-      for (let i = 0; i < days; i++) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        const dk = [
-          d.getFullYear(),
-          String(d.getMonth() + 1).padStart(2, "0"),
-          String(d.getDate()).padStart(2, "0"),
-        ].join("-");
-        if (habitCompletions.includes(dk)) {
-          doneCount++;
-          currentStreak++;
-          if (i === 0 || i === streak) streak = currentStreak;
-          if (currentStreak > maxStreak) maxStreak = currentStreak;
-        } else {
-          currentStreak = 0;
-          if (missedDates.length < 5) missedDates.push(dk);
-        }
+      for (let i = 0; i < days && missedDates.length < 5; i++) {
+        const dk = getKyivDayKey(now - i * DAY_MS);
+        if (!habitScheduledOnDate(habit, dk)) continue;
+        const done =
+          Array.isArray(completionsForHabit) &&
+          completionsForHabit.includes(dk);
+        if (done || skipsForHabit?.[dk]) continue;
+        missedDates.push(dk);
       }
-      const pct = days > 0 ? Math.round((doneCount / days) * 100) : 0;
       const parts: string[] = [
-        `Статистика "${habit.emoji || ""} ${habit.name || id}" за ${days} днів:`,
-        `Виконано: ${doneCount}/${days} (${pct}%)`,
-        `Поточна серія: ${streak} днів`,
+        // Без гліфа: у полі лежить icon-slug, і «droplet Пити воду» в
+        // тексті чату виглядало б як помилка рендера.
+        `Статистика "${habit.name || id}" за ${days} днів:`,
+        `Виконано: ${completed}/${scheduled} (${formatNumberUk(pct)}%)`,
+        `Поточна серія: ${currentStreak} днів`,
         `Макс. серія: ${maxStreak} днів`,
       ];
       if (missedDates.length > 0) {
@@ -477,60 +616,18 @@ export function handleRoutineAction(
     case "habit_trend": {
       const { habit_id, period_days } =
         (action as HabitTrendAction).input || {};
-      const days = Number(period_days) || 30;
       const state = loadRoutineState();
       if (state.habits.length === 0) return "Немає звичок.";
       const habits = habit_id
         ? state.habits.filter((h) => h.id === habit_id)
         : state.habits.filter((h) => !h.archived);
       if (habits.length === 0) return `Звичку ${habit_id} не знайдено.`;
-      const completions = state.completions;
-      const now = new Date();
-      const weeks = Math.ceil(days / 7);
-      const weeklyData: number[] = [];
-      for (let w = 0; w < weeks; w++) {
-        let done = 0;
-        let possible = 0;
-        for (let d = 0; d < 7; d++) {
-          const dayOffset = w * 7 + d;
-          if (dayOffset >= days) break;
-          const dt = new Date(now);
-          dt.setDate(dt.getDate() - dayOffset);
-          const dk = [
-            dt.getFullYear(),
-            String(dt.getMonth() + 1).padStart(2, "0"),
-            String(dt.getDate()).padStart(2, "0"),
-          ].join("-");
-          for (const h of habits) {
-            possible++;
-            if (
-              Array.isArray(completions[h.id]) &&
-              completions[h.id]!.includes(dk)
-            )
-              done++;
-          }
-        }
-        weeklyData.push(possible > 0 ? Math.round((done / possible) * 100) : 0);
-      }
-      const parts: string[] = [
-        `Тренд звичок за ${days} днів (${habits.length} звичок):`,
-      ];
-      weeklyData.reverse();
-      for (let i = 0; i < weeklyData.length; i++) {
-        parts.push(`  Тиждень ${i + 1}: ${weeklyData[i]}%`);
-      }
-      const first = weeklyData[0];
-      const last = weeklyData[weeklyData.length - 1];
-      if (weeklyData.length >= 2) {
-        const trend =
-          last! > first!
-            ? "покращується"
-            : last! < first!
-              ? "погіршується"
-              : "стабільно";
-        parts.push(`Тренд: ${trend} (${first}% → ${last}%)`);
-      }
-      return parts.join("\n");
+      return habitTrendText(
+        habits,
+        state.completions,
+        Number(period_days) || 30,
+        Date.now(),
+      );
     }
     // ── Утиліти ────────────────────────────────────────────────
     default:

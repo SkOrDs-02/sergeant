@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { chatApi } from "@shared/api";
 
 // ─── Dependency mocks ─────────────────────────────────────────────────────────
 //
@@ -34,6 +35,7 @@ vi.mock("../../lib/finykStorage", () => ({
 import {
   proactiveCacheKey,
   PROACTIVE_CACHE_TTL,
+  fetchProactiveAdvice,
   loadProactiveAdviceFromLS,
   saveProactiveAdviceToLS,
 } from "./budgetsLib";
@@ -132,5 +134,85 @@ describe("saveProactiveAdviceToLS", () => {
     expect(loadProactiveAdviceFromLS("transport", "2026-05")?.text).toBe(
       "Advice B",
     );
+  });
+});
+
+describe("fetchProactiveAdvice", () => {
+  beforeEach(() => {
+    clearStore();
+    vi.clearAllMocks();
+  });
+
+  it("frames an already-broken limit as overspend, not as «щоб не перевищити»", async () => {
+    vi.mocked(chatApi.send).mockResolvedValueOnce({ text: "ok" });
+
+    await fetchProactiveAdvice({
+      categoryKey: "cafe",
+      monthKey: "2026-09",
+      catLabel: "Кафе",
+      spent: 4256,
+      limit: 3500,
+      remaining: -756,
+      pct: 122,
+      daysRemaining: 2,
+    });
+
+    const content = vi.mocked(chatApi.send).mock.calls[0]![0].messages[0]!
+      .content;
+    expect(content).toContain("Ліміт перевищено на 756 ₴.");
+    expect(content).toContain("До кінця місяця 2 дні.");
+    expect(content).not.toContain("щоб не перевищити");
+  });
+
+  it("sends a Ukrainian prompt and caches non-empty AI advice", async () => {
+    vi.mocked(chatApi.send).mockResolvedValueOnce({
+      text: "Залиш каву на завтра.",
+    });
+
+    await expect(
+      fetchProactiveAdvice({
+        categoryKey: "coffee",
+        monthKey: "2026-07",
+        catLabel: "Кава",
+        spent: 1200,
+        limit: 1500,
+        remaining: 300,
+        pct: 80,
+        daysRemaining: 5,
+      }),
+    ).resolves.toBe("Залиш каву на завтра.");
+
+    expect(chatApi.send).toHaveBeenCalledWith({
+      context:
+        "[Проактивна AI-порада] Категорія: Кава, витрачено: 1200 ₴, ліміт: 1500 ₴, залишок: 300 ₴, днів до кінця місяця: 5",
+      messages: [
+        {
+          role: "user",
+          content: expect.stringContaining("Відповідь виключно українською"),
+        },
+      ],
+    });
+    expect(loadProactiveAdviceFromLS("coffee", "2026-07")?.text).toBe(
+      "Залиш каву на завтра.",
+    );
+  });
+
+  it("returns null and skips cache writes for empty AI responses", async () => {
+    vi.mocked(chatApi.send).mockResolvedValueOnce({ text: "" });
+
+    await expect(
+      fetchProactiveAdvice({
+        categoryKey: "food",
+        monthKey: "2026-07",
+        catLabel: "Їжа",
+        spent: 100,
+        limit: 1000,
+        remaining: 900,
+        pct: 10,
+        daysRemaining: 12,
+      }),
+    ).resolves.toBeNull();
+
+    expect(loadProactiveAdviceFromLS("food", "2026-07")).toBeNull();
   });
 });

@@ -6,12 +6,9 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 // FizrukPage is referenced in the JSDoc above and in the onNavigate type
 // signature — keep the import even when TS doesn't track JSDoc refs.
 
-import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { pluralExercises } from "@sergeant/shared";
-import {
-  formatKyivNominativeDate,
-  getKyivGreeting,
-} from "@shared/lib/time/greeting";
+import { formatKyivNominativeDate } from "@shared/lib/time/greeting";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -21,15 +18,17 @@ import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { useRecovery } from "../hooks/useRecovery";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
+import { isFizrukReadBootInFlight } from "../hooks/useFizrukSqliteReadBoot";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
 import { HeroCard, type HeroCardState } from "../components/dashboard/HeroCard";
-import { PrBadge } from "../components/dashboard/PrBadge";
+import { PrBadge, isPrBadgeVisible } from "../components/dashboard/PrBadge";
 import { RecentWorkoutsSection } from "../components/dashboard/RecentWorkoutsSection";
-import { StatusStrip } from "../components/dashboard/StatusStrip";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import { workoutDurationSec } from "@sergeant/fizruk-domain";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
+import { selectHeroRecoveryRows } from "@sergeant/fizruk-domain";
+import { forecastFullRecoveryByDate } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import {
   computeDashboardKpis,
@@ -42,12 +41,14 @@ import type {
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
 import { Skeleton } from "@shared/components/ui/Skeleton";
-import { useAuth } from "../../../core/auth/AuthContext";
 import { useActiveFizrukWorkout } from "@shared/hooks/useActiveFizrukWorkout";
 import { InsightCard } from "@shared/components/ui/InsightCard";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
 import { usePrLatest } from "../hooks/usePrLatest";
+import { messages } from "@shared/i18n/uk";
 
 interface DashboardTodaySession {
   sessionKey: string;
@@ -75,6 +76,13 @@ interface DashboardProps {
    * absorbed the planning surface.
    */
   onNavigate: (target: FizrukPage | string) => void;
+  /**
+   * «Швидкий старт» — порожнє тренування зараз. До PR-Z6 порожній hero
+   * пропонував лише «Створити шаблон» і «До програм», тобто на першому
+   * запуску з Огляду СТАРТУВАТИ було нічим: обидві кнопки вели у списки, а
+   * єдина кнопка старту жила на сусідній вкладці.
+   */
+  onQuickStart?: (() => void) | undefined;
 }
 
 export function Dashboard({
@@ -82,20 +90,22 @@ export function Dashboard({
   activeProgram,
   todaySession,
   onStartProgramWorkout,
+  onQuickStart,
   onNavigate,
 }: DashboardProps) {
   // Use the shared nominative formatter so weekday matches HubHeader
   // ("Пʼятниця" not "пʼятницю") and the Kyiv timezone is anchored correctly.
   const today = useMemo(() => formatKyivNominativeDate(), []);
-  const { user } = useAuth();
   const rec = useRecovery();
   const {
     workouts,
     loaded: workoutsLoaded,
     createWorkout,
     addItem,
+    endWorkout,
+    deleteWorkout,
   } = useWorkouts();
-  const { exercises } = useExerciseCatalog();
+  const { exercises, musclesUk } = useExerciseCatalog();
   const {
     templates,
     loaded: templatesLoaded,
@@ -105,6 +115,18 @@ export function Dashboard({
   const monthlyPlan = useMonthlyPlan();
   const { entries: measurements } = useMeasurements();
 
+  // Declared before the start-flow handlers below because they close over
+  // `activeWorkout` to detect a start conflict. Leaving the memo further
+  // down makes React Compiler drop the memoization it cannot order.
+  const activeWorkoutId = useActiveFizrukWorkout();
+  const activeWorkout = useMemo(() => {
+    if (!activeWorkoutId) return null;
+    const w = (workouts || []).find(
+      (it) => it && it.id === activeWorkoutId && !it.endedAt,
+    );
+    return w || null;
+  }, [activeWorkoutId, workouts]);
+
   const [planConfirmOpen, setPlanConfirmOpen] = useState(false);
   const [pendingPicks, setPendingPicks] = useState<RawExerciseDef[] | null>(
     null,
@@ -112,6 +134,10 @@ export function Dashboard({
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(
     null,
   );
+  const [startConflict, setStartConflict] = useState<{
+    picks: RawExerciseDef[];
+    templateId: string | null;
+  } | null>(null);
 
   const closePlanConfirm = () => {
     setPlanConfirmOpen(false);
@@ -126,11 +152,7 @@ export function Dashboard({
     return Math.round(sum / done.length);
   }, [workouts]);
 
-  // Use the shared Kyiv-anchored greeting so thresholds match HubHeader
-  // (5/12/17/22 buckets including "Доброї ночі" for 22:00–05:00).
-  const greeting = useMemo(() => getKyivGreeting(), []);
-
-  const startWorkoutFromPlan = (
+  const executeWorkoutFromPlan = (
     picks: RawExerciseDef[],
     templateId?: string | null,
   ) => {
@@ -151,9 +173,27 @@ export function Dashboard({
     }
     if (templateId) markTemplateUsed(templateId);
     safeWriteLS(ACTIVE_WORKOUT_KEY, w.id);
-    // non-fatal: workouts tab remains reachable in its default mode
-    safeWriteSS("fizruk_workouts_mode", "log");
-    onNavigate("workouts");
+    onNavigate(`workout/${w.id}`);
+  };
+
+  const requestWorkoutFromPlan = (
+    picks: RawExerciseDef[],
+    templateId?: string | null,
+  ) => {
+    if (activeWorkout) {
+      setStartConflict({ picks, templateId: templateId ?? null });
+      return;
+    }
+    executeWorkoutFromPlan(picks, templateId);
+  };
+
+  const resolveStartConflict = (resolution: "finish" | "discard") => {
+    if (!startConflict || !activeWorkout) return;
+    if (resolution === "finish") endWorkout(activeWorkout.id);
+    else deleteWorkout(activeWorkout.id);
+    const pending = startConflict;
+    setStartConflict(null);
+    executeWorkoutFromPlan(pending.picks, pending.templateId);
   };
 
   const tryStartPlan = (
@@ -172,7 +212,7 @@ export function Dashboard({
     }
     setPendingPicks(null);
     setPendingTemplateId(null);
-    startWorkoutFromPlan(picks, templateId);
+    requestWorkoutFromPlan(picks, templateId);
   };
 
   const primaryAction = useMemo(() => {
@@ -251,7 +291,6 @@ export function Dashboard({
   // template (recentlyUsed) > upcoming scheduled day > empty nudge.
   // Each branch returns a fully-typed `HeroCardState` so the hero can
   // decide on layout without re-deriving any data.
-  const activeWorkoutId = useActiveFizrukWorkout();
 
   // ── Insight triggers ────────────────────────────────────────────────
   // Max 2 shown simultaneously; PR-pending takes priority over rest-day.
@@ -272,14 +311,7 @@ export function Dashboard({
     if (restDayInsight && out.length < 2) out.push(restDayInsight);
     return out;
   }, [prPendingInsight, restDayInsight]);
-
-  const activeWorkout = useMemo(() => {
-    if (!activeWorkoutId) return null;
-    const w = (workouts || []).find(
-      (it) => it && it.id === activeWorkoutId && !it.endedAt,
-    );
-    return w || null;
-  }, [activeWorkoutId, workouts]);
+  const askAiDisabled = useAskAiQuotaExhausted();
 
   const nextPlanSession = useMemo(() => {
     if (!templates?.length) return null;
@@ -305,6 +337,25 @@ export function Dashboard({
     () => listRecentCompletedWorkouts(workouts || [], { limit: 3 }),
     [workouts],
   );
+
+  // Спека `fizruk-hero-recovery-bars.md` рішення 1: до 6 рядків «стан тіла»
+  // для hero — травми першими, далі мʼязи з навантаженням за 14 днів.
+  const heroRecoveryRows = useMemo(
+    () => selectHeroRecoveryRows(rec.by, rec.injurySites),
+    [rec.by, rec.injurySites],
+  );
+
+  // Рішення 5: підпис `red`-рядка йде через `forecastFullRecoveryByDate` —
+  // рахуємо лише коли справді є червоний мʼязовий рядок (21-денний
+  // sweep по `computeRecoveryBy` не дешевий, і порожні/усі-зелені hero не
+  // мають його викликати взагалі).
+  const heroRecoverByDate = useMemo(() => {
+    const hasRedMuscleRow = heroRecoveryRows.some(
+      (r) => r.kind === "muscle" && r.status === "red",
+    );
+    if (!hasRedMuscleRow) return {};
+    return forecastFullRecoveryByDate(workouts || [], musclesUk);
+  }, [heroRecoveryRows, workouts, musclesUk]);
 
   const heroState: HeroCardState = useMemo(() => {
     if (activeWorkout?.startedAt) {
@@ -342,18 +393,15 @@ export function Dashboard({
   ]);
 
   const openWorkoutsTab = () => {
-    // `Workouts` defaults to the `home` view and only switches to the
-    // journal/log when the `fizruk_workouts_mode` hint is primed in
-    // sessionStorage (see `apps/web/src/modules/fizruk/pages/Workouts.tsx`).
-    // When the hero CTA resumes an active session we want the user to
-    // land directly on the log — one extra tap is a real UX regression
-    // otherwise. non-fatal: default view is still reachable.
-    safeWriteSS("fizruk_workouts_mode", "log");
-    onNavigate("workouts");
+    onNavigate(activeWorkout?.id ? `workout/${activeWorkout.id}` : "workouts");
   };
   const openTemplates = () => {
-    safeWriteSS("fizruk_workouts_mode", "templates");
-    onNavigate("workouts");
+    // PR-Z8: канонічний маршрут, а не `workouts` + прапорець у
+    // sessionStorage. Старий шлях лишав адресу `/fizruk/workouts`, хоч на
+    // екрані були «Шаблони», тож браузерне «назад» звідси виходило з
+    // МОДУЛЯ замість повернення на Огляд, а перезавантаження показувало
+    // зовсім інший екран (прапорець споживався на читанні).
+    onNavigate("templates");
   };
   const openPlan = () => {
     // «План» tab was dissolved into the Workouts tab — "plan" is not a
@@ -362,23 +410,47 @@ export function Dashboard({
     // overview, which now owns the planning/schedule surface.
     onNavigate("workouts");
   };
-  const openProgress = () => {
-    onNavigate("progress");
-  };
-  const openBody = () => {
-    onNavigate("body");
+  // Рішення 4: тап по рядку «стан тіла» відкриває атлас, сфокусований на
+  // цій групі — `useFizrukRoute`/`parseFizrukSegments` несуть id як тейл
+  // сегмент `atlas/<id>` (той самий приймач, що вже носить `exercise/<id>`
+  // і `workout/<id>`).
+  const openAtlas = (atlasId: string) => {
+    onNavigate(`atlas/${atlasId}`);
   };
 
-  // Gate the data-derived hero/KPI body on hydration for signed-in users.
-  // The SQLite read path boots only when a userId is present
-  // (`useFizrukSqliteReadBoot`), so `workoutsLoaded` flips to true only for
-  // authed users; gating guests on it would trap them in a permanent
-  // skeleton (the empty hero is their correct, final state). For authed
-  // returning users, render a skeleton until the warm cache
-  // (`workoutsLoaded`) and templates LS read (`templatesLoaded`) settle —
-  // otherwise they see a «План порожній» / «Серія 0 днів» flash before
-  // real data lands (matches the sibling Workouts page skeleton pattern).
-  if (user?.id && (!workoutsLoaded || !templatesLoaded)) {
+  // Скелетон, поки дані ще їдуть — і рівно доти.
+  //
+  // Тут стояв гейт `user?.id && (!workoutsLoaded || !templatesLoaded)` з
+  // коментарем, що «SQLite read path boots only when a userId is present,
+  // so `workoutsLoaded` flips to true only for authed users; gating guests
+  // on it would trap them in a permanent skeleton (the empty hero is their
+  // correct, final state)». Заміром 2026-09-14 обидві половини виявились
+  // хибними, і сусідній файл каже протилежне прямим текстом:
+  //
+  // (а) `useLocalUserId` (`core/auth/useLocalUserId.ts:53`) віддає аноніму
+  //     й демо СИНТЕТИЧНИЙ id, не `null`, тож бут читання стартує і для
+  //     них — це дослівно описано в AI-CONTEXT самого
+  //     `useFizrukSqliteReadBoot`: «an anonymous visitor reads back what
+  //     `useFizrukDualWriteBoot` wrote under the same id». Отже у гостя Є
+  //     свої дані, і порожній hero — НЕ його фінальний стан, а спалах
+  //     «План порожній» поверх власного журналу.
+  // (б) «matches the sibling Workouts page skeleton pattern» — у
+  //     `components/workouts/WorkoutsHome.tsx` жодного такого гейта немає.
+  //
+  // AI-DANGER: умова тримається на `isFizrukReadBootInFlight()`, і
+  // підміняти його на `workoutsLoaded` не можна. `workoutsLoaded` — це
+  // `refreshedAt !== null`, а єдиний продуктовий шлях, що ставить
+  // `refreshedAt`, лежить в УСПІШНІЙ гілці `bootFizrukSqliteReadPath`.
+  // Якщо бут упав (той `catch` ловить і `getSqliteDb()`, який перекидає
+  // далі, і `migrateFizruk`), прапорець лишається `false` назавжди — і
+  // гейт на ньому виходу не має. «У польоті» ж ламається в безпечний бік:
+  // коли бут не стартував узагалі, скелетона просто немає.
+  // Читається під час рендеру, і цього досить: `useWorkouts` підписаний на
+  // `useFizrukSqliteReadTick`, а `settle()` у буті повідомляє гейт ЗАВЖДИ —
+  // тож Dashboard перемальовується в момент, коли політ завершується.
+  const bootInFlight = isFizrukReadBootInFlight();
+
+  if (bootInFlight && (!workoutsLoaded || !templatesLoaded)) {
     return (
       <div className="flex-1 overflow-y-auto">
         <div
@@ -398,16 +470,24 @@ export function Dashboard({
   return (
     <div className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+        <h1 className="sr-only">{messages.nav.fizrukOverview}</h1>
         <HeroCard
           state={heroState}
-          greeting={greeting}
           today={today}
+          streakWeeks={dashboardKpis.streakWeeks}
+          weeklyWorkoutsCount={dashboardKpis.weeklyWorkoutsCount}
+          recoveryRows={heroRecoveryRows}
+          recoverByDate={heroRecoverByDate}
+          onOpenAtlas={openAtlas}
           onResume={openWorkoutsTab}
           onStartToday={handleStartPrimary}
           onOpenPlan={openPlan}
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}
-          cornerSlot={<PrBadge pr={prLatest} />}
+          {...(onQuickStart ? { onQuickStart } : {})}
+          cornerSlot={
+            isPrBadgeVisible(prLatest) ? <PrBadge pr={prLatest} /> : undefined
+          }
         />
 
         {activeInsights.map((insight) => (
@@ -421,31 +501,42 @@ export function Dashboard({
                 onNavigate("workouts");
               }
             }}
+            onAskAi={() =>
+              emitHubBus("openChat", {
+                message: insight.askAiPrompt,
+                autoSend: false,
+              })
+            }
+            askAiDisabled={askAiDisabled}
           />
         ))}
 
-        <StatusStrip
-          kpis={dashboardKpis}
-          recovery={{ avoid: rec.avoid }}
-          onOpenBody={openBody}
-          onOpenProgress={openProgress}
-          onOpenWorkouts={openWorkoutsTab}
-        />
-
         {templates.length > 0 &&
           (() => {
-            const quickTemplates =
-              recentlyUsed.length > 0 ? recentlyUsed : templates.slice(0, 3);
+            // N-10 (аудит 2026-09-16): герой і цей список не повторюють
+            // одну й ту саму пропозицію старту - коли герой уже показує
+            // конкретний шаблон, прибираємо його рядок звідси.
+            const heroTemplateId =
+              heroState.kind === "today" && primaryAction?.kind === "template"
+                ? primaryAction.templateId
+                : null;
+            const quickTemplates = (
+              recentlyUsed.length > 0 ? recentlyUsed : templates.slice(0, 3)
+            ).filter((tpl) => tpl.id !== heroTemplateId);
+            if (quickTemplates.length === 0) return null;
             return (
               <Card
                 as="section"
                 prominence="glass"
-                radius="r-lg"
-                aria-label="Швидкий старт"
+                radius="lg"
+                aria-label="Шаблони"
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
-                  <SectionHeading as="h2" size="sm">
-                    Швидкий старт
+                  {/* Була «Швидкий старт» — так само називалась кнопка на
+                      вкладці «Тренування», яка робила інше. Одна назва на
+                      дві різні речі (власник 2026-09-16). */}
+                  <SectionHeading as="h2" size="xs" variant="fizruk">
+                    Шаблони
                   </SectionHeading>
                   <span className="text-style-caption text-muted">
                     {recentlyUsed.length > 0
@@ -462,12 +553,18 @@ export function Dashboard({
                       <button
                         key={tpl.id}
                         type="button"
-                        className="w-full text-left flex items-center gap-3 rounded-r-lg hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99]"
+                        className="w-full text-left flex items-center gap-3 rounded-2xl hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent disabled:active:scale-100"
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >
-                        <div
-                          className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0"
+                        {/* Зелений «play» на шаблоні без вправ обіцяв старт,
+                            якого не буде: вимкнений рядок його не показує. */}
+                        <span
+                          className={
+                            picks.length
+                              ? "text-success shrink-0"
+                              : "text-muted shrink-0"
+                          }
                           aria-hidden
                         >
                           <svg
@@ -478,12 +575,12 @@ export function Dashboard({
                           >
                             <path d="M8 5v14l11-7z" />
                           </svg>
-                        </div>
+                        </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-style-label text-text truncate">
                             {tpl.name}
                           </div>
-                          <div className="text-xs text-subtle mt-0.5">
+                          <div className="text-style-caption text-muted mt-0.5">
                             {picks.length > 0
                               ? `${picks.length} ${pluralExercises(
                                   picks.length,
@@ -522,36 +619,80 @@ export function Dashboard({
       <Sheet
         open={planConfirmOpen}
         onClose={closePlanConfirm}
-        title="Увага"
-        panelClassName="fizruk-sheet max-w-4xl"
+        title="Мʼязи ще відновлюються"
+        panelClassName="fizruk-sheet max-w-md"
         zIndex={100}
         footer={
           <div className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               className="flex-1 h-12 min-h-[44px]"
               onClick={closePlanConfirm}
             >
               Скасувати
             </Button>
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 const picks = pendingPicks ?? [];
                 const templateId = pendingTemplateId;
                 closePlanConfirm();
-                startWorkoutFromPlan(picks, templateId);
+                requestWorkoutFromPlan(picks, templateId);
               }}
             >
-              Продовжити
+              Почати все одно
             </Button>
           </div>
         }
       >
-        <p className="text-sm text-subtle leading-relaxed">
+        <p className="text-style-body text-muted leading-relaxed">
           У цьому шаблоні є вправи на мʼязи, які ще відновлюються. Продовжити
           старт тренування?
+        </p>
+      </Sheet>
+
+      <Sheet
+        open={startConflict !== null}
+        onClose={() => setStartConflict(null)}
+        title="Уже є активне тренування"
+        description="Перш ніж почати нове, заверши поточне або викинь його."
+        panelClassName="fizruk-sheet max-w-md"
+        zIndex={110}
+        footer={
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="solid"
+              tone="fizruk"
+
+              className="w-full h-12"
+              onClick={() => resolveStartConflict("finish")}
+            >
+              Завершити старе й почати нове
+            </Button>
+            <Button
+              variant="solid"
+              tone="danger"
+              className="w-full h-12"
+              onClick={() => resolveStartConflict("discard")}
+            >
+              Викинути старе й почати нове
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full h-12"
+              onClick={() => setStartConflict(null)}
+            >
+              Скасувати
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-style-body text-muted leading-relaxed">
+          Нове тренування не створиться, доки ти не вибереш, що зробити з
+          поточним.
         </p>
       </Sheet>
     </div>

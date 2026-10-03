@@ -1,3 +1,4 @@
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import type { Hit } from "./searchTypes";
 
@@ -13,14 +14,17 @@ import type { Hit } from "./searchTypes";
 // attention with module-coloured data. Actions + AI inherit the brand
 // swatch (they are the launcher commands, not stored data).
 export const MODULE_COLORS: Record<string, string> = {
-  finyk: "bg-finyk-soft text-finyk-strong dark:text-finyk",
-  fizruk: "bg-fizruk-soft text-fizruk-strong dark:text-fizruk-300",
-  routine: "bg-routine-soft text-routine-strong dark:text-routine",
-  nutrition: "bg-nutrition-soft text-nutrition-strong dark:text-nutrition",
+  finyk: "bg-finyk-soft text-finyk-soft-fg",
+  fizruk: "bg-fizruk-soft text-fizruk-soft-fg",
+  routine: "bg-routine-soft text-routine-soft-fg",
+  nutrition: "bg-nutrition-soft text-nutrition-soft-fg",
   settings: "bg-panelHi text-muted",
-  assistant: "bg-brand-500/10 text-brand-strong dark:text-brand",
-  actions: "bg-brand-500/10 text-brand-strong dark:text-brand",
-  ai: "bg-brand-500/10 text-brand-strong dark:text-brand",
+  // PR-S5 (аудит 2026-09-13 хвиля 5): та сама нейтральна «системна»
+  // заливка, що й `settings` — Профіль теж не є доменними даними.
+  profile: "bg-panelHi text-muted",
+  assistant: "bg-brand-500/10 text-brand-strong",
+  actions: "bg-brand-500/10 text-brand-strong",
+  ai: "bg-brand-500/10 text-brand-strong",
 };
 
 export interface SearchResultItemProps {
@@ -64,16 +68,16 @@ export function SearchResultItem({
     >
       <span
         className={cn(
-          "w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0",
+          "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
           MODULE_COLORS[hit.module],
         )}
         aria-hidden
       >
-        {hit.icon}
+        <Icon name={hit.icon} size="md" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm text-text truncate">{hit.title}</p>
-        <p className="text-xs text-muted truncate">{hit.subtitle}</p>
+        <p className="text-style-body text-text truncate">{hit.title}</p>
+        <p className="text-style-caption text-muted truncate">{hit.subtitle}</p>
       </div>
       <svg
         width="14"
@@ -84,7 +88,7 @@ export function SearchResultItem({
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-muted/40 shrink-0"
+        className="text-muted shrink-0"
         aria-hidden
       >
         <path d="M9 18l6-6-6-6" />

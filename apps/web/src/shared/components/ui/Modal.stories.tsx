@@ -45,7 +45,7 @@ type Story = StoryObj<typeof Modal>;
 /**
  * Storybook stories використовують hooks щоб тримати локальний open-стан
  * без зовнішнього controller-у. ESLint-rule `react-hooks/rules-of-hooks`
- * вимагає, щоб виклики hooks жили у компонентах з PascalCase-ім'ям —
+ * вимагає, щоб виклики hooks жили у компонентах з PascalCase-імʼям —
  * тому кожен `render` делегує до окремого Demo-компонента, а не
  * викликає `useState` всередині arrow-render-у.
  */
@@ -88,7 +88,7 @@ function DefaultDemo({
         }
       >
         <p className="text-sm">
-          Видалення транзакції «Сільпо — 428.50 ₴» — операція незворотна.
+          Видалення операції «Сільпо — 428.50 ₴» — операція незворотна.
         </p>
       </Modal>
     </div>

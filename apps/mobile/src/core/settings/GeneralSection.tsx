@@ -20,7 +20,7 @@
  *    with the dashboard via `useDashboardOrder` and persisted through
  *    the same `STORAGE_KEYS.DASHBOARD_ORDER` slice used by web.
  *
- * Deferred (tracked in `docs/mobile/react-native-migration.md` Phase 2 /
+ * Deferred (tracked in `docs/engineering/mobile/react-native-migration.md` Phase 2 /
  * Hub-core, section 2.4):
  *  - **Cloud sync command buttons.** The v1 provider and pull/push
  *    handlers are removed. A future explicit v2 command hook can wire
@@ -249,7 +249,12 @@ export function GeneralSection() {
     setActiveModulesState((prev) => {
       const isActive = prev.includes(id);
       if (isActive && prev.length === 1) {
-        toast.error("Щонайменше один модуль має бути активним");
+        // PR-X3: це ВАЛІДАЦІЯ, не збій — застосунок відмовився виконати
+        // дію і нічого не зламалось. `error` тут обіцяв поломку, якої
+        // немає, а recovery-дії в нього бути не може: «Повторити»
+        // означало б «спробуй вимкнути ще раз» і дало б той самий текст.
+        // Вихід у людини на екрані — увімкнути інший модуль.
+        toast.warning("Щонайменше один модуль має бути активним");
         return prev;
       }
       const next = isActive
@@ -272,8 +277,12 @@ export function GeneralSection() {
         payload,
       );
     } catch (err) {
+      // Ретрай безпечний: `buildHubBackupPayload` перечитує стан наново, а
+      // часткового запису тут не буває — файл або створився, або ні.
       toast.error(
         err instanceof Error ? err.message : "Не вдалось експортувати",
+        undefined,
+        { label: "Повторити", onPress: () => void handleExport() },
       );
     }
   };
@@ -286,8 +295,18 @@ export function GeneralSection() {
       applyHubBackupPayload(result.data);
       toast.success("Резервну копію відновлено");
     } catch (err) {
+      // «Обрати інший», а не «Повторити»: сюди долітає лише виняток
+      // валідації з `applyHubBackupPayload` (`hubBackup.ts:98-100`), яка
+      // стоїть ПЕРЕД будь-яким записом — тобто файл виявився не тим, а не
+      // імпорт зламався на півдорозі. Кожен модульний зріз усередині має
+      // власний try/catch, тож часткового застосування теж не буває.
       toast.error(
         err instanceof Error ? err.message : "Не вдалось імпортувати файл",
+        undefined,
+        {
+          label: "Обрати інший",
+          onPress: () => void handleImportConfirmed(),
+        },
       );
     }
   };
@@ -298,7 +317,7 @@ export function GeneralSection() {
       <SettingsSubGroup title="Дашборд">
         <ToggleRow
           label="Показувати AI-коуч"
-          description="Блок з щоденною порадою коуча на головному екрані."
+          description="Блок з щоденною порадою Сержанта на головному екрані."
           checked={showCoach}
           onChange={(next) =>
             setPrefs((prev) => ({ ...prev, showCoach: next }))
@@ -353,8 +372,8 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Онбординг">
         <Text className="text-xs text-fg-muted leading-snug">
-          Подивитись tour — побачити вітальний екран ще раз без скидання твого
-          стану. Перезапуск не видаляє твої дані — лише повертає вітальний екран
+          Подивитись tour, побачити вітальний екран ще раз без скидання твого
+          стану. Перезапуск не видаляє твої дані, лише повертає вітальний екран
           та підказки першого запуску.
         </Text>
         <Button
@@ -379,7 +398,7 @@ export function GeneralSection() {
       </SettingsSubGroup>
       <SettingsSubGroup title="Активні модулі">
         <Text className="text-xs text-fg-muted leading-snug">
-          Неактивні розділи виглядають приглушено на головній — без кнопки
+          Неактивні розділи виглядають приглушено на головній, без кнопки
           швидкого додавання. Принаймні один має залишатися активним.
         </Text>
         <View className="overflow-hidden rounded-xl border border-cream-300">
@@ -435,7 +454,7 @@ export function GeneralSection() {
         <Card variant="flat" radius="md" padding="md">
           <Text className="text-xs text-fg-muted leading-relaxed mb-3">
             Резервна копія всього Hub (Фінік, Фізрук, Рутина, Харчування). Токен
-            Monobank і кеш транзакцій не входять у файл.
+            Monobank і кеш операцій не входять у файл.
           </Text>
           <View className="flex-row flex-wrap gap-2">
             <Button
@@ -462,7 +481,6 @@ export function GeneralSection() {
           description="Поточні дані модулів будуть замінені даними з файлу. Продовжити?"
           confirmLabel="Імпортувати"
           cancelLabel="Скасувати"
-          danger={false}
           onConfirm={handleImportConfirmed}
           onCancel={() => setConfirmImport(false)}
         />
@@ -470,7 +488,7 @@ export function GeneralSection() {
       <View className="gap-1">
         <Text className="text-[11px] text-fg-subtle leading-snug">
           Решта опцій цього блоку (push/pull хмари) портується разом із
-          відповідними інфраструктурними кроками — див. примітки вище.
+          відповідними інфраструктурними кроками, див. примітки вище.
         </Text>
       </View>
       {tourOpen ? (

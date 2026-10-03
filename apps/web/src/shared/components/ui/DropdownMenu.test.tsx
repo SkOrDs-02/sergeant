@@ -11,6 +11,7 @@ import {
   nextFocusableIndex,
   type DropdownMenuEntry,
 } from "./DropdownMenu";
+import { DropdownMenuEntryView } from "./DropdownMenu.entry";
 
 // jsdom provides requestAnimationFrame; the menu's focus-restore on close
 // schedules a rAF that we let run naturally. Testing-library's cleanup()
@@ -210,5 +211,61 @@ describe("DropdownMenu", () => {
       ),
     ).toThrow(/must be a single React element/);
     spy.mockRestore();
+  });
+});
+
+describe("DropdownMenuEntryView", () => {
+  it("renders an open submenu and supports submenu keyboard navigation", () => {
+    const onSelect = vi.fn();
+    const onCloseAll = vi.fn();
+    const onHoverIndex = vi.fn();
+    const entry: DropdownMenuEntry = {
+      type: "submenu",
+      id: "more",
+      label: "More",
+      items: [
+        { type: "item", id: "disabled", label: "Disabled", disabled: true },
+        { type: "separator", id: "sep" },
+        {
+          type: "item",
+          id: "archive",
+          label: "Archive",
+          shortcut: "A",
+          destructive: true,
+          onSelect,
+        },
+      ],
+    };
+
+    render(
+      <DropdownMenuEntryView
+        entry={entry}
+        index={2}
+        focused
+        openSubmenuId="more"
+        onHoverIndex={onHoverIndex}
+        onActivate={vi.fn()}
+        onOpenSubmenu={vi.fn()}
+        onCloseAll={onCloseAll}
+      />,
+    );
+
+    const submenuTrigger = screen.getByRole("menuitem", { name: "More" });
+    expect(submenuTrigger).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menu", { name: "More" })).toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Disabled" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+
+    const submenu = screen.getByRole("menu", { name: "More" });
+    fireEvent.keyDown(submenu, { key: "ArrowDown" });
+    fireEvent.keyDown(submenu, { key: "ArrowUp" });
+    fireEvent.keyDown(submenu, { key: "End" });
+    fireEvent.keyDown(submenu, { key: "Home" });
+    fireEvent.click(screen.getByRole("menuitem", { name: /Archive/ }));
+
+    expect(onSelect).toHaveBeenCalledTimes(1);
+    expect(onCloseAll).toHaveBeenCalledTimes(1);
   });
 });

@@ -93,14 +93,14 @@ export function MenusSection() {
   const { open: openPalette } = useCommandPaletteControls();
   return (
     <Sec id="menus" title="Menus та командна палітра">
-      <Group label="DropdownMenu — базовий" row>
+      <Group label="DropdownMenu: базовий" row>
         <DropdownMenu
           ariaLabel="Дії з елементом"
           items={basicItems}
           trigger={
             <Button variant="secondary" size="sm">
               Меню
-              <Icon name="chevron-down" size={14} />
+              <Icon name="chevron-down" size="sm" />
             </Button>
           }
         />
@@ -110,20 +110,20 @@ export function MenusSection() {
           trigger={
             <Button variant="secondary" size="sm">
               Налаштування
-              <Icon name="chevron-down" size={14} />
+              <Icon name="chevron-down" size="sm" />
             </Button>
           }
         />
       </Group>
 
-      <Group label="DropdownMenu — підменю та disabled" row>
+      <Group label="DropdownMenu: підменю та disabled" row>
         <DropdownMenu
           ariaLabel="Опції сортування"
           items={submenuItems}
           trigger={
             <Button variant="secondary" size="sm">
               Сортувати
-              <Icon name="chevron-down" size={14} />
+              <Icon name="chevron-down" size="sm" />
             </Button>
           }
         />
@@ -133,7 +133,7 @@ export function MenusSection() {
           placement="bottom-end"
           trigger={
             <Button variant="ghost" size="sm" iconOnly aria-label="Більше дій">
-              <Icon name="more-horizontal" size={16} />
+              <Icon name="more-horizontal" size="md" />
             </Button>
           }
         />
@@ -141,17 +141,17 @@ export function MenusSection() {
 
       <Group label="Командна палітра">
         <div className="space-y-2">
-          <p className="text-sm text-muted">
+          <p className="text-style-body text-muted">
             Натисни{" "}
-            <kbd className="px-1.5 h-5 inline-flex items-center text-2xs font-mono font-semibold text-muted bg-surface-muted border border-line rounded-md">
+            <kbd className="px-1.5 h-5 inline-flex items-center text-style-code text-muted bg-surface-muted border border-line rounded-md">
               ⌘ K
             </kbd>{" "}
             (або{" "}
-            <kbd className="px-1.5 h-5 inline-flex items-center text-2xs font-mono font-semibold text-muted bg-surface-muted border border-line rounded-md">
+            <kbd className="px-1.5 h-5 inline-flex items-center text-style-code text-muted bg-surface-muted border border-line rounded-md">
               Ctrl K
             </kbd>{" "}
             на Windows / Linux), щоб відкрити палітру з пошуком і клавіатурною
-            навігацією. Або кнопка нижче — обхідний шлях для тач-пристроїв.
+            навігацією. Або кнопка нижче, обхідний шлях для тач-пристроїв.
           </p>
           <Button onClick={openPalette}>Відкрити палітру</Button>
         </div>

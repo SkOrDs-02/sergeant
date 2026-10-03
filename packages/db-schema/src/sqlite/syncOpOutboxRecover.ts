@@ -2,7 +2,7 @@ import type { SqliteMigrationClient } from "../migrate/adapters/sqlite.js";
 
 /**
  * Dead-letter recovery helper for the client-side `sync_op_outbox`
- * (`docs/planning/storage-roadmap.md` Stage 5 / PR #042e-recover).
+ * (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5 / PR #042e-recover).
  *
  * Pairs with the lifecycle helpers (PR #042e-lifecycle) and the
  * status reader (PR #042e-status). Lifecycle helpers move rows
@@ -31,11 +31,13 @@ import type { SqliteMigrationClient } from "../migrate/adapters/sqlite.js";
  *   Rows in the list whose current status is not `'dead_letter'`
  *   are reported in `skipped` (not in `recovered`); duplicate ids
  *   in the input are de-duplicated before the SQL.
- * - `{ all: true }` — recover every dead-letter row in one shot.
- *   Used by the "retry all" / "force flush" workflow after a
- *   service incident is resolved. Bounded internally by the row
- *   count of the dead-letter bucket; for huge backlogs callers
- *   should chunk via `ids` so they can show progress.
+ * - `{ all: true, userId }` — recover every dead-letter row OF THAT
+ *   USER in one shot. Used by the "retry all" / "force flush"
+ *   workflow after a service incident is resolved. Bounded internally
+ *   by the row count of the dead-letter bucket; for huge backlogs
+ *   callers should chunk via `ids` so they can show progress. The
+ *   owner scope is mandatory here — see
+ *   {@link RecoverDeadLetterSelector}.
  *
  * Mutation contract (idempotent + total):
  *
@@ -90,9 +92,51 @@ import type { SqliteMigrationClient } from "../migrate/adapters/sqlite.js";
  * the `attempts` / `next_retry_at` / `last_error` reset is total.
  */
 
-export type RecoverDeadLetterSelector =
+/**
+ * ЩО відновлювати — без скоупу власника. Це те, що знає рантайм-шар
+ * (`SyncEngineWriterRuntime.recoverAllDeadLetters`, кнопка dev-панелі):
+ * він оперує чергою, а не сесією. Скоуп домішує адаптер у singleton-і,
+ * де є `resolveUserId` — див. {@link RecoverDeadLetterSelector}.
+ */
+export type RecoverDeadLetterTarget =
   | { readonly ids: readonly number[]; readonly all?: undefined }
   | { readonly all: true; readonly ids?: undefined };
+
+/**
+ * Те саме плюс скоуп власника.
+ *
+ * `{ all: true }` ВИМАГАЄ `userId`. Доти ця гілка виконувала
+ * `UPDATE … WHERE status = 'dead_letter'` без жодного фільтра: на
+ * kvvfs-сховищі (кожна сесія Chrome на головному потоці — OPFS-SAH-пул
+ * потребує `createSyncAccessHandle`, доступний лише у воркері) усі
+ * партиції лежать в одному фізичному файлі, тож «оживи мої мертві рядки»
+ * оживляло чужі теж. Витоку це не давало (`drainSyncOpOutbox` і далі
+ * фільтрує по `user_id`), але семантика була ширша за назву — а такий
+ * розрив рано чи пізно ловлять уже як інцидент. Дзеркалить контракт
+ * `drainSyncOpOutbox`: без автентифікованого користувача виклику не має
+ * бути взагалі, тож порожній рядок відхиляється.
+ *
+ * `{ ids }` — навпаки, скоуп ОПЦІЙНИЙ і за замовчуванням не звужує
+ * вибірку. Міграція `005_sync_op_outbox_user_id` навмисно зберегла
+ * термінальні рядки старої схеми під синтетичним `user_id='__legacy__'`
+ * саме з розрахунку, що їх і далі можна тріажити по id («the
+ * recover-helper explicitly targets dead_letter rows by id and is safe to
+ * keep operating on the legacy set»). Обов'язковий скоуп тут відрізав би
+ * цей шлях.
+ *
+ * ponytail: {ids} selector unused until dev-panel ships — the only real
+ * callers (web/mobile syncEngineWriter.ts) always pass {all: true}.
+ * Collapsing this to recoverAllDeadLetter(client) would mean deleting
+ * ~15 test cases covering the ids branch (dedup, validation, skip logic),
+ * which fails the "green tests without edits" equivalence gate.
+ */
+export type RecoverDeadLetterSelector =
+  | {
+      readonly ids: readonly number[];
+      readonly all?: undefined;
+      readonly userId?: string;
+    }
+  | { readonly all: true; readonly ids?: undefined; readonly userId: string };
 
 export interface RecoverDeadLetterResult {
   /** Ids that transitioned `'dead_letter'` → `'pending'` in this call. */
@@ -117,12 +161,14 @@ export interface RecoverDeadLetterResult {
  *     mutually exclusive);
  *   - `ids` containing a non-finite or non-integer value (caller
  *     bug — would generate malformed SQL);
- *   - `ids` containing a negative id (schema-invariant violation).
+ *   - `ids` containing a negative id (schema-invariant violation);
+ *   - `{ all: true }` without a non-empty `userId` (unscoped revive).
  *
  * @param client SQLite client (better-sqlite3 in tests; sqlite-wasm
  *               in `apps/web`; expo-sqlite in `apps/mobile`).
- * @param selector Either an explicit `{ ids: [...] }` list or
- *                 `{ all: true }` to recover every dead-letter row.
+ * @param selector Either an explicit `{ ids: [...] }` list (owner
+ *                 scope optional) or `{ all: true, userId }` to
+ *                 recover every dead-letter row of that user.
  */
 export async function recoverDeadLetter(
   client: SqliteMigrationClient,
@@ -131,10 +177,10 @@ export async function recoverDeadLetter(
   validateSelector(selector);
 
   if (selector.all === true) {
-    return recoverAllDeadLetter(client);
+    return recoverAllDeadLetter(client, selector.userId);
   }
 
-  return recoverByIds(client, selector.ids);
+  return recoverByIds(client, selector.ids, selector.userId);
 }
 
 function validateSelector(selector: RecoverDeadLetterSelector): void {
@@ -145,18 +191,38 @@ function validateSelector(selector: RecoverDeadLetterSelector): void {
       `recoverDeadLetter: selector must set exactly one of { ids } or { all: true }`,
     );
   }
+  // Кидаємо, а не мовчки розширюємо вибірку: «оживити все» без власника —
+  // це рівно та поведінка, яку закриває цей guard (див. докстрінг типу).
+  if (
+    selector.all === true &&
+    (typeof selector.userId !== "string" || selector.userId.length === 0)
+  ) {
+    throw new Error(
+      `recoverDeadLetter: { all: true } requires a non-empty userId — ` +
+        `a shared kvvfs store holds every local account's rows, so an ` +
+        `unscoped revive reaches other accounts. Skip the call entirely ` +
+        `when no user is authenticated.`,
+    );
+  }
 }
 
 async function recoverAllDeadLetter(
   client: SqliteMigrationClient,
+  userId: string,
 ): Promise<RecoverDeadLetterResult> {
   // Snapshot the dead-letter set BEFORE the UPDATE so we can return
   // the recovered ids verbatim. Any rows that arrive in dead-letter
   // between the SELECT and the UPDATE are picked up by the next
   // recovery call — that race is harmless because dead-letter is a
   // terminal status (no other writer moves rows out of it).
+  //
+  // `user_id = ?` стоїть в ОБОХ запитах: знімок формує відповідь, UPDATE
+  // змінює стан, і розʼїхатись вони не мають права.
   const snapshot = await client.all<{ id: number }>(
-    `SELECT id FROM sync_op_outbox WHERE status = 'dead_letter' ORDER BY id ASC`,
+    `SELECT id FROM sync_op_outbox
+      WHERE status = 'dead_letter' AND user_id = ?
+      ORDER BY id ASC`,
+    [userId],
   );
   if (snapshot.length === 0) {
     return { recovered: [], skipped: [] };
@@ -167,8 +233,8 @@ async function recoverAllDeadLetter(
             attempts = 0,
             next_retry_at = NULL,
             last_error = NULL
-      WHERE status = 'dead_letter'`,
-    [],
+      WHERE status = 'dead_letter' AND user_id = ?`,
+    [userId],
   );
   return { recovered: snapshot.map((row) => row.id), skipped: [] };
 }
@@ -176,6 +242,7 @@ async function recoverAllDeadLetter(
 async function recoverByIds(
   client: SqliteMigrationClient,
   rawIds: readonly number[],
+  userId: string | undefined,
 ): Promise<RecoverDeadLetterResult> {
   const ids = dedupeIds(rawIds);
   if (ids.length === 0) {
@@ -183,6 +250,11 @@ async function recoverByIds(
   }
 
   const placeholders = ids.map(() => "?").join(", ");
+  // Скоуп тут опційний (див. докстрінг {@link RecoverDeadLetterSelector}):
+  // без нього поведінка та сама, що була, а з ним чужий id просто
+  // потрапляє в `skipped` — не в `recovered` і не в UPDATE.
+  const scope = userId !== undefined ? ` AND user_id = ?` : "";
+  const scopedParams = userId !== undefined ? [...ids, userId] : ids;
   // Pin the recoverable set before issuing the UPDATE — without
   // SQLite's `changes()` we cannot see post-hoc which rows the
   // UPDATE actually touched, so we capture the eligible set first.
@@ -193,8 +265,8 @@ async function recoverByIds(
   // returns.
   const eligibleRows = await client.all<{ id: number }>(
     `SELECT id FROM sync_op_outbox
-      WHERE id IN (${placeholders}) AND status = 'dead_letter'`,
-    ids,
+      WHERE id IN (${placeholders}) AND status = 'dead_letter'${scope}`,
+    scopedParams,
   );
   const eligible = new Set(eligibleRows.map((row) => row.id));
 
@@ -205,8 +277,8 @@ async function recoverByIds(
               attempts = 0,
               next_retry_at = NULL,
               last_error = NULL
-        WHERE id IN (${placeholders}) AND status = 'dead_letter'`,
-      ids,
+        WHERE id IN (${placeholders}) AND status = 'dead_letter'${scope}`,
+      scopedParams,
     );
   }
 

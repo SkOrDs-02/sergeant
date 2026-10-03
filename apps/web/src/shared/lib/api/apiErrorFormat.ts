@@ -7,7 +7,7 @@
  * не розрізняє офлайн/auth/5xx і показує різні тексти для одного й того
  * ж кейсу. Правила форматера збігаються з тим, що робить
  * `modules/nutrition/lib/nutritionApi.ts`-адаптер (див. його JSDoc), але
- * живуть у shared-шарі, без прив'язки до домену.
+ * живуть у shared-шарі, без привʼязки до домену.
  *
  * Використання у хуку з доменно-специфічними текстами:
  *
@@ -51,20 +51,21 @@ export function formatApiError(
     if (err.kind === "network") {
       if (err.isOffline) {
         const base = "Немає підключення до інтернету. Спробуй пізніше.";
-        return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+        return base;
       }
-      const base = err.message || "Не вдалося зʼєднатися із сервером.";
-      return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+      // `err.message` тут технічний («Failed to fetch»), людині його не
+      // показуємо (аудит копі 2026-09-23 §2.5).
+      return "Не вдалося зʼєднатися із сервером. Перевір зʼєднання і спробуй ще раз.";
     }
     if (err.kind === "parse") {
       // Типовий кейс на Vercel: rewrite перехоплює `/api/*` і повертає index.html.
       if (/<!doctype html/i.test(err.bodyText || "")) {
         const base =
-          "API повернув HTML замість JSON (ймовірно, rewrite перехоплює /api/*).";
-        return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+          "Сервер відповів сторінкою замість даних. Онови сторінку, а якщо не допоможе, спробуй пізніше.";
+        return base;
       }
-      const base = err.message || err.bodyText || fallback;
-      return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+      // «Unexpected token <» і сире тіло відповіді людині ні про що.
+      return fallback;
     }
     // kind === "http"
     const httpMsg = mapHttp(err.status, err.serverMessage);
@@ -79,10 +80,10 @@ export function formatApiError(
       /^Помилка \d+$/.test(httpMsg)
     ) {
       const base = options.fallback;
-      return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+      return base;
     }
     const base = httpMsg || fallback;
-    return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+    return base;
   }
 
   if (err instanceof Error && err.message) return err.message;

@@ -28,11 +28,13 @@ vi.mock("../components/LogCard", () => ({
   LogCard: ({
     log,
     onAddMeal,
+    onAddMealFromSearch,
     onRemoveMeal,
     onEditMeal,
   }: {
     log: NutritionLog;
     onAddMeal?: () => void;
+    onAddMealFromSearch?: (meal: Meal) => void;
     onRemoveMeal?: (date: string, meal: Meal) => void;
     onEditMeal?: (date: string, meal: Meal) => void;
   }) => {
@@ -54,6 +56,9 @@ vi.mock("../components/LogCard", () => ({
       <div>
         <div data-testid="meal-count">{meals.length}</div>
         <button onClick={onAddMeal}>Додати прийом їжі</button>
+        <button onClick={() => onAddMealFromSearch?.(meal)}>
+          Додати з пошуку
+        </button>
         <button onClick={() => onRemoveMeal?.(date, meal)}>
           Видалити meal
         </button>
@@ -78,8 +83,6 @@ function makeLog(
     setSelectedDate: vi.fn(),
     addMealSheetOpen: false,
     setAddMealSheetOpen: vi.fn(),
-    addMealPhotoResult: null,
-    setAddMealPhotoResult: vi.fn(),
     handleAddMeal: vi.fn(),
     handleEditMeal: vi.fn(),
     handleRemoveMeal: vi.fn(),
@@ -117,7 +120,12 @@ describe("NutritionLogPage", () => {
     const log = makeLog();
     const toast = makeToast();
     render(
-      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={vi.fn()}
+      />,
     );
     // The stub renders the add button
     expect(
@@ -125,32 +133,43 @@ describe("NutritionLogPage", () => {
     ).toBeTruthy();
   });
 
-  it("clicking 'Додати прийом їжі' clears photo result and opens the add-meal sheet", async () => {
-    const setAddMealSheetOpen = vi.fn();
-    const setAddMealPhotoResult = vi.fn();
-    const log = makeLog({ setAddMealSheetOpen, setAddMealPhotoResult });
+  it("clicking 'Додати прийом їжі' delegates to onOpenAddMeal (host resets the sheet step)", async () => {
+    // Хост (NutritionApp) відкриває sheet сам і скидає його initialStep на
+    // "source" — пряме setAddMealSheetOpen тут відкривало б sheet на
+    // залишковому кроці фото після фото-CTA.
+    const onOpenAddMeal = vi.fn();
+    const log = makeLog();
     const toast = makeToast();
 
     render(
-      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={onOpenAddMeal}
+      />,
     );
 
     await userEvent.click(
       screen.getByRole("button", { name: /Додати прийом їжі/ }),
     );
 
-    expect(setAddMealPhotoResult).toHaveBeenCalledWith(null);
-    expect(setAddMealSheetOpen).toHaveBeenCalledWith(true);
+    expect(onOpenAddMeal).toHaveBeenCalledTimes(1);
   });
 
-  it("clicking 'Видалити meal' calls handleRemoveMeal and fires an info toast (undo pattern)", async () => {
+  it("clicking 'Видалити meal' calls handleRemoveMeal and fires a success toast (undo pattern)", async () => {
     const handleRemoveMeal = vi.fn();
     const handleRestoreMeal = vi.fn();
     const log = makeLog({ handleRemoveMeal, handleRestoreMeal });
     const toast = makeToast();
 
     render(
-      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={vi.fn()}
+      />,
     );
 
     await userEvent.click(
@@ -158,11 +177,12 @@ describe("NutritionLogPage", () => {
     );
 
     expect(handleRemoveMeal).toHaveBeenCalledTimes(1);
-    // showUndoToast always calls toast.show with type "info"
+    // showUndoToast always calls toast.show with type "success" — це
+    // підтвердження результату дії користувача, а не системна нотифікація.
     expect(toast.show).toHaveBeenCalledTimes(1);
     const [, toastType] = (toast.show as ReturnType<typeof vi.fn>).mock
       .calls[0] as [unknown, string];
-    expect(toastType).toBe("info");
+    expect(toastType).toBe("success");
   });
 
   it("the undo callback inside the toast calls handleRestoreMeal", async () => {
@@ -180,7 +200,12 @@ describe("NutritionLogPage", () => {
     );
 
     render(
-      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={vi.fn()}
+      />,
     );
 
     await userEvent.click(
@@ -192,10 +217,51 @@ describe("NutritionLogPage", () => {
     expect(handleRestoreMeal).toHaveBeenCalledTimes(1);
   });
 
+  // Regression PR-N1 (аудит 2026-09-13): додавання з пошуку кликало
+  // `handleAddMeal` голим — без тосту й без «Скасувати», на відміну від
+  // аркуша прийому і від видалення поруч. Помилковий тап коштував ручного
+  // пошуку запису й видалення.
+  it("додавання з пошуку дає тост зі «Скасувати», який знімає запис", async () => {
+    const handleAddMeal = vi.fn();
+    const handleRemoveMeal = vi.fn();
+    const log = makeLog({ handleAddMeal, handleRemoveMeal });
+
+    let capturedOnUndo: (() => void) | undefined;
+    const toast = makeToast();
+    (toast.show as ReturnType<typeof vi.fn>).mockImplementation(
+      (_msg, _type, _dur, action?: { label: string; onClick: () => void }) => {
+        capturedOnUndo = action?.onClick;
+        return 1;
+      },
+    );
+
+    render(
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Додати з пошуку/ }),
+    );
+
+    expect(handleAddMeal).toHaveBeenCalledTimes(1);
+    expect(toast.show).toHaveBeenCalledTimes(1);
+    expect(capturedOnUndo).toBeDefined();
+
+    // «Скасувати» мусить знімати САМЕ доданий запис — за тим `id`, що його
+    // видала сторінка, а не за `id` знайденого рядка.
+    const addedId = (handleAddMeal.mock.calls[0]![0] as Meal).id;
+    capturedOnUndo!();
+    expect(handleRemoveMeal).toHaveBeenCalledWith(log.selectedDate, addedId);
+  });
+
   it("clicking 'Редагувати meal' calls setEditingMeal with date + meal fields", async () => {
     const setAddMealSheetOpen = vi.fn();
-    const setAddMealPhotoResult = vi.fn();
-    const log = makeLog({ setAddMealSheetOpen, setAddMealPhotoResult });
+    const log = makeLog({ setAddMealSheetOpen });
     const toast = makeToast();
     const setEditingMeal = vi.fn();
 
@@ -204,6 +270,7 @@ describe("NutritionLogPage", () => {
         log={log}
         toast={toast}
         setEditingMeal={setEditingMeal}
+        onOpenAddMeal={vi.fn()}
       />,
     );
 
@@ -216,8 +283,7 @@ describe("NutritionLogPage", () => {
       .calls[0];
     const arg = firstCall?.[0];
     expect(arg).toMatchObject({ date: "2025-01-01", id: "m1" });
-    // editing-meal also clears photo and reopens the sheet
-    expect(setAddMealPhotoResult).toHaveBeenCalledWith(null);
+    // editing-meal reopens the sheet (initialMeal.id → крок "fill")
     expect(setAddMealSheetOpen).toHaveBeenCalledWith(true);
   });
 
@@ -230,7 +296,12 @@ describe("NutritionLogPage", () => {
     const toast = makeToast();
 
     render(
-      <NutritionLogPage log={log} toast={toast} setEditingMeal={vi.fn()} />,
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={vi.fn()}
+      />,
     );
 
     const removeBtn = screen.getByRole("button", { name: /Видалити meal/ });

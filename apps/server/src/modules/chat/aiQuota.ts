@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { getSessionUser } from "../../auth.js";
-import pool from "../../db.js";
+import pool, { withSubjectContext } from "../../db.js";
 import { getIp } from "../../http/rateLimit.js";
 import { logger } from "../../obs/logger.js";
 import {
@@ -8,16 +8,49 @@ import {
   aiQuotaFailOpenTotal,
   aiCostConsumedTotal,
 } from "../../obs/metrics.js";
+import {
+  nextWeekStartKyivMs,
+  toLocalISODate,
+  weekStartKyiv,
+  weeklyLimit,
+  type FeatureId,
+} from "@sergeant/shared";
+import {
+  parseLimit,
+  resolvePresetBudget,
+  type QuotaBudget,
+} from "./aiQuotaBudget.js";
+import { consumeRoundTripTicket } from "./chatRoundTripTicket.js";
+import {
+  AI_QUOTA_ENDPOINT,
+  WEEKLY_METERS,
+  type WeeklyMeter,
+} from "./aiQuotaWeekly.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
-import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
+import { isAnthropicBudgetHardExceeded } from "../../obs/anthropicBudgetGuard.js";
+import {
+  freeOnPremiumEnabled,
+  hardBreachDegradeAllEnabled,
+  setTierHeader,
+  tieredProEnabled,
+  tierModel,
+  type ProEndpoint,
+  type ProTier,
+  type ProTierResult,
+} from "./aiQuotaTierModels.js";
+
+// Реекспорт: caller-и (chat.ts, coach.ts, тести) історично беруть ці типи
+// з `aiQuota.js`. Тримаємо контракт, щоб винесення лишилось внутрішнім.
+export type { ProEndpoint, ProTier, ProTierResult };
+export { getWeeklyUsage, type WeeklyMeter } from "./aiQuotaWeekly.js";
 
 type SessionUser = { id: string } | null;
 
 /**
  * Квиток на refund у разі неуспіху upstream AI-виклику. Атачиться до `req`
  * (див. `WithAiQuotaRefund`), handler викликає його якщо Anthropic повернув
- * помилку / timeout / клієнт відвалився — тоді квоту не сп'ємо за провалений
+ * помилку / timeout / клієнт відвалився — тоді квоту не спʼємо за провалений
  * запит. Без-db режим (fail-open) повертає no-op refund.
  */
 export interface AiQuotaRefund {
@@ -59,10 +92,11 @@ interface ConsumeQuotaReturn {
 }
 
 /**
- * Денна AI-квота. Зберігається в `ai_usage_daily` як лічильник по (subject, day,
- * bucket). Є два типи bucket-ів: `default` — звичайний chat/coach/digest/nutrition
- * (cost=1), `tool:<name>` — окремий tool-use виклик (cost = AI_QUOTA_TOOL_COST,
- * default 3 — див. `toolCost`).
+ * AI-квота. Зберігається в `ai_usage_daily` як лічильник по (subject, day,
+ * bucket). Free списує тижневі відра (`week:ai`, `week:photo`,
+ * `week:finyk-vision`, ключ `day` = понеділок тижня за Києвом, спека
+ * `docs/work/specs/access-tiers.md`). `tool:<name>`: окремий tool-use виклик
+ * для Pro (cost = AI_QUOTA_TOOL_COST, default 3, див. `toolCost`).
  *
  * Cost vs. limit — два незалежні важелі (детальніше в docstring-ах `toolCost`
  * і `toolLimit`):
@@ -83,19 +117,19 @@ interface ConsumeQuotaReturn {
  * upstream-ліміти Anthropic і per-route rate-limit все одно працюють.
  */
 
-const DEFAULT_BUCKET = "default";
 const TOOL_BUCKET_PREFIX = "tool:";
+
 const DEFAULT_TOOL_COST = 3;
 
-function parseLimit<F extends number | null>(
-  name: string,
-  fallback: F,
-): number | F {
-  const v = process.env[name];
-  if (v === undefined || v === "") return fallback;
-  const n = parseInt(v, 10);
-  return Number.isFinite(n) && n >= 0 ? n : fallback;
-}
+// ── Pro tiered model degradation ────────────────────────────────────
+// Окремі відра рахують дорогі (premium) та дешеві (standard) AI-виклики
+// Pro-юзера за добу. Каскад: premium вичерпано → standard → floor (∞,
+// майже-безкоштовна модель). Pro НІКОЛИ не блокується (немає 429).
+// Самі model-id і прапорці тирингу живуть у `aiQuotaTierModels.ts`.
+const PREMIUM_BUCKET = "premium";
+const STANDARD_BUCKET = "standard";
+const DEFAULT_PREMIUM_LIMIT = 20;
+const DEFAULT_STANDARD_LIMIT = 80;
 
 /**
  * `true` when the AI-quota subsystem is disabled wholesale (CI/test only).
@@ -107,19 +141,14 @@ function parseLimit<F extends number | null>(
  *
  * Production safety lives at startup — `assertStartupEnv()` in
  * `apps/server/src/env/env.ts` hard-blocks server boot when this flag is
- * truthy alongside `NODE_ENV=production` (or any RAILWAY_* env). The module
- * here trusts the startup check and does not re-validate at runtime.
+ * truthy alongside `NODE_ENV=production` / `APP_ENV=production`. The module
+ * here trusts the startup check and does not re-validate at runtime. The
+ * startup gate uses the host-agnostic `isDeployedProduction()` (NODE_ENV /
+ * APP_ENV), so it fires on Coolify/Hetzner regardless of the host shape.
  */
 export function isAiQuotaDisabled(): boolean {
   const v = process.env["AI_QUOTA_DISABLED"]?.toLowerCase();
   return v === "1" || v === "true";
-}
-
-const DEFAULT_ANON_LIMIT = 40;
-
-/** Daily AI-message cap for an anonymous (IP-keyed) caller — env-tunable. */
-function anonDailyLimit(): number | null {
-  return parseLimit("AI_DAILY_ANON_LIMIT", DEFAULT_ANON_LIMIT);
 }
 
 /**
@@ -131,9 +160,9 @@ function anonDailyLimit(): number | null {
  *
  * Distinct from a Pro plan: a founder keeps whatever billing plan they have
  * but is never blocked by the per-user counter, so internal dogfooding and
- * demos don't burn the free 5/day cap (which is also lower than the anon
- * 40/day cap — the inversion that makes this bypass necessary for a real
- * owner account). Covers both the default chat bucket and tool-use buckets.
+ * demos don't burn the authenticated free-tier cap (weekly buckets from the
+ * access registry, `@sergeant/shared` `FEATURES`).
+ * Covers both the weekly buckets and tool-use buckets.
  */
 function isFounderUser(userId: string): boolean {
   const raw = process.env["AI_QUOTA_FOUNDER_IDS"];
@@ -142,9 +171,10 @@ function isFounderUser(userId: string): boolean {
 }
 
 /**
- * Plan-aware daily AI-message cap for an authenticated user (ADR-1.7).
- * Free → `FREE_LIMITS.aiRequestsPerDay` (5); Pro → `null` (unlimited).
- * Sourced from `billing/effectiveLimits` so the paid limit lives in one place.
+ * Plan-aware weekly cap of one Free bucket for an authenticated user.
+ * Free → `weeklyLimit("free", feature)` з реєстру доступу; Pro (включно з
+ * trial і grace, бо `getUserPlan` віддає для них `pro`) → `null`. Число тут
+ * не хардкодиться: воно вже раз дрейфувало від свого рішення.
  *
  * On a plan-lookup error we fall back to the FREE cap — never silently grant
  * unlimited (the monetization-safe default). A full DB outage is still
@@ -155,7 +185,10 @@ function isFounderUser(userId: string): boolean {
  * and is dwarfed by the upstream Anthropic call. Add a short-TTL cache here
  * (ADR-1.7) only if profiling shows it matters.
  */
-async function userDailyLimit(userId: string): Promise<number | null> {
+async function userWeeklyLimit(
+  userId: string,
+  feature: FeatureId,
+): Promise<number | null> {
   let plan: "free" | "pro" = "free";
   try {
     plan = (await getUserPlan(pool, userId)).plan === "pro" ? "pro" : "free";
@@ -165,7 +198,7 @@ async function userDailyLimit(userId: string): Promise<number | null> {
       err: { message: (e as Error)?.message || String(e) },
     });
   }
-  return planLimits(plan).aiRequestsPerDay;
+  return weeklyLimit(plan, feature);
 }
 
 /**
@@ -174,7 +207,7 @@ async function userDailyLimit(userId: string): Promise<number | null> {
  * Це ГЛОБАЛЬНА (per-tool-name-agnostic) вага: усі tool-и коштують однаково.
  * За замовчуванням `DEFAULT_TOOL_COST` (3) — один tool-call "важить" як три
  * звичайні chat-повідомлення (`default`-bucket, cost=1). Override —
- * через env `AI_QUOTA_TOOL_COST` (невід'ємне ціле; биті/від'ємні значення
+ * через env `AI_QUOTA_TOOL_COST` (невідʼємне ціле; биті/відʼємні значення
  * ігноруються `parseLimit`-ом і падають на дефолт).
  *
  * NB: вартість і ліміт — це ДВА різні важелі. `AI_QUOTA_TOOL_COST` керує тим,
@@ -196,7 +229,7 @@ function toolCost(): number {
  *
  * Precedence (від найвищого до найнижчого):
  *   1. `AI_QUOTA_TOOL_LIMITS[toolName]` — явний per-tool ліміт із JSON-мапи,
- *      якщо ключ присутній і значення — валідне невід'ємне число.
+ *      якщо ключ присутній і значення — валідне невідʼємне число.
  *   2. `AI_QUOTA_TOOL_DEFAULT_LIMIT` — fallback для tool-ів, яких немає в мапі
  *      (а також коли `AI_QUOTA_TOOL_LIMITS` взагалі не задано).
  *   3. `null` (unlimited) — якщо й дефолтний ліміт не задано.
@@ -240,32 +273,103 @@ async function safeSessionUser(req: Request): Promise<SessionUser> {
   }
 }
 
+/** Subject key for a logged-in user — shared by quota consume/refund and read-only usage lookups. */
+function subjectForUser(userId: string): string {
+  return `u:${userId}`;
+}
+
 function subjectFor(sessionUser: SessionUser, req: Request): string {
-  return sessionUser ? `u:${sessionUser.id}` : `ip:${getIp(req)}`;
+  return sessionUser ? subjectForUser(sessionUser.id) : `ip:${getIp(req)}`;
 }
 
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  // Europe/Kyiv day boundary (домен-інваріант) для денних tool-відер Pro.
+  return toLocalISODate();
+}
+
+function resetsAtIso(): string {
+  return new Date(nextWeekStartKyivMs()).toISOString();
 }
 
 /**
- * Default-bucket (plain chat) quota check. Shape збережено (backwards compat):
- * повертає true/false; при вичерпанні сама відправляє 429 у `res`.
+ * Читає `round_trip_ticket` із сирого `req.body` (цей middleware стоїть ДО
+ * `parseBody(ChatRequestSchema, …)` у `chat.ts`, той самий патерн, що
+ * `resolvePresetBudget` уже використовує для `preset`) і намагається його
+ * спожити для `userId`. `req.body` тут може бути `undefined` узагалі —
+ * `requireAiQuota()` монтується і на роутах без tool-round-trip (`coach.ts`,
+ * `nutrition.ts`), де поля просто нема.
+ */
+function tryConsumeRoundTripTicket(req: Request, userId: string): boolean {
+  const raw = (req.body as { round_trip_ticket?: unknown } | undefined)
+    ?.round_trip_ticket;
+  if (typeof raw !== "string" || raw.length === 0) return false;
+  return consumeRoundTripTicket({ ticket: raw, userId });
+}
+
+/**
+ * Тижнева quota check одного відра Free (`meter`, за замовчуванням `ai`).
+ * Shape збережено (backwards compat): повертає true/false; при вичерпанні
+ * сама відправляє 429 у `res`.
  */
 export async function assertAiQuota(
   req: Request,
   res: Response,
+  meter: WeeklyMeter = "ai",
 ): Promise<boolean> {
   if (isAiQuotaDisabled()) return true;
+  const spec = WEEKLY_METERS[meter];
 
   const sessionUser = await safeSessionUser(req);
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
-  const limit = sessionUser
-    ? await userDailyLimit(sessionUser.id)
-    : anonDailyLimit();
 
-  if (limit == null) return true;
+  // AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
+  // — «хід з дією коштує ОДИН запит». Якщо цей запит несе валідний
+  // round-trip-квиток для ЦЬОГО юзера (`chatRoundTripTicket.ts`), він —
+  // другий HTTP-запит уже оплаченого першого туру (tool-хід), а не новий
+  // хід: списання пропускаємо цілком (жодного DB-виклику). Без валідного
+  // квитка (немає поля, чужий, прострочений, підроблений) — падаємо назад
+  // на звичайне списання нижче; це safe default, той самий шлях, що діяв
+  // до цього рішення, і саме тому підробити «я — продовження» без
+  // реального першого ходу не працює.
+  if (
+    meter === "ai" &&
+    sessionUser &&
+    tryConsumeRoundTripTicket(req, sessionUser.id)
+  ) {
+    return true;
+  }
+
+  // Анонімного трафіку тут не буває. КОЖЕН роут, що монтує цю квоту, стоїть
+  // за `requireSession()`: `routes/chat.ts`, `routes/coach.ts`,
+  // `routes/weekly-digest.ts` і `r.use("/api/nutrition", requireSession())` —
+  // рішення A1 з `docs/work/specs/audits/ai-abuse-2026-08-05.md`, і послаблювати
+  // його не можна (без сесії ключем квоти був би `ip:<addr>`, а IPv6-клієнт
+  // має під підпискою цілу /64).
+  //
+  // Тож `sessionUser === null` тут означає не аноніма, а збій ПОВТОРНОГО
+  // session-lookup усередині запиту, який `requireSession()` уже пропустив
+  // (`safeSessionUser` ковтає виняток). Даємо Free-стелю — та сама
+  // monetization-safe відповідь, що і в `userWeeklyLimit` на помилку плану:
+  // ніколи не роздаємо безліміт мовчки.
+  const planLimit = sessionUser
+    ? await userWeeklyLimit(sessionUser.id, spec.feature)
+    : weeklyLimit("free", spec.feature);
+
+  // Unlimited (Pro) виходить ДО резолву preset-відра: безлімітному юзеру
+  // окремий бюджет нічого не додає, а зайве відро тільки шумить у метриках.
+  if (planLimit == null) return true;
+
+  // Сценарний preset витрачає власне тижневе відро замість спільного (див.
+  // `resolvePresetBudget`). Усе решта — той самий шлях.
+  const presetBudget = meter === "ai" ? resolvePresetBudget(req) : null;
+  const isPresetBudget = presetBudget !== null;
+  const budget: QuotaBudget = presetBudget ?? {
+    bucket: spec.bucket,
+    day: weekStartKyiv(),
+    limit: planLimit,
+  };
+  const limit = budget.limit;
 
   if (limit === 0) {
     try {
@@ -295,14 +399,14 @@ export async function assertAiQuota(
 
   const subject = subjectFor(sessionUser, req);
   try {
-    const day = today();
+    const day = budget.day;
     const cost = 1;
     const result = await consumeQuota({
       subject,
       day,
       limit,
       cost,
-      bucket: DEFAULT_BUCKET,
+      bucket: budget.bucket,
     });
     aiQuotaCircuitBreaker.recordSuccess();
     if (!result.ok) {
@@ -311,23 +415,47 @@ export async function assertAiQuota(
       } catch {
         /* ignore */
       }
-      res.status(429).json({
-        error: "Денний ліміт AI вичерпано. Спробуй завтра.",
-        code: "AI_QUOTA",
-        limit: result.limit,
-      });
+      // Тижневе відро і сценарний preset вичерпують РІЗНІ ліміти, тож і
+      // виходи в них різні. Тижневе чекає понеділка (`resetsAt`), а в preset
+      // вихід у ручному заповненні, яке взагалі не витрачає AI.
+      // Клієнт розрізняє випадки за `code` (див. `friendlyApiError` у
+      // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
+      res.status(429).json(
+        isPresetBudget
+          ? {
+              error:
+                "Ліміт AI-заповнення профілю на цей тиждень вичерпано. Дозаповни вручну в Профілі, це безкоштовно.",
+              code: "AI_QUOTA_PRESET",
+              limit: result.limit,
+            }
+          : {
+              error: spec.error,
+              code: spec.code,
+              limit: result.limit,
+              resetsAt: resetsAtIso(),
+            },
+      );
       return false;
     }
     try {
       const subjectType = sessionUser ? "user" : "anon";
       aiCostConsumedTotal.inc(
-        { subject_type: subjectType, bucket_type: "default" },
+        {
+          subject_type: subjectType,
+          // Лейбл `default` для спільних дій лишається, щоб не рвати
+          // наявні дашборди; окремі відра Free отримують власний.
+          bucket_type: isPresetBudget
+            ? "preset"
+            : meter === "ai"
+              ? "default"
+              : meter,
+        },
         cost,
       );
     } catch {
       /* ignore */
     }
-    attachRefund(req, { subject, day, bucket: DEFAULT_BUCKET, cost });
+    attachRefund(req, { subject, day, bucket: budget.bucket, cost });
     setRemainingHeader(res, String(result.remaining));
     return true;
   } catch (e) {
@@ -382,6 +510,15 @@ export async function consumeToolQuota(
   }
   const limit = toolLimit(toolName);
   if (limit == null) {
+    return { ok: true, remaining: null, limit: null };
+  }
+  // Free: хід із tool-викликом коштує 1 дію з тижневих (`assertAiQuota`),
+  // окремий денний tool-бакет тут був би невидимою стелею при повних
+  // тижневих. Для Pro бакет лишається захистом від зловживань.
+  if (
+    !sessionUser ||
+    (await userWeeklyLimit(sessionUser.id, "ai.actions")) !== null
+  ) {
     return { ok: true, remaining: null, limit: null };
   }
   if (limit === 0) {
@@ -461,6 +598,194 @@ export async function consumeToolQuota(
   }
 }
 
+/**
+ * Pro tiered model resolution. На відміну від `assertAiQuota`, НЕ блокує і НЕ
+ * шле 429 — Pro завжди отримує якусь модель. Повертає `{tier, model}`, caller
+ * підставляє `model` у свій AI-виклик (chat → Anthropic stream, coach → factory).
+ *
+ * Каскад (лише для Pro-плану): premium-bucket (дорога модель) → standard-bucket
+ * (дешевша) → floor (∞, майже-безкоштовна).
+ *
+ * **Free та анон ідуть `standard`-моделлю** (`unpaid()`). До 2026-08-06 вони
+ * отримували `premium`, і це була інверсія: Pro після 20 викликів доби падає на
+ * standard, тобто неплатник мав кращу модель, ніж платник на 21-му
+ * повідомленні. Кількість Free так само капає `assertAiQuota` — змінилась лише
+ * модель. Kill-switch назад: `AI_FREE_ON_PREMIUM=true`.
+ *
+ * `founder`/`disabled`/`flag-off` та будь-який fail-open шлях → `premium`
+ * (краще зрідка переплатити, ніж заблокувати оплаченого юзера) — окрім
+ * hard-breach деградації, яка накриває всіх, крім founder-а.
+ *
+ * Refund: інкрементиться рівно одне відро на запит (premium АБО standard), тож
+ * єдиного `req.aiQuotaRefund`-слота достатньо — `attachRefund` прикріплюється
+ * лише коли реально списали. Floor нічого не списує → refund не потрібен.
+ *
+ * Fail-open скрізь: DB-outage / circuit-open / plan-lookup-fail → `premium`.
+ * Краще зрідка дати Pro дорожчу модель, ніж заблокувати оплаченого юзера.
+ */
+export async function resolveProTier(
+  req: Request,
+  res: Response,
+  endpoint: ProEndpoint,
+): Promise<ProTierResult> {
+  const premium = (
+    remaining: number | null = null,
+    limit: number | null = null,
+  ): ProTierResult => {
+    setTierHeader(res, "premium");
+    return {
+      tier: "premium",
+      model: tierModel("premium", endpoint),
+      remaining,
+      limit,
+    };
+  };
+
+  /**
+   * Неоплачений трафік (Free + анон). Не `premium()`: Free не деградує ніколи, а
+   * Pro після 20 викликів доби падає на standard — тобто неплатник мав кращу
+   * модель за платника. `remaining/limit` = `null`, бо Free капає КІЛЬКІСТЮ
+   * через `assertAiQuota`, і чужі лічильники в `X-AI-*` були б брехнею.
+   *
+   * **Лише `chat`.** Коуч лишається на premium, і це не непослідовність, а
+   * рахунок: у чаті деградація premium→standard це `glm-5.2`→`deepseek-v4-flash`
+   * і −$0.014 на повідомлення, а в коуча — `gpt-5.1`→`gemini-2.5-flash-lite`,
+   * тобто НАЙБІЛЬШИЙ розрив у якості за НАЙМЕНШУ економію (~$0.0035 на виклик,
+   * ≈$0.05 на Free-юзера в місяць). Коуч до того ж не має plan-gate
+   * (`routes/coach.ts` — лише session+ключ+квота), тож це поверхня, яку Free
+   * бачить на дашборді щодня.
+   */
+  const unpaid = (): ProTierResult => {
+    if (freeOnPremiumEnabled()) return premium();
+    if (endpoint === "coach") return premium();
+    setTierHeader(res, "standard");
+    return {
+      tier: "standard",
+      model: tierModel("standard", endpoint),
+      remaining: null,
+      limit: null,
+    };
+  };
+
+  if (isAiQuotaDisabled()) return premium();
+  if (!tieredProEnabled()) return premium();
+
+  const sessionUser = await safeSessionUser(req);
+  // Founder — never degraded (plan-agnostic).
+  if (sessionUser && isFounderUser(sessionUser.id)) return premium();
+
+  // Catastrophic-cost circuit-breaker (opt-in, default off). Коли денний
+  // глобальний Anthropic-spend перевищив hard-поріг І
+  // `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=true` — деградуємо КОЖЕН не-founder
+  // виклик (анонімний, Free і Pro) на floor-модель, не лише ті, що
+  // вичерпали власну квоту. Це справжня стеля вартості, тому перевірка стоїть
+  // ВИЩЕ за анонімну гілку: анонім не має плану, який можна деградувати
+  // «наступного разу», і саме він найдешевший для масового виклику. Sync-флаг,
+  // без DB-залежності → працює навіть при db-outage. Floor нічого не списує
+  // (no refund).
+  if (hardBreachDegradeAllEnabled() && isAnthropicBudgetHardExceeded()) {
+    setTierHeader(res, "floor");
+    return {
+      tier: "floor",
+      model: tierModel("floor", endpoint),
+      remaining: 0,
+      limit: 0,
+    };
+  }
+
+  // Сесії немає. На практиці це не анонім (усі роути під `requireSession()` —
+  // див. коментар у `assertAiQuota`), а збій session-lookup. Модель — standard,
+  // тобто той самий тир, що й Free: не деградуємо нижче й не даруємо premium.
+  if (!sessionUser) return unpaid();
+
+  let plan: "free" | "pro" = "free";
+  try {
+    plan =
+      (await getUserPlan(pool, sessionUser.id)).plan === "pro" ? "pro" : "free";
+  } catch (e: unknown) {
+    logger.warn({
+      msg: "pro_tier_plan_lookup_failed",
+      err: { message: (e as Error)?.message || String(e) },
+    });
+    // Як і збій сесії вище: не блокуємо, але й не даруємо premium кожному
+    // Free-юзеру, поки лежить БД (рішення власника 2026-09-28).
+    return unpaid();
+  }
+  // Free: кількість капає `assertAiQuota`, модель — standard (див. `unpaid`).
+  if (plan !== "pro") return unpaid();
+
+  // Fail-open: never block a paying user on infra trouble.
+  if (!process.env["DATABASE_URL"]) return premium();
+  if (!aiQuotaCircuitBreaker.isAllowing()) return premium();
+
+  const subject = subjectFor(sessionUser, req);
+  // Tier buckets use the Kyiv civil day (домен-інваріант).
+  const day = toLocalISODate();
+  const premiumLimit = parseLimit(
+    "AI_PRO_PREMIUM_DAILY_LIMIT",
+    DEFAULT_PREMIUM_LIMIT,
+  );
+  const standardLimit = parseLimit(
+    "AI_PRO_STANDARD_DAILY_LIMIT",
+    DEFAULT_STANDARD_LIMIT,
+  );
+
+  // 1) premium-bucket
+  try {
+    const pr = await consumeQuota({
+      subject,
+      day,
+      limit: premiumLimit,
+      cost: 1,
+      bucket: PREMIUM_BUCKET,
+    });
+    aiQuotaCircuitBreaker.recordSuccess();
+    if (pr.ok) {
+      attachRefund(req, { subject, day, bucket: PREMIUM_BUCKET, cost: 1 });
+      return premium(pr.remaining, pr.limit);
+    }
+  } catch (e) {
+    aiQuotaCircuitBreaker.recordFailure(e);
+    logQuotaStoreUnavailable("db_error", e);
+    return premium(); // fail-open
+  }
+
+  // 2) standard-bucket (premium exhausted)
+  try {
+    const sr = await consumeQuota({
+      subject,
+      day,
+      limit: standardLimit,
+      cost: 1,
+      bucket: STANDARD_BUCKET,
+    });
+    aiQuotaCircuitBreaker.recordSuccess();
+    if (sr.ok) {
+      attachRefund(req, { subject, day, bucket: STANDARD_BUCKET, cost: 1 });
+      setTierHeader(res, "standard");
+      return {
+        tier: "standard",
+        model: tierModel("standard", endpoint),
+        remaining: sr.remaining,
+        limit: sr.limit,
+      };
+    }
+  } catch (e) {
+    aiQuotaCircuitBreaker.recordFailure(e);
+    logQuotaStoreUnavailable("db_error", e);
+    // fall through to floor — degrade rather than block
+  }
+
+  // 3) floor — both exhausted (or standard-write failed). No increment, no refund.
+  setTierHeader(res, "floor");
+  return {
+    tier: "floor",
+    model: tierModel("floor", endpoint),
+    remaining: 0,
+    limit: standardLimit,
+  };
+}
+
 function setRemainingHeader(res: Response, value: string): void {
   try {
     res.setHeader("X-AI-Quota-Remaining", value);
@@ -537,20 +862,23 @@ async function consumeQuota({
   }
 
   const sql = `
-    INSERT INTO ai_usage_daily AS t (subject_key, usage_day, bucket, request_count)
-    VALUES ($1, $2::date, $3, $4)
-    ON CONFLICT (subject_key, usage_day, bucket)
+    INSERT INTO ai_usage_daily AS t (subject_key, usage_day, bucket, endpoint, request_count)
+    VALUES ($1, $2::date, $3, $4, $5)
+    ON CONFLICT (subject_key, usage_day, bucket, endpoint)
     DO UPDATE SET request_count = t.request_count + EXCLUDED.request_count
-      WHERE t.request_count + EXCLUDED.request_count <= $5
+      WHERE t.request_count + EXCLUDED.request_count <= $6
     RETURNING request_count
   `;
-  const r = await pool.query<ConsumeQuotaRow>(sql, [
-    subject,
-    day,
-    bucket,
-    cost,
-    limit,
-  ]);
+  const r = await withSubjectContext(subject, (db) =>
+    db.query<ConsumeQuotaRow>(sql, [
+      subject,
+      day,
+      bucket,
+      AI_QUOTA_ENDPOINT,
+      cost,
+      limit,
+    ]),
+  );
   if (r.rows.length === 0) {
     return { ok: false, remaining: 0, limit };
   }
@@ -567,11 +895,20 @@ async function consumeQuota({
 async function refundConsumed(ticket: ConsumedTicket): Promise<void> {
   if (!process.env["DATABASE_URL"]) return;
   try {
-    await pool.query(
-      `UPDATE ai_usage_daily
-          SET request_count = GREATEST(0, request_count - $4)
-        WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3`,
-      [ticket.subject, ticket.day, ticket.bucket, ticket.cost],
+    await withSubjectContext(ticket.subject, (db) =>
+      db.query(
+        `UPDATE ai_usage_daily
+            SET request_count = GREATEST(0, request_count - $4)
+          WHERE subject_key = $1 AND usage_day = $2::date AND bucket = $3
+            AND endpoint = $5`,
+        [
+          ticket.subject,
+          ticket.day,
+          ticket.bucket,
+          ticket.cost,
+          AI_QUOTA_ENDPOINT,
+        ],
+      ),
     );
   } catch (e: unknown) {
     const err = e as { message?: string; code?: string } | undefined;
@@ -603,6 +940,7 @@ function attachRefund(req: Request, ticket: ConsumedTicket): void {
 export const __aiQuotaTestHooks = {
   consumeQuota,
   refundConsumed,
-  DEFAULT_BUCKET,
+  WEEKLY_METERS,
   TOOL_BUCKET_PREFIX,
+  AI_QUOTA_ENDPOINT,
 };

@@ -7,14 +7,22 @@ export type PwaAction =
   | "start_workout"
   | "add_meal"
   | "add_meal_photo"
-  | "add_habit";
+  | "add_habit"
+  | "set_budget"
+  | "view_analytics"
+  | "connect_bank";
 
+// The last three are Фінік checklist steps. Without them here `useAppEffects`
+// dropped the step's action and every step opened Огляд.
 const VALID_ACTIONS = new Set<PwaAction>([
   "add_expense",
   "start_workout",
   "add_meal",
   "add_meal_photo",
   "add_habit",
+  "set_budget",
+  "view_analytics",
+  "connect_bank",
 ]);
 
 function isPwaAction(value: string | null): value is PwaAction {

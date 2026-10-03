@@ -40,7 +40,7 @@ export function ModulesStep({
           Що тобі важливо?
         </Text>
         <Text className="text-center text-xs text-fg-muted">
-          Обери модулі — решту легко додати потім.
+          Обери модулі, решту легко додати потім.
         </Text>
       </View>
       <View className="w-full gap-2">
@@ -124,7 +124,7 @@ export function ModulesStep({
       )}
       {picks.length === 0 && defaultPicksVariant === "all" && (
         <Text className="text-center text-[11px] text-fg-muted">
-          Без вибору — всі 4 модулі.
+          Без вибору: всі 4 модулі.
         </Text>
       )}
     </View>

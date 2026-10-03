@@ -1,3 +1,6 @@
+import { HUB_AXIS_ANALYTICS_EVENTS } from "./analyticsEvents.hubAxis";
+import { VALUE_LOOP_ANALYTICS_EVENTS } from "./analyticsEvents.valueLoops";
+
 /**
  * Canonical analytics event names shared across platforms.
  *
@@ -17,13 +20,18 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // Onboarding replay (Settings → "Подивитись tour" — read-only mode).
   // Distinguished from `ONBOARDING_STARTED` / `ONBOARDING_COMPLETED` so
   // re-runs do not inflate the FTUX funnel — see S4.5 in
-  // `docs/launch/ftux-sprint-plan.md`.
+  // `docs/work/specs/launch/ftux-sprint-plan.md`.
   ONBOARDING_REPLAY_VIEWED: "onboarding_replay_viewed",
   ONBOARDING_REPLAY_DISMISSED: "onboarding_replay_dismissed",
 
   // Finyk / activation
   EXPENSE_ADDED: "expense_added",
   EXPENSE_DELETED: "expense_deleted",
+  // Manual income (fab-and-manual-income spec) — symmetric to EXPENSE_ADDED/
+  // DELETED above, kept as separate named events rather than a payload
+  // discriminator to match the existing convention for this event pair.
+  INCOME_ADDED: "income_added",
+  INCOME_DELETED: "income_deleted",
   BUDGET_SET: "budget_set",
   ANALYTICS_OPENED: "analytics_opened",
   BANK_CONNECT_STARTED: "bank_connect_started",
@@ -51,7 +59,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // `hub_first_action_completed_v1:<module>` flag у KV) з payload-ом
   // `{ module: "finyk" | "fizruk" | "routine" | "nutrition" }`. Назву
   // події не міняти — залежать дашборди WF-60 та pre-launch funnel у
-  // PostHog (див. `docs/observability/posthog-ftux-dashboards.md`).
+  // PostHog (див. `docs/operations/observability/posthog-ftux-dashboards.md`).
   //
   //   FIRST_ACTION_COMPLETED { module: DashboardModuleId }
   FIRST_ACTION_COMPLETED: "first_action_completed",
@@ -128,18 +136,31 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //
   // Трекаємо факт взаємодії, НЕ текст повідомлень. Payload-контракти:
   //
+  //   HUBCHAT_OPENED         { source: "overlay" | "route" }
   //   HUBCHAT_MESSAGE_SENT   { length: number, fromVoice: boolean,
   //                            hasQuickAction?: boolean, module?: string }
+  //   HUBCHAT_RESPONSE_RECEIVED { latency_ms: number, length: number,
+  //                               had_tools: boolean }
   //   HUBCHAT_TOOL_INVOKED   { tool: string, module: string,
   //                            success: boolean, latency_ms: number }
   //   HUBCHAT_ERROR          { kind: "http" | "parse" | "aborted" | "network"
   //                                 | "unknown",
   //                            status?: number }
   //
-  // `tool` — канонічне ім'я ChatAction (напр. `add_expense`, `log_workout`).
+  // `tool` — канонічне імʼя ChatAction (напр. `add_expense`, `log_workout`).
   // Body повідомлень / tool_input НЕ потрапляють у payload — лише counts
   // + latency + провайдер/модуль, щоб дашборди працювали без експорту PII.
+  //
+  // Воронка бети: OPENED ≥ MESSAGE_SENT ≥ RESPONSE_RECEIVED + ERROR.
+  // Різниця `MESSAGE_SENT − (RESPONSE_RECEIVED + ERROR)` — це відповіді,
+  // яких користувач НЕ дочекався (скасував кнопкою або пішов зі сторінки);
+  // явну подію на скасування не заводимо, бо це не збій, а вибір людини.
+  // `HUBCHAT_ERROR{kind:"aborted"}` означає САМЕ 90-секундний таймаут, не
+  // ручний cancel — інакше «модель зависла» й «юзер передумав» злиплися б
+  // в одне число, а під час бети це два різні висновки.
+  HUBCHAT_OPENED: "hubchat_opened",
   HUBCHAT_MESSAGE_SENT: "hubchat_message_sent",
+  HUBCHAT_RESPONSE_RECEIVED: "hubchat_response_received",
   HUBCHAT_TOOL_INVOKED: "hubchat_tool_invoked",
   HUBCHAT_ERROR: "hubchat_error",
 
@@ -163,21 +184,25 @@ export const ANALYTICS_EVENTS = Object.freeze({
 
   // Acquisition — `signup_completed` рахується у WF-60 growth funnel
   // (`ops/n8n-workflows/60-growth-funnel-snapshot.json`) як перехід
-  // visit → signup. Fire-and-forget одразу після успішного
-  // `signUp.email` у `AuthContext` — Better Auth повертає
-  // ok-without-error на cтворення акаунта, тож подія = «акаунт
-  // створено», незалежно від email-verification flow. Payload-контракт:
+  // visit → signup. Payload-контракт:
   //
-  //   SIGNUP_COMPLETED { method: "email" | "google" }
+  //   SIGNUP_COMPLETED { method: "email" | "google" | "apple" }
   //
-  // Google OAuth наразі не диференціює signup vs login на клієнті
-  // (`signIn.social` повертає той самий shape для обох), тож на цей
-  // момент трекаємо тільки `method: "email"`. Google signup
-  // інструментується окремим follow-up PR коли callback-flow
-  // повертатиме `isNewUser` — див. план у docs/planning/pr-plan-2026-05.md
-  // (PR-06 follow-up). До того ж WF-60 рахує DISTINCT distinct_id за
-  // подією, тож відсутність google-signup тимчасово недо-зараховує
-  // signups, але не подвоює існуючі.
+  // Email: fire-and-forget одразу після успішного `signUp.email` у
+  // `AuthContext` — Better Auth повертає ok-without-error на cтворення
+  // акаунта, тож подія = «акаунт створено», незалежно від
+  // email-verification flow.
+  //
+  // Google/Apple: `signIn.social` full-page-redirects to the provider, so
+  // there is no synchronous "signup vs login" signal at call time —
+  // `AuthContext.loginWithGoogle`/`loginWithApple` never resolve on
+  // success. `AuthContext` instead stashes the chosen provider in
+  // sessionStorage before the redirect and, once the callback lands back
+  // on `/`, compares the freshly-loaded `user.createdAt` to now: Better
+  // Auth sets `createdAt` once at row insert, so a brand-new OAuth signup
+  // lands within ~2 minutes of the redirect return while a repeat login's
+  // `createdAt` is however old the account already is. See
+  // `consumePendingOAuthSignup` in `apps/web/src/core/auth/AuthContext.tsx`.
   SIGNUP_COMPLETED: "signup_completed",
 
   // Subscription / billing — placeholders. Білінг поки не підключено;
@@ -200,6 +225,35 @@ export const ANALYTICS_EVENTS = Object.freeze({
   SUBSCRIPTION_CANCELED: "subscription_canceled",
   SUBSCRIPTION_RENEWED: "subscription_renewed",
 
+  // Billing failures (billing-observability — ADR-0001 §ADR-1.16). Fired
+  // server-side from the Stripe webhook handler
+  // (`apps/server/src/modules/billing/stripe.ts`) on every NEGATIVE payment
+  // signal, so PostHog can measure checkout drop-rate і 3DS-fail rate без
+  // експорту card data. ONE event, розрізнюваний полем `kind`; ніколи не
+  // несе PAN / CVC / raw error blob. Payload-контракт:
+  //
+  //   PAYMENT_FAILED {
+  //     kind: "payment_intent" | "invoice" | "charge" | "checkout_expired",
+  //     source: "stripe_webhook",
+  //     stripe_event_id: string,
+  //     user_resolved: boolean,        // false → distinctId анонімний
+  //     // kind="payment_intent":
+  //     error_code?: string | null,           // last_payment_error.code
+  //     decline_code?: string | null,         // last_payment_error.decline_code
+  //     is_3ds?: boolean,                      // code === "payment_intent_authentication_failure"
+  //     // kind="invoice":
+  //     attempt_count?: number | null,
+  //     next_payment_attempt?: string | null,  // ISO-8601 (Stripe unix→ISO)
+  //     // kind="charge":
+  //     failure_code?: string | null,
+  //     network_decline_code?: string | null,  // outcome.network_decline_code
+  //   }
+  //
+  // distinctId резолвиться через customer → subscriptions.provider_customer_id
+  // → user_id; на miss — fallback `stripe_customer:<id>` / `stripe_event:<id>`
+  // (анонімно), щоб aggregate drop-rate лишався countable.
+  PAYMENT_FAILED: "payment_failed",
+
   // Pricing / waitlist. Очікувані payload-контракти:
   //
   //   PRICING_VIEWED         { source?: "settings" | "paywall" | "direct" }
@@ -207,9 +261,13 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //                            cta: "free" | "stripe_checkout" }
   //   CHECKOUT_OPENED        { plan: "pro", mode: "test" | "live" }
   //   WAITLIST_SUBMITTED     { tier_interest: "free" | "pro" | "unsure",
-  //                            source: "pricing_page" | "paywall" | "settings"
-  //                                   | "onboarding",
+  //                            source: "pricing_page" | "landing" | "paywall"
+  //                                   | "settings" | "onboarding",
   //                            created: boolean }
+  //
+  // `source` дзеркалить `WaitlistSourceSchema` у `schemas/api.ts` — той самий
+  // enum, що їде в тілі `POST /api/v1/waitlist`. `"landing"` шле маркетинговий
+  // сайт (`apps/landing`), решта — in-app поверхні.
   PRICING_VIEWED: "pricing_viewed",
   PRICING_CTA_CLICKED: "pricing_cta_clicked",
   CHECKOUT_OPENED: "checkout_opened",
@@ -232,18 +290,95 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // is active; absent on production rollout once a winner is picked.
   ACTIVATION_V2_HIT: "activation_v2_hit",
 
-  // Landing page (initiative 0010 Phase 6.1). Fired from `/` + `/pricing`
-  // public surfaces. Payload contracts:
+  // Multi-module activation — cross-module breadth signal (Tier 2).
+  // Complements `activation_v2` (Finyk-only depth) with the breadth the
+  // growth funnel actually needs: how many users touch ≥2 modules, not
+  // just deep-activate one. Fired exactly once per browser profile the
+  // moment the count of modules with a `first_action_completed` flag
+  // first reaches `MULTI_MODULE_ACTIVATION_THRESHOLD` (2). Idempotent
+  // through the `hub_multi_module_activated_v1` localStorage flag.
+  // Payload contract:
   //
-  //   LANDING_VIEWED          { path: "/" | "/pricing", referrer?: string,
+  //   MULTI_MODULE_ACTIVATED { module_count: number,
+  //                            modules: DashboardModuleId[],
+  //                            days_since_first_action: number | null }
+  //
+  // `modules` is in `DASHBOARD_MODULE_IDS` order. `days_since_first_action`
+  // is whole days from the FTUX clock origin (`hub_first_action_started_at_v1`),
+  // or `null` when that stamp is missing (e.g. data restored via sync).
+  MULTI_MODULE_ACTIVATED: "multi_module_activated",
+
+  // Landing page (initiative 0010 Phase 6.1). Fired from the in-app public
+  // surfaces (`/`, `/pricing`) and from the standalone marketing site
+  // `apps/landing` (every route in its `App.tsx` `ROUTES`, unknown paths
+  // collapse to `/404`). Payload contract:
+  //
+  //   LANDING_VIEWED          { path: string,   // маршрут із ROUTES або "/404"
+  //                             referrer?: string,
   //                             locale: "uk" | "en" }
-  //   LANDING_EMAIL_CAPTURED  { source: "hero" | "footer" | "sticky",
-  //                             locale: "uk" | "en" }
+  //
+  // `apps/landing` шле рівно чотири події — `LANDING_VIEWED`,
+  // `LANDING_TELEGRAM_CLICKED`, `LANDING_WIDGET_CHANGED`, `LANDING_FAQ_OPENED`
+  // (усі нижче) — без autocapture і pageview-хуків. Полів вводу на сайті
+  // немає; кожна подія несе лише стан контрола. Перелік продубльовано
+  // користувачу в політиці приватності лендінга і в `apps/landing/README.md`.
+  //
+  // `LANDING_EMAIL_CAPTURED` прибрано 2026-09-17: подія була задекларована
+  // 2026-05-13 під email-форму, яку лендінг так і не отримав — 2026-07-26
+  // конверсію переведено на Telegram-вейтліст (#487). Жодного call site і
+  // жодної події в PostHog за нею не було, тож дашборди не постраждали
+  // (аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md` § 9а).
   //
   // `locale` is the served locale at capture time — used to split funnel
   // metrics between UA-organic and EN-paid acquisition tracks.
   LANDING_VIEWED: "landing_viewed",
-  LANDING_EMAIL_CAPTURED: "landing_email_captured",
+
+  // Telegram-вейтліст (спека `docs/work/specs/telegram-waitlist.md`).
+  // Маркетинговий лендінг перевів конверсію з email на deep link бота, бо
+  // розсилка поштою заблокована відсутністю верифікованого домену, а бета-група
+  // і так живе в Telegram. Payload:
+  //
+  //   LANDING_TELEGRAM_CLICKED { source: "hero" | "footer" | "beta",
+  //                              locale: "uk" | "en",
+  //                              ref: string,
+  //                              path?: string }
+  //   LANDING_TELEGRAM_STARTED { placement: "hero" | "footer",
+  //                              ref: string,
+  //                              first_start: boolean }
+  //
+  // `source` — це `LandingPlacement` з `landingAttribution.ts`; до
+  // 2026-09-17 тут стояло застаріле `"thanks"`, маршруту `/thanks` у
+  // лендінга немає.
+  //
+  // `path` (додано 2026-08-28, аудит воронки): сторінка, з якої зроблено
+  // клік. `source` кодує лише місце кнопки (hero/footer/beta), тож без
+  // `path` footer-кліки з різних сторінок нерозрізнимі.
+  //
+  // `LANDING_TELEGRAM_CLICKED` — остання подія, яку бачить КЛІЄНТ: сам
+  // `/start` відбувається вже в Telegram. Раніше друга половина воронки
+  // рахувалась як `COUNT(telegram_waitlist)` у БД, тож знаменник і чисельник
+  // жили в різних системах і зводились вручну. Тепер вебхук бота шле
+  // `LANDING_TELEGRAM_STARTED` серверним транспортом (`lib/posthogCapture.ts`,
+  // заведений 2026-07-26), і обидві половини лежать в одному місці.
+  //
+  // Склеюються вони по `ref` — одноразовому токену з deep link-а
+  // (`lib/landingAttribution.ts`), а НЕ по `distinct_id`: лендінг cookieless,
+  // тож його анонім і користувач апки — принципово різні персони. Тому
+  // воронку по цих двох подіях будувати саме join-ом по `ref`.
+  LANDING_TELEGRAM_CLICKED: "landing_telegram_clicked",
+  LANDING_TELEGRAM_STARTED: "landing_telegram_started",
+
+  // Engagement-події лендінга (аудит воронки 2026-08-28). Обидві анонімні
+  // й content-free: несуть лише стан контрола, жодного вводу користувача.
+  //
+  //   LANDING_WIDGET_CHANGED { trainings: 1 | 3 | 5, locale: "uk" | "en" }
+  //   LANDING_FAQ_OPENED     { question: string, locale: "uk" | "en" }
+  //
+  // `question` — літерал заголовка з FAQ_ITEMS (фіксований словник, не
+  // текст користувача). Перелік подій дубльовано в політиці приватності
+  // лендінга — додаєш подію, онови і її.
+  LANDING_WIDGET_CHANGED: "landing_widget_changed",
+  LANDING_FAQ_OPENED: "landing_faq_opened",
 
   // Auth multi-provider (initiative 0010 Phase 4.3). Better Auth wires
   // Apple + Google + Email/password fallback; these events split the
@@ -302,37 +437,51 @@ export const ANALYTICS_EVENTS = Object.freeze({
   PERMISSIONS_SETTINGS_OPENED: "permissions_settings_opened",
   PERMISSION_STATUS_CHANGED: "permission_status_changed",
 
-  // Demo mode (S4.1 of `docs/launch/ftux-sprint-plan.md`). The welcome
-  // screen ships a "Подивитись приклад" CTA that seeds a fake hub
-  // payload in localStorage; once the user lands inside the hub, a
-  // banner offers them a one-tap path back to the real onboarding
-  // wizard. Events are kept off the FTUX funnel so demo browsing
-  // doesn't inflate `onboarding_started` cohorts. Expected payloads:
-  //
-  //   DEMO_STARTED                { source: "welcome" | "deeplink" }
-  //   DEMO_DISMISSED              {}  // banner X
-  //   DEMO_TO_WIZARD_CONFIRMED    {}  // banner CTA → /welcome
-  DEMO_STARTED: "demo_started",
-  DEMO_DISMISSED: "demo_dismissed",
-  DEMO_TO_WIZARD_CONFIRMED: "demo_to_wizard_confirmed",
+  // Demo mode (S4.1) стояв тут із трьома подіями — `demo_started`,
+  // `demo_dismissed`, `demo_to_wizard_confirmed`. Режим знято
+  // 2026-09-17: за 4,5 місяця в демо зайшли 13 людей, а повернувся
+  // наступного дня один. Історичні події лишаються в PostHog; нових
+  // джерел для них у коді немає.
 
-  // PWA install prompt (Wave 1 PR-07 — `docs/launch/product-os/ftux-master-tracker.md`).
+  // PWA install prompt (Wave 1 PR-07 — `docs/work/specs/launch/product-os/ftux-master-tracker.md`).
   // Funnel:
   //   PWA_INSTALL_PROMPTED  ≥  PWA_INSTALL_ACCEPTED + PWA_INSTALL_DISMISSED
-  //   PWA_INSTALLED          ≤  PWA_INSTALL_ACCEPTED                  (Android/Chromium only;
-  //                                                                     iOS Safari has no
-  //                                                                     `appinstalled` event)
+  //   PWA_INSTALLED          — термінальний успіх, фіксується на ОБОХ платформах
   //
   // The success metric we maintain is
   //   `pwa_installed / first_real_entry ≥ 8 %`
   // — i.e. of users who hit their first real entry, at least 8 % go on
-  // to install the app. Payload contracts:
+  // to install the app.
+  //
+  // `PWA_INSTALLED` має два джерела, бо `appinstalled` — Chromium-only, а вся
+  // наша база на iOS Safari. До 2026-08-16 існувало лише перше, і подія не
+  // спрацювала жодного разу за весь час (231 `pwa_install_prompted`, 0
+  // `pwa_installed`) — success-плече воронки було структурно невимірним саме
+  // на тій платформі, де всі користувачі:
+  //
+  //   - `via: "appinstalled"`         — Chromium `window.appinstalled`;
+  //   - `via: "standalone_detected"`  — перший запуск у `display-mode:
+  //                                     standalone`. Потрапити туди можна лише
+  //                                     через Add to Home Screen, тож для iOS
+  //                                     це і є момент інсталяції.
+  //
+  // Обидва джерела дедупляться спільним прапорцем у storage, тож на одну
+  // інсталяцію припадає рівно одна подія. Payload contracts:
   //
   //   PWA_INSTALL_PROMPTED   { surface: "android" | "ios" }
   //   PWA_INSTALL_ACCEPTED   {}  // native chooser → outcome === "accepted"
   //   PWA_INSTALL_DISMISSED  { surface: "android" | "ios",
-  //                            via: "banner" | "chooser" }
-  //   PWA_INSTALLED          {}  // window `appinstalled` event
+  //                            via: "banner" | "banner_snooze" | "chooser" }
+  //   PWA_INSTALLED          { surface: "android" | "ios",
+  //                            via: "appinstalled" | "standalone_detected" }
+  //
+  // Founder-ux-review round 2 (O2): на iOS `via: "banner"` — це явна
+  // постійна відмова (текстове посилання «не нагадувати»), а
+  // `via: "banner_snooze"` — тимчасове відкладення на 30 днів (іконка "×").
+  // На Android однієї affordance («×» у рядку сповіщень) досить, тож тег
+  // лишився старим (`via: "banner"`) заради стабільності дашбордів, але
+  // персистентність під капотом змінилась: тепер це завжди TTL-снуз
+  // (`installBannerSnooze.ts`), не forever-флаг.
   PWA_INSTALL_PROMPTED: "pwa_install_prompted",
   PWA_INSTALL_ACCEPTED: "pwa_install_accepted",
   PWA_INSTALL_DISMISSED: "pwa_install_dismissed",
@@ -386,9 +535,42 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //   }
   //
   // Target P50 / P95 thresholds tracked in
-  // `docs/observability/hub-perf-baseline.md` — sampling 100 % for the
+  // `docs/operations/observability/hub-perf-baseline.md` — sampling 100 % for the
   // first 30 days, then 10 % once Sprint 1+2 optimisations land.
   HUB_TAB_SWITCH_PERF: "hub_tab_switch_perf",
+
+  // Feedback loop (GTM § 3.2 — `docs/work/specs/launch/business/02-go-to-market.md`).
+  // In-app feedback widget (Settings → «Фідбек») + NPS через PostHog
+  // Surveys. Ops-довідка: `docs/operations/observability/feedback-loop.md`.
+  //
+  // Payload-контракти:
+  //
+  //   FEEDBACK_WIDGET_OPENED { source: "settings" }
+  //   FEEDBACK_SUBMITTED     { category: "idea" | "bug" | "other",
+  //                            message: string,        // free-text, ≤ 2000 chars
+  //                            length: number,
+  //                            has_page_context: boolean,
+  //                            page?: string,          // sanitizeUrl()-ений href
+  //                            viewport?: string }     // "WxH", напр. "390x844"
+  //   NPS_SURVEY_ELIGIBLE    { account_age_days: number }
+  //
+  // `FEEDBACK_SUBMITTED.message` — єдиний event у каталозі з навмисним
+  // user-generated free-text payload-ом. Це усвідомлений виняток із
+  // «minimal, non-sensitive metadata» контракту `trackEvent`: текст
+  // юзер пише саме для того, щоб ми його прочитали. `scrubPII` все одно
+  // проходить по payload (redact відомих key-імен), а DEV-console-шлях
+  // додатково gated value-рівневим `containsPII`.
+  //
+  // `NPS_SURVEY_ELIGIBLE` — client-side тригер для PostHog Survey
+  // (NPS). Стріляє рівно один раз на browser profile, коли вік акаунта
+  // (від `user.createdAt`, цілі доби UTC) сягає ≥ 7 днів; idempotency —
+  // localStorage-флаг `sergeant.nps_survey_eligible_fired`. Survey у
+  // PostHog dashboard таргетиться display-умовою «user sends event
+  // nps_survey_eligible» (див. ops-довідку вище). Назви подій не
+  // міняти — на них завʼязані survey-умови й дашборди у PostHog.
+  FEEDBACK_WIDGET_OPENED: "feedback_widget_opened",
+  FEEDBACK_SUBMITTED: "feedback_submitted",
+  NPS_SURVEY_ELIGIBLE: "nps_survey_eligible",
 
   // [Initiative 0006](../../../../docs/initiatives/0006-frontend-routing-and-code-split.md)
   // Phase 4 — RUM baseline for `route_change_p95_latency_ms`. Fires once
@@ -409,6 +591,33 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // 10 %. The first event after page-load is suppressed (initial mount,
   // not a route change).
   ROUTE_CHANGE: "route_change",
+
+  // Плашка «залий документи» (спека
+  // `docs/work/specs/finyk-import-reminders.md` § Телеметрія).
+  //
+  // `_SHOWN` — плашка реально відрендерилась; це знаменник CTR у критерії
+  // зняття фічі. Окремої shadow-події тут НЕ заводимо саме тому: подія
+  // «умова істинна, але плашку не показали» зіпсувала б цей знаменник, і
+  // фічу зняли б за критерієм, якого вона не проходила.
+  //
+  // Payload: { source: "bank_statement" | "bank_screenshot",
+  //            daysSince: number, expectedIntervalDays: number }
+  FINYK_IMPORT_REMINDER_SHOWN: "finyk_import_reminder_shown",
+  FINYK_IMPORT_REMINDER_CLICKED: "finyk_import_reminder_clicked",
+  FINYK_IMPORT_REMINDER_SNOOZED: "finyk_import_reminder_snoozed",
+  FINYK_IMPORT_REMINDER_MUTED: "finyk_import_reminder_muted",
+
+  // Хвиля 2 — петлі цінності («сигнал показано → дію зроблено»).
+  // Група живе в окремому модулі, щоб тримати цей файл у межах
+  // module-size-дисципліни (Hard Rule #18); публічний доступ незмінний —
+  // `ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN` тощо. Payload-контракти —
+  // у `analyticsEvents.valueLoops.ts`.
+  ...VALUE_LOOP_ANALYTICS_EVENTS,
+
+  // Базова лінія перед віссю дії хабу (P3): три події, без яких перехід
+  // на A1 не починається за рішенням власника 2026-08-07. Контракти й
+  // тип джерела — у `analyticsEvents.hubAxis.ts`.
+  ...HUB_AXIS_ANALYTICS_EVENTS,
 } as const);
 
 export type AnalyticsEventName =

@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import { BrandLogo } from "../app/BrandLogo";
 import { OnboardingProgress } from "./OnboardingProgress";
 import { ALL_MODULES } from "./vibePicks";
@@ -33,10 +33,8 @@ export function WelcomeOneScreen({
   expanded,
   onToggleExpanded,
   copy,
-  ctaLabelOverride,
   ctaDisabled,
   emptyPicksHint,
-  onSecondaryAction,
   headingRef,
   ctaBusy,
 }: {
@@ -48,11 +46,6 @@ export function WelcomeOneScreen({
   /** Resolved A/B copy for the splash hero (S1.1 + S1.2). */
   copy: OnboardingHeroCopy;
   /**
-   * Override label for the primary CTA. Used by tour replay to swap
-   * `copy.primaryCta` for "Закрити". Real wizard always renders
-   * `copy.primaryCta` so the experiment arm controls the text.
-   */
-  ctaLabelOverride?: string | undefined;
   /**
    * S6.1: disable the primary CTA when the user is in the `none` arm
    * of `onboarding_default_picks_v1` and has no module selected.
@@ -63,17 +56,6 @@ export function WelcomeOneScreen({
    * is true. Tells the user why the button is inactive.
    */
   emptyPicksHint?: string | undefined;
-  /**
-   * PR-05 — demo mode as first-class CTA. Optional handler for the
-   * secondary "Подивитись приклад" button rendered inside the splash
-   * card under the primary CTA. When omitted (modal mode, tour
-   * replay) the secondary CTA is not rendered. Hosts (`/welcome`)
-   * pass `seedDemoData()` so the demo entry sits in the same visual
-   * card as the primary onboarding CTA, satisfying the share-of-
-   * traffic ≥ 15% target without forcing the user to scan past the
-   * card.
-   */
-  onSecondaryAction?: (() => void) | undefined;
   /**
    * Ref to the splash heading. Set by the wizard so the modal variant
    * can move focus there on mount (WCAG 2.4.3 — focus must land
@@ -101,36 +83,47 @@ export function WelcomeOneScreen({
         <h2
           ref={headingRef}
           tabIndex={-1}
-          className="text-style-hero text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+          className="text-style-headline text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
         >
           {copy.title}
         </h2>
-        <p className="text-sm text-muted leading-relaxed max-w-xs mx-auto">
+        <p className="text-style-body text-muted leading-relaxed max-w-xs mx-auto">
           {copy.subtitle}
         </p>
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-muted">
+      <div className="flex items-center gap-3 text-style-caption text-muted">
         <span className="flex items-center gap-1">
-          <Icon name="lock" size={14} aria-hidden />
+          <Icon name="lock" size="sm" aria-hidden />
           {copy.badges[0]}
         </span>
         <span className="flex items-center gap-1">
-          <Icon name="cloud-off" size={14} aria-hidden />
+          <Icon name="cloud-off" size="sm" aria-hidden />
           {copy.badges[1]}
         </span>
         <span className="flex items-center gap-1">
-          <Icon name="eye-off" size={14} aria-hidden />
+          <Icon name="eye-off" size="sm" aria-hidden />
           {copy.badges[2]}
         </span>
       </div>
+
+      {/* Усі чотири модулі увімкнені за замовчуванням, тому тап по рядку
+          знімає вибір, а не додає. Без цього рядка взаємодія виглядає як
+          «обери свої», а працює як «зніми зайві» — дизайн-аудит 2026-07,
+          цикл 3. */}
+      <p className="w-full text-left text-style-body text-subtle -mb-1">
+        {messages.onboarding.pickerAllOnHint}
+      </p>
 
       <div className="w-full space-y-2">
         {MODULE_CARDS.map((card, idx) => (
           <div
             key={card.id}
             className="motion-safe:animate-module-card"
-            style={{ animationDelay: `${idx * 50}ms` }}
+            // Hard Rule #17: між дітьми стагеру максимум 30 мс, сумарно
+            // ≤150 мс. Було `idx * 50` — четверта картка чекала 150 мс,
+            // а на пʼятій вибігла б за стелю.
+            style={{ animationDelay: `${Math.min(idx * 30, 150)}ms` }}
           >
             <ModuleRow
               card={card}
@@ -152,19 +145,19 @@ export function WelcomeOneScreen({
       <Button
         type="button"
         onClick={onOpen}
-        variant="primary"
+        variant="solid"
         size="lg"
         className="w-full"
         disabled={ctaDisabled || ctaBusy}
         loading={ctaBusy}
       >
-        {ctaLabelOverride ?? copy.primaryCta}
-        <Icon name="chevron-right" size={16} />
+        {copy.primaryCta}
+        <Icon name="chevron-right" size="md" />
       </Button>
 
       {ctaDisabled && emptyPicksHint ? (
         <p
-          className="text-xs text-muted -mt-2"
+          className="text-style-caption text-muted -mt-2"
           role="status"
           aria-live="polite"
         >
@@ -172,32 +165,15 @@ export function WelcomeOneScreen({
         </p>
       ) : null}
 
-      {onSecondaryAction ? (
-        <button
-          type="button"
-          onClick={onSecondaryAction}
-          className={cn(
-            "w-full flex items-center justify-center gap-2",
-            "h-11 min-h-[44px] rounded-2xl border border-brand-500/35 bg-brand-500/5",
-            "text-style-label text-brand-strong dark:text-brand",
-            "hover:bg-brand-500/10 hover:border-brand-500/55 transition-colors",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-          )}
-        >
-          <Icon name="sparkles" size={16} strokeWidth={2} aria-hidden />
-          <span>{copy.secondaryCta}</span>
-        </button>
-      ) : null}
-
       <button
         type="button"
         onClick={onToggleExpanded}
         aria-expanded={expanded}
-        className="w-full text-xs text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded inline-flex items-center justify-center gap-1.5"
+        className="w-full text-style-label text-muted hover:text-text transition-colors py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded inline-flex items-center justify-center gap-1.5"
       >
         <Icon
           name={expanded ? "chevron-up" : "chevron-down"}
-          size={12}
+          size="xs"
           aria-hidden
         />
         {expanded ? "Згорнути" : "Що це за розділи?"}

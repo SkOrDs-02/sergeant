@@ -2,9 +2,12 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { NUTRITION_RECIPES_CACHE_KEY } from "@sergeant/nutrition-domain";
+import {
+  NUTRITION_RECIPES_CACHE_KEY,
+  shortHash,
+} from "@sergeant/nutrition-domain";
 
-import { normalizeFoodName } from "./pantryTextParser";
+import { matchFoodName } from "./pantryTextParser";
 
 /**
  * Recipe cache lives in `sessionStorage` (per-tab) by design — AI-generated
@@ -31,20 +34,13 @@ function safeWriteSessionRaw(key: string, value: string): void {
   }
 }
 
-function shortHash(str: string): string {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(36);
-}
-
 export interface RecipeCachePrefs {
   goal?: unknown;
   servings?: unknown;
   timeMinutes?: unknown;
   exclude?: unknown;
+  recipeMealType?: unknown;
+  recipePantryMode?: unknown;
 }
 
 export interface RecipeCacheEntry<TRecipe = unknown> {
@@ -58,8 +54,10 @@ export function buildRecipeCacheKey(
   effectiveItems: ReadonlyArray<{ name?: unknown }>,
   prefs: RecipeCachePrefs | null | undefined,
 ): string {
+  // Match-ключ, а не display: зміна лише регістру назви не має інвалідувати
+  // кеш рецептів — набір продуктів той самий.
   const names = effectiveItems
-    .map((x) => normalizeFoodName(x?.name))
+    .map((x) => matchFoodName(x?.name))
     .filter(Boolean)
     .sort();
   const prefStr = [
@@ -67,6 +65,8 @@ export function buildRecipeCacheKey(
     prefs?.servings,
     prefs?.timeMinutes,
     String(prefs?.exclude || ""),
+    prefs?.recipeMealType,
+    prefs?.recipePantryMode,
   ].join("|");
   const raw = `${activePantryId}\n${names.join("\n")}\n${prefStr}`;
   return shortHash(raw);
@@ -81,8 +81,7 @@ export function readRecipeCache<TRecipe = unknown>(
     const all = JSON.parse(raw);
     if (!all || typeof all !== "object") return null;
     const entry = (all as Record<string, unknown>)[cacheKey] as
-      | RecipeCacheEntry<TRecipe>
-      | undefined;
+      RecipeCacheEntry<TRecipe> | undefined;
     if (!entry || !Array.isArray(entry.recipes)) return null;
     return {
       recipes: entry.recipes,

@@ -20,7 +20,7 @@ test("sw: debug snapshot + clear caches work (best-effort)", async ({
         navigator.serviceWorker.controller || reg.active;
       if (!ctl) return { ok: false, reason: "no_controller" as const };
 
-      const requestId = `pw_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+      const requestId = `pw_${crypto.randomUUID()}`;
       const snapshot = await new Promise<unknown>((resolve, reject) => {
         const timer = setTimeout(() => {
           navigator.serviceWorker.removeEventListener("message", onMessage);

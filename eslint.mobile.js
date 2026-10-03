@@ -44,6 +44,19 @@ export const mobileBlocks = [
       "sergeant-design/no-raw-local-storage": "error",
     },
   },
+  // Tone-of-voice канону `docs/product/copy/style-guide.uk.md` — той самий
+  // гейт, що у web. Mobile тримаємо під ним із першого дня: аудит копії
+  // 2026-08-26 знайшов саме тут більшість формального «Ви» (19 рядків проти
+  // 15 у web), бо поверхня молодша й ніколи не проходила ToV-ревʼю.
+  {
+    files: [
+      "apps/mobile/src/**/*.{js,jsx,ts,tsx}",
+      "apps/mobile/app/**/*.{js,jsx,ts,tsx}",
+    ],
+    rules: {
+      "sergeant-design/ukrainian-copy": "error",
+    },
+  },
   // Mirror of the web umbrella ban for the mobile app — Metro tolerates
   // `node:fs` shims today, but the latent dual breakage (audit §8) means
   // we lock all client-side surfaces to the safe sub-segments.
@@ -57,7 +70,7 @@ export const mobileBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`.",
             },
           ],
         },
@@ -70,7 +83,7 @@ export const mobileBlocks = [
   //
   // Allowlist below names every existing `as unknown as X` call-site
   // on mobile as of rule extension (2026-05-01). Migrate a file → drop
-  // it from the list. See `docs/90-work/tech-debt/mobile.md` §no-strict-bypass
+  // it from the list. See `docs/work/specs/tech-debt/mobile.md` §no-strict-bypass
   // (registry tracked separately in PR 3).
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
@@ -115,7 +128,7 @@ export const mobileBlocks = [
   //     (legacy LS shape parser; eslint-disable-next-line present).
   // New `any` in mobile production code surfaces immediately in CI lint
   // output. Promote to "error" once the burn-down reaches zero. See
-  // `docs/90-work/tech-debt/mobile.md` §no-explicit-any.
+  // `docs/work/specs/tech-debt/mobile.md` §no-explicit-any.
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}"],
     ignores: [
@@ -124,6 +137,132 @@ export const mobileBlocks = [
     ],
     rules: {
       "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `immutability` cleared
+  // apps/mobile: Sheet.tsx shared-value deps + CategoryDonut render accumulator.
+  // Promoted from baseline `off` to mobile-scoped `error`. See
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/immutability": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `purity` cleared apps/mobile:
+  // OnboardingWizard step timestamp ref init + useRecovery `nowMs` state
+  // (parity with web `useRecovery`). Promoted from baseline `off` to
+  // mobile-scoped `error`. See initiative 0021.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/purity": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `preserve-manual-memoization`
+  // cleared apps/mobile: 4 call-sites fixed by extracting `computeInitialExpenseDate`
+  // (ManualExpenseSheet — drop the memo the Compiler couldn't preserve) and by
+  // centralising `pantryItems` in `useNutritionPantries` with a narrowed
+  // `activePantryItems` dependency (mirrors web hook). Promoted from the
+  // baseline `off` to mobile-scoped `error` so the next regression fails lint
+  // loudly. Stays `off` in the shared baseline until other surfaces clear.
+  // See `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}"],
+    rules: {
+      "react-hooks/preserve-manual-memoization": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `refs` cleared apps/mobile
+  // across waves 1–3: Animated.Value lazy useState, onboarding intro state,
+  // hook callback-ref sync via useEffect, draggable reduceMotion shared values,
+  // HubSearch destructure. Promoted from baseline `off` to mobile-scoped
+  // `error`. See `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/refs": "error",
+    },
+  },
+  // react-hooks v7 burndown (initiative 0021) — `set-state-in-effect` cleared
+  // apps/mobile in two waves (2026-07-10): wave 1 (46→2) render-time SQLite
+  // overlay, prevOpen sheet reset, derived state; wave 2 (2→0) microtask-deferred
+  // OS permission state after async Expo Notifications APIs. Promoted from
+  // baseline `off` to mobile-scoped `error`. See initiative 0021.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "react-hooks/set-state-in-effect": "error",
+    },
+  },
+  // Тости помилок мусять нести дію — те саме правило, що вже стоїть на
+  // вебі (`eslint.web.js`), тепер і на мобілці.
+  //
+  // Чому це окремий блок, а не розширення веб-глоба: конфіги розбиті по
+  // поверхнях навмисно (PR-31 phase 2), і allowlist у них РІЗНІ — веб
+  // виправдовує свої винятки веб-причинами (файловий input, який хук не
+  // тримає), мобільні причини свої.
+  //
+  // Дірку знайшов огляд 2026-09-13 (PR-X3): правило жило під
+  // `files: ["apps/web/src/**"]`, тож чотири мобільні `toast.error` не
+  // гейтились нічим. API тостів на обох поверхнях однаковий
+  // (`error(msg, duration?, action?)`), тож ніякої мобільної специфіки
+  // тут немає — була просто незакрита поверхня. Той самий клас, що M1.
+  {
+    files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
+    ignores: [
+      "apps/mobile/src/**/*.test.{ts,tsx}",
+      "apps/mobile/src/**/__tests__/**",
+      "apps/mobile/app/**/*.test.{ts,tsx}",
+      "apps/mobile/app/**/__tests__/**",
+    ],
+    rules: {
+      "sergeant-design/require-toast-error-action": [
+        "error",
+        {
+          allowlist: [
+            // `showUndoToast`: тост про ПРОВАЛЕНИЙ undo. Причина дослівно
+            // та сама, що у веб-дзеркала (`eslint.web.js`, запис для
+            // `apps/web/src/shared/lib/ui/undoToast.tsx`): повторний
+            // виклик `onUndo` після часткового відкату може подвоїти
+            // запис, тож ретрай тут небезпечніший за його відсутність.
+            // Тримати пару синхронною важливо саме тут — розсинхрон цієї
+            // пари огляд уже ловив окремою знахідкою.
+            "apps/mobile/src/lib/showUndoToast.ts",
+            // Помилка голосового вводу. `handleVoiceError` отримує лише
+            // готовий рядок і не володіє мікрофоном, тож «Повторити»
+            // звідси не підняти без проведення колбека крізь компонент —
+            // а кнопка мікрофона й так лишається на екрані, тобто
+            // recovery-шлях видимий без тоста. Та сама логіка, що у
+            // веб-записах про імпорт (`useNutritionLog.ts`).
+            "apps/mobile/src/core/hub/HubChat.tsx",
+          ],
+        },
+      ],
     },
   },
 ];

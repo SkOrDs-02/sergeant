@@ -17,7 +17,14 @@ export { Banner } from "./Banner";
 export type { BannerProps, BannerVariant } from "./Banner";
 
 export { Button } from "./Button";
-export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
+export type {
+  ButtonProps,
+  ButtonSize,
+  ButtonVariant,
+  ButtonEmphasis,
+  ButtonTone,
+  ButtonVariantLegacy,
+} from "./Button";
 
 export { IconButton } from "./IconButton";
 export type { IconButtonProps } from "./IconButton";
@@ -40,6 +47,12 @@ export type {
 
 export { Avatar } from "./Avatar";
 export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
+
+export { DateScrubber } from "./DateScrubber";
+export type { DateScrubberProps } from "./DateScrubber";
+
+export { MorphChevron } from "./MorphChevron";
+export type { MorphChevronProps } from "./MorphChevron";
 
 export { EmptyState, ModuleEmptyState } from "./EmptyState";
 export type {
@@ -68,23 +81,13 @@ export {
 } from "./AnimatedNumber";
 export type {} from "./AnimatedNumber";
 
-export { QuickActionsMenu } from "./QuickActionsMenu";
-export type { QuickAction } from "./QuickActionsMenu";
-
-export { PageTransition } from "./PageTransition";
-export type { TransitionDirection } from "./PageTransition";
+export { MaskedAmount } from "./MaskedAmount";
+export type { MaskedAmountProps } from "./MaskedAmount";
 
 export { PullToRefresh } from "./PullToRefresh";
 export type { PullToRefreshProps, PullToRefreshVariant } from "./PullToRefresh";
 export { PullToRefreshIndicator } from "./PullToRefreshIndicator";
 export type { PullToRefreshIndicatorProps } from "./PullToRefreshIndicator";
-
-export {
-  AccentColorPicker,
-  AccentColorPickerCard,
-  useAccentColor,
-} from "./AccentColorPicker";
-export type { AccentColor } from "./AccentColorPicker";
 
 export { FormField, Label } from "./FormField";
 export type { FormFieldProps, LabelProps } from "./FormField";
@@ -100,10 +103,7 @@ export type {
   TextareaProps,
 } from "./Input";
 
-export { Prose } from "./Prose";
-export type { ProseProps, ProseVariant } from "./Prose";
-
-export { SectionHeader, SectionHeading } from "./SectionHeading";
+export { SectionHeading } from "./SectionHeading";
 export type {
   SectionHeadingProps,
   SectionHeadingSize,
@@ -136,13 +136,6 @@ export type {
   ProgressBarSize,
   ProgressBarVariant,
 } from "./ProgressBar";
-
-export { ProgressCircle } from "./ProgressCircle";
-export type {
-  ProgressCircleProps,
-  ProgressCircleSize,
-  ProgressCircleVariant,
-} from "./ProgressCircle";
 
 export { ProgressRing } from "./ProgressRing";
 export type {
@@ -183,6 +176,13 @@ export type { SkeletonCardProps, SkeletonListProps } from "./SkeletonCard";
 export { DataState } from "./DataState";
 export type { DataStateProps, DataStateQueryLike } from "./DataState";
 
+export { DataTable } from "./DataTable";
+export type {
+  DataTableColumn,
+  DataTableDensity,
+  DataTableProps,
+} from "./DataTable";
+
 export { SkipLink } from "./SkipLink";
 export type { SkipLinkProps } from "./SkipLink";
 
@@ -211,6 +211,9 @@ export type { TooltipPlacement, TooltipProps, TooltipSize } from "./Tooltip";
 
 export { ThemeSwitcher } from "./ThemeSwitcher";
 export type { ThemeSwitcherProps } from "./ThemeSwitcher";
+
+export { DateField } from "./DateField";
+export type { DateFieldProps } from "./DateField";
 
 export type { FormVariant, SmallMediumLarge } from "./types";
 
@@ -296,17 +299,12 @@ export {
   CommandPaletteProvider,
   useCommandPalette,
   useCommandPaletteControls,
-  useCommandPaletteHotkey,
   useRegisterCommand,
 } from "./CommandPalette";
 export type { PaletteCommand } from "./CommandPalette";
 
-// Sergeant v2 redesign (2026-05, PR-7a) — AI push/pull surfaces.
-// `<AIPill>` sits above bottom-nav as persistent chat-entry affordance;
+// Sergeant v2 redesign (2026-05, PR-7a) — AI push surface.
 // `<InsightCard>` shows AI-detected actionable insights with dismissal
 // tracked via `@shared/lib/insights/useInsightDismissal`.
-export { AIPill } from "./AIPill";
-export type { AIPillProps } from "./AIPill";
-
 export { InsightCard } from "./InsightCard";
 export type { InsightCardProps } from "./InsightCard";

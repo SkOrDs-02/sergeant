@@ -15,7 +15,7 @@ import type {
  * each row's lifecycle (success / transient retry / terminal reject)
  * based on the server's per-op result.
  *
- * Stage 5 PR #042e-pushloop of `docs/planning/storage-roadmap.md`.
+ * Stage 5 PR #042e-pushloop of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Pairs with PR #042e-lifecycle (write-side helpers in db-schema:
  * `markOutboxSuccess` / `markOutboxRetry` / `markOutboxRejected`),
  * PR #042e-drain (read-side helper), PR #042d-builder (enqueue helper),
@@ -80,16 +80,27 @@ import type {
  *     supposed to return one result per op submitted; if it doesn't,
  *     leaving the row in `pending` and bumping `attempts` is safer
  *     than silently dropping it.
- * - On HTTP failure (any thrown error from `deps.push`): the entire
- *   batch goes to {@link MarkOutboxRetryFn}. The error is classified
- *   via {@link describePushError} into a stable, low-cardinality
- *   string (`network`, `timeout`, `http_5xx`, `http_503`, …) so
- *   `last_error` keeps a bounded label space (analytics rollup
- *   cardinality budget — see Stage 5 reject-reason hygiene rule).
- *   `ApiError.kind === 'http'` with `status === 401 | 403` (auth) is
- *   propagated as `auth_<status>` and is still treated as transient
- *   — the engine has no way to mint new credentials on its own;
- *   re-auth happens out of band, after which the next tick re-pushes.
+ * - On HTTP failure (any thrown error from `deps.push`): the error is
+ *   classified via {@link describePushError} into a stable,
+ *   low-cardinality string (`network`, `timeout`, `http_5xx`,
+ *   `http_503`, …) so `last_error` keeps a bounded label space
+ *   (analytics rollup cardinality budget — see Stage 5 reject-reason
+ *   hygiene rule). The label then decides the lifecycle:
+ *   * Статус із {@link TERMINAL_PUSH_HTTP_STATUSES} (400 / 413 / 422)
+ *     — ТЕРМІНАЛЬНЕ відхилення всього батча через
+ *     {@link MarkOutboxRejectedFn}. Ретрай його не полагодить за
+ *     визначенням: батч дренеться детерміновано (`ORDER BY id ASC`),
+ *     тож кожна спроба збирає ті самі рядки й дає ту саму відповідь.
+ *     Доти такий батч мовчки згорав: `SYNC_OP_MAX_ATTEMPTS = 10`
+ *     спроб — і всі рядки в `dead_letter` без жодного сигналу, тобто
+ *     тиха втрата офлайн-записів. Тепер вони одразу `rejected` із
+ *     причиною `http_<status>`, а це вже видно і в Sentry
+ *     (`reportTerminalRejection`), і в екрані стану синку.
+ *   * Усе інше — транзієнт: увесь батч іде в
+ *     {@link MarkOutboxRetryFn}. `ApiError.kind === 'http'` зі
+ *     `status === 401 | 403` теж лишається транзієнтом — рушій не
+ *     вміє сам випустити нові креденшали; re-auth стається поза ним,
+ *     після чого наступний тик перепушить.
  *
  * Idempotency on retry:
  *
@@ -214,7 +225,24 @@ export type MarkOutboxRetryFn = (
 export type MarkOutboxRejectedFn = (
   id: number,
   reason: string,
+  meta?: RejectedOpMeta,
 ) => Promise<void>;
+
+/**
+ * Що саме відхилено — для обсервабіліті на боці харнеса.
+ *
+ * Раніше сюди доїжджали тільки `id` рядка outbox-а й причина, тож у Sentry
+ * було видно «щось відкинуто через tombstoned» і не видно ЩО. Розбір
+ * `SERGEANT-WEB-Q` через це звівся до археології по коду замість погляду в
+ * теги. `table` + `op` знімають рівно цю сліпоту.
+ *
+ * `row` (payload) сюди НЕ передається навмисно: там суми, назви й нотатки
+ * користувача, а це прямий шлях у Sentry повз redaction (Hard Rule #21).
+ */
+export interface RejectedOpMeta {
+  readonly table: string;
+  readonly op: SyncV2OpKind;
+}
 
 /**
  * DI: pure retry-policy. Mirror of `planRetry` from
@@ -262,6 +290,29 @@ export interface SyncEnginePushDeps {
    * desynchronize.
    */
   readonly jitterMs?: () => number;
+  /**
+   * Optional connectivity probe. When it returns `false`, the tick is a
+   * no-op: no drain, no push, and — critically — no retry attempt burned.
+   *
+   * AI-DANGER: без цього гарда довгий офлайн ВБИВАЄ чергу. Планувальник
+   * тикає кожні ~30 с; кожен тик без мережі кидає transport-помилку, а
+   * `catch` нижче зараховує невдалу спробу КОЖНОМУ рядку батча. При
+   * `SYNC_OP_MAX_ATTEMPTS = 10` і бекофі 1→2→4→…→512 с (перші пʼять
+   * кроків коротші за тик, тож їх задає саме тик) черга доходить до
+   * `dead_letter` приблизно за 10-15 хвилин без мережі — літак, метро,
+   * дача. `createSyncEngineFlushOnReconnect` рятує лише те, що ще
+   * `pending`; мертві рядки оживляє тільки ручний тап у налаштуваннях.
+   *
+   * Навмисно інʼєктується, а не читає `navigator.onLine` напряму: цей
+   * пакет спільний для web і React Native, де `navigator.onLine` не є
+   * надійним. Web передає `() => navigator.onLine`, mobile — свій
+   * NetInfo-адаптер. Опущено → поведінка як була (жодного гарда).
+   *
+   * Одностороннє за задумом: `false` довіряємо (браузер упевнений, що
+   * інтерфейсу нема), `true` — ні (Wi-Fi без інтернету все одно дасть
+   * помилку, і рядок піде в звичайний ретрай).
+   */
+  readonly isOnline?: () => boolean;
 }
 
 export interface SyncEnginePushOptions {
@@ -302,6 +353,13 @@ export async function runSyncEnginePushOnce(
   deps: SyncEnginePushDeps,
   options: SyncEnginePushOptions,
 ): Promise<SyncEnginePushResult> {
+  // Офлайн-гард стоїть ПЕРЕД `drain` навмисно: так тик не тільки не палить
+  // спробу, а й не чіпає чергу взагалі — жодного зайвого читання й жодної
+  // зміни стану рядків. Див. `isOnline` у `SyncEnginePushDeps`.
+  if (deps.isOnline?.() === false) {
+    return { drained: 0, pushed: 0, retried: 0, rejected: 0 };
+  }
+
   const now = deps.now();
   const drained = await deps.drain({ limit: options.limit, now });
 
@@ -319,8 +377,26 @@ export async function runSyncEnginePushOnce(
   try {
     response = await deps.push(ops, pushOptions);
   } catch (err) {
-    // Transport / HTTP failure: every row in the batch goes to retry.
     const lastError = describePushError(err);
+
+    // Статус, який ретрай не полагодить, — термінальне відхилення батча,
+    // а не транзієнт. Див. {@link TERMINAL_PUSH_HTTP_STATUSES}.
+    if (isTerminalPushFailure(err)) {
+      for (const row of drained) {
+        await deps.markRejected(row.id, lastError, {
+          table: row.table,
+          op: row.op,
+        });
+      }
+      return {
+        drained: drained.length,
+        pushed: 0,
+        retried: 0,
+        rejected: drained.length,
+      };
+    }
+
+    // Transport / HTTP failure: every row in the batch goes to retry.
     for (const row of drained) {
       const plan = callPlanRetry(deps, row.attempts, now, lastError);
       await deps.markRetry(row.id, plan);
@@ -366,7 +442,10 @@ export async function runSyncEnginePushOnce(
         typeof result.reason === "string" && result.reason.length > 0
           ? result.reason
           : "unspecified";
-      await deps.markRejected(row.id, reason);
+      await deps.markRejected(row.id, reason, {
+        table: row.table,
+        op: row.op,
+      });
       rejected += 1;
       continue;
     }
@@ -391,6 +470,48 @@ export async function runSyncEnginePushOnce(
     retried,
     rejected,
   };
+}
+
+/**
+ * HTTP-статуси, на яких повтор ТОГО САМОГО батча завідомо безглуздий.
+ *
+ * - **413** — тіло завелике. Батч дренеться детерміновано (`ORDER BY id
+ *   ASC`, той самий `limit`), тож наступна спроба збере ті самі рядки й
+ *   отримає ту саму відповідь. Саме цей цикл і з'їдав усі
+ *   `SYNC_OP_MAX_ATTEMPTS` спроб, після чого рядки ставали `dead_letter`
+ *   мовчки.
+ * - **400 / 422** — сервер не зміг розібрати конверт (zod на
+ *   `SyncV2PushSchema`). Це розлад контракту клієнт↔сервер, а не
+ *   миттєвий збій: він не «розсмокчеться» через 512 секунд.
+ *
+ * Чого тут НЕМА і не має бути: **401 / 403**. Креденшали оновлюються поза
+ * рушієм, тож після re-auth той самий батч пройде — це класичний
+ * транзієнт. **5xx** — тим паче.
+ *
+ * Свідома ціна: відхиляється ВЕСЬ батч, включно з рядками, які самі по
+ * собі пройшли б (на 413 «завеликим» міг бути один сусід). Це гірше за
+ * розумний спліт, але значно краще за попереднє — там ті самі рядки
+ * втрачались так само, тільки на десять спроб пізніше й без сліду.
+ * Причина `http_<status>` не входить у benign-список
+ * (`reportTerminalRejection` у вебі), тож кожен такий випадок видно.
+ */
+const TERMINAL_PUSH_HTTP_STATUSES: ReadonlySet<number> = new Set([
+  400, 413, 422,
+]);
+
+/**
+ * `true`, якщо помилка push-а — термінальна за
+ * {@link TERMINAL_PUSH_HTTP_STATUSES}. Усе інше (транспорт, таймаут,
+ * parse, 401/403, 5xx) — транзієнт.
+ *
+ * Exported for tests; not part of the runtime contract.
+ */
+export function isTerminalPushFailure(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    err.kind === "http" &&
+    TERMINAL_PUSH_HTTP_STATUSES.has(err.status)
+  );
 }
 
 /**

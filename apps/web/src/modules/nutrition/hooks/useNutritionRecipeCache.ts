@@ -21,6 +21,9 @@ interface UseNutritionRecipeCacheArgs {
  * Recipes moved to a sub-tab inside the "menu" page. Only read the
  * recipe cache when the menu page is actually showing the recipes
  * tab — avoids touching `localStorage` for users who never open it.
+ * Друге місце, де кеш потрібен, - сторінка «Комора» (вкладка «Покупки»
+ * бере згенеровані рецепти як джерело списку, 2026-10-01): без читання
+ * кеша там вони зʼявлялись лише після візиту в Меню → Рецепти.
  * Cache shape is normalised: `id` is filled via `stableRecipeId` when
  * the raw payload didn't carry one.
  */
@@ -33,7 +36,8 @@ export function useNutritionRecipeCache({
   setRecipesTried,
 }: UseNutritionRecipeCacheArgs): void {
   useEffect(() => {
-    if (activePage !== "menu" || menuSubTab !== "recipes") return;
+    const onRecipesTab = activePage === "menu" && menuSubTab === "recipes";
+    if (!onRecipesTab && activePage !== "pantry") return;
     const c = readRecipeCache<Record<string, unknown>>(recipeCacheKey);
     if (c?.recipes?.length) {
       setRecipes(

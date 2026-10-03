@@ -24,6 +24,11 @@ import type {
 } from "./types.js";
 import { VoyageSoftBudgetExceededError } from "./voyageBudgetError.js";
 import { isVoyageBudgetHardExceeded } from "./voyageBudget.js";
+import { isHealthMemoryRow } from "./healthRows.js";
+import {
+  aiMemoryRecallTopScore,
+  aiMemoryRecallResultsTotal,
+} from "../../obs/metrics.js";
 
 /**
  * Параметри запису одного memory. Caller передає сирий `content`;
@@ -46,6 +51,46 @@ export interface RecallInput {
   query: string;
   topK?: number | undefined;
   sources?: MemorySource[] | undefined;
+  /**
+   * Хто питає. Йде міткою в `ai_memory_recall_*` — у chat-RAG і
+   * forget-preview різні очікування від скору, і зливати їх в одну
+   * гістограму означає не побачити жодного. Без значення — `unknown`.
+   */
+  caller?: RecallCaller | undefined;
+}
+
+/** Поверхні, що ходять у памʼять. Літерали, а не `string`, щоб мітка не розповзлась. */
+export type RecallCaller = "chat-rag" | "forget-preview" | "explicit-recall";
+
+/**
+ * Знімає якість одного retrieval-у: розподіл найкращого скору й частку
+ * порожніх відповідей.
+ *
+ * WHY окремою функцією, а не інлайном: `recall()` має три ранні виходи
+ * (вимкнено, немає згоди, `topK <= 0`), і жоден із них НЕ є порожньою
+ * відповіддю в сенсі якості пошуку. Інлайн неминуче доповз би й туди, і
+ * метрика показувала б відсутність згоди як поганий retrieval.
+ *
+ * Логуємо число, не текст — вміст памʼяті це персональні дані (Hard Rule #21).
+ * `queryLen` замість самого запиту з тієї ж причини.
+ */
+function recordRecallQuality(
+  caller: string,
+  results: MemoryQueryResult[],
+): void {
+  const outcome = results.length > 0 ? "hit" : "empty";
+  aiMemoryRecallResultsTotal.inc({ caller, outcome });
+  const top = results[0];
+  if (top) aiMemoryRecallTopScore.observe({ caller }, top.score);
+  logger.debug({
+    msg: "ai_memory_recall_quality",
+    caller,
+    resultCount: results.length,
+    topScore: top ? Number(top.score.toFixed(3)) : null,
+    lowScore: results.length
+      ? Number((results[results.length - 1]?.score ?? 0).toFixed(3))
+      : null,
+  });
 }
 
 export interface AiMemoryService {
@@ -76,6 +121,15 @@ export interface AiMemoryService {
 interface CreateAiMemoryServiceDeps {
   embeddings: EmbeddingProvider;
   vectorStore: VectorStore;
+  /** Per-user privacy gate supplied by the production bootstrap. */
+  isConsentEnabled?: (userId: string) => Promise<boolean>;
+  /**
+   * Окрема згода на дані про здоровʼя (`healthDataConsent`, GDPR Art. 9).
+   * Без неї health-рядки не пишуться (`remember`) і не читаються (`recall`).
+   * Fail-closed: збій перевірки = «згоди немає». Дефолт `true` лише для
+   * тестів без цього гейта; production bootstrap передає реальну перевірку.
+   */
+  isHealthConsentEnabled?: (userId: string) => Promise<boolean>;
   /**
    * Override `enabled` flag для тестів. Default — `env.AI_MEMORY_ENABLED`.
    * У production не передавай — тут флаг має один source-of-truth.
@@ -87,6 +141,20 @@ export function createAiMemoryService(
   deps: CreateAiMemoryServiceDeps,
 ): AiMemoryService {
   const enabled = deps.enabled ?? env.AI_MEMORY_ENABLED;
+  const isConsentEnabled = deps.isConsentEnabled ?? (async () => true);
+  const isHealthConsentEnabledRaw =
+    deps.isHealthConsentEnabled ?? (async () => true);
+  const isHealthConsentEnabled = async (userId: string): Promise<boolean> => {
+    try {
+      return (await isHealthConsentEnabledRaw(userId)) === true;
+    } catch (err) {
+      logger.warn({
+        msg: "ai_memory_health_consent_check_failed",
+        err: err instanceof Error ? err.message : String(err),
+      });
+      return false;
+    }
+  };
 
   return {
     async remember(inputs: RememberInput[]): Promise<void> {
@@ -99,6 +167,37 @@ export function createAiMemoryService(
       }
       if (inputs.length === 0) return;
 
+      const consentByUser = new Map<string, boolean>();
+      for (const userId of new Set(inputs.map((input) => input.userId))) {
+        consentByUser.set(userId, await isConsentEnabled(userId));
+      }
+      const healthConsentByUser = new Map<string, boolean>();
+      for (const input of inputs) {
+        if (
+          consentByUser.get(input.userId) === true &&
+          isHealthMemoryRow(input) &&
+          !healthConsentByUser.has(input.userId)
+        ) {
+          healthConsentByUser.set(
+            input.userId,
+            await isHealthConsentEnabled(input.userId),
+          );
+        }
+      }
+      const consentedInputs = inputs.filter(
+        (input) =>
+          consentByUser.get(input.userId) === true &&
+          (!isHealthMemoryRow(input) ||
+            healthConsentByUser.get(input.userId) === true),
+      );
+      if (consentedInputs.length === 0) {
+        logger.debug({
+          msg: "ai_memory_remember_skipped_consent_disabled",
+          count: inputs.length,
+        });
+        return;
+      }
+
       // Voyage hard daily budget pause-ingestion гейт. Якщо `VOYAGE_DAILY_BUDGET_USD_HARD`
       // вже відстрелявся сьогодні — skip-аємо embed-call ще до `embedBatch()`,
       // щоб не витрачати Voyage-квоту і не дублювати alert-и. Sentry-error
@@ -107,13 +206,13 @@ export function createAiMemoryService(
       if (isVoyageBudgetHardExceeded()) {
         logger.warn({
           msg: "ai_memory_remember_skipped_hard_budget",
-          count: inputs.length,
-          sources: inputs.map((i) => i.source),
+          count: consentedInputs.length,
+          sources: consentedInputs.map((i) => i.source),
         });
         return;
       }
 
-      const texts = inputs.map((i) => i.content);
+      const texts = consentedInputs.map((i) => i.content);
       let embeddings: Float32Array[];
       try {
         // PR-38 — background ingestion (digest / mono webhook / RAG-prep)
@@ -129,8 +228,8 @@ export function createAiMemoryService(
           // знати, котрі ingestion-source-и нагрівали soft-cap.
           logger.warn({
             msg: "ai_memory_remember_skipped_soft_budget",
-            count: inputs.length,
-            sources: inputs.map((i) => i.source),
+            count: consentedInputs.length,
+            sources: consentedInputs.map((i) => i.source),
             usage_usd: err.usage,
             threshold_usd: err.threshold,
             day_key: err.dayKey,
@@ -139,23 +238,76 @@ export function createAiMemoryService(
         }
         throw err;
       }
-      if (embeddings.length !== inputs.length) {
+      if (embeddings.length !== consentedInputs.length) {
         throw new Error(
-          `Embedding provider returned ${embeddings.length} vectors for ${inputs.length} inputs`,
+          `Embedding provider returned ${embeddings.length} vectors for ${consentedInputs.length} inputs`,
         );
       }
 
-      await deps.vectorStore.upsert(
-        inputs.map((input, i) => ({
-          userId: input.userId,
-          source: input.source,
-          sourceRef: input.sourceRef,
-          content: input.content,
-          embedding: embeddings[i]!,
-          embeddingMeta: deps.embeddings.meta,
-          metadata: input.metadata,
-        })),
-      );
+      const writes = consentedInputs.map((input, i) => ({
+        userId: input.userId,
+        source: input.source,
+        sourceRef: input.sourceRef,
+        content: input.content,
+        embedding: embeddings[i]!,
+        embeddingMeta: deps.embeddings.meta,
+        metadata: input.metadata,
+      }));
+
+      // Near-duplicate guard. Тільки для вільних memory (sourceRef===null:
+      // chat-факти, digest-нотатки) — накопичувальний кейс, де однакові факти
+      // ("алергія на горіхи") пишуться знову й знову і засмічують recall. Rows
+      // зі sourceRef!=null уже дедупляться через (user,source,sourceRef) upsert,
+      // тож їх не чіпаємо. Переюзуємо ВЖЕ пораховані `embeddings[i]` — dedup-query
+      // йде лише в pgvector, БЕЗ додаткового Voyage-виклику. Fail-open: якщо
+      // similarity-query впав, пишемо запис (краще дубль, ніж втрата памʼяті).
+      const dedupThreshold = env.AI_MEMORY_DEDUP_THRESHOLD;
+      let finalWrites = writes;
+      if (dedupThreshold > 0) {
+        const keep = await Promise.all(
+          consentedInputs.map(async (input, i) => {
+            if (input.sourceRef !== null) return true;
+            try {
+              const near = await deps.vectorStore.query({
+                userId: input.userId,
+                embedding: embeddings[i]!,
+                topK: 1,
+                sources: [input.source],
+              });
+              const top = near[0];
+              if (top && top.score >= dedupThreshold) {
+                logger.debug({
+                  msg: "ai_memory_remember_deduped",
+                  userId: input.userId,
+                  source: input.source,
+                  score: top.score,
+                  threshold: dedupThreshold,
+                });
+                return false;
+              }
+            } catch (err) {
+              logger.warn({
+                msg: "ai_memory_dedup_query_failed",
+                userId: input.userId,
+                source: input.source,
+                err: err instanceof Error ? err.message : String(err),
+              });
+            }
+            return true;
+          }),
+        );
+        finalWrites = writes.filter((_, i) => keep[i]);
+      }
+
+      if (finalWrites.length === 0) {
+        logger.debug({
+          msg: "ai_memory_remember_all_deduped",
+          count: writes.length,
+        });
+        return;
+      }
+
+      await deps.vectorStore.upsert(finalWrites);
     },
 
     async recall(input: RecallInput): Promise<MemoryQueryResult[]> {
@@ -163,20 +315,51 @@ export function createAiMemoryService(
         logger.debug({ msg: "ai_memory_recall_skipped_disabled" });
         return [];
       }
+      if (!(await isConsentEnabled(input.userId))) {
+        logger.debug({
+          msg: "ai_memory_recall_skipped_consent_disabled",
+          userId: input.userId,
+        });
+        return [];
+      }
       const topK = input.topK ?? env.AI_MEMORY_TOP_K;
       if (topK <= 0) return [];
+
+      // B10: hard-cap Voyage діє і на recall (раніше лише на remember, а
+      // `embedBatch` без опцій = criticality "critical", що обходить soft-cap).
+      // Fail-soft: порожній результат, щоб chat-RAG не падав.
+      if (isVoyageBudgetHardExceeded()) {
+        logger.warn({
+          msg: "ai_memory_recall_skipped_hard_budget",
+          caller: input.caller ?? "unknown",
+        });
+        return [];
+      }
 
       const [embedding] = await deps.embeddings.embedBatch([input.query]);
       if (!embedding) {
         throw new Error("Embedding provider returned empty result for query");
       }
 
-      return deps.vectorStore.query({
+      const results = await deps.vectorStore.query({
         userId: input.userId,
         embedding,
         topK,
         sources: input.sources,
       });
+
+      // Гейт на дані про здоровʼя (рішення власника 2026-09-29): без
+      // `healthDataConsent` такі рядки не потрапляють ні в RAG-блок чату,
+      // ні у `recall_memory`. Фільтр ПІСЛЯ ANN-запиту, бо ознака живе в
+      // `metadata`; топ-K може стати коротшим, і це прийнятно.
+      const visible = results.some(isHealthMemoryRow)
+        ? (await isHealthConsentEnabled(input.userId))
+          ? results
+          : results.filter((r) => !isHealthMemoryRow(r))
+        : results;
+
+      recordRecallQuality(input.caller ?? "unknown", visible);
+      return visible;
     },
 
     async forgetUser(userId: string): Promise<number> {

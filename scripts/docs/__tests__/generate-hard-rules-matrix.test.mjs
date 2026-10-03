@@ -24,7 +24,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "../../..");
 const REGISTRY_PATH = resolve(
   REPO_ROOT,
-  "docs/04-governance/governance/hard-rules.json",
+  "docs/governance/governance/hard-rules.json",
 );
 
 // Fixture used across tests: minimum valid registry shape (canonical schema).
@@ -282,7 +282,7 @@ test("renderMatrixRaw: category legend section enumerates the three buckets", ()
 test("renderMatrixRaw: How-to-add-a-rule section references the playbook", () => {
   const md = renderMatrixRaw(FIXTURE, { now: FROZEN_NOW });
   assert.match(md, /## How to add a rule/);
-  assert.match(md, /docs\/00-start\/playbooks\/add-hard-rule\.md/);
+  assert.match(md, /docs\/start\/instructions\/add-hard-rule\.md/);
 });
 
 // ── renderMatrix (Prettier integration) ──────────────────────────────────────
@@ -336,11 +336,35 @@ test("on-disk hard-rules.json: passes loadRegistry validation", () => {
   }
 });
 
-test("on-disk hard-rules.json: ids are sequential 1..N (no gaps)", () => {
+// Пропуски в нумерації — НОРМА, а не помилка: ADR-0081 вивів з обігу правила
+// #8, #9, #11–#14, #16, #17 і #24, і їхні номери свідомо не перевикористовуються
+// (інакше посилання «Hard Rule #12» у старих PR і докax почали б вказувати на
+// інше правило). Тому інваріант — строго зростаюча унікальна послідовність,
+// а не 1..N без пропусків. Попередня версія тесту вимагала суцільності й
+// падала на кожному PR після ADR-0081.
+test("on-disk hard-rules.json: ids are unique and strictly increasing", () => {
   const raw = readFileSync(REGISTRY_PATH, "utf8");
   const r = loadRegistry(raw);
   const ids = r.rules.map((x) => x.id);
-  for (let i = 0; i < ids.length; i += 1) {
-    assert.equal(ids[i], i + 1, `rule index ${i} should have id ${i + 1}`);
+
+  assert.ok(ids.length > 0, "registry must not be empty");
+  assert.equal(
+    new Set(ids).size,
+    ids.length,
+    `rule ids must be unique, got: ${ids.join(",")}`,
+  );
+
+  for (let i = 1; i < ids.length; i += 1) {
+    assert.ok(
+      ids[i] > ids[i - 1],
+      `rule ids must be strictly increasing: index ${i} has id ${ids[i]} after ${ids[i - 1]}`,
+    );
+  }
+
+  for (const id of ids) {
+    assert.ok(
+      Number.isInteger(id) && id >= 1,
+      `rule id must be a positive integer, got ${id}`,
+    );
   }
 });

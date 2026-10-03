@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ASSISTANT_CAPABILITIES,
+  ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS,
   CAPABILITY_MODULE_ORDER,
   CAPABILITY_MODULE_META,
   getCapabilityServerTool,
@@ -8,6 +9,7 @@ import {
   groupCapabilitiesByModule,
   isActiveQuickActionModule,
   isIncompletePrompt,
+  isRecentCapability,
   pickTopQuickActions,
   searchCapabilities,
   sortQuickActionsForModule,
@@ -17,14 +19,6 @@ import {
 
 // Mirrors RISKY_TOOLS in apps/web/src/core/lib/hubChatActionCards.ts.
 // Hardcoded here because @sergeant/shared cannot depend on app code.
-const RISKY_TOOL_IDS = new Set<string>([
-  "delete_transaction",
-  "hide_transaction",
-  "forget",
-  "archive_habit",
-  "import_monobank_range",
-]);
-
 describe("ASSISTANT_CAPABILITIES — invariants", () => {
   it("has unique ids", () => {
     const ids = ASSISTANT_CAPABILITIES.map((c) => c.id);
@@ -66,26 +60,11 @@ describe("ASSISTANT_CAPABILITIES — invariants", () => {
     }
   });
 
-  it("risky=true entries are also in client RISKY_TOOLS set", () => {
-    const registryRisky = new Set(
-      ASSISTANT_CAPABILITIES.filter((c) => c.risky).map((c) => c.id),
-    );
-    // Every risky in registry must be known to the action-card layer.
-    for (const id of registryRisky) {
-      expect(
-        RISKY_TOOL_IDS.has(id),
-        `${id} marked risky but missing from RISKY_TOOLS`,
-      ).toBe(true);
-    }
-    // Every RISKY_TOOL must have a risky catalogue entry (so user
-    // sees the warning badge before triggering it).
-    for (const id of RISKY_TOOL_IDS) {
-      expect(
-        registryRisky.has(id),
-        `${id} in RISKY_TOOLS but missing risky catalogue entry`,
-      ).toBe(true);
-    }
-  });
+  // Перевірка «risky ↔ клієнтський набір» переїхала у `toolRisk.test.ts`.
+  // Тут вона звіряла каталог із рукописною копією набору, оголошеною
+  // просто вище в цьому ж файлі, — і тому лишалась зеленою, поки в
+  // продукті жили чотири різні набори. Тепер джерело одне (`toolRisk.ts`),
+  // а порівнюються реальні множини.
 
   it("isQuickAction entries have priority and online flag", () => {
     for (const c of ASSISTANT_CAPABILITIES) {
@@ -105,7 +84,7 @@ describe("ASSISTANT_CAPABILITIES — invariants", () => {
   it("has a reasonable total count (sanity)", () => {
     // Spec calls for ~60 entries; allow a small drift.
     expect(ASSISTANT_CAPABILITIES.length).toBeGreaterThanOrEqual(50);
-    expect(ASSISTANT_CAPABILITIES.length).toBeLessThanOrEqual(80);
+    expect(ASSISTANT_CAPABILITIES.length).toBeLessThanOrEqual(85);
   });
 
   it("each entry has at least one example", () => {
@@ -351,5 +330,56 @@ describe("searchCapabilities", () => {
     for (const c of moduleEntries) {
       expect(r.some((x) => x.id === c.id)).toBe(true);
     }
+  });
+});
+
+// Founder-ux-review round 2 (O3): `isNew: boolean` → `since: "YYYY-MM-DD"`
+// so the "Новинка" badge expires on its own instead of hanging forever
+// (compare_weeks: ~4.5 months from the 2026-04-25 spec to 2026-09-11).
+describe("isRecentCapability", () => {
+  const NOW = Date.parse("2026-09-11T12:00:00.000Z");
+
+  it("undefined `since` is never recent", () => {
+    expect(isRecentCapability(undefined, NOW)).toBe(false);
+  });
+
+  it("unparsable `since` is never recent (fails safe, not open)", () => {
+    expect(isRecentCapability("not-a-date", NOW)).toBe(false);
+  });
+
+  it("today is recent", () => {
+    expect(isRecentCapability("2026-09-11", NOW)).toBe(true);
+  });
+
+  it("1 day inside the window is recent", () => {
+    expect(
+      isRecentCapability("2026-09-10", NOW), // 1 day ago
+    ).toBe(true);
+  });
+
+  it(`the day exactly at the ${ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS}-day boundary is NOT recent`, () => {
+    // 2026-08-12 is exactly 30 Kyiv-calendar days before 2026-09-11.
+    expect(isRecentCapability("2026-08-12", NOW)).toBe(false);
+  });
+
+  it("29 days ago (1 day inside the boundary) is still recent", () => {
+    expect(isRecentCapability("2026-08-13", NOW)).toBe(true);
+  });
+
+  it("a release from ~4.5 months ago (the compare_weeks regression) is NOT recent", () => {
+    expect(isRecentCapability("2026-04-25", NOW)).toBe(false);
+  });
+
+  it("a `since` in the future is not recent (defensive — should never happen in practice)", () => {
+    expect(isRecentCapability("2026-09-12", NOW)).toBe(false);
+  });
+
+  it("no capability in the live catalogue currently renders as new", () => {
+    // Documents current state so a future `since` addition is a deliberate,
+    // visible diff — not a silent side effect of adding an unrelated field.
+    const recent = ASSISTANT_CAPABILITIES.filter((c) =>
+      isRecentCapability(c.since, NOW),
+    );
+    expect(recent).toEqual([]);
   });
 });

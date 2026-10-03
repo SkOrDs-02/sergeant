@@ -36,13 +36,16 @@ import type { RecoveryStatus } from "@sergeant/fizruk-domain";
 
 import {
   BODY_SUMMARY_WINDOW_DAYS,
-  buildBodySummaries,
+  buildBodySummariesWithWeightUnion,
   hasAnyMeasurementFor,
+  selectBodyWeightSamples,
+  toBodyWeightEntries,
   type MeasurementFieldId,
 } from "@sergeant/fizruk-domain/domain";
 import { hapticTap } from "@sergeant/shared";
 
 import { BodySummaryCard, BodyTrendCard } from "../components/body";
+import { useDailyLog } from "../hooks/useDailyLog";
 import { useMeasurements } from "../hooks/useMeasurements";
 import { useRecovery } from "../hooks/useRecovery";
 
@@ -167,11 +170,21 @@ export function Body({
   testID = "fizruk-body",
 }: BodyProps = {}) {
   const { entries } = useMeasurements();
+  // W1-WEIGHT-SOT стадія 1: цей екран читав тільки `fizruk_measurements`, тож
+  // daily_log-історія ваги (web «Тіло», AI `log_weight`/`log_wellbeing`) сюди
+  // не доходила — mobile Body показував інші числа, ніж web Body.
+  const { entries: dailyLogEntries } = useDailyLog();
   const { ready, avoid, wellbeingMult } = useRecovery();
 
   const summaries = useMemo(
-    () => buildBodySummaries(entries, SUMMARY_FIELDS, BODY_SUMMARY_WINDOW_DAYS),
-    [entries],
+    () =>
+      buildBodySummariesWithWeightUnion(
+        dailyLogEntries,
+        entries,
+        SUMMARY_FIELDS,
+        BODY_SUMMARY_WINDOW_DAYS,
+      ),
+    [dailyLogEntries, entries],
   );
 
   const handleOpenMeasurements = useCallback(() => {
@@ -179,11 +192,26 @@ export function Body({
     onOpenMeasurements?.();
   }, [onOpenMeasurements]);
 
-  const hasAnyEntries = entries.length > 0;
+  /**
+   * Записи для трендів. Для ваги — union обох сховищ (див. коментар вище);
+   * решта полів як і раніше читаються з `fizruk_measurements`.
+   */
+  const weightEntries = useMemo(
+    () =>
+      toBodyWeightEntries(selectBodyWeightSamples(dailyLogEntries, entries)),
+    [dailyLogEntries, entries],
+  );
+
+  const hasAnyEntries = entries.length > 0 || weightEntries.length > 0;
 
   const visibleTrends = useMemo(
-    () => TREND_CARDS.filter((t) => hasAnyMeasurementFor(entries, t.field)),
-    [entries],
+    () =>
+      TREND_CARDS.filter((t) =>
+        t.field === "weightKg"
+          ? weightEntries.length > 0
+          : hasAnyMeasurementFor(entries, t.field),
+      ),
+    [entries, weightEntries],
   );
 
   return (
@@ -280,7 +308,7 @@ export function Body({
                     strokeColor={t.strokeColor}
                     unit={t.unit}
                     metricLabel={t.metricLabel}
-                    entries={entries}
+                    entries={t.field === "weightKg" ? weightEntries : entries}
                     testID={`${testID}-trend-${t.field}`}
                   />
                 ))}

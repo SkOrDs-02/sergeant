@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
  * on SQLite for both surfaces — web (sqlite-wasm via OPFS-SAH) and mobile
  * (`expo-sqlite`).
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Differences from Postgres:
  * - `id` is TEXT (UUID stored as a string — SQLite has no native UUID).
@@ -38,6 +38,8 @@ export const fizrukWorkouts = sqliteTable(
     warmupJson: text("warmup_json"),
     cooldownJson: text("cooldown_json"),
     wellbeingJson: text("wellbeing_json"),
+    /** Оцінка витрачених калорій (міграція 132). Nullable: без ваги оцінювати нічим. */
+    kcalBurned: integer("kcal_burned"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -77,6 +79,13 @@ export const fizrukWorkoutItems = sqliteTable(
     type: text().notNull().default("strength"),
     durationSec: integer("duration_sec"),
     distanceM: integer("distance_m"),
+    /**
+     * Обраний варіант підказки: planned | easier | harder.
+     * NULL = вибору не було (запис до появи чека готовності), і це НЕ те
+     * саме, що "planned": лічильник полегшень читає NULL як обрив стрічки.
+     * CHECK на значення живе в міграції 134.
+     */
+    chosenVariant: text("chosen_variant"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: text("created_at")
       .notNull()
@@ -154,10 +163,42 @@ export const fizrukCustomExercises = sqliteTable(
 );
 
 /**
+ * SQLite schema for the `fizruk_custom_activities` table.
+ *
+ * Дзеркало `fizruk_custom_exercises`: свої заняття для короткого запису,
+ * увесь вміст у `data_json`.
+ */
+export const fizrukCustomActivities = sqliteTable(
+  "fizruk_custom_activities",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    dataJson: text("data_json").notNull().default("{}"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("fizruk_custom_activities_user_idx_lite")
+      .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
  * SQLite schema for the `fizruk_measurements` table.
  *
  * Body measurements and wellbeing scores. One row per measurement session.
  * All numeric fields nullable — the user picks which to fill.
+ *
+ * Міграція 008 додала решту полів веб-форми (жир, шия, передпліччя,
+ * стегно, литка, розділені біцепси) — до того вони не мали куди писатись
+ * і зникали після перезавантаження. `bicepCm` лишається як зведене
+ * значення доменного/мобільного реєстру.
  */
 export const fizrukMeasurements = sqliteTable(
   "fizruk_measurements",
@@ -165,12 +206,25 @@ export const fizrukMeasurements = sqliteTable(
     id: text().primaryKey(),
     userId: text("user_id").notNull(),
     measuredAt: text("measured_at").notNull(),
-    weightKg: integer("weight_kg"),
-    waistCm: integer("waist_cm"),
-    chestCm: integer("chest_cm"),
-    hipsCm: integer("hips_cm"),
-    bicepCm: integer("bicep_cm"),
-    sleepHours: integer("sleep_hours"),
+    // Postgres оголошує ці шість як REAL (`029_fizruk_tables.sql`).
+    // Дзеркало помилково мало `integer`, і писачі округлювали значення до
+    // цілого — 81.4 кг ставало 81. Тип вирівняно з PG.
+    weightKg: real("weight_kg"),
+    waistCm: real("waist_cm"),
+    chestCm: real("chest_cm"),
+    hipsCm: real("hips_cm"),
+    bicepCm: real("bicep_cm"),
+    bodyFatPct: real("body_fat_pct"),
+    neckCm: real("neck_cm"),
+    bicepLCm: real("bicep_l_cm"),
+    bicepRCm: real("bicep_r_cm"),
+    forearmLCm: real("forearm_l_cm"),
+    forearmRCm: real("forearm_r_cm"),
+    thighLCm: real("thigh_l_cm"),
+    thighRCm: real("thigh_r_cm"),
+    calfLCm: real("calf_l_cm"),
+    calfRCm: real("calf_r_cm"),
+    sleepHours: real("sleep_hours"),
     energyLevel: integer("energy_level"),
     mood: integer(),
     createdAt: text("created_at")
@@ -197,7 +251,7 @@ export const fizrukMeasurements = sqliteTable(
  * `safeWriteLS(STORAGE_KEYS.FIZRUK_DAILY_LOG, ...)` in
  * `apps/{web,mobile}/src/modules/fizruk/hooks/useDailyLog.ts`.
  *
- * Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`.
+ * Stage 12 / PR #070f-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Differences from `fizruk_measurements` (the closest existing slot):
  *  - `daily_log` rows are user-edited diary entries with the full
@@ -369,6 +423,45 @@ export const fizrukWorkoutTemplates = sqliteTable(
   (table) => [
     index("fizruk_workout_templates_user_idx_lite")
       .on(table.userId, sql`${table.updatedAt} DESC`)
+      .where(sql`${table.deletedAt} IS NULL`),
+  ],
+);
+
+/**
+ * SQLite schema for `fizruk_injuries`.
+ *
+ * Mirrors `apps/server/src/migrations/097_fizruk_injuries.sql` and
+ * `packages/db-schema/src/pg/fizruk.ts`. Injury marks are the client-authored
+ * half of the "не можна" model (ADR-0083) — they must survive a device change,
+ * which is why they live in a synced table rather than local-only state.
+ *
+ * Differences from Postgres: TIMESTAMPTZ → TEXT (ISO-8601 with offset);
+ * index names carry the `_lite` suffix to spot drift. `id` is TEXT on BOTH
+ * sides here — the client id is not a bare UUID.
+ */
+export const fizrukInjuries = sqliteTable(
+  "fizruk_injuries",
+  {
+    id: text().primaryKey(),
+    userId: text("user_id").notNull(),
+    site: text().notNull(),
+    startedAt: text("started_at").notNull(),
+    clearedAt: text("cleared_at"),
+    note: text().notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    deletedAt: text("deleted_at"),
+  },
+  (table) => [
+    index("fizruk_injuries_user_active_idx_lite")
+      .on(table.userId, table.site)
+      .where(sql`${table.deletedAt} IS NULL AND ${table.clearedAt} IS NULL`),
+    index("fizruk_injuries_user_started_at_idx_lite")
+      .on(table.userId, sql`${table.startedAt} DESC`)
       .where(sql`${table.deletedAt} IS NULL`),
   ],
 );

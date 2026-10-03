@@ -279,6 +279,63 @@ describe("replayWebhookEvent", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("falls back to an empty body when response.text() rejects", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      async text() {
+        throw new Error("stream already consumed");
+      },
+    } as unknown as Response);
+    const pool = mockPool([]);
+
+    await expect(
+      replayWebhookEvent(pool, {
+        event: SAMPLE_EVENT,
+        n8nWebhookBaseUrl: "https://n8n.example.com",
+        fetchImpl,
+      }),
+    ).rejects.toMatchObject({
+      name: "ReplayHttpError",
+      status: 500,
+      body: "",
+    });
+  });
+
+  it("aborts the fetch when the timeout elapses", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi.fn().mockImplementation(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => {
+              const err = new Error("aborted");
+              err.name = "AbortError";
+              reject(err);
+            });
+          }),
+      );
+      const pool = mockPool([]);
+
+      const resultPromise = replayWebhookEvent(pool, {
+        event: SAMPLE_EVENT,
+        n8nWebhookBaseUrl: "https://n8n.example.com",
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        timeoutMs: 1000,
+      });
+      // Attach a rejection handler immediately so Node doesn't warn about
+      // an unhandled rejection while fake timers are advanced below.
+      const assertion = expect(resultPromise).rejects.toMatchObject({
+        name: "AbortError",
+      });
+      await vi.advanceTimersByTimeAsync(1000);
+      await assertion;
+      expect(pool.query).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("strip-ає trailing slash з baseUrl при формуванні URL", async () => {
     const fetchImpl = vi
       .fn()

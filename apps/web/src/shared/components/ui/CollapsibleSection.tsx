@@ -2,10 +2,19 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useState, useCallback, useRef, type ReactNode } from "react";
+import {
+  useState,
+  useCallback,
+  useEffect,
+  useRef,
+  type ReactNode,
+  type RefObject,
+} from "react";
+import { useInertWhileCollapsed } from "@shared/hooks/useInertWhileCollapsed";
 import { cn } from "../../lib/ui/cn";
 import { motionScrollBehavior } from "../../lib/ui/motion";
 import { Icon } from "./Icon";
+import { MorphChevron } from "./MorphChevron";
 import { SectionHeading, type SectionHeadingSize } from "./SectionHeading";
 import { safeReadLS, safeWriteLS } from "../../lib/storage/storage";
 
@@ -30,6 +39,33 @@ export interface CollapsibleSectionProps {
    * or a one-line CTA ("AI-порада оновлена", "3 інсайти").
    */
   collapsedSubtitle?: ReactNode;
+  /**
+   * Викликається з поточним станом розгорнутості — на монтуванні (значення з
+   * localStorage / `defaultOpen`) і після кожного перемикання.
+   *
+   * Навіщо. Секція тримає дітей у DOM навіть згорнутою
+   * (`grid-rows-[0fr] overflow-hidden`), тож «змонтовано» ≠ «видно». Дітям,
+   * які емітять impression-телеметрію (`AssistantAdviceCard`,
+   * `WeeklyDigestCard`), потрібен реальний стан видимості — інакше показ
+   * зарахується для згорнутої секції і знаменник роздується.
+   *
+   * Передавай СТАБІЛЬНИЙ колбек (наприклад setter із `useState`): інлайн-
+   * лямбда змінює identity щорендеру і ефект перевикликатиметься дарма.
+   */
+  onOpenChange?: (open: boolean) => void;
+  /**
+   * Лічильник запитів «покажи секцію» ззовні (діп-лінк з картки в іншому
+   * місці сторінки). Кожне ЗБІЛЬШЕННЯ розгортає секцію так само, як клік
+   * (стан пишеться в `storageKey`), і докручує до неї. Значення на монтуванні
+   * не діє: секція реагує лише на зміну.
+   */
+  openSignal?: number;
+  /**
+   * Що показати після розгортання за `openSignal`: елемент усередині секції
+   * (наприклад, рядки звіту), а не її верх. Фокус іде туди ж, тож елемент має
+   * бути фокусованим програмно (`tabIndex={-1}`). Без значення — верх секції.
+   */
+  revealRef?: RefObject<HTMLElement | null>;
   children?: ReactNode;
   className?: string;
 }
@@ -49,6 +85,27 @@ export interface CollapsibleSectionProps {
  *
  * Collapse animation uses CSS `grid-template-rows` for smooth height
  * transitions (no JavaScript measurement needed).
+ *
+ * **Чому в репо ДВА дисклоужери, і чому це не борг.** §6 аудиту Профілю і
+ * Налаштувань (2026-08-08) записав «два collapsible-примітиви з різною
+ * поведінкою: Профіль памʼятає відкрите, Налаштування — ні» як борг. Після
+ * рішення власника про Варіант A (§0.1 того ж аудиту) різниця стала
+ * НАСЛІДКОМ цього рішення, а не недоглядом:
+ *
+ * - Тут — 6 стабільних секцій, кожна зі своїм `storageKey`. Людина
+ *   повертається до тієї самої секції, тож памʼятати її стан корисно.
+ * - `SettingsGroup` — 14 секцій у трьох вкладках, де кожна секція за
+ *   замовчуванням згорнута (forced-first-of-tab скасовано рішенням
+ *   власника 2026-09-11; відкриває секцію лише hash-діп-лінк/query-return
+ *   або явний клік юзера), а явний вибір людини живе в памʼяті сесії
+ *   (`sectionOpenOverrides` у `HubSettingsPage`). Персистити там означало
+ *   б воювати з тим самим дефолтом на 14 секціях одразу: збережене
+ *   «відкрито» на всіх повернуло б стіну розгорнутих секцій, тобто саме
+ *   те, чого й дефолт «згорнуто», і Варіант A до нього, мали уникати.
+ *
+ * Спільне між ними — інваріант доступності L-7, і він винесений у
+ * `useInertWhileCollapsed`. Саме там була справжня вада: не «компонентів
+ * два», а «гарантія tab-порядку написана двічі й могла розійтись».
  */
 export function CollapsibleSection({
   storageKey,
@@ -57,6 +114,9 @@ export function CollapsibleSection({
   headingSize = "xs",
   collapsedIcon,
   collapsedSubtitle,
+  onOpenChange,
+  openSignal,
+  revealRef,
   children,
   className,
 }: CollapsibleSectionProps) {
@@ -64,23 +124,116 @@ export function CollapsibleSection({
     () => safeReadLS<boolean>(storageKey, defaultOpen) ?? defaultOpen,
   );
   const sectionRef = useRef<HTMLElement>(null);
+  // Вузол сітки. Несе дві ролі одночасно: з нього приходить `transitionend`
+  // (див. `toggle` нижче) і на ньому ж L-7 ставить `inert`/`aria-hidden`.
+  //
+  // Логіка L-7 живе у СПІЛЬНОМУ хуку `useInertWhileCollapsed`
+  // (`@shared/hooks`) — той самий, що використовує `SettingsGroup`
+  // (`core/settings/SettingsPrimitives.tsx`). Доти кожен із двох
+  // дисклоужерів репо ніс власну копію тієї самої логіки: розходження
+  // копій не впало б жодним тестом і не було б видно на екрані — одна з
+  // поверхонь просто тихо втратила б гарантію tab-порядку. Чому саме
+  // `inert` + `aria-hidden` + `useLayoutEffect` — у докстрінгу хука.
+  const gridRef = useInertWhileCollapsed(open);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
+
+  /**
+   * Скрол після того, як рядок сітки доїхав.
+   *
+   * AI-DANGER: чекати фіксованим таймером НЕ можна — CSS-перехід іде на
+   * `duration-base`, тобто на токені, і будь-яка його зміна розсинхронила б
+   * пару. Доти тут стояло 210 ms проти коментаря «200ms» проти фактичних
+   * 220 ms токена: три різні числа про одну подію. `transitionend` знає
+   * точно.
+   *
+   * Запасний таймер лишається на випадок, коли події не буде зовсім:
+   * перехід не запускається, якщо секція вже потрібної висоти або рух
+   * вимкнено системно.
+   */
+  const scrollWhenSettled = useCallback(
+    (reveal: () => void) => {
+      const grid = gridRef.current;
+      if (!grid) {
+        reveal();
+        return;
+      }
+      let done = false;
+      const once = () => {
+        if (done) return;
+        done = true;
+        grid.removeEventListener("transitionend", once);
+        reveal();
+      };
+      grid.addEventListener("transitionend", once, { once: true });
+      // Стеля — помітно більша за `slowest` (680 ms), щоб таймер не
+      // випереджав подію на повільному пристрої.
+      setTimeout(once, 800);
+    },
+    [gridRef],
+  );
 
   const toggle = useCallback(() => {
     setOpen((prev) => {
       const next = !prev;
       safeWriteLS(storageKey, next);
       if (next) {
-        // After CSS transition (200ms) scroll so expanded content is visible.
-        setTimeout(() => {
-          sectionRef.current?.scrollIntoView({
+        scrollWhenSettled(() =>
+          sectionRef.current?.scrollIntoView?.({
             behavior: motionScrollBehavior(),
             block: "nearest",
-          });
-        }, 210);
+          }),
+        );
       }
       return next;
     });
-  }, [storageKey]);
+    // `gridRef` у залежностях, хоч ідентичність ref-а й стабільна: доти він
+    // створювався тут же через `useRef`, і ESLint знав це за побудовою. Після
+    // виносу L-7 у спільний хук ref приходить із виклику функції, і правило
+    // `react-hooks/exhaustive-deps` більше не може довести стабільність.
+    // Додати в масив чесніше, ніж глушити правило — на поведінку не впливає.
+  }, [storageKey, scrollWhenSettled]);
+
+  // Запит «покажи секцію» ззовні (`openSignal`). Розгортання — під час
+  // рендеру, за лічильником (патерн «підтягнути стан із пропа»): `setState`
+  // в ефекті дав би зайвий каскадний рендер. Побічні дії (сховище, скрол,
+  // фокус) — у ефекті нижче.
+  const [seenSignal, setSeenSignal] = useState(openSignal);
+  if (openSignal !== undefined && openSignal !== seenSignal) {
+    setSeenSignal(openSignal);
+    if (!open) setOpen(true);
+  }
+
+  // Після розгортання: записати стан як від кліку, дочекатись кінця переходу
+  // (або діяти одразу, якщо секція вже була розгорнута), показати й
+  // сфокусувати `revealRef`. Фокус — для скрінрідера: без нього «Відкрити» з
+  // картки лишало б курсор на кнопці, яка вже нічого не показує.
+  const handledSignalRef = useRef(openSignal);
+  const wasOpenRef = useRef(open);
+  useEffect(() => {
+    const wasOpen = wasOpenRef.current;
+    wasOpenRef.current = open;
+    if (openSignal === undefined || openSignal === handledSignalRef.current) {
+      return;
+    }
+    handledSignalRef.current = openSignal;
+    const reveal = () => {
+      const target = revealRef?.current ?? sectionRef.current;
+      target?.scrollIntoView?.({
+        behavior: motionScrollBehavior(),
+        block: "nearest",
+      });
+      if (revealRef?.current) revealRef.current.focus({ preventScroll: true });
+    };
+    if (wasOpen) {
+      reveal();
+      return;
+    }
+    safeWriteLS(storageKey, true);
+    scrollWhenSettled(reveal);
+  }, [openSignal, open, revealRef, storageKey, scrollWhenSettled]);
 
   return (
     <section ref={sectionRef} className={cn("space-y-2", className)}>
@@ -89,14 +242,13 @@ export function CollapsibleSection({
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-xl -ml-0.5 pl-0.5"
+          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl -ml-0.5 pl-0.5"
         >
-          <Icon
-            name="chevron-down"
+          <MorphChevron
+            open
             size={12}
             strokeWidth={2.5}
             className="text-subtle"
-            aria-hidden
           />
           <SectionHeading as="span" size={headingSize} className="px-0!">
             {title}
@@ -112,19 +264,20 @@ export function CollapsibleSection({
             "px-3.5 py-3 rounded-2xl",
             "bg-panel hover:bg-panelHi border border-line shadow-soft",
             "transition-colors active:scale-[0.99]",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
+          {/* Гліф без тонованого квадрата (огляд 2026-09-04) — той самий
+              хід, що `BentoCard` і `SettingsGroup`: icon-in-tinted-square
+              робив кожну згорнуту секцію однаковою плиткою. */}
           {collapsedIcon && (
-            <span
-              className={cn(
-                "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
-                "bg-brand-500/10 text-brand-strong dark:text-brand",
-              )}
+            <Icon
+              name={collapsedIcon}
+              size={18}
+              strokeWidth={2}
+              className="shrink-0 text-muted"
               aria-hidden
-            >
-              <Icon name={collapsedIcon} size={18} strokeWidth={2} />
-            </span>
+            />
           )}
           <span className="flex-1 min-w-0">
             <span className="text-style-label block text-text leading-tight">
@@ -136,20 +289,20 @@ export function CollapsibleSection({
               </span>
             )}
           </span>
-          <Icon
-            name="chevron-right"
+          <MorphChevron
+            open={false}
             size={16}
             strokeWidth={2}
-            className="text-subtle shrink-0"
-            aria-hidden
+            className="text-subtle"
           />
         </button>
       )}
 
       {/* CSS grid row transition for smooth collapse */}
       <div
+        ref={gridRef}
         className={cn(
-          "grid transition-[grid-template-rows] duration-200 ease-out",
+          "grid transition-[grid-template-rows] duration-base ease-standard",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >

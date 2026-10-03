@@ -3,7 +3,7 @@
  *
  * Mirror of `apps/web/src/modules/routine/lib/sqliteReader.ts`. See
  * the web copy for the full design rationale (PR #025 of
- * `docs/planning/storage-roadmap.md`).
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * **Stage 10 mobile mirror** extends the reader from completions-only
  * (routine_entries) to all 7 new tables introduced in PR #070r-schema:
@@ -12,7 +12,6 @@
  *   - `routine_tags` → `Tag[]`
  *   - `routine_categories` → `Category[]`
  *   - `routine_prefs` → `RoutinePrefs`
- *   - `routine_pushups` → `Record<string, number>`
  *   - `routine_habit_order` → `string[]`
  *   - `routine_completion_notes` → `Record<string, string>`
  *
@@ -31,6 +30,7 @@ import type {
   Tag,
   Category,
   RoutinePrefs,
+  WeeklyTargetInterval,
 } from "@sergeant/routine-domain";
 
 // -----------------------------------------------------------------------
@@ -96,7 +96,6 @@ export interface SqliteRoutineStateCache {
   tags: Tag[];
   categories: Category[];
   prefs: RoutinePrefs;
-  pushupsByDate: Record<string, number>;
   habitOrder: string[];
   completionNotes: Record<string, string>;
   refreshedAt: string | null;
@@ -107,7 +106,6 @@ const EMPTY_STATE_CACHE: SqliteRoutineStateCache = {
   tags: [],
   categories: [],
   prefs: {},
-  pushupsByDate: {},
   habitOrder: [],
   completionNotes: {},
   refreshedAt: null,
@@ -128,23 +126,20 @@ export async function refreshSqliteRoutineState(
   client: SqliteMigrationClient,
   userId: string,
 ): Promise<SqliteRoutineStateCache> {
-  const [habits, tags, categories, prefs, pushups, order, notes] =
-    await Promise.all([
-      readHabits(client, userId),
-      readTags(client, userId),
-      readCategories(client, userId),
-      readPrefs(client, userId),
-      readPushups(client, userId),
-      readHabitOrder(client, userId),
-      readCompletionNotes(client, userId),
-    ]);
+  const [habits, tags, categories, prefs, order, notes] = await Promise.all([
+    readHabits(client, userId),
+    readTags(client, userId),
+    readCategories(client, userId),
+    readPrefs(client, userId),
+    readHabitOrder(client, userId),
+    readCompletionNotes(client, userId),
+  ]);
 
   stateCache = {
     habits,
     tags,
     categories,
     prefs,
-    pushupsByDate: pushups,
     habitOrder: order,
     completionNotes: notes,
     refreshedAt: new Date().toISOString(),
@@ -174,7 +169,6 @@ export function setCachedSqliteRoutineState(
     | "tags"
     | "categories"
     | "prefs"
-    | "pushupsByDate"
     | "habitOrder"
     | "completionNotes"
   >,
@@ -184,7 +178,6 @@ export function setCachedSqliteRoutineState(
     tags: state.tags,
     categories: state.categories,
     prefs: state.prefs,
-    pushupsByDate: state.pushupsByDate,
     habitOrder: state.habitOrder,
     completionNotes: state.completionNotes,
     refreshedAt: new Date().toISOString(),
@@ -247,6 +240,7 @@ interface HabitRow extends Record<string, unknown> {
   time_of_day: string;
   reminder_times_json: string;
   weekdays_json: string;
+  weekly_target_history_json: string;
   created_at: string;
 }
 
@@ -257,7 +251,8 @@ async function readHabits(
   const rows = await client.all<HabitRow>(
     `SELECT id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
-            time_of_day, reminder_times_json, weekdays_json, created_at
+            time_of_day, reminder_times_json, weekdays_json,
+            weekly_target_history_json, created_at
        FROM routine_habits
       WHERE user_id = ? AND deleted_at IS NULL
       ORDER BY id ASC`,
@@ -277,6 +272,10 @@ async function readHabits(
     timeOfDay: r.time_of_day || undefined,
     reminderTimes: safeJsonParse<string[]>(r.reminder_times_json, []),
     weekdays: safeJsonParse<number[]>(r.weekdays_json, []),
+    weeklyTargetHistory: safeJsonParse<WeeklyTargetInterval[]>(
+      r.weekly_target_history_json,
+      [],
+    ),
     createdAt: r.created_at,
   }));
 }
@@ -334,18 +333,6 @@ async function readPrefs(
   >(`SELECT data_json FROM routine_prefs WHERE user_id = ?`, [userId]);
   if (rows.length === 0) return {};
   return safeJsonParse<RoutinePrefs>(rows[0]!.data_json, {});
-}
-
-async function readPushups(
-  client: SqliteMigrationClient,
-  userId: string,
-): Promise<Record<string, number>> {
-  const rows = await client.all<
-    { date_key: string; reps: number } & Record<string, unknown>
-  >(`SELECT date_key, reps FROM routine_pushups WHERE user_id = ?`, [userId]);
-  const out: Record<string, number> = {};
-  for (const row of rows) out[row.date_key] = row.reps;
-  return out;
 }
 
 async function readHabitOrder(

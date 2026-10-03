@@ -60,7 +60,11 @@ export interface HideTransactionAction {
 
 export interface SetBudgetLimitAction {
   name: "set_budget_limit";
-  input: { category_id: string; limit: number | string };
+  input: {
+    category_id: string;
+    limit: number | string;
+    period?: "month" | "week" | "one_time";
+  };
 }
 
 export interface SetMonthlyPlanAction {
@@ -153,6 +157,16 @@ export interface BudgetLimit {
   type: "limit";
   categoryId: string;
   limit: number;
+  period?: "month" | "week" | "one_time";
+  createdAt?: string;
+}
+
+/** Один запис логу поповнень цілі (goal-progress-auto-sync). */
+export interface GoalContribution {
+  id: string;
+  amountUah: number;
+  date: string;
+  note?: string;
 }
 
 export interface BudgetGoal {
@@ -160,7 +174,10 @@ export interface BudgetGoal {
   type: "goal";
   name: string;
   targetAmount: number;
+  /** @deprecated лишено для старих снапшотів — прогрес рахується через `contributions`. */
   savedAmount?: number;
+  contributions?: GoalContribution[];
+  linkedJarId?: string;
 }
 
 export type Budget = BudgetLimit | BudgetGoal;

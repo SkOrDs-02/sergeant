@@ -1,0 +1,399 @@
+// @vitest-environment jsdom
+/**
+ * Last validated: 2026-08-13
+ * Status: Active
+ */
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { SetStateAction } from "react";
+import { PhotoAnalyzeCard } from "./PhotoAnalyzeCard";
+
+const baseProps = {
+  analyzePhoto: vi.fn(),
+  fileRef: { current: null },
+  onPickPhoto: vi.fn(),
+  fmtMacro: (v: unknown) => (v == null ? "—" : String(v)),
+  portionGrams: "",
+  setPortionGrams: vi.fn(),
+  refinePhoto: vi.fn(),
+  answers: {},
+  setAnswers: vi.fn(),
+  note: "",
+  setNote: vi.fn(),
+};
+
+describe("PhotoAnalyzeCard", () => {
+  it("shows drop-zone placeholder without preview", () => {
+    render(<PhotoAnalyzeCard {...baseProps} />);
+    expect(screen.getByText("Натисни щоб обрати фото")).toBeInTheDocument();
+  });
+
+  it("shows busy label on analyze button", () => {
+    render(<PhotoAnalyzeCard {...baseProps} busy />);
+    expect(screen.getByRole("button", { name: "…" })).toBeDisabled();
+  });
+
+  it("shows an inline status line next to the analyze button while analyzing", () => {
+    render(<PhotoAnalyzeCard {...baseProps} analyzing />);
+    expect(screen.getByRole("status")).toHaveTextContent("Аналізую фото…");
+  });
+
+  it("does not show the inline status line when neither analyzing nor refining", () => {
+    render(<PhotoAnalyzeCard {...baseProps} />);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("shows an inline status line next to the refine button while refining", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        refining
+        photoResult={{
+          dishName: "Борщ",
+          macros: {},
+          questions: ["Порція?"],
+        }}
+      />,
+    );
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Уточнюю порцію та перераховую…",
+    );
+  });
+
+  it("renders result and save-to-log", () => {
+    const onSaveToLog = vi.fn();
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Борщ",
+          confidence: 0.82,
+          macros: { kcal: 250, protein_g: 8, fat_g: 10, carbs_g: 30 },
+          ingredients: [{ name: "буряк" }],
+          questions: ["Порція?"],
+        }}
+        onSaveToLog={onSaveToLog}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Зберегти в журнал/ }));
+    expect(onSaveToLog).toHaveBeenCalled();
+  });
+
+  it("keeps save-to-log the only filled action of the card", () => {
+    // Регресія тестера 2026-08-13 («ледь не пропустила цей пункт»): збереження
+    // було outline-кнопкою, а допоміжне «Перерахувати» — залитим, тож головна
+    // дія картки читалась як другорядна. Пін на ієрархію, а не на естетику.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Борщ",
+          macros: { kcal: 250, protein_g: 8, fat_g: 10, carbs_g: 30 },
+          questions: ["Порція?"],
+        }}
+        onSaveToLog={vi.fn()}
+      />,
+    );
+
+    const save = screen.getByRole("button", { name: /Зберегти в журнал/ });
+    const refine = screen.getByRole("button", {
+      name: "Перерахувати з урахуванням уточнень",
+    });
+
+    expect(save.className).toContain("bg-nutrition-strong");
+    expect(refine.className).not.toContain("bg-nutrition-strong");
+    expect(
+      screen.getByText(/Сам аналіз у журнал не потрапляє/),
+    ).toBeInTheDocument();
+  });
+
+  it("refuses a non-food result: no macros, no save-to-log, no portion questions", () => {
+    // Регресія фото кота: сервер віддає `isFood: false`, і картка не має
+    // показувати ані КБЖВ, ані кнопку збереження, ані блок уточнень —
+    // саме через них не-їжа потрапляла в денний журнал як `photoAI`.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          dishName: "Кіт",
+          confidence: 1,
+          macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
+          questions: [],
+        }}
+        onSaveToLog={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Не бачу тут страви")).toBeInTheDocument();
+    expect(screen.getByText(/схоже на «Кіт»/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Зберегти в журнал/ }),
+    ).toBeNull();
+    expect(screen.queryByText("Уточнення")).toBeNull();
+    expect(screen.queryByText("Ккал")).toBeNull();
+    expect(screen.queryByText(/Впевненість/)).toBeNull();
+  });
+
+  it("offers the clarification block even when the model asked nothing", () => {
+    // Звіт тестової групи 2026-08-12: розпізнало 2 страви з 3, питань модель
+    // не поставила — і саме тоді канал «сказати своїми словами» був потрібен
+    // найбільше. Поки блок гейтився на `questions.length > 0`, впевнена
+    // модель мовчки забирала в людини єдиний спосіб її виправити.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: "Рис з овочами, рагу, булочка",
+          macros: { kcal: 455, protein_g: 11, fat_g: 6, carbs_g: 88 },
+          questions: [],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Уточнення")).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText("напр. третє: не булочка, а сирник"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Перерахувати з урахуванням уточнень",
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the free-form note inside the contract limit and warns about the re-roll", () => {
+    const setNote = vi.fn();
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{ dishName: "Борщ", macros: {}, questions: [] }}
+        setNote={setNote}
+      />,
+    );
+
+    const note = screen.getByLabelText("Що не так? Опиши своїми словами");
+    // 500 — стеля `qna[].answer` у `RefinePhotoSchema`; без неї довгий
+    // текст їхав би на сервер і повертався 400 вже після аналізу.
+    expect(note).toHaveAttribute("maxLength", "500");
+
+    fireEvent.change(note, { target: { value: "третє — сирник" } });
+    expect(setNote).toHaveBeenCalledWith("третє — сирник");
+
+    // Перерахунок переписує весь результат — людина має знати ціну кліку
+    // до того, як загубить дві правильні страви.
+    expect(screen.getByText(/оновлює весь результат/)).toBeInTheDocument();
+  });
+
+  it("greets an animal instead of offering another photo", () => {
+    // Фото кота — найчастіша не-їжа в кадрі, і нейтральне «обери інше фото»
+    // тут читається як помилка застосунку, хоча розпізнавання спрацювало.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          notFoodKind: "animal",
+          dishName: "Кіт",
+          macros: {},
+          questions: [],
+        }}
+        onSaveToLog={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Це не страва, а тваринка")).toBeInTheDocument();
+    expect(
+      screen.getByText(/погладь і пригости смаколиком/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/схоже на «Кіт»/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Зберегти в журнал/ }),
+    ).toBeNull();
+  });
+
+  it("names an animal even when the model did not", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          notFoodKind: "animal",
+          dishName: "",
+          macros: {},
+          questions: [],
+        }}
+      />,
+    );
+    expect(screen.getByText(/На фото тваринка, а не їжа/)).toBeInTheDocument();
+  });
+
+  it("points a person back at the plate", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          notFoodKind: "person",
+          dishName: "Селфі",
+          macros: {},
+          questions: [],
+        }}
+      />,
+    );
+    expect(screen.getByText("Це людина, а не страва")).toBeInTheDocument();
+    expect(screen.getByText(/Наведи камеру на тарілку/)).toBeInTheDocument();
+  });
+
+  it("keeps the neutral refusal for an unknown category", () => {
+    // Стара модель без поля і будь-яка не-їжа поза таксономією — той самий
+    // текст, що й до появи категорій.
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: false,
+          dishName: "Клавіатура",
+          macros: {},
+          questions: [],
+        }}
+      />,
+    );
+    expect(screen.getByText("Не бачу тут страви")).toBeInTheDocument();
+    expect(screen.getByText(/Обери інше фото вище/)).toBeInTheDocument();
+  });
+
+  it("keeps the refusal readable when the model did not name the object", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{ isFood: false, dishName: "", macros: {}, questions: [] }}
+      />,
+    );
+    expect(
+      screen.getByText(/На фото немає їжі, для якої можна порахувати КБЖВ/),
+    ).toBeInTheDocument();
+  });
+
+  it("hides the confidence percentage when there are no macros to be confident about", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: true,
+          dishName: "Щось",
+          confidence: 0.9,
+          macros: {},
+          questions: ["Що саме?"],
+        }}
+      />,
+    );
+    expect(screen.getByText("Щось")).toBeInTheDocument();
+    expect(screen.queryByText(/Впевненість/)).toBeNull();
+  });
+
+  it("labels the confidence as recognition confidence when macros exist", () => {
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          isFood: true,
+          dishName: "Борщ",
+          confidence: 0.82,
+          macros: { kcal: 250, protein_g: 8, fat_g: 10, carbs_g: 30 },
+          questions: [],
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(/Впевненість у розпізнаванні: 82%/),
+    ).toBeInTheDocument();
+  });
+
+  it("handles preview removal, file selection and analyze click", () => {
+    const analyzePhoto = vi.fn();
+    const onPickPhoto = vi.fn();
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        analyzePhoto={analyzePhoto}
+        onPickPhoto={onPickPhoto}
+        photoPreviewUrl="blob:meal-photo"
+      />,
+    );
+
+    expect(screen.getByAltText("Обране фото")).toHaveAttribute(
+      "src",
+      "blob:meal-photo",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Аналізувати" }));
+    expect(analyzePhoto).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Прибрати фото" }));
+    expect(onPickPhoto).toHaveBeenCalledWith(null);
+
+    const file = new File(["img"], "borsch.png", { type: "image/png" });
+    fireEvent.change(screen.getByLabelText("Обрати фото страви"), {
+      target: { files: [file] },
+    });
+    expect(onPickPhoto).toHaveBeenCalledWith(file);
+  });
+
+  it("updates clarification answers and refines the photo result", () => {
+    const refinePhoto = vi.fn();
+    const setPortionGrams = vi.fn();
+    let currentAnswers: Record<string, string> = {};
+    const setAnswers = vi.fn(
+      (update: SetStateAction<Record<string, string>>) => {
+        currentAnswers =
+          typeof update === "function" ? update(currentAnswers) : update;
+      },
+    );
+    render(
+      <PhotoAnalyzeCard
+        {...baseProps}
+        photoResult={{
+          dishName: null,
+          macros: {},
+          questions: [
+            "Скільки було борщу?",
+            "Чи була сметана?",
+            "Питання 3",
+            "Питання 4",
+            "Питання 5",
+            "Питання 6",
+            "Питання 7",
+          ],
+        }}
+        portionGrams="320"
+        setPortionGrams={setPortionGrams}
+        refinePhoto={refinePhoto}
+        answers={{ "Чи була сметана?": "так" }}
+        setAnswers={setAnswers}
+      />,
+    );
+
+    expect(screen.getByText("Страва")).toBeInTheDocument();
+    expect(screen.getByText("Питання 6")).toBeInTheDocument();
+    expect(screen.queryByText("Питання 7")).toBeNull();
+
+    fireEvent.change(screen.getByDisplayValue("320"), {
+      target: { value: "450" },
+    });
+    expect(setPortionGrams).toHaveBeenCalledWith("450");
+
+    fireEvent.change(screen.getAllByPlaceholderText("Твоя відповідь")[0]!, {
+      target: { value: "велика тарілка" },
+    });
+    expect(currentAnswers).toMatchObject({
+      "Скільки було борщу?": "велика тарілка",
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Перерахувати з урахуванням уточнень",
+      }),
+    );
+    expect(refinePhoto).toHaveBeenCalledTimes(1);
+  });
+});

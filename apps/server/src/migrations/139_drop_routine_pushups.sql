@@ -1,0 +1,23 @@
+-- 139: Phase 2 DROP — знімає `routine_pushups` (лічильник віджимань
+-- routine-ери).
+--
+-- Phase 1 (2026-08-30, Phase B переносу власності pushup-даних, канон
+-- routine.md §10): клієнти перестали писати в цю таблицю — стан
+-- `RoutineState.pushupsByDate`, редʼюсер, дзеркала sqliteWriter/Reader і
+-- pull-списки sync-engine прибрано; дані скопійовано у `fizruk_pushups`
+-- міграцією 131 зі збереженням `updated_at`. Серверний handler
+-- `applyRoutinePushups` лишався compat-шляхом для op-ів зі старих клієнтів
+-- і знімається разом із цим DROP (`syncV2.ts` більше не знає таблиці —
+-- такий op тепер `unsupported_table`).
+--
+-- Що з даними. Історія цієї таблиці вже двічі перенесена: 131 скопіювала її
+-- у `fizruk_pushups`, а 140 (наступна міграція) конвертує ту копію в
+-- звичайні `fizruk_workouts`. Тут нічого не копіюємо, щоб не мати трьох
+-- джерел однієї цифри.
+--
+-- CHECK `routine_pushups_date_key_format_check` (міграція 110) падає разом
+-- із таблицею — окремого DROP CONSTRAINT не потрібно.
+--
+-- TWO-PHASE-DROP: introduced 2026-08-30 as deprecation; safe to drop after 2026-09-13
+
+DROP TABLE IF EXISTS routine_pushups;

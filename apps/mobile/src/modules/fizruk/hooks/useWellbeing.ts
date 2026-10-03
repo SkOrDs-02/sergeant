@@ -3,7 +3,7 @@
  * (mood, energy, sleep, recovery notes).
  *
  * Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 of
- * `docs/planning/storage-roadmap.md`. Reads from the SQLite warm cache
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Reads from the SQLite warm cache
  * (`getCachedFizrukSqliteState`) and persists exclusively through the
  * dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV slot
  * `STORAGE_KEYS.FIZRUK_WELLBEING` is drained on first boot via
@@ -21,7 +21,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { triggerFizrukDualWrite } from "../lib/dualWrite";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
 import {
   EMPTY_FIZRUK_DUAL_WRITE_STATE,
   extractWellbeingSnapshots,
@@ -32,6 +32,7 @@ import {
   type CachedWellbeingEntry,
 } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import { deepEqual } from "./jsonEqual";
 
 export interface WellbeingEntry {
   /** `YYYY-MM-DD` — primary key; one entry per calendar day. */
@@ -70,15 +71,6 @@ function loadInitialFromCache(): WellbeingEntry[] {
   return cache.wellbeing.map(projectFromCache);
 }
 
-function deepEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  try {
-    return JSON.stringify(a) === JSON.stringify(b);
-  } catch {
-    return false;
-  }
-}
-
 export interface UseWellbeingResult {
   /** Entries sorted by date descending (newest first). */
   entries: readonly WellbeingEntry[];
@@ -103,14 +95,21 @@ export function useWellbeing(): UseWellbeingResult {
 
   // Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5: overlay
   // wellbeing entries from the SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
   const sqliteCacheTick = useFizrukSqliteReadTick();
-  useEffect(() => {
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
     const cache = getCachedFizrukSqliteState();
-    if (cache.refreshedAt === null) return;
-    const overlay = cache.wellbeing.map(projectFromCache);
-    stateRef.current = overlay;
-    setEntries(overlay);
-  }, [sqliteCacheTick]);
+    if (cache.refreshedAt !== null) {
+      setEntries(cache.wellbeing.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = entries;
+  }, [entries]);
 
   const persist = useCallback(
     (updater: (prev: WellbeingEntry[]) => WellbeingEntry[]) => {

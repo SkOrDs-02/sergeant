@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import {
@@ -7,6 +8,7 @@ import {
   writePersistedOpen,
 } from "./storage";
 import type { JournalEntry } from "./storage";
+import { fmtLoose } from "../../lib/numberFmt";
 
 export function JournalEntryCard({
   entry,
@@ -36,19 +38,33 @@ export function JournalEntryCard({
     year: "numeric",
   });
 
-  // Cyrillic abbreviations matching the expanded labels («Енергія» / «Настрій»)
-  // — the previous Latin "E"/"M" mix read as English on a Ukrainian-only
-  // surface and "M" in particular wasn't legible as Mood/Настрій.
+  // Collapsed summary shows only weight/sleep — energy and mood are visible
+  // in the expanded state, so surfacing them here doubled the same values
+  // on screen at once.
   const summaryParts: string[] = [];
-  if (entry.weightKg != null) summaryParts.push(`${entry.weightKg} кг`);
-  if (entry.sleepHours != null) summaryParts.push(`${entry.sleepHours} год`);
-  if (entry.energyLevel != null)
-    summaryParts.push(`Енергія ${entry.energyLevel}/5`);
-  if (entry.moodScore != null)
-    summaryParts.push(`Настрій ${entry.moodScore}/5`);
+  if (entry.weightKg != null)
+    summaryParts.push(`${fmtLoose(entry.weightKg)}\u202Fкг`);
+  if (entry.sleepHours != null)
+    summaryParts.push(`${fmtLoose(entry.sleepHours)} год`);
   const summary = summaryParts.join(" · ");
 
   return (
+    /*
+      AI-CONTEXT: краю (П3) тут НЕМА — і це рішення, а не пропуск.
+
+      Запис щоденника за дату спокушає: він датований і після створення
+      його не редагують, тобто тест «існує в житті як аркуш» на око
+      проходить. Але аркушем є ЖУРНАЛ, а це його рядок: `JournalSection`
+      мапить `entries` без верхньої межі, тож перфорація дісталась би
+      кожному запису — і матеріал перетворився б на візерунок, тобто на
+      декор. Саме від цього застерігає § П3 канону, і саме тому в стосі
+      операцій лінійка належить першій поверхні групи, а перфорація —
+      останній, а не обом на кожному рядку.
+
+      Стосом ці записи теж не є: між ними `space-y-2`, тож пара
+      `rule`/`perf` стверджувала б неперервність, якої на екрані немає.
+      Отже правильний хід — не давати краю зовсім.
+    */
     <div className="rounded-xl border border-line bg-bg">
       <div className="flex items-start gap-2">
         <button
@@ -64,21 +80,25 @@ export function JournalEntryCard({
           <span
             aria-hidden
             className={cn(
-              "inline-block w-3 text-muted transition-transform shrink-0 text-xs",
+              "inline-flex justify-center w-3 text-muted transition-transform shrink-0",
               open ? "rotate-180" : "rotate-0",
             )}
           >
-            ▾
+            <Icon name="chevron-down" size="sm" />
           </span>
-          <span className="text-xs text-subtle shrink-0">{dateLabel}</span>
+          <span className="text-style-caption text-muted shrink-0">
+            {dateLabel}
+          </span>
           {!open && summary && (
-            <span className="text-xs text-muted truncate">· {summary}</span>
+            <span className="text-style-caption text-muted truncate">
+              · {summary}
+            </span>
           )}
         </button>
         <button
           type="button"
           onClick={() => onDelete(entry.id)}
-          className="touch-target shrink-0 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+          className="focus-ring touch-target shrink-0 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           aria-label={messages.fizruk.journal.deleteEntryAriaLabel}
         >
           <svg
@@ -98,36 +118,36 @@ export function JournalEntryCard({
         <div id={contentId} className="px-3 pb-3 pt-0">
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {entry.weightKg != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.weightLabel}
                 </span>{" "}
                 <span className="font-semibold">
-                  {entry.weightKg} {messages.fizruk.kgUnit}
+                  {fmtLoose(entry.weightKg)} {messages.fizruk.kgUnit}
                 </span>
               </span>
             )}
             {entry.sleepHours != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.sleepLabel}
                 </span>{" "}
                 <span className="font-semibold">
-                  {entry.sleepHours} {messages.fizruk.hoursUnit}
+                  {fmtLoose(entry.sleepHours)} {messages.fizruk.hoursUnit}
                 </span>
               </span>
             )}
             {entry.energyLevel != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.energyLabel}
                 </span>{" "}
                 <span className="font-semibold">{entry.energyLevel}/5</span>
               </span>
             )}
             {entry.moodScore != null && (
-              <span className="text-xs text-text">
-                <span className="text-subtle">
+              <span className="text-style-caption text-text">
+                <span className="text-muted">
                   {messages.fizruk.journal.moodLabel}
                 </span>{" "}
                 <span className="font-semibold">{entry.moodScore}/5</span>
@@ -135,7 +155,9 @@ export function JournalEntryCard({
             )}
           </div>
           {entry.note && (
-            <p className="text-xs text-subtle mt-1 italic">{entry.note}</p>
+            <p className="text-style-caption text-muted mt-1 italic">
+              {entry.note}
+            </p>
           )}
         </div>
       )}

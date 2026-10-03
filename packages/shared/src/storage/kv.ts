@@ -279,7 +279,7 @@ export function createMmkvKVStore(
 
 // ─── createSqliteKVStore ─────────────────────────────────────────────
 //
-// Stage 9 / PR #061 of `docs/planning/storage-roadmap.md`. Backs the
+// Stage 9 / PR #061 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Backs the
 // SQLite swap of the `webKVStore` primitive (and its MMKV mobile
 // counterpart) onto the per-device `kv_store` table introduced in
 // PR #060. Sync read/write contract preserved by holding a warm
@@ -471,7 +471,20 @@ function isBcMessage(payload: unknown): payload is SqliteKvBcMessage {
  *     fire-and-forget upsert to SQLite + broadcast a `kv-store` BC
  *     message.
  */
-export function createSqliteKVStore(opts: SqliteKVStoreOptions): KVStore {
+/**
+ * {@link KVStore} поверх warm-cache з точкою повного перезаповнення кешу.
+ */
+export interface SqliteKVStore extends KVStore {
+  /**
+   * Замінює весь warm-cache знімком `next` і сповіщає підписників `onChange`
+   * лише про ключі, чиє значення змінилось (видалений ключ отримує `null`).
+   * Потрібно, коли застосунок перемикає SQLite-розділ на інший акаунт: стор
+   * лишається тим самим обʼєктом, тож підписки не губляться.
+   */
+  replaceCache(next: ReadonlyMap<string, string>): void;
+}
+
+export function createSqliteKVStore(opts: SqliteKVStoreOptions): SqliteKVStore {
   const {
     sqlite,
     boot,
@@ -603,6 +616,17 @@ export function createSqliteKVStore(opts: SqliteKVStoreOptions): KVStore {
     listKeys() {
       if (!boot.loaded) return [];
       return Array.from(boot.warmCache.keys());
+    },
+    replaceCache(next) {
+      const prev = new Map(boot.warmCache);
+      boot.warmCache.clear();
+      for (const [key, value] of next) boot.warmCache.set(key, value);
+      for (const [key, value] of prev) {
+        if (next.get(key) !== value) notify(key, next.get(key) ?? null);
+      }
+      for (const [key, value] of next) {
+        if (!prev.has(key)) notify(key, value);
+      }
     },
     onChange(key, listener) {
       let set = subs.get(key);

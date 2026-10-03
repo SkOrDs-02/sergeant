@@ -9,7 +9,7 @@
  * so we also merge entries into `res/values/strings.xml`.
  *
  * Why a local plugin and not `expo-quick-actions`?
- *   - The migration plan (`docs/mobile/react-native-migration.md` Phase 10)
+ *   - The migration plan (`docs/engineering/mobile/react-native-migration.md` Phase 10)
  *     explicitly forbids adding new runtime deps for this step.
  *   - Static shortcuts don't need a runtime module — they are purely
  *     manifest-level: tapping one fires the app's existing deep-link

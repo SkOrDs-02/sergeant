@@ -1,12 +1,18 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
+import {
+  formatMoney,
+  formatMoneyFromKopecks,
+  pluralExercises,
+} from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
+import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import { safeParseLS, scoreLru } from "./searchCache";
+import { searchProfile } from "./searchProfile";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
 
@@ -27,8 +33,7 @@ interface FinykSub {
 function searchFinyk(tokens: string[]): Hit[] {
   const results: Hit[] = [];
 
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key
-  const txList = safeParseLS<FinykTx[]>("finyk_tx_cache", []);
+  const txList = getVisibleFinykMonoMirrorState().transactions as FinykTx[];
   if (Array.isArray(txList)) {
     for (const tx of txList) {
       if (!tx || typeof tx !== "object") continue;
@@ -41,9 +46,9 @@ function searchFinyk(tokens: string[]): Hit[] {
           id: `finyk_tx_${tx.id || time}`,
           module: "finyk",
           moduleLabel: "Фінік",
-          title: tx.description || tx.comment || "Транзакція",
+          title: tx.description || tx.comment || "Операція",
           subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
-          icon: "💳",
+          icon: "credit-card",
           target: { kind: "module", moduleId: "finyk" },
         },
         tokens,
@@ -53,7 +58,9 @@ function searchFinyk(tokens: string[]): Hit[] {
     }
   }
 
-  // eslint-disable-next-line sergeant-design/no-raw-storage-key
+  // Hub search reads the finyk_subs LS shard; STORAGE_KEYS.FINYK_* is banned
+  // outside module wrappers by the no-restricted-syntax retirement guard.
+  // eslint-disable-next-line sergeant-design/no-raw-storage-key -- intentional LS-shard read; STORAGE_KEYS.FINYK_* banned in hub/search (retirement guard)
   const subs = safeParseLS<FinykSub[]>("finyk_subs", []);
   if (Array.isArray(subs)) {
     for (const s of subs) {
@@ -68,7 +75,7 @@ function searchFinyk(tokens: string[]): Hit[] {
           moduleLabel: "Фінік",
           title: s.name || "Підписка",
           subtitle: `Підписка · ${amt ? formatMoneyFromKopecks(amt) : ""}`,
-          icon: "🔄",
+          icon: "refresh-cw",
           target: { kind: "module", moduleId: "finyk" },
         },
         tokens,
@@ -112,7 +119,7 @@ function searchFizruk(tokens: string[]): Hit[] {
         // ловив запит «bench», «жим лежа» тощо. Перед рендером ми
         // повертаємо короткий subtitle (lookup по id у мапі нижче).
         subtitle: `${groupUk} · ${ex.name?.en ?? ""} ${aliases}`.trim(),
-        icon: "💪",
+        icon: "dumbbell",
         target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
@@ -122,7 +129,7 @@ function searchFizruk(tokens: string[]): Hit[] {
   }
   // Заміняємо subtitle на коротку версію (без aliases) перед рендером —
   // довгий список синонімів був корисний для скорінгу, але в UI хочеться
-  // лише примарну м'язову групу.
+  // лише примарну мʼязову групу.
   for (const r of results) {
     const ex = FizrukData.EXERCISES.find((e) => `fizruk_cat_${e?.id}` === r.id);
     if (!ex) continue;
@@ -163,9 +170,9 @@ function searchFizruk(tokens: string[]): Hit[] {
         subtitle:
           dateLabel +
           (itemsRaw.length
-            ? ` · ${itemsRaw.length} вправ · ${fullTokensText}`
+            ? ` · ${itemsRaw.length} ${pluralExercises(itemsRaw.length)} · ${fullTokensText}`
             : ""),
-        icon: "🏋️",
+        icon: "dumbbell",
         target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
@@ -191,7 +198,7 @@ function searchFizruk(tokens: string[]): Hit[] {
         moduleLabel: "Фізрук",
         title: e.name?.uk || "Вправа",
         subtitle: groupUk,
-        icon: "💪",
+        icon: "dumbbell",
         target: { kind: "module", moduleId: "fizruk" },
       },
       tokens,
@@ -208,7 +215,13 @@ function searchRoutine(tokens: string[]): Hit[] {
   // `hub_routine_v1` is tombstoned — read the canonical SQLite warm cache.
   const habits = loadRoutineState().habits;
   for (const h of habits) {
-    const title = `${h.emoji || ""} ${h.name || "Звичка"}`.trim();
+    // AI-CONTEXT (2026-08-21): тут стояло `${h.emoji || ""} ${h.name}`.
+    // Після переходу Рутини на icon-slug-и (2026-08-03) поле `emoji`
+    // містить НЕ емодзі, а імʼя гліфа, тож рядок пошуку показував
+    // «droplet Пити воду»; на легасі-записах лишалось сире емодзі. Гліф
+    // малює `HabitGlyph` там, де він доречний, — у заголовок результату
+    // він не потрапляє взагалі.
+    const title = (h.name || "Звичка").trim();
     const stop = pushScored(
       results,
       {
@@ -217,7 +230,7 @@ function searchRoutine(tokens: string[]): Hit[] {
         moduleLabel: "Рутина",
         title,
         subtitle: h.archived ? "Архівовано" : h.recurrence || "daily",
-        icon: "✅",
+        icon: "check-circle",
         target: { kind: "module", moduleId: "routine" },
       },
       tokens,
@@ -248,10 +261,10 @@ function searchNutrition(tokens: string[]): Hit[] {
         {
           id: `nutrition_m_${m.id || date}`,
           module: "nutrition",
-          moduleLabel: "Харчування",
+          moduleLabel: "Їжа",
           title: m.name || "Прийом їжі",
           subtitle: `${date} · ${m.macros?.kcal ?? 0} ккал`,
-          icon: "🥗",
+          icon: "utensils",
           target: { kind: "module", moduleId: "nutrition" },
         },
         tokens,
@@ -276,10 +289,20 @@ function storageSnapshot(): string {
   // SQLite warm caches (their `*_v1` LS keys are tombstoned). Build the cache
   // half from the canonical readers so the LRU still invalidates when that
   // data changes (counts + ids + habit/meal names catch add/remove/rename).
-  const lsParts = ["finyk_tx_cache", "finyk_subs"].map((k) => {
-    const v = safeReadStringLS(k);
-    return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
-  });
+  // finyk_tx_cache is now tombstoned — derive change-signal from the mirror cache
+  // (same semantics: length change + prefix/suffix fingerprint).
+  const mirrorTxs = getVisibleFinykMonoMirrorState().transactions;
+  const mirrorSnapshot =
+    mirrorTxs.length === 0
+      ? "0"
+      : `${mirrorTxs.length}:${mirrorTxs[0]?.id ?? ""}:${mirrorTxs[mirrorTxs.length - 1]?.id ?? ""}`;
+  const lsParts = [
+    mirrorSnapshot,
+    ...["finyk_subs"].map((k) => {
+      const v = safeReadStringLS(k);
+      return v === null ? "0" : `${v.length}:${v.slice(0, 24)}:${v.slice(-24)}`;
+    }),
+  ];
   const routine = loadRoutineState();
   const fizruk = getCachedFizrukSqliteState();
   const nutrition = loadNutritionLog();
@@ -320,6 +343,7 @@ export function performSearch(query: string): Hit[] {
     ...searchRoutine(tokens),
     ...searchNutrition(tokens),
     ...searchSettings(tokens),
+    ...searchProfile(tokens),
     ...searchAssistantTools(tokens),
     ...searchAiHandoff(query),
   ];

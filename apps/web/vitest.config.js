@@ -18,6 +18,13 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: "node",
+    // TZ пінимо навмисно. Тести дня ПРИСТРОЮ (ADR-0078) читають локальні
+    // геттери `Date`, а їхні межові моменти задані в UTC — тож на машині
+    // розробника в Києві той самий інстант дає інший день-ключ, і зелений
+    // тут ставав червоним там. Іронія в тому, що це набір тестів ПРО
+    // таймзони. CI і так рахує UTC, тож для нього це но-оп; фіксація лікує
+    // локальні прогони й робить намір явним.
+    env: { TZ: "UTC" },
     // CI runners are intermittently throttled (the whole pipeline has been
     // observed running 1.5–3× slower than its p95 — every job, not just this
     // one). At that pace the heavy jsdom + react-test-renderer suites flake on
@@ -117,15 +124,63 @@ export default defineConfig({
         //   repo-wide default floor), branches → 63, fns → 64,
         //   statements → 73. ~2–2.7pp headroom kept for throttled CI.
         //
-        // Floors set ~2–2.7pp below current actuals. Raise per sprint
-        // as more component shells land (next targets: FinykApp,
-        // NutritionApp, useRoutineAppState, CommandPaletteUI,
-        // HabitDetailSheet — the heavy orchestration shells still at 0%).
+        // - 2026-07-10 (web coverage wave 1–4): parallel subagent push
+        //   across finyk/fizruk/nutrition/core/routine + SQLite storage
+        //   test drift fixes. Measured (CI=true, maxWorkers=1, 697 files /
+        //   6977 tests):
+        //     lines 89.76 / branches 75.1 / fns 81.52 / statements 87.29.
+        //   Ratchet: lines → 87 (coverage-thresholds.json), branches → 73,
+        //   fns → 79, statements → 85. ~2–2.8pp headroom for throttled CI.
+        //
+        // - 2026-07-10 (web coverage wave 5): branch-focused push on finyk,
+        //   core (dailySeries/AuthContext/useChatSend), fizruk orchestrator.
+        //   Measured (CI=true, maxWorkers=1, 700 files / 7115 tests):
+        //     lines 89.92 / branches 75.34 / fns 81.64 / statements 87.47.
+        //   Ratchet: lines → 88, branches → 74. ~1.3–2pp headroom.
+        //
+        // - 2026-07-10 (web coverage wave 6): zero-coverage shells across
+        //   fizruk/routine/nutrition/core hub+settings. Measured (CI=true,
+        //   maxWorkers=1, 710 files / 7121 tests):
+        //     lines 90.49 / branches 75.76 / fns 82.63 / statements 88.
+        //   Ratchet: lines → 88 (coverage-thresholds.json), branches → 74,
+        //   fns → 81, statements → 86. ~1.5–2.5pp headroom for throttled CI.
+        //
+        // - 2026-07-10 (web coverage wave 7): Transactions page shells,
+        //   FeedbackDialog, useSqliteTickOverlay, singleton branches,
+        //   CapabilityDetailModal, foodDb legacy migration. Measured (CI=true,
+        //   maxWorkers=1, 724 files / ~7170 tests — 16 pre-existing fails on
+        //   main sqlite-overlay drift, not introduced by this wave):
+        //     lines 90.52 / branches 75.84 / fns 82.64 / statements 88.03.
+        //   Ratchet: lines → 89, branches → 75, fns → 82, statements → 87.
+        //
+        // - 2026-07-10 (web coverage wave 9): ModuleShell + lazy route entries
+        //   (4 modules, settings, onboarding), dualWriteBoot hooks (4 modules),
+        //   HubSearch / PushNotificationToggle / nutritionErrors shells, plus
+        //   partial test-drift fixes for async hub-shell + SQLite overlay.
+        //   Measured (CI=true, maxWorkers=1, reportOnFailure, 737 files /
+        //   7393 tests — 9 legacy fails remain on main sync/overlay drift):
+        //     lines 90.12 / branches 75.64 / fns 82.72 / statements 87.66.
+        //   Ratchet: lines → 89 (coverage-thresholds.json), branches → 75,
+        //   fns → 82, statements → 87. ~0.1–0.4pp headroom on lines — main
+        //   sync-v2 scaffold widened the denominator; next wave targets heavy
+        //   shells (FinykApp, NutritionApp, useRoutineAppState).
+        //
+        // - 2026-07-10 (web coverage wave 10): orchestration-shell branch push
+        //   (FinykApp/NutritionApp page routing + swipe, pending-action machine,
+        //   useRoutineAppState branches, HabitDetailSheet delete-without-snapshot,
+        //   CommandPalette Escape, async PWA drift fixes in FinykApp.extra /
+        //   useRoutineAppState). Measured (CI=true, maxWorkers=1):
+        //     lines 90.0 / branches 75.49 / fns 82.51 / statements 87.55.
+        //   Floors unchanged: 89 / 75 / 82 / 87 (~0.5–2.5pp headroom).
+        //
+        // Floors set ~1.3–2.5pp below current actuals. Raise per sprint
+        // as more component shells land (next targets: remaining FinykApp /
+        // NutritionApp callback branches in heavy lazy pages).
         // `lines` приходить з кореневого coverage-thresholds.json.
         lines: sharedThresholds["apps/web"],
-        branches: 63,
-        functions: 64,
-        statements: 73,
+        branches: 75,
+        functions: 82,
+        statements: 87,
       },
     },
   },

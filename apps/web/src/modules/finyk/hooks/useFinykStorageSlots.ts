@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
+import type { MerchantRule } from "@sergeant/finyk-domain/lib/merchantRules";
 import { readJSON, readRaw, finykStorageManager } from "../lib/finykStorage";
 import { useReadonlyPersist, reportSilentError } from "./useStorage.persist";
 import { getCachedFinykSqliteState } from "../lib/sqliteReader";
@@ -11,6 +12,7 @@ import type {
   ManualExpense,
   CustomCategory,
   TxCategoriesMap,
+  TxNotesMap,
   MonoDebtLinkedMap,
   MonthlyPlan,
   NetworthEntry,
@@ -33,6 +35,8 @@ const defaultMonthlyPlan: MonthlyPlan = {
 };
 
 export interface FinykStorageSlots {
+  /** SQLite-кеш прогрітий; до того слоти показують LS-знімок першого кадру. */
+  storageReady: boolean;
   hiddenAccounts: string[];
   setHiddenAccounts: Dispatch<SetStateAction<string[]>>;
   budgets: Budget[];
@@ -51,6 +55,10 @@ export interface FinykStorageSlots {
   setMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
   txCategories: TxCategoriesMap;
   setTxCategories: Dispatch<SetStateAction<TxCategoriesMap>>;
+  /** User's own free-text annotation per bank transaction (LS-only —
+   * not part of the SQLite dual-write mirror, same as `finyk_tx_filters_v1`). */
+  txNotes: TxNotesMap;
+  setTxNotes: Dispatch<SetStateAction<TxNotesMap>>;
   monoDebtLinkedTxIds: MonoDebtLinkedMap;
   setMonoDebtLinkedTxIds: Dispatch<SetStateAction<MonoDebtLinkedMap>>;
   networthHistory: NetworthEntry[];
@@ -65,6 +73,13 @@ export interface FinykStorageSlots {
   setExcludedStatTxIds: Dispatch<SetStateAction<string[]>>;
   dismissedRecurring: string[];
   setDismissedRecurring: Dispatch<SetStateAction<string[]>>;
+  /**
+   * Правила «Завжди так для цього магазину» (2026-10-01). Живуть у
+   * `finyk_prefs.prefs_json`, а не в LS: слот стартує порожнім і вкочується
+   * з SQLite-кешу, тож до `storageReady` правил немає (як і в усіх prefs).
+   */
+  merchantRules: MerchantRule[];
+  setMerchantRules: Dispatch<SetStateAction<MerchantRule[]>>;
   /**
    * Balance-visibility flag (Stage 13 PR #074). LS first-paint fallback,
    * SQLite-overlay once warm. Mutations flow through dual-write —
@@ -127,6 +142,10 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     "finyk_tx_cats",
     {},
   );
+  const [txNotes, setTxNotes] = useReadonlyPersist<TxNotesMap>(
+    "finyk_tx_notes",
+    {},
+  );
   const [monoDebtLinkedTxIds, setMonoDebtLinkedTxIds] =
     useReadonlyPersist<MonoDebtLinkedMap>("finyk_mono_debt_linked", {});
   const [networthHistory, setNetworthHistory] = useReadonlyPersist<
@@ -148,6 +167,9 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   const [dismissedRecurring, setDismissedRecurring] = useReadonlyPersist<
     string[]
   >("finyk_rec_dismissed", []);
+  // Правила мерчантів: нового LS-ключа свідомо немає — слот живе лише в
+  // SQLite (`prefs_json`) і sync-у, переносити нема чого.
+  const [merchantRules, setMerchantRules] = useState<MerchantRule[]>([]);
   // Stage 13 PR #074 — `finyk_show_balance_v1` slot. Default `true`
   // (UI shows balances unless user toggled off). Raw-string LS shape
   // (`"0"` / `"1"`), не JSON, тож беремо ручну useState + readRaw
@@ -169,46 +191,54 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   // gone: the dual-write pipeline (`useFinykDualWriteSync`) is the
   // sole persistence sink.
   const sqliteCacheTick = useFinykSqliteReadTick();
-  useEffect(() => {
+  // Seeded with `-1` (never a real tick — the gate counts up from 0) so
+  // an ALREADY warm cache is applied on the first render. Seeding with
+  // the live tick meant "warmed before this hook mounted" produced no
+  // change and therefore no overlay at all: `useHubChatStorageBoot`
+  // warms the finyk cache app-wide and `bootFinykSqliteReadPath` is
+  // `booted`-guarded, so by the time the lazy `/finyk` shell mounts the
+  // only refresh has already happened. Authenticated sessions hid it —
+  // sync pulls keep bumping the tick — but an anonymous visitor has no
+  // sync, so their own expenses stayed invisible after reload
+  // (measured 2026-08-06).
+  const [prevSqliteTick, setPrevSqliteTick] = useState(-1);
+  if (sqliteCacheTick !== prevSqliteTick) {
+    setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedFinykSqliteState();
-    if (cache.refreshedAt === null) return;
-    setHiddenAccounts(cache.hiddenAccounts);
-    setHiddenTxIds(cache.hiddenTransactions);
-    setBudgets(cache.budgets);
-    setSubscriptions(cache.subscriptions);
-    setManualAssets(cache.manualAssets);
-    setManualDebts(cache.manualDebts);
-    setReceivables(cache.receivables);
-    setCustomCategories(cache.customCategories);
-    setManualExpenses(cache.manualExpenses);
-    setTxCategories(cache.txCategories);
-    setTxSplits(cache.txSplits);
-    setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
-    setNetworthHistory(cache.networthHistory);
-    if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);
-    // Stage 13 / PR #075 — `excluded_stat_tx_ids_json` /
-    // `dismissed_recurring_json` тепер їдуть через `finyk_prefs`,
-    // тож overlay-имо їх із кеша. `null` означає, що prefs-row ще
-    // не існує — лишаємо локальний first-paint state.
-    if (cache.excludedStatTxIds !== null) {
-      setExcludedStatTxIds(cache.excludedStatTxIds);
+    if (cache.refreshedAt !== null) {
+      setHiddenAccounts(cache.hiddenAccounts);
+      setHiddenTxIds(cache.hiddenTransactions);
+      setBudgets(cache.budgets);
+      setSubscriptions(cache.subscriptions);
+      setManualAssets(cache.manualAssets);
+      setManualDebts(cache.manualDebts);
+      setReceivables(cache.receivables);
+      setCustomCategories(cache.customCategories);
+      setManualExpenses(cache.manualExpenses);
+      setTxCategories(cache.txCategories);
+      setTxSplits(cache.txSplits);
+      setMonoDebtLinkedTxIds(cache.monoDebtLinkedTxIds);
+      setNetworthHistory(cache.networthHistory);
+      if (cache.monthlyPlan !== null) setMonthlyPlan(cache.monthlyPlan);
+      if (cache.excludedStatTxIds !== null) {
+        setExcludedStatTxIds(cache.excludedStatTxIds);
+      }
+      if (cache.dismissedRecurring !== null) {
+        setDismissedRecurring(cache.dismissedRecurring);
+      }
+      if (cache.showBalance !== null) {
+        setShowBalance(cache.showBalance);
+      }
+      if (cache.merchantRules !== null) {
+        setMerchantRules(cache.merchantRules);
+      }
     }
-    if (cache.dismissedRecurring !== null) {
-      setDismissedRecurring(cache.dismissedRecurring);
-    }
-    // Stage 13 PR #074 — `finyk_prefs.show_balance` overlay.
-    // `null` means prefs row ще не існує або колонка NULL —
-    // лишаємо LS first-paint value (`true` by default).
-    if (cache.showBalance !== null) {
-      setShowBalance(cache.showBalance);
-    }
-    // `networth_last_snap` ref slot is intentionally NOT mirrored to
-    // SQLite — it's a per-device dashboard hint, not part of the
-    // dual-write contract.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sqliteCacheTick]);
+  }
 
   return {
+    // LS-знімок вище лише перший кадр: у `finyk_tx_cats` більше ніхто не
+    // пише, тож до прогріву SQLite категорії й приховані операції застарілі.
+    storageReady: getCachedFinykSqliteState().refreshedAt !== null,
     hiddenAccounts,
     setHiddenAccounts,
     budgets,
@@ -227,6 +257,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setMonthlyPlan,
     txCategories,
     setTxCategories,
+    txNotes,
+    setTxNotes,
     monoDebtLinkedTxIds,
     setMonoDebtLinkedTxIds,
     networthHistory,
@@ -241,6 +273,8 @@ export function useFinykStorageSlots(): FinykStorageSlots {
     setExcludedStatTxIds,
     dismissedRecurring,
     setDismissedRecurring,
+    merchantRules,
+    setMerchantRules,
     showBalance,
     setShowBalance,
     networthSnapshotRef,

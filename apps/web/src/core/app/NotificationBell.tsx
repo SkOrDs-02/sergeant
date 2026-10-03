@@ -11,19 +11,20 @@
  * tap reveals the same actions inside a dropdown.
  *
  * Dropdown chrome (trigger a11y, outside-click + ESC close, focus return)
- * mirrors `ThemeSwitcher`'s `DropdownSwitcher` so the header keeps one
- * popover idiom. iOS-install and Trial banners stay inline for now — they
- * carry their own bespoke UX (step-by-step instructions / billing CTA).
+ * mirrors `HubHeaderMenu`'s popover so the header keeps one idiom.
+ * iOS-install and Trial banners stay inline for now — they carry their own
+ * bespoke UX (step-by-step instructions / billing CTA).
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 
 const FOCUS_RING =
-  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 export interface HubNotification {
   /** Stable id for the React key + analytics. */
@@ -52,36 +53,28 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
 
   const close = useCallback(() => setOpen(false), []);
 
-  // Close on outside click + ESC; focus returns to the trigger.
+  const menuOpen = open && count > 0;
+
+  // Outside click — спільний хук; Esc лишається окремим ефектом, бо
+  // повертає фокус на тригер (outside-click цього навмисно не робить).
+  useOutsideClick([menuRef, buttonRef], close, { enabled: menuOpen });
+  // Панель це disclosure з кнопками, а не `role=menu`: пункти меню не можуть
+  // містити вкладених кнопок. Тож фокус переносимо на першу дію самі.
   useEffect(() => {
-    if (!open) return;
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node | null;
-      if (!target) return;
-      if (menuRef.current?.contains(target)) return;
-      if (buttonRef.current?.contains(target)) return;
-      close();
-    };
+    if (!menuOpen) return;
+    menuRef.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [menuOpen]);
+  useEffect(() => {
+    if (!menuOpen) return;
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         close();
         buttonRef.current?.focus();
       }
     };
-    document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("mousedown", handleClick);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [open, close]);
-
-  // If the last pending notification clears while the menu is open (e.g. the
-  // user installs the PWA → `canInstall` flips false), collapse the popover
-  // so it doesn't linger empty.
-  useEffect(() => {
-    if (count === 0) setOpen(false);
-  }, [count]);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [menuOpen, close]);
 
   if (count === 0) return null;
 
@@ -90,8 +83,8 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
       <button
         ref={buttonRef}
         type="button"
-        aria-haspopup="menu"
-        aria-expanded={open}
+        aria-haspopup="dialog"
+        aria-expanded={menuOpen}
         aria-controls={menuId}
         aria-label={`Сповіщення: ${count}`}
         onClick={() => setOpen((value) => !value)}
@@ -104,65 +97,66 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         <Icon name="bell" size="lg" />
         <span
           aria-hidden="true"
-          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white text-xs font-bold leading-[18px] text-center"
+          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white dark:bg-brand-400 dark:text-bg text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
         >
           {count}
         </span>
       </button>
 
-      {open && (
+      {menuOpen && (
         <div
           ref={menuRef}
           id={menuId}
-          role="menu"
+          role="dialog"
           // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- single-use a11y label; i18n catalog reserves entries for strings on ≥2 surfaces
           aria-label="Сповіщення"
           className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-panel shadow-float p-1.5 z-50"
         >
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              role="menuitem"
-              className="flex items-start gap-3 px-2.5 py-2.5 rounded-xl"
-            >
-              <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel/60">
-                <Icon name={n.icon} size="md" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-style-label text-text leading-tight">
-                  {n.title}
-                </p>
-                {n.description && (
-                  <p className="text-xs text-muted leading-snug mt-0.5">
-                    {n.description}
+          <ul>
+            {notifications.map((n) => (
+              <li
+                key={n.id}
+                className="flex items-start gap-3 px-2.5 py-2.5 rounded-xl"
+              >
+                <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel">
+                  <Icon name={n.icon} size="md" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-style-label text-text leading-tight">
+                    {n.title}
                   </p>
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Button
-                    variant="secondary"
-                    size="xs"
-                    onClick={() => {
-                      n.onAction();
-                      close();
-                    }}
-                    className="font-semibold"
-                  >
-                    {n.actionLabel}
-                  </Button>
-                  {n.onDismiss && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => n.onDismiss?.()}
-                      className="text-muted hover:text-text"
-                    >
-                      {messages.actions.later}
-                    </Button>
+                  {n.description && (
+                    <p className="text-style-caption text-muted leading-snug mt-0.5">
+                      {n.description}
+                    </p>
                   )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => {
+                        n.onAction();
+                        close();
+                      }}
+                      className="font-semibold"
+                    >
+                      {n.actionLabel}
+                    </Button>
+                    {n.onDismiss && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => n.onDismiss?.()}
+                        className="text-muted hover:text-text"
+                      >
+                        {messages.actions.later}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

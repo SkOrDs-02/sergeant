@@ -30,15 +30,24 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    <!--
+      Values must track `--c-bg` in `src/styles/theme.css` (`:root` /
+      `.dark`) — #ecebe7 light / #14100e dark. These media-query metas are
+      only the pre-JS default (first paint before `useTheme()` mounts);
+      once the app boots, `useTheme.ts` `applyResolvedTheme()` overwrites
+      both with the actually-resolved theme so an in-app light/dark/hc
+      pick (which can diverge from the OS `prefers-color-scheme`) is
+      reflected in the browser chrome too.
+    -->
     <meta
       name="theme-color"
       media="(prefers-color-scheme: light)"
-      content="#fdf9f3"
+      content="#ecebe7"
     />
     <meta
       name="theme-color"
       media="(prefers-color-scheme: dark)"
-      content="#171412"
+      content="#14100e"
     />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
@@ -61,15 +70,112 @@
       `frame-ancestors` / `sandbox` (HTML spec restriction), so the directive
       set here is a reduced subset of the Vercel policy. Keep the two in
       sync when the Vercel policy changes.
+
+      "Reduced subset" must mean FEWER directives, never WEAKER ones. Until
+      the beta-readiness audit
+      (`docs/90-work/planning/specs/beta-security-readiness.md`, F4) this tag
+      still carried `script-src 'unsafe-inline'` after the Vercel policy had
+      dropped it — so the fallback that exists for the least-protected
+      contexts (file://, stripped headers, local preview) was the most
+      permissive policy we shipped. `'unsafe-inline'` is gone from both now.
+
+      `wss:`/`ws:` were also removed: `apps/web` opens no WebSocket at all,
+      so the wildcard was pure attack surface. Only the local-dev HMR origins
+      remain here, and they are absent from the production header.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.openclaw.com https://api.sergeant.app https://api.sergeantapp.com wss: ws:; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://*.posthog.com https://*.sentry-cdn.com https://*.sentry.io https://js.sentry-cdn.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' http://localhost:3000 http://127.0.0.1:3000 https://*.sentry.io https://*.ingest.sentry.io https://*.posthog.com https://api.sergeant.com.ua ws://localhost:* ws://127.0.0.1:*; worker-src 'self' blob:; manifest-src 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
     />
-    <title>Sergeant — Твій персональний хаб життя</title>
+    <title>Sergeant · Твій персональний хаб життя</title>
+    <!--
+      S10-R1 (sprint-9-10-plan-2026.md § Sprint 10) — OG/Twitter meta for
+      link-preview crawlers. Static tags in index.html rather than a
+      per-route head library: `/` (LandingPage) is the only public
+      pre-auth surface, crawlers read the initial HTML without executing
+      JS, and no react-helmet-like mechanism exists in this app (see
+      RootLayout.tsx's `document.title` effect for the in-app pattern).
+      og:image falls back to the PWA icon — no dedicated 1200x630 social
+      card asset exists yet in apps/web/public; add one and swap this if
+      a real social-share card is needed later.
+
+      Домен тут — `app.sergeant.com.ua`, той самий, що в `public/robots.txt`
+      і `public/sitemap.xml`. До 2026-09-17 стояв `sergeant.app`: домен
+      проєкту не належить і віддає паркувальну сторінку з редиректом на
+      `/lander`, тож кожне прев'ю посилання в Telegram чи соцмережах тягло
+      мертву картинку і чужий canonical. Міняєш домен — міняй у трьох
+      файлах разом.
+    -->
+    <meta
+      name="description"
+      content="Sergeant обʼєднує чотири модулі (Фінік, Фізрук, Їжа, Рутина) в один local-first помічник з AI, без прихованих платежів."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sergeant" />
+    <meta
+      property="og:title"
+      content="Sergeant · Твій персональний хаб життя"
+    />
+    <meta
+      property="og:description"
+      content="Один помічник для фінансів, тренувань, харчування і рутини. Local-first, з AI, без прихованих платежів."
+    />
+    <meta
+      property="og:image"
+      content="https://app.sergeant.com.ua/icon-512.png"
+    />
+    <meta property="og:url" content="https://app.sergeant.com.ua/" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Sergeant · Твій персональний хаб життя"
+    />
+    <meta
+      name="twitter:description"
+      content="Один помічник для фінансів, тренувань, харчування і рутини. Local-first, з AI, без прихованих платежів."
+    />
+    <meta
+      name="twitter:image"
+      content="https://app.sergeant.com.ua/icon-512.png"
+    />
   </head>
   <body>
     <div id="root"></div>
+    <!--
+      Без JS застосунок не працює: local-first сховище і sync живуть у
+      браузері. До 2026-09-17 при вимкненому JS або зламаному бандлі
+      (застарілий service worker, заблокований скрипт) лишалась порожня
+      сторінка без жодного пояснення. Inline-style дозволений CSP
+      (`style-src 'unsafe-inline'` і в meta вище, і у vercel.json).
+    -->
+    <noscript>
+      <div
+        style="
+          max-width: 32rem;
+          margin: 4rem auto;
+          padding: 0 1.5rem;
+          font:
+            16px/1.5 system-ui,
+            -apple-system,
+            sans-serif;
+          color: #14100e;
+        "
+      >
+        <h1 style="font-size: 1.25rem; margin: 0 0 0.75rem">
+          Sergeant не працює без JavaScript
+        </h1>
+        <p style="margin: 0 0 0.75rem">
+          Застосунок тримає дані на цьому пристрої і синхронізує їх лише через
+          браузерний код. Увімкни JavaScript або відкрий сторінку в іншому
+          браузері.
+        </p>
+        <p style="margin: 0">
+          Якщо JavaScript увімкнено, а ти бачиш цей текст, бандл не
+          завантажився. Онови сторінку: вона підтягне свіжу збірку.
+        </p>
+      </div>
+    </noscript>
+    <script src="/boot-watchdog.js"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

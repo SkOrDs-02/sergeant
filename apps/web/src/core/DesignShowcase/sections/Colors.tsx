@@ -1,3 +1,4 @@
+import { categoryColors } from "@sergeant/design-tokens";
 import {
   CodeBlock,
   DoDont,
@@ -7,11 +8,11 @@ import {
   Swatch,
 } from "../_shared/primitives";
 
-const SAMPLE_USAGE = `// Tokens — light / dark / hc cascade for free
+const SAMPLE_USAGE = `// Tokens: light / dark / hc cascade for free
 <div className="bg-panel text-text border border-line">…</div>
 
 // Saturated brand fill behind text-white needs the -strong companion
-<button className="bg-accent-strong text-white">Submit</button>`;
+<button className="bg-brand-strong text-white">Submit</button>`;
 
 export function ColorsSection() {
   return (
@@ -21,13 +22,14 @@ export function ColorsSection() {
       intro={
         <>
           Семантичні токени з <code>:root</code> та <code>.dark</code>. Hex у
-          класах заборонено (HR #11), парні light/dark literal — теж (HR #13).
-          Сатуровані бренд-заливки під <code>text-white</code> мають вмикати{" "}
-          <code>-strong</code> компаньйон (HR #9).
+          класах заборонено, це гейтить <code>check-design-conventions</code>.
+          Парні light/dark literal, opacity-шкала і <code>-strong</code>{" "}
+          компаньйон під <code>text-white</code> лишаються обовʼязковими, але
+          review-only (ADR-0081).
         </>
       }
     >
-      <Group label="Semantic — поверхні">
+      <Group label="Semantic: поверхні">
         <div className="flex flex-wrap gap-4">
           <Swatch label="bg-bg" className="bg-bg" />
           <Swatch label="bg-panel" className="bg-panel" />
@@ -36,12 +38,14 @@ export function ColorsSection() {
         </div>
       </Group>
 
-      <Group label="Semantic — текст">
+      <Group label="Semantic: текст">
         <div className="flex gap-8 items-baseline">
           <div className="flex flex-col gap-1.5">
-            <span className="text-base font-semibold text-text">text-text</span>
-            <span className="text-base text-muted">text-muted</span>
-            <span className="text-base text-subtle">text-subtle</span>
+            <span className="text-style-body font-semibold text-text">
+              text-text
+            </span>
+            <span className="text-style-body text-muted">text-muted</span>
+            <span className="text-style-body text-subtle">text-subtle</span>
           </div>
         </div>
       </Group>
@@ -66,20 +70,46 @@ export function ColorsSection() {
         label="-strong tier (WCAG AA на сатурованих заливках)"
         description={
           <>
-            Якщо ставиш <code>text-white</code> на бренд-fill — використовуй
-            <code>-strong</code> companion. Lint:{" "}
-            <code>sergeant-design/no-low-contrast-text-on-fill</code>.
+            Якщо ставиш <code>text-white</code> на бренд-fill, використовуй
+            <code>-strong</code> companion. Контраст перевіряється у Storybook і
+            design-review.
           </>
         }
       >
         <div className="flex flex-wrap gap-3">
-          {/* eslint-disable-next-line sergeant-design/no-low-contrast-text-on-fill -- showcase демонструє AA-fail, а не пропонує його як патерн */}
-          <div className="bg-brand text-white rounded-xl px-3 py-2 text-xs font-mono">
-            bg-brand · text-white (~2.7:1 — fail)
+          <div className="bg-brand text-white rounded-xl px-3 py-2 text-style-code">
+            bg-brand · text-white (~2.7:1, fail)
           </div>
-          <div className="bg-brand-strong text-white rounded-xl px-3 py-2 text-xs font-mono">
-            bg-brand-strong · text-white (WCAG AA — recommended)
+          <div className="bg-brand-strong text-white rounded-xl px-3 py-2 text-style-code">
+            bg-brand-strong · text-white (WCAG AA, recommended)
           </div>
+        </div>
+      </Group>
+
+      <Group
+        label="Пʼята родина: categoryColors (категорії витрат Фініка)"
+        description={
+          <>
+            Свідомо розведена по hue з модульними акцентами - не фарбуй
+            категорію бренд-тиром. Джерело - <code>tokens.js</code>, гейт{" "}
+            <code>categoryColors.contract.test.js</code>. У JSX бери через{" "}
+            <code>catChipVars()</code> + класи <code>.cat-chip</code> /{" "}
+            <code>.cat-dot</code>, не хардкодь hex.
+          </>
+        }
+      >
+        <div className="flex flex-wrap gap-4">
+          {Object.entries(categoryColors).map(([id, c]) => (
+            <div key={id} className="flex flex-col items-center gap-1.5">
+              <div
+                className="w-14 h-14 rounded-2xl border border-line shadow-card"
+                style={{ backgroundColor: c.solid }}
+              />
+              <span className="text-style-code text-subtle text-center">
+                {id}
+              </span>
+            </div>
+          ))}
         </div>
       </Group>
 
@@ -97,7 +127,7 @@ export function ColorsSection() {
             },
             {
               label: "Saturated fill + text-white",
-              good: <code>bg-accent-strong text-white</code>,
+              good: <code>bg-brand-strong text-white</code>,
               bad: <code>bg-accent text-white</code>,
             },
             {
@@ -110,17 +140,12 @@ export function ColorsSection() {
       </Group>
 
       <RuleBadges
-        hardRules={[
-          { label: "HR #8", hint: "Opacity scale" },
-          { label: "HR #9", hint: "-strong companion" },
-          { label: "HR #11", hint: "No hex in className" },
-          { label: "HR #13", hint: "No raw dark palette" },
-        ]}
+        hardRules={[]}
         lintRules={[
-          { label: "valid-tailwind-opacity" },
-          { label: "no-low-contrast-text-on-fill" },
-          { label: "no-hex-in-classname" },
-          { label: "no-raw-dark-palette" },
+          {
+            label: "check-design-conventions",
+            hint: "raw hex у className, кольори лише через токени",
+          },
         ]}
       />
     </Sec>

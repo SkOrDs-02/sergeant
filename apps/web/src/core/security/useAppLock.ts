@@ -62,10 +62,7 @@ export function useAppLock(): UseAppLockReturn {
   // On mount (and whenever the flag is toggled on) check if a PIN is already
   // configured — if yes, lock immediately (cold-start protection).
   useEffect(() => {
-    if (!enabled) {
-      setState("idle");
-      return;
-    }
+    if (!enabled) return;
     let cancelled = false;
     hasPinSet(userId).then((has) => {
       if (!cancelled && has) setState("locked");

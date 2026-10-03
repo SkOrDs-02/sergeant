@@ -13,7 +13,11 @@ import type {
   ApiClient,
   NutritionShoppingListResponse,
 } from "@sergeant/api-client";
-import type { PantryItem, ShoppingCategory } from "@sergeant/nutrition-domain";
+import {
+  migrateShoppingListCategories,
+  type PantryItem,
+  type ShoppingCategory,
+} from "@sergeant/nutrition-domain";
 
 import type { SavedRecipe } from "./recipeBookStore";
 
@@ -58,12 +62,12 @@ export function buildShoppingRequestBody({
 }): ShoppingRequestBody {
   if (source !== "recipes") {
     throw new Error(
-      "Тижневий план поки що недоступний у мобільній версії — обери «Рецепти».",
+      "Тижневий план поки що недоступний у мобільній версії, обери «Рецепти».",
     );
   }
   if (!recipes.length) {
     throw new Error(
-      "Немає збережених рецептів — спочатку додай хоча б один рецепт.",
+      "Немає збережених рецептів, спочатку додай хоча б один рецепт.",
     );
   }
   return {
@@ -99,14 +103,17 @@ export async function callShoppingList(
   // `id`/`checked` — добудовуємо їх локально (паритет із web
   // `adaptShoppingCategories`). `normalizeShoppingList` усередині
   // `setGeneratedList` робить фінальний dedupe.
-  return data.categories.map((cat, catIdx) => ({
+  const minted = data.categories.map((cat, catIdx) => ({
     name: String(cat.name ?? ""),
     items: (Array.isArray(cat.items) ? cat.items : []).map((it, itIdx) => ({
-      id: `sl_${catIdx}_${itIdx}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `sl_${catIdx}_${itIdx}_${crypto.randomUUID()}`,
       name: String(it.name ?? ""),
       quantity: String(it.quantity ?? ""),
       note: String(it.note ?? ""),
       checked: false,
     })),
   }));
+  // Одна таксономія з коморою (рішення власника 2026-10-01): стара чи вигадана
+  // назва категорії зводиться до категорій комори за назвою позиції.
+  return migrateShoppingListCategories({ categories: minted }).categories;
 }

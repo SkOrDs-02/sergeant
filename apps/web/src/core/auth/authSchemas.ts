@@ -5,13 +5,13 @@ import { messages } from "@shared/i18n/uk";
 // використовуються більше ніде). Окремий пакет `@sergeant/auth-schemas`
 // був би оверкіл-ом для двох форм. Меседжі — з `messages.validation.*`
 // (`apps/web/src/shared/i18n/uk.ts`), див. AGENTS.md (Hard Rule #15) і
-// `docs/i18n/readiness.md`.
+// `docs/design/i18n/readiness.md`.
 export const loginSchema = z.object({
   email: z
     .string()
     .min(1, messages.validation.emailRequired)
     .email(messages.validation.emailInvalid),
-  // На login-у ми не нав'язуємо мінімальну довжину пароля — користувач
+  // На login-у ми не навʼязуємо мінімальну довжину пароля — користувач
   // міг створити акаунт у епоху 6-символьного мінімуму, а потім стандарт
   // підняли. Перевірка відбувається на сервері; форма просто гарантує,
   // що поле не порожнє.

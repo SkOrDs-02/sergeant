@@ -9,6 +9,7 @@ type AddedItem = Partial<WorkoutItem>;
 
 function setup(
   workouts: Array<{
+    endedAt?: string | null;
     items?: Array<{
       exerciseId?: string;
       sets?: Array<{ weightKg?: number }>;
@@ -35,6 +36,7 @@ function setup(
       primaryGroup: "cardio",
     },
   ];
+  const onConflict = vi.fn<(start: () => void) => void>();
   const { result } = renderHook(() =>
     useFizrukProgramStart({
       workouts,
@@ -42,9 +44,17 @@ function setup(
       addItem,
       exercises,
       navigate,
+      onConflict,
     }),
   );
-  return { start: result.current, added, navigate, createWorkout, addItem };
+  return {
+    start: result.current,
+    added,
+    navigate,
+    createWorkout,
+    addItem,
+    onConflict,
+  };
 }
 
 describe("useFizrukProgramStart", () => {
@@ -70,9 +80,9 @@ describe("useFizrukProgramStart", () => {
     const { start, added, navigate } = setup();
     start({ exerciseIds: ["bench", "run"] });
     expect(added).toHaveLength(2);
-    expect(navigate).toHaveBeenCalledWith("workouts");
+    expect(navigate).toHaveBeenCalledWith("workout/w-new");
     expect(localStorage.getItem(ACTIVE_WORKOUT_KEY)).toBe("w-new");
-    expect(sessionStorage.getItem("fizruk_workouts_mode")).toBe("log");
+    expect(sessionStorage.getItem("fizruk_workouts_mode")).toBeNull();
   });
 
   it("marks cardio exercises as distance type without sets", () => {
@@ -85,7 +95,10 @@ describe("useFizrukProgramStart", () => {
 
   it("applies progression to the last-used weight for strength exercises", () => {
     const { start, added } = setup([
-      { items: [{ exerciseId: "bench", sets: [{ weightKg: 50 }] }] },
+      {
+        endedAt: "2026-07-01T10:00:00.000Z",
+        items: [{ exerciseId: "bench", sets: [{ weightKg: 50 }] }],
+      },
     ]);
     start({ exerciseIds: ["bench"], progressionKg: 2.5 });
     const bench = added.find((i) => i.exerciseId === "bench");
@@ -97,5 +110,16 @@ describe("useFizrukProgramStart", () => {
     start({ exerciseIds: ["bench"], progressionKg: 5 });
     const bench = added.find((i) => i.exerciseId === "bench");
     expect(bench?.sets?.[0]?.weightKg).toBe(0);
+  });
+
+  it("defers creation to the conflict resolver when a workout is unfinished", () => {
+    const { start, createWorkout, onConflict } = setup([{ endedAt: null }]);
+
+    start({ exerciseIds: ["bench"] });
+
+    expect(createWorkout).not.toHaveBeenCalled();
+    expect(onConflict).toHaveBeenCalledTimes(1);
+    onConflict.mock.calls[0]?.[0]();
+    expect(createWorkout).toHaveBeenCalledTimes(1);
   });
 });

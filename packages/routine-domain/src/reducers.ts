@@ -11,20 +11,32 @@
  * persists the returned state.
  */
 
-import { dateKeyFromDate } from "./dateKeys.js";
+import { dateKeyFromDate, parseDateKey } from "./dateKeys.js";
+import {
+  DEFAULT_ROUTINE_GLYPH,
+  resolveHabitGlyph,
+  upgradeHabitGlyph,
+} from "./glyphs.js";
 import { habitScheduledOnDate } from "./schedule.js";
 import { completionNoteKey } from "./completionNoteKey.js";
+import { reconcileHabitOrder } from "./habitOrder.js";
 import {
+  SKIP_NOTE_MAX_LENGTH,
   normalizeCompletionList,
   normalizeHabit,
+  normalizePauseIntervals,
   normalizeReminderTimesStorage,
   routineUid,
 } from "./storage.js";
+import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 import type {
   Category,
   CreateHabitOptions,
   Habit,
+  HabitSkip,
+  PauseInterval,
   RoutineState,
+  SkipReason,
   Tag,
 } from "./types.js";
 
@@ -67,10 +79,13 @@ export function applyCreateCategory(
   if (state.categories.some((c) => c.name.trim().toLocaleLowerCase() === key)) {
     return state;
   }
+  // `emoji` тут — гліф-slug (див. `glyphs.ts`); legacy emoji, що приходить
+  // від чат-тулів чи старих клієнтів, апгрейдиться, невідоме відкидається.
+  const glyph = upgradeHabitGlyph(emoji);
   const c: Category = {
     id: routineUid("cat"),
     name: n,
-    ...(emoji ? { emoji } : {}),
+    ...(glyph ? { emoji: glyph } : {}),
   };
   return { ...state, categories: [...state.categories, c] };
 }
@@ -82,7 +97,7 @@ export function applyCreateHabit(
   state: RoutineState,
   {
     name = "",
-    emoji = "✓",
+    emoji = DEFAULT_ROUTINE_GLYPH,
     tagIds = [],
     categoryId = null,
     recurrence = "daily",
@@ -91,16 +106,20 @@ export function applyCreateHabit(
     timeOfDay = "",
     reminderTimes = [],
     weekdays = [0, 1, 2, 3, 4, 5, 6],
+    id,
   }: Partial<CreateHabitOptions> = {},
 ): RoutineState {
   const n = (name || "").trim();
   if (!n) return state;
+  // Idempotency by client-generated id — a double-tapped save button and a
+  // replayed offline write both land here with the same id.
+  if (id && state.habits.some((h) => h.id === id)) return state;
   const sd =
     (startDate && String(startDate).trim()) || dateKeyFromDate(new Date());
   const h = normalizeHabit({
-    id: routineUid("hab"),
+    id: id || routineUid("hab"),
     name: n,
-    emoji: emoji || "✓",
+    emoji: resolveHabitGlyph(emoji),
     tagIds: Array.isArray(tagIds) ? tagIds : [],
     categoryId: categoryId || null,
     createdAt: new Date().toISOString(),
@@ -155,48 +174,282 @@ export function applySetPref<K extends string>(
 }
 
 /**
+ * Внутрішній хелпер: додати відмітку виконання за день і зняти «не зміг»
+ * (три стани дня взаємно виключні, канон §5). НЕ перевіряє розклад — виклик
+ * відповідає за це сам, бо у `applyToggleHabitCompletion` і в
+ * `applyMarkAllScheduledHabitsComplete` предикат розкладу викликається з
+ * РІЗНИМИ опціями (`weekDoneCount` для гнучких звичок рахується інакше в
+ * bulk-варіанті). No-op (та сама ідентичність `state`), якщо день уже
+ * відмічено — це і є спільна точка «вже готово, більше нічого робити».
+ */
+function markHabitDone(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const curSet = new Set(normalizeCompletionList(state.completions[habitId]));
+  if (curSet.has(dateKey)) return state;
+  curSet.add(dateKey);
+  const cur = [...curSet].sort();
+  const next: RoutineState = {
+    ...state,
+    completions: { ...state.completions, [habitId]: cur },
+  };
+  return clearSkip(next, habitId, dateKey);
+}
+
+/**
+ * Межа «сьогодні» для редюсерів, які СТАВЛЯТЬ відмітку.
+ *
+ * AI-CONTEXT: поле обовʼязкове навмисно, і це головне в цьому типі.
+ * Опційна опція тут уже коштувала: рівно так `weekDoneCount` роками не
+ * доїжджав до трьох поверхонь (PR-R4), бо кожен новий call-site мовчки
+ * отримував дефолт. Обовʼязковість робить компілятор єдиним, хто стежить
+ * за повнотою, — і він не забуває.
+ *
+ * Значення — день за годинником **ПРИСТРОЮ** (ADR-0078: межа особистої
+ * доби device-local, не київська). У вебі це `anchoredTodayKey()` з
+ * `routine/lib/dayAnchor.ts`; передавати сюди київський день не можна —
+ * для користувача на захід від Києва це зсунуло б «сьогодні» на добу.
+ */
+export interface CompletionDayBounds {
+  /** Сьогодні за годинником пристрою, `YYYY-MM-DD`. */
+  todayKey: string;
+}
+
+/**
+ * Чи день у майбутньому відносно «сьогодні».
+ *
+ * Обидва ключі — `YYYY-MM-DD`, тож лексикографічне порівняння дає
+ * календарний порядок. Той самий прийом, що в `heatmap/grid.ts:241`.
+ */
+function isFutureDay(dateKey: string, todayKey: string): boolean {
+  return dateKey > todayKey;
+}
+
+/**
  * Перемкнути відмітку виконання звички за день. No-op якщо звичка
  * не запланована на цей день і ще не позначена.
+ *
+ * **Майбутній день позначити НЕ можна** (рішення власника 2026-09-14,
+ * знахідка PR-R3). Доти єдиною перевіркою дати був `habitScheduledOnDate`,
+ * а він майбутнє не відсікає взагалі — тож зріз «Завтра» приймав відмітку,
+ * і майбутній факт їхав у серії, у синк і у звіти.
+ *
+ * ЗНЯТИ відмітку з майбутнього дня при цьому можна, і гілка зняття стоїть
+ * ВИЩЕ гейта саме тому: дані, записані до появи цієї межі, мусять лишатись
+ * виправними. Заборона лише на постановку.
  */
 export function applyToggleHabitCompletion(
   state: RoutineState,
   habitId: string,
   dateKey: string,
+  bounds: CompletionDayBounds,
 ): RoutineState {
   const habit = state.habits.find((h) => h.id === habitId);
   if (!habit) return state;
   const curSet = new Set(normalizeCompletionList(state.completions[habitId]));
   if (curSet.has(dateKey)) {
     curSet.delete(dateKey);
-  } else {
-    if (!habitScheduledOnDate(habit, dateKey)) return state;
-    curSet.add(dateKey);
+    const cur = [...curSet].sort();
+    return {
+      ...state,
+      completions: { ...state.completions, [habitId]: cur },
+    };
   }
-  const cur = [...curSet].sort();
+  if (isFutureDay(dateKey, bounds.todayKey)) return state;
+  if (!habitScheduledOnDate(habit, dateKey)) return state;
+  return markHabitDone(state, habitId, dateKey);
+}
+
+/** Внутрішній хелпер: прибрати позначку пропуску, зберігши незмінність. */
+function clearSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const forHabit = state.skips?.[habitId];
+  if (!forHabit || !forHabit[dateKey]) return state;
+  const rest = { ...forHabit };
+  delete rest[dateKey];
+  const skips = { ...(state.skips || {}) };
+  if (Object.keys(rest).length === 0) delete skips[habitId];
+  else skips[habitId] = rest;
+  return { ...state, skips };
+}
+
+/**
+ * Позначити день як «не зміг з причиною» (канон §5, третій стан).
+ *
+ * Взаємно виключно з відміткою виконання: ставлячи пропуск, знімаємо
+ * `completions`-ключ. No-op для дня, який звичці не запланований — інакше
+ * можна було б «не змогти» у вихідний, і знаменник поїхав би вниз на
+ * днях, яких у ньому й не було.
+ */
+export function applySetHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+  reason: SkipReason,
+  note?: string,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  if (!habitScheduledOnDate(habit, dateKey)) return state;
+
+  const trimmed = (note || "").trim();
+  const skip: HabitSkip = {
+    reason,
+    at: new Date().toISOString(),
+    ...(trimmed ? { note: trimmed.slice(0, SKIP_NOTE_MAX_LENGTH) } : {}),
+  };
+  const forHabit = { ...(state.skips?.[habitId] || {}), [dateKey]: skip };
+  const completions = normalizeCompletionList(state.completions[habitId]);
+  const withoutDone = completions.filter((k) => k !== dateKey);
   return {
     ...state,
-    completions: { ...state.completions, [habitId]: cur },
+    completions:
+      withoutDone.length === completions.length
+        ? state.completions
+        : { ...state.completions, [habitId]: withoutDone },
+    skips: { ...(state.skips || {}), [habitId]: forHabit },
   };
 }
 
-/** Усі активні звички, заплановані на день, отримують відмітку (якщо ще немає). */
+/** Зняти позначку «не зміг» — день повертається у стан «не зробив». */
+export function applyClearHabitSkip(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  return clearSkip(state, habitId, dateKey);
+}
+
+/**
+ * Заявити плановану паузу датованим інтервалом (канон §4).
+ *
+ * `to === null` — пауза без дати кінця. Інтервали нормалізуються й
+ * зливаються, тож повторний виклик на той самий діапазон ідемпотентний.
+ * Легасі-прапор `paused` при цьому НЕ вмикається: він недатований і, на
+ * відміну від інтервалу, ретроактивний — саме та вада, яку рядок
+ * закриває.
+ */
+export function applyPauseHabitBetween(
+  state: RoutineState,
+  habitId: string,
+  fromKey: string,
+  toKey: string | null,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  if (toKey !== null && toKey < fromKey) return state;
+  const intervals = normalizePauseIntervals([
+    ...(habit.pauseIntervals || []),
+    { from: fromKey, to: toKey },
+  ]);
+  // Ідентичність, а не лише рівність значень: повторний виклик на той самий
+  // діапазон має віддати ТОЙ САМИЙ `state`. Інакше кожен повтор народжував
+  // би `habit-upsert` у дуал-райті (`habitChanged` порівнює масиви за
+  // посиланням) і чат-тул рапортував би «поставлено» замість «уже на паузі».
+  const prevIntervals = habit.pauseIntervals || [];
+  if (
+    prevIntervals.length === intervals.length &&
+    prevIntervals.every(
+      (iv, i) => iv.from === intervals[i]?.from && iv.to === intervals[i]?.to,
+    )
+  ) {
+    return state;
+  }
+  const updated: Habit = { ...habit, pauseIntervals: intervals };
+  return {
+    ...state,
+    habits: state.habits.map((h) => (h.id === habitId ? updated : h)),
+  };
+}
+
+/**
+ * Достроково завершити паузу, що накриває `dateKey`.
+ *
+ * Інтервал не видаляється — він **закривається** днем перед `dateKey`,
+ * бо дні, що вже минули на паузі, минули на паузі. Стирання інтервалу
+ * заднім числом перетворило б відпустку на серію пропусків, тобто
+ * повторило б рівно баг недатованого `paused`.
+ */
+export function applyResumeHabitFrom(
+  state: RoutineState,
+  habitId: string,
+  dateKey: string,
+): RoutineState {
+  const habit = state.habits.find((h) => h.id === habitId);
+  if (!habit) return state;
+  const intervals = habit.pauseIntervals || [];
+  if (intervals.length === 0 && !habit.paused) return state;
+
+  const dayBefore = (() => {
+    const d = parseDateKey(dateKey);
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - 1);
+    return dateKeyFromDate(d);
+  })();
+
+  const next: PauseInterval[] = [];
+  for (const iv of intervals) {
+    const covers = dateKey >= iv.from && (iv.to === null || dateKey <= iv.to);
+    if (!covers) {
+      next.push(iv);
+      continue;
+    }
+    // Пауза починалась сьогодні чи пізніше — вона ще не діяла, прибираємо.
+    if (dayBefore < iv.from) continue;
+    next.push({ from: iv.from, to: dayBefore });
+  }
+  const updated: Habit = {
+    ...habit,
+    pauseIntervals: normalizePauseIntervals(next),
+    paused: false,
+  };
+  return {
+    ...state,
+    habits: state.habits.map((h) => (h.id === habitId ? updated : h)),
+  };
+}
+
+/**
+ * Усі активні звички, заплановані на день, отримують відмітку (якщо ще
+ * немає). Проведено через той самий `markHabitDone`, що й одиночний
+ * `applyToggleHabitCompletion` — це і знімає «не зміг» на позначених
+ * звичках (три стани дня взаємно виключні, канон §5), і рахує
+ * `weekDoneCount` для гнучких звичок ОКРЕМО на кожну звичку, а не
+ * покладається на дефолт «завжди заплановано», яким `habitScheduledOnDate`
+ * відповідає без опції. Без цього гнучка звичка, що вже виконала тижневу
+ * ціль, отримувала б зайву відмітку від масового «Відмітити все».
+ */
 export function applyMarkAllScheduledHabitsComplete(
   state: RoutineState,
   dateKey: string,
+  bounds: CompletionDayBounds,
 ): RoutineState {
+  // Майбутній день не позначається — той самий гейт, що в одиночному
+  // шляху (PR-R3). Без нього зріз «Завтра» лишався б робочим для масової
+  // дії навіть після заборони одиночної: знахідка називала саме масову,
+  // але діра була в обох.
+  if (isFutureDay(dateKey, bounds.todayKey)) return state;
   const active = state.habits.filter((h) => !h.archived);
-  const completions = { ...state.completions };
+  let next = state;
   let changed = false;
   for (const h of active) {
-    if (!habitScheduledOnDate(h, dateKey)) continue;
-    const set = new Set(normalizeCompletionList(completions[h.id]));
-    if (set.has(dateKey)) continue;
-    set.add(dateKey);
-    completions[h.id] = [...set].sort();
+    const completionsForHabit = normalizeCompletionList(next.completions[h.id]);
+    if (completionsForHabit.includes(dateKey)) continue;
+    const weekDoneCount = isFlexibleHabit(h)
+      ? weekDoneCountExcludingDate(completionsForHabit, dateKey)
+      : undefined;
+    if (!habitScheduledOnDate(h, dateKey, { weekDoneCount })) continue;
+    const marked = markHabitDone(next, h.id, dateKey);
+    if (marked === next) continue;
+    next = marked;
     changed = true;
   }
-  if (!changed) return state;
-  return { ...state, completions };
+  return changed ? next : state;
 }
 
 export function applySetHabitArchived(
@@ -296,32 +549,13 @@ export function applyRestoreHabit(
   };
 }
 
-export function applyAddPushupReps(
-  state: RoutineState,
-  reps: unknown,
-): RoutineState {
-  const n = Number(reps);
-  if (!Number.isFinite(n) || n <= 0) return state;
-  const today = dateKeyFromDate(new Date());
-  const cur = state.pushupsByDate?.[today] ?? 0;
-  return {
-    ...state,
-    pushupsByDate: { ...state.pushupsByDate, [today]: cur + n },
-  };
-}
-
 export function applyMoveHabitInOrder(
   state: RoutineState,
   habitId: string,
   delta: number,
 ): RoutineState {
   const active = state.habits.filter((h) => !h.archived).map((h) => h.id);
-  const order = [...(state.habitOrder || [])].filter((id) =>
-    active.includes(id),
-  );
-  for (const id of active) {
-    if (!order.includes(id)) order.push(id);
-  }
+  const order = reconcileHabitOrder(active, state.habitOrder || []);
   const i = order.indexOf(habitId);
   if (i < 0) return state;
   const j = i + delta;
@@ -342,17 +576,7 @@ export function applySetHabitOrder(
   orderedActiveIds: string[],
 ): RoutineState {
   const active = state.habits.filter((h) => !h.archived).map((h) => h.id);
-  const seen = new Set<string>();
-  const order: string[] = [];
-  for (const id of orderedActiveIds) {
-    if (active.includes(id) && !seen.has(id)) {
-      order.push(id);
-      seen.add(id);
-    }
-  }
-  for (const id of active) {
-    if (!seen.has(id)) order.push(id);
-  }
+  const order = reconcileHabitOrder(active, orderedActiveIds);
   const prev = state.habitOrder || [];
   if (order.length === prev.length && order.every((id, i) => id === prev[i])) {
     return state;
@@ -428,8 +652,8 @@ export function applyUpdateCategory(
             ...(patch.name !== undefined
               ? { name: (patch.name || "").trim() || c.name }
               : {}),
-            ...(patch.emoji !== undefined && patch.emoji
-              ? { emoji: patch.emoji }
+            ...(patch.emoji !== undefined && upgradeHabitGlyph(patch.emoji)
+              ? { emoji: upgradeHabitGlyph(patch.emoji) }
               : {}),
           }
         : c,

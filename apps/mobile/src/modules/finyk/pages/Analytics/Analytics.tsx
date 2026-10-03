@@ -7,7 +7,7 @@
  * `@sergeant/finyk-domain/domain/selectors` helpers the web page
  * uses — numbers match web verbatim.
  *
- * Scope of this PR (Phase 4 / PR 6 per `docs/mobile/react-native-migration.md`):
+ * Scope of this PR (Phase 4 / PR 6 per `docs/engineering/mobile/react-native-migration.md`):
  *  - Month navigation (‹ / › with "no future months" guard).
  *  - Summary card (spent / income / balance) via `getMonthlySummary`.
  *  - Comparison card (month-over-month) via `getTrendComparison`.
@@ -209,7 +209,7 @@ export function Analytics({ data, now, testID }: AnalyticsProps) {
 
       <Section title="Категорії">
         {distribution.length === 0 ? (
-          <EmptyRow message="Транзакцій за цей місяць не знайдено" />
+          <EmptyRow message="Операцій за цей місяць не знайдено" />
         ) : (
           <CategoryDonut data={distribution} />
         )}
@@ -217,7 +217,7 @@ export function Analytics({ data, now, testID }: AnalyticsProps) {
 
       <Section title="Топ мерчанти">
         {topMerchants.length === 0 ? (
-          <EmptyRow message="Транзакцій ще немає" />
+          <EmptyRow message="Операцій ще немає" />
         ) : (
           <MerchantList merchants={topMerchants} />
         )}

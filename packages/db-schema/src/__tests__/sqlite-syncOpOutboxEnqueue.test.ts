@@ -8,15 +8,15 @@ import {
 } from "../migrate/adapters/sqlite.js";
 import { runMigrations } from "../migrate/runner.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 import { enqueueOutboxIncrement } from "../sqlite/syncOpOutboxEnqueue.js";
 
 /**
  * Integration tests for the durable outbox enqueue helper for
  * PN-counter `op='increment'` envelopes (PR #042d-builder of
- * `docs/planning/storage-roadmap.md`). Runs the full SPIKE +
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the full SPIKE +
  * PR #040 + PR #042d-prep migration stack against a fresh
  * `:memory:` engine, then drives the helper through every public
  * branch of its contract:
@@ -77,8 +77,8 @@ describe("enqueueOutboxIncrement", () => {
     client = syncClient(db);
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
   });
 
@@ -275,6 +275,59 @@ describe("enqueueOutboxIncrement", () => {
       next_retry_at: "2026-05-04T12:00:08.000Z",
       last_error: "http_503",
     });
+  });
+
+  it("rejects a missing/empty userId before touching the table", async () => {
+    await expect(
+      enqueueOutboxIncrement(client, {
+        userId: "",
+        table: "routine_streaks",
+        row: { delta: 1 },
+        clientTs: "2026-05-04T12:00:00.000+00:00",
+        idempotencyKey: "idem-no-user",
+      }),
+    ).rejects.toThrow(/userId is required/);
+
+    // No row was written for the rejected call.
+    const rows = db
+      .prepare(`SELECT id FROM sync_op_outbox WHERE idempotency_key = ?`)
+      .all("idem-no-user");
+    expect(rows).toHaveLength(0);
+  });
+
+  it("rejects a non-string userId", async () => {
+    await expect(
+      enqueueOutboxIncrement(client, {
+        userId: undefined as unknown as string,
+        table: "routine_streaks",
+        row: { delta: 1 },
+        clientTs: "2026-05-04T12:00:00.000+00:00",
+        idempotencyKey: "idem-undefined-user",
+      }),
+    ).rejects.toThrow(/userId is required/);
+  });
+
+  it("surfaces a defensive error when the post-insert SELECT finds no row (fake client)", async () => {
+    // Simulate a client whose INSERT silently no-ops (e.g. an unknown
+    // constraint) by having `all()` always return zero rows. This
+    // pins the helper's defensive throw rather than letting a
+    // phantom enqueue pass silently up to the sync engine.
+    const noopClient: SqliteMigrationClient = {
+      exec() {},
+      run() {},
+      all() {
+        return [];
+      },
+    };
+    await expect(
+      enqueueOutboxIncrement(noopClient, {
+        userId: "u-test",
+        table: "routine_streaks",
+        row: { delta: 1 },
+        clientTs: "2026-05-04T12:00:00.000+00:00",
+        idempotencyKey: "idem-phantom",
+      }),
+    ).rejects.toThrow(/expected exactly one row for idempotency_key/);
   });
 
   it("propagates SQL errors verbatim when the schema rejects the row", async () => {

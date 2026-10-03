@@ -18,10 +18,13 @@ import { router } from "expo-router";
 
 import { isApiError } from "@sergeant/api-client";
 import { useApiClient } from "@sergeant/api-client/react";
+import { chartHex } from "@sergeant/design-tokens/tokens";
 import {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
+  resolveKcalGoalsForDays,
+  stripPlacement,
   type MealTypeId,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
@@ -36,6 +39,7 @@ import { MacroRing } from "../components/MacroRing";
 import { WaterTrackerCard } from "../components/WaterTrackerCard";
 import { WeekKcalChart } from "../components/WeekKcalChart";
 import { useNutritionLog } from "../hooks/useNutritionLog";
+import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useNutritionPantries } from "../hooks/useNutritionPantries";
 import { useNutritionPrefs } from "../hooks/useNutritionPrefs";
 
@@ -53,6 +57,9 @@ const MACRO_DEFS: readonly MacroDef[] = [
   {
     key: "kcal",
     label: "Ккал",
+    // AI-NOTE: kcal has no canonical `chartHex` token (chartHex only
+    // covers protein/fat/carbs) — keeps the pre-existing orange until one
+    // is added.
     color: "#f97316",
     prefKey: "dailyTargetKcal",
     unit: "",
@@ -60,21 +67,21 @@ const MACRO_DEFS: readonly MacroDef[] = [
   {
     key: "protein_g",
     label: "Білки",
-    color: "#3b82f6",
+    color: chartHex.protein, // cyan-700 #0e7490
     prefKey: "dailyTargetProtein_g",
     unit: "г",
   },
   {
     key: "fat_g",
     label: "Жири",
-    color: "#eab308",
+    color: chartHex.fat, // rose-700 #c23a3a
     prefKey: "dailyTargetFat_g",
     unit: "г",
   },
   {
     key: "carbs_g",
-    label: "Вуглев.",
-    color: "#22c55e",
+    label: "Вугл",
+    color: chartHex.carbs, // lime-700 #567c0f
     prefKey: "dailyTargetCarbs_g",
     unit: "г",
   },
@@ -156,7 +163,8 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const api = useApiClient();
   const { nutritionLog, addMeal } = useNutritionLog();
   const { prefs, updatePrefs } = useNutritionPrefs();
-  const { activePantry } = useNutritionPantries();
+  const goalPeriods = useNutritionGoalPeriods();
+  const { pantryItems } = useNutritionPantries();
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const [dayPlan, setDayPlan] = useState<DayPlanState | null>(null);
@@ -184,11 +192,11 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
       setDayPlanBusy(true);
       setDayPlanErr("");
       try {
-        const pantryItems = Array.isArray(activePantry?.items)
-          ? activePantry.items.slice(0, PANTRY_ITEMS_LIMIT)
-          : [];
+        const pantryPayload = stripPlacement(
+          pantryItems.slice(0, PANTRY_ITEMS_LIMIT),
+        );
         const data = await api.nutrition.dayPlan({
-          pantry: pantryItems,
+          pantry: pantryPayload,
           targets: {
             kcal: prefs.dailyTargetKcal ?? null,
             protein_g: prefs.dailyTargetProtein_g ?? null,
@@ -235,7 +243,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
     },
     [
       api,
-      activePantry?.items,
+      pantryItems,
       dayPlanBusy,
       prefs.dailyTargetKcal,
       prefs.dailyTargetProtein_g,
@@ -260,7 +268,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const handleAddMealToLog = useCallback(
     (meal: PlanMeal) => {
       const now = new Date();
-      const id = `meal_${now.getTime()}_${Math.random().toString(36).slice(2, 8)}`;
+      const id = `meal_${now.getTime()}_${crypto.randomUUID()}`;
       const mealType = (meal.type ?? "snack") as MealTypeId;
       const label =
         (meal.type ? MEAL_TYPE_LABELS[String(meal.type)] : undefined) ??
@@ -301,6 +309,14 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const weekRows = useMemo(
     () => getMacrosForDateRange(nutritionLog, today, 7),
     [nutritionLog, today],
+  );
+  const weekGoals = useMemo(
+    () =>
+      resolveKcalGoalsForDays(
+        goalPeriods,
+        weekRows.map((row) => row.date),
+      ),
+    [goalPeriods, weekRows],
   );
 
   const hasTargets =
@@ -398,7 +414,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
         </Text>
         <WeekKcalChart
           rows={weekRows}
-          targetKcal={prefs.dailyTargetKcal || 0}
+          goalsByDay={weekGoals}
           todayIso={today}
         />
       </Card>

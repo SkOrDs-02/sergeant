@@ -13,7 +13,7 @@ const MODULES: ReadonlyArray<{
     id: "finyk",
     icon: "wallet",
     title: "Побачити гроші без шуму",
-    body: "Додай першу витрату або підключи Mono, щоб Sergeant показав тижневий патерн.",
+    body: "Додай першу витрату або підключи Mono, щоб Сержант показав тижневий патерн.",
   },
   {
     id: "fizruk",
@@ -66,16 +66,17 @@ export function OutcomeCard({
           >
             Почни з одного живого запису
           </h2>
-          <p className="text-sm text-muted leading-relaxed">
+          <p className="text-style-body text-muted leading-relaxed">
             Обери модуль, де найпростіше зробити першу дію. Після цього хаб
             замінить стартові підказки на персональний фокус дня.
           </p>
         </div>
         <Button
           type="button"
-          variant="primary"
+          variant="solid"
           size="sm"
           onClick={() => onOpenModule(preferred.id)}
+          aria-label={`Відкрити: ${preferred.title}`}
         >
           Відкрити
           <Icon name="chevron-right" size="sm" className="ml-1" />
@@ -91,11 +92,13 @@ export function OutcomeCard({
               type="button"
               onClick={() => onOpenModule(module.id)}
               aria-label={`${module.title}: ${module.body}`}
+              // Обраний модуль - той, що відкриє «Відкрити» вгорі; досі це
+              // було видно лише кольором рамки.
+              aria-current={selected ? "true" : undefined}
               className={cn(
-                "text-left rounded-xl border p-3 transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                "text-left rounded-xl border p-3 transition-colors focus-ring",
                 selected
-                  ? "border-brand-500 bg-brand/10"
+                  ? "border-brand-strong dark:border-brand-400 bg-brand-soft"
                   : "border-line bg-bg hover:bg-panelHi",
               )}
             >
@@ -104,11 +107,10 @@ export function OutcomeCard({
                   <Icon name={module.icon} size="md" />
                 </span>
                 <span className="space-y-1">
-                  {/* eslint-disable-next-line sergeant-design/prefer-text-style -- pre-existing semibold module title; semantic swap deferred to design-token pass */}
-                  <span className="block text-sm font-semibold text-text">
+                  <span className="block text-style-label font-semibold text-text">
                     {module.title}
                   </span>
-                  <span className="block text-xs text-muted leading-relaxed">
+                  <span className="block text-style-caption text-muted leading-relaxed">
                     {module.body}
                   </span>
                 </span>

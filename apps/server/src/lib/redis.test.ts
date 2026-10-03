@@ -117,7 +117,7 @@ describe("redis client wrapper", () => {
         lazyConnect: boolean;
         connectTimeout: number;
         commandTimeout: number;
-        retryStrategy(times: number): number | null;
+        retryStrategy(times: number): number;
       },
     ];
     expect(options).toMatchObject({
@@ -128,12 +128,30 @@ describe("redis client wrapper", () => {
       commandTimeout: 3_000,
     });
     expect(options.retryStrategy(1)).toBe(50);
-    expect(options.retryStrategy(3)).toBeNull();
+    // Понад `maxRetries` клієнт НЕ здається: повертає клампнуту затримку,
+    // а не `null`. `null` означав би «більше не перепідключатись ніколи» —
+    // після рестарту Redis у Coolify це назавжди садило rate-limit на
+    // in-memory fallback, а `/healthz` віддавав 200 з "degraded", тож
+    // платформа контейнер не перезапускала.
+    expect(options.retryStrategy(3)).toBe(120);
     expect(logger.error).toHaveBeenCalledWith({
       msg: "redis_max_retries_exceeded",
       attempts: 3,
       maxRetries: 2,
+      delayMs: 120,
+      note: "reconnect triggers continue with clamped delay",
     });
+
+    // Затримка клампиться стелею і НЕ росте далі, а порогова помилка
+    // логується рівно один раз — інакше багатогодинний простій Redis залив
+    // би лог однаковими error-ами.
+    expect(options.retryStrategy(9)).toBe(120);
+    const thresholdErrors = logger.error.mock.calls.filter(
+      (call: unknown[]) =>
+        (call[0] as { msg?: string } | undefined)?.msg ===
+        "redis_max_retries_exceeded",
+    );
+    expect(thresholdErrors).toHaveLength(1);
 
     handlers["connect"]?.();
     expect(mod.getRedisStats()).toEqual({

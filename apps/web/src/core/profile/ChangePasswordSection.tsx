@@ -8,7 +8,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { useToast } from "@shared/hooks/useToast";
-import { useApiForm } from "@shared/forms/useApiForm";
+import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
 import { changePassword } from "../auth/authClient";
@@ -16,7 +16,7 @@ import { changePassword } from "../auth/authClient";
 /**
  * Зод-схема — локальна, узгоджена за повідомленнями з `ResetPasswordPage`.
  * Меседжі — з `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`),
- * див. `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`,
+ * див. `docs/design/i18n/readiness.md`. `confirm` валідуємо через `superRefine`,
  * щоб помилка лягла саме на поле підтвердження — стандартний RHF-pattern
  * для cross-field перевірок.
  */
@@ -74,9 +74,14 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
+      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
+          (канонічний коментар там): текстовий заголовок «Пароль» дослівно
+          дублював заголовок `CollapsibleSection` у `ProfilePage.tsx` і
+          малювався `text-style-label`, більшим за `xs`-кікер. Прибрано;
+          іконка лишилась — тут немає власної мета-інформації (лічильника
+          чи статусу), яку варто було б винести на її місце. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="lock" size={16} className="text-muted" />
-        <span className="text-style-label text-text">Пароль</span>
+        <Icon name="lock" size="md" className="text-muted" />
       </div>
 
       <form onSubmit={submit} noValidate className="px-4 py-4 space-y-3">
@@ -102,7 +107,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           {formState.errors.current?.message && (
             <p
               id="profile-current-pw-error"
-              className="text-xs text-danger-strong dark:text-danger"
+              className="text-style-caption text-danger-strong dark:text-danger"
             >
               {formState.errors.current.message}
             </p>
@@ -131,7 +136,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           {formState.errors.next?.message && (
             <p
               id="profile-new-pw-error"
-              className="text-xs text-danger-strong dark:text-danger"
+              className="text-style-caption text-danger-strong dark:text-danger"
             >
               {formState.errors.next.message}
             </p>
@@ -159,7 +164,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           {formState.errors.confirm?.message && (
             <p
               id="profile-confirm-pw-error"
-              className="text-xs text-danger-strong dark:text-danger"
+              className="text-style-caption text-danger-strong dark:text-danger"
             >
               {formState.errors.confirm.message}
             </p>
@@ -169,7 +174,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
         {serverError && (
           <div
             role="alert"
-            className="text-xs text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
+            className="text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-3 py-2"
           >
             {serverError}
           </div>
@@ -177,7 +182,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
 
         <Button
           type="submit"
-          variant="primary"
+          variant="solid"
           size="sm"
           className="w-full mt-1"
           disabled={disabled}

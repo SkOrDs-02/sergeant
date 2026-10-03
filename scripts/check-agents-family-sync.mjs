@@ -2,8 +2,8 @@
 // scripts/check-agents-family-sync.mjs
 //
 // Keeps thin platform-specific agent wrappers from becoming parallel policy
-// documents. AGENTS.md remains the source of truth; CLAUDE.md, DEVIN.md and
-// optional OPENAI.md may only point to it and keep short runtime notes.
+// documents. AGENTS.md remains the source of truth; CLAUDE.md and optional
+// OPENAI.md may only point to it and keep short runtime notes.
 
 import { readFileSync, existsSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const DEFAULT_ROOT = resolve(__dirname, "..");
 
-export const WRAPPER_FILES = ["CLAUDE.md", "DEVIN.md", "OPENAI.md"];
+export const WRAPPER_FILES = ["CLAUDE.md", "OPENAI.md"];
 export const MAX_WRAPPER_LINES = 40;
 const SOURCE_OF_TRUTH_RE =
   /^>\s+\*\*Single source of truth (?:->|→) \[AGENTS\.md\]\(\.\/AGENTS\.md\)\.\*\*/gm;

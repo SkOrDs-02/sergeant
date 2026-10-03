@@ -66,7 +66,7 @@ export function HubChatHistoryDrawer({
           testID="hub-chat-history-create"
           className="flex-row items-center gap-2 rounded-2xl border border-line bg-cream-50 px-3 py-3 active:bg-cream-100"
         >
-          <Plus size={16} color="#10b981" />
+          <Plus size={16} color="#0f766e" />
           <Text className="text-sm font-semibold text-brand-700">
             Нова бесіда
           </Text>

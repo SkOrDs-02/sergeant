@@ -9,7 +9,6 @@
 import { Router } from "express";
 import type { Pool } from "pg";
 import { z } from "zod";
-import { asyncHandler } from "../../http/index.js";
 import { parseBody } from "../../http/validate.js";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
@@ -41,59 +40,56 @@ const RotateBody = z
 export function createMonoInternalRouter(_args: { pool: Pool }): Router {
   const r = Router();
 
-  r.post(
-    "/api/internal/mono/webhook/rotate",
-    asyncHandler(async (req, res) => {
-      // 503 if the feature is off — nothing to rotate, and asserting here
-      // catches misconfigured staging where the cron is wired but the
-      // integration itself is disabled.
-      if (!env.MONO_WEBHOOK_ENABLED) {
-        res
-          .status(503)
-          .json({ error: "Monobank webhook integration is disabled" });
-        return;
-      }
-      const ring = monoKeyRing();
-      if (!ring || !env.PUBLIC_API_BASE_URL) {
-        // `assertStartupEnv` already enforces both when MONO_WEBHOOK_ENABLED
-        // is true, so reaching here means a runtime misconfiguration.
-        // Fail closed rather than crash with an undefined deref deeper in.
-        res.status(503).json({
-          error: "Mono webhook rotation is not configured",
-          code: "NOT_CONFIGURED",
-        });
-        return;
-      }
+  r.post("/api/internal/mono/webhook/rotate", async (req, res) => {
+    // 503 if the feature is off — nothing to rotate, and asserting here
+    // catches misconfigured staging where the cron is wired but the
+    // integration itself is disabled.
+    if (!env.MONO_WEBHOOK_ENABLED) {
+      res
+        .status(503)
+        .json({ error: "Monobank webhook integration is disabled" });
+      return;
+    }
+    const ring = monoKeyRing();
+    if (!ring || !env.PUBLIC_API_BASE_URL) {
+      // `assertStartupEnv` already enforces both when MONO_WEBHOOK_ENABLED
+      // is true, so reaching here means a runtime misconfiguration.
+      // Fail closed rather than crash with an undefined deref deeper in.
+      res.status(503).json({
+        error: "Mono webhook rotation is not configured",
+        code: "NOT_CONFIGURED",
+      });
+      return;
+    }
 
-      const parsed = parseBody(RotateBody, req);
+    const parsed = parseBody(RotateBody, req);
 
-      try {
-        const result = await rotateStaleMonoWebhookSecrets({
-          ring,
-          publicApiBaseUrl: env.PUBLIC_API_BASE_URL,
-          olderThanDays: parsed.olderThanDays,
-          alertAfterDays: parsed.alertAfterDays,
-          limit: parsed.limit,
-          dryRun: parsed.dryRun,
-          query: dbQuery,
-        });
-        res.status(200).json({
-          ok: true,
-          candidates: result.candidates,
-          rotated: result.rotated,
-          failed: result.failed,
-          stale: result.stale,
-          dryRun: result.dryRun,
-        });
-      } catch (err) {
-        logger.error({
-          msg: "mono_rotate_endpoint_error",
-          err: err instanceof Error ? err.message : String(err),
-        });
-        throw err;
-      }
-    }),
-  );
+    try {
+      const result = await rotateStaleMonoWebhookSecrets({
+        ring,
+        publicApiBaseUrl: env.PUBLIC_API_BASE_URL,
+        olderThanDays: parsed.olderThanDays,
+        alertAfterDays: parsed.alertAfterDays,
+        limit: parsed.limit,
+        dryRun: parsed.dryRun,
+        query: dbQuery,
+      });
+      res.status(200).json({
+        ok: true,
+        candidates: result.candidates,
+        rotated: result.rotated,
+        failed: result.failed,
+        stale: result.stale,
+        dryRun: result.dryRun,
+      });
+    } catch (err) {
+      logger.error({
+        msg: "mono_rotate_endpoint_error",
+        err: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+  });
 
   return r;
 }

@@ -22,7 +22,6 @@ vi.mock("../../../core/db/kvStoreBoot", () => ({
 const useWorkouts = vi.fn();
 const useMeasurements = vi.fn();
 const useExerciseCatalog = vi.fn();
-const usePushupActivity = vi.fn();
 
 vi.mock("../hooks/useWorkouts", () => ({
   useWorkouts: () => useWorkouts(),
@@ -32,9 +31,6 @@ vi.mock("../hooks/useMeasurements", () => ({
 }));
 vi.mock("../hooks/useExerciseCatalog", () => ({
   useExerciseCatalog: () => useExerciseCatalog(),
-}));
-vi.mock("../hooks/usePushupActivity", () => ({
-  usePushupActivity: () => usePushupActivity(),
 }));
 
 vi.mock("../components/MiniLineChart", () => ({
@@ -58,20 +54,22 @@ function setHooks(opts: {
   entries?: unknown[];
   exercises?: unknown[];
   musclesUk?: Record<string, string>;
-  pushup?: { stats: unknown; hasData: boolean };
+  primaryGroupsUk?: Record<string, string>;
+  /** Defaults to `true` — most tests exercise the post-cache-warm page. */
+  loaded?: boolean;
 }) {
-  useWorkouts.mockReturnValue({ workouts: opts.workouts ?? [] });
+  useWorkouts.mockReturnValue({
+    workouts: opts.workouts ?? [],
+    loaded: opts.loaded ?? true,
+  });
   useMeasurements.mockReturnValue({ entries: opts.entries ?? [] });
   useExerciseCatalog.mockReturnValue({
     exercises: opts.exercises ?? [],
     musclesUk: opts.musclesUk ?? {},
+    // Мапа ГРУП (`chest` → «Груди») — окрема від мапи мʼязів; PR-борд і
+    // бейдж групи читають саме її (QA 2026-08-23).
+    primaryGroupsUk: opts.primaryGroupsUk ?? opts.musclesUk ?? {},
   });
-  usePushupActivity.mockReturnValue(
-    opts.pushup ?? {
-      stats: { todayCount: 0, week: 0, month: 0 },
-      hasData: false,
-    },
-  );
 }
 
 const NOW = Date.now();
@@ -150,7 +148,7 @@ describe("Progress page — charts & trends", () => {
     });
     render(<Progress onNavigate={onNavigate} />);
     // 18 − 20 = -2.0%
-    expect(screen.getByText(/-2\.0%/)).toBeInTheDocument();
+    expect(screen.getByText(/−2,0%/)).toBeInTheDocument();
   });
 
   it("renders the wellbeing chart with ≥2 entries carrying energy/mood", () => {
@@ -217,6 +215,38 @@ describe("Progress page — muscle volume & PR board", () => {
     expect(screen.getByText("Спина")).toBeInTheDocument();
   });
 
+  // П3 — the bars plot an internal `loadPoints` score (тоннаж ÷ 1000 +
+  // сети × 0.15), not kilograms; a raw "0.6" gives the reader no chance to
+  // understand what it means. A legend under the section heading names the
+  // unit explicitly.
+  it("labels the muscle-volume numbers as load-score units, not kilograms (П3)", () => {
+    const at = new Date(NOW - 1 * DAY).toISOString();
+    setHooks({
+      musclesUk: { chest: "Груди" },
+      workouts: [
+        {
+          id: "w1",
+          startedAt: at,
+          endedAt: at,
+          items: [
+            {
+              id: "w1-a",
+              exerciseId: "bench",
+              type: "strength",
+              musclesPrimary: ["chest"],
+              musclesSecondary: [],
+              sets: [{ weightKg: 100, reps: 10 }],
+            },
+          ],
+        },
+      ],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+    expect(
+      screen.getByText(/Умовні одиниці навантаження, не кілограми/),
+    ).toBeInTheDocument();
+  });
+
   it("filters the PR board by muscle group and resets via «Всі»", () => {
     setHooks({
       exercises: [
@@ -259,6 +289,45 @@ describe("Progress page — muscle volume & PR board", () => {
     fireEvent.click(screen.getByRole("button", { name: "Всі" }));
     expect(screen.getByText("Жим")).toBeInTheDocument();
     expect(screen.getByText("Тяга")).toBeInTheDocument();
+  });
+
+  // Браузерне QA 2026-08-23: фільтр PR-борда показував сирий слаг `chest`
+  // поруч із локалізованим «Квадрицепс», а бейдж групи на картці грудей
+  // зникав — лейбл шукався в мапі МʼЯЗІВ, де груп немає.
+  it("localizes every muscle group even when it is absent from musclesUk", () => {
+    setHooks({
+      exercises: [
+        { id: "bench", name: { uk: "Жим" }, primaryGroup: "chest" },
+        { id: "squat", name: { uk: "Присід" }, primaryGroup: "quadriceps" },
+      ],
+      musclesUk: { quadriceps: "Квадрицепс" },
+      primaryGroupsUk: { chest: "Груди", quadriceps: "Квадрицепс" },
+      workouts: [
+        strengthWorkout({
+          id: "w1",
+          daysAgo: 1,
+          exerciseId: "bench",
+          primary: ["pectoralis_major"],
+          weightKg: 120,
+          reps: 3,
+        }),
+        strengthWorkout({
+          id: "w2",
+          daysAgo: 2,
+          exerciseId: "squat",
+          primary: ["quadriceps"],
+          weightKg: 90,
+          reps: 5,
+        }),
+      ],
+    });
+    render(<Progress onNavigate={onNavigate} />);
+
+    expect(screen.getByRole("button", { name: "Груди" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "chest" })).toBeNull();
+    // Бейдж групи на самій картці рекорду теж має бути (він зникав разом
+    // із лейблом, бо `muscleGroupLabel` виходив `null`).
+    expect(screen.getAllByText("Груди").length).toBeGreaterThanOrEqual(2);
   });
 
   it("navigates to the exercise detail when a PR card is tapped", () => {

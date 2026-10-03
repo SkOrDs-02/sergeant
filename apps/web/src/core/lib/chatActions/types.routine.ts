@@ -1,5 +1,5 @@
 /**
- * Routine-доменні chat-action payload-и (habits + calendar) + HabitState.
+ * Routine-доменні chat-action payload-и (habits + calendar).
  * Виокремлено з `types.ts` (initiative 0001 Phase 2).
  */
 
@@ -69,17 +69,10 @@ export interface SetHabitScheduleAction {
 
 export interface PauseHabitAction {
   name: "pause_habit";
-  input: { habit_id: string; paused?: boolean };
+  input: { habit_id: string; paused?: boolean; from?: string; to?: string };
 }
 
 export interface HabitTrendAction {
   name: "habit_trend";
   input: { habit_id?: string; period_days?: number | string };
-}
-
-// ─── Domain entities (зберігаються в localStorage) ──────────────────────────
-
-export interface HabitState {
-  habits: Array<{ id: string; name?: string; emoji?: string }>;
-  completions: Record<string, string[]>;
 }

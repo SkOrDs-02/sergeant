@@ -4,7 +4,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
- * Bundle-graph guard for PR #015 in `docs/planning/storage-roadmap.md`:
+ * Bundle-graph guard for PR #015 in `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`:
  *
  * The whole point of `core/db/sqlite.ts` is to ship sqlite-wasm in its
  * own async chunk so that the home screen does not pay for ~700 KB of

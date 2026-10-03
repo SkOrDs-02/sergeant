@@ -40,7 +40,7 @@ describe("ForgotPasswordScreen", () => {
         redirectTo: "sergeant://reset-password",
       });
     });
-    expect(await findByText("Перевірте пошту")).toBeTruthy();
+    expect(await findByText("Перевір пошту")).toBeTruthy();
     expect(await findByText("me@test.dev")).toBeTruthy();
   });
 

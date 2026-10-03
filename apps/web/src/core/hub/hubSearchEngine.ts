@@ -3,7 +3,7 @@
  *
  * Pure-скорінг (нормалізація, токенізація, scoreMatch/scoreAndSort) винесений
  * у `@sergeant/insights/search` — його шерить майбутній `apps/mobile`
- * (див. docs/mobile/react-native-migration.md §11, R2). Тут лишилися тільки
+ * (див. docs/engineering/mobile/react-native-migration.md §11, R2). Тут лишилися тільки
  * функції поверх `localStorage` — зберігання останніх запитів. Вони навмисно
  * НЕ переносяться у пакет: `@sergeant/insights` має бути DOM-free.
  */

@@ -9,7 +9,7 @@
  *      entry (no "ghost" tools the user can never discover).
  *   4. Token budget guard (≤10% growth vs. baseline) — handoff requirement.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   ASSISTANT_CAPABILITIES,
   getCapabilityServerTool,
@@ -24,7 +24,7 @@ import { TOOLS } from "../tools.js";
 
 describe("SYSTEM_PREFIX — registry-driven", () => {
   it("starts with the canonical assistant intro (cache key sensitivity)", () => {
-    expect(SYSTEM_PREFIX).toMatch(/^Ти персональний асистент/);
+    expect(SYSTEM_PREFIX).toMatch(/^Ти Сержант/);
   });
 
   it("ends with the ДАНІ marker so the per-user context block can append cleanly", () => {
@@ -96,13 +96,35 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     }
   });
 
-  // AI-CONTEXT: baseline computed 2026-04-26 from v5 (hand-written) prompt.
+  // AI-CONTEXT: baseline перебазовано 2026-08-05 на факт v17 (~1145 токенів).
   // Approximation: chars / 3.5 ≈ tokens for mixed Cyrillic/ASCII Anthropic
   // tokenizer. Real measurement happens server-side in usage logs.
-  // Allow up to 1.10× growth per the PR2 handoff guard.
-  it("token budget: stays within 110% of baseline (~1012 tokens)", () => {
-    const BASELINE_TOKENS = 1012;
-    const BUDGET = Math.round(BASELINE_TOKENS * 1.1);
+  //
+  // Стара цифра (1012, знята 2026-04-26 з рукописного v5) пережила пʼять
+  // свідомих доповнень промпта — межа порад (v13), голос і заборона вигаданих
+  // аргументів (v14), звірка чисел (v15), межа скоупу і `<user_data>` (v17) —
+  // і на v17 стеля 1113 виявилась нижчою за факт. Гейт, який червоний завжди,
+  // інформаційно дорівнює вимкненому, тож baseline перебазовано на факт.
+  //
+  // Запас звужено 1.10 → 1.05 навмисно: рамка після перебазування має бути
+  // ТІСНІШОЮ за попередню, інакше перебазування перетворюється на спосіб
+  // тихо купити собі ще 10% зростання. Наступне додавання правила знову
+  // впреться в гейт — так і задумано, промпт кешується, але не безкоштовно.
+  //
+  // Так і сталося: v22 стояв на 1201 при стелі 1202 — один токен запасу.
+  // Рядок про справжні українські слова (v23, +27 токенів) впертися в гейт
+  // мусив, і це саме та свідома розмова, заради якої гейт існує: правило
+  // зʼявилось за фото від тестера («дніорвий челендж»), тобто платимо
+  // 27 токенів кешованого префікса за читабельність кожної відповіді.
+  // Baseline перебазовано на факт v23 (1228), запас звужено 1.05 → 1.03 —
+  // за тим самим принципом, що й попереднього разу.
+  //
+  // v24 (2026-09-23): персона Сержанта і чотири рядки поведінки коштують
+  // +196 токенів (1228 → 1424). Це рішення власника за аудитом анти-слопу,
+  // тож baseline перебазовано на факт v24, запас лишається 1.03.
+  it("token budget: stays within 103% of baseline (~1424 tokens)", () => {
+    const BASELINE_TOKENS = 1424;
+    const BUDGET = Math.round(BASELINE_TOKENS * 1.03);
     const approxTokens = Math.round(SYSTEM_PREFIX.length / 3.5);
     expect(
       approxTokens,
@@ -119,7 +141,33 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     expect(list).toMatch(/- Кросмодульні: /);
     expect(list).toMatch(/- Аналітика: /);
     expect(list).toMatch(/- Утиліти: /);
-    expect(list).toMatch(/- Пам'ять: /);
+    expect(list).toMatch(/- Памʼять: /);
+  });
+
+  it("skips a module bullet when every capability is prompt-only", async () => {
+    vi.resetModules();
+    vi.doMock("@sergeant/shared", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@sergeant/shared")>();
+      return {
+        ...actual,
+        ASSISTANT_CAPABILITIES: actual.ASSISTANT_CAPABILITIES.map(
+          (capability) =>
+            capability.module === "memory"
+              ? { ...capability, serverTool: null }
+              : capability,
+        ),
+      };
+    });
+
+    const { buildModuleToolList: buildModuleToolListWithEmptyMemory } =
+      await import("./systemPrompt.js");
+
+    const list = buildModuleToolListWithEmptyMemory();
+    expect(list).toMatch(/- Фінанси: /);
+    expect(list).not.toMatch(/- Памʼять: /);
+
+    vi.doUnmock("@sergeant/shared");
+    vi.resetModules();
   });
 
   it("aiHints are rendered in parentheses next to the tool name", () => {
@@ -127,6 +175,15 @@ describe("SYSTEM_PREFIX — registry-driven", () => {
     expect(SYSTEM_PREFIX).toContain("delete_transaction (лише ручні m_<id>)");
     expect(SYSTEM_PREFIX).toContain("update_budget (ліміт або ціль)");
     expect(SYSTEM_PREFIX).toContain("batch_categorize (dry_run спершу)");
+  });
+
+  it("забороняє переказувати id, назви інструментів і їхні параметри (v27)", () => {
+    // Регресія: модель витягла в текст користувачу внутрішній параметр
+    // («З group_by=category, але агрегація…»). Рядок про переказ результату
+    // інструмента мусить називати всі три категорії витоку, а не лише id.
+    expect(SYSTEM_PREFIX).toContain(
+      "Результат інструмента переказуй своїми словами, без id, назв інструментів і їхніх параметрів.",
+    );
   });
 
   it("does NOT contain the legacy /help instruction (PR #795 redirected it)", () => {

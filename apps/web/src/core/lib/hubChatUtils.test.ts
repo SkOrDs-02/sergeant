@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ApiError } from "@sergeant/api-client";
 import {
   getActiveModule,
   friendlyApiError,
   friendlyChatError,
+  CHAT_UNKNOWN_ERROR_TEXT,
+  CHAT_RESPONSE_TOO_LONG_TEXT,
   consumeHubChatSse,
   newMsgId,
   makeAssistantMsg,
@@ -15,7 +18,9 @@ import {
   requestIdle,
   cancelIdle,
   isHelpCommand,
+  CHAT_AUTH_REQUIRED_TEXT,
 } from "./hubChatUtils";
+import { formatNumberUk } from "@sergeant/shared";
 
 function setHash(hash: string): void {
   window.location.hash = hash;
@@ -42,16 +47,69 @@ describe("getActiveModule", () => {
 });
 
 describe("friendlyApiError", () => {
-  it("special-cases missing AI key on 500", () => {
-    expect(friendlyApiError(500, "ANTHROPIC key not set")).toBe(
-      "Чат на сервері не налаштовано (немає ключа AI).",
-    );
+  // Regression (аудит `web-qa-pre-beta.md` § 11, 2026-09-03): гілка чекала
+  // `status === 500` і маркер у ТЕКСТІ, а `requireChatUpstreamKey` віддає
+  // 503 з нейтральним `error` і маркером у `body.code` — тобто рівно ту
+  // форму, що нижче. До фіксу цей кейс мапився в серверний текст.
+  it("special-cases the missing upstream key by `code`, on the real 503 shape", () => {
+    expect(
+      friendlyApiError(
+        503,
+        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        "ANTHROPIC_KEY_MISSING",
+      ),
+    ).toBe("Чат на сервері не налаштовано. Повідом у підтримку.");
+  });
+  it("without the code a 503 with a body stays the server's own text", () => {
+    // Той самий статус без маркера — це звичайний збій upstream-у, і
+    // серверне пояснення конкретніше за текст про відсутній ключ.
+    expect(
+      friendlyApiError(
+        503,
+        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+      ),
+    ).toBe("AI-помічник тимчасово недоступний. Спробуй пізніше.");
   });
   it("special-cases AI quota on 429", () => {
     expect(friendlyApiError(429, "AI_QUOTA exceeded")).toBe(
-      "Денний ліміт AI вичерпано. Спробуй завтра або зменш навантаження.",
+      "Тижневий ліміт Сержанта вичерпано. Оновиться в понеділок.",
     );
-    expect(friendlyApiError(429, "ліміт AI")).toContain("Денний ліміт AI");
+    expect(friendlyApiError(429, "ліміт AI")).toContain(
+      "Тижневий ліміт Сержанта",
+    );
+  });
+  it("passes the server copy through for a preset weekly quota block", () => {
+    // Копія цього випадку живе на сервері (`assertAiQuota`) в одному
+    // екземплярі — мапер не має права її переписати на «спробуй завтра»,
+    // бо у сценарного пресета відро ТИЖНЕВЕ, і вихід інший.
+    const serverCopy =
+      "Сценарій на цей тиждень вичерпано. Заповни профіль вручну в налаштуваннях.";
+    expect(friendlyApiError(429, serverCopy, "AI_QUOTA_PRESET")).toBe(
+      serverCopy,
+    );
+  });
+  // Гілки `AI_QUOTA_ANON` більше немає: сервер прибрав анонімне квотне відро,
+  // `/api/chat` session-gated, тож анонім упирається в 401, а не 429. Код
+  // проходить повз спецкейс і мапиться загальним правилом 429 — а той (AI-3)
+  // тепер віддає РЕАЛЬНЕ серверне повідомлення (rate-limit копія називає
+  // конкретний час очікування), а не фіксований текст.
+  it("no longer special-cases the retired AI_QUOTA_ANON code", () => {
+    expect(
+      friendlyApiError(
+        429,
+        "Забагато запитів. Спробуй через 12 секунд.",
+        "AI_QUOTA_ANON",
+      ),
+    ).toBe("Забагато запитів. Спробуй через 12 секунд.");
+  });
+  // Regression (browser QA 2026-08-23): `/api/chat` за `requireSession()`
+  // віддавав аноніму 401, загальний мапер робив із цього «Доступ заборонено.»,
+  // а `friendlyChatError` — «Помилка: Доступ заборонено.». Жодного натяку на
+  // вхід. Гейт лишається, змінюється тільки те, що продукт про нього каже.
+  it("names the way out on 401/403 instead of a bare «access denied»", () => {
+    expect(friendlyApiError(401, "Unauthorized")).toBe(CHAT_AUTH_REQUIRED_TEXT);
+    expect(friendlyApiError(403, "Forbidden")).toBe(CHAT_AUTH_REQUIRED_TEXT);
+    expect(CHAT_AUTH_REQUIRED_TEXT).toContain("Увійди");
   });
   it("delegates to base mapper otherwise", () => {
     const out = friendlyApiError(404, "not found");
@@ -60,16 +118,111 @@ describe("friendlyApiError", () => {
   });
 });
 
+it("шлюзові збої дістають текст із дією, а не голий номер", () => {
+  // Саме 504 і побачив власник на екрані 2026-09-02. У чату немає
+  // caller-fallback-у, тож «Помилка 504» доїжджала просто до людини.
+  expect(friendlyApiError(504)).toBe(
+    "Сервер не встиг відповісти. Спробуй ще раз.",
+  );
+  expect(friendlyApiError(502)).toBe(
+    "Сервер тимчасово недоступний. Спробуй за хвилину.",
+  );
+  expect(friendlyApiError(503)).toBe(
+    "Сервер тимчасово недоступний. Спробуй за хвилину.",
+  );
+  // Серверне повідомлення, якщо воно є, конкретніше за наш загальний текст.
+  expect(friendlyApiError(502, "upstream down")).toBe("upstream down");
+});
+
 describe("friendlyChatError", () => {
   it("maps network errors", () => {
     expect(friendlyChatError(new Error("Failed to fetch"))).toBe(
-      "Немає з'єднання з мережею або сервер недоступний.",
+      "Немає зʼєднання з мережею або сервер недоступний.",
     );
     expect(friendlyChatError(new Error("network down"))).toContain("мережею");
   });
-  it("wraps other errors", () => {
-    expect(friendlyChatError(new Error("boom"))).toBe("Помилка: boom");
-    expect(friendlyChatError("string err")).toBe("Помилка: string err");
+  it("keeps the auth hint after the API mapper already rewrote the message", () => {
+    // Саме цей шлях і давав «Помилка: Доступ заборонено.»: `useChatSend`
+    // перезаписує `message` через `friendlyApiError` ДО того, як помилка
+    // дійде сюди, тож стара гілка по «Потрібна автентифікація» була мертва.
+    expect(friendlyChatError(new Error(CHAT_AUTH_REQUIRED_TEXT))).toBe(
+      CHAT_AUTH_REQUIRED_TEXT,
+    );
+    expect(friendlyChatError(new Error("Доступ заборонено."))).toBe(
+      CHAT_AUTH_REQUIRED_TEXT,
+    );
+    expect(friendlyChatError(new Error("Потрібна автентифікація"))).toBe(
+      CHAT_AUTH_REQUIRED_TEXT,
+    );
+  });
+  it("НЕ обгортає вдруге текст, який уже пройшов friendlyApiError", () => {
+    // Рівно той баг, який власник побачив на екрані 2026-09-02:
+    // «Помилка: Помилка 504». `useChatSend` перезаписує `message` готовим
+    // текстом, а ця функція наліплювала префікс поверх.
+    const gateway = new ApiError({
+      kind: "http",
+      message: "Сервер не встиг відповісти. Спробуй ще раз.",
+      status: 504,
+      url: "/api/chat",
+    });
+    expect(friendlyChatError(gateway)).toBe(
+      "Сервер не встиг відповісти. Спробуй ще раз.",
+    );
+    expect(friendlyChatError(gateway)).not.toContain("Помилка: Помилка");
+
+    // Навіть коли текст усе-таки почався з «Помилка N» (статус без власної
+    // гілки), подвоєння немає: рішення береться за ТИПОМ помилки.
+    const bare = new ApiError({
+      kind: "http",
+      message: "Помилка 418",
+      status: 418,
+      url: "/api/chat",
+    });
+    expect(friendlyChatError(bare)).toBe("Помилка 418");
+  });
+
+  it("сирий технічний текст не доходить до екрана — замість нього дія", () => {
+    // Тут раніше піналось `"Помилка: boom"` з обґрунтуванням «без префікса
+    // «boom» не читається як збій». Обґрунтування було правдиве рівно доти,
+    // доки збій рендерився звичайною реплікою асистента. Той самий захід, що
+    // прибрав подвоєння «Помилка: Помилка 504», це й змінив: `makeErrorMsg`
+    // ставить `error: true`, `core/components/ChatMessage.tsx` малює червону
+    // рамку і вішає `role="alert"`, а `useInlineAiRail` дає власний заголовок
+    // «Помилка асистента». Слово в тексті дублювало колір і скрінрідер, а §7
+    // гайду копірайтингу забороняє «Помилка» як standalone.
+    //
+    // Сам `boom` теж не показуємо: у цю гілку доходять `parse`-помилки,
+    // нетипові мережеві винятки й сирі `TypeError` — їхній `message`
+    // технічний, і §3 прямо каже не виносити його людині.
+    expect(friendlyChatError(new Error("boom"))).toBe(CHAT_UNKNOWN_ERROR_TEXT);
+    expect(friendlyChatError("string err")).toBe(CHAT_UNKNOWN_ERROR_TEXT);
+    // Головне, заради чого правка: у тексті більше немає забороненої
+    // конструкції, і він закінчується дією.
+    expect(CHAT_UNKNOWN_ERROR_TEXT).not.toMatch(/Помилка/);
+    expect(CHAT_UNKNOWN_ERROR_TEXT).toMatch(/Спробуй/);
+  });
+
+  it("НЕ ковтає копію для людини, кинуту звичайним Error", () => {
+    // Пастка, у яку я впав, коли робив правку вище: гілка «сирої помилки»
+    // виглядає технічною, але через неї їде й навмисний людський текст —
+    // стеля SSE-потоку кидається як звичайний `Error`. Заміна всієї гілки
+    // на загальний фолбек мовчки з'їдала «Відповідь занадто довга», і це
+    // спіймав `useChatSend.test.tsx` («caps the accumulated SSE stream»).
+    // Тому пропуск іде за ТОТОЖНІСТЮ константи, а не за виглядом рядка.
+    expect(friendlyChatError(new Error(CHAT_RESPONSE_TOO_LONG_TEXT))).toBe(
+      CHAT_RESPONSE_TOO_LONG_TEXT,
+    );
+    // І сама ця копія теж закінчується дією — до PR-X3 не закінчувалась.
+    expect(CHAT_RESPONSE_TOO_LONG_TEXT).toMatch(/Постав/);
+    // Мережева гілка не є HTTP-помилкою, тож лишається як була.
+    const offline = new ApiError({
+      kind: "network",
+      message: "Failed to fetch",
+      url: "/api/chat",
+    });
+    expect(friendlyChatError(offline)).toBe(
+      "Немає зʼєднання з мережею або сервер недоступний.",
+    );
   });
 });
 
@@ -148,11 +301,19 @@ describe("message helpers", () => {
 });
 
 describe("normalizeStoredMessages", () => {
-  it("returns greeting for empty input", () => {
-    const msgs = normalizeStoredMessages(null);
-    expect(msgs).toHaveLength(1);
-    expect(msgs[0]!.role).toBe("assistant");
-    expect(msgs[0]!.text).toContain("Привіт");
+  // PR-A7 regression guard (audit `2026-09-13-product-full-review.md`):
+  // substituting a greeting for an empty/missing input made
+  // `messages.length === 0` unreachable everywhere this function is
+  // called (`createInitialSession`, `parseSessionsBlob`, cold-boot in
+  // `useChatSessions`), so `<ChatEmpty>` never rendered. Do NOT reinstate
+  // a synthesized message here.
+  it("does not synthesize a greeting for missing input — ChatEmpty must stay reachable", () => {
+    expect(normalizeStoredMessages(null)).toEqual([]);
+    expect(normalizeStoredMessages(undefined)).toEqual([]);
+  });
+
+  it("does not synthesize a greeting for an empty stored array", () => {
+    expect(normalizeStoredMessages([])).toEqual([]);
   });
   it("normalizes stored messages and synthesizes ids", () => {
     const msgs = normalizeStoredMessages([
@@ -180,7 +341,7 @@ describe("ls / lsSet", () => {
 
 describe("fmt", () => {
   it("rounds and localizes", () => {
-    expect(fmt(1234.6)).toBe((1235).toLocaleString("uk-UA"));
+    expect(fmt(1234.6)).toBe(formatNumberUk(1235));
     expect(fmt(0)).toBe("0");
   });
 });

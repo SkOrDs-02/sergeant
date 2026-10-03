@@ -1,5 +1,5 @@
 /**
- * Stage 13 PR #071 of `docs/planning/storage-roadmap.md` — round-trip
+ * Stage 13 PR #071 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — round-trip
  * integration test for the rewritten mobile hub backup.
  *
  * After Stage 8 PR #057{r,f,n,k}-tombstone the MMKV slots Routine /
@@ -32,26 +32,26 @@ jest.mock("@/lib/storage", () => ({
 
 const mockTriggerNutritionDualWrite = jest.fn();
 const mockNutritionRegistered = jest.fn();
-jest.mock("@/modules/nutrition/lib/dualWrite", () => ({
+jest.mock("@/modules/nutrition/lib/sqliteWriter", () => ({
   triggerNutritionDualWrite: (...args: unknown[]) =>
     mockTriggerNutritionDualWrite(...args),
   isNutritionDualWriteRegistered: () => mockNutritionRegistered(),
 }));
 
 const mockTriggerRoutineDualWrite = jest.fn();
-jest.mock("@/modules/routine/lib/dualWrite", () => ({
+jest.mock("@/modules/routine/lib/sqliteWriter", () => ({
   triggerRoutineDualWrite: (...args: unknown[]) =>
     mockTriggerRoutineDualWrite(...args),
 }));
 
 const mockTriggerFizrukDualWrite = jest.fn();
-jest.mock("@/modules/fizruk/lib/dualWrite", () => ({
+jest.mock("@/modules/fizruk/lib/sqliteWriter", () => ({
   triggerFizrukDualWrite: (...args: unknown[]) =>
     mockTriggerFizrukDualWrite(...args),
 }));
 
 const mockTriggerFinykDualWrite = jest.fn();
-jest.mock("@/modules/finyk/lib/dualWrite", () => ({
+jest.mock("@/modules/finyk/lib/sqliteWriter", () => ({
   triggerFinykDualWrite: (...args: unknown[]) =>
     mockTriggerFinykDualWrite(...args),
 }));
@@ -103,7 +103,7 @@ describe("isHubBackupPayload", () => {
     ).toBe(true);
   });
 
-  it("відхиляє сторонні об'єкти", () => {
+  it("відхиляє сторонні обʼєкти", () => {
     expect(isHubBackupPayload(null)).toBe(false);
     expect(isHubBackupPayload({ kind: "other" })).toBe(false);
     expect(isHubBackupPayload({ kind: HUB_BACKUP_KIND })).toBe(false);
@@ -127,7 +127,6 @@ describe("buildHubBackupPayload — reads from SQLite warm cache", () => {
       tags: baseState.tags,
       categories: baseState.categories,
       prefs: baseState.prefs,
-      pushupsByDate: {},
       habitOrder: ["h1"],
       completionNotes: {},
     });

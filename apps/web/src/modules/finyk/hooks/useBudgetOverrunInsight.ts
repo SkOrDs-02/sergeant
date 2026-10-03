@@ -1,20 +1,31 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-09-24
  * Status: Active
  *
- * Detection hook for the "category spend > 110% of its budget" insight trigger.
+ * Detection hook for the «ліміт перевищено» hub insight.
  *
- * Scans all limit-type budgets. Picks the first category that has exceeded
- * its limit by more than OVERRUN_THRESHOLD (default 10%). Returns a single
- * Insight with concrete UAH overage and days-remaining copy. When multiple
- * categories are overrun, the most-overrun one wins (highest ratio).
+ * Reads the same `calcLimitUsages` result as the Planning limit card and the
+ * `budget_over_*` recommendation (`buildFinanceContext`), so a card saying
+ * «використано 162% ліміту» can never sit next to «перевищень немає»
+ * (Р5, spec finyk-analytics-v2). Fires from `overLimit` (≥100 %), the same
+ * threshold the card uses; the former 110 % margin let Planning say
+ * «Перевищено» while the hub stayed silent. When several limits are over,
+ * the highest ratio wins.
+ *
+ * AI-DANGER: callers pass the full transaction history (the sibling insight
+ * hooks need several months for their MoM / recurring detection). The period
+ * window is applied per limit inside `calcLimitUsages` (`getLimitPeriodRange`),
+ * which is what stopped «використано 521% ліміту» on the second day of a month
+ * (founder report 2026-07-31). Do not pre-clamp here: week and one-time
+ * limits carry their own window.
  */
 
 import { useMemo } from "react";
-import { calcCategorySpent } from "@sergeant/finyk-domain/domain/categories";
 import {
-  getLimitBudgets,
+  calcLimitUsages,
   getCurrentMonthContext,
+  formatLimitBudgetLabel,
+  type LimitUsageEntry,
 } from "@sergeant/finyk-domain/domain/budget";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/domain/categories";
 import type { Insight } from "@shared/lib/insights/types";
@@ -23,10 +34,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
-
-// Tunable threshold — export so tests can override.
-/** Ratio above which the insight fires (1.10 = 110% of budget). */
-export const OVERRUN_THRESHOLD = 1.1;
+import { formatNumberUk, pluralDays } from "@sergeant/shared";
 
 interface UseBudgetOverrunInsightArgs {
   budgets: readonly Budget[];
@@ -34,8 +42,7 @@ interface UseBudgetOverrunInsightArgs {
   txCategories: Record<string, string | undefined>;
   txSplits: TxSplitsMap;
   customCategories?:
-    | readonly { id: string; label?: string | undefined }[]
-    | undefined;
+    readonly { id: string; label?: string | undefined }[] | undefined;
 }
 
 export function useBudgetOverrunInsight({
@@ -46,59 +53,49 @@ export function useBudgetOverrunInsight({
   customCategories = [],
 }: UseBudgetOverrunInsightArgs): Insight | null {
   return useMemo(() => {
-    const limitBudgets = getLimitBudgets(budgets);
-    if (!limitBudgets.length || !transactions.length) return null;
+    if (!budgets.length || !transactions.length) return null;
 
-    const { daysLeft } = getCurrentMonthContext(new Date());
+    const { daysLeft } = getCurrentMonthContext();
 
-    // Score each limit budget and pick the worst offender.
-    let worst: {
-      budget: (typeof limitBudgets)[number];
-      ratio: number;
-      spent: number;
-      limit: number;
-    } | null = null;
-
-    for (const b of limitBudgets) {
-      if (!b.categoryId || !(Number(b.limit) > 0)) continue;
-      const limit = Number(b.limit);
-      const spent = calcCategorySpent(
-        transactions,
-        b.categoryId,
-        txCategories,
-        txSplits,
-        customCategories,
-      );
-      const ratio = spent / limit;
-      if (ratio < OVERRUN_THRESHOLD) continue;
-      if (!worst || ratio > worst.ratio) {
-        worst = { budget: b, ratio, spent, limit };
-      }
+    let worst: LimitUsageEntry | null = null;
+    for (const usage of calcLimitUsages(budgets, transactions, {
+      txCategories,
+      txSplits,
+      customCategories,
+    })) {
+      if (!usage.overLimit) continue;
+      if (!worst || usage.pctRaw > worst.pctRaw) worst = usage;
     }
 
     if (!worst) return null;
 
-    const { budget, ratio, spent, limit } = worst;
-    const pct = Math.round((ratio - 1) * 100);
+    const { budget, spent, limit, pctRaw } = worst;
+    // Same base as the Overview budget plashka (`BudgetAlertsList`): percent
+    // of the limit used, not percent above it. The two surfaces render side by
+    // side, so a shared base is what keeps them from reading as a data bug.
+    const pct = Math.round(pctRaw);
     const overage = Math.round(spent - limit);
-    const catMeta = resolveExpenseCategoryMeta(
-      budget.categoryId!,
-      customCategories,
-    );
-    const catLabel = catMeta?.label ?? budget.categoryId ?? "Категорія";
+    const catLabel =
+      formatLimitBudgetLabel(
+        budget,
+        (id) => resolveExpenseCategoryMeta(id, customCategories)?.label,
+      ) || budget.categoryId;
 
     return {
       id: `finyk-budget-overrun-${budget.categoryId}`,
       module: "finyk",
-      title: `${catLabel} перевищена на ${pct}%`,
-      subtitle: `+${overage.toLocaleString("uk-UA")} грн. Залишилось ${daysLeft} дн. Подивитись?`,
+      title: `${catLabel}: використано ${pct}% ліміту`,
+      subtitle: `+${formatNumberUk(overage)}\u202F₴. Залишилось ${daysLeft} ${pluralDays(daysLeft)}. Подивитись?`,
+      askAiPrompt: `У Фініку категорія "${catLabel}" вже ${formatNumberUk(Math.round(spent))}\u202F₴ із бюджету ${formatNumberUk(Math.round(limit))}\u202F₴ (+${pct - 100}%). Це разовий сплеск чи тренд? Що підрізати?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${budget.categoryId}`,
       },
-      // Hub surface promoted post-Phase 5e: budget overrun is urgent + simple
-      // (one navigate, no in-Finyk preview required to understand stakes).
-      showOn: "both",
+      // Hub-only (Фаза 3, finyk-observations spec PR-1): BudgetAlertsList
+      // already shows every overrun category on the Finyk Overview itself,
+      // so this card duplicated the worst one there. It stays on the Hub,
+      // where it's the only budget signal.
+      showOn: "hub",
     };
   }, [budgets, transactions, txCategories, txSplits, customCategories]);
 }

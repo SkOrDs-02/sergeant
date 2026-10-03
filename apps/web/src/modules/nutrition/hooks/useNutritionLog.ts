@@ -2,11 +2,17 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@shared/hooks/useToast";
-import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { digestKeys } from "@shared/lib/api/queryKeys";
+import { todayISODate } from "@sergeant/nutrition-domain";
+import {
+  ANALYTICS_EVENTS,
+  trackEvent,
+} from "../../../core/observability/analytics";
+import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
 import {
   NUTRITION_LOG_KEY,
   loadNutritionLog,
@@ -24,6 +30,7 @@ import {
 } from "../lib/nutritionStorage";
 import { deleteMealThumbnail, gcMealThumbnails } from "../lib/mealPhotoStorage";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { clearMealMoment, recordMealMoment } from "../lib/mealMoments";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 /**
@@ -54,14 +61,21 @@ export function useNutritionLog() {
   const queryClient = useQueryClient();
   const toast = useToast();
   const sqliteCacheTick = useNutritionSqliteReadTick();
-  const [nutritionLog, setNutritionLog] = useState<NutritionLog>(() =>
-    loadNutritionLog(NUTRITION_LOG_KEY),
+  const [nutritionLog, setNutritionLog] = useSqliteTickOverlay<NutritionLog>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedNutritionSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.log;
+    },
+    () => loadNutritionLog(NUTRITION_LOG_KEY),
   );
+  // ADR-0078: активний день журналу — день ПРИСТРОЮ, не Kyiv. Це і є ключ,
+  // під яким запис лягає в лог, тож усе, що читає "сьогодні" з того самого
+  // логу (LogCard, Dashboard, quick-chips), мусить рахувати той самий день.
   const [selectedDate, setSelectedDate] = useState<string>(() =>
-    getKyivDayKey(),
+    todayISODate(),
   );
   const [addMealSheetOpen, setAddMealSheetOpen] = useState(false);
-  const [addMealPhotoResult, setAddMealPhotoResult] = useState<unknown>(null);
   const [storageErr, setStorageErr] = useState("");
   const pendingThumbDeletesRef = useRef<
     Map<string, ReturnType<typeof setTimeout>>
@@ -70,23 +84,11 @@ export function useNutritionLog() {
 
   useEffect(() => {
     const ok = persistNutritionLog(nutritionLog, NUTRITION_LOG_KEY);
-    setStorageErr(
-      ok
-        ? ""
-        : "Не вдалося зберегти журнал (переповнення сховища або приватний режим).",
-    );
+    const err = ok
+      ? ""
+      : "Не вдалося зберегти журнал (переповнення сховища або приватний режим).";
+    void Promise.resolve().then(() => setStorageErr(err));
   }, [nutritionLog]);
-
-  // Stage 4 PR #033 + Stage 8 PR #057n-tombstone: overlay the meal
-  // log from the local SQLite cache once it's warm. The next persist
-  // effect that fires with this cache snapshot diffs the SQLite cache
-  // against itself and emits zero ops, so the warm-cache hydration is
-  // a no-op for the dual-write orchestrator.
-  useEffect(() => {
-    const cache = getCachedNutritionSqliteState();
-    if (cache.refreshedAt === null) return;
-    setNutritionLog(cache.log);
-  }, [sqliteCacheTick]);
 
   // AI-CONTEXT: cleanup ref for pending thumbnail deletes — on unmount the undo window is gone, so timers are cancelled and thumbnails deleted immediately
   // Flush scheduled thumbnail deletes on unmount. The 6 s grace window
@@ -105,28 +107,34 @@ export function useNutritionLog() {
     };
   }, []);
 
-  // Coach insight and weekly digest both derive from the nutrition log.
-  // Invalidate them whenever the log changes so the next mount / user
-  // refresh regenerates with the latest context.
+  // Журнал харчування живить і дайджест, і денну пораду коуча — але
+  // інвалідуємо тут ЛИШЕ дайджест.
   //
-  // Audit 08 F11 scope-tightening: previously called `coachKeys.all` /
-  // `digestKeys.all` — a broad sweep that refetched every coach query
-  // and every weekly-digest variant on each meal save. Now scoped to
-  // `coachKeys.insight(selectedDate)` (the only key whose data depends
-  // on the day the user edited) and `digestKeys.history` (the rolling
-  // list the user might be scrolling). Other coach / digest queries
-  // keep their `staleTime: Infinity` cache; they re-derive on their own
-  // next mount-cycle without a sync write storm here.
+  // Порада коуча навмисно НЕ інвалідується записом їжі. Вона денна за
+  // контрактом (`useCoachInsight`: ключ за днем, `staleTime: Infinity`,
+  // кеш у localStorage), і кожна інвалідація ламала цей контракт двічі.
+  // По-перше видимо: людина записувала обід, поверталась на дашборд — і
+  // читала ІНШИЙ текст. Не оновлений, а інший; денна порада не має
+  // змінюватись під руками. По-друге в грошах: генерація коштує ~$0.004,
+  // а снапшот, з якого вона будується, тижневий — одна страва зсуває
+  // середні на кілька відсотків і майже ніколи не змінює висновок.
+  //
+  // Джерела правди для регенерації лишаються два, обидва усвідомлені:
+  // pull-to-refresh (`HubMainContent`) і поява свіжих кореляцій після
+  // тижневого дайджесту (`useWeeklyDigest`). Обидва — це «зʼявилось щось
+  // нове», а не «користувач надрукував рядок».
+  //
+  // Audit 08 F11 звузив цей ефект із `coachKeys.all` / `digestKeys.all` до
+  // одного ключа кожен; тут прибрано другу половину. `digestKeys.history`
+  // лишається: це список, який людина може прокручувати просто зараз, і
+  // він дешевий — жодної моделі, лише локальна вибірка.
   useEffect(() => {
     if (!didMountRef.current) {
       didMountRef.current = true;
       return;
     }
-    queryClient.invalidateQueries({
-      queryKey: coachKeys.insight(selectedDate),
-    });
     queryClient.invalidateQueries({ queryKey: digestKeys.history });
-  }, [nutritionLog, selectedDate, queryClient]);
+  }, [nutritionLog, queryClient]);
 
   /**
    * Add a meal to the currently selected date and close the add-meal sheet.
@@ -134,7 +142,34 @@ export function useNutritionLog() {
   const handleAddMeal = (meal: Partial<Meal>) => {
     setNutritionLog((log) => addLogEntry(log, selectedDate, meal));
     setAddMealSheetOpen(false);
-    setAddMealPhotoResult(null);
+    // Момент рахується з поточного стану хука, а не всередині оновлювача:
+    // оновлювач React кличе пізніше і може кликати двічі. `addLogEntry`
+    // тут чистий, тож «після» для моменту збігається з тим, що ляже в лог.
+    recordMealMoment(
+      nutritionLog,
+      addLogEntry(nutritionLog, selectedDate, meal),
+      selectedDate,
+    );
+    // Телеметрія (Хвиля 2, `nutrition_meal_logged`). Fire-and-forget поза
+    // state-updater-ом: `setNutritionLog` — оновлювач, і сайд-ефект у ньому
+    // виконався б у render-фазі (та сама пастка, що в routine).
+    //
+    // НАЗВИ СТРАВИ В PAYLOAD НЕМАЄ і не буде: `scrubPII` чистить за іменами
+    // ключів (`packages/shared/src/lib/pii.ts`), тож `name` він не вирізав
+    // би (Hard Rule #21). Їдуть лише enum-и і прапорці.
+    //
+    // `source` (як їжа потрапила в лог) і `macro_source` (звідки макроси) —
+    // це РІЗНІ осі: фото без розпізнаних макросів дає `photo` + `manual`.
+    // Схлопування їх в одне поле зробило б «скільки логів через AI»
+    // неможливим питанням.
+    trackEvent(ANALYTICS_EVENTS.NUTRITION_MEAL_LOGGED, {
+      meal_type: typeof meal?.mealType === "string" ? meal.mealType : "unknown",
+      source: meal?.source === "photo" ? "photo" : "manual",
+      macro_source:
+        typeof meal?.macroSource === "string" ? meal.macroSource : "manual",
+      has_macros: Boolean(meal?.macros),
+      ...readSignalContext("nutrition"),
+    });
   };
 
   const handleEditMeal = (
@@ -144,7 +179,6 @@ export function useNutritionLog() {
     if (!meal?.id) return;
     setNutritionLog((log) => updateLogEntry(log, date, meal));
     setAddMealSheetOpen(false);
-    setAddMealPhotoResult(null);
   };
 
   /**
@@ -165,6 +199,7 @@ export function useNutritionLog() {
     }, 6000);
     pendingThumbDeletesRef.current.set(id, t);
     setNutritionLog((log) => removeLogEntry(log, date, id));
+    clearMealMoment(date);
   };
 
   const handleRestoreMeal = (
@@ -193,7 +228,7 @@ export function useNutritionLog() {
    */
   const duplicateYesterday = useCallback(() => {
     setNutritionLog((log) => duplicatePreviousDayMeals(log, selectedDate));
-  }, [selectedDate]);
+  }, [selectedDate, setNutritionLog]);
 
   /**
    * Replace the entire log with data parsed from a JSON string.
@@ -210,7 +245,7 @@ export function useNutritionLog() {
         parsed = JSON.parse(text);
       } catch {
         toast.error(
-          "Не вдалося завантажити лог харчування — невалідний формат JSON.",
+          "Не вдалося прочитати файл: це не резервна копія журналу харчування. Вибери файл, збережений із Sergeant.",
         );
         return false;
       }
@@ -222,7 +257,7 @@ export function useNutritionLog() {
       });
       return true;
     },
-    [toast],
+    [toast, setNutritionLog],
   );
 
   /**
@@ -239,14 +274,14 @@ export function useNutritionLog() {
         parsed = JSON.parse(text);
       } catch {
         toast.error(
-          "Не вдалося об'єднати лог харчування — невалідний формат JSON.",
+          "Не вдалося обʼєднати журнал: файл не є резервною копією журналу харчування. Вибери файл, збережений із Sergeant.",
         );
         return false;
       }
       setNutritionLog((log) => mergeNutritionLogs(log, parsed));
       return true;
     },
-    [toast],
+    [toast, setNutritionLog],
   );
 
   /**
@@ -254,14 +289,17 @@ export function useNutritionLog() {
    * Garbage-collects photo thumbnails for removed entries.
    * @param {number} keepDays - Number of most-recent days to keep.
    */
-  const trimLogToLastDays = useCallback((keepDays: number) => {
-    setNutritionLog((prev) => {
-      const next = trimLogOldestDays(prev, keepDays);
-      const keep = collectMealIds(next);
-      void gcMealThumbnails(keep, { maxDeletes: 2000 });
-      return next;
-    });
-  }, []);
+  const trimLogToLastDays = useCallback(
+    (keepDays: number) => {
+      setNutritionLog((prev) => {
+        const next = trimLogOldestDays(prev, keepDays);
+        const keep = collectMealIds(next);
+        void gcMealThumbnails(keep, { maxDeletes: 2000 });
+        return next;
+      });
+    },
+    [setNutritionLog],
+  );
 
   return {
     nutritionLog,
@@ -270,8 +308,6 @@ export function useNutritionLog() {
     setSelectedDate,
     addMealSheetOpen,
     setAddMealSheetOpen,
-    addMealPhotoResult,
-    setAddMealPhotoResult,
     handleAddMeal,
     handleEditMeal,
     handleRemoveMeal,

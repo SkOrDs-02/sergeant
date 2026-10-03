@@ -1,16 +1,29 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { coachApi, isApiError } from "@shared/api";
 import { coachKeys } from "@shared/lib/api/queryKeys";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { trackAdviceFailed } from "../observability/adviceTelemetry";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
+import { weekWindowByMondayKey } from "@sergeant/finyk-domain/domain/weekSlices";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
+import { dateKeyFromDate } from "@sergeant/routine-domain";
+import {
+  deviceMondayStart,
+  countModuleSignals,
+  MIN_SIGNAL_MODULES,
+} from "@sergeant/shared";
+import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { averageKcalGoalForDays } from "@sergeant/nutrition-domain";
+import { newAdviceId } from "../observability/adviceTelemetry";
+import { failedCopy } from "@shared/i18n/failedCopy";
+import { finykExpenseCategoryLabel } from "./finykCategoryLabel";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
    prefer-kyiv-time: the "today" / week-window math intentionally reads
@@ -23,14 +36,29 @@ import { loadRoutineState } from "@routine/lib/routineStorage";
 
 const CACHE_KEY = "hub_coach_insight_cache_v1";
 
-function localDateKey(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
+// Device-local day key (ADR-0078) — канонічна реалізація живе в
+// `@sergeant/routine-domain` (`dateKeyFromDate`); тут лише тонкий делегат
+// із дефолтним `new Date()` замість колишньої інлайн-копії.
+const localDateKey = (d: Date = new Date()): string => dateKeyFromDate(d);
 
 interface CategoryAmount {
   name: string;
   amount: number;
 }
+
+/**
+ * Підпис категорії для коуча: емодзі з лейбла зрізаємо, бо він іде в
+ * прозовий текст поради, а не в чип UI.
+ *
+ * Сам підпис дає `finykExpenseCategoryLabel` — той самий резолвер, що й у
+ * тижневого дайджесту. Сервер (`modules/chat/coach.ts`) друкує `name` у
+ * промпт ЯК Є і назв не розкриває, тож ключем бакета мусить бути вже людська
+ * назва, а не `String(mcc)`: на сирому MCC ручні витрати (`mcc: 0`) і банківські
+ * рядки з невідомим MCC, але впізнаваним описом, осідали в «Інше», а
+ * користувацька категорія їхала в промпт слагом.
+ */
+const cleanCategoryLabel = (label: string): string =>
+  label.replace(/^[^\p{L}\p{N}]+/u, "").trim() || label;
 
 interface FinykSnapshot {
   totalSpent: number;
@@ -65,7 +93,7 @@ interface DateContext {
   weekRange: string;
 }
 
-interface CoachSnapshot {
+export interface CoachSnapshot {
   dateContext: DateContext;
   finyk: FinykSnapshot;
   fizruk: FizrukSnapshot | null;
@@ -78,7 +106,7 @@ const WEEKDAY_UK_FROM_ISO: Record<number, string> = {
   2: "вівторок",
   3: "середа",
   4: "четвер",
-  5: "п'ятниця",
+  5: "пʼятниця",
   6: "субота",
   7: "неділя",
 };
@@ -109,25 +137,37 @@ function buildDateContext(
 }
 
 function aggregateCurrentSnapshot(): CoachSnapshot {
-  const { txs, excludedTxIds, txSplits, txCategories } =
+  const { txs, excludedTxIds, txSplits, txCategories, customCategories } =
     readFinykStatsContext();
 
   const now = new Date();
   const mondayOffset = (now.getDay() + 6) % 7;
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - mondayOffset);
-  weekStart.setHours(0, 0, 0, 0);
+  const weekStart = new Date(deviceMondayStart(now));
 
   // AI-NOTE: Делегуємо у `calcFinykPeriodAggregate` (`@sergeant/finyk-domain`)
   // замість власного парсингу `finyk_tx_cache`/`finyk_hidden_txs`/
   // `finyk_tx_cats`. Excluded-set єдиний з Overview/Reports
-  // (`getFinykExcludedTxIdsFromStorage`). Категорії бакетимо за raw
-  // `txCategories[id] || mcc` — coach API сам розкриває назви.
+  // (`getFinykExcludedTxIdsFromStorage`). Категорії бакетимо одразу за
+  // ЛЮДСЬКИМ підписом (спільний з дайджестом `finykExpenseCategoryLabel`) —
+  // coach API назв не розкриває, друкує `name` у промпт як є. Ключ-підпис
+  // сам зливає різні id в одну позицію, окремого кроку злиття не треба.
+  //
+  // Межі тижня для ГРОШЕЙ — київські (рішення власника 2026-10-01,
+  // `METRICS_VERSION` 17): тиждень названо понеділком пристрою (він спільний
+  // зі звичками, їжею й тренуваннями нижче, ADR-0078), а транзакція лягає в
+  // нього за своїм КИЇВСЬКИМ днем — так само, як у дайджесті й «Звітах».
+  // Для київського пристрою це те саме вікно; `end` тепер явний кінець
+  // тижня, а не «усе від понеділка».
+  const moneyWeek = weekWindowByMondayKey(localDateKey(weekStart));
   const aggregate = calcFinykPeriodAggregate(txs, {
-    start: weekStart.getTime(),
+    start: moneyWeek.startMs,
+    end: moneyWeek.endMs,
     excludedTxIds,
     txSplits,
-    categoryKey: (tx) => txCategories[tx.id] || String(tx.mcc ?? "other"),
+    categoryKey: (tx) =>
+      cleanCategoryLabel(
+        finykExpenseCategoryLabel(tx, txCategories, customCategories),
+      ),
   });
 
   const topCategories = Object.entries(aggregate.byCategory)
@@ -146,7 +186,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   try {
     // Канонічні тренування — SQLite warm cache (`fizruk_workouts_v1`
     // tombstoned). Холодний кеш (`refreshedAt === null`) = «немає даних».
-    // Тижневий об'єм рахуємо з domain `items[].sets[].weightKg × reps`.
+    // Тижневий обʼєм рахуємо з domain `items[].sets[].weightKg × reps`.
     const fizrukCache = getCachedFizrukSqliteState();
     if (fizrukCache.refreshedAt !== null) {
       const allWorkouts = fizrukCache.workouts;
@@ -154,14 +194,10 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
         if (!w.endedAt) return false;
         return new Date(w.startedAt) >= weekStart;
       });
-      let totalVolume = 0;
-      for (const w of weekWorkouts) {
-        for (const item of w.items) {
-          for (const set of item.sets ?? []) {
-            totalVolume += set.weightKg * set.reps;
-          }
-        }
-      }
+      const totalVolume = weekWorkouts.reduce(
+        (sum, w) => sum + workoutTonnageKg(w),
+        0,
+      );
       const completed = allWorkouts.filter((w) => w.endedAt);
       const last = [...completed].sort(
         (a, b) =>
@@ -187,17 +223,18 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let nutrition: NutritionSnapshot | null = null;
   try {
-    // Канонічні лог + prefs — SQLite warm cache (`nutrition_log_v1` /
-    // `nutrition_prefs_v1` tombstoned).
+    // Канонічні лог + append-only журнал цілей із SQLite warm cache.
     const log = loadNutritionLog();
-    const prefs = loadNutritionPrefs();
+    const goalPeriods = loadNutritionGoalPeriods();
     let totalKcal = 0,
       totalProtein = 0,
       daysLogged = 0;
+    const weekDays: string[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const dk = localDateKey(d);
+      weekDays.push(dk);
       const meals = Array.isArray(log[dk]?.meals) ? log[dk].meals : [];
       if (meals.length > 0) {
         daysLogged++;
@@ -211,7 +248,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
       nutrition = {
         avgKcal: Math.round(totalKcal / daysLogged),
         avgProtein: Math.round(totalProtein / daysLogged),
-        targetKcal: prefs.dailyTargetKcal ?? 2000,
+        targetKcal: averageKcalGoalForDays(goalPeriods, weekDays) ?? 0,
         daysLogged,
       };
     }
@@ -251,16 +288,54 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
   return { dateContext, finyk, fizruk, nutrition, routine };
 }
 
+/**
+ * Скільки модулів дали ЗМІСТОВНИЙ сигнал за тиждень.
+ *
+ * Тонкий делегат `countModuleSignals` (`@sergeant/shared`) — той самий
+ * рахунок, яким сервер гейтить дайджест (`countDigestSignalModules` в
+ * `apps/server/src/modules/digest/weekly-digest.ts`), канонізовано за
+ * аудитом §2.23 замість двох незалежних копій.
+ */
+export function coachSnapshotSignals(snapshot: CoachSnapshot): number {
+  return countModuleSignals(snapshot);
+}
+
+/**
+ * Поріг публікації — канон hub-coach §6.2 «краще мовчати, ніж шуміти».
+ *
+ * AI-CONTEXT (аудит hub-coach § G2): поріг існував ЛИШЕ для статистичних
+ * кореляцій (`digestCorrelations.ts`: `MIN_N` спільних днів + `NOTABLE_R`
+ * сила звʼязку — немає звʼязку, блок не друкується). Для текстових інсайтів
+ * порогу не було взагалі: снапшот їхав на модель навіть тоді, коли всі
+ * чотири модулі порожні, і вона писала пораду з нічого. Тобто захищено було
+ * найнадійнішу частину — ту, що рахує код, — і не захищено найризикованішу,
+ * ту, що пише модель.
+ *
+ * Канон вимагає саме порогу, а не промпт-побажання: «Це контракт із прямим
+ * технічним наслідком: потрібен поріг публікації, а не просто
+ * промпт-побажання» (§6.2).
+ *
+ * Поріг навмисно мінімальний і безспірний: нуль сигналів — мовчимо. Ширша
+ * ГРАДАЦІЯ впевненості (скільки саме даних треба на впевнене твердження) —
+ * окремий рядок Хвилі 4, і вона потребує продуктового рішення, якого канон
+ * поки не дає. Число саме — `MIN_SIGNAL_MODULES` з `@sergeant/shared`,
+ * той самий, який гейтить дайджест у `weekly-digest.ts`.
+ */
+
 async function fetchCoachInsight(): Promise<string | null> {
+  const snapshot = aggregateCurrentSnapshot();
+
+  // Гейт СТОЇТЬ ПЕРЕД усіма мережевими викликами: порожній тиждень не має
+  // ані будити модель, ані палити денну AI-квоту користувача.
+  if (coachSnapshotSignals(snapshot) < MIN_SIGNAL_MODULES) return null;
+
   let memory: string | null = null;
   try {
     const memJson = await coachApi.getMemory();
     memory = (memJson as { memory?: string }).memory ?? null;
   } catch {
-    // Пам'ять не обов'язкова — інсайт будуємо й без неї.
+    // Памʼять не обовʼязкова — інсайт будуємо й без неї.
   }
-
-  const snapshot = aggregateCurrentSnapshot();
 
   const insightJson = await coachApi.postInsight({ snapshot, memory });
   return (insightJson as { insight?: string }).insight ?? null;
@@ -269,25 +344,83 @@ async function fetchCoachInsight(): Promise<string | null> {
 const coachInsightQueryKey = (todayKey = localDateKey()) =>
   coachKeys.insight(todayKey);
 
+/**
+ * Форма запису кешу. `adviceId` доданий Хвилею 2 (W2-AI-ADVICE-EVENTS) і
+ * НАВМИСНО опційний: записи, збережені старим бандлом, живуть до кінця дня
+ * (`staleTime: Infinity`), тож читання без id не має падати — id дописується
+ * ліниво при першому ж проході ефекту.
+ */
+interface CachedAdvice {
+  date?: string;
+  text?: string;
+  adviceId?: string;
+}
+
+function readAdviceCache(): CachedAdvice | null {
+  return safeReadLS<CachedAdvice | null>(CACHE_KEY, null);
+}
+
 function loadInitialInsight(todayKey: string): string | undefined {
-  const cached = safeReadLS<{ date?: string; text?: string } | null>(
-    CACHE_KEY,
-    null,
-  );
+  const cached = readAdviceCache();
   if (cached?.date === todayKey && typeof cached?.text === "string") {
     return cached.text;
   }
   return undefined;
 }
 
+function loadInitialAdviceId(todayKey: string): string | null {
+  const cached = readAdviceCache();
+  if (
+    cached?.date === todayKey &&
+    typeof cached?.adviceId === "string" &&
+    cached.adviceId
+  ) {
+    return cached.adviceId;
+  }
+  return null;
+}
+
 interface UseCoachInsightResult {
   insight: string | null;
+  /**
+   * Ідентичність поради для телеметрії (`advice_id` подій `ai_advice_*`).
+   *
+   * Випадковий uuid, згенерований РІВНО ОДИН РАЗ на згенеровану пораду —
+   * не на рендер і НЕ як хеш тексту (хеш перетворив би подію на приховану
+   * сигнатуру змісту, тобто на витік іншими словами). `null`, поки поради
+   * немає.
+   *
+   * Обмеження, яке треба знати ДО побудови дашборда: id клієнтський, тож та
+   * сама денна порада у вебі й на телефоні дасть ДВА різні id. Придатно для
+   * «побачив → зреагував», НЕпридатно для «скільки унікальних порад
+   * згенеровано».
+   */
+  adviceId: string | null;
   loading: boolean;
   error: string | null;
   refresh: () => Promise<unknown>;
 }
 
-export function useCoachInsight(): UseCoachInsightResult {
+export interface UseCoachInsightOptions {
+  /**
+   * Чи дозволено робити мережевий запит/фактично генерувати пораду.
+   *
+   * `false`, коли UI, що показує пораду, не рендериться (Чистий режим,
+   * вимкнена секція «Інсайти» в налаштуваннях-дашборда, ще немає першого
+   * реального запису) — саме так «Чистий режим» перестає мовчки палити
+   * денну AI-квоту (аудит PR-A1, канон hub-coach §6.2). За замовчуванням
+   * `true` — існуючі виклики без опцій поведінки не міняють.
+   *
+   * Стандартна семантика React Query `enabled`: перехід `false → true`
+   * (блок став видимим) сам тригерить фетч, окремого коду не треба.
+   */
+  enabled?: boolean;
+}
+
+export function useCoachInsight(
+  options?: UseCoachInsightOptions,
+): UseCoachInsightResult {
+  const enabled = options?.enabled ?? true;
   const queryClient = useQueryClient();
   const todayKey = localDateKey();
   const queryKey = coachInsightQueryKey(todayKey);
@@ -295,6 +428,7 @@ export function useCoachInsight(): UseCoachInsightResult {
   const query = useQuery({
     queryKey,
     queryFn: fetchCoachInsight,
+    enabled,
     // Не ретраїмо 429: ліміт (`api:coach` rate-limit + денна AI-квота)
     // має годинне/добове вікно, тож негайний повтор гарантовано впаде
     // знову, спалить ще один хіт у спільному `api:coach` бакеті й затягне
@@ -309,27 +443,76 @@ export function useCoachInsight(): UseCoachInsightResult {
     gcTime: 24 * 60 * 60_000,
     initialData: () => loadInitialInsight(todayKey),
     initialDataUpdatedAt: () => {
-      const cached = safeReadLS<{ date?: string } | null>(CACHE_KEY, null);
+      const cached = readAdviceCache();
       if (cached?.date !== todayKey) return undefined;
       return Date.now();
     },
   });
 
+  const [adviceId, setAdviceId] = useState<string | null>(() =>
+    loadInitialAdviceId(todayKey),
+  );
+  // Якір ідентичності: (текст поради → її id). Джерело правди — САМЕ він, а не
+  // round-trip через localStorage.
+  //
+  // AI-DANGER: спокуслива версія «перечитати кеш і порівняти» тут — це
+  // нескінченний цикл рендерів у приватному режимі / при переповненій квоті:
+  // `safeWriteLS` мовчки не зберігає, наступний `safeReadLS` знову не бачить
+  // id, ефект генерує ще один — і так щорендеру. Ref розриває цю залежність:
+  // id генерується рівно один раз на текст навіть коли сховище недоступне.
+  const adviceIdRef = useRef<{ text: string; id: string } | null>(null);
+
   useEffect(() => {
-    if (
-      typeof query.data === "string" &&
-      query.data.length > 0 &&
-      !query.isFetching
-    ) {
-      const cached = safeReadLS<{ date?: string; text?: string } | null>(
-        CACHE_KEY,
-        null,
-      );
-      if (cached?.date !== todayKey || cached?.text !== query.data) {
-        safeWriteLS(CACHE_KEY, { date: todayKey, text: query.data });
-      }
+    const text = query.data;
+    if (typeof text !== "string" || text.length === 0 || query.isFetching) {
+      return;
     }
+    // Той самий текст → та сама порада → той самий id. Жодної залежності від
+    // рендеру: id мінтиться в момент фіксації результату.
+    if (adviceIdRef.current?.text === text) return;
+
+    const cached = readAdviceCache();
+    // Legacy-запис `{date, text}` без `adviceId` не падає — id дописується
+    // ліниво, бо `staleTime: Infinity` лишає такий запис живим до кінця дня.
+    const cachedId =
+      cached?.date === todayKey &&
+      cached?.text === text &&
+      typeof cached?.adviceId === "string" &&
+      cached.adviceId
+        ? cached.adviceId
+        : null;
+    const nextId = cachedId ?? newAdviceId();
+
+    adviceIdRef.current = { text, id: nextId };
+    if (
+      cached?.date !== todayKey ||
+      cached?.text !== text ||
+      cached?.adviceId !== nextId
+    ) {
+      safeWriteLS(CACHE_KEY, { date: todayKey, text, adviceId: nextId });
+    }
+    setAdviceId((prev) => (prev === nextId ? prev : nextId));
   }, [query.data, query.isFetching, todayKey]);
+
+  // Провал генерації інсайту. Без цієї події «коуч мовчить, бо гейт
+  // достатності даних (`hub-coach.md` §6.2) навмисно тримає тишу» і «коуч
+  // мовчить, бо провайдер віддає 400» дають на дашборді той самий нуль
+  // `ai_advice_shown`.
+  //
+  // Guard за посиланням на помилку, а не за булеаном: React Query лишає той
+  // самий обʼєкт живим між рендерами й на час ретраю, тож без ref подія
+  // летіла б щорендеру, поки картка на екрані.
+  const failedErrRef = useRef<unknown>(null);
+  useEffect(() => {
+    const err = query.error;
+    if (!err || failedErrRef.current === err) return;
+    failedErrRef.current = err;
+    trackAdviceFailed({
+      source: "coach_insight",
+      kind: isApiError(err) ? err.kind : "unknown",
+      status: isApiError(err) && err.kind === "http" ? err.status : null,
+    });
+  }, [query.error]);
 
   const { refetch } = query;
 
@@ -340,11 +523,12 @@ export function useCoachInsight(): UseCoachInsightResult {
 
   return {
     insight: query.data ?? null,
+    adviceId,
     loading: query.isPending || query.isFetching,
     error: query.error
       ? isApiError(query.error) && query.error.kind === "http"
-        ? query.error.serverMessage || "Помилка генерації інсайту"
-        : (query.error as Error).message || "Помилка завантаження"
+        ? query.error.serverMessage || failedCopy("скласти пораду")
+        : failedCopy("завантажити пораду")
       : null,
     refresh,
   };

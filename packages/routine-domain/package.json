@@ -10,23 +10,29 @@
     "./constants": "./src/constants.ts",
     "./date-keys": "./src/dateKeys.ts",
     "./drafts": "./src/drafts.ts",
+    "./flex-streak": "./src/flexStreak.ts",
     "./habit-order": "./src/habitOrder.ts",
+    "./period-completion": "./src/periodCompletion.ts",
+    "./quick-stats": "./src/quickStats.ts",
     "./schedule": "./src/schedule.ts",
     "./streaks": "./src/streaks.ts",
     "./types": "./src/types.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint": "eslint --cache \"src/**/*.{ts,tsx}\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
   },
+  "dependencies": {
+    "@sergeant/shared": "workspace:*"
+  },
   "devDependencies": {
     "@sergeant/config": "workspace:*",
     "@types/node": "^20.19.41",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/coverage-v8": "^4.1.10",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   }
 }
